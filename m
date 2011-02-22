@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab1BVIEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 03:04:49 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:40049 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab1BVIEs (ORCPT
+	id S1751851Ab1BVIFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 03:05:08 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:16838 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab1BVIFF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 03:04:48 -0500
-Date: Tue, 22 Feb 2011 09:04:46 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@snapgear.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Steven King <sfking00@yahoo.com>,
-        uClinux development list <uclinux-dev@uclinux.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Greg Ungerer <gregungerer@westnet.com.au>
-Subject: Re: merge of m68knommu and m68k arch branches?
-Message-ID: <20110222080446.GA25012@merkur.ravnborg.org>
-References: <4D5DB83D.80205@snapgear.com> <alpine.LFD.2.00.1102212216540.2701@localhost6.localdomain6> <4D6319E0.9080907@snapgear.com> <AANLkTi=QkXK7=DQ5H1PFttTk+iug_npCsz112RYXd7BR@mail.gmail.com> <20110222072951.GA24953@merkur.ravnborg.org> <AANLkTi=o9hQM1DqbBOAsDpxBW9U1uHsUZ6q3Kw48OBb6@mail.gmail.com>
+	Tue, 22 Feb 2011 03:05:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=GvrIXh3AbjwL3vYE3siB2iGmLNwfZCt8bVHaEs82idZvmsFkex4IjzCK2zfO2VSDB2
+         Lxr5Wdtp9V0xsDCGVTgA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=o9hQM1DqbBOAsDpxBW9U1uHsUZ6q3Kw48OBb6@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTikNSEyjdL0Lchmm-bFxD00omkGLq6Q6Yyjy51Ov@mail.gmail.com>
+References: <1298342392-21236-1-git-send-email-ccross@android.com>
+	<1298342392-21236-8-git-send-email-ccross@android.com>
+	<AANLkTikNSEyjdL0Lchmm-bFxD00omkGLq6Q6Yyjy51Ov@mail.gmail.com>
+Date: Tue, 22 Feb 2011 00:05:03 -0800
+X-Google-Sender-Auth: aBJIgvC8nYBCtTncWLxknUxaNtU
+Message-ID: <AANLkTi==wykFCCjamRNh2ngEaubgeLqmZ7Mv9OsH=0cL@mail.gmail.com>
+Subject: Re: [PATCH 7/7] ARM: tegra: clock: Disable clocks left on by bootloader
+From: Colin Cross <ccross@android.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-tegra@vger.kernel.org, konkers@android.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mike@compulab.co.il, Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 08:40:53AM +0100, Geert Uytterhoeven wrote:
-> On Tue, Feb 22, 2011 at 08:29, Sam Ravnborg <sam@ravnborg.org> wrote:
-> >> >> Is there a plan to move m68k to the generic facilities as well ?
-> >>
-> >> Moving m68k to genirq is (the next thing?) on my list...
-> >
-> > If I succeed migrating sparc32 to genirq I hope to be of a little help here.
-> > It looks like a bigger task to migrate m68k than it was/is to migrate sparc32.
-> >
-> > It would be _very_ nice to get the last two architectures migrated to genirq.
-> 
-> Aren't your forgetting s390?
-Hmm, I had the understanding that m68k and sparc32 was the only two remaining :-(
-But I did not check.
+On Mon, Feb 21, 2011 at 9:43 PM, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
+>
+> On Mon, Feb 21, 2011 at 6:39 PM, Colin Cross <ccross@android.com> wrote:
+>> Iterates through all clocks, disabling any for which the
+>> refcount is 0 but the clock init detected the bootloader
+>> left the clock on.  Can be disabled with command line
+>> tegra_clock.disable_boot_clocks=N
+>>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>> ---
+>>  arch/arm/mach-tegra/clock.c |   44 +++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 44 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
+>> index e028320..6d686ff 100644
+>> --- a/arch/arm/mach-tegra/clock.c
+>> +++ b/arch/arm/mach-tegra/clock.c
+>> @@ -33,6 +33,9 @@
+>>  #include "board.h"
+>>  #include "clock.h"
+>>
+>> +#undef MODULE_PARAM_PREFIX
+>> +#define MODULE_PARAM_PREFIX "tegra_clock."
+>> +
+>>  /*
+>>  * Locking:
+>>  *
+>> @@ -416,6 +419,47 @@ void tegra_sdmmc_tap_delay(struct clk *c, int delay)
+>>        spin_unlock_irqrestore(&c->spinlock, flags);
+>>  }
+>>
+>> +static bool tegra_disable_boot_clocks = true;
+>> +module_param_named(disable_boot_clocks, tegra_disable_boot_clocks, bool,
+>> +       S_IRUGO | S_IWUSR | S_IWGRP);
+>
+> I suggest doing this as an early_param instead. I know it's not truly
+> an early param, but it's the easier way to do non-module bootargs,
+> i.e. by not requiring a (fake) module prefix. It'd be a little
+> cleaner, in my opinion. The variable name itself is unique enough to
+> not need a module prefix for namespace reasons.
+It doesn't need to be an early_param, I can make it a __setup.
 
-s390 sees more active maintenance so if they become the last non genirq user,
-then they may feel a bit of pressure :-)
-
-	Sam
+> Also, Documentation/kernel-parameters.txt should be updated with it.
+Is it really worth adding every debug flag on every platform to
+kernel-parametes.txt?  I could add the flag to the warning message
+instead.
