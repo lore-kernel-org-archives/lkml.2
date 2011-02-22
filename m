@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab1BVCcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 21:32:18 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:59811 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab1BVCcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 21:32:17 -0500
-Date: Mon, 21 Feb 2011 21:32:11 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Alexander V. Lukyanov" <lav@netis.ru>
-Cc: linux-ext4@vger.kernel.org, Andreas Dilger <adilger@sun.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: allow inode_readahead_blks=0 (linux-2.6.37)
-Message-ID: <20110222023211.GF2924@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Alexander V. Lukyanov" <lav@netis.ru>, linux-ext4@vger.kernel.org,
-	Andreas Dilger <adilger@sun.com>, linux-kernel@vger.kernel.org
-References: <20110208063925.GA13619@lw.yar.ru>
+	id S1753249Ab1BVCe4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 21:34:56 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38432 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab1BVCez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 21:34:55 -0500
+Date: Tue, 22 Feb 2011 02:34:52 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: rtc-linux@googlegroups.com
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
+	rtc_class_ops->read_alarm()
+Message-ID: <20110222023452.GB18299@sirena.org.uk>
+References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org> <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110208063925.GA13619@lw.yar.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
+X-Cookie: Preserve the old, but know the new.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 09:39:25AM +0300, Alexander V. Lukyanov wrote:
-> Hello!
-> 
-> I cannot disable inode-read-ahead feature of ext4 (on 2.6.37):
-> 
-> # echo 0 > /sys/fs/ext4/sda2/inode_readahead_blks 
-> bash: echo: write error: Invalid argument
-> 
-> On a server with lots of small files and random access this read-ahead makes
-> performance worse, and I'd like to disable it. I work around this problem
-> by using value of 1, but it still reads an extra block.
+On Mon, Feb 21, 2011 at 03:55:32PM -0800, John Stultz wrote:
+> With the generic rtc code managing the now virtualized alarm timer,
+> no one actually calls rtc_clas_ops->read_alarm().
 
-So I'm curious --- have you actually benchmarked a performance
-decrease?  What sort of hardware are you using?
+> We do check that it exists in rtc_read_alarm(), but that is only
+> to verify that the hardware supports irqs. The same test can
+> be done by checking set_alarm instead.
 
-The readahead should be changing a 4k read to a 8k read with a value
-of 1, which shouldn't take a much of a difference to a HDD.
+> This patch changes the the read_alarm check to set_alarm, and then
+> removes the read_alarm method and its implementations in the rt
+> drivers.
 
-I can apply this patch, but is it really making a difference for you?
-
-      	    	 	       	  	 	- Ted
+Can you go into more detail on the rationale behind this virtualised
+functionality and how it works?  I'd really expect the RTC alarm to be
+preserved over system reboots (on some systems it can be used to
+initiate a boot) and that would mean that we need to go to the hardware
+for at least the initial configuration.
