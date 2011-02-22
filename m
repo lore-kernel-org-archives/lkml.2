@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab1BVN3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 08:29:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53623 "EHLO mx1.redhat.com"
+	id S1752534Ab1BVNdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 08:33:54 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39567 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab1BVN3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 08:29:37 -0500
-Date: Tue, 22 Feb 2011 14:28:04 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v6 0/4] fadvise(DONTNEED) support
-Message-ID: <20110222132804.GQ13092@random.random>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
- <20110221190713.GM13092@random.random>
- <AANLkTimOhgK953rmOw4PqnoFq_e7y6j1m+NBDYJehkds@mail.gmail.com>
+	id S1752096Ab1BVNdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 08:33:53 -0500
+Date: Tue, 22 Feb 2011 14:33:38 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL tip:x86/mm] x86-64, NUMA: NUMA related misc changes
+Message-ID: <20110222133338.GA6493@elte.hu>
+References: <20110222112027.GA31267@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimOhgK953rmOw4PqnoFq_e7y6j1m+NBDYJehkds@mail.gmail.com>
+In-Reply-To: <20110222112027.GA31267@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
 
-On Tue, Feb 22, 2011 at 07:59:51AM +0900, Minchan Kim wrote:
-> I don't have a reproducible experiment.
-> I started the series with Ben's complain.
-> http://marc.info/?l=rsync&m=128885034930933&w=2
+* Tejun Heo <tj@kernel.org> wrote:
 
-Yes I've noticed.
+> Ingo, please pull from the following git branch to receive five
+> commits updating x86-64 NUMA code.  These five patches shouldn't cause
+> any visible behavior change.  The HEAD is 2bf50555b0 (x86-64, NUMA:
+> Seperate out numa_alloc_distance() from numa_set_distance()).
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-numa
+> 
+> git.korg still seems a bit slow to sync, so if you can't see the HEAD
+> there please pull from master.korg.
+> 
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-numa
+> 
+> Thanks.
+> 
+> Tejun Heo (3):
+>       x86-64, NUMA: Prepare numa_emulation() for moving NUMA emulation into a separate file
+>       x86-64, NUMA: Move NUMA emulation into numa_emulation.c
+>       x86-64, NUMA: Add proper function comments to global functions
+> 
+> Yinghai Lu (2):
+>       x86-64, NUMA: Do not scan two times for setup_node_bootmem()
+>       x86-64, NUMA: Seperate out numa_alloc_distance() from numa_set_distance()
+> 
+>  arch/x86/mm/Makefile         |    1 +
+>  arch/x86/mm/numa_64.c        |  629 +++++++-----------------------------------
+>  arch/x86/mm/numa_emulation.c |  475 +++++++++++++++++++++++++++++++
+>  arch/x86/mm/numa_internal.h  |   31 ++
+>  4 files changed, 607 insertions(+), 529 deletions(-)
+>  create mode 100644 arch/x86/mm/numa_emulation.c
+>  create mode 100644 arch/x86/mm/numa_internal.h
 
-> I don't know Ben could test it with older kernel since recently he got silent.
+Pulled, thanks a lot Tejun!
 
-That's my point, we should check if the "thrashing horribly" is really
-a "recently" or if it has always happened before with 2.6.18 and previous.
-
-> I am not sure older kernel worked well such as workload.
-> That's because Rik had been pointed out rsync's two touch
-> problem(http://linux-mm.org/PageReplacementRequirements) and solved
-> part of the problem with remaining half of the active file pages(look
-> at inactive_file_is_low) on 2.6.28's big change reclaim.
-> So I think the problem about such workload have been in there.
-
-It's possible it's an old problem, but frankly I doubt that any
-swapping would have ever happened before, no matter how much rsync you
-would run in a loop. As said I also got PM from users asking what they
-can do to limit the pagecache because their systems are swapping
-overnight because of backup loads, that's definitely not ok. Or at
-least there must be a tweak to tell the VM "stop doing the swapping
-thing with backup". I didn't yet try to reproduce or debug this as I'm
-busy with other compaction/THP related bits.
-
-> And this patch's benefit is not only for preventing working set.
-> Before this patch, application should sync the data before fadvise to
-> take a effect but it's very inefficient by slow sync operation. If the
-> invalidation meet dirty page, it can skip the page. But after this
-> patch, application could fdavise without sync because we could move
-> the page of head/or tail of inactive list.
-
-I agree, the objective of the patch definitely looks good. Before the
-fadvise would be ignored without a fdatasync before it as the pages
-were dirty and couldn't be discarded.
-
-> So I think the patch is valuable enough to merge?
-
-The objective looks good, I didn't have time to review all details of
-the patches but I'll try to review it later.
-
-> And as I said, I need Ben's help but I am not sure he can.
-> Thanks for the review, Andrea.
-
-Thanks for the effort in improving fadvise.
-
-I'd like to try to find the time to check if we've a regression
-without fadvise too. It's perfectly ok to use fadvise in rsync but my
-point is that the kernel should not lead to trashing of running apps
-regardless of fadvise or not, and I think that is higher priority to
-fix than the fadvise improvement. But still the fadvise improvement is
-very valuable to increase overall performance and hopefully to avoid
-wasting most of filesystem cache because of backups (but wasting cache
-shouldn't lead to trashing horribly, just more I/O from apps after the
-backup run, like after starting the app the first time, trashing
-usually means we swapped out or discarded mapped pages too and that's
-wrong).
-
-Thanks,
-Andrea
+	Ingo
