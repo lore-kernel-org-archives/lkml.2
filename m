@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab1BVOyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:54:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab1BVOyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:54:45 -0500
-Subject: Re: [PATCH 4/7] KVM: sort memslots and use binary search to search
- the right slot
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-In-Reply-To: <4D63C753.3030906@redhat.com>
-References: <4D636EF8.60800@cn.fujitsu.com>
-	 <4D636FE8.8000505@cn.fujitsu.com>  <4D63C753.3030906@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Feb 2011 07:54:41 -0700
-Message-ID: <1298386481.5764.60.camel@x201>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754351Ab1BVO6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:58:14 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64815 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab1BVO6N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:58:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qcDN0taowK6puAOJ7o/Pa4WjgYj2KoAHqA4YNxarcqKunaSTAYlN3WRdmVkmDHw5x0
+         HFcgL8tATez84EJBqKX5FYvBg/Q6h3dg6XfuDfD2Jvo6nFgUW/VglYf2jrDrrM4Fjn5k
+         OkS3cUniKXJ1CvfgsEyJLCG0HJ3xSZH8G2xSk=
+MIME-Version: 1.0
+In-Reply-To: <4D635618.3@linux.vnet.ibm.com>
+References: <20110222115340.da48b908.sfr@canb.auug.org.au>
+	<4D63479F.3060603@linux.vnet.ibm.com>
+	<20110222163016.aac65a7a.sfr@canb.auug.org.au>
+	<4D635618.3@linux.vnet.ibm.com>
+Date: Tue, 22 Feb 2011 08:57:26 -0600
+Message-ID: <AANLkTik1cmehfLENCYb8GYPLbM6PWUCzqtp74xD2YbVR@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the v9fs tree
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 16:25 +0200, Avi Kivity wrote:
-> On 02/22/2011 10:12 AM, Xiao Guangrong wrote:
-> > Sort memslots then search the slot with binary search to speed up the
-> > slot searching
-> >
-> 
-> I'm not sure if a binary search is the right algorithm here.  It 
-> introduces a lot of branches which may be mispredicted.
-> 
-> Options we've discussed are:
-> 
-> - Sort slots by size, use linear search (so the largest slots are found 
-> quickly)
-> - Weighted balanced tree 
-> http://en.wikipedia.org/wiki/Weight-balanced_tree, use weight == slot size
+JV - you should be able to check this just by building with allmod
+config.  I'll accept a pull immediately if this is the fix.
 
-I've got an implementation using a weight balanced tree working now.  I
-need to do some testing to see if I can detect any performance
-difference from the current unsorted, linear array.
-
-> Both options still make the miss case (mmio) slow.  We could cache the 
-> result of a miss in an spte by using a reserved bit, and checking the 
-> page fault error code (or seeing if we get an ept violation or ept 
-> misconfiguration), so if we get repeated mmio on a page, we don't need 
-> to search the slot list/tree.
-
-I haven't started on this idea yet.  Thanks,
-
-Alex
+        -eric
 
 
-
+On Tue, Feb 22, 2011 at 12:22 AM, Venkateswararao Jujjuri (JV)
+<jvrao@linux.vnet.ibm.com> wrote:
+> On 2/21/2011 9:30 PM, Stephen Rothwell wrote:
+>> Hi,
+>>
+>> On Mon, 21 Feb 2011 21:20:31 -0800 "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com> wrote:
+>>>
+>>> On 2/21/2011 4:53 PM, Stephen Rothwell wrote:
+>>>>
+>>>> After merging the v9fs tree, today's linux-next build (x86_64
+>>>> allmodconfig) failed like this:
+>>>>
+>>>> ERROR: "p9_payload_gup" [net/9p/9pnet_virtio.ko] undefined!
+>>>> ERROR: "p9_nr_pages" [net/9p/9pnet_virtio.ko] undefined!
+>>>> ERROR: "p9_release_req_pages" [net/9p/9pnet_virtio.ko] undefined!
+>>>
+>>> These functions are defined by commit 249951bf66816128a7698caa826425e299494c82
+>>> ([net/9p] Preparation and helper functions for zero copy)
+>>
+>> Yes, they are - but they are not exported to modules.
+>
+> Thanks; Can you please check if this patch fixes your issue?
+>
+> diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
+> index ca705f1..da7c2cd 100644
+> --- a/net/9p/trans_common.c
+> +++ b/net/9p/trans_common.c
+> @@ -13,6 +13,7 @@
+>  */
+>
+>  #include <linux/slab.h>
+> + #include <linux/module.h>
+>  #include <net/9p/9p.h>
+>  #include <net/9p/client.h>
+>  #include <linux/scatterlist.h>
+> @@ -32,6 +33,7 @@ p9_release_req_pages(struct trans_rpage_info *rpinfo)
+>                i++;
+>        }
+>  }
+> +EXPORT_SYMBOL(p9_release_req_pages);
+>
+>  /**
+>  * p9_nr_pages - Return number of pages needed to accomodate the payload.
+> @@ -45,6 +47,7 @@ p9_nr_pages(struct p9_req_t *req)
+>                        PAGE_SIZE - 1) >> PAGE_SHIFT;
+>        return end_page - start_page;
+>  }
+> +EXPORT_SYMBOL(p9_nr_pages);
+>
+>  /**
+>  * payload_gup - Translates user buffer into kernel pages and
+> @@ -91,3 +94,4 @@ p9_payload_gup(struct p9_req_t *req, size_t *pdata_off, int *p
+>        }
+>        return 0;
+>  }
+> +EXPORT_SYMBOL(p9_payload_gup);
+>
+>
+>
+>
