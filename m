@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab1BVSiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 13:38:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1974 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751226Ab1BVSiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 13:38:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,207,1297065600"; 
-   d="scan'208";a="711856746"
-Subject: Re: [PATCH 01/12] export kernel call get_task_comm()
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
-In-Reply-To: <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
-References: <james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 22 Feb 2011 10:38:06 -0800
-Message-ID: <1298399886.2315.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752286Ab1BVSmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 13:42:47 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:62067 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab1BVSmq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 13:42:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FXO3UzLvdeRKgw7jhTihjEzn1K1FmzZqt9D72wb0KQX94OYQ687tZvoxhxVWF2jwuF
+         yvOEiwqubGTgWZ6FhNMg==
+MIME-Version: 1.0
+In-Reply-To: <1298394776-9957-5-git-send-email-arighi@develer.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+	<1298394776-9957-5-git-send-email-arighi@develer.com>
+Date: Tue, 22 Feb 2011 10:42:41 -0800
+Message-ID: <AANLkTinD2ZH3hw_iqVpvMjMRbUkXMBgttjd2NevvYq9x@mail.gmail.com>
+Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
+From: Chad Talbott <ctalbott@google.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg:
-
-Is this a patch you will or have already take/taken?  Or do you want me
-to re-submit this with the rest of the patches like last time?  
-
-My default is I will re-send you all of these patches with the changes
-we talked about last week.
-
-thanks,
-jay
-
-On Tue, 2011-02-08 at 11:34 -0800, james_p_freyensee@linux.intel.com
-wrote:
-> From: J Freyensee <james_p_freyensee@linux.intel.com>
-> 
-> This allows drivers who call this function to be compiled modularly.
-> Otherwise, a driver who is interested in this type of functionality
-> has to implement their own.
-> 
-> Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+On Tue, Feb 22, 2011 at 9:12 AM, Andrea Righi <arighi@develer.com> wrote:
+> Add the tracking of buffered (writeback) and anonymous pages.
+...
 > ---
->  fs/exec.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index c62efcb..7b209f9 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -998,6 +998,7 @@ char *get_task_comm(char *buf, struct task_struct *tsk)
->  	task_unlock(tsk);
->  	return buf;
->  }
-> +EXPORT_SYMBOL_GPL(get_task_comm);
->  
->  void set_task_comm(struct task_struct *tsk, char *buf)
->  {
+>  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/blkdev.h |   26 ++++++++++++++-
+>  2 files changed, 111 insertions(+), 2 deletions(-)
+>
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 9ad3d1e..a50ee04 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+...
+> +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
+> +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
+> +int blk_throtl_copy_page_owner(struct page *npage, struct page *opage)
 
+It would be nice if these were named blk_cgroup_*.  This is arguably
+more correct as the id comes from the blkio subsystem, and isn't
+specific to blk-throttle.  This will be more important very shortly,
+as CFQ will be using this same cgroup id for async IO tracking soon.
 
+is_kernel_io() is a good idea, it avoids a bug that we've run into
+with CFQ async IO tracking.  Why isn't PF_KTHREAD sufficient to cover
+all kernel threads, including kswapd and those marked PF_MEMALLOC?
+
+Thanks,
+Chad
