@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1BVTzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:55:17 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:59406 "EHLO smtp.outflux.net"
+	id S1753711Ab1BVT6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:58:07 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48580 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab1BVTzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:55:15 -0500
-Date: Tue, 22 Feb 2011 11:54:32 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@suse.de>, David Daney <ddaney@caviumnetworks.com>,
-        linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110222195432.GB4000@outflux.net>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
- <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
- <20110222181613.GU4000@outflux.net>
- <4D640133.9020901@caviumnetworks.com>
- <20110222184726.GV4000@outflux.net>
- <20110222191454.GB9991@suse.de>
- <20110222192532.GY4000@outflux.net>
- <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
+	id S1751890Ab1BVT6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:58:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ed Tomlinson <edt@aei.ca>
+Subject: Re: [Bug #28562] [BUG] usb problems in .38-rc3+
+Date: Tue, 22 Feb 2011 20:57:47 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera> <5HY1m9_-mkI.A.VxH.8WtYNB@chimera> <201102212106.07392.edt@aei.ca>
+In-Reply-To: <201102212106.07392.edt@aei.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102222057.47321.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
-> Anyway - we don't mostly have a "root/non-root" model - it went out
-> around Linux 1.2. So any model for dealing with should be respecting of
-> capabilities, SELinux and the like.
+On Tuesday, February 22, 2011, Ed Tomlinson wrote:
+> On Monday 21 February 2011 17:03:00 Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.37.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28562
+> > Subject		: [BUG] usb problems in .38-rc3+
+> > Submitter	: Ed Tomlinson <edt@aei.ca>
+> > Date		: 2011-02-05 19:17 (17 days old)
+> > Message-ID	: <201102051417.58953.edt@aei.ca>
+> > References	: http://marc.info/?l=linux-kernel&m=129693391417607&w=2
+>  
+> I figured out a work around for this.  Once the bluetooth adaptor has been detected and udev
+> had done its stuff run: 
+> 
+> hciconfig -a
+> 
+> With this user space change it works.  I have no idea why the 'hciconfig -a' query fixes things.
+> I run gentoo and bluez-4.87 is installed.
 
-That reminds me; in this line of reasoning, would a patchset to update all
-the /proc/sys, /sys, etc writing functions to take capability lists and check
-them be accepted? Because right now, almost everything in /proc/sys uses
-DAC instead of checking caps. I think the same is true of /sys and debugfs.
+OK, thanks for the update.  Do I understand correctly that things used to work
+before without that workaround?
 
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+Rafael
