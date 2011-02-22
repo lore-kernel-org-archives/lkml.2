@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab1BVJKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 04:10:52 -0500
-Received: from hera.kernel.org ([140.211.167.34]:35311 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752727Ab1BVJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 04:10:47 -0500
-Date: Tue, 22 Feb 2011 09:10:21 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel: Fix inverted test for fixing up attr.inherit flag
-Message-ID: <tip-e603dc15072c7fec0ae263597e6dabc3bb4c5c5b@git.kernel.org>
-Git-Commit-ID: e603dc15072c7fec0ae263597e6dabc3bb4c5c5b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753023Ab1BVJN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 04:13:58 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:53053 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab1BVJN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 04:13:56 -0500
+Date: Tue, 22 Feb 2011 18:13:43 +0900
+From: Norbert Preining <preining@logic.at>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, stefanb@linux.vnet.ibm.com,
+        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        debora@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 2.6.37.1 s2disk regression (TPM)
+Message-ID: <20110222091342.GA2212@gamma.logic.tuwien.ac.at>
+References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com> <20110222053932.GB21903@gamma.logic.tuwien.ac.at> <4D6376F0.4020200@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 22 Feb 2011 09:10:22 +0000 (UTC)
+In-Reply-To: <4D6376F0.4020200@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e603dc15072c7fec0ae263597e6dabc3bb4c5c5b
-Gitweb:     http://git.kernel.org/tip/e603dc15072c7fec0ae263597e6dabc3bb4c5c5b
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 21 Feb 2011 16:05:50 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 21 Feb 2011 22:27:59 -0300
+On Di, 22 Feb 2011, Jiri Slaby wrote:
+> Ok, run some older kernel where this is not reverted (.38-rc5, 2.6.37.1)
+> or revert the revert :).
 
-perf evsel: Fix inverted test for fixing up attr.inherit flag
+1000000 4000 152000
 
-The kernel refuses mmapping an event with the inherit flag set for
-something that is systemwide (cpu == -1), and the evsel layer got this
-reversed at some point, fix it.
+Best wishes
 
-The symtom was that the --pid and --tid parameters for 'perf record' and
-'perf top' returned with -EINVAL, like:
-
- # /tmp/build-perf/perf record -v -fo/tmp/perf.data -p 1042
-   Warning:  ... trying to fall back to cpu-clock-ticks
-
-   Fatal: failed to mmap with 22 (Invalid argument)
-
-Reported-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.c |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 63cadaf..8083d51 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -179,8 +179,19 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 
- 	for (cpu = 0; cpu < cpus->nr; cpu++) {
- 		int group_fd = -1;
--
--		evsel->attr.inherit = (cpus->map[cpu] < 0) && inherit;
-+		/*
-+		 * Don't allow mmap() of inherited per-task counters. This
-+		 * would create a performance issue due to all children writing
-+		 * to the same buffer.
-+		 *
-+		 * FIXME:
-+		 * Proper fix is not to pass 'inherit' to perf_evsel__open*,
-+		 * but a 'flags' parameter, with 'group' folded there as well,
-+		 * then introduce a PERF_O_{MMAP,GROUP,INHERIT} enum, and if
-+		 * O_MMAP is set, emit a warning if cpu < 0 and O_INHERIT is
-+		 * set. Lets go for the minimal fix first tho.
-+		 */
-+		evsel->attr.inherit = (cpus->map[cpu] >= 0) && inherit;
- 
- 		for (thread = 0; thread < threads->nr; thread++) {
- 
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+HARBLEDOWN (vb.)
+To manoeuvre a double mattress down a winding staircase.
+			--- Douglas Adams, The Meaning of Liff
