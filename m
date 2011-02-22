@@ -1,89 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab1BVDNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 22:13:42 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48871 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab1BVDNl (ORCPT
+	id S1753498Ab1BVDO3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 22:14:29 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33607 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab1BVDO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 22:13:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=RijWIJuf07/GHn1BO8bZoqafJL25GDP2urS42rq59Q6do68Xry0u09IkvOelCkh5df
-         oaDaSaAqUk0w7zOTrKBF/PMPXkzlYKA/DxOGcRoBgNAeGRMdNyYKrEyUYmnngjumJ8i+
-         HPhr6Mn5fvCIkmJD3Lr9R39xzJC0Omg5y07Ao=
+	Mon, 21 Feb 2011 22:14:28 -0500
+Date: Tue, 22 Feb 2011 08:44:20 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
+Subject: Re: [CFS Bandwidth Control v4 5/7] sched: add exports tracking cfs
+ bandwidth control statistics
+Message-ID: <20110222031420.GI10342@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20110216031831.571628191@google.com>
+ <20110216031841.258879435@google.com>
 MIME-Version: 1.0
-In-Reply-To: <1298306175.24121.14.camel@twins>
-References: <1298185696-4403-1-git-send-email-yong.zhang0@gmail.com>
-	<1298185696-4403-6-git-send-email-yong.zhang0@gmail.com>
-	<1298207379.7998.11.camel@marge.simson.net>
-	<20110220141003.GA6006@zhy>
-	<1298222533.7881.15.camel@marge.simson.net>
-	<1298306175.24121.14.camel@twins>
-Date: Tue, 22 Feb 2011 11:13:40 +0800
-Message-ID: <AANLkTin_aqBTXUyO4H-p1_4i-9FAvxChBi1QpPFXvqD_@mail.gmail.com>
-Subject: Re: [PATCH 5/5] sched, autogroup: runtime enable/disable tuning fix
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110216031841.258879435@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 12:36 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sun, 2011-02-20 at 18:22 +0100, Mike Galbraith wrote:
->>
->> Your whole series looked fine to me at a glance (sunday;), with the
->> exception of #2, that one is maybe iffy, depending on point of view.
+* Paul Turner <pjt@google.com> [2011-02-15 19:18:36]:
+
+> From: Nikhil Rao <ncrao@google.com>
+> 
+> This change introduces statistics exports for the cpu sub-system, these are
+> added through the use of a stat file similar to that exported by other
+> subsystems.
+> 
+> The following exports are included:
+> 
+> nr_periods:	number of periods in which execution occurred
+> nr_throttled:	the number of periods above in which execution was throttle
+> throttled_time:	cumulative wall-time that any cpus have been throttled for
+> this group
+> 
+> Signed-off-by: Paul Turner <pjt@google.com>
+> Signed-off-by: Nikhil Rao <ncrao@google.com>
+> Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> ---
+>  kernel/sched.c      |   26 ++++++++++++++++++++++++++
+>  kernel/sched_fair.c |   16 +++++++++++++++-
+>  2 files changed, 41 insertions(+), 1 deletion(-)
+> 
+> Index: tip/kernel/sched.c
+> ===================================================================
+> --- tip.orig/kernel/sched.c
+> +++ tip/kernel/sched.c
+> @@ -254,6 +254,11 @@ struct cfs_bandwidth {
+>  	ktime_t			period;
+>  	u64			runtime, quota;
+>  	struct hrtimer		period_timer;
+> +
+> +	/* throttle statistics */
+> +	u64			nr_periods;
+> +	u64			nr_throttled;
+> +	u64			throttled_time;
+>  };
+>  #endif
+> 
+> @@ -389,6 +394,7 @@ struct cfs_rq {
+>  #ifdef CONFIG_CFS_BANDWIDTH
+>  	u64 quota_assigned, quota_used;
+>  	int throttled;
+> +	u64 throttled_timestamp;
+>  #endif
+>  #endif
+>  };
+> @@ -426,6 +432,10 @@ void init_cfs_bandwidth(struct cfs_bandw
+> 
+>  	hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+>  	cfs_b->period_timer.function = sched_cfs_period_timer;
+> +
+> +	cfs_b->nr_periods = 0;
+> +	cfs_b->nr_throttled = 0;
+> +	cfs_b->throttled_time = 0;
+>  }
+> 
+>  static
+> @@ -9332,6 +9342,18 @@ static int cpu_cfs_period_write_u64(stru
+>  	return tg_set_cfs_period(cgroup_tg(cgrp), cfs_period_us);
+>  }
+> 
+> +static int cpu_stats_show(struct cgroup *cgrp, struct cftype *cft,
+> +		struct cgroup_map_cb *cb)
+> +{
+> +	struct task_group *tg = cgroup_tg(cgrp);
+> +	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+> +
+> +	cb->fill(cb, "nr_periods", cfs_b->nr_periods);
+> +	cb->fill(cb, "nr_throttled", cfs_b->nr_throttled);
+> +	cb->fill(cb, "throttled_time", cfs_b->throttled_time);
+> +
+> +	return 0;
+> +}
+>  #endif /* CONFIG_CFS_BANDWIDTH */
+>  #endif /* CONFIG_FAIR_GROUP_SCHED */
+> 
+> @@ -9378,6 +9400,10 @@ static struct cftype cpu_files[] = {
+>  		.read_u64 = cpu_cfs_period_read_u64,
+>  		.write_u64 = cpu_cfs_period_write_u64,
+>  	},
+> +	{
+> +		.name = "stat",
+> +		.read_map = cpu_stats_show,
+> +	},
+>  #endif
+>  #ifdef CONFIG_RT_GROUP_SCHED
+>  	{
+> Index: tip/kernel/sched_fair.c
+> ===================================================================
+> --- tip.orig/kernel/sched_fair.c
+> +++ tip/kernel/sched_fair.c
+> @@ -1519,17 +1519,25 @@ static void throttle_cfs_rq(struct cfs_r
+> 
+>  out_throttled:
+>  	cfs_rq->throttled = 1;
+> +	cfs_rq->throttled_timestamp = rq_of(cfs_rq)->clock;
+>  	update_cfs_rq_load_contribution(cfs_rq, 1);
+>  }
+> 
+>  static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+>  {
+>  	struct rq *rq = rq_of(cfs_rq);
+> +	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
+>  	struct sched_entity *se;
+> 
+>  	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
+> 
+>  	update_rq_clock(rq);
+> +	/* update stats */
+> +	raw_spin_lock(&cfs_b->lock);
+> +	cfs_b->throttled_time += (rq->clock - cfs_rq->throttled_timestamp);
+> +	raw_spin_unlock(&cfs_b->lock);
+> +	cfs_rq->throttled_timestamp = 0;
+> +
+>  	/* (Try to) avoid maintaining share statistics for idle time */
+>  	cfs_rq->load_stamp = cfs_rq->load_last = rq->clock_task;
+> 
+> @@ -1571,7 +1579,7 @@ static void account_cfs_rq_quota(struct 
+> 
+>  static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+>  {
+> -	int i, idle = 1;
+> +	int i, idle = 1, num_throttled = 0;
+>  	u64 delta;
+>  	const struct cpumask *span;
+> 
+> @@ -1593,6 +1601,7 @@ static int do_sched_cfs_period_timer(str
+> 
+>  		if (!cfs_rq_throttled(cfs_rq))
+>  			continue;
+> +		num_throttled++;
+> 
+>  		delta = tg_request_cfs_quota(cfs_rq->tg);
+> 
+> @@ -1608,6 +1617,11 @@ static int do_sched_cfs_period_timer(str
+>  		}
+>  	}
+> 
+> +	/* update throttled stats */
+> +	cfs_b->nr_periods++;
+> +	if (num_throttled)
+> +		cfs_b->nr_throttled++;
+> +
+>  	return idle;
+>  }
 >
-> Right, so I've queued 1 and 3, 2 is like you said iffy, if there's an
-> autogroup it should display it.
 
-So how about replacing patch-2 by below one for now?
+Should we consider integrating this in cpuacct, it would be difficult
+if we spill over stats between controllers. 
 
----
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH] sched, autogroup: always show autogroup name in sched_debug
-
-When autogroup is disabled, there will be lots of group
-named "cfs_rq[cpu]:", thus will lead to confusion for
-who read it.
-And for now, autogroup runtime disable/enable will
-not take effect immediately on current live processes,
-so there maybe still have some processes attaching to
-its autogroup.
-So show autogroup name always. But for the root group,
-its name will dance between "cfs_rq[cpu]:" and
-"cfs_rq[cpu]:/autogroup-0" according to
-sysctl_sched_autogroup_enabled.
-
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>
----
- kernel/sched_autogroup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
-index 64919dc..6114e3e 100644
---- a/kernel/sched_autogroup.c
-+++ b/kernel/sched_autogroup.c
-@@ -301,7 +301,7 @@ static inline int autogroup_path(struct task_group
-*tg, char *buf, int buflen)
- {
- 	int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
-
--	if (!enabled || !tg->autogroup)
-+	if (!tg->autogroup || (!tg->autogroup->id && !enabled))
- 		return 0;
-
- 	return snprintf(buf, buflen, "%s-%ld", "/autogroup", tg->autogroup->id);
 -- 
-1.7.1
--- 
-Only stand for myself
+	Three Cheers,
+	Balbir
