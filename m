@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab1BVWWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:22:09 -0500
-Received: from kroah.org ([198.145.64.141]:46790 "EHLO coco.kroah.org"
+	id S1754598Ab1BVWVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:48 -0500
+Received: from kroah.org ([198.145.64.141]:46723 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab1BVWWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:02 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:41 2011
-Message-Id: <20110222221841.208902876@clark.kroah.org>
+	id S1754370Ab1BVWVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:45 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:40 2011
+Message-Id: <20110222221840.149753645@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:21 -0800
+Date: Tue, 22 Feb 2011 14:17:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [42/70] iwl3945: remove plcp check
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [31/70] ACPI / Wakeup: Enable button GPEs unconditionally during initialization
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,42 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit c91d01556f52255a31575be0cb1981c92a2a5028 upstream.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Patch fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=654599
+This is a backport of mainline kernel commit
+2a5d24286e8bdafdc272b37ec5bdd9e977b3767c.
 
-Many users report very low speed problem on 3945 devices,
-this patch fixes problem, but only for some of them.
+Commit 9630bdd (ACPI: Use GPE reference counting to support shared
+GPEs) introduced a suspend regression where boxes resume immediately
+after being suspended due to the lid or sleep button wakeup status
+not being cleared properly.  This happens if the GPEs corresponding
+to those devices are not enabled all the time, which apparently is
+expected by some BIOSes.
 
-For unknown reason, sometimes after hw scanning, device is not able
-to receive frames at high rate. Since plcp health check may request
-hw scan to "reset radio", performance problem start to be observable
-after update kernel to .35, where plcp check was introduced.
+To fix this problem, enable button and lid GPEs unconditionally
+during initialization and keep them enabled all the time, regardless
+of whether or not the ACPI button driver is used.
 
-Bug reporter confirmed that removing plcp check fixed problem for him.
-
-Reported-and-tested-by: SilvioTO <silviotoya@yahoo.it>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=27372
+Reported-and-tested-by: Ferenc Wágner <wferi@niif.hu>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-3945.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/acpi/wakeup.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-3945.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
-@@ -2727,7 +2727,6 @@ static struct iwl_lib_ops iwl3945_lib =
- 	.config_ap = iwl3945_config_ap,
- 	.manage_ibss_station = iwl3945_manage_ibss_station,
- 	.recover_from_tx_stall = iwl_bg_monitor_recover,
--	.check_plcp_health = iwl3945_good_plcp_health,
- 
- 	.debugfs_ops = {
- 		.rx_stats_read = iwl3945_ucode_rx_stats_read,
+--- a/drivers/acpi/wakeup.c
++++ b/drivers/acpi/wakeup.c
+@@ -84,8 +84,12 @@ int __init acpi_wakeup_device_init(void)
+ 		struct acpi_device *dev = container_of(node,
+ 						       struct acpi_device,
+ 						       wakeup_list);
+-		if (dev->wakeup.flags.always_enabled)
++		if (dev->wakeup.flags.always_enabled) {
++			/* Button GPEs are supposed to be always enabled. */
++			acpi_enable_gpe(dev->wakeup.gpe_device,
++					dev->wakeup.gpe_number);
+ 			dev->wakeup.state.enabled = 1;
++		}
+ 	}
+ 	mutex_unlock(&acpi_device_lock);
+ 	return 0;
 
 
