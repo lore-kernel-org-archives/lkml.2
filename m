@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab1BVWVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:44 -0500
-Received: from kroah.org ([198.145.64.141]:46709 "EHLO coco.kroah.org"
+	id S1754684Ab1BVWVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:54 -0500
+Received: from kroah.org ([198.145.64.141]:46742 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370Ab1BVWVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:42 -0500
+	id S1754370Ab1BVWVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:50 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:40 2011
-Message-Id: <20110222221839.961065505@clark.kroah.org>
+Message-Id: <20110222221840.440392449@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:08 -0800
+Date: Tue, 22 Feb 2011 14:17:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wright <chrisw@sous-sol.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <jmorris@namei.org>
-Subject: [29/70] security: add cred argument to security_capable()
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [34/70] s390: remove task_show_regs
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,72 +25,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wright <chrisw@sous-sol.org>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 6037b715d6fab139742c3df8851db4c823081561 upstream.
+commit 261cd298a8c363d7985e3482946edb4bfedacf98 upstream.
 
-Expand security_capable() to include cred, so that it can be usable in a
-wider range of call sites.
+task_show_regs used to be a debugging aid in the early bringup days
+of Linux on s390. /proc/<pid>/status is a world readable file, it
+is not a good idea to show the registers of a process. The only
+correct fix is to remove task_show_regs.
 
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/security.h |    6 +++---
- kernel/capability.c      |    2 +-
- security/security.c      |    5 ++---
- 3 files changed, 6 insertions(+), 7 deletions(-)
+ arch/s390/include/asm/processor.h |    5 -----
+ arch/s390/kernel/traps.c          |   37 -------------------------------------
+ fs/proc/array.c                   |    3 ---
+ 3 files changed, 45 deletions(-)
 
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1664,7 +1664,7 @@ int security_capset(struct cred *new, co
- 		    const kernel_cap_t *effective,
- 		    const kernel_cap_t *inheritable,
- 		    const kernel_cap_t *permitted);
--int security_capable(int cap);
-+int security_capable(const struct cred *cred, int cap);
- int security_real_capable(struct task_struct *tsk, int cap);
- int security_real_capable_noaudit(struct task_struct *tsk, int cap);
- int security_sysctl(struct ctl_table *table, int op);
-@@ -1857,9 +1857,9 @@ static inline int security_capset(struct
- 	return cap_capset(new, old, effective, inheritable, permitted);
+--- a/arch/s390/include/asm/processor.h
++++ b/arch/s390/include/asm/processor.h
+@@ -148,11 +148,6 @@ extern int kernel_thread(int (*fn)(void
+  */
+ extern unsigned long thread_saved_pc(struct task_struct *t);
+ 
+-/*
+- * Print register of task into buffer. Used in fs/proc/array.c.
+- */
+-extern void task_show_regs(struct seq_file *m, struct task_struct *task);
+-
+ extern void show_code(struct pt_regs *regs);
+ 
+ unsigned long get_wchan(struct task_struct *p);
+--- a/arch/s390/kernel/traps.c
++++ b/arch/s390/kernel/traps.c
+@@ -237,43 +237,6 @@ void show_regs(struct pt_regs *regs)
+ 	show_last_breaking_event(regs);
  }
  
--static inline int security_capable(int cap)
-+static inline int security_capable(const struct cred *cred, int cap)
- {
--	return cap_capable(current, current_cred(), cap, SECURITY_CAP_AUDIT);
-+	return cap_capable(current, cred, cap, SECURITY_CAP_AUDIT);
+-/* This is called from fs/proc/array.c */
+-void task_show_regs(struct seq_file *m, struct task_struct *task)
+-{
+-	struct pt_regs *regs;
+-
+-	regs = task_pt_regs(task);
+-	seq_printf(m, "task: %p, ksp: %p\n",
+-		       task, (void *)task->thread.ksp);
+-	seq_printf(m, "User PSW : %p %p\n",
+-		       (void *) regs->psw.mask, (void *)regs->psw.addr);
+-
+-	seq_printf(m, "User GPRS: " FOURLONG,
+-			  regs->gprs[0], regs->gprs[1],
+-			  regs->gprs[2], regs->gprs[3]);
+-	seq_printf(m, "           " FOURLONG,
+-			  regs->gprs[4], regs->gprs[5],
+-			  regs->gprs[6], regs->gprs[7]);
+-	seq_printf(m, "           " FOURLONG,
+-			  regs->gprs[8], regs->gprs[9],
+-			  regs->gprs[10], regs->gprs[11]);
+-	seq_printf(m, "           " FOURLONG,
+-			  regs->gprs[12], regs->gprs[13],
+-			  regs->gprs[14], regs->gprs[15]);
+-	seq_printf(m, "User ACRS: %08x %08x %08x %08x\n",
+-			  task->thread.acrs[0], task->thread.acrs[1],
+-			  task->thread.acrs[2], task->thread.acrs[3]);
+-	seq_printf(m, "           %08x %08x %08x %08x\n",
+-			  task->thread.acrs[4], task->thread.acrs[5],
+-			  task->thread.acrs[6], task->thread.acrs[7]);
+-	seq_printf(m, "           %08x %08x %08x %08x\n",
+-			  task->thread.acrs[8], task->thread.acrs[9],
+-			  task->thread.acrs[10], task->thread.acrs[11]);
+-	seq_printf(m, "           %08x %08x %08x %08x\n",
+-			  task->thread.acrs[12], task->thread.acrs[13],
+-			  task->thread.acrs[14], task->thread.acrs[15]);
+-}
+-
+ static DEFINE_SPINLOCK(die_lock);
+ 
+ void die(const char * str, struct pt_regs * regs, long err)
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -353,9 +353,6 @@ int proc_pid_status(struct seq_file *m,
+ 	task_cap(m, task);
+ 	task_cpus_allowed(m, task);
+ 	cpuset_task_status_allowed(m, task);
+-#if defined(CONFIG_S390)
+-	task_show_regs(m, task);
+-#endif
+ 	task_context_switch_counts(m, task);
+ 	return 0;
  }
- 
- static inline int security_real_capable(struct task_struct *tsk, int cap)
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -306,7 +306,7 @@ int capable(int cap)
- 		BUG();
- 	}
- 
--	if (security_capable(cap) == 0) {
-+	if (security_capable(current_cred(), cap) == 0) {
- 		current->flags |= PF_SUPERPRIV;
- 		return 1;
- 	}
---- a/security/security.c
-+++ b/security/security.c
-@@ -154,10 +154,9 @@ int security_capset(struct cred *new, co
- 				    effective, inheritable, permitted);
- }
- 
--int security_capable(int cap)
-+int security_capable(const struct cred *cred, int cap)
- {
--	return security_ops->capable(current, current_cred(), cap,
--				     SECURITY_CAP_AUDIT);
-+	return security_ops->capable(current, cred, cap, SECURITY_CAP_AUDIT);
- }
- 
- int security_real_capable(struct task_struct *tsk, int cap)
 
 
