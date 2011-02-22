@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab1BVWVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:54 -0500
-Received: from kroah.org ([198.145.64.141]:46742 "EHLO coco.kroah.org"
+	id S1753902Ab1BVWV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:58 -0500
+Received: from kroah.org ([198.145.64.141]:46762 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370Ab1BVWVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:50 -0500
+	id S1753903Ab1BVWVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:55 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:40 2011
-Message-Id: <20110222221840.440392449@clark.kroah.org>
+Message-Id: <20110222221840.710164960@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:13 -0800
+Date: Tue, 22 Feb 2011 14:17:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [34/70] s390: remove task_show_regs
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [37/70] drm/radeon/kms: add missing frac fb div flag for dce4+
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 261cd298a8c363d7985e3482946edb4bfedacf98 upstream.
+commit 9f4283f49f0a96a64c5a45fe56f0f8c942885eef upstream.
 
-task_show_regs used to be a debugging aid in the early bringup days
-of Linux on s390. /proc/<pid>/status is a world readable file, it
-is not a good idea to show the registers of a process. The only
-correct fix is to remove task_show_regs.
+The fixed ref/post dividers are set by the AdjustPll table
+rather than the ss info table on dce4+.  Make sure we enable
+the fractional feedback dividers when using a fixed post
+or ref divider on them as well.
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=29272
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/include/asm/processor.h |    5 -----
- arch/s390/kernel/traps.c          |   37 -------------------------------------
- fs/proc/array.c                   |    3 ---
- 3 files changed, 45 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -148,11 +148,6 @@ extern int kernel_thread(int (*fn)(void
-  */
- extern unsigned long thread_saved_pc(struct task_struct *t);
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -533,9 +533,9 @@ static u32 atombios_adjust_pll(struct dr
  
--/*
-- * Print register of task into buffer. Used in fs/proc/array.c.
-- */
--extern void task_show_regs(struct seq_file *m, struct task_struct *task);
--
- extern void show_code(struct pt_regs *regs);
- 
- unsigned long get_wchan(struct task_struct *p);
---- a/arch/s390/kernel/traps.c
-+++ b/arch/s390/kernel/traps.c
-@@ -237,43 +237,6 @@ void show_regs(struct pt_regs *regs)
- 	show_last_breaking_event(regs);
- }
- 
--/* This is called from fs/proc/array.c */
--void task_show_regs(struct seq_file *m, struct task_struct *task)
--{
--	struct pt_regs *regs;
--
--	regs = task_pt_regs(task);
--	seq_printf(m, "task: %p, ksp: %p\n",
--		       task, (void *)task->thread.ksp);
--	seq_printf(m, "User PSW : %p %p\n",
--		       (void *) regs->psw.mask, (void *)regs->psw.addr);
--
--	seq_printf(m, "User GPRS: " FOURLONG,
--			  regs->gprs[0], regs->gprs[1],
--			  regs->gprs[2], regs->gprs[3]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[4], regs->gprs[5],
--			  regs->gprs[6], regs->gprs[7]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[8], regs->gprs[9],
--			  regs->gprs[10], regs->gprs[11]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[12], regs->gprs[13],
--			  regs->gprs[14], regs->gprs[15]);
--	seq_printf(m, "User ACRS: %08x %08x %08x %08x\n",
--			  task->thread.acrs[0], task->thread.acrs[1],
--			  task->thread.acrs[2], task->thread.acrs[3]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[4], task->thread.acrs[5],
--			  task->thread.acrs[6], task->thread.acrs[7]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[8], task->thread.acrs[9],
--			  task->thread.acrs[10], task->thread.acrs[11]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[12], task->thread.acrs[13],
--			  task->thread.acrs[14], task->thread.acrs[15]);
--}
--
- static DEFINE_SPINLOCK(die_lock);
- 
- void die(const char * str, struct pt_regs * regs, long err)
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -353,9 +353,6 @@ int proc_pid_status(struct seq_file *m,
- 	task_cap(m, task);
- 	task_cpus_allowed(m, task);
- 	cpuset_task_status_allowed(m, task);
--#if defined(CONFIG_S390)
--	task_show_regs(m, task);
--#endif
- 	task_context_switch_counts(m, task);
- 	return 0;
- }
+ 			/* use recommended ref_div for ss */
+ 			if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
+-				pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;
+ 				if (ss_enabled) {
+ 					if (ss->refdiv) {
++						pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;
+ 						pll->flags |= RADEON_PLL_USE_REF_DIV;
+ 						pll->reference_div = ss->refdiv;
+ 						if (ASIC_IS_AVIVO(rdev))
+@@ -650,10 +650,12 @@ static u32 atombios_adjust_pll(struct dr
+ 						   index, (uint32_t *)&args);
+ 				adjusted_clock = le32_to_cpu(args.v3.sOutput.ulDispPllFreq) * 10;
+ 				if (args.v3.sOutput.ucRefDiv) {
++					pll->flags |= RADEON_PLL_USE_FRAC_FB_DIV;
+ 					pll->flags |= RADEON_PLL_USE_REF_DIV;
+ 					pll->reference_div = args.v3.sOutput.ucRefDiv;
+ 				}
+ 				if (args.v3.sOutput.ucPostDiv) {
++					pll->flags |= RADEON_PLL_USE_FRAC_FB_DIV;
+ 					pll->flags |= RADEON_PLL_USE_POST_DIV;
+ 					pll->post_div = args.v3.sOutput.ucPostDiv;
+ 				}
 
 
