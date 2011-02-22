@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab1BVWVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:04 -0500
-Received: from kroah.org ([198.145.64.141]:46539 "EHLO coco.kroah.org"
+	id S1753352Ab1BVWVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:14 -0500
+Received: from kroah.org ([198.145.64.141]:46562 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824Ab1BVWVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:00 -0500
+	id S1752797Ab1BVWVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:37 2011
-Message-Id: <20110222221837.247265755@clark.kroah.org>
+Message-Id: <20110222221837.651481879@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:41 -0800
+Date: Tue, 22 Feb 2011 14:16:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kashyap Desai <kashyap.desai@lsi.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [02/70] [SCSI] mptfusion: mptctl_release is required in mptctl.c
+        Dave Airlie <airlied@redhat.com>
+Subject: [06/70] drm/radeon: fix memory debugging since d961db75ce86a84f1f04e91ad1014653ed7d9f46
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kashyap, Desai <kashyap.desai@lsi.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 84857c8bf83e8aa87afc57d2956ba01f11d82386 upstream.
+commit 16f9fdcbcce74102bed9a4b7ccc1fb05b5dd6ca3 upstream.
 
-Added missing release callback for file_operations mptctl_fops.
-Without release callback there will be never freed. It remains on
-mptctl's eent list even after the file is closed and released.
+The old code dereferenced a value, the new code just needs to pass
+the ptr.
 
-Relavent RHEL bugzilla is 660871
+fixes an oops looking at files in debugfs.
 
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/message/fusion/mptctl.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/radeon_ttm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/message/fusion/mptctl.c
-+++ b/drivers/message/fusion/mptctl.c
-@@ -597,6 +597,13 @@ mptctl_event_process(MPT_ADAPTER *ioc, E
- }
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -787,9 +787,9 @@ static int radeon_ttm_debugfs_init(struc
+ 		radeon_mem_types_list[i].show = &radeon_mm_dump_table;
+ 		radeon_mem_types_list[i].driver_features = 0;
+ 		if (i == 0)
+-			radeon_mem_types_list[i].data = &rdev->mman.bdev.man[TTM_PL_VRAM].priv;
++			radeon_mem_types_list[i].data = rdev->mman.bdev.man[TTM_PL_VRAM].priv;
+ 		else
+-			radeon_mem_types_list[i].data = &rdev->mman.bdev.man[TTM_PL_TT].priv;
++			radeon_mem_types_list[i].data = rdev->mman.bdev.man[TTM_PL_TT].priv;
  
- static int
-+mptctl_release(struct inode *inode, struct file *filep)
-+{
-+	fasync_helper(-1, filep, 0, &async_queue);
-+	return 0;
-+}
-+
-+static int
- mptctl_fasync(int fd, struct file *filep, int mode)
- {
- 	MPT_ADAPTER	*ioc;
-@@ -2815,6 +2822,7 @@ static const struct file_operations mptc
- 	.llseek =	no_llseek,
- 	.fasync = 	mptctl_fasync,
- 	.unlocked_ioctl = mptctl_ioctl,
-+	.release =	mptctl_release,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = compat_mpctl_ioctl,
- #endif
+ 	}
+ 	/* Add ttm page pool to debugfs */
 
 
