@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab1BVJDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 04:03:16 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32959 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1BVJDH (ORCPT
+	id S1752983Ab1BVJHY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 04:07:24 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:40932 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab1BVJHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 04:03:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ujQEHGSEzUXEtV+cBjd7/2ICbAedR+jhZUmkybLRr2/ynwfqO4WY5LYCOpLV6UFqII
-         5sPM21YVyWYf76NiiAV8zpygNzO3rSVqL67xhCskL84LBtbjDzMXikdoG17Owo09HP/P
-         KPsOrSpdmmRrQrZRdJ+71Bu3PVPMHtqFwlHMs=
-Date: Tue, 22 Feb 2011 10:02:55 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "pantherchen@versanet.de" <pantherchen@versanet.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Boot time regression in 2.6.38 after initial wq merge
-Message-ID: <20110222090255.GR31267@htj.dyndns.org>
-References: <4D62CE9C.7090806@versanet.de>
- <20110222081752.GP31267@htj.dyndns.org>
- <20110222085223.GC11681@core.coreip.homeip.net>
+	Tue, 22 Feb 2011 04:07:22 -0500
+Date: Tue, 22 Feb 2011 09:07:16 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG ?] checkpatch.pl rejects as error something I think it
+ ought to be allow
+Message-ID: <20110222090716.GH2809@shadowen.org>
+References: <4D62F502.9040506@linux.vnet.ibm.com>
+ <20110221234015.GG2809@shadowen.org>
+ <4D62FA0D.2070102@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110222085223.GC11681@core.coreip.homeip.net>
+In-Reply-To: <4D62FA0D.2070102@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 12:52:23AM -0800, Dmitry Torokhov wrote:
-> > 1. kworker/0:1's uninterruptible sleeps start later than kserio's.
-> > 
-> >    It could be that cpu 0 was busy running other stuff and thus cmwq
-> >    delayed executing serio_event_work; however, if we look at the CPU
-> >    usage, that doesn't seem likely.  The CPU is not busy at all and if
-> >    the CPU isn't busy, cmwq wouldn't introduce any noticeable delay in
-> >    work item execution.
-> > 
-> >    Another possibility is the rescuer concurrency depletion bug is
-> >    delaying execution of queued work items early during boot.  This
-> >    was fixed recently.  Can you please give a shot at 2.6.38-rc6 and
-> >    see whether anything is different?
-> > 
-> > 2. Most of the delay is caused by xorg starting up much later.  xorg
-> >    seems to start up in parallel with the kseriod sleeps in 2.6.37 but
-> >    on 2.6.38 it seems to wait for the serio_event_work to finish.
-> > 
-> >    I have no idea what xorg is waiting for.  Dmitry, any clue?
-> > 
+On Mon, Feb 21, 2011 at 03:49:33PM -0800, Corey Ashford wrote:
+> On 02/21/2011 03:40 PM, Andy Whitcroft wrote:
+> >On Mon, Feb 21, 2011 at 03:28:02PM -0800, Corey Ashford wrote:
+> >>Hi,
+> >>
+> >>I have a piece of code where I have two constants defined as follows:
+> >>
+> >>	static const unsigned long polling_interval_sec = 1;
+> >>	static const unsigned long polling_interval_ns = 0;
+> >>
+> >>Now, it's clear to me that I want these two values to have the
+> >>keywords const and static.  I could use a #define here, but const
+> >>static seemed cleaner to me.
+> >>
+> >>When I run checkpatch.pl across this code, I get this error:
+> >>
+> >>ERROR: do not initialise statics to 0 or NULL.
+> >>
+> >>I think the problem here is that another case is needed for "static
+> >>const" that does allow 0.
+> >>
+> >>What do you think?
+> >>
+> >>Thanks for your consideration,
+> >
+> >The warning is intended to tell you that the = 0 is unnecessary.  Any
+> >static is 0 by default I believe.  At some point the addition of the 0
+> >would move the value from the bss to the data segment bloating the code.
+> >This may no longer be true.
 > 
-> It looks like it is not X is waiting but plymouth not being told to
-> quit... I will have to look at waht triggers plymouth->X/GDM transition.
+> OK, but that means I'd have to have a declaration like this, which
+> looks quite odd to me:
 > 
-> Also, serio jobs (mouse probe) is quite lengthtly. Should it be using
-> unbound workqueue instead?
+> 	static const poll_interval_ns; /* = 0 */
+> 
+> I don't think that is preferable to this:
+> 
+> 	static const poll_interval_ns = 0;
 
-How long it works doesn't matter at all.  If you look at the boot
-chart, as soon as those uninterruptible sleeps start, kworker/0:2 is
-created to serve other work items, so it doesn't really affect anyone
-else.  Unbound ones are mostly helpful for cases where the work items
-involved may consume large amount of cpu cycles (not true here) over
-long period of time.  That said, something definitely seems wrong
-here.  Eh well, let's find out. :-)
+Well I'd not bother with the comment as that is defined behaviour.  But I
+suspect that gcc has gained the smarts to not break these and perhaps the
+check is long in the tooth.  As for this patch, as checkpatch is intended
+to be an advisory helper you are free to ignore its recommendations,
+just expect to be asked about it by any human reviewers.
 
-Thanks.
-
--- 
-tejun
+-apw
