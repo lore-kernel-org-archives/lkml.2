@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab1BWB4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:56:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755644Ab1BWB4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 20:56:23 -0500
-Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable
- memory slots using wbtree
-From: Alex Williamson <alex.williamson@redhat.com>
-To: avi@redhat.com
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        xiaoguangrong@cn.fujitsu.com
-In-Reply-To: <20110222183822.22026.62832.stgit@s20.home>
-References: <1298386481.5764.60.camel@x201>
-	 <20110222183822.22026.62832.stgit@s20.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Feb 2011 18:56:19 -0700
-Message-ID: <1298426179.1668.35.camel@x201>
-Mime-Version: 1.0
+	id S1755898Ab1BWCD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 21:03:27 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51103 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab1BWCD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 21:03:26 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4D646AC0.7030809@jp.fujitsu.com>
+Date: Wed, 23 Feb 2011 11:02:40 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>
+Subject: Re: [CFS Bandwidth Control v4 6/7] sched: hierarchical task accounting
+ for SCHED_OTHER
+References: <20110216031831.571628191@google.com> <20110216031841.352204682@google.com>
+In-Reply-To: <20110216031841.352204682@google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 11:54 -0700, Alex Williamson wrote:
-> This series introduces a new weight-balanced binary tree (wbtree) for
-> general use.  It's largely leveraged from the rbtree, copying it's
-> rotate functions, while introducing different rebalance and erase
-> functions.  This tree is particularly useful for managing memory
-> ranges, where it's desirable to have the most likely targets (the
-> largest ranges) at the top of each subtree.
-> 
-> Patches 2 & 3 go on to convert the KVM memory slots to a growable
-> array and make use of wbtree for efficient managment.  Trying to
-> exercise the worst case for this data structure, I ran netperf
-> TCP_RR on an emulated rtl8139 NIC connected directly to the host
-> via a tap.  Both qemu-kvm and the netserver on the host were
-> pinned to optimal CPUs with taskset.  This series resulted in
-> a 3% improvement for this test.
+(2011/02/16 12:18), Paul Turner wrote:
+> @@ -1428,6 +1464,7 @@ enqueue_task_fair(struct rq *rq, struct 
+>  		update_cfs_shares(cfs_rq);
+>  	}
+>  
+> +	account_hier_tasks(&p->se, 1);
+>  	hrtick_update(rq);
+>  }
+>  
+> @@ -1461,6 +1498,7 @@ static void dequeue_task_fair(struct rq 
+>  		update_cfs_shares(cfs_rq);
+>  	}
+>  
+> +	account_hier_tasks(&p->se, -1);
+>  	hrtick_update(rq);
+>  }
+>  
 
-Marcelo asked about kernbench with ept=0 on this series.  Using a 4-way,
-10G guest with pinned vcpus, build in tmpfs, 10x optimal run, I got:
+Why hrtick_update() is need to be delayed after modifying nr_running? 
+You should not impact current hrtick logic without once mentioning.
 
-           before (stdev)    after (stdev)     %
---------+-----------------+----------------+-------
-Elapsed |  42.809 (0.19)  |  42.305 (0.23) | -1.18
-User    | 115.709 (0.22)  | 114.720 (0.31) | -0.85
-System  |  41.605 (0.14)  |  40.924 (0.20) | -1.64
-%cpu    |   366.9 (1.45)  |   367.6 (1.51) |  0.19
-context |  7272.3 (68.6)  |  7249.5 (97.8) | -0.31
-sleeps  | 14826.2 (110.6) | 14798.5 (63.0) | -0.19
+> Index: tip/kernel/sched_rt.c
+> ===================================================================
+> --- tip.orig/kernel/sched_rt.c
+> +++ tip/kernel/sched_rt.c
+> @@ -906,6 +906,8 @@ enqueue_task_rt(struct rq *rq, struct ta
+>  
+>  	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
+>  		enqueue_pushable_task(rq, p);
+> +
+> +	inc_nr_running(rq);
+>  }
+>  
+>  static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+> @@ -916,6 +918,8 @@ static void dequeue_task_rt(struct rq *r
+>  	dequeue_rt_entity(rt_se);
+>  
+>  	dequeue_pushable_task(rq, p);
+> +
+> +	dec_nr_running(rq);
+>  }
+>  
+>  /*
 
-So, a small but measurable gain.  Also, sorry for forgetting to address
-Marcelo's comments from the original version of patch 2/3, I'll pick
-them up in the next round.  Thanks,
+I think similar change for sched_stoptask.c is required.
 
-Alex
+In fact I could not boot tip/master with this v4 patchset.
+It reports rcu stall warns without applying following tweak:
+
+--- a/kernel/sched_stoptask.c
++++ b/kernel/sched_stoptask.c
+@@ -35,11 +35,13 @@ static struct task_struct *pick_next_task_stop(struct rq *rq
+ static void
+ enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
+ {
++       inc_nr_running(rq);
+ }
+
+ static void
+ dequeue_task_stop(struct rq *rq, struct task_struct *p, int flags)
+ {
++       dec_nr_running(rq);
+ }
+
+
+Thanks,
+H.Seto
 
