@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1BWCoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 21:44:30 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57141 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab1BWCo3 (ORCPT
+	id S1756030Ab1BWCt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 21:49:29 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:37416 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab1BWCt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 21:44:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=b+CdBiu2h8gLz4NN2H68o3SvDqUTSmWgrQtbQvqQjmdkQdYzbVHfRWUbuGW2YcQ0zb
-         X7gLxgGiDRIWgKX71TM89Yqd0L8rQyYtfmQuXq5YnoCkdxye8iZ7u+7vcAwcQjmTU7ZZ
-         i1s+JRxPGyJoJg5DxB2SJ6koyeqTBodQTyeMs=
-Date: Wed, 23 Feb 2011 03:44:24 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110223024420.GA5809@nowhere>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	Tue, 22 Feb 2011 21:49:28 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 1/2] Add a common struct clk
+Date: Wed, 23 Feb 2011 10:49:17 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
+References: <1298256658.861611.43913489619.0.gpush@pororo> <1298256658.862188.178150188637.1.gpush@pororo> <20110222201725.GF22310@pengutronix.de>
+In-Reply-To: <20110222201725.GF22310@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102231049.17466.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 05:39:40PM -0800, Paul E. McKenney wrote:
-> +static int rcu_node_kthread(void *arg)
-> +{
-> +	int cpu;
-> +	unsigned long flags;
-> +	unsigned long mask;
-> +	struct rcu_node *rnp = (struct rcu_node *)arg;
-> +	struct sched_param sp;
-> +	struct task_struct *t;
-> +
-> +	for (;;) {
-> +		wait_event_interruptible(rnp->node_wq, rnp->wakemask != 0 ||
-> +						       kthread_should_stop());
-> +		if (kthread_should_stop())
-> +			break;
-> +		raw_spin_lock_irqsave(&rnp->lock, flags);
-> +		mask = rnp->wakemask;
-> +		rnp->wakemask = 0;
-> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> +		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1) {
+Hi Uwe,
 
-I may be confused, but shouldn't it be mask >>= 1 instead?
+> > +static inline void clk_common_init(struct clk *clk) { }
+> > +
+> > +/*
+> > + * For !CONFIG_USE_COMMON_STRUCT_CLK, we don't enforce any atomicity
+> > + * requirements for clk_enable/clk_disable, so the prepare and unprepare
+> > + * functions are no-ops
+> > + */
+> > +int clk_prepare(struct clk *clk) { return 0; }
+> > +void clk_unprepare(struct clk *clk) { }
+> 
+> these should be static inline.  Otherwise these functions end up in many
+> files and so provoke a build failure.
 
-rnp->wakemask is the unioned rdp->grpmask of the cpu(s) for which we woke that
-node thread up. Those mask start from 0, so what you want with the below
-check is to watch if the next CPU in group range is in the wakeup mask by shifting
-to the right.
+Ugh, brown paper bag time. Thanks for that, I'll update this patch.
 
-No?
+Cheers,
 
-> +			if ((mask & 0x1) == 0)
-> +				continue;
-> +			preempt_disable();
-> +			per_cpu(rcu_cpu_has_work, cpu) = 1;
-> +			t = per_cpu(rcu_cpu_kthread_task, cpu);
-> +			if (t == NULL) {
-> +				preempt_enable();
-> +				continue;
-> +			}
-> +			sp.sched_priority = RCU_KTHREAD_PRIO;
-> +			sched_setscheduler_nocheck(t, cpu, &sp);
-> +			wake_up_process(t);
-> +			preempt_enable();
-> +		}
-> +	}
-> +	return 0;
-> +}
+
+Jeremy
