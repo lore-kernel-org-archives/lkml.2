@@ -1,74 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab1BWEVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:21:00 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:36766 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752215Ab1BWEU7 (ORCPT
+	id S1754101Ab1BWEeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:34:06 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49850 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab1BWEeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:20:59 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19RBL8O3KdRqN3gcT8L3R2LfL2OVmrlAjf0D5V7qg
-	2tXugsnS+dtIe2
-Subject: Re: [PATCH 1/2] sched: allow SCHED_BATCH to preempt SCHED_IDLE
- tasks
-From: Mike Galbraith <efault@gmx.de>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        richard.purdie@linuxfoundation.org
-In-Reply-To: <1298408674-3130-2-git-send-email-dvhart@linux.intel.com>
-References: <1298408674-3130-1-git-send-email-dvhart@linux.intel.com>
-	 <1298408674-3130-2-git-send-email-dvhart@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Feb 2011 05:20:54 +0100
-Message-ID: <1298434854.7856.24.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	Tue, 22 Feb 2011 23:34:05 -0500
+Subject: [RFC PATCH 05/15] leds/leds-gpio: merge platform_driver with
+	of_platform_driver
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Date: Tue, 22 Feb 2011 21:34:00 -0700
+Message-ID: <20110223043400.20795.32203.stgit@localhost6.localdomain6>
+In-Reply-To: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
+References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 13:04 -0800, Darren Hart wrote:
-> Perform the test for SCHED_IDLE before testing for SCHED_BATCH (and ensure idle
-> tasks don't preempt idle tasks) so the non-interactive, but still important,
-> SCHED_BATCH tasks will run in favor of the very low priority SCHED_IDLE tasks.
+Both interfaces can be driven with the same driver, and
+of_platform_driver is getting removed.  This patch merges the two
+driver registrations.
 
-Yeah, that could be construed as a fairness fix for light SCHED_BATCH vs
-a heavy SCHED_IDLE.  It should lower latencies for both when mixed.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/leds/leds-gpio.c |  206 +++++++++++++++++++---------------------------
+ 1 files changed, 83 insertions(+), 123 deletions(-)
 
-Acked-by: Mike Galbraith <efault@gmx.de>
-
-Nit below.
-
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Richard Purdie <richard.purdie@linuxfoundation.org>
-> ---
->  kernel/sched_fair.c |   12 +++++++-----
->  1 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 0c26e2d..ff04bbd 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -1857,16 +1857,18 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
->  	if (test_tsk_need_resched(curr))
->  		return;
->  
-> +	/* Idle tasks are by definition preempted by non-idle tasks. */
-> +	if (unlikely(curr->policy == SCHED_IDLE) &&
-> +	    likely(p->policy != SCHED_IDLE))
-> +		goto preempt;
-> +
-
-if (unlikely(curr->policy == SCHED_IDLE && p->policy != curr->policy))
-	goto preempt;
-
-Looks better to me.
-
-	-Mike
+diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+index 4d9fa38..c4efece 100644
+--- a/drivers/leds/leds-gpio.c
++++ b/drivers/leds/leds-gpio.c
+@@ -14,6 +14,8 @@
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/leds.h>
++#include <linux/of_platform.h>
++#include <linux/of_gpio.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+ 
+@@ -151,96 +153,34 @@ static void delete_gpio_led(struct gpio_led_data *led)
+ 	gpio_free(led->gpio);
+ }
+ 
+-#ifdef CONFIG_LEDS_GPIO_PLATFORM
+-static int __devinit gpio_led_probe(struct platform_device *pdev)
+-{
+-	struct gpio_led_platform_data *pdata = pdev->dev.platform_data;
+-	struct gpio_led_data *leds_data;
+-	int i, ret = 0;
+-
+-	if (!pdata)
+-		return -EBUSY;
+-
+-	leds_data = kzalloc(sizeof(struct gpio_led_data) * pdata->num_leds,
+-				GFP_KERNEL);
+-	if (!leds_data)
+-		return -ENOMEM;
+-
+-	for (i = 0; i < pdata->num_leds; i++) {
+-		ret = create_gpio_led(&pdata->leds[i], &leds_data[i],
+-				      &pdev->dev, pdata->gpio_blink_set);
+-		if (ret < 0)
+-			goto err;
+-	}
+-
+-	platform_set_drvdata(pdev, leds_data);
+-
+-	return 0;
+-
+-err:
+-	for (i = i - 1; i >= 0; i--)
+-		delete_gpio_led(&leds_data[i]);
+-
+-	kfree(leds_data);
+-
+-	return ret;
+-}
++struct gpio_leds_priv {
++	int num_leds;
++	struct gpio_led_data leds[];
++};
+ 
+-static int __devexit gpio_led_remove(struct platform_device *pdev)
++static inline int sizeof_gpio_leds_priv(int num_leds)
+ {
+-	int i;
+-	struct gpio_led_platform_data *pdata = pdev->dev.platform_data;
+-	struct gpio_led_data *leds_data;
+-
+-	leds_data = platform_get_drvdata(pdev);
+-
+-	for (i = 0; i < pdata->num_leds; i++)
+-		delete_gpio_led(&leds_data[i]);
+-
+-	kfree(leds_data);
+-
+-	return 0;
++	return sizeof(struct gpio_leds_priv) +
++		(sizeof(struct gpio_led_data) * num_leds);
+ }
+ 
+-static struct platform_driver gpio_led_driver = {
+-	.probe		= gpio_led_probe,
+-	.remove		= __devexit_p(gpio_led_remove),
+-	.driver		= {
+-		.name	= "leds-gpio",
+-		.owner	= THIS_MODULE,
+-	},
+-};
+-
+-MODULE_ALIAS("platform:leds-gpio");
+-#endif /* CONFIG_LEDS_GPIO_PLATFORM */
+-
+ /* Code to create from OpenFirmware platform devices */
+ #ifdef CONFIG_LEDS_GPIO_OF
+-#include <linux/of_platform.h>
+-#include <linux/of_gpio.h>
+-
+-struct gpio_led_of_platform_data {
+-	int num_leds;
+-	struct gpio_led_data led_data[];
+-};
+-
+-static int __devinit of_gpio_leds_probe(struct platform_device *ofdev,
+-					const struct of_device_id *match)
++static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
+ {
+ 	struct device_node *np = ofdev->dev.of_node, *child;
+-	struct gpio_led_of_platform_data *pdata;
++	struct gpio_leds_priv *priv;
+ 	int count = 0, ret;
+ 
+-	/* count LEDs defined by this device, so we know how much to allocate */
++	/* count LEDs in this device, so we know how much to allocate */
+ 	for_each_child_of_node(np, child)
+ 		count++;
+ 	if (!count)
+-		return 0; /* or ENODEV? */
++		return NULL;
+ 
+-	pdata = kzalloc(sizeof(*pdata) + sizeof(struct gpio_led_data) * count,
+-			GFP_KERNEL);
+-	if (!pdata)
+-		return -ENOMEM;
++	priv = kzalloc(sizeof_gpio_leds_priv(count), GFP_KERNEL);
++	if (!priv)
++		return NULL;
+ 
+ 	for_each_child_of_node(np, child) {
+ 		struct gpio_led led = {};
+@@ -256,13 +196,13 @@ static int __devinit of_gpio_leds_probe(struct platform_device *ofdev,
+ 		if (state) {
+ 			if (!strcmp(state, "keep"))
+ 				led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+-			else if(!strcmp(state, "on"))
++			else if (!strcmp(state, "on"))
+ 				led.default_state = LEDS_GPIO_DEFSTATE_ON;
+ 			else
+ 				led.default_state = LEDS_GPIO_DEFSTATE_OFF;
+ 		}
+ 
+-		ret = create_gpio_led(&led, &pdata->led_data[pdata->num_leds++],
++		ret = create_gpio_led(&led, &priv->leds[priv->num_leds++],
+ 				      &ofdev->dev, NULL);
+ 		if (ret < 0) {
+ 			of_node_put(child);
+@@ -270,78 +210,98 @@ static int __devinit of_gpio_leds_probe(struct platform_device *ofdev,
+ 		}
+ 	}
+ 
+-	dev_set_drvdata(&ofdev->dev, pdata);
+-
+-	return 0;
++	return priv;
+ 
+ err:
+ 	for (count = pdata->num_leds - 2; count >= 0; count--)
+ 		delete_gpio_led(&pdata->led_data[count]);
++	kfree(priv);
++	return NULL;
++}
+ 
+-	kfree(pdata);
++static const struct of_device_id of_gpio_leds_match[] = {
++	{ .compatible = "gpio-leds", },
++	{},
++};
++#else
++static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
++{
++	return NULL;
++}
++#define of_gpio_leds_match NULL
++#endif
+ 
+-	return ret;
++
++static int __devinit gpio_led_probe(struct platform_device *pdev)
++{
++	struct gpio_led_platform_data *pdata = pdev->dev.platform_data;
++	struct gpio_leds_priv *priv;
++	int i, ret = 0;
++
++	if (pdata && pdata->num_leds) {
++		priv = kzalloc(sizeof_gpio_leds_priv(pdata->num_leds),
++				GFP_KERNEL);
++		if (!priv)
++			return -ENOMEM;
++
++		priv->num_leds = pdata->num_leds;
++		for (i = 0; i < priv->num_leds; i++) {
++			ret = create_gpio_led(&pdata->leds[i],
++					      &priv->leds[i],
++					      &pdev->dev, pdata->gpio_blink_set);
++			if (ret < 0) {
++				/* On failure: unwind the led creations */
++				for (i = i - 1; i >= 0; i--)
++					delete_gpio_led(&priv->leds[i]);
++				kfree(priv);
++				return ret;
++			}
++		}
++	} else {
++		priv = gpio_leds_create_of(pdev);
++		if (!priv)
++			return -ENODEV;
++	}
++
++	platform_set_drvdata(pdev, priv);
++
++	return 0;
+ }
+ 
+-static int __devexit of_gpio_leds_remove(struct platform_device *ofdev)
++static int __devexit gpio_led_remove(struct platform_device *pdev)
+ {
+-	struct gpio_led_of_platform_data *pdata = dev_get_drvdata(&ofdev->dev);
++	struct gpio_leds_priv *priv = dev_get_drvdata(&pdev->dev);
+ 	int i;
+ 
+-	for (i = 0; i < pdata->num_leds; i++)
+-		delete_gpio_led(&pdata->led_data[i]);
+-
+-	kfree(pdata);
++	for (i = 0; i < priv->num_leds; i++)
++		delete_gpio_led(&priv->leds[i]);
+ 
+-	dev_set_drvdata(&ofdev->dev, NULL);
++	dev_set_drvdata(&pdev->dev, NULL);
++	kfree(priv);
+ 
+ 	return 0;
+ }
+ 
+-static const struct of_device_id of_gpio_leds_match[] = {
+-	{ .compatible = "gpio-leds", },
+-	{},
+-};
+-
+-static struct of_platform_driver of_gpio_leds_driver = {
+-	.driver = {
+-		.name = "of_gpio_leds",
+-		.owner = THIS_MODULE,
++static struct platform_driver gpio_led_driver = {
++	.probe		= gpio_led_probe,
++	.remove		= __devexit_p(gpio_led_remove),
++	.driver		= {
++		.name	= "leds-gpio",
++		.owner	= THIS_MODULE,
+ 		.of_match_table = of_gpio_leds_match,
+ 	},
+-	.probe = of_gpio_leds_probe,
+-	.remove = __devexit_p(of_gpio_leds_remove),
+ };
+-#endif
++
++MODULE_ALIAS("platform:leds-gpio");
+ 
+ static int __init gpio_led_init(void)
+ {
+-	int ret = 0;
+-
+-#ifdef CONFIG_LEDS_GPIO_PLATFORM	
+-	ret = platform_driver_register(&gpio_led_driver);
+-	if (ret)
+-		return ret;
+-#endif
+-#ifdef CONFIG_LEDS_GPIO_OF
+-	ret = of_register_platform_driver(&of_gpio_leds_driver);
+-#endif
+-#ifdef CONFIG_LEDS_GPIO_PLATFORM	
+-	if (ret)
+-		platform_driver_unregister(&gpio_led_driver);
+-#endif
+-
+-	return ret;
++	return platform_driver_register(&gpio_led_driver);
+ }
+ 
+ static void __exit gpio_led_exit(void)
+ {
+-#ifdef CONFIG_LEDS_GPIO_PLATFORM
+ 	platform_driver_unregister(&gpio_led_driver);
+-#endif
+-#ifdef CONFIG_LEDS_GPIO_OF
+-	of_unregister_platform_driver(&of_gpio_leds_driver);
+-#endif
+ }
+ 
+ module_init(gpio_led_init);
 
