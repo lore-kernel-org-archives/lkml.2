@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab1BWEdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:33:41 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49850 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab1BWEdk (ORCPT
+	id S1754366Ab1BWEeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:34:13 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52621 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab1BWEeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:33:40 -0500
-Subject: [RFC PATCH 00/15] Remove last remains of of_platform_bus_type
+	Tue, 22 Feb 2011 23:34:09 -0500
+Subject: [RFC PATCH 06/15] dt: xilinx_hwicap: merge platform and of_platform
+	driver bindings
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
         linux-kernel@vger.kernel.org, davem@davemloft.net
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Tue, 22 Feb 2011 21:33:34 -0700
-Message-ID: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
+Date: Tue, 22 Feb 2011 21:34:06 -0700
+Message-ID: <20110223043405.20795.19903.stgit@localhost6.localdomain6>
+In-Reply-To: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
+References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,197 +26,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series finally removes all the remaining users of the
-of_platform_{,un}register_driver() functions that used to be sued with
-the of_platform_bus_type.  All the cool kids are using the platform
-bus now.  At the end of this series the ugly stop-gap shim code is finally
-removed.
+of_platform_driver is getting removed, and a single platform_driver
+can now support both devicetree and non-devicetree use cases.  This
+patch merges the two driver registrations.
 
-g.
-
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
+ drivers/char/xilinx_hwicap/xilinx_hwicap.c |  129 +++++++++++-----------------
+ 1 files changed, 49 insertions(+), 80 deletions(-)
 
-Grant Likely (15):
-      dt/powerpc: move of_bus_type infrastructure to ibmebus
-      dt: add a match table pointer to struct device
-      dt/powerpc: Eliminate users of of_platform_{,un}register_driver
-      dt/sparc: Eliminate users of of_platform_{,un}register_driver
-      leds/leds-gpio: merge platform_driver with of_platform_driver
-      dt: xilinx_hwicap: merge platform and of_platform driver bindings
-      dt: uartlite: merge platform and of_platform driver bindings
-      dt/spi: Eliminate users of of_platform_{,un}register_driver
-      dt/sound: Eliminate users of of_platform_{,un}register_driver
-      dt/net: Eliminate users of of_platform_{,un}register_driver
-      dt/video: Eliminate users of of_platform_{,un}register_driver
-      dt/usb: Eliminate users of of_platform_{,un}register_driver
-      dt/serial: Eliminate users of of_platform_{,un}register_driver
-      dt: Eliminate of_platform_{,un}register_driver
-      dt: eliminate of_platform_driver shim code
+diff --git a/drivers/char/xilinx_hwicap/xilinx_hwicap.c b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
+index 9f2272e..a55e877 100644
+--- a/drivers/char/xilinx_hwicap/xilinx_hwicap.c
++++ b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
+@@ -714,20 +714,29 @@ static int __devexit hwicap_remove(struct device *dev)
+ 	return 0;		/* success */
+ }
+ 
+-static int __devinit hwicap_drv_probe(struct platform_device *pdev)
++#ifdef CONFIG_OF
++static int __devinit hwicap_of_probe(struct platform_device *op)
+ {
+-	struct resource *res;
+-	const struct config_registers *regs;
++	struct resource res;
++	const unsigned int *id;
+ 	const char *family;
++	int rc;
++	const struct hwicap_driver_config *config = op->dev.of_match->data;
++	const struct config_registers *regs;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENODEV;
++
++	rc = of_address_to_resource(op->dev.of_node, 0, &res);
++	if (rc) {
++		dev_err(&op->dev, "invalid address\n");
++		return rc;
++	}
++
++	id = of_get_property(op->dev.of_node, "port-number", NULL);
+ 
+ 	/* It's most likely that we're using V4, if the family is not
+ 	   specified */
+ 	regs = &v4_config_registers;
+-	family = pdev->dev.platform_data;
++	family = of_get_property(op->dev.of_node, "xlnx,family", NULL);
+ 
+ 	if (family) {
+ 		if (!strcmp(family, "virtex2p")) {
+@@ -738,54 +747,33 @@ static int __devinit hwicap_drv_probe(struct platform_device *pdev)
+ 			regs = &v5_config_registers;
+ 		}
+ 	}
+-
+-	return hwicap_setup(&pdev->dev, pdev->id, res,
+-			&buffer_icap_config, regs);
++	return hwicap_setup(&op->dev, id ? *id : -1, &res, config,
++			regs);
+ }
+-
+-static int __devexit hwicap_drv_remove(struct platform_device *pdev)
++#else
++static inline int hwicap_of_probe(struct platform_device *op)
+ {
+-	return hwicap_remove(&pdev->dev);
++	return -EINVAL;
+ }
++#endif /* CONFIG_OF */
+ 
+-static struct platform_driver hwicap_platform_driver = {
+-	.probe = hwicap_drv_probe,
+-	.remove = hwicap_drv_remove,
+-	.driver = {
+-		.owner = THIS_MODULE,
+-		.name = DRIVER_NAME,
+-	},
+-};
+-
+-/* ---------------------------------------------------------------------
+- * OF bus binding
+- */
+-
+-#if defined(CONFIG_OF)
+-static int __devinit
+-hwicap_of_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit hwicap_drv_probe(struct platform_device *pdev)
+ {
+-	struct resource res;
+-	const unsigned int *id;
+-	const char *family;
+-	int rc;
+-	const struct hwicap_driver_config *config = match->data;
++	struct resource *res;
+ 	const struct config_registers *regs;
++	const char *family;
+ 
+-	dev_dbg(&op->dev, "hwicap_of_probe(%p, %p)\n", op, match);
+-
+-	rc = of_address_to_resource(op->dev.of_node, 0, &res);
+-	if (rc) {
+-		dev_err(&op->dev, "invalid address\n");
+-		return rc;
+-	}
++	if (pdev->dev.of_match)
++		return hwicap_of_probe(pdev);
+ 
+-	id = of_get_property(op->dev.of_node, "port-number", NULL);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
+ 
+ 	/* It's most likely that we're using V4, if the family is not
+ 	   specified */
+ 	regs = &v4_config_registers;
+-	family = of_get_property(op->dev.of_node, "xlnx,family", NULL);
++	family = pdev->dev.platform_data;
+ 
+ 	if (family) {
+ 		if (!strcmp(family, "virtex2p")) {
+@@ -796,15 +784,17 @@ hwicap_of_probe(struct platform_device *op, const struct of_device_id *match)
+ 			regs = &v5_config_registers;
+ 		}
+ 	}
+-	return hwicap_setup(&op->dev, id ? *id : -1, &res, config,
+-			regs);
++
++	return hwicap_setup(&pdev->dev, pdev->id, res,
++			&buffer_icap_config, regs);
+ }
+ 
+-static int __devexit hwicap_of_remove(struct platform_device *op)
++static int __devexit hwicap_drv_remove(struct platform_device *pdev)
+ {
+-	return hwicap_remove(&op->dev);
++	return hwicap_remove(&pdev->dev);
+ }
+ 
++#ifdef CONFIG_OF
+ /* Match table for of_platform binding */
+ static const struct of_device_id __devinitconst hwicap_of_match[] = {
+ 	{ .compatible = "xlnx,opb-hwicap-1.00.b", .data = &buffer_icap_config},
+@@ -812,33 +802,23 @@ static const struct of_device_id __devinitconst hwicap_of_match[] = {
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, hwicap_of_match);
++#else
++#define hwicap_of_match NULL
++#endif
+ 
+-static struct of_platform_driver hwicap_of_driver = {
+-	.probe = hwicap_of_probe,
+-	.remove = __devexit_p(hwicap_of_remove),
++static struct platform_driver hwicap_platform_driver = {
++	.probe = hwicap_drv_probe,
++	.remove = hwicap_drv_remove,
+ 	.driver = {
+-		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
++		.name = DRIVER_NAME,
+ 		.of_match_table = hwicap_of_match,
+ 	},
+ };
+ 
+-/* Registration helpers to keep the number of #ifdefs to a minimum */
+-static inline int __init hwicap_of_register(void)
+-{
+-	pr_debug("hwicap: calling of_register_platform_driver()\n");
+-	return of_register_platform_driver(&hwicap_of_driver);
+-}
+-
+-static inline void __exit hwicap_of_unregister(void)
+-{
+-	of_unregister_platform_driver(&hwicap_of_driver);
+-}
+-#else /* CONFIG_OF */
+-/* CONFIG_OF not enabled; do nothing helpers */
+-static inline int __init hwicap_of_register(void) { return 0; }
+-static inline void __exit hwicap_of_unregister(void) { }
+-#endif /* CONFIG_OF */
++/* ---------------------------------------------------------------------
++ * OF bus binding
++ */
+ 
+ static int __init hwicap_module_init(void)
+ {
+@@ -856,21 +836,12 @@ static int __init hwicap_module_init(void)
+ 		return retval;
+ 
+ 	retval = platform_driver_register(&hwicap_platform_driver);
+-
+-	if (retval)
+-		goto failed1;
+-
+-	retval = hwicap_of_register();
+-
+ 	if (retval)
+-		goto failed2;
++		goto failed;
+ 
+ 	return retval;
+ 
+- failed2:
+-	platform_driver_unregister(&hwicap_platform_driver);
+-
+- failed1:
++ failed:
+ 	unregister_chrdev_region(devt, HWICAP_DEVICES);
+ 
+ 	return retval;
+@@ -884,8 +855,6 @@ static void __exit hwicap_module_cleanup(void)
+ 
+ 	platform_driver_unregister(&hwicap_platform_driver);
+ 
+-	hwicap_of_unregister();
+-
+ 	unregister_chrdev_region(devt, HWICAP_DEVICES);
+ }
+ 
 
-
- arch/powerpc/kernel/ibmebus.c                 |  404 ++++++++++++++++++++++
- arch/powerpc/kernel/of_platform.c             |    7 
- arch/powerpc/platforms/52xx/mpc52xx_gpio.c    |   14 -
- arch/powerpc/platforms/52xx/mpc52xx_gpt.c     |   10 -
- arch/powerpc/platforms/52xx/mpc52xx_lpbfifo.c |   11 -
- arch/powerpc/platforms/82xx/ep8248e.c         |    7 
- arch/powerpc/platforms/83xx/suspend.c         |   14 -
- arch/powerpc/platforms/cell/axon_msi.c        |   11 -
- arch/powerpc/platforms/pasemi/gpio_mdio.c     |    9 
- arch/powerpc/sysdev/axonram.c                 |   11 -
- arch/powerpc/sysdev/bestcomm/bestcomm.c       |    9 
- arch/powerpc/sysdev/fsl_85xx_l2ctlr.c         |    9 
- arch/powerpc/sysdev/fsl_msi.c                 |   13 -
- arch/powerpc/sysdev/fsl_pmc.c                 |    7 
- arch/powerpc/sysdev/fsl_rio.c                 |    7 
- arch/powerpc/sysdev/pmi.c                     |    9 
- arch/powerpc/sysdev/qe_lib/qe.c               |    7 
- arch/sparc/include/asm/parport.h              |    6 
- arch/sparc/kernel/apc.c                       |    7 
- arch/sparc/kernel/auxio_64.c                  |    7 
- arch/sparc/kernel/central.c                   |   14 -
- arch/sparc/kernel/chmc.c                      |   19 -
- arch/sparc/kernel/pci_fire.c                  |    7 
- arch/sparc/kernel/pci_psycho.c                |    7 
- arch/sparc/kernel/pci_sabre.c                 |    9 
- arch/sparc/kernel/pci_schizo.c                |   11 -
- arch/sparc/kernel/pci_sun4v.c                 |    7 
- arch/sparc/kernel/pmc.c                       |    7 
- arch/sparc/kernel/power.c                     |    6 
- arch/sparc/kernel/time_32.c                   |    6 
- arch/sparc/kernel/time_64.c                   |   18 -
- drivers/ata/pata_mpc52xx.c                    |    8 
- drivers/ata/pata_of_platform.c                |    9 
- drivers/ata/sata_dwc_460ex.c                  |    9 
- drivers/ata/sata_fsl.c                        |    9 
- drivers/atm/fore200e.c                        |   17 +
- drivers/block/xsysace.c                       |   11 -
- drivers/char/hw_random/n2-drv.c               |   16 -
- drivers/char/hw_random/pasemi-rng.c           |    9 
- drivers/char/ipmi/ipmi_si_intf.c              |   18 +
- drivers/char/xilinx_hwicap/xilinx_hwicap.c    |  129 +++----
- drivers/crypto/amcc/crypto4xx_core.c          |    9 
- drivers/crypto/n2_core.c                      |   20 -
- drivers/crypto/talitos.c                      |    9 
- drivers/dma/fsldma.c                          |   14 -
- drivers/dma/mpc512x_dma.c                     |    9 
- drivers/dma/ppc4xx/adma.c                     |   11 -
- drivers/edac/mpc85xx_edac.c                   |   27 +
- drivers/edac/ppc4xx_edac.c                    |   23 -
- drivers/hwmon/ultra45_env.c                   |    9 
- drivers/i2c/busses/i2c-cpm.c                  |    9 
- drivers/i2c/busses/i2c-ibm_iic.c              |    9 
- drivers/i2c/busses/i2c-mpc.c                  |   22 -
- drivers/input/misc/sparcspkr.c                |   22 +
- drivers/input/serio/i8042-sparcio.h           |    8 
- drivers/input/serio/xilinx_ps2.c              |    9 
- drivers/leds/leds-gpio.c                      |  206 +++++------
- drivers/macintosh/smu.c                       |    7 
- drivers/macintosh/therm_pm72.c                |    8 
- drivers/macintosh/therm_windtunnel.c          |    9 
- drivers/media/video/fsl-viu.c                 |    9 
- drivers/mmc/host/sdhci-of-core.c              |   12 -
- drivers/mtd/maps/physmap_of.c                 |   15 -
- drivers/mtd/maps/sun_uflash.c                 |    8 
- drivers/mtd/nand/fsl_upm.c                    |    9 
- drivers/mtd/nand/mpc5121_nfc.c                |    9 
- drivers/mtd/nand/ndfc.c                       |    9 
- drivers/mtd/nand/pasemi_nand.c                |    9 
- drivers/mtd/nand/socrates_nand.c              |    9 
- drivers/net/can/mscan/mpc5xxx_can.c           |   15 -
- drivers/net/can/sja1000/sja1000_of_platform.c |    9 
- drivers/net/fec_mpc52xx.c                     |   13 -
- drivers/net/fec_mpc52xx.h                     |    2 
- drivers/net/fec_mpc52xx_phy.c                 |    5 
- drivers/net/fs_enet/fs_enet-main.c            |   16 -
- drivers/net/fs_enet/mii-bitbang.c             |    9 
- drivers/net/fs_enet/mii-fec.c                 |   15 -
- drivers/net/fsl_pq_mdio.c                     |    9 
- drivers/net/gianfar.c                         |   12 -
- drivers/net/greth.c                           |    8 
- drivers/net/ibm_newemac/core.c                |    9 
- drivers/net/ibm_newemac/mal.c                 |    9 
- drivers/net/ibm_newemac/rgmii.c               |    9 
- drivers/net/ibm_newemac/tah.c                 |    9 
- drivers/net/ibm_newemac/zmii.c                |    9 
- drivers/net/ll_temac_main.c                   |    9 
- drivers/net/myri_sbus.c                       |    8 
- drivers/net/niu.c                             |   11 -
- drivers/net/phy/mdio-gpio.c                   |    9 
- drivers/net/sunbmac.c                         |    9 
- drivers/net/sunhme.c                          |   14 -
- drivers/net/sunlance.c                        |    8 
- drivers/net/sunqe.c                           |    8 
- drivers/net/ucc_geth.c                        |    8 
- drivers/net/xilinx_emaclite.c                 |    9 
- drivers/of/device.c                           |   34 --
- drivers/of/platform.c                         |  461 -------------------------
- drivers/parport/parport_sunbpp.c              |    8 
- drivers/pcmcia/electra_cf.c                   |    9 
- drivers/pcmcia/m8xx_pcmcia.c                  |    9 
- drivers/rtc/rtc-mpc5121.c                     |    9 
- drivers/sbus/char/bbc_i2c.c                   |    9 
- drivers/sbus/char/display7seg.c               |    9 
- drivers/sbus/char/envctrl.c                   |    9 
- drivers/sbus/char/flash.c                     |    9 
- drivers/sbus/char/uctrl.c                     |    9 
- drivers/scsi/qlogicpti.c                      |   14 -
- drivers/scsi/sun_esp.c                        |    8 
- drivers/spi/mpc512x_psc_spi.c                 |    9 
- drivers/spi/mpc52xx_psc_spi.c                 |    9 
- drivers/spi/mpc52xx_spi.c                     |    9 
- drivers/spi/spi_fsl_espi.c                    |   11 -
- drivers/spi/spi_fsl_lib.c                     |    3 
- drivers/spi/spi_fsl_lib.h                     |    3 
- drivers/spi/spi_fsl_spi.c                     |   11 -
- drivers/spi/spi_ppc4xx.c                      |    9 
- drivers/tty/serial/apbuart.c                  |   11 -
- drivers/tty/serial/cpm_uart/cpm_uart_core.c   |    9 
- drivers/tty/serial/mpc52xx_uart.c             |   13 -
- drivers/tty/serial/of_serial.c                |   14 -
- drivers/tty/serial/sunhv.c                    |    8 
- drivers/tty/serial/sunsab.c                   |    8 
- drivers/tty/serial/sunsu.c                    |    6 
- drivers/tty/serial/sunzilog.c                 |   10 -
- drivers/tty/serial/uartlite.c                 |  103 +-----
- drivers/tty/serial/ucc_uart.c                 |    9 
- drivers/usb/gadget/fsl_qe_udc.c               |   14 -
- drivers/usb/host/ehci-hcd.c                   |   12 -
- drivers/usb/host/ehci-ppc-of.c                |    9 
- drivers/usb/host/ehci-xilinx-of.c             |    6 
- drivers/usb/host/fhci-hcd.c                   |    9 
- drivers/usb/host/isp1760-if.c                 |    9 
- drivers/usb/host/ohci-hcd.c                   |    6 
- drivers/usb/host/ohci-ppc-of.c                |    9 
- drivers/video/bw2.c                           |    8 
- drivers/video/cg14.c                          |    8 
- drivers/video/cg3.c                           |    9 
- drivers/video/cg6.c                           |    9 
- drivers/video/ffb.c                           |    9 
- drivers/video/fsl-diu-fb.c                    |    9 
- drivers/video/leo.c                           |    9 
- drivers/video/mb862xx/mb862xxfb.c             |    9 
- drivers/video/p9100.c                         |    8 
- drivers/video/platinumfb.c                    |    9 
- drivers/video/sunxvr1000.c                    |    9 
- drivers/video/tcx.c                           |    9 
- drivers/video/xilinxfb.c                      |   11 -
- drivers/watchdog/cpwd.c                       |    9 
- drivers/watchdog/gef_wdt.c                    |    9 
- drivers/watchdog/mpc8xxx_wdt.c                |   15 -
- drivers/watchdog/riowd.c                      |    9 
- include/linux/device.h                        |    1 
- include/linux/of_device.h                     |    5 
- include/linux/of_platform.h                   |   18 -
- sound/soc/fsl/fsl_dma.c                       |    9 
- sound/soc/fsl/fsl_ssi.c                       |    9 
- sound/soc/fsl/mpc5200_dma.c                   |   24 +
- sound/soc/fsl/mpc5200_psc_ac97.c              |    9 
- sound/soc/fsl/mpc5200_psc_i2s.c               |    9 
- sound/sparc/amd7930.c                         |    8 
- sound/sparc/cs4231.c                          |   16 -
- sound/sparc/dbri.c                            |    8 
- 162 files changed, 1278 insertions(+), 1627 deletions(-)
-
--- 
-Signature
