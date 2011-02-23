@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab1BWOmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 09:42:19 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36199 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab1BWOmS (ORCPT
+	id S1752358Ab1BWOnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 09:43:18 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:36486 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab1BWOnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 09:42:18 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=x5lYFldHaXAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=WFeUc9oR0mGRn63VL4YA:9 a=hZvR7mBFBhhRIelGOuUY33M2Pt8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, "Paul E. McKenney" <paul.mckenney@linaro.org>
-In-Reply-To: <BLU0-SMTP211F39903EDACD9B7E025C96DB0@phx.gbl>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
-	 <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <BLU0-SMTP211F39903EDACD9B7E025C96DB0@phx.gbl>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 23 Feb 2011 09:42:14 -0500
-Message-ID: <1298472134.7666.82.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 23 Feb 2011 09:43:17 -0500
+Message-ID: <4D651CFD.6070805@canonical.com>
+Date: Wed, 23 Feb 2011 22:43:09 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ideapad: read brightness setting on brightness key	notify
+References: <1298468399-3642-1-git-send-email-ike.pan@canonical.com> <20110223134748.GA6830@srcf.ucam.org> <4D651490.5070103@canonical.com> <20110223142253.GA8292@srcf.ucam.org>
+In-Reply-To: <20110223142253.GA8292@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-23 at 09:02 -0500, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> [...]
-> > +	for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1)
-> > +		if (mask & 01)
+On 02/23/2011 10:22 PM, Matthew Garrett wrote:
+> On Wed, Feb 23, 2011 at 10:07:12PM +0800, Ike Panhc wrote:
+>> On 02/23/2011 09:47 PM, Matthew Garrett wrote:
+>>>
+>>> Which kernel versions does this hit?
+>>>
+>>
+>> This patch is made against current checkout of Linus's tree.
 > 
-> Wow, octal notation! ;)
-
-Heh
-
+> The bug, not the patch :)
 > 
-> Maybe we could consider 0x1 here.
 
-Why even the conversion? mask & 1 should be good enough.
+This bug hits .37 and later. But patch is not suitable for .37.y
 
-Perhaps 1UL to match the unsigned long.
-
--- Steve
-
-
+I will make another patch for stable kernel.
