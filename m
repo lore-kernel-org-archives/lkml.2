@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1BWEkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:40:14 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52815 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab1BWEkL (ORCPT
+	id S1754172Ab1BWEmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:42:40 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:32935 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab1BWEmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:40:11 -0500
-Subject: [RFC PATCH 07/15] dt: uartlite: merge platform and of_platform driver
-	bindings
+	Tue, 22 Feb 2011 23:42:39 -0500
+Subject: [RFC PATCH 15/15] dt: eliminate of_platform_driver shim code
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
         linux-kernel@vger.kernel.org, davem@davemloft.net
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Tue, 22 Feb 2011 21:34:11 -0700
-Message-ID: <20110223043411.20795.57850.stgit@localhost6.localdomain6>
+Date: Tue, 22 Feb 2011 21:34:52 -0700
+Message-ID: <20110223043452.20795.70146.stgit@localhost6.localdomain6>
 In-Reply-To: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,183 +25,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_platform_driver is getting removed, and a single platform_driver
-can now support both devicetree and non-devicetree use cases.  This
-patch merges the two driver registrations.
+Commit eca393016, "of: Merge of_platform_bus_type with
+platform_bus_type" added a shim to allow of_platform_drivers to get
+registers onto the platform bus so that there was time to migrate the
+existing drivers to the platform_bus_type.
+
+This patch removes the shim since there are no more users of the old
+interface.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/tty/serial/uartlite.c |  103 ++++++++++-------------------------------
- 1 files changed, 24 insertions(+), 79 deletions(-)
+ drivers/of/platform.c       |   68 -------------------------------------------
+ include/linux/of_platform.h |   12 +-------
+ 2 files changed, 1 insertions(+), 79 deletions(-)
 
-diff --git a/drivers/tty/serial/uartlite.c b/drivers/tty/serial/uartlite.c
-index d2fce86..457ac34 100644
---- a/drivers/tty/serial/uartlite.c
-+++ b/drivers/tty/serial/uartlite.c
-@@ -19,22 +19,11 @@
- #include <linux/interrupt.h>
- #include <linux/init.h>
- #include <asm/io.h>
--#if defined(CONFIG_OF) && (defined(CONFIG_PPC32) || defined(CONFIG_MICROBLAZE))
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/of_device.h>
- #include <linux/of_platform.h>
- 
--/* Match table for of_platform binding */
--static struct of_device_id ulite_of_match[] __devinitdata = {
--	{ .compatible = "xlnx,opb-uartlite-1.00.b", },
--	{ .compatible = "xlnx,xps-uartlite-1.00.a", },
--	{}
--};
--MODULE_DEVICE_TABLE(of, ulite_of_match);
--
--#endif
--
- #define ULITE_NAME		"ttyUL"
- #define ULITE_MAJOR		204
- #define ULITE_MINOR		187
-@@ -571,9 +560,23 @@ static int __devexit ulite_release(struct device *dev)
-  * Platform bus binding
-  */
- 
-+#if defined(CONFIG_OF)
-+/* Match table for of_platform binding */
-+static struct of_device_id ulite_of_match[] __devinitdata = {
-+	{ .compatible = "xlnx,opb-uartlite-1.00.b", },
-+	{ .compatible = "xlnx,xps-uartlite-1.00.a", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, ulite_of_match);
-+#else /* CONFIG_OF */
-+#define ulite_of_match NULL
-+#endif /* CONFIG_OF */
-+
- static int __devinit ulite_probe(struct platform_device *pdev)
- {
- 	struct resource *res, *res2;
-+	const __be32 *prop;
-+	int id = pdev->id;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
-@@ -583,7 +586,13 @@ static int __devinit ulite_probe(struct platform_device *pdev)
- 	if (!res2)
- 		return -ENODEV;
- 
--	return ulite_assign(&pdev->dev, pdev->id, res->start, res2->start);
-+#ifdef CONFIG_OF
-+	prop = of_get_property(pdev->dev.of_node, "port-number", NULL);
-+	if (prop)
-+		id = be32_to_cpup(prop);
-+#endif
-+
-+	return ulite_assign(&pdev->dev, id, res->start, res2->start);
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index b71d0cd..1ce4c45 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -42,74 +42,6 @@ struct platform_device *of_find_device_by_node(struct device_node *np)
  }
+ EXPORT_SYMBOL(of_find_device_by_node);
  
- static int __devexit ulite_remove(struct platform_device *pdev)
-@@ -595,72 +604,15 @@ static int __devexit ulite_remove(struct platform_device *pdev)
- MODULE_ALIAS("platform:uartlite");
- 
- static struct platform_driver ulite_platform_driver = {
--	.probe	= ulite_probe,
--	.remove	= __devexit_p(ulite_remove),
--	.driver	= {
--		   .owner = THIS_MODULE,
--		   .name  = "uartlite",
--		   },
--};
+-static int platform_driver_probe_shim(struct platform_device *pdev)
+-{
+-	struct platform_driver *pdrv;
+-	struct of_platform_driver *ofpdrv;
+-	const struct of_device_id *match;
 -
--/* ---------------------------------------------------------------------
-- * OF bus bindings
+-	pdrv = container_of(pdev->dev.driver, struct platform_driver, driver);
+-	ofpdrv = container_of(pdrv, struct of_platform_driver, platform_driver);
+-
+-	/* There is an unlikely chance that an of_platform driver might match
+-	 * on a non-OF platform device.  If so, then of_match_device() will
+-	 * come up empty.  Return -EINVAL in this case so other drivers get
+-	 * the chance to bind. */
+-	match = of_match_device(pdev->dev.driver->of_match_table, &pdev->dev);
+-	return match ? ofpdrv->probe(pdev, match) : -EINVAL;
+-}
+-
+-static void platform_driver_shutdown_shim(struct platform_device *pdev)
+-{
+-	struct platform_driver *pdrv;
+-	struct of_platform_driver *ofpdrv;
+-
+-	pdrv = container_of(pdev->dev.driver, struct platform_driver, driver);
+-	ofpdrv = container_of(pdrv, struct of_platform_driver, platform_driver);
+-	ofpdrv->shutdown(pdev);
+-}
+-
+-/**
+- * of_register_platform_driver
 - */
--#if defined(CONFIG_OF) && (defined(CONFIG_PPC32) || defined(CONFIG_MICROBLAZE))
--static int __devinit
--ulite_of_probe(struct platform_device *op, const struct of_device_id *match)
+-int of_register_platform_driver(struct of_platform_driver *drv)
 -{
--	struct resource res;
--	const unsigned int *id;
--	int irq, rc;
+-	char *of_name;
 -
--	dev_dbg(&op->dev, "%s(%p, %p)\n", __func__, op, match);
+-	/* setup of_platform_driver to platform_driver adaptors */
+-	drv->platform_driver.driver = drv->driver;
 -
--	rc = of_address_to_resource(op->dev.of_node, 0, &res);
--	if (rc) {
--		dev_err(&op->dev, "invalid address\n");
--		return rc;
--	}
+-	/* Prefix the driver name with 'of:' to avoid namespace collisions
+-	 * and bogus matches.  There are some drivers in the tree that
+-	 * register both an of_platform_driver and a platform_driver with
+-	 * the same name.  This is a temporary measure until they are all
+-	 * cleaned up --gcl July 29, 2010 */
+-	of_name = kmalloc(strlen(drv->driver.name) + 5, GFP_KERNEL);
+-	if (!of_name)
+-		return -ENOMEM;
+-	sprintf(of_name, "of:%s", drv->driver.name);
+-	drv->platform_driver.driver.name = of_name;
 -
--	irq = irq_of_parse_and_map(op->dev.of_node, 0);
+-	if (drv->probe)
+-		drv->platform_driver.probe = platform_driver_probe_shim;
+-	drv->platform_driver.remove = drv->remove;
+-	if (drv->shutdown)
+-		drv->platform_driver.shutdown = platform_driver_shutdown_shim;
+-	drv->platform_driver.suspend = drv->suspend;
+-	drv->platform_driver.resume = drv->resume;
 -
--	id = of_get_property(op->dev.of_node, "port-number", NULL);
--
--	return ulite_assign(&op->dev, id ? *id : -1, res.start, irq);
+-	return platform_driver_register(&drv->platform_driver);
 -}
+-EXPORT_SYMBOL(of_register_platform_driver);
 -
--static int __devexit ulite_of_remove(struct platform_device *op)
+-void of_unregister_platform_driver(struct of_platform_driver *drv)
 -{
--	return ulite_release(&op->dev);
+-	platform_driver_unregister(&drv->platform_driver);
+-	kfree(drv->platform_driver.driver.name);
+-	drv->platform_driver.driver.name = NULL;
 -}
+-EXPORT_SYMBOL(of_unregister_platform_driver);
 -
--static struct of_platform_driver ulite_of_driver = {
--	.probe = ulite_of_probe,
--	.remove = __devexit_p(ulite_of_remove),
-+	.probe = ulite_probe,
-+	.remove = __devexit_p(ulite_remove),
- 	.driver = {
--		.name = "uartlite",
- 		.owner = THIS_MODULE,
-+		.name  = "uartlite",
- 		.of_match_table = ulite_of_match,
- 	},
- };
- 
--/* Registration helpers to keep the number of #ifdefs to a minimum */
--static inline int __init ulite_of_register(void)
--{
--	pr_debug("uartlite: calling of_register_platform_driver()\n");
--	return of_register_platform_driver(&ulite_of_driver);
--}
--
--static inline void __exit ulite_of_unregister(void)
--{
--	of_unregister_platform_driver(&ulite_of_driver);
--}
--#else /* CONFIG_OF && (CONFIG_PPC32 || CONFIG_MICROBLAZE) */
--/* Appropriate config not enabled; do nothing helpers */
--static inline int __init ulite_of_register(void) { return 0; }
--static inline void __exit ulite_of_unregister(void) { }
--#endif /* CONFIG_OF && (CONFIG_PPC32 || CONFIG_MICROBLAZE) */
--
- /* ---------------------------------------------------------------------
-  * Module setup/teardown
+ #if defined(CONFIG_PPC_DCR)
+ #include <asm/dcr.h>
+ #endif
+diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+index 048949f..17c7e21 100644
+--- a/include/linux/of_platform.h
++++ b/include/linux/of_platform.h
+@@ -23,13 +23,7 @@
+  * of_platform_driver - Legacy of-aware driver for platform devices.
+  *
+  * An of_platform_driver driver is attached to a basic platform_device on
+- * ether the "platform bus" (platform_bus_type), or the ibm ebus
+- * (ibmebus_bus_type).
+- *
+- * of_platform_driver is being phased out when used with the platform_bus_type,
+- * and regular platform_drivers should be used instead.  When the transition
+- * is complete, only ibmebus will be using this structure, and the
+- * platform_driver member of this structure will be removed.
++ * the ibm ebus (ibmebus_bus_type).
   */
-@@ -674,10 +626,6 @@ int __init ulite_init(void)
- 	if (ret)
- 		goto err_uart;
- 
--	ret = ulite_of_register();
--	if (ret)
--		goto err_of;
--
- 	pr_debug("uartlite: calling platform_driver_register()\n");
- 	ret = platform_driver_register(&ulite_platform_driver);
- 	if (ret)
-@@ -686,8 +634,6 @@ int __init ulite_init(void)
- 	return 0;
- 
- err_plat:
--	ulite_of_unregister();
--err_of:
- 	uart_unregister_driver(&ulite_uart_driver);
- err_uart:
- 	printk(KERN_ERR "registering uartlite driver failed: err=%i", ret);
-@@ -697,7 +643,6 @@ err_uart:
- void __exit ulite_exit(void)
+ struct of_platform_driver
  {
- 	platform_driver_unregister(&ulite_platform_driver);
--	ulite_of_unregister();
- 	uart_unregister_driver(&ulite_uart_driver);
- }
+@@ -42,15 +36,11 @@ struct of_platform_driver
+ 	int	(*shutdown)(struct platform_device* dev);
  
+ 	struct device_driver	driver;
+-	struct platform_driver	platform_driver;
+ };
+ #define	to_of_platform_driver(drv) \
+ 	container_of(drv,struct of_platform_driver, driver)
+ 
+ /* Platform drivers register/unregister */
+-extern int of_register_platform_driver(struct of_platform_driver *drv);
+-extern void of_unregister_platform_driver(struct of_platform_driver *drv);
+-
+ extern struct platform_device *of_device_alloc(struct device_node *np,
+ 					 const char *bus_id,
+ 					 struct device *parent);
 
