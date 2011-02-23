@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab1BWUHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:07:19 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52871 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754910Ab1BWUHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:07:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Subject: Re: does hibernate to disk try hard enough to free memory?
-Date: Wed, 23 Feb 2011 21:06:51 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201102222159.58546.Martin@lichtvoll.de> <201102222332.43864.rjw@sisk.pl> <201102231511.15683.Martin@lichtvoll.de>
-In-Reply-To: <201102231511.15683.Martin@lichtvoll.de>
+	id S932099Ab1BWUIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:08:06 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:65167 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755090Ab1BWUIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:08:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAHf3ZE120uZw/2dsb2JhbACmIHS8DYVeBJFr
+Message-ID: <4D65691E.9080600@internode.on.net>
+Date: Thu, 24 Feb 2011 06:37:58 +1030
+From: Arthur Marsh <arthur.marsh@internode.on.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-AU; rv:1.9.2.13) Gecko/20101213 Icedove/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified
+ - 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd
+ for GFP_ATOMIC order > 0
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net> <4D6367B3.9050306@googlemail.com> <20110222134047.GT13092@random.random> <20110222161513.GC13092@random.random> <4D63F6C0.7060204@internode.on.net> <20110223162432.GL31195@random.random> <20110223165550.GP31195@random.random>
+In-Reply-To: <20110223165550.GP31195@random.random>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102232106.51980.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 23, 2011, Martin Steigerwald wrote:
-> Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
-> > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> > > Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
-> > > > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> > > > > Hi!
-> > > > > 
-> > > > > Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB
-> > > > > of RAM is not able to allocate memory for the hibernation image.
-> > > > > Before KMS hibernation only very rarely failed for that reason.
-> > > > > 
-> > > > > Often I run without compositing at all as I believe this might
-> > > > > spare some pages as well. But this doesn't always help.
-> > > > > 
-> > > > > It complains that to less pages could be freed. For example with
-> > > > > kernel 2.6.37:
-> > > > > 
-> > > > > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
-> > > > > Feb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
-> > > > > Feb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411
-> > > > > + 1024, available pages: 112767
-> > > > > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
-> > > > > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating
-> > > > > hibernation image Feb 16 00:15:00 shambhala kernel: Extended
-> > > > > CMOS year: 2000 Feb 16 00:15:00 shambhala kernel: ACPI: Waking
-> > > > > up from system sleep state S4
-> > > > > Feb 16 00:15:00 shambhala kernel: PM: early recover of devices
-> > > > > complete after 0.376 msecs
-> > > > 
-> > > > What's the value in /sys/power/image_size?
-> > > 
-> > > shambhala:~> cat /sys/power/image_size
-> > > 844206080
-> > > 
-> > > Should I try with less?
-> > 
-> > Yes, please.  Try with 700000000 for example.
-> 
-> I replaced dropping by settings image_size to this valua and the ThinkPad 
-> hibernated with KMail open. Thus seems to work, but I will test a bit 
-> further.
-> 
-> Where does the higher value previously set come from? Autotuning?
 
-Likely.  The number seems to match at least.
 
-> Is there anything that can be improved with autotuning?
+Andrea Arcangeli wrote, on 24/02/11 03:25:
+> On Wed, Feb 23, 2011 at 05:24:32PM +0100, Andrea Arcangeli wrote:
+>> On Wed, Feb 23, 2011 at 04:17:44AM +1030, Arthur Marsh wrote:
+>>> OK, these patches applied together against upstream didn't cause a crash
+>>> but I did observe:
+>>>
+>>> significant slowdowns of MIDI playback (moreso than in previous cases,
+>>> and with less than 20 Meg of swap file in use);
+>>>
+>>> kswapd0 sharing equal top place in CPU usage at times (e.g. 20 percent).
+>>>
+>>> If I should try only one of the patches or something else entirely,
+>>> please let me know.
+>>
+>> Yes, with irq off, schedule won't run and need_resched won't get set.
+>>
+>> So let's try this.
+>>
+>> In case this doesn't fix I definitely give it up with compaction in
+>> kswapd as GFP_ATOMIC will likely not get an huge benefit out of
+>> compaction anyway because 1) the allocations from GFP_ATOMIC are
+>> likely short lived, 2) the cost of the compaction scan loop +
+>> migration may be higher than the benefit we get from jumbo frames
+>>
+>> So if this doesn't fix it, I'll already post a definitive fix that
+>> removes compaction from kswapd (but leaves it enabled for direct
+>> reclaim for all order sizes including kernel stack). I already
+>> verified that this solves not just the midi latency issue but the
+>> other server benchmark that I'm dealing with. Then we can think at
+>> compaction+kswapd later for 2.6.39 but I think we need to close this
+>> kswapd issue in time for 2.6.38. So if the below isn't enough the next
+>> patch should be applied. I'll get those two patches tested in the
+>> server load too, and I'll let you know how the results are when it
+>> finishes.
+>>
+>> Please apply also the attached "kswapd-high-wmark" before the below
+>> one.
+>> +		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
+>> +			if (fatal_signal_pending(current))
+>> +				break;
+>
+> this is compaction-kswapd-2, to fix the buglet same as in the other
+> patch.
+>
+> In short (to avoid confusion) it'll be helpful if you can test
+> compaction-kswapd-2 vs compaction-no-kswapd-3 and let us know if both
+> are ok or if only compaction-no-kswapd-3 is ok. compaction-no-kswapd-3
+> should help, compaction-kswapd-2 I'm unsure. And as usual I suggest to
+> apply kswapd-high-wmark (attached to previous emails) _before_
+> applying both patches.
 
-We can lower the ratio of the image size to the total RAM.
-Alternatively, we can increase SPARE_PAGES.
+kswapd-high_wmark + compaction-kswapd-2 - kswapd0 CPU up to 11 percent 
+and slightly less pronounced slowdowns of MIDI playback compared to 
+previous patches.
 
-> If yes, I can file a bug report.
+kswapd-high_wmark + compaction-no-kswapd-3 - kswapd0 CPU up to 2.3 
+percent and no noticable slowdown of MIDI playback.
 
-Yes, please.
+Mel Gorman's mm/compaction.c patch - kswapd0 CPU up to 20 percent and no 
+noticable slowdown of MIDI playback.
 
-> Otherwise I just try to find a good value for image size and be 
-> done with it.
+Thanks everyone for the help with this.
 
-It would be helpful if you could determine the greatest image size working
-for you.
-
-Thanks,
-Rafael
+Arthur.
