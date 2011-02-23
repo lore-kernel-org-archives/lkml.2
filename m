@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab1BWOce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 09:32:34 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:48062 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751882Ab1BWOcc (ORCPT
+	id S1751924Ab1BWOgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 09:36:53 -0500
+Received: from blu0-omc1-s2.blu0.hotmail.com ([65.55.116.13]:35335 "EHLO
+	blu0-omc1-s2.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750823Ab1BWOgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 09:32:32 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19+6Wogi/F+jTH7mdx6Ss7N+Y22PvUoUl7TNM4/oW
-	aKlMSLGy3QYq9n
-Subject: Re: [GIT PULL 0/2] perf/core TUI live annotate and a cleanup
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-In-Reply-To: <1298446517.7856.143.camel@marge.simson.net>
-References: <1298400790-29453-1-git-send-email-acme@infradead.org>
-	 <20110223072842.GC15175@elte.hu>
-	 <1298446517.7856.143.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Feb 2011 15:32:25 +0100
-Message-ID: <1298471545.7846.17.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	Wed, 23 Feb 2011 09:36:52 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP163E6A66B4089FBA19C6BF96DB0@phx.gbl>
+Date: Wed, 23 Feb 2011 09:36:49 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com,
+        Amerigo Wang <amwang@redhat.com>
+Subject: Re: [PATCH RFC tip/core/rcu 04/11] rcupdate: remove dead code
+References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-4-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Disposition: inline
+In-Reply-To: <1298425183-21265-4-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 09:04:55 up 321 days, 23:54,  6 users,  load average: 1.59, 1.63,
+	1.57
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 23 Feb 2011 14:36:51.0778 (UTC) FILETIME=[1C29BA20:01CBD367]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-23 at 08:35 +0100, Mike Galbraith wrote: 
-> On Wed, 2011-02-23 at 08:28 +0100, Ingo Molnar wrote:
-> > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > 
-> > > Hi Ingo,
-> > > 
-> > >         Please consider pulling from:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> > > 
-> > > 	Mike, if you can give it some stress, I'd appreciate.
-> > > 
-> > > Regards,
-> > > 
-> > > - Arnaldo
-> > > 
-> > > Arnaldo Carvalho de Melo (2):
-> > >   perf probe: Remove redundant checks
-> > >   perf top: Live TUI Annotation
-> > 
-> > Yummie! :-)
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> From: Amerigo Wang <amwang@redhat.com>
 > 
-> (indeed, I will take it out for a spin)
+> DEBUG_OBJECTS_RCU_HEAD depends on PREEMPT, so #ifndef CONFIG_PREEMPT
+> is totally useless in kernel/rcupdate.c.
 
-Works spiffy, and no lockup troubles (didn't get back to that, koff),
-much nicer than the old annotation.  I did notice that pressing left
-arrow one too many times leads to exit, dunno if that's intended.
+Why does it depend on PREEMPT exactly ? Only for the fixup ?
 
-	-Mike
+Thanks,
 
+Mathieu
+
+> 
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcupdate.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+> index a23a57a..afd21d1 100644
+> --- a/kernel/rcupdate.c
+> +++ b/kernel/rcupdate.c
+> @@ -215,10 +215,6 @@ static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
+>  		 * If we detect that we are nested in a RCU read-side critical
+>  		 * section, we should simply fail, otherwise we would deadlock.
+>  		 */
+> -#ifndef CONFIG_PREEMPT
+> -		WARN_ON(1);
+> -		return 0;
+> -#else
+>  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+>  		    irqs_disabled()) {
+>  			WARN_ON(1);
+> @@ -229,7 +225,6 @@ static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
+>  		rcu_barrier_bh();
+>  		debug_object_free(head, &rcuhead_debug_descr);
+>  		return 1;
+> -#endif
+>  	default:
+>  		return 0;
+>  	}
+> -- 
+> 1.7.3.2
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
