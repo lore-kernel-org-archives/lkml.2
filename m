@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1BWWzQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 17:55:16 -0500
-Received: from mail2.microsoft.com ([131.107.115.215]:51382 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab1BWWzP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 17:55:15 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <greg@kroah.com>, KY Srinivasan <kys@microsoft.com>
-CC: Hank Janssen <hjanssen@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 1/4] staging: hv: Fix the code depending on struct
- vmbus_driver_context data order
-Thread-Topic: [PATCH 1/4] staging: hv: Fix the code depending on struct
- vmbus_driver_context data order
-Thread-Index: AQHL05XXX+kAHBjdg0KWib5MQLs97JQQH60AgAAVwoCAAAEVgP//ep+Q
-Date: Wed, 23 Feb 2011 22:55:12 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC060EE9@TK5EX14MBXC227.redmond.corp.microsoft.com>
-References: <1298492398-16522-1-git-send-email-haiyangz@microsoft.com>
- <20110223212644.GC23766@kroah.com>
- <6E21E5352C11B742B20C142EB499E048014F2C@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20110223224829.GA7175@kroah.com>
-In-Reply-To: <20110223224829.GA7175@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754414Ab1BWW5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 17:57:31 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:54527 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753969Ab1BWW5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 17:57:30 -0500
+Date: Wed, 23 Feb 2011 17:57:28 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Timur Tabi <timur@freescale.com>
+Cc: Greg KH <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: How important is it that tty_write_room doesn't lie?
+Message-ID: <20110223225728.GR2924@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Timur Tabi <timur@freescale.com>, Greg KH <gregkh@suse.de>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4D656679.90907@freescale.com>
+ <20110223202915.GB9081@suse.de>
+ <4D657292.6000106@freescale.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D657292.6000106@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:greg@kroah.com]
-> The layering is almost ok, there is still one more layer here than is
-> needed, and it should be removed (I already removed lots of layers that
-> were not needed, just didn't get to this one.)  But the naming also
-> needs to be fixed up as it is wrong from a "driver model" standpoint
-> with the rest of the kernel.
+On Wed, Feb 23, 2011 at 02:48:18PM -0600, Timur Tabi wrote:
+> Greg KH wrote:
+> > I think that people don't normally hit this as the console code isn't
+> > used as a tty and a console at the same time, right?
+> 
+> That's another thing I never understood.  It's rare for a driver to
+> support both the console and tty layers.  The serial core driver
+> does that, but I can't find any other examples.  I would think that
+> a driver would support both interfaces, because both are needed.
+> Simplistically, printk --> console, and printf --> tty.  When would
+> ever want user-space support but not kernel support?
 
-So, how about rename the "struct driver_context" to "struct gen_drv_ctx"
-in this patch? We can deal with the layering in next round of patches.
+When you are supporting a large bank of modems?  A number of the
+serial cards were originally created to support 32, 64, 128 serial
+ports per PCI board, specifically to drive modems, in the bad old days
+of modems.  :-)
 
-Thanks,
+And I suspect many modern serial devices are just 8250/16550A based,
+so they get the console and userspace serial for free.  A large number
+of the more exotic boards were created because the 16550A uart isn't
+ideal if you are driving vast number of modems at the same time.
 
-- Haiyang
+> The FIFO can vary, but it's probably at least 2KB it size.  At
+> least, we hope to able to set it to that size in the field.
+> Currently, we set it to 4KB.
 
+Wow, the FIFO has gotten a lot larger than I ever remember them
+getting even when people were doing 460kbps.  I'm guessing this is
+because you're trying to defer interrupts for power saving reasons,
+yes?  I was used to seeing FIFO sizes more in the 32-128 bytes, tops.  :-)
+
+      	    	    	   	      - Ted
