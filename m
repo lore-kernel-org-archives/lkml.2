@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab1BWVIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:08:15 -0500
-Received: from usmamail.tilera.com ([206.83.70.70]:19995 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab1BWVIN (ORCPT
+	id S1752964Ab1BWVO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:14:59 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47912 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336Ab1BWVO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:08:13 -0500
-Message-ID: <4D65773B.1040300@tilera.com>
-Date: Wed, 23 Feb 2011 16:08:11 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	Wed, 23 Feb 2011 16:14:58 -0500
+Message-ID: <4D657880.50405@ru.mvista.com>
+Date: Thu, 24 Feb 2011 00:13:36 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/3] tile: Cleanup irq chips and irq_desc accessors
-References: <20110206230305.461141290@linutronix.de> <4D657405.3050105@tilera.com> <alpine.LFD.2.00.1102232155460.2701@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102232155460.2701@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 6/7] arm/dt: Basic tegra devicetree support
+References: <20110223021524.18318.71902.stgit@localhost6.localdomain6> <20110223022234.18318.90592.stgit@localhost6.localdomain6>
+In-Reply-To: <20110223022234.18318.90592.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/23/2011 3:56 PM, Thomas Gleixner wrote:
-> On Wed, 23 Feb 2011, Chris Metcalf wrote:
->
->> On 2/6/2011 6:04 PM, Thomas Gleixner wrote:
->>> Convert the irq chips to the new callback functions and use proper
->>> accessors for irq_desc. Select GENERIC_HARDIRQS_NO_DEPRECATED
->> For the series:
->>
->> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
->>
->> Sorry for the late response, but your email came while I was still trying
->> to catch up with my email from a week's vacation, and I'm just re-triaging
->> my inbox now :-)
-> No problem. Can you takes this via your tree for .39 ? It does not
-> depend on any changes in the core code.
+Hello.
 
-Sure.  Done.
+On 23-02-2011 5:22, Grant Likely wrote:
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+> This patch adds adds very basic support for booting tegra with a
+> device tree.  It simply allows the existing machine_descs to match
+> against the tegra compatible values so that the kernel can boot.
+> Kernel parameters and the initrd pointer is read out of the tree
+> instead of atags.
 
+> This is not complete device tree support.  This change will be
+> reverted when a new machine_desc is added that can populate the
+> device registrations directly from data in the tree instead of using
+> hard coded data.  That change will be made in a future patch.
+
+> v2: Fixed cut-and-paste error in commit text
+
+    Shouldn't this sentence follow the --- tearline?
+
+> Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+
+WBR, Sergei
