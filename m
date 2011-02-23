@@ -1,127 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab1BWTlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:41:31 -0500
-Received: from mail3.microsoft.com ([131.107.115.214]:25814 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab1BWTla convert rfc822-to-8bit (ORCPT
+	id S1754365Ab1BWToB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:44:01 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52050 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab1BWTn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:41:30 -0500
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: Haiyang Zhang <haiyangz@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "KY Srinivasan" <kys@microsoft.com>
-Subject: RE: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
- using pr_err now
-Thread-Topic: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
- using pr_err now
-Thread-Index: AQHL0ueeEyAMD95LDk2oP6NgPzLQI5QP/GKA//99kOA=
-Date: Wed, 23 Feb 2011 19:41:28 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56233FADA94@TK5EX14MBXC118.redmond.corp.microsoft.com>
-References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
- <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
- <20110223191533.GB1030@kroah.com>
-In-Reply-To: <20110223191533.GB1030@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.79]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Feb 2011 14:43:59 -0500
+Date: Wed, 23 Feb 2011 12:43:52 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Daniel Drake <dsd@laptop.org>, David Woodhouse <dwmw2@infradead.org>,
+        cbou@mail.ru, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        dmitry.torokhov@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name'
+ brokenness
+Message-ID: <20110223194352.GR14597@angua.secretlab.ca>
+References: <20110216222820.487AE9D401C@zog.reactivated.net>
+ <1297896277.3011.5.camel@macbook.infradead.org>
+ <AANLkTikAF2X1A5jfoNfCPRhZkZ7qPdZ57c8B5b9z4+qr@mail.gmail.com>
+ <20110218190659.7f955e4c@queued.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110218190659.7f955e4c@queued.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Wednesday, February 23, 2011 11:16 AM
+On Fri, Feb 18, 2011 at 07:06:59PM -0800, Andres Salomon wrote:
+> On Fri, 18 Feb 2011 23:42:57 +0000
+> Daniel Drake <dsd@laptop.org> wrote:
 > 
-> On Tue, Feb 22, 2011 at 03:32:41PM -0800, Hank Janssen wrote:
-> > This group of patches removes all DPRINT from hv_vmbus.ko.
-> > It is divided in several patches due to size.
-> >
-> > All DPRINT calls have been removed, and where needed have been
-> > replaced with pr_XX native calls. Many debug DPRINT calls have
-> > been removed outright.
-> >
-> > The amount of clutter this driver prints has been
-> > significantly reduced.
-> >
-> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> >
-> > ---
-> >  drivers/staging/hv/hv.c |   88 +++++++++++--------------------------
-> ---------
-> >  1 files changed, 21 insertions(+), 67 deletions(-)
-
-> > -		DPRINT_INFO(VMBUS, "OS Build:%d-%d.%d-%d-%d.%d",\
-> > -			    eax,
-> > -			    ebx >> 16,
-> > -			    ebx & 0xFFFF,
-> > -			    ecx,
-> > -			    edx >> 24,
-> > -			    edx & 0xFFFFFF);
-> > +
-> > +		pr_info("%s: Hyper-V Host OS Build:%d-%d.%d-%d-%d.%d",
-> > +			VMBUS_MOD,
-> > +			eax,
-> > +			ebx >> 16,
-> > +			ebx & 0xFFFF,
-> > +			ecx,
-> > +			edx >> 24,
-> > +			edx & 0xFFFFFF);
+> > On 16 February 2011 22:44, David Woodhouse <dwmw2@infradead.org>
+> > wrote:
+> > > On Wed, 2011-02-16 at 22:28 +0000, Daniel Drake wrote:
+> > >>
+> > >> +static int __init add_common_platform_devices(void)
+> > >> +{
+> > >> +       struct platform_device *pdev;
+> > >> +
+> > >> +       pdev = platform_device_register_simple("olpc-battery", -1,
+> > >> NULL, 0);
+> > >> +       if (IS_ERR(pdev))
+> > >> +               return PTR_ERR(pdev);
+> > >> +
+> > >> +       return 0;
+> > >> +}
+> > >> +
+> > >
+> > > Still kind of sucks that you have to do this, and can't bind to
+> > > something in the device-tree.
+> > 
+> > OK, feel free to put this patch on hold for now. I started looking at
+> > the device tree approach today. It looks doable but first we have to
+> > fix a DT bug/inconsistency that is preventing us from correctly
+> > binding to the tree's devices.
+> > 
+> > Daniel
 > 
-> Why did you keep this one?  Why is it needed?
-
-This tells me what version the host is running. I frequently ask customers if 
-they are running on Host version X or Y. This tells me that with certainty 
-what they are running. The number of times I got from a customer that
-they are running X while I knew that would not be possible has been pretty
-high.
-
 > 
-> >  	if (!query_hypervisor_presence()) {
-> > -		DPRINT_ERR(VMBUS, "No Windows hypervisor detected!!");
-> > +		pr_err("%s: %s No Hyper-V detected", VMBUS_MOD, __func__);
+> Mea culpa.  The patch below fixes a bug I introduced earlier.
+> Cc'ing the sparc folks, as this probably affects them
+> (although I would think that it fixes broken behavior for them..?)
+
+Wait; why are you binding to a device based on name?  Binding by name
+and/or device_type is strongly discouraged for new code.  Use compatible
+instead.
+
+As for this patch, comments below...
+
+> From: Andres Salomon <dilinger@queued.net>
 > 
-> Why the __func__?  That should never be needed as it is trivial to see
-> what is happening, the user doesn't need to know the function name,
-> right?
+> Commit e2f2a93b changed dp->name from using the 'name' property to
+> using package-to-path.  This fixed /proc/device-tree creation by
+> eliminating conflicts between names (the 'name' property provides
+> names like 'battery', whereas package-to-path provides names like
+> '/foo/bar/battery@0', which we stripped to 'battery@0').  However,
+> it also breaks of_device_id table matching.
 > 
-> Please remove them from all of these calls.
-
-The new patch will have these removed. When I checked other drivers 
-in the drivers subdirectory the __func__ is used 15455 times most
-of these are in print, debug or error lines. The __func__ in this
-case only shows up if an error occurs. 
-
-But as requested, I will remove them.
-
+> The fix that we _really_ wanted was to keep dp->name based upon
+> the name property ('battery'), but based dp->full_name upon
+> package-to-path ('battery@0').  This patch does just that.
 > 
-> Oh, and you obviously didn't test these patches as your syslog would be
-> a mess if you did.  Which is NOT ok, and makes me grumpy:
-> 	http://www.kroah.com/log/linux/maintainer-05.html
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> Reported-by: Daniel Drake <dsd@laptop.org>
+
+>From what I can tell, this only affects OLPC, correct?  It looks like
+SPARC's implementation of of_pdt_node_name() will sidestep most of this
+name retrieval code.
+
+> ---
+>  drivers/of/pdt.c |   42 +++++++++++++++++++-----------------------
+>  1 files changed, 19 insertions(+), 23 deletions(-)
 > 
-> bah, I should just make a numbered list and just start saying: "This
-> patch fails point #4" or something like that, it would save me in
-> typing...
+> diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+> index 28295d0..b39d584 100644
+> --- a/drivers/of/pdt.c
+> +++ b/drivers/of/pdt.c
+> @@ -48,7 +48,7 @@ static inline void irq_trans_init(struct device_node *dp) { }
+>  
+>  static inline const char *of_pdt_node_name(struct device_node *dp)
+>  {
+> -	return dp->name;
+> +	return NULL;
+>  }
+
+Rather than using this hook; perhaps the sparc .path_component_name
+should be enabled for all architectures.  It is a useful data item to
+keep a pointer to, and it would simplify the of_pdt code.
+
+>  
+>  #endif /* !CONFIG_SPARC */
+> @@ -156,23 +156,6 @@ static char * __init of_pdt_try_pkg2path(phandle node)
+>  	return res+1;
+>  }
+>  
+> -/*
+> - * When fetching the node's name, first try using package-to-path; if
+> - * that fails (either because the arch hasn't supplied a PROM callback,
+> - * or some other random failure), fall back to just looking at the node's
+> - * 'name' property.
+> - */
+> -static char * __init of_pdt_build_name(phandle node)
+> -{
+> -	char *buf;
+> -
+> -	buf = of_pdt_try_pkg2path(node);
+> -	if (!buf)
+> -		buf = of_pdt_get_one_property(node, "name");
+> -
+> -	return buf;
+> -}
+> -
+>  static struct device_node * __init of_pdt_create_node(phandle node,
+>  						    struct device_node *parent)
+>  {
+> @@ -187,7 +170,7 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+>  
+>  	kref_init(&dp->kref);
+>  
+> -	dp->name = of_pdt_build_name(node);
+> +	dp->name = of_pdt_get_one_property(node, "name");
+>  	dp->type = of_pdt_get_one_property(node, "device_type");
+>  	dp->phandle = node;
+>  
+> @@ -198,13 +181,26 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+>  	return dp;
+>  }
+>  
+> -static char * __init of_pdt_build_full_name(struct device_node *dp)
+> +static char * __init of_pdt_build_full_name(struct device_node *dp,
+> +		phandle node)
+>  {
+>  	int len, ourlen, plen;
+> +	const char *name;
+>  	char *n;
+>  
+> +	/*
+> +	 * When fetching the full name, rather than what we see with the
+> +	 * name property (ie, 'battery'), we want the name we see with
+> +	 * package-to-path (ie, 'battery@0').
+> +	 */
+> +	name = of_pdt_node_name(dp);
+> +	if (!name)
+> +		name = of_pdt_try_pkg2path(node);
+> +	if (!name)
+> +		name = dp->name;
+> +
+
+Rather than this thrashing about looking for a way to get the path
+component, it should be fairly certain how to obtain the node's name
+before getting into of_pdt_build_full_name().  I'd follow SPARC's
+lead and create an implementation of build_path_component();
+
+However, considering that this is creating the full name; wouldn't the
+raw output of pkg2path() provide exactly the full name string you need
+here instead of breaking it down into components and adding it back up
+again?
+
+>  	plen = strlen(dp->parent->full_name);
+> -	ourlen = strlen(of_pdt_node_name(dp));
+> +	ourlen = strlen(name);
+>  	len = ourlen + plen + 2;
+>  
+>  	n = prom_early_alloc(len);
+> @@ -213,7 +209,7 @@ static char * __init of_pdt_build_full_name(struct device_node *dp)
+>  		strcpy(n + plen, "/");
+>  		plen++;
+>  	}
+> -	strcpy(n + plen, of_pdt_node_name(dp));
+> +	strcpy(n + plen, name);
+>  
+>  	return n;
+>  }
+> @@ -243,7 +239,7 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
+>  #if defined(CONFIG_SPARC)
+>  		dp->path_component_name = build_path_component(dp);
+>  #endif
+> -		dp->full_name = of_pdt_build_full_name(dp);
+> +		dp->full_name = of_pdt_build_full_name(dp, node);
+>  
+>  		dp->child = of_pdt_build_tree(dp,
+>  				of_pdt_prom_ops->getchild(node), nextp);
+> -- 
+> 1.7.2.3
 > 
-
-They where compile and run tested. And syslog was not a mess. What did
-I mess up here? The amount of printouts now are a fraction of what they
-where before.
-
-Hank.
-
-
-
-
