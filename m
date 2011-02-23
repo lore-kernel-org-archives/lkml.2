@@ -1,4514 +1,1794 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab1BXRS0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:18:26 -0500
+	id S1752787Ab1BXRSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:18:40 -0500
 Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47683 "EHLO
 	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752033Ab1BXRSX (ORCPT
+	with ESMTP id S1752566Ab1BXRSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:18:23 -0500
+	Thu, 24 Feb 2011 12:18:37 -0500
 From: Alan Cox <alan@linux.jf.intel.com>
-Subject: [PATCH 2/2] gma500: Rip out the memory manager
-To: linux-kernel@vger.kernel.org, greg@kroah.com
-Date: Thu, 24 Feb 2011 16:25:09 +0000
-Message-ID: <20110224162457.27093.32399.stgit@localhost.localdomain>
-In-Reply-To: <20110224162440.27093.80825.stgit@localhost.localdomain>
-References: <20110224162440.27093.80825.stgit@localhost.localdomain>
+Subject: [PATCH] gma500: More pruning
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Wed, 23 Feb 2011 15:42:37 +0000
+Message-ID: <20110223154207.18491.18965.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At this point we simply stuff the display at the start of the stolen memory
-area that the BIOS gave us. No user framebuffers no multiple framebuffers.
+[Sits on top of Matthews opregion patch]
 
-However from here we have a better chance of seeing what is going on and
-writing an actual gem manager for the driver.
+Address the bits that Matthew noted. Also prune various ioctl stuff and
+interfaces we don't care about
+
+Disable the opregion changes - they crash on the Dell Mini 10.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/Makefile                 |    7 
- drivers/staging/gma500/psb_buffer.c             |  450 ----------------
- drivers/staging/gma500/psb_drm.h                |    3 
- drivers/staging/gma500/psb_drv.c                |  170 +-----
- drivers/staging/gma500/psb_drv.h                |   37 -
- drivers/staging/gma500/psb_fb.c                 |  112 ----
- drivers/staging/gma500/psb_fence.c              |  122 ----
- drivers/staging/gma500/psb_gtt.c                |   84 ---
- drivers/staging/gma500/psb_sgx.c                |  238 ---------
- drivers/staging/gma500/psb_sgx.h                |    6 
- drivers/staging/gma500/psb_ttm_fence.c          |  605 ----------------------
- drivers/staging/gma500/psb_ttm_fence_api.h      |  272 ----------
- drivers/staging/gma500/psb_ttm_fence_driver.h   |  302 -----------
- drivers/staging/gma500/psb_ttm_fence_user.c     |  237 ---------
- drivers/staging/gma500/psb_ttm_fence_user.h     |  140 -----
- drivers/staging/gma500/psb_ttm_glue.c           |  349 -------------
- drivers/staging/gma500/psb_ttm_placement_user.c |  628 -----------------------
- drivers/staging/gma500/psb_ttm_placement_user.h |  252 ---------
- drivers/staging/gma500/psb_ttm_userobj_api.h    |   85 ---
- 19 files changed, 32 insertions(+), 4067 deletions(-)
- delete mode 100644 drivers/staging/gma500/psb_buffer.c
- delete mode 100644 drivers/staging/gma500/psb_fence.c
- delete mode 100644 drivers/staging/gma500/psb_sgx.c
- delete mode 100644 drivers/staging/gma500/psb_ttm_fence.c
- delete mode 100644 drivers/staging/gma500/psb_ttm_fence_api.h
- delete mode 100644 drivers/staging/gma500/psb_ttm_fence_driver.h
- delete mode 100644 drivers/staging/gma500/psb_ttm_fence_user.c
- delete mode 100644 drivers/staging/gma500/psb_ttm_fence_user.h
- delete mode 100644 drivers/staging/gma500/psb_ttm_glue.c
- delete mode 100644 drivers/staging/gma500/psb_ttm_placement_user.c
- delete mode 100644 drivers/staging/gma500/psb_ttm_placement_user.h
- delete mode 100644 drivers/staging/gma500/psb_ttm_userobj_api.h
+ drivers/acpi/acpi_igd_opregion.c        |    2 
+ drivers/staging/gma500/psb_bl.c         |   10 -
+ drivers/staging/gma500/psb_drm.h        |  507 ++++++-----------------------
+ drivers/staging/gma500/psb_drv.c        |   49 ---
+ drivers/staging/gma500/psb_drv.h        |    1 
+ drivers/staging/gma500/psb_gfx.mod.c    |    4 
+ drivers/staging/gma500/psb_intel_bios.c |    2 
+ drivers/staging/gma500/psb_intel_bios.h |    2 
+ drivers/staging/gma500/psb_intel_reg.h  |  548 ++++++++++++++-----------------
+ drivers/staging/gma500/psb_irq.c        |    4 
+ drivers/staging/gma500/psb_powermgmt.c  |    5 
+ 11 files changed, 364 insertions(+), 770 deletions(-)
 
-diff --git a/drivers/staging/gma500/Makefile b/drivers/staging/gma500/Makefile
-index b9a7d2e..4469616 100644
---- a/drivers/staging/gma500/Makefile
-+++ b/drivers/staging/gma500/Makefile
-@@ -15,15 +15,8 @@ psb_gfx-y += psb_bl.o \
- 	  psb_intel_modes.o \
- 	  psb_intel_sdvo.o \
- 	  psb_reset.o \
--	  psb_sgx.o \
- 	  psb_pvr_glue.o \
--	  psb_buffer.o \
--	  psb_fence.o \
- 	  psb_mmu.o \
--	  psb_ttm_glue.o \
--	  psb_ttm_fence.o \
--	  psb_ttm_fence_user.o \
--	  psb_ttm_placement_user.o \
- 	  psb_powermgmt.o \
- 	  psb_irq.o
+diff --git a/drivers/acpi/acpi_igd_opregion.c b/drivers/acpi/acpi_igd_opregion.c
+index df706b6..de815d7 100644
+--- a/drivers/acpi/acpi_igd_opregion.c
++++ b/drivers/acpi/acpi_igd_opregion.c
+@@ -329,7 +329,7 @@ void igd_opregion_init(struct opregion_dev *dev)
+ 		register_acpi_notifier(&igd_opregion_notifier);
+ 	}
  
-diff --git a/drivers/staging/gma500/psb_buffer.c b/drivers/staging/gma500/psb_buffer.c
-deleted file mode 100644
-index 3077f6a..0000000
---- a/drivers/staging/gma500/psb_buffer.c
-+++ /dev/null
-@@ -1,450 +0,0 @@
--/**************************************************************************
-- * Copyright (c) 2007, Intel Corporation.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics.com>
-- */
--#include "ttm/ttm_placement.h"
--#include "ttm/ttm_execbuf_util.h"
--#include "psb_ttm_fence_api.h"
--#include <drm/drmP.h>
--#include "psb_drv.h"
--
--#define DRM_MEM_TTM       26
--
--struct drm_psb_ttm_backend {
--	struct ttm_backend base;
--	struct page **pages;
--	unsigned int desired_tile_stride;
--	unsigned int hw_tile_stride;
--	int mem_type;
--	unsigned long offset;
--	unsigned long num_pages;
--};
--
--/*
-- * MSVDX/TOPAZ GPU virtual space looks like this
-- * (We currently use only one MMU context).
-- * PSB_MEM_MMU_START: from 0x00000000~0xe000000, for generic buffers
-- * TTM_PL_CI: from 0xe0000000+half GTT space, for camear/video buffer sharing
-- * TTM_PL_RAR: from TTM_PL_CI+CI size, for RAR/video buffer sharing
-- * TTM_PL_TT: from TTM_PL_RAR+RAR size, for buffers need to mapping into GTT
-- */
--static int psb_init_mem_type(struct ttm_bo_device *bdev, uint32_t type,
--			     struct ttm_mem_type_manager *man)
--{
--
--	struct drm_psb_private *dev_priv =
--	    container_of(bdev, struct drm_psb_private, bdev);
--	struct psb_gtt *pg = dev_priv->pg;
--
--	switch (type) {
--	case TTM_PL_SYSTEM:
--		man->flags = TTM_MEMTYPE_FLAG_MAPPABLE;
--		man->available_caching = TTM_PL_FLAG_CACHED |
--		    TTM_PL_FLAG_UNCACHED | TTM_PL_FLAG_WC;
--		man->default_caching = TTM_PL_FLAG_CACHED;
--		break;
--	case DRM_PSB_MEM_MMU:
--		man->func = &ttm_bo_manager_func;
--		man->flags = TTM_MEMTYPE_FLAG_MAPPABLE |
--		    TTM_MEMTYPE_FLAG_CMA;
--		man->gpu_offset = PSB_MEM_MMU_START;
--		man->available_caching = TTM_PL_FLAG_CACHED |
--		    TTM_PL_FLAG_UNCACHED | TTM_PL_FLAG_WC;
--		man->default_caching = TTM_PL_FLAG_WC;
--		break;
--	case TTM_PL_CI:
--		man->func = &ttm_bo_manager_func;
--		man->flags = TTM_MEMTYPE_FLAG_MAPPABLE |
--			TTM_MEMTYPE_FLAG_FIXED;
--		man->gpu_offset = pg->mmu_gatt_start + (pg->ci_start);
--		man->available_caching = TTM_PL_FLAG_UNCACHED;
--		man->default_caching = TTM_PL_FLAG_UNCACHED;
--		break;
--	case TTM_PL_RAR:	/* Unmappable RAR memory */
--		man->func = &ttm_bo_manager_func;
--		man->flags = TTM_MEMTYPE_FLAG_MAPPABLE |
--			TTM_MEMTYPE_FLAG_FIXED;
--		man->available_caching = TTM_PL_FLAG_UNCACHED;
--		man->default_caching = TTM_PL_FLAG_UNCACHED;
--		man->gpu_offset = pg->mmu_gatt_start + (pg->rar_start);
--		break;
--	case TTM_PL_TT:	/* Mappable GATT memory */
--		man->func = &ttm_bo_manager_func;
--#ifdef PSB_WORKING_HOST_MMU_ACCESS
--		man->flags = TTM_MEMTYPE_FLAG_MAPPABLE;
--#else
--		man->flags = TTM_MEMTYPE_FLAG_MAPPABLE |
--		    TTM_MEMTYPE_FLAG_CMA;
--#endif
--		man->available_caching = TTM_PL_FLAG_CACHED |
--		    TTM_PL_FLAG_UNCACHED | TTM_PL_FLAG_WC;
--		man->default_caching = TTM_PL_FLAG_WC;
--		man->gpu_offset = pg->mmu_gatt_start +
--				(pg->rar_start + dev_priv->rar_region_size);
--		break;
--	default:
--		DRM_ERROR("Unsupported memory type %u\n", (unsigned) type);
--		return -EINVAL;
--	}
--	return 0;
--}
--
--
--static void psb_evict_mask(struct ttm_buffer_object *bo,
--					struct ttm_placement *placement)
--{
--	static uint32_t cur_placement;
--
--	cur_placement = bo->mem.placement & ~TTM_PL_MASK_MEM;
--	cur_placement |= TTM_PL_FLAG_SYSTEM;
--
--	placement->fpfn = 0;
--	placement->lpfn = 0;
--	placement->num_placement = 1;
--	placement->placement = &cur_placement;
--	placement->num_busy_placement = 0;
--	placement->busy_placement = NULL;
--
--	/* all buffers evicted to system memory */
--	/* return cur_placement | TTM_PL_FLAG_SYSTEM; */
--}
--
--static int psb_invalidate_caches(struct ttm_bo_device *bdev,
--				 uint32_t placement)
--{
--	return 0;
--}
--
--static int psb_move_blit(struct ttm_buffer_object *bo,
--			 bool evict, bool no_wait,
--			 struct ttm_mem_reg *new_mem)
--{
--	BUG();
--	return 0;
--}
--
--/*
-- * Flip destination ttm into GATT,
-- * then blit and subsequently move out again.
-- */
--
--static int psb_move_flip(struct ttm_buffer_object *bo,
--			 bool evict, bool interruptible, bool no_wait,
--			 struct ttm_mem_reg *new_mem)
--{
--	/*struct ttm_bo_device *bdev = bo->bdev;*/
--	struct ttm_mem_reg tmp_mem;
--	int ret;
--	struct ttm_placement placement;
--	uint32_t flags = TTM_PL_FLAG_TT;
--
--	tmp_mem = *new_mem;
--	tmp_mem.mm_node = NULL;
--
--	placement.fpfn = 0;
--	placement.lpfn = 0;
--	placement.num_placement = 1;
--	placement.placement = &flags;
--	placement.num_busy_placement = 0; /* FIXME */
--	placement.busy_placement = NULL;
--
--	ret = ttm_bo_mem_space(bo, &placement, &tmp_mem, interruptible,
--							false, no_wait);
--	if (ret)
--		return ret;
--	ret = ttm_tt_bind(bo->ttm, &tmp_mem);
--	if (ret)
--		goto out_cleanup;
--	ret = psb_move_blit(bo, true, no_wait, &tmp_mem);
--	if (ret)
--		goto out_cleanup;
--
--	ret = ttm_bo_move_ttm(bo, evict, false, no_wait, new_mem);
--out_cleanup:
--	if (tmp_mem.mm_node) {
--		drm_mm_put_block(tmp_mem.mm_node);
--		tmp_mem.mm_node = NULL;
--	}
--	return ret;
--}
--
--static int psb_move(struct ttm_buffer_object *bo,
--		    bool evict, bool interruptible, bool no_wait_reserve,
--		    bool no_wait, struct ttm_mem_reg *new_mem)
--{
--	struct ttm_mem_reg *old_mem = &bo->mem;
--
--	if ((old_mem->mem_type == TTM_PL_RAR) ||
--	    (new_mem->mem_type == TTM_PL_RAR)) {
--		if (old_mem->mm_node) {
--			spin_lock(&bo->glob->lru_lock);
--			drm_mm_put_block(old_mem->mm_node);
--			spin_unlock(&bo->glob->lru_lock);
--		}
--		old_mem->mm_node = NULL;
--		*old_mem = *new_mem;
--	} else if (old_mem->mem_type == TTM_PL_SYSTEM) {
--		return ttm_bo_move_memcpy(bo, evict, false, no_wait, new_mem);
--	} else if (new_mem->mem_type == TTM_PL_SYSTEM) {
--		int ret = psb_move_flip(bo, evict, interruptible,
--					no_wait, new_mem);
--		if (unlikely(ret != 0)) {
--			if (ret == -ERESTART)
--				return ret;
--			else
--				return ttm_bo_move_memcpy(bo, evict, false,
--						no_wait, new_mem);
--		}
--	} else {
--		if (psb_move_blit(bo, evict, no_wait, new_mem))
--			return ttm_bo_move_memcpy(bo, evict, false, no_wait,
--						  new_mem);
--	}
--	return 0;
--}
--
--static int drm_psb_tbe_populate(struct ttm_backend *backend,
--				unsigned long num_pages,
--				struct page **pages,
--				struct page *dummy_read_page,
--				dma_addr_t *dma_addrs)
--{
--	struct drm_psb_ttm_backend *psb_be =
--	    container_of(backend, struct drm_psb_ttm_backend, base);
--
--	psb_be->pages = pages;
--	return 0;
--}
--
--static int drm_psb_tbe_unbind(struct ttm_backend *backend)
--{
--	struct ttm_bo_device *bdev = backend->bdev;
--	struct drm_psb_private *dev_priv =
--	    container_of(bdev, struct drm_psb_private, bdev);
--	struct drm_psb_ttm_backend *psb_be =
--	    container_of(backend, struct drm_psb_ttm_backend, base);
--	struct psb_mmu_pd *pd = psb_mmu_get_default_pd(dev_priv->mmu);
--	/* struct ttm_mem_type_manager *man = &bdev->man[psb_be->mem_type]; */
--
--	if (psb_be->mem_type == TTM_PL_TT) {
--		uint32_t gatt_p_offset =
--			(psb_be->offset - dev_priv->pg->mmu_gatt_start)
--								>> PAGE_SHIFT;
--
--		(void) psb_gtt_remove_pages(dev_priv->pg, gatt_p_offset,
--					    psb_be->num_pages,
--					    psb_be->desired_tile_stride,
--					    psb_be->hw_tile_stride, 0);
--	}
--
--	psb_mmu_remove_pages(pd, psb_be->offset,
--			     psb_be->num_pages,
--			     psb_be->desired_tile_stride,
--			     psb_be->hw_tile_stride);
--
--	return 0;
--}
--
--static int drm_psb_tbe_bind(struct ttm_backend *backend,
--			    struct ttm_mem_reg *bo_mem)
--{
--	struct ttm_bo_device *bdev = backend->bdev;
--	struct drm_psb_private *dev_priv =
--	    container_of(bdev, struct drm_psb_private, bdev);
--	struct drm_psb_ttm_backend *psb_be =
--	    container_of(backend, struct drm_psb_ttm_backend, base);
--	struct psb_mmu_pd *pd = psb_mmu_get_default_pd(dev_priv->mmu);
--	struct ttm_mem_type_manager *man = &bdev->man[bo_mem->mem_type];
--	struct drm_mm_node *mm_node = bo_mem->mm_node;
--	int type;
--	int ret = 0;
--
--	psb_be->mem_type = bo_mem->mem_type;
--	psb_be->num_pages = bo_mem->num_pages;
--	psb_be->desired_tile_stride = 0;
--	psb_be->hw_tile_stride = 0;
--	psb_be->offset = (mm_node->start << PAGE_SHIFT) +
--	    man->gpu_offset;
--
--	type =
--	    (bo_mem->
--	     placement & TTM_PL_FLAG_CACHED) ? PSB_MMU_CACHED_MEMORY : 0;
--
--	if (psb_be->mem_type == TTM_PL_TT) {
--		uint32_t gatt_p_offset =
--				(psb_be->offset - dev_priv->pg->mmu_gatt_start)
--								>> PAGE_SHIFT;
--
--		ret = psb_gtt_insert_pages(dev_priv->pg, psb_be->pages,
--					   gatt_p_offset,
--					   psb_be->num_pages,
--					   psb_be->desired_tile_stride,
--					   psb_be->hw_tile_stride, type);
--	}
--
--	ret = psb_mmu_insert_pages(pd, psb_be->pages,
--				   psb_be->offset, psb_be->num_pages,
--				   psb_be->desired_tile_stride,
--				   psb_be->hw_tile_stride, type);
--	if (ret)
--		goto out_err;
--
--	return 0;
--out_err:
--	drm_psb_tbe_unbind(backend);
--	return ret;
--
--}
--
--static void drm_psb_tbe_clear(struct ttm_backend *backend)
--{
--	struct drm_psb_ttm_backend *psb_be =
--	    container_of(backend, struct drm_psb_ttm_backend, base);
--
--	psb_be->pages = NULL;
--	return;
--}
--
--static void drm_psb_tbe_destroy(struct ttm_backend *backend)
--{
--	struct drm_psb_ttm_backend *psb_be =
--	    container_of(backend, struct drm_psb_ttm_backend, base);
--
--	if (backend)
--		kfree(psb_be);
--}
--
--static struct ttm_backend_func psb_ttm_backend = {
--	.populate = drm_psb_tbe_populate,
--	.clear = drm_psb_tbe_clear,
--	.bind = drm_psb_tbe_bind,
--	.unbind = drm_psb_tbe_unbind,
--	.destroy = drm_psb_tbe_destroy,
--};
--
--static struct ttm_backend *drm_psb_tbe_init(struct ttm_bo_device *bdev)
--{
--	struct drm_psb_ttm_backend *psb_be;
--
--	psb_be = kzalloc(sizeof(*psb_be), GFP_KERNEL);
--	if (!psb_be)
--		return NULL;
--	psb_be->pages = NULL;
--	psb_be->base.func = &psb_ttm_backend;
--	psb_be->base.bdev = bdev;
--	return &psb_be->base;
--}
--
--static int psb_ttm_io_mem_reserve(struct ttm_bo_device *bdev,
--						struct ttm_mem_reg *mem)
--{
--	struct ttm_mem_type_manager *man = &bdev->man[mem->mem_type];
--	struct drm_psb_private *dev_priv =
--	    container_of(bdev, struct drm_psb_private, bdev);
--	struct psb_gtt *pg = dev_priv->pg;
--	struct drm_mm_node *mm_node = mem->mm_node;
--
--	mem->bus.addr = NULL;
--	mem->bus.offset = 0;
--	mem->bus.size = mem->num_pages << PAGE_SHIFT;
--	mem->bus.base = 0;
--	mem->bus.is_iomem = false;
--	if (!(man->flags & TTM_MEMTYPE_FLAG_MAPPABLE))
--		return -EINVAL;
--	switch (mem->mem_type) {
--	case TTM_PL_SYSTEM:
--		/* system memory */
--		return 0;
--	case TTM_PL_TT:
--		mem->bus.offset = mm_node->start << PAGE_SHIFT;
--		mem->bus.base = pg->gatt_start;
--		mem->bus.is_iomem = false;
--		/* Don't know whether it is IO_MEM, this flag
--						used in vm_fault handle */
--		break;
--	case DRM_PSB_MEM_MMU:
--		mem->bus.offset = mm_node->start << PAGE_SHIFT;
--		mem->bus.base = 0x00000000;
--		break;
--	case TTM_PL_CI:
--		mem->bus.offset = mm_node->start << PAGE_SHIFT;
--		mem->bus.base = dev_priv->ci_region_start;;
--		mem->bus.is_iomem = true;
--		break;
--	case TTM_PL_RAR:
--		mem->bus.offset = mm_node->start << PAGE_SHIFT;
--		mem->bus.base = dev_priv->rar_region_start;;
--		mem->bus.is_iomem = true;
--		break;
--	default:
--		return -EINVAL;
--	}
--	return 0;
--}
--
--static void psb_ttm_io_mem_free(struct ttm_bo_device *bdev,
--						struct ttm_mem_reg *mem)
--{
--}
--
--/*
-- * Use this memory type priority if no eviction is needed.
-- */
--/*
--static uint32_t psb_mem_prios[] = {
--	TTM_PL_CI,
--	TTM_PL_RAR,
--	TTM_PL_TT,
--	DRM_PSB_MEM_MMU,
--	TTM_PL_SYSTEM
--};
--*/
--/*
-- * Use this memory type priority if need to evict.
-- */
--/*
--static uint32_t psb_busy_prios[] = {
--	TTM_PL_TT,
--	TTM_PL_CI,
--	TTM_PL_RAR,
--	DRM_PSB_MEM_MMU,
--	TTM_PL_SYSTEM
--};
--*/
--struct ttm_bo_driver psb_ttm_bo_driver = {
--/*
--	.mem_type_prio = psb_mem_prios,
--	.mem_busy_prio = psb_busy_prios,
--	.num_mem_type_prio = ARRAY_SIZE(psb_mem_prios),
--	.num_mem_busy_prio = ARRAY_SIZE(psb_busy_prios),
--*/
--	.create_ttm_backend_entry = &drm_psb_tbe_init,
--	.invalidate_caches = &psb_invalidate_caches,
--	.init_mem_type = &psb_init_mem_type,
--	.evict_flags = &psb_evict_mask,
--	.move = &psb_move,
--	.verify_access = &psb_verify_access,
--	.sync_obj_signaled = &ttm_fence_sync_obj_signaled,
--	.sync_obj_wait = &ttm_fence_sync_obj_wait,
--	.sync_obj_flush = &ttm_fence_sync_obj_flush,
--	.sync_obj_unref = &ttm_fence_sync_obj_unref,
--	.sync_obj_ref = &ttm_fence_sync_obj_ref,
--	.io_mem_reserve = &psb_ttm_io_mem_reserve,
--	.io_mem_free = &psb_ttm_io_mem_free
--};
+-	if (opregion->asle)
++	if (opregion->asle && dev->enable_asle)
+ 		dev->enable_asle(dev->drm_dev);
+ }
+ EXPORT_SYMBOL(igd_opregion_init);
+diff --git a/drivers/staging/gma500/psb_bl.c b/drivers/staging/gma500/psb_bl.c
+index 52edb43..70c17b3 100644
+--- a/drivers/staging/gma500/psb_bl.c
++++ b/drivers/staging/gma500/psb_bl.c
+@@ -1,5 +1,5 @@
+ /*
+- *  psb backlight using HAL
++ *  psb backlight interface
+  *
+  * Copyright (c) 2009, Intel Corporation.
+  *
+@@ -73,6 +73,8 @@ int psb_get_brightness(struct backlight_device *bd)
+ 	DRM_DEBUG_DRIVER("brightness = 0x%x\n", psb_brightness);
+ 
+ 	/* return locally cached var instead of HW read (due to DPST etc.) */
++	/* FIXME: ideally return actual value in case firmware fiddled with
++	   it */
+ 	return psb_brightness;
+ }
+ 
+@@ -83,7 +85,7 @@ static const struct backlight_ops psb_ops = {
+ 
+ static int device_backlight_init(struct drm_device *dev)
+ {
+-	unsigned long CoreClock;
++	unsigned long core_clock;
+ 	/* u32 bl_max_freq; */
+ 	/* unsigned long value; */
+ 	u16 bl_max_freq;
+@@ -102,9 +104,9 @@ static int device_backlight_init(struct drm_device *dev)
+ 	blc_brightnesscmd = dev_priv->lvds_bl->brightnesscmd;
+ 	blc_type = dev_priv->lvds_bl->type;
+ 
+-	CoreClock = dev_priv->core_freq;
++	core_clock = dev_priv->core_freq;
+ 
+-	value = (CoreClock * MHz) / BLC_PWM_FREQ_CALC_CONSTANT;
++	value = (core_clock * MHz) / BLC_PWM_FREQ_CALC_CONSTANT;
+ 	value *= blc_pwm_precision_factor;
+ 	value /= bl_max_freq;
+ 	value /= blc_pwm_precision_factor;
 diff --git a/drivers/staging/gma500/psb_drm.h b/drivers/staging/gma500/psb_drm.h
-index fb9b424..2fb9f24 100644
+index ef5fcd0..fb9b424 100644
 --- a/drivers/staging/gma500/psb_drm.h
 +++ b/drivers/staging/gma500/psb_drm.h
-@@ -28,9 +28,6 @@
- #include "drm_mode.h"
- #endif
+@@ -31,17 +31,6 @@
+ #include "psb_ttm_fence_user.h"
+ #include "psb_ttm_placement_user.h"
  
--#include "psb_ttm_fence_user.h"
--#include "psb_ttm_placement_user.h"
+-/*
+- * Menlow/MRST graphics driver package version
+- * a.b.c.xxxx
+- * a - Product Family: 5 - Linux
+- * b - Major Release Version: 0 - non-Gallium (Unbuntu);
+- *                            1 - Gallium (Moblin2)
+- * c - Hotfix Release
+- * xxxx - Graphics internal build #
+- */
+-#define PSB_PACKAGE_VERSION "5.3.0.32L.0036"
 -
  #define DRM_PSB_SAREA_MAJOR 0
  #define DRM_PSB_SAREA_MINOR 2
  #define PSB_FIXED_SHIFT 16
+@@ -52,24 +41,24 @@
+  * Public memory types.
+  */
+ 
+-#define DRM_PSB_MEM_MMU TTM_PL_PRIV1
+-#define DRM_PSB_FLAG_MEM_MMU TTM_PL_FLAG_PRIV1
++#define DRM_PSB_MEM_MMU 	TTM_PL_PRIV1
++#define DRM_PSB_FLAG_MEM_MMU	TTM_PL_FLAG_PRIV1
+ 
+ #define TTM_PL_CI               TTM_PL_PRIV0
+ #define TTM_PL_FLAG_CI          TTM_PL_FLAG_PRIV0
+ 
+-#define TTM_PL_RAR               TTM_PL_PRIV2
+-#define TTM_PL_FLAG_RAR          TTM_PL_FLAG_PRIV2
++#define TTM_PL_RAR              TTM_PL_PRIV2
++#define TTM_PL_FLAG_RAR         TTM_PL_FLAG_PRIV2
+ 
+-typedef int32_t psb_fixed;
+-typedef uint32_t psb_ufixed;
++typedef s32 psb_fixed;
++typedef u32 psb_ufixed;
+ 
+-static inline int32_t psb_int_to_fixed(int a)
++static inline s32 psb_int_to_fixed(int a)
+ {
+ 	return a * (1 << PSB_FIXED_SHIFT);
+ }
+ 
+-static inline uint32_t psb_unsigned_to_ufixed(unsigned int a)
++static inline u32 psb_unsigned_to_ufixed(unsigned int a)
+ {
+ 	return a << PSB_FIXED_SHIFT;
+ }
+@@ -82,13 +71,13 @@ typedef enum {
+ } drm_cmd_status_t;
+ 
+ struct drm_psb_scanout {
+-	uint32_t buffer_id;	/* DRM buffer object ID */
+-	uint32_t rotation;	/* Rotation as in RR_rotation definitions */
+-	uint32_t stride;	/* Buffer stride in bytes */
+-	uint32_t depth;		/* Buffer depth in bits (NOT) bpp */
+-	uint32_t width;		/* Buffer width in pixels */
+-	uint32_t height;	/* Buffer height in lines */
+-	int32_t transform[3][3];	/* Buffer composite transform */
++	u32 buffer_id;	/* DRM buffer object ID */
++	u32 rotation;	/* Rotation as in RR_rotation definitions */
++	u32 stride;	/* Buffer stride in bytes */
++	u32 depth;		/* Buffer depth in bits (NOT) bpp */
++	u32 width;		/* Buffer width in pixels */
++	u32 height;	/* Buffer height in lines */
++	s32 transform[3][3];	/* Buffer composite transform */
+ 	/* (scaling, rot, reflect) */
+ };
+ 
+@@ -101,14 +90,14 @@ struct drm_psb_scanout {
+ struct drm_psb_sarea {
+ 	/* Track changes of this data structure */
+ 
+-	uint32_t major;
+-	uint32_t minor;
++	u32 major;
++	u32 minor;
+ 
+ 	/* Last context to touch part of hw */
+-	uint32_t ctx_owners[DRM_PSB_SAREA_OWNERS];
++	u32 ctx_owners[DRM_PSB_SAREA_OWNERS];
+ 
+ 	/* Definition of front- and rotated buffers */
+-	uint32_t num_scanouts;
++	u32 num_scanouts;
+ 	struct drm_psb_scanout scanouts[DRM_PSB_SAREA_SCANOUTS];
+ 
+ 	int planeA_x;
+@@ -120,7 +109,7 @@ struct drm_psb_sarea {
+ 	int planeB_w;
+ 	int planeB_h;
+ 	/* Number of active scanouts */
+-	uint32_t num_active_scanouts;
++	u32 num_active_scanouts;
+ };
+ 
+ #define PSB_RELOC_MAGIC         0x67676767
+@@ -134,16 +123,16 @@ struct drm_psb_sarea {
+ 					 */
+ 
+ struct drm_psb_reloc {
+-	uint32_t reloc_op;
+-	uint32_t where;		/* offset in destination buffer */
+-	uint32_t buffer;	/* Buffer reloc applies to */
+-	uint32_t mask;		/* Destination format: */
+-	uint32_t shift;		/* Destination format: */
+-	uint32_t pre_add;	/* Destination format: */
+-	uint32_t background;	/* Destination add */
+-	uint32_t dst_buffer;	/* Destination buffer. Index into buffer_list */
+-	uint32_t arg0;		/* Reloc-op dependant */
+-	uint32_t arg1;
++	u32 reloc_op;
++	u32 where;		/* offset in destination buffer */
++	u32 buffer;	/* Buffer reloc applies to */
++	u32 mask;		/* Destination format: */
++	u32 shift;		/* Destination format: */
++	u32 pre_add;	/* Destination format: */
++	u32 background;	/* Destination add */
++	u32 dst_buffer;	/* Destination buffer. Index into buffer_list */
++	u32 arg0;		/* Reloc-op dependant */
++	u32 arg1;
+ };
+ 
+ 
+@@ -174,12 +163,12 @@ struct drm_psb_reloc {
+ #define PSB_FEEDBACK_OP_VISTEST (1 << 0)
+ 
+ struct drm_psb_extension_rep {
+-	int32_t exists;
+-	uint32_t driver_ioctl_offset;
+-	uint32_t sarea_offset;
+-	uint32_t major;
+-	uint32_t minor;
+-	uint32_t pl;
++	s32 exists;
++	u32 driver_ioctl_offset;
++	u32 sarea_offset;
++	u32 major;
++	u32 minor;
++	u32 pl;
+ };
+ 
+ #define DRM_PSB_EXT_NAME_LEN 128
+@@ -190,20 +179,20 @@ union drm_psb_extension_arg {
+ };
+ 
+ struct psb_validate_req {
+-	uint64_t set_flags;
+-	uint64_t clear_flags;
+-	uint64_t next;
+-	uint64_t presumed_gpu_offset;
+-	uint32_t buffer_handle;
+-	uint32_t presumed_flags;
+-	uint32_t group;
+-	uint32_t pad64;
++	u64 set_flags;
++	u64 clear_flags;
++	u64 next;
++	u64 presumed_gpu_offset;
++	u32 buffer_handle;
++	u32 presumed_flags;
++	u32 group;
++	u32 pad64;
+ };
+ 
+ struct psb_validate_rep {
+-	uint64_t gpu_offset;
+-	uint32_t placement;
+-	uint32_t fence_type_mask;
++	u64 gpu_offset;
++	u32 placement;
++	u32 fence_type_mask;
+ };
+ 
+ #define PSB_USE_PRESUMED     (1 << 0)
+@@ -221,102 +210,24 @@ struct psb_validate_arg {
+ #define DRM_PSB_FENCE_NO_USER        (1 << 0)
+ 
+ struct psb_ttm_fence_rep {
+-	uint32_t handle;
+-	uint32_t fence_class;
+-	uint32_t fence_type;
+-	uint32_t signaled_types;
+-	uint32_t error;
++	u32 handle;
++	u32 fence_class;
++	u32 fence_type;
++	u32 signaled_types;
++	u32 error;
+ };
+ 
+-typedef struct drm_psb_cmdbuf_arg {
+-	uint64_t buffer_list;	/* List of buffers to validate */
+-	uint64_t clip_rects;	/* See i915 counterpart */
+-	uint64_t scene_arg;
+-	uint64_t fence_arg;
+-
+-	uint32_t ta_flags;
+-
+-	uint32_t ta_handle;	/* TA reg-value pairs */
+-	uint32_t ta_offset;
+-	uint32_t ta_size;
+-
+-	uint32_t oom_handle;
+-	uint32_t oom_offset;
+-	uint32_t oom_size;
+-
+-	uint32_t cmdbuf_handle;	/* 2D Command buffer object or, */
+-	uint32_t cmdbuf_offset;	/* rasterizer reg-value pairs */
+-	uint32_t cmdbuf_size;
+-
+-	uint32_t reloc_handle;	/* Reloc buffer object */
+-	uint32_t reloc_offset;
+-	uint32_t num_relocs;
+-
+-	int32_t damage;		/* Damage front buffer with cliprects */
+-	/* Not implemented yet */
+-	uint32_t fence_flags;
+-	uint32_t engine;
+-
+-	/*
+-	 * Feedback;
+-	 */
+-
+-	uint32_t feedback_ops;
+-	uint32_t feedback_handle;
+-	uint32_t feedback_offset;
+-	uint32_t feedback_breakpoints;
+-	uint32_t feedback_size;
+-} drm_psb_cmdbuf_arg_t;
+-
+-typedef struct drm_psb_pageflip_arg {
+-	uint32_t flip_offset;
+-	uint32_t stride;
+-} drm_psb_pageflip_arg_t;
+-
+-typedef enum {
+-	LNC_VIDEO_DEVICE_INFO,
+-	LNC_VIDEO_GETPARAM_RAR_INFO,
+-	LNC_VIDEO_GETPARAM_CI_INFO,
+-	LNC_VIDEO_GETPARAM_RAR_HANDLER_OFFSET,
+-	LNC_VIDEO_FRAME_SKIP,
+-	IMG_VIDEO_DECODE_STATUS,
+-	IMG_VIDEO_NEW_CONTEXT,
+-	IMG_VIDEO_RM_CONTEXT,
+-	IMG_VIDEO_MB_ERROR
+-} lnc_getparam_key_t;
+-
+-struct drm_lnc_video_getparam_arg {
+-	lnc_getparam_key_t key;
+-	uint64_t arg;	/* argument pointer */
+-	uint64_t value;	/* feed back pointer */
+-};
+-
+-
+ /*
+  * Feedback components:
+  */
+ 
+-/*
+- * Vistest component. The number of these in the feedback buffer
+- * equals the number of vistest breakpoints + 1.
+- * This is currently the only feedback component.
+- */
+-
+-struct drm_psb_vistest {
+-	uint32_t vt[8];
+-};
+-
+ struct drm_psb_sizes_arg {
+-	uint32_t ta_mem_size;
+-	uint32_t mmu_size;
+-	uint32_t pds_size;
+-	uint32_t rastgeom_size;
+-	uint32_t tt_size;
+-	uint32_t vram_size;
+-};
+-
+-struct drm_psb_hist_status_arg {
+-	uint32_t buf[32];
++	u32 ta_mem_size;
++	u32 mmu_size;
++	u32 pds_size;
++	u32 rastgeom_size;
++	u32 tt_size;
++	u32 vram_size;
+ };
+ 
+ struct drm_psb_dpst_lut_arg {
+@@ -324,194 +235,6 @@ struct drm_psb_dpst_lut_arg {
+ 	int output_id;
+ };
+ 
+-struct mrst_timing_info {
+-	uint16_t pixel_clock;
+-	uint8_t hactive_lo;
+-	uint8_t hblank_lo;
+-	uint8_t hblank_hi:4;
+-	uint8_t hactive_hi:4;
+-	uint8_t vactive_lo;
+-	uint8_t vblank_lo;
+-	uint8_t vblank_hi:4;
+-	uint8_t vactive_hi:4;
+-	uint8_t hsync_offset_lo;
+-	uint8_t hsync_pulse_width_lo;
+-	uint8_t vsync_pulse_width_lo:4;
+-	uint8_t vsync_offset_lo:4;
+-	uint8_t vsync_pulse_width_hi:2;
+-	uint8_t vsync_offset_hi:2;
+-	uint8_t hsync_pulse_width_hi:2;
+-	uint8_t hsync_offset_hi:2;
+-	uint8_t width_mm_lo;
+-	uint8_t height_mm_lo;
+-	uint8_t height_mm_hi:4;
+-	uint8_t width_mm_hi:4;
+-	uint8_t hborder;
+-	uint8_t vborder;
+-	uint8_t unknown0:1;
+-	uint8_t hsync_positive:1;
+-	uint8_t vsync_positive:1;
+-	uint8_t separate_sync:2;
+-	uint8_t stereo:1;
+-	uint8_t unknown6:1;
+-	uint8_t interlaced:1;
+-} __attribute__((packed));
+-
+-struct gct_r10_timing_info {
+-	uint16_t pixel_clock;
+-	uint32_t hactive_lo:8;
+-	uint32_t hactive_hi:4;
+-	uint32_t hblank_lo:8;
+-	uint32_t hblank_hi:4;
+-	uint32_t hsync_offset_lo:8;
+-	uint16_t hsync_offset_hi:2;
+-	uint16_t hsync_pulse_width_lo:8;
+-	uint16_t hsync_pulse_width_hi:2;
+-	uint16_t hsync_positive:1;
+-	uint16_t rsvd_1:3;
+-	uint8_t  vactive_lo:8;
+-	uint16_t vactive_hi:4;
+-	uint16_t vblank_lo:8;
+-	uint16_t vblank_hi:4;
+-	uint16_t vsync_offset_lo:4;
+-	uint16_t vsync_offset_hi:2;
+-	uint16_t vsync_pulse_width_lo:4;
+-	uint16_t vsync_pulse_width_hi:2;
+-	uint16_t vsync_positive:1;
+-	uint16_t rsvd_2:3;
+-} __attribute__((packed));
+-
+-struct mrst_panel_descriptor_v1{
+-	uint32_t Panel_Port_Control; /* 1 dword, Register 0x61180 if LVDS */
+-				/* 0x61190 if MIPI */
+-	uint32_t Panel_Power_On_Sequencing;/*1 dword,Register 0x61208,*/
+-	uint32_t Panel_Power_Off_Sequencing;/*1 dword,Register 0x6120C,*/
+-	uint32_t Panel_Power_Cycle_Delay_and_Reference_Divisor;/* 1 dword */
+-						/* Register 0x61210 */
+-	struct mrst_timing_info DTD;/*18 bytes, Standard definition */
+-	uint16_t Panel_Backlight_Inverter_Descriptor;/* 16 bits, as follows */
+-				/* Bit 0, Frequency, 15 bits,0 - 32767Hz */
+-			/* Bit 15, Polarity, 1 bit, 0: Normal, 1: Inverted */
+-	uint16_t Panel_MIPI_Display_Descriptor;
+-			/*16 bits, Defined as follows: */
+-			/* if MIPI, 0x0000 if LVDS */
+-			/* Bit 0, Type, 2 bits, */
+-			/* 0: Type-1, */
+-			/* 1: Type-2, */
+-			/* 2: Type-3, */
+-			/* 3: Type-4 */
+-			/* Bit 2, Pixel Format, 4 bits */
+-			/* Bit0: 16bpp (not supported in LNC), */
+-			/* Bit1: 18bpp loosely packed, */
+-			/* Bit2: 18bpp packed, */
+-			/* Bit3: 24bpp */
+-			/* Bit 6, Reserved, 2 bits, 00b */
+-		/* Bit 8, Minimum Supported Frame Rate, 6 bits, 0 - 63Hz */
+-			/* Bit 14, Reserved, 2 bits, 00b */
+-} __attribute__ ((packed));
+-
+-struct mrst_panel_descriptor_v2{
+-	uint32_t Panel_Port_Control; /* 1 dword, Register 0x61180 if LVDS */
+-				/* 0x61190 if MIPI */
+-	uint32_t Panel_Power_On_Sequencing;/*1 dword,Register 0x61208,*/
+-	uint32_t Panel_Power_Off_Sequencing;/*1 dword,Register 0x6120C,*/
+-	uint8_t Panel_Power_Cycle_Delay_and_Reference_Divisor;/* 1 byte */
+-						/* Register 0x61210 */
+-	struct mrst_timing_info DTD;/*18 bytes, Standard definition */
+-	uint16_t Panel_Backlight_Inverter_Descriptor;/*16 bits, as follows*/
+-				/*Bit 0, Frequency, 16 bits, 0 - 32767Hz*/
+-	uint8_t Panel_Initial_Brightness;/* [7:0] 0 - 100% */
+-			/*Bit 7, Polarity, 1 bit,0: Normal, 1: Inverted*/
+-	uint16_t Panel_MIPI_Display_Descriptor;
+-			/*16 bits, Defined as follows: */
+-			/* if MIPI, 0x0000 if LVDS */
+-			/* Bit 0, Type, 2 bits, */
+-			/* 0: Type-1, */
+-			/* 1: Type-2, */
+-			/* 2: Type-3, */
+-			/* 3: Type-4 */
+-			/* Bit 2, Pixel Format, 4 bits */
+-			/* Bit0: 16bpp (not supported in LNC), */
+-			/* Bit1: 18bpp loosely packed, */
+-			/* Bit2: 18bpp packed, */
+-			/* Bit3: 24bpp */
+-			/* Bit 6, Reserved, 2 bits, 00b */
+-		/* Bit 8, Minimum Supported Frame Rate, 6 bits, 0 - 63Hz */
+-			/* Bit 14, Reserved, 2 bits, 00b */
+-} __attribute__ ((packed));
+-
+-union mrst_panel_rx{
+-	struct{
+-		uint16_t NumberOfLanes:2; /*Num of Lanes, 2 bits,0 = 1 lane,*/
+-			/* 1 = 2 lanes, 2 = 3 lanes, 3 = 4 lanes. */
+-		uint16_t MaxLaneFreq:3; /* 0: 100MHz, 1: 200MHz, 2: 300MHz, */
+-		/*3: 400MHz, 4: 500MHz, 5: 600MHz, 6: 700MHz, 7: 800MHz.*/
+-		uint16_t SupportedVideoTransferMode:2; /*0: Non-burst only */
+-					/* 1: Burst and non-burst */
+-					/* 2/3: Reserved */
+-		uint16_t HSClkBehavior:1; /*0: Continuous, 1: Non-continuous*/
+-		uint16_t DuoDisplaySupport:1; /*1 bit,0: No, 1: Yes*/
+-		uint16_t ECC_ChecksumCapabilities:1;/*1 bit,0: No, 1: Yes*/
+-		uint16_t BidirectionalCommunication:1;/*1 bit,0: No, 1: Yes */
+-		uint16_t Rsvd:5;/*5 bits,00000b */
+-	} panelrx;
+-	uint16_t panel_receiver;
+-} __attribute__ ((packed));
+-
+-struct gct_ioctl_arg{
+-	uint8_t bpi; /* boot panel index, number of panel used during boot */
+-	uint8_t pt; /* panel type, 4 bit field, 0=lvds, 1=mipi */
+-	struct mrst_timing_info DTD; /* timing info for the selected panel */
+-	uint32_t Panel_Port_Control;
+-	uint32_t PP_On_Sequencing;/*1 dword,Register 0x61208,*/
+-	uint32_t PP_Off_Sequencing;/*1 dword,Register 0x6120C,*/
+-	uint32_t PP_Cycle_Delay;
+-	uint16_t Panel_Backlight_Inverter_Descriptor;
+-	uint16_t Panel_MIPI_Display_Descriptor;
+-} __attribute__ ((packed));
+-
+-struct mrst_vbt{
+-	char Signature[4]; /*4 bytes,"$GCT" */
+-	uint8_t Revision; /*1 byte */
+-	uint8_t Size; /*1 byte */
+-	uint8_t Checksum; /*1 byte,Calculated*/
+-	void *mrst_gct;
+-} __attribute__ ((packed));
+-
+-struct mrst_gct_v1{ /* expect this table to change per customer request*/
+-	union{ /*8 bits,Defined as follows: */
+-		struct{
+-			uint8_t PanelType:4; /*4 bits, Bit field for panels*/
+-					/* 0 - 3: 0 = LVDS, 1 = MIPI*/
+-					/*2 bits,Specifies which of the*/
+-			uint8_t BootPanelIndex:2;
+-					/* 4 panels to use by default*/
+-			uint8_t BootMIPI_DSI_RxIndex:2;/*Specifies which of*/
+-					/* the 4 MIPI DSI receivers to use*/
+-			} PD;
+-		uint8_t PanelDescriptor;
+-	};
+-	struct mrst_panel_descriptor_v1 panel[4];/*panel descrs,38 bytes each*/
+-	union mrst_panel_rx panelrx[4]; /* panel receivers*/
+-} __attribute__ ((packed));
+-
+-struct mrst_gct_v2{ /* expect this table to change per customer request*/
+-	union{ /*8 bits,Defined as follows: */
+-		struct{
+-			uint8_t PanelType:4; /*4 bits, Bit field for panels*/
+-					/* 0 - 3: 0 = LVDS, 1 = MIPI*/
+-					/*2 bits,Specifies which of the*/
+-			uint8_t BootPanelIndex:2;
+-					/* 4 panels to use by default*/
+-			uint8_t BootMIPI_DSI_RxIndex:2;/*Specifies which of*/
+-					/* the 4 MIPI DSI receivers to use*/
+-			} PD;
+-		uint8_t PanelDescriptor;
+-	};
+-	struct mrst_panel_descriptor_v2 panel[4];/*panel descrs,38 bytes each*/
+-	union mrst_panel_rx panelrx[4]; /* panel receivers*/
+-} __attribute__ ((packed));
+-
+ #define PSB_DC_CRTC_SAVE 0x01
+ #define PSB_DC_CRTC_RESTORE 0x02
+ #define PSB_DC_OUTPUT_SAVE 0x04
+@@ -520,20 +243,20 @@ struct mrst_gct_v2{ /* expect this table to change per customer request*/
+ #define PSB_DC_OUTPUT_MASK 0x0C
+ 
+ struct drm_psb_dc_state_arg {
+-	uint32_t flags;
+-	uint32_t obj_id;
++	u32 flags;
++	u32 obj_id;
+ };
+ 
+ struct drm_psb_mode_operation_arg {
+-	uint32_t obj_id;
+-	uint16_t operation;
++	u32 obj_id;
++	u16 operation;
+ 	struct drm_mode_modeinfo mode;
+ 	void *data;
+ };
+ 
+ struct drm_psb_stolen_memory_arg {
+-	uint32_t base;
+-	uint32_t size;
++	u32 base;
++	u32 size;
+ };
+ 
+ /*Display Register Bits*/
+@@ -556,64 +279,64 @@ struct drm_psb_stolen_memory_arg {
+ #define OVC_REGRWBITS_OGAM_ALL			(1 << 3)
+ 
+ struct drm_psb_register_rw_arg {
+-	uint32_t b_force_hw_on;
++	u32 b_force_hw_on;
+ 
+-	uint32_t display_read_mask;
+-	uint32_t display_write_mask;
++	u32 display_read_mask;
++	u32 display_write_mask;
+ 
+ 	struct {
+-		uint32_t pfit_controls;
+-		uint32_t pfit_autoscale_ratios;
+-		uint32_t pfit_programmed_scale_ratios;
+-		uint32_t pipeasrc;
+-		uint32_t pipebsrc;
+-		uint32_t vtotal_a;
+-		uint32_t vtotal_b;
++		u32 pfit_controls;
++		u32 pfit_autoscale_ratios;
++		u32 pfit_programmed_scale_ratios;
++		u32 pipeasrc;
++		u32 pipebsrc;
++		u32 vtotal_a;
++		u32 vtotal_b;
+ 	} display;
+ 
+-	uint32_t overlay_read_mask;
+-	uint32_t overlay_write_mask;
++	u32 overlay_read_mask;
++	u32 overlay_write_mask;
+ 
+ 	struct {
+-		uint32_t OVADD;
+-		uint32_t OGAMC0;
+-		uint32_t OGAMC1;
+-		uint32_t OGAMC2;
+-		uint32_t OGAMC3;
+-		uint32_t OGAMC4;
+-		uint32_t OGAMC5;
+-        	uint32_t IEP_ENABLED;
+-        	uint32_t IEP_BLE_MINMAX;
+-        	uint32_t IEP_BSSCC_CONTROL;
+-                uint32_t b_wait_vblank;
++		u32 OVADD;
++		u32 OGAMC0;
++		u32 OGAMC1;
++		u32 OGAMC2;
++		u32 OGAMC3;
++		u32 OGAMC4;
++		u32 OGAMC5;
++        	u32 IEP_ENABLED;
++        	u32 IEP_BLE_MINMAX;
++        	u32 IEP_BSSCC_CONTROL;
++                u32 b_wait_vblank;
+ 	} overlay;
+ 
+-	uint32_t sprite_enable_mask;
+-	uint32_t sprite_disable_mask;
++	u32 sprite_enable_mask;
++	u32 sprite_disable_mask;
+ 
+ 	struct {
+-		uint32_t dspa_control;
+-		uint32_t dspa_key_value;
+-		uint32_t dspa_key_mask;
+-		uint32_t dspc_control;
+-		uint32_t dspc_stride;
+-		uint32_t dspc_position;
+-		uint32_t dspc_linear_offset;
+-		uint32_t dspc_size;
+-		uint32_t dspc_surface;
++		u32 dspa_control;
++		u32 dspa_key_value;
++		u32 dspa_key_mask;
++		u32 dspc_control;
++		u32 dspc_stride;
++		u32 dspc_position;
++		u32 dspc_linear_offset;
++		u32 dspc_size;
++		u32 dspc_surface;
+ 	} sprite;
+ 
+-	uint32_t subpicture_enable_mask;
+-	uint32_t subpicture_disable_mask;
++	u32 subpicture_enable_mask;
++	u32 subpicture_disable_mask;
+ };
+ 
+ struct psb_gtt_mapping_arg {
+ 	void *hKernelMemInfo;
+-	uint32_t offset_pages;
++	u32 offset_pages;
+ };
+ 
+ struct drm_psb_getpageaddrs_arg {
+-	uint32_t handle;
++	u32 handle;
+ 	unsigned long *page_addrs;
+ 	unsigned long gtt_offset;
+ };
+@@ -659,38 +382,16 @@ struct drm_psb_getpageaddrs_arg {
+ #define DRM_PVR_RESERVED6	0x1E
+ 
+ #define DRM_PSB_GET_PIPE_FROM_CRTC_ID 0x1F
+-#define DRM_PSB_DPU_QUERY 0x20
+-#define DRM_PSB_DPU_DSR_ON 0x21
+-#define DRM_PSB_DPU_DSR_OFF 0x22
+-
+-#define DRM_PSB_DSR_ENABLE	0xfffffffe
+-#define DRM_PSB_DSR_DISABLE	0xffffffff
+-
+-struct psb_drm_dpu_rect {
+-    int x, y;
+-    int width, height;
+-};
+-
+-struct drm_psb_drv_dsr_off_arg {
+-	int screen;
+-	struct psb_drm_dpu_rect damage_rect;
+-};
+-
+-
+-struct drm_psb_dev_info_arg {
+-	uint32_t num_use_attribute_registers;
+-};
+-#define DRM_PSB_DEVINFO         0x01
+ 
+ #define PSB_MODE_OPERATION_MODE_VALID	0x01
+ #define PSB_MODE_OPERATION_SET_DC_BASE  0x02
+ 
+ struct drm_psb_get_pipe_from_crtc_id_arg {
+ 	/** ID of CRTC being requested **/
+-	uint32_t crtc_id;
++	u32 crtc_id;
+ 
+ 	/** pipe of requested CRTC **/
+-	uint32_t pipe;
++	u32 pipe;
+ };
+ 
+ #endif
 diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index d82d544..033d953 100644
+index f1775e1..cfe1731 100644
 --- a/drivers/staging/gma500/psb_drv.c
 +++ b/drivers/staging/gma500/psb_drv.c
-@@ -238,35 +238,15 @@ static struct drm_ioctl_desc psb_ioctls[] = {
- 	PSB_IOCTL_DEF(DRM_IOCTL_PSB_GTT_UNMAP,
- 			psb_gtt_unmap_meminfo_ioctl,
- 			DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_GETPAGEADDRS,
-+/*	PSB_IOCTL_DEF(DRM_IOCTL_PSB_GETPAGEADDRS,
- 			psb_getpageaddrs_ioctl,
--			DRM_AUTH),
-+			DRM_AUTH), */
- 	PSB_IOCTL_DEF(DRM_IOCTL_PSB_DPST, psb_dpst_ioctl, DRM_AUTH),
- 	PSB_IOCTL_DEF(DRM_IOCTL_PSB_GAMMA, psb_gamma_ioctl, DRM_AUTH),
+@@ -40,8 +40,6 @@ static int drm_psb_trap_pagefaults;
+ 
+ int drm_psb_disable_vsync = 1;
+ int drm_psb_no_fb;
+-int drm_psb_force_pipeb;
+-int drm_idle_check_interval = 5;
+ int gfxrtdelay = 2 * 1000;
+ 
+ static int psb_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
+@@ -58,7 +56,6 @@ MODULE_PARM_DESC(hdmi_edid, "EDID info for HDMI monitor");
+ module_param_named(debug, drm_psb_debug, int, 0600);
+ module_param_named(no_fb, drm_psb_no_fb, int, 0600);
+ module_param_named(trap_pagefaults, drm_psb_trap_pagefaults, int, 0600);
+-module_param_named(force_pipeb, drm_psb_force_pipeb, int, 0600);
+ module_param_named(rtpm, gfxrtdelay, int, 0600);
+ 
+ 
+@@ -109,12 +106,6 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+ #define DRM_IOCTL_PSB_GETPAGEADDRS	\
+ 		DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_GETPAGEADDRS,\
+ 			 struct drm_psb_getpageaddrs_arg)
+-#define DRM_IOCTL_PSB_HIST_ENABLE	\
+-		DRM_IOWR(DRM_PSB_HIST_ENABLE + DRM_COMMAND_BASE, \
+-			 uint32_t)
+-#define DRM_IOCTL_PSB_HIST_STATUS	\
+-		DRM_IOWR(DRM_PSB_HIST_STATUS + DRM_COMMAND_BASE, \
+-			 struct drm_psb_hist_status_arg)
+ #define DRM_IOCTL_PSB_UPDATE_GUARD	\
+ 		DRM_IOWR(DRM_PSB_UPDATE_GUARD + DRM_COMMAND_BASE, \
+ 			 uint32_t)
+@@ -134,15 +125,9 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+ /*
+  * TTM execbuf extension.
+  */
+-#define DRM_PSB_CMDBUF		  (DRM_PSB_DPU_DSR_OFF + 1)
+-
+-#define DRM_PSB_SCENE_UNREF	  (DRM_PSB_CMDBUF + 1)
+-#define DRM_IOCTL_PSB_CMDBUF	\
+-		DRM_IOW(DRM_PSB_CMDBUF + DRM_COMMAND_BASE,	\
+-			struct drm_psb_cmdbuf_arg)
+-#define DRM_IOCTL_PSB_SCENE_UNREF	\
+-		DRM_IOW(DRM_PSB_SCENE_UNREF + DRM_COMMAND_BASE, \
+-			struct drm_psb_scene)
++
++#define DRM_PSB_CMDBUF		  0x23
++#define DRM_PSB_SCENE_UNREF	  0x24
+ #define DRM_IOCTL_PSB_KMS_OFF	  DRM_IO(DRM_PSB_KMS_OFF + DRM_COMMAND_BASE)
+ #define DRM_IOCTL_PSB_KMS_ON	  DRM_IO(DRM_PSB_KMS_ON + DRM_COMMAND_BASE)
+ /*
+@@ -169,8 +154,6 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+ #define DRM_PSB_TTM_FENCE_UNREF    (TTM_FENCE_UNREF + DRM_PSB_FENCE_OFFSET)
+ 
+ #define DRM_PSB_FLIP	   (DRM_PSB_TTM_FENCE_UNREF + 1)	/*20*/
+-/* PSB video extension */
+-#define DRM_LNC_VIDEO_GETPARAM		(DRM_PSB_FLIP + 1)
+ 
+ #define DRM_IOCTL_PSB_TTM_PL_CREATE    \
+ 	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_TTM_PL_CREATE,\
+@@ -202,12 +185,6 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+ #define DRM_IOCTL_PSB_TTM_FENCE_UNREF \
+ 	DRM_IOW(DRM_COMMAND_BASE + DRM_PSB_TTM_FENCE_UNREF,	\
+ 		 struct ttm_fence_unref_arg)
+-#define DRM_IOCTL_PSB_FLIP \
+-	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_FLIP, \
+-		 struct drm_psb_pageflip_arg)
+-#define DRM_IOCTL_LNC_VIDEO_GETPARAM \
+-	DRM_IOWR(DRM_COMMAND_BASE + DRM_LNC_VIDEO_GETPARAM, \
+-		 struct drm_lnc_video_getparam_arg)
+ 
+ static int psb_vt_leave_ioctl(struct drm_device *dev, void *data,
+ 			      struct drm_file *file_priv);
+@@ -269,9 +246,6 @@ static struct drm_ioctl_desc psb_ioctls[] = {
  	PSB_IOCTL_DEF(DRM_IOCTL_PSB_DPST_BL, psb_dpst_bl_ioctl, DRM_AUTH),
  	PSB_IOCTL_DEF(DRM_IOCTL_PSB_GET_PIPE_FROM_CRTC_ID,
  					psb_intel_get_pipe_from_crtc_id, 0),
+-	/*to be removed later*/
+-	/*PSB_IOCTL_DEF(DRM_IOCTL_PSB_SCENE_UNREF, drm_psb_scene_unref_ioctl,
+-		      DRM_AUTH),*/
  
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_CREATE, psb_pl_create_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_REFERENCE, psb_pl_reference_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_UNREF, psb_pl_unref_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_SYNCCPU, psb_pl_synccpu_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_WAITIDLE, psb_pl_waitidle_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_SETSTATUS, psb_pl_setstatus_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_CREATE_UB, psb_pl_ub_create_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_FENCE_SIGNALED,
--		      psb_fence_signaled_ioctl, DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_FENCE_FINISH, psb_fence_finish_ioctl,
--		      DRM_AUTH),
--	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_FENCE_UNREF, psb_fence_unref_ioctl,
--		      DRM_AUTH),
- };
+ 	PSB_IOCTL_DEF(DRM_IOCTL_PSB_TTM_PL_CREATE, psb_pl_create_ioctl,
+ 		      DRM_AUTH),
+@@ -405,15 +379,6 @@ static void psb_get_core_freq(struct drm_device *dev)
+ #define FB_SKU_100 0
+ #define FB_SKU_100L 1
+ #define FB_SKU_83 2
+-#if 1 /* FIXME remove it after PO */
+-#define FB_GFX_CLK_DIVIDE_MASK	(BIT20|BIT21|BIT22)
+-#define FB_GFX_CLK_DIVIDE_SHIFT 20
+-#define FB_VED_CLK_DIVIDE_MASK	(BIT23|BIT24)
+-#define FB_VED_CLK_DIVIDE_SHIFT 23
+-#define FB_VEC_CLK_DIVIDE_MASK	(BIT25|BIT26)
+-#define FB_VEC_CLK_DIVIDE_SHIFT 25
+-#endif	/* FIXME remove it after PO */
+-
  
- static void psb_lid_init(struct drm_device *dev)
-@@ -306,30 +286,6 @@ static void psb_lastclose(struct drm_device *dev)
- 
- static void psb_do_takedown(struct drm_device *dev)
+ bool mid_get_pci_revID(struct drm_psb_private *dev_priv)
  {
--	struct drm_psb_private *dev_priv =
--	    (struct drm_psb_private *) dev->dev_private;
--	struct ttm_bo_device *bdev = &dev_priv->bdev;
--
--
--	if (dev_priv->have_mem_mmu) {
--		ttm_bo_clean_mm(bdev, DRM_PSB_MEM_MMU);
--		dev_priv->have_mem_mmu = 0;
--	}
--
--	if (dev_priv->have_tt) {
--		ttm_bo_clean_mm(bdev, TTM_PL_TT);
--		dev_priv->have_tt = 0;
--	}
--
--	if (dev_priv->have_camera) {
--		ttm_bo_clean_mm(bdev, TTM_PL_CI);
--		dev_priv->have_camera = 0;
--	}
--	if (dev_priv->have_rar) {
--		ttm_bo_clean_mm(bdev, TTM_PL_RAR);
--		dev_priv->have_rar = 0;
--	}
--
- }
- 
- static void psb_get_core_freq(struct drm_device *dev)
-@@ -399,7 +355,6 @@ static int psb_do_init(struct drm_device *dev)
- {
- 	struct drm_psb_private *dev_priv =
- 	    (struct drm_psb_private *) dev->dev_private;
--	struct ttm_bo_device *bdev = &dev_priv->bdev;
- 	struct psb_gtt *pg = dev_priv->pg;
- 
- 	uint32_t stolen_gtt;
-@@ -467,27 +422,6 @@ static int psb_do_init(struct drm_device *dev)
- 	psb_spank(dev_priv);
-        
-       	PSB_WSGX32(pg->mmu_gatt_start, PSB_CR_BIF_TWOD_REQ_BASE);
--
--	/* TT region managed by TTM. */
--	if (!ttm_bo_init_mm(bdev, TTM_PL_TT,
--			pg->gatt_pages -
--			(pg->ci_start >> PAGE_SHIFT) -
--			((dev_priv->ci_region_size + dev_priv->rar_region_size)
--			 >> PAGE_SHIFT))) {
--
--		dev_priv->have_tt = 1;
--		dev_priv->sizes.tt_size =
--			(tt_pages << PAGE_SHIFT) / (1024 * 1024) / 2;
--	}
--
--	if (!ttm_bo_init_mm(bdev,
--			DRM_PSB_MEM_MMU,
--			PSB_MEM_TT_START >> PAGE_SHIFT)) {
--		dev_priv->have_mem_mmu = 1;
--		dev_priv->sizes.mmu_size =
--			PSB_MEM_TT_START / (1024*1024);
--	}
--
- 	PSB_DEBUG_INIT("Init MSVDX\n");
- 	return 0;
- out_err:
-@@ -549,14 +483,6 @@ static int psb_driver_unload(struct drm_device *dev)
- 			__free_page(dev_priv->scratch_page);
- 			dev_priv->scratch_page = NULL;
- 		}
--		if (dev_priv->has_bo_device) {
--			ttm_bo_device_release(&dev_priv->bdev);
--			dev_priv->has_bo_device = 0;
--		}
--		if (dev_priv->has_fence_device) {
--			ttm_fence_device_release(&dev_priv->fdev);
--			dev_priv->has_fence_device = 0;
--		}
- 		if (dev_priv->vdc_reg) {
- 			iounmap(dev_priv->vdc_reg);
- 			dev_priv->vdc_reg = NULL;
-@@ -565,13 +491,6 @@ static int psb_driver_unload(struct drm_device *dev)
- 			iounmap(dev_priv->sgx_reg);
- 			dev_priv->sgx_reg = NULL;
- 		}
--
--		if (dev_priv->tdev)
--			ttm_object_device_release(&dev_priv->tdev);
--
--		if (dev_priv->has_global)
--			psb_ttm_global_release(dev_priv);
--
- 		kfree(dev_priv);
+@@ -602,7 +567,7 @@ static int psb_driver_unload(struct drm_device *dev)
  		dev->dev_private = NULL;
  
-@@ -588,7 +507,6 @@ static int psb_driver_unload(struct drm_device *dev)
- static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- {
- 	struct drm_psb_private *dev_priv;
--	struct ttm_bo_device *bdev;
- 	unsigned long resource_start;
- 	struct psb_gtt *pg;
- 	unsigned long irqflags;
-@@ -601,20 +519,7 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- 	INIT_LIST_HEAD(&dev_priv->video_ctx);
+ 		/*destory VBT data*/
+-		psb_intel_destory_bios(dev);
++		psb_intel_destroy_bios(dev);
+ 	}
  
- 	dev_priv->num_pipe = 2;
--
--
- 	dev_priv->dev = dev;
--	bdev = &dev_priv->bdev;
--
--	ret = psb_ttm_global_init(dev_priv);
--	if (unlikely(ret != 0))
--		goto out_err;
--	dev_priv->has_global = 1;
--
--	dev_priv->tdev = ttm_object_device_init
--		(dev_priv->mem_global_ref.object, PSB_OBJECT_HASH_ORDER);
--	if (unlikely(dev_priv->tdev == NULL))
--		goto out_err;
+ 	ospm_power_uninit();
+@@ -621,10 +586,6 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
+ 	int ret = -ENOMEM;
+ 	uint32_t tt_pages;
  
- 	mutex_init(&dev_priv->temp_mem);
- 	mutex_init(&dev_priv->cmdbuf_mutex);
-@@ -658,20 +563,6 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- 	/* Init OSPM support */
- 	ospm_power_init(dev);
- 
--	ret = psb_ttm_fence_device_init(&dev_priv->fdev);
--	if (unlikely(ret != 0))
--		goto out_err;
+-	DRM_INFO("psb - %s\n", PSB_PACKAGE_VERSION);
 -
--	dev_priv->has_fence_device = 1;
--	ret = ttm_bo_device_init(bdev,
--				 dev_priv->bo_global_ref.ref.object,
--				 &psb_ttm_bo_driver,
--				 DRM_PSB_FILE_PAGE_OFFSET, false);
--	if (unlikely(ret != 0))
--		goto out_err;
--	dev_priv->has_bo_device = 1;
--	ttm_lock_init(&dev_priv->ttm_lock);
+-	DRM_INFO("Run drivers on Poulsbo platform!\n");
 -
- 	ret = -ENOMEM;
- 
- 	dev_priv->scratch_page = alloc_page(GFP_DMA32 | __GFP_ZERO);
-@@ -801,11 +692,6 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- #endif
- 	/*Intel drm driver load is done, continue doing pvr load*/
- 	DRM_DEBUG("Pvr driver load\n");
--
--/*	if (PVRCore_Init() < 0)
--		goto out_err; */
--/*	if (MRSTLFBInit(dev) < 0)
--		goto out_err;*/
- 	return 0;
- out_err:
- 	psb_driver_unload(dev);
-@@ -821,40 +707,13 @@ int psb_driver_device_is_agp(struct drm_device *dev)
- static int psb_vt_leave_ioctl(struct drm_device *dev, void *data,
- 			      struct drm_file *file_priv)
- {
--	struct drm_psb_private *dev_priv = psb_priv(dev);
--	struct ttm_bo_device *bdev = &dev_priv->bdev;
--	struct ttm_mem_type_manager *man;
--	int ret;
--
--	ret = ttm_vt_lock(&dev_priv->ttm_lock, 1,
--			     psb_fpriv(file_priv)->tfile);
--	if (unlikely(ret != 0))
--		return ret;
--
--	ret = ttm_bo_evict_mm(&dev_priv->bdev, TTM_PL_TT);
--	if (unlikely(ret != 0))
--		goto out_unlock;
--
--	man = &bdev->man[TTM_PL_TT];
--
--#if 0		/* What to do with this ? */
--	if (unlikely(!drm_mm_clean(&man->manager)))
--		DRM_INFO("Warning: GATT was not clean after VT switch.\n");
--#endif
--
--	ttm_bo_swapout_all(&dev_priv->bdev);
--
- 	return 0;
--out_unlock:
--	(void) ttm_vt_unlock(&dev_priv->ttm_lock);
--	return ret;
- }
- 
- static int psb_vt_enter_ioctl(struct drm_device *dev, void *data,
- 			      struct drm_file *file_priv)
- {
--	struct drm_psb_private *dev_priv = psb_priv(dev);
--	return ttm_vt_unlock(&dev_priv->ttm_lock);
-+	return 0;
- }
- 
- static int psb_sizes_ioctl(struct drm_device *dev, void *data,
-@@ -1509,7 +1368,6 @@ static int psb_driver_open(struct drm_device *dev, struct drm_file *priv)
+ 	dev_priv = kzalloc(sizeof(*dev_priv), GFP_KERNEL);
+ 	if (dev_priv == NULL)
  		return -ENOMEM;
- 	priv->driver_priv = psb;
- 	DRM_DEBUG("\n");
--	/*return PVRSRVOpen(dev, priv);*/
- 	return 0;
- }
+@@ -783,7 +744,7 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
+ 	if (ret)
+ 		return ret;
  
-@@ -1557,7 +1415,6 @@ static long psb_unlocked_ioctl(struct file *filp, unsigned int cmd,
- 	/*
- 	 * Not all old drm ioctls are thread-safe.
- 	 */
--
- 	return drm_ioctl(filp, cmd, arg);
- }
- 
-@@ -1575,6 +1432,24 @@ static void psb_remove(struct pci_dev *pdev)
- 	drm_put_dev(dev);
- }
- 
-+static int psb_open(struct inode *inode, struct file *filp)
-+{
-+	return drm_open(inode, filp);
-+	/* Attach our stuff 
-+		psb_priv(drm_file * filp->private_data) */
-+}
-+
-+int psb_release(struct inode *inode, struct file *filp)
-+{
-+	/* Release our resources from open */
-+	return drm_release(inode, filp);
-+}
-+
-+int psb_mmap(struct file *flip, struct vm_area_struct *vma)
-+{
-+	/* For now */
-+	return -EINVAL;
-+}
- 
- static const struct dev_pm_ops psb_pm_ops = {
- 	.runtime_suspend = psb_runtime_suspend,
-@@ -1598,10 +1473,10 @@ static struct drm_driver driver = {
- 	.enable_vblank = psb_enable_vblank,
- 	.disable_vblank = psb_disable_vblank,
- 	.get_vblank_counter = psb_get_vblank_counter,
--	.firstopen = NULL,
- 	.lastclose = psb_lastclose,
- 	.open = psb_driver_open,
- 	.postclose = psb_driver_close,
-+	.reclaim_buffers = drm_core_reclaim_buffers,
- #if 0	/* ACFIXME */
- 	.get_map_ofs = drm_core_get_map_ofs,
- 	.get_reg_ofs = drm_core_get_reg_ofs,
-@@ -1618,6 +1493,7 @@ static struct drm_driver driver = {
- 		 .poll = psb_poll,
- 		 .fasync = drm_fasync,
- 		 .read = drm_read,
-+		 .llseek = noop_llseek,
- 		 },
- 	.name = DRIVER_NAME,
- 	.desc = DRIVER_DESC,
+-	igd_opregion_init(&dev_priv->opregion_dev);
++/*	igd_opregion_init(&dev_priv->opregion_dev); */
+ 	acpi_video_register();
+ 	psb_lid_init(dev);
+ 	if (dev_priv->lid_state)
 diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index 80b5c8d..b81b544 100644
+index 30d161e..4f5c67e 100644
 --- a/drivers/staging/gma500/psb_drv.h
 +++ b/drivers/staging/gma500/psb_drv.h
-@@ -30,17 +30,10 @@
- #include "psb_intel_drv.h"
- #include "psb_gtt.h"
- #include "psb_powermgmt.h"
--#include "ttm/ttm_object.h"
--#include "psb_ttm_fence_driver.h"
--#include "psb_ttm_userobj_api.h"
--#include "ttm/ttm_bo_driver.h"
--#include "ttm/ttm_lock.h"
+@@ -356,7 +356,6 @@ struct drm_psb_private {
  
- /*Append new drm mode definition here, align with libdrm definition*/
- #define DRM_MODE_SCALE_NO_SCALE   2
+ 	unsigned long chipset;
  
--extern struct ttm_bo_driver psb_ttm_bo_driver;
--
- enum {
- 	CHIP_PSB_8108 = 0,
- 	CHIP_PSB_8109 = 1,
-@@ -337,20 +330,7 @@ struct drm_psb_private {
- 	void * dbi_dsr_info;
- 	void * dsi_configs[2];
+-	struct drm_psb_dev_info_arg dev_info;
+ 	struct drm_psb_uopt uopt;
  
--	/*
--	 *TTM Glue.
--	 */
--
--	struct drm_global_reference mem_global_ref;
--	struct ttm_bo_global_ref bo_global_ref;
--	int has_global;
--
- 	struct drm_device *dev;
--	struct ttm_object_device *tdev;
--	struct ttm_fence_device fdev;
--	struct ttm_bo_device bdev;
--	struct ttm_lock ttm_lock;
--	struct vm_operations_struct *ttm_vm_ops;
- 	int has_fence_device;
- 	int has_bo_device;
+ 	struct psb_gtt *pg;
+diff --git a/drivers/staging/gma500/psb_gfx.mod.c b/drivers/staging/gma500/psb_gfx.mod.c
+index 14772c4..d7d2afc 100644
+--- a/drivers/staging/gma500/psb_gfx.mod.c
++++ b/drivers/staging/gma500/psb_gfx.mod.c
+@@ -19,9 +19,9 @@ MODULE_INFO(staging, "Y");
+ static const char __module_depends[]
+ __used
+ __attribute__((section(".modinfo"))) =
+-"depends=video";
++"depends=ttm,drm,drm_kms_helper,i2c-core,cfbfillrect,video,cfbimgblt,acpi_igd_opregion,cfbcopyarea,i2c-algo-bit";
  
-@@ -710,7 +690,7 @@ struct psb_file_data {	/* TODO: Audit this, remove the indirection and set
- };
+ MODULE_ALIAS("pci:v00008086d00008108sv*sd*bc*sc*i*");
+ MODULE_ALIAS("pci:v00008086d00008109sv*sd*bc*sc*i*");
  
- struct psb_fpriv {
--	struct ttm_object_file *tfile;
-+	void *tfile;
- };
- 
- struct psb_mmu_driver;
-@@ -730,6 +710,7 @@ static inline struct drm_psb_private *psb_priv(struct drm_device *dev)
- 	return (struct drm_psb_private *) dev->dev_private;
- }
- 
-+#if 0
- /*
-  *TTM glue. psb_ttm_glue.c
+-MODULE_INFO(srcversion, "B869B52B58BF27553563032");
++MODULE_INFO(srcversion, "BAD33CD8BAE640651EBA1A4");
+diff --git a/drivers/staging/gma500/psb_intel_bios.c b/drivers/staging/gma500/psb_intel_bios.c
+index 83d8e93..f5bcd11 100644
+--- a/drivers/staging/gma500/psb_intel_bios.c
++++ b/drivers/staging/gma500/psb_intel_bios.c
+@@ -273,7 +273,7 @@ bool psb_intel_init_bios(struct drm_device *dev)
+ /**
+  * Destory and free VBT data
   */
-@@ -770,6 +751,7 @@ extern int psb_ttm_global_init(struct drm_psb_private *dev_priv);
- extern void psb_ttm_global_release(struct drm_psb_private *dev_priv);
- extern int psb_getpageaddrs_ioctl(struct drm_device *dev, void *data,
- 				struct drm_file *file_priv);
-+#endif				
- /*
-  *MMU stuff.
-  */
-@@ -823,7 +805,7 @@ extern int psb_cmdbuf_ioctl(struct drm_device *dev, void *data,
- extern int psb_reg_submit(struct drm_psb_private *dev_priv,
- 			  uint32_t *regs, unsigned int cmds);
- 
--
-+#if 0
- extern void psb_fence_or_sync(struct drm_file *file_priv,
- 			      uint32_t engine,
- 			      uint32_t fence_types,
-@@ -836,7 +818,7 @@ extern int psb_validate_kernel_buffer(struct psb_context *context,
- 				      uint32_t fence_class,
- 				      uint64_t set_flags,
- 				      uint64_t clr_flags);
--
-+#endif
- /*
-  *psb_irq.c
-  */
-@@ -865,6 +847,7 @@ psb_disable_pipestat(struct drm_psb_private *dev_priv, int pipe, u32 mask);
- 
- extern u32 psb_get_vblank_counter(struct drm_device *dev, int crtc);
- 
-+#if 0
- /*
-  *psb_fence.c
-  */
-@@ -880,13 +863,7 @@ extern void psb_fence_error(struct drm_device *dev,
- 			    uint32_t sequence, uint32_t type, int error);
- extern int psb_ttm_fence_device_init(struct ttm_fence_device *fdev);
- 
--/* MSVDX/Topaz stuff */
--extern int psb_remove_videoctx(struct drm_psb_private *dev_priv, struct file *filp);
--
--extern int lnc_video_frameskip(struct drm_device *dev,
--			       uint64_t user_pointer);
--extern int lnc_video_getparam(struct drm_device *dev, void *data,
--			      struct drm_file *file_priv);
-+#endif
- 
- /*
-  *psb_fb.c
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index 94d8457..ca31a7b 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -36,7 +36,6 @@
- #include "psb_drv.h"
- #include "psb_intel_reg.h"
- #include "psb_intel_drv.h"
--#include "psb_ttm_userobj_api.h"
- #include "psb_fb.h"
- #include "psb_sgx.h"
- #include "psb_pvr_glue.h"
-@@ -317,115 +316,7 @@ static struct drm_framebuffer *psb_user_framebuffer_create
- 			(struct drm_device *dev, struct drm_file *filp,
- 			 struct drm_mode_fb_cmd *r)
+-void psb_intel_destory_bios(struct drm_device *dev)
++void psb_intel_destroy_bios(struct drm_device *dev)
  {
--	struct ttm_buffer_object *bo = NULL;
--	uint64_t size;
--
--	bo = ttm_buffer_object_lookup(psb_fpriv(filp)->tfile, r->handle);
--	if (!bo)
--		return NULL;
--
--	/* JB: TODO not drop, make smarter */
--	size = ((uint64_t) bo->num_pages) << PAGE_SHIFT;
--	if (size < r->width * r->height * 4)
--		return NULL;
--
--	/* JB: TODO not drop, refcount buffer */
--	return psb_framebuffer_create(dev, r, bo);
--
--#if 0
--	struct psb_framebuffer *psbfb;
--	struct drm_framebuffer *fb;
--	struct fb_info *info;
--	void *psKernelMemInfo = NULL;
--	void * hKernelMemInfo = (void *)r->handle;
--	struct drm_psb_private *dev_priv
--		= (struct drm_psb_private *)dev->dev_private;
--	struct psb_fbdev *fbdev = dev_priv->fbdev;
--	struct psb_gtt *pg = dev_priv->pg;
--	int ret;
--	uint32_t offset;
--	uint64_t size;
--
--	ret = psb_get_meminfo_by_handle(hKernelMemInfo, &psKernelMemInfo);
--	if (ret) {
--		DRM_ERROR("Cannot get meminfo for handle 0x%x\n",
--						(u32)hKernelMemInfo);
--		return NULL;
--	}
--
--	DRM_DEBUG("Got Kernel MemInfo for handle %lx\n",
--		  (u32)hKernelMemInfo);
--
--	/* JB: TODO not drop, make smarter */
--	size = psKernelMemInfo->ui32AllocSize;
--	if (size < r->height * r->pitch)
--		return NULL;
--
--	/* JB: TODO not drop, refcount buffer */
--	/* return psb_framebuffer_create(dev, r, bo); */
--
--	fb = psb_framebuffer_create(dev, r, (void *)psKernelMemInfo);
--	if (!fb) {
--		DRM_ERROR("failed to allocate fb.\n");
--		return NULL;
--	}
--
--	psbfb = to_psb_fb(fb);
--	psbfb->size = size;
--	psbfb->hKernelMemInfo = hKernelMemInfo;
--
--	DRM_DEBUG("Mapping to gtt..., KernelMemInfo %p\n", psKernelMemInfo);
--
--	/*if not VRAM, map it into tt aperture*/
--	if (psKernelMemInfo->pvLinAddrKM != pg->vram_addr) {
--		ret = psb_gtt_map_meminfo(dev, hKernelMemInfo, &offset);
--		if (ret) {
--			DRM_ERROR("map meminfo for 0x%x failed\n",
--				  (u32)hKernelMemInfo);
--			return NULL;
--		}
--		psbfb->offset = (offset << PAGE_SHIFT);
--	} else {
--		psbfb->offset = 0;
--	}
--	info = framebuffer_alloc(0, &dev->pdev->dev);
--	if (!info)
--		return NULL;
--
--	strcpy(info->fix.id, "psbfb");
--
--	info->flags = FBINFO_DEFAULT;
--	info->fix.accel = FB_ACCEL_I830;	/*FIXMEAC*/
--	info->fbops = &psbfb_ops;
--
--	info->fix.smem_start = dev->mode_config.fb_base;
--	info->fix.smem_len = size;
--
--	info->screen_base = psKernelMemInfo->pvLinAddrKM;
--	info->screen_size = size;
--
--	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
--	drm_fb_helper_fill_var(info, &fbdev->psb_fb_helper,
--							fb->width, fb->height);
--
--	info->fix.mmio_start = pci_resource_start(dev->pdev, 0);
--	info->fix.mmio_len = pci_resource_len(dev->pdev, 0);
--
--	info->pixmap.size = 64 * 1024;
--	info->pixmap.buf_align = 8;
--	info->pixmap.access_align = 32;
--	info->pixmap.flags = FB_PIXMAP_SYSTEM;
--	info->pixmap.scan_align = 1;
--
--	psbfb->fbdev = info;
--	fbdev->pfb = psbfb;
--
--	fbdev->psb_fb_helper.fb = fb;
--	fbdev->psb_fb_helper.fbdev = info;
--	MRSTLFBHandleChangeFB(dev, psbfb);
--
--	return fb;
--#endif
-+	return NULL;
- }
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	struct drm_display_mode *sdvo_lvds_vbt_mode =
+diff --git a/drivers/staging/gma500/psb_intel_bios.h b/drivers/staging/gma500/psb_intel_bios.h
+index dfcae62..aaf3fd1 100644
+--- a/drivers/staging/gma500/psb_intel_bios.h
++++ b/drivers/staging/gma500/psb_intel_bios.h
+@@ -304,7 +304,7 @@ struct bdb_sdvo_lvds_options {
  
- static int psbfb_create(struct psb_fbdev *fbdev,
-@@ -485,6 +376,7 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 	info->fbops = &psbfb_ops;
- 	info->fix.smem_start = dev->mode_config.fb_base;
- 	info->fix.smem_len = size;
-+        /* FIXME: this should eventually be a GEM object */
- 	info->screen_base = (char *)pg->vram_addr;
- 	info->screen_size = size;
- 	memset(info->screen_base, 0, size);
-diff --git a/drivers/staging/gma500/psb_fence.c b/drivers/staging/gma500/psb_fence.c
-deleted file mode 100644
-index a70aa64..0000000
---- a/drivers/staging/gma500/psb_fence.c
-+++ /dev/null
-@@ -1,122 +0,0 @@
--/*
-- * Copyright (c) 2007, Intel Corporation.
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- *
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
+ 
+ extern bool psb_intel_init_bios(struct drm_device *dev);
+-extern void psb_intel_destory_bios(struct drm_device *dev);
++extern void psb_intel_destroy_bios(struct drm_device *dev);
+ 
+ /*
+  * Driver<->VBIOS interaction occurs through scratch bits in
+diff --git a/drivers/staging/gma500/psb_intel_reg.h b/drivers/staging/gma500/psb_intel_reg.h
+index 6cae118..23c2cac 100644
+--- a/drivers/staging/gma500/psb_intel_reg.h
++++ b/drivers/staging/gma500/psb_intel_reg.h
+@@ -22,7 +22,7 @@
+ #define BLC_PWM_CTL_C		0x62254
+ #define BLC_PWM_CTL2_C		0x62250
+ #define BACKLIGHT_MODULATION_FREQ_SHIFT		(17)
+-/**
++/*
+  * This is the most significant 15 bits of the number of backlight cycles in a
+  * complete cycle of the modulated backlight control.
+  *
+@@ -30,7 +30,7 @@
+  */
+ #define BACKLIGHT_MODULATION_FREQ_MASK		(0x7fff << 17)
+ #define BLM_LEGACY_MODE				(1 << 16)
+-/**
++/*
+  * This is the number of cycles out of the backlight modulation cycle for which
+  * the backlight is on.
+  *
+@@ -86,7 +86,7 @@
+ 
+ #define PP_STATUS	0x61200
+ # define PP_ON					(1 << 31)
+-/**
++/*
+  * Indicates that all dependencies of the panel are on:
+  *
+  * - PLL enabled
+@@ -143,12 +143,12 @@
+ # define DPLLB_LVDS_P2_CLOCK_DIV_7		(1 << 24)	/* i915 */
+ # define DPLL_P2_CLOCK_DIV_MASK			0x03000000	/* i915 */
+ # define DPLL_FPA01_P1_POST_DIV_MASK		0x00ff0000	/* i915 */
+-/**
++/*
+  *  The i830 generation, in DAC/serial mode, defines p1 as two plus this
+  * bitfield, or just 2 if PLL_P1_DIVIDE_BY_TWO is set.
+  */
+ # define DPLL_FPA01_P1_POST_DIV_MASK_I830	0x001f0000
+-/**
++/*
+  * The i830 generation, in LVDS mode, defines P1 as the bit number set within
+  * this field (only one bit may be set).
+  */
+@@ -173,33 +173,33 @@
+ # define PLL_LOAD_PULSE_PHASE_MASK	(0xf << PLL_LOAD_PULSE_PHASE_SHIFT)
+ # define DISPLAY_RATE_SELECT_FPA1	(1 << 8)
+ 
+-/**
++/*
+  * SDVO multiplier for 945G/GM. Not used on 965.
+  *
+- * \sa DPLL_MD_UDI_MULTIPLIER_MASK
++ * DPLL_MD_UDI_MULTIPLIER_MASK
+  */
+ # define SDVO_MULTIPLIER_MASK			0x000000ff
+ # define SDVO_MULTIPLIER_SHIFT_HIRES		4
+ # define SDVO_MULTIPLIER_SHIFT_VGA		0
+ 
+-/** @defgroup DPLL_MD
+- * @{
++/*
++ * PLL_MD
+  */
+-/** Pipe A SDVO/UDI clock multiplier/divider register for G965. */
++/* Pipe A SDVO/UDI clock multiplier/divider register for G965. */
+ #define DPLL_A_MD		0x0601c
+-/** Pipe B SDVO/UDI clock multiplier/divider register for G965. */
++/* Pipe B SDVO/UDI clock multiplier/divider register for G965. */
+ #define DPLL_B_MD		0x06020
+-/**
++/*
+  * UDI pixel divider, controlling how many pixels are stuffed into a packet.
+  *
+  * Value is pixels minus 1.  Must be set to 1 pixel for SDVO.
+  */
+ # define DPLL_MD_UDI_DIVIDER_MASK		0x3f000000
+ # define DPLL_MD_UDI_DIVIDER_SHIFT		24
+-/** UDI pixel divider for VGA, same as DPLL_MD_UDI_DIVIDER_MASK. */
++/* UDI pixel divider for VGA, same as DPLL_MD_UDI_DIVIDER_MASK. */
+ # define DPLL_MD_VGA_UDI_DIVIDER_MASK		0x003f0000
+ # define DPLL_MD_VGA_UDI_DIVIDER_SHIFT		16
+-/**
++/*
+  * SDVO/UDI pixel multiplier.
+  *
+  * SDVO requires that the bus clock rate be between 1 and 2 Ghz, and the bus
+@@ -218,13 +218,13 @@
+  */
+ # define DPLL_MD_UDI_MULTIPLIER_MASK		0x00003f00
+ # define DPLL_MD_UDI_MULTIPLIER_SHIFT		8
+-/** SDVO/UDI pixel multiplier for VGA, same as DPLL_MD_UDI_MULTIPLIER_MASK.
++/*
++ * SDVO/UDI pixel multiplier for VGA, same as DPLL_MD_UDI_MULTIPLIER_MASK.
+  * This best be set to the default value (3) or the CRT won't work. No,
+  * I don't entirely understand what this does...
+  */
+ # define DPLL_MD_VGA_UDI_MULTIPLIER_MASK	0x0000003f
+ # define DPLL_MD_VGA_UDI_MULTIPLIER_SHIFT	0
+-/** @} */
+ 
+ #define DPLL_TEST		0x606c
+ # define DPLLB_TEST_SDVO_DIV_1			(0 << 22)
+@@ -295,7 +295,7 @@
+  *
+  * Programmed value is multiplier - 1, up to 5x.
+  *
+- * \sa DPLL_MD_UDI_MULTIPLIER_MASK
++ * DPLL_MD_UDI_MULTIPLIER_MASK
+  */
+ #define SDVO_PORT_MULTIPLY_MASK			(7 << 23)
+ #define SDVO_PORT_MULTIPLY_SHIFT		23
+@@ -310,35 +310,32 @@
+ #define SDVOB_PRESERVE_MASK		((1 << 17) | (1 << 16) | (1 << 14))
+ #define SDVOC_PRESERVE_MASK			(1 << 17)
+ 
+-/** @defgroup LVDS
+- * @{
 - */
--
--#include <drm/drmP.h>
--#include "psb_drv.h"
--
--
--static void psb_fence_poll(struct ttm_fence_device *fdev,
--			   uint32_t fence_class, uint32_t waiting_types)
--{
--	struct drm_psb_private *dev_priv =
--	    container_of(fdev, struct drm_psb_private, fdev);
--
--
--	if (unlikely(!dev_priv))
--		return;
--
--	if (waiting_types == 0)
--		return;
--
--	/* DRM_ERROR("Polling fence sequence, got 0x%08x\n", sequence); */
--	ttm_fence_handler(fdev, fence_class, 0 /* Sequence */,
--			_PSB_FENCE_TYPE_EXE, 0);
--}
--
--void psb_fence_error(struct drm_device *dev,
--		     uint32_t fence_class,
--		     uint32_t sequence, uint32_t type, int error)
--{
--	struct drm_psb_private *dev_priv = psb_priv(dev);
--	struct ttm_fence_device *fdev = &dev_priv->fdev;
--	unsigned long irq_flags;
--	struct ttm_fence_class_manager *fc =
--	    &fdev->fence_class[fence_class];
--
--	BUG_ON(fence_class >= PSB_NUM_ENGINES);
--	write_lock_irqsave(&fc->lock, irq_flags);
--	ttm_fence_handler(fdev, fence_class, sequence, type, error);
--	write_unlock_irqrestore(&fc->lock, irq_flags);
--}
--
--int psb_fence_emit_sequence(struct ttm_fence_device *fdev,
--			    uint32_t fence_class,
--			    uint32_t flags, uint32_t *sequence,
--			    unsigned long *timeout_jiffies)
--{
--	struct drm_psb_private *dev_priv =
--	    container_of(fdev, struct drm_psb_private, fdev);
--
--	if (!dev_priv)
--		return -EINVAL;
--
--	if (fence_class >= PSB_NUM_ENGINES)
--		return -EINVAL;
--
--	DRM_ERROR("Unexpected fence class\n");
--	return -EINVAL;
--}
--
--static void psb_fence_lockup(struct ttm_fence_object *fence,
--			     uint32_t fence_types)
--{
--	DRM_ERROR("Unsupported fence class\n");
--}
--
--void psb_fence_handler(struct drm_device *dev, uint32_t fence_class)
--{
--	struct drm_psb_private *dev_priv = psb_priv(dev);
--	struct ttm_fence_device *fdev = &dev_priv->fdev;
--	struct ttm_fence_class_manager *fc =
--	    &fdev->fence_class[fence_class];
--	unsigned long irq_flags;
--
--	write_lock_irqsave(&fc->lock, irq_flags);
--	psb_fence_poll(fdev, fence_class, fc->waiting_types);
--	write_unlock_irqrestore(&fc->lock, irq_flags);
--}
--
--
--static struct ttm_fence_driver psb_ttm_fence_driver = {
--	.has_irq = NULL,
--	.emit = psb_fence_emit_sequence,
--	.flush = NULL,
--	.poll = psb_fence_poll,
--	.needed_flush = NULL,
--	.wait = NULL,
--	.signaled = NULL,
--	.lockup = psb_fence_lockup,
--};
--
--int psb_ttm_fence_device_init(struct ttm_fence_device *fdev)
--{
--	struct drm_psb_private *dev_priv =
--		container_of(fdev, struct drm_psb_private, fdev);
--	struct ttm_fence_class_init fci = {.wrap_diff = (1 << 30),
--		.flush_diff = (1 << 29),
--		.sequence_mask = 0xFFFFFFFF
--	};
--
--	return ttm_fence_device_init(PSB_NUM_ENGINES,
--				     dev_priv->mem_global_ref.object,
--				     fdev, &fci, 1,
--				     &psb_ttm_fence_driver);
--}
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 53c1e1e..5828db5 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -811,90 +811,6 @@ int psb_gtt_map_meminfo(struct drm_device *dev,
- 			uint32_t *offset)
- {
- 	return -EINVAL;
--	/* FIXMEAC */
--#if 0
--	struct drm_psb_private *dev_priv
--	       = (struct drm_psb_private *)dev->dev_private;
--	void *psKernelMemInfo;
--	struct psb_gtt_mm *mm = dev_priv->gtt_mm;
--	struct psb_gtt *pg = dev_priv->pg;
--	uint32_t size, pages, offset_pages;
--	void *kmem;
--	struct drm_mm_node *node;
--	struct page **page_list;
--	struct psb_gtt_mem_mapping *mapping = NULL;
--	int ret;
--
--	ret = psb_get_meminfo_by_handle(hKernelMemInfo, &psKernelMemInfo);
--	if (ret) {
--		DRM_DEBUG("Cannot find kernelMemInfo handle %ld\n",
--			  hKernelMemInfo);
--		return -EINVAL;
--	}
--
--	DRM_DEBUG("Got psKernelMemInfo %p for handle %lx\n",
--		  psKernelMemInfo, (u32)hKernelMemInfo);
--	size = psKernelMemInfo->ui32AllocSize;
--	kmem = psKernelMemInfo->pvLinAddrKM;
--	pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
--
--	DRM_DEBUG("KerMemInfo size %ld, cpuVadr %lx, pages %ld, osMemHdl %lx\n",
--		  size, kmem, pages, psKernelMemInfo->sMemBlk.hOSMemHandle);
--
--	if (!kmem)
--		DRM_DEBUG("kmem is NULL");
--
--	/*get pages*/
--	ret = psb_get_pages_by_mem_handle(psKernelMemInfo->sMemBlk.hOSMemHandle,
--					  &page_list);
--	if (ret) {
--		DRM_DEBUG("get pages error\n");
--		return ret;
--	}
--
--	DRM_DEBUG("get %ld pages\n", pages);
--
--	/*alloc memory in TT apeture*/
--	ret = psb_gtt_mm_alloc_mem(mm, pages, 0, &node);
--	if (ret) {
--		DRM_DEBUG("alloc TT memory error\n");
--		goto failed_pages_alloc;
--	}
--
--	/*update psb_gtt_mm*/
--	ret = psb_gtt_add_node(mm,
--			       task_tgid_nr(current),
--			       (u32)hKernelMemInfo,
--			       node,
--			       &mapping);
--	if (ret) {
--		DRM_DEBUG("add_node failed");
--		goto failed_add_node;
--	}
--
--	node = mapping->node;
--	offset_pages = node->start;
--
--	DRM_DEBUG("get free node for %ld pages, offset %ld pages",
--		  pages, offset_pages);
--
--	/*update gtt*/
--	psb_gtt_insert_pages(pg, page_list,
--			     (unsigned)offset_pages,
--			     (unsigned)pages,
--			     0,
--			     0,
--			     0);
--
--	*offset = offset_pages;
--	return 0;
--
--failed_add_node:
--	psb_gtt_mm_free_mem(mm, node);
--failed_pages_alloc:
--	kfree(page_list);
--	return ret;
--#endif
- }
+-/**
++/*
+  * This register controls the LVDS output enable, pipe selection, and data
+  * format selection.
+  *
+  * All of the clock/data pairs are force powered down by power sequencing.
+  */
+ #define LVDS			0x61180
+-/**
++/*
+  * Enables the LVDS port.  This bit must be set before DPLLs are enabled, as
+  * the DPLL semantics change when the LVDS is assigned to that pipe.
+  */
+ # define LVDS_PORT_EN			(1 << 31)
+-/** Selects pipe B for LVDS data.  Must be set on pre-965. */
++/* Selects pipe B for LVDS data.  Must be set on pre-965. */
+ # define LVDS_PIPEB_SELECT		(1 << 30)
  
- int psb_gtt_unmap_meminfo(struct drm_device *dev, void * hKernelMemInfo)
-diff --git a/drivers/staging/gma500/psb_sgx.c b/drivers/staging/gma500/psb_sgx.c
-deleted file mode 100644
-index 973134b..0000000
---- a/drivers/staging/gma500/psb_sgx.c
-+++ /dev/null
-@@ -1,238 +0,0 @@
--/**************************************************************************
-- * Copyright (c) 2007, Intel Corporation.
-- * All Rights Reserved.
-- * Copyright (c) 2008, Tungsten Graphics, Inc. Cedar Park, TX. USA.
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--
--#include <drm/drmP.h>
--#include "psb_drv.h"
--#include "psb_drm.h"
--#include "psb_reg.h"
--#include "ttm/ttm_bo_api.h"
--#include "ttm/ttm_execbuf_util.h"
--#include "psb_ttm_userobj_api.h"
--#include "ttm/ttm_placement.h"
--#include "psb_sgx.h"
--#include "psb_intel_reg.h"
--#include "psb_powermgmt.h"
--
--
--static inline int psb_same_page(unsigned long offset,
--				unsigned long offset2)
--{
--	return (offset & PAGE_MASK) == (offset2 & PAGE_MASK);
--}
--
--static inline unsigned long psb_offset_end(unsigned long offset,
--					      unsigned long end)
--{
--	offset = (offset + PAGE_SIZE) & PAGE_MASK;
--	return (end < offset) ? end : offset;
--}
--
--struct psb_dstbuf_cache {
--	unsigned int dst;
--	struct ttm_buffer_object *dst_buf;
--	unsigned long dst_offset;
--	uint32_t *dst_page;
--	unsigned int dst_page_offset;
--	struct ttm_bo_kmap_obj dst_kmap;
--	bool dst_is_iomem;
--};
--
--struct psb_validate_buffer {
--	struct ttm_validate_buffer base;
--	struct psb_validate_req req;
--	int ret;
--	struct psb_validate_arg __user *user_val_arg;
--	uint32_t flags;
--	uint32_t offset;
--	int po_correct;
--};
--static int
--psb_placement_fence_type(struct ttm_buffer_object *bo,
--			 uint64_t set_val_flags,
--			 uint64_t clr_val_flags,
--			 uint32_t new_fence_class,
--			 uint32_t *new_fence_type)
--{
--	int ret;
--	uint32_t n_fence_type;
--	/*
--	uint32_t set_flags = set_val_flags & 0xFFFFFFFF;
--	uint32_t clr_flags = clr_val_flags & 0xFFFFFFFF;
--	*/
--	struct ttm_fence_object *old_fence;
--	uint32_t old_fence_type;
--	struct ttm_placement placement;
--
--	if (unlikely
--	    (!(set_val_flags &
--	       (PSB_GPU_ACCESS_READ | PSB_GPU_ACCESS_WRITE)))) {
--		DRM_ERROR
--		    ("GPU access type (read / write) is not indicated.\n");
--		return -EINVAL;
--	}
--
--	/* User space driver doesn't set any TTM placement flags in
--					set_val_flags or clr_val_flags */
--	placement.num_placement = 0;/* FIXME  */
--	placement.num_busy_placement = 0;
--	placement.fpfn = 0;
--	placement.lpfn = 0;
--	ret = psb_ttm_bo_check_placement(bo, &placement);
--	if (unlikely(ret != 0))
--		return ret;
--
--	switch (new_fence_class) {
--	default:
--		n_fence_type = _PSB_FENCE_TYPE_EXE;
--	}
--
--	*new_fence_type = n_fence_type;
--	old_fence = (struct ttm_fence_object *) bo->sync_obj;
--	old_fence_type = (uint32_t) (unsigned long) bo->sync_obj_arg;
--
--	if (old_fence && ((new_fence_class != old_fence->fence_class) ||
--			  ((n_fence_type ^ old_fence_type) &
--			   old_fence_type))) {
--		ret = ttm_bo_wait(bo, 0, 1, 0);
--		if (unlikely(ret != 0))
--			return ret;
--	}
--	/*
--	bo->proposed_flags = (bo->proposed_flags | set_flags)
--		& ~clr_flags & TTM_PL_MASK_MEMTYPE;
--	*/
--	return 0;
--}
--
--int psb_validate_kernel_buffer(struct psb_context *context,
--			       struct ttm_buffer_object *bo,
--			       uint32_t fence_class,
--			       uint64_t set_flags, uint64_t clr_flags)
--{
--	struct psb_validate_buffer *item;
--	uint32_t cur_fence_type;
--	int ret;
--
--	if (unlikely(context->used_buffers >= PSB_NUM_VALIDATE_BUFFERS)) {
--		DRM_ERROR("Out of free validation buffer entries for "
--			  "kernel buffer validation.\n");
--		return -ENOMEM;
--	}
--
--	item = &context->buffers[context->used_buffers];
--	item->user_val_arg = NULL;
--	item->base.reserved = 0;
--
--	ret = ttm_bo_reserve(bo, 1, 0, 1, context->val_seq);
--	if (unlikely(ret != 0))
--	        return ret;
--
--	ret = psb_placement_fence_type(bo, set_flags, clr_flags, fence_class,
--				       &cur_fence_type);
--	if (unlikely(ret != 0)) {
--		ttm_bo_unreserve(bo);
--		return ret;
--	}
--
--	item->base.bo = ttm_bo_reference(bo);
--	item->base.new_sync_obj_arg = (void *) (unsigned long) cur_fence_type;
--	item->base.reserved = 1;
--
--	/* Internal locking ??? FIXMEAC */
--	list_add_tail(&item->base.head, &context->kern_validate_list);
--	context->used_buffers++;
--	/*
--	ret = ttm_bo_validate(bo, 1, 0, 0);
--	if (unlikely(ret != 0))
--		goto out_unlock;
--	*/
--	item->offset = bo->offset;
--	item->flags = bo->mem.placement;
--	context->fence_types |= cur_fence_type;
--
--	return ret;
--}
--
--void psb_fence_or_sync(struct drm_file *file_priv,
--		       uint32_t engine,
--		       uint32_t fence_types,
--		       uint32_t fence_flags,
--		       struct list_head *list,
--		       struct psb_ttm_fence_rep *fence_arg,
--		       struct ttm_fence_object **fence_p)
--{
--	struct drm_device *dev = file_priv->minor->dev;
--	struct drm_psb_private *dev_priv = psb_priv(dev);
--	struct ttm_fence_device *fdev = &dev_priv->fdev;
--	int ret;
--	struct ttm_fence_object *fence;
--	struct ttm_object_file *tfile = psb_fpriv(file_priv)->tfile;
--	uint32_t handle;
--
--	ret = ttm_fence_user_create(fdev, tfile,
--				    engine, fence_types,
--				    TTM_FENCE_FLAG_EMIT, &fence, &handle);
--	if (ret) {
--
--		/*
--		 * Fence creation failed.
--		 * Fall back to synchronous operation and idle the engine.
--		 */
--
--		if (!(fence_flags & DRM_PSB_FENCE_NO_USER)) {
--
--			/*
--			 * Communicate to user-space that
--			 * fence creation has failed and that
--			 * the engine is idle.
--			 */
--
--			fence_arg->handle = ~0;
--			fence_arg->error = ret;
--		}
--
--		ttm_eu_backoff_reservation(list);
--		if (fence_p)
--			*fence_p = NULL;
--		return;
--	}
--
--	ttm_eu_fence_buffer_objects(list, fence);
--	if (!(fence_flags & DRM_PSB_FENCE_NO_USER)) {
--		struct ttm_fence_info info = ttm_fence_get_info(fence);
--		fence_arg->handle = handle;
--		fence_arg->fence_class = ttm_fence_class(fence);
--		fence_arg->fence_type = ttm_fence_types(fence);
--		fence_arg->signaled_types = info.signaled_types;
--		fence_arg->error = 0;
--	} else {
--		ret =
--		    ttm_ref_object_base_unref(tfile, handle,
--					      ttm_fence_type);
--		BUG_ON(ret);
--	}
--
--	if (fence_p)
--		*fence_p = fence;
--	else if (fence)
--		ttm_fence_object_unref(&fence);
--}
--
-diff --git a/drivers/staging/gma500/psb_sgx.h b/drivers/staging/gma500/psb_sgx.h
-index 9300e2d..71455a0 100644
---- a/drivers/staging/gma500/psb_sgx.h
-+++ b/drivers/staging/gma500/psb_sgx.h
-@@ -21,12 +21,6 @@
- #ifndef _PSB_SGX_H_
- #define _PSB_SGX_H_
+-/** Turns on border drawing to allow centered display. */
++/* Turns on border drawing to allow centered display. */
+ # define LVDS_BORDER_EN                 (1 << 15)
  
--extern int psb_submit_video_cmdbuf(struct drm_device *dev,
--			       struct ttm_buffer_object *cmd_buffer,
--			       unsigned long cmd_offset,
--			       unsigned long cmd_size,
--			       struct ttm_fence_object *fence);
+-/**
++/*
+  * Enables the A0-A2 data pairs and CLKA, containing 18 bits of color data per
+  * pixel.
+  */
+ # define LVDS_A0A2_CLKA_POWER_MASK	(3 << 8)
+ # define LVDS_A0A2_CLKA_POWER_DOWN	(0 << 8)
+ # define LVDS_A0A2_CLKA_POWER_UP	(3 << 8)
+-/**
++/*
+  * Controls the A3 data pair, which contains the additional LSBs for 24 bit
+  * mode.  Only enabled if LVDS_A0A2_CLKA_POWER_UP also indicates it should be
+  * on.
+@@ -346,15 +343,14 @@
+ # define LVDS_A3_POWER_MASK		(3 << 6)
+ # define LVDS_A3_POWER_DOWN		(0 << 6)
+ # define LVDS_A3_POWER_UP		(3 << 6)
+-/**
++/*
+  * Controls the CLKB pair.  This should only be set when LVDS_B0B3_POWER_UP
+  * is set.
+  */
+ # define LVDS_CLKB_POWER_MASK		(3 << 4)
+ # define LVDS_CLKB_POWER_DOWN		(0 << 4)
+ # define LVDS_CLKB_POWER_UP		(3 << 4)
 -
- extern int drm_idle_check_interval;
+-/**
++/*
+  * Controls the B0-B3 data pairs.  This must be set to match the DPLL p2
+  * setting for whether we are in dual-channel mode.  The B3 pair will
+  * additionally only be powered up when LVDS_A3_POWER_UP is set.
+@@ -419,8 +415,8 @@
+ #define PIPE_HDMI_AUDIO_UNDERRUN             (1UL<<26)
+ #define PIPE_HDMI_AUDIO_BUFFER_DONE          (1UL<<27)
+ #define PIPE_HDMI_AUDIO_INT_MASK (PIPE_HDMI_AUDIO_UNDERRUN | PIPE_HDMI_AUDIO_BUFFER_DONE)
+-#define PIPE_EVENT_MASK (BIT29|BIT28|BIT27|BIT26|BIT24|BIT23|BIT22|BIT21|BIT20|BIT16)
+-#define PIPE_VBLANK_MASK (BIT25|BIT24|BIT18|BIT17)
++#define PIPE_EVENT_MASK ((1 << 29)|(1 << 28)|(1 << 27)|(1 << 26)|(1 << 24)|(1 << 23)|(1 << 22)|(1 << 21)|(1 << 20)|(1 << 16))
++#define PIPE_VBLANK_MASK ((1 << 25)|(1 << 24)|(1 << 18)|(1 << 17))
+ #define HISTOGRAM_INT_CONTROL		0x61268
+ #define HISTOGRAM_BIN_DATA		0X61264
+ #define HISTOGRAM_LOGIC_CONTROL		0x61260
+@@ -567,7 +563,7 @@ struct dpst_guardband {
+ #define OV_C_OFFSET		0x08000
+ #define OV_OVADD		0x30000
+ #define OV_DOVASTA              0x30008
+-# define OV_PIPE_SELECT				(BIT6|BIT7)
++# define OV_PIPE_SELECT				((1 << 6)|(1 << 7))
+ # define OV_PIPE_SELECT_POS			6
+ # define OV_PIPE_A				0
+ # define OV_PIPE_C				1
+@@ -629,40 +625,6 @@ struct dpst_guardband {
+ #define PALETTE_B		0x0a800
+ #define PALETTE_C		0x0ac00
  
+-#define IS_I830(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82830_CGC)
+-#define IS_845G(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82845G_IG)
+-#define IS_I85X(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82855GM_IG)
+-#define IS_I855(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82855GM_IG)
+-#define IS_I865G(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82865_IG)
+-
+-
+-/* || dev->pci_device == PCI_DEVICE_ID_INTELPCI_CHIP_E7221_G) */
+-#define IS_I915G(dev) (dev->pci_device == PCI_DEVICE_ID_INTEL_82915G_IG)
+-#define IS_I915GM(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82915GM_IG)
+-#define IS_I945G(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82945G_IG)
+-#define IS_I945GM(dev) ((dev)->pci_device == PCI_DEVICE_ID_INTEL_82945GM_IG)
+-
+-#define IS_I965G(dev) ((dev)->pci_device == 0x2972 || \
+-		       (dev)->pci_device == 0x2982 || \
+-		       (dev)->pci_device == 0x2992 || \
+-		       (dev)->pci_device == 0x29A2 || \
+-		       (dev)->pci_device == 0x2A02 || \
+-		       (dev)->pci_device == 0x2A12)
+-
+-#define IS_I965GM(dev) ((dev)->pci_device == 0x2A02)
+-
+-#define IS_G33(dev)    ((dev)->pci_device == 0x29C2 ||	\
+-			(dev)->pci_device == 0x29B2 ||	\
+-			(dev)->pci_device == 0x29D2)
+-
+-#define IS_I9XX(dev) (IS_I915G(dev) || IS_I915GM(dev) || IS_I945G(dev) || \
+-		      IS_I945GM(dev) || IS_I965G(dev) || IS_POULSBO(dev) || \
+-		      IS_MRST(dev))
+-
+-#define IS_MOBILE(dev) (IS_I830(dev) || IS_I85X(dev) || IS_I915GM(dev) || \
+-			IS_I945GM(dev) || IS_I965GM(dev) || \
+-			IS_POULSBO(dev) || IS_MRST(dev))
+-
+ /* Cursor A & B regs */
+ #define CURACNTR		0x70080
+ #define   CURSOR_MODE_DISABLE   0x00
+@@ -707,7 +669,9 @@ struct dpst_guardband {
+ #define MDFLD_DPLL_DIV1		0x0f04c
+ #define MRST_PERF_MODE		0x020f4
+ 
+-/* MEDFIELD HDMI registers */
++/*
++ * MEDFIELD HDMI registers
++ */
+ #define HDMIPHYMISCCTL   	0x61134
+ # define HDMI_PHY_POWER_DOWN	0x7f
+ #define HDMIB_CONTROL   	0x61140
+@@ -724,7 +688,7 @@ struct dpst_guardband {
+ #define MIPI			0x61190
+ #define MIPI_C			0x62190
+ # define MIPI_PORT_EN			(1 << 31)
+-/** Turns on border drawing to allow centered display. */
++/* Turns on border drawing to allow centered display. */
+ # define SEL_FLOPPED_HSTX		(1 << 23)
+ # define PASS_FROM_SPHY_TO_AFE 		(1 << 16)
+ # define MIPI_BORDER_EN			(1 << 15)
+@@ -756,47 +720,13 @@ struct dpst_guardband {
+ /*
+  * Moorestown registers.
+  */
+-/*===========================================================================
+-; General Constants
+-;--------------------------------------------------------------------------*/
+-#define BIT0  0x00000001
+-#define BIT1  0x00000002
+-#define BIT2  0x00000004
+-#define BIT3  0x00000008
+-#define BIT4  0x00000010
+-#define BIT5  0x00000020
+-#define BIT6  0x00000040
+-#define BIT7  0x00000080
+-#define BIT8  0x00000100
+-#define BIT9  0x00000200
+-#define BIT10 0x00000400
+-#define BIT11 0x00000800
+-#define BIT12 0x00001000
+-#define BIT13 0x00002000
+-#define BIT14 0x00004000
+-#define BIT15 0x00008000
+-#define BIT16 0x00010000
+-#define BIT17 0x00020000
+-#define BIT18 0x00040000
+-#define BIT19 0x00080000
+-#define BIT20 0x00100000
+-#define BIT21 0x00200000
+-#define BIT22 0x00400000
+-#define BIT23 0x00800000
+-#define BIT24 0x01000000
+-#define BIT25 0x02000000
+-#define BIT26 0x04000000
+-#define BIT27 0x08000000
+-#define BIT28 0x10000000
+-#define BIT29 0x20000000
+-#define BIT30 0x40000000
+-#define BIT31 0x80000000
+-/*===========================================================================
+-; MIPI IP registers
+-;--------------------------------------------------------------------------*/
++
++/*
++ *	MIPI IP registers
++ */
+ #define MIPIC_REG_OFFSET             0x800
+ #define DEVICE_READY_REG             0xb000
+-#define LP_OUTPUT_HOLD               BIT16
++#define LP_OUTPUT_HOLD               (1 << 16)
+ #define EXIT_ULPS_DEV_READY          0x3
+ #define LP_OUTPUT_HOLD_RELEASE       0x810000
+ # define ENTERING_ULPS		(2 << 1)
+@@ -804,33 +734,33 @@ struct dpst_guardband {
+ # define ULPS_MASK		(3 << 1)
+ # define BUS_POSSESSION		(1 << 3)
+ #define INTR_STAT_REG                0xb004
+-#define RX_SOT_ERROR BIT0
+-#define RX_SOT_SYNC_ERROR BIT1
+-#define RX_ESCAPE_MODE_ENTRY_ERROR BIT3
+-#define RX_LP_TX_SYNC_ERROR BIT4
+-#define RX_HS_RECEIVE_TIMEOUT_ERROR BIT5
+-#define RX_FALSE_CONTROL_ERROR BIT6
+-#define RX_ECC_SINGLE_BIT_ERROR BIT7
+-#define RX_ECC_MULTI_BIT_ERROR BIT8
+-#define RX_CHECKSUM_ERROR BIT9
+-#define RX_DSI_DATA_TYPE_NOT_RECOGNIZED BIT10
+-#define RX_DSI_VC_ID_INVALID BIT11
+-#define TX_FALSE_CONTROL_ERROR BIT12
+-#define TX_ECC_SINGLE_BIT_ERROR BIT13
+-#define TX_ECC_MULTI_BIT_ERROR BIT14
+-#define TX_CHECKSUM_ERROR BIT15
+-#define TX_DSI_DATA_TYPE_NOT_RECOGNIZED BIT16
+-#define TX_DSI_VC_ID_INVALID BIT17
+-#define HIGH_CONTENTION BIT18
+-#define LOW_CONTENTION BIT19
+-#define DPI_FIFO_UNDER_RUN BIT20
+-#define HS_TX_TIMEOUT BIT21
+-#define LP_RX_TIMEOUT BIT22
+-#define TURN_AROUND_ACK_TIMEOUT BIT23
+-#define ACK_WITH_NO_ERROR BIT24
+-#define HS_GENERIC_WR_FIFO_FULL BIT27
+-#define LP_GENERIC_WR_FIFO_FULL BIT28
+-#define SPL_PKT_SENT			BIT30
++#define RX_SOT_ERROR (1 << 0)
++#define RX_SOT_SYNC_ERROR (1 << 1)
++#define RX_ESCAPE_MODE_ENTRY_ERROR (1 << 3)
++#define RX_LP_TX_SYNC_ERROR (1 << 4)
++#define RX_HS_RECEIVE_TIMEOUT_ERROR (1 << 5)
++#define RX_FALSE_CONTROL_ERROR (1 << 6)
++#define RX_ECC_SINGLE_BIT_ERROR (1 << 7)
++#define RX_ECC_MULTI_BIT_ERROR (1 << 8)
++#define RX_CHECKSUM_ERROR (1 << 9)
++#define RX_DSI_DATA_TYPE_NOT_RECOGNIZED (1 << 10)
++#define RX_DSI_VC_ID_INVALID (1 << 11)
++#define TX_FALSE_CONTROL_ERROR (1 << 12)
++#define TX_ECC_SINGLE_BIT_ERROR (1 << 13)
++#define TX_ECC_MULTI_BIT_ERROR (1 << 14)
++#define TX_CHECKSUM_ERROR (1 << 15)
++#define TX_DSI_DATA_TYPE_NOT_RECOGNIZED (1 << 16)
++#define TX_DSI_VC_ID_INVALID (1 << 17)
++#define HIGH_CONTENTION (1 << 18)
++#define LOW_CONTENTION (1 << 19)
++#define DPI_FIFO_UNDER_RUN (1 << 20)
++#define HS_TX_TIMEOUT (1 << 21)
++#define LP_RX_TIMEOUT (1 << 22)
++#define TURN_AROUND_ACK_TIMEOUT (1 << 23)
++#define ACK_WITH_NO_ERROR (1 << 24)
++#define HS_GENERIC_WR_FIFO_FULL (1 << 27)
++#define LP_GENERIC_WR_FIFO_FULL (1 << 28)
++#define SPL_PKT_SENT			(1 << 30)
+ #define INTR_EN_REG                  0xb008
+ #define DSI_FUNC_PRG_REG             0xb00c
+ #define DPI_CHANNEL_NUMBER_POS   0x03
+@@ -873,22 +803,22 @@ struct dpst_guardband {
+ #define VERT_FRONT_PORCH_COUNT_REG   0xb040
+ #define HIGH_LOW_SWITCH_COUNT_REG    0xb044
+ #define DPI_CONTROL_REG              0xb048
+-#define DPI_SHUT_DOWN            BIT0
+-#define DPI_TURN_ON              BIT1
+-#define DPI_COLOR_MODE_ON        BIT2
+-#define DPI_COLOR_MODE_OFF       BIT3
+-#define DPI_BACK_LIGHT_ON        BIT4
+-#define DPI_BACK_LIGHT_OFF       BIT5
+-#define DPI_LP                   BIT6
++#define DPI_SHUT_DOWN            (1 << 0)
++#define DPI_TURN_ON              (1 << 1)
++#define DPI_COLOR_MODE_ON        (1 << 2)
++#define DPI_COLOR_MODE_OFF       (1 << 3)
++#define DPI_BACK_LIGHT_ON        (1 << 4)
++#define DPI_BACK_LIGHT_OFF       (1 << 5)
++#define DPI_LP                   (1 << 6)
+ #define DPI_DATA_REG                 0xb04c
+ #define DPI_BACK_LIGHT_ON_DATA   0x07
+ #define DPI_BACK_LIGHT_OFF_DATA  0x17
+ #define INIT_COUNT_REG               0xb050
+ #define MAX_RET_PAK_REG              0xb054
+ #define VIDEO_FMT_REG                0xb058
+-#define COMPLETE_LAST_PCKT       BIT2
++#define COMPLETE_LAST_PCKT       (1 << 2)
+ #define EOT_DISABLE_REG              0xb05c
+-#define ENABLE_CLOCK_STOPPING    BIT1
++#define ENABLE_CLOCK_STOPPING    (1 << 1)
+ #define LP_BYTECLK_REG               0xb060
+ #define LP_GEN_DATA_REG              0xb064
+ #define HS_GEN_DATA_REG              0xb068
+@@ -899,30 +829,31 @@ struct dpst_guardband {
+ #define WORD_COUNTS_POS		0x8
+ #define MCS_PARAMETER_POS	0x10
+ #define GEN_FIFO_STAT_REG            0xb074
+-#define HS_DATA_FIFO_FULL        BIT0
+-#define HS_DATA_FIFO_HALF_EMPTY  BIT1
+-#define HS_DATA_FIFO_EMPTY       BIT2
+-#define LP_DATA_FIFO_FULL        BIT8
+-#define LP_DATA_FIFO_HALF_EMPTY  BIT9
+-#define LP_DATA_FIFO_EMPTY       BIT10
+-#define HS_CTRL_FIFO_FULL        BIT16
+-#define HS_CTRL_FIFO_HALF_EMPTY  BIT17
+-#define HS_CTRL_FIFO_EMPTY       BIT18
+-#define LP_CTRL_FIFO_FULL        BIT24
+-#define LP_CTRL_FIFO_HALF_EMPTY  BIT25
+-#define LP_CTRL_FIFO_EMPTY       BIT26
+-#define DBI_FIFO_EMPTY           BIT27
+-#define DPI_FIFO_EMPTY           BIT28
++#define HS_DATA_FIFO_FULL        (1 << 0)
++#define HS_DATA_FIFO_HALF_EMPTY  (1 << 1)
++#define HS_DATA_FIFO_EMPTY       (1 << 2)
++#define LP_DATA_FIFO_FULL        (1 << 8)
++#define LP_DATA_FIFO_HALF_EMPTY  (1 << 9)
++#define LP_DATA_FIFO_EMPTY       (1 << 10)
++#define HS_CTRL_FIFO_FULL        (1 << 16)
++#define HS_CTRL_FIFO_HALF_EMPTY  (1 << 17)
++#define HS_CTRL_FIFO_EMPTY       (1 << 18)
++#define LP_CTRL_FIFO_FULL        (1 << 24)
++#define LP_CTRL_FIFO_HALF_EMPTY  (1 << 25)
++#define LP_CTRL_FIFO_EMPTY       (1 << 26)
++#define DBI_FIFO_EMPTY           (1 << 27)
++#define DPI_FIFO_EMPTY           (1 << 28)
+ #define HS_LS_DBI_ENABLE_REG         0xb078
+ #define TXCLKESC_REG		     0xb07c
+ #define DPHY_PARAM_REG               0xb080
+ #define DBI_BW_CTRL_REG              0xb084
+ #define CLK_LANE_SWT_REG             0xb088
+-/*===========================================================================
+-; MIPI Adapter registers
+-;--------------------------------------------------------------------------*/
++
++/*
++ * MIPI Adapter registers
++ */
+ #define MIPI_CONTROL_REG             0xb104
+-#define MIPI_2X_CLOCK_BITS       (BIT0 | BIT1)
++#define MIPI_2X_CLOCK_BITS       ((1 << 0) | (1 << 1))
+ #define MIPI_DATA_ADDRESS_REG        0xb108
+ #define MIPI_DATA_LENGTH_REG         0xb10C
+ #define MIPI_COMMAND_ADDRESS_REG     0xb110
+@@ -938,75 +869,76 @@ struct dpst_guardband {
+ #define MIPI_READ_DATA_VALID_REG     0xb138
+ /* DBI COMMANDS */
+ #define soft_reset                   0x01
+-/* ************************************************************************* *\
+-The display module performs a software reset.
+-Registers are written with their SW Reset default values.
+-\* ************************************************************************* */
++/*
++ *	The display module performs a software reset.
++ *	Registers are written with their SW Reset default values.
++ */
+ #define get_power_mode               0x0a
+-/* ************************************************************************* *\
+-The display module returns the current power mode
+-\* ************************************************************************* */
++/*
++ *	The display module returns the current power mode
++ */
+ #define get_address_mode             0x0b
+-/* ************************************************************************* *\
+-The display module returns the current status.
+-\* ************************************************************************* */
++/*
++ *	The display module returns the current status.
++ */
+ #define get_pixel_format             0x0c
+-/* ************************************************************************* *\
+-This command gets the pixel format for the RGB image data
+-used by the interface.
+-\* ************************************************************************* */
++/*
++ *	This command gets the pixel format for the RGB image data
++ *	used by the interface.
++ */
+ #define get_display_mode             0x0d
+-/* ************************************************************************* *\
+-The display module returns the Display Image Mode status.
+-\* ************************************************************************* */
++/*
++ *	The display module returns the Display Image Mode status.
++ */
+ #define get_signal_mode              0x0e
+-/* ************************************************************************* *\
+-The display module returns the Display Signal Mode.
+-\* ************************************************************************* */
++/*
++ *	The display module returns the Display Signal Mode.
++ */
+ #define get_diagnostic_result        0x0f
+-/* ************************************************************************* *\
+-The display module returns the self-diagnostic results following
+-a Sleep Out command.
+-\* ************************************************************************* */
++/*
++ *	The display module returns the self-diagnostic results following
++ *	a Sleep Out command.
++ */
+ #define enter_sleep_mode             0x10
+-/* ************************************************************************* *\
+-This command causes the display module to enter the Sleep mode.
+-In this mode, all unnecessary blocks inside the display module are disabled
+-except interface communication. This is the lowest power mode
+-the display module supports.
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to enter the Sleep mode.
++ *	In this mode, all unnecessary blocks inside the display module are
++ *	disabled except interface communication. This is the lowest power
++ *	mode the display module supports.
++ */
+ #define exit_sleep_mode              0x11
+-/* ************************************************************************* *\
+-This command causes the display module to exit Sleep mode.
+-All blocks inside the display module are enabled.
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to exit Sleep mode.
++ *	All blocks inside the display module are enabled.
++ */
+ #define enter_partial_mode           0x12
+-/* ************************************************************************* *\
+-This command causes the display module to enter the Partial Display Mode.
+-The Partial Display Mode window is described by the set_partial_area command.
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to enter the Partial Display
++ *	Mode. The Partial Display Mode window is described by the
++ *	set_partial_area command.
++ */
+ #define enter_normal_mode            0x13
+-/* ************************************************************************* *\
+-This command causes the display module to enter the Normal mode.
+-Normal Mode is defined as Partial Display mode and Scroll mode are off
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to enter the Normal mode.
++ *	Normal Mode is defined as Partial Display mode and Scroll mode are off
++ */
+ #define exit_invert_mode             0x20
+-/* ************************************************************************* *\
+-This command causes the display module to stop inverting the image data on
+-the display device. The frame memory contents remain unchanged.
+-No status bits are changed.
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to stop inverting the image
++ *	data on the display device. The frame memory contents remain unchanged.
++ *	No status bits are changed.
++ */
+ #define enter_invert_mode            0x21
+-/* ************************************************************************* *\
+-This command causes the display module to invert the image data only on
+-the display device. The frame memory contents remain unchanged.
+-No status bits are changed.
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to invert the image data only on
++ *	the display device. The frame memory contents remain unchanged.
++ *	No status bits are changed.
++ */
+ #define set_gamma_curve              0x26
+-/* ************************************************************************* *\
+-This command selects the desired gamma curve for the display device.
+-Four fixed gamma curves are defined in section DCS spec.
+-\* ************************************************************************* */
++/*
++ *	This command selects the desired gamma curve for the display device.
++ *	Four fixed gamma curves are defined in section DCS spec.
++ */
+ #define set_display_off              0x28
+ /* ************************************************************************* *\
+ This command causes the display module to stop displaying the image data
+@@ -1020,77 +952,80 @@ on the display device. The frame memory contents remain unchanged.
+ No status bits are changed.
+ \* ************************************************************************* */
+ #define set_column_address           0x2a
+-/* ************************************************************************* *\
+-This command defines the column extent of the frame memory accessed by the
+-hostprocessor with the read_memory_continue and write_memory_continue commands.
+-No status bits are changed.
+-\* ************************************************************************* */
++/*
++ *	This command defines the column extent of the frame memory accessed by
++ *	the hostprocessor with the read_memory_continue and
++ *	write_memory_continue commands.
++ *	No status bits are changed.
++ */
+ #define set_page_addr             0x2b
+-/* ************************************************************************* *\
+-This command defines the page extent of the frame memory accessed by the host
+-processor with the write_memory_continue and read_memory_continue command.
+-No status bits are changed.
+-\* ************************************************************************* */
++/*
++ *	This command defines the page extent of the frame memory accessed by
++ *	the host processor with the write_memory_continue and
++ *	read_memory_continue command. 
++ *	No status bits are changed.
++ */
+ #define write_mem_start              0x2c
+-/* ************************************************************************* *\
+-This command transfers image data from the host processor to the display
+-module s frame memory starting at the pixel location specified by
+-preceding set_column_address and set_page_address commands.
+-\* ************************************************************************* */
++/*
++ *	This command transfers image data from the host processor to the
++ *	display module s frame memory starting at the pixel location specified
++ *	by preceding set_column_address and set_page_address commands.
++ */
+ #define set_partial_area             0x30
+-/* ************************************************************************* *\
+-This command defines the Partial Display mode s display area.
+-There are two parameters associated with
+-this command, the first defines the Start Row (SR) and the second the End Row
+-(ER). SR and ER refer to the Frame Memory Line Pointer.
+-\* ************************************************************************* */
++/*
++ *	This command defines the Partial Display mode s display area.
++ *	There are two parameters associated with this command, the first
++ *	defines the Start Row (SR) and the second the End Row (ER). SR and ER
++ *	refer to the Frame Memory Line Pointer.
++ */
+ #define set_scroll_area              0x33
+-/* ************************************************************************* *\
+-This command defines the display modules Vertical Scrolling Area.
+-\* ************************************************************************* */
++/*
++ *	This command defines the display modules Vertical Scrolling Area.
++ */
+ #define set_tear_off                 0x34
+-/* ************************************************************************* *\
+-This command turns off the display modules Tearing Effect output signal on
+-the TE signal line.
+-\* ************************************************************************* */
++/*
++ *	This command turns off the display modules Tearing Effect output
++ *	signal on the TE signal line.
++ */
+ #define set_tear_on                  0x35
+-/* ************************************************************************* *\
+-This command turns on the display modules Tearing Effect output signal
+-on the TE signal line.
+-\* ************************************************************************* */
++/*
++ *	This command turns on the display modules Tearing Effect output signal
++ *	on the TE signal line.
++ */
+ #define set_address_mode             0x36
+-/* ************************************************************************* *\
+-This command sets the data order for transfers from the host processor to
+-display modules frame memory,bits B[7:5] and B3, and from the display
+-modules frame memory to the display device, bits B[2:0] and B4.
+-\* ************************************************************************* */
++/*
++ *	This command sets the data order for transfers from the host processor
++ *	to display modules frame memory,bits B[7:5] and B3, and from the
++ *	display modules frame memory to the display device, bits B[2:0] and B4.
++ */
+ #define set_scroll_start             0x37
+-/* ************************************************************************* *\
+-This command sets the start of the vertical scrolling area in the frame memory.
+-The vertical scrolling area is fully defined when this command is used with
+-the set_scroll_area command The set_scroll_start command has one parameter,
+-the Vertical Scroll Pointer. The VSP defines the line in the frame memory
+-that is written to the display device as the first line of the vertical
+-scroll area.
+-\* ************************************************************************* */
++/*
++ *	This command sets the start of the vertical scrolling area in the frame
++ *	memory. The vertical scrolling area is fully defined when this command
++ *	is used with the set_scroll_area command The set_scroll_start command
++ *	has one parameter, the Vertical Scroll Pointer. The VSP defines the
++ *	line in the frame memory that is written to the display device as the
++ *	first line of the vertical scroll area.
++ */
+ #define exit_idle_mode               0x38
+-/* ************************************************************************* *\
+-This command causes the display module to exit Idle mode.
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to exit Idle mode.
++ */
+ #define enter_idle_mode              0x39
+-/* ************************************************************************* *\
+-This command causes the display module to enter Idle Mode.
+-In Idle Mode, color expression is reduced. Colors are shown on the display
+-device using the MSB of each of the R, G and B color components in the frame
+-memory
+-\* ************************************************************************* */
++/*
++ *	This command causes the display module to enter Idle Mode.
++ *	In Idle Mode, color expression is reduced. Colors are shown on the
++ *	display device using the MSB of each of the R, G and B color
++ *	components in the frame memory
++ */
+ #define set_pixel_format             0x3a
+-/* ************************************************************************* *\
+-This command sets the pixel format for the RGB image data used by the interface.
+-Bits D[6:4]  DPI Pixel Format Definition
+-Bits D[2:0]  DBI Pixel Format Definition
+-Bits D7 and D3 are not used.
+-\* ************************************************************************* */
++/*
++ *	This command sets the pixel format for the RGB image data used by the
++ *	interface.
++ *	Bits D[6:4]  DPI Pixel Format Definition
++ *	Bits D[2:0]  DBI Pixel Format Definition
++ *	Bits D7 and D3 are not used.
++ */
+   #define DCS_PIXEL_FORMAT_3bbp	 	0x1
+   #define DCS_PIXEL_FORMAT_8bbp 	0x2
+   #define DCS_PIXEL_FORMAT_12bbp 	0x3
+@@ -1098,24 +1033,25 @@ Bits D7 and D3 are not used.
+   #define DCS_PIXEL_FORMAT_18bbp	0x6 
+   #define DCS_PIXEL_FORMAT_24bbp 	0x7
+ #define write_mem_cont               0x3c
+-/* ************************************************************************* *\
+-This command transfers image data from the host processor to the display
+-module's frame memory continuing from the pixel location following the
+-previous write_memory_continue or write_memory_start command.
+-\* ************************************************************************* */
++/*
++ *	This command transfers image data from the host processor to the
++ *	display module's frame memory continuing from the pixel location
++ *	following the previous write_memory_continue or write_memory_start
++ *	command.
++ */
+ #define set_tear_scanline            0x44
+-/* ************************************************************************* *\
+-This command turns on the display modules Tearing Effect output signal on the
+-TE signal line when the display module reaches line N.
+-\* ************************************************************************* */
++/*
++ *	This command turns on the display modules Tearing Effect output signal
++ *	on the TE signal line when the display module reaches line N.
++ */
+ #define get_scanline                 0x45
+-/* ************************************************************************* *\
+-The display module returns the current scanline, N, used to update the
+-display device. The total number of scanlines on a display device is
+-defined as VSYNC + VBP + VACT + VFP.The first scanline is defined as
+-the first line of V Sync and is denoted as Line 0.
+-When in Sleep Mode, the value returned by get_scanline is undefined.
+-\* ************************************************************************* */
++/*
++ *	The display module returns the current scanline, N, used to update the
++ *	 display device. The total number of scanlines on a display device is
++ *	defined as VSYNC + VBP + VACT + VFP.The first scanline is defined as
++ *	the first line of V Sync and is denoted as Line 0.
++ *	When in Sleep Mode, the value returned by get_scanline is undefined.
++ */
+ 
+ /* MCS or Generic COMMANDS */
+ /* MCS/generic data type */
+@@ -1131,7 +1067,7 @@ When in Sleep Mode, the value returned by get_scanline is undefined.
+ #define MCS_READ		0x06  /* MCS read, no parameters */
+ #define MCS_LONG_WRITE		0x39  /* MCS long write */
+ /* MCS/generic commands */
+-/*****TPO MCS**********/
++/* TPO MCS */
+ #define write_display_profile		0x50
+ #define write_display_brightness	0x51
+ #define write_ctrl_display		0x53
+@@ -1143,19 +1079,19 @@ When in Sleep Mode, the value returned by get_scanline is undefined.
+ #define write_gamma_setting		0x58
+ #define write_cabc_min_bright		0x5e
+ #define write_kbbc_profile		0x60
+-/*****TMD MCS**************/
++/* TMD MCS */
+ #define tmd_write_display_brightness 0x8c
+ 
+-/* ************************************************************************* *\
+-This command is used to control ambient light, panel backlight brightness and
+-gamma settings.
+-\* ************************************************************************* */
+-#define BRIGHT_CNTL_BLOCK_ON	BIT5
+-#define AMBIENT_LIGHT_SENSE_ON	BIT4
+-#define DISPLAY_DIMMING_ON	BIT3
+-#define BACKLIGHT_ON		BIT2
+-#define DISPLAY_BRIGHTNESS_AUTO	BIT1
+-#define GAMMA_AUTO		BIT0
++/*
++ *	This command is used to control ambient light, panel backlight
++ *	brightness and gamma settings.
++ */
++#define BRIGHT_CNTL_BLOCK_ON	(1 << 5)
++#define AMBIENT_LIGHT_SENSE_ON	(1 << 4)
++#define DISPLAY_DIMMING_ON	(1 << 3)
++#define BACKLIGHT_ON		(1 << 2)
++#define DISPLAY_BRIGHTNESS_AUTO	(1 << 1)
++#define GAMMA_AUTO		(1 << 0)
+ 
+ /* DCS Interface Pixel Formats */
+ #define DCS_PIXEL_FORMAT_3BPP         0x1
+@@ -1191,7 +1127,7 @@ gamma settings.
+ 						 */
+ #define DBI_CB_TIME_OUT 0xFFFF
+ #define GEN_FB_TIME_OUT 2000 
+-#define ALIGNMENT_32BYTE_MASK		(~(BIT0|BIT1|BIT2|BIT3|BIT4))
++#define ALIGNMENT_32BYTE_MASK		(~((1 << 0)|(1 << 1)|(1 << 2)|(1 << 3)|(1 << 4)))
+ #define SKU_83 						0x01
+ #define SKU_100 					0x02
+ #define SKU_100L 					0x04
+diff --git a/drivers/staging/gma500/psb_irq.c b/drivers/staging/gma500/psb_irq.c
+index 3cdcd1e..a0ef4bb 100644
+--- a/drivers/staging/gma500/psb_irq.c
++++ b/drivers/staging/gma500/psb_irq.c
+@@ -420,9 +420,9 @@ void psb_irq_turn_on_dpst(struct drm_device *dev)
+ 
+ 	if (ospm_power_using_hw_begin(OSPM_DISPLAY_ISLAND,
+ 							OSPM_UHB_ONLY_IF_ON)) {
+-		PSB_WVDC32(BIT31, HISTOGRAM_LOGIC_CONTROL);
++		PSB_WVDC32(1 << 31, HISTOGRAM_LOGIC_CONTROL);
+ 		hist_reg = PSB_RVDC32(HISTOGRAM_LOGIC_CONTROL);
+-		PSB_WVDC32(BIT31, HISTOGRAM_INT_CONTROL);
++		PSB_WVDC32(1 << 31, HISTOGRAM_INT_CONTROL);
+ 		hist_reg = PSB_RVDC32(HISTOGRAM_INT_CONTROL);
+ 
+ 		PSB_WVDC32(0x80010100, PWM_CONTROL_LOGIC);
+diff --git a/drivers/staging/gma500/psb_powermgmt.c b/drivers/staging/gma500/psb_powermgmt.c
+index 3a6ffb7..f5740dc 100644
+--- a/drivers/staging/gma500/psb_powermgmt.c
++++ b/drivers/staging/gma500/psb_powermgmt.c
+@@ -287,11 +287,6 @@ static void ospm_suspend_pci(struct pci_dev *pdev)
+ 	printk(KERN_ALERT "ospm_suspend_pci\n");
  #endif
-diff --git a/drivers/staging/gma500/psb_ttm_fence.c b/drivers/staging/gma500/psb_ttm_fence.c
-deleted file mode 100644
-index d1c3590..0000000
---- a/drivers/staging/gma500/psb_ttm_fence.c
-+++ /dev/null
-@@ -1,605 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright (c) 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- * Copyright (c) 2009 VMware, Inc., Palo Alto, CA., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
-- */
--
--#include "psb_ttm_fence_api.h"
--#include "psb_ttm_fence_driver.h"
--#include <linux/wait.h>
--#include <linux/sched.h>
--
--#include <drm/drmP.h>
--
--/*
-- * Simple implementation for now.
-- */
--
--static void ttm_fence_lockup(struct ttm_fence_object *fence, uint32_t mask)
--{
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--
--	printk(KERN_ERR "GPU lockup dectected on engine %u "
--	       "fence type 0x%08x\n",
--	       (unsigned int)fence->fence_class, (unsigned int)mask);
--	/*
--	 * Give engines some time to idle?
--	 */
--
--	write_lock(&fc->lock);
--	ttm_fence_handler(fence->fdev, fence->fence_class,
--			  fence->sequence, mask, -EBUSY);
--	write_unlock(&fc->lock);
--}
--
--/*
-- * Convenience function to be called by fence::wait methods that
-- * need polling.
-- */
--
--int ttm_fence_wait_polling(struct ttm_fence_object *fence, bool lazy,
--			   bool interruptible, uint32_t mask)
--{
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--	const struct ttm_fence_driver *driver = ttm_fence_driver(fence);
--	uint32_t count = 0;
--	int ret;
--	unsigned long end_jiffies = fence->timeout_jiffies;
--
--	DECLARE_WAITQUEUE(entry, current);
--	add_wait_queue(&fc->fence_queue, &entry);
--
--	ret = 0;
--
--	for (;;) {
--		__set_current_state((interruptible) ?
--				    TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE);
--		if (ttm_fence_object_signaled(fence, mask))
--			break;
--		if (time_after_eq(jiffies, end_jiffies)) {
--			if (driver->lockup)
--				driver->lockup(fence, mask);
--			else
--				ttm_fence_lockup(fence, mask);
--			continue;
--		}
--		if (lazy)
--			schedule_timeout(1);
--		else if ((++count & 0x0F) == 0) {
--			__set_current_state(TASK_RUNNING);
--			schedule();
--			__set_current_state((interruptible) ?
--					    TASK_INTERRUPTIBLE :
--					    TASK_UNINTERRUPTIBLE);
--		}
--		if (interruptible && signal_pending(current)) {
--			ret = -ERESTART;
--			break;
--		}
--	}
--	__set_current_state(TASK_RUNNING);
--	remove_wait_queue(&fc->fence_queue, &entry);
--	return ret;
--}
--
--/*
-- * Typically called by the IRQ handler.
-- */
--
--void ttm_fence_handler(struct ttm_fence_device *fdev, uint32_t fence_class,
--		       uint32_t sequence, uint32_t type, uint32_t error)
--{
--	int wake = 0;
--	uint32_t diff;
--	uint32_t relevant_type;
--	uint32_t new_type;
--	struct ttm_fence_class_manager *fc = &fdev->fence_class[fence_class];
--	const struct ttm_fence_driver *driver = ttm_fence_driver_from_dev(fdev);
--	struct list_head *head;
--	struct ttm_fence_object *fence, *next;
--	bool found = false;
--
--	if (list_empty(&fc->ring))
--		return;
--
--	list_for_each_entry(fence, &fc->ring, ring) {
--		diff = (sequence - fence->sequence) & fc->sequence_mask;
--		if (diff > fc->wrap_diff) {
--			found = true;
--			break;
--		}
--	}
--
--	fc->waiting_types &= ~type;
--	head = (found) ? &fence->ring : &fc->ring;
--
--	list_for_each_entry_safe_reverse(fence, next, head, ring) {
--		if (&fence->ring == &fc->ring)
--			break;
--
--		DRM_DEBUG("Fence 0x%08lx, sequence 0x%08x, type 0x%08x\n",
--			  (unsigned long)fence, fence->sequence,
--			  fence->fence_type);
--
--		if (error) {
--			fence->info.error = error;
--			fence->info.signaled_types = fence->fence_type;
--			list_del_init(&fence->ring);
--			wake = 1;
--			break;
--		}
--
--		relevant_type = type & fence->fence_type;
--		new_type = (fence->info.signaled_types | relevant_type) ^
--		    fence->info.signaled_types;
--
--		if (new_type) {
--			fence->info.signaled_types |= new_type;
--			DRM_DEBUG("Fence 0x%08lx signaled 0x%08x\n",
--				  (unsigned long)fence,
--				  fence->info.signaled_types);
--
--			if (unlikely(driver->signaled))
--				driver->signaled(fence);
--
--			if (driver->needed_flush)
--				fc->pending_flush |=
--				    driver->needed_flush(fence);
--
--			if (new_type & fence->waiting_types)
--				wake = 1;
--		}
--
--		fc->waiting_types |=
--		    fence->waiting_types & ~fence->info.signaled_types;
--
--		if (!(fence->fence_type & ~fence->info.signaled_types)) {
--			DRM_DEBUG("Fence completely signaled 0x%08lx\n",
--				  (unsigned long)fence);
--			list_del_init(&fence->ring);
--		}
--	}
--
--	/*
--	 * Reinstate lost waiting types.
--	 */
--
--	if ((fc->waiting_types & type) != type) {
--		head = head->prev;
--		list_for_each_entry(fence, head, ring) {
--			if (&fence->ring == &fc->ring)
--				break;
--			diff =
--			    (fc->highest_waiting_sequence -
--			     fence->sequence) & fc->sequence_mask;
--			if (diff > fc->wrap_diff)
--				break;
--
--			fc->waiting_types |=
--			    fence->waiting_types & ~fence->info.signaled_types;
--		}
--	}
--
--	if (wake)
--		wake_up_all(&fc->fence_queue);
--}
--
--static void ttm_fence_unring(struct ttm_fence_object *fence)
--{
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--	unsigned long irq_flags;
--
--	write_lock_irqsave(&fc->lock, irq_flags);
--	list_del_init(&fence->ring);
--	write_unlock_irqrestore(&fc->lock, irq_flags);
--}
--
--bool ttm_fence_object_signaled(struct ttm_fence_object *fence, uint32_t mask)
--{
--	unsigned long flags;
--	bool signaled;
--	const struct ttm_fence_driver *driver = ttm_fence_driver(fence);
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--
--	mask &= fence->fence_type;
--	read_lock_irqsave(&fc->lock, flags);
--	signaled = (mask & fence->info.signaled_types) == mask;
--	read_unlock_irqrestore(&fc->lock, flags);
--	if (!signaled && driver->poll) {
--		write_lock_irqsave(&fc->lock, flags);
--		driver->poll(fence->fdev, fence->fence_class, mask);
--		signaled = (mask & fence->info.signaled_types) == mask;
--		write_unlock_irqrestore(&fc->lock, flags);
--	}
--	return signaled;
--}
--
--int ttm_fence_object_flush(struct ttm_fence_object *fence, uint32_t type)
--{
--	const struct ttm_fence_driver *driver = ttm_fence_driver(fence);
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--	unsigned long irq_flags;
--	uint32_t saved_pending_flush;
--	uint32_t diff;
--	bool call_flush;
--
--	if (type & ~fence->fence_type) {
--		DRM_ERROR("Flush trying to extend fence type, "
--			  "0x%x, 0x%x\n", type, fence->fence_type);
--		return -EINVAL;
--	}
--
--	write_lock_irqsave(&fc->lock, irq_flags);
--	fence->waiting_types |= type;
--	fc->waiting_types |= fence->waiting_types;
--	diff = (fence->sequence - fc->highest_waiting_sequence) &
--	    fc->sequence_mask;
--
--	if (diff < fc->wrap_diff)
--		fc->highest_waiting_sequence = fence->sequence;
--
--	/*
--	 * fence->waiting_types has changed. Determine whether
--	 * we need to initiate some kind of flush as a result of this.
--	 */
--
--	saved_pending_flush = fc->pending_flush;
--	if (driver->needed_flush)
--		fc->pending_flush |= driver->needed_flush(fence);
--
--	if (driver->poll)
--		driver->poll(fence->fdev, fence->fence_class,
--			     fence->waiting_types);
--
--	call_flush = (fc->pending_flush != 0);
--	write_unlock_irqrestore(&fc->lock, irq_flags);
--
--	if (call_flush && driver->flush)
--		driver->flush(fence->fdev, fence->fence_class);
--
--	return 0;
--}
--
--/*
-- * Make sure old fence objects are signaled before their fence sequences are
-- * wrapped around and reused.
-- */
--
--void ttm_fence_flush_old(struct ttm_fence_device *fdev,
--			 uint32_t fence_class, uint32_t sequence)
--{
--	struct ttm_fence_class_manager *fc = &fdev->fence_class[fence_class];
--	struct ttm_fence_object *fence;
--	unsigned long irq_flags;
--	const struct ttm_fence_driver *driver = fdev->driver;
--	bool call_flush;
--
--	uint32_t diff;
--
--	write_lock_irqsave(&fc->lock, irq_flags);
--
--	list_for_each_entry_reverse(fence, &fc->ring, ring) {
--		diff = (sequence - fence->sequence) & fc->sequence_mask;
--		if (diff <= fc->flush_diff)
--			break;
--
--		fence->waiting_types = fence->fence_type;
--		fc->waiting_types |= fence->fence_type;
--
--		if (driver->needed_flush)
--			fc->pending_flush |= driver->needed_flush(fence);
--	}
--
--	if (driver->poll)
--		driver->poll(fdev, fence_class, fc->waiting_types);
--
--	call_flush = (fc->pending_flush != 0);
--	write_unlock_irqrestore(&fc->lock, irq_flags);
--
--	if (call_flush && driver->flush)
--		driver->flush(fdev, fence->fence_class);
--
--	/*
--	 * FIXME: Shold we implement a wait here for really old fences?
--	 */
--
--}
--
--int ttm_fence_object_wait(struct ttm_fence_object *fence,
--			  bool lazy, bool interruptible, uint32_t mask)
--{
--	const struct ttm_fence_driver *driver = ttm_fence_driver(fence);
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--	int ret = 0;
--	unsigned long timeout;
--	unsigned long cur_jiffies;
--	unsigned long to_jiffies;
--
--	if (mask & ~fence->fence_type) {
--		DRM_ERROR("Wait trying to extend fence type"
--			  " 0x%08x 0x%08x\n", mask, fence->fence_type);
--		BUG();
--		return -EINVAL;
--	}
--
--	if (driver->wait)
--		return driver->wait(fence, lazy, interruptible, mask);
--
--	ttm_fence_object_flush(fence, mask);
--retry:
--	if (!driver->has_irq ||
--	    driver->has_irq(fence->fdev, fence->fence_class, mask)) {
--
--		cur_jiffies = jiffies;
--		to_jiffies = fence->timeout_jiffies;
--
--		timeout = (time_after(to_jiffies, cur_jiffies)) ?
--		    to_jiffies - cur_jiffies : 1;
--
--		if (interruptible)
--			ret = wait_event_interruptible_timeout
--			    (fc->fence_queue,
--			     ttm_fence_object_signaled(fence, mask), timeout);
--		else
--			ret = wait_event_timeout
--			    (fc->fence_queue,
--			     ttm_fence_object_signaled(fence, mask), timeout);
--
--		if (unlikely(ret == -ERESTARTSYS))
--			return -ERESTART;
--
--		if (unlikely(ret == 0)) {
--			if (driver->lockup)
--				driver->lockup(fence, mask);
--			else
--				ttm_fence_lockup(fence, mask);
--			goto retry;
--		}
--
--		return 0;
--	}
--
--	return ttm_fence_wait_polling(fence, lazy, interruptible, mask);
--}
--
--int ttm_fence_object_emit(struct ttm_fence_object *fence, uint32_t fence_flags,
--			  uint32_t fence_class, uint32_t type)
--{
--	const struct ttm_fence_driver *driver = ttm_fence_driver(fence);
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--	unsigned long flags;
--	uint32_t sequence;
--	unsigned long timeout;
--	int ret;
--
--	ttm_fence_unring(fence);
--	ret = driver->emit(fence->fdev,
--			   fence_class, fence_flags, &sequence, &timeout);
--	if (ret)
--		return ret;
--
--	write_lock_irqsave(&fc->lock, flags);
--	fence->fence_class = fence_class;
--	fence->fence_type = type;
--	fence->waiting_types = 0;
--	fence->info.signaled_types = 0;
--	fence->info.error = 0;
--	fence->sequence = sequence;
--	fence->timeout_jiffies = timeout;
--	if (list_empty(&fc->ring))
--		fc->highest_waiting_sequence = sequence - 1;
--	list_add_tail(&fence->ring, &fc->ring);
--	fc->latest_queued_sequence = sequence;
--	write_unlock_irqrestore(&fc->lock, flags);
--	return 0;
--}
--
--int ttm_fence_object_init(struct ttm_fence_device *fdev,
--			  uint32_t fence_class,
--			  uint32_t type,
--			  uint32_t create_flags,
--			  void (*destroy) (struct ttm_fence_object *),
--			  struct ttm_fence_object *fence)
--{
--	int ret = 0;
--
--	kref_init(&fence->kref);
--	fence->fence_class = fence_class;
--	fence->fence_type = type;
--	fence->info.signaled_types = 0;
--	fence->waiting_types = 0;
--	fence->sequence = 0;
--	fence->info.error = 0;
--	fence->fdev = fdev;
--	fence->destroy = destroy;
--	INIT_LIST_HEAD(&fence->ring);
--	atomic_inc(&fdev->count);
--
--	if (create_flags & TTM_FENCE_FLAG_EMIT) {
--		ret = ttm_fence_object_emit(fence, create_flags,
--					    fence->fence_class, type);
--	}
--
--	return ret;
--}
--
--int ttm_fence_object_create(struct ttm_fence_device *fdev,
--			    uint32_t fence_class,
--			    uint32_t type,
--			    uint32_t create_flags,
--			    struct ttm_fence_object **c_fence)
--{
--	struct ttm_fence_object *fence;
--	int ret;
--
--	ret = ttm_mem_global_alloc(fdev->mem_glob,
--				   sizeof(*fence),
--				   false,
--				   false);
--	if (unlikely(ret != 0)) {
--		printk(KERN_ERR "Out of memory creating fence object\n");
--		return ret;
--	}
--
--	fence = kmalloc(sizeof(*fence), GFP_KERNEL);
--	if (!fence) {
--		printk(KERN_ERR "Out of memory creating fence object\n");
--		ttm_mem_global_free(fdev->mem_glob, sizeof(*fence));
--		return -ENOMEM;
--	}
--
--	ret = ttm_fence_object_init(fdev, fence_class, type,
--				    create_flags, NULL, fence);
--	if (ret) {
--		ttm_fence_object_unref(&fence);
--		return ret;
--	}
--	*c_fence = fence;
--
--	return 0;
--}
--
--static void ttm_fence_object_destroy(struct kref *kref)
--{
--	struct ttm_fence_object *fence =
--	    container_of(kref, struct ttm_fence_object, kref);
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--	unsigned long irq_flags;
--
--	write_lock_irqsave(&fc->lock, irq_flags);
--	list_del_init(&fence->ring);
--	write_unlock_irqrestore(&fc->lock, irq_flags);
--
--	atomic_dec(&fence->fdev->count);
--	if (fence->destroy)
--		fence->destroy(fence);
--	else {
--		ttm_mem_global_free(fence->fdev->mem_glob,
--				    sizeof(*fence));
--		kfree(fence);
--	}
--}
--
--void ttm_fence_device_release(struct ttm_fence_device *fdev)
--{
--	kfree(fdev->fence_class);
--}
--
--int
--ttm_fence_device_init(int num_classes,
--		      struct ttm_mem_global *mem_glob,
--		      struct ttm_fence_device *fdev,
--		      const struct ttm_fence_class_init *init,
--		      bool replicate_init,
--		      const struct ttm_fence_driver *driver)
--{
--	struct ttm_fence_class_manager *fc;
--	const struct ttm_fence_class_init *fci;
--	int i;
--
--	fdev->mem_glob = mem_glob;
--	fdev->fence_class = kzalloc(num_classes *
--				    sizeof(*fdev->fence_class), GFP_KERNEL);
--
--	if (unlikely(!fdev->fence_class))
--		return -ENOMEM;
--
--	fdev->num_classes = num_classes;
--	atomic_set(&fdev->count, 0);
--	fdev->driver = driver;
--
--	for (i = 0; i < fdev->num_classes; ++i) {
--		fc = &fdev->fence_class[i];
--		fci = &init[(replicate_init) ? 0 : i];
--
--		fc->wrap_diff = fci->wrap_diff;
--		fc->flush_diff = fci->flush_diff;
--		fc->sequence_mask = fci->sequence_mask;
--
--		rwlock_init(&fc->lock);
--		INIT_LIST_HEAD(&fc->ring);
--		init_waitqueue_head(&fc->fence_queue);
--	}
--
--	return 0;
--}
--
--struct ttm_fence_info ttm_fence_get_info(struct ttm_fence_object *fence)
--{
--	struct ttm_fence_class_manager *fc = ttm_fence_fc(fence);
--	struct ttm_fence_info tmp;
--	unsigned long irq_flags;
--
--	read_lock_irqsave(&fc->lock, irq_flags);
--	tmp = fence->info;
--	read_unlock_irqrestore(&fc->lock, irq_flags);
--
--	return tmp;
--}
--
--void ttm_fence_object_unref(struct ttm_fence_object **p_fence)
--{
--	struct ttm_fence_object *fence = *p_fence;
--
--	*p_fence = NULL;
--	(void)kref_put(&fence->kref, &ttm_fence_object_destroy);
--}
--
--/*
-- * Placement / BO sync object glue.
-- */
--
--bool ttm_fence_sync_obj_signaled(void *sync_obj, void *sync_arg)
--{
--	struct ttm_fence_object *fence = (struct ttm_fence_object *)sync_obj;
--	uint32_t fence_types = (uint32_t) (unsigned long)sync_arg;
--
--	return ttm_fence_object_signaled(fence, fence_types);
--}
--
--int ttm_fence_sync_obj_wait(void *sync_obj, void *sync_arg,
--			    bool lazy, bool interruptible)
--{
--	struct ttm_fence_object *fence = (struct ttm_fence_object *)sync_obj;
--	uint32_t fence_types = (uint32_t) (unsigned long)sync_arg;
--
--	return ttm_fence_object_wait(fence, lazy, interruptible, fence_types);
--}
--
--int ttm_fence_sync_obj_flush(void *sync_obj, void *sync_arg)
--{
--	struct ttm_fence_object *fence = (struct ttm_fence_object *)sync_obj;
--	uint32_t fence_types = (uint32_t) (unsigned long)sync_arg;
--
--	return ttm_fence_object_flush(fence, fence_types);
--}
--
--void ttm_fence_sync_obj_unref(void **sync_obj)
--{
--	ttm_fence_object_unref((struct ttm_fence_object **)sync_obj);
--}
--
--void *ttm_fence_sync_obj_ref(void *sync_obj)
--{
--	return (void *)
--	    ttm_fence_object_ref((struct ttm_fence_object *)sync_obj);
--}
-diff --git a/drivers/staging/gma500/psb_ttm_fence_api.h b/drivers/staging/gma500/psb_ttm_fence_api.h
-deleted file mode 100644
-index b14a427..0000000
---- a/drivers/staging/gma500/psb_ttm_fence_api.h
-+++ /dev/null
-@@ -1,272 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright (c) 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- * Copyright (c) 2009 VMware, Inc., Palo Alto, CA., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
-- */
--#ifndef _TTM_FENCE_API_H_
--#define _TTM_FENCE_API_H_
--
--#include <linux/list.h>
--#include <linux/kref.h>
--
--#define TTM_FENCE_FLAG_EMIT (1 << 0)
--#define TTM_FENCE_TYPE_EXE  (1 << 0)
--
--struct ttm_fence_device;
--
--/**
-- * struct ttm_fence_info
-- *
-- * @fence_class:    The fence class.
-- * @fence_type:     Bitfield indicating types for this fence.
-- * @signaled_types: Bitfield indicating which types are signaled.
-- * @error:          Last error reported from the device.
-- *
-- * Used as output from the ttm_fence_get_info
-- */
--
--struct ttm_fence_info {
--	uint32_t signaled_types;
--	uint32_t error;
--};
--
--/**
-- * struct ttm_fence_object
-- *
-- * @fdev:            Pointer to the fence device struct.
-- * @kref:            Holds the reference count of this fence object.
-- * @ring:            List head used for the circular list of not-completely
-- *                   signaled fences.
-- * @info:            Data for fast retrieval using the ttm_fence_get_info()
-- * function.
-- * @timeout_jiffies: Absolute jiffies value indicating when this fence
-- *                   object times out and, if waited on, calls ttm_fence_lockup
-- *                   to check for and resolve a GPU lockup.
-- * @sequence:        Fence sequence number.
-- * @waiting_types:   Types currently waited on.
-- * @destroy:         Called to free the fence object, when its refcount has
-- *                   reached zero. If NULL, kfree is used.
-- *
-- * This struct is provided in the driver interface so that drivers can
-- * derive from it and create their own fence implementation. All members
-- * are private to the fence implementation and the fence driver callbacks.
-- * Otherwise a driver may access the derived object using container_of().
-- */
--
--struct ttm_fence_object {
--	struct ttm_fence_device *fdev;
--	struct kref kref;
--	uint32_t fence_class;
--	uint32_t fence_type;
--
--	/*
--	 * The below fields are protected by the fence class
--	 * manager spinlock.
--	 */
--
--	struct list_head ring;
--	struct ttm_fence_info info;
--	unsigned long timeout_jiffies;
--	uint32_t sequence;
--	uint32_t waiting_types;
--	void (*destroy) (struct ttm_fence_object *);
--};
--
--/**
-- * ttm_fence_object_init
-- *
-- * @fdev: Pointer to a struct ttm_fence_device.
-- * @fence_class: Fence class for this fence.
-- * @type: Fence type for this fence.
-- * @create_flags: Flags indicating varios actions at init time. At this point
-- * there's only TTM_FENCE_FLAG_EMIT, which triggers a sequence emission to
-- * the command stream.
-- * @destroy: Destroy function. If NULL, kfree() is used.
-- * @fence: The struct ttm_fence_object to initialize.
-- *
-- * Initialize a pre-allocated fence object. This function, together with the
-- * destroy function makes it possible to derive driver-specific fence objects.
-- */
--
--extern int
--ttm_fence_object_init(struct ttm_fence_device *fdev,
--		      uint32_t fence_class,
--		      uint32_t type,
--		      uint32_t create_flags,
--		      void (*destroy) (struct ttm_fence_object *fence),
--		      struct ttm_fence_object *fence);
--
--/**
-- * ttm_fence_object_create
-- *
-- * @fdev: Pointer to a struct ttm_fence_device.
-- * @fence_class: Fence class for this fence.
-- * @type: Fence type for this fence.
-- * @create_flags: Flags indicating varios actions at init time. At this point
-- * there's only TTM_FENCE_FLAG_EMIT, which triggers a sequence emission to
-- * the command stream.
-- * @c_fence: On successful termination, *(@c_fence) will point to the created
-- * fence object.
-- *
-- * Create and initialize a struct ttm_fence_object. The destroy function will
-- * be set to kfree().
-- */
--
--extern int
--ttm_fence_object_create(struct ttm_fence_device *fdev,
--			uint32_t fence_class,
--			uint32_t type,
--			uint32_t create_flags,
--			struct ttm_fence_object **c_fence);
--
--/**
-- * ttm_fence_object_wait
-- *
-- * @fence: The fence object to wait on.
-- * @lazy: Allow sleeps to reduce the cpu-usage if polling.
-- * @interruptible: Sleep interruptible when waiting.
-- * @type_mask: Wait for the given type_mask to signal.
-- *
-- * Wait for a fence to signal the given type_mask. The function will
-- * perform a fence_flush using type_mask. (See ttm_fence_object_flush).
-- *
-- * Returns
-- * -ERESTART if interrupted by a signal.
-- * May return driver-specific error codes if timed-out.
-- */
--
--extern int
--ttm_fence_object_wait(struct ttm_fence_object *fence,
--		      bool lazy, bool interruptible, uint32_t type_mask);
--
--/**
-- * ttm_fence_object_flush
-- *
-- * @fence: The fence object to flush.
-- * @flush_mask: Fence types to flush.
-- *
-- * Make sure that the given fence eventually signals the
-- * types indicated by @flush_mask. Note that this may or may not
-- * map to a CPU or GPU flush.
-- */
--
--extern int
--ttm_fence_object_flush(struct ttm_fence_object *fence, uint32_t flush_mask);
--
--/**
-- * ttm_fence_get_info
-- *
-- * @fence: The fence object.
-- *
-- * Copy the info block from the fence while holding relevant locks.
-- */
--
--struct ttm_fence_info ttm_fence_get_info(struct ttm_fence_object *fence);
--
--/**
-- * ttm_fence_object_ref
-- *
-- * @fence: The fence object.
-- *
-- * Return a ref-counted pointer to the fence object indicated by @fence.
-- */
--
--static inline struct ttm_fence_object *ttm_fence_object_ref(struct
--							    ttm_fence_object
--							    *fence)
--{
--	kref_get(&fence->kref);
--	return fence;
--}
--
--/**
-- * ttm_fence_object_unref
-- *
-- * @p_fence: Pointer to a ref-counted pinter to a struct ttm_fence_object.
-- *
-- * Unreference the fence object pointed to by *(@p_fence), clearing
-- * *(p_fence).
-- */
--
--extern void ttm_fence_object_unref(struct ttm_fence_object **p_fence);
--
--/**
-- * ttm_fence_object_signaled
-- *
-- * @fence: Pointer to the struct ttm_fence_object.
-- * @mask: Type mask to check whether signaled.
-- *
-- * This function checks (without waiting) whether the fence object
-- * pointed to by @fence has signaled the types indicated by @mask,
-- * and returns 1 if true, 0 if false. This function does NOT perform
-- * an implicit fence flush.
-- */
--
--extern bool
--ttm_fence_object_signaled(struct ttm_fence_object *fence, uint32_t mask);
--
--/**
-- * ttm_fence_class
-- *
-- * @fence: Pointer to the struct ttm_fence_object.
-- *
-- * Convenience function that returns the fence class of a
-- * struct ttm_fence_object.
-- */
--
--static inline uint32_t ttm_fence_class(const struct ttm_fence_object *fence)
--{
--	return fence->fence_class;
--}
--
--/**
-- * ttm_fence_types
-- *
-- * @fence: Pointer to the struct ttm_fence_object.
-- *
-- * Convenience function that returns the fence types of a
-- * struct ttm_fence_object.
-- */
--
--static inline uint32_t ttm_fence_types(const struct ttm_fence_object *fence)
--{
--	return fence->fence_type;
--}
--
--/*
-- * The functions below are wrappers to the above functions, with
-- * similar names but with sync_obj omitted. These wrappers are intended
-- * to be plugged directly into the buffer object driver's sync object
-- * API, if the driver chooses to use ttm_fence_objects as buffer object
-- * sync objects. In the prototypes below, a sync_obj is cast to a
-- * struct ttm_fence_object, whereas a sync_arg is cast to an
-- * uint32_t representing a fence_type argument.
-- */
--
--extern bool ttm_fence_sync_obj_signaled(void *sync_obj, void *sync_arg);
--extern int ttm_fence_sync_obj_wait(void *sync_obj, void *sync_arg,
--				   bool lazy, bool interruptible);
--extern int ttm_fence_sync_obj_flush(void *sync_obj, void *sync_arg);
--extern void ttm_fence_sync_obj_unref(void **sync_obj);
--extern void *ttm_fence_sync_obj_ref(void *sync_obj);
--
--#endif
-diff --git a/drivers/staging/gma500/psb_ttm_fence_driver.h b/drivers/staging/gma500/psb_ttm_fence_driver.h
-deleted file mode 100644
-index c35c569..0000000
---- a/drivers/staging/gma500/psb_ttm_fence_driver.h
-+++ /dev/null
-@@ -1,302 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright (c) 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- * Copyright (c) 2009 VMware, Inc., Palo Alto, CA., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
-- */
--#ifndef _TTM_FENCE_DRIVER_H_
--#define _TTM_FENCE_DRIVER_H_
--
--#include <linux/kref.h>
--#include <linux/spinlock.h>
--#include <linux/wait.h>
--#include "psb_ttm_fence_api.h"
--#include "ttm/ttm_memory.h"
--
--/** @file ttm_fence_driver.h
-- *
-- * Definitions needed for a driver implementing the
-- * ttm_fence subsystem.
-- */
--
--/**
-- * struct ttm_fence_class_manager:
-- *
-- * @wrap_diff: Sequence difference to catch 32-bit wrapping.
-- * if (seqa - seqb) > @wrap_diff, then seqa < seqb.
-- * @flush_diff: Sequence difference to trigger fence flush.
-- * if (cur_seq - seqa) > @flush_diff, then consider fence object with
-- * seqa as old an needing a flush.
-- * @sequence_mask: Mask of valid bits in a fence sequence.
-- * @lock: Lock protecting this struct as well as fence objects
-- * associated with this struct.
-- * @ring: Circular sequence-ordered list of fence objects.
-- * @pending_flush: Fence types currently needing a flush.
-- * @waiting_types: Fence types that are currently waited for.
-- * @fence_queue: Queue of waiters on fences belonging to this fence class.
-- * @highest_waiting_sequence: Sequence number of the fence with highest
-- * sequence number and that is waited for.
-- * @latest_queued_sequence: Sequence number of the fence latest queued
-- * on the ring.
-- */
--
--struct ttm_fence_class_manager {
--
--	/*
--	 * Unprotected constant members.
--	 */
--
--	uint32_t wrap_diff;
--	uint32_t flush_diff;
--	uint32_t sequence_mask;
--
--	/*
--	 * The rwlock protects this structure as well as
--	 * the data in all fence objects belonging to this
--	 * class. This should be OK as most fence objects are
--	 * only read from once they're created.
--	 */
--
--	rwlock_t lock;
--	struct list_head ring;
--	uint32_t pending_flush;
--	uint32_t waiting_types;
--	wait_queue_head_t fence_queue;
--	uint32_t highest_waiting_sequence;
--	uint32_t latest_queued_sequence;
--};
--
--/**
-- * struct ttm_fence_device
-- *
-- * @fence_class:  Array of fence class managers.
-- * @num_classes:  Array dimension of @fence_class.
-- * @count:        Current number of fence objects for statistics.
-- * @driver:       Driver struct.
-- *
-- * Provided in the driver interface so that the driver can derive
-- * from this struct for its driver_private, and accordingly
-- * access the driver_private from the fence driver callbacks.
-- *
-- * All members except "count" are initialized at creation and
-- * never touched after that. No protection needed.
-- *
-- * This struct is private to the fence implementation and to the fence
-- * driver callbacks, and may otherwise be used by drivers only to
-- * obtain the derived device_private object using container_of().
-- */
--
--struct ttm_fence_device {
--	struct ttm_mem_global *mem_glob;
--	struct ttm_fence_class_manager *fence_class;
--	uint32_t num_classes;
--	atomic_t count;
--	const struct ttm_fence_driver *driver;
--};
--
--/**
-- * struct ttm_fence_class_init
-- *
-- * @wrap_diff:    Fence sequence number wrap indicator. If
-- * (sequence1 - sequence2) > @wrap_diff, then sequence1 is
-- * considered to be older than sequence2.
-- * @flush_diff:   Fence sequence number flush indicator.
-- * If a non-completely-signaled fence has a fence sequence number
-- * sequence1 and (sequence1 - current_emit_sequence) > @flush_diff,
-- * the fence is considered too old and it will be flushed upon the
-- * next call of ttm_fence_flush_old(), to make sure no fences with
-- * stale sequence numbers remains unsignaled. @flush_diff should
-- * be sufficiently less than @wrap_diff.
-- * @sequence_mask: Mask with valid bits of the fence sequence
-- * number set to 1.
-- *
-- * This struct is used as input to ttm_fence_device_init.
-- */
--
--struct ttm_fence_class_init {
--	uint32_t wrap_diff;
--	uint32_t flush_diff;
--	uint32_t sequence_mask;
--};
--
--/**
-- * struct ttm_fence_driver
-- *
-- * @has_irq: Called by a potential waiter. Should return 1 if a
-- * fence object with indicated parameters is expected to signal
-- * automatically, and 0 if the fence implementation needs to
-- * repeatedly call @poll to make it signal.
-- * @emit:    Make sure a fence with the given parameters is
-- * present in the indicated command stream. Return its sequence number
-- * in "breadcrumb".
-- * @poll:    Check and report sequences of the given "fence_class"
-- *           that have signaled "types"
-- * @flush:   Make sure that the types indicated by the bitfield
-- *           ttm_fence_class_manager::pending_flush will eventually
-- *           signal. These bits have been put together using the
-- *           result from the needed_flush function described below.
-- * @needed_flush: Given the fence_class and fence_types indicated by
-- *           "fence", and the last received fence sequence of this
-- *           fence class, indicate what types need a fence flush to
-- *           signal. Return as a bitfield.
-- * @wait:    Set to non-NULL if the driver wants to override the fence
-- *           wait implementation. Return 0 on success, -EBUSY on failure,
-- *           and -ERESTART if interruptible and a signal is pending.
-- * @signaled:  Driver callback that is called whenever a
-- *           ttm_fence_object::signaled_types has changed status.
-- *           This function is called from atomic context,
-- *           with the ttm_fence_class_manager::lock held in write mode.
-- * @lockup:  Driver callback that is called whenever a wait has exceeded
-- *           the lifetime of a fence object.
-- *           If there is a GPU lockup,
-- *           this function should, if possible, reset the GPU,
-- *           call the ttm_fence_handler with an error status, and
-- *           return. If no lockup was detected, simply extend the
-- *           fence timeout_jiffies and return. The driver might
-- *           want to protect the lockup check with a mutex and cache a
-- *           non-locked-up status for a while to avoid an excessive
-- *           amount of lockup checks from every waiting thread.
-- */
--
--struct ttm_fence_driver {
--	bool (*has_irq) (struct ttm_fence_device *fdev,
--			uint32_t fence_class, uint32_t flags);
--	int (*emit) (struct ttm_fence_device *fdev,
--		     uint32_t fence_class,
--		     uint32_t flags,
--		     uint32_t *breadcrumb, unsigned long *timeout_jiffies);
--	void (*flush) (struct ttm_fence_device *fdev, uint32_t fence_class);
--	void (*poll) (struct ttm_fence_device *fdev,
--		      uint32_t fence_class, uint32_t types);
--	 uint32_t(*needed_flush)
--	 (struct ttm_fence_object *fence);
--	int (*wait) (struct ttm_fence_object *fence, bool lazy,
--		     bool interruptible, uint32_t mask);
--	void (*signaled) (struct ttm_fence_object *fence);
--	void (*lockup) (struct ttm_fence_object *fence, uint32_t fence_types);
--};
--
--/**
-- * function ttm_fence_device_init
-- *
-- * @num_classes:      Number of fence classes for this fence implementation.
-- * @mem_global:       Pointer to the global memory accounting info.
-- * @fdev:             Pointer to an uninitialised struct ttm_fence_device.
-- * @init:             Array of initialization info for each fence class.
-- * @replicate_init:   Use the first @init initialization info for all classes.
-- * @driver:           Driver callbacks.
-- *
-- * Initialize a struct ttm_fence_driver structure. Returns -ENOMEM if
-- * out-of-memory. Otherwise returns 0.
-- */
--extern int
--ttm_fence_device_init(int num_classes,
--		      struct ttm_mem_global *mem_glob,
--		      struct ttm_fence_device *fdev,
--		      const struct ttm_fence_class_init *init,
--		      bool replicate_init,
--		      const struct ttm_fence_driver *driver);
--
--/**
-- * function ttm_fence_device_release
-- *
-- * @fdev:             Pointer to the fence device.
-- *
-- * Release all resources held by a fence device. Note that before
-- * this function is called, the caller must have made sure all fence
-- * objects belonging to this fence device are completely signaled.
-- */
--
--extern void ttm_fence_device_release(struct ttm_fence_device *fdev);
--
--/**
-- * ttm_fence_handler - the fence handler.
-- *
-- * @fdev:        Pointer to the fence device.
-- * @fence_class: Fence class that signals.
-- * @sequence:    Signaled sequence.
-- * @type:        Types that signal.
-- * @error:       Error from the engine.
-- *
-- * This function signals all fences with a sequence previous to the
-- * @sequence argument, and belonging to @fence_class. The signaled fence
-- * types are provided in @type. If error is non-zero, the error member
-- * of the fence with sequence = @sequence is set to @error. This value
-- * may be reported back to user-space, indicating, for example an illegal
-- * 3D command or illegal mpeg data.
-- *
-- * This function is typically called from the driver::poll method when the
-- * command sequence preceding the fence marker has executed. It should be
-- * called with the ttm_fence_class_manager::lock held in write mode and
-- * may be called from interrupt context.
-- */
--
--extern void
--ttm_fence_handler(struct ttm_fence_device *fdev,
--		  uint32_t fence_class,
--		  uint32_t sequence, uint32_t type, uint32_t error);
--
--/**
-- * ttm_fence_driver_from_dev
-- *
-- * @fdev:        The ttm fence device.
-- *
-- * Returns a pointer to the fence driver struct.
-- */
--
--static inline const struct ttm_fence_driver *ttm_fence_driver_from_dev(
--						struct ttm_fence_device *fdev)
--{
--	return fdev->driver;
--}
--
--/**
-- * ttm_fence_driver
-- *
-- * @fence:        Pointer to a ttm fence object.
-- *
-- * Returns a pointer to the fence driver struct.
-- */
--
--static inline const struct ttm_fence_driver *ttm_fence_driver(struct
--							      ttm_fence_object
--							      *fence)
--{
--	return ttm_fence_driver_from_dev(fence->fdev);
--}
--
--/**
-- * ttm_fence_fc
-- *
-- * @fence:        Pointer to a ttm fence object.
-- *
-- * Returns a pointer to the struct ttm_fence_class_manager for the
-- * fence class of @fence.
-- */
--
--static inline struct ttm_fence_class_manager *ttm_fence_fc(struct
--							   ttm_fence_object
--							   *fence)
--{
--	return &fence->fdev->fence_class[fence->fence_class];
--}
--
--#endif
-diff --git a/drivers/staging/gma500/psb_ttm_fence_user.c b/drivers/staging/gma500/psb_ttm_fence_user.c
-deleted file mode 100644
-index 36f974f..0000000
---- a/drivers/staging/gma500/psb_ttm_fence_user.c
-+++ /dev/null
-@@ -1,237 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright (c) 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- * Copyright (c) 2009 VMware, Inc., Palo Alto, CA., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
-- */
--
--#include <drm/drmP.h>
--#include "psb_ttm_fence_user.h"
--#include "ttm/ttm_object.h"
--#include "psb_ttm_fence_driver.h"
--#include "psb_ttm_userobj_api.h"
--
--/**
-- * struct ttm_fence_user_object
-- *
-- * @base:    The base object used for user-space visibility and refcounting.
-- *
-- * @fence:   The fence object itself.
-- *
-- */
--
--struct ttm_fence_user_object {
--	struct ttm_base_object base;
--	struct ttm_fence_object fence;
--};
--
--static struct ttm_fence_user_object *ttm_fence_user_object_lookup(
--					struct ttm_object_file *tfile,
--					uint32_t handle)
--{
--	struct ttm_base_object *base;
--
--	base = ttm_base_object_lookup(tfile, handle);
--	if (unlikely(base == NULL)) {
--		printk(KERN_ERR "Invalid fence handle 0x%08lx\n",
--		       (unsigned long)handle);
--		return NULL;
--	}
--
--	if (unlikely(base->object_type != ttm_fence_type)) {
--		ttm_base_object_unref(&base);
--		printk(KERN_ERR "Invalid fence handle 0x%08lx\n",
--		       (unsigned long)handle);
--		return NULL;
--	}
--
--	return container_of(base, struct ttm_fence_user_object, base);
--}
--
--/*
-- * The fence object destructor.
-- */
--
--static void ttm_fence_user_destroy(struct ttm_fence_object *fence)
--{
--	struct ttm_fence_user_object *ufence =
--	    container_of(fence, struct ttm_fence_user_object, fence);
--
--	ttm_mem_global_free(fence->fdev->mem_glob, sizeof(*ufence));
--	kfree(ufence);
--}
--
--/*
-- * The base object destructor. We basically unly unreference the
-- * attached fence object.
-- */
--
--static void ttm_fence_user_release(struct ttm_base_object **p_base)
--{
--	struct ttm_fence_user_object *ufence;
--	struct ttm_base_object *base = *p_base;
--	struct ttm_fence_object *fence;
--
--	*p_base = NULL;
--
--	if (unlikely(base == NULL))
--		return;
--
--	ufence = container_of(base, struct ttm_fence_user_object, base);
--	fence = &ufence->fence;
--	ttm_fence_object_unref(&fence);
--}
--
--int
--ttm_fence_user_create(struct ttm_fence_device *fdev,
--		      struct ttm_object_file *tfile,
--		      uint32_t fence_class,
--		      uint32_t fence_types,
--		      uint32_t create_flags,
--		      struct ttm_fence_object **fence,
--		      uint32_t *user_handle)
--{
--	int ret;
--	struct ttm_fence_object *tmp;
--	struct ttm_fence_user_object *ufence;
--
--	ret = ttm_mem_global_alloc(fdev->mem_glob,
--				   sizeof(*ufence),
--				   false,
--				   false);
--	if (unlikely(ret != 0))
--		return -ENOMEM;
--
--	ufence = kmalloc(sizeof(*ufence), GFP_KERNEL);
--	if (unlikely(ufence == NULL)) {
--		ttm_mem_global_free(fdev->mem_glob, sizeof(*ufence));
--		return -ENOMEM;
--	}
--
--	ret = ttm_fence_object_init(fdev,
--				    fence_class,
--				    fence_types, create_flags,
--				    &ttm_fence_user_destroy, &ufence->fence);
--
--	if (unlikely(ret != 0))
--		goto out_err0;
--
--	/*
--	 * One fence ref is held by the fence ptr we return.
--	 * The other one by the base object. Need to up the
--	 * fence refcount before we publish this object to
--	 * user-space.
--	 */
--
--	tmp = ttm_fence_object_ref(&ufence->fence);
--	ret = ttm_base_object_init(tfile, &ufence->base,
--				   false, ttm_fence_type,
--				   &ttm_fence_user_release, NULL);
--
--	if (unlikely(ret != 0))
--		goto out_err1;
--
--	*fence = &ufence->fence;
--	*user_handle = ufence->base.hash.key;
--
--	return 0;
--out_err1:
--	ttm_fence_object_unref(&tmp);
--	tmp = &ufence->fence;
--	ttm_fence_object_unref(&tmp);
--	return ret;
--out_err0:
--	ttm_mem_global_free(fdev->mem_glob, sizeof(*ufence));
--	kfree(ufence);
--	return ret;
--}
--
--int ttm_fence_signaled_ioctl(struct ttm_object_file *tfile, void *data)
--{
--	int ret;
--	union ttm_fence_signaled_arg *arg = data;
--	struct ttm_fence_object *fence;
--	struct ttm_fence_info info;
--	struct ttm_fence_user_object *ufence;
--	struct ttm_base_object *base;
--	ret = 0;
--
--	ufence = ttm_fence_user_object_lookup(tfile, arg->req.handle);
--	if (unlikely(ufence == NULL))
--		return -EINVAL;
--
--	fence = &ufence->fence;
--
--	if (arg->req.flush) {
--		ret = ttm_fence_object_flush(fence, arg->req.fence_type);
--		if (unlikely(ret != 0))
--			goto out;
--	}
--
--	info = ttm_fence_get_info(fence);
--	arg->rep.signaled_types = info.signaled_types;
--	arg->rep.fence_error = info.error;
--
--out:
--	base = &ufence->base;
--	ttm_base_object_unref(&base);
--	return ret;
--}
--
--int ttm_fence_finish_ioctl(struct ttm_object_file *tfile, void *data)
--{
--	int ret;
--	union ttm_fence_finish_arg *arg = data;
--	struct ttm_fence_user_object *ufence;
--	struct ttm_base_object *base;
--	struct ttm_fence_object *fence;
--	ret = 0;
--
--	ufence = ttm_fence_user_object_lookup(tfile, arg->req.handle);
--	if (unlikely(ufence == NULL))
--		return -EINVAL;
--
--	fence = &ufence->fence;
--
--	ret = ttm_fence_object_wait(fence,
--				    arg->req.mode & TTM_FENCE_FINISH_MODE_LAZY,
--				    true, arg->req.fence_type);
--	if (likely(ret == 0)) {
--		struct ttm_fence_info info = ttm_fence_get_info(fence);
--
--		arg->rep.signaled_types = info.signaled_types;
--		arg->rep.fence_error = info.error;
--	}
--
--	base = &ufence->base;
--	ttm_base_object_unref(&base);
--
--	return ret;
--}
--
--int ttm_fence_unref_ioctl(struct ttm_object_file *tfile, void *data)
--{
--	struct ttm_fence_unref_arg *arg = data;
--	int ret = 0;
--
--	ret = ttm_ref_object_base_unref(tfile, arg->handle, ttm_fence_type);
--	return ret;
--}
-diff --git a/drivers/staging/gma500/psb_ttm_fence_user.h b/drivers/staging/gma500/psb_ttm_fence_user.h
-deleted file mode 100644
-index fc13f89..0000000
---- a/drivers/staging/gma500/psb_ttm_fence_user.h
-+++ /dev/null
-@@ -1,140 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- * Copyright (c) 2009 VMware, Inc., Palo Alto, CA., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors
-- * Thomas Hellström <thomas-at-tungstengraphics-dot-com>
-- */
--
--#ifndef TTM_FENCE_USER_H
--#define TTM_FENCE_USER_H
--
--#if !defined(__KERNEL__) && !defined(_KERNEL)
--#include <stdint.h>
+ 
+-#ifdef CONFIG_MDFD_GL3
+-	// Power off GL3 after all GFX sub-systems are powered off.
+-	ospm_power_island_down(OSPM_GL3_CACHE_ISLAND);
 -#endif
 -
--#define TTM_FENCE_MAJOR 0
--#define TTM_FENCE_MINOR 1
--#define TTM_FENCE_PL    0
--#define TTM_FENCE_DATE  "080819"
--
--/**
-- * struct ttm_fence_signaled_req
-- *
-- * @handle: Handle to the fence object. Input.
-- *
-- * @fence_type: Fence types we want to flush. Input.
-- *
-- * @flush: Boolean. Flush the indicated fence_types. Input.
-- *
-- * Argument to the TTM_FENCE_SIGNALED ioctl.
-- */
--
--struct ttm_fence_signaled_req {
--	uint32_t handle;
--	uint32_t fence_type;
--	int32_t flush;
--	uint32_t pad64;
--};
--
--/**
-- * struct ttm_fence_rep
-- *
-- * @signaled_types: Fence type that has signaled.
-- *
-- * @fence_error: Command execution error.
-- * Hardware errors that are consequences of the execution
-- * of the command stream preceding the fence are reported
-- * here.
-- *
-- * Output argument to the TTM_FENCE_SIGNALED and
-- * TTM_FENCE_FINISH ioctls.
-- */
--
--struct ttm_fence_rep {
--	uint32_t signaled_types;
--	uint32_t fence_error;
--};
--
--union ttm_fence_signaled_arg {
--	struct ttm_fence_signaled_req req;
--	struct ttm_fence_rep rep;
--};
--
--/*
-- * Waiting mode flags for the TTM_FENCE_FINISH ioctl.
-- *
-- * TTM_FENCE_FINISH_MODE_LAZY: Allow for sleeps during polling
-- * wait.
-- *
-- * TTM_FENCE_FINISH_MODE_NO_BLOCK: Don't block waiting for GPU,
-- * but return -EBUSY if the buffer is busy.
-- */
--
--#define TTM_FENCE_FINISH_MODE_LAZY     (1 << 0)
--#define TTM_FENCE_FINISH_MODE_NO_BLOCK (1 << 1)
--
--/**
-- * struct ttm_fence_finish_req
-- *
-- * @handle: Handle to the fence object. Input.
-- *
-- * @fence_type: Fence types we want to finish.
-- *
-- * @mode: Wait mode.
-- *
-- * Input to the TTM_FENCE_FINISH ioctl.
-- */
--
--struct ttm_fence_finish_req {
--	uint32_t handle;
--	uint32_t fence_type;
--	uint32_t mode;
--	uint32_t pad64;
--};
--
--union ttm_fence_finish_arg {
--	struct ttm_fence_finish_req req;
--	struct ttm_fence_rep rep;
--};
--
--/**
-- * struct ttm_fence_unref_arg
-- *
-- * @handle: Handle to the fence object.
-- *
-- * Argument to the TTM_FENCE_UNREF ioctl.
-- */
--
--struct ttm_fence_unref_arg {
--	uint32_t handle;
--	uint32_t pad64;
--};
--
--/*
-- * Ioctl offsets frome extenstion start.
-- */
--
--#define TTM_FENCE_SIGNALED 0x01
--#define TTM_FENCE_FINISH   0x02
--#define TTM_FENCE_UNREF    0x03
--
--#endif
-diff --git a/drivers/staging/gma500/psb_ttm_glue.c b/drivers/staging/gma500/psb_ttm_glue.c
-deleted file mode 100644
-index d1d965e..0000000
---- a/drivers/staging/gma500/psb_ttm_glue.c
-+++ /dev/null
-@@ -1,349 +0,0 @@
--/**************************************************************************
-- * Copyright (c) 2008, Intel Corporation.
-- * All Rights Reserved.
-- * Copyright (c) 2008, Tungsten Graphics Inc.  Cedar Park, TX., USA.
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--
--
--#include <drm/drmP.h>
--#include "psb_drv.h"
--#include "psb_ttm_userobj_api.h"
--#include <linux/io.h>
--
--
--static struct vm_operations_struct psb_ttm_vm_ops;
--
--/**
-- * NOTE: driver_private of drm_file is now a struct psb_file_data struct
-- * pPriv in struct psb_file_data contains the original psb_fpriv;
-- */
--int psb_open(struct inode *inode, struct file *filp)
--{
--	struct drm_file *file_priv;
--	struct drm_psb_private *dev_priv;
--	struct psb_fpriv *psb_fp;
--	struct psb_file_data *pvr_file_priv;
--	int ret;
--
--	DRM_DEBUG("\n");
--
--	ret = drm_open(inode, filp);
--	if (unlikely(ret))
--		return ret;
--
--	psb_fp = kzalloc(sizeof(*psb_fp), GFP_KERNEL);
--
--	if (unlikely(psb_fp == NULL))
--		goto out_err0;
--
--	file_priv = (struct drm_file *) filp->private_data;
--	dev_priv = psb_priv(file_priv->minor->dev);
--
--	DRM_DEBUG("is_master %d\n", file_priv->is_master ? 1 : 0);
--
--	psb_fp->tfile = ttm_object_file_init(dev_priv->tdev,
--					     PSB_FILE_OBJECT_HASH_ORDER);
--	if (unlikely(psb_fp->tfile == NULL))
--		goto out_err1;
--
--	pvr_file_priv = (struct psb_file_data *)file_priv->driver_priv;
--	if (!pvr_file_priv) {
--		DRM_ERROR("drm file private is NULL\n");
--		goto out_err1;
--	}
--
--	pvr_file_priv->priv = psb_fp;
--	if (unlikely(dev_priv->bdev.dev_mapping == NULL))
--		dev_priv->bdev.dev_mapping = dev_priv->dev->dev_mapping;
--
--	return 0;
--
--out_err1:
--	kfree(psb_fp);
--out_err0:
--	(void) drm_release(inode, filp);
--	return ret;
--}
--
--int psb_release(struct inode *inode, struct file *filp)
--{
--	struct drm_file *file_priv;
--	struct psb_fpriv *psb_fp;
--	struct drm_psb_private *dev_priv;
--	int ret;
--	file_priv = (struct drm_file *) filp->private_data;
--	psb_fp = psb_fpriv(file_priv);
--	dev_priv = psb_priv(file_priv->minor->dev);
--
--	ttm_object_file_release(&psb_fp->tfile);
--	kfree(psb_fp);
--
--	ret = drm_release(inode, filp);
--
--	return ret;
--}
--
--int psb_fence_signaled_ioctl(struct drm_device *dev, void *data,
--			     struct drm_file *file_priv)
--{
--
--	return ttm_fence_signaled_ioctl(psb_fpriv(file_priv)->tfile, data);
--}
--
--int psb_fence_finish_ioctl(struct drm_device *dev, void *data,
--			   struct drm_file *file_priv)
--{
--	return ttm_fence_finish_ioctl(psb_fpriv(file_priv)->tfile, data);
--}
--
--int psb_fence_unref_ioctl(struct drm_device *dev, void *data,
--			  struct drm_file *file_priv)
--{
--	return ttm_fence_unref_ioctl(psb_fpriv(file_priv)->tfile, data);
--}
--
--int psb_pl_waitidle_ioctl(struct drm_device *dev, void *data,
--			  struct drm_file *file_priv)
--{
--	return ttm_pl_waitidle_ioctl(psb_fpriv(file_priv)->tfile, data);
--}
--
--int psb_pl_setstatus_ioctl(struct drm_device *dev, void *data,
--			   struct drm_file *file_priv)
--{
--	return ttm_pl_setstatus_ioctl(psb_fpriv(file_priv)->tfile,
--				      &psb_priv(dev)->ttm_lock, data);
--
--}
--
--int psb_pl_synccpu_ioctl(struct drm_device *dev, void *data,
--			 struct drm_file *file_priv)
--{
--	return ttm_pl_synccpu_ioctl(psb_fpriv(file_priv)->tfile, data);
--}
--
--int psb_pl_unref_ioctl(struct drm_device *dev, void *data,
--		       struct drm_file *file_priv)
--{
--	return ttm_pl_unref_ioctl(psb_fpriv(file_priv)->tfile, data);
--
--}
--
--int psb_pl_reference_ioctl(struct drm_device *dev, void *data,
--			   struct drm_file *file_priv)
--{
--	return  ttm_pl_reference_ioctl(psb_fpriv(file_priv)->tfile, data);
--
--}
--
--int psb_pl_create_ioctl(struct drm_device *dev, void *data,
--			struct drm_file *file_priv)
--{
--	struct drm_psb_private *dev_priv = psb_priv(dev);
--
--	return ttm_pl_create_ioctl(psb_fpriv(file_priv)->tfile,
--				   &dev_priv->bdev, &dev_priv->ttm_lock, data);
--
--}
--
--int psb_pl_ub_create_ioctl(struct drm_device *dev, void *data,
--			struct drm_file *file_priv)
--{
--	struct drm_psb_private *dev_priv = psb_priv(dev);
--
--	return ttm_pl_ub_create_ioctl(psb_fpriv(file_priv)->tfile,
--				   &dev_priv->bdev, &dev_priv->ttm_lock, data);
--
--}
--/**
-- * psb_ttm_fault - Wrapper around the ttm fault method.
-- *
-- * @vma: The struct vm_area_struct as in the vm fault() method.
-- * @vmf: The struct vm_fault as in the vm fault() method.
-- *
-- * Since ttm_fault() will reserve buffers while faulting,
-- * we need to take the ttm read lock around it, as this driver
-- * relies on the ttm_lock in write mode to exclude all threads from
-- * reserving and thus validating buffers in aperture- and memory shortage
-- * situations.
-- */
--
--static int psb_ttm_fault(struct vm_area_struct *vma,
--			 struct vm_fault *vmf)
--{
--	struct ttm_buffer_object *bo = (struct ttm_buffer_object *)
--		vma->vm_private_data;
--	struct drm_psb_private *dev_priv =
--		container_of(bo->bdev, struct drm_psb_private, bdev);
--	int ret;
--
--	ret = ttm_read_lock(&dev_priv->ttm_lock, true);
--	if (unlikely(ret != 0))
--		return VM_FAULT_NOPAGE;
--
--	ret = dev_priv->ttm_vm_ops->fault(vma, vmf);
--
--	ttm_read_unlock(&dev_priv->ttm_lock);
--	return ret;
--}
--
--/**
-- * if vm_pgoff < DRM_PSB_FILE_PAGE_OFFSET call directly to
-- * PVRMMap
-- */
--int psb_mmap(struct file *filp, struct vm_area_struct *vma)
--{
--	struct drm_file *file_priv;
--	struct drm_psb_private *dev_priv;
--	int ret;
--
--	if (vma->vm_pgoff < DRM_PSB_FILE_PAGE_OFFSET ||
--	    vma->vm_pgoff > 2 * DRM_PSB_FILE_PAGE_OFFSET)
--#if 0		/* FIXMEAC */
--		return PVRMMap(filp, vma);
--#else
--		return -EINVAL;
--#endif
--
--	file_priv = (struct drm_file *) filp->private_data;
--	dev_priv = psb_priv(file_priv->minor->dev);
--
--	ret = ttm_bo_mmap(filp, vma, &dev_priv->bdev);
--	if (unlikely(ret != 0))
--		return ret;
--
--	if (unlikely(dev_priv->ttm_vm_ops == NULL)) {
--		dev_priv->ttm_vm_ops = (struct vm_operations_struct *)
--								vma->vm_ops;
--		psb_ttm_vm_ops = *vma->vm_ops;
--		psb_ttm_vm_ops.fault = &psb_ttm_fault;
--	}
--
--	vma->vm_ops = &psb_ttm_vm_ops;
--
--	return 0;
--}
--/*
--ssize_t psb_ttm_write(struct file *filp, const char __user *buf,
--		      size_t count, loff_t *f_pos)
--{
--	struct drm_file *file_priv = (struct drm_file *)filp->private_data;
--	struct drm_psb_private *dev_priv = psb_priv(file_priv->minor->dev);
--
--	return ttm_bo_io(&dev_priv->bdev, filp, buf, NULL, count, f_pos, 1);
--}
--
--ssize_t psb_ttm_read(struct file *filp, char __user *buf,
--		     size_t count, loff_t *f_pos)
--{
--	struct drm_file *file_priv = (struct drm_file *)filp->private_data;
--	struct drm_psb_private *dev_priv = psb_priv(file_priv->minor->dev);
--
--	return ttm_bo_io(&dev_priv->bdev, filp, NULL, buf, count, f_pos, 1);
--}
--*/
--int psb_verify_access(struct ttm_buffer_object *bo,
--		      struct file *filp)
--{
--	struct drm_file *file_priv = (struct drm_file *)filp->private_data;
--
--	if (capable(CAP_SYS_ADMIN))
--		return 0;
--
--	if (unlikely(!file_priv->authenticated))
--		return -EPERM;
--
--	return ttm_pl_verify_access(bo, psb_fpriv(file_priv)->tfile);
--}
--
--static int psb_ttm_mem_global_init(struct drm_global_reference *ref)
--{
--	return ttm_mem_global_init(ref->object);
--}
--
--static void psb_ttm_mem_global_release(struct drm_global_reference *ref)
--{
--	ttm_mem_global_release(ref->object);
--}
--
--int psb_ttm_global_init(struct drm_psb_private *dev_priv)
--{
--	struct drm_global_reference *global_ref;
--	int ret;
--
--	global_ref = &dev_priv->mem_global_ref;
--	global_ref->global_type = DRM_GLOBAL_TTM_MEM;
--	global_ref->size = sizeof(struct ttm_mem_global);
--	global_ref->init = &psb_ttm_mem_global_init;
--	global_ref->release = &psb_ttm_mem_global_release;
--
--	ret = drm_global_item_ref(global_ref);
--	if (unlikely(ret != 0)) {
--		DRM_ERROR("Failed referencing a global TTM memory object.\n");
--		return ret;
--	}
--
--	dev_priv->bo_global_ref.mem_glob = dev_priv->mem_global_ref.object;
--	global_ref = &dev_priv->bo_global_ref.ref;
--	global_ref->global_type = DRM_GLOBAL_TTM_BO;
--	global_ref->size = sizeof(struct ttm_bo_global);
--	global_ref->init = &ttm_bo_global_init;
--	global_ref->release = &ttm_bo_global_release;
--	ret = drm_global_item_ref(global_ref);
--	if (ret != 0) {
--		DRM_ERROR("Failed setting up TTM BO subsystem.\n");
--		drm_global_item_unref(global_ref);
--		return ret;
--	}
--	return 0;
--}
--
--void psb_ttm_global_release(struct drm_psb_private *dev_priv)
--{
--	drm_global_item_unref(&dev_priv->mem_global_ref);
--}
--
--int psb_getpageaddrs_ioctl(struct drm_device *dev, void *data,
--		struct drm_file *file_priv)
--{
--	struct drm_psb_getpageaddrs_arg *arg = data;
--	struct ttm_buffer_object *bo;
--	struct ttm_tt *ttm;
--	struct page **tt_pages;
--	unsigned long i, num_pages;
--	unsigned long *p = arg->page_addrs;
--	int ret = 0;
--
--	bo = ttm_buffer_object_lookup(psb_fpriv(file_priv)->tfile,
--					arg->handle);
--	if (unlikely(bo == NULL)) {
--		printk(KERN_ERR
--			"Could not find buffer object for getpageaddrs.\n");
--		return -EINVAL;
--	}
--
--	arg->gtt_offset = bo->offset;
--	ttm = bo->ttm;
--	num_pages = ttm->num_pages;
--	tt_pages = ttm->pages;
--
--	for (i = 0; i < num_pages; i++)
--		p[i] = (unsigned long)page_to_phys(tt_pages[i]);
--
--	return ret;
--}
-diff --git a/drivers/staging/gma500/psb_ttm_placement_user.c b/drivers/staging/gma500/psb_ttm_placement_user.c
-deleted file mode 100644
-index 272b397..0000000
---- a/drivers/staging/gma500/psb_ttm_placement_user.c
-+++ /dev/null
-@@ -1,628 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright (c) 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
-- */
--
--#include "psb_ttm_placement_user.h"
--#include "ttm/ttm_bo_driver.h"
--#include "ttm/ttm_object.h"
--#include "psb_ttm_userobj_api.h"
--#include "ttm/ttm_lock.h"
--#include <linux/slab.h>
--#include <linux/sched.h>
--
--struct ttm_bo_user_object {
--	struct ttm_base_object base;
--	struct ttm_buffer_object bo;
--};
--
--static size_t pl_bo_size;
--
--static uint32_t psb_busy_prios[] = {
--	TTM_PL_TT,
--	TTM_PL_PRIV0, /* CI */
--	TTM_PL_PRIV2, /* RAR */
--	TTM_PL_PRIV1, /* DRM_PSB_MEM_MMU */
--	TTM_PL_SYSTEM
--};
--
--static const struct ttm_placement default_placement = {
--				0, 0, 0, NULL, 5, psb_busy_prios
--};
--
--static size_t ttm_pl_size(struct ttm_bo_device *bdev, unsigned long num_pages)
--{
--	size_t page_array_size =
--	    (num_pages * sizeof(void *) + PAGE_SIZE - 1) & PAGE_MASK;
--
--	if (unlikely(pl_bo_size == 0)) {
--		pl_bo_size = bdev->glob->ttm_bo_extra_size +
--		    ttm_round_pot(sizeof(struct ttm_bo_user_object));
--	}
--
--	return bdev->glob->ttm_bo_size + 2 * page_array_size;
--}
--
--static struct ttm_bo_user_object *ttm_bo_user_lookup(struct ttm_object_file
--						     *tfile, uint32_t handle)
--{
--	struct ttm_base_object *base;
--
--	base = ttm_base_object_lookup(tfile, handle);
--	if (unlikely(base == NULL)) {
--		printk(KERN_ERR "Invalid buffer object handle 0x%08lx.\n",
--		       (unsigned long)handle);
--		return NULL;
--	}
--
--	if (unlikely(base->object_type != ttm_buffer_type)) {
--		ttm_base_object_unref(&base);
--		printk(KERN_ERR "Invalid buffer object handle 0x%08lx.\n",
--		       (unsigned long)handle);
--		return NULL;
--	}
--
--	return container_of(base, struct ttm_bo_user_object, base);
--}
--
--struct ttm_buffer_object *ttm_buffer_object_lookup(struct ttm_object_file
--						   *tfile, uint32_t handle)
--{
--	struct ttm_bo_user_object *user_bo;
--	struct ttm_base_object *base;
--
--	user_bo = ttm_bo_user_lookup(tfile, handle);
--	if (unlikely(user_bo == NULL))
--		return NULL;
--
--	(void)ttm_bo_reference(&user_bo->bo);
--	base = &user_bo->base;
--	ttm_base_object_unref(&base);
--	return &user_bo->bo;
--}
--
--static void ttm_bo_user_destroy(struct ttm_buffer_object *bo)
--{
--	struct ttm_bo_user_object *user_bo =
--	    container_of(bo, struct ttm_bo_user_object, bo);
--
--	ttm_mem_global_free(bo->glob->mem_glob, bo->acc_size);
--	kfree(user_bo);
--}
--
--static void ttm_bo_user_release(struct ttm_base_object **p_base)
--{
--	struct ttm_bo_user_object *user_bo;
--	struct ttm_base_object *base = *p_base;
--	struct ttm_buffer_object *bo;
--
--	*p_base = NULL;
--
--	if (unlikely(base == NULL))
--		return;
--
--	user_bo = container_of(base, struct ttm_bo_user_object, base);
--	bo = &user_bo->bo;
--	ttm_bo_unref(&bo);
--}
--
--static void ttm_bo_user_ref_release(struct ttm_base_object *base,
--				    enum ttm_ref_type ref_type)
--{
--	struct ttm_bo_user_object *user_bo =
--	    container_of(base, struct ttm_bo_user_object, base);
--	struct ttm_buffer_object *bo = &user_bo->bo;
--
--	switch (ref_type) {
--	case TTM_REF_SYNCCPU_WRITE:
--		ttm_bo_synccpu_write_release(bo);
--		break;
--	default:
--		BUG();
--	}
--}
--
--static void ttm_pl_fill_rep(struct ttm_buffer_object *bo,
--			    struct ttm_pl_rep *rep)
--{
--	struct ttm_bo_user_object *user_bo =
--	    container_of(bo, struct ttm_bo_user_object, bo);
--
--	rep->gpu_offset = bo->offset;
--	rep->bo_size = bo->num_pages << PAGE_SHIFT;
--	rep->map_handle = bo->addr_space_offset;
--	rep->placement = bo->mem.placement;
--	rep->handle = user_bo->base.hash.key;
--	rep->sync_object_arg = (uint32_t) (unsigned long)bo->sync_obj_arg;
--}
--
--/* FIXME Copy from upstream TTM */
--static inline size_t ttm_bo_size(struct ttm_bo_global *glob,
--				 unsigned long num_pages)
--{
--	size_t page_array_size = (num_pages * sizeof(void *) + PAGE_SIZE - 1) &
--	    PAGE_MASK;
--
--	return glob->ttm_bo_size + 2 * page_array_size;
--}
--
--/* FIXME Copy from upstream TTM "ttm_bo_create", upstream TTM does not
--   export this, so copy it here */
--static int ttm_bo_create_private(struct ttm_bo_device *bdev,
--			unsigned long size,
--			enum ttm_bo_type type,
--			struct ttm_placement *placement,
--			uint32_t page_alignment,
--			unsigned long buffer_start,
--			bool interruptible,
--			struct file *persistant_swap_storage,
--			struct ttm_buffer_object **p_bo)
--{
--	struct ttm_buffer_object *bo;
--	struct ttm_mem_global *mem_glob = bdev->glob->mem_glob;
--	int ret;
--
--	size_t acc_size =
--	    ttm_bo_size(bdev->glob, (size + PAGE_SIZE - 1) >> PAGE_SHIFT);
--	ret = ttm_mem_global_alloc(mem_glob, acc_size, false, false);
--	if (unlikely(ret != 0))
--		return ret;
--
--	bo = kzalloc(sizeof(*bo), GFP_KERNEL);
--
--	if (unlikely(bo == NULL)) {
--		ttm_mem_global_free(mem_glob, acc_size);
--		return -ENOMEM;
--	}
--
--	ret = ttm_bo_init(bdev, bo, size, type, placement, page_alignment,
--				buffer_start, interruptible,
--				persistant_swap_storage, acc_size, NULL);
--	if (likely(ret == 0))
--		*p_bo = bo;
--
--	return ret;
--}
--
--int psb_ttm_bo_check_placement(struct ttm_buffer_object *bo,
--				struct ttm_placement *placement)
--{
--	int i;
--
--	for (i = 0; i < placement->num_placement; i++) {
--		if (!capable(CAP_SYS_ADMIN)) {
--			if (placement->placement[i] & TTM_PL_FLAG_NO_EVICT) {
--				printk(KERN_ERR TTM_PFX "Need to be root to "
--					"modify NO_EVICT status.\n");
--				return -EINVAL;
--			}
--		}
--	}
--	for (i = 0; i < placement->num_busy_placement; i++) {
--		if (!capable(CAP_SYS_ADMIN)) {
--			if (placement->busy_placement[i]
--						& TTM_PL_FLAG_NO_EVICT) {
--				printk(KERN_ERR TTM_PFX "Need to be root to modify NO_EVICT status.\n");
--				return -EINVAL;
--			}
--		}
--	}
--	return 0;
--}
--
--int ttm_buffer_object_create(struct ttm_bo_device *bdev,
--			unsigned long size,
--			enum ttm_bo_type type,
--			uint32_t flags,
--			uint32_t page_alignment,
--			unsigned long buffer_start,
--			bool interruptible,
--			struct file *persistant_swap_storage,
--			struct ttm_buffer_object **p_bo)
--{
--	struct ttm_placement placement = default_placement;
--	int ret;
--
--	if ((flags & TTM_PL_MASK_CACHING) == 0)
--		flags |= TTM_PL_FLAG_WC | TTM_PL_FLAG_UNCACHED;
--
--	placement.num_placement = 1;
--	placement.placement = &flags;
--
--	ret = ttm_bo_create_private(bdev,
--			size,
--			type,
--			&placement,
--			page_alignment,
--			buffer_start,
--			interruptible,
--			persistant_swap_storage,
--			p_bo);
--
--	return ret;
--}
--
--
--int ttm_pl_create_ioctl(struct ttm_object_file *tfile,
--			struct ttm_bo_device *bdev,
--			struct ttm_lock *lock, void *data)
--{
--	union ttm_pl_create_arg *arg = data;
--	struct ttm_pl_create_req *req = &arg->req;
--	struct ttm_pl_rep *rep = &arg->rep;
--	struct ttm_buffer_object *bo;
--	struct ttm_buffer_object *tmp;
--	struct ttm_bo_user_object *user_bo;
--	uint32_t flags;
--	int ret = 0;
--	struct ttm_mem_global *mem_glob = bdev->glob->mem_glob;
--	struct ttm_placement placement = default_placement;
--	size_t acc_size =
--	    ttm_pl_size(bdev, (req->size + PAGE_SIZE - 1) >> PAGE_SHIFT);
--	ret = ttm_mem_global_alloc(mem_glob, acc_size, false, false);
--	if (unlikely(ret != 0))
--		return ret;
--
--	flags = req->placement;
--	user_bo = kzalloc(sizeof(*user_bo), GFP_KERNEL);
--	if (unlikely(user_bo == NULL)) {
--		ttm_mem_global_free(mem_glob, acc_size);
--		return -ENOMEM;
--	}
--
--	bo = &user_bo->bo;
--	ret = ttm_read_lock(lock, true);
--	if (unlikely(ret != 0)) {
--		ttm_mem_global_free(mem_glob, acc_size);
--		kfree(user_bo);
--		return ret;
--	}
--
--	placement.num_placement = 1;
--	placement.placement = &flags;
--
--	if ((flags & TTM_PL_MASK_CACHING) == 0)
--		flags |=  TTM_PL_FLAG_WC | TTM_PL_FLAG_UNCACHED;
--
--	ret = ttm_bo_init(bdev, bo, req->size,
--				     ttm_bo_type_device, &placement,
--				     req->page_alignment, 0, true,
--				     NULL, acc_size, &ttm_bo_user_destroy);
--	ttm_read_unlock(lock);
--
--	/*
--	 * Note that the ttm_buffer_object_init function
--	 * would've called the destroy function on failure!!
--	 */
--
--	if (unlikely(ret != 0))
--		goto out;
--
--	tmp = ttm_bo_reference(bo);
--	ret = ttm_base_object_init(tfile, &user_bo->base,
--				   flags & TTM_PL_FLAG_SHARED,
--				   ttm_buffer_type,
--				   &ttm_bo_user_release,
--				   &ttm_bo_user_ref_release);
--	if (unlikely(ret != 0))
--		goto out_err;
--
--	ttm_pl_fill_rep(bo, rep);
--	ttm_bo_unref(&bo);
--out:
--	return 0;
--out_err:
--	ttm_bo_unref(&tmp);
--	ttm_bo_unref(&bo);
--	return ret;
--}
--
--int ttm_pl_ub_create_ioctl(struct ttm_object_file *tfile,
--			   struct ttm_bo_device *bdev,
--			   struct ttm_lock *lock, void *data)
--{
--	union ttm_pl_create_ub_arg *arg = data;
--	struct ttm_pl_create_ub_req *req = &arg->req;
--	struct ttm_pl_rep *rep = &arg->rep;
--	struct ttm_buffer_object *bo;
--	struct ttm_buffer_object *tmp;
--	struct ttm_bo_user_object *user_bo;
--	uint32_t flags;
--	int ret = 0;
--	struct ttm_mem_global *mem_glob = bdev->glob->mem_glob;
--	struct ttm_placement placement = default_placement;
--	size_t acc_size =
--	    ttm_pl_size(bdev, (req->size + PAGE_SIZE - 1) >> PAGE_SHIFT);
--	ret = ttm_mem_global_alloc(mem_glob, acc_size, false, false);
--	if (unlikely(ret != 0))
--		return ret;
--
--	flags = req->placement;
--	user_bo = kzalloc(sizeof(*user_bo), GFP_KERNEL);
--	if (unlikely(user_bo == NULL)) {
--		ttm_mem_global_free(mem_glob, acc_size);
--		return -ENOMEM;
--	}
--	ret = ttm_read_lock(lock, true);
--	if (unlikely(ret != 0)) {
--		ttm_mem_global_free(mem_glob, acc_size);
--		kfree(user_bo);
--		return ret;
--	}
--	bo = &user_bo->bo;
--
--	placement.num_placement = 1;
--	placement.placement = &flags;
--
--	ret = ttm_bo_init(bdev,
--					bo,
--					req->size,
--					ttm_bo_type_user,
--					&placement,
--					req->page_alignment,
--					req->user_address,
--					true,
--					NULL,
--					acc_size,
--					&ttm_bo_user_destroy);
--
--	/*
--	 * Note that the ttm_buffer_object_init function
--	 * would've called the destroy function on failure!!
--	 */
--	ttm_read_unlock(lock);
--	if (unlikely(ret != 0))
--		goto out;
--
--	tmp = ttm_bo_reference(bo);
--	ret = ttm_base_object_init(tfile, &user_bo->base,
--				   flags & TTM_PL_FLAG_SHARED,
--				   ttm_buffer_type,
--				   &ttm_bo_user_release,
--				   &ttm_bo_user_ref_release);
--	if (unlikely(ret != 0))
--		goto out_err;
--
--	ttm_pl_fill_rep(bo, rep);
--	ttm_bo_unref(&bo);
--out:
--	return 0;
--out_err:
--	ttm_bo_unref(&tmp);
--	ttm_bo_unref(&bo);
--	return ret;
--}
--
--int ttm_pl_reference_ioctl(struct ttm_object_file *tfile, void *data)
--{
--	union ttm_pl_reference_arg *arg = data;
--	struct ttm_pl_rep *rep = &arg->rep;
--	struct ttm_bo_user_object *user_bo;
--	struct ttm_buffer_object *bo;
--	struct ttm_base_object *base;
--	int ret;
--
--	user_bo = ttm_bo_user_lookup(tfile, arg->req.handle);
--	if (unlikely(user_bo == NULL)) {
--		printk(KERN_ERR "Could not reference buffer object.\n");
--		return -EINVAL;
--	}
--
--	bo = &user_bo->bo;
--	ret = ttm_ref_object_add(tfile, &user_bo->base, TTM_REF_USAGE, NULL);
--	if (unlikely(ret != 0)) {
--		printk(KERN_ERR
--		       "Could not add a reference to buffer object.\n");
--		goto out;
--	}
--
--	ttm_pl_fill_rep(bo, rep);
--
--out:
--	base = &user_bo->base;
--	ttm_base_object_unref(&base);
--	return ret;
--}
--
--int ttm_pl_unref_ioctl(struct ttm_object_file *tfile, void *data)
--{
--	struct ttm_pl_reference_req *arg = data;
--
--	return ttm_ref_object_base_unref(tfile, arg->handle, TTM_REF_USAGE);
--}
--
--int ttm_pl_synccpu_ioctl(struct ttm_object_file *tfile, void *data)
--{
--	struct ttm_pl_synccpu_arg *arg = data;
--	struct ttm_bo_user_object *user_bo;
--	struct ttm_buffer_object *bo;
--	struct ttm_base_object *base;
--	bool existed;
--	int ret;
--
--	switch (arg->op) {
--	case TTM_PL_SYNCCPU_OP_GRAB:
--		user_bo = ttm_bo_user_lookup(tfile, arg->handle);
--		if (unlikely(user_bo == NULL)) {
--			printk(KERN_ERR
--			       "Could not find buffer object for synccpu.\n");
--			return -EINVAL;
--		}
--		bo = &user_bo->bo;
--		base = &user_bo->base;
--		ret = ttm_bo_synccpu_write_grab(bo,
--						arg->access_mode &
--						TTM_PL_SYNCCPU_MODE_NO_BLOCK);
--		if (unlikely(ret != 0)) {
--			ttm_base_object_unref(&base);
--			goto out;
--		}
--		ret = ttm_ref_object_add(tfile, &user_bo->base,
--					 TTM_REF_SYNCCPU_WRITE, &existed);
--		if (existed || ret != 0)
--			ttm_bo_synccpu_write_release(bo);
--		ttm_base_object_unref(&base);
--		break;
--	case TTM_PL_SYNCCPU_OP_RELEASE:
--		ret = ttm_ref_object_base_unref(tfile, arg->handle,
--						TTM_REF_SYNCCPU_WRITE);
--		break;
--	default:
--		ret = -EINVAL;
--		break;
--	}
--out:
--	return ret;
--}
--
--int ttm_pl_setstatus_ioctl(struct ttm_object_file *tfile,
--			   struct ttm_lock *lock, void *data)
--{
--	union ttm_pl_setstatus_arg *arg = data;
--	struct ttm_pl_setstatus_req *req = &arg->req;
--	struct ttm_pl_rep *rep = &arg->rep;
--	struct ttm_buffer_object *bo;
--	struct ttm_bo_device *bdev;
--	struct ttm_placement placement = default_placement;
--	uint32_t flags[2];
--	int ret;
--
--	bo = ttm_buffer_object_lookup(tfile, req->handle);
--	if (unlikely(bo == NULL)) {
--		printk(KERN_ERR
--		       "Could not find buffer object for setstatus.\n");
--		return -EINVAL;
--	}
--
--	bdev = bo->bdev;
--
--	ret = ttm_read_lock(lock, true);
--	if (unlikely(ret != 0))
--		goto out_err0;
--
--	ret = ttm_bo_reserve(bo, true, false, false, 0);
--	if (unlikely(ret != 0))
--		goto out_err1;
--
--	ret = ttm_bo_wait_cpu(bo, false);
--	if (unlikely(ret != 0))
--		goto out_err2;
--
--	flags[0] = req->set_placement;
--	flags[1] = req->clr_placement;
--
--	placement.num_placement = 2;
--	placement.placement = flags;
--
--	/* Review internal locking ? FIXMEAC */
--	ret = psb_ttm_bo_check_placement(bo, &placement);
--	if (unlikely(ret != 0))
--		goto out_err2;
--
--	placement.num_placement = 1;
--	flags[0] = (req->set_placement | bo->mem.placement)
--						& ~req->clr_placement;
--
--	ret = ttm_bo_validate(bo, &placement, true, false, false);
--	if (unlikely(ret != 0))
--		goto out_err2;
--
--	ttm_pl_fill_rep(bo, rep);
--out_err2:
--	ttm_bo_unreserve(bo);
--out_err1:
--	ttm_read_unlock(lock);
--out_err0:
--	ttm_bo_unref(&bo);
--	return ret;
--}
--
--static int psb_ttm_bo_block_reservation(struct ttm_buffer_object *bo,
--				bool interruptible, bool no_wait)
--{
--	int ret;
--
--	while (unlikely(atomic_cmpxchg(&bo->reserved, 0, 1) != 0)) {
--		if (no_wait)
--			return -EBUSY;
--		else if (interruptible) {
--			ret = wait_event_interruptible(bo->event_queue,
--					atomic_read(&bo->reserved) == 0);
--			if (unlikely(ret != 0))
--				return -ERESTART;
--		} else {
--			wait_event(bo->event_queue,
--				atomic_read(&bo->reserved) == 0);
--		}
--	}
--	return 0;
--}
--
--static void psb_ttm_bo_unblock_reservation(struct ttm_buffer_object *bo)
--{
--	atomic_set(&bo->reserved, 0);
--	wake_up_all(&bo->event_queue);
--}
--
--int ttm_pl_waitidle_ioctl(struct ttm_object_file *tfile, void *data)
--{
--	struct ttm_pl_waitidle_arg *arg = data;
--	struct ttm_buffer_object *bo;
--	int ret;
--
--	bo = ttm_buffer_object_lookup(tfile, arg->handle);
--	if (unlikely(bo == NULL)) {
--		printk(KERN_ERR "Could not find buffer object for waitidle.\n");
--		return -EINVAL;
--	}
--
--	ret =
--	    psb_ttm_bo_block_reservation(bo, true,
--				     arg->mode & TTM_PL_WAITIDLE_MODE_NO_BLOCK);
--	if (unlikely(ret != 0))
--		goto out;
--	ret = ttm_bo_wait(bo,
--			  arg->mode & TTM_PL_WAITIDLE_MODE_LAZY,
--			  true, arg->mode & TTM_PL_WAITIDLE_MODE_NO_BLOCK);
--	psb_ttm_bo_unblock_reservation(bo);
--out:
--	ttm_bo_unref(&bo);
--	return ret;
--}
--
--int ttm_pl_verify_access(struct ttm_buffer_object *bo,
--			 struct ttm_object_file *tfile)
--{
--	struct ttm_bo_user_object *ubo;
--
--	/*
--	 * Check bo subclass.
--	 */
--
--	if (unlikely(bo->destroy != &ttm_bo_user_destroy))
--		return -EPERM;
--
--	ubo = container_of(bo, struct ttm_bo_user_object, bo);
--	if (likely(ubo->base.shareable || ubo->base.tfile == tfile))
--		return 0;
--
--	return -EPERM;
--}
-diff --git a/drivers/staging/gma500/psb_ttm_placement_user.h b/drivers/staging/gma500/psb_ttm_placement_user.h
-deleted file mode 100644
-index 8b7068b..0000000
---- a/drivers/staging/gma500/psb_ttm_placement_user.h
-+++ /dev/null
-@@ -1,252 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- * Copyright (c) 2009 VMware, Inc., Palo Alto, CA., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors
-- * Thomas Hellström <thomas-at-tungstengraphics-dot-com>
-- */
--
--#ifndef _TTM_PLACEMENT_USER_H_
--#define _TTM_PLACEMENT_USER_H_
--
--#if !defined(__KERNEL__) && !defined(_KERNEL)
--#include <stdint.h>
--#else
--#include <linux/kernel.h>
--#endif
--
--#include "ttm/ttm_placement.h"
--
--#define TTM_PLACEMENT_MAJOR 0
--#define TTM_PLACEMENT_MINOR 1
--#define TTM_PLACEMENT_PL    0
--#define TTM_PLACEMENT_DATE  "080819"
--
--/**
-- * struct ttm_pl_create_req
-- *
-- * @size: The buffer object size.
-- * @placement: Flags that indicate initial acceptable
-- *  placement.
-- * @page_alignment: Required alignment in pages.
-- *
-- * Input to the TTM_BO_CREATE ioctl.
-- */
--
--struct ttm_pl_create_req {
--	uint64_t size;
--	uint32_t placement;
--	uint32_t page_alignment;
--};
--
--/**
-- * struct ttm_pl_create_ub_req
-- *
-- * @size: The buffer object size.
-- * @user_address: User-space address of the memory area that
-- * should be used to back the buffer object cast to 64-bit.
-- * @placement: Flags that indicate initial acceptable
-- *  placement.
-- * @page_alignment: Required alignment in pages.
-- *
-- * Input to the TTM_BO_CREATE_UB ioctl.
-- */
--
--struct ttm_pl_create_ub_req {
--	uint64_t size;
--	uint64_t user_address;
--	uint32_t placement;
--	uint32_t page_alignment;
--};
--
--/**
-- * struct ttm_pl_rep
-- *
-- * @gpu_offset: The current offset into the memory region used.
-- * This can be used directly by the GPU if there are no
-- * additional GPU mapping procedures used by the driver.
-- *
-- * @bo_size: Actual buffer object size.
-- *
-- * @map_handle: Offset into the device address space.
-- * Used for map, seek, read, write. This will never change
-- * during the lifetime of an object.
-- *
-- * @placement: Flag indicating the placement status of
-- * the buffer object using the TTM_PL flags above.
-- *
-- * @sync_object_arg: Used for user-space synchronization and
-- * depends on the synchronization model used. If fences are
-- * used, this is the buffer_object::fence_type_mask
-- *
-- * Output from the TTM_PL_CREATE and TTM_PL_REFERENCE, and
-- * TTM_PL_SETSTATUS ioctls.
-- */
--
--struct ttm_pl_rep {
--	uint64_t gpu_offset;
--	uint64_t bo_size;
--	uint64_t map_handle;
--	uint32_t placement;
--	uint32_t handle;
--	uint32_t sync_object_arg;
--	uint32_t pad64;
--};
--
--/**
-- * struct ttm_pl_setstatus_req
-- *
-- * @set_placement: Placement flags to set.
-- *
-- * @clr_placement: Placement flags to clear.
-- *
-- * @handle: The object handle
-- *
-- * Input to the TTM_PL_SETSTATUS ioctl.
-- */
--
--struct ttm_pl_setstatus_req {
--	uint32_t set_placement;
--	uint32_t clr_placement;
--	uint32_t handle;
--	uint32_t pad64;
--};
--
--/**
-- * struct ttm_pl_reference_req
-- *
-- * @handle: The object to put a reference on.
-- *
-- * Input to the TTM_PL_REFERENCE and the TTM_PL_UNREFERENCE ioctls.
-- */
--
--struct ttm_pl_reference_req {
--	uint32_t handle;
--	uint32_t pad64;
--};
--
--/*
-- * ACCESS mode flags for SYNCCPU.
-- *
-- * TTM_SYNCCPU_MODE_READ will guarantee that the GPU is not
-- * writing to the buffer.
-- *
-- * TTM_SYNCCPU_MODE_WRITE will guarantee that the GPU is not
-- * accessing the buffer.
-- *
-- * TTM_SYNCCPU_MODE_NO_BLOCK makes sure the call does not wait
-- * for GPU accesses to finish but return -EBUSY.
-- *
-- * TTM_SYNCCPU_MODE_TRYCACHED Try to place the buffer in cacheable
-- * memory while synchronized for CPU.
-- */
--
--#define TTM_PL_SYNCCPU_MODE_READ      TTM_ACCESS_READ
--#define TTM_PL_SYNCCPU_MODE_WRITE     TTM_ACCESS_WRITE
--#define TTM_PL_SYNCCPU_MODE_NO_BLOCK  (1 << 2)
--#define TTM_PL_SYNCCPU_MODE_TRYCACHED (1 << 3)
--
--/**
-- * struct ttm_pl_synccpu_arg
-- *
-- * @handle: The object to synchronize.
-- *
-- * @access_mode: access mode indicated by the
-- * TTM_SYNCCPU_MODE flags.
-- *
-- * @op: indicates whether to grab or release the
-- * buffer for cpu usage.
-- *
-- * Input to the TTM_PL_SYNCCPU ioctl.
-- */
--
--struct ttm_pl_synccpu_arg {
--	uint32_t handle;
--	uint32_t access_mode;
--	enum {
--		TTM_PL_SYNCCPU_OP_GRAB,
--		TTM_PL_SYNCCPU_OP_RELEASE
--	} op;
--	uint32_t pad64;
--};
--
--/*
-- * Waiting mode flags for the TTM_BO_WAITIDLE ioctl.
-- *
-- * TTM_WAITIDLE_MODE_LAZY: Allow for sleeps during polling
-- * wait.
-- *
-- * TTM_WAITIDLE_MODE_NO_BLOCK: Don't block waiting for GPU,
-- * but return -EBUSY if the buffer is busy.
-- */
--
--#define TTM_PL_WAITIDLE_MODE_LAZY     (1 << 0)
--#define TTM_PL_WAITIDLE_MODE_NO_BLOCK (1 << 1)
--
--/**
-- * struct ttm_waitidle_arg
-- *
-- * @handle: The object to synchronize.
-- *
-- * @mode: wait mode indicated by the
-- * TTM_SYNCCPU_MODE flags.
-- *
-- * Argument to the TTM_BO_WAITIDLE ioctl.
-- */
--
--struct ttm_pl_waitidle_arg {
--	uint32_t handle;
--	uint32_t mode;
--};
--
--union ttm_pl_create_arg {
--	struct ttm_pl_create_req req;
--	struct ttm_pl_rep rep;
--};
--
--union ttm_pl_reference_arg {
--	struct ttm_pl_reference_req req;
--	struct ttm_pl_rep rep;
--};
--
--union ttm_pl_setstatus_arg {
--	struct ttm_pl_setstatus_req req;
--	struct ttm_pl_rep rep;
--};
--
--union ttm_pl_create_ub_arg {
--	struct ttm_pl_create_ub_req req;
--	struct ttm_pl_rep rep;
--};
--
--/*
-- * Ioctl offsets.
-- */
--
--#define TTM_PL_CREATE      0x00
--#define TTM_PL_REFERENCE   0x01
--#define TTM_PL_UNREF       0x02
--#define TTM_PL_SYNCCPU     0x03
--#define TTM_PL_WAITIDLE    0x04
--#define TTM_PL_SETSTATUS   0x05
--#define TTM_PL_CREATE_UB   0x06
--
--#endif
-diff --git a/drivers/staging/gma500/psb_ttm_userobj_api.h b/drivers/staging/gma500/psb_ttm_userobj_api.h
-deleted file mode 100644
-index 6a8f7c4..0000000
---- a/drivers/staging/gma500/psb_ttm_userobj_api.h
-+++ /dev/null
-@@ -1,85 +0,0 @@
--/**************************************************************************
-- *
-- * Copyright (c) 2006-2008 Tungsten Graphics, Inc., Cedar Park, TX., USA
-- * All Rights Reserved.
-- * Copyright (c) 2009 VMware, Inc., Palo Alto, CA., USA
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--/*
-- * Authors: Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
-- */
--
--#ifndef _TTM_USEROBJ_API_H_
--#define _TTM_USEROBJ_API_H_
--
--#include "psb_ttm_placement_user.h"
--#include "psb_ttm_fence_user.h"
--#include "ttm/ttm_object.h"
--#include "psb_ttm_fence_api.h"
--#include "ttm/ttm_bo_api.h"
--
--struct ttm_lock;
--
--/*
-- * User ioctls.
-- */
--
--extern int ttm_pl_create_ioctl(struct ttm_object_file *tfile,
--			       struct ttm_bo_device *bdev,
--			       struct ttm_lock *lock, void *data);
--extern int ttm_pl_ub_create_ioctl(struct ttm_object_file *tfile,
--				  struct ttm_bo_device *bdev,
--				  struct ttm_lock *lock, void *data);
--extern int ttm_pl_reference_ioctl(struct ttm_object_file *tfile, void *data);
--extern int ttm_pl_unref_ioctl(struct ttm_object_file *tfile, void *data);
--extern int ttm_pl_synccpu_ioctl(struct ttm_object_file *tfile, void *data);
--extern int ttm_pl_setstatus_ioctl(struct ttm_object_file *tfile,
--				  struct ttm_lock *lock, void *data);
--extern int ttm_pl_waitidle_ioctl(struct ttm_object_file *tfile, void *data);
--extern int ttm_fence_signaled_ioctl(struct ttm_object_file *tfile, void *data);
--extern int ttm_fence_finish_ioctl(struct ttm_object_file *tfile, void *data);
--extern int ttm_fence_unref_ioctl(struct ttm_object_file *tfile, void *data);
--
--extern int
--ttm_fence_user_create(struct ttm_fence_device *fdev,
--		      struct ttm_object_file *tfile,
--		      uint32_t fence_class,
--		      uint32_t fence_types,
--		      uint32_t create_flags,
--		      struct ttm_fence_object **fence, uint32_t * user_handle);
--
--extern struct ttm_buffer_object *ttm_buffer_object_lookup(struct ttm_object_file
--							  *tfile,
--							  uint32_t handle);
--
--extern int
--ttm_pl_verify_access(struct ttm_buffer_object *bo,
--		     struct ttm_object_file *tfile);
--
--extern int ttm_buffer_object_create(struct ttm_bo_device *bdev,
--			unsigned long size,
--			enum ttm_bo_type type,
--			uint32_t flags,
--			uint32_t page_alignment,
--			unsigned long buffer_start,
--			bool interruptible,
--			struct file *persistant_swap_storage,
--			struct ttm_buffer_object **p_bo);
--
--extern int psb_ttm_bo_check_placement(struct ttm_buffer_object *bo,
--				struct ttm_placement *placement);
--#endif
+ 	pci_save_state(pdev);
+ 	pci_read_config_dword(pdev, 0x5C, &bsm);
+ 	dev_priv->saveBSM = bsm;
 
