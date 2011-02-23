@@ -1,151 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab1BWQki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:40:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755018Ab1BWQkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:40:37 -0500
-Date: Wed, 23 Feb 2011 17:40:01 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Arthur Marsh <arthur.marsh@internode.on.net>
-Cc: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
- 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
- GFP_ATOMIC order > 0
-Message-ID: <20110223164001.GN31195@random.random>
-References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
- <4D6367B3.9050306@googlemail.com>
- <20110222134047.GT13092@random.random>
- <20110222161513.GC13092@random.random>
- <4D63F6C0.7060204@internode.on.net>
- <20110223162432.GL31195@random.random>
- <20110223163639.GM31195@random.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110223163639.GM31195@random.random>
+	id S1755095Ab1BWQlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:41:45 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36190 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab1BWQlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 11:41:44 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=x5lYFldHaXAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=V3uPyP-92uv3RMKLG0cA:9 a=pqKMKEnthuSll5uxJiMA:7 a=JA12IbQPuWDukOJ5SJH6WmZbr1QA:4 a=PUjeQqilurYA:10 a=m7dB5c_xsyASV2UR:21 a=CquaIQMWIIkNkfT1:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+In-Reply-To: <20110223161645.GA1819@nowhere>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+	 <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20110223161645.GA1819@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 23 Feb 2011 11:41:42 -0500
+Message-ID: <1298479302.7666.94.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 05:36:39PM +0100, Andrea Arcangeli wrote:
-> +		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
-> +			if (fatal_signal_pending(current))
-> +				break;
+On Wed, 2011-02-23 at 17:16 +0100, Frederic Weisbecker wrote:
+> On Tue, Feb 22, 2011 at 05:39:40PM -0800, Paul E. McKenney wrote:
+> > +/*
+> > + * Wake up the current CPU's kthread.  This replaces raise_softirq()
+> > + * in earlier versions of RCU.
+> > + */
+> > +static void invoke_rcu_kthread(void)
+> > +{
+> > +	unsigned long flags;
+> > +	wait_queue_head_t *q;
+> > +	int cpu;
+> > +
+> > +	local_irq_save(flags);
+> > +	cpu = smp_processor_id();
+> > +	if (per_cpu(rcu_cpu_kthread_task, cpu) == NULL) {
+> > +		local_irq_restore(flags);
+> > +		return;
+> > +	}
+> > +	per_cpu(rcu_cpu_has_work, cpu) = 1;
+> > +	q = &per_cpu(rcu_cpu_wq, cpu);
+> 
+> I see you make extensive use of per_cpu() accessors even for
+> local variables.
+> 
+> I tend to think it's better to use __get_cpu_var() for local
+> accesses and keep per_cpu() for remote accesses.
+> 
+> There are several reasons for that:
+> 
+> * __get_cpu_var() checks we are in a non-preemptible section,
+> per_cpu() doesn't. That may sound of a limited interest for code like the
+> above, but by the time code can move, and then we might lose track of some
+> things, etc...
 
-I noticed a buglet in this break... need to repost sorry. compaction-no-kswapd-2.
+Ah, but so does smp_processor_id() ;-)
 
-===
-Subject: compaction: fix high compaction latencies and remove compaction-kswapd
+> 
+> * local accesses can be optimized by architectures. per_cpu() implies
+> finding the local cpu number, and dereference an array of cpu offsets with
+> that number to find the local cpu offset.
+> __get_cpu_var() does a direct access to __my_cpu_offset which is a nice
+> shortcut if the arch implements it.
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+True, but we could also argue that the multiple checks for being preempt
+can also be an issue.
 
-We need to proper spin_unlock_irq/cond_resched in the compaction loop to avoid
-hurting latencies. We must also stop calling compaction from kswapd as that
-creates too high load during memory pressure that can't be offseted by the
-improved performance of hugepage allocations. NOTE: this is not related to THP
-as all THP allocations uses __GFP_NO_KSWAPD, this is only related to usually
-small order allocations like the kernel stack that make kswapd go wild with
-compaction.
+> 
+> * It makes code easier to review: we know that __get_cpu_var() is
+> for local accesses and per_cpu() for remote.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/compaction.c |   40 +++++++++++++++++++++-------------------
- 1 file changed, 21 insertions(+), 19 deletions(-)
+This I'll agree with you.
 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -271,9 +271,27 @@ static unsigned long isolate_migratepage
- 	}
- 
- 	/* Time to isolate some pages for migration */
-+	cond_resched();
- 	spin_lock_irq(&zone->lru_lock);
- 	for (; low_pfn < end_pfn; low_pfn++) {
- 		struct page *page;
-+		int unlocked = 0;
-+
-+		/* give a chance to irqs before checking need_resched() */
-+		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			unlocked = 1;
-+		}
-+		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
-+			if (!unlocked)
-+				spin_unlock_irq(&zone->lru_lock);
-+			cond_resched();
-+			spin_lock_irq(&zone->lru_lock);
-+			if (fatal_signal_pending(current))
-+				break;
-+		} else if (unlocked)
-+			spin_lock_irq(&zone->lru_lock);
-+
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
- 		nr_scanned++;
-@@ -397,10 +415,7 @@ static int compact_finished(struct zone 
- 		return COMPACT_COMPLETE;
- 
- 	/* Compaction run is not finished if the watermark is not met */
--	if (cc->compact_mode != COMPACT_MODE_KSWAPD)
--		watermark = low_wmark_pages(zone);
--	else
--		watermark = high_wmark_pages(zone);
-+	watermark = low_wmark_pages(zone);
- 	watermark += (1 << cc->order);
- 
- 	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
-@@ -413,15 +428,6 @@ static int compact_finished(struct zone 
- 	if (cc->order == -1)
- 		return COMPACT_CONTINUE;
- 
--	/*
--	 * Generating only one page of the right order is not enough
--	 * for kswapd, we must continue until we're above the high
--	 * watermark as a pool for high order GFP_ATOMIC allocations
--	 * too.
--	 */
--	if (cc->compact_mode == COMPACT_MODE_KSWAPD)
--		return COMPACT_CONTINUE;
--
- 	/* Direct compactor: Is a suitable page free? */
- 	for (order = cc->order; order < MAX_ORDER; order++) {
- 		/* Job done if page is free of the right migratetype */
-@@ -543,8 +549,7 @@ static int compact_zone(struct zone *zon
- 
- unsigned long compact_zone_order(struct zone *zone,
- 				 int order, gfp_t gfp_mask,
--				 bool sync,
--				 int compact_mode)
-+				 bool sync)
- {
- 	struct compact_control cc = {
- 		.nr_freepages = 0,
-@@ -553,7 +558,6 @@ unsigned long compact_zone_order(struct 
- 		.migratetype = allocflags_to_migratetype(gfp_mask),
- 		.zone = zone,
- 		.sync = sync,
--		.compact_mode = compact_mode,
- 	};
- 	INIT_LIST_HEAD(&cc.freepages);
- 	INIT_LIST_HEAD(&cc.migratepages);
-@@ -599,8 +603,7 @@ unsigned long try_to_compact_pages(struc
- 								nodemask) {
- 		int status;
- 
--		status = compact_zone_order(zone, order, gfp_mask, sync,
--					    COMPACT_MODE_DIRECT_RECLAIM);
-+		status = compact_zone_order(zone, order, gfp_mask, sync);
- 		rc = max(status, rc);
- 
- 		/* If a normal allocation would succeed, stop compacting */
-@@ -631,7 +634,6 @@ static int compact_node(int nid)
- 			.nr_freepages = 0,
- 			.nr_migratepages = 0,
- 			.order = -1,
--			.compact_mode = COMPACT_MODE_DIRECT_RECLAIM,
- 		};
- 
- 		zone = &pgdat->node_zones[zoneid];
+In the past, I've thought about which one is better (per_cpu() vs
+__get_cpu_var()).
+
+But, that last point is a good one. Just knowing that this is for the
+local CPU helps with the amount of info your mind needs to process when
+looking at this code. And the mind needs all the help it can get when
+reviewing this code ;-)
+
+-- Steve
+
+> 
+> > +	wake_up(q);
+> > +	local_irq_restore(flags);
+> > +}
+
+
