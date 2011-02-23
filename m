@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab1BWOwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 09:52:51 -0500
-Received: from hera.kernel.org ([140.211.167.34]:33145 "EHLO hera.kernel.org"
+	id S1752778Ab1BWOwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 09:52:55 -0500
+Received: from hera.kernel.org ([140.211.167.34]:33149 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336Ab1BWOwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 09:52:49 -0500
-Date: Wed, 23 Feb 2011 14:52:05 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1752336Ab1BWOww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 09:52:52 -0500
+Date: Wed, 23 Feb 2011 14:52:26 GMT
+From: tip-bot for Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        marcin.slusarz@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        marcin.slusarz@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110222205312.GA18474@joi.lan>
+References: <20110222205312.GA18474@joi.lan>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top browser: Adjust the browser indexes when refreshing
-Message-ID: <tip-6435a5e39d3e01a1a73a925ed53ee18619b0a368@git.kernel.org>
-Git-Commit-ID: 6435a5e39d3e01a1a73a925ed53ee18619b0a368
+Subject: [tip:perf/core] perf lock: Document valid sort keys
+Message-ID: <tip-9826e8329bc160e4cc58b83019f3f056965e42d0@git.kernel.org>
+Git-Commit-ID: 9826e8329bc160e4cc58b83019f3f056965e42d0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 23 Feb 2011 14:52:06 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 23 Feb 2011 14:52:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6435a5e39d3e01a1a73a925ed53ee18619b0a368
-Gitweb:     http://git.kernel.org/tip/6435a5e39d3e01a1a73a925ed53ee18619b0a368
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 23 Feb 2011 07:25:02 -0300
+Commit-ID:  9826e8329bc160e4cc58b83019f3f056965e42d0
+Gitweb:     http://git.kernel.org/tip/9826e8329bc160e4cc58b83019f3f056965e42d0
+Author:     Marcin Slusarz <marcin.slusarz@gmail.com>
+AuthorDate: Tue, 22 Feb 2011 21:53:12 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 23 Feb 2011 07:25:02 -0300
+CommitDate: Wed, 23 Feb 2011 07:29:33 -0300
 
-perf top browser: Adjust the browser indexes when refreshing
+perf lock: Document valid sort keys
 
-This is not a problem when we're not at the bottom of the active symbols
-list, so was not noticed, but at the end of the screen it falls apart.
-
-Fix it by adjusting the ui_browser indexes according to the new number
-of entries in the rb_tree and by seeking from the start of the rb_tree
-to find the new symbol at the top of the screen.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20110222205312.GA18474@joi.lan>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browsers/top.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-lock.txt |   12 ++++++++++--
+ tools/perf/builtin-lock.c              |    2 +-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
-index 377ff58..2f47224 100644
---- a/tools/perf/util/ui/browsers/top.c
-+++ b/tools/perf/util/ui/browsers/top.c
-@@ -70,6 +70,7 @@ static void perf_top_browser__write(struct ui_browser *browser, void *entry, int
- static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
- {
- 	struct perf_top *top = browser->b.priv;
-+	u64 top_idx = browser->b.top_idx;
+diff --git a/tools/perf/Documentation/perf-lock.txt b/tools/perf/Documentation/perf-lock.txt
+index 921de25..4a26a2f 100644
+--- a/tools/perf/Documentation/perf-lock.txt
++++ b/tools/perf/Documentation/perf-lock.txt
+@@ -24,8 +24,8 @@ and statistics with this 'perf lock' command.
  
- 	browser->root = RB_ROOT;
- 	browser->b.top = NULL;
-@@ -82,7 +83,29 @@ static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
- 		if (browser->sym_width + browser->dso_width > browser->b.width - 29)
- 			browser->sym_width = browser->b.width - browser->dso_width - 29;
- 	}
-+
-+	/*
-+	 * Adjust the ui_browser indexes since the entries in the browser->root
-+	 * rb_tree may have changed, then seek it from start, so that we get a
-+	 * possible new top of the screen.
-+ 	 */
- 	browser->b.nr_entries = top->rb_entries;
-+
-+	if (top_idx >= browser->b.nr_entries) {
-+		if (browser->b.height >= browser->b.nr_entries)
-+			top_idx = browser->b.nr_entries - browser->b.height;
-+		else
-+			top_idx = 0;
-+	}
-+
-+	if (browser->b.index >= top_idx + browser->b.height)
-+		browser->b.index = top_idx + browser->b.index - browser->b.top_idx;
-+
-+	if (browser->b.index >= browser->b.nr_entries)
-+		browser->b.index = browser->b.nr_entries - 1;
-+
-+	browser->b.top_idx = top_idx;
-+	browser->b.seek(&browser->b, top_idx, SEEK_SET);
- }
+   'perf lock report' reports statistical data.
  
- static void perf_top_browser__annotate(struct perf_top_browser *browser)
+-OPTIONS
+--------
++COMMON OPTIONS
++--------------
+ 
+ -i::
+ --input=<file>::
+@@ -39,6 +39,14 @@ OPTIONS
+ --dump-raw-trace::
+         Dump raw trace in ASCII.
+ 
++REPORT OPTIONS
++--------------
++
++-k::
++--key=<value>::
++        Sorting key. Possible values: acquired (default), contended,
++        wait_total, wait_max, wait_min.
++
+ SEE ALSO
+ --------
+ linkperf:perf[1]
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index e00d938..2e93f99 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -893,7 +893,7 @@ static const char * const report_usage[] = {
+ 
+ static const struct option report_options[] = {
+ 	OPT_STRING('k', "key", &sort_key, "acquired",
+-		    "key for sorting"),
++		    "key for sorting (acquired / contended / wait_total / wait_max / wait_min)"),
+ 	/* TODO: type */
+ 	OPT_END()
+ };
