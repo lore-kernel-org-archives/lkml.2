@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab1BWEen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:34:43 -0500
+	id S1755401Ab1BWEes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:34:48 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:61703 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028Ab1BWEek (ORCPT
+	with ESMTP id S1755028Ab1BWEep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:34:40 -0500
-Subject: [RFC PATCH 12/15] dt/usb: Eliminate users of of_platform_{,
+	Tue, 22 Feb 2011 23:34:45 -0500
+Subject: [RFC PATCH 13/15] dt/serial: Eliminate users of of_platform_{,
 	un}register_driver
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
         linux-kernel@vger.kernel.org, davem@davemloft.net
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Tue, 22 Feb 2011 21:34:37 -0700
-Message-ID: <20110223043436.20795.9795.stgit@localhost6.localdomain6>
+Date: Tue, 22 Feb 2011 21:34:42 -0700
+Message-ID: <20110223043442.20795.4037.stgit@localhost6.localdomain6>
 In-Reply-To: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,342 +26,412 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of users of of_platform_driver in drivers/usb.  The
+Get rid of users of of_platform_driver in drivers/serial.  The
 of_platform_{,un}register_driver functions are going away, so the
 users need to be converted to using the platform_bus_type directly.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/usb/gadget/fsl_qe_udc.c   |   14 ++++++++------
- drivers/usb/host/ehci-hcd.c       |   12 ++++++------
- drivers/usb/host/ehci-ppc-of.c    |    9 +++------
- drivers/usb/host/ehci-xilinx-of.c |    6 ++----
- drivers/usb/host/fhci-hcd.c       |    9 ++++-----
- drivers/usb/host/isp1760-if.c     |    9 ++++-----
- drivers/usb/host/ohci-hcd.c       |    6 +++---
- drivers/usb/host/ohci-ppc-of.c    |    9 +++------
- 8 files changed, 33 insertions(+), 41 deletions(-)
+ drivers/tty/serial/apbuart.c                |   11 +++++------
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c |    9 ++++-----
+ drivers/tty/serial/mpc52xx_uart.c           |   13 +++++--------
+ drivers/tty/serial/of_serial.c              |   14 ++++++++------
+ drivers/tty/serial/sunhv.c                  |    8 ++++----
+ drivers/tty/serial/sunsab.c                 |    8 ++++----
+ drivers/tty/serial/sunsu.c                  |    6 +++---
+ drivers/tty/serial/sunzilog.c               |   10 +++++-----
+ drivers/tty/serial/ucc_uart.c               |    9 ++++-----
+ 9 files changed, 42 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/usb/gadget/fsl_qe_udc.c b/drivers/usb/gadget/fsl_qe_udc.c
-index 792d5ef..aee7e3c 100644
---- a/drivers/usb/gadget/fsl_qe_udc.c
-+++ b/drivers/usb/gadget/fsl_qe_udc.c
-@@ -2523,8 +2523,7 @@ static void qe_udc_release(struct device *dev)
+diff --git a/drivers/tty/serial/apbuart.c b/drivers/tty/serial/apbuart.c
+index 095a5d5..1ab999b 100644
+--- a/drivers/tty/serial/apbuart.c
++++ b/drivers/tty/serial/apbuart.c
+@@ -553,8 +553,7 @@ static struct uart_driver grlib_apbuart_driver = {
+ /* OF Platform Driver                                                       */
+ /* ======================================================================== */
+ 
+-static int __devinit apbuart_probe(struct platform_device *op,
+-				   const struct of_device_id *match)
++static int __devinit apbuart_probe(struct platform_device *op)
+ {
+ 	int i = -1;
+ 	struct uart_port *port = NULL;
+@@ -587,7 +586,7 @@ static struct of_device_id __initdata apbuart_match[] = {
+ 	{},
+ };
+ 
+-static struct of_platform_driver grlib_apbuart_of_driver = {
++static struct platform_driver grlib_apbuart_of_driver = {
+ 	.probe = apbuart_probe,
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+@@ -676,10 +675,10 @@ static int __init grlib_apbuart_init(void)
+ 		return ret;
+ 	}
+ 
+-	ret = of_register_platform_driver(&grlib_apbuart_of_driver);
++	ret = platform_driver_register(&grlib_apbuart_of_driver);
+ 	if (ret) {
+ 		printk(KERN_ERR
+-		       "%s: of_register_platform_driver failed (%i)\n",
++		       "%s: platform_driver_register failed (%i)\n",
+ 		       __FILE__, ret);
+ 		uart_unregister_driver(&grlib_apbuart_driver);
+ 		return ret;
+@@ -697,7 +696,7 @@ static void __exit grlib_apbuart_exit(void)
+ 				     &grlib_apbuart_ports[i]);
+ 
+ 	uart_unregister_driver(&grlib_apbuart_driver);
+-	of_unregister_platform_driver(&grlib_apbuart_of_driver);
++	platform_driver_unregister(&grlib_apbuart_of_driver);
  }
  
- /* Driver probe functions */
--static int __devinit qe_udc_probe(struct platform_device *ofdev,
--			const struct of_device_id *match)
-+static int __devinit qe_udc_probe(struct platform_device *ofdev)
+ module_init(grlib_apbuart_init);
+diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+index 8692ff9..a9a6a5f 100644
+--- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+@@ -1359,8 +1359,7 @@ static struct uart_driver cpm_reg = {
+ 
+ static int probe_index;
+ 
+-static int __devinit cpm_uart_probe(struct platform_device *ofdev,
+-                                    const struct of_device_id *match)
++static int __devinit cpm_uart_probe(struct platform_device *ofdev)
  {
- 	struct device_node *np = ofdev->dev.of_node;
- 	struct qe_ep *ep;
-@@ -2532,6 +2531,9 @@ static int __devinit qe_udc_probe(struct platform_device *ofdev,
- 	unsigned int i;
- 	const void *prop;
+ 	int index = probe_index++;
+ 	struct uart_cpm_port *pinfo = &cpm_uart_ports[index];
+@@ -1405,7 +1404,7 @@ static struct of_device_id cpm_uart_match[] = {
+ 	{}
+ };
+ 
+-static struct of_platform_driver cpm_uart_driver = {
++static struct platform_driver cpm_uart_driver = {
+ 	.driver = {
+ 		.name = "cpm_uart",
+ 		.owner = THIS_MODULE,
+@@ -1421,7 +1420,7 @@ static int __init cpm_uart_init(void)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = of_register_platform_driver(&cpm_uart_driver);
++	ret = platform_driver_register(&cpm_uart_driver);
+ 	if (ret)
+ 		uart_unregister_driver(&cpm_reg);
+ 
+@@ -1430,7 +1429,7 @@ static int __init cpm_uart_init(void)
+ 
+ static void __exit cpm_uart_exit(void)
+ {
+-	of_unregister_platform_driver(&cpm_uart_driver);
++	platform_driver_unregister(&cpm_uart_driver);
+ 	uart_unregister_driver(&cpm_reg);
+ }
+ 
+diff --git a/drivers/tty/serial/mpc52xx_uart.c b/drivers/tty/serial/mpc52xx_uart.c
+index 126ec7f..a0bcd8a 100644
+--- a/drivers/tty/serial/mpc52xx_uart.c
++++ b/drivers/tty/serial/mpc52xx_uart.c
+@@ -1302,8 +1302,7 @@ static struct of_device_id mpc52xx_uart_of_match[] = {
+ 	{},
+ };
+ 
+-static int __devinit
+-mpc52xx_uart_of_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit mpc52xx_uart_of_probe(struct platform_device *op)
+ {
+ 	int idx = -1;
+ 	unsigned int uartclk;
+@@ -1311,8 +1310,6 @@ mpc52xx_uart_of_probe(struct platform_device *op, const struct of_device_id *mat
+ 	struct resource res;
+ 	int ret;
+ 
+-	dev_dbg(&op->dev, "mpc52xx_uart_probe(op=%p, match=%p)\n", op, match);
+-
+ 	/* Check validity & presence */
+ 	for (idx = 0; idx < MPC52xx_PSC_MAXNUM; idx++)
+ 		if (mpc52xx_uart_nodes[idx] == op->dev.of_node)
+@@ -1453,7 +1450,7 @@ mpc52xx_uart_of_enumerate(void)
+ 
+ MODULE_DEVICE_TABLE(of, mpc52xx_uart_of_match);
+ 
+-static struct of_platform_driver mpc52xx_uart_of_driver = {
++static struct platform_driver mpc52xx_uart_of_driver = {
+ 	.probe		= mpc52xx_uart_of_probe,
+ 	.remove		= mpc52xx_uart_of_remove,
+ #ifdef CONFIG_PM
+@@ -1497,9 +1494,9 @@ mpc52xx_uart_init(void)
+ 			return ret;
+ 	}
+ 
+-	ret = of_register_platform_driver(&mpc52xx_uart_of_driver);
++	ret = platform_driver_register(&mpc52xx_uart_of_driver);
+ 	if (ret) {
+-		printk(KERN_ERR "%s: of_register_platform_driver failed (%i)\n",
++		printk(KERN_ERR "%s: platform_driver_register failed (%i)\n",
+ 		       __FILE__, ret);
+ 		uart_unregister_driver(&mpc52xx_uart_driver);
+ 		return ret;
+@@ -1514,7 +1511,7 @@ mpc52xx_uart_exit(void)
+ 	if (psc_ops->fifoc_uninit)
+ 		psc_ops->fifoc_uninit();
+ 
+-	of_unregister_platform_driver(&mpc52xx_uart_of_driver);
++	platform_driver_unregister(&mpc52xx_uart_of_driver);
+ 	uart_unregister_driver(&mpc52xx_uart_driver);
+ }
+ 
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 5c7abe4..1a43197 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -80,14 +80,16 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+ /*
+  * Try to register a serial port
+  */
+-static int __devinit of_platform_serial_probe(struct platform_device *ofdev,
+-						const struct of_device_id *id)
++static int __devinit of_platform_serial_probe(struct platform_device *ofdev)
+ {
+ 	struct of_serial_info *info;
+ 	struct uart_port port;
+ 	int port_type;
+ 	int ret;
  
 +	if (!ofdev->dev.of_match)
 +		return -EINVAL;
 +
- 	prop = of_get_property(np, "mode", NULL);
- 	if (!prop || strcmp(prop, "peripheral"))
- 		return -ENODEV;
-@@ -2543,7 +2545,7 @@ static int __devinit qe_udc_probe(struct platform_device *ofdev,
+ 	if (of_find_property(ofdev->dev.of_node, "used-by-rtas", NULL))
+ 		return -EBUSY;
+ 
+@@ -95,7 +97,7 @@ static int __devinit of_platform_serial_probe(struct platform_device *ofdev,
+ 	if (info == NULL)
  		return -ENOMEM;
- 	}
  
--	udc_controller->soc_type = (unsigned long)match->data;
-+	udc_controller->soc_type = (unsigned long)ofdev->dev.of_match->data;
- 	udc_controller->usb_regs = of_iomap(np, 0);
- 	if (!udc_controller->usb_regs) {
- 		ret = -ENOMEM;
-@@ -2768,7 +2770,7 @@ static const struct of_device_id qe_udc_match[] __devinitconst = {
+-	port_type = (unsigned long)id->data;
++	port_type = (unsigned long)ofdev->dev.of_match->data;
+ 	ret = of_platform_serial_setup(ofdev, port_type, &port);
+ 	if (ret)
+ 		goto out;
+@@ -174,7 +176,7 @@ static struct of_device_id __devinitdata of_platform_serial_table[] = {
+ 	{ /* end of list */ },
+ };
  
- MODULE_DEVICE_TABLE(of, qe_udc_match);
- 
--static struct of_platform_driver udc_driver = {
-+static struct platform_driver udc_driver = {
+-static struct of_platform_driver of_platform_serial_driver = {
++static struct platform_driver of_platform_serial_driver = {
  	.driver = {
- 		.name = (char *)driver_name,
+ 		.name = "of_serial",
  		.owner = THIS_MODULE,
-@@ -2786,12 +2788,12 @@ static int __init qe_udc_init(void)
+@@ -186,13 +188,13 @@ static struct of_platform_driver of_platform_serial_driver = {
+ 
+ static int __init of_platform_serial_init(void)
  {
- 	printk(KERN_INFO "%s: %s, %s\n", driver_name, driver_desc,
- 			DRIVER_VERSION);
--	return of_register_platform_driver(&udc_driver);
-+	return platform_driver_register(&udc_driver);
+-	return of_register_platform_driver(&of_platform_serial_driver);
++	return platform_driver_register(&of_platform_serial_driver);
  }
+ module_init(of_platform_serial_init);
  
- static void __exit qe_udc_exit(void)
+ static void __exit of_platform_serial_exit(void)
  {
--	of_unregister_platform_driver(&udc_driver);
-+	platform_driver_unregister(&udc_driver);
- }
- 
- module_init(qe_udc_init);
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 74dcf49..c4de2d7 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1306,24 +1306,24 @@ static int __init ehci_hcd_init(void)
- #endif
- 
- #ifdef OF_PLATFORM_DRIVER
--	retval = of_register_platform_driver(&OF_PLATFORM_DRIVER);
-+	retval = platform_driver_register(&OF_PLATFORM_DRIVER);
- 	if (retval < 0)
- 		goto clean3;
- #endif
- 
- #ifdef XILINX_OF_PLATFORM_DRIVER
--	retval = of_register_platform_driver(&XILINX_OF_PLATFORM_DRIVER);
-+	retval = platform_driver_register(&XILINX_OF_PLATFORM_DRIVER);
- 	if (retval < 0)
- 		goto clean4;
- #endif
- 	return retval;
- 
- #ifdef XILINX_OF_PLATFORM_DRIVER
--	/* of_unregister_platform_driver(&XILINX_OF_PLATFORM_DRIVER); */
-+	/* platform_driver_unregister(&XILINX_OF_PLATFORM_DRIVER); */
- clean4:
- #endif
- #ifdef OF_PLATFORM_DRIVER
--	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
-+	platform_driver_unregister(&OF_PLATFORM_DRIVER);
- clean3:
- #endif
- #ifdef PS3_SYSTEM_BUS_DRIVER
-@@ -1351,10 +1351,10 @@ module_init(ehci_hcd_init);
- static void __exit ehci_hcd_cleanup(void)
- {
- #ifdef XILINX_OF_PLATFORM_DRIVER
--	of_unregister_platform_driver(&XILINX_OF_PLATFORM_DRIVER);
-+	platform_driver_unregister(&XILINX_OF_PLATFORM_DRIVER);
- #endif
- #ifdef OF_PLATFORM_DRIVER
--	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
-+	platform_driver_unregister(&OF_PLATFORM_DRIVER);
- #endif
- #ifdef PLATFORM_DRIVER
- 	platform_driver_unregister(&PLATFORM_DRIVER);
-diff --git a/drivers/usb/host/ehci-ppc-of.c b/drivers/usb/host/ehci-ppc-of.c
-index ba52be4..1f09f25 100644
---- a/drivers/usb/host/ehci-ppc-of.c
-+++ b/drivers/usb/host/ehci-ppc-of.c
-@@ -105,8 +105,7 @@ ppc44x_enable_bmt(struct device_node *dn)
- }
- 
- 
--static int __devinit
--ehci_hcd_ppc_of_probe(struct platform_device *op, const struct of_device_id *match)
-+static int __devinit ehci_hcd_ppc_of_probe(struct platform_device *op)
- {
- 	struct device_node *dn = op->dev.of_node;
- 	struct usb_hcd *hcd;
-@@ -255,14 +254,12 @@ static int ehci_hcd_ppc_of_remove(struct platform_device *op)
- }
- 
- 
--static int ehci_hcd_ppc_of_shutdown(struct platform_device *op)
-+static void ehci_hcd_ppc_of_shutdown(struct platform_device *op)
- {
- 	struct usb_hcd *hcd = dev_get_drvdata(&op->dev);
- 
- 	if (hcd->driver->shutdown)
- 		hcd->driver->shutdown(hcd);
--
--	return 0;
- }
- 
- 
-@@ -275,7 +272,7 @@ static const struct of_device_id ehci_hcd_ppc_of_match[] = {
- MODULE_DEVICE_TABLE(of, ehci_hcd_ppc_of_match);
- 
- 
--static struct of_platform_driver ehci_hcd_ppc_of_driver = {
-+static struct platform_driver ehci_hcd_ppc_of_driver = {
- 	.probe		= ehci_hcd_ppc_of_probe,
- 	.remove		= ehci_hcd_ppc_of_remove,
- 	.shutdown	= ehci_hcd_ppc_of_shutdown,
-diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
-index e8f4f36..17c1b11 100644
---- a/drivers/usb/host/ehci-xilinx-of.c
-+++ b/drivers/usb/host/ehci-xilinx-of.c
-@@ -142,15 +142,13 @@ static const struct hc_driver ehci_xilinx_of_hc_driver = {
- /**
-  * ehci_hcd_xilinx_of_probe - Probe method for the USB host controller
-  * @op:		pointer to the platform_device bound to the host controller
-- * @match:	pointer to of_device_id structure, not used
-  *
-  * This function requests resources and sets up appropriate properties for the
-  * host controller. Because the Xilinx USB host controller can be configured
-  * as HS only or HS/FS only, it checks the configuration in the device tree
-  * entry, and sets an appropriate value for hcd->has_tt.
-  */
--static int __devinit
--ehci_hcd_xilinx_of_probe(struct platform_device *op, const struct of_device_id *match)
-+static int __devinit ehci_hcd_xilinx_of_probe(struct platform_device *op)
- {
- 	struct device_node *dn = op->dev.of_node;
- 	struct usb_hcd *hcd;
-@@ -288,7 +286,7 @@ static const struct of_device_id ehci_hcd_xilinx_of_match[] = {
+-	return of_unregister_platform_driver(&of_platform_serial_driver);
++	return platform_driver_unregister(&of_platform_serial_driver);
  };
- MODULE_DEVICE_TABLE(of, ehci_hcd_xilinx_of_match);
+ module_exit(of_platform_serial_exit);
  
--static struct of_platform_driver ehci_hcd_xilinx_of_driver = {
-+static struct platform_driver ehci_hcd_xilinx_of_driver = {
- 	.probe		= ehci_hcd_xilinx_of_probe,
- 	.remove		= ehci_hcd_xilinx_of_remove,
- 	.shutdown	= ehci_hcd_xilinx_of_shutdown,
-diff --git a/drivers/usb/host/fhci-hcd.c b/drivers/usb/host/fhci-hcd.c
-index 12fd184..b84ff7e 100644
---- a/drivers/usb/host/fhci-hcd.c
-+++ b/drivers/usb/host/fhci-hcd.c
-@@ -561,8 +561,7 @@ static const struct hc_driver fhci_driver = {
- 	.hub_control = fhci_hub_control,
+diff --git a/drivers/tty/serial/sunhv.c b/drivers/tty/serial/sunhv.c
+index c901486..c0b7246 100644
+--- a/drivers/tty/serial/sunhv.c
++++ b/drivers/tty/serial/sunhv.c
+@@ -519,7 +519,7 @@ static struct console sunhv_console = {
+ 	.data	=	&sunhv_reg,
  };
  
--static int __devinit of_fhci_probe(struct platform_device *ofdev,
--				   const struct of_device_id *ofid)
-+static int __devinit of_fhci_probe(struct platform_device *ofdev)
+-static int __devinit hv_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit hv_probe(struct platform_device *op)
  {
- 	struct device *dev = &ofdev->dev;
- 	struct device_node *node = dev->of_node;
-@@ -812,7 +811,7 @@ static const struct of_device_id of_fhci_match[] = {
+ 	struct uart_port *port;
+ 	unsigned long minor;
+@@ -629,7 +629,7 @@ static const struct of_device_id hv_match[] = {
  };
- MODULE_DEVICE_TABLE(of, of_fhci_match);
+ MODULE_DEVICE_TABLE(of, hv_match);
  
--static struct of_platform_driver of_fhci_driver = {
-+static struct platform_driver of_fhci_driver = {
+-static struct of_platform_driver hv_driver = {
++static struct platform_driver hv_driver = {
  	.driver = {
- 		.name = "fsl,usb-fhci",
+ 		.name = "hv",
  		.owner = THIS_MODULE,
-@@ -824,13 +823,13 @@ static struct of_platform_driver of_fhci_driver = {
+@@ -644,12 +644,12 @@ static int __init sunhv_init(void)
+ 	if (tlb_type != hypervisor)
+ 		return -ENODEV;
  
- static int __init fhci_module_init(void)
- {
--	return of_register_platform_driver(&of_fhci_driver);
-+	return platform_driver_register(&of_fhci_driver);
+-	return of_register_platform_driver(&hv_driver);
++	return platform_driver_register(&hv_driver);
  }
- module_init(fhci_module_init);
  
- static void __exit fhci_module_exit(void)
+ static void __exit sunhv_exit(void)
  {
--	of_unregister_platform_driver(&of_fhci_driver);
-+	platform_driver_unregister(&of_fhci_driver);
+-	of_unregister_platform_driver(&hv_driver);
++	platform_driver_unregister(&hv_driver);
  }
- module_exit(fhci_module_exit);
  
-diff --git a/drivers/usb/host/isp1760-if.c b/drivers/usb/host/isp1760-if.c
-index 3b28dbf..7ee3005 100644
---- a/drivers/usb/host/isp1760-if.c
-+++ b/drivers/usb/host/isp1760-if.c
-@@ -27,8 +27,7 @@
- #endif
- 
- #ifdef CONFIG_PPC_OF
--static int of_isp1760_probe(struct platform_device *dev,
--		const struct of_device_id *match)
-+static int of_isp1760_probe(struct platform_device *dev)
- {
- 	struct usb_hcd *hcd;
- 	struct device_node *dp = dev->dev.of_node;
-@@ -119,7 +118,7 @@ static const struct of_device_id of_isp1760_match[] = {
- };
- MODULE_DEVICE_TABLE(of, of_isp1760_match);
- 
--static struct of_platform_driver isp1760_of_driver = {
-+static struct platform_driver isp1760_of_driver = {
- 	.driver = {
- 		.name = "nxp-isp1760",
- 		.owner = THIS_MODULE,
-@@ -398,7 +397,7 @@ static int __init isp1760_init(void)
- 	if (!ret)
- 		any_ret = 0;
- #ifdef CONFIG_PPC_OF
--	ret = of_register_platform_driver(&isp1760_of_driver);
-+	ret = platform_driver_register(&isp1760_of_driver);
- 	if (!ret)
- 		any_ret = 0;
- #endif
-@@ -418,7 +417,7 @@ static void __exit isp1760_exit(void)
- {
- 	platform_driver_unregister(&isp1760_plat_driver);
- #ifdef CONFIG_PPC_OF
--	of_unregister_platform_driver(&isp1760_of_driver);
-+	platform_driver_unregister(&isp1760_of_driver);
- #endif
- #ifdef CONFIG_PCI
- 	pci_unregister_driver(&isp1761_pci_driver);
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index 759a12f..54240f6 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1180,7 +1180,7 @@ static int __init ohci_hcd_mod_init(void)
- #endif
- 
- #ifdef OF_PLATFORM_DRIVER
--	retval = of_register_platform_driver(&OF_PLATFORM_DRIVER);
-+	retval = platform_driver_register(&OF_PLATFORM_DRIVER);
- 	if (retval < 0)
- 		goto error_of_platform;
- #endif
-@@ -1239,7 +1239,7 @@ static int __init ohci_hcd_mod_init(void)
-  error_sa1111:
- #endif
- #ifdef OF_PLATFORM_DRIVER
--	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
-+	platform_driver_unregister(&OF_PLATFORM_DRIVER);
-  error_of_platform:
- #endif
- #ifdef PLATFORM_DRIVER
-@@ -1287,7 +1287,7 @@ static void __exit ohci_hcd_mod_exit(void)
- 	sa1111_driver_unregister(&SA1111_DRIVER);
- #endif
- #ifdef OF_PLATFORM_DRIVER
--	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
-+	platform_driver_unregister(&OF_PLATFORM_DRIVER);
- #endif
- #ifdef PLATFORM_DRIVER
- 	platform_driver_unregister(&PLATFORM_DRIVER);
-diff --git a/drivers/usb/host/ohci-ppc-of.c b/drivers/usb/host/ohci-ppc-of.c
-index b2c2dbf..1ca1821 100644
---- a/drivers/usb/host/ohci-ppc-of.c
-+++ b/drivers/usb/host/ohci-ppc-of.c
-@@ -80,8 +80,7 @@ static const struct hc_driver ohci_ppc_of_hc_driver = {
- };
- 
- 
--static int __devinit
--ohci_hcd_ppc_of_probe(struct platform_device *op, const struct of_device_id *match)
-+static int __devinit ohci_hcd_ppc_of_probe(struct platform_device *op)
- {
- 	struct device_node *dn = op->dev.of_node;
- 	struct usb_hcd *hcd;
-@@ -201,14 +200,12 @@ static int ohci_hcd_ppc_of_remove(struct platform_device *op)
+ module_init(sunhv_init);
+diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
+index 5b246b1..b5fa2a5 100644
+--- a/drivers/tty/serial/sunsab.c
++++ b/drivers/tty/serial/sunsab.c
+@@ -1006,7 +1006,7 @@ static int __devinit sunsab_init_one(struct uart_sunsab_port *up,
  	return 0;
  }
  
--static int ohci_hcd_ppc_of_shutdown(struct platform_device *op)
-+static void ohci_hcd_ppc_of_shutdown(struct platform_device *op)
+-static int __devinit sab_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit sab_probe(struct platform_device *op)
  {
- 	struct usb_hcd *hcd = dev_get_drvdata(&op->dev);
+ 	static int inst;
+ 	struct uart_sunsab_port *up;
+@@ -1092,7 +1092,7 @@ static const struct of_device_id sab_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, sab_match);
  
-         if (hcd->driver->shutdown)
-                 hcd->driver->shutdown(hcd);
--
--	return 0;
+-static struct of_platform_driver sab_driver = {
++static struct platform_driver sab_driver = {
+ 	.driver = {
+ 		.name = "sab",
+ 		.owner = THIS_MODULE,
+@@ -1130,12 +1130,12 @@ static int __init sunsab_init(void)
+ 		}
+ 	}
+ 
+-	return of_register_platform_driver(&sab_driver);
++	return platform_driver_register(&sab_driver);
  }
  
+ static void __exit sunsab_exit(void)
+ {
+-	of_unregister_platform_driver(&sab_driver);
++	platform_driver_unregister(&sab_driver);
+ 	if (sunsab_reg.nr) {
+ 		sunserial_unregister_minors(&sunsab_reg, sunsab_reg.nr);
+ 	}
+diff --git a/drivers/tty/serial/sunsu.c b/drivers/tty/serial/sunsu.c
+index 551ebfe..92aa545 100644
+--- a/drivers/tty/serial/sunsu.c
++++ b/drivers/tty/serial/sunsu.c
+@@ -1406,7 +1406,7 @@ static enum su_type __devinit su_get_type(struct device_node *dp)
+ 	return SU_PORT_PORT;
+ }
  
-@@ -243,7 +240,7 @@ MODULE_DEVICE_TABLE(of, ohci_hcd_ppc_of_match);
- #endif
+-static int __devinit su_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit su_probe(struct platform_device *op)
+ {
+ 	static int inst;
+ 	struct device_node *dp = op->dev.of_node;
+@@ -1543,7 +1543,7 @@ static const struct of_device_id su_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, su_match);
  
+-static struct of_platform_driver su_driver = {
++static struct platform_driver su_driver = {
+ 	.driver = {
+ 		.name = "su",
+ 		.owner = THIS_MODULE,
+@@ -1586,7 +1586,7 @@ static int __init sunsu_init(void)
+ 			return err;
+ 	}
  
--static struct of_platform_driver ohci_hcd_ppc_of_driver = {
-+static struct platform_driver ohci_hcd_ppc_of_driver = {
- 	.probe		= ohci_hcd_ppc_of_probe,
- 	.remove		= ohci_hcd_ppc_of_remove,
- 	.shutdown 	= ohci_hcd_ppc_of_shutdown,
+-	err = of_register_platform_driver(&su_driver);
++	err = platform_driver_register(&su_driver);
+ 	if (err && num_uart)
+ 		sunserial_unregister_minors(&sunsu_reg, num_uart);
+ 
+diff --git a/drivers/tty/serial/sunzilog.c b/drivers/tty/serial/sunzilog.c
+index c1967ac..99ff9ab 100644
+--- a/drivers/tty/serial/sunzilog.c
++++ b/drivers/tty/serial/sunzilog.c
+@@ -1399,7 +1399,7 @@ static void __devinit sunzilog_init_hw(struct uart_sunzilog_port *up)
+ 
+ static int zilog_irq = -1;
+ 
+-static int __devinit zs_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit zs_probe(struct platform_device *op)
+ {
+ 	static int kbm_inst, uart_inst;
+ 	int inst;
+@@ -1540,7 +1540,7 @@ static const struct of_device_id zs_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, zs_match);
+ 
+-static struct of_platform_driver zs_driver = {
++static struct platform_driver zs_driver = {
+ 	.driver = {
+ 		.name = "zs",
+ 		.owner = THIS_MODULE,
+@@ -1576,7 +1576,7 @@ static int __init sunzilog_init(void)
+ 			goto out_free_tables;
+ 	}
+ 
+-	err = of_register_platform_driver(&zs_driver);
++	err = platform_driver_register(&zs_driver);
+ 	if (err)
+ 		goto out_unregister_uart;
+ 
+@@ -1604,7 +1604,7 @@ out:
+ 	return err;
+ 
+ out_unregister_driver:
+-	of_unregister_platform_driver(&zs_driver);
++	platform_driver_unregister(&zs_driver);
+ 
+ out_unregister_uart:
+ 	if (num_sunzilog) {
+@@ -1619,7 +1619,7 @@ out_free_tables:
+ 
+ static void __exit sunzilog_exit(void)
+ {
+-	of_unregister_platform_driver(&zs_driver);
++	platform_driver_unregister(&zs_driver);
+ 
+ 	if (zilog_irq != -1) {
+ 		struct uart_sunzilog_port *up = sunzilog_irq_chain;
+diff --git a/drivers/tty/serial/ucc_uart.c b/drivers/tty/serial/ucc_uart.c
+index 3f4848e..ff51dae 100644
+--- a/drivers/tty/serial/ucc_uart.c
++++ b/drivers/tty/serial/ucc_uart.c
+@@ -1194,8 +1194,7 @@ static void uart_firmware_cont(const struct firmware *fw, void *context)
+ 	release_firmware(fw);
+ }
+ 
+-static int ucc_uart_probe(struct platform_device *ofdev,
+-	const struct of_device_id *match)
++static int ucc_uart_probe(struct platform_device *ofdev)
+ {
+ 	struct device_node *np = ofdev->dev.of_node;
+ 	const unsigned int *iprop;      /* Integer OF properties */
+@@ -1485,7 +1484,7 @@ static struct of_device_id ucc_uart_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, ucc_uart_match);
+ 
+-static struct of_platform_driver ucc_uart_of_driver = {
++static struct platform_driver ucc_uart_of_driver = {
+ 	.driver = {
+ 		.name = "ucc_uart",
+ 		.owner = THIS_MODULE,
+@@ -1510,7 +1509,7 @@ static int __init ucc_uart_init(void)
+ 		return ret;
+ 	}
+ 
+-	ret = of_register_platform_driver(&ucc_uart_of_driver);
++	ret = platform_driver_register(&ucc_uart_of_driver);
+ 	if (ret)
+ 		printk(KERN_ERR
+ 		       "ucc-uart: could not register platform driver\n");
+@@ -1523,7 +1522,7 @@ static void __exit ucc_uart_exit(void)
+ 	printk(KERN_INFO
+ 	       "Freescale QUICC Engine UART device driver unloading\n");
+ 
+-	of_unregister_platform_driver(&ucc_uart_of_driver);
++	platform_driver_unregister(&ucc_uart_of_driver);
+ 	uart_unregister_driver(&ucc_uart_driver);
+ }
+ 
 
