@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab1BWNMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:12:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917Ab1BWNMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:12:47 -0500
-Message-ID: <4D6507C9.1000906@redhat.com>
-Date: Wed, 23 Feb 2011 15:12:41 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754775Ab1BWNR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:17:58 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:35732 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335Ab1BWNR5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 08:17:57 -0500
+Date: Wed, 23 Feb 2011 13:17:34 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Narendra_K@Dell.com
+Cc: viro@zeniv.linux.org.uk, jbarnes@virtuousgeek.org, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Shyam_Iyer@Dell.com, Matt_Domsch@Dell.com, Charles_Rose@Dell.com,
+        Jordan_Hargrave@Dell.com
+Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+	allmodconfig
+Message-ID: <20110223131734.GA6275@srcf.ucam.org>
+References: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        xiaoguangrong@cn.fujitsu.com
-Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable memory
- slots using wbtree
-References: <1298386481.5764.60.camel@x201> <20110222183822.22026.62832.stgit@s20.home>
-In-Reply-To: <20110222183822.22026.62832.stgit@s20.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 08:54 PM, Alex Williamson wrote:
-> This series introduces a new weight-balanced binary tree (wbtree) for
-> general use.  It's largely leveraged from the rbtree, copying it's
-> rotate functions, while introducing different rebalance and erase
-> functions.  This tree is particularly useful for managing memory
-> ranges, where it's desirable to have the most likely targets (the
-> largest ranges) at the top of each subtree.
->
-> Patches 2&  3 go on to convert the KVM memory slots to a growable
-> array and make use of wbtree for efficient managment.  Trying to
-> exercise the worst case for this data structure, I ran netperf
-> TCP_RR on an emulated rtl8139 NIC connected directly to the host
-> via a tap.  Both qemu-kvm and the netserver on the host were
-> pinned to optimal CPUs with taskset.  This series resulted in
-> a 3% improvement for this test.
->
+On Wed, Feb 23, 2011 at 06:24:31PM +0530, Narendra_K@Dell.com wrote:
 
-In this case, I think most of the faults (at least after the guest was 
-warmed up) missed the tree completely.  In this case a weight balanced 
-tree is hardly optimal (it is optimized for hits), so I think you'll see 
-a bigger gain from the mmio fault optimization.  You'll probably see 
-most of the gain running mmu intensive tests with ept=0.
+> This patch fixes the following build breakage introduced by the patch
+> '[PATCH V3] Export ACPI _DSM provided firmware instance number and string to
+> sysfs'.
 
-> Note that part of why this series is RFC is that the print_tree
-> function in the last patch is debug code that generates output
-> for dot.  You can copy the output to a file and run:
->
->    dot -Tpdf foo.dot>  foo.pdf
->
-> to generate a nice diagram of the tree currently in use.  I'll
-> follow-up with a few examples.  Thanks,
->
-> Alex
->
+First, you should include this as part of your original patch so that 
+the build doesn't break during bisection.
+
+> This is fixed by making fs/nls/nls_base.c compile conditionally into
+> vmlinux by introducing a new config option CONFIG_NLS_BASE which is
+> selected by (ACPI || DMI || NLS).
+
+Why?
+
+> -obj-$(CONFIG_NLS)		+= nls/
+> +obj-y				+= nls/
+
+You seem to have just broken building any of the NLS code as modules.
+
+>  menuconfig NLS
+>  	tristate "Native language support"
+> +	select NLS_BASE
+
+All CONFIG_NLS does is build nls_base.
+
+> +config NLS_BASE
+> +	bool "Base NLS functions"
+> +	depends on ACPI || DMI
+
+What in this code depends on ACPI or DMI?
+
+> -obj-$(CONFIG_NLS)		+= nls_base.o
+> +obj-$(CONFIG_NLS_BASE)		+= nls_base.o
+
+And why make this change?
+
+Just have something like
+
+select NLS if (ACPI || DMI)
+
+in drivers/pci/Kconfig.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Matthew Garrett | mjg59@srcf.ucam.org
