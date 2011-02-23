@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1BWPKF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:10:05 -0500
-Received: from exprod5og114.obsmtp.com ([64.18.0.28]:33558 "EHLO
-	exprod5og114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab1BWPKD (ORCPT
+	id S1753222Ab1BWPKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:10:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44522 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab1BWPKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:10:03 -0500
-Message-ID: <4D652344.1020402@ge.com>
-Date: Wed, 23 Feb 2011 15:09:56 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 23 Feb 2011 10:10:53 -0500
+Date: Wed, 23 Feb 2011 12:10:40 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/2] perf/core TUI live annotate and a cleanup
+Message-ID: <20110223151040.GD12398@ghostprotocols.net>
+References: <1298400790-29453-1-git-send-email-acme@infradead.org>
+ <20110223072842.GC15175@elte.hu>
+ <1298446517.7856.143.camel@marge.simson.net>
+ <1298471545.7846.17.camel@marge.simson.net>
+ <20110223145026.GA20686@elte.hu>
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>, Manohar Vanga <manohar.vanga@cern.ch>,
-        devel@driverdev.osuosl.org, cota@braap.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: vme: remove unreachable code
-References: <1298403376-28352-1-git-send-email-manohar.vanga@cern.ch> <1298403376-28352-2-git-send-email-manohar.vanga@cern.ch> <4D64D10A.3070702@ge.com> <20110223121726.GR1898@bicker>
-In-Reply-To: <20110223121726.GR1898@bicker>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Feb 2011 15:09:54.0513 (UTC) FILETIME=[B9F71410:01CBD36B]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110223145026.GA20686@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/02/11 12:17, Dan Carpenter wrote:
-> On Wed, Feb 23, 2011 at 09:19:06AM +0000, Martyn Welch wrote:
->> On 22/02/11 19:36, Manohar Vanga wrote:
->>> Remove unreachable code from vme_register_bridge
->>>
->>> Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
+Em Wed, Feb 23, 2011 at 03:50:26PM +0100, Ingo Molnar escreveu:
 > 
-> Please always CC the list.  It's going to be Greg to commit this
-> code so CC Greg as well.
+> * Mike Galbraith <efault@gmx.de> wrote:
 > 
-> ./scripts/get_maintainer.pl patch.diff
+> > Works spiffy, and no lockup troubles (didn't get back to that, koff),
+> > much nicer than the old annotation.  I did notice that pressing left
+> > arrow one too many times leads to exit, dunno if that's intended.
 > 
-> (Although you should generally remove Tejun from the CC list.)
-> 
->>
->> Yeah - that's there from development. If the function needed to be extended,
->> that's the next part of the error path.
-> 
-> Don't do that.  Kernel style is austere.  Anything that isn't needed
-> here and now should be removed.
-> 
->>> --- a/drivers/staging/vme/vme.c
->>> +++ b/drivers/staging/vme/vme.c
->>> @@ -1363,7 +1363,6 @@ int vme_register_bridge(struct vme_bridge *bridge)
->>>  
->>>  	return retval;
->>>  
->>> -	i = VME_SLOTS_MAX;
->>>  err_reg:
->>>  	while (i > -1) {
->>>  		dev = &bridge->dev[i];
-> 
-> There are two problems with this loop.  1) It unregisters the device
-> which failed to register.  2) It is a forever loop.
-> 
+> I think it should at least ask for confirmation. Exiting on 'q' or escape 
+> immediately would be fine.
 
-Even if "i" is a signed int?
+Right, I'll get the code used in 'perf report' TUI to top, matching the
+experiences.
 
-> It should be:
-> 	while (--i >= 0) {
-> 		dev = &bridge->dev[i];
-> 
-> Can you fix that up as well and resend.
-> 
-> regards,
-> dan carpenter
-
-
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+- Arnaldo
