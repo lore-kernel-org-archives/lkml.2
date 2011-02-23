@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab1BWULx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:11:53 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:50271
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755632Ab1BWULV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:11:21 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
-        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: [PATCH 1/4] staging: hv: Fix the code depending on struct vmbus_driver_context data order
-Date: Wed, 23 Feb 2011 12:19:55 -0800
-Message-Id: <1298492398-16522-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S932539Ab1BWUPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:15:40 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:45129 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab1BWUPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:15:39 -0500
+Date: Wed, 23 Feb 2011 12:15:34 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christoph Lameter <cl@linux.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+Message-ID: <20110223201534.GX2163@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20110223161645.GA1819@nowhere>
+ <1298479302.7666.94.camel@gandalf.stny.rr.com>
+ <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl>
+ <alpine.DEB.2.00.1102231132140.562@router.home>
+ <1298485027.7666.98.camel@gandalf.stny.rr.com>
+ <alpine.DEB.2.00.1102231225330.3906@router.home>
+ <1298485965.7666.102.camel@gandalf.stny.rr.com>
+ <alpine.DEB.2.00.1102231317550.4823@router.home>
+ <1298489030.2217.818.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298489030.2217.818.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch fixed the code depending on the exact order of fields in the
-struct vmbus_driver_context, so the unused field drv_ctx can be removed,
-and drv_obj doesn't have to be the second field in this structure.
+On Wed, Feb 23, 2011 at 08:23:50PM +0100, Peter Zijlstra wrote:
+> On Wed, 2011-02-23 at 13:19 -0600, Christoph Lameter wrote:
+> 
+> > this_cpu_inc is already percpu atomic. On x86 it is an instruction that
+> > cannot be interrupted nor preempted while in progress.
+> 
+> On x86, yes, but is this true for all architectures? I guess the
+> fallback is implemented with local_irq_disable() which might be good
+> enough for some but not for NMI usage.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Good point!  Thankfully, no worries about NMI usage in this piece of
+code.  ;-)
 
----
- drivers/staging/hv/blkvsc_drv.c  |    2 ++
- drivers/staging/hv/netvsc_drv.c  |    2 ++
- drivers/staging/hv/storvsc_drv.c |    2 ++
- drivers/staging/hv/vmbus.h       |    2 +-
- drivers/staging/hv/vmbus_drv.c   |   14 +-------------
- 5 files changed, 8 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 36a0adb..293ab8e 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -177,6 +177,8 @@ static int blkvsc_drv_init(int (*drv_init)(struct hv_driver *drv))
- 	struct driver_context *drv_ctx = &g_blkvsc_drv.drv_ctx;
- 	int ret;
- 
-+	drv_ctx->hv_drv = &storvsc_drv_obj->base;
-+
- 	storvsc_drv_obj->ring_buffer_size = blkvsc_ringbuffer_size;
- 
- 	/* Callback to client driver to complete the initialization */
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 03f9740..364b6c7 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -500,6 +500,8 @@ static int netvsc_drv_init(int (*drv_init)(struct hv_driver *drv))
- 	struct driver_context *drv_ctx = &g_netvsc_drv.drv_ctx;
- 	int ret;
- 
-+	drv_ctx->hv_drv = &net_drv_obj->base;
-+
- 	net_drv_obj->ring_buf_size = ring_size * PAGE_SIZE;
- 	net_drv_obj->recv_cb = netvsc_recv_callback;
- 	net_drv_obj->link_status_change = netvsc_linkstatus_callback;
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index a8427ff..33acee5 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -140,6 +140,8 @@ static int storvsc_drv_init(int (*drv_init)(struct hv_driver *drv))
- 	struct storvsc_driver_object *storvsc_drv_obj = &g_storvsc_drv.drv_obj;
- 	struct driver_context *drv_ctx = &g_storvsc_drv.drv_ctx;
- 
-+	drv_ctx->hv_drv = &storvsc_drv_obj->base;
-+
- 	storvsc_drv_obj->ring_buffer_size = storvsc_ringbuffer_size;
- 
- 	/* Callback to client driver to complete the initialization */
-diff --git a/drivers/staging/hv/vmbus.h b/drivers/staging/hv/vmbus.h
-index 42f2adb..fd9d00f 100644
---- a/drivers/staging/hv/vmbus.h
-+++ b/drivers/staging/hv/vmbus.h
-@@ -30,8 +30,8 @@
- 
- struct driver_context {
- 	struct hv_guid class_id;
--
- 	struct device_driver driver;
-+	struct hv_driver *hv_drv;
- 
- 	/*
- 	 * Use these methods instead of the struct device_driver so 2.6 kernel
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 459c707..1f4e46d 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -42,11 +42,6 @@
- 
- /* Main vmbus driver data structure */
- struct vmbus_driver_context {
--	/* !! These must be the first 2 fields !! */
--	/* FIXME, this is a bug */
--	/* The driver field is not used in here. Instead, the bus field is */
--	/* used to represent the driver */
--	struct driver_context drv_ctx;
- 	struct hv_driver drv_obj;
- 
- 	struct bus_type bus;
-@@ -869,14 +864,7 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
- 	/* We found our driver ? */
- 	if (memcmp(&device_ctx->class_id, &driver_ctx->class_id,
- 		   sizeof(struct hv_guid)) == 0) {
--		/*
--		 * !! NOTE: The driver_ctx is not a vmbus_drv_ctx. We typecast
--		 * it here to access the struct hv_driver field
--		 */
--		struct vmbus_driver_context *vmbus_drv_ctx =
--			(struct vmbus_driver_context *)driver_ctx;
--
--		device_ctx->device_obj.drv = &vmbus_drv_ctx->drv_obj;
-+		device_ctx->device_obj.drv = driver_ctx->hv_drv;
- 		DPRINT_INFO(VMBUS_DRV,
- 			    "device object (%p) set to driver object (%p)",
- 			    &device_ctx->device_obj,
--- 
-1.6.3.2
-
+							Thanx, Paul
