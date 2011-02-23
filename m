@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab1BWJ6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 04:58:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47466 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab1BWJ6A (ORCPT
+	id S1752799Ab1BWJ7W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 04:59:22 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:50822 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab1BWJ7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 04:58:00 -0500
-Date: Wed, 23 Feb 2011 10:57:56 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Subject: Re: [PATCH 1/2] rtc: rtc-mc13xxx: fix unterminated
- platform_device_id table
-Message-ID: <20110223095756.GQ22310@pengutronix.de>
-References: <1298453244.25444.1.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Wed, 23 Feb 2011 04:59:20 -0500
+Date: Wed, 23 Feb 2011 10:55:38 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hans Nieser <hnsr@xs4all.nl>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+Message-ID: <20110223095538.GA12662@electric-eye.fr.zoreil.com>
+References: <1298396007.23906.27.camel@krikkit>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1298453244.25444.1.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1298396007.23906.27.camel@krikkit>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 05:27:24PM +0800, Axel Lin wrote:
-> The platform_device_id table is supposed to be zero-terminated.
+Hans Nieser <hnsr@xs4all.nl> :
+[...]
+> With your patches applied to 2.6.38-rc6, I have gathered some of the
+> info you requested from Seblu as well, I hope it's helpful:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/rtc/rtc-mc13xxx.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
-> index 5314b15..6e6de98 100644
-> --- a/drivers/rtc/rtc-mc13xxx.c
-> +++ b/drivers/rtc/rtc-mc13xxx.c
-> @@ -408,6 +408,7 @@ const struct platform_device_id mc13xxx_rtc_idtable[] = {
->  	}, {
->  		.name = "mc13892-rtc",
->  	},
-> +	{ }
->  };
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-for both patches.  I wonder how that worked before, just luck I assume.
+> 1: see attachment
 
-Thanks
-Uwe
+Ok.
+
+The chipset requires no trivial last minute regression fix (yet).
+
+> 2: I'm not sure how to check the size of the packets, but I'm just
+> fetching a (large) file over http/tcp, so I guess they are mostly of the
+> size of my MTU which is 1500 looking at ifconfig output
+
+Fine.
+
+Your testcases are always based on a real download, whence including some
+disk activity, as opposed to a pure network test, right ?
+
+> For the other vmstat/ethtool/interrupts output, I started the following
+> commands remotely via ssh a second or two before starting the download,
+> and the machine locked up a few seconds later:
+
+SysRq is enabled (/etc/sysctl.conf::kernel.sysrq = 1), the computer was
+switched back on a no-X console before the test. Then the keyboard leds
+ignore keypresses and the sysrq keys don't display anything in the
+console, right ?
+
+You may enable PCIEASPM_DEBUG, force 'pcie_aspm=off' and switch from
+SLUB to SLAB but it's a bit cargo-cultish.
+
+A bisection could help. Bisecting 2.6.35 .. 2.6.35.9 may be enough if
+2.6.35.9 works well.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Ueimor
