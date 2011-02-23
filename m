@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab1BWAb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 19:31:29 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:56264 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab1BWAb2 (ORCPT
+	id S1755574Ab1BWAcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 19:32:06 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:60078 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab1BWAcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 19:31:28 -0500
-X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Feb 2011 19:31:27 EST
-Date: Wed, 23 Feb 2011 01:23:13 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] tty: add TIOCVHANGUP: time for revoke() in f_ops ?
-Message-ID: <20110223002313.GA21518@tango.0pointer.de>
-References: <1297964368.2165.1.camel@yio>
- <20110218095048.4e9f1e1a@lxorguk.ukuu.org.uk>
- <20110222231536.GA18066@kroah.com>
- <20110223000958.7c18fdef@lxorguk.ukuu.org.uk>
+	Tue, 22 Feb 2011 19:32:03 -0500
+Message-ID: <4D645578.3020906@wytron.com.tw>
+Date: Wed, 23 Feb 2011 08:31:52 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110223000958.7c18fdef@lxorguk.ukuu.org.uk>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+To: Ben Dooks <ben-i2c@fluff.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Ben Dooks <ben-linux@fluff.org>,
+        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c-ocores: register devices on child nodes
+References: <1297306314-11483-1-git-send-email-thomas@wytron.com.tw> <20110223001252.GT15795@trinity.fluff.org>
+In-Reply-To: <20110223001252.GT15795@trinity.fluff.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.250
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23.02.11 00:09, Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
+On 02/23/2011 08:12 AM, Ben Dooks wrote:
+> On Thu, Feb 10, 2011 at 10:51:54AM +0800, Thomas Chou wrote:
+>> This patch registers devices on the devicetree child nodes to the bus.
+>> Also removes one trailing whitespace.
+>
+> Is this required as an urgent fix, or can it queue for next merge window?
 
-> It's basically 3 things
-> - Lennarts bits for vhangup on an fd
+It is not urgent. An it is fine to queue it for next merge window.
 
-Uh? Me? I didn't write this patch.
+- Thomas
 
-(Though I do like to see patch merged and I would use it, and I have
-trouble following your logic.)
+>
+>> Signed-off-by: Thomas Chou<thomas@wytron.com.tw>
+>> ---
+>>   drivers/i2c/busses/i2c-ocores.c |    6 +++++-
+>>   1 files changed, 5 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+>> index ef3bcb1..c63838f 100644
+>> --- a/drivers/i2c/busses/i2c-ocores.c
+>> +++ b/drivers/i2c/busses/i2c-ocores.c
+>> @@ -18,7 +18,7 @@
+>>    * - interrupts      : interrupt number
+>>    * - regstep         : size of device registers in bytes
+>>    * - clock-frequency : frequency of bus clock in Hz
+>> - *
+>> + *
+>>    * Example:
+>>    *
+>>    *  i2c0: ocores@a0000000 {
+>> @@ -55,6 +55,7 @@
+>>   #include<linux/i2c-ocores.h>
+>>   #include<linux/slab.h>
+>>   #include<linux/io.h>
+>> +#include<linux/of_i2c.h>
+>>
+>>   struct ocores_i2c {
+>>   	void __iomem *base;
+>> @@ -347,6 +348,9 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+>>   			i2c_new_device(&i2c->adap, pdata->devices + i);
+>>   	}
+>>
+>> +	/* Now register all the child nodes */
+>> +	of_i2c_register_devices(&i2c->adap);
+>> +
+>>   	return 0;
+>>   }
+>>
+>> --
+>> 1.7.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-vhangup() is different from revoke(). vhangup() does weird SIGHUP
-handling and stuff, which I think goes way beyond what revoke() would
-eventually do. And that different behaviour becomes visible in various
-smaller places. e.g. vhangup() results in POLLHUP on the fd, although I
-assume that revoke() would more likely result in POLLERR. And there's
-more... Let's not pretend this is really the same thing, because it
-isn't.
-
-> Its not a quick patch - that's why its not happened yet, vhangup(fd)
-> quickfix Lennart style is unfortunately a useless bodge job which like
-> most bodge jobs is simply going to spring leaks and need fixing again.
-
-Thanks. If you are trying to insult me, doesn't really work, because I
-didn't do this "bodge job". I'll take it as a compliment though that
-you say there's a "Lennart style".
-
-Lennart, style icon
-
--- 
-Lennart Poettering - Red Hat, Inc.
