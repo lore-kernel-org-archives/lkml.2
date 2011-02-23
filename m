@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab1BWHWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 02:22:15 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:51869 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752612Ab1BWHWN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 02:22:13 -0500
-X-Sasl-enc: drR7w6fKlRfXfm5DczoxL0WOKCfxgmdaRGl5ZFpH58aF 1298445732
-Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
-From: Ian Kent <raven@themaw.net>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-In-Reply-To: <1297779902.13007.86.camel@perseus>
-References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
-	 <1295420817.3076.24.camel@perseus>  <1297779902.13007.86.camel@perseus>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Feb 2011 15:22:05 +0800
-Message-ID: <1298445725.20733.2.camel@perseus>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753268Ab1BWH3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 02:29:03 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56608 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752323Ab1BWH3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 02:29:02 -0500
+Date: Wed, 23 Feb 2011 08:28:42 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/2] perf/core TUI live annotate and a cleanup
+Message-ID: <20110223072842.GC15175@elte.hu>
+References: <1298400790-29453-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298400790-29453-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-15 at 22:25 +0800, Ian Kent wrote:
-> On Wed, 2011-01-19 at 15:06 +0800, Ian Kent wrote:
-> > On Tue, 2011-01-18 at 12:05 +0800, Ian Kent wrote:
-> > > I noticed a couple of problems which needed to be fixed before I can
-> > > start testing.
-> > 
-> > Before I return to testing I thought I should let everyone know the
-> > results so far, following the addition of the merged patches from this
-> > thread.
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> Sorry for the large recipient list but I think there's a need.
-> I've made very little progress on this but my most recent development
-> deserves an update.
+>         Please consider pulling from:
 > 
-> Most recent kernel used is 2.6.38-rc4.
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> 	Mike, if you can give it some stress, I'd appreciate.
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (2):
+>   perf probe: Remove redundant checks
+>   perf top: Live TUI Annotation
 
-Now at rc5, and still struggling with this but I have made some
-progress.
+Yummie! :-)
 
-Nick, what stops a dentry from going away during the rcu-walk?
+>  tools/perf/builtin-top.c               |   36 +++++-----
+>  tools/perf/util/annotate.h             |    6 +-
+>  tools/perf/util/probe-event.c          |    2 +-
+>  tools/perf/util/probe-finder.c         |    5 +-
+>  tools/perf/util/top.h                  |    1 +
+>  tools/perf/util/ui/browsers/annotate.c |  126 +++++++++++++++++++++++---------
+>  tools/perf/util/ui/browsers/top.c      |   45 +++++++++++-
+>  7 files changed, 159 insertions(+), 62 deletions(-)
 
-Ian
+Pulled, thanks a lot Arnaldo!
 
-
+	Ingo
