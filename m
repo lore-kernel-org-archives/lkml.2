@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab1BWFcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 00:32:35 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:33069 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab1BWFce convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 00:32:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=rDVfKRMNSU+B63dkEYUzfL/a4MzhD43JcvypL/hqSKrhVVSu/PQdKQRiXQY3IygAiH
-         4X0+a0NoRFhER7bB0xG0LHz7vntALXfS8TvP/crkPvC289un+ASukcBYbMJvoBe3D9sm
-         bVc95GfmaqC7uJAokZqso8kb3zKfqXgEVt5uw=
+	id S1751658Ab1BWFeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 00:34:16 -0500
+Received: from mga09.intel.com ([134.134.136.24]:3276 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751229Ab1BWFeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 00:34:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,210,1297065600"; 
+   d="scan'208";a="712084500"
+Message-ID: <4D649C44.80107@linux.intel.com>
+Date: Tue, 22 Feb 2011 21:33:56 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <m3mxm2mt5n.fsf@fleche.redhat.com>
-References: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
- <m3hbcfzu9u.fsf@fleche.redhat.com> <AANLkTinMx8mJYiDps3TuuaA1B4NLHi-PuCKm2=sTqyR0@mail.gmail.com>
- <m3y65qv7m8.fsf@fleche.redhat.com> <AANLkTi=UrBZUttP9Q=2DrNXs8MAw4FXWhv6f_Pz8ad8o@mail.gmail.com>
- <m3mxm2mt5n.fsf@fleche.redhat.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Wed, 23 Feb 2011 13:32:13 +0800
-Message-ID: <AANLkTinBDpw6wPtOC5f2GhibHcYiGAg2=v2KF1+PTm57@mail.gmail.com>
-Subject: Re: [PATCH] Linux Kernel GDB tracepoint module 2011-02-05
-To: Tom Tromey <tromey@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Snyder <msnyder@vmware.com>,
-        Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        "gdb@sourceware.org" <gdb@sourceware.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mike Galbraith <efault@gmx.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        richard.purdie@linuxfoundation.org
+Subject: Re: [PATCH 1/2] sched: allow SCHED_BATCH to preempt SCHED_IDLE tasks
+References: <1298408674-3130-1-git-send-email-dvhart@linux.intel.com>	 <1298408674-3130-2-git-send-email-dvhart@linux.intel.com> <1298434854.7856.24.camel@marge.simson.net>
+In-Reply-To: <1298434854.7856.24.camel@marge.simson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tom,
+On 02/22/2011 08:20 PM, Mike Galbraith wrote:
+> On Tue, 2011-02-22 at 13:04 -0800, Darren Hart wrote:
+>> Perform the test for SCHED_IDLE before testing for SCHED_BATCH (and ensure idle
+>> tasks don't preempt idle tasks) so the non-interactive, but still important,
+>> SCHED_BATCH tasks will run in favor of the very low priority SCHED_IDLE tasks.
+>
+> Yeah, that could be construed as a fairness fix for light SCHED_BATCH vs
+> a heavy SCHED_IDLE.  It should lower latencies for both when mixed.
+>
+> Acked-by: Mike Galbraith<efault@gmx.de>
+>
+> Nit below.
+>
+>> Signed-off-by: Darren Hart<dvhart@linux.intel.com>
+>> CC: Peter Zijlstra<peterz@infradead.org>
+>> CC: Ingo Molnar<mingo@elte.hu>
+>> CC: Richard Purdie<richard.purdie@linuxfoundation.org>
+>> ---
+>>   kernel/sched_fair.c |   12 +++++++-----
+>>   1 files changed, 7 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+>> index 0c26e2d..ff04bbd 100644
+>> --- a/kernel/sched_fair.c
+>> +++ b/kernel/sched_fair.c
+>> @@ -1857,16 +1857,18 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+>>   	if (test_tsk_need_resched(curr))
+>>   		return;
+>>
+>> +	/* Idle tasks are by definition preempted by non-idle tasks. */
+>> +	if (unlikely(curr->policy == SCHED_IDLE)&&
+>> +	    likely(p->policy != SCHED_IDLE))
+>> +		goto preempt;
+>> +
+>
+> if (unlikely(curr->policy == SCHED_IDLE&&  p->policy != curr->policy))
+> 	goto preempt;
+>
+> Looks better to me.
 
-I have updated the VTA introduce to https://code.google.com/p/kgtp/wiki/HOWTO
-Thanks for your help.
+I have no opinion on the unlikely/likely optimizations. I chose the way 
+I did as I thought it was more consistent with the existing code. I'll 
+leave that to Peter and Ingo - let me know if I should resend.
 
-Best,
-Hui
-
-On Sat, Feb 12, 2011 at 00:29, Tom Tromey <tromey@redhat.com> wrote:
->>>>>> ">" == Hui Zhu <teawater@gmail.com> writes:
->
->>> Handle the var is enough for KGTP.  Could you send me a introduce
->>> link for VTA?  I will post the the VTA to the HOWTO of the kgtp.
->
-> Here's the original plan:
-> http://gcc.gnu.org/wiki/Var_Tracking_Assignments
->
-> Alexandre also wrote a paper about it for the GCC Summit.  You can
-> probably dig that up without much effort.  There's also a follow-up
-> effort, the paper there is called "Consistent Views at Recommended
-> Breakpoints".  This one hasn't been implemented yet, though.
->
-> Tom
->
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
