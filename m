@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab1BWBlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:41:55 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:37585 "EHLO e8.ny.us.ibm.com"
+	id S1755957Ab1BWBlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:41:53 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:54791 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755769Ab1BWBjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755776Ab1BWBjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Feb 2011 20:39:51 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,10 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 08/11] rcu: Decrease memory-barrier usage based on semi-formal proof
-Date: Tue, 22 Feb 2011 17:39:37 -0800
-Message-Id: <1298425183-21265-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 09/11] rcu: merge TREE_PREEPT_RCU blocked_tasks[] lists
+Date: Tue, 22 Feb 2011 17:39:38 -0800
+Message-Id: <1298425183-21265-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110223013917.GA20996@linux.vnet.ibm.com>
 References: <20110223013917.GA20996@linux.vnet.ibm.com>
@@ -24,482 +25,429 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d09b62d fixed grace-period synchronization, but left some smp_mb()
-invocations in rcu_process_callbacks() that are no longer needed, but
-sheer paranoia prevented them from being removed.  This commit removes
-them and provides a proof of correctness in their absence.  It also adds
-a memory barrier to rcu_report_qs_rsp() immediately before the update to
-rsp->completed in order to handle the theoretical possibility that the
-compiler or CPU might move massive quantities of code into a lock-based
-critical section.  This also proves that the sheer paranoia was not
-entirely unjustified, at least from a theoretical point of view.
+From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-In addition, the old dyntick-idle synchronization depended on the fact
-that grace periods were many milliseconds in duration, so that it could
-be assumed that no dyntick-idle CPU could reorder a memory reference
-across an entire grace period.  Unfortunately for this design, the
-addition of expedited grace periods breaks this assumption, which has
-the unfortunate side-effect of requiring atomic operations in the
-functions that track dyntick-idle state for RCU.  (There is some hope
-that the algorithms used in user-level RCU might be applied here, but
-some work is required to handle the NMIs that user-space applications
-can happily ignore.)
-
-This proof assumes that neither compiler nor CPU will allow a lock
-acquisition and release to be reordered, as doing so can result in
-deadlock.  The proof is as follows:
-
-1.	A given CPU declares a quiescent state under the protection of
-	its leaf rcu_node's lock.
-
-2.	If there is more than one level of rcu_node hierarchy, the
-	last CPU to declare a quiescent state will also acquire the
-	->lock of the next rcu_node up in the hierarchy,  but only
-	after releasing the lower level's lock.  The acquisition of this
-	lock clearly cannot occur prior to the acquisition of the leaf
-	node's lock.
-
-3.	Step 2 repeats until we reach the root rcu_node structure.
-	Please note again that only one lock is held at a time through
-	this process.  The acquisition of the root rcu_node's ->lock
-	must occur after the release of that of the leaf rcu_node.
-
-4.	At this point, we set the ->completed field in the rcu_state
-	structure in rcu_report_qs_rsp().  However, if the rcu_node
-	hierarchy contains only one rcu_node, then in theory the code
-	preceding the quiescent state could leak into the critical
-	section.  We therefore precede the update of ->completed with a
-	memory barrier.  All CPUs will therefore agree that any updates
-	preceding any report of a quiescent state will have happened
-	before the update of ->completed.
-
-5.	Regardless of whether a new grace period is needed, rcu_start_gp()
-	will propagate the new value of ->completed to all of the leaf
-	rcu_node structures, under the protection of each rcu_node's ->lock.
-	If a new grace period is needed immediately, this propagation
-	will occur in the same critical section that ->completed was
-	set in, but courtesy of the memory barrier in #4 above, is still
-	seen to follow any pre-quiescent-state activity.
-
-6.	When a given CPU invokes __rcu_process_gp_end(), it becomes
-	aware of the end of the old grace period and therefore makes
-	any RCU callbacks that were waiting on that grace period eligible
-	for invocation.
-
-	If this CPU is the same one that detected the end of the grace
-	period, and if there is but a single rcu_node in the hierarchy,
-	we will still be in the single critical section.  In this case,
-	the memory barrier in step #4 guarantees that all callbacks will
-	be seen to execute after each CPU's quiescent state.
-
-	On the other hand, if this is a different CPU, it will acquire
-	the leaf rcu_node's ->lock, and will again be serialized after
-	each CPU's quiescent state for the old grace period.
-
-On the strength of this proof, this commit therefore removes the memory
-barriers from rcu_process_callbacks() and adds one to rcu_report_qs_rsp().
-The effect is to reduce the number of memory barriers by one and to
-reduce the frequency of execution from about once per scheduling tick
-per CPU to once per grace period.
+Combine the current TREE_PREEMPT_RCU ->blocked_tasks[] lists in the
+rcu_node structure into a single ->blkd_tasks list with ->gp_tasks
+and ->exp_tasks tail pointers.  This is in preparation for RCU priority
+boosting, which will add a third dimension to the combinatorial explosion
+in the ->blocked_tasks[] case, but simply a third pointer in the new
+->blkd_tasks case.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 ---
- Documentation/RCU/trace.txt |   48 +++++++---------
- kernel/rcutree.c            |  130 ++++++++++++++++++------------------------
- kernel/rcutree.h            |    9 +--
- kernel/rcutree_plugin.h     |    7 +-
- kernel/rcutree_trace.c      |   12 ++--
- 5 files changed, 88 insertions(+), 118 deletions(-)
+ kernel/rcutree.c        |    5 +-
+ kernel/rcutree.h        |   21 ++++--
+ kernel/rcutree_plugin.h |  163 ++++++++++++++++++++++++++++-------------------
+ kernel/rcutree_trace.c  |   11 +--
+ 4 files changed, 117 insertions(+), 83 deletions(-)
 
-diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
-index 6a8c73f..e731ad2 100644
---- a/Documentation/RCU/trace.txt
-+++ b/Documentation/RCU/trace.txt
-@@ -21,23 +21,23 @@ rcu_pending() function decided that there was core RCU work to do).
- The output of "cat rcu/rcudata" looks as follows:
- 
- rcu_sched:
--  0 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=10951/1 dn=0 df=1101 of=0 ri=36 ql=0 b=10
--  1 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=16117/1 dn=0 df=1015 of=0 ri=0 ql=0 b=10
--  2 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=1445/1 dn=0 df=1839 of=0 ri=0 ql=0 b=10
--  3 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=6681/1 dn=0 df=1545 of=0 ri=0 ql=0 b=10
--  4 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=1003/1 dn=0 df=1992 of=0 ri=0 ql=0 b=10
--  5 c=17829 g=17830 pq=1 pqc=17829 qp=1 dt=3887/1 dn=0 df=3331 of=0 ri=4 ql=2 b=10
--  6 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=859/1 dn=0 df=3224 of=0 ri=0 ql=0 b=10
--  7 c=17829 g=17830 pq=0 pqc=17829 qp=1 dt=3761/1 dn=0 df=1818 of=0 ri=0 ql=2 b=10
-+  0 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=10951/1/0 df=1101 of=0 ri=36 ql=0 b=10
-+  1 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=16117/1/0 df=1015 of=0 ri=0 ql=0 b=10
-+  2 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=1445/1/0 df=1839 of=0 ri=0 ql=0 b=10
-+  3 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=6681/1/0 df=1545 of=0 ri=0 ql=0 b=10
-+  4 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=1003/1/0 df=1992 of=0 ri=0 ql=0 b=10
-+  5 c=17829 g=17830 pq=1 pqc=17829 qp=1 dt=3887/1/0 df=3331 of=0 ri=4 ql=2 b=10
-+  6 c=17829 g=17829 pq=1 pqc=17829 qp=0 dt=859/1/0 df=3224 of=0 ri=0 ql=0 b=10
-+  7 c=17829 g=17830 pq=0 pqc=17829 qp=1 dt=3761/1/0 df=1818 of=0 ri=0 ql=2 b=10
- rcu_bh:
--  0 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=10951/1 dn=0 df=0 of=0 ri=0 ql=0 b=10
--  1 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=16117/1 dn=0 df=13 of=0 ri=0 ql=0 b=10
--  2 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=1445/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
--  3 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=6681/1 dn=0 df=9 of=0 ri=0 ql=0 b=10
--  4 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=1003/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
--  5 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=3887/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
--  6 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=859/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
--  7 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=3761/1 dn=0 df=15 of=0 ri=0 ql=0 b=10
-+  0 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=10951/1/0 df=0 of=0 ri=0 ql=0 b=10
-+  1 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=16117/1/0 df=13 of=0 ri=0 ql=0 b=10
-+  2 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=1445/1/0 df=15 of=0 ri=0 ql=0 b=10
-+  3 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=6681/1/0 df=9 of=0 ri=0 ql=0 b=10
-+  4 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=1003/1/0 df=15 of=0 ri=0 ql=0 b=10
-+  5 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=3887/1/0 df=15 of=0 ri=0 ql=0 b=10
-+  6 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=859/1/0 df=15 of=0 ri=0 ql=0 b=10
-+  7 c=-275 g=-275 pq=1 pqc=-275 qp=0 dt=3761/1/0 df=15 of=0 ri=0 ql=0 b=10
- 
- The first section lists the rcu_data structures for rcu_sched, the second
- for rcu_bh.  Note that CONFIG_TREE_PREEMPT_RCU kernels will have an
-@@ -85,18 +85,10 @@ o	"qp" indicates that RCU still expects a quiescent state from
- 
- o	"dt" is the current value of the dyntick counter that is incremented
- 	when entering or leaving dynticks idle state, either by the
--	scheduler or by irq.  The number after the "/" is the interrupt
--	nesting depth when in dyntick-idle state, or one greater than
--	the interrupt-nesting depth otherwise.
--
--	This field is displayed only for CONFIG_NO_HZ kernels.
--
--o	"dn" is the current value of the dyntick counter that is incremented
--	when entering or leaving dynticks idle state via NMI.  If both
--	the "dt" and "dn" values are even, then this CPU is in dynticks
--	idle mode and may be ignored by RCU.  If either of these two
--	counters is odd, then RCU must be alert to the possibility of
--	an RCU read-side critical section running on this CPU.
-+	scheduler or by irq.  The number after the first "/" is the
-+	interrupt nesting depth when in dyntick-idle state, or one
-+	greater than the interrupt-nesting depth otherwise.  The number
-+	after the second "/" is the NMI nesting depth.
- 
- 	This field is displayed only for CONFIG_NO_HZ kernels.
- 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 5513129..90104a1 100644
+index 90104a1..0ac1cc0 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -128,7 +128,7 @@ void rcu_note_context_switch(int cpu)
- #ifdef CONFIG_NO_HZ
- DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
- 	.dynticks_nesting = 1,
--	.dynticks = 1,
-+	.dynticks = ATOMIC_INIT(1),
- };
- #endif /* #ifdef CONFIG_NO_HZ */
- 
-@@ -262,13 +262,25 @@ void rcu_enter_nohz(void)
- 	unsigned long flags;
- 	struct rcu_dynticks *rdtp;
- 
--	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
- 	local_irq_save(flags);
- 	rdtp = &__get_cpu_var(rcu_dynticks);
--	rdtp->dynticks++;
--	rdtp->dynticks_nesting--;
--	WARN_ON_ONCE(rdtp->dynticks & 0x1);
-+	if (--rdtp->dynticks_nesting) {
-+		local_irq_restore(flags);
-+		return;
-+	}
-+	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
-+	smp_mb__before_atomic_inc();  /* See above. */
-+	atomic_inc(&rdtp->dynticks);
-+	smp_mb__after_atomic_inc();  /* Force ordering with next sojourn. */
-+	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
- 	local_irq_restore(flags);
-+
-+	/* If the interrupt queued a callback, get out of dyntick mode. */
-+	if (in_irq() &&
-+	    (__get_cpu_var(rcu_sched_data).nxtlist ||
-+	     __get_cpu_var(rcu_bh_data).nxtlist ||
-+	     rcu_preempt_needs_cpu(smp_processor_id())))
-+		set_need_resched();
- }
- 
- /*
-@@ -284,11 +296,16 @@ void rcu_exit_nohz(void)
- 
- 	local_irq_save(flags);
- 	rdtp = &__get_cpu_var(rcu_dynticks);
--	rdtp->dynticks++;
--	rdtp->dynticks_nesting++;
--	WARN_ON_ONCE(!(rdtp->dynticks & 0x1));
-+	if (rdtp->dynticks_nesting++) {
-+		local_irq_restore(flags);
-+		return;
-+	}
-+	smp_mb__before_atomic_inc();  /* Force ordering w/previous sojourn. */
-+	atomic_inc(&rdtp->dynticks);
-+	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
-+	smp_mb__after_atomic_inc();  /* See above. */
-+	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
- 	local_irq_restore(flags);
--	smp_mb(); /* CPUs seeing ++ must see later RCU read-side crit sects */
- }
- 
- /**
-@@ -302,11 +319,15 @@ void rcu_nmi_enter(void)
- {
- 	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
- 
--	if (rdtp->dynticks & 0x1)
-+	if (rdtp->dynticks_nmi_nesting == 0 &&
-+	    (atomic_read(&rdtp->dynticks) & 0x1))
- 		return;
--	rdtp->dynticks_nmi++;
--	WARN_ON_ONCE(!(rdtp->dynticks_nmi & 0x1));
--	smp_mb(); /* CPUs seeing ++ must see later RCU read-side crit sects */
-+	rdtp->dynticks_nmi_nesting++;
-+	smp_mb__before_atomic_inc();  /* Force delay from prior write. */
-+	atomic_inc(&rdtp->dynticks);
-+	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
-+	smp_mb__after_atomic_inc();  /* See above. */
-+	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
- }
- 
- /**
-@@ -320,11 +341,14 @@ void rcu_nmi_exit(void)
- {
- 	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
- 
--	if (rdtp->dynticks & 0x1)
-+	if (rdtp->dynticks_nmi_nesting == 0 ||
-+	    --rdtp->dynticks_nmi_nesting != 0)
- 		return;
--	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
--	rdtp->dynticks_nmi++;
--	WARN_ON_ONCE(rdtp->dynticks_nmi & 0x1);
-+	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
-+	smp_mb__before_atomic_inc();  /* See above. */
-+	atomic_inc(&rdtp->dynticks);
-+	smp_mb__after_atomic_inc();  /* Force delay to next write. */
-+	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
- }
- 
- /**
-@@ -335,13 +359,7 @@ void rcu_nmi_exit(void)
-  */
- void rcu_irq_enter(void)
- {
--	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
--
--	if (rdtp->dynticks_nesting++)
--		return;
--	rdtp->dynticks++;
--	WARN_ON_ONCE(!(rdtp->dynticks & 0x1));
--	smp_mb(); /* CPUs seeing ++ must see later RCU read-side crit sects */
-+	rcu_exit_nohz();
- }
- 
- /**
-@@ -353,18 +371,7 @@ void rcu_irq_enter(void)
-  */
- void rcu_irq_exit(void)
- {
--	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
--
--	if (--rdtp->dynticks_nesting)
--		return;
--	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
--	rdtp->dynticks++;
--	WARN_ON_ONCE(rdtp->dynticks & 0x1);
--
--	/* If the interrupt queued a callback, get out of dyntick mode. */
--	if (__get_cpu_var(rcu_sched_data).nxtlist ||
--	    __get_cpu_var(rcu_bh_data).nxtlist)
--		set_need_resched();
-+	rcu_enter_nohz();
- }
- 
- #ifdef CONFIG_SMP
-@@ -376,19 +383,8 @@ void rcu_irq_exit(void)
-  */
- static int dyntick_save_progress_counter(struct rcu_data *rdp)
- {
--	int ret;
--	int snap;
--	int snap_nmi;
--
--	snap = rdp->dynticks->dynticks;
--	snap_nmi = rdp->dynticks->dynticks_nmi;
--	smp_mb();	/* Order sampling of snap with end of grace period. */
--	rdp->dynticks_snap = snap;
--	rdp->dynticks_nmi_snap = snap_nmi;
--	ret = ((snap & 0x1) == 0) && ((snap_nmi & 0x1) == 0);
--	if (ret)
--		rdp->dynticks_fqs++;
--	return ret;
-+	rdp->dynticks_snap = atomic_add_return(0, &rdp->dynticks->dynticks);
-+	return 0;
- }
- 
- /*
-@@ -399,16 +395,11 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
-  */
- static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- {
--	long curr;
--	long curr_nmi;
--	long snap;
--	long snap_nmi;
-+	unsigned long curr;
-+	unsigned long snap;
- 
--	curr = rdp->dynticks->dynticks;
--	snap = rdp->dynticks_snap;
--	curr_nmi = rdp->dynticks->dynticks_nmi;
--	snap_nmi = rdp->dynticks_nmi_snap;
--	smp_mb(); /* force ordering with cpu entering/leaving dynticks. */
-+	curr = (unsigned long)atomic_add_return(0, &rdp->dynticks->dynticks);
-+	snap = (unsigned long)rdp->dynticks_snap;
- 
- 	/*
- 	 * If the CPU passed through or entered a dynticks idle phase with
-@@ -418,8 +409,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- 	 * read-side critical section that started before the beginning
- 	 * of the current RCU grace period.
- 	 */
--	if ((curr != snap || (curr & 0x1) == 0) &&
--	    (curr_nmi != snap_nmi || (curr_nmi & 0x1) == 0)) {
-+	if ((curr & 0x1) == 0 || ULONG_CMP_GE(curr, snap + 2)) {
- 		rdp->dynticks_fqs++;
- 		return 1;
+@@ -1901,10 +1901,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+ 					      j / rsp->levelspread[i - 1];
+ 			}
+ 			rnp->level = i;
+-			INIT_LIST_HEAD(&rnp->blocked_tasks[0]);
+-			INIT_LIST_HEAD(&rnp->blocked_tasks[1]);
+-			INIT_LIST_HEAD(&rnp->blocked_tasks[2]);
+-			INIT_LIST_HEAD(&rnp->blocked_tasks[3]);
++			INIT_LIST_HEAD(&rnp->blkd_tasks);
+ 		}
  	}
-@@ -841,6 +831,12 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
- 	__releases(rcu_get_root(rsp)->lock)
- {
- 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
-+
-+	/*
-+	 * Ensure that all grace-period and pre-grace-period activity
-+	 * is seen before the assignment to rsp->completed.
-+	 */
-+	smp_mb(); /* See above block comment. */
- 	rsp->completed = rsp->gpnum;
- 	rsp->signaled = RCU_GP_IDLE;
- 	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
-@@ -1367,25 +1363,11 @@ __rcu_process_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
-  */
- static void rcu_process_callbacks(struct softirq_action *unused)
- {
--	/*
--	 * Memory references from any prior RCU read-side critical sections
--	 * executed by the interrupted code must be seen before any RCU
--	 * grace-period manipulations below.
--	 */
--	smp_mb(); /* See above block comment. */
--
- 	__rcu_process_callbacks(&rcu_sched_state,
- 				&__get_cpu_var(rcu_sched_data));
- 	__rcu_process_callbacks(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
- 	rcu_preempt_process_callbacks();
  
--	/*
--	 * Memory references from any later RCU read-side critical sections
--	 * executed by the interrupted code must be seen after any RCU
--	 * grace-period manipulations above.
--	 */
--	smp_mb(); /* See above block comment. */
--
- 	/* If we are last CPU on way to dyntick-idle mode, accelerate it. */
- 	rcu_needs_cpu_flush();
- }
 diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index e1a6663..bd891de 100644
+index bd891de..5a439c1 100644
 --- a/kernel/rcutree.h
 +++ b/kernel/rcutree.h
-@@ -84,11 +84,9 @@
-  * Dynticks per-CPU state.
-  */
- struct rcu_dynticks {
--	int dynticks_nesting;	/* Track nesting level, sort of. */
--	int dynticks;		/* Even value for dynticks-idle, else odd. */
--	int dynticks_nmi;	/* Even value for either dynticks-idle or */
--				/*  not in nmi handler, else odd.  So this */
--				/*  remains even for nmi from irq handler. */
-+	int dynticks_nesting;	/* Track irq/process nesting level. */
-+	int dynticks_nmi_nesting; /* Track NMI nesting level. */
-+	atomic_t dynticks;	/* Even value for dynticks-idle, else odd. */
- };
+@@ -107,7 +107,7 @@ struct rcu_node {
+ 				/*  an rcu_data structure, otherwise, each */
+ 				/*  bit corresponds to a child rcu_node */
+ 				/*  structure. */
+-	unsigned long expmask;	/* Groups that have ->blocked_tasks[] */
++	unsigned long expmask;	/* Groups that have ->blkd_tasks */
+ 				/*  elements that need to drain to allow the */
+ 				/*  current expedited grace period to */
+ 				/*  complete (only for TREE_PREEMPT_RCU). */
+@@ -120,11 +120,20 @@ struct rcu_node {
+ 	u8	grpnum;		/* CPU/group number for next level up. */
+ 	u8	level;		/* root is at level 0. */
+ 	struct rcu_node *parent;
+-	struct list_head blocked_tasks[4];
+-				/* Tasks blocked in RCU read-side critsect. */
+-				/*  Grace period number (->gpnum) x blocked */
+-				/*  by tasks on the (x & 0x1) element of the */
+-				/*  blocked_tasks[] array. */
++	struct list_head blkd_tasks;
++				/* Tasks blocked in RCU read-side critical */
++				/*  section.  Tasks are placed at the head */
++				/*  of this list and age towards the tail. */
++	struct list_head *gp_tasks;
++				/* Pointer to the first task blocking the */
++				/*  current grace period, or NULL if there */
++				/*  is no such task. */
++	struct list_head *exp_tasks;
++				/* Pointer to the first task blocking the */
++				/*  current expedited grace period, or NULL */
++				/*  if there is no such task.  If there */
++				/*  is no current expedited grace period, */
++				/*  then there can cannot be any such task. */
+ } ____cacheline_internodealigned_in_smp;
  
  /*
-@@ -218,7 +216,6 @@ struct rcu_data {
- 	/* 3) dynticks interface. */
- 	struct rcu_dynticks *dynticks;	/* Shared per-CPU dynticks state. */
- 	int dynticks_snap;		/* Per-GP tracking for dynticks. */
--	int dynticks_nmi_snap;		/* Per-GP tracking for dynticks_nmi. */
- #endif /* #ifdef CONFIG_NO_HZ */
- 
- 	/* 4) reasons this CPU needed to be kicked by force_quiescent_state */
 diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 38426ef..764b5fc 100644
+index 764b5fc..774f010 100644
 --- a/kernel/rcutree_plugin.h
 +++ b/kernel/rcutree_plugin.h
-@@ -1182,7 +1182,6 @@ int rcu_needs_cpu(int cpu)
+@@ -130,12 +130,12 @@ static void rcu_preempt_qs(int cpu)
+  * We have entered the scheduler, and the current task might soon be
+  * context-switched away from.  If this task is in an RCU read-side
+  * critical section, we will no longer be able to rely on the CPU to
+- * record that fact, so we enqueue the task on the appropriate entry
+- * of the blocked_tasks[] array.  The task will dequeue itself when
+- * it exits the outermost enclosing RCU read-side critical section.
+- * Therefore, the current grace period cannot be permitted to complete
+- * until the blocked_tasks[] entry indexed by the low-order bit of
+- * rnp->gpnum empties.
++ * record that fact, so we enqueue the task on the blkd_tasks list.
++ * The task will dequeue itself when it exits the outermost enclosing
++ * RCU read-side critical section.  Therefore, the current grace period
++ * cannot be permitted to complete until the blkd_tasks list entries
++ * predating the current grace period drain, in other words, until
++ * rnp->gp_tasks becomes NULL.
+  *
+  * Caller must disable preemption.
+  */
+@@ -143,7 +143,6 @@ static void rcu_preempt_note_context_switch(int cpu)
  {
- 	int c = 0;
- 	int snap;
--	int snap_nmi;
- 	int thatcpu;
+ 	struct task_struct *t = current;
+ 	unsigned long flags;
+-	int phase;
+ 	struct rcu_data *rdp;
+ 	struct rcu_node *rnp;
  
- 	/* Check for being in the holdoff period. */
-@@ -1193,10 +1192,10 @@ int rcu_needs_cpu(int cpu)
- 	for_each_online_cpu(thatcpu) {
- 		if (thatcpu == cpu)
- 			continue;
--		snap = per_cpu(rcu_dynticks, thatcpu).dynticks;
--		snap_nmi = per_cpu(rcu_dynticks, thatcpu).dynticks_nmi;
-+		snap = atomic_add_return(0, &per_cpu(rcu_dynticks,
-+						     thatcpu).dynticks);
- 		smp_mb(); /* Order sampling of snap with end of grace period. */
--		if (((snap & 0x1) != 0) || ((snap_nmi & 0x1) != 0)) {
-+		if ((snap & 0x1) != 0) {
- 			per_cpu(rcu_dyntick_drain, cpu) = 0;
- 			per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
- 			return rcu_needs_cpu_quick_check(cpu);
+@@ -165,15 +164,26 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 		 * (i.e., this CPU has not yet passed through a quiescent
+ 		 * state for the current grace period), then as long
+ 		 * as that task remains queued, the current grace period
+-		 * cannot end.
++		 * cannot end.  Note that there is some uncertainty as
++		 * to exactly when the current grace period started.
++		 * We take a conservative approach, which can result
++		 * in unnecessarily waiting on tasks that started very
++		 * slightly after the current grace period began.  C'est
++		 * la vie!!!
+ 		 *
+ 		 * But first, note that the current CPU must still be
+ 		 * on line!
+ 		 */
+ 		WARN_ON_ONCE((rdp->grpmask & rnp->qsmaskinit) == 0);
+ 		WARN_ON_ONCE(!list_empty(&t->rcu_node_entry));
+-		phase = (rnp->gpnum + !(rnp->qsmask & rdp->grpmask)) & 0x1;
+-		list_add(&t->rcu_node_entry, &rnp->blocked_tasks[phase]);
++		if ((rnp->qsmask & rdp->grpmask) && rnp->gp_tasks != NULL) {
++			list_add(&t->rcu_node_entry, rnp->gp_tasks->prev);
++			rnp->gp_tasks = &t->rcu_node_entry;
++		} else {
++			list_add(&t->rcu_node_entry, &rnp->blkd_tasks);
++			if (rnp->qsmask & rdp->grpmask)
++				rnp->gp_tasks = &t->rcu_node_entry;
++		}
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	}
+ 
+@@ -210,10 +220,7 @@ EXPORT_SYMBOL_GPL(__rcu_read_lock);
+  */
+ static int rcu_preempted_readers(struct rcu_node *rnp)
+ {
+-	int phase = rnp->gpnum & 0x1;
+-
+-	return !list_empty(&rnp->blocked_tasks[phase]) ||
+-	       !list_empty(&rnp->blocked_tasks[phase + 2]);
++	return rnp->gp_tasks != NULL;
+ }
+ 
+ /*
+@@ -253,6 +260,21 @@ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp, unsigned long flags)
+ }
+ 
+ /*
++ * Advance a ->blkd_tasks-list pointer to the next entry, instead
++ * returning NULL if at the end of the list.
++ */
++static struct list_head *rcu_next_node_entry(struct task_struct *t,
++					     struct rcu_node *rnp)
++{
++	struct list_head *np;
++
++	np = t->rcu_node_entry.next;
++	if (np == &rnp->blkd_tasks)
++		np = NULL;
++	return np;
++}
++
++/*
+  * Handle special cases during rcu_read_unlock(), such as needing to
+  * notify RCU core processing or task having blocked during the RCU
+  * read-side critical section.
+@@ -262,6 +284,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
+ 	int empty;
+ 	int empty_exp;
+ 	unsigned long flags;
++	struct list_head *np;
+ 	struct rcu_node *rnp;
+ 	int special;
+ 
+@@ -305,7 +328,12 @@ static void rcu_read_unlock_special(struct task_struct *t)
+ 		empty = !rcu_preempted_readers(rnp);
+ 		empty_exp = !rcu_preempted_readers_exp(rnp);
+ 		smp_mb(); /* ensure expedited fastpath sees end of RCU c-s. */
++		np = rcu_next_node_entry(t, rnp);
+ 		list_del_init(&t->rcu_node_entry);
++		if (&t->rcu_node_entry == rnp->gp_tasks)
++			rnp->gp_tasks = np;
++		if (&t->rcu_node_entry == rnp->exp_tasks)
++			rnp->exp_tasks = np;
+ 		t->rcu_blocked_node = NULL;
+ 
+ 		/*
+@@ -361,18 +389,16 @@ EXPORT_SYMBOL_GPL(__rcu_read_unlock);
+ static void rcu_print_detail_task_stall_rnp(struct rcu_node *rnp)
+ {
+ 	unsigned long flags;
+-	struct list_head *lp;
+-	int phase;
+ 	struct task_struct *t;
+ 
+-	if (rcu_preempted_readers(rnp)) {
+-		raw_spin_lock_irqsave(&rnp->lock, flags);
+-		phase = rnp->gpnum & 0x1;
+-		lp = &rnp->blocked_tasks[phase];
+-		list_for_each_entry(t, lp, rcu_node_entry)
+-			sched_show_task(t);
+-		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-	}
++	if (!rcu_preempted_readers(rnp))
++		return;
++	raw_spin_lock_irqsave(&rnp->lock, flags);
++	t = list_entry(rnp->gp_tasks,
++		       struct task_struct, rcu_node_entry);
++	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry)
++		sched_show_task(t);
++	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ }
+ 
+ /*
+@@ -402,16 +428,14 @@ static void rcu_print_detail_task_stall(struct rcu_state *rsp)
+  */
+ static void rcu_print_task_stall(struct rcu_node *rnp)
+ {
+-	struct list_head *lp;
+-	int phase;
+ 	struct task_struct *t;
+ 
+-	if (rcu_preempted_readers(rnp)) {
+-		phase = rnp->gpnum & 0x1;
+-		lp = &rnp->blocked_tasks[phase];
+-		list_for_each_entry(t, lp, rcu_node_entry)
+-			printk(" P%d", t->pid);
+-	}
++	if (!rcu_preempted_readers(rnp))
++		return;
++	t = list_entry(rnp->gp_tasks,
++		       struct task_struct, rcu_node_entry);
++	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry)
++		printk(" P%d", t->pid);
+ }
+ 
+ /*
+@@ -430,10 +454,15 @@ static void rcu_preempt_stall_reset(void)
+  * period that still has RCU readers blocked!  This function must be
+  * invoked -before- updating this rnp's ->gpnum, and the rnp's ->lock
+  * must be held by the caller.
++ *
++ * Also, if there are blocked tasks on the list, they automatically
++ * block the newly created grace period, so set up ->gp_tasks accordingly.
+  */
+ static void rcu_preempt_check_blocked_tasks(struct rcu_node *rnp)
+ {
+ 	WARN_ON_ONCE(rcu_preempted_readers(rnp));
++	if (!list_empty(&rnp->blkd_tasks))
++		rnp->gp_tasks = rnp->blkd_tasks.next;
+ 	WARN_ON_ONCE(rnp->qsmask);
+ }
+ 
+@@ -457,45 +486,49 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
+ 				     struct rcu_node *rnp,
+ 				     struct rcu_data *rdp)
+ {
+-	int i;
+ 	struct list_head *lp;
+ 	struct list_head *lp_root;
+ 	int retval = 0;
+ 	struct rcu_node *rnp_root = rcu_get_root(rsp);
+-	struct task_struct *tp;
++	struct task_struct *t;
+ 
+ 	if (rnp == rnp_root) {
+ 		WARN_ONCE(1, "Last CPU thought to be offlined?");
+ 		return 0;  /* Shouldn't happen: at least one CPU online. */
+ 	}
+-	WARN_ON_ONCE(rnp != rdp->mynode &&
+-		     (!list_empty(&rnp->blocked_tasks[0]) ||
+-		      !list_empty(&rnp->blocked_tasks[1]) ||
+-		      !list_empty(&rnp->blocked_tasks[2]) ||
+-		      !list_empty(&rnp->blocked_tasks[3])));
++
++	/* If we are on an internal node, complain bitterly. */
++	WARN_ON_ONCE(rnp != rdp->mynode);
+ 
+ 	/*
+-	 * Move tasks up to root rcu_node.  Rely on the fact that the
+-	 * root rcu_node can be at most one ahead of the rest of the
+-	 * rcu_nodes in terms of gp_num value.  This fact allows us to
+-	 * move the blocked_tasks[] array directly, element by element.
++	 * Move tasks up to root rcu_node.  Don't try to get fancy for
++	 * this corner-case operation -- just put this node's tasks
++	 * at the head of the root node's list, and update the root node's
++	 * ->gp_tasks and ->exp_tasks pointers to those of this node's,
++	 * if non-NULL.  This might result in waiting for more tasks than
++	 * absolutely necessary, but this is a good performance/complexity
++	 * tradeoff.
+ 	 */
+ 	if (rcu_preempted_readers(rnp))
+ 		retval |= RCU_OFL_TASKS_NORM_GP;
+ 	if (rcu_preempted_readers_exp(rnp))
+ 		retval |= RCU_OFL_TASKS_EXP_GP;
+-	for (i = 0; i < 4; i++) {
+-		lp = &rnp->blocked_tasks[i];
+-		lp_root = &rnp_root->blocked_tasks[i];
+-		while (!list_empty(lp)) {
+-			tp = list_entry(lp->next, typeof(*tp), rcu_node_entry);
+-			raw_spin_lock(&rnp_root->lock); /* irqs already disabled */
+-			list_del(&tp->rcu_node_entry);
+-			tp->rcu_blocked_node = rnp_root;
+-			list_add(&tp->rcu_node_entry, lp_root);
+-			raw_spin_unlock(&rnp_root->lock); /* irqs remain disabled */
+-		}
++	lp = &rnp->blkd_tasks;
++	lp_root = &rnp_root->blkd_tasks;
++	while (!list_empty(lp)) {
++		t = list_entry(lp->next, typeof(*t), rcu_node_entry);
++		raw_spin_lock(&rnp_root->lock); /* irqs already disabled */
++		list_del(&t->rcu_node_entry);
++		t->rcu_blocked_node = rnp_root;
++		list_add(&t->rcu_node_entry, lp_root);
++		if (&t->rcu_node_entry == rnp->gp_tasks)
++			rnp_root->gp_tasks = rnp->gp_tasks;
++		if (&t->rcu_node_entry == rnp->exp_tasks)
++			rnp_root->exp_tasks = rnp->exp_tasks;
++		raw_spin_unlock(&rnp_root->lock); /* irqs still disabled */
+ 	}
++	rnp->gp_tasks = NULL;
++	rnp->exp_tasks = NULL;
+ 	return retval;
+ }
+ 
+@@ -586,8 +619,7 @@ static DEFINE_MUTEX(sync_rcu_preempt_exp_mutex);
+  */
+ static int rcu_preempted_readers_exp(struct rcu_node *rnp)
+ {
+-	return !list_empty(&rnp->blocked_tasks[2]) ||
+-	       !list_empty(&rnp->blocked_tasks[3]);
++	return rnp->exp_tasks != NULL;
+ }
+ 
+ /*
+@@ -647,12 +679,13 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp)
+ static void
+ sync_rcu_preempt_exp_init(struct rcu_state *rsp, struct rcu_node *rnp)
+ {
+-	int must_wait;
++	int must_wait = 0;
+ 
+ 	raw_spin_lock(&rnp->lock); /* irqs already disabled */
+-	list_splice_init(&rnp->blocked_tasks[0], &rnp->blocked_tasks[2]);
+-	list_splice_init(&rnp->blocked_tasks[1], &rnp->blocked_tasks[3]);
+-	must_wait = rcu_preempted_readers_exp(rnp);
++	if (!list_empty(&rnp->blkd_tasks)) {
++		rnp->exp_tasks = rnp->blkd_tasks.next;
++		must_wait = 1;
++	}
+ 	raw_spin_unlock(&rnp->lock); /* irqs remain disabled */
+ 	if (!must_wait)
+ 		rcu_report_exp_rnp(rsp, rnp);
+@@ -661,9 +694,7 @@ sync_rcu_preempt_exp_init(struct rcu_state *rsp, struct rcu_node *rnp)
+ /*
+  * Wait for an rcu-preempt grace period, but expedite it.  The basic idea
+  * is to invoke synchronize_sched_expedited() to push all the tasks to
+- * the ->blocked_tasks[] lists, move all entries from the first set of
+- * ->blocked_tasks[] lists to the second set, and finally wait for this
+- * second set to drain.
++ * the ->blkd_tasks lists and wait for this list to drain.
+  */
+ void synchronize_rcu_expedited(void)
+ {
+@@ -695,7 +726,7 @@ void synchronize_rcu_expedited(void)
+ 	if ((ACCESS_ONCE(sync_rcu_preempt_exp_count) - snap) > 0)
+ 		goto unlock_mb_ret; /* Others did our work for us. */
+ 
+-	/* force all RCU readers onto blocked_tasks[]. */
++	/* force all RCU readers onto ->blkd_tasks lists. */
+ 	synchronize_sched_expedited();
+ 
+ 	raw_spin_lock_irqsave(&rsp->onofflock, flags);
+@@ -707,7 +738,7 @@ void synchronize_rcu_expedited(void)
+ 		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+ 	}
+ 
+-	/* Snapshot current state of ->blocked_tasks[] lists. */
++	/* Snapshot current state of ->blkd_tasks lists. */
+ 	rcu_for_each_leaf_node(rsp, rnp)
+ 		sync_rcu_preempt_exp_init(rsp, rnp);
+ 	if (NUM_RCU_NODES > 1)
+@@ -715,7 +746,7 @@ void synchronize_rcu_expedited(void)
+ 
+ 	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
+ 
+-	/* Wait for snapshotted ->blocked_tasks[] lists to drain. */
++	/* Wait for snapshotted ->blkd_tasks lists to drain. */
+ 	rnp = rcu_get_root(rsp);
+ 	wait_event(sync_rcu_preempt_exp_wq,
+ 		   sync_rcu_preempt_exp_done(rnp));
 diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index c8e9785..4a21ca5 100644
+index 4a21ca5..1cedf94 100644
 --- a/kernel/rcutree_trace.c
 +++ b/kernel/rcutree_trace.c
-@@ -57,10 +57,10 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
- 		   rdp->passed_quiesc, rdp->passed_quiesc_completed,
- 		   rdp->qs_pending);
- #ifdef CONFIG_NO_HZ
--	seq_printf(m, " dt=%d/%d dn=%d df=%lu",
--		   rdp->dynticks->dynticks,
-+	seq_printf(m, " dt=%d/%d/%d df=%lu",
-+		   atomic_read(&rdp->dynticks->dynticks),
- 		   rdp->dynticks->dynticks_nesting,
--		   rdp->dynticks->dynticks_nmi,
-+		   rdp->dynticks->dynticks_nmi_nesting,
- 		   rdp->dynticks_fqs);
- #endif /* #ifdef CONFIG_NO_HZ */
- 	seq_printf(m, " of=%lu ri=%lu", rdp->offline_fqs, rdp->resched_ipi);
-@@ -115,9 +115,9 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
- 		   rdp->qs_pending);
- #ifdef CONFIG_NO_HZ
- 	seq_printf(m, ",%d,%d,%d,%lu",
--		   rdp->dynticks->dynticks,
-+		   atomic_read(&rdp->dynticks->dynticks),
- 		   rdp->dynticks->dynticks_nesting,
--		   rdp->dynticks->dynticks_nmi,
-+		   rdp->dynticks->dynticks_nmi_nesting,
- 		   rdp->dynticks_fqs);
- #endif /* #ifdef CONFIG_NO_HZ */
- 	seq_printf(m, ",%lu,%lu", rdp->offline_fqs, rdp->resched_ipi);
-@@ -130,7 +130,7 @@ static int show_rcudata_csv(struct seq_file *m, void *unused)
+@@ -161,7 +161,6 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
  {
- 	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pqc\",\"pq\",");
- #ifdef CONFIG_NO_HZ
--	seq_puts(m, "\"dt\",\"dt nesting\",\"dn\",\"df\",");
-+	seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
- #endif /* #ifdef CONFIG_NO_HZ */
- 	seq_puts(m, "\"of\",\"ri\",\"ql\",\"b\",\"ci\",\"co\",\"ca\"\n");
- #ifdef CONFIG_TREE_PREEMPT_RCU
+ 	unsigned long gpnum;
+ 	int level = 0;
+-	int phase;
+ 	struct rcu_node *rnp;
+ 
+ 	gpnum = rsp->gpnum;
+@@ -178,13 +177,11 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
+ 			seq_puts(m, "\n");
+ 			level = rnp->level;
+ 		}
+-		phase = gpnum & 0x1;
+-		seq_printf(m, "%lx/%lx %c%c>%c%c %d:%d ^%d    ",
++		seq_printf(m, "%lx/%lx %c%c>%c %d:%d ^%d    ",
+ 			   rnp->qsmask, rnp->qsmaskinit,
+-			   "T."[list_empty(&rnp->blocked_tasks[phase])],
+-			   "E."[list_empty(&rnp->blocked_tasks[phase + 2])],
+-			   "T."[list_empty(&rnp->blocked_tasks[!phase])],
+-			   "E."[list_empty(&rnp->blocked_tasks[!phase + 2])],
++			   ".G"[rnp->gp_tasks != NULL],
++			   ".E"[rnp->exp_tasks != NULL],
++			   ".T"[!list_empty(&rnp->blkd_tasks)],
+ 			   rnp->grplo, rnp->grphi, rnp->grpnum);
+ 	}
+ 	seq_puts(m, "\n");
 -- 
 1.7.3.2
 
