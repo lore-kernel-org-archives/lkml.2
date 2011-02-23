@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab1BWUJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:09:16 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54775 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab1BWUJP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:09:15 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: linux-next still missing patch for zcache modular Kconfig/build issue
-From: Valdis.Kletnieks@vt.edu
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1298491740_5041P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 23 Feb 2011 15:09:00 -0500
-Message-ID: <21508.1298491740@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4D65695D.00D1,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S932561Ab1BWULY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:11:24 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:46512
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755615Ab1BWULV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:11:21 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
+        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Subject: [PATCH 4/4] staging: hv: Fix the code depending on struct storvsc_driver_context data order
+Date: Wed, 23 Feb 2011 12:19:58 -0800
+Message-Id: <1298492398-16522-4-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
+In-Reply-To: <1298492398-16522-3-git-send-email-haiyangz@microsoft.com>
+References: <1298492398-16522-1-git-send-email-haiyangz@microsoft.com>
+ <1298492398-16522-2-git-send-email-haiyangz@microsoft.com>
+ <1298492398-16522-3-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1298491740_5041P
-Content-Type: text/plain; charset=us-ascii
+The patch fixed the code depending on the exact order of fields in the
+struct storvsc_driver_context. Now, we use container_of() instead of type
+casting from the first field to the container struct.
 
-I know this is a known and solved problem with CONFIG_ZCACHE=m I hit a while back:
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
-  Building modules, stage 2.
-  MODPOST 258 modules
-ERROR: "xv_malloc" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "tmem_new_pool" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "tmem_put" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "tmem_destroy_pool" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "xv_free" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "xv_get_object_size" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "tmem_get" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "tmem_flush_object" [drivers/staging/zcache/zcache.ko] undefined!
-ERROR: "tmem_flush_page" [drivers/staging/zcache/zcache.ko] undefined!
+---
+ drivers/staging/hv/storvsc_drv.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
-The patch for this isn't in the linux-next tree I pulled yesterday - what happened to it?
-
-
---==_Exmh_1298491740_5041P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNZWlccC3lWbTT17ARAltfAKCsvedFj5BVpT+8G64/3p2l7CPVdgCfd/GW
-9xS2WGiWr8kgPpuTAYRbw1s=
-=y6Jb
------END PGP SIGNATURE-----
-
---==_Exmh_1298491740_5041P--
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 33acee5..a364627 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -64,8 +64,6 @@ struct storvsc_cmd_request {
+ };
+ 
+ struct storvsc_driver_context {
+-	/* !! These must be the first 2 fields !! */
+-	/* FIXME this is a bug... */
+ 	struct driver_context drv_ctx;
+ 	struct storvsc_driver_object drv_obj;
+ };
+@@ -223,8 +221,8 @@ static int storvsc_probe(struct device *device)
+ 	int ret;
+ 	struct driver_context *driver_ctx =
+ 				driver_to_driver_context(device->driver);
+-	struct storvsc_driver_context *storvsc_drv_ctx =
+-				(struct storvsc_driver_context *)driver_ctx;
++	struct storvsc_driver_context *storvsc_drv_ctx = container_of(
++		driver_ctx, struct storvsc_driver_context, drv_ctx);
+ 	struct storvsc_driver_object *storvsc_drv_obj =
+ 				&storvsc_drv_ctx->drv_obj;
+ 	struct vm_device *device_ctx = device_to_vm_device(device);
+@@ -308,8 +306,8 @@ static int storvsc_remove(struct device *device)
+ 	int ret;
+ 	struct driver_context *driver_ctx =
+ 			driver_to_driver_context(device->driver);
+-	struct storvsc_driver_context *storvsc_drv_ctx =
+-			(struct storvsc_driver_context *)driver_ctx;
++	struct storvsc_driver_context *storvsc_drv_ctx = container_of(
++		driver_ctx, struct storvsc_driver_context, drv_ctx);
+ 	struct storvsc_driver_object *storvsc_drv_obj =
+ 			&storvsc_drv_ctx->drv_obj;
+ 	struct vm_device *device_ctx = device_to_vm_device(device);
+@@ -606,8 +604,8 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 	struct vm_device *device_ctx = host_device_ctx->device_ctx;
+ 	struct driver_context *driver_ctx =
+ 		driver_to_driver_context(device_ctx->device.driver);
+-	struct storvsc_driver_context *storvsc_drv_ctx =
+-		(struct storvsc_driver_context *)driver_ctx;
++	struct storvsc_driver_context *storvsc_drv_ctx = container_of(
++		driver_ctx, struct storvsc_driver_context, drv_ctx);
+ 	struct storvsc_driver_object *storvsc_drv_obj =
+ 		&storvsc_drv_ctx->drv_obj;
+ 	struct hv_storvsc_request *request;
+-- 
+1.6.3.2
 
