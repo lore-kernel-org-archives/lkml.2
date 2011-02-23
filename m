@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab1BWUGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:06:50 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35485 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab1BWUGs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:06:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=WAW9/DJVbNpq3QPNnfYspkVbXX3JE+5ui9/o7bBeaVS30oo0gl4SEyF01Pe02LJ1st
-         oGDIwGNeA07qnDcHNMRenrI+iC3pbPayRB6C0KMhJgPDfz7chYEd/ZBePd0d1rO5QV3H
-         vuT2B+DtG0biearQwZv0LDasBgnK08z5dynfE=
+	id S932535Ab1BWUHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:07:19 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52871 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754910Ab1BWUHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:07:17 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Subject: Re: does hibernate to disk try hard enough to free memory?
+Date: Wed, 23 Feb 2011 21:06:51 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201102222159.58546.Martin@lichtvoll.de> <201102222332.43864.rjw@sisk.pl> <201102231511.15683.Martin@lichtvoll.de>
+In-Reply-To: <201102231511.15683.Martin@lichtvoll.de>
 MIME-Version: 1.0
-In-Reply-To: <20110223115414.547b8c17@queued.net>
-References: <20110216222820.487AE9D401C@zog.reactivated.net>
-	<1297896277.3011.5.camel@macbook.infradead.org>
-	<AANLkTikAF2X1A5jfoNfCPRhZkZ7qPdZ57c8B5b9z4+qr@mail.gmail.com>
-	<20110218190659.7f955e4c@queued.net>
-	<20110223194352.GR14597@angua.secretlab.ca>
-	<20110223115414.547b8c17@queued.net>
-Date: Wed, 23 Feb 2011 20:06:47 +0000
-X-Google-Sender-Auth: 5q1jaDO9oH74lfaZMNlyNkqWAiE
-Message-ID: <AANLkTi=D1eWGsN4JVWEGeHp3AXfpbOOKr9Fq7juGAXtT@mail.gmail.com>
-Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name' brokenness
-From: Daniel Drake <dsd@laptop.org>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        David Woodhouse <dwmw2@infradead.org>, cbou@mail.ru,
-        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, dmitry.torokhov@gmail.com,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102232106.51980.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 February 2011 19:54, Andres Salomon <dilinger@queued.net> wrote:
->> Wait; why are you binding to a device based on name?  Binding by name
->> and/or device_type is strongly discouraged for new code.  Use
->> compatible instead.
->>
->
-> Daniel posted a separate patch showing his code, would you mind
-> commenting on that?  I noticed he didn't cc you though, here's the
-> patch:
->
-> https://patchwork.kernel.org/patch/574901/
+On Wednesday, February 23, 2011, Martin Steigerwald wrote:
+> Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
+> > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> > > Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
+> > > > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> > > > > Hi!
+> > > > > 
+> > > > > Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB
+> > > > > of RAM is not able to allocate memory for the hibernation image.
+> > > > > Before KMS hibernation only very rarely failed for that reason.
+> > > > > 
+> > > > > Often I run without compositing at all as I believe this might
+> > > > > spare some pages as well. But this doesn't always help.
+> > > > > 
+> > > > > It complains that to less pages could be freed. For example with
+> > > > > kernel 2.6.37:
+> > > > > 
+> > > > > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
+> > > > > Feb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
+> > > > > Feb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411
+> > > > > + 1024, available pages: 112767
+> > > > > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
+> > > > > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating
+> > > > > hibernation image Feb 16 00:15:00 shambhala kernel: Extended
+> > > > > CMOS year: 2000 Feb 16 00:15:00 shambhala kernel: ACPI: Waking
+> > > > > up from system sleep state S4
+> > > > > Feb 16 00:15:00 shambhala kernel: PM: early recover of devices
+> > > > > complete after 0.376 msecs
+> > > > 
+> > > > What's the value in /sys/power/image_size?
+> > > 
+> > > shambhala:~> cat /sys/power/image_size
+> > > 844206080
+> > > 
+> > > Should I try with less?
+> > 
+> > Yes, please.  Try with 700000000 for example.
+> 
+> I replaced dropping by settings image_size to this valua and the ThinkPad 
+> hibernated with KMail open. Thus seems to work, but I will test a bit 
+> further.
+> 
+> Where does the higher value previously set come from? Autotuning?
 
-It does bind to the name.
-We don't currently have a compatible property for the battery device.
-We could fix that with a firmware upgrade, but it would break
-compatibility with all existing installs. I guess this is still the
-recommended approach...
+Likely.  The number seems to match at least.
 
-Daniel
+> Is there anything that can be improved with autotuning?
+
+We can lower the ratio of the image size to the total RAM.
+Alternatively, we can increase SPARE_PAGES.
+
+> If yes, I can file a bug report.
+
+Yes, please.
+
+> Otherwise I just try to find a good value for image size and be 
+> done with it.
+
+It would be helpful if you could determine the greatest image size working
+for you.
+
+Thanks,
+Rafael
