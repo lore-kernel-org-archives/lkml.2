@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab1BWTUL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:20:11 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:10587 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab1BWTUJ (ORCPT
+	id S932441Ab1BWTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:22:09 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:48801 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752252Ab1BWTWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:20:09 -0500
-Message-ID: <4D655DE9.9080809@caviumnetworks.com>
-Date: Wed, 23 Feb 2011 11:20:09 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 23 Feb 2011 14:22:08 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Wp7klwkVM1lheoudyrZ8k1djuH.ZQ64OC6354leuchmX8Tf
+ A.6Jyt4ai2AKzbSn3Kg22eZNWZPD0LeDWWG6AeKZCg2_g5TNVKuBZ8ngXIfV
+ F.rlMIsvzPb9KHeYdtPNwu8JMLIQj.ukfZj80L4Cf8QgFYiIULu1JnUbCFz4
+ FICb8R0Gp7KkY4eFeeWL9mpIIHt0CtAg3yNv44nH_0mTt7V57LRtgFAxoHhl
+ q10IVpbB0uYm3r8unqUe0l1MQhd17ZQlwbTonIiiR5c2wl9T45U_A8peru9S
+ wfCHMSgb2fxES7DA5M8AmzZ4WHeQ7bk9DVXvKG46rVJNvZVA-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 23 Feb 2011 13:22:02 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+In-Reply-To: <20110223191043.GU2163@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1102231320050.4823@router.home>
+References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com> <20110223161645.GA1819@nowhere> <1298479302.7666.94.camel@gandalf.stny.rr.com> <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl>
+ <alpine.DEB.2.00.1102231132140.562@router.home> <20110223191043.GU2163@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 06/10] MIPS: Octeon: Initialize and fixup device tree.
-References: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com> <1298408274-20856-7-git-send-email-ddaney@caviumnetworks.com> <20110223174120.GG14597@angua.secretlab.ca> <4D6554A0.5010407@caviumnetworks.com> <20110223185134.GN14597@angua.secretlab.ca>
-In-Reply-To: <20110223185134.GN14597@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Feb 2011 19:20:09.0533 (UTC) FILETIME=[AF9D4ED0:01CBD38E]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2011 10:51 AM, Grant Likely wrote:
-> On Wed, Feb 23, 2011 at 10:40:32AM -0800, David Daney wrote:
->> On 02/23/2011 09:41 AM, Grant Likely wrote:
->>> On Tue, Feb 22, 2011 at 12:57:50PM -0800, David Daney wrote:
->>>> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
->>>> ---
->>>>   arch/mips/Kconfig                         |    2 +
->>>>   arch/mips/cavium-octeon/octeon-platform.c |  280 +++++++++++++++++++++++++++++
->>>>   arch/mips/cavium-octeon/setup.c           |   17 ++
->>>>   3 files changed, 299 insertions(+), 0 deletions(-)
->>>
->>> I've got an odd feeling of foreboding about this patch.  It makes me
->>> nervous, but I can't articulate why yet.  Gut-wise I'd rather see the
->>> device tree pruned/fixed up before it gets unflattened,
->>
->> I chose to work on the unflattened form because there were already
->> functions to do it.  I didn't see anything that would make
->> manipulating the flattened form easy.
->>
->> I agree that working on the unflattened form would be best.  At a
->> minium the /proc/device-tree structure would better reflect reality.
->>
->> What do you think about adding some helper functions to
->> drivers/of/fdt.c for the manipulation of the flattened form?
->
-> It would probably be easier/safer to link libfdt into the kernel
-> proper.  It's already used in the powerpc bootwrapper, and there has
-> been talk about replacing some of fdt.c with libfdt.  See
-> scripts/dtc/libfdt
->
+On Wed, 23 Feb 2011, Paul E. McKenney wrote:
 
-I will take a look at that approach.
+> These do introduce redundant preempt_disable()/preempt_enable() calls, but
+> this is not on a fastpath, so should be OK, and the improved readability
+> is certainly nice.  The read and the write do need to happen on the same
+> CPU, FWIW.
 
->>
->>> or for the
->>> kernel to have a separate .dtb linked in for each legacy platform.
->>
->> I think there are too many variants to make this viable.
->
-> Out of curiosity, how many variants?
->
+this_cpu_xxx only use preempt_enable/disable() on platforms that do not
+support per cpu atomic instructions. On x86 no preempt enable/disable will
+be inserted.
 
-I don't know exactly, but for the sake of argument let's say at least 
-twenty we support in-house.  That is not counting close to 100 customer 
-boards.  Some of these boards have modular I/O connections (SPI-4.2 vs. 
-XAIU vs. 4xSGMII, etc. across several different ports.), so the hardware 
-configuration may be different each time they are powered on.
-
-The existing legacy code handles these, so using it to configure the 
-Device Tree has a certain appeal.  I would hope that moving forward a 
-correct device tree is obtained from the bootloader, but for existing 
-boards...
-
-> btw, did you know about the dtc '/include/' functionality?  It is
-> possible to set up .dts include files that represent a SoC and can be
-> modified by the .dts files that include them.  See
-> arch/powerpc/boot/dts/*5200*.dts
-
-Yes.
-
-Thanks,
-David Daney
+You can also use the __this_cpu_xxx operations which never add preempt
+disable/enable because they expect the caller to deal with preemption.
