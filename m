@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab1BWSaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 13:30:07 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:23783 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751717Ab1BWSaG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 13:30:06 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: mGKjh3oVM1n5GjlMYih.R7oyEeP5858x0vC4pNvULQPobkp
- tHglj5Y5bUCWWlnUL_qyCm2gJu4bnYwoGy9PNPhlEMWfQSDNu_P7NEDsA.m7
- B7fhhvw_SOcTOxLBTHyNTWybZfh7X.GNPL4FsOxvXuZ5ae0Z4AkJMzm1Ua5y
- iJcZB.Rtk8eOWAHqs0J1fzVaslEkcKhUuJrCsJN6q8Lr1MOshIlAdxHzwe0p
- v_sOFfaHYV6afx4xKGUsWFkPKS16LEQELJXDyyAoQ.YQn5RM-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 23 Feb 2011 12:29:59 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-In-Reply-To: <1298485027.7666.98.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.DEB.2.00.1102231225330.3906@router.home>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>  <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>  <20110223161645.GA1819@nowhere>  <1298479302.7666.94.camel@gandalf.stny.rr.com>  <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl> 
- <alpine.DEB.2.00.1102231132140.562@router.home> <1298485027.7666.98.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754861Ab1BWSbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 13:31:15 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59358 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752198Ab1BWSbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 13:31:13 -0500
+Date: Wed, 23 Feb 2011 10:31:09 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
+Subject: Re: [PATCH] debug rcu head support !PREEMPT config
+Message-ID: <20110223183109.GO2163@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1298431409.7666.76.camel@gandalf.stny.rr.com>
+ <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
+ <1298472914.7666.85.camel@gandalf.stny.rr.com>
+ <BLU0-SMTP1519908E0ACAEE1384F71896DB0@phx.gbl>
+ <1298474827.7666.86.camel@gandalf.stny.rr.com>
+ <BLU0-SMTP42770DC9BDE561B962274096DB0@phx.gbl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BLU0-SMTP42770DC9BDE561B962274096DB0@phx.gbl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011, Steven Rostedt wrote:
+On Wed, Feb 23, 2011 at 10:37:26AM -0500, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > On Wed, 2011-02-23 at 10:13 -0500, Mathieu Desnoyers wrote:
+> > > Remove DEBUG_RCU_HEAD dependency on PREEMPT config. Handle the unability to
+> > > detect if within a RCU read-side critical section by never performing any
+> > > attempt to recover from a failure situation in the fixup handlers. Just print
+> > > the warnings.
+> > > 
+> > > This patch is only compile-tested.
+> > > 
+> > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > ---
+> > >  kernel/rcupdate.c |   17 +++++++++++++++++
+> > >  lib/Kconfig.debug |    2 +-
+> > >  2 files changed, 18 insertions(+), 1 deletion(-)
+> > > 
+> > > Index: linux-2.6-lttng/lib/Kconfig.debug
+> > > ===================================================================
+> > > --- linux-2.6-lttng.orig/lib/Kconfig.debug
+> > > +++ linux-2.6-lttng/lib/Kconfig.debug
+> > > @@ -313,7 +313,7 @@ config DEBUG_OBJECTS_WORK
+> > >  
+> > >  config DEBUG_OBJECTS_RCU_HEAD
+> > >  	bool "Debug RCU callbacks objects"
+> > > -	depends on DEBUG_OBJECTS && PREEMPT
+> > > +	depends on DEBUG_OBJECTS
+> > >  	help
+> > >  	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
+> > >  
+> > > Index: linux-2.6-lttng/kernel/rcupdate.c
+> > > ===================================================================
+> > > --- linux-2.6-lttng.orig/kernel/rcupdate.c
+> > > +++ linux-2.6-lttng/kernel/rcupdate.c
+> > > @@ -142,7 +142,14 @@ static int rcuhead_fixup_init(void *addr
+> > >  		 * Ensure that queued callbacks are all executed.
+> > >  		 * If we detect that we are nested in a RCU read-side critical
+> > >  		 * section, we should simply fail, otherwise we would deadlock.
+> > > +		 * In !PREEMPT configurations, there is no way to tell if we are
+> > > +		 * in a RCU read-side critical section or not, so we never
+> > > +		 * attempt any fixup and just print a warning.
+> > >  		 */
+> > > +#ifndef CONFIG_PREEMPT
+> > > +		WARN_ON(1);
+> > > +		return 0;
+> > > +#endif
+> > >  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+> > >  		    irqs_disabled()) {
+> > >  			WARN_ON(1);
+> > > @@ -184,7 +191,14 @@ static int rcuhead_fixup_activate(void *
+> > >  		 * Ensure that queued callbacks are all executed.
+> > >  		 * If we detect that we are nested in a RCU read-side critical
+> > >  		 * section, we should simply fail, otherwise we would deadlock.
+> > > +		 * In !PREEMPT configurations, there is no way to tell if we are
+> > > +		 * in a RCU read-side critical section or not, so we never
+> > > +		 * attempt any fixup and just print a warning.
+> > >  		 */
+> > > +#ifndef CONFIG_PREEMPT
+> > > +		WARN_ON(1);
+> > > +		return 0;
+> > > +#endif
+> > >  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+> > >  		    irqs_disabled()) {
+> > >  			WARN_ON(1);
+> > > @@ -214,6 +228,9 @@ static int rcuhead_fixup_free(void *addr
+> > >  		 * Ensure that queued callbacks are all executed.
+> > >  		 * If we detect that we are nested in a RCU read-side critical
+> > >  		 * section, we should simply fail, otherwise we would deadlock.
+> > > +		 * In !PREEMPT configurations, there is no way to tell if we are
+> > > +		 * in a RCU read-side critical section or not, so we never
+> > > +		 * attempt any fixup and just print a warning.
+> > >  		 */
+> > >  #ifndef CONFIG_PREEMPT
+> > >  		WARN_ON(1);
+> > 
+> > Hmm, I wonder if s/WARN_ON/WARN_ON_ONCE/g is in order. Why spam the
+> > console if it happens to trigger all the time?
+> 
+> The system should die pretty soon anyway due to list corruption, so I
+> don't think it's a problem in practice.
 
-> On Wed, 2011-02-23 at 11:34 -0600, Christoph Lameter wrote:
->
-> > > > True, but we could also argue that the multiple checks for being preempt
-> > > > can also be an issue.
-> > >
-> > > At least on x86 preemption don't actually need to be disabled: selection
-> > > of the right per-cpu memory location is done atomically with the rest of
-> > > the instruction by the segment selector.
-> >
-> > Right.
->
-> But a test still needs to be made. Because three access of this_cpu_*()
-> that gets preempted and scheduled on another CPU can access a different
-> CPU var for each access. This does not matter how atomic the
-> this_cpu_*() code is.
+Well, it would add noise, so I added a patch converting the WARN_ON's
+to WARN_ON_ONCE's.
 
-Right if the kthread context can be rescheduled then either preemption
-needs to be disabled to guarantee that all three access the same per cpu
-area data or the code needs to be changed in such a way that a this_cpu
-RMW instructions can do the mods in one go.
-
+							Thanx, Paul
