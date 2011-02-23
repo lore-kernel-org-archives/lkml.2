@@ -1,123 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab1BWMrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 07:47:43 -0500
-Received: from proxy.DResearch.DE ([87.193.137.100]:57020 "EHLO
-	mail.dresearch.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753546Ab1BWMrl (ORCPT
+	id S1754557Ab1BWMuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 07:50:37 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:33050 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab1BWMug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 07:47:41 -0500
-X-Greylist: delayed 2009 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 07:47:41 EST
-Message-ID: <4D64FA12.4070800@dresearch.de>
-Date: Wed, 23 Feb 2011 13:14:10 +0100
-From: Steffen Sledz <sledz@dresearch.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org
-CC: Mario Schuknecht <m.schuknecht@dresearch.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Fred N. van Kempen" <waltje@uWalt.NL.Mugnet.ORG>,
-        Mark Evans <evansmp@uhura.aston.ac.uk>,
-        Corey Minyard <wf-rch!minyard@relay.EU.net>,
-        Florian La Roche <flla@stud.uni-sb.de>,
-        Charles Hedrick <hedrick@klinzhai.rutgers.edu>,
-        Linus Torvalds <torvalds@cs.helsinki.fi>,
-        Alan Cox <gw4pts@gw4pts.ampr.org>,
-        Matthew Dillon <dillon@apollo.west.oic.com>,
-        Arnt Gulbrandsen <arnt@gulbrandsen.priv.no>,
-        Jorge Cwik <jorge@laser.satlink.net>,
-        Matthew Dillon <dillon@crater.dragonflybsd.org>,
-        Alan Cox <alc@FreeBSD.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Charles Hedrick <hedrick@rutgers.edu>,
-        "" <Fred.van.Kempen@microwalt.nl>
-Subject: Re: [PATCH] tcp: ioctl type SIOCOUTQNSD returns amount of data not
- sent
-References: <1286271154-18600-1-git-send-email-m.schuknecht@dresearch.de>
-In-Reply-To: <1286271154-18600-1-git-send-email-m.schuknecht@dresearch.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 23 Feb 2011 12:14:10.0653 (UTC) FILETIME=[2D55B8D0:01CBD353]
+	Wed, 23 Feb 2011 07:50:36 -0500
+To: akpm@linux-foundation.org, torvalds@linux-foundation.org
+cc: hughd@google.com, gurudas.pai@oracle.com, lkml20101129@newton.leun.net,
+        rjw@sisk.pl, florian@mickler.org, trond.myklebust@fys.uio.no,
+        maciej.rutecki@gmail.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH]  mm: prevent concurrent unmap_mapping_range() on the same inode
+Message-Id: <E1PsEA7-0007G0-29@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 23 Feb 2011 13:49:47 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.10.2010 11:32, schrieb Mario Schuknecht:
-> In contrast to SIOCOUTQ which returns the amount of data sent
-> but not yet acknowledged plus data not yet sent this patch only
-> returns the data not sent.
-> 
-> For various methods of live streaming bitrate control it may
-> be helpful to know how much data are in the tcp outqueue are
-> not sent yet.
-> 
-> Signed-off-by: Mario Schuknecht <m.schuknecht@dresearch.de>
-> ---
->  include/asm-generic/ioctls.h |    1 +
->  include/linux/sockios.h      |    1 +
->  net/ipv4/tcp.c               |    9 +++++++++
->  3 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
-> index a321665..b87115b 100644
-> --- a/include/asm-generic/ioctls.h
-> +++ b/include/asm-generic/ioctls.h
-> @@ -72,6 +72,7 @@
->  #define TCSETXF		0x5434
->  #define TCSETXW		0x5435
->  #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
-> +#define TIOCOUTQNSD	0x5437
->  
->  #define FIONCLEX	0x5450
->  #define FIOCLEX		0x5451
-> diff --git a/include/linux/sockios.h b/include/linux/sockios.h
-> index 241f179..4c5ca47 100644
-> --- a/include/linux/sockios.h
-> +++ b/include/linux/sockios.h
-> @@ -23,6 +23,7 @@
->  /* Linux-specific socket ioctls */
->  #define SIOCINQ		FIONREAD
->  #define SIOCOUTQ	TIOCOUTQ
-> +#define SIOCOUTQNSD	TIOCOUTQNSD
->  
->  /* Routing table calls. */
->  #define SIOCADDRT	0x890B		/* add routing table entry	*/
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 1664a05..c2d52e8 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -505,6 +505,15 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
->  		else
->  			answ = tp->write_seq - tp->snd_una;
->  		break;
-> +	case SIOCOUTQNSD:
-> +		if (sk->sk_state == TCP_LISTEN)
-> +			return -EINVAL;
-> +
-> +		if ((1 << sk->sk_state) & (TCPF_SYN_SENT | TCPF_SYN_RECV))
-> +			answ = 0;
-> +		else
-> +			answ = tp->write_seq - tp->snd_nxt;
-> +		break;
->  	default:
->  		return -ENOIOCTLCMD;
->  	}
+Linus, Andrew,
 
-Ping!
+This resolves Bug 25822 listed in the regressions since 2.6.36 (though
+it's a bug much older than that, for some reason it only started
+triggering for people recently).
 
-It would be nice to get some feedback on this. We really need an extension of this kind.
+Summary of discussion of below patch by Hugh:
 
-If the patch does something in a wrong way (esp. choosing the TIOCOUTQNSD id) please give us a hint how to do it in the right way.
+   An executive summary of the thread that followed would be that hch
+   dislikes the bloat, as we all do, but Miklos and I don't see a
+   decent alternative (and hch has not proposed one).
 
-Thx,
-Steffen Sledz
+Please consider this for 2.6.38.
 
--- 
-DResearch Fahrzeugelektronik GmbH
-Otto-Schmirgal-Str. 3, 10319 Berlin, Germany
-Tel: +49 30 515932-237 mailto:sledz@DResearch.de
-Fax: +49 30 515932-299
-Geschäftsführer: Dr. Michael Weber, Werner Mögle;
-Amtsgericht Berlin Charlottenburg; HRB 130120 B;
-Ust.-IDNr. DE273952058
+Thanks,
+Miklos
 
+----
+Subject: mm: prevent concurrent unmap_mapping_range() on the same inode
+
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+Michael Leun reported that running parallel opens on a fuse filesystem
+can trigger a "kernel BUG at mm/truncate.c:475"
+
+Gurudas Pai reported the same bug on NFS.
+
+The reason is, unmap_mapping_range() is not prepared for more than
+one concurrent invocation per inode.  For example:
+
+  thread1: going through a big range, stops in the middle of a vma and
+     stores the restart address in vm_truncate_count.
+
+  thread2: comes in with a small (e.g. single page) unmap request on
+     the same vma, somewhere before restart_address, finds that the
+     vma was already unmapped up to the restart address and happily
+     returns without doing anything.
+
+Another scenario would be two big unmap requests, both having to
+restart the unmapping and each one setting vm_truncate_count to its
+own value.  This could go on forever without any of them being able to
+finish.
+
+Truncate and hole punching already serialize with i_mutex.  Other
+callers of unmap_mapping_range() do not, and it's difficult to get
+i_mutex protection for all callers.  In particular ->d_revalidate(),
+which calls invalidate_inode_pages2_range() in fuse, may be called
+with or without i_mutex.
+
+This patch adds a new mutex to 'struct address_space' to prevent
+running multiple concurrent unmap_mapping_range() on the same mapping.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Reported-by: Michael Leun <lkml20101129@newton.leun.net>
+Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+---
+ fs/gfs2/main.c     |    9 +--------
+ fs/inode.c         |   22 +++++++++++++++-------
+ fs/nilfs2/btnode.c |    5 -----
+ fs/nilfs2/btnode.h |    1 -
+ fs/nilfs2/mdt.c    |    4 ++--
+ fs/nilfs2/page.c   |   13 -------------
+ fs/nilfs2/page.h   |    1 -
+ fs/nilfs2/super.c  |    2 +-
+ include/linux/fs.h |    2 ++
+ mm/memory.c        |    2 ++
+ 10 files changed, 23 insertions(+), 38 deletions(-)
+
+Index: linux-2.6/mm/memory.c
+===================================================================
+--- linux-2.6.orig/mm/memory.c	2011-02-22 11:05:15.000000000 +0100
++++ linux-2.6/mm/memory.c	2011-02-23 13:35:30.000000000 +0100
+@@ -2648,6 +2648,7 @@ void unmap_mapping_range(struct address_
+ 		details.last_index = ULONG_MAX;
+ 	details.i_mmap_lock = &mapping->i_mmap_lock;
+ 
++	mutex_lock(&mapping->unmap_mutex);
+ 	spin_lock(&mapping->i_mmap_lock);
+ 
+ 	/* Protect against endless unmapping loops */
+@@ -2664,6 +2665,7 @@ void unmap_mapping_range(struct address_
+ 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
+ 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
+ 	spin_unlock(&mapping->i_mmap_lock);
++	mutex_unlock(&mapping->unmap_mutex);
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
+Index: linux-2.6/fs/gfs2/main.c
+===================================================================
+--- linux-2.6.orig/fs/gfs2/main.c	2011-02-22 11:05:15.000000000 +0100
++++ linux-2.6/fs/gfs2/main.c	2011-02-23 13:35:30.000000000 +0100
+@@ -59,14 +59,7 @@ static void gfs2_init_gl_aspace_once(voi
+ 	struct address_space *mapping = (struct address_space *)(gl + 1);
+ 
+ 	gfs2_init_glock_once(gl);
+-	memset(mapping, 0, sizeof(*mapping));
+-	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
+-	spin_lock_init(&mapping->tree_lock);
+-	spin_lock_init(&mapping->i_mmap_lock);
+-	INIT_LIST_HEAD(&mapping->private_list);
+-	spin_lock_init(&mapping->private_lock);
+-	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
+-	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
++	address_space_init_once(mapping);
+ }
+ 
+ /**
+Index: linux-2.6/fs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/inode.c	2011-01-20 13:28:34.000000000 +0100
++++ linux-2.6/fs/inode.c	2011-02-23 13:35:30.000000000 +0100
+@@ -295,6 +295,20 @@ static void destroy_inode(struct inode *
+ 		call_rcu(&inode->i_rcu, i_callback);
+ }
+ 
++void address_space_init_once(struct address_space *mapping)
++{
++	memset(mapping, 0, sizeof(*mapping));
++	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
++	spin_lock_init(&mapping->tree_lock);
++	spin_lock_init(&mapping->i_mmap_lock);
++	INIT_LIST_HEAD(&mapping->private_list);
++	spin_lock_init(&mapping->private_lock);
++	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
++	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
++	mutex_init(&mapping->unmap_mutex);
++}
++EXPORT_SYMBOL(address_space_init_once);
++
+ /*
+  * These are initializations that only need to be done
+  * once, because the fields are idempotent across use
+@@ -308,13 +322,7 @@ void inode_init_once(struct inode *inode
+ 	INIT_LIST_HEAD(&inode->i_devices);
+ 	INIT_LIST_HEAD(&inode->i_wb_list);
+ 	INIT_LIST_HEAD(&inode->i_lru);
+-	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
+-	spin_lock_init(&inode->i_data.tree_lock);
+-	spin_lock_init(&inode->i_data.i_mmap_lock);
+-	INIT_LIST_HEAD(&inode->i_data.private_list);
+-	spin_lock_init(&inode->i_data.private_lock);
+-	INIT_RAW_PRIO_TREE_ROOT(&inode->i_data.i_mmap);
+-	INIT_LIST_HEAD(&inode->i_data.i_mmap_nonlinear);
++	address_space_init_once(&inode->i_data);
+ 	i_size_ordered_init(inode);
+ #ifdef CONFIG_FSNOTIFY
+ 	INIT_HLIST_HEAD(&inode->i_fsnotify_marks);
+Index: linux-2.6/fs/nilfs2/btnode.c
+===================================================================
+--- linux-2.6.orig/fs/nilfs2/btnode.c	2011-01-20 13:28:34.000000000 +0100
++++ linux-2.6/fs/nilfs2/btnode.c	2011-02-23 13:35:30.000000000 +0100
+@@ -35,11 +35,6 @@
+ #include "btnode.h"
+ 
+ 
+-void nilfs_btnode_cache_init_once(struct address_space *btnc)
+-{
+-	nilfs_mapping_init_once(btnc);
+-}
+-
+ static const struct address_space_operations def_btnode_aops = {
+ 	.sync_page		= block_sync_page,
+ };
+Index: linux-2.6/fs/nilfs2/btnode.h
+===================================================================
+--- linux-2.6.orig/fs/nilfs2/btnode.h	2011-01-20 13:28:34.000000000 +0100
++++ linux-2.6/fs/nilfs2/btnode.h	2011-02-23 13:35:30.000000000 +0100
+@@ -37,7 +37,6 @@ struct nilfs_btnode_chkey_ctxt {
+ 	struct buffer_head *newbh;
+ };
+ 
+-void nilfs_btnode_cache_init_once(struct address_space *);
+ void nilfs_btnode_cache_init(struct address_space *, struct backing_dev_info *);
+ void nilfs_btnode_cache_clear(struct address_space *);
+ struct buffer_head *nilfs_btnode_create_block(struct address_space *btnc,
+Index: linux-2.6/fs/nilfs2/mdt.c
+===================================================================
+--- linux-2.6.orig/fs/nilfs2/mdt.c	2011-01-20 13:28:34.000000000 +0100
++++ linux-2.6/fs/nilfs2/mdt.c	2011-02-23 13:35:30.000000000 +0100
+@@ -454,9 +454,9 @@ int nilfs_mdt_setup_shadow_map(struct in
+ 	struct backing_dev_info *bdi = inode->i_sb->s_bdi;
+ 
+ 	INIT_LIST_HEAD(&shadow->frozen_buffers);
+-	nilfs_mapping_init_once(&shadow->frozen_data);
++	address_space_init_once(&shadow->frozen_data);
+ 	nilfs_mapping_init(&shadow->frozen_data, bdi, &shadow_map_aops);
+-	nilfs_mapping_init_once(&shadow->frozen_btnodes);
++	address_space_init_once(&shadow->frozen_btnodes);
+ 	nilfs_mapping_init(&shadow->frozen_btnodes, bdi, &shadow_map_aops);
+ 	mi->mi_shadow = shadow;
+ 	return 0;
+Index: linux-2.6/fs/nilfs2/page.c
+===================================================================
+--- linux-2.6.orig/fs/nilfs2/page.c	2011-01-20 13:28:34.000000000 +0100
++++ linux-2.6/fs/nilfs2/page.c	2011-02-23 13:35:30.000000000 +0100
+@@ -492,19 +492,6 @@ unsigned nilfs_page_count_clean_buffers(
+ 	return nc;
+ }
+ 
+-void nilfs_mapping_init_once(struct address_space *mapping)
+-{
+-	memset(mapping, 0, sizeof(*mapping));
+-	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
+-	spin_lock_init(&mapping->tree_lock);
+-	INIT_LIST_HEAD(&mapping->private_list);
+-	spin_lock_init(&mapping->private_lock);
+-
+-	spin_lock_init(&mapping->i_mmap_lock);
+-	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
+-	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
+-}
+-
+ void nilfs_mapping_init(struct address_space *mapping,
+ 			struct backing_dev_info *bdi,
+ 			const struct address_space_operations *aops)
+Index: linux-2.6/fs/nilfs2/page.h
+===================================================================
+--- linux-2.6.orig/fs/nilfs2/page.h	2011-01-20 13:28:34.000000000 +0100
++++ linux-2.6/fs/nilfs2/page.h	2011-02-23 13:35:30.000000000 +0100
+@@ -61,7 +61,6 @@ void nilfs_free_private_page(struct page
+ int nilfs_copy_dirty_pages(struct address_space *, struct address_space *);
+ void nilfs_copy_back_pages(struct address_space *, struct address_space *);
+ void nilfs_clear_dirty_pages(struct address_space *);
+-void nilfs_mapping_init_once(struct address_space *mapping);
+ void nilfs_mapping_init(struct address_space *mapping,
+ 			struct backing_dev_info *bdi,
+ 			const struct address_space_operations *aops);
+Index: linux-2.6/fs/nilfs2/super.c
+===================================================================
+--- linux-2.6.orig/fs/nilfs2/super.c	2011-02-07 17:05:19.000000000 +0100
++++ linux-2.6/fs/nilfs2/super.c	2011-02-23 13:35:30.000000000 +0100
+@@ -1279,7 +1279,7 @@ static void nilfs_inode_init_once(void *
+ #ifdef CONFIG_NILFS_XATTR
+ 	init_rwsem(&ii->xattr_sem);
+ #endif
+-	nilfs_btnode_cache_init_once(&ii->i_btnode_cache);
++	address_space_init_once(&ii->i_btnode_cache);
+ 	ii->i_bmap = &ii->i_bmap_data;
+ 	inode_init_once(&ii->vfs_inode);
+ }
+Index: linux-2.6/include/linux/fs.h
+===================================================================
+--- linux-2.6.orig/include/linux/fs.h	2011-02-22 11:04:39.000000000 +0100
++++ linux-2.6/include/linux/fs.h	2011-02-23 13:35:30.000000000 +0100
+@@ -649,6 +649,7 @@ struct address_space {
+ 	spinlock_t		private_lock;	/* for use by the address_space */
+ 	struct list_head	private_list;	/* ditto */
+ 	struct address_space	*assoc_mapping;	/* ditto */
++	struct mutex		unmap_mutex;    /* to protect unmapping */
+ } __attribute__((aligned(sizeof(long))));
+ 	/*
+ 	 * On most architectures that alignment is already the case; but
+@@ -2225,6 +2226,7 @@ extern loff_t vfs_llseek(struct file *fi
+ 
+ extern int inode_init_always(struct super_block *, struct inode *);
+ extern void inode_init_once(struct inode *);
++extern void address_space_init_once(struct address_space *mapping);
+ extern void ihold(struct inode * inode);
+ extern void iput(struct inode *);
+ extern struct inode * igrab(struct inode *);
