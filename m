@@ -1,173 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab1BWPDK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:03:10 -0500
-Received: from diomedes.noc.ntua.gr ([147.102.222.220]:52639 "EHLO
-	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab1BWPDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:03:08 -0500
-X-Greylist: delayed 1264 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 10:03:08 EST
-From: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
-To: linux-kernel@vger.kernel.org
-Cc: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
-Subject: [PATCH] Cleanup of asm-offsets.c(PAGE_SIZE_asm, PAGE_SHIFT_asm, THREAD_SIZE_asm)
-Date: Wed, 23 Feb 2011 16:42:02 +0200
-Message-Id: <1298472122-4967-1-git-send-email-psomas@cslab.ece.ntua.gr>
-X-Mailer: git-send-email 1.7.4.1
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (diomedes.noc.ntua.gr [147.102.222.220]); Wed, 23 Feb 2011 16:42:03 +0200 (EET)
+	id S1753066Ab1BWPGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:06:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45728 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752859Ab1BWPGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 10:06:31 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110223135814.GA1859@mail.hallyn.com>
+References: <20110223135814.GA1859@mail.hallyn.com> <20110217150224.GA26334@mail.hallyn.com> <29677.1298462729@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: dhowells@redhat.com, LSM <linux-security-module@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
+Subject: Re: User namespaces and keys
+Date: Wed, 23 Feb 2011 15:06:14 +0000
+Message-ID: <890.1298473574@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed that PAGE_SIZE_asm, PAGE_SHIFT_asm, and THREAD_SIZE_asm in asm-offsets.c were 
-no longer needed(since the _AC macro defined in include/linux/const.h makes PAGE_SIZE etc
-'work' with as).
+Serge E. Hallyn <serge@hallyn.com> wrote:
 
-Unless I'm missing something here, PAGE_SIZE_asm/PAGE_SHIFT_asm/THREAD_SIZE_asm can be safely
-removed from asm-offsets.c, and be replaced by their non-'_asm' counterparts in the code that 
-uses them.
-Right?
+> > I guess we need to look at how to mix keys and namespaces again.
+> 
+> From strictly kernel pov, at the moment, keys are strictly usable only
+> by the user in your own user namespace.
 
-The kernel builds cleanly after the patch is applied.
+I'm not sure that's currently completely true.  Key quota maintenance is
+namespaced, and the key's owner UID/GID belong to that namespace, so that's
+okay, but:
 
-(I know that even if the patch is 'correct', it's as 'important', as a patch fixing typos
-in comments/documentation, but anyway :/ )
+ (*) key_task_permission() does not distinguish UIDs and GIDs from different
+     namespaces.
 
+ (*) A key can be referred to by its serial number, no matter whose namespace
+     it is in, and will yield up its given UID/GID, even if these aren't
+     actually meaningful in your namespace.
 
-Signed-off-by: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
----
- arch/mn10300/kernel/asm-offsets.c      |    2 +-
- arch/mn10300/kernel/gdb-io-ttysm-low.S |    2 +-
- arch/x86/kernel/asm-offsets_32.c       |    4 ----
- arch/x86/kernel/asm-offsets_64.c       |    1 -
- arch/x86/kernel/entry_32.S             |    2 +-
- arch/x86/kernel/head_32.S              |    8 ++++----
- arch/x86/xen/xen-head.S                |    4 ++--
- 7 files changed, 9 insertions(+), 14 deletions(-)
+     This means request_key() can successfully upcall at the moment.
 
-diff --git a/arch/mn10300/kernel/asm-offsets.c b/arch/mn10300/kernel/asm-offsets.c
-index 96f24fa..cbe7cda 100644
---- a/arch/mn10300/kernel/asm-offsets.c
-+++ b/arch/mn10300/kernel/asm-offsets.c
-@@ -89,7 +89,7 @@ void foo(void)
- 	OFFSET(EXEC_DOMAIN_handler,	exec_domain, handler);
- 	OFFSET(RT_SIGFRAME_sigcontext,	rt_sigframe, uc.uc_mcontext);
- 
--	DEFINE(PAGE_SIZE_asm,		PAGE_SIZE);
-+	DEFINE(PAGE_SIZE,		PAGE_SIZE);
- 
- 	OFFSET(__rx_buffer,		mn10300_serial_port, rx_buffer);
- 	OFFSET(__rx_inp,		mn10300_serial_port, rx_inp);
-diff --git a/arch/mn10300/kernel/gdb-io-ttysm-low.S b/arch/mn10300/kernel/gdb-io-ttysm-low.S
-index 060b7cc..7b2d665 100644
---- a/arch/mn10300/kernel/gdb-io-ttysm-low.S
-+++ b/arch/mn10300/kernel/gdb-io-ttysm-low.S
-@@ -38,7 +38,7 @@ gdbstub_io_rx_handler:
- gdbstub_io_rx_more:
- 	mov	a3,a2
- 	add	2,a3
--	and	PAGE_SIZE_asm-1,a3
-+	and	PAGE_SIZE-1,a3
- 	mov	(gdbstub_rx_outp),d3
- 	cmp	a3,d3
- 	beq	gdbstub_io_rx_overflow
-diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
-index 1a4088d..e1e5009 100644
---- a/arch/x86/kernel/asm-offsets_32.c
-+++ b/arch/x86/kernel/asm-offsets_32.c
-@@ -97,10 +97,6 @@ void foo(void)
- 	DEFINE(TSS_sysenter_sp0, offsetof(struct tss_struct, x86_tss.sp0) -
- 		 sizeof(struct tss_struct));
- 
--	DEFINE(PAGE_SIZE_asm, PAGE_SIZE);
--	DEFINE(PAGE_SHIFT_asm, PAGE_SHIFT);
--	DEFINE(THREAD_SIZE_asm, THREAD_SIZE);
--
- 	OFFSET(crypto_tfm_ctx_offset, crypto_tfm, __crt_ctx);
- 
- #ifdef CONFIG_PARAVIRT
-diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
-index 4a6aeed..aab9bdb 100644
---- a/arch/x86/kernel/asm-offsets_64.c
-+++ b/arch/x86/kernel/asm-offsets_64.c
-@@ -129,7 +129,6 @@ int main(void)
- 	OFFSET(BP_kernel_alignment, boot_params, hdr.kernel_alignment);
- 
- 	BLANK();
--	DEFINE(PAGE_SIZE_asm, PAGE_SIZE);
- #ifdef CONFIG_XEN
- 	BLANK();
- 	OFFSET(XEN_vcpu_info_mask, vcpu_info, evtchn_upcall_mask);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..49bdedd 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -395,7 +395,7 @@ sysenter_past_esp:
- 	 * A tiny bit of offset fixup is necessary - 4*4 means the 4 words
- 	 * pushed above; +8 corresponds to copy_thread's esp0 setting.
- 	 */
--	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE_asm+8+4*4)(%esp)
-+	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE+8+4*4)(%esp)
- 	CFI_REL_OFFSET eip, 0
- 
- 	pushl_cfi %eax
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 767d6c4..187aa63 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -73,7 +73,7 @@ MAPPING_BEYOND_END = PAGE_TABLE_SIZE(LOWMEM_PAGES) << PAGE_SHIFT
-  */
- KERNEL_PAGES = LOWMEM_PAGES
- 
--INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE_asm
-+INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE
- RESERVE_BRK(pagetables, INIT_MAP_SIZE)
- 
- /*
-@@ -623,7 +623,7 @@ ENTRY(initial_code)
-  * BSS section
-  */
- __PAGE_ALIGNED_BSS
--	.align PAGE_SIZE_asm
-+	.align PAGE_SIZE
- #ifdef CONFIG_X86_PAE
- initial_pg_pmd:
- 	.fill 1024*KPMDS,4,0
-@@ -644,7 +644,7 @@ ENTRY(swapper_pg_dir)
- #ifdef CONFIG_X86_PAE
- __PAGE_ALIGNED_DATA
- 	/* Page-aligned for the benefit of paravirt? */
--	.align PAGE_SIZE_asm
-+	.align PAGE_SIZE
- ENTRY(initial_page_table)
- 	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
- # if KPMDS == 3
-@@ -662,7 +662,7 @@ ENTRY(initial_page_table)
- # else
- #  error "Kernel PMDs should be 1, 2 or 3"
- # endif
--	.align PAGE_SIZE_asm		/* needs to be page-sized too */
-+	.align PAGE_SIZE		/* needs to be page-sized too */
- #endif
- 
- .data
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 1a5ff24..aaa7291 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -28,9 +28,9 @@ ENTRY(startup_xen)
- 	__FINIT
- 
- .pushsection .text
--	.align PAGE_SIZE_asm
-+	.align PAGE_SIZE
- ENTRY(hypercall_page)
--	.skip PAGE_SIZE_asm
-+	.skip PAGE_SIZE
- .popsection
- 
- 	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz "linux")
--- 
-1.7.4.1
+I wonder if I should make the following changes:
 
+ (1) If the key and the accessor are in different user namespaces, then skip
+     the UID and GID comparisons in key_task_permission().  That means that to
+     be able to access the key you'd have to possess the key and the key would
+     have to grant you Possessor access, or the key would have to grant you
+     Other access.
+
+ (2) If the key and someone viewing the key description are in different
+     namespaces, then indicate that the UID and the GID are -1, irrespective of
+     the actual values.
+
+ (3) When an upcall is attempting to instantiate a key, it is allowed to access
+     the keys of requestor using the requestor's credentials (UID, GID, groups,
+     security label).  Ensure that this will be done in the requestor's user
+     namespace.
+
+     Nothing should need to be done here, since search_process_keyrings()
+     switches to the requestor's creds.
+
+Oh, and are security labels user-namespaced?
+
+> We may want to look at this again, but for now I think that would be a
+> safe enough default.  Later, we'll probably want the user creating a
+> child_user_ns to allow his keys to be inherited by the child user_ns.
+
+That depends what you mean by 'allow his keys to be inherited'.  Do you mean
+copying all the creator's keys en mass?  You may find all you need to do is to
+provide the new intended user with a new session keyring with a link back to
+the creator's session keyring.
+
+> Though, as I type that, it seems to me that that'll just become a
+> maintenance pain, and it's just plain safer to have the user re-enter
+> his keys,
+
+That would certainly be simpler.
+
+> sharing them over a file if needed.
+
+I'm not sure what you mean by that.  Do you mean some sort of cred passing
+similar to that that can be done over AF_UNIX sockets with fds?
+
+> I'm going to not consider the TPM at the moment :)
+
+I'm not sure the TPM is that much of a problem, assuming you're just referring
+to its keystore capability...
+
+David
