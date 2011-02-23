@@ -1,64 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1BWTkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:40:46 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:27996 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751539Ab1BWTko (ORCPT
+	id S1753603Ab1BWTlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:41:31 -0500
+Received: from mail3.microsoft.com ([131.107.115.214]:25814 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab1BWTla convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:40:44 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 9SWVVdIVM1lX6AKkLsIwtTus9WhnEfXQsFq._gzjrmkRdvQ
- OSixuP1Ql1IhZDWTBzpGYc.6jp4uRhsuM4Goll3ZL56LWnu2MaXiDior802A
- TrCgmUZlUrchcIZEXzIGNzIZMei4UTZrTI43XZs5OuASCOPENsNHbedQmRad
- FppgqzpX8DBaCgnanLw8jbqY4Ghpkr0joOj9UV_RGkbsNiCzFEZJFz0hBnyM
- gmaGdlUOiUbtct4udbTgUVyDJ09vmSfdoWBiJhUNQK0ZVgcBydKweW6o96No
- GGUyxPhIPw1ehVfrYsysCoDl6Z67woVrYaAWXCgZlWEZyuNo-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 23 Feb 2011 13:40:37 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-In-Reply-To: <1298489030.2217.818.camel@twins>
-Message-ID: <alpine.DEB.2.00.1102231337340.4823@router.home>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>  <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>  <20110223161645.GA1819@nowhere>  <1298479302.7666.94.camel@gandalf.stny.rr.com>  <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl> 
- <alpine.DEB.2.00.1102231132140.562@router.home>  <1298485027.7666.98.camel@gandalf.stny.rr.com>  <alpine.DEB.2.00.1102231225330.3906@router.home>  <1298485965.7666.102.camel@gandalf.stny.rr.com>  <alpine.DEB.2.00.1102231317550.4823@router.home>
- <1298489030.2217.818.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 23 Feb 2011 14:41:30 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "KY Srinivasan" <kys@microsoft.com>
+Subject: RE: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
+ using pr_err now
+Thread-Topic: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
+ using pr_err now
+Thread-Index: AQHL0ueeEyAMD95LDk2oP6NgPzLQI5QP/GKA//99kOA=
+Date: Wed, 23 Feb 2011 19:41:28 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56233FADA94@TK5EX14MBXC118.redmond.corp.microsoft.com>
+References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
+ <20110223191533.GB1030@kroah.com>
+In-Reply-To: <20110223191533.GB1030@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.79]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011, Peter Zijlstra wrote:
 
-> On Wed, 2011-02-23 at 13:19 -0600, Christoph Lameter wrote:
->
-> > this_cpu_inc is already percpu atomic. On x86 it is an instruction that
-> > cannot be interrupted nor preempted while in progress.
->
-> On x86, yes, but is this true for all architectures? I guess the
-> fallback is implemented with local_irq_disable() which might be good
-> enough for some but not for NMI usage.
 
-Fallback is to do preempt_disable(). But you can also disable interrupts
-on fallback by putting an irqsafe_ prefix before them. Its just more
-expensive and typically not needed.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, February 23, 2011 11:16 AM
+> 
+> On Tue, Feb 22, 2011 at 03:32:41PM -0800, Hank Janssen wrote:
+> > This group of patches removes all DPRINT from hv_vmbus.ko.
+> > It is divided in several patches due to size.
+> >
+> > All DPRINT calls have been removed, and where needed have been
+> > replaced with pr_XX native calls. Many debug DPRINT calls have
+> > been removed outright.
+> >
+> > The amount of clutter this driver prints has been
+> > significantly reduced.
+> >
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> >
+> > ---
+> >  drivers/staging/hv/hv.c |   88 +++++++++++--------------------------
+> ---------
+> >  1 files changed, 21 insertions(+), 67 deletions(-)
 
-There is no way to create an nmi safe per cpu atomicity emulation as far
-as I can tell. It is possible to check at compile time if the arch has
-per cpu atomic instructions available via CONFIG_CMPXCHG_LOCAL which
-allows optimized per cpu atomic use for arches that satisfy the safety
-requirements.
+> > -		DPRINT_INFO(VMBUS, "OS Build:%d-%d.%d-%d-%d.%d",\
+> > -			    eax,
+> > -			    ebx >> 16,
+> > -			    ebx & 0xFFFF,
+> > -			    ecx,
+> > -			    edx >> 24,
+> > -			    edx & 0xFFFFFF);
+> > +
+> > +		pr_info("%s: Hyper-V Host OS Build:%d-%d.%d-%d-%d.%d",
+> > +			VMBUS_MOD,
+> > +			eax,
+> > +			ebx >> 16,
+> > +			ebx & 0xFFFF,
+> > +			ecx,
+> > +			edx >> 24,
+> > +			edx & 0xFFFFFF);
+> 
+> Why did you keep this one?  Why is it needed?
+
+This tells me what version the host is running. I frequently ask customers if 
+they are running on Host version X or Y. This tells me that with certainty 
+what they are running. The number of times I got from a customer that
+they are running X while I knew that would not be possible has been pretty
+high.
+
+> 
+> >  	if (!query_hypervisor_presence()) {
+> > -		DPRINT_ERR(VMBUS, "No Windows hypervisor detected!!");
+> > +		pr_err("%s: %s No Hyper-V detected", VMBUS_MOD, __func__);
+> 
+> Why the __func__?  That should never be needed as it is trivial to see
+> what is happening, the user doesn't need to know the function name,
+> right?
+> 
+> Please remove them from all of these calls.
+
+The new patch will have these removed. When I checked other drivers 
+in the drivers subdirectory the __func__ is used 15455 times most
+of these are in print, debug or error lines. The __func__ in this
+case only shows up if an error occurs. 
+
+But as requested, I will remove them.
+
+> 
+> Oh, and you obviously didn't test these patches as your syslog would be
+> a mess if you did.  Which is NOT ok, and makes me grumpy:
+> 	http://www.kroah.com/log/linux/maintainer-05.html
+> 
+> bah, I should just make a numbered list and just start saying: "This
+> patch fails point #4" or something like that, it would save me in
+> typing...
+> 
+
+They where compile and run tested. And syslog was not a mess. What did
+I mess up here? The amount of printouts now are a fraction of what they
+where before.
+
+Hank.
+
+
+
+
