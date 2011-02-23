@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab1BXACJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 19:02:09 -0500
-Received: from kroah.org ([198.145.64.141]:60400 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab1BXACI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 19:02:08 -0500
-Date: Wed, 23 Feb 2011 16:01:55 -0800
-From: Greg KH <greg@kroah.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: Intel GMA500 staging driver
-Message-ID: <20110224000155.GA32282@kroah.com>
-References: <20110222121704.19437.4650.stgit@localhost.localdomain>
- <AANLkTimPpr+OugTiPpYxNyS78vqActuURw-tnxJVxi18@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimPpr+OugTiPpYxNyS78vqActuURw-tnxJVxi18@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755204Ab1BXAEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 19:04:31 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55610 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab1BXAEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 19:04:30 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 24 Feb 2011 08:58:05 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] page_cgroup: make page tracking available for blkio
+Message-Id: <20110224085805.14766e93.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110223085911.GC2174@linux.develer.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+	<1298394776-9957-4-git-send-email-arighi@develer.com>
+	<20110222130145.37cb151e@bike.lwn.net>
+	<20110222230146.GB23723@linux.develer.com>
+	<20110222230630.GL28269@redhat.com>
+	<20110222233718.GF23723@linux.develer.com>
+	<20110223134910.abbdc931.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110223085911.GC2174@linux.develer.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 09:51:04AM +1000, Dave Airlie wrote:
-> On Tue, Feb 22, 2011 at 10:17 PM, Alan Cox <alan@linux.intel.com> wrote:
-> > This is an initial staging driver for the GMA500. It's been stripped out
-> > of the PVR drivers and crunched together from various bits of code and
-> > different kernels.
-> >
-> > Currently it's unaccelerated but still pretty snappy even compositing with
-> > the frame buffer X server.
-> >
-> > Lots of work is needed to rework the ttm and bo interfaces from being
-> > ripped out and then 2D acceleration wants putting back for framebuffer and
-> > somehow eventually via DRM.
-> >
-> > There is no support for the parts without open source userspace (video
-> > accelerators, 3D) as per kernel policy.
-> >
-> > I'm not a DRM expert so if there is anyone with a GMA500 who actually knows
-> > something about DRI internals then help would be most welcome.
-> >
+On Wed, 23 Feb 2011 09:59:11 +0100
+Andrea Righi <arighi@develer.com> wrote:
+
+> > 
+> > I wonder I can make pc->mem_cgroup to be pc->memid(16bit), then, 
+> > ==
+> > static inline struct mem_cgroup *get_memcg_from_pc(struct page_cgroup *pc)
+> > {
+> >     struct cgroup_subsys_state *css = css_lookup(&mem_cgroup_subsys, pc->memid);
+> >     return container_of(css, struct mem_cgroup, css);
+> > }
+> > ==
+> > Overhead will be seen at updating file statistics and LRU management.
+> > 
+> > But, hmm, can't you do that tracking without page_cgroup ?
+> > Because the number of dirty/writeback pages are far smaller than total pages,
+> > chasing I/O with dynamic structure is not very bad..
+> > 
+> > prepareing [pfn -> blkio] record table and move that information to struct bio
+> > in dynamic way is very difficult ?
 > 
+> This would be ok for dirty pages, but consider that we're also tracking
+> anonymous pages. So, if we want to control the swap IO we actually need
+> to save this information for a lot of pages and at the end I think we'll
+> basically duplicate the page_cgroup code.
 > 
-> Okay I'm okay with this going into staging but we should work out a
-> plan for it going forward.
 
-Good as I just added it to the staging-next tree a few hours ago :)
+swap io is always started with bio and the task/mm_struct.
+So, if we can record information in bio, no page tracking is required.
+You can record information to bio just by reading mm->owner.
 
-> I don't have any poulsbo hw but if some were to appear I could
-> probably expend effort on this.
-> 
-> So where do we want to go my opinion is
-> 
-> a) remove all userspace interfaces and simplify ttm memory management usage.
-> b) add support to hook this up to the dumb ioctl so we can do trivial
-> generic front buffer allocation, so then a libkms + dumb kms
-> modesetting driver can work on it.
-> c) figure out how to add interface for acceleration users. Whether TTM
-> fence interfaces are required etc.
+Thanks,
+-Kame
 
-That all sounds reasonable to me.  Patches now gladly accepted.
-
-thanks,
-
-greg k-h
