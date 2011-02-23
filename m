@@ -1,193 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab1BWQxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:53:13 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62260 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab1BWQxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:53:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OnRs0+Cxu6ooynxonOF8COz8Ji0lmNFTb+iB8eIgAXoDlG98y01pb3P7g3FXmbPb8o
-         TdRfZa9WKgvFOGAToFaw+hxg6/CeOrkMGYrC60qFoShjDY9wZSZEhep5tQLwxiKSJQc+
-         Y/YnWWCOCQ5+4pRMDdrKqpXujy5coTO8ahu2g=
-Date: Wed, 23 Feb 2011 17:50:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110223165043.GA2529@nowhere>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S932202Ab1BWQ40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:56:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42884 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755134Ab1BWQ4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 11:56:25 -0500
+Date: Wed, 23 Feb 2011 17:55:50 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Arthur Marsh <arthur.marsh@internode.on.net>
+Cc: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
+ 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
+ GFP_ATOMIC order > 0
+Message-ID: <20110223165550.GP31195@random.random>
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
+ <4D6367B3.9050306@googlemail.com>
+ <20110222134047.GT13092@random.random>
+ <20110222161513.GC13092@random.random>
+ <4D63F6C0.7060204@internode.on.net>
+ <20110223162432.GL31195@random.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110223162432.GL31195@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 05:39:40PM -0800, Paul E. McKenney wrote:
-> +}
-> +
-> +/*
-> + * Drop to non-real-time priority and yield, but only after posting a
-> + * timer that will cause us to regain our real-time priority if we
-> + * remain preempted.  Either way, we restore our real-time priority
-> + * before returning.
-> + */
-> +static void rcu_yield(int cpu)
-> +{
-> +	struct rcu_data *rdp = per_cpu_ptr(rcu_sched_state.rda, cpu);
-> +	struct sched_param sp;
-> +	struct timer_list yield_timer;
-> +
-> +	setup_timer(&yield_timer, rcu_cpu_kthread_timer, (unsigned long)rdp);
-> +	mod_timer(&yield_timer, jiffies + 2);
-> +	sp.sched_priority = 0;
-> +	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
-> +	schedule();
-> +	sp.sched_priority = RCU_KTHREAD_PRIO;
-> +	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
-> +	del_timer(&yield_timer);
-> +}
-> +
-> +/*
-> + * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
-> + * This can happen while the corresponding CPU is either coming online
-> + * or going offline.  We cannot wait until the CPU is fully online
-> + * before starting the kthread, because the various notifier functions
-> + * can wait for RCU grace periods.  So we park rcu_cpu_kthread() until
-> + * the corresponding CPU is online.
-> + *
-> + * Return 1 if the kthread needs to stop, 0 otherwise.
-> + *
-> + * Caller must disable bh.  This function can momentarily enable it.
-> + */
-> +static int rcu_cpu_kthread_should_stop(int cpu)
-> +{
-> +	while (cpu_is_offline(cpu) || smp_processor_id() != cpu) {
-> +		if (kthread_should_stop())
-> +			return 1;
-> +		local_bh_enable();
-> +		schedule_timeout_uninterruptible(1);
+On Wed, Feb 23, 2011 at 05:24:32PM +0100, Andrea Arcangeli wrote:
+> On Wed, Feb 23, 2011 at 04:17:44AM +1030, Arthur Marsh wrote:
+> > OK, these patches applied together against upstream didn't cause a crash 
+> > but I did observe:
+> > 
+> > significant slowdowns of MIDI playback (moreso than in previous cases, 
+> > and with less than 20 Meg of swap file in use);
+> > 
+> > kswapd0 sharing equal top place in CPU usage at times (e.g. 20 percent).
+> > 
+> > If I should try only one of the patches or something else entirely, 
+> > please let me know.
+> 
+> Yes, with irq off, schedule won't run and need_resched won't get set.
+> 
+> So let's try this.
+> 
+> In case this doesn't fix I definitely give it up with compaction in
+> kswapd as GFP_ATOMIC will likely not get an huge benefit out of
+> compaction anyway because 1) the allocations from GFP_ATOMIC are
+> likely short lived, 2) the cost of the compaction scan loop +
+> migration may be higher than the benefit we get from jumbo frames
+> 
+> So if this doesn't fix it, I'll already post a definitive fix that
+> removes compaction from kswapd (but leaves it enabled for direct
+> reclaim for all order sizes including kernel stack). I already
+> verified that this solves not just the midi latency issue but the
+> other server benchmark that I'm dealing with. Then we can think at
+> compaction+kswapd later for 2.6.39 but I think we need to close this
+> kswapd issue in time for 2.6.38. So if the below isn't enough the next
+> patch should be applied. I'll get those two patches tested in the
+> server load too, and I'll let you know how the results are when it
+> finishes.
+> 
+> Please apply also the attached "kswapd-high-wmark" before the below
+> one.
+> +		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
+> +			if (fatal_signal_pending(current))
+> +				break;
 
-Why is it uninterruptible? Well that doesn't change much anyway.
-It can be a problem for long time sleeping kernel threads because of
-the hung task detector, but certainly not for 1 jiffy.
+this is compaction-kswapd-2, to fix the buglet same as in the other
+patch.
 
-> +		if (smp_processor_id() != cpu)
-> +			set_cpus_allowed_ptr(current, cpumask_of(cpu));
-> +		local_bh_disable();
-> +	}
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Per-CPU kernel thread that invokes RCU callbacks.  This replaces the
-> + * earlier RCU softirq.
-> + */
-> +static int rcu_cpu_kthread(void *arg)
-> +{
-> +	int cpu = (int)(long)arg;
-> +	unsigned long flags;
-> +	int spincnt = 0;
-> +	wait_queue_head_t *wqp = &per_cpu(rcu_cpu_wq, cpu);
-> +	char work;
-> +	char *workp = &per_cpu(rcu_cpu_has_work, cpu);
-> +
-> +	for (;;) {
-> +		wait_event_interruptible(*wqp,
-> +					 *workp != 0 || kthread_should_stop());
-> +		local_bh_disable();
-> +		if (rcu_cpu_kthread_should_stop(cpu)) {
-> +			local_bh_enable();
-> +			break;
-> +		}
-> +		local_irq_save(flags);
-> +		work = *workp;
-> +		*workp = 0;
-> +		local_irq_restore(flags);
-> +		if (work)
-> +			rcu_process_callbacks();
-> +		local_bh_enable();
-> +		if (*workp != 0)
-> +			spincnt++;
-> +		else
-> +			spincnt = 0;
-> +		if (spincnt > 10) {
-> +			rcu_yield(cpu);
-> +			spincnt = 0;
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Per-rcu_node kthread, which is in charge of waking up the per-CPU
-> + * kthreads when needed.
-> + */
-> +static int rcu_node_kthread(void *arg)
-> +{
-> +	int cpu;
-> +	unsigned long flags;
-> +	unsigned long mask;
-> +	struct rcu_node *rnp = (struct rcu_node *)arg;
-> +	struct sched_param sp;
-> +	struct task_struct *t;
-> +
-> +	for (;;) {
-> +		wait_event_interruptible(rnp->node_wq, rnp->wakemask != 0 ||
-> +						       kthread_should_stop());
-> +		if (kthread_should_stop())
-> +			break;
-> +		raw_spin_lock_irqsave(&rnp->lock, flags);
-> +		mask = rnp->wakemask;
-> +		rnp->wakemask = 0;
-> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> +		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1) {
-> +			if ((mask & 0x1) == 0)
-> +				continue;
-> +			preempt_disable();
-> +			per_cpu(rcu_cpu_has_work, cpu) = 1;
-> +			t = per_cpu(rcu_cpu_kthread_task, cpu);
-> +			if (t == NULL) {
-> +				preempt_enable();
-> +				continue;
-> +			}
-> +			sp.sched_priority = RCU_KTHREAD_PRIO;
-> +			sched_setscheduler_nocheck(t, cpu, &sp);
-> +			wake_up_process(t);
+In short (to avoid confusion) it'll be helpful if you can test
+compaction-kswapd-2 vs compaction-no-kswapd-3 and let us know if both
+are ok or if only compaction-no-kswapd-3 is ok. compaction-no-kswapd-3
+should help, compaction-kswapd-2 I'm unsure. And as usual I suggest to
+apply kswapd-high-wmark (attached to previous emails) _before_
+applying both patches.
 
-My (mis?)understanding of the picture is this node kthread is there to
-wake up cpu threads that called rcu_yield(). But actually rcu_yield()
-doesn't make the cpu thread sleeping, instead it switches to SCHED_NORMAL,
-to avoid starving the system with callbacks.
+===
+Subject: compaction: fix high latencies created by kswapd
 
-So I wonder if this wake_up_process() is actually relevant.
-sched_setscheduler_nocheck() already handles the per sched policy rq migration
-and the process is not sleeping.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-That said, by the time the process may have gone to sleep, because if no other
-SCHED_NORMAL task was there, it has just continued and may have flushed
-every callbacks. So this wake_up_process() may actually wake up the task
-but it will sleep again right away due to the condition in wait_event_interruptible()
-of the cpu thread.
+We need to proper spin_unlock_irq/cond_resched in the compaction loop to avoid
+hurting latencies. We must also stop being too aggressive insisting with
+compaction within kswapd if compaction don't make progress in every zone.
 
-Right?
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/compaction.h |    6 +++++
+ mm/compaction.c            |   53 +++++++++++++++++++++++++++++++++++++--------
+ mm/vmscan.c                |   39 +++++++++++++++++++--------------
+ 3 files changed, 73 insertions(+), 25 deletions(-)
 
-> +			preempt_enable();
-> +		}
-> +	}
-> +	return 0;
-> +}
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -271,9 +271,27 @@ static unsigned long isolate_migratepage
+ 	}
+ 
+ 	/* Time to isolate some pages for migration */
++	cond_resched();
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		struct page *page;
++		int unlocked = 0;
++
++		/* give a chance to irqs before checking need_resched() */
++		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
++			spin_unlock_irq(&zone->lru_lock);
++			unlocked = 1;
++		}
++		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
++			if (!unlocked)
++				spin_unlock_irq(&zone->lru_lock);
++			cond_resched();
++			spin_lock_irq(&zone->lru_lock);
++			if (fatal_signal_pending(current))
++				break;
++		} else if (unlocked)
++			spin_lock_irq(&zone->lru_lock);
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
+@@ -436,6 +454,28 @@ static int compact_finished(struct zone 
+ 	return COMPACT_CONTINUE;
+ }
+ 
++static unsigned long compaction_watermark(struct zone *zone, int order)
++{
++	/*
++	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
++	 * This is because during migration, copies of pages need to be
++	 * allocated and for a short time, the footprint is higher
++	 */
++	return low_wmark_pages(zone) + (2UL << order);
++}
++
++static int __compaction_need_reclaim(struct zone *zone, int order,
++				     unsigned long watermark)
++{
++	return !zone_watermark_ok(zone, 0, watermark, 0, 0);
++}
++
++int compaction_need_reclaim(struct zone *zone, int order)
++{
++	return __compaction_need_reclaim(zone, order,
++					 compaction_watermark(zone, order));
++}
++
+ /*
+  * compaction_suitable: Is this suitable to run compaction on this zone now?
+  * Returns
+@@ -449,21 +489,16 @@ unsigned long compaction_suitable(struct
+ 	unsigned long watermark;
+ 
+ 	/*
+-	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
+-	 * This is because during migration, copies of pages need to be
+-	 * allocated and for a short time, the footprint is higher
+-	 */
+-	watermark = low_wmark_pages(zone) + (2UL << order);
+-	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
+-		return COMPACT_SKIPPED;
+-
+-	/*
+ 	 * order == -1 is expected when compacting via
+ 	 * /proc/sys/vm/compact_memory
+ 	 */
+ 	if (order == -1)
+ 		return COMPACT_CONTINUE;
+ 
++	watermark = compaction_watermark(zone, order);
++	if (__compaction_need_reclaim(zone, order, watermark))
++		return COMPACT_SKIPPED;
++
+ 	/*
+ 	 * fragmentation index determines if allocation failures are due to
+ 	 * low memory or external fragmentation
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2385,9 +2385,9 @@ loop_again:
+ 		 * cause too much scanning of the lower zones.
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+-			int compaction;
+ 			struct zone *zone = pgdat->node_zones + i;
+ 			int nr_slab;
++			int local_order;
+ 
+ 			if (!populated_zone(zone))
+ 				continue;
+@@ -2407,20 +2407,21 @@ loop_again:
+ 			 * We put equal pressure on every zone, unless one
+ 			 * zone has way too many pages free already.
+ 			 */
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone), end_zone, 0))
++			if (!zone_watermark_ok_safe(zone, 0,
++					high_wmark_pages(zone), end_zone, 0) ||
++			    compaction_need_reclaim(zone, order)) {
+ 				shrink_zone(priority, zone, &sc);
+-			reclaim_state->reclaimed_slab = 0;
+-			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
+-						lru_pages);
+-			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-			total_scanned += sc.nr_scanned;
++				reclaim_state->reclaimed_slab = 0;
++				nr_slab = shrink_slab(sc.nr_scanned,
++						      GFP_KERNEL,
++						      lru_pages);
++				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
++				total_scanned += sc.nr_scanned;
++			}
+ 
+-			compaction = 0;
++			local_order = order;
+ 			if (order &&
+-			    zone_watermark_ok(zone, 0,
+-					       high_wmark_pages(zone),
+-					      end_zone, 0) &&
++			    !compaction_need_reclaim(zone, order) &&
+ 			    !zone_watermark_ok(zone, order,
+ 					       high_wmark_pages(zone),
+ 					       end_zone, 0)) {
+@@ -2428,12 +2429,18 @@ loop_again:
+ 						   order,
+ 						   sc.gfp_mask, false,
+ 						   COMPACT_MODE_KSWAPD);
+-				compaction = 1;
++				/*
++				 * Let kswapd stop immediately even if
++				 * compaction didn't succeed to
++				 * generate "high_wmark_pages" of the
++				 * max order wanted in every zone.
++				 */
++				local_order = 0;
+ 			}
+ 
+ 			if (zone->all_unreclaimable)
+ 				continue;
+-			if (!compaction && nr_slab == 0 &&
++			if (nr_slab == 0 &&
+ 			    !zone_reclaimable(zone))
+ 				zone->all_unreclaimable = 1;
+ 			/*
+@@ -2445,7 +2452,7 @@ loop_again:
+ 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+ 				sc.may_writepage = 1;
+ 
+-			if (!zone_watermark_ok_safe(zone, order,
++			if (!zone_watermark_ok_safe(zone, local_order,
+ 					high_wmark_pages(zone), end_zone, 0)) {
+ 				all_zones_ok = 0;
+ 				/*
+@@ -2453,7 +2460,7 @@ loop_again:
+ 				 * means that we have a GFP_ATOMIC allocation
+ 				 * failure risk. Hurry up!
+ 				 */
+-				if (!zone_watermark_ok_safe(zone, order,
++				if (!zone_watermark_ok_safe(zone, local_order,
+ 					    min_wmark_pages(zone), end_zone, 0))
+ 					has_under_min_watermark_zone = 1;
+ 			} else {
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -26,6 +26,7 @@ extern int fragmentation_index(struct zo
+ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask,
+ 			bool sync);
++extern int compaction_need_reclaim(struct zone *zone, int order);
+ extern unsigned long compaction_suitable(struct zone *zone, int order);
+ extern unsigned long compact_zone_order(struct zone *zone, int order,
+ 					gfp_t gfp_mask, bool sync,
+@@ -68,6 +69,11 @@ static inline unsigned long try_to_compa
+ 	return COMPACT_CONTINUE;
+ }
+ 
++static inline int compaction_need_reclaim(struct zone *zone, int order)
++{
++	return 0;
++}
++
+ static inline unsigned long compaction_suitable(struct zone *zone, int order)
+ {
+ 	return COMPACT_SKIPPED;
