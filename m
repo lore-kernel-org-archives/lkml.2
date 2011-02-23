@@ -1,99 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab1BWOLT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 09:11:19 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:40405 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab1BWOLS (ORCPT
+	id S1755319Ab1BWOLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 09:11:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:48604 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab1BWOLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 09:11:18 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: does hibernate to disk try hard enough to free memory?
-Date: Wed, 23 Feb 2011 15:10:46 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201102222159.58546.Martin@lichtvoll.de> <201102222307.41499.Martin@lichtvoll.de> <201102222332.43864.rjw@sisk.pl> (sfid-20110222_235917_178098_58EF243B)
-In-Reply-To: <201102222332.43864.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2760788.Nz7BMqQCQB";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Wed, 23 Feb 2011 09:11:45 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=jNfASM90n5oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=VnNF1IyMAAAA:8 a=BlnHduZpV6Z90Tvco4cA:9 a=EO-E5QtwyNllPJREo9FXne_ZC-kA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH RFC tip/core/rcu 05/11] rcu: add comment saying why
+ DEBUG_OBJECTS_RCU_HEAD depends on PREEMPT.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com
+In-Reply-To: <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+	 <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1298431409.7666.76.camel@gandalf.stny.rr.com>
+	 <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 23 Feb 2011 09:11:43 -0500
+Message-ID: <1298470303.7666.80.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102231511.15683.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2760788.Nz7BMqQCQB
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2011-02-23 at 08:59 -0500, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > On Tue, 2011-02-22 at 17:39 -0800, Paul E. McKenney wrote:
+> > > The build will break if you change the Kconfig to allow
+> > > DEBUG_OBJECTS_RCU_HEAD and !PREEMPT, so document the reasoning
+> > > near where the breakage would occur.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > ---
+> > >  kernel/rcupdate.c |    5 +++++
+> > >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+> > > index afd21d1..f3240e9 100644
+> > > --- a/kernel/rcupdate.c
+> > > +++ b/kernel/rcupdate.c
+> > > @@ -214,6 +214,11 @@ static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
+> > >  		 * Ensure that queued callbacks are all executed.
+> > >  		 * If we detect that we are nested in a RCU read-side critical
+> > >  		 * section, we should simply fail, otherwise we would deadlock.
+> > > +		 * Note that the machinery to reliably determine whether
+> > > +		 * or not we are in an RCU read-side critical section
+> > > +		 * exists only in the preemptible RCU implementations
+> > > +		 * (TINY_PREEMPT_RCU and TREE_PREEMPT_RCU), which is why
+> > > +		 * DEBUG_OBJECTS_RCU_HEAD is disallowed if !PREEMPT.
+> > >  		 */
+> > 
+> > Shouldn't this comment also be in the kconfig where
+> > DEBUG_OBJECTS_RCU_HEAD is defined?
+> 
+> hrm, but this is a "rcuhead_fixup_init" : it does not need to always
 
-Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
-> On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> > Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
-> > > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> > > > Hi!
-> > > >=20
-> > > > Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB
-> > > > of RAM is not able to allocate memory for the hibernation image.
-> > > > Before KMS hibernation only very rarely failed for that reason.
-> > > >=20
-> > > > Often I run without compositing at all as I believe this might
-> > > > spare some pages as well. But this doesn't always help.
-> > > >=20
-> > > > It complains that to less pages could be freed. For example with
-> > > > kernel 2.6.37:
-> > > >=20
-> > > > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
-> > > > Feb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
-> > > > Feb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411
-> > > > + 1024, available pages: 112767
-> > > > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
-> > > > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating
-> > > > hibernation image Feb 16 00:15:00 shambhala kernel: Extended
-> > > > CMOS year: 2000 Feb 16 00:15:00 shambhala kernel: ACPI: Waking
-> > > > up from system sleep state S4
-> > > > Feb 16 00:15:00 shambhala kernel: PM: early recover of devices
-> > > > complete after 0.376 msecs
-> > >=20
-> > > What's the value in /sys/power/image_size?
-> >=20
-> > shambhala:~> cat /sys/power/image_size
-> > 844206080
-> >=20
-> > Should I try with less?
->=20
-> Yes, please.  Try with 700000000 for example.
+Looks like it was in rcuhead_fixup_free to me.
 
-I replaced dropping by settings image_size to this valua and the ThinkPad=20
-hibernated with KMail open. Thus seems to work, but I will test a bit=20
-further.
+> succeed. It's just that when it is safe to recover from an error
+> situation, it does it. We could do:
+> 
+> #ifdef CONFIG_PREEMPT
+>                 /*
+>                  * Ensure that queued callbacks are all executed.
+>                  * If we detect that we are nested in a RCU read-side
+>                  * critical
+>                  * section, we should simply fail, otherwise we would
+>                  * deadlock.
+>                  */
+>                 if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+>                     irqs_disabled()) {
+>                         WARN_ON(1);
+>                         return 0;
+>                 }
+>                 rcu_barrier();
+>                 rcu_barrier_sched();
+>                 rcu_barrier_bh();
+>                 debug_object_init(head, &rcuhead_debug_descr);
+>                 return 1;
+> #else
+> 		return 0;
+> #endif
+> 
+> instead, no ?
 
-Where does the higher value previously set come from? Autotuning? Is there=
-=20
-anything that can be improved with autotuning? If yes, I can file a bug=20
-report. Otherwise I just try to find a good value for image size and be=20
-done with it.
+The point is that this entire block of code is wrapped in #ifdef
+CONFIG_DEBUG_OBJECTS_RCU_HEAD, and that config depends on PREEMPT. Thus
+you will never have a case where #ifdef CONFIG_PREEMPT is false.
 
-Thanks,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+-- Steve
 
---nextPart2760788.Nz7BMqQCQB
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAk1lFWcACgkQmRvqrKWZhMf8kQCglNEiA5KmveZ2pXb7eYDFXhKy
-KO0AnRYNpFKTkV2XOgbZb7cgjlJsy9/l
-=T3Gf
------END PGP SIGNATURE-----
-
---nextPart2760788.Nz7BMqQCQB--
