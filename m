@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab1BWEek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:34:40 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49687 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab1BWEef (ORCPT
+	id S1755275Ab1BWEen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:34:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61703 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028Ab1BWEek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:34:35 -0500
-Subject: [RFC PATCH 11/15] dt/video: Eliminate users of of_platform_{,
+	Tue, 22 Feb 2011 23:34:40 -0500
+Subject: [RFC PATCH 12/15] dt/usb: Eliminate users of of_platform_{,
 	un}register_driver
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
         linux-kernel@vger.kernel.org, davem@davemloft.net
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Tue, 22 Feb 2011 21:34:31 -0700
-Message-ID: <20110223043431.20795.79475.stgit@localhost6.localdomain6>
+Date: Tue, 22 Feb 2011 21:34:37 -0700
+Message-ID: <20110223043436.20795.9795.stgit@localhost6.localdomain6>
 In-Reply-To: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,534 +26,342 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of users of of_platform_driver in drivers/video.  The
+Get rid of users of of_platform_driver in drivers/usb.  The
 of_platform_{,un}register_driver functions are going away, so the
 users need to be converted to using the platform_bus_type directly.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/video/bw2.c               |    8 ++++----
- drivers/video/cg14.c              |    8 ++++----
- drivers/video/cg3.c               |    9 ++++-----
- drivers/video/cg6.c               |    9 ++++-----
- drivers/video/ffb.c               |    9 ++++-----
- drivers/video/fsl-diu-fb.c        |    9 ++++-----
- drivers/video/leo.c               |    9 ++++-----
- drivers/video/mb862xx/mb862xxfb.c |    9 ++++-----
- drivers/video/p9100.c             |    8 ++++----
- drivers/video/platinumfb.c        |    9 ++++-----
- drivers/video/sunxvr1000.c        |    9 ++++-----
- drivers/video/tcx.c               |    9 ++++-----
- drivers/video/xilinxfb.c          |   11 ++++-------
- 13 files changed, 52 insertions(+), 64 deletions(-)
+ drivers/usb/gadget/fsl_qe_udc.c   |   14 ++++++++------
+ drivers/usb/host/ehci-hcd.c       |   12 ++++++------
+ drivers/usb/host/ehci-ppc-of.c    |    9 +++------
+ drivers/usb/host/ehci-xilinx-of.c |    6 ++----
+ drivers/usb/host/fhci-hcd.c       |    9 ++++-----
+ drivers/usb/host/isp1760-if.c     |    9 ++++-----
+ drivers/usb/host/ohci-hcd.c       |    6 +++---
+ drivers/usb/host/ohci-ppc-of.c    |    9 +++------
+ 8 files changed, 33 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/video/bw2.c b/drivers/video/bw2.c
-index 4dc1346..7ba74cd 100644
---- a/drivers/video/bw2.c
-+++ b/drivers/video/bw2.c
-@@ -273,7 +273,7 @@ static int __devinit bw2_do_default_mode(struct bw2_par *par,
- 	return 0;
+diff --git a/drivers/usb/gadget/fsl_qe_udc.c b/drivers/usb/gadget/fsl_qe_udc.c
+index 792d5ef..aee7e3c 100644
+--- a/drivers/usb/gadget/fsl_qe_udc.c
++++ b/drivers/usb/gadget/fsl_qe_udc.c
+@@ -2523,8 +2523,7 @@ static void qe_udc_release(struct device *dev)
  }
  
--static int __devinit bw2_probe(struct platform_device *op, const struct of_device_id *match)
-+static int __devinit bw2_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -375,7 +375,7 @@ static const struct of_device_id bw2_match[] = {
- };
- MODULE_DEVICE_TABLE(of, bw2_match);
- 
--static struct of_platform_driver bw2_driver = {
-+static struct platform_driver bw2_driver = {
- 	.driver = {
- 		.name = "bw2",
- 		.owner = THIS_MODULE,
-@@ -390,12 +390,12 @@ static int __init bw2_init(void)
- 	if (fb_get_options("bw2fb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&bw2_driver);
-+	return platform_driver_register(&bw2_driver);
- }
- 
- static void __exit bw2_exit(void)
- {
--	of_unregister_platform_driver(&bw2_driver);
-+	platform_driver_unregister(&bw2_driver);
- }
- 
- module_init(bw2_init);
-diff --git a/drivers/video/cg14.c b/drivers/video/cg14.c
-index 2424953..e2c85b0 100644
---- a/drivers/video/cg14.c
-+++ b/drivers/video/cg14.c
-@@ -463,7 +463,7 @@ static void cg14_unmap_regs(struct platform_device *op, struct fb_info *info,
- 			   info->screen_base, info->fix.smem_len);
- }
- 
--static int __devinit cg14_probe(struct platform_device *op, const struct of_device_id *match)
-+static int __devinit cg14_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -595,7 +595,7 @@ static const struct of_device_id cg14_match[] = {
- };
- MODULE_DEVICE_TABLE(of, cg14_match);
- 
--static struct of_platform_driver cg14_driver = {
-+static struct platform_driver cg14_driver = {
- 	.driver = {
- 		.name = "cg14",
- 		.owner = THIS_MODULE,
-@@ -610,12 +610,12 @@ static int __init cg14_init(void)
- 	if (fb_get_options("cg14fb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&cg14_driver);
-+	return platform_driver_register(&cg14_driver);
- }
- 
- static void __exit cg14_exit(void)
- {
--	of_unregister_platform_driver(&cg14_driver);
-+	platform_driver_unregister(&cg14_driver);
- }
- 
- module_init(cg14_init);
-diff --git a/drivers/video/cg3.c b/drivers/video/cg3.c
-index 09c0c3c..f927a7b 100644
---- a/drivers/video/cg3.c
-+++ b/drivers/video/cg3.c
-@@ -346,8 +346,7 @@ static int __devinit cg3_do_default_mode(struct cg3_par *par)
- 	return 0;
- }
- 
--static int __devinit cg3_probe(struct platform_device *op,
--			       const struct of_device_id *match)
-+static int __devinit cg3_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -462,7 +461,7 @@ static const struct of_device_id cg3_match[] = {
- };
- MODULE_DEVICE_TABLE(of, cg3_match);
- 
--static struct of_platform_driver cg3_driver = {
-+static struct platform_driver cg3_driver = {
- 	.driver = {
- 		.name = "cg3",
- 		.owner = THIS_MODULE,
-@@ -477,12 +476,12 @@ static int __init cg3_init(void)
- 	if (fb_get_options("cg3fb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&cg3_driver);
-+	return platform_driver_register(&cg3_driver);
- }
- 
- static void __exit cg3_exit(void)
- {
--	of_unregister_platform_driver(&cg3_driver);
-+	platform_driver_unregister(&cg3_driver);
- }
- 
- module_init(cg3_init);
-diff --git a/drivers/video/cg6.c b/drivers/video/cg6.c
-index 2b5a970..4ffad90 100644
---- a/drivers/video/cg6.c
-+++ b/drivers/video/cg6.c
-@@ -737,8 +737,7 @@ static void cg6_unmap_regs(struct platform_device *op, struct fb_info *info,
- 			   info->fix.smem_len);
- }
- 
--static int __devinit cg6_probe(struct platform_device *op,
--				const struct of_device_id *match)
-+static int __devinit cg6_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -855,7 +854,7 @@ static const struct of_device_id cg6_match[] = {
- };
- MODULE_DEVICE_TABLE(of, cg6_match);
- 
--static struct of_platform_driver cg6_driver = {
-+static struct platform_driver cg6_driver = {
- 	.driver = {
- 		.name = "cg6",
- 		.owner = THIS_MODULE,
-@@ -870,12 +869,12 @@ static int __init cg6_init(void)
- 	if (fb_get_options("cg6fb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&cg6_driver);
-+	return platform_driver_register(&cg6_driver);
- }
- 
- static void __exit cg6_exit(void)
- {
--	of_unregister_platform_driver(&cg6_driver);
-+	platform_driver_unregister(&cg6_driver);
- }
- 
- module_init(cg6_init);
-diff --git a/drivers/video/ffb.c b/drivers/video/ffb.c
-index 6739b2a..910c5e6 100644
---- a/drivers/video/ffb.c
-+++ b/drivers/video/ffb.c
-@@ -893,8 +893,7 @@ static void ffb_init_fix(struct fb_info *info)
- 	info->fix.accel = FB_ACCEL_SUN_CREATOR;
- }
- 
--static int __devinit ffb_probe(struct platform_device *op,
--			       const struct of_device_id *match)
-+static int __devinit ffb_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct ffb_fbc __iomem *fbc;
-@@ -1052,7 +1051,7 @@ static const struct of_device_id ffb_match[] = {
- };
- MODULE_DEVICE_TABLE(of, ffb_match);
- 
--static struct of_platform_driver ffb_driver = {
-+static struct platform_driver ffb_driver = {
- 	.driver = {
- 		.name = "ffb",
- 		.owner = THIS_MODULE,
-@@ -1067,12 +1066,12 @@ static int __init ffb_init(void)
- 	if (fb_get_options("ffb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&ffb_driver);
-+	return platform_driver_register(&ffb_driver);
- }
- 
- static void __exit ffb_exit(void)
- {
--	of_unregister_platform_driver(&ffb_driver);
-+	platform_driver_unregister(&ffb_driver);
- }
- 
- module_init(ffb_init);
-diff --git a/drivers/video/fsl-diu-fb.c b/drivers/video/fsl-diu-fb.c
-index 8bbbf08..9048f87 100644
---- a/drivers/video/fsl-diu-fb.c
-+++ b/drivers/video/fsl-diu-fb.c
-@@ -1487,8 +1487,7 @@ static ssize_t show_monitor(struct device *device,
- 	return diu_ops.show_monitor_port(machine_data->monitor_port, buf);
- }
- 
--static int __devinit fsl_diu_probe(struct platform_device *ofdev,
--	const struct of_device_id *match)
-+static int __devinit fsl_diu_probe(struct platform_device *ofdev)
+ /* Driver probe functions */
+-static int __devinit qe_udc_probe(struct platform_device *ofdev,
+-			const struct of_device_id *match)
++static int __devinit qe_udc_probe(struct platform_device *ofdev)
  {
  	struct device_node *np = ofdev->dev.of_node;
- 	struct mfb_info *mfbi;
-@@ -1735,7 +1734,7 @@ static struct of_device_id fsl_diu_match[] = {
- };
- MODULE_DEVICE_TABLE(of, fsl_diu_match);
+ 	struct qe_ep *ep;
+@@ -2532,6 +2531,9 @@ static int __devinit qe_udc_probe(struct platform_device *ofdev,
+ 	unsigned int i;
+ 	const void *prop;
  
--static struct of_platform_driver fsl_diu_driver = {
-+static struct platform_driver fsl_diu_driver = {
- 	.driver = {
- 		.name = "fsl_diu",
- 		.owner = THIS_MODULE,
-@@ -1797,7 +1796,7 @@ static int __init fsl_diu_init(void)
- 	if (!coherence_data)
++	if (!ofdev->dev.of_match)
++		return -EINVAL;
++
+ 	prop = of_get_property(np, "mode", NULL);
+ 	if (!prop || strcmp(prop, "peripheral"))
+ 		return -ENODEV;
+@@ -2543,7 +2545,7 @@ static int __devinit qe_udc_probe(struct platform_device *ofdev,
  		return -ENOMEM;
- #endif
--	ret = of_register_platform_driver(&fsl_diu_driver);
-+	ret = platform_driver_register(&fsl_diu_driver);
- 	if (ret) {
- 		printk(KERN_ERR
- 			"fsl-diu: failed to register platform driver\n");
-@@ -1811,7 +1810,7 @@ static int __init fsl_diu_init(void)
+ 	}
  
- static void __exit fsl_diu_exit(void)
- {
--	of_unregister_platform_driver(&fsl_diu_driver);
-+	platform_driver_unregister(&fsl_diu_driver);
- #if defined(CONFIG_NOT_COHERENT_CACHE)
- 	vfree(coherence_data);
- #endif
-diff --git a/drivers/video/leo.c b/drivers/video/leo.c
-index b599e5e..9e946e2 100644
---- a/drivers/video/leo.c
-+++ b/drivers/video/leo.c
-@@ -547,8 +547,7 @@ static void leo_unmap_regs(struct platform_device *op, struct fb_info *info,
- 		of_iounmap(&op->resource[0], info->screen_base, 0x800000);
- }
+-	udc_controller->soc_type = (unsigned long)match->data;
++	udc_controller->soc_type = (unsigned long)ofdev->dev.of_match->data;
+ 	udc_controller->usb_regs = of_iomap(np, 0);
+ 	if (!udc_controller->usb_regs) {
+ 		ret = -ENOMEM;
+@@ -2768,7 +2770,7 @@ static const struct of_device_id qe_udc_match[] __devinitconst = {
  
--static int __devinit leo_probe(struct platform_device *op,
--			       const struct of_device_id *match)
-+static int __devinit leo_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -662,7 +661,7 @@ static const struct of_device_id leo_match[] = {
- };
- MODULE_DEVICE_TABLE(of, leo_match);
+ MODULE_DEVICE_TABLE(of, qe_udc_match);
  
--static struct of_platform_driver leo_driver = {
-+static struct platform_driver leo_driver = {
+-static struct of_platform_driver udc_driver = {
++static struct platform_driver udc_driver = {
  	.driver = {
- 		.name = "leo",
+ 		.name = (char *)driver_name,
  		.owner = THIS_MODULE,
-@@ -677,12 +676,12 @@ static int __init leo_init(void)
- 	if (fb_get_options("leofb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&leo_driver);
-+	return platform_driver_register(&leo_driver);
- }
- 
- static void __exit leo_exit(void)
+@@ -2786,12 +2788,12 @@ static int __init qe_udc_init(void)
  {
--	of_unregister_platform_driver(&leo_driver);
-+	platform_driver_unregister(&leo_driver);
+ 	printk(KERN_INFO "%s: %s, %s\n", driver_name, driver_desc,
+ 			DRIVER_VERSION);
+-	return of_register_platform_driver(&udc_driver);
++	return platform_driver_register(&udc_driver);
  }
  
- module_init(leo_init);
-diff --git a/drivers/video/mb862xx/mb862xxfb.c b/drivers/video/mb862xx/mb862xxfb.c
-index b1c4374..c76e663 100644
---- a/drivers/video/mb862xx/mb862xxfb.c
-+++ b/drivers/video/mb862xx/mb862xxfb.c
-@@ -550,8 +550,7 @@ static int mb862xx_gdc_init(struct mb862xxfb_par *par)
- 	return 0;
- }
- 
--static int __devinit of_platform_mb862xx_probe(struct platform_device *ofdev,
--					       const struct of_device_id *id)
-+static int __devinit of_platform_mb862xx_probe(struct platform_device *ofdev)
+ static void __exit qe_udc_exit(void)
  {
- 	struct device_node *np = ofdev->dev.of_node;
- 	struct device *dev = &ofdev->dev;
-@@ -717,7 +716,7 @@ static struct of_device_id __devinitdata of_platform_mb862xx_tbl[] = {
- 	{ /* end */ }
- };
- 
--static struct of_platform_driver of_platform_mb862xxfb_driver = {
-+static struct platform_driver of_platform_mb862xxfb_driver = {
- 	.driver = {
- 		.name = DRV_NAME,
- 		.owner = THIS_MODULE,
-@@ -1038,7 +1037,7 @@ static int __devinit mb862xxfb_init(void)
- 	int ret = -ENODEV;
- 
- #if defined(CONFIG_FB_MB862XX_LIME)
--	ret = of_register_platform_driver(&of_platform_mb862xxfb_driver);
-+	ret = platform_driver_register(&of_platform_mb862xxfb_driver);
- #endif
- #if defined(CONFIG_FB_MB862XX_PCI_GDC)
- 	ret = pci_register_driver(&mb862xxfb_pci_driver);
-@@ -1049,7 +1048,7 @@ static int __devinit mb862xxfb_init(void)
- static void __exit mb862xxfb_exit(void)
- {
- #if defined(CONFIG_FB_MB862XX_LIME)
--	of_unregister_platform_driver(&of_platform_mb862xxfb_driver);
-+	platform_driver_unregister(&of_platform_mb862xxfb_driver);
- #endif
- #if defined(CONFIG_FB_MB862XX_PCI_GDC)
- 	pci_unregister_driver(&mb862xxfb_pci_driver);
-diff --git a/drivers/video/p9100.c b/drivers/video/p9100.c
-index b6c3fc2..d57cc58 100644
---- a/drivers/video/p9100.c
-+++ b/drivers/video/p9100.c
-@@ -249,7 +249,7 @@ static void p9100_init_fix(struct fb_info *info, int linebytes, struct device_no
- 	info->fix.accel = FB_ACCEL_SUN_CGTHREE;
+-	of_unregister_platform_driver(&udc_driver);
++	platform_driver_unregister(&udc_driver);
  }
  
--static int __devinit p9100_probe(struct platform_device *op, const struct of_device_id *match)
-+static int __devinit p9100_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -352,7 +352,7 @@ static const struct of_device_id p9100_match[] = {
- };
- MODULE_DEVICE_TABLE(of, p9100_match);
- 
--static struct of_platform_driver p9100_driver = {
-+static struct platform_driver p9100_driver = {
- 	.driver = {
- 		.name = "p9100",
- 		.owner = THIS_MODULE,
-@@ -367,12 +367,12 @@ static int __init p9100_init(void)
- 	if (fb_get_options("p9100fb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&p9100_driver);
-+	return platform_driver_register(&p9100_driver);
- }
- 
- static void __exit p9100_exit(void)
- {
--	of_unregister_platform_driver(&p9100_driver);
-+	platform_driver_unregister(&p9100_driver);
- }
- 
- module_init(p9100_init);
-diff --git a/drivers/video/platinumfb.c b/drivers/video/platinumfb.c
-index a50e197..ef532d9 100644
---- a/drivers/video/platinumfb.c
-+++ b/drivers/video/platinumfb.c
-@@ -533,8 +533,7 @@ static int __init platinumfb_setup(char *options)
- #define invalidate_cache(addr)
+ module_init(qe_udc_init);
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 74dcf49..c4de2d7 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1306,24 +1306,24 @@ static int __init ehci_hcd_init(void)
  #endif
  
--static int __devinit platinumfb_probe(struct platform_device* odev,
--				      const struct of_device_id *match)
-+static int __devinit platinumfb_probe(struct platform_device* odev)
- {
- 	struct device_node	*dp = odev->dev.of_node;
- 	struct fb_info		*info;
-@@ -677,7 +676,7 @@ static struct of_device_id platinumfb_match[] =
- 	{},
- };
- 
--static struct of_platform_driver platinum_driver = 
-+static struct platform_driver platinum_driver = 
- {
- 	.driver = {
- 		.name = "platinumfb",
-@@ -697,14 +696,14 @@ static int __init platinumfb_init(void)
- 		return -ENODEV;
- 	platinumfb_setup(option);
+ #ifdef OF_PLATFORM_DRIVER
+-	retval = of_register_platform_driver(&OF_PLATFORM_DRIVER);
++	retval = platform_driver_register(&OF_PLATFORM_DRIVER);
+ 	if (retval < 0)
+ 		goto clean3;
  #endif
--	of_register_platform_driver(&platinum_driver);
-+	platform_driver_register(&platinum_driver);
  
- 	return 0;
- }
+ #ifdef XILINX_OF_PLATFORM_DRIVER
+-	retval = of_register_platform_driver(&XILINX_OF_PLATFORM_DRIVER);
++	retval = platform_driver_register(&XILINX_OF_PLATFORM_DRIVER);
+ 	if (retval < 0)
+ 		goto clean4;
+ #endif
+ 	return retval;
  
- static void __exit platinumfb_exit(void)
+ #ifdef XILINX_OF_PLATFORM_DRIVER
+-	/* of_unregister_platform_driver(&XILINX_OF_PLATFORM_DRIVER); */
++	/* platform_driver_unregister(&XILINX_OF_PLATFORM_DRIVER); */
+ clean4:
+ #endif
+ #ifdef OF_PLATFORM_DRIVER
+-	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
++	platform_driver_unregister(&OF_PLATFORM_DRIVER);
+ clean3:
+ #endif
+ #ifdef PS3_SYSTEM_BUS_DRIVER
+@@ -1351,10 +1351,10 @@ module_init(ehci_hcd_init);
+ static void __exit ehci_hcd_cleanup(void)
  {
--	of_unregister_platform_driver(&platinum_driver);
-+	platform_driver_unregister(&platinum_driver);
+ #ifdef XILINX_OF_PLATFORM_DRIVER
+-	of_unregister_platform_driver(&XILINX_OF_PLATFORM_DRIVER);
++	platform_driver_unregister(&XILINX_OF_PLATFORM_DRIVER);
+ #endif
+ #ifdef OF_PLATFORM_DRIVER
+-	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
++	platform_driver_unregister(&OF_PLATFORM_DRIVER);
+ #endif
+ #ifdef PLATFORM_DRIVER
+ 	platform_driver_unregister(&PLATFORM_DRIVER);
+diff --git a/drivers/usb/host/ehci-ppc-of.c b/drivers/usb/host/ehci-ppc-of.c
+index ba52be4..1f09f25 100644
+--- a/drivers/usb/host/ehci-ppc-of.c
++++ b/drivers/usb/host/ehci-ppc-of.c
+@@ -105,8 +105,7 @@ ppc44x_enable_bmt(struct device_node *dn)
  }
  
- MODULE_LICENSE("GPL");
-diff --git a/drivers/video/sunxvr1000.c b/drivers/video/sunxvr1000.c
-index 5dbe06a..b7f27ac 100644
---- a/drivers/video/sunxvr1000.c
-+++ b/drivers/video/sunxvr1000.c
-@@ -111,8 +111,7 @@ static int __devinit gfb_set_fbinfo(struct gfb_info *gp)
-         return 0;
- }
- 
--static int __devinit gfb_probe(struct platform_device *op,
--			       const struct of_device_id *match)
-+static int __devinit gfb_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -198,7 +197,7 @@ static const struct of_device_id gfb_match[] = {
- };
- MODULE_DEVICE_TABLE(of, ffb_match);
- 
--static struct of_platform_driver gfb_driver = {
-+static struct platform_driver gfb_driver = {
- 	.probe		= gfb_probe,
- 	.remove		= __devexit_p(gfb_remove),
- 	.driver = {
-@@ -213,12 +212,12 @@ static int __init gfb_init(void)
- 	if (fb_get_options("gfb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&gfb_driver);
-+	return platform_driver_register(&gfb_driver);
- }
- 
- static void __exit gfb_exit(void)
- {
--	of_unregister_platform_driver(&gfb_driver);
-+	platform_driver_unregister(&gfb_driver);
- }
- 
- module_init(gfb_init);
-diff --git a/drivers/video/tcx.c b/drivers/video/tcx.c
-index 77ad279..855b719 100644
---- a/drivers/video/tcx.c
-+++ b/drivers/video/tcx.c
-@@ -362,8 +362,7 @@ static void tcx_unmap_regs(struct platform_device *op, struct fb_info *info,
- 			   info->screen_base, info->fix.smem_len);
- }
- 
--static int __devinit tcx_probe(struct platform_device *op,
--			       const struct of_device_id *match)
-+static int __devinit tcx_probe(struct platform_device *op)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct fb_info *info;
-@@ -511,7 +510,7 @@ static const struct of_device_id tcx_match[] = {
- };
- MODULE_DEVICE_TABLE(of, tcx_match);
- 
--static struct of_platform_driver tcx_driver = {
-+static struct platform_driver tcx_driver = {
- 	.driver = {
- 		.name = "tcx",
- 		.owner = THIS_MODULE,
-@@ -526,12 +525,12 @@ static int __init tcx_init(void)
- 	if (fb_get_options("tcxfb", NULL))
- 		return -ENODEV;
- 
--	return of_register_platform_driver(&tcx_driver);
-+	return platform_driver_register(&tcx_driver);
- }
- 
- static void __exit tcx_exit(void)
- {
--	of_unregister_platform_driver(&tcx_driver);
-+	platform_driver_unregister(&tcx_driver);
- }
- 
- module_init(tcx_init);
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 68bd234..77dea01 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
-@@ -404,8 +404,7 @@ static int xilinxfb_release(struct device *dev)
-  * OF bus binding
-  */
  
 -static int __devinit
--xilinxfb_of_probe(struct platform_device *op, const struct of_device_id *match)
-+static int __devinit xilinxfb_of_probe(struct platform_device *op)
+-ehci_hcd_ppc_of_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit ehci_hcd_ppc_of_probe(struct platform_device *op)
  {
- 	const u32 *prop;
- 	u32 *p;
-@@ -418,8 +417,6 @@ xilinxfb_of_probe(struct platform_device *op, const struct of_device_id *match)
- 	/* Copy with the default pdata (not a ptr reference!) */
- 	pdata = xilinx_fb_default_pdata;
+ 	struct device_node *dn = op->dev.of_node;
+ 	struct usb_hcd *hcd;
+@@ -255,14 +254,12 @@ static int ehci_hcd_ppc_of_remove(struct platform_device *op)
+ }
  
--	dev_dbg(&op->dev, "xilinxfb_of_probe(%p, %p)\n", op, match);
+ 
+-static int ehci_hcd_ppc_of_shutdown(struct platform_device *op)
++static void ehci_hcd_ppc_of_shutdown(struct platform_device *op)
+ {
+ 	struct usb_hcd *hcd = dev_get_drvdata(&op->dev);
+ 
+ 	if (hcd->driver->shutdown)
+ 		hcd->driver->shutdown(hcd);
 -
- 	/* Allocate the driver data region */
- 	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
- 	if (!drvdata) {
-@@ -505,7 +502,7 @@ static struct of_device_id xilinxfb_of_match[] __devinitdata = {
+-	return 0;
+ }
+ 
+ 
+@@ -275,7 +272,7 @@ static const struct of_device_id ehci_hcd_ppc_of_match[] = {
+ MODULE_DEVICE_TABLE(of, ehci_hcd_ppc_of_match);
+ 
+ 
+-static struct of_platform_driver ehci_hcd_ppc_of_driver = {
++static struct platform_driver ehci_hcd_ppc_of_driver = {
+ 	.probe		= ehci_hcd_ppc_of_probe,
+ 	.remove		= ehci_hcd_ppc_of_remove,
+ 	.shutdown	= ehci_hcd_ppc_of_shutdown,
+diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
+index e8f4f36..17c1b11 100644
+--- a/drivers/usb/host/ehci-xilinx-of.c
++++ b/drivers/usb/host/ehci-xilinx-of.c
+@@ -142,15 +142,13 @@ static const struct hc_driver ehci_xilinx_of_hc_driver = {
+ /**
+  * ehci_hcd_xilinx_of_probe - Probe method for the USB host controller
+  * @op:		pointer to the platform_device bound to the host controller
+- * @match:	pointer to of_device_id structure, not used
+  *
+  * This function requests resources and sets up appropriate properties for the
+  * host controller. Because the Xilinx USB host controller can be configured
+  * as HS only or HS/FS only, it checks the configuration in the device tree
+  * entry, and sets an appropriate value for hcd->has_tt.
+  */
+-static int __devinit
+-ehci_hcd_xilinx_of_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit ehci_hcd_xilinx_of_probe(struct platform_device *op)
+ {
+ 	struct device_node *dn = op->dev.of_node;
+ 	struct usb_hcd *hcd;
+@@ -288,7 +286,7 @@ static const struct of_device_id ehci_hcd_xilinx_of_match[] = {
  };
- MODULE_DEVICE_TABLE(of, xilinxfb_of_match);
+ MODULE_DEVICE_TABLE(of, ehci_hcd_xilinx_of_match);
  
--static struct of_platform_driver xilinxfb_of_driver = {
-+static struct platform_driver xilinxfb_of_driver = {
- 	.probe = xilinxfb_of_probe,
- 	.remove = __devexit_p(xilinxfb_of_remove),
+-static struct of_platform_driver ehci_hcd_xilinx_of_driver = {
++static struct platform_driver ehci_hcd_xilinx_of_driver = {
+ 	.probe		= ehci_hcd_xilinx_of_probe,
+ 	.remove		= ehci_hcd_xilinx_of_remove,
+ 	.shutdown	= ehci_hcd_xilinx_of_shutdown,
+diff --git a/drivers/usb/host/fhci-hcd.c b/drivers/usb/host/fhci-hcd.c
+index 12fd184..b84ff7e 100644
+--- a/drivers/usb/host/fhci-hcd.c
++++ b/drivers/usb/host/fhci-hcd.c
+@@ -561,8 +561,7 @@ static const struct hc_driver fhci_driver = {
+ 	.hub_control = fhci_hub_control,
+ };
+ 
+-static int __devinit of_fhci_probe(struct platform_device *ofdev,
+-				   const struct of_device_id *ofid)
++static int __devinit of_fhci_probe(struct platform_device *ofdev)
+ {
+ 	struct device *dev = &ofdev->dev;
+ 	struct device_node *node = dev->of_node;
+@@ -812,7 +811,7 @@ static const struct of_device_id of_fhci_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, of_fhci_match);
+ 
+-static struct of_platform_driver of_fhci_driver = {
++static struct platform_driver of_fhci_driver = {
  	.driver = {
-@@ -523,13 +520,13 @@ static struct of_platform_driver xilinxfb_of_driver = {
- static int __init
- xilinxfb_init(void)
+ 		.name = "fsl,usb-fhci",
+ 		.owner = THIS_MODULE,
+@@ -824,13 +823,13 @@ static struct of_platform_driver of_fhci_driver = {
+ 
+ static int __init fhci_module_init(void)
  {
--	return of_register_platform_driver(&xilinxfb_of_driver);
-+	return platform_driver_register(&xilinxfb_of_driver);
+-	return of_register_platform_driver(&of_fhci_driver);
++	return platform_driver_register(&of_fhci_driver);
+ }
+ module_init(fhci_module_init);
+ 
+ static void __exit fhci_module_exit(void)
+ {
+-	of_unregister_platform_driver(&of_fhci_driver);
++	platform_driver_unregister(&of_fhci_driver);
+ }
+ module_exit(fhci_module_exit);
+ 
+diff --git a/drivers/usb/host/isp1760-if.c b/drivers/usb/host/isp1760-if.c
+index 3b28dbf..7ee3005 100644
+--- a/drivers/usb/host/isp1760-if.c
++++ b/drivers/usb/host/isp1760-if.c
+@@ -27,8 +27,7 @@
+ #endif
+ 
+ #ifdef CONFIG_PPC_OF
+-static int of_isp1760_probe(struct platform_device *dev,
+-		const struct of_device_id *match)
++static int of_isp1760_probe(struct platform_device *dev)
+ {
+ 	struct usb_hcd *hcd;
+ 	struct device_node *dp = dev->dev.of_node;
+@@ -119,7 +118,7 @@ static const struct of_device_id of_isp1760_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, of_isp1760_match);
+ 
+-static struct of_platform_driver isp1760_of_driver = {
++static struct platform_driver isp1760_of_driver = {
+ 	.driver = {
+ 		.name = "nxp-isp1760",
+ 		.owner = THIS_MODULE,
+@@ -398,7 +397,7 @@ static int __init isp1760_init(void)
+ 	if (!ret)
+ 		any_ret = 0;
+ #ifdef CONFIG_PPC_OF
+-	ret = of_register_platform_driver(&isp1760_of_driver);
++	ret = platform_driver_register(&isp1760_of_driver);
+ 	if (!ret)
+ 		any_ret = 0;
+ #endif
+@@ -418,7 +417,7 @@ static void __exit isp1760_exit(void)
+ {
+ 	platform_driver_unregister(&isp1760_plat_driver);
+ #ifdef CONFIG_PPC_OF
+-	of_unregister_platform_driver(&isp1760_of_driver);
++	platform_driver_unregister(&isp1760_of_driver);
+ #endif
+ #ifdef CONFIG_PCI
+ 	pci_unregister_driver(&isp1761_pci_driver);
+diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+index 759a12f..54240f6 100644
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -1180,7 +1180,7 @@ static int __init ohci_hcd_mod_init(void)
+ #endif
+ 
+ #ifdef OF_PLATFORM_DRIVER
+-	retval = of_register_platform_driver(&OF_PLATFORM_DRIVER);
++	retval = platform_driver_register(&OF_PLATFORM_DRIVER);
+ 	if (retval < 0)
+ 		goto error_of_platform;
+ #endif
+@@ -1239,7 +1239,7 @@ static int __init ohci_hcd_mod_init(void)
+  error_sa1111:
+ #endif
+ #ifdef OF_PLATFORM_DRIVER
+-	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
++	platform_driver_unregister(&OF_PLATFORM_DRIVER);
+  error_of_platform:
+ #endif
+ #ifdef PLATFORM_DRIVER
+@@ -1287,7 +1287,7 @@ static void __exit ohci_hcd_mod_exit(void)
+ 	sa1111_driver_unregister(&SA1111_DRIVER);
+ #endif
+ #ifdef OF_PLATFORM_DRIVER
+-	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
++	platform_driver_unregister(&OF_PLATFORM_DRIVER);
+ #endif
+ #ifdef PLATFORM_DRIVER
+ 	platform_driver_unregister(&PLATFORM_DRIVER);
+diff --git a/drivers/usb/host/ohci-ppc-of.c b/drivers/usb/host/ohci-ppc-of.c
+index b2c2dbf..1ca1821 100644
+--- a/drivers/usb/host/ohci-ppc-of.c
++++ b/drivers/usb/host/ohci-ppc-of.c
+@@ -80,8 +80,7 @@ static const struct hc_driver ohci_ppc_of_hc_driver = {
+ };
+ 
+ 
+-static int __devinit
+-ohci_hcd_ppc_of_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit ohci_hcd_ppc_of_probe(struct platform_device *op)
+ {
+ 	struct device_node *dn = op->dev.of_node;
+ 	struct usb_hcd *hcd;
+@@ -201,14 +200,12 @@ static int ohci_hcd_ppc_of_remove(struct platform_device *op)
+ 	return 0;
  }
  
- static void __exit
- xilinxfb_cleanup(void)
+-static int ohci_hcd_ppc_of_shutdown(struct platform_device *op)
++static void ohci_hcd_ppc_of_shutdown(struct platform_device *op)
  {
--	of_unregister_platform_driver(&xilinxfb_of_driver);
-+	platform_driver_unregister(&xilinxfb_of_driver);
+ 	struct usb_hcd *hcd = dev_get_drvdata(&op->dev);
+ 
+         if (hcd->driver->shutdown)
+                 hcd->driver->shutdown(hcd);
+-
+-	return 0;
  }
  
- module_init(xilinxfb_init);
+ 
+@@ -243,7 +240,7 @@ MODULE_DEVICE_TABLE(of, ohci_hcd_ppc_of_match);
+ #endif
+ 
+ 
+-static struct of_platform_driver ohci_hcd_ppc_of_driver = {
++static struct platform_driver ohci_hcd_ppc_of_driver = {
+ 	.probe		= ohci_hcd_ppc_of_probe,
+ 	.remove		= ohci_hcd_ppc_of_remove,
+ 	.shutdown 	= ohci_hcd_ppc_of_shutdown,
 
