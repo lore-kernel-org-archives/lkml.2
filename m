@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab1BWUpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:45:52 -0500
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:32208 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755808Ab1BWUpv (ORCPT
+	id S1755859Ab1BWUrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:47:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44416 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1BWUrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:45:51 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEANsAZU1R8sEZ/2dsb2JhbACmIHS8HA2FUQQ
-Date: Wed, 23 Feb 2011 21:45:49 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [RFC] [PATCH 10/10] Generic Watchdog Timer Driver
-Message-ID: <20110223204549.GA7497@infomag.iguana.be>
+	Wed, 23 Feb 2011 15:47:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iCVILwdlfgE+KPKGcwmqVdn0uwDnLa8AD9+67XcJ6/5DBbpNYhtPKOvU8Psmy7U3ls
+         u7O4ePcnlppixyri4DDMAuT0Lhesoy8/MGBs46/aTJXtpspCfz6LmLPw3Q5jIocAE+x6
+         FbZUyHQT0tJo4OFnJzqnkER0Wk780jJNE4T8A=
+Date: Wed, 23 Feb 2011 21:46:56 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: questions about init_memory_mapping_high()
+Message-ID: <20110223204656.GA27738@atj.dyndns.org>
+References: <20110223171945.GI26065@htj.dyndns.org>
+ <4D656D1A.7030006@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D656D1A.7030006@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c5651be8a416dd427f4a5f184e1d87b37631d15b
-Author: Wim Van Sebroeck <wim@iguana.be>
-Date:   Sun Jul 18 10:59:56 2010 +0000
+On Wed, Feb 23, 2011 at 12:24:58PM -0800, Yinghai Lu wrote:
+> >    I guess this was the reason why the commit message showed usage of
+> >    2MiB mappings so that each node would end up with their own third
+> >    level page tables.  Is this something we need to optimize for?  I
+> >    don't recall seeing recent machines which don't use 1GiB pages for
+> >    the linear mapping.  Are there NUMA machines which can't use 1GiB
+> >    mappings?
+> 
+> till now:
+> amd 64 cpu does support 1gb page.
+> 
+> Intel CPU Nehalem-EX does not. and several vendors do provide 8 sockets
+> NUMA system with 1024g and 2048g RAM
 
-    watchdog: WatchDog Timer Driver Core - Part 10
-    
-    Add support for extra ioctl calls by adding a
-    ioctl watchdog operation. This operation will be
-    called before we do our own handling of ioctl
-    commands. This way we can override the internal
-    ioctl command handling and we can also add
-    extra ioctl commands. The ioctl watchdog operation
-    should return the appropriate error codes or
-    -ENOIOCTLCMD if the ioctl command should be handled
-    through the internal ioctl handling of the framework.
-    
-    Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+That's interesting.  Didn't expect that.  So, this one is an actually
+valid reason for implementing per node mapping.  Is this Nehalem-EX
+only thing?  Or is it applicable to all xeons upto now?
 
-diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
-index aa4f836..ad5ff57 100644
---- a/Documentation/watchdog/watchdog-kernel-api.txt
-+++ b/Documentation/watchdog/watchdog-kernel-api.txt
-@@ -74,6 +74,7 @@ struct watchdog_ops {
- 	int (*ping)(struct watchdog_device *);
- 	int (*status)(struct watchdog_device *);
- 	int (*set_timeout)(struct watchdog_device *, int);
-+	long (*ioctl)(struct watchdog_device *, unsigned int, unsigned long);
- };
- 
- It is important that you first define the module owner of the watchdog timer
-@@ -119,6 +120,10 @@ they are supported. These optional routines/operations are:
-   was just used to re-program the watchdog timer device.
-   (Note: the WDIOF_SETTIMEOUT needs to be set in the options field of the
-   watchdog's info structure).
-+* ioctl: if this routine is present then it will be called first before we do
-+  our own internal ioctl call handling. This routine should return -ENOIOCTLCMD
-+  if a command is not supported. The parameters that are passsed to the ioctl
-+  call are: watchdog_device, cmd and arg.
- 
- The status bits should (preferably) be set with the set_bit and clear_bit alike
- bit-operations. The status bit's that are defined are:
-diff --git a/drivers/watchdog/core/watchdog_dev.c b/drivers/watchdog/core/watchdog_dev.c
-index ad080fe..15865db 100644
---- a/drivers/watchdog/core/watchdog_dev.c
-+++ b/drivers/watchdog/core/watchdog_dev.c
-@@ -207,6 +207,12 @@ static long watchdog_ioctl(struct file *file, unsigned int cmd,
- 
- 	trace("%p, %u, %li", file, cmd, arg);
- 
-+	if (wdd->ops->ioctl) {
-+		err = wdd->ops->ioctl(wdd, cmd, arg);
-+		if (err != -ENOIOCTLCMD)
-+			return err;
-+	}
-+
- 	switch (cmd) {
- 	case WDIOC_GETSUPPORT:
- 		return copy_to_user(argp, wdd->info,
-diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-index d264493..447a2e5 100644
---- a/include/linux/watchdog.h
-+++ b/include/linux/watchdog.h
-@@ -72,6 +72,7 @@ struct watchdog_ops {
- 	int (*ping)(struct watchdog_device *);
- 	int (*status)(struct watchdog_device *);
- 	int (*set_timeout)(struct watchdog_device *, int);
-+	long (*ioctl)(struct watchdog_device *, unsigned int, unsigned long);
- };
- 
- /* The structure that defines a watchdog device */
+> > 3. The new code creates linear mapping only for memory regions where
+> >    e820 actually says there is memory as opposed to mapping from base
+> >    to top.  Again, I'm not sure what the intention of this change was.
+> >    Having larger mappings over holes is much cheaper than having to
+> >    break down the mappings into smaller sized mappings around the
+> >    holes both in terms of memory and run time overhead.  Why would we
+> >    want to match the linear address mapping to the e820 map exactly?
+> 
+> we don't need to map those holes if there is any.
+
+Yeah, sure, my point was that not mapping those holes is likely to be
+worse.  Wouldn't it be better to get low and high ends of the occupied
+area and expand those to larger mapping size?  It's worse to match the
+memory map exactly.  You unnecessarily end up with smaller mappings.
+
+> for hotplug case, they should map new added memory later.
+
+Sure.
+
+> > Also, Yinghai, can you please try to write commit descriptions with
+> > more details?  It really sucks for other people when they have to
+> > guess what the actual changes and underlying intentions are.  The
+> > commit adding init_memory_mapping_high() is very anemic on details
+> > about how the behavior changes and the only intention given there is
+> > RED-PEN removal even which is largely a miss.
+> 
+> i don't know what you are talking about. that changelog is clear enough.
+
+Ah well, if you still think the changelog is clear enough, I give up.
+I guess I'll just keep rewriting your changelogs.
+
+Thanks.
+
+--
+tejun
