@@ -1,152 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab1BWRQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 12:16:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932124Ab1BWRQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 12:16:48 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20110217150257.GA26395@mail.hallyn.com>
-References: <20110217150257.GA26395@mail.hallyn.com> <20110217150224.GA26334@mail.hallyn.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: dhowells@redhat.com, LSM <linux-security-module@vger.kernel.org>,
-        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
-Subject: Re: [PATCH 1/9] Add a user_namespace as creator/owner of uts_namespace
-Date: Wed, 23 Feb 2011 17:16:33 +0000
-Message-ID: <3139.1298481393@redhat.com>
+	id S1755299Ab1BWRRM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:17:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37266 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab1BWRRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 12:17:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Q+BrTI53IPB4hUGc6Yvc8FyMa/JaUTVYdvQPqVhFCm2arf0GlB5CZ+M+dB4p0r7kqG
+         OZ177vno+867r0y7vT0iY8leOLXjZtsG57PlA5y21clAJpzN/WkRmI0TzjE6cZEuQhsF
+         82JRdjVjHuzMTQkEhOeKMbEPZOvkzGS/nyyUQ=
+Date: Wed, 23 Feb 2011 18:14:47 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+Message-ID: <20110223171444.GA2591@nowhere>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20110223161645.GA1819@nowhere>
+ <1298479302.7666.94.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298479302.7666.94.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge E. Hallyn <serge@hallyn.com> wrote:
+On Wed, Feb 23, 2011 at 11:41:42AM -0500, Steven Rostedt wrote:
+> On Wed, 2011-02-23 at 17:16 +0100, Frederic Weisbecker wrote:
+> > I see you make extensive use of per_cpu() accessors even for
+> > local variables.
+> > 
+> > I tend to think it's better to use __get_cpu_var() for local
+> > accesses and keep per_cpu() for remote accesses.
+> > 
+> > There are several reasons for that:
+> > 
+> > * __get_cpu_var() checks we are in a non-preemptible section,
+> > per_cpu() doesn't. That may sound of a limited interest for code like the
+> > above, but by the time code can move, and then we might lose track of some
+> > things, etc...
+> 
+> Ah, but so does smp_processor_id() ;-)
 
->  struct uts_namespace {
->  	struct kref kref;
->  	struct new_utsname name;
-> +	struct user_namespace *user_ns;
->  };
+Ah, right :)
+ 
+> > 
+> > * local accesses can be optimized by architectures. per_cpu() implies
+> > finding the local cpu number, and dereference an array of cpu offsets with
+> > that number to find the local cpu offset.
+> > __get_cpu_var() does a direct access to __my_cpu_offset which is a nice
+> > shortcut if the arch implements it.
+> 
+> True, but we could also argue that the multiple checks for being preempt
+> can also be an issue.
 
-If a uts_namespace belongs to a user_namespace, should CLONE_NEWUSER then
-imply CLONE_NEWUTS?
+It's only in debugging code, so it's not really an issue.
+ 
+> > 
+> > * It makes code easier to review: we know that __get_cpu_var() is
+> > for local accesses and per_cpu() for remote.
+> 
+> This I'll agree with you.
+> 
+> In the past, I've thought about which one is better (per_cpu() vs
+> __get_cpu_var()).
+> 
+> But, that last point is a good one. Just knowing that this is for the
+> local CPU helps with the amount of info your mind needs to process when
+> looking at this code. And the mind needs all the help it can get when
+> reviewing this code ;-)
 
-Or is uts_namespace::user_ns more an implication that the set of users in
-user_namespace are the only ones authorised to alter the uts data.
+Yeah :-)
 
-I presume that the uts_namespace of a process must be owned by one of the
-user_namespaces in the alternating inheritance chain of namespaces and their
-creators leading from current_user_ns() to init_user_ns.
-
-With that in mind, looking at patch 3:
-
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
-
-what is it you're actually asking?  I presume it's 'does this user have
-CAP_SYS_ADMIN capability over objects belonging to the uts_namespace's
-user_namespace?'
-
-So, to look at the important bit of patch 2:
-
--int cap_capable(struct task_struct *tsk, const struct cred *cred, int cap,
--		int audit)
-+int cap_capable(struct task_struct *tsk, const struct cred *cred,
-+		struct user_namespace *targ_ns, int cap, int audit)
- {
--	return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
-+	for (;;) {
-+		/* The creator of the user namespace has all caps. */
-+		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
-+			return 0;
-+
-+		/* Do we have the necessary capabilities? */
-+		if (targ_ns == cred->user->user_ns)
-+			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
-+
-+		/* Have we tried all of the parent namespaces? */
-+		if (targ_ns == &init_user_ns)
-+			return -EPERM;
-+
-+		/* If you have the capability in a parent user ns you have it
-+		 * in the over all children user namespaces as well, so see
-+		 * if this process has the capability in the parent user
-+		 * namespace.
-+		 */
-+		targ_ns = targ_ns->creator->user_ns;
-+	}
-+
-+	/* We never get here */
-+	return -EPERM;
- }
-
-On entry, as we're called from ns_capable(), cred->user is the user that the
-current process is running as, and, as such, may be in a separate namespace
-from uts_namespace - which may itself be in a separate namespace from
-init_user_ns.
-
-So, assume for the sake of argument that there are three user_namespaces along
-the chain from the calling process to the root, and that the uts_namespace
-belongs to the middle one.
-
-		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
-			return 0;
-
-Can never match because targ_ns->creator cannot be cred->user; even if the
-uts_namespace belongs to our namespace, given that the creator lies outside
-our namespace.
-
-		if (targ_ns == cred->user->user_ns)
-			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
-
-Can only match if we are in the target user_namespace (ie. the one to which
-uts_namespace belongs), whether or not we have CAP_SYS_ADMIN.
-
-Which means that unless the uts_namespace belongs to our user_namespace, we
-cannot change it.  Is that correct?
-
-So ns_capable() restricts you to only doing interesting things to objects that
-belong to a user_namespace if they are in your own user_namespace.  Is that
-correct?
-
-If that is so, is the loop required for ns_capable()?
-
-
-Looking further at patch 2:
-
-	#define nsown_capable(cap) (ns_capable(current_user_ns(), (cap)))
-
-Given what I've said above, I presume the loop isn't necessary here either.
-
-
-I think you're using ns_capable() in two different ways:
-
- (1) You're using it to see if a process has power over its descendents in a
-     user_namespace that can be traced back to a clone() that it did with
-     CLONE_NEWUSER.
-
-     For example, automatically granting a process permission to kill
-     descendents in a namespace it created.
-
- (2) You're using it to see if a process can access objects that might be
-     outside its own user_namespace.
-
-     For example, setting the hostname.
-
-Is it worth giving two different interfaces to make this clearer (even if they
-actually do the same thing)?
-
-
-Sorry if this seems rambly, but I'm trying to get my head round your code.
-
-David
-     
+And that becomes even better when you have the opportunity to
+use get_cpu_var(). So that tells that your are doing a local access
+and the reason why you disable/enable preemption.
