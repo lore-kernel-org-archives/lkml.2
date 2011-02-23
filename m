@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1BWVgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:36:08 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56353 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab1BWVgG (ORCPT
+	id S1756053Ab1BWVhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:37:19 -0500
+Received: from smtp101.prem.mail.sp1.yahoo.com ([98.136.44.56]:35106 "HELO
+	smtp101.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756029Ab1BWVhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:36:06 -0500
-Date: Wed, 23 Feb 2011 14:36:01 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 6/7] arm/dt: Basic tegra devicetree support
-Message-ID: <20110223213601.GA5404@angua.secretlab.ca>
-References: <20110223021524.18318.71902.stgit@localhost6.localdomain6>
- <20110223022234.18318.90592.stgit@localhost6.localdomain6>
- <4D657880.50405@ru.mvista.com>
+	Wed, 23 Feb 2011 16:37:17 -0500
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: 7Ws2l_AVM1nbZxQxgf9LtULYrL27K6_RGyU7w3qWIie82ju
+ 0mgfNP8FDrOISVM1MWz1aOZtEdMMW2mfc6s9qnidcTRMzfWspgeo03vNSNlt
+ EuWqfnYPzCWUwVwJh5VLGxa_oaIfSmQ5b2M_Lu3eOPYctaXeDnBsNzMS6q_l
+ kzoQhTcZ5PDyDNAT2POUjkH4V6lnTn.Ar1EJfUF_r4O94Es.Lo7PUH_WavMO
+ aZ.OMELSMWkDYK76WrvIEhzs12CkGn0ZohNZKbXWBB276q7MFGmWMqOlHLVe
+ G1BOoe1TsMyoVhMDeD7rSJQqzxYg-
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4D657E0C.3010102@schaufler-ca.com>
+Date: Wed, 23 Feb 2011 13:37:16 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D657880.50405@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        David Howells <dhowells@redhat.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: User namespaces and keys
+References: <20110223135814.GA1859@mail.hallyn.com>	<20110217150224.GA26334@mail.hallyn.com> <29677.1298462729@redhat.com>	<890.1298473574@redhat.com> <m162sasqj6.fsf@fess.ebiederm.org>	<20110223155328.GA21266@peq.hallyn.com>	<4D655EE4.6030707@schaufler-ca.com> <m1k4gqlbdm.fsf@fess.ebiederm.org>
+In-Reply-To: <m1k4gqlbdm.fsf@fess.ebiederm.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 12:13:36AM +0300, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 23-02-2011 5:22, Grant Likely wrote:
-> 
-> >This patch adds adds very basic support for booting tegra with a
-> >device tree.  It simply allows the existing machine_descs to match
-> >against the tegra compatible values so that the kernel can boot.
-> >Kernel parameters and the initrd pointer is read out of the tree
-> >instead of atags.
-> 
-> >This is not complete device tree support.  This change will be
-> >reverted when a new machine_desc is added that can populate the
-> >device registrations directly from data in the tree instead of using
-> >hard coded data.  That change will be made in a future patch.
-> 
-> >v2: Fixed cut-and-paste error in commit text
-> 
->    Shouldn't this sentence follow the --- tearline?
+On 2/23/2011 12:55 PM, Eric W. Biederman wrote:
+> Casey Schaufler <casey@schaufler-ca.com> writes:
+>
+>> I confess that I remain less well educated on namespaces than
+>> I probably should be, but with what I do know it seems that the
+>> relationships between user namespaces and LSMs are bound to be
+>> strained from the beginning. Some LSMs (SELinux and Smack) are
+>> providing similar sandbox capabilities to what you get from user
+>> namespaces, but from different directions and with different
+>> use cases.
+> Casey I won't argue about the possibility of things being strained, but
+> I think if we focus on the semantics and not on the end goal of exactly
+> how the pieces are to be used there can be some reasonable dialog.
 
-Nope!  It is actually quite useful for the version information to show
-up in the commit text.  That way you know *exactly* which version got
-merged.  dwmw2 pointed that out to me a few months back.
+I'm sure that there will be cases where they will work together
+like horses in a troika. Making sensible semantics for the interactions
+is key, and it is entirely possible that in some cases a comparison
+of semantics and behaviors will lead an end user to chose either an
+LSM or namespaces over the combination. Just like I expect that even
+when we allow multiple LSMs the SELinux and Smack combination will be
+rare among the sane.
 
