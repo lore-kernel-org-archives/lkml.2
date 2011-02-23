@@ -1,251 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab1BWViJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:38:09 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43006 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab1BWViI (ORCPT
+	id S932710Ab1BWVmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:42:03 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:32271 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab1BWVmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:38:08 -0500
+	Wed, 23 Feb 2011 16:42:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Dh/SrXcEhbEhlXTjpyHhtzfiu2yL6pV3jud6R4kcdCIyGZ9Skmnwm+/UKxUVGGQ111
-         XEg7EJwGDXm2Sn8Zp0rfkPdggFDKGsJ1umZme4YSw4U6EK9UoLm9KhGKVk1F50N7sv2X
-         Zd5UiboAtEZutfRipWIO9ntBGURCNarqi43Dg=
-From: Rob Herring <robherring2@gmail.com>
-To: grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] ipmi: convert OF driver to platform driver
-Date: Wed, 23 Feb 2011 15:37:59 -0600
-Message-Id: <1298497079-20546-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=O92svcrpy6AoQVKdtn+T1DbPCFQMlMsLzV27VZIi0k3wEyx5dIMxO4iefdG42bYisN
+         l1hobCfAqD2zJ0rXe4fQ==
+Message-ID: <4D657F24.2000402@google.com>
+Date: Wed, 23 Feb 2011 13:41:56 -0800
+From: Mike Waychison <mikew@google.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC] [PATCH 3/10] Generic Watchdog Timer Driver
+References: <20110223204253.GA7385@infomag.iguana.be>
+In-Reply-To: <20110223204253.GA7385@infomag.iguana.be>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On 02/23/11 12:42, Wim Van Sebroeck wrote:
+> commit 87af8029a114af16d696047167d482624a1c9334
+> Author: Wim Van Sebroeck<wim@iguana.be>
+> Date:   Fri Jun 18 09:03:14 2010 +0000
+>
+>      watchdog: WatchDog Timer Driver Core - Part 3
+>
+>      This part add's the WDIOC_KEEPALIVE ioctl functionality to the
+>      WatchDog Timer Driver Core framework. Please note that the
+>      WDIOF_KEEPALIVEPING bit has to be set in the watchdog_info
+>      options field.
+>
+>      Signed-off-by: Alan Cox<alan@lxorguk.ukuu.org.uk>
+>      Signed-off-by: Wim Van Sebroeck<wim@iguana.be>
+>
+> diff --git a/Documentation/watchdog/src/watchdog-with-timer-example.c b/Documentation/watchdog/src/watchdog-with-timer-example.c
+> index ed7852a..d64cac6 100644
+> --- a/Documentation/watchdog/src/watchdog-with-timer-example.c
+> +++ b/Documentation/watchdog/src/watchdog-with-timer-example.c
+> @@ -117,6 +117,7 @@ static int wdt_stop(struct watchdog_device *wdd)
+>    */
+>   static const struct watchdog_info wdt_info = {
+>   	.identity =	DRV_NAME,
+> +	.options =	WDIOF_KEEPALIVEPING,
+>   };
+>
+>   static const struct watchdog_ops wdt_ops = {
+> diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
+> index 9418d4c..4a68e5e 100644
+> --- a/Documentation/watchdog/watchdog-kernel-api.txt
+> +++ b/Documentation/watchdog/watchdog-kernel-api.txt
+> @@ -96,6 +96,9 @@ they are supported. These optional routines/operations are:
+>     the watchdog timer driver core does: to send a keepalive ping to the watchdog
+>     timer hardware it will either use the ping operation (when available) or the
+>     start operation (when the ping operation is not available).
+> +  (Note: the WDIOC_KEEPALIVE ioctl call will only be active when the
+> +  WDIOF_KEEPALIVEPING bit has been set in the option field on the watchdog's
+> +  info structure).
+>   * status: this routine checks the status of the watchdog timer device. The
+>     status of the device is reported with watchdog WDIOF_* status flags/bits.
+>
+> diff --git a/drivers/watchdog/core/watchdog_dev.c b/drivers/watchdog/core/watchdog_dev.c
+> index ad08a93..0d2ed1d 100644
+> --- a/drivers/watchdog/core/watchdog_dev.c
+> +++ b/drivers/watchdog/core/watchdog_dev.c
+> @@ -151,6 +151,11 @@ static long watchdog_ioctl(struct file *file, unsigned int cmd,
+>   		return put_user(val, p);
+>   	case WDIOC_GETBOOTSTATUS:
+>   		return put_user(wdd->bootstatus, p);
+> +	case WDIOC_KEEPALIVE:
+> +		if (!(wdd->info->options&  WDIOF_MAGICCLOSE))
 
-of_bus is deprecated in favor of the plain platform bus. This patch
-merges the ipmi OF driver with the existing platform driver.
+Is this meant to be WDIOF_KEEPALIVEPING ?
 
-CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
 
-Compile tested with and without CONFIG_OF. Tested OF probe and
-default probe cases.
-
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-
----
- drivers/char/ipmi/ipmi_si_intf.c |   70 ++++++++++++-------------------------
- 1 files changed, 23 insertions(+), 47 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 7855f9f..dcfc39c 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -66,13 +66,10 @@
- #include <linux/string.h>
- #include <linux/ctype.h>
- #include <linux/pnp.h>
--
--#ifdef CONFIG_PPC_OF
- #include <linux/of_device.h>
- #include <linux/of_platform.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
--#endif
- 
- #define PFX "ipmi_si: "
- 
-@@ -116,13 +113,7 @@ static char *ipmi_addr_src_to_str[] = { NULL, "hotmod", "hardcoded", "SPMI",
- 
- #define DEVICE_NAME "ipmi_si"
- 
--static struct platform_driver ipmi_driver = {
--	.driver = {
--		.name = DEVICE_NAME,
--		.bus = &platform_bus_type
--	}
--};
--
-+static struct platform_driver ipmi_driver;
- 
- /*
-  * Indexes into stats[] in smi_info below.
-@@ -308,9 +299,6 @@ static int pci_registered;
- #ifdef CONFIG_ACPI
- static int pnp_registered;
- #endif
--#ifdef CONFIG_PPC_OF
--static int of_registered;
--#endif
- 
- static unsigned int kipmid_max_busy_us[SI_MAX_PARMS];
- static int num_max_busy_us;
-@@ -1860,8 +1848,9 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
- 	return rv;
- }
- 
--static void __devinit hardcode_find_bmc(void)
-+static int __devinit hardcode_find_bmc(void)
- {
-+	int ret = -ENODEV;
- 	int             i;
- 	struct smi_info *info;
- 
-@@ -1871,7 +1860,7 @@ static void __devinit hardcode_find_bmc(void)
- 
- 		info = smi_info_alloc();
- 		if (!info)
--			return;
-+			return -ENOMEM;
- 
- 		info->addr_source = SI_HARDCODED;
- 		printk(KERN_INFO PFX "probing via hardcoded address\n");
-@@ -1924,10 +1913,12 @@ static void __devinit hardcode_find_bmc(void)
- 		if (!add_smi(info)) {
- 			if (try_smi_init(info))
- 				cleanup_one_si(info);
-+			ret = 0;
- 		} else {
- 			kfree(info);
- 		}
- 	}
-+	return ret;
- }
- 
- #ifdef CONFIG_ACPI
-@@ -2555,11 +2546,9 @@ static struct pci_driver ipmi_pci_driver = {
- };
- #endif /* CONFIG_PCI */
- 
--
--#ifdef CONFIG_PPC_OF
--static int __devinit ipmi_of_probe(struct platform_device *dev,
--			 const struct of_device_id *match)
-+static int __devinit ipmi_probe(struct platform_device *dev)
- {
-+#ifdef CONFIG_OF
- 	struct smi_info *info;
- 	struct resource resource;
- 	const __be32 *regsize, *regspacing, *regshift;
-@@ -2569,6 +2558,9 @@ static int __devinit ipmi_of_probe(struct platform_device *dev,
- 
- 	dev_info(&dev->dev, "probing via device tree\n");
- 
-+	if (!dev->dev.of_match)
-+		return -EINVAL;
-+
- 	ret = of_address_to_resource(np, 0, &resource);
- 	if (ret) {
- 		dev_warn(&dev->dev, PFX "invalid address from OF\n");
-@@ -2601,7 +2593,7 @@ static int __devinit ipmi_of_probe(struct platform_device *dev,
- 		return -ENOMEM;
- 	}
- 
--	info->si_type		= (enum si_type) match->data;
-+	info->si_type		= (enum si_type) dev->dev.of_match->data;
- 	info->addr_source	= SI_DEVICETREE;
- 	info->irq_setup		= std_irq_setup;
- 
-@@ -2632,13 +2624,15 @@ static int __devinit ipmi_of_probe(struct platform_device *dev,
- 		kfree(info);
- 		return -EBUSY;
- 	}
--
-+#endif
- 	return 0;
- }
- 
--static int __devexit ipmi_of_remove(struct platform_device *dev)
-+static int __devexit ipmi_remove(struct platform_device *dev)
- {
-+#ifdef CONFIG_OF
- 	cleanup_one_si(dev_get_drvdata(&dev->dev));
-+#endif
- 	return 0;
- }
- 
-@@ -2653,16 +2647,15 @@ static struct of_device_id ipmi_match[] =
- 	{},
- };
- 
--static struct of_platform_driver ipmi_of_platform_driver = {
-+static struct platform_driver ipmi_driver = {
- 	.driver = {
--		.name = "ipmi",
-+		.name = DEVICE_NAME,
- 		.owner = THIS_MODULE,
- 		.of_match_table = ipmi_match,
- 	},
--	.probe		= ipmi_of_probe,
--	.remove		= __devexit_p(ipmi_of_remove),
-+	.probe		= ipmi_probe,
-+	.remove		= __devexit_p(ipmi_remove),
- };
--#endif /* CONFIG_PPC_OF */
- 
- static int wait_for_msg_done(struct smi_info *smi_info)
- {
-@@ -3340,8 +3333,7 @@ static int __devinit init_ipmi_si(void)
- 		return 0;
- 	initialized = 1;
- 
--	/* Register the device drivers. */
--	rv = driver_register(&ipmi_driver.driver);
-+	rv = platform_driver_register(&ipmi_driver);
- 	if (rv) {
- 		printk(KERN_ERR PFX "Unable to register driver: %d\n", rv);
- 		return rv;
-@@ -3365,15 +3357,9 @@ static int __devinit init_ipmi_si(void)
- 
- 	printk(KERN_INFO "IPMI System Interface driver.\n");
- 
--	hardcode_find_bmc();
--
- 	/* If the user gave us a device, they presumably want us to use it */
--	mutex_lock(&smi_infos_lock);
--	if (!list_empty(&smi_infos)) {
--		mutex_unlock(&smi_infos_lock);
-+	if (!hardcode_find_bmc())
- 		return 0;
--	}
--	mutex_unlock(&smi_infos_lock);
- 
- #ifdef CONFIG_PCI
- 	rv = pci_register_driver(&ipmi_pci_driver);
-@@ -3396,11 +3382,6 @@ static int __devinit init_ipmi_si(void)
- 	spmi_find_bmc();
- #endif
- 
--#ifdef CONFIG_PPC_OF
--	of_register_platform_driver(&ipmi_of_platform_driver);
--	of_registered = 1;
--#endif
--
- 	/* We prefer devices with interrupts, but in the case of a machine
- 	   with multiple BMCs we assume that there will be several instances
- 	   of a given type so if we succeed in registering a type then also
-@@ -3548,17 +3529,12 @@ static void __exit cleanup_ipmi_si(void)
- 		pnp_unregister_driver(&ipmi_pnp_driver);
- #endif
- 
--#ifdef CONFIG_PPC_OF
--	if (of_registered)
--		of_unregister_platform_driver(&ipmi_of_platform_driver);
--#endif
-+	platform_driver_unregister(&ipmi_driver);
- 
- 	mutex_lock(&smi_infos_lock);
- 	list_for_each_entry_safe(e, tmp_e, &smi_infos, link)
- 		cleanup_one_si(e);
- 	mutex_unlock(&smi_infos_lock);
--
--	driver_unregister(&ipmi_driver.driver);
- }
- module_exit(cleanup_ipmi_si);
- 
--- 
-1.7.1
+> +			return -EOPNOTSUPP;
+> +		watchdog_ping(wdd);
+> +		return 0;
+>   	default:
+>   		return -ENOTTY;
+>   	}
+> diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+> index 4d00bf8..a41dca3 100644
+> --- a/include/linux/watchdog.h
+> +++ b/include/linux/watchdog.h
+> @@ -69,12 +69,15 @@ struct watchdog_ops {
+>   	int (*stop)(struct watchdog_device *);
+>   	/* optional operations */
+>   	int (*ping)(struct watchdog_device *);
+> +	int (*status)(struct watchdog_device *);
+>   };
+>
+>   /* The structure that defines a watchdog device */
+>   struct watchdog_device {
+>   	char *name;
+> +	const struct watchdog_info *info;
+>   	const struct watchdog_ops *ops;
+> +	int bootstatus;
+>   	long status;
+>   #define WDOG_DEV_OPEN		1	/* is the watchdog opened via
+>   					 * /dev/watchdog */
 
