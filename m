@@ -1,121 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab1BWFUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 00:20:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53543 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab1BWFUs (ORCPT
+	id S1751173Ab1BWF3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 00:29:13 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:36627 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1BWF3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 00:20:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CD1RyOgb8e+Oa2MNGQ8wMHTAQHz4Yo69xP5zsn8iiKmUYi6MPts4CHeOG+/VqkQLKm
-         aiak2ULDKnvQ+3hlGwvMHR/ZYdxmzz1YLek4E2dobRjFtp+5hIpAPY3cJwaJO71Ar2BG
-         J9FkUmMAQ+9453xz3ZcMjuqovgW4HbzcCF6dA=
-Date: Tue, 22 Feb 2011 21:20:42 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "pantherchen@versanet.de" <pantherchen@versanet.de>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Boot time regression in 2.6.38 after initial wq merge
-Message-ID: <20110223052042.GA19269@core.coreip.homeip.net>
-References: <20110222081752.GP31267@htj.dyndns.org>
- <20110222085223.GC11681@core.coreip.homeip.net>
- <20110222090255.GR31267@htj.dyndns.org>
- <B04A0050-5AE7-4072-BE6F-279E24B0DA64@gmail.com>
- <4D63D062.3040404@versanet.de>
- <20110222172254.GA13114@core.coreip.homeip.net>
- <20110222175955.GA27991@core.coreip.homeip.net>
- <4D640F67.3040109@versanet.de>
- <20110222195257.GA13256@core.coreip.homeip.net>
- <4D641936.90404@versanet.de>
+	Wed, 23 Feb 2011 00:29:11 -0500
+Message-ID: <86364E209B534BF1ADB2764227483070@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Greg KH" <gregkh@suse.de>, "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>, <sachi@mistralsolutions.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
+        "Stalin Srinivasan" <stalin.s@mistralsolutions.com>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <20110218143500.23b3044b@lxorguk.ukuu.org.uk> <alpine.LFD.2.00.1102181917520.2701@localhost6.localdomain6> <201102181951.32631.arnd@arndb.de> <9826735BD9DD48A599C595D28C4A05F0@subhasishg> <20110222143704.GA978@suse.de>
+In-Reply-To: <20110222143704.GA978@suse.de>
+Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
+Date: Wed, 23 Feb 2011 11:00:25 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D641936.90404@versanet.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 09:14:46PM +0100, pantherchen@versanet.de wrote:
-> On 02/22/2011 08:52 PM, Dmitry Torokhov wrote:
-> >Ewww... tty/ldisc...
-> >
-> >Does it help if you change drivers/input/serio/serio.c::serio_queue_event()
-> >from calling
-> >
-> >	schedule_work(&serio_event_work);
-> >
-> >to call
-> >
-> >	queue_work(system_long_wq,&serio_event_work);
-> >
-> >?
-> 
-> Yes, that works: http://img.xrmb2.net/images/499337.png
-> 
+I could not follow the recommendations clearly.
+This is just to clarify.
 
-Great!
+Currently, I have the following files for the suart implementation:
 
-OK, so below is properly formatted patch. I am going to send it upstream
-unless somebody objects.
+drivers/tty/serial/da8xx_pruss/pruss_suart_api.h
+drivers/tty/serial/da8xx_pruss/pruss_suart_err.h
+drivers/tty/serial/da8xx_pruss/pruss_suart_regs.h
+drivers/tty/serial/da8xx_pruss/pruss_suart_board.h
+drivers/tty/serial/da8xx_pruss/pruss_suart_mcasp.h
+drivers/tty/serial/da8xx_pruss/pruss_suart_utils.h
 
-Thanks.
+drivers/tty/serial/da8xx_pruss/pruss_suart_api.c
+drivers/tty/serial/da8xx_pruss/pruss_suart.c
+drivers/tty/serial/da8xx_pruss/pruss_suart_utils.c
 
--- 
-Dmitry
+Of these, I will be removing pruss_suart_err.h as part of the Linux error 
+code cleanup.
+But, I need to keep at least  pruss_suart_board.h as a separate file, as 
+this defines
+configurations which will be often modified by users, I don't want to mix it 
+with other files.
 
-
-Input: serio/gameport - use 'long' system workqueue
-
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-Commit 8ee294cd9def0004887da7f44b80563493b0a097 converted serio
-subsystem event handling from using a dedicated thread to using
-common workqueue. Unfortunately, this regressed our boot times,
-due to the fact that serio jobs take long time to execute. While
-the new concurrency managed workqueue code manages long-playing
-works just fine and schedules additional workers as needed, such
-works wreck havoc among remaining users of flush_scheduled_work().
-
-To solve this problem let's move serio/gameport works from system_wq
-to system_long_wq which nobody tries to flush.
-
-Reported-and-tested-by: Hernando Torque <pantherchen@versanet.de>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
-
- drivers/input/gameport/gameport.c |    2 +-
- drivers/input/serio/serio.c       |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Should I combine rest of the headers into a single file ? and keep the other 
+three .c files under "drivers/tty/serial/"
+and remove the da8xx_pruss directory altogether.
 
 
-diff --git a/drivers/input/gameport/gameport.c b/drivers/input/gameport/gameport.c
-index 23cf8fc..5b8f59d 100644
---- a/drivers/input/gameport/gameport.c
-+++ b/drivers/input/gameport/gameport.c
-@@ -360,7 +360,7 @@ static int gameport_queue_event(void *object, struct module *owner,
- 	event->owner = owner;
- 
- 	list_add_tail(&event->node, &gameport_event_list);
--	schedule_work(&gameport_event_work);
-+	queue_work(system_long_wq, &gameport_event_work);
- 
- out:
- 	spin_unlock_irqrestore(&gameport_event_lock, flags);
-diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-index 7c38d1f..ba70058 100644
---- a/drivers/input/serio/serio.c
-+++ b/drivers/input/serio/serio.c
-@@ -299,7 +299,7 @@ static int serio_queue_event(void *object, struct module *owner,
- 	event->owner = owner;
- 
- 	list_add_tail(&event->node, &serio_event_list);
--	schedule_work(&serio_event_work);
-+	queue_work(system_long_wq, &serio_event_work);
- 
- out:
- 	spin_unlock_irqrestore(&serio_event_lock, flags);
+--------------------------------------------------
+From: "Greg KH" <gregkh@suse.de>
+Sent: Tuesday, February 22, 2011 8:07 PM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: "Arnd Bergmann" <arnd@arndb.de>; <linux-arm-kernel@lists.infradead.org>; 
+"Thomas Gleixner" <tglx@linutronix.de>; "Alan Cox" 
+<alan@lxorguk.ukuu.org.uk>; <sachi@mistralsolutions.com>; 
+<davinci-linux-open-source@linux.davincidsp.com>; <nsekhar@ti.com>; "open 
+list" <linux-kernel@vger.kernel.org>; <m-watkins@ti.com>
+Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
+
+> On Tue, Feb 22, 2011 at 02:12:32PM +0530, Subhasish Ghosh wrote:
+>> Hello,
+>>
+>> I had kept separate files to affirm the modularity and ease of
+>> portability of the system.
+>>
+>> There are three different interfaces,
+>> 1. The Linux driver interface
+>> 2. The PRU control interface
+>> 3. The McASP serializer interface.
+>>
+>> To maintain modularity, I  had classified the files respectively as :
+>> 1.  pruss_suart.c
+>> 2.  pruss_suart_api.c
+>> 3.  pruss_suart_utils.c
+>>
+>> This is not a single device which can be expressed as a single file,
+>> but functionally different devices logically cascaded together to
+>> work in unison.
+>>
+>> We use the PRU for packet processing, but the actual data is
+>> transmitted/received through the
+>> McASP, which we use as a serializer.
+>>
+>> I feel to combine these disparate functionalities into a single file
+>> will not
+>>
+>> 1. Help better understanding the device. I mean, why should a TTY
+>> UART driver be aware of the McASP or the PRU.
+>> 2. In case of a bug in the API layer or McASP, the driver need not
+>> be touched, thus improve maintainability.
+>> 3. If we need to port it to another Linux version, just editing the
+>> driver file should suffice, this will reduce bugs while porting.
+>
+> If your code is in the kernel tree, you do not need to ever port it to a
+> new version, as it will happen automatically as new kernels are
+> released, so this really isn't anything to worry about.
+>
+>> To me, combining all of these into a single file only creates a
+>> mess. This is the reason I had separated them into different files!!
+>> I don't understand why should it be better to have all of these into
+>> a single file.
+>
+> As Alan stated, just use 3 files in the directory with the other
+> drivers, you don't need a subdir for something small like this.
+>
+> thanks,
+>
+> greg k-h 
+
