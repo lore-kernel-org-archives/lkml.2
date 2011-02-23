@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab1BWUjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:39:25 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:40108 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab1BWUjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:39:24 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: linux-next still missing patch for zcache modular Kconfig/build issue
-In-Reply-To: Your message of "Wed, 23 Feb 2011 12:23:34 PST."
-             <fc9a9123-cc27-4754-9222-796890553ee6@default>
-From: Valdis.Kletnieks@vt.edu
-References: <21508.1298491740@localhost>
-            <fc9a9123-cc27-4754-9222-796890553ee6@default>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1298493554_5041P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S932642Ab1BWUkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:40:05 -0500
+Received: from mail.aknet.ru ([78.158.192.28]:47184 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166Ab1BWUkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:40:03 -0500
+Message-ID: <4D656F87.3090005@aknet.ru>
+Date: Wed, 23 Feb 2011 23:35:19 +0300
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+References: <4D6510A3.90905@aknet.ru> <20110223191442.GA717@redhat.com>
+In-Reply-To: <20110223191442.GA717@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Wed, 23 Feb 2011 15:39:14 -0500
-Message-ID: <30338.1298493554@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4D657073.005F,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1298493554_5041P
-Content-Type: text/plain; charset=us-ascii
+23.02.2011 22:14, Oleg Nesterov wrote:
+> The attched patch adds the PR_DETACH prctl command.
+> Hi. The patch doesn't look right at first glance,
+I know, thanks for the review. That's basically an RFC material.
 
-On Wed, 23 Feb 2011 12:23:34 PST, Dan Magenheimer said:
-> GregKH hasn't yet pulled the fix into staging-next, which feeds
-> into linux-next.  See:
-> 
-> https://lkml.org/lkml/2011/2/18/311
-> https://lkml.org/lkml/2011/2/18/342
+> Well. You should somehow convince people we need this ;)
+I don't have to: I need this patch, and that's the main motivation
+for me. :) Though of course I'll offer it for inclusion when its ready,
+but I am developing it mostly for my project.
+google reveals that many people were confused by the fact that
+daemon() silently drops all the threads, and the man page says
+nothing about that nasty habit. And I really think there is no other
+way to daemonize the process with threads, than to use something
+like this patch, or is there?
 
-Oh OK. Just wanted to make sure it hadn't gotten misplaced - I'm a few days
-behind on reading lkml, and missed where Nitin had to respin the patch...
+> Only current can change its ->flags, this is racy
+Oh my, add a new lock only for that? :((
+Add another thread_struct member only for that?
+Abuse ->exit_state only for that?
+Nothing looks good...
 
+>> +	if (!ptrace_reparented(p))
+>> +		p->parent = init_pid_ns.child_reaper;
+>> +	p->real_parent = init_pid_ns.child_reaper;
+>> +	p->exit_signal = SIGCHLD;
+>> +	list_move_tail(&p->sibling,&p->real_parent->children);
+> No, we can't do this under read_lock(tasklist). And you forgot about
+> threads, they also have ->real_parent == old_parent.
+Thanks, will fix.
 
---==_Exmh_1298493554_5041P
-Content-Type: application/pgp-signature
+> The usage of ->exit_code doesn't look right, espeicaily if it is traced.
+Could you please elaborate on that? I am using the
+->exit_code to pass the (fake) exit code to the parent.
+The argument of my PR_DETACH is an exit code to pass.
+What is a problem with that?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> What if it is already dead? We are goint to reparent it, but init
+> won't notice the new zombie.
+>
+> And what if do_wait() was called without WEXITED? say, the old parent
+> does waitpid(WSTOPPED).
+Will fix.
 
-iD8DBQFNZXBycC3lWbTT17ARAj2CAJ9cNTudgdtdzBFIuZTUjYJYTSMfTACgsapB
-xJy2lCxRyQzFWotiASzfC5Y=
-=GRDy
------END PGP SIGNATURE-----
+>> @@ -1450,10 +1450,10 @@ int do_notify_parent(struct task_struct *tsk, int sig)
+>>
+>>   	BUG_ON(sig == -1);
+>>
+>> - 	/* do_notify_parent_cldstop should have been called instead.  */
+>> - 	BUG_ON(task_is_stopped_or_traced(tsk));
+>> +	/* do_notify_parent_cldstop should have been called instead.  */
+>> +	BUG_ON(task_is_stopped_or_traced(tsk));
+>>
+>> -	BUG_ON(!task_ptrace(tsk)&&
+>> +	BUG_ON(!task_ptrace(tsk)&&  (tsk->flags&  PF_EXITING)&&
+>>   	(tsk->group_leader != tsk || !thread_group_empty(tsk)));
+> Afaics, you are trying to hide the problem.... The code below can make
+> tsk detached if real_parent ignores SIGCHLD.
+Will fix the problem with parent ignoring SIGCHLD, thanks.
+Though could you please clarify whether or not you see the
+above hunk wrong? It is there just because the group is not
+empty when the leader does PR_DETACH, so I adjusted the
+sanity check.
 
---==_Exmh_1298493554_5041P--
+>> --- a/kernel/sys.c
+>> +++ b/kernel/sys.c
+>> @@ -1736,6 +1736,22 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+>>   			else
+>>   				error = PR_MCE_KILL_DEFAULT;
+>>   			break;
+>> +		case PR_DETACH:
+>> +			error = -EPERM;
+>> +			/* if parent is init, or not a group leader - bail */
+>> +			if (me->real_parent == init_pid_ns.child_reaper)
+> This is not exactly right. What if the child of init's sub-thread
+> does PR_DETACH?
+Will fix.
 
+Thanks for your review! I'll update the patch.
