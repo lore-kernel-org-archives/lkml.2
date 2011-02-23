@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab1BWNxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:53:31 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53140 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530Ab1BWNxY (ORCPT
+	id S932186Ab1BWNx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:53:59 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33157 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab1BWNx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:53:24 -0500
+	Wed, 23 Feb 2011 08:53:56 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
         sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
-Subject: [PATCH -V5 08/24] vfs: Add delete child and delete self permission flags
-Date: Wed, 23 Feb 2011 19:21:55 +0530
-Message-Id: <1298469131-16555-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V5 13/24] richacl: Permission mapping functions
+Date: Wed, 23 Feb 2011 19:22:00 +0530
+Message-Id: <1298469131-16555-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,143 +26,211 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-Normally, deleting a file requires write access to the parent directory.
-Some permission models use a different permission on the parent
-directory to indicate delete access.  In addition, a process can have
-per-file delete access even without delete access on the parent
-directory.
-
-Introduce two new inode_permission() mask flags and use them in
-may_delete()
+We need to map from POSIX permissions to NFSv4 permissions when a
+chmod() is done, from NFSv4 permissions to POSIX permissions when an acl
+is set (which implicitly sets the file permission bits), and from the
+MAY_READ/MAY_WRITE/MAY_EXEC/MAY_APPEND flags to NFSv4 permissions when
+doing an access check in a richacl.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c         |   40 ++++++++++++++++++++++++++--------------
- include/linux/fs.h |    2 ++
- 2 files changed, 28 insertions(+), 14 deletions(-)
+ fs/richacl_base.c       |  118 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/richacl.h |   46 ++++++++++++++++++
+ 2 files changed, 164 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index b4f7198..1b6dbc9 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -253,7 +253,7 @@ int generic_permission(struct inode *inode, int mask, unsigned int flags,
-  * are used for other things.
-  *
-  * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
-- * MAY_WRITE must also be set in @mask.
-+ * MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_WRITE must also be set in @mask.
-  */
- int inode_permission(struct inode *inode, int mask)
- {
-@@ -1944,7 +1944,7 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
- 		return 0;
- 	if (dir->i_uid == fsuid)
- 		return 0;
--	return !capable(CAP_FOWNER);
-+	return 1;
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index 99ed0ca..50ba645 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -69,6 +69,124 @@ richacl_clone(const struct richacl *acl)
  }
  
- /*
-@@ -1966,30 +1966,42 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
-  * 10. We don't allow removal of NFS sillyrenamed files; it's handled by
-  *     nfs_async_unlink().
+ /**
++ * richacl_mask_to_mode  -  compute the file permission bits which correspond to @mask
++ * @mask:	%ACE4_* permission mask
++ *
++ * See richacl_masks_to_mode().
++ */
++static int
++richacl_mask_to_mode(unsigned int mask)
++{
++	int mode = 0;
++
++	if (mask & ACE4_POSIX_MODE_READ)
++		mode |= MAY_READ;
++	if (mask & ACE4_POSIX_MODE_WRITE)
++		mode |= MAY_WRITE;
++	if (mask & ACE4_POSIX_MODE_EXEC)
++		mode |= MAY_EXEC;
++
++	return mode;
++}
++
++/**
++ * richacl_masks_to_mode  -  compute the file permission bits from the file masks
++ *
++ * When setting a richacl, we set the file permission bits to indicate maximum
++ * permissions: for example, we set the Write permission when a mask contains
++ * ACE4_APPEND_DATA even if it does not also contain ACE4_WRITE_DATA.
++ *
++ * Permissions which are not in ACE4_POSIX_MODE_READ, ACE4_POSIX_MODE_WRITE, or
++ * ACE4_POSIX_MODE_EXEC cannot be represented in the file permission bits.
++ * Such permissions can still be effective, but not for new files or after a
++ * chmod(), and only if they were set explicitly, for example, by setting a
++ * richacl.
++ */
++int
++richacl_masks_to_mode(const struct richacl *acl)
++{
++	return richacl_mask_to_mode(acl->a_owner_mask) << 6 |
++	       richacl_mask_to_mode(acl->a_group_mask) << 3 |
++	       richacl_mask_to_mode(acl->a_other_mask);
++}
++EXPORT_SYMBOL_GPL(richacl_masks_to_mode);
++
++/**
++ * richacl_mode_to_mask  - compute a file mask from the lowest three mode bits
++ *
++ * When the file permission bits of a file are set with chmod(), this specifies
++ * the maximum permissions that processes will get.  All permissions beyond
++ * that will be removed from the file masks, and become ineffective.
++ *
++ * We also add in the permissions which are always allowed no matter what the
++ * acl says.
++ */
++unsigned int
++richacl_mode_to_mask(mode_t mode)
++{
++	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
++
++	if (mode & MAY_READ)
++		mask |= ACE4_POSIX_MODE_READ;
++	if (mode & MAY_WRITE)
++		mask |= ACE4_POSIX_MODE_WRITE;
++	if (mode & MAY_EXEC)
++		mask |= ACE4_POSIX_MODE_EXEC;
++
++	return mask;
++}
++
++/**
++ * richacl_want_to_mask  - convert the iop->permission want argument to a mask
++ * @want:	@want argument of the permission inode operation
++ *
++ * When checking for append, @want is (MAY_WRITE | MAY_APPEND).
++ *
++ * Richacls use the iop->may_create and iop->may_delete hooks which are
++ * used for checking if creating and deleting files is allowed.  These hooks do
++ * not use richacl_want_to_mask(), so we do not have to deal with mapping
++ * MAY_WRITE to ACE4_ADD_FILE, ACE4_ADD_SUBDIRECTORY, and ACE4_DELETE_CHILD
++ * here.
++ */
++unsigned int
++richacl_want_to_mask(int want)
++{
++	unsigned int mask = 0;
++
++	if (want & MAY_READ)
++		mask |= ACE4_READ_DATA;
++	if (want & (MAY_APPEND |
++		    MAY_CREATE_FILE | MAY_CREATE_DIR |
++		    MAY_DELETE_CHILD | MAY_DELETE_SELF |
++		    MAY_TAKE_OWNERSHIP | MAY_CHMOD | MAY_SET_TIMES)) {
++		if (want & MAY_APPEND)
++			mask |= ACE4_APPEND_DATA;
++		else if (want & MAY_DELETE_SELF)
++			mask |= ACE4_DELETE;
++		else if (want & MAY_TAKE_OWNERSHIP)
++			mask |= ACE4_WRITE_OWNER;
++		else if (want & MAY_CHMOD)
++			mask |= ACE4_WRITE_ACL;
++		else if (want & MAY_SET_TIMES)
++			mask |= ACE4_WRITE_ATTRIBUTES;
++		else {
++			if (want & MAY_CREATE_FILE)
++				mask |= ACE4_ADD_FILE;
++			if (want & MAY_CREATE_DIR)
++				mask |= ACE4_ADD_SUBDIRECTORY;
++			if (want & MAY_DELETE_CHILD)
++				mask |= ACE4_DELETE_CHILD;
++		}
++	} else if (want & MAY_WRITE)
++		mask |= ACE4_WRITE_DATA;
++	if (want & MAY_EXEC)
++		mask |= ACE4_EXECUTE;
++
++	return mask;
++}
++EXPORT_SYMBOL_GPL(richacl_want_to_mask);
++
++/**
+  * richace_is_same_identifier  -  are both identifiers the same?
   */
--static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
-+static int may_delete(struct inode *dir, struct dentry *victim,
-+		      int isdir, int replace)
- {
--	int error;
-+	int mask, error, is_sticky;
-+	struct inode *inode = victim->d_inode;
+ int
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index b0472f1..399dbc9 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -117,6 +117,49 @@ struct richacl {
+ 	ACE4_WRITE_OWNER |				\
+ 	ACE4_SYNCHRONIZE)
  
--	if (!victim->d_inode)
-+	if (!inode)
- 		return -ENOENT;
++/*
++ * The POSIX permissions are supersets of the following NFSv4 permissions:
++ *
++ *  - MAY_READ maps to READ_DATA or LIST_DIRECTORY, depending on the type
++ *    of the file system object.
++ *
++ *  - MAY_WRITE maps to WRITE_DATA or ACE4_APPEND_DATA for files, and to
++ *    ADD_FILE, ACE4_ADD_SUBDIRECTORY, or ACE4_DELETE_CHILD for directories.
++ *
++ *  - MAY_EXECUTE maps to ACE4_EXECUTE.
++ *
++ *  (Some of these NFSv4 permissions have the same bit values.)
++ */
++#define ACE4_POSIX_MODE_READ (			\
++		ACE4_READ_DATA |		\
++		ACE4_LIST_DIRECTORY)
++#define ACE4_POSIX_MODE_WRITE (			\
++		ACE4_WRITE_DATA |		\
++		ACE4_ADD_FILE |			\
++		ACE4_APPEND_DATA |		\
++		ACE4_ADD_SUBDIRECTORY |		\
++		ACE4_DELETE_CHILD)
++#define ACE4_POSIX_MODE_EXEC ACE4_EXECUTE
++#define ACE4_POSIX_MODE_ALL (			\
++		ACE4_POSIX_MODE_READ |		\
++		ACE4_POSIX_MODE_WRITE |		\
++		ACE4_POSIX_MODE_EXEC)
++/*
++ * These permissions are always allowed
++ * no matter what the acl says.
++ */
++#define ACE4_POSIX_ALWAYS_ALLOWED (	\
++		ACE4_SYNCHRONIZE |	\
++		ACE4_READ_ATTRIBUTES |	\
++		ACE4_READ_ACL)
++/*
++ * The owner is implicitly granted
++ * these permissions under POSIX.
++ */
++#define ACE4_POSIX_OWNER_ALLOWED (		\
++		ACE4_WRITE_ATTRIBUTES |		\
++		ACE4_WRITE_OWNER |		\
++		ACE4_WRITE_ACL)
+ /**
+  * richacl_get  -  grab another reference to a richacl handle
+  */
+@@ -241,5 +284,8 @@ extern struct richacl *richacl_alloc(int);
+ extern int richace_is_same_identifier(const struct richace *,
+ 				      const struct richace *);
+ extern int richace_set_who(struct richace *, const char *);
++extern int richacl_masks_to_mode(const struct richacl *);
++extern unsigned int richacl_mode_to_mask(mode_t);
++extern unsigned int richacl_want_to_mask(int);
  
- 	BUG_ON(victim->d_parent->d_inode != dir);
- 	audit_inode_child(victim, dir);
- 
--	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
-+	mask = MAY_WRITE | MAY_EXEC | MAY_DELETE_CHILD;
-+	if (replace)
-+		mask |= S_ISDIR(inode->i_mode) ?
-+			MAY_CREATE_DIR : MAY_CREATE_FILE;
-+	is_sticky = check_sticky(dir, inode);
-+	error = inode_permission(dir, mask);
-+	if ((error || is_sticky) && IS_RICHACL(inode) &&
-+	    !inode_permission(dir, mask & ~(MAY_WRITE | MAY_DELETE_CHILD)) &&
-+	    !inode_permission(inode, MAY_DELETE_SELF))
-+		error = 0;
-+	else if (!error && is_sticky && !capable(CAP_FOWNER))
-+		error = -EPERM;
- 	if (error)
- 		return error;
- 	if (IS_APPEND(dir))
- 		return -EPERM;
--	if (check_sticky(dir, victim->d_inode)||IS_APPEND(victim->d_inode)||
--	    IS_IMMUTABLE(victim->d_inode) || IS_SWAPFILE(victim->d_inode))
-+	if (IS_APPEND(inode) || IS_IMMUTABLE(inode) || IS_SWAPFILE(inode))
- 		return -EPERM;
- 	if (isdir) {
--		if (!S_ISDIR(victim->d_inode->i_mode))
-+		if (!S_ISDIR(inode->i_mode))
- 			return -ENOTDIR;
- 		if (IS_ROOT(victim))
- 			return -EBUSY;
--	} else if (S_ISDIR(victim->d_inode->i_mode))
-+	} else if (S_ISDIR(inode->i_mode))
- 		return -EISDIR;
- 	if (IS_DEADDIR(dir))
- 		return -ENOENT;
-@@ -2824,7 +2836,7 @@ void dentry_unhash(struct dentry *dentry)
- 
- int vfs_rmdir(struct inode *dir, struct dentry *dentry)
- {
--	int error = may_delete(dir, dentry, 1);
-+	int error = may_delete(dir, dentry, 1, 0);
- 
- 	if (error)
- 		return error;
-@@ -2911,7 +2923,7 @@ SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
- 
- int vfs_unlink(struct inode *dir, struct dentry *dentry)
- {
--	int error = may_delete(dir, dentry, 0);
-+	int error = may_delete(dir, dentry, 0, 0);
- 
- 	if (error)
- 		return error;
-@@ -3304,14 +3316,14 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	if (old_dentry->d_inode == new_dentry->d_inode)
-  		return 0;
-  
--	error = may_delete(old_dir, old_dentry, is_dir);
-+	error = may_delete(old_dir, old_dentry, is_dir, 0);
- 	if (error)
- 		return error;
- 
- 	if (!new_dentry->d_inode)
- 		error = may_create(new_dir, new_dentry, is_dir);
- 	else
--		error = may_delete(new_dir, new_dentry, is_dir);
-+		error = may_delete(new_dir, new_dentry, is_dir, 1);
- 	if (error)
- 		return error;
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a86afc0..6a6e017 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -64,6 +64,8 @@ struct inodes_stat_t {
- #define MAY_CHDIR 64
- #define MAY_CREATE_FILE 128
- #define MAY_CREATE_DIR 256
-+#define MAY_DELETE_CHILD 512
-+#define MAY_DELETE_SELF 1024
- 
- /*
-  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
+ #endif /* __RICHACL_H */
 -- 
 1.7.1
 
