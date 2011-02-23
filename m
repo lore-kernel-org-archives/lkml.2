@@ -1,138 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab1BWU0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:26:23 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34377 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab1BWU0U (ORCPT
+	id S1755785Ab1BWU3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:29:12 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:50931 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1BWU3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:26:20 -0500
-Message-ID: <4D656D1A.7030006@kernel.org>
-Date: Wed, 23 Feb 2011 12:24:58 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Wed, 23 Feb 2011 15:29:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=pS1oTvMyWL6cZloaWUcYtfOhNfP7YKDn9q3jygGHrCPTnFBOcTSxTIBH25SUzCUAeF
+         vQHmsJKjZFstJ2SoP4Lw==
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: questions about init_memory_mapping_high()
-References: <20110223171945.GI26065@htj.dyndns.org>
-In-Reply-To: <20110223171945.GI26065@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D656D57.0076,ss=1,fgs=0
+In-Reply-To: <AANLkTinjhY3oiFTq2xq4fwQ-mtLZ8ph435+nc5irM7wZ@mail.gmail.com>
+References: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
+ <20110223015320.13068.77428.stgit@mike.mtv.corp.google.com> <AANLkTinjhY3oiFTq2xq4fwQ-mtLZ8ph435+nc5irM7wZ@mail.gmail.com>
+From: Mike Waychison <mikew@google.com>
+Date: Wed, 23 Feb 2011 12:28:46 -0800
+Message-ID: <AANLkTi=+-Wc0bWdpvR+X6UszLf7MXKYgi8Oo6anN-jR8@mail.gmail.com>
+Subject: Re: [PATCH v2 2/5] firmware: Basic dmi-sysfs support
+To: Tony Luck <tony.luck@intel.com>
+Cc: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Robert Lippert <rlippert@google.com>, Jon Mayer <jonmayer@google.com>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
+        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
+Content-Type: multipart/mixed; boundary=000e0cd2bd1ccb90e6049cf8f2df
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2011 09:19 AM, Tejun Heo wrote:
-> Hello, guys.
-> 
-> I've been looking at init_memory_mapping_high() added by commit
-> 1411e0ec31 (x86-64, numa: Put pgtable to local node memory) and I got
-> curious about several things.
-> 
-> 1. The only rationale given in the commit description is that a
->    RED-PEN is killed, which was the following.
-> 
-> 	/*
-> 	 * RED-PEN putting page tables only on node 0 could
-> 	 * cause a hotspot and fill up ZONE_DMA. The page tables
-> 	 * need roughly 0.5KB per GB.
-> 	 */
-> 
->    This already wasn't true with top-down memblock allocation.
-> 
->    The 0.5KB per GiB comment is for 32bit w/ 3 level mapping.  On
->    64bit, it's ~4KiB per GiB when using 2MiB mappings and, well, very
->    small per GiB if 1GiB mapping is used.  Even with 2MiB mapping,
->    1TiB mapping would only be 4MiB.  Under ZONE_DMA, this could be
->    problematic but with top-down this can't be a problem in any
->    realistic way in foreseeable future.
+--000e0cd2bd1ccb90e6049cf8f2df
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-before that patch set:
-page table for [0, 4g) is just under and near 512M.
-page table for [4g, 128) is just under and near 2g ( assume 0-2g is ram under 4g)
+On Wed, Feb 23, 2011 at 11:43 AM, Tony Luck <tony.luck@intel.com> wrote:
+> On Tue, Feb 22, 2011 at 5:53 PM, Mike Waychison <mikew@google.com> wrote:
+>> +static void __init dmi_sysfs_register_handle(const struct dmi_header *d=
+h,
+>> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =A0 =A0 =A0 =A0void *_ret)
+>> +{
+>
+> I'm seeing some unaligned references from this function
+> on ia64. =A0Code is loading a 2-byte value from an odd
+> address. We are dereferencing "dh", so looking at the
+> dmi_header definition, I'd have thought that we must
+> be touching dh->handle:
+>
+> struct dmi_header {
+> =A0 =A0 =A0 =A0u8 type;
+> =A0 =A0 =A0 =A0u8 length;
+> =A0 =A0 =A0 =A0u16 handle;
+> };
+>
+> I don't see any code in this function that does this,
+> so I assume there is some inlining or macro stuff
+> happening.
 
-first patch in the patch set will
-page table for [0, 4g) is just under and near 2g.( assume 0-2g is ram under 4g)
-page table for [4g, 128) is just under and near 128g 
+Ya, I don't think there is anything that guarantees that dmi_header is
+aligned.   The access is probably the struct copy I did here:
 
-so top down could put most page table on last node.
+        /* Set the key */
+        entry->dh =3D *dh;
 
-for debug purpose case, 2M and 1G page could be disabled.
+What if we changed that guy to use memcpy?  We'd probably need to
+memcpy the dmi_system_event_log as well.  Patch attached (applies on
+top of the entire patchset).
 
-code excerpt from init_memory_mapping()
+--000e0cd2bd1ccb90e6049cf8f2df
+Content-Type: application/octet-stream; name=patch
+Content-Disposition: attachment; filename=patch
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gkip513f0
 
-        printk(KERN_INFO "init_memory_mapping: %016lx-%016lx\n", start, end);
-
-#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
-        /*
-         * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
-         * This will simplify cpa(), which otherwise needs to support splitting
-         * large pages into small in interrupt context, etc.
-         */
-        use_pse = use_gbpages = 0;
-#else
-        use_pse = cpu_has_pse;
-        use_gbpages = direct_gbpages;
-#endif
-
-
-> 
-> 2. In most cases, the kernel mapping ends up using 1GiB mappings and
->    when using 1GiB mappings, a single second level table would cover
->    512GiB of memory.  IOW, little, if any, is gained by trying to
->    allocate the page table on node local memory when 1GiB mappings are
->    used, they end up sharing the same page somewhere anyway.
-> 
->    I guess this was the reason why the commit message showed usage of
->    2MiB mappings so that each node would end up with their own third
->    level page tables.  Is this something we need to optimize for?  I
->    don't recall seeing recent machines which don't use 1GiB pages for
->    the linear mapping.  Are there NUMA machines which can't use 1GiB
->    mappings?
-> 
->    Or was this for the future where we would be using a lot more than
->    512GiB of memory?  If so, wouldn't that be a bit over-reaching?
->    Wouldn't we be likely to have 512GiB mappings if we get to a point
->    where NUMA locality of such mappings actually become a problem?
-
-
-till now:
-amd 64 cpu does support 1gb page.
-
-Intel CPU Nehalem-EX does not. and several vendors do provide 8 sockets
-NUMA system with 1024g and 2048g RAM
-
-cpu after Nehalem-EX looks support 1gb page.
-
-
-
-> 
-> 3. The new code creates linear mapping only for memory regions where
->    e820 actually says there is memory as opposed to mapping from base
->    to top.  Again, I'm not sure what the intention of this change was.
->    Having larger mappings over holes is much cheaper than having to
->    break down the mappings into smaller sized mappings around the
->    holes both in terms of memory and run time overhead.  Why would we
->    want to match the linear address mapping to the e820 map exactly?
-
-we don't need to map those holes if there is any.
-
-for hotplug case, they should map new added memory later.
-
-> 
-> Also, Yinghai, can you please try to write commit descriptions with
-> more details?  It really sucks for other people when they have to
-> guess what the actual changes and underlying intentions are.  The
-> commit adding init_memory_mapping_high() is very anemic on details
-> about how the behavior changes and the only intention given there is
-> RED-PEN removal even which is largely a miss.
-
-i don't know what you are talking about. that changelog is clear enough.
-
-Yinghai
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZmlybXdhcmUvZG1pLXN5c2ZzLmMgYi9kcml2ZXJzL2Zpcm13
+YXJlL2RtaS1zeXNmcy5jCmluZGV4IGE1YWZkODAuLmViMjZkNjIgMTAwNjQ0Ci0tLSBhL2RyaXZl
+cnMvZmlybXdhcmUvZG1pLXN5c2ZzLmMKKysrIGIvZHJpdmVycy9maXJtd2FyZS9kbWktc3lzZnMu
+YwpAQCAtMjYzLDIwICsyNjMsMTYgQEAgc3RydWN0IGRtaV9zeXN0ZW1fZXZlbnRfbG9nIHsKIAl1
+OAlzdXBwb3J0ZWRfbG9nX3R5cGVfZGVzY3JpcHRvc1swXTsKIH0gX19wYWNrZWQ7CiAKLXN0YXRp
+YyBjb25zdCBzdHJ1Y3QgZG1pX3N5c3RlbV9ldmVudF9sb2cgKnRvX3NlbChjb25zdCBzdHJ1Y3Qg
+ZG1pX2hlYWRlciAqZGgpCi17Ci0JcmV0dXJuIChjb25zdCBzdHJ1Y3QgZG1pX3N5c3RlbV9ldmVu
+dF9sb2cgKilkaDsKLX0KLQogI2RlZmluZSBETUlfU1lTRlNfU0VMX0ZJRUxEKF9maWVsZCkgXAog
+c3RhdGljIHNzaXplX3QgZG1pX3N5c2ZzX3NlbF8jI19maWVsZChzdHJ1Y3QgZG1pX3N5c2ZzX2Vu
+dHJ5ICplbnRyeSwgXAogCQkJCSAgICAgIGNvbnN0IHN0cnVjdCBkbWlfaGVhZGVyICpkaCwgXAog
+CQkJCSAgICAgIGNoYXIgKmJ1ZikgXAogeyBcCi0JY29uc3Qgc3RydWN0IGRtaV9zeXN0ZW1fZXZl
+bnRfbG9nICpzZWwgPSB0b19zZWwoZGgpOyBcCi0JaWYgKHNpemVvZigqc2VsKSA+IGRtaV9lbnRy
+eV9sZW5ndGgoZGgpKSBcCisJc3RydWN0IGRtaV9zeXN0ZW1fZXZlbnRfbG9nIHNlbDsgXAorCWlm
+IChzaXplb2Yoc2VsKSA+IGRtaV9lbnRyeV9sZW5ndGgoZGgpKSBcCiAJCXJldHVybiAtRUlPOyBc
+Ci0JcmV0dXJuIHNwcmludGYoYnVmLCAiJXVcbiIsIHNlbC0+X2ZpZWxkKTsgXAorCW1lbWNweSgm
+c2VsLCBkaCwgc2l6ZW9mKHNlbCkpOyBcCisJcmV0dXJuIHNwcmludGYoYnVmLCAiJXVcbiIsIHNl
+bC5fZmllbGQpOyBcCiB9IFwKIHN0YXRpYyBETUlfU1lTRlNfTUFQUEVEX0FUVFIoc2VsLCBfZmll
+bGQpCiAKQEAgLTQwMywyNiArMzk5LDI4IEBAIHN0YXRpYyBzc2l6ZV90IGRtaV9zZWxfcmF3X3Jl
+YWRfaGVscGVyKHN0cnVjdCBkbWlfc3lzZnNfZW50cnkgKmVudHJ5LAogCQkJCSAgICAgICB2b2lk
+ICpfc3RhdGUpCiB7CiAJc3RydWN0IGRtaV9yZWFkX3N0YXRlICpzdGF0ZSA9IF9zdGF0ZTsKLQlj
+b25zdCBzdHJ1Y3QgZG1pX3N5c3RlbV9ldmVudF9sb2cgKnNlbCA9IHRvX3NlbChkaCk7CisJc3Ry
+dWN0IGRtaV9zeXN0ZW1fZXZlbnRfbG9nIHNlbDsKIAotCWlmIChzaXplb2YoKnNlbCkgPiBkbWlf
+ZW50cnlfbGVuZ3RoKGRoKSkKKwlpZiAoc2l6ZW9mKHNlbCkgPiBkbWlfZW50cnlfbGVuZ3RoKGRo
+KSkKIAkJcmV0dXJuIC1FSU87CiAKLQlzd2l0Y2ggKHNlbC0+YWNjZXNzX21ldGhvZCkgeworCW1l
+bWNweSgmc2VsLCBkaCwgc2l6ZW9mKHNlbCkpOworCisJc3dpdGNoIChzZWwuYWNjZXNzX21ldGhv
+ZCkgewogCWNhc2UgRE1JX1NFTF9BQ0NFU1NfTUVUSE9EX0lPODoKIAljYXNlIERNSV9TRUxfQUND
+RVNTX01FVEhPRF9JTzJ4ODoKIAljYXNlIERNSV9TRUxfQUNDRVNTX01FVEhPRF9JTzE2OgotCQly
+ZXR1cm4gZG1pX3NlbF9yYXdfcmVhZF9pbyhlbnRyeSwgc2VsLCBzdGF0ZS0+YnVmLAorCQlyZXR1
+cm4gZG1pX3NlbF9yYXdfcmVhZF9pbyhlbnRyeSwgJnNlbCwgc3RhdGUtPmJ1ZiwKIAkJCQkJICAg
+c3RhdGUtPnBvcywgc3RhdGUtPmNvdW50KTsKIAljYXNlIERNSV9TRUxfQUNDRVNTX01FVEhPRF9Q
+SFlTMzI6Ci0JCXJldHVybiBkbWlfc2VsX3Jhd19yZWFkX3BoeXMzMihlbnRyeSwgc2VsLCBzdGF0
+ZS0+YnVmLAorCQlyZXR1cm4gZG1pX3NlbF9yYXdfcmVhZF9waHlzMzIoZW50cnksICZzZWwsIHN0
+YXRlLT5idWYsCiAJCQkJCSAgICAgICBzdGF0ZS0+cG9zLCBzdGF0ZS0+Y291bnQpOwogCWNhc2Ug
+RE1JX1NFTF9BQ0NFU1NfTUVUSE9EX0dQTlY6CiAJCXByX2luZm8oImRtaS1zeXNmczogR1BOViBz
+dXBwb3J0IG1pc3NpbmcuXG4iKTsKIAkJcmV0dXJuIC1FSU87CiAJZGVmYXVsdDoKIAkJcHJfaW5m
+bygiZG1pLXN5c2ZzOiBVbmtub3duIGFjY2VzcyBtZXRob2QgJTAyeFxuIiwKLQkJCXNlbC0+YWNj
+ZXNzX21ldGhvZCk7CisJCQlzZWwuYWNjZXNzX21ldGhvZCk7CiAJCXJldHVybiAtRUlPOwogCX0K
+IH0KQEAgLTU5NSw3ICs1OTMsNyBAQCBzdGF0aWMgdm9pZCBfX2luaXQgZG1pX3N5c2ZzX3JlZ2lz
+dGVyX2hhbmRsZShjb25zdCBzdHJ1Y3QgZG1pX2hlYWRlciAqZGgsCiAJfQogCiAJLyogU2V0IHRo
+ZSBrZXkgKi8KLQllbnRyeS0+ZGggPSAqZGg7CisJbWVtY3B5KCZlbnRyeS0+ZGgsIGRoLCBzaXpl
+b2YoKmRoKSk7CiAJZW50cnktPmluc3RhbmNlID0gaW5zdGFuY2VfY291bnRzW2RoLT50eXBlXSsr
+OwogCWVudHJ5LT5wb3NpdGlvbiA9IHBvc2l0aW9uX2NvdW50Kys7CiAK
+--000e0cd2bd1ccb90e6049cf8f2df--
