@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1BWPwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:52:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54263 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754278Ab1BWPwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:52:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,212,1297065600"; 
-   d="scan'208";a="712272392"
-Message-ID: <4D652D42.4040801@linux.intel.com>
-Date: Wed, 23 Feb 2011 07:52:34 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1754449Ab1BWPyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:54:09 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:59637 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab1BWPyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 10:54:08 -0500
+Date: Wed, 23 Feb 2011 09:53:29 -0600
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
+Subject: Re: User namespaces and keys
+Message-ID: <20110223155328.GA21266@peq.hallyn.com>
+References: <20110223135814.GA1859@mail.hallyn.com>
+ <20110217150224.GA26334@mail.hallyn.com>
+ <29677.1298462729@redhat.com>
+ <890.1298473574@redhat.com>
+ <m162sasqj6.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        richard.purdie@linuxfoundation.org
-Subject: Re: [PATCH 2/2] sched: allow users with rtprio rlimit to change from
- SCHED_IDLE policy
-References: <1298408674-3130-1-git-send-email-dvhart@linux.intel.com>	 <1298408674-3130-3-git-send-email-dvhart@linux.intel.com>	 <1298458989.2217.361.camel@twins>  <20110223111354.GB7448@elte.hu> <1298459826.2217.363.camel@twins>
-In-Reply-To: <1298459826.2217.363.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m162sasqj6.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2011 03:17 AM, Peter Zijlstra wrote:
-> On Wed, 2011-02-23 at 12:13 +0100, Ingo Molnar wrote:
->> * Peter Zijlstra<peterz@infradead.org>  wrote:
->>
->>> On Tue, 2011-02-22 at 13:04 -0800, Darren Hart wrote:
->>>> As it stands, users with rtprio rlimit permissions can change their policy from
->>>> SCHED_OTHER to SCHED_FIFO and back. They can change to SCHED_IDLE, but not back
->>>> to SCHED_FIFO. If they have the rtprio permission, they should be able to. Once
->>>> in SCHED_FIFO, they could go back to SCHED_OTHER. This patch allows users with
->>>> rtprio permission to change out of SCHED_IDLE.
->>>>
->>>
->>> Ingo, can you remember the rationale for this?
->>>
->>> The fact is that SCHED_IDLE is very near nice-20, and we can do:
->>>
->>> peterz@twins:~$ renice 5 -p $$
->>> 1867: old priority 0, new priority 5
->>> peterz@twins:~$ renice 0 -p $$
->>> 1867: old priority 5, new priority 0
->>>
->>> Which would suggest that we should be able to return to SCHED_OTHER
->>> RLIMIT_NICE-20.
->>
->> I dont remember anything subtle there - most likely we just forgot about that spot
->> when adding RLIMIT_RTPRIO support.
->
-> Ah, I was arguing we should allow it regardless of RLIMIT_RTPRIO, based
-> on RLIMIT_NICE, it is after all a change to SCHED_OTHER, not
-> SCHED_FIFO/RR.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> David Howells <dhowells@redhat.com> writes:
+> 
+> > Serge E. Hallyn <serge@hallyn.com> wrote:
+> >
+> >> > I guess we need to look at how to mix keys and namespaces again.
+> >> 
+> >> From strictly kernel pov, at the moment, keys are strictly usable only
+> >> by the user in your own user namespace.
+> >
+> > I'm not sure that's currently completely true.  Key quota maintenance is
+> > namespaced, and the key's owner UID/GID belong to that namespace, so that's
+> > okay, but:
+> >
+> >  (*) key_task_permission() does not distinguish UIDs and GIDs from different
+> >      namespaces.
+> >
+> >  (*) A key can be referred to by its serial number, no matter whose namespace
+> >      it is in, and will yield up its given UID/GID, even if these aren't
+> >      actually meaningful in your namespace.
+> >
+> >      This means request_key() can successfully upcall at the moment.
+> >
+> > I wonder if I should make the following changes:
+> >
+> >  (1) If the key and the accessor are in different user namespaces, then skip
+> >      the UID and GID comparisons in key_task_permission().  That means that to
+> >      be able to access the key you'd have to possess the key and the key would
+> >      have to grant you Possessor access, or the key would have to grant you
+> >      Other access.
+> >
+> >  (2) If the key and someone viewing the key description are in different
+> >      namespaces, then indicate that the UID and the GID are -1, irrespective of
+> >      the actual values.
+> >
+> >  (3) When an upcall is attempting to instantiate a key, it is allowed to access
+> >      the keys of requestor using the requestor's credentials (UID, GID, groups,
+> >      security label).  Ensure that this will be done in the requestor's user
+> >      namespace.
+> >
+> >      Nothing should need to be done here, since search_process_keyrings()
+> >      switches to the requestor's creds.
+> >
+> > Oh, and are security labels user-namespaced?
+> 
+> Not at this time.  The user namespace as currently merged is little more
+> than a place holder for a proper implementation.  Serge is busily
+> fleshing out that proper implementation.
+> 
+> Until we reach the point where all checks that have historically been
+> "if (uid1 == uid2)" become "if ((uidns1 == uidns2) && (uid1 == uid2))"
+> there will be problems.
+> 
+> The security labels and probably lsm's in general need to be per user
+> namespace but we simply have not gotten that far.  For the short term I
+> will be happy when we get a minimally usable user namespace.
 
-So we need an OR test of RLIMIT_NICE | RLIMIT_RTPRIO ? The reason I keep 
-coming back to RTPRIO is it allows the user to change to 
-SCHED_(FIFO|RR), and from there they can change to anything they want - 
-so why force two steps? Perhaps the argument is to keep the meaning of 
-the RLIMITs precise, and if you want to go from IDLE->OTHER you had 
-better properly set RLIMIT_NICE - maybe I just convinced myself.
+Note also that when Eric brought this up at the LSM mini-conf two or three
+years ago, there was pretty general, strong objection to the idea.
 
-Shall I respin the patch to reflect that?
+Like Eric says, I think that'll have to wait.  In the meantime, isolating
+user namespace sandboxes (or containers) using simple LSM configurations
+is a very good idea.
 
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+-serge
