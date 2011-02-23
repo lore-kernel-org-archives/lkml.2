@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab1BWW2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 17:28:12 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12326 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756104Ab1BWW2L (ORCPT
+	id S1756154Ab1BWWcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 17:32:17 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59258
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754461Ab1BWWcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 17:28:11 -0500
-Date: Wed, 23 Feb 2011 23:27:21 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-cc: Chuck Lever <chuck.lever@oracle.com>, Milton Miller <miltonm@bga.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, bfields@fieldses.org
-Subject: Re: [PATCH] Fix size argument to memset call in nfsacl_encode
-In-Reply-To: <alpine.LNX.2.00.1102232326130.28678@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1102232327010.28678@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102032012540.15101@swampdragon.chaosbits.net>  <1296761330.3015.22.camel@heimdal.trondhjem.org>  <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net>  <705C97E5-E273-45AA-9714-2BF409DE1322@oracle.com> 
- <1296763614.3015.26.camel@heimdal.trondhjem.org>  <67867FEF-6C10-4A35-8952-4EB56EAB79B9@oracle.com> <1296770110.12342.6.camel@heimdal.trondhjem.org> <alpine.LNX.2.00.1102232326130.28678@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 23 Feb 2011 17:32:15 -0500
+Date: Wed, 23 Feb 2011 14:32:52 -0800 (PST)
+Message-Id: <20110223.143252.28802031.davem@davemloft.net>
+To: jacmet@sunsite.dk
+Cc: shaharh@redhat.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@suse.de, netdev@vger.kernel.org
+Subject: Re: [PATCH-v2] Added support for usb ethernet (0x0fe6, 0x9700)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <87hbbwqein.fsf@macbook.be.48ers.dk>
+References: <20110222144110.GG2122@redhat.com>
+	<87hbbwqein.fsf@macbook.be.48ers.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011, Jesper Juhl wrote:
+From: Peter Korsgaard <jacmet@sunsite.dk>
+Date: Tue, 22 Feb 2011 16:23:44 +0100
 
-> On Thu, 3 Feb 2011, Trond Myklebust wrote:
+>>>>>> "Shahar" == Shahar Havivi <shaharh@redhat.com> writes:
 > 
-> > On Thu, 2011-02-03 at 15:29 -0500, Chuck Lever wrote: 
-> > > Sorry, I wasn't clear.  IMO, data that is destined for the network is an important case where we have to be careful about the rule of using either assignments or memset(), not both, when initializing a data structure.
-> > > 
-> > > If the compiler doesn't pack the fields in struct posix_acl, there is unused space between them.  Memory for acl2 comes from the stack, which contains arbitrary data when this function is invoked.  The areas between the structure fields are not affected by the variable assignments used here.  If the data in acl2 is then simply memcpy'd to the XDR buffer, that old stack data can possibly appear on the wire.
-> > > 
-> > > I agree that the current memset() is incorrect.  My conditional ACK was more about what happens in xdr_encode_array2() rather than how the posix_acl acl2 is initialized.  I think in that regard we are also safe, if the array encoding operates by data type rather than by simply doing a blanket memcpy.  See xdr_nfsace_encode().  It's always possible I misunderstood how ACEs are XDR encoded.
-> > 
-> > We shouldn't ever be memcopying entire structures directly to or from
-> > the XDR buffer, and as far as I know, the current code will always copy
-> > them element by element.
-> > 
-> Ok. So, could we merge the patch that kills the memcpy() ? 
+>  Shahar> The device is very similar to (0x0fe6, 0x8101),
+>  Shahar> And works well with dm9601 driver.
 > 
-I mean memset() of course. 
+>  Shahar> Signed-off-by: Shahar Havivi <shaharh@redhat.com>
+> 
+> Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Applied.
