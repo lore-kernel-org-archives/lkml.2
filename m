@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab1BWChy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 21:37:54 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:16707 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab1BWChx (ORCPT
+	id S1755984Ab1BWCkA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 21:40:00 -0500
+Received: from eddie.linux-mips.org ([78.24.191.182]:41101 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755809Ab1BWCj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 21:37:53 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 22 Feb 2011 21:37:28 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Dima Zavin <dima@android.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Kenneth Heitke <kheitke@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
-        tsoni@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        ARM PORT <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] msm: add single-wire serial bus interface (SSBI) driver
-In-reply-to: <8ya62sbli3z.fsf@huya.qualcomm.com>
-Message-id: <alpine.LFD.2.00.1102222049410.22028@xanadu.home>
-References: <1297989299-27320-1-git-send-email-kheitke@codeaurora.org>
- <1297989432.9680.50.camel@c-dwalke-linux.qualcomm.com>
- <4D5DC289.1090004@codeaurora.org>
- <1298054771.17758.1.camel@c-dwalke-linux.qualcomm.com>
- <AANLkTi=0Pxg09x8DdVDVy9Ur7r1dgB+4LM3q0hM4_8Rg@mail.gmail.com>
- <1298419839.17118.5.camel@m0nster> <8ya62sbli3z.fsf@huya.qualcomm.com>
+	Tue, 22 Feb 2011 21:39:59 -0500
+Date: Wed, 23 Feb 2011 02:39:58 +0000 (GMT)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Don Zickus <dzickus@redhat.com>
+cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        gorcunov@gmail.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] x86, NMI: Allow NMI reason io port (0x61) to be
+ processed on any CPU
+In-Reply-To: <1294348732-15030-6-git-send-email-dzickus@redhat.com>
+Message-ID: <alpine.LFD.2.00.1102230227010.31425@eddie.linux-mips.org>
+References: <1294348732-15030-1-git-send-email-dzickus@redhat.com> <1294348732-15030-6-git-send-email-dzickus@redhat.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Feb 2011, David Brown wrote:
+On Thu, 6 Jan 2011, Don Zickus wrote:
 
-> On Tue, Feb 22 2011, Daniel Walker wrote:
+> In original NMI handler, NMI reason io port (0x61) is only processed
+> on BSP.  This makes it impossible to hot-remove BSP.  To solve the
+> issue, a raw spinlock is used to allow the port to be processed on any
+> CPU.
 > 
-> > On Tue, 2011-02-22 at 12:47 -0800, Dima Zavin wrote:
-> >
-> >> What is the problem leaving it under arch/arm/mach-msm?
-> >
-> > Because it's a driver.
+> Originally-by: Huang Ying <ying.huang@intel.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  arch/x86/kernel/traps.c |   16 ++++++++++------
+>  1 files changed, 10 insertions(+), 6 deletions(-)
 > 
-> There are a lot of other drivers currently under various arch
-> subsystems.  
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 23f6ac0..613b3d2 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -402,13 +406,12 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+>  		return;
+>  
+> -	cpu = smp_processor_id();
+> -
+> -	/* Only the BSP gets external NMIs from the system. */
+> -	if (!cpu)
+> -		reason = get_nmi_reason();
+> +	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+> +	raw_spin_lock(&nmi_reason_lock);
+> +	reason = get_nmi_reason();
+>  
+>  	if (!(reason & NMI_REASON_MASK)) {
+> +		raw_spin_unlock(&nmi_reason_lock);
+>  		unknown_nmi_error(reason, regs);
+>  
+>  		return;
 
-And they are wrong.  Probably because of some historical reasons.
+ [Catching up with old e-mail...]
 
-> I'm not sure if a driver that is specific to only one arch
-> has a strong reason to be elsewhere in the kernel.
+ In line with the comment above that you're removing -- have you (or 
+anyone else) adjusted code elsewhere so that external NMIs are actually 
+delivered to processors other than the BSP?  I can't see such code in this 
+series nor an explanation as to why it wouldn't be needed.
 
-You'll find plenty of examples for that, far more than drivers in arch 
-specific directories.
+ For the record -- the piece of code above reflects our setup where the 
+LINT1 input is enabled and configured for the NMI delivery mode on the BSP 
+only and all the other processors have this line disabled in their local 
+APIC units.  If system NMIs are to be handled after the removal of the 
+BSP, then another processor has to be selected and configured for NMI 
+reception.  Alternatively, all local units could have their LINT1 input 
+enabled and arbitrate handling, although it would be quite disruptive as 
+all the processors would take the interrupt if it happened.  OTOH it would 
+be more fault-tolerant in the case of a CPU failure.  On a typical x86 box 
+the system NMI cannot be routed to an I/O APIC input.
 
-> If there was a possibility of there being other devices that used 
-> SSBI, it might make sense to put it elsewhere.  But, as far as I know, 
-> this device is only found on MSM chips.
-
-That doesn't matter.
-
-The main reasoning is that Linux has no stable internal API by design. 
-When large scale driver API changes happen, it is the responsibility of 
-the person doing that change to also fix up all the in-tree users of 
-that API.  And it is far more trouble for that person who probably has 
-no knowledge about msm to go and hunt for all scattered drivers 
-throughout the tree than it is for you to remember that all your drivers 
-are under linux/drivers/.
-
-And if someone else comes up with a SSBI interface, then it will be much 
-easier to notice the already existing driver if it is in the driver 
-directory rather than somewhere else in some unrelated (from that 
-person's pov) obscure directory.
-
-This was discussed in the past already.  I would have liked to provide a 
-link to some archived discussions (they do exist) but I can't find them 
-at the moment.
-
-> It seems kind of unusual to create an entirely new directory under
-> drivers to hold what will only ever be a single driver.
-
-Well, a couple examples exist already: drivers/dca, drivers/nfc, 
-drivers/sn, drivers/tc, drivers/vlynq, etc.  And if you expect to have 
-more oddball msm drivers then you can create a drivers/msm directory, 
-similar to the existing drivers/macintosh, drivers/parisc, drivers/s390, 
-drivers/sh, drivers/video/omap, drivers/video/omap2, etc.
-
-
-Nicolas
+  Maciej
