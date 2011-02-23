@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab1BWAjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 19:39:33 -0500
-Received: from fifo99.com ([67.223.236.141]:56083 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517Ab1BWAjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 19:39:32 -0500
-Subject: Re: [PATCH] msm: add single-wire serial bus interface (SSBI) driver
-From: Daniel Walker <dwalker@fifo99.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Dima Zavin <dima@android.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        Kenneth Heitke <kheitke@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
-        tsoni@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        ARM PORT <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-In-Reply-To: <8ya62sbli3z.fsf@huya.qualcomm.com>
-References: <1297989299-27320-1-git-send-email-kheitke@codeaurora.org>
-	 <1297989432.9680.50.camel@c-dwalke-linux.qualcomm.com>
-	 <4D5DC289.1090004@codeaurora.org>
-	 <1298054771.17758.1.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTi=0Pxg09x8DdVDVy9Ur7r1dgB+4LM3q0hM4_8Rg@mail.gmail.com>
-	 <1298419839.17118.5.camel@m0nster>  <8ya62sbli3z.fsf@huya.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Feb 2011 16:39:27 -0800
-Message-ID: <1298421567.17118.8.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755064Ab1BWBEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:04:50 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:17330 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751608Ab1BWBEr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 20:04:47 -0500
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Jesper Juhl <jj@chaosbits.net>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH linux-next 2/8] pch_uart: add spin_lock_init
+Date: Wed, 23 Feb 2011 10:03:13 +0900
+Message-Id: <1298422999-4050-2-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1298422999-4050-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1298422999-4050-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 16:17 -0800, David Brown wrote:
-> On Tue, Feb 22 2011, Daniel Walker wrote:
-> 
-> > On Tue, 2011-02-22 at 12:47 -0800, Dima Zavin wrote:
-> >
-> >> What is the problem leaving it under arch/arm/mach-msm?
-> >
-> > Because it's a driver.
-> 
-> There are a lot of other drivers currently under various arch
-> subsystems.  I'm not sure if a driver that is specific to only one arch
-> has a strong reason to be elsewhere in the kernel.  If there was a
-> possibility of there being other devices that used SSBI, it might make
-> sense to put it elsewhere.  But, as far as I know, this device is only
-> found on MSM chips.
+Currently, spin_lock is not initialized.
+Thus, add spin_lock_init().
 
-There are lots of arch specific drivers under drivers/ . In fact I'm
-sure there are more arch specific drivers under drivers/ than anyplace
-else. That's how we organize things in Linux.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/tty/serial/pch_uart.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> It seems kind of unusual to create an entirely new directory under
-> drivers to hold what will only ever be a single driver.
-
-Then put it under another directory.
-
-Daniel
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index bd5e980..9c631ab 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1369,6 +1369,8 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	priv->port.line = num++;
+ 	priv->trigger = PCH_UART_HAL_TRIGGER_M;
+ 
++	spin_lock_init(&priv->port.lock);
++
+ 	pci_set_drvdata(pdev, priv);
+ 	pch_uart_hal_request(pdev, fifosize, base_baud);
+ 
+-- 
+1.7.3.4
 
