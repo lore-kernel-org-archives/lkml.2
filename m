@@ -1,210 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab1BWVVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:21:40 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:52280 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab1BWVVh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:21:37 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Howells <dhowells@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
-References: <20110217150257.GA26395@mail.hallyn.com>
-	<20110217150224.GA26334@mail.hallyn.com> <3139.1298481393@redhat.com>
-Date: Wed, 23 Feb 2011 13:21:28 -0800
-In-Reply-To: <3139.1298481393@redhat.com> (David Howells's message of "Wed, 23
-	Feb 2011 17:16:33 +0000")
-Message-ID: <m1lj16ih0n.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1755951Ab1BWVYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:24:19 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:57157 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753254Ab1BWVYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 16:24:18 -0500
+Message-ID: <4D657AFB.4010501@sgi.com>
+Date: Wed, 23 Feb 2011 13:24:11 -0800
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18k3RmqBY1nl8bH/dw9Dw7CQSrLQoUj0SU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Howells <dhowells@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/9] Add a user_namespace as creator/owner of uts_namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] x86: Minimize SRAT messages
+References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024705.828947738@gulag1.americas.sgi.com> <alpine.DEB.2.00.1102191725150.27722@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1102191725150.27722@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
+[I was finally able to get some time on our large UV test system.]
 
-> Serge E. Hallyn <serge@hallyn.com> wrote:
->
->>  struct uts_namespace {
->>  	struct kref kref;
->>  	struct new_utsname name;
->> +	struct user_namespace *user_ns;
->>  };
->
-> If a uts_namespace belongs to a user_namespace, should CLONE_NEWUSER then
-> imply CLONE_NEWUTS?
->
-> Or is uts_namespace::user_ns more an implication that the set of users in
-> user_namespace are the only ones authorised to alter the uts data.
+Here are the stats testing on a system with 248 nodes, 606 EFI
+mem ranges, 1984 cores
 
-The later.
+after get_log_buff_early:  (17% overflow)
 
-> I presume that the uts_namespace of a process must be owned by one of the
-> user_namespaces in the alternating inheritance chain of namespaces and their
-> creators leading from current_user_ns() to init_user_ns.
->
-> With that in mind, looking at patch 3:
->
-> -	if (!capable(CAP_SYS_ADMIN))
-> +	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
->
-> what is it you're actually asking?  I presume it's 'does this user have
-> CAP_SYS_ADMIN capability over objects belonging to the uts_namespace's
-> user_namespace?'
+        [    0.000000] early log_buf free: -45723/262183(-17%)
+        [    0.000000] first line: : mem339: type=7, attr=0xf, range=[0x00000e6000000000-0x00000e6fff000000) (6552
 
-Yes.
+Here I enabled some cores that were disabled so now the system
+has 248 nodes, 606 EFI mem ranges, 2368 cores.
 
-> So, to look at the important bit of patch 2:
->
-> -int cap_capable(struct task_struct *tsk, const struct cred *cred, int cap,
-> -		int audit)
-> +int cap_capable(struct task_struct *tsk, const struct cred *cred,
-> +		struct user_namespace *targ_ns, int cap, int audit)
->  {
-> -	return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
-> +	for (;;) {
-> +		/* The creator of the user namespace has all caps. */
-> +		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
-> +			return 0;
-> +
-> +		/* Do we have the necessary capabilities? */
-> +		if (targ_ns == cred->user->user_ns)
-> +			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
-> +
-> +		/* Have we tried all of the parent namespaces? */
-> +		if (targ_ns == &init_user_ns)
-> +			return -EPERM;
-> +
-> +		/* If you have the capability in a parent user ns you have it
-> +		 * in the over all children user namespaces as well, so see
-> +		 * if this process has the capability in the parent user
-> +		 * namespace.
-> +		 */
-> +		targ_ns = targ_ns->creator->user_ns;
-> +	}
-> +
-> +	/* We never get here */
-> +	return -EPERM;
->  }
->
-> On entry, as we're called from ns_capable(), cred->user is the user that the
-> current process is running as, and, as such, may be in a separate namespace
-> from uts_namespace - which may itself be in a separate namespace from
-> init_user_ns.
->
-> So, assume for the sake of argument that there are three user_namespaces along
-> the chain from the calling process to the root, and that the uts_namespace
-> belongs to the middle one.
+after minimize-time-zero-msgs:  (5% overflow)
 
-So we have the nested stack of:
-user_ns3->creator->user_ns == user_ns2
-user_ns2->creator->user_ns == &init_user_ns
-uts_ns2->user_ns == user_ns2
+[0] early log_buf free: -15184/262172(-5%)
+[0] first line: [0x000000007226e000-0x0000000072271000) (0MB) <6>[0] EFI: mem67: type=3, attr=0
 
->
-> 		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
-> 			return 0;
->
-> Can never match because targ_ns->creator cannot be cred->user; even if the
-> uts_namespace belongs to our namespace, given that the creator lies outside
-> our namespace.
+Condensing the SRAT: PXM APIC messages resulted in 26% space free
+in the early log buffer...
 
-Initially we come in with targ_ns == user_ns2 and cred->user->user_ns in
-one of (user_ns3, user_ns2, or &init_user_ns).
+Was 2368 lines (for 2368 cores):
 
-targ_ns takes on values user_ns2 and &init_user_ns.
+ 779 [0] SRAT: PXM 0 -> APIC 0x0000 -> Node 0
+ 780 [0] SRAT: PXM 0 -> APIC 0x0002 -> Node 0
+ 781 [0] SRAT: PXM 0 -> APIC 0x0004 -> Node 0
+ ...
+ 3145 [0] SRAT: PXM 247 -> APIC 0x3df0 -> Node 247
+ 3146 [0] SRAT: PXM 247 -> APIC 0x3df2 -> Node 247
 
-So when targ_ns becomes &init_user_ns.  If the user in question is
-uts_ns2->user_ns->creator.  This check will indeed match.
+Now it's 248 lines (for 248 Nodes) (Nodes 0..191 have 10 core cpus.)
 
-> 		if (targ_ns == cred->user->user_ns)
-> 			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
->
-> Can only match if we are in the target user_namespace (ie. the one to which
-> uts_namespace belongs), whether or not we have CAP_SYS_ADMIN.
+ 777 [0] SRAT: Node 0: PXM:APIC 0:0 :2 :4 :16 :18 :32 :34 :36 :48 :50
+ 778 [0] SRAT: Node 1: PXM:APIC 1:64 :66 :68 :80 :82 :96 :98 :100 :112 :114
+ 779 [0] SRAT: Node 2: PXM:APIC 2:128 :130 :132 :144 :146 :160 :162 :164 :176 :178
+ ...
+ 968 [0] SRAT: Node 190: PXM:APIC 190:12160 :12162 :12164 :12176 :12178 :12192 :12194 :12196 :12208 :12210
+ 969 [0] SRAT: Node 191: PXM:APIC 191:12224 :12226 :12228 :12240 :12242 :12256 :12258 :12260 :12272 :12274
+ ...
+ 1023 [0] SRAT: Node 246: PXM:APIC 246:15744 :15746 :15748 :15760 :15778 :15780 :15792 :15794
+ 1024 [0] SRAT: Node 247: PXM:APIC 247:15808 :15810 :15812 :15826 :15840 :15844 :15856 :15858
 
-As before targ_ns takes on values of user_ns2 and &init_user_ns.
+[0] early log_buf free: 69649/192523(26%)
+[0] first line: <6>[0] Initializing cgroup subsys cpuset <6>[0] Initializing cgroup subsys cpu                                       
 
-Which means this check will match if we have CAP_SYS_ADMIN in
-&init_user_ns or in user_ns2.
+My question is is the above decimal satisfactory, or should it be hex as
+shown below?  (Which will add 8k bytes for the "0x" when there are 4096 cores
+but the hex values will be smaller.)
 
-> Which means that unless the uts_namespace belongs to our user_namespace, we
-> cannot change it.  Is that correct?
+ 821 [0] SRAT: Node 0: PXM:APIC 0:0x0 :0x2 :0x4 :0x10 :0x12 :0x20 :0x22 :0x24 :0x30 :0x32
+ 822 [0] SRAT: Node 1: PXM:APIC 1:0x40 :0x42 :0x44 :0x50 :0x52 :0x60 :0x62 :0x64 :0x70 :0x72
+ 823 [0] SRAT: Node 2: PXM:APIC 2:0x80 :0x82 :0x84 :0x90 :0x92 :0xa0 :0xa2 :0xa4 :0xb0 :0xb2
+...
+1011 [0] SRAT: Node 190: PXM:APIC 190:0x2f80 :0x2f82 :0x2f84 :0x2f90 :0x2f92 :0x2fa0 :0x2fa2 :0x2fa4 :0x2fb0 :0x2fb2
+1012 [0] SRAT: Node 191: PXM:APIC 191:0x2fc0 :0x2fc2 :0x2fc4 :0x2fd0 :0x2fd2 :0x2fe0 :0x2fe2 :0x2fe4 :0x2ff0 :0x2ff2
+...
+1067 [0] SRAT: Node 246: PXM:APIC 246:0x3d80 :0x3d82 :0x3d84 :0x3d90 :0x3da2 :0x3da4 :0x3db0 :0x3db2
+1068 [0] SRAT: Node 247: PXM:APIC 247:0x3dc0 :0x3dc2 :0x3dc4 :0x3dd2 :0x3de0 :0x3de4 :0x3df0 :0x3df2
 
-No.  If you are root in a parent namespace you can also change it.
+I will do some more study to see if affecting only these changes will
+be enough to not overflow the early log buffer in a max config system.
 
-> So ns_capable() restricts you to only doing interesting things to objects that
-> belong to a user_namespace if they are in your own user_namespace.  Is that
-> correct?
+(Btw, I have not figured out how to predict ahead of time that this
+APIC id is the last one on the Node to insert the '\n'.)
 
-No.  Root outside your user namespace is also allowed to do interesting
-things.
+Thanks,
+Mike
 
-> If that is so, is the loop required for ns_capable()?
-
-Yes.
-
-
-> Looking further at patch 2:
->
-> 	#define nsown_capable(cap) (ns_capable(current_user_ns(), (cap)))
->
-> Given what I've said above, I presume the loop isn't necessary here either.
->
->
-> I think you're using ns_capable() in two different ways:
->
->  (1) You're using it to see if a process has power over its descendents in a
->      user_namespace that can be traced back to a clone() that it did with
->      CLONE_NEWUSER.
->
->      For example, automatically granting a process permission to kill
->      descendents in a namespace it created.
->
->  (2) You're using it to see if a process can access objects that might be
->      outside its own user_namespace.
->
->      For example, setting the hostname.
->
-> Is it worth giving two different interfaces to make this clearer (even if they
-> actually do the same thing)?
->
->
-> Sorry if this seems rambly, but I'm trying to get my head round your
-> code.
-
-I am all for making that loop a little clearer, because it is something
-you have to pause and think about to understand but so far I don't think
-the loop is wrong, and it is simple.
-
-Eric
