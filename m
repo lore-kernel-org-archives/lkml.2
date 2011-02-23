@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab1BWPbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:31:51 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43827 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab1BWPa6 (ORCPT
+	id S1753887Ab1BWPeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:34:09 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63049 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab1BWPeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:30:58 -0500
-Date: Wed, 23 Feb 2011 10:30:52 -0500
+	Wed, 23 Feb 2011 10:34:08 -0500
+Date: Wed, 23 Feb 2011 10:33:30 -0500
 From: Eric B Munson <emunson@mgebm.net>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, akpm@osdl.org,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 3/5] pass pte size argument in to smaps_pte_entry()
-Message-ID: <20110223153052.GC2810@mgebm.net>
-References: <20110222015338.309727CA@kernel>
- <20110222015342.5DD9FC72@kernel>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v2] hugetlbfs: correct handling of negative input to
+ /proc/sys/vm/nr_hugepages
+Message-ID: <20110223153330.GF2810@mgebm.net>
+References: <4D6419C0.8080804@redhat.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L6iaP+gRLNZHKoI4"
+	protocol="application/pgp-signature"; boundary="9ADF8FXzFeE7X4jE"
 Content-Disposition: inline
-In-Reply-To: <20110222015342.5DD9FC72@kernel>
+In-Reply-To: <4D6419C0.8080804@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---L6iaP+gRLNZHKoI4
+--9ADF8FXzFeE7X4jE
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 21 Feb 2011, Dave Hansen wrote:
+On Tue, 22 Feb 2011, Petr Holasek wrote:
 
+> When user insert negative value into /proc/sys/vm/nr_hugepages it
+> will result
+> in the setting a random number of HugePages in system (can be easily show=
+ed
+> at /proc/meminfo output). This patch fixes the wrong behavior so that the
+> negative input will result in nr_hugepages value unchanged.
 >=20
-> This patch adds an argument to the new smaps_pte_entry()
-> function to let it account in things other than PAGE_SIZE
-> units.  I changed all of the PAGE_SIZE sites, even though
-> not all of them can be reached for transparent huge pages,
-> just so this will continue to work without changes as THPs
-> are improved.
+> v2: same fix was also done in hugetlb_overcommit_handler function
+>     as suggested by reviewers.
 >=20
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> Signed-off-by: Petr Holasek <pholasek@redhat.com>
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-Reviewed-and-tested-by: Eric B Munson <emunson@mgebm.net>
+Acked-by: Eric B Munson <emunson@mgebm.net>
 
---L6iaP+gRLNZHKoI4
+--9ADF8FXzFeE7X4jE
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 Content-Disposition: inline
@@ -58,13 +59,13 @@ Content-Disposition: inline
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJNZSgsAAoJEH65iIruGRnNfjQH/jigfBNihcGhJ6Z9ESvDkQ1C
-VxTUjpWt67zxTObErN/TYLn9zZv/MvG4m8+ZmYKesICyydXAqoo/2rjqsm6dUv05
-Tczv0gIcgih8XL9EG+TzzHqx4s5iky9DyRcqG4HOOOffa5CIB9BpytMNRu/e/Q5V
-i/Fy7qLLYD17wBCN7QZY1BtT+ENPUSvWtARDoizow5ps8v0LgtNEOxL75Qmii7pw
-R9TKiTFdrZjx0zwpszXx4QTWDsWortBg3PcQkuvIicMgb48EnvEdOod7TZlmeKpG
-NvdMp9DJ/O4CC+SblmVf2FwFYuMWD6UEJO1TXEodxQAyNijToMKyOxPq7M5P69I=
-=Sovd
+iQEcBAEBAgAGBQJNZSjKAAoJEH65iIruGRnNfmgIANcaLoAQV6ayXUnWTeYd1BtW
+xjf2c91jcxg+UMRNmpZEkQXVU03CfV4GZe/o9r1vXDTZTtUgMYpRcI+dhIC7X4+W
+IhiPQAB1I/J0E8vNvYfbj7J2GK7vvmMhM1du3DQyb44L5IsbNiaA13VfCrUqTS+g
+3Ls6SROHpQOc/Qf4EXsq0w6nrrlJfOFajLJ7LNA6EAd59Ze6mA0QaBrARyOmpjYe
+IPQZbPB5IKcy64+1rnTjrDgd9ba1ruhOKVsrb0q0u7z1LO7a+K9IhPMVpPNkydeS
+8bHUWdQCnH0NdHkWggTPdJac82e5JGWddcjoNi5JYx5/QqNLkWqIgVDA+kXg3hQ=
+=QDU0
 -----END PGP SIGNATURE-----
 
---L6iaP+gRLNZHKoI4--
+--9ADF8FXzFeE7X4jE--
