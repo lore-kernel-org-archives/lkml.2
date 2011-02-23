@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1BWEeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:34:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61703 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab1BWEeV (ORCPT
+	id S1754786Ab1BWEe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:34:28 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49850 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab1BWEeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:34:21 -0500
-Subject: [RFC PATCH 08/15] dt/spi: Eliminate users of of_platform_{,
+	Tue, 22 Feb 2011 23:34:25 -0500
+Subject: [RFC PATCH 09/15] dt/sound: Eliminate users of of_platform_{,
 	un}register_driver
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
         linux-kernel@vger.kernel.org, davem@davemloft.net
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Tue, 22 Feb 2011 21:34:16 -0700
-Message-ID: <20110223043416.20795.65181.stgit@localhost6.localdomain6>
+Date: Tue, 22 Feb 2011 21:34:21 -0700
+Message-ID: <20110223043421.20795.32153.stgit@localhost6.localdomain6>
 In-Reply-To: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,299 +26,374 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of users of of_platform_driver in drivers/spi.  The
+Get rid of users of of_platform_driver in drivers/sound.  The
 of_platform_{,un}register_driver functions are going away, so the
 users need to be converted to using the platform_bus_type directly.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/spi/mpc512x_psc_spi.c |    9 ++++-----
- drivers/spi/mpc52xx_psc_spi.c |    9 ++++-----
- drivers/spi/mpc52xx_spi.c     |    9 ++++-----
- drivers/spi/spi_fsl_espi.c    |   11 +++++------
- drivers/spi/spi_fsl_lib.c     |    3 +--
- drivers/spi/spi_fsl_lib.h     |    3 +--
- drivers/spi/spi_fsl_spi.c     |   11 +++++------
- drivers/spi/spi_ppc4xx.c      |    9 ++++-----
- 8 files changed, 28 insertions(+), 36 deletions(-)
+ sound/soc/fsl/fsl_dma.c          |    9 ++++-----
+ sound/soc/fsl/fsl_ssi.c          |    9 ++++-----
+ sound/soc/fsl/mpc5200_dma.c      |   24 +++++++++++-------------
+ sound/soc/fsl/mpc5200_psc_ac97.c |    9 ++++-----
+ sound/soc/fsl/mpc5200_psc_i2s.c  |    9 ++++-----
+ sound/sparc/amd7930.c            |    8 ++++----
+ sound/sparc/cs4231.c             |   16 ++++++++--------
+ sound/sparc/dbri.c               |    8 ++++----
+ 8 files changed, 43 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/spi/mpc512x_psc_spi.c b/drivers/spi/mpc512x_psc_spi.c
-index 77d9e7e..6a5b423 100644
---- a/drivers/spi/mpc512x_psc_spi.c
-+++ b/drivers/spi/mpc512x_psc_spi.c
-@@ -507,8 +507,7 @@ static int __devexit mpc512x_psc_spi_do_remove(struct device *dev)
- 	return 0;
- }
+diff --git a/sound/soc/fsl/fsl_dma.c b/sound/soc/fsl/fsl_dma.c
+index 4cf98c0..15dac0f 100644
+--- a/sound/soc/fsl/fsl_dma.c
++++ b/sound/soc/fsl/fsl_dma.c
+@@ -896,8 +896,7 @@ static struct snd_pcm_ops fsl_dma_ops = {
+ 	.pointer	= fsl_dma_pointer,
+ };
  
--static int __devinit mpc512x_psc_spi_of_probe(struct platform_device *op,
--					      const struct of_device_id *match)
-+static int __devinit mpc512x_psc_spi_of_probe(struct platform_device *op)
- {
- 	const u32 *regaddr_p;
- 	u64 regaddr64, size64;
-@@ -551,7 +550,7 @@ static struct of_device_id mpc512x_psc_spi_of_match[] = {
- 
- MODULE_DEVICE_TABLE(of, mpc512x_psc_spi_of_match);
- 
--static struct of_platform_driver mpc512x_psc_spi_of_driver = {
-+static struct platform_driver mpc512x_psc_spi_of_driver = {
- 	.probe = mpc512x_psc_spi_of_probe,
- 	.remove = __devexit_p(mpc512x_psc_spi_of_remove),
- 	.driver = {
-@@ -563,13 +562,13 @@ static struct of_platform_driver mpc512x_psc_spi_of_driver = {
- 
- static int __init mpc512x_psc_spi_init(void)
- {
--	return of_register_platform_driver(&mpc512x_psc_spi_of_driver);
-+	return platform_driver_register(&mpc512x_psc_spi_of_driver);
- }
- module_init(mpc512x_psc_spi_init);
- 
- static void __exit mpc512x_psc_spi_exit(void)
- {
--	of_unregister_platform_driver(&mpc512x_psc_spi_of_driver);
-+	platform_driver_unregister(&mpc512x_psc_spi_of_driver);
- }
- module_exit(mpc512x_psc_spi_exit);
- 
-diff --git a/drivers/spi/mpc52xx_psc_spi.c b/drivers/spi/mpc52xx_psc_spi.c
-index 8a904c1..e30baf0 100644
---- a/drivers/spi/mpc52xx_psc_spi.c
-+++ b/drivers/spi/mpc52xx_psc_spi.c
-@@ -450,8 +450,7 @@ free_master:
- 	return ret;
- }
- 
--static int __devinit mpc52xx_psc_spi_of_probe(struct platform_device *op,
--	const struct of_device_id *match)
-+static int __devinit mpc52xx_psc_spi_of_probe(struct platform_device *op)
- {
- 	const u32 *regaddr_p;
- 	u64 regaddr64, size64;
-@@ -503,7 +502,7 @@ static const struct of_device_id mpc52xx_psc_spi_of_match[] = {
- 
- MODULE_DEVICE_TABLE(of, mpc52xx_psc_spi_of_match);
- 
--static struct of_platform_driver mpc52xx_psc_spi_of_driver = {
-+static struct platform_driver mpc52xx_psc_spi_of_driver = {
- 	.probe = mpc52xx_psc_spi_of_probe,
- 	.remove = __devexit_p(mpc52xx_psc_spi_of_remove),
- 	.driver = {
-@@ -515,13 +514,13 @@ static struct of_platform_driver mpc52xx_psc_spi_of_driver = {
- 
- static int __init mpc52xx_psc_spi_init(void)
- {
--	return of_register_platform_driver(&mpc52xx_psc_spi_of_driver);
-+	return platform_driver_register(&mpc52xx_psc_spi_of_driver);
- }
- module_init(mpc52xx_psc_spi_init);
- 
- static void __exit mpc52xx_psc_spi_exit(void)
- {
--	of_unregister_platform_driver(&mpc52xx_psc_spi_of_driver);
-+	platform_driver_unregister(&mpc52xx_psc_spi_of_driver);
- }
- module_exit(mpc52xx_psc_spi_exit);
- 
-diff --git a/drivers/spi/mpc52xx_spi.c b/drivers/spi/mpc52xx_spi.c
-index 84439f6..015a974 100644
---- a/drivers/spi/mpc52xx_spi.c
-+++ b/drivers/spi/mpc52xx_spi.c
-@@ -390,8 +390,7 @@ static int mpc52xx_spi_transfer(struct spi_device *spi, struct spi_message *m)
- /*
-  * OF Platform Bus Binding
-  */
--static int __devinit mpc52xx_spi_probe(struct platform_device *op,
+-static int __devinit fsl_soc_dma_probe(struct platform_device *pdev,
 -				       const struct of_device_id *match)
-+static int __devinit mpc52xx_spi_probe(struct platform_device *op)
- {
- 	struct spi_master *master;
- 	struct mpc52xx_spi *ms;
-@@ -556,7 +555,7 @@ static const struct of_device_id mpc52xx_spi_match[] __devinitconst = {
++static int __devinit fsl_soc_dma_probe(struct platform_device *pdev)
+  {
+ 	struct dma_object *dma;
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -979,7 +978,7 @@ static const struct of_device_id fsl_soc_dma_ids[] = {
  };
- MODULE_DEVICE_TABLE(of, mpc52xx_spi_match);
+ MODULE_DEVICE_TABLE(of, fsl_soc_dma_ids);
  
--static struct of_platform_driver mpc52xx_spi_of_driver = {
-+static struct platform_driver mpc52xx_spi_of_driver = {
+-static struct of_platform_driver fsl_soc_dma_driver = {
++static struct platform_driver fsl_soc_dma_driver = {
  	.driver = {
- 		.name = "mpc52xx-spi",
+ 		.name = "fsl-pcm-audio",
  		.owner = THIS_MODULE,
-@@ -568,13 +567,13 @@ static struct of_platform_driver mpc52xx_spi_of_driver = {
- 
- static int __init mpc52xx_spi_init(void)
+@@ -993,12 +992,12 @@ static int __init fsl_soc_dma_init(void)
  {
--	return of_register_platform_driver(&mpc52xx_spi_of_driver);
-+	return platform_driver_register(&mpc52xx_spi_of_driver);
- }
- module_init(mpc52xx_spi_init);
+ 	pr_info("Freescale Elo DMA ASoC PCM Driver\n");
  
- static void __exit mpc52xx_spi_exit(void)
- {
--	of_unregister_platform_driver(&mpc52xx_spi_of_driver);
-+	platform_driver_unregister(&mpc52xx_spi_of_driver);
- }
- module_exit(mpc52xx_spi_exit);
- 
-diff --git a/drivers/spi/spi_fsl_espi.c b/drivers/spi/spi_fsl_espi.c
-index a99e233..900e921 100644
---- a/drivers/spi/spi_fsl_espi.c
-+++ b/drivers/spi/spi_fsl_espi.c
-@@ -685,8 +685,7 @@ static int of_fsl_espi_get_chipselects(struct device *dev)
- 	return 0;
+-	return of_register_platform_driver(&fsl_soc_dma_driver);
++	return platform_driver_register(&fsl_soc_dma_driver);
  }
  
--static int __devinit of_fsl_espi_probe(struct platform_device *ofdev,
--					const struct of_device_id *ofid)
-+static int __devinit of_fsl_espi_probe(struct platform_device *ofdev)
+ static void __exit fsl_soc_dma_exit(void)
  {
- 	struct device *dev = &ofdev->dev;
- 	struct device_node *np = ofdev->dev.of_node;
-@@ -695,7 +694,7 @@ static int __devinit of_fsl_espi_probe(struct platform_device *ofdev,
- 	struct resource irq;
- 	int ret = -ENOMEM;
+-	of_unregister_platform_driver(&fsl_soc_dma_driver);
++	platform_driver_unregister(&fsl_soc_dma_driver);
+ }
  
--	ret = of_mpc8xxx_spi_probe(ofdev, ofid);
-+	ret = of_mpc8xxx_spi_probe(ofdev);
- 	if (ret)
- 		return ret;
+ module_init(fsl_soc_dma_init);
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index 4cc167a..313e0cc 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -624,8 +624,7 @@ static void make_lowercase(char *s)
+ 	}
+ }
  
-@@ -736,7 +735,7 @@ static const struct of_device_id of_fsl_espi_match[] = {
+-static int __devinit fsl_ssi_probe(struct platform_device *pdev,
+-				   const struct of_device_id *match)
++static int __devinit fsl_ssi_probe(struct platform_device *pdev)
+ {
+ 	struct fsl_ssi_private *ssi_private;
+ 	int ret = 0;
+@@ -774,7 +773,7 @@ static const struct of_device_id fsl_ssi_ids[] = {
  };
- MODULE_DEVICE_TABLE(of, of_fsl_espi_match);
+ MODULE_DEVICE_TABLE(of, fsl_ssi_ids);
  
--static struct of_platform_driver fsl_espi_driver = {
-+static struct platform_driver fsl_espi_driver = {
+-static struct of_platform_driver fsl_ssi_driver = {
++static struct platform_driver fsl_ssi_driver = {
  	.driver = {
- 		.name = "fsl_espi",
+ 		.name = "fsl-ssi-dai",
  		.owner = THIS_MODULE,
-@@ -748,13 +747,13 @@ static struct of_platform_driver fsl_espi_driver = {
- 
- static int __init fsl_espi_init(void)
+@@ -788,12 +787,12 @@ static int __init fsl_ssi_init(void)
  {
--	return of_register_platform_driver(&fsl_espi_driver);
-+	return platform_driver_register(&fsl_espi_driver);
- }
- module_init(fsl_espi_init);
+ 	printk(KERN_INFO "Freescale Synchronous Serial Interface (SSI) ASoC Driver\n");
  
- static void __exit fsl_espi_exit(void)
- {
--	of_unregister_platform_driver(&fsl_espi_driver);
-+	platform_driver_unregister(&fsl_espi_driver);
- }
- module_exit(fsl_espi_exit);
- 
-diff --git a/drivers/spi/spi_fsl_lib.c b/drivers/spi/spi_fsl_lib.c
-index 5cd741f..ff59f42 100644
---- a/drivers/spi/spi_fsl_lib.c
-+++ b/drivers/spi/spi_fsl_lib.c
-@@ -189,8 +189,7 @@ int __devexit mpc8xxx_spi_remove(struct device *dev)
- 	return 0;
+-	return of_register_platform_driver(&fsl_ssi_driver);
++	return platform_driver_register(&fsl_ssi_driver);
  }
  
--int __devinit of_mpc8xxx_spi_probe(struct platform_device *ofdev,
--					const struct of_device_id *ofid)
-+int __devinit of_mpc8xxx_spi_probe(struct platform_device *ofdev)
+ static void __exit fsl_ssi_exit(void)
  {
- 	struct device *dev = &ofdev->dev;
- 	struct device_node *np = ofdev->dev.of_node;
-diff --git a/drivers/spi/spi_fsl_lib.h b/drivers/spi/spi_fsl_lib.h
-index 281e060..57f28db 100644
---- a/drivers/spi/spi_fsl_lib.h
-+++ b/drivers/spi/spi_fsl_lib.h
-@@ -118,7 +118,6 @@ extern const char *mpc8xxx_spi_strmode(unsigned int flags);
- extern int mpc8xxx_spi_probe(struct device *dev, struct resource *mem,
- 		unsigned int irq);
- extern int mpc8xxx_spi_remove(struct device *dev);
--extern int of_mpc8xxx_spi_probe(struct platform_device *ofdev,
--				const struct of_device_id *ofid);
-+extern int of_mpc8xxx_spi_probe(struct platform_device *ofdev)
- 
- #endif /* __SPI_FSL_LIB_H__ */
-diff --git a/drivers/spi/spi_fsl_spi.c b/drivers/spi/spi_fsl_spi.c
-index 7ca52d3..ad317c3 100644
---- a/drivers/spi/spi_fsl_spi.c
-+++ b/drivers/spi/spi_fsl_spi.c
-@@ -1042,8 +1042,7 @@ static int of_fsl_spi_free_chipselects(struct device *dev)
- 	return 0;
+-	of_unregister_platform_driver(&fsl_ssi_driver);
++	platform_driver_unregister(&fsl_ssi_driver);
  }
  
--static int __devinit of_fsl_spi_probe(struct platform_device *ofdev,
--					const struct of_device_id *ofid)
-+static int __devinit of_fsl_spi_probe(struct platform_device *ofdev)
- {
- 	struct device *dev = &ofdev->dev;
- 	struct device_node *np = ofdev->dev.of_node;
-@@ -1052,7 +1051,7 @@ static int __devinit of_fsl_spi_probe(struct platform_device *ofdev,
- 	struct resource irq;
- 	int ret = -ENOMEM;
- 
--	ret = of_mpc8xxx_spi_probe(ofdev, ofid);
-+	ret = of_mpc8xxx_spi_probe(ofdev)
- 	if (ret)
- 		return ret;
- 
-@@ -1100,7 +1099,7 @@ static const struct of_device_id of_fsl_spi_match[] = {
+ module_init(fsl_ssi_init);
+diff --git a/sound/soc/fsl/mpc5200_dma.c b/sound/soc/fsl/mpc5200_dma.c
+index f92dca0..fff695c 100644
+--- a/sound/soc/fsl/mpc5200_dma.c
++++ b/sound/soc/fsl/mpc5200_dma.c
+@@ -368,8 +368,7 @@ static struct snd_soc_platform_driver mpc5200_audio_dma_platform = {
+ 	.pcm_free	= &psc_dma_free,
  };
- MODULE_DEVICE_TABLE(of, of_fsl_spi_match);
  
--static struct of_platform_driver of_fsl_spi_driver = {
-+static struct platform_driver of_fsl_spi_driver = {
- 	.driver = {
- 		.name = "fsl_spi",
- 		.owner = THIS_MODULE,
-@@ -1177,13 +1176,13 @@ static void __exit legacy_driver_unregister(void) {}
- static int __init fsl_spi_init(void)
+-static int mpc5200_hpcd_probe(struct of_device *op,
+-		const struct of_device_id *match)
++static int mpc5200_hpcd_probe(struct of_device *op)
  {
- 	legacy_driver_register();
--	return of_register_platform_driver(&of_fsl_spi_driver);
-+	return platform_driver_register(&of_fsl_spi_driver);
+ 	phys_addr_t fifo;
+ 	struct psc_dma *psc_dma;
+@@ -511,32 +510,31 @@ static int mpc5200_hpcd_remove(struct of_device *op)
  }
- module_init(fsl_spi_init);
  
- static void __exit fsl_spi_exit(void)
+ static struct of_device_id mpc5200_hpcd_match[] = {
+-	{
+-		.compatible = "fsl,mpc5200-pcm",
+-	},
++	{ .compatible = "fsl,mpc5200-pcm", },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, mpc5200_hpcd_match);
+ 
+-static struct of_platform_driver mpc5200_hpcd_of_driver = {
+-	.owner		= THIS_MODULE,
+-	.name		= "mpc5200-pcm-audio",
+-	.match_table    = mpc5200_hpcd_match,
++static struct platform_driver mpc5200_hpcd_of_driver = {
+ 	.probe		= mpc5200_hpcd_probe,
+ 	.remove		= mpc5200_hpcd_remove,
++	.dev = {
++		.owner		= THIS_MODULE,
++		.name		= "mpc5200-pcm-audio",
++		.of_match_table    = mpc5200_hpcd_match,
++	}
+ };
+ 
+ static int __init mpc5200_hpcd_init(void)
  {
--	of_unregister_platform_driver(&of_fsl_spi_driver);
-+	platform_driver_unregister(&of_fsl_spi_driver);
- 	legacy_driver_unregister();
+-	return of_register_platform_driver(&mpc5200_hpcd_of_driver);
++	return platform_driver_register(&mpc5200_hpcd_of_driver);
  }
- module_exit(fsl_spi_exit);
-diff --git a/drivers/spi/spi_ppc4xx.c b/drivers/spi/spi_ppc4xx.c
-index 80e172d..2a298c0 100644
---- a/drivers/spi/spi_ppc4xx.c
-+++ b/drivers/spi/spi_ppc4xx.c
-@@ -390,8 +390,7 @@ static void free_gpios(struct ppc4xx_spi *hw)
- /*
-  * platform_device layer stuff...
++module_init(mpc5200_hpcd_init);
+ 
+ static void __exit mpc5200_hpcd_exit(void)
+ {
+-	of_unregister_platform_driver(&mpc5200_hpcd_of_driver);
++	platform_driver_unregister(&mpc5200_hpcd_of_driver);
+ }
+-
+-module_init(mpc5200_hpcd_init);
+ module_exit(mpc5200_hpcd_exit);
+ 
+ MODULE_AUTHOR("Grant Likely <grant.likely@secretlab.ca>");
+diff --git a/sound/soc/fsl/mpc5200_psc_ac97.c b/sound/soc/fsl/mpc5200_psc_ac97.c
+index 40acc8e..ad36b09 100644
+--- a/sound/soc/fsl/mpc5200_psc_ac97.c
++++ b/sound/soc/fsl/mpc5200_psc_ac97.c
+@@ -272,8 +272,7 @@ static struct snd_soc_dai_driver psc_ac97_dai[] = {
+  * - Probe/remove operations
+  * - OF device match table
   */
--static int __init spi_ppc4xx_of_probe(struct platform_device *op,
+-static int __devinit psc_ac97_of_probe(struct platform_device *op,
 -				      const struct of_device_id *match)
-+static int __init spi_ppc4xx_of_probe(struct platform_device *op)
++static int __devinit psc_ac97_of_probe(struct platform_device *op)
  {
- 	struct ppc4xx_spi *hw;
- 	struct spi_master *master;
-@@ -586,7 +585,7 @@ static const struct of_device_id spi_ppc4xx_of_match[] = {
+ 	int rc;
+ 	struct snd_ac97 ac97;
+@@ -316,7 +315,7 @@ static struct of_device_id psc_ac97_match[] __devinitdata = {
+ };
+ MODULE_DEVICE_TABLE(of, psc_ac97_match);
  
- MODULE_DEVICE_TABLE(of, spi_ppc4xx_of_match);
- 
--static struct of_platform_driver spi_ppc4xx_of_driver = {
-+static struct platform_driver spi_ppc4xx_of_driver = {
- 	.probe = spi_ppc4xx_of_probe,
- 	.remove = __exit_p(spi_ppc4xx_of_remove),
+-static struct of_platform_driver psc_ac97_driver = {
++static struct platform_driver psc_ac97_driver = {
+ 	.probe = psc_ac97_of_probe,
+ 	.remove = __devexit_p(psc_ac97_of_remove),
  	.driver = {
-@@ -598,13 +597,13 @@ static struct of_platform_driver spi_ppc4xx_of_driver = {
- 
- static int __init spi_ppc4xx_init(void)
+@@ -332,13 +331,13 @@ static struct of_platform_driver psc_ac97_driver = {
+  */
+ static int __init psc_ac97_init(void)
  {
--	return of_register_platform_driver(&spi_ppc4xx_of_driver);
-+	return platform_driver_register(&spi_ppc4xx_of_driver);
+-	return of_register_platform_driver(&psc_ac97_driver);
++	return platform_driver_register(&psc_ac97_driver);
  }
- module_init(spi_ppc4xx_init);
+ module_init(psc_ac97_init);
  
- static void __exit spi_ppc4xx_exit(void)
+ static void __exit psc_ac97_exit(void)
  {
--	of_unregister_platform_driver(&spi_ppc4xx_of_driver);
-+	platform_driver_unregister(&spi_ppc4xx_of_driver);
+-	of_unregister_platform_driver(&psc_ac97_driver);
++	platform_driver_unregister(&psc_ac97_driver);
  }
- module_exit(spi_ppc4xx_exit);
+ module_exit(psc_ac97_exit);
  
+diff --git a/sound/soc/fsl/mpc5200_psc_i2s.c b/sound/soc/fsl/mpc5200_psc_i2s.c
+index 9018fa5..87cf2a5 100644
+--- a/sound/soc/fsl/mpc5200_psc_i2s.c
++++ b/sound/soc/fsl/mpc5200_psc_i2s.c
+@@ -150,8 +150,7 @@ static struct snd_soc_dai_driver psc_i2s_dai[] = {{
+  * - Probe/remove operations
+  * - OF device match table
+  */
+-static int __devinit psc_i2s_of_probe(struct platform_device *op,
+-				      const struct of_device_id *match)
++static int __devinit psc_i2s_of_probe(struct platform_device *op)
+ {
+ 	int rc;
+ 	struct psc_dma *psc_dma;
+@@ -213,7 +212,7 @@ static struct of_device_id psc_i2s_match[] __devinitdata = {
+ };
+ MODULE_DEVICE_TABLE(of, psc_i2s_match);
+ 
+-static struct of_platform_driver psc_i2s_driver = {
++static struct platform_driver psc_i2s_driver = {
+ 	.probe = psc_i2s_of_probe,
+ 	.remove = __devexit_p(psc_i2s_of_remove),
+ 	.driver = {
+@@ -229,13 +228,13 @@ static struct of_platform_driver psc_i2s_driver = {
+  */
+ static int __init psc_i2s_init(void)
+ {
+-	return of_register_platform_driver(&psc_i2s_driver);
++	return platform_driver_register(&psc_i2s_driver);
+ }
+ module_init(psc_i2s_init);
+ 
+ static void __exit psc_i2s_exit(void)
+ {
+-	of_unregister_platform_driver(&psc_i2s_driver);
++	platform_driver_unregister(&psc_i2s_driver);
+ }
+ module_exit(psc_i2s_exit);
+ 
+diff --git a/sound/sparc/amd7930.c b/sound/sparc/amd7930.c
+index f8bcfc3..ad7d4d7 100644
+--- a/sound/sparc/amd7930.c
++++ b/sound/sparc/amd7930.c
+@@ -1002,7 +1002,7 @@ static int __devinit snd_amd7930_create(struct snd_card *card,
+ 	return 0;
+ }
+ 
+-static int __devinit amd7930_sbus_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit amd7930_sbus_probe(struct platform_device *op)
+ {
+ 	struct resource *rp = &op->resource[0];
+ 	static int dev_num;
+@@ -1064,7 +1064,7 @@ static const struct of_device_id amd7930_match[] = {
+ 	{},
+ };
+ 
+-static struct of_platform_driver amd7930_sbus_driver = {
++static struct platform_driver amd7930_sbus_driver = {
+ 	.driver = {
+ 		.name = "audio",
+ 		.owner = THIS_MODULE,
+@@ -1075,7 +1075,7 @@ static struct of_platform_driver amd7930_sbus_driver = {
+ 
+ static int __init amd7930_init(void)
+ {
+-	return of_register_platform_driver(&amd7930_sbus_driver);
++	return platform_driver_register(&amd7930_sbus_driver);
+ }
+ 
+ static void __exit amd7930_exit(void)
+@@ -1092,7 +1092,7 @@ static void __exit amd7930_exit(void)
+ 
+ 	amd7930_list = NULL;
+ 
+-	of_unregister_platform_driver(&amd7930_sbus_driver);
++	platform_driver_unregister(&amd7930_sbus_driver);
+ }
+ 
+ module_init(amd7930_init);
+diff --git a/sound/sparc/cs4231.c b/sound/sparc/cs4231.c
+index c276086..0e618f8 100644
+--- a/sound/sparc/cs4231.c
++++ b/sound/sparc/cs4231.c
+@@ -1856,7 +1856,7 @@ static int __devinit snd_cs4231_sbus_create(struct snd_card *card,
+ 	return 0;
+ }
+ 
+-static int __devinit cs4231_sbus_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit cs4231_sbus_probe(struct platform_device *op)
+ {
+ 	struct resource *rp = &op->resource[0];
+ 	struct snd_card *card;
+@@ -2048,7 +2048,7 @@ static int __devinit snd_cs4231_ebus_create(struct snd_card *card,
+ 	return 0;
+ }
+ 
+-static int __devinit cs4231_ebus_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit cs4231_ebus_probe(struct platform_device *op)
+ {
+ 	struct snd_card *card;
+ 	int err;
+@@ -2072,16 +2072,16 @@ static int __devinit cs4231_ebus_probe(struct platform_device *op, const struct
+ }
+ #endif
+ 
+-static int __devinit cs4231_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit cs4231_probe(struct platform_device *op)
+ {
+ #ifdef EBUS_SUPPORT
+ 	if (!strcmp(op->dev.of_node->parent->name, "ebus"))
+-		return cs4231_ebus_probe(op, match);
++		return cs4231_ebus_probe(op);
+ #endif
+ #ifdef SBUS_SUPPORT
+ 	if (!strcmp(op->dev.of_node->parent->name, "sbus") ||
+ 	    !strcmp(op->dev.of_node->parent->name, "sbi"))
+-		return cs4231_sbus_probe(op, match);
++		return cs4231_sbus_probe(op);
+ #endif
+ 	return -ENODEV;
+ }
+@@ -2108,7 +2108,7 @@ static const struct of_device_id cs4231_match[] = {
+ 
+ MODULE_DEVICE_TABLE(of, cs4231_match);
+ 
+-static struct of_platform_driver cs4231_driver = {
++static struct platform_driver cs4231_driver = {
+ 	.driver = {
+ 		.name = "audio",
+ 		.owner = THIS_MODULE,
+@@ -2120,12 +2120,12 @@ static struct of_platform_driver cs4231_driver = {
+ 
+ static int __init cs4231_init(void)
+ {
+-	return of_register_platform_driver(&cs4231_driver);
++	return platform_driver_register(&cs4231_driver);
+ }
+ 
+ static void __exit cs4231_exit(void)
+ {
+-	of_unregister_platform_driver(&cs4231_driver);
++	platform_driver_unregister(&cs4231_driver);
+ }
+ 
+ module_init(cs4231_init);
+diff --git a/sound/sparc/dbri.c b/sound/sparc/dbri.c
+index 39cd5d6..73f9cba 100644
+--- a/sound/sparc/dbri.c
++++ b/sound/sparc/dbri.c
+@@ -2592,7 +2592,7 @@ static void snd_dbri_free(struct snd_dbri *dbri)
+ 				  (void *)dbri->dma, dbri->dma_dvma);
+ }
+ 
+-static int __devinit dbri_probe(struct platform_device *op, const struct of_device_id *match)
++static int __devinit dbri_probe(struct platform_device *op)
+ {
+ 	struct snd_dbri *dbri;
+ 	struct resource *rp;
+@@ -2686,7 +2686,7 @@ static const struct of_device_id dbri_match[] = {
+ 
+ MODULE_DEVICE_TABLE(of, dbri_match);
+ 
+-static struct of_platform_driver dbri_sbus_driver = {
++static struct platform_driver dbri_sbus_driver = {
+ 	.driver = {
+ 		.name = "dbri",
+ 		.owner = THIS_MODULE,
+@@ -2699,12 +2699,12 @@ static struct of_platform_driver dbri_sbus_driver = {
+ /* Probe for the dbri chip and then attach the driver. */
+ static int __init dbri_init(void)
+ {
+-	return of_register_platform_driver(&dbri_sbus_driver);
++	return platform_driver_register(&dbri_sbus_driver);
+ }
+ 
+ static void __exit dbri_exit(void)
+ {
+-	of_unregister_platform_driver(&dbri_sbus_driver);
++	platform_driver_unregister(&dbri_sbus_driver);
+ }
+ 
+ module_init(dbri_init);
 
