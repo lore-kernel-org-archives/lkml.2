@@ -1,48 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab1BWBce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:32:34 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38544 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab1BWBcd (ORCPT
+	id S1755703Ab1BWBdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:33:07 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:51938 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab1BWBdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 20:32:33 -0500
+	Tue, 22 Feb 2011 20:33:05 -0500
+Message-ID: <00ffee499c3a14f9f96aaf8575193dd9.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20110222130440.21a27714@jbarnes-desktop>
+References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
+    <20110216192658.GA7225@blimp.localdomain>
+    <20110217221329.GA3332@x61.home>
+    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
+    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
+    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
+    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
+    <20110222130440.21a27714@jbarnes-desktop>
+Date: Wed, 23 Feb 2011 02:32:58 +0100 (CET)
+Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after 
+     reopening lid
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Jesse Barnes" <jbarnes@virtuousgeek.org>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Alex Riesen" <raa.lkml@gmail.com>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <20110221232902.GA3440@x61s.reliablesolutions.de>
-References: <20110221232902.GA3440@x61s.reliablesolutions.de>
-Date: Tue, 22 Feb 2011 17:32:32 -0800
-Message-ID: <AANLkTimnFUxjzUBX_c0dAcJn-GFxWo2HCxbrCwPz+qET@mail.gmail.com>
-Subject: Re: TX VLAN acceleration on bridges broken in 2.6.37?
-From: Jesse Gross <jesse@nicira.com>
-To: Jan Niehusmann <jan@gondor.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 2c269fdec788119c0964d98755c55204
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 3:29 PM, Jan Niehusmann <jan@gondor.com> wrote:
-> With the following configuration, sending vlan tagged traffic from a
-> bridged interface doesn't work in 2.6.37.
-> The same configuration does work with 2.6.36:
+On Tue, February 22, 2011 22:04, Jesse Barnes wrote:
+> On Sat, 19 Feb 2011 15:07:49 -0800
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
 >
-> - bridge br0 with physical interface eth0
-> - eth0 being an e1000e device (don't know if that's important)
-> - vlan interface br0.10
-> - (on 2.6.37) tx vlan acceleration active on br0 (default)
+>> On Sat, Feb 19, 2011 at 4:26 AM, Alex Riesen <raa.lkml@gmail.com> wrote:
+>> > On Sat, Feb 19, 2011 at 13:11, Alex Riesen <raa.lkml@gmail.com> wrote:
+>> >>> Lastly, could you verify that my patch at https://lkml.org/lkml/2011/2/16/447
+>> fixes
+>> >>> it for you too? (Make sure you're at max brightness before rebooting.)
+>> >>
+>> >> I'll try it now.
+>> >>
+>> >
+>> > I can confirm that it does fix backlight in my case (Dell XPS 1330,
+>> > LVDS panel, GM965/GL960).
+>> >
+>> > Tested-by: Alex Riesen <raa.lkml@gmail.com>
+>>
+>> Guys, should I apply this, or will I get it through somebody's pull?
 >
-> Networking on br0.10 doesn't work, and tcpdump on eth0 shows packets
-> sent on br0.10 as untagged, instead of vlan 10 tagged.
->
-> After turning vlan tx offloading off with 'ethtool -K br0 txvlan off',
-> everything works as expected, again.
->
-> The workaround is made permanent by reverting "bridge: Add support for
-> TX vlan offload.", 361ff8a6cf90d62c0071b7e532e37369bfd3ae77, turning
-> of the feature on bridges completely.
+> I'm worried that removing combo mode will break some working setups,
+> but if it's seen a lot of testing and is ok, then I'm fine with it, as
+> it definitely simplifies things.
 
-I tested this at one point and it worked but it sounds like something
-broke after that.  It's probably fairly simple, so I'd rather just fix
-the problem instead of reverting the commit.  I'm just coming back
-from vacation and am trying to catch up but I'll try to look at it in
-the next couple of days.
+This all seems new code added in 2.6.37, it wasn't there before. The working
+setups stopped working when that code was added. The only reason it may work
+for some gen 2 and gen 3 hardware is because of a random value of the max
+brightness (bit 16).  The buggy code seems to be written in a haste without
+any testing done. It's so off from the official documentation that I suspect
+that the windows driver was used as reference, but its code was misinterpreted.
+
+I grepped the userspace driver source, and LBPC is defined there for 810,
+but not used anywhere either.
+
+This patch should be added to stable kernel 2.6.37.2, because it messes
+up the LPBC register, which some laptops store between boots.
+
+Quoting https://bugzilla.kernel.org/show_bug.cgi?id=23472#c57
+
+- Checking bit 16 in BLC_PWM_CTL is wrong, it has no special meaning.
+
+- If LBPC == 0xff, it should be ignored and it's not in combination mode.
+  (This is for gen 3).
+
+- Gen 2 documentation doesn't mention LBPC or combination mode at all.
+  Gen 3 does, but doesn't tell what the register value is or how to use it,
+  it just mentions it.
+
+- The calculations are rubbish, resulting in bogus LBPC values, and
+  depending on how lucky you are, it writes different values for the
+  registers after a restore.
+
+All this code is new and causes problems, while everything worked before
+just fine, when the driver didn't do anything special.
+
+So it seems a bit like voodoo programming, because nothing the driver did
+followed the official Intel documentation.
+
+Now, there may be real reasons for some of the code, but I propose we add
+them one at a time when people show up with problems without the weird code
+added. That way the reason for any weirdness is also documented.
+
+Greetings,
+
+Indan
+
+
