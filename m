@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab1BWTkL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:40:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63394 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab1BWTkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:40:10 -0500
-Date: Wed, 23 Feb 2011 20:31:17 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110223193117.GA3231@redhat.com>
-References: <AANLkTi=_af8+XKD+d-677JpQZA=AN2EsydscSYxk7z55@mail.gmail.com> <20110214200130.GA21559@redhat.com> <20110215152448.GL3160@htj.dyndns.org> <20110215173149.239601807B7@magilla.sf.frob.com> <20110215202747.GA20560@redhat.com> <20110218170212.GS21209@htj.dyndns.org> <20110218193709.GA9700@redhat.com> <20110221162206.GN31267@htj.dyndns.org> <20110221164908.GA25803@redhat.com> <20110221165908.GO31267@htj.dyndns.org>
+	id S1753966Ab1BWTkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:40:46 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:27996 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751539Ab1BWTko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 14:40:44 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 9SWVVdIVM1lX6AKkLsIwtTus9WhnEfXQsFq._gzjrmkRdvQ
+ OSixuP1Ql1IhZDWTBzpGYc.6jp4uRhsuM4Goll3ZL56LWnu2MaXiDior802A
+ TrCgmUZlUrchcIZEXzIGNzIZMei4UTZrTI43XZs5OuASCOPENsNHbedQmRad
+ FppgqzpX8DBaCgnanLw8jbqY4Ghpkr0joOj9UV_RGkbsNiCzFEZJFz0hBnyM
+ gmaGdlUOiUbtct4udbTgUVyDJ09vmSfdoWBiJhUNQK0ZVgcBydKweW6o96No
+ GGUyxPhIPw1ehVfrYsysCoDl6Z67woVrYaAWXCgZlWEZyuNo-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 23 Feb 2011 13:40:37 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+In-Reply-To: <1298489030.2217.818.camel@twins>
+Message-ID: <alpine.DEB.2.00.1102231337340.4823@router.home>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>  <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>  <20110223161645.GA1819@nowhere>  <1298479302.7666.94.camel@gandalf.stny.rr.com>  <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl> 
+ <alpine.DEB.2.00.1102231132140.562@router.home>  <1298485027.7666.98.camel@gandalf.stny.rr.com>  <alpine.DEB.2.00.1102231225330.3906@router.home>  <1298485965.7666.102.camel@gandalf.stny.rr.com>  <alpine.DEB.2.00.1102231317550.4823@router.home>
+ <1298489030.2217.818.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110221165908.GO31267@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21, Tejun Heo wrote:
+On Wed, 23 Feb 2011, Peter Zijlstra wrote:
+
+> On Wed, 2011-02-23 at 13:19 -0600, Christoph Lameter wrote:
 >
-> Hey,
+> > this_cpu_inc is already percpu atomic. On x86 it is an instruction that
+> > cannot be interrupted nor preempted while in progress.
 >
-> On Mon, Feb 21, 2011 at 05:49:08PM +0100, Oleg Nesterov wrote:
-> > > BTW, I plan on separating out all ptrace related stuff into a separate
-> > > struct as it's not used by most tasks anyway, so I don't think we need
-> > > to be too concerned about several more fields.
-> >
-> > This is funny.
-> >
-> > I already did this change (it even had some review on lkml). And it was
-> > discussed again (on archer@sourceware.org) a couple of days ago. Yes,
-> > probably we should finally do this. Unfortunately, this complicates the
-> > attach-to-all-threads request (new feature), but anyway.
->
-> Heh, well, I also have a mostly working patch but hey if you already
-> did it, all the better.  :-)
+> On x86, yes, but is this true for all architectures? I guess the
+> fallback is implemented with local_irq_disable() which might be good
+> enough for some but not for NMI usage.
 
-Argh, sorry. If you already have the patch - please send it.
+Fallback is to do preempt_disable(). But you can also disable interrupts
+on fallback by putting an irqsafe_ prefix before them. Its just more
+expensive and typically not needed.
 
-Otherwise I'll try to refresh the old series, but not before the next week.
-
-
-And. As usual, sorry for the delay, I'll try to reply to other emails
-tomorrow.
-
-Oleg.
-
+There is no way to create an nmi safe per cpu atomicity emulation as far
+as I can tell. It is possible to check at compile time if the arch has
+per cpu atomic instructions available via CONFIG_CMPXCHG_LOCAL which
+allows optimized per cpu atomic use for arches that satisfy the safety
+requirements.
