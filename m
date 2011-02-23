@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539Ab1BWUPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:15:40 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:45129 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab1BWUPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:15:39 -0500
-Date: Wed, 23 Feb 2011 12:15:34 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110223201534.GX2163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110223161645.GA1819@nowhere>
- <1298479302.7666.94.camel@gandalf.stny.rr.com>
- <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl>
- <alpine.DEB.2.00.1102231132140.562@router.home>
- <1298485027.7666.98.camel@gandalf.stny.rr.com>
- <alpine.DEB.2.00.1102231225330.3906@router.home>
- <1298485965.7666.102.camel@gandalf.stny.rr.com>
- <alpine.DEB.2.00.1102231317550.4823@router.home>
- <1298489030.2217.818.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298489030.2217.818.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755747Ab1BWUTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:19:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755351Ab1BWUTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:19:36 -0500
+Subject: Re: [RFC PATCH 1/3] Weight-balanced tree
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4D653F1D.2090106@redhat.com>
+References: <20110222183822.22026.62832.stgit@s20.home>
+	 <20110222185456.22026.28200.stgit@s20.home>  <4D6506FB.2090809@redhat.com>
+	 <1298480563.18387.6.camel@x201>  <4D653F1D.2090106@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Feb 2011 13:19:27 -0700
+Message-ID: <1298492367.18387.59.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 08:23:50PM +0100, Peter Zijlstra wrote:
-> On Wed, 2011-02-23 at 13:19 -0600, Christoph Lameter wrote:
+On Wed, 2011-02-23 at 19:08 +0200, Avi Kivity wrote:
+> On 02/23/2011 07:02 PM, Alex Williamson wrote:
+> > >
+> > >  obj-$(CONFIG_WEIGHT_BALANCED_TREE) += wbtree.o
+> > >
+> > >  then kvm can select it, and the impact on non-kvm kernels is removed.
+> >
+> > Then we'd have issues trying to build an external kvm module for a
+> > pre-existing non-kvm kernel.  Do we care?
 > 
-> > this_cpu_inc is already percpu atomic. On x86 it is an instruction that
-> > cannot be interrupted nor preempted while in progress.
+> Officially, no.
 > 
-> On x86, yes, but is this true for all architectures? I guess the
-> fallback is implemented with local_irq_disable() which might be good
-> enough for some but not for NMI usage.
+> What we typically do in these cases is copy the code into the kvm-kmod 
+> compatibility layer and compile it if the kernel doesn't supply it (like 
+> all older kernels regardless of config).
+> 
+> > If we were to take such a
+> > path, I think the default should be on, kvm would depend on it, but we
+> > could add an option to disable it for EMBEDDED/EXPERT.  Thanks,
+> 
+> That would work as well.
 
-Good point!  Thankfully, no worries about NMI usage in this piece of
-code.  ;-)
+In retrospect, I suppose it doesn't really make sense to have it
+compiled in "just in case".  I'll follow your first suggestion.  Thanks,
 
-							Thanx, Paul
+Alex
+
