@@ -1,35 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab1BWBNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:13:42 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48317 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754887Ab1BWBNl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 20:13:41 -0500
+	id S1755654Ab1BWBOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:14:07 -0500
+Received: from kroah.org ([198.145.64.141]:37935 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755259Ab1BWBOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 20:14:05 -0500
+Date: Tue, 22 Feb 2011 17:12:23 -0800
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [RFC 0/5] tty: move stuff around
+Message-ID: <20110223011223.GA5690@kroah.com>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+ <20100830184737.GA21339@suse.de>
+ <201008302333.22447.arnd@arndb.de>
+ <201009031729.58102.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <1298420395.17118.6.camel@m0nster>
-References: <1298419415-3973-1-git-send-email-davidb@codeaurora.org> <1298420395.17118.6.camel@m0nster>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 22 Feb 2011 17:12:50 -0800
-Message-ID: <AANLkTikuaOL7mdARoNtx2ZJGJm6FBrqizrit6_uSaUte@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Update MSM maintainers
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009031729.58102.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 4:19 PM, Daniel Walker <dwalker@fifo99.com> wrote:
-> On Tue, 2011-02-22 at 16:03 -0800, David Brown wrote:
->> Remove Bryan Huntsman and Daniel Walker from the MSM maintainer list.
->>
->
-> No.. I don't sign off on this.. Please ignore this Linus.
+On Fri, Sep 03, 2010 at 05:29:57PM +0200, Arnd Bergmann wrote:
+> This is the updated list, I hope I captured all the comments correctly:
+>  
+> drivers/char/tty_*      -> tty/*
+> drivers/char/{vt stuff} -> tty/vt/
+> 
+> drivers/char/hvc_*      -> drivers/tty/hvc/hvc_*
+> drivers/serial/*        -> drivers/tty/serial/*
+> drivers/usb/serial      -> drivers/usb/serial
+> 
+> amiserial,nozomi,synclink,
+> rocket,ipwireless
+> cyclades,moxa,mxser,
+> isicom,bfin_jtag_comm   -> drivers/tty/
+> 
+> stallion,istallion,
+> epca,specialix,ip2,
+> riscom,serial167	-> drivers/staging/tty/*
+>  
+> generic_serial,vme_scc,
+> ser_a2232,sx,rio        -> drivers/staging/generic_serial/*
 
-Guys, you need to sort out your differences here..
+Ok, I've now moved the rest of these files in the tty-next tree, so we
+should be completed with this for .39.
 
-                        Linus
+If there are any problems, or I missed any files, please let me know.
+
+thanks,
+
+greg k-h
