@@ -1,233 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab1BWVxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:53:38 -0500
-Received: from hera.kernel.org ([140.211.167.34]:57161 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab1BWVxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:53:36 -0500
-Date: Wed, 23 Feb 2011 21:53:06 GMT
-From: tip-bot for Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, hpa@zytor.com,
-        mingo@redhat.com, dirk.brandewie@gmail.com, tglx@linutronix.de,
-        bigeasy@linutronix.de, a.zummo@towertech.it
-Reply-To: mingo@redhat.com, hpa@zytor.com, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, dirk.brandewie@gmail.com,
-        bigeasy@linutronix.de, tglx@linutronix.de, a.zummo@towertech.it
-In-Reply-To: <1298405266-1624-12-git-send-email-bigeasy@linutronix.de>
-References: <1298405266-1624-12-git-send-email-bigeasy@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] rtc: cmos: Add OF bindings
-Message-ID: <tip-3bcbaf6e08d8d82cde781997bd2c56dda87049b5@git.kernel.org>
-Git-Commit-ID: 3bcbaf6e08d8d82cde781997bd2c56dda87049b5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755906Ab1BWV4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:56:10 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:31945 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754416Ab1BWV4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 16:56:09 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEABIQZU120uZw/2dsb2JhbACmHnS8KYVeBJFr
+Message-ID: <4D65825F.5080403@internode.on.net>
+Date: Thu, 24 Feb 2011 08:25:43 +1030
+From: Arthur Marsh <arthur.marsh@internode.on.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-AU; rv:1.9.2.13) Gecko/20101213 Icedove/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 23 Feb 2011 21:53:09 +0000 (UTC)
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified
+ - 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd
+ for GFP_ATOMIC order > 0
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net> <4D6367B3.9050306@googlemail.com> <20110222134047.GT13092@random.random> <20110222161513.GC13092@random.random> <4D63F6C0.7060204@internode.on.net> <20110223162432.GL31195@random.random> <20110223165550.GP31195@random.random> <4D65691E.9080600@internode.on.net> <20110223212541.GV31195@random.random>
+In-Reply-To: <20110223212541.GV31195@random.random>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3bcbaf6e08d8d82cde781997bd2c56dda87049b5
-Gitweb:     http://git.kernel.org/tip/3bcbaf6e08d8d82cde781997bd2c56dda87049b5
-Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-AuthorDate: Tue, 22 Feb 2011 21:07:46 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 23 Feb 2011 22:27:55 +0100
 
-rtc: cmos: Add OF bindings
 
-This allows to load the OF driver based informations from the device
-tree. Systems without BIOS may need to perform some initialization.
-PowerPC creates a PNP device from the OF information and performs this
-kind of initialization in their private PCI quirk. This looks more
-generic.
+Andrea Arcangeli wrote, on 24/02/11 07:55:
+> On Thu, Feb 24, 2011 at 06:37:58AM +1030, Arthur Marsh wrote:
+>> kswapd-high_wmark + compaction-kswapd-2 - kswapd0 CPU up to 11 percent
+>> and slightly less pronounced slowdowns of MIDI playback compared to
+>> previous patches.
+>>
+>> kswapd-high_wmark + compaction-no-kswapd-3 - kswapd0 CPU up to 2.3
+>> percent and no noticable slowdown of MIDI playback.
+>>
+>> Mel Gorman's mm/compaction.c patch - kswapd0 CPU up to 20 percent and no
+>> noticable slowdown of MIDI playback.
+>>
+>> Thanks everyone for the help with this.
+>
+> Ok then I think it's safer to go with compaction-no-kswapd-3.
 
-This patch also avoids registering the platform RTC driver on X86 if
-we have a device tree blob. Otherwise we would setup the device based
-on the hardcoded information in arch/x86 rather than the device tree
-based one.
+One more combination I tried:
 
-[ tglx: Changed "int of_have_populated_dt()" to bool as recommended by
-        Grant ]
+Mel Gorman's mm/compaction.c patch with Andrea Archangeli's 
+kswapd-high_wmark + compaction-no-kswapd-3 patches - kswapd0 CPU less 
+than 2 percent and no noticable slowdown of MIDI playback.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: sodaville@linutronix.de
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: rtc-linux@googlegroups.com
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-LKML-Reference: <1298405266-1624-12-git-send-email-bigeasy@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- Documentation/devicetree/bindings/rtc/rtc-cmos.txt |   28 ++++++++++++
- arch/x86/kernel/rtc.c                              |    3 +
- drivers/rtc/rtc-cmos.c                             |   45 ++++++++++++++++++++
- include/linux/of.h                                 |   12 +++++
- 4 files changed, 88 insertions(+), 0 deletions(-)
+This may be better performing than compaction-no-kswapd-3 alone but is 
+not conclusive.
 
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-cmos.txt b/Documentation/devicetree/bindings/rtc/rtc-cmos.txt
-new file mode 100644
-index 0000000..7382989
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/rtc-cmos.txt
-@@ -0,0 +1,28 @@
-+ Motorola mc146818 compatible RTC
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+Required properties:
-+  - compatible : "motorola,mc146818"
-+  - reg : should contain registers location and length.
-+
-+Optional properties:
-+  - interrupts : should contain interrupt.
-+  - interrupt-parent : interrupt source phandle.
-+  - ctrl-reg : Contains the initial value of the control register also
-+    called "Register B".
-+  - freq-reg : Contains the initial value of the frequency register also
-+    called "Regsiter A".
-+
-+"Register A" and "B" are usually initialized by the firmware (BIOS for
-+instance). If this is not done, it can be performed by the driver.
-+
-+ISA Example:
-+
-+	rtc@70 {
-+	         compatible = "motorola,mc146818";
-+	         interrupts = <8 3>;
-+	         interrupt-parent = <&ioapic1>;
-+	         ctrl-reg = <2>;
-+	         freq-reg = <0x26>;
-+	         reg = <1 0x70 2>;
-+	 };
-diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
-index 6f39cab..3f2ad26 100644
---- a/arch/x86/kernel/rtc.c
-+++ b/arch/x86/kernel/rtc.c
-@@ -6,6 +6,7 @@
- #include <linux/acpi.h>
- #include <linux/bcd.h>
- #include <linux/pnp.h>
-+#include <linux/of.h>
- 
- #include <asm/vsyscall.h>
- #include <asm/x86_init.h>
-@@ -236,6 +237,8 @@ static __init int add_rtc_cmos(void)
- 		}
- 	}
- #endif
-+	if (of_have_populated_dt())
-+		return 0;
- 
- 	platform_device_register(&rtc_device);
- 	dev_info(&rtc_device.dev,
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index c7ff8df..159b95e 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -37,6 +37,8 @@
- #include <linux/mod_devicetable.h>
- #include <linux/log2.h>
- #include <linux/pm.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
- 
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -1123,6 +1125,47 @@ static struct pnp_driver cmos_pnp_driver = {
- 
- #endif	/* CONFIG_PNP */
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id of_cmos_match[] = {
-+	{
-+		.compatible = "motorola,mc146818",
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, of_cmos_match);
-+
-+static __init void cmos_of_init(struct platform_device *pdev)
-+{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct rtc_time time;
-+	int ret;
-+	const __be32 *val;
-+
-+	if (!node)
-+		return;
-+
-+	val = of_get_property(node, "ctrl-reg", NULL);
-+	if (val)
-+		CMOS_WRITE(be32_to_cpup(val), RTC_CONTROL);
-+
-+	val = of_get_property(node, "freq-reg", NULL);
-+	if (val)
-+		CMOS_WRITE(be32_to_cpup(val), RTC_FREQ_SELECT);
-+
-+	get_rtc_time(&time);
-+	ret = rtc_valid_tm(&time);
-+	if (ret) {
-+		struct rtc_time def_time = {
-+			.tm_year = 1,
-+			.tm_mday = 1,
-+		};
-+		set_rtc_time(&def_time);
-+	}
-+}
-+#else
-+static inline void cmos_of_init(struct platform_device *pdev) {}
-+#define of_cmos_match NULL
-+#endif
- /*----------------------------------------------------------------*/
- 
- /* Platform setup should have set up an RTC device, when PNP is
-@@ -1131,6 +1174,7 @@ static struct pnp_driver cmos_pnp_driver = {
- 
- static int __init cmos_platform_probe(struct platform_device *pdev)
- {
-+	cmos_of_init(pdev);
- 	cmos_wake_setup(&pdev->dev);
- 	return cmos_do_probe(&pdev->dev,
- 			platform_get_resource(pdev, IORESOURCE_IO, 0),
-@@ -1162,6 +1206,7 @@ static struct platform_driver cmos_platform_driver = {
- #ifdef CONFIG_PM
- 		.pm		= &cmos_pm_ops,
- #endif
-+		.of_match_table = of_cmos_match,
- 	}
- };
- 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index d9dd664..266db1d 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -70,6 +70,11 @@ extern struct device_node *allnodes;
- extern struct device_node *of_chosen;
- extern rwlock_t devtree_lock;
- 
-+static inline bool of_have_populated_dt(void)
-+{
-+	return allnodes != NULL;
-+}
-+
- static inline bool of_node_is_root(const struct device_node *node)
- {
- 	return node && (node->parent == NULL);
-@@ -222,5 +227,12 @@ extern void of_attach_node(struct device_node *);
- extern void of_detach_node(struct device_node *);
- #endif
- 
-+#else
-+
-+static inline bool of_have_populated_dt(void)
-+{
-+	return false;
-+}
-+
- #endif /* CONFIG_OF */
- #endif /* _LINUX_OF_H */
+>
+> I also created a git tree in case anybody else wants to test in easier
+> way.
+>
+> git clone --reference linux-2.6.git git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+> (or "git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git")
+> cd aa
+> git checkout -f 3d74399aaece29047beba13a81650538af8db67a
+> (compaction-kswapd+compaction_alloc_lowlat)
+> git checkout -f f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27
+> (compaction-no-kswapd+rest+compaction_alloc_lowlat)
+> git checkout -f 859e705548f7377b1803b05b2904bae77495fd1e (only
+> compaction_alloc_lowlat)
+>
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=3d74399aaece29047beba13a81650538af8db67a
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=859e705548f7377b1803b05b2904bae77495fd1e
+>
+> Arthur could you give one more spin to the
+> 3d74399aaece29047beba13a81650538af8db67a tree? (or do you prefer an
+> updated patch compaction-kswapd-3?)
+
+If you can send me an updated patch compaction-no-kswapd-3 (I presume 
+that kswapd-high_wmark is still needed) it would be easier for me to apply.
+
+>
+> I'd like to get 3d74399aaece29047beba13a81650538af8db67a tested again
+> because I did one more modification included in the git version
+> compared to the patch version (nr_slab was not always initialized and
+> it could lead to slightly higher kswapd cpu load than intended). I
+> doubt it will help though (just in case).
+>
+> Mel what you think? If f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27 is
+> still the only one that shows no regression, I think it's safe to
+> apply it to 2.6.38 and revert the compaction in kswapd feature. Then
+> we can add compaction to kswapd later with no hurry.
+>
+> Thanks a lot for the help and quick feedback!
+> Andrea
+>
+
+Arthur.
