@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab1BWOBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 09:01:43 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36677 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294Ab1BWNw5 (ORCPT
+	id S1755631Ab1BWOCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 09:02:09 -0500
+Received: from blu0-omc1-s3.blu0.hotmail.com ([65.55.116.14]:38883 "EHLO
+	blu0-omc1-s3.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755337Ab1BWOCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:52:57 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
-        sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
-        jlayton@redhat.com
-Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
-Subject: [PATCH -V5 02/24] vfs: Pass all mask flags down to iop->check_acl
-Date: Wed, 23 Feb 2011 19:21:49 +0530
-Message-Id: <1298469131-16555-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Wed, 23 Feb 2011 09:02:05 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP797F3B7E1397A060EAD32296DB0@phx.gbl>
+Date: Wed, 23 Feb 2011 09:02:01 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+	to kthread
+References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 09:00:44 up 321 days, 23:50,  6 users,  load average: 1.46, 1.51,
+	1.53
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 23 Feb 2011 14:02:03.0482 (UTC) FILETIME=[3F710BA0:01CBD362]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@suse.de>
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+[...]
+> +	for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1)
+> +		if (mask & 01)
 
-Some file permission models differentiate between writing to a file
-(MAY_WRITE) and appending to it (MAY_WRITE | MAY_APPEND).  Pass all the
-mask flags down to iop->check_acl so that filesystems can distinguish
-between writing and appending.
+Wow, octal notation! ;)
 
-All users of iop->check_acl pass the mask value back into
-posix_acl_permission(); strip off the additional mask flags there.
+Maybe we could consider 0x1 here.
 
-Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/namei.c     |    4 +---
- fs/posix_acl.c |    2 ++
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Thanks,
 
-diff --git a/fs/namei.c b/fs/namei.c
-index b01eab8..f09ab1f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -174,8 +174,6 @@ static int acl_permission_check(struct inode *inode, int mask, unsigned int flag
- {
- 	umode_t			mode = inode->i_mode;
- 
--	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
--
- 	if (current_fsuid() == inode->i_uid)
- 		mode >>= 6;
- 	else {
-@@ -192,7 +190,7 @@ static int acl_permission_check(struct inode *inode, int mask, unsigned int flag
- 	/*
- 	 * If the DACs are ok we don't need any capability check.
- 	 */
--	if ((mask & ~mode) == 0)
-+	if ((mask & (MAY_READ | MAY_WRITE | MAY_EXEC) & ~mode) == 0)
- 		return 0;
- 	return -EACCES;
- }
-diff --git a/fs/posix_acl.c b/fs/posix_acl.c
-index b1cf6bf..ad40df2 100644
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -222,6 +222,8 @@ posix_acl_permission(struct inode *inode, const struct posix_acl *acl, int want)
- 	const struct posix_acl_entry *pa, *pe, *mask_obj;
- 	int found = 0;
- 
-+	want &= MAY_READ | MAY_WRITE | MAY_EXEC;
-+
- 	FOREACH_ACL_ENTRY(pa, acl, pe) {
-                 switch(pa->e_tag) {
-                         case ACL_USER_OBJ:
+Mathieu
+
 -- 
-1.7.1
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
