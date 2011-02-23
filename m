@@ -1,61 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab1BWM2N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 07:28:13 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:48519 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab1BWM2K (ORCPT
+	id S1754427Ab1BWMrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 07:47:43 -0500
+Received: from proxy.DResearch.DE ([87.193.137.100]:57020 "EHLO
+	mail.dresearch.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753546Ab1BWMrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 07:28:10 -0500
-Date: Wed, 23 Feb 2011 13:29:04 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Funny perf
-Message-ID: <20110223122904.GA3935@aftab>
-References: <20110217182658.GA23443@aftab>
- <1298456508.2217.357.camel@twins>
+	Wed, 23 Feb 2011 07:47:41 -0500
+X-Greylist: delayed 2009 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 07:47:41 EST
+Message-ID: <4D64FA12.4070800@dresearch.de>
+Date: Wed, 23 Feb 2011 13:14:10 +0100
+From: Steffen Sledz <sledz@dresearch.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298456508.2217.357.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org
+CC: Mario Schuknecht <m.schuknecht@dresearch.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Fred N. van Kempen" <waltje@uWalt.NL.Mugnet.ORG>,
+        Mark Evans <evansmp@uhura.aston.ac.uk>,
+        Corey Minyard <wf-rch!minyard@relay.EU.net>,
+        Florian La Roche <flla@stud.uni-sb.de>,
+        Charles Hedrick <hedrick@klinzhai.rutgers.edu>,
+        Linus Torvalds <torvalds@cs.helsinki.fi>,
+        Alan Cox <gw4pts@gw4pts.ampr.org>,
+        Matthew Dillon <dillon@apollo.west.oic.com>,
+        Arnt Gulbrandsen <arnt@gulbrandsen.priv.no>,
+        Jorge Cwik <jorge@laser.satlink.net>,
+        Matthew Dillon <dillon@crater.dragonflybsd.org>,
+        Alan Cox <alc@FreeBSD.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Charles Hedrick <hedrick@rutgers.edu>,
+        "" <Fred.van.Kempen@microwalt.nl>
+Subject: Re: [PATCH] tcp: ioctl type SIOCOUTQNSD returns amount of data not
+ sent
+References: <1286271154-18600-1-git-send-email-m.schuknecht@dresearch.de>
+In-Reply-To: <1286271154-18600-1-git-send-email-m.schuknecht@dresearch.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 23 Feb 2011 12:14:10.0653 (UTC) FILETIME=[2D55B8D0:01CBD353]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 05:21:48AM -0500, Peter Zijlstra wrote:
-> On Thu, 2011-02-17 at 19:26 +0100, Borislav Petkov wrote:
-> > 
-> > so this looks like some of the samples do not belong in the perf.data
-> > output with that garbled cpu field. It lets me also assume that the
-> > sample->time field is also crap so the timestamp check is falsely
-> > tripped. 
+Am 05.10.2010 11:32, schrieb Mario Schuknecht:
+> In contrast to SIOCOUTQ which returns the amount of data sent
+> but not yet acknowledged plus data not yet sent this patch only
+> returns the data not sent.
 > 
-> Most interesting, I haven't tried to reproduce, but it does sound
-> smelly.
+> For various methods of live streaming bitrate control it may
+> be helpful to know how much data are in the tcp outqueue are
+> not sent yet.
 > 
-> I did have a quick peek at some code I suspected but that all seems in
-> order. I guess someone will have to sit down and figure this out proper,
-> if nobody steps up I guess it'll have to be me, but that also means it
-> might take a while since I've got some other pending stuff to stare at
-> before this :/
+> Signed-off-by: Mario Schuknecht <m.schuknecht@dresearch.de>
+> ---
+>  include/asm-generic/ioctls.h |    1 +
+>  include/linux/sockios.h      |    1 +
+>  net/ipv4/tcp.c               |    9 +++++++++
+>  3 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
+> index a321665..b87115b 100644
+> --- a/include/asm-generic/ioctls.h
+> +++ b/include/asm-generic/ioctls.h
+> @@ -72,6 +72,7 @@
+>  #define TCSETXF		0x5434
+>  #define TCSETXW		0x5435
+>  #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
+> +#define TIOCOUTQNSD	0x5437
+>  
+>  #define FIONCLEX	0x5450
+>  #define FIOCLEX		0x5451
+> diff --git a/include/linux/sockios.h b/include/linux/sockios.h
+> index 241f179..4c5ca47 100644
+> --- a/include/linux/sockios.h
+> +++ b/include/linux/sockios.h
+> @@ -23,6 +23,7 @@
+>  /* Linux-specific socket ioctls */
+>  #define SIOCINQ		FIONREAD
+>  #define SIOCOUTQ	TIOCOUTQ
+> +#define SIOCOUTQNSD	TIOCOUTQNSD
+>  
+>  /* Routing table calls. */
+>  #define SIOCADDRT	0x890B		/* add routing table entry	*/
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 1664a05..c2d52e8 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -505,6 +505,15 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
+>  		else
+>  			answ = tp->write_seq - tp->snd_una;
+>  		break;
+> +	case SIOCOUTQNSD:
+> +		if (sk->sk_state == TCP_LISTEN)
+> +			return -EINVAL;
+> +
+> +		if ((1 << sk->sk_state) & (TCPF_SYN_SENT | TCPF_SYN_RECV))
+> +			answ = 0;
+> +		else
+> +			answ = tp->write_seq - tp->snd_nxt;
+> +		break;
+>  	default:
+>  		return -ENOIOCTLCMD;
+>  	}
 
-Same here, I'll try to play with this a bit more when I get a free
-window. I think the first step should be if someone else tries
-reproducing this to see whether it really is reproducible or there's
-something wrong with my setup.
+Ping!
 
-Thanks.
+It would be nice to get some feedback on this. We really need an extension of this kind.
+
+If the patch does something in a wrong way (esp. choosing the TIOCOUTQNSD id) please give us a hint how to do it in the right way.
+
+Thx,
+Steffen Sledz
 
 -- 
-Regards/Gruss,
-Boris.
+DResearch Fahrzeugelektronik GmbH
+Otto-Schmirgal-Str. 3, 10319 Berlin, Germany
+Tel: +49 30 515932-237 mailto:sledz@DResearch.de
+Fax: +49 30 515932-299
+Geschäftsführer: Dr. Michael Weber, Werner Mögle;
+Amtsgericht Berlin Charlottenburg; HRB 130120 B;
+Ust.-IDNr. DE273952058
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
