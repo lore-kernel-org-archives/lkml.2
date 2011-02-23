@@ -1,83 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab1BWXMV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:12:21 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:47615 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab1BWXMS (ORCPT
+	id S1752254Ab1BWXOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:14:17 -0500
+Received: from trinity.develer.com ([83.149.158.210]:56167 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab1BWXOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:12:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Q3m47Pt72QbI1fMIdgNy4i2q5GEcbC+D71Mbn72IoHn+t5xRUSTrmafToKv8neKo3f
-         MmA3Bpz9CaBl98ZFlEtw==
-Date: Wed, 23 Feb 2011 15:12:02 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Miklos Szeredi <miklos@szeredi.hu>, akpm@linux-foundation.org,
-        hch@infradead.org, a.p.zijlstra@chello.nl, gurudas.pai@oracle.com,
-        lkml20101129@newton.leun.net, rjw@sisk.pl, florian@mickler.org,
-        trond.myklebust@fys.uio.no, maciej.rutecki@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
- inode
-In-Reply-To: <AANLkTimeihuzjgR2f7Avq2PJrCw1vZxtjh=wBPXO3aHP@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1102231448460.5732@sister.anvils>
-References: <E1PsEA7-0007G0-29@pomaz-ex.szeredi.hu> <AANLkTimeihuzjgR2f7Avq2PJrCw1vZxtjh=wBPXO3aHP@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 23 Feb 2011 18:14:15 -0500
+Date: Thu, 24 Feb 2011 00:14:11 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] blk-throttle: writeback and swap IO control
+Message-ID: <20110223231410.GB1744@linux.develer.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <20110222193403.GG28269@redhat.com>
+ <20110222224141.GA23723@linux.develer.com>
+ <20110223000358.GM28269@redhat.com>
+ <20110223083206.GA2174@linux.develer.com>
+ <20110223152354.GA2526@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110223152354.GA2526@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011, Linus Torvalds wrote:
-> On Wed, Feb 23, 2011 at 4:49 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> >
-> > This resolves Bug 25822 listed in the regressions since 2.6.36 (though
-> > it's a bug much older than that, for some reason it only started
-> > triggering for people recently).
+On Wed, Feb 23, 2011 at 10:23:54AM -0500, Vivek Goyal wrote:
+> > > Agreed. Granularity of per inode level might be accetable in many 
+> > > cases. Again, I am worried faster group getting stuck behind slower
+> > > group.
+> > > 
+> > > I am wondering if we are trying to solve the problem of ASYNC write throttling
+> > > at wrong layer. Should ASYNC IO be throttled before we allow task to write to
+> > > page cache. The way we throttle the process based on dirty ratio, can we
+> > > just check for throttle limits also there or something like that.(I think
+> > > that's what you had done in your initial throttling controller implementation?)
+> > 
+> > Right. This is exactly the same approach I've used in my old throttling
+> > controller: throttle sync READs and WRITEs at the block layer and async
+> > WRITEs when the task is dirtying memory pages.
+> > 
+> > This is probably the simplest way to resolve the problem of faster group
+> > getting blocked by slower group, but the controller will be a little bit
+> > more leaky, because the writeback IO will be never throttled and we'll
+> > see some limited IO spikes during the writeback.
 > 
-> Gaah. I hate this patch. It is, in fact, a patch that makes me finally
-> think that the mm preemptibility is actually worth it, because then
-> i_mmap_lock turns into a mutex and makes the whole "drop the lock"
-> thing hopefully a thing of the past (see the patch "mm: Remove
-> i_mmap_mutex lockbreak").
+> Yes writeback will not be throttled. Not sure how big a problem that is.
 > 
-> Because as far as I can see, the only thing that makes this thing
-> needed in the first place is that horribly ugly "we drop i_mmap_lock
-> in the middle of random operations that really still need it".
+> - We have controlled the input rate. So that should help a bit.
+> - May be one can put some high limit on root cgroup to in blkio throttle
+>   controller to limit overall WRITE rate of the system.
+> - For SATA disks, try to use CFQ which can try to minimize the impact of
+>   WRITE.
 > 
-> That said, I don't really see any alternatives - I guess we can't
-> really just say "remove that crazy lock dropping". Even though I
-> really really really would like to.
+> It will atleast provide consistent bandwindth experience to application.
 
-Those feelings understood and shared.
+Right.
 
 > 
-> Of course, we could also just decide that we should apply the mm
-> preemptibility series instead. Can people confirm that that fixes the
-> bug too?
+> >However, this is always
+> > a better solution IMHO respect to the current implementation that is
+> > affected by that kind of priority inversion problem.
+> > 
+> > I can try to add this logic to the current blk-throttle controller if
+> > you think it is worth to test it.
+> 
+> At this point of time I have few concerns with this approach.
+> 
+> - Configuration issues. Asking user to plan for SYNC ans ASYNC IO
+>   separately is inconvenient. One has to know the nature of workload.
+> 
+> - Most likely we will come up with global limits (atleast to begin with),
+>   and not per device limit. That can lead to contention on one single
+>   lock and scalability issues on big systems.
+> 
+> Having said that, this approach should reduce the kernel complexity a lot.
+> So if we can do some intelligent locking to limit the overhead then it
+> will boil down to reduced complexity in kernel vs ease of use to user. I 
+> guess at this point of time I am inclined towards keeping it simple in
+> kernel.
+> 
 
-It would fix it, but there's a but.
+BTW, with this approach probably we can even get rid of the page
+tracking stuff for now. If we don't consider the swap IO, any other IO
+operation from our point of view will happen directly from process
+context (writes in memory + sync reads from the block device).
 
-In his [2/8] mm: remove i_mmap_mutex lockbreak patch, Peter says
-"shouldn't hold up reclaim more than lock_page() would".  But (apart
-from a write error case) we always use trylock_page() in reclaim, we
-never dare hold it up on a lock_page().  So page reclaim would get
-held up on truncation more than at present - though he's right to
-point out that truncation will usually be freeing pages much faster.
+However, I'm sure we'll need the page tracking also for the blkio
+controller soon or later. This is an important information and also the
+proportional bandwidth controller can take advantage of it.
 
-I'm not sure whether it will prove good enough to abandon the lock
-breaking if we move to a mutex there.  And besides, this unmapping
-BUG does need a fix in stable, well before we want to try out the
-preemptible mmu gathering.
+> 
+> Couple of people have asked me that we have backup jobs running at night
+> and we want to reduce the IO bandwidth of these jobs to limit the impact
+> on latency of other jobs, I guess this approach will definitely solve
+> that issue.
+> 
+> IMHO, it might be worth trying this approach and see how well does it work. It
+> might not solve all the problems but can be helpful in many situations.
 
-I'd rather hold out Peter's series as a hope that we can
-eliminate this extra unmapping mutex in a few months time.
+Agreed. This could be a good tradeoff for a lot of common cases.
 
-Hugh
+> 
+> I feel that for proportional bandwidth division, implementing ASYNC
+> control at CFQ will make sense because even if things get serialized in
+> higher layers, consequences are not very bad as it is work conserving
+> algorithm. But for throttling serialization will lead to bad consequences.
+
+Agreed.
+
+> 
+> May be one can think of new files in blkio controller to limit async IO
+> per group during page dirty time.
+> 
+> blkio.throttle.async.write_bps_limit
+> blkio.throttle.async.write_iops_limit
+
+OK, I'll try to add the async throttling logic and use this interface.
+
+-Andrea
