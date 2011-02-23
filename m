@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab1BWXHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:07:49 -0500
-Received: from kroah.org ([198.145.64.141]:51652 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754278Ab1BWXHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:07:48 -0500
-Date: Wed, 23 Feb 2011 15:06:54 -0800
-From: Greg KH <greg@kroah.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: KY Srinivasan <kys@microsoft.com>, Hank Janssen <hjanssen@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 1/4] staging: hv: Fix the code depending on struct
- vmbus_driver_context data order
-Message-ID: <20110223230654.GA18829@kroah.com>
-References: <1298492398-16522-1-git-send-email-haiyangz@microsoft.com>
- <20110223212644.GC23766@kroah.com>
- <6E21E5352C11B742B20C142EB499E048014F2C@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20110223224829.GA7175@kroah.com>
- <A1F3067C9B68744AA19F6802BAB8FFDC060EE9@TK5EX14MBXC227.redmond.corp.microsoft.com>
+	id S1755409Ab1BWXMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:12:21 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:47615 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab1BWXMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 18:12:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Q3m47Pt72QbI1fMIdgNy4i2q5GEcbC+D71Mbn72IoHn+t5xRUSTrmafToKv8neKo3f
+         MmA3Bpz9CaBl98ZFlEtw==
+Date: Wed, 23 Feb 2011 15:12:02 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Miklos Szeredi <miklos@szeredi.hu>, akpm@linux-foundation.org,
+        hch@infradead.org, a.p.zijlstra@chello.nl, gurudas.pai@oracle.com,
+        lkml20101129@newton.leun.net, rjw@sisk.pl, florian@mickler.org,
+        trond.myklebust@fys.uio.no, maciej.rutecki@gmail.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
+ inode
+In-Reply-To: <AANLkTimeihuzjgR2f7Avq2PJrCw1vZxtjh=wBPXO3aHP@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1102231448460.5732@sister.anvils>
+References: <E1PsEA7-0007G0-29@pomaz-ex.szeredi.hu> <AANLkTimeihuzjgR2f7Avq2PJrCw1vZxtjh=wBPXO3aHP@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC060EE9@TK5EX14MBXC227.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 10:55:12PM +0000, Haiyang Zhang wrote:
-> > From: Greg KH [mailto:greg@kroah.com]
-> > The layering is almost ok, there is still one more layer here than is
-> > needed, and it should be removed (I already removed lots of layers that
-> > were not needed, just didn't get to this one.)  But the naming also
-> > needs to be fixed up as it is wrong from a "driver model" standpoint
-> > with the rest of the kernel.
+On Wed, 23 Feb 2011, Linus Torvalds wrote:
+> On Wed, Feb 23, 2011 at 4:49 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> >
+> > This resolves Bug 25822 listed in the regressions since 2.6.36 (though
+> > it's a bug much older than that, for some reason it only started
+> > triggering for people recently).
 > 
-> So, how about rename the "struct driver_context" to "struct gen_drv_ctx"
-> in this patch? We can deal with the layering in next round of patches.
+> Gaah. I hate this patch. It is, in fact, a patch that makes me finally
+> think that the mm preemptibility is actually worth it, because then
+> i_mmap_lock turns into a mutex and makes the whole "drop the lock"
+> thing hopefully a thing of the past (see the patch "mm: Remove
+> i_mmap_mutex lockbreak").
+> 
+> Because as far as I can see, the only thing that makes this thing
+> needed in the first place is that horribly ugly "we drop i_mmap_lock
+> in the middle of random operations that really still need it".
+> 
+> That said, I don't really see any alternatives - I guess we can't
+> really just say "remove that crazy lock dropping". Even though I
+> really really really would like to.
 
-No, it's not a "driver context" at all.  It is a "hyperv driver", so
-name it as such.
+Those feelings understood and shared.
 
-A "context" is a void pointer or something that the driver uses
-privately.  And you already have a pointer to the context in the base
-structure so you don't need your own.
+> 
+> Of course, we could also just decide that we should apply the mm
+> preemptibility series instead. Can people confirm that that fixes the
+> bug too?
 
-You should work on removing the layering now, that will clean this all
-up.
+It would fix it, but there's a but.
 
-thanks,
+In his [2/8] mm: remove i_mmap_mutex lockbreak patch, Peter says
+"shouldn't hold up reclaim more than lock_page() would".  But (apart
+from a write error case) we always use trylock_page() in reclaim, we
+never dare hold it up on a lock_page().  So page reclaim would get
+held up on truncation more than at present - though he's right to
+point out that truncation will usually be freeing pages much faster.
 
-greg k-h
+I'm not sure whether it will prove good enough to abandon the lock
+breaking if we move to a mutex there.  And besides, this unmapping
+BUG does need a fix in stable, well before we want to try out the
+preemptible mmu gathering.
+
+I'd rather hold out Peter's series as a hope that we can
+eliminate this extra unmapping mutex in a few months time.
+
+Hugh
