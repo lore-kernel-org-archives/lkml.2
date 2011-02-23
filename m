@@ -1,126 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1BWBzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:55:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39482 "EHLO mga02.intel.com"
+	id S1755893Ab1BWB4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:56:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755708Ab1BWBwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 20:52:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,209,1297065600"; 
-   d="scan'208";a="712021905"
-From: Andi Kleen <andi@firstfloor.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>, aarcange@redhat.com
-Subject: [PATCH 2/8] Change alloc_pages_vma to pass down the policy node for local policy
-Date: Tue, 22 Feb 2011 17:51:56 -0800
-Message-Id: <1298425922-23630-3-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
-References: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
+	id S1755644Ab1BWB4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 20:56:23 -0500
+Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable
+ memory slots using wbtree
+From: Alex Williamson <alex.williamson@redhat.com>
+To: avi@redhat.com
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com
+In-Reply-To: <20110222183822.22026.62832.stgit@s20.home>
+References: <1298386481.5764.60.camel@x201>
+	 <20110222183822.22026.62832.stgit@s20.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Feb 2011 18:56:19 -0700
+Message-ID: <1298426179.1668.35.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Tue, 2011-02-22 at 11:54 -0700, Alex Williamson wrote:
+> This series introduces a new weight-balanced binary tree (wbtree) for
+> general use.  It's largely leveraged from the rbtree, copying it's
+> rotate functions, while introducing different rebalance and erase
+> functions.  This tree is particularly useful for managing memory
+> ranges, where it's desirable to have the most likely targets (the
+> largest ranges) at the top of each subtree.
+> 
+> Patches 2 & 3 go on to convert the KVM memory slots to a growable
+> array and make use of wbtree for efficient managment.  Trying to
+> exercise the worst case for this data structure, I ran netperf
+> TCP_RR on an emulated rtl8139 NIC connected directly to the host
+> via a tap.  Both qemu-kvm and the netserver on the host were
+> pinned to optimal CPUs with taskset.  This series resulted in
+> a 3% improvement for this test.
 
-Currently alloc_pages_vma always uses the local node as policy node
-for the LOCAL policy. Pass this node down as an argument instead.
+Marcelo asked about kernbench with ept=0 on this series.  Using a 4-way,
+10G guest with pinned vcpus, build in tmpfs, 10x optimal run, I got:
 
-No behaviour change from this patch, but will be needed for followons.
+           before (stdev)    after (stdev)     %
+--------+-----------------+----------------+-------
+Elapsed |  42.809 (0.19)  |  42.305 (0.23) | -1.18
+User    | 115.709 (0.22)  | 114.720 (0.31) | -0.85
+System  |  41.605 (0.14)  |  40.924 (0.20) | -1.64
+%cpu    |   366.9 (1.45)  |   367.6 (1.51) |  0.19
+context |  7272.3 (68.6)  |  7249.5 (97.8) | -0.31
+sleeps  | 14826.2 (110.6) | 14798.5 (63.0) | -0.19
 
-Cc: aarcange@redhat.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/gfp.h |    9 +++++----
- mm/huge_memory.c    |    2 +-
- mm/mempolicy.c      |   11 +++++------
- 3 files changed, 11 insertions(+), 11 deletions(-)
+So, a small but measurable gain.  Also, sorry for forgetting to address
+Marcelo's comments from the original version of patch 2/3, I'll pick
+them up in the next round.  Thanks,
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 0b84c61..782e74a 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -332,16 +332,17 @@ alloc_pages(gfp_t gfp_mask, unsigned int order)
- 	return alloc_pages_current(gfp_mask, order);
- }
- extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
--			struct vm_area_struct *vma, unsigned long addr);
-+		    	struct vm_area_struct *vma, unsigned long addr,
-+			int node);
- #else
- #define alloc_pages(gfp_mask, order) \
- 		alloc_pages_node(numa_node_id(), gfp_mask, order)
--#define alloc_pages_vma(gfp_mask, order, vma, addr)	\
-+#define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
- 	alloc_pages(gfp_mask, order)
- #endif
- #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
--#define alloc_page_vma(gfp_mask, vma, addr)	\
--	alloc_pages_vma(gfp_mask, 0, vma, addr)
-+#define alloc_page_vma(gfp_mask, vma, addr)			\
-+	alloc_pages_vma(gfp_mask, 0, vma, addr, numa_node_id())
- 
- extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
- extern unsigned long get_zeroed_page(gfp_t gfp_mask);
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e62ddb8..73ecca5 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -653,7 +653,7 @@ static inline struct page *alloc_hugepage_vma(int defrag,
- 					      unsigned long haddr)
- {
- 	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag),
--			       HPAGE_PMD_ORDER, vma, haddr);
-+			       HPAGE_PMD_ORDER, vma, haddr, numa_node_id());
- }
- 
- #ifndef CONFIG_NUMA
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 49355a9..25a5a91 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1524,10 +1524,9 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
- }
- 
- /* Return a zonelist indicated by gfp for node representing a mempolicy */
--static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy)
-+static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
-+	int nd)
- {
--	int nd = numa_node_id();
--
- 	switch (policy->mode) {
- 	case MPOL_PREFERRED:
- 		if (!(policy->flags & MPOL_F_LOCAL))
-@@ -1679,7 +1678,7 @@ struct zonelist *huge_zonelist(struct vm_area_struct *vma, unsigned long addr,
- 		zl = node_zonelist(interleave_nid(*mpol, vma, addr,
- 				huge_page_shift(hstate_vma(vma))), gfp_flags);
- 	} else {
--		zl = policy_zonelist(gfp_flags, *mpol);
-+		zl = policy_zonelist(gfp_flags, *mpol, numa_node_id());
- 		if ((*mpol)->mode == MPOL_BIND)
- 			*nodemask = &(*mpol)->v.nodes;
- 	}
-@@ -1820,7 +1819,7 @@ static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
-  */
- struct page *
- alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
--		unsigned long addr)
-+		unsigned long addr, int node)
- {
- 	struct mempolicy *pol = get_vma_policy(current, vma, addr);
- 	struct zonelist *zl;
-@@ -1836,7 +1835,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
- 		put_mems_allowed();
- 		return page;
- 	}
--	zl = policy_zonelist(gfp, pol);
-+	zl = policy_zonelist(gfp, pol, node);
- 	if (unlikely(mpol_needs_cond_ref(pol))) {
- 		/*
- 		 * slow path: ref counted shared policy
--- 
-1.7.4
+Alex
 
