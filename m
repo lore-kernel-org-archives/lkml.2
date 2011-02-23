@@ -1,740 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab1BWQvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:51:09 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44024 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab1BWQvH (ORCPT
+	id S932198Ab1BWQxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:53:13 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62260 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab1BWQxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:51:07 -0500
-Date: Wed, 23 Feb 2011 09:50:58 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found
- on the MPC85xx.
-Message-ID: <20110223165058.GE14597@angua.secretlab.ca>
-References: <cover.1298447722.git.richard.cochran@omicron.at>
- <be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
+	Wed, 23 Feb 2011 11:53:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=OnRs0+Cxu6ooynxonOF8COz8Ji0lmNFTb+iB8eIgAXoDlG98y01pb3P7g3FXmbPb8o
+         TdRfZa9WKgvFOGAToFaw+hxg6/CeOrkMGYrC60qFoShjDY9wZSZEhep5tQLwxiKSJQc+
+         Y/YnWWCOCQ5+4pRMDdrKqpXujy5coTO8ahu2g=
+Date: Wed, 23 Feb 2011 17:50:46 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+Message-ID: <20110223165043.GA2529@nowhere>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
+In-Reply-To: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 11:38:17AM +0100, Richard Cochran wrote:
-> The eTSEC includes a PTP clock with quite a few features. This patch adds
-> support for the basic clock adjustment functions, plus two external time
-> stamps, one alarm, and the PPS callback.
-> 
-> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-> Acked-by: John Stultz <johnstul@us.ibm.com>
-> ---
->  .../devicetree/bindings/net/fsl-tsec-phy.txt       |   57 +++
->  arch/powerpc/boot/dts/mpc8313erdb.dts              |   14 +
->  arch/powerpc/boot/dts/mpc8572ds.dts                |   14 +
->  arch/powerpc/boot/dts/p2020ds.dts                  |   14 +
->  arch/powerpc/boot/dts/p2020rdb.dts                 |   14 +
->  drivers/net/Makefile                               |    1 +
->  drivers/net/gianfar_ptp.c                          |  448 ++++++++++++++++++++
->  drivers/net/gianfar_ptp_reg.h                      |  113 +++++
->  drivers/ptp/Kconfig                                |   13 +
->  9 files changed, 688 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/net/gianfar_ptp.c
->  create mode 100644 drivers/net/gianfar_ptp_reg.h
-> 
-> diff --git a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-> index edb7ae1..f6edbb8 100644
-> --- a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-> +++ b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-> @@ -74,3 +74,60 @@ Example:
->  		interrupt-parent = <&mpic>;
->  		phy-handle = <&phy0>
->  	};
-> +
-> +* Gianfar PTP clock nodes
-> +
-> +General Properties:
-> +
-> +  - compatible   Should be "fsl,etsec-ptp"
-
-Should specify an *exact* part; ie: "fsl,mpc8313-etsec-ptp" instead of
-trying to define a generic catchall.  The reason is that the same
-marketing name can end up getting applied to a wide range of parts.
-
-Instead, choose one specific device to stand in as the 'common'
-implementation and get all parts with the same core to claim
-compatibility with it.  ie: a p2020 might have:
-
-	compatible = "fsl,mpc2020-etsec-ptp", "fsl,mpc8313-etsec-ptp";
-
-> +  - reg          Offset and length of the register set for the device
-> +  - interrupts   There should be at least two interrupts. Some devices
-> +                 have as many as four PTP related interrupts.
-> +
-> +Clock Properties:
-> +
-> +  - tclk-period  Timer reference clock period in nanoseconds.
-> +  - tmr-prsc     Prescaler, divides the output clock.
-> +  - tmr-add      Frequency compensation value.
-> +  - cksel        0= external clock, 1= eTSEC system clock, 3= RTC clock input.
-> +                 Currently the driver only supports choice "1".
-
-I'd be hesitant about defining something that isn't actually
-implemented yet.  You may find the binding to be insufficient at a
-later date.
-
-> +  - tmr-fiper1   Fixed interval period pulse generator.
-> +  - tmr-fiper2   Fixed interval period pulse generator.
-> +  - max-adj      Maximum frequency adjustment in parts per billion.
-
-These are all custom properties (not part of any shared binding) so
-they should probably be prefixed with 'fsl,'.
-
-> +
-> +  These properties set the operational parameters for the PTP
-> +  clock. You must choose these carefully for the clock to work right.
-> +  Here is how to figure good values:
-> +
-> +  TimerOsc     = system clock               MHz
-> +  tclk_period  = desired clock period       nanoseconds
-> +  NominalFreq  = 1000 / tclk_period         MHz
-> +  FreqDivRatio = TimerOsc / NominalFreq     (must be greater that 1.0)
-> +  tmr_add      = ceil(2^32 / FreqDivRatio)
-> +  OutputClock  = NominalFreq / tmr_prsc     MHz
-> +  PulseWidth   = 1 / OutputClock            microseconds
-> +  FiperFreq1   = desired frequency in Hz
-> +  FiperDiv1    = 1000000 * OutputClock / FiperFreq1
-> +  tmr_fiper1   = tmr_prsc * tclk_period * FiperDiv1 - tclk_period
-> +  max_adj      = 1000000000 * (FreqDivRatio - 1.0) - 1
-> +
-> +  The calculation for tmr_fiper2 is the same as for tmr_fiper1. The
-> +  driver expects that tmr_fiper1 will be correctly set to produce a 1
-> +  Pulse Per Second (PPS) signal, since this will be offered to the PPS
-> +  subsystem to synchronize the Linux clock.
-
-Good documentation, thanks.  Question though, how many of these values
-will the end user (or board builder) be likely to want to change.  It
-is risky encoding the calculation results into the device tree when
-they aren't the actually parameters that will be manipulated, or at
-least very user-unfriendly.
-
-> +
-> +Example:
-> +
-> +	ptp_clock@24E00 {
-> +		compatible = "fsl,etsec-ptp";
-> +		reg = <0x24E00 0xB0>;
-> +		interrupts = <12 0x8 13 0x8>;
-> +		interrupt-parent = < &ipic >;
-> +		tclk-period = <10>;
-> +		tmr-prsc    = <100>;
-> +		tmr-add     = <0x999999A4>;
-> +		cksel       = <0x1>;
-> +		tmr-fiper1  = <0x3B9AC9F6>;
-> +		tmr-fiper2  = <0x00018696>;
-> +		max-adj     = <659999998>;
-> +	};
-> diff --git a/arch/powerpc/boot/dts/mpc8313erdb.dts b/arch/powerpc/boot/dts/mpc8313erdb.dts
-> index 183f2aa..85a7eaa 100644
-> --- a/arch/powerpc/boot/dts/mpc8313erdb.dts
-> +++ b/arch/powerpc/boot/dts/mpc8313erdb.dts
-> @@ -208,6 +208,20 @@
->  			sleep = <&pmc 0x00300000>;
->  		};
->  
-> +		ptp_clock@24E00 {
-> +			compatible = "fsl,etsec-ptp";
-> +			reg = <0x24E00 0xB0>;
-> +			interrupts = <12 0x8 13 0x8>;
-> +			interrupt-parent = < &ipic >;
-> +			tclk-period = <10>;
-> +			tmr-prsc    = <100>;
-> +			tmr-add     = <0x999999A4>;
-> +			cksel       = <0x1>;
-> +			tmr-fiper1  = <0x3B9AC9F6>;
-> +			tmr-fiper2  = <0x00018696>;
-> +			max-adj     = <659999998>;
-> +		};
-> +
->  		enet0: ethernet@24000 {
->  			#address-cells = <1>;
->  			#size-cells = <1>;
-> diff --git a/arch/powerpc/boot/dts/mpc8572ds.dts b/arch/powerpc/boot/dts/mpc8572ds.dts
-> index cafc128..74208cd 100644
-> --- a/arch/powerpc/boot/dts/mpc8572ds.dts
-> +++ b/arch/powerpc/boot/dts/mpc8572ds.dts
-> @@ -324,6 +324,20 @@
->  			};
->  		};
->  
-> +		ptp_clock@24E00 {
-> +			compatible = "fsl,etsec-ptp";
-> +			reg = <0x24E00 0xB0>;
-> +			interrupts = <68 2 69 2 70 2 71 2>;
-> +			interrupt-parent = < &mpic >;
-> +			tclk-period = <5>;
-> +			tmr-prsc = <200>;
-> +			tmr-add = <0xAAAAAAAB>;
-> +			cksel = <1>;
-> +			tmr-fiper1 = <0x3B9AC9FB>;
-> +			tmr-fiper2 = <0x3B9AC9FB>;
-> +			max-adj = <499999999>;
-> +		};
-> +
->  		enet0: ethernet@24000 {
->  			#address-cells = <1>;
->  			#size-cells = <1>;
-> diff --git a/arch/powerpc/boot/dts/p2020ds.dts b/arch/powerpc/boot/dts/p2020ds.dts
-> index 1101914..39d73bb 100644
-> --- a/arch/powerpc/boot/dts/p2020ds.dts
-> +++ b/arch/powerpc/boot/dts/p2020ds.dts
-> @@ -336,6 +336,20 @@
->  			phy_type = "ulpi";
->  		};
->  
-> +		ptp_clock@24E00 {
-> +			compatible = "fsl,etsec-ptp";
-> +			reg = <0x24E00 0xB0>;
-> +			interrupts = <68 2 69 2 70 2>;
-> +			interrupt-parent = < &mpic >;
-> +			tclk-period = <5>;
-> +			tmr-prsc = <200>;
-> +			tmr-add = <0xCCCCCCCD>;
-> +			cksel = <1>;
-> +			tmr-fiper1 = <0x3B9AC9FB>;
-> +			tmr-fiper2 = <0x0001869B>;
-> +			max-adj = <249999999>;
-> +		};
-> +
->  		enet0: ethernet@24000 {
->  			#address-cells = <1>;
->  			#size-cells = <1>;
-> diff --git a/arch/powerpc/boot/dts/p2020rdb.dts b/arch/powerpc/boot/dts/p2020rdb.dts
-> index da4cb0d..5498fb9 100644
-> --- a/arch/powerpc/boot/dts/p2020rdb.dts
-> +++ b/arch/powerpc/boot/dts/p2020rdb.dts
-> @@ -396,6 +396,20 @@
->  			phy_type = "ulpi";
->  		};
->  
-> +		ptp_clock@24E00 {
-> +			compatible = "fsl,etsec-ptp";
-> +			reg = <0x24E00 0xB0>;
-> +			interrupts = <68 2 69 2 70 2>;
-> +			interrupt-parent = < &mpic >;
-> +			tclk-period = <5>;
-> +			tmr-prsc = <200>;
-> +			tmr-add = <0xCCCCCCCD>;
-> +			cksel = <1>;
-> +			tmr-fiper1 = <0x3B9AC9FB>;
-> +			tmr-fiper2 = <0x0001869B>;
-> +			max-adj = <249999999>;
-> +		};
-> +
->  		enet0: ethernet@24000 {
->  			#address-cells = <1>;
->  			#size-cells = <1>;
-> diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-> index b90738d..c303f5f 100644
-> --- a/drivers/net/Makefile
-> +++ b/drivers/net/Makefile
-> @@ -31,6 +31,7 @@ obj-$(CONFIG_ATL2) += atlx/
->  obj-$(CONFIG_ATL1E) += atl1e/
->  obj-$(CONFIG_ATL1C) += atl1c/
->  obj-$(CONFIG_GIANFAR) += gianfar_driver.o
-> +obj-$(CONFIG_PTP_1588_CLOCK_GIANFAR) += gianfar_ptp.o
->  obj-$(CONFIG_TEHUTI) += tehuti.o
->  obj-$(CONFIG_ENIC) += enic/
->  obj-$(CONFIG_JME) += jme.o
-> diff --git a/drivers/net/gianfar_ptp.c b/drivers/net/gianfar_ptp.c
-> new file mode 100644
-> index 0000000..84fff15
-> --- /dev/null
-> +++ b/drivers/net/gianfar_ptp.c
-> @@ -0,0 +1,448 @@
-> +/*
-> + * PTP 1588 clock using the eTSEC
-> + *
-> + * Copyright (C) 2010 OMICRON electronics GmbH
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; if not, write to the Free Software
-> + *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> + */
-> +#include <linux/device.h>
-> +#include <linux/hrtimer.h>
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/timex.h>
-> +#include <linux/io.h>
-> +
-> +#include <linux/ptp_clock_kernel.h>
-> +
-> +#include "gianfar_ptp_reg.h"
-> +#include "gianfar.h"
-> +
-> +#define DRIVER		"gianfar_ptp"
-> +#define N_ALARM		1 /* first alarm is used internally to reset fipers */
-> +#define N_EXT_TS	2
-> +#define REG_SIZE	sizeof(struct gianfar_ptp_registers)
-> +
-> +struct etsects {
-> +	struct gianfar_ptp_registers *regs;
-> +	struct ptp_clock *clock;
-> +	struct ptp_clock_info caps;
-> +	int irq;
-> +	u64 alarm_interval; /* for periodic alarm */
-> +	u64 alarm_value;
-> +	u32 tclk_period;  /* nanoseconds */
-> +	u32 tmr_prsc;
-> +	u32 tmr_add;
-> +	u32 cksel;
-> +	u32 tmr_fiper1;
-> +	u32 tmr_fiper2;
-> +};
-> +
-> +/* Private globals */
-> +static struct etsects the_clock;
-> +DEFINE_SPINLOCK(register_lock);
-> +
-> +/*
-> + * Register access functions
-> + */
-> +
-> +static u64 tmr_cnt_read(struct etsects *etsects)
-> +{
-> +	u64 ns;
-> +	u32 lo, hi;
-> +
-> +	lo = gfar_read(&etsects->regs->tmr_cnt_l);
-> +	hi = gfar_read(&etsects->regs->tmr_cnt_h);
-> +	ns = ((u64) hi) << 32;
-> +	ns |= lo;
-> +	return ns;
-> +}
-> +
-> +static void tmr_cnt_write(struct etsects *etsects, u64 ns)
-> +{
-> +	u32 hi = ns >> 32;
-> +	u32 lo = ns & 0xffffffff;
-> +
-> +	gfar_write(&etsects->regs->tmr_cnt_l, lo);
-> +	gfar_write(&etsects->regs->tmr_cnt_h, hi);
-> +}
-> +
-> +static void set_alarm(struct etsects *etsects)
-> +{
-> +	u64 ns;
-> +	u32 lo, hi;
-> +
-> +	ns = tmr_cnt_read(etsects) + 1500000000ULL;
-> +	ns = div_u64(ns, 1000000000UL) * 1000000000ULL;
-> +	ns -= etsects->tclk_period;
-> +	hi = ns >> 32;
-> +	lo = ns & 0xffffffff;
-> +	gfar_write(&etsects->regs->tmr_alarm1_l, lo);
-> +	gfar_write(&etsects->regs->tmr_alarm1_h, hi);
-> +}
-> +
-> +static void set_fipers(struct etsects *etsects)
-> +{
-> +	u32 tmr_ctrl = gfar_read(&etsects->regs->tmr_ctrl);
-> +
-> +	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl & (~TE));
-> +	gfar_write(&etsects->regs->tmr_prsc,   etsects->tmr_prsc);
-> +	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
-> +	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
-> +	set_alarm(etsects);
-> +	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|TE);
+On Tue, Feb 22, 2011 at 05:39:40PM -0800, Paul E. McKenney wrote:
 > +}
 > +
 > +/*
-> + * Interrupt service routine
+> + * Drop to non-real-time priority and yield, but only after posting a
+> + * timer that will cause us to regain our real-time priority if we
+> + * remain preempted.  Either way, we restore our real-time priority
+> + * before returning.
 > + */
-> +
-> +static irqreturn_t isr(int irq, void *priv)
+> +static void rcu_yield(int cpu)
 > +{
-> +	struct etsects *etsects = priv;
-> +	struct ptp_clock_event event;
-> +	u64 ns;
-> +	u32 ack = 0, lo, hi, mask, val;
+> +	struct rcu_data *rdp = per_cpu_ptr(rcu_sched_state.rda, cpu);
+> +	struct sched_param sp;
+> +	struct timer_list yield_timer;
 > +
-> +	val = gfar_read(&etsects->regs->tmr_tevent);
-> +
-> +	if (val & ETS1) {
-> +		ack |= ETS1;
-> +		hi = gfar_read(&etsects->regs->tmr_etts1_h);
-> +		lo = gfar_read(&etsects->regs->tmr_etts1_l);
-> +		event.type = PTP_CLOCK_EXTTS;
-> +		event.index = 0;
-> +		event.timestamp = ((u64) hi) << 32;
-> +		event.timestamp |= lo;
-> +		ptp_clock_event(etsects->clock, &event);
-> +	}
-> +
-> +	if (val & ETS2) {
-> +		ack |= ETS2;
-> +		hi = gfar_read(&etsects->regs->tmr_etts2_h);
-> +		lo = gfar_read(&etsects->regs->tmr_etts2_l);
-> +		event.type = PTP_CLOCK_EXTTS;
-> +		event.index = 1;
-> +		event.timestamp = ((u64) hi) << 32;
-> +		event.timestamp |= lo;
-> +		ptp_clock_event(etsects->clock, &event);
-> +	}
-> +
-> +	if (val & ALM2) {
-> +		ack |= ALM2;
-> +		if (etsects->alarm_value) {
-> +			event.type = PTP_CLOCK_ALARM;
-> +			event.index = 0;
-> +			event.timestamp = etsects->alarm_value;
-> +			ptp_clock_event(etsects->clock, &event);
-> +		}
-> +		if (etsects->alarm_interval) {
-> +			ns = etsects->alarm_value + etsects->alarm_interval;
-> +			hi = ns >> 32;
-> +			lo = ns & 0xffffffff;
-> +			spin_lock(&register_lock);
-> +			gfar_write(&etsects->regs->tmr_alarm2_l, lo);
-> +			gfar_write(&etsects->regs->tmr_alarm2_h, hi);
-> +			spin_unlock(&register_lock);
-> +			etsects->alarm_value = ns;
-> +		} else {
-> +			gfar_write(&etsects->regs->tmr_tevent, ALM2);
-> +			spin_lock(&register_lock);
-> +			mask = gfar_read(&etsects->regs->tmr_temask);
-> +			mask &= ~ALM2EN;
-> +			gfar_write(&etsects->regs->tmr_temask, mask);
-> +			spin_unlock(&register_lock);
-> +			etsects->alarm_value = 0;
-> +			etsects->alarm_interval = 0;
-> +		}
-> +	}
-> +
-> +	if (val & PP1) {
-> +		ack |= PP1;
-> +		event.type = PTP_CLOCK_PPS;
-> +		ptp_clock_event(etsects->clock, &event);
-> +	}
-> +
-> +	if (ack) {
-> +		gfar_write(&etsects->regs->tmr_tevent, ack);
-> +		return IRQ_HANDLED;
-> +	} else
-> +		return IRQ_NONE;
+> +	setup_timer(&yield_timer, rcu_cpu_kthread_timer, (unsigned long)rdp);
+> +	mod_timer(&yield_timer, jiffies + 2);
+> +	sp.sched_priority = 0;
+> +	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
+> +	schedule();
+> +	sp.sched_priority = RCU_KTHREAD_PRIO;
+> +	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+> +	del_timer(&yield_timer);
 > +}
 > +
 > +/*
-> + * PTP clock operations
+> + * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
+> + * This can happen while the corresponding CPU is either coming online
+> + * or going offline.  We cannot wait until the CPU is fully online
+> + * before starting the kthread, because the various notifier functions
+> + * can wait for RCU grace periods.  So we park rcu_cpu_kthread() until
+> + * the corresponding CPU is online.
+> + *
+> + * Return 1 if the kthread needs to stop, 0 otherwise.
+> + *
+> + * Caller must disable bh.  This function can momentarily enable it.
 > + */
-> +
-> +static int ptp_gianfar_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
+> +static int rcu_cpu_kthread_should_stop(int cpu)
 > +{
-> +	u64 adj;
-> +	u32 diff, tmr_add;
-> +	int neg_adj = 0;
-> +	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-> +
-> +	if (ppb < 0) {
-> +		neg_adj = 1;
-> +		ppb = -ppb;
+> +	while (cpu_is_offline(cpu) || smp_processor_id() != cpu) {
+> +		if (kthread_should_stop())
+> +			return 1;
+> +		local_bh_enable();
+> +		schedule_timeout_uninterruptible(1);
+
+Why is it uninterruptible? Well that doesn't change much anyway.
+It can be a problem for long time sleeping kernel threads because of
+the hung task detector, but certainly not for 1 jiffy.
+
+> +		if (smp_processor_id() != cpu)
+> +			set_cpus_allowed_ptr(current, cpumask_of(cpu));
+> +		local_bh_disable();
 > +	}
-> +	tmr_add = etsects->tmr_add;
-> +	adj = tmr_add;
-> +	adj *= ppb;
-> +	diff = div_u64(adj, 1000000000ULL);
-> +
-> +	tmr_add = neg_adj ? tmr_add - diff : tmr_add + diff;
-> +
-> +	gfar_write(&etsects->regs->tmr_add, tmr_add);
-> +
 > +	return 0;
 > +}
 > +
-> +static int ptp_gianfar_adjtime(struct ptp_clock_info *ptp, s64 delta)
+> +/*
+> + * Per-CPU kernel thread that invokes RCU callbacks.  This replaces the
+> + * earlier RCU softirq.
+> + */
+> +static int rcu_cpu_kthread(void *arg)
 > +{
-> +	s64 now;
+> +	int cpu = (int)(long)arg;
 > +	unsigned long flags;
-> +	struct etsects *etsects = container_of(ptp, struct etsects, caps);
+> +	int spincnt = 0;
+> +	wait_queue_head_t *wqp = &per_cpu(rcu_cpu_wq, cpu);
+> +	char work;
+> +	char *workp = &per_cpu(rcu_cpu_has_work, cpu);
 > +
-> +	spin_lock_irqsave(&register_lock, flags);
-> +
-> +	now = tmr_cnt_read(etsects);
-> +	now += delta;
-> +	tmr_cnt_write(etsects, now);
-> +
-> +	spin_unlock_irqrestore(&register_lock, flags);
-> +
-> +	set_fipers(etsects);
-> +
-> +	return 0;
-> +}
-> +
-> +static int ptp_gianfar_gettime(struct ptp_clock_info *ptp, struct timespec *ts)
-> +{
-> +	u64 ns;
-> +	u32 remainder;
-> +	unsigned long flags;
-> +	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-> +
-> +	spin_lock_irqsave(&register_lock, flags);
-> +
-> +	ns = tmr_cnt_read(etsects);
-> +
-> +	spin_unlock_irqrestore(&register_lock, flags);
-> +
-> +	ts->tv_sec = div_u64_rem(ns, 1000000000, &remainder);
-> +	ts->tv_nsec = remainder;
-> +	return 0;
-> +}
-> +
-> +static int ptp_gianfar_settime(struct ptp_clock_info *ptp,
-> +			       const struct timespec *ts)
-> +{
-> +	u64 ns;
-> +	unsigned long flags;
-> +	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-> +
-> +	ns = ts->tv_sec * 1000000000ULL;
-> +	ns += ts->tv_nsec;
-> +
-> +	spin_lock_irqsave(&register_lock, flags);
-> +
-> +	tmr_cnt_write(etsects, ns);
-> +	set_fipers(etsects);
-> +
-> +	spin_unlock_irqrestore(&register_lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static int ptp_gianfar_enable(struct ptp_clock_info *ptp,
-> +			      struct ptp_clock_request *rq, int on)
-> +{
-> +	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-> +	unsigned long flags;
-> +	u32 bit, mask;
-> +
-> +	switch (rq->type) {
-> +	case PTP_CLK_REQ_EXTTS:
-> +		switch (rq->extts.index) {
-> +		case 0:
-> +			bit = ETS1EN;
+> +	for (;;) {
+> +		wait_event_interruptible(*wqp,
+> +					 *workp != 0 || kthread_should_stop());
+> +		local_bh_disable();
+> +		if (rcu_cpu_kthread_should_stop(cpu)) {
+> +			local_bh_enable();
 > +			break;
-> +		case 1:
-> +			bit = ETS2EN;
-> +			break;
-> +		default:
-> +			return -EINVAL;
 > +		}
-> +		spin_lock_irqsave(&register_lock, flags);
-> +		mask = gfar_read(&etsects->regs->tmr_temask);
-> +		if (on)
-> +			mask |= bit;
+> +		local_irq_save(flags);
+> +		work = *workp;
+> +		*workp = 0;
+> +		local_irq_restore(flags);
+> +		if (work)
+> +			rcu_process_callbacks();
+> +		local_bh_enable();
+> +		if (*workp != 0)
+> +			spincnt++;
 > +		else
-> +			mask &= ~bit;
-> +		gfar_write(&etsects->regs->tmr_temask, mask);
-> +		spin_unlock_irqrestore(&register_lock, flags);
-> +		return 0;
-> +
-> +	case PTP_CLK_REQ_PPS:
-> +		spin_lock_irqsave(&register_lock, flags);
-> +		mask = gfar_read(&etsects->regs->tmr_temask);
-> +		if (on)
-> +			mask |= PP1EN;
-> +		else
-> +			mask &= ~PP1EN;
-> +		gfar_write(&etsects->regs->tmr_temask, mask);
-> +		spin_unlock_irqrestore(&register_lock, flags);
-> +		return 0;
-> +
-> +	default:
-> +		break;
+> +			spincnt = 0;
+> +		if (spincnt > 10) {
+> +			rcu_yield(cpu);
+> +			spincnt = 0;
+> +		}
 > +	}
-> +
-> +	return -EOPNOTSUPP;
-> +}
-> +
-> +static struct ptp_clock_info ptp_gianfar_caps = {
-> +	.owner		= THIS_MODULE,
-> +	.name		= "gianfar clock",
-> +	.max_adj	= 512000,
-> +	.n_alarm	= N_ALARM,
-> +	.n_ext_ts	= N_EXT_TS,
-> +	.n_per_out	= 0,
-> +	.pps		= 1,
-> +	.adjfreq	= ptp_gianfar_adjfreq,
-> +	.adjtime	= ptp_gianfar_adjtime,
-> +	.gettime	= ptp_gianfar_gettime,
-> +	.settime	= ptp_gianfar_settime,
-> +	.enable		= ptp_gianfar_enable,
-> +};
-> +
-> +/* OF device tree */
-> +
-> +static int get_of_u32(struct device_node *node, char *str, u32 *val)
-> +{
-> +	int plen;
-> +	const u32 *prop = of_get_property(node, str, &plen);
-> +
-> +	if (!prop || plen != sizeof(*prop))
-> +		return -1;
-> +	*val = *prop;
 > +	return 0;
 > +}
 > +
-> +static int gianfar_ptp_probe(struct platform_device *dev,
-> +			     const struct of_device_id *match)
+> +/*
+> + * Per-rcu_node kthread, which is in charge of waking up the per-CPU
+> + * kthreads when needed.
+> + */
+> +static int rcu_node_kthread(void *arg)
 > +{
-> +	struct device_node *node = dev->dev.of_node;
-> +	struct etsects *etsects = &the_clock;
-> +	struct timespec now;
-> +	u32 tmr_ctrl;
+> +	int cpu;
+> +	unsigned long flags;
+> +	unsigned long mask;
+> +	struct rcu_node *rnp = (struct rcu_node *)arg;
+> +	struct sched_param sp;
+> +	struct task_struct *t;
 > +
-> +	etsects->caps = ptp_gianfar_caps;
-> +
-> +	if (get_of_u32(node, "tclk-period", &etsects->tclk_period) ||
-> +	    get_of_u32(node, "tmr-prsc", &etsects->tmr_prsc) ||
-> +	    get_of_u32(node, "tmr-add", &etsects->tmr_add) ||
-> +	    get_of_u32(node, "cksel", &etsects->cksel) ||
-> +	    get_of_u32(node, "tmr-fiper1", &etsects->tmr_fiper1) ||
-> +	    get_of_u32(node, "tmr-fiper2", &etsects->tmr_fiper2) ||
-> +	    get_of_u32(node, "max-adj", &etsects->caps.max_adj)) {
-> +		pr_err("device tree node missing required elements\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	etsects->irq = irq_of_parse_and_map(node, 0);
+> +	for (;;) {
+> +		wait_event_interruptible(rnp->node_wq, rnp->wakemask != 0 ||
+> +						       kthread_should_stop());
+> +		if (kthread_should_stop())
+> +			break;
+> +		raw_spin_lock_irqsave(&rnp->lock, flags);
+> +		mask = rnp->wakemask;
+> +		rnp->wakemask = 0;
+> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> +		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1) {
+> +			if ((mask & 0x1) == 0)
+> +				continue;
+> +			preempt_disable();
+> +			per_cpu(rcu_cpu_has_work, cpu) = 1;
+> +			t = per_cpu(rcu_cpu_kthread_task, cpu);
+> +			if (t == NULL) {
+> +				preempt_enable();
+> +				continue;
+> +			}
+> +			sp.sched_priority = RCU_KTHREAD_PRIO;
+> +			sched_setscheduler_nocheck(t, cpu, &sp);
+> +			wake_up_process(t);
 
-Use platform_get_irq().
+My (mis?)understanding of the picture is this node kthread is there to
+wake up cpu threads that called rcu_yield(). But actually rcu_yield()
+doesn't make the cpu thread sleeping, instead it switches to SCHED_NORMAL,
+to avoid starving the system with callbacks.
 
-> +
-> +	if (etsects->irq == NO_IRQ) {
-> +		pr_err("irq not in device tree\n");
-> +		return -ENODEV;
-> +	}
-> +	if (request_irq(etsects->irq, isr, 0, DRIVER, etsects)) {
-> +		pr_err("request_irq failed\n");
-> +		return -ENODEV;
-> +	}
-> +	etsects->regs = of_iomap(node, 0);
+So I wonder if this wake_up_process() is actually relevant.
+sched_setscheduler_nocheck() already handles the per sched policy rq migration
+and the process is not sleeping.
 
-Use platform_get_resource(), and don't forget to request the
-resources.
+That said, by the time the process may have gone to sleep, because if no other
+SCHED_NORMAL task was there, it has just continued and may have flushed
+every callbacks. So this wake_up_process() may actually wake up the task
+but it will sleep again right away due to the condition in wait_event_interruptible()
+of the cpu thread.
 
-> +	if (!etsects->regs) {
-> +		pr_err("of_iomap ptp registers failed\n");
-> +		return -EINVAL;
+Right?
+
+> +			preempt_enable();
+> +		}
 > +	}
-> +	getnstimeofday(&now);
-> +	ptp_gianfar_settime(&etsects->caps, &now);
-> +
-> +	tmr_ctrl =
-> +	  (etsects->tclk_period & TCLK_PERIOD_MASK) << TCLK_PERIOD_SHIFT |
-> +	  (etsects->cksel & CKSEL_MASK) << CKSEL_SHIFT;
-> +
-> +	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl);
-> +	gfar_write(&etsects->regs->tmr_add,    etsects->tmr_add);
-> +	gfar_write(&etsects->regs->tmr_prsc,   etsects->tmr_prsc);
-> +	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
-> +	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
-> +	set_alarm(etsects);
-> +	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|FS|RTPE|TE);
-> +
-> +	etsects->clock = ptp_clock_register(&etsects->caps);
-> +
-> +	return IS_ERR(etsects->clock) ? PTR_ERR(etsects->clock) : 0;
-> +}
-> +
-> +static int gianfar_ptp_remove(struct platform_device *dev)
-> +{
-> +	gfar_write(&the_clock.regs->tmr_temask, 0);
-> +	gfar_write(&the_clock.regs->tmr_ctrl,   0);
-> +
-> +	ptp_clock_unregister(the_clock.clock);
-> +	free_irq(the_clock.irq, &the_clock);
-> +	iounmap(the_clock.regs);
-> +
 > +	return 0;
 > +}
-> +
-> +static struct of_device_id match_table[] = {
-> +	{ .compatible = "fsl,etsec-ptp" },
-> +	{},
-> +};
-> +
-> +static struct of_platform_driver gianfar_ptp_driver = {
-
-Use a platform_driver instead.  of_platform_driver is deprecated and
-being removed.
-
-> +	.driver = {
-> +		.name		= "gianfar_ptp",
-> +		.of_match_table	= match_table,
-> +		.owner		= THIS_MODULE,
-> +	},
-> +	.probe       = gianfar_ptp_probe,
-> +	.remove      = gianfar_ptp_remove,
-> +};
-> +
-> +/* module operations */
-> +
-> +static int __init ptp_gianfar_init(void)
-> +{
-> +	return of_register_platform_driver(&gianfar_ptp_driver);
-> +}
-> +
-> +module_init(ptp_gianfar_init);
-> +
-> +static void __exit ptp_gianfar_exit(void)
-> +{
-> +	of_unregister_platform_driver(&gianfar_ptp_driver);
-> +}
-> +
-> +module_exit(ptp_gianfar_exit);
-> +
-> +MODULE_AUTHOR("Richard Cochran <richard.cochran@omicron.at>");
-> +MODULE_DESCRIPTION("PTP clock using the eTSEC");
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/net/gianfar_ptp_reg.h b/drivers/net/gianfar_ptp_reg.h
-> new file mode 100644
-> index 0000000..95e171f
-> --- /dev/null
-> +++ b/drivers/net/gianfar_ptp_reg.h
-
-This data is only used by gianfar_ptp.c, so there is no need for a
-separate include file.  Move the contents of gianfar_ptp_reg.h into
-gianfar_ptp.c
-
-g.
-
