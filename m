@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab1BWNyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:54:18 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38488 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207Ab1BWNyO (ORCPT
+	id S932236Ab1BWNyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:54:21 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53315 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188Ab1BWNyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:54:14 -0500
+	Wed, 23 Feb 2011 08:54:18 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
         sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
-Subject: [PATCH -V5 20/24] richacl: xattr mapping functions
-Date: Wed, 23 Feb 2011 19:22:07 +0530
-Message-Id: <1298469131-16555-21-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V5 18/24] richacl: Check if an acl is equivalent to a file mode
+Date: Wed, 23 Feb 2011 19:22:05 +0530
+Message-Id: <1298469131-16555-19-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,246 +26,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-Map between "system.richacl" xattrs and the in-kernel representation.
+This function is used to avoid storing richacls on disk if the acl can
+be computed from the file permission bits.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/Makefile                   |    2 +-
- fs/richacl_xattr.c            |  156 +++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl_xattr.h |   47 ++++++++++++
- 3 files changed, 204 insertions(+), 1 deletions(-)
- create mode 100644 fs/richacl_xattr.c
- create mode 100644 include/linux/richacl_xattr.h
+ fs/richacl_base.c       |   54 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/richacl.h |    1 +
+ 2 files changed, 55 insertions(+), 0 deletions(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index e313219..4e52702 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -49,7 +49,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index 5e926ad..e60440b 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -561,3 +561,57 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
  
- obj-$(CONFIG_FS_RICHACL)	+= richacl.o
--richacl-y			:= richacl_base.o richacl_inode.o
-+richacl-y			:= richacl_base.o richacl_inode.o richacl_xattr.o
- 
- obj-y				+= quota/
- 
-diff --git a/fs/richacl_xattr.c b/fs/richacl_xattr.c
-new file mode 100644
-index 0000000..51d1c3c
---- /dev/null
-+++ b/fs/richacl_xattr.c
-@@ -0,0 +1,156 @@
-+/*
-+ * Copyright (C) 2006, 2010  Novell, Inc.
-+ * Written by Andreas Gruenbacher <agruen@suse.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/richacl_xattr.h>
-+
-+MODULE_LICENSE("GPL");
+ 	return acl;
+ }
 +
 +/**
-+ * richacl_from_xattr  -  convert a richacl xattr into the in-memory representation
-+ */
-+struct richacl *
-+richacl_from_xattr(const void *value, size_t size)
-+{
-+	const struct richacl_xattr *xattr_acl = value;
-+	const struct richace_xattr *xattr_ace = (void *)(xattr_acl + 1);
-+	struct richacl *acl;
-+	struct richace *ace;
-+	int count;
-+
-+	if (size < sizeof(struct richacl_xattr) ||
-+	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
-+	    (xattr_acl->a_flags & ~ACL4_VALID_FLAGS))
-+		return ERR_PTR(-EINVAL);
-+
-+	count = le16_to_cpu(xattr_acl->a_count);
-+	if (count > ACL4_XATTR_MAX_COUNT)
-+		return ERR_PTR(-EINVAL);
-+
-+	acl = richacl_alloc(count);
-+	if (!acl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	acl->a_flags = xattr_acl->a_flags;
-+	acl->a_owner_mask = le32_to_cpu(xattr_acl->a_owner_mask);
-+	if (acl->a_owner_mask & ~ACE4_VALID_MASK)
-+		goto fail_einval;
-+	acl->a_group_mask = le32_to_cpu(xattr_acl->a_group_mask);
-+	if (acl->a_group_mask & ~ACE4_VALID_MASK)
-+		goto fail_einval;
-+	acl->a_other_mask = le32_to_cpu(xattr_acl->a_other_mask);
-+	if (acl->a_other_mask & ~ACE4_VALID_MASK)
-+		goto fail_einval;
-+
-+	richacl_for_each_entry(ace, acl) {
-+		const char *who = (void *)(xattr_ace + 1), *end;
-+		ssize_t used = (void *)who - value;
-+
-+		if (used > size)
-+			goto fail_einval;
-+		end = memchr(who, 0, size - used);
-+		if (!end)
-+			goto fail_einval;
-+
-+		ace->e_type = le16_to_cpu(xattr_ace->e_type);
-+		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
-+		ace->e_mask = le32_to_cpu(xattr_ace->e_mask);
-+		ace->u.e_id = le32_to_cpu(xattr_ace->e_id);
-+
-+		if (ace->e_flags & ~ACE4_VALID_FLAGS)
-+			goto fail_einval;
-+		if (ace->e_type > ACE4_ACCESS_DENIED_ACE_TYPE ||
-+		    (ace->e_mask & ~ACE4_VALID_MASK))
-+			goto fail_einval;
-+
-+		if (who == end) {
-+			if (ace->u.e_id == -1)
-+				goto fail_einval;  /* uid/gid needed */
-+		} else if (richace_set_who(ace, who))
-+			goto fail_einval;
-+
-+		xattr_ace = (void *)who + ALIGN(end - who + 1, 4);
-+	}
-+
-+	return acl;
-+
-+fail_einval:
-+	richacl_put(acl);
-+	return ERR_PTR(-EINVAL);
-+}
-+EXPORT_SYMBOL_GPL(richacl_from_xattr);
-+
-+/**
-+ * richacl_xattr_size  -  compute the size of the xattr representation of @acl
-+ */
-+size_t
-+richacl_xattr_size(const struct richacl *acl)
-+{
-+	size_t size = sizeof(struct richacl_xattr);
-+	const struct richace *ace;
-+
-+	richacl_for_each_entry(ace, acl) {
-+		size += sizeof(struct richace_xattr) +
-+			(richace_is_unix_id(ace) ? 4 :
-+			 ALIGN(strlen(ace->u.e_who) + 1, 4));
-+	}
-+	return size;
-+}
-+EXPORT_SYMBOL_GPL(richacl_xattr_size);
-+
-+/**
-+ * richacl_to_xattr  -  convert @acl into its xattr representation
-+ * @acl:	the richacl to convert
-+ * @buffer:	buffer of size richacl_xattr_size(@acl) for the result
-+ */
-+void
-+richacl_to_xattr(const struct richacl *acl, void *buffer)
-+{
-+	struct richacl_xattr *xattr_acl = buffer;
-+	struct richace_xattr *xattr_ace;
-+	const struct richace *ace;
-+
-+	xattr_acl->a_version = ACL4_XATTR_VERSION;
-+	xattr_acl->a_flags = acl->a_flags;
-+	xattr_acl->a_count = cpu_to_le16(acl->a_count);
-+
-+	xattr_acl->a_owner_mask = cpu_to_le32(acl->a_owner_mask);
-+	xattr_acl->a_group_mask = cpu_to_le32(acl->a_group_mask);
-+	xattr_acl->a_other_mask = cpu_to_le32(acl->a_other_mask);
-+
-+	xattr_ace = (void *)(xattr_acl + 1);
-+	richacl_for_each_entry(ace, acl) {
-+		xattr_ace->e_type = cpu_to_le16(ace->e_type);
-+		xattr_ace->e_flags = cpu_to_le16(ace->e_flags &
-+						 ACE4_VALID_FLAGS);
-+		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
-+		if (richace_is_unix_id(ace)) {
-+			xattr_ace->e_id = cpu_to_le32(ace->u.e_id);
-+			memset(xattr_ace->e_who, 0, 4);
-+			xattr_ace = (void *)xattr_ace->e_who + 4;
-+		} else {
-+			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
-+
-+			xattr_ace->e_id = cpu_to_le32(-1);
-+			memset(xattr_ace->e_who + sz - 4, 0, 4);
-+			strcpy(xattr_ace->e_who, ace->u.e_who);
-+			xattr_ace = (void *)xattr_ace->e_who + sz;
-+		}
-+	}
-+}
-+EXPORT_SYMBOL_GPL(richacl_to_xattr);
-diff --git a/include/linux/richacl_xattr.h b/include/linux/richacl_xattr.h
-new file mode 100644
-index 0000000..e038a7c
---- /dev/null
-+++ b/include/linux/richacl_xattr.h
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright (C) 2006, 2010  Novell, Inc.
-+ * Written by Andreas Gruenbacher <agruen@suse.de>
++ * richacl_equiv_mode  -  check if @acl is equivalent to file permission bits
++ * @mode_p:	the file mode (including the file type)
 + *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
++ * If @acl can be fully represented by file permission bits, this function
++ * returns 0, and the file permission bits in @mode_p are set to the equivalent
++ * of @acl.
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
++ * This function is used to avoid storing richacls on disk if the acl can be
++ * computed from the file permission bits.  It allows user-space to make sure
++ * that a file has no explicit richacl set.
 + */
++int
++richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
++{
++	const struct richace *ace = acl->a_entries;
++	unsigned int x;
++	mode_t mode;
 +
-+#ifndef __RICHACL_XATTR_H
-+#define __RICHACL_XATTR_H
++	if (acl->a_count != 1 ||
++	    acl->a_flags != ACL4_MASKED ||
++	    !richace_is_everyone(ace) ||
++	    !richace_is_allow(ace) ||
++	    ace->e_flags & ~ACE4_SPECIAL_WHO)
++		return -1;
 +
-+#include <linux/richacl.h>
++	/*
++	 * Figure out the permissions we care about: ACE4_DELETE_CHILD is
++	 * meaningless for non-directories, so we ignore it.
++	 */
++	x = ~ACE4_POSIX_ALWAYS_ALLOWED;
++	if (!S_ISDIR(*mode_p))
++		x &= ~ACE4_DELETE_CHILD;
 +
-+#define RICHACL_XATTR "system.richacl"
++	mode = richacl_masks_to_mode(acl);
++	if ((acl->a_group_mask & x) != (richacl_mode_to_mask(mode >> 3) & x) ||
++	    (acl->a_other_mask & x) != (richacl_mode_to_mask(mode) & x))
++		return -1;
 +
-+struct richace_xattr {
-+	__le16		e_type;
-+	__le16		e_flags;
-+	__le32		e_mask;
-+	__le32		e_id;
-+	char		e_who[0];
-+};
++	/*
++	 * Ignore permissions which the owner is always allowed.
++	 */
++	x &= ~ACE4_POSIX_OWNER_ALLOWED;
++	if ((acl->a_owner_mask & x) != (richacl_mode_to_mask(mode >> 6) & x))
++		return -1;
 +
-+struct richacl_xattr {
-+	unsigned char	a_version;
-+	unsigned char	a_flags;
-+	__le16		a_count;
-+	__le32		a_owner_mask;
-+	__le32		a_group_mask;
-+	__le32		a_other_mask;
-+};
++	if ((ace->e_mask & x) != (ACE4_POSIX_MODE_ALL & x))
++		return -1;
 +
-+#define ACL4_XATTR_VERSION	0
-+#define ACL4_XATTR_MAX_COUNT	1024
-+
-+extern struct richacl *richacl_from_xattr(const void *, size_t);
-+extern size_t richacl_xattr_size(const struct richacl *acl);
-+extern void richacl_to_xattr(const struct richacl *, void *);
-+
-+#endif /* __RICHACL_XATTR_H */
++	*mode_p = (*mode_p & ~S_IRWXUGO) | mode;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(richacl_equiv_mode);
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index 630bf86..12a79f1 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -292,6 +292,7 @@ extern struct richacl *richacl_chmod(struct richacl *, mode_t);
+ extern int richacl_permission(struct inode *, const struct richacl *,
+ 			      unsigned int);
+ extern struct richacl *richacl_inherit(const struct richacl *, int);
++extern int richacl_equiv_mode(const struct richacl *, mode_t *);
+ 
+ /* richacl_inode.c */
+ extern struct richacl *richacl_inherit_inode(const struct richacl *,
 -- 
 1.7.1
 
