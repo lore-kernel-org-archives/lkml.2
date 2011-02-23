@@ -1,68 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1BWNxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:53:04 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60248 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755399Ab1BWNxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:53:00 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
-        sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
-        jlayton@redhat.com
-Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
-Subject: [PATCH -V5 03/24] vfs: Add a comment to inode_permission()
-Date: Wed, 23 Feb 2011 19:21:50 +0530
-Message-Id: <1298469131-16555-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1755482Ab1BWNxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:53:09 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53145 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755448Ab1BWNxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 08:53:06 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
+To: davinci-linux-open-source@linux.davincidsp.com
+Cc: hjk@hansjkoch.de, gregkh@suse.de, pratheesh@ti.com, amit.chatterjee@ti.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 1/2] PRUSS UIO driver support
+Date: Wed, 23 Feb 2011 19:22:40 +0530
+Message-Id: <1298469161-7644-2-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+In-Reply-To: <1298469161-7644-1-git-send-email-pratheesh@ti.com>
+References: <1298469161-7644-1-git-send-email-pratheesh@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@suse.de>
+This patch implements PRUSS (Programmable Real-time Unit Sub System)
+UIO driver which exports SOC resources associated with PRUSS like
+I/O, memories and IRQs to user space. PRUSS is dual 32-bit RISC
+processors which is efficient in performing embedded tasks that
+require manipulation of packed memory mapped data structures and
+efficient in handling system events that have tight real time
+constraints. This driver is currently supported on Texas Instruments
+DA850, AM18xx and OMAPL1-38 devices.
+For example, PRUSS runs firmware for real-time critical industrial
+communication data link layer and communicates with application stack
+running in user space via shared memory and IRQs.
 
-Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
 ---
- fs/namei.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/uio/Kconfig     |   17 ++++
+ drivers/uio/Makefile    |    1 +
+ drivers/uio/uio_pruss.c |  223 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 241 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/uio/uio_pruss.c
 
-diff --git a/fs/namei.c b/fs/namei.c
-index f09ab1f..0bfc546 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -167,7 +167,7 @@ EXPORT_SYMBOL(putname);
- #endif
+diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
+index bb44079..6f3ea9b 100644
+--- a/drivers/uio/Kconfig
++++ b/drivers/uio/Kconfig
+@@ -94,4 +94,21 @@ config UIO_NETX
+ 	  To compile this driver as a module, choose M here; the module
+ 	  will be called uio_netx.
  
- /*
-- * This does basic POSIX ACL permission checking
-+ * This does the basic permission checking
-  */
- static int acl_permission_check(struct inode *inode, int mask, unsigned int flags,
- 		int (*check_acl)(struct inode *inode, int mask, unsigned int flags))
-@@ -217,7 +217,7 @@ int generic_permission(struct inode *inode, int mask, unsigned int flags,
- 	int ret;
- 
- 	/*
--	 * Do the basic POSIX ACL permission checks.
-+	 * Do the basic permission checks.
- 	 */
- 	ret = acl_permission_check(inode, mask, flags, check_acl);
- 	if (ret != -EACCES)
-@@ -251,6 +251,8 @@ int generic_permission(struct inode *inode, int mask, unsigned int flags,
-  * We use "fsuid" for this, letting us set arbitrary permissions
-  * for filesystem access without changing the "normal" uids which
-  * are used for other things.
++config UIO_PRUSS
++	tristate "Texas Instruments PRUSS driver"
++	depends on ARCH_DAVINCI_DA850
++	help
++	  PRUSS driver for OMAPL138/DA850/AM18XX devices
++	  PRUSS driver requires user space components, examples and user space
++	  driver is available from below SVN repo - you may use anonymous login
++
++	  https://gforge.ti.com/gf/project/pru_sw/
++
++	  More info on API is available at below wiki
++
++	  http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called uio_pruss.
++
+ endif
+diff --git a/drivers/uio/Makefile b/drivers/uio/Makefile
+index 18fd818..d4dd9a5 100644
+--- a/drivers/uio/Makefile
++++ b/drivers/uio/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_UIO_AEC)	+= uio_aec.o
+ obj-$(CONFIG_UIO_SERCOS3)	+= uio_sercos3.o
+ obj-$(CONFIG_UIO_PCI_GENERIC)	+= uio_pci_generic.o
+ obj-$(CONFIG_UIO_NETX)	+= uio_netx.o
++obj-$(CONFIG_UIO_PRUSS)         += uio_pruss.o
+diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
+new file mode 100644
+index 0000000..f2b2f4b
+--- /dev/null
++++ b/drivers/uio/uio_pruss.c
+@@ -0,0 +1,223 @@
++/*
++ * Programmable Real-Time Unit Sub System (PRUSS) UIO driver (uio_pruss)
 + *
-+ * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
-  */
- int inode_permission(struct inode *inode, int mask)
- {
++ * This driver exports PRUSS host event out interrupts and PRUSS, L3 RAM,
++ * and DDR RAM to user space for applications interacting with PRUSS firmware
++ *
++ * Copyright (C) 2010-11 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/uio_driver.h>
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/dma-mapping.h>
++#include <linux/slab.h>
++
++#define DRV_NAME "pruss"
++#define DRV_VERSION "0.50"
++
++/*
++ * Host event IRQ numbers from PRUSS - PRUSS can generate upto 8 interrupt
++ * events to AINTC of ARM host processor - which can be used for IPC b/w PRUSS
++ * firmware and user space application, async notification from PRU firmware
++ * to user space application
++ * 3	PRU_EVTOUT0
++ * 4	PRU_EVTOUT1
++ * 5	PRU_EVTOUT2
++ * 6	PRU_EVTOUT3
++ * 7	PRU_EVTOUT4
++ * 8	PRU_EVTOUT5
++ * 9	PRU_EVTOUT6
++ * 10	PRU_EVTOUT7
++*/
++
++#define MAX_PRUSS_EVTOUT_INSTANCE	8
++
++#define	PINTC_HIPIR			0x4900
++#define	PINTC_HIPIR_NO_PEND_MASK	0x80000000
++#define	PINTC_HIER			0x5500
++
++struct clk *pruss_clk;
++struct uio_info *info;
++void *ddr_virt_addr = NULL, *prussio_virt_addr = NULL;
++dma_addr_t ddr_phy_addr;
++
++static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
++{
++	void __iomem *base = dev_info->mem[0].internal_addr;
++	void __iomem *intren_reg = base + PINTC_HIER;
++	void __iomem *intrstat_reg = base + PINTC_HIPIR + ((irq - 1) << 2);
++	int intren_regval = ioread32(intren_reg), intr_mask = (1 << (irq - 1));
++
++	/* Is interrupt enabled and active ? */
++	if (!(intren_regval & intr_mask)
++	    && (ioread32(intrstat_reg) & PINTC_HIPIR_NO_PEND_MASK))
++		return IRQ_NONE;
++
++	/* Disable interrupt */
++	iowrite32((intren_regval & ~intr_mask), intren_reg);
++	return IRQ_HANDLED;
++}
++
++static void pruss_cleanup(struct platform_device *dev, struct uio_info *info)
++{
++	int count;
++	struct uio_info *p;
++
++	for (count = 0, p = info; count < MAX_PRUSS_EVTOUT_INSTANCE;
++	     count++, p++) {
++		uio_unregister_device(p);
++		kfree(p->name);
++	}
++	iounmap(prussio_virt_addr);
++	dma_free_coherent(&dev->dev, info[0].mem[2].size,
++			  info[0].mem[2].internal_addr, info[0].mem[2].addr);
++
++	kfree(info);
++	clk_put(pruss_clk);
++}
++
++static int __devinit pruss_probe(struct platform_device *dev)
++{
++	int ret = -ENODEV, count = 0;
++	struct resource *regs_prussio, *regs_l3ram, *regs_ddr;
++	struct uio_info *p;
++
++	info = kzalloc(sizeof(struct uio_info) * MAX_PRUSS_EVTOUT_INSTANCE,
++		       GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	/* Power on PRU in case its not done as part of boot-loader */
++	pruss_clk = clk_get(&dev->dev, "pruss");
++	if (IS_ERR(pruss_clk)) {
++		dev_err(&dev->dev, "Failed to get clock\n");
++		ret = PTR_ERR(pruss_clk);
++		return ret;
++	} else {
++		clk_enable(pruss_clk);
++	}
++
++	regs_prussio = platform_get_resource(dev, IORESOURCE_MEM, 0);
++	if (!regs_prussio) {
++		dev_err(&dev->dev, "No PRUSS I/O resource specified\n");
++		goto out_free;
++	}
++
++	regs_l3ram = platform_get_resource(dev, IORESOURCE_MEM, 1);
++	if (!regs_l3ram) {
++		dev_err(&dev->dev, "No L3 RAM resource specified\n");
++		goto out_free;
++	}
++
++	regs_ddr = platform_get_resource(dev, IORESOURCE_MEM, 2);
++	if (!regs_ddr) {
++		dev_err(&dev->dev, "No External RAM resource specified\n");
++		goto out_free;
++	}
++
++	if (!regs_prussio->start || !regs_l3ram->start) {
++		dev_err(&dev->dev, "Invalid memory resource\n");
++		goto out_free;
++	}
++
++	ddr_virt_addr =
++	    dma_alloc_coherent(&dev->dev, regs_ddr->end - regs_ddr->start + 1,
++			       &ddr_phy_addr, GFP_KERNEL | GFP_DMA);
++	if (!ddr_virt_addr) {
++		dev_err(&dev->dev, "Could not allocate external memory\n");
++		goto out_free;
++	}
++
++	prussio_virt_addr =
++	    ioremap(regs_prussio->start,
++		    regs_prussio->end - regs_prussio->start + 1);
++	if (prussio_virt_addr) {
++		dev_err(&dev->dev, "Can't remap PRUSS I/O  address range\n");
++		goto out_free;
++	}
++
++	for (count = 0, p = info; count < MAX_PRUSS_EVTOUT_INSTANCE;
++	     count++, p++) {
++		p->mem[0].internal_addr = prussio_virt_addr;
++		p->mem[0].addr = regs_prussio->start;
++		p->mem[0].size = regs_prussio->end - regs_prussio->start + 1;
++		p->mem[0].memtype = UIO_MEM_PHYS;
++
++		p->mem[1].addr = regs_l3ram->start;
++		p->mem[1].size = regs_l3ram->end - regs_l3ram->start + 1;
++		p->mem[1].memtype = UIO_MEM_PHYS;
++
++		p->mem[2].internal_addr = ddr_virt_addr;
++		p->mem[2].addr = ddr_phy_addr;
++		p->mem[2].size = regs_ddr->end - regs_ddr->start + 1;
++		p->mem[2].memtype = UIO_MEM_PHYS;
++
++		p->name = kasprintf(GFP_KERNEL, "pruss_evt%d", count);
++		p->version = "0.50";
++
++		/* Register PRUSS IRQ lines */
++		p->irq = IRQ_DA8XX_EVTOUT0 + count;
++		p->handler = pruss_handler;
++
++		ret = uio_register_device(&dev->dev, p);
++
++		if (ret < 0)
++			goto out_free;
++	}
++
++	platform_set_drvdata(dev, info);
++	return 0;
++
++out_free:
++	pruss_cleanup(dev, info);
++	return ret;
++}
++
++static int __devexit pruss_remove(struct platform_device *dev)
++{
++	struct uio_info *info = platform_get_drvdata(dev);
++
++	pruss_cleanup(dev, info);
++	platform_set_drvdata(dev, NULL);
++	return 0;
++}
++
++static struct platform_driver pruss_driver = {
++	.probe = pruss_probe,
++	.remove = __devexit_p(pruss_remove),
++	.driver = {
++		   .name = DRV_NAME,
++		   .owner = THIS_MODULE,
++		   },
++};
++
++static int __init pruss_init_module(void)
++{
++	return platform_driver_register(&pruss_driver);
++}
++
++module_init(pruss_init_module);
++
++static void __exit pruss_exit_module(void)
++{
++	platform_driver_unregister(&pruss_driver);
++}
++
++module_exit(pruss_exit_module);
++
++MODULE_LICENSE("GPL v2");
++MODULE_VERSION(DRV_VERSION);
++MODULE_AUTHOR("Amit Chatterjee <amit.chatterjee@ti.com>");
++MODULE_AUTHOR("Pratheesh Gangadhar <pratheesh@ti.com>");
 -- 
-1.7.1
+1.6.0.6
 
