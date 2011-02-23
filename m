@@ -1,120 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab1BWSbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 13:31:15 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59358 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198Ab1BWSbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 13:31:13 -0500
-Date: Wed, 23 Feb 2011 10:31:09 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
-Subject: Re: [PATCH] debug rcu head support !PREEMPT config
-Message-ID: <20110223183109.GO2163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <1298431409.7666.76.camel@gandalf.stny.rr.com>
- <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
- <1298472914.7666.85.camel@gandalf.stny.rr.com>
- <BLU0-SMTP1519908E0ACAEE1384F71896DB0@phx.gbl>
- <1298474827.7666.86.camel@gandalf.stny.rr.com>
- <BLU0-SMTP42770DC9BDE561B962274096DB0@phx.gbl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BLU0-SMTP42770DC9BDE561B962274096DB0@phx.gbl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755316Ab1BWSbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 13:31:37 -0500
+Received: from smtpq3.gn.mail.iss.as9143.net ([212.54.34.166]:58049 "EHLO
+	smtpq3.gn.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751717Ab1BWSbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 13:31:36 -0500
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+From: Hans Nieser <hnsr@xs4all.nl>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1298463704.31256.29.camel@krikkit>
+References: <1298396007.23906.27.camel@krikkit>
+	 <20110223095538.GA12662@electric-eye.fr.zoreil.com>
+	 <1298463704.31256.29.camel@krikkit>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Feb 2011 19:31:33 +0100
+Message-ID: <1298485893.31256.40.camel@krikkit>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
+X-ZiggoSMTP-MailScanner-ID: 1PsJUr-0006Ey-OZ
+X-ZiggoSMTP-MailScanner: Found to be clean
+X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
+	score=-4.841, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90, PROLO_TRUST_RDNS -3.00, RDNS_DYNAMIC 0.98,
+	TW_SR 0.08)
+X-ZiggoSMTP-MailScanner-From: hnsr@xs4all.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 10:37:26AM -0500, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Wed, 2011-02-23 at 10:13 -0500, Mathieu Desnoyers wrote:
-> > > Remove DEBUG_RCU_HEAD dependency on PREEMPT config. Handle the unability to
-> > > detect if within a RCU read-side critical section by never performing any
-> > > attempt to recover from a failure situation in the fixup handlers. Just print
-> > > the warnings.
+On Wed, 2011-02-23 at 13:21 +0100, Hans Nieser wrote:
+> On Wed, 2011-02-23 at 10:55 +0100, Francois Romieu wrote:
+> > Hans Nieser <hnsr@xs4all.nl> :
+> > [...]
+> > > With your patches applied to 2.6.38-rc6, I have gathered some of the
+> > > info you requested from Seblu as well, I hope it's helpful:
 > > > 
-> > > This patch is only compile-tested.
-> > > 
-> > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > ---
-> > >  kernel/rcupdate.c |   17 +++++++++++++++++
-> > >  lib/Kconfig.debug |    2 +-
-> > >  2 files changed, 18 insertions(+), 1 deletion(-)
-> > > 
-> > > Index: linux-2.6-lttng/lib/Kconfig.debug
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/lib/Kconfig.debug
-> > > +++ linux-2.6-lttng/lib/Kconfig.debug
-> > > @@ -313,7 +313,7 @@ config DEBUG_OBJECTS_WORK
-> > >  
-> > >  config DEBUG_OBJECTS_RCU_HEAD
-> > >  	bool "Debug RCU callbacks objects"
-> > > -	depends on DEBUG_OBJECTS && PREEMPT
-> > > +	depends on DEBUG_OBJECTS
-> > >  	help
-> > >  	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
-> > >  
-> > > Index: linux-2.6-lttng/kernel/rcupdate.c
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/kernel/rcupdate.c
-> > > +++ linux-2.6-lttng/kernel/rcupdate.c
-> > > @@ -142,7 +142,14 @@ static int rcuhead_fixup_init(void *addr
-> > >  		 * Ensure that queued callbacks are all executed.
-> > >  		 * If we detect that we are nested in a RCU read-side critical
-> > >  		 * section, we should simply fail, otherwise we would deadlock.
-> > > +		 * In !PREEMPT configurations, there is no way to tell if we are
-> > > +		 * in a RCU read-side critical section or not, so we never
-> > > +		 * attempt any fixup and just print a warning.
-> > >  		 */
-> > > +#ifndef CONFIG_PREEMPT
-> > > +		WARN_ON(1);
-> > > +		return 0;
-> > > +#endif
-> > >  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-> > >  		    irqs_disabled()) {
-> > >  			WARN_ON(1);
-> > > @@ -184,7 +191,14 @@ static int rcuhead_fixup_activate(void *
-> > >  		 * Ensure that queued callbacks are all executed.
-> > >  		 * If we detect that we are nested in a RCU read-side critical
-> > >  		 * section, we should simply fail, otherwise we would deadlock.
-> > > +		 * In !PREEMPT configurations, there is no way to tell if we are
-> > > +		 * in a RCU read-side critical section or not, so we never
-> > > +		 * attempt any fixup and just print a warning.
-> > >  		 */
-> > > +#ifndef CONFIG_PREEMPT
-> > > +		WARN_ON(1);
-> > > +		return 0;
-> > > +#endif
-> > >  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-> > >  		    irqs_disabled()) {
-> > >  			WARN_ON(1);
-> > > @@ -214,6 +228,9 @@ static int rcuhead_fixup_free(void *addr
-> > >  		 * Ensure that queued callbacks are all executed.
-> > >  		 * If we detect that we are nested in a RCU read-side critical
-> > >  		 * section, we should simply fail, otherwise we would deadlock.
-> > > +		 * In !PREEMPT configurations, there is no way to tell if we are
-> > > +		 * in a RCU read-side critical section or not, so we never
-> > > +		 * attempt any fixup and just print a warning.
-> > >  		 */
-> > >  #ifndef CONFIG_PREEMPT
-> > >  		WARN_ON(1);
+> > > 1: see attachment
 > > 
-> > Hmm, I wonder if s/WARN_ON/WARN_ON_ONCE/g is in order. Why spam the
-> > console if it happens to trigger all the time?
+> > Ok.
+> > 
+> > The chipset requires no trivial last minute regression fix (yet).
+> > 
+> > > 2: I'm not sure how to check the size of the packets, but I'm just
+> > > fetching a (large) file over http/tcp, so I guess they are mostly of the
+> > > size of my MTU which is 1500 looking at ifconfig output
+> > 
+> > Fine.
+> > 
+> > Your testcases are always based on a real download, whence including some
+> > disk activity, as opposed to a pure network test, right ?
 > 
-> The system should die pretty soon anyway due to list corruption, so I
-> don't think it's a problem in practice.
+> Yeah, I just had a little script that wgetted a file from a webserver in
+> my LAN and saved it to separate (non-root) fs, then removed it - in a
+> loop. When testing on the 2.6.35 and 2.6.35.9 kernels it did max out at
+> about 107MiB/s, sometimes falling down a little presumably when disk was
+> being touched.
+> 
+> > > For the other vmstat/ethtool/interrupts output, I started the following
+> > > commands remotely via ssh a second or two before starting the download,
+> > > and the machine locked up a few seconds later:
+> > 
+> > SysRq is enabled (/etc/sysctl.conf::kernel.sysrq = 1), the computer was
+> > switched back on a no-X console before the test. Then the keyboard leds
+> > ignore keypresses and the sysrq keys don't display anything in the
+> > console, right ?
+> 
+> Yep I had X shutdown and switched to VT1, after lock up the LEDs can't
+> be toggled anymore and sysrq key combo was nonresponsive (it works if I
+> do it before it locks up)
+> 
+> > You may enable PCIEASPM_DEBUG, force 'pcie_aspm=off' and switch from
+> > SLUB to SLAB but it's a bit cargo-cultish.
+> 
+> I'll give that a try this evening
+> 
+> > A bisection could help. Bisecting 2.6.35 .. 2.6.35.9 may be enough if
+> > 2.6.35.9 works well.
+> 
+> Hmm did you mean bisecting 2.6.36 - 2.6.35.9 ? Since with 2.6.36 and
+> above I can get the machine to hang within seconds and performance is
+> really bad (10-20MiB/s with wget), while with 2.6.35.9 and 2.6.35
+> performance was really good (reaching 107MiB/s most of the time) and
+> lock up took 5-10 minutes instead of seconds (I guess I didn't mention
+> this in my last e-mail but I managed to get both 2.6.35 and 2.6.35.9 to
+> lock up eventually) - but I guess something changed between .35 and .36
+> that made the issue easier to trigger.
+> 
+> I can also try even older kernels to see if there is one that doesn't
+> lock up at all
+> 
 
-Well, it would add noise, so I added a patch converting the WARN_ON's
-to WARN_ON_ONCE's.
+Ok, I just tried 2.6.34, and after over 5 hours of running my script,
+the system is still up and running, with only 24 'link up' messages on
+dmesg, and having transferred 2.1TiB of data (1428042421 rx_packets, 45
+rx_missed). So I'm going to assume the problem isn't present with this
+kernel and try a bisect between it and 2.6.35
 
-							Thanx, Paul
