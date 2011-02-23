@@ -1,92 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab1BWPCJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:02:09 -0500
-Received: from blu0-omc1-s32.blu0.hotmail.com ([65.55.116.43]:35710 "EHLO
-	blu0-omc1-s32.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751090Ab1BWPCH (ORCPT
+	id S1752996Ab1BWPDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:03:10 -0500
+Received: from diomedes.noc.ntua.gr ([147.102.222.220]:52639 "EHLO
+	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1BWPDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:02:07 -0500
-X-Originating-IP: [174.91.193.52]
-X-Originating-Email: [pdumas9@sympatico.ca]
-Message-ID: <BLU0-SMTP11F8F588EC47CF2C6BAA5896DB0@phx.gbl>
-Date: Wed, 23 Feb 2011 10:02:04 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 05/11] rcu: add comment saying why
-	DEBUG_OBJECTS_RCU_HEAD depends on PREEMPT.
-References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com> <1298431409.7666.76.camel@gandalf.stny.rr.com> <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl> <1298472914.7666.85.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1298472914.7666.85.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 10:01:54 up 322 days, 51 min,  6 users,  load average: 1.68,
-	1.48, 1.48
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 23 Feb 2011 15:02:06.0710 (UTC) FILETIME=[A3220160:01CBD36A]
+	Wed, 23 Feb 2011 10:03:08 -0500
+X-Greylist: delayed 1264 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 10:03:08 EST
+From: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+To: linux-kernel@vger.kernel.org
+Cc: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+Subject: [PATCH] Cleanup of asm-offsets.c(PAGE_SIZE_asm, PAGE_SHIFT_asm, THREAD_SIZE_asm)
+Date: Wed, 23 Feb 2011 16:42:02 +0200
+Message-Id: <1298472122-4967-1-git-send-email-psomas@cslab.ece.ntua.gr>
+X-Mailer: git-send-email 1.7.4.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (diomedes.noc.ntua.gr [147.102.222.220]); Wed, 23 Feb 2011 16:42:03 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2011-02-23 at 08:59 -0500, Mathieu Desnoyers wrote:
-> 
-> > #ifdef CONFIG_PREEMPT
-> >                 /*
-> >                  * Ensure that queued callbacks are all executed.
-> >                  * If we detect that we are nested in a RCU read-side
-> >                  * critical
-> >                  * section, we should simply fail, otherwise we would
-> >                  * deadlock.
-> >                  */
-> >                 if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-> >                     irqs_disabled()) {
-> >                         WARN_ON(1);
-> >                         return 0;
-> >                 }
-> >                 rcu_barrier();
-> >                 rcu_barrier_sched();
-> >                 rcu_barrier_bh();
-> >                 debug_object_init(head, &rcuhead_debug_descr);
-> >                 return 1;
-> > #else
-> > 		return 0;
-> > #endif
-> > 
-> > instead, no ?
-> 
-> BTW, if you do end up doing such a thing...
-> 
-> #ifndef CONFIG_PREEMPT
-> 	return 0;
-> #endif
-> 
-> before all that would be much cleaner.
-> 
-> Just make sure any non defined in PREEMPT macros/functions are defined
-> as nops in !CONFIG_PREEMPT
+I noticed that PAGE_SIZE_asm, PAGE_SHIFT_asm, and THREAD_SIZE_asm in asm-offsets.c were 
+no longer needed(since the _AC macro defined in include/linux/const.h makes PAGE_SIZE etc
+'work' with as).
 
-Good point, thanks !
+Unless I'm missing something here, PAGE_SIZE_asm/PAGE_SHIFT_asm/THREAD_SIZE_asm can be safely
+removed from asm-offsets.c, and be replaced by their non-'_asm' counterparts in the code that 
+uses them.
+Right?
 
-Mathieu
+The kernel builds cleanly after the patch is applied.
 
-> 
-> -- Steve
-> 
-> 
+(I know that even if the patch is 'correct', it's as 'important', as a patch fixing typos
+in comments/documentation, but anyway :/ )
 
+
+Signed-off-by: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+---
+ arch/mn10300/kernel/asm-offsets.c      |    2 +-
+ arch/mn10300/kernel/gdb-io-ttysm-low.S |    2 +-
+ arch/x86/kernel/asm-offsets_32.c       |    4 ----
+ arch/x86/kernel/asm-offsets_64.c       |    1 -
+ arch/x86/kernel/entry_32.S             |    2 +-
+ arch/x86/kernel/head_32.S              |    8 ++++----
+ arch/x86/xen/xen-head.S                |    4 ++--
+ 7 files changed, 9 insertions(+), 14 deletions(-)
+
+diff --git a/arch/mn10300/kernel/asm-offsets.c b/arch/mn10300/kernel/asm-offsets.c
+index 96f24fa..cbe7cda 100644
+--- a/arch/mn10300/kernel/asm-offsets.c
++++ b/arch/mn10300/kernel/asm-offsets.c
+@@ -89,7 +89,7 @@ void foo(void)
+ 	OFFSET(EXEC_DOMAIN_handler,	exec_domain, handler);
+ 	OFFSET(RT_SIGFRAME_sigcontext,	rt_sigframe, uc.uc_mcontext);
+ 
+-	DEFINE(PAGE_SIZE_asm,		PAGE_SIZE);
++	DEFINE(PAGE_SIZE,		PAGE_SIZE);
+ 
+ 	OFFSET(__rx_buffer,		mn10300_serial_port, rx_buffer);
+ 	OFFSET(__rx_inp,		mn10300_serial_port, rx_inp);
+diff --git a/arch/mn10300/kernel/gdb-io-ttysm-low.S b/arch/mn10300/kernel/gdb-io-ttysm-low.S
+index 060b7cc..7b2d665 100644
+--- a/arch/mn10300/kernel/gdb-io-ttysm-low.S
++++ b/arch/mn10300/kernel/gdb-io-ttysm-low.S
+@@ -38,7 +38,7 @@ gdbstub_io_rx_handler:
+ gdbstub_io_rx_more:
+ 	mov	a3,a2
+ 	add	2,a3
+-	and	PAGE_SIZE_asm-1,a3
++	and	PAGE_SIZE-1,a3
+ 	mov	(gdbstub_rx_outp),d3
+ 	cmp	a3,d3
+ 	beq	gdbstub_io_rx_overflow
+diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
+index 1a4088d..e1e5009 100644
+--- a/arch/x86/kernel/asm-offsets_32.c
++++ b/arch/x86/kernel/asm-offsets_32.c
+@@ -97,10 +97,6 @@ void foo(void)
+ 	DEFINE(TSS_sysenter_sp0, offsetof(struct tss_struct, x86_tss.sp0) -
+ 		 sizeof(struct tss_struct));
+ 
+-	DEFINE(PAGE_SIZE_asm, PAGE_SIZE);
+-	DEFINE(PAGE_SHIFT_asm, PAGE_SHIFT);
+-	DEFINE(THREAD_SIZE_asm, THREAD_SIZE);
+-
+ 	OFFSET(crypto_tfm_ctx_offset, crypto_tfm, __crt_ctx);
+ 
+ #ifdef CONFIG_PARAVIRT
+diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
+index 4a6aeed..aab9bdb 100644
+--- a/arch/x86/kernel/asm-offsets_64.c
++++ b/arch/x86/kernel/asm-offsets_64.c
+@@ -129,7 +129,6 @@ int main(void)
+ 	OFFSET(BP_kernel_alignment, boot_params, hdr.kernel_alignment);
+ 
+ 	BLANK();
+-	DEFINE(PAGE_SIZE_asm, PAGE_SIZE);
+ #ifdef CONFIG_XEN
+ 	BLANK();
+ 	OFFSET(XEN_vcpu_info_mask, vcpu_info, evtchn_upcall_mask);
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index c8b4efa..49bdedd 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -395,7 +395,7 @@ sysenter_past_esp:
+ 	 * A tiny bit of offset fixup is necessary - 4*4 means the 4 words
+ 	 * pushed above; +8 corresponds to copy_thread's esp0 setting.
+ 	 */
+-	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE_asm+8+4*4)(%esp)
++	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE+8+4*4)(%esp)
+ 	CFI_REL_OFFSET eip, 0
+ 
+ 	pushl_cfi %eax
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 767d6c4..187aa63 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -73,7 +73,7 @@ MAPPING_BEYOND_END = PAGE_TABLE_SIZE(LOWMEM_PAGES) << PAGE_SHIFT
+  */
+ KERNEL_PAGES = LOWMEM_PAGES
+ 
+-INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE_asm
++INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE
+ RESERVE_BRK(pagetables, INIT_MAP_SIZE)
+ 
+ /*
+@@ -623,7 +623,7 @@ ENTRY(initial_code)
+  * BSS section
+  */
+ __PAGE_ALIGNED_BSS
+-	.align PAGE_SIZE_asm
++	.align PAGE_SIZE
+ #ifdef CONFIG_X86_PAE
+ initial_pg_pmd:
+ 	.fill 1024*KPMDS,4,0
+@@ -644,7 +644,7 @@ ENTRY(swapper_pg_dir)
+ #ifdef CONFIG_X86_PAE
+ __PAGE_ALIGNED_DATA
+ 	/* Page-aligned for the benefit of paravirt? */
+-	.align PAGE_SIZE_asm
++	.align PAGE_SIZE
+ ENTRY(initial_page_table)
+ 	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
+ # if KPMDS == 3
+@@ -662,7 +662,7 @@ ENTRY(initial_page_table)
+ # else
+ #  error "Kernel PMDs should be 1, 2 or 3"
+ # endif
+-	.align PAGE_SIZE_asm		/* needs to be page-sized too */
++	.align PAGE_SIZE		/* needs to be page-sized too */
+ #endif
+ 
+ .data
+diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+index 1a5ff24..aaa7291 100644
+--- a/arch/x86/xen/xen-head.S
++++ b/arch/x86/xen/xen-head.S
+@@ -28,9 +28,9 @@ ENTRY(startup_xen)
+ 	__FINIT
+ 
+ .pushsection .text
+-	.align PAGE_SIZE_asm
++	.align PAGE_SIZE
+ ENTRY(hypercall_page)
+-	.skip PAGE_SIZE_asm
++	.skip PAGE_SIZE
+ .popsection
+ 
+ 	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz "linux")
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.4.1
+
