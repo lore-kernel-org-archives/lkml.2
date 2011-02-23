@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab1BWRhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 12:37:34 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:54650 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab1BWRhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 12:37:32 -0500
-Date: Wed, 23 Feb 2011 18:37:25 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Pratheesh Gangadhar <pratheesh@ti.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com, hjk@hansjkoch.de,
-        gregkh@suse.de, amit.chatterjee@ti.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/2] PRUSS UIO driver support
-Message-ID: <20110223173724.GA2801@local>
-References: <1298469161-7644-1-git-send-email-pratheesh@ti.com>
- <1298469161-7644-2-git-send-email-pratheesh@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298469161-7644-2-git-send-email-pratheesh@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755457Ab1BWRht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:37:49 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57249 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab1BWRhr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 12:37:47 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6266"; a="76210407"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCH 0/2] Migrate MSM to clkdev
+Date: Wed, 23 Feb 2011 09:37:40 -0800
+Message-Id: <1298482662-27298-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.1.55.gdca3d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 07:22:40PM +0530, Pratheesh Gangadhar wrote:
-> This patch implements PRUSS (Programmable Real-time Unit Sub System)
-> UIO driver which exports SOC resources associated with PRUSS like
-> I/O, memories and IRQs to user space. PRUSS is dual 32-bit RISC
-> processors which is efficient in performing embedded tasks that
-> require manipulation of packed memory mapped data structures and
-> efficient in handling system events that have tight real time
-> constraints. This driver is currently supported on Texas Instruments
-> DA850, AM18xx and OMAPL1-38 devices.
-> For example, PRUSS runs firmware for real-time critical industrial
-> communication data link layer and communicates with application stack
-> running in user space via shared memory and IRQs.
-> 
-> Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
-> ---
->  drivers/uio/Kconfig     |   17 ++++
->  drivers/uio/Makefile    |    1 +
->  drivers/uio/uio_pruss.c |  223 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 241 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/uio/uio_pruss.c
-> 
+These two patches migrate the current MSM clock code to clkdev. In
+the process clock-dummy.c is removed since clk_get() implemented in
+clkdev already returns -ENOENT for non-existent clocks.
 
-[...]
+Prepared against davidb/linx-msm.git for-next.
 
-> +
-> +static int __devinit pruss_probe(struct platform_device *dev)
-> +{
-> +	int ret = -ENODEV, count = 0;
-> +	struct resource *regs_prussio, *regs_l3ram, *regs_ddr;
-> +	struct uio_info *p;
-> +
-> +	info = kzalloc(sizeof(struct uio_info) * MAX_PRUSS_EVTOUT_INSTANCE,
-> +		       GFP_KERNEL);
-> +	if (!info)
-> +		return -ENOMEM;
-> +
-> +	/* Power on PRU in case its not done as part of boot-loader */
-> +	pruss_clk = clk_get(&dev->dev, "pruss");
-> +	if (IS_ERR(pruss_clk)) {
-> +		dev_err(&dev->dev, "Failed to get clock\n");
-> +		ret = PTR_ERR(pruss_clk);
-> +		return ret;
+Stephen Boyd (2):
+  msm: clock: Remove references to clk_ops_pcom
+  msm: clock: Migrate to clkdev
 
-You leak memory here. What about freeing "info"?
+ arch/arm/Kconfig                        |    1 +
+ arch/arm/mach-msm/Makefile              |    6 +---
+ arch/arm/mach-msm/board-msm7x30.c       |    1 +
+ arch/arm/mach-msm/board-msm8960.c       |    1 +
+ arch/arm/mach-msm/board-qsd8x50.c       |    1 +
+ arch/arm/mach-msm/board-trout.c         |    1 +
+ arch/arm/mach-msm/clock-7x30.h          |   30 ++++++++++-------
+ arch/arm/mach-msm/clock-debug.c         |    3 +-
+ arch/arm/mach-msm/clock-dummy.c         |   54 -------------------------------
+ arch/arm/mach-msm/clock-pcom.c          |    6 +++
+ arch/arm/mach-msm/clock-pcom.h          |   16 +++++----
+ arch/arm/mach-msm/clock.c               |   50 ++++------------------------
+ arch/arm/mach-msm/clock.h               |    3 +-
+ arch/arm/mach-msm/devices-msm7x00.c     |   32 +++++++++---------
+ arch/arm/mach-msm/devices-msm7x30.c     |    5 ++-
+ arch/arm/mach-msm/devices-qsd8x50.c     |   23 +++++++------
+ arch/arm/mach-msm/devices.h             |    8 +++--
+ arch/arm/mach-msm/include/mach/board.h  |    4 +-
+ arch/arm/mach-msm/include/mach/clkdev.h |   19 +++++++++++
+ 19 files changed, 105 insertions(+), 159 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/clock-dummy.c
+ create mode 100644 arch/arm/mach-msm/include/mach/clkdev.h
 
-> +	} else {
-> +		clk_enable(pruss_clk);
-> +	}
-
-Thanks,
-Hans
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
