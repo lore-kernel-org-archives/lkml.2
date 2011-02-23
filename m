@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab1BWWL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 17:11:27 -0500
-Received: from ozlabs.org ([203.10.76.45]:49468 "EHLO ozlabs.org"
+	id S1756067Ab1BWWNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 17:13:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753942Ab1BWWL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 17:11:26 -0500
-Date: Thu, 24 Feb 2011 09:11:21 +1100
-From: Anton Blanchard <anton@samba.org>
-To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Matthew McClintock <msm@freescale.com>,
-        "Livingston, John A" <john.a.livingston@boeing.com>
-Subject: Re: mpc85xx: kexec build broken by "powerpc/kexec: Remove
- ppc_md.machine_kexec"
-Message-ID: <20110224091121.43b31dad@kryten>
-In-Reply-To: <B87A2622-0006-4FC8-893A-41DBBF0CA170@boeing.com>
-References: <B87A2622-0006-4FC8-893A-41DBBF0CA170@boeing.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753155Ab1BWWNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 17:13:05 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: x86@kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] x86: use int instead of long to set reset vector back to 0
+Date: Wed, 23 Feb 2011 17:12:31 -0500
+Message-Id: <1298499151-24983-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A customer of ours, complained that when setting the reset vector
+back to 0, it trashed other data and hung their box.  They noticed
+when only 4 bytes were set to 0 instead of 8, everything worked
+correctly.
 
-Hi Kyle,
+I don't know where to find this in the spec to know if this is
+correct, but looking at historical info of the code, x86_64 used
+to use 'int' here whereas i386 used to use 'long'.  When they got
+merged it seemed like 'long' was used.  So the change seems to
+make sense from that point of view.
 
-> As far as I can tell, "machine_kexec" was removed in commit c9486878
-> (powerpc/kexec: Remove ppc_md.machine_kexec) on Jan 6th, 2011, which
-> claims that it was not used.
-> 
-> Unfortunately it looks like it *is* used by the mpc85xx kexec()
-> support (commit f933a41e), added on Jul 21, 2010.
+I am hoping someone smarter than me can verify this.
 
-Thanks for the report. Testing a patch now.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+Reposting this in case it was lost in the noise
 
-Anton
+---
+ arch/x86/include/asm/smpboot_hooks.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
+index 6c22bf3..42d0366 100644
+--- a/arch/x86/include/asm/smpboot_hooks.h
++++ b/arch/x86/include/asm/smpboot_hooks.h
+@@ -34,7 +34,7 @@ static inline void smpboot_restore_warm_reset_vector(void)
+ 	 */
+ 	CMOS_WRITE(0, 0xf);
+ 
+-	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
++	*((volatile int *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+ }
+ 
+ static inline void __init smpboot_setup_io_apic(void)
+-- 
+1.7.3.5
+
