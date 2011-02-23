@@ -1,128 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab1BWRCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 12:02:31 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:58741 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207Ab1BWRC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 12:02:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=IHVt4Rd77CWDo3LzWi3AVSTrb+WtXtVnYkFzq93sAV9mhP/RmS3qGBxnd60ZJhK0lV
-         QzH3qhOh4WzdzrQWT5INfmA/It2nm7yqQ871THUwCi3SQ0fXQfgCDNtvyuI+3EnTPDi8
-         rCgGzwCdOl3B1GyUUoBjoN0UxJSpojRvpirbU=
-Date: Wed, 23 Feb 2011 20:02:05 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Anoop P A <anoop.pa@gmail.com>
-Cc: "gregkh @ suse . de" <gregkh@suse.de>,
-        "dbrownell @ users . sourceforge . net" 
-	<dbrownell@users.sourceforge.net>,
-        "stern @ rowland . harvard . edu" <stern@rowland.harvard.edu>,
-        "pkondeti @ codeaurora . org" <pkondeti@codeaurora.org>,
-        "jacob . jun . pan @ intel . com" <jacob.jun.pan@intel.com>,
-        "linux-usb @ vger . kernel . org" <linux-usb@vger.kernel.org>,
-        "alek . du @ intel . com" <alek.du@intel.com>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        "gadiyar @ ti . com" <gadiyar@ti.com>,
-        "ralf @ linux-mips . org" <ralf@linux-mips.org>,
-        "linux-mips @ linux-mips . org" <linux-mips@linux-mips.org>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v5] EHCI bus glue for on-chip PMC MSP USB controller
-Message-ID: <20110223170205.GE19898@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Anoop P A <anoop.pa@gmail.com>,
-	"gregkh @ suse . de" <gregkh@suse.de>,
-	"dbrownell @ users . sourceforge . net" <dbrownell@users.sourceforge.net>,
-	"stern @ rowland . harvard . edu" <stern@rowland.harvard.edu>,
-	"pkondeti @ codeaurora . org" <pkondeti@codeaurora.org>,
-	"jacob . jun . pan @ intel . com" <jacob.jun.pan@intel.com>,
-	"linux-usb @ vger . kernel . org" <linux-usb@vger.kernel.org>,
-	"alek . du @ intel . com" <alek.du@intel.com>,
-	"linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-	"gadiyar @ ti . com" <gadiyar@ti.com>,
-	"ralf @ linux-mips . org" <ralf@linux-mips.org>,
-	"linux-mips @ linux-mips . org" <linux-mips@linux-mips.org>,
-	Greg KH <greg@kroah.com>
-References: <4D5ABB65.3090101@parrot.com>
- <1298388933-13707-1-git-send-email-anoop.pa@gmail.com>
- <20110222200427.GB1966@bicker>
- <1298467343.9950.119.camel@paanoop1-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298467343.9950.119.camel@paanoop1-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932324Ab1BWRCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:02:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124Ab1BWRCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 12:02:50 -0500
+Subject: Re: [RFC PATCH 1/3] Weight-balanced tree
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4D6506FB.2090809@redhat.com>
+References: <20110222183822.22026.62832.stgit@s20.home>
+	 <20110222185456.22026.28200.stgit@s20.home>  <4D6506FB.2090809@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Feb 2011 10:02:43 -0700
+Message-ID: <1298480563.18387.6.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 06:52:23PM +0530, Anoop P A wrote:
-> > Cannot find the msp_usb.h in linux-next.  Doesn't compile.
-> msp_usb.h has made it's way to linux-mips queue tree along with the
-> platform code
+On Wed, 2011-02-23 at 15:09 +0200, Avi Kivity wrote:
+> On 02/22/2011 08:55 PM, Alex Williamson wrote:
+> > Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> > ---
+> >
+> >   include/linux/wbtree.h |   55 ++++++++++++++++
+> >   lib/Makefile           |    3 +
+> >   lib/wbtree.c           |  170 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >   3 files changed, 227 insertions(+), 1 deletions(-)
+> >   create mode 100644 include/linux/wbtree.h
+> >   create mode 100644 lib/wbtree.c
+> >
+> 
+> Andrew, can we add something like this to the tree?  Can it go through 
+> the kvm tree?
+> 
+> > diff --git a/include/linux/wbtree.h b/include/linux/wbtree.h
+> > new file mode 100644
+> > index 0000000..ef70f6f
+> > --- /dev/null
+> > +++ b/include/linux/wbtree.h
+> > @@ -0,0 +1,55 @@
+> > +/*
+> > + * Weight-balanced binary tree
+> > + *
+> > + * The balance of this tree is based on search probability.  The
+> > + * heaviest weighted nodes (the ones we're most likely to hit), are
+> > + * at the top of each subtree.
+> > + *
+> > + * Copywrite (C) 2011 Red Hat, Inc.
+> > + *
+> > + * Authors:
+> > + *   Alex Williamson<alex.williamson@redhat.com>
+> > + *
+> > + * This work is licensed under the terms of the GNU GPL, version 2.  See
+> > + * the COPYING file in the top-level directory.
+> > + */
+> > +#ifndef _LINUX_WBTREE_H
+> > +#define _LINUX_WBTREE_H
+> > +
+> > +#include<linux/kernel.h>
+> > +#include<linux/stddef.h>
+> > +
+> > +struct wb_node {
+> > +	struct wb_node *wb_parent;
+> > +	struct wb_node *wb_left;
+> > +	struct wb_node *wb_right;
+> > +	unsigned long wb_weight;
+> > +};
+> > +
+> > +struct wb_root {
+> > +	struct wb_node *wb_node;
+> > +};
+> > +
+> > +#define WB_ROOT (struct wb_root) { NULL, }
+> > +#define wb_entry(ptr, type, member) container_of(ptr, type, member)
+> > +
+> > +extern void wb_rebalance(struct wb_node *node, struct wb_root *root);
+> > +extern void wb_erase(struct wb_node *node, struct wb_root *root);
+> > +extern struct wb_node *wb_first(struct wb_root *root);
+> > +extern struct wb_node *wb_last(struct wb_root *root);
+> > +extern struct wb_node *wb_next(struct wb_node *node);
+> > +extern struct wb_node *wb_prev(struct wb_node *node);
+> > +
+> > +static inline void wb_set_weight(struct wb_node *node, unsigned long weight)
+> > +{
+> > +	node->wb_weight = weight;
+> > +}
+> > +
+> > +static inline void wb_link_node(struct wb_node *node, struct wb_node *parent,
+> > +				struct wb_node **wb_link)
+> > +{
+> > +	node->wb_left = node->wb_right = NULL;
+> > +	node->wb_parent = parent;
+> > +	*wb_link = node;
+> > +}
+> > +#endif /* _LINUX_WBTREE_H */
+> > diff --git a/lib/Makefile b/lib/Makefile
+> > index cbb774f..5c42e63 100644
+> > --- a/lib/Makefile
+> > +++ b/lib/Makefile
+> > @@ -21,7 +21,8 @@ lib-y	+= kobject.o kref.o klist.o
+> >
+> >   obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+> >   	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+> > -	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o
+> > +	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o \
+> > +	 wbtree.o
+> >
+> 
+> obj-$(CONFIG_WEIGHT_BALANCED_TREE) += wbtree.o
+> 
+> then kvm can select it, and the impact on non-kvm kernels is removed.
 
-Hm...  Ralf is on the CC list.  Ralf, why are the "Patches queued for
-the next Linux kernel release." not included in linux-next?
+Then we'd have issues trying to build an external kvm module for a
+pre-existing non-kvm kernel.  Do we care?  If we were to take such a
+path, I think the default should be on, kvm would depend on it, but we
+could add an option to disable it for EMBEDDED/EXPERT.  Thanks,
 
-> > > +	val = ehci_readl(ehci, (u32 *)base);
-> > 
-> > It doesn't compile so I can't test this, but I think that this will
-> > cause a sparse warning.  "base" should have an __iomem tag.  Please
-> > run sparse on this driver.
-> Looks like mips platform build has been broken on linux-next ( unable to
-> configure) . However I have tested code with linux-queue tree ( mips)
-> and didn't see any such warnings
+Alex
 
-Sparse is an external tool.  You have to install it and build with
-make C=1 drivers/usb/file.o
-
-> > > +	temp = HCS_N_CC(ehci->hcs_params) * HCS_N_PCC(ehci->hcs_params);
-> > > +	temp &= 0x0f;
-> > 
-> > companion HCs * ports per CC & 0xf?
-> > 
-> > What's the &= 0x0f for?  It's left out of the printk.
-> Code got carried forward from ehci-pci.c . Is that says ehci-pci.c is
-> uptodate? .  
-
-My guess is that ehci-pci.c is buggy.  Anyway this is just a work around
-to handle buggy hardware.  Since the code here just prints some debug
-output and doesn't do the work arounds we might as well remove the whole
-thing?  It seems unlikely that your mips hardware will have the same
-bug.
-
-> > > +static int ehci_msp_suspend(struct device *dev)
-> > > +{
-> > > +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-> > > +	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-> > > +	unsigned long flags;
-> > > +	int rc;
-> > > +
-> > > +	return 0;
-> > > +	rc = 0;
-> > > +
-> > > +	if (time_before(jiffies, ehci->next_statechange))
-> > > +		usleep(10000);
-> > 
-> > Is there still a usleep() function?  Either way, can you send us
-> > something that compiles on linux-next?
-> Again code got carried from ehci-pci.c .(changed msleep to usleep as
-> checkpatch complained about it). I am unable to compile mips targets in
-> linux-next tree . However this patch is tested with both linux-stable
-> and linux-queue tree of l-m-o
-
-checkpatch.pl complains because msleep() is not accurate for tiny
-amounts of time.  There is no usleep() function because trying to be
-that accurate is a lot of work and causes a lot of interrupts.  There
-is a usleep_range() function instead which lets the scheduler group
-wakeups together.  This is documented in
-Documentation/timers/timers-howto.txt
-
-Also this is dead code.  No one will complain, if you just delete it.
-
-regards,
-dan carpenter
