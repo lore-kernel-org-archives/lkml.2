@@ -1,189 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab1BWU0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:26:06 -0500
-Received: from www.tglx.de ([62.245.132.106]:54838 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932095Ab1BWU0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:26:05 -0500
-Date: Wed, 23 Feb 2011 21:25:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Pratheesh Gangadhar <pratheesh@ti.com>
-cc: davinci-linux-open-source@linux.davincidsp.com, hjk@hansjkoch.de,
-        gregkh@suse.de, amit.chatterjee@ti.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/2] PRUSS UIO driver support
-In-Reply-To: <1298469161-7644-2-git-send-email-pratheesh@ti.com>
-Message-ID: <alpine.LFD.2.00.1102232057260.2701@localhost6.localdomain6>
-References: <1298469161-7644-1-git-send-email-pratheesh@ti.com> <1298469161-7644-2-git-send-email-pratheesh@ti.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932597Ab1BWU0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:26:23 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34377 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab1BWU0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:26:20 -0500
+Message-ID: <4D656D1A.7030006@kernel.org>
+Date: Wed, 23 Feb 2011 12:24:58 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: questions about init_memory_mapping_high()
+References: <20110223171945.GI26065@htj.dyndns.org>
+In-Reply-To: <20110223171945.GI26065@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D656D57.0076,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011, Pratheesh Gangadhar wrote:
+On 02/23/2011 09:19 AM, Tejun Heo wrote:
+> Hello, guys.
+> 
+> I've been looking at init_memory_mapping_high() added by commit
+> 1411e0ec31 (x86-64, numa: Put pgtable to local node memory) and I got
+> curious about several things.
+> 
+> 1. The only rationale given in the commit description is that a
+>    RED-PEN is killed, which was the following.
+> 
+> 	/*
+> 	 * RED-PEN putting page tables only on node 0 could
+> 	 * cause a hotspot and fill up ZONE_DMA. The page tables
+> 	 * need roughly 0.5KB per GB.
+> 	 */
+> 
+>    This already wasn't true with top-down memblock allocation.
+> 
+>    The 0.5KB per GiB comment is for 32bit w/ 3 level mapping.  On
+>    64bit, it's ~4KiB per GiB when using 2MiB mappings and, well, very
+>    small per GiB if 1GiB mapping is used.  Even with 2MiB mapping,
+>    1TiB mapping would only be 4MiB.  Under ZONE_DMA, this could be
+>    problematic but with top-down this can't be a problem in any
+>    realistic way in foreseeable future.
 
-Is it actually too much of an hassle to cc the people who spent their
-time to review previous versions of your patch ?
+before that patch set:
+page table for [0, 4g) is just under and near 512M.
+page table for [4g, 128) is just under and near 2g ( assume 0-2g is ram under 4g)
 
-> +struct clk *pruss_clk;
-> +struct uio_info *info;
-> +void *ddr_virt_addr = NULL, *prussio_virt_addr = NULL;
+first patch in the patch set will
+page table for [0, 4g) is just under and near 2g.( assume 0-2g is ram under 4g)
+page table for [4g, 128) is just under and near 128g 
 
-Grrr. We do not initialize with NULL.
+so top down could put most page table on last node.
 
-> +dma_addr_t ddr_phy_addr;
+for debug purpose case, 2M and 1G page could be disabled.
 
-Also all of these want to be static.
+code excerpt from init_memory_mapping()
 
-> +static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
-> +{
-> +	void __iomem *base = dev_info->mem[0].internal_addr;
-> +	void __iomem *intren_reg = base + PINTC_HIER;
-> +	void __iomem *intrstat_reg = base + PINTC_HIPIR + ((irq - 1) << 2);
-> +	int intren_regval = ioread32(intren_reg), intr_mask = (1 << (irq - 1));
-> +
-> +	/* Is interrupt enabled and active ? */
-> +	if (!(intren_regval & intr_mask)
-> +	    && (ioread32(intrstat_reg) & PINTC_HIPIR_NO_PEND_MASK))
-> +		return IRQ_NONE;
+        printk(KERN_INFO "init_memory_mapping: %016lx-%016lx\n", start, end);
 
-You could avoid all these ugly line breaks by chosing sensible short
-names for variables and defines.
+#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
+        /*
+         * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
+         * This will simplify cpa(), which otherwise needs to support splitting
+         * large pages into small in interrupt context, etc.
+         */
+        use_pse = use_gbpages = 0;
+#else
+        use_pse = cpu_has_pse;
+        use_gbpages = direct_gbpages;
+#endif
 
-> +	/* Disable interrupt */
-> +	iowrite32((intren_regval & ~intr_mask), intren_reg);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static void pruss_cleanup(struct platform_device *dev, struct uio_info *info)
-> +{
-> +	int count;
-> +	struct uio_info *p;
 
-Nit: I prefer the longer declarations above the shorter ones. It's
-easier to parse, but that's really my personal preference. 
+> 
+> 2. In most cases, the kernel mapping ends up using 1GiB mappings and
+>    when using 1GiB mappings, a single second level table would cover
+>    512GiB of memory.  IOW, little, if any, is gained by trying to
+>    allocate the page table on node local memory when 1GiB mappings are
+>    used, they end up sharing the same page somewhere anyway.
+> 
+>    I guess this was the reason why the commit message showed usage of
+>    2MiB mappings so that each node would end up with their own third
+>    level page tables.  Is this something we need to optimize for?  I
+>    don't recall seeing recent machines which don't use 1GiB pages for
+>    the linear mapping.  Are there NUMA machines which can't use 1GiB
+>    mappings?
+> 
+>    Or was this for the future where we would be using a lot more than
+>    512GiB of memory?  If so, wouldn't that be a bit over-reaching?
+>    Wouldn't we be likely to have 512GiB mappings if we get to a point
+>    where NUMA locality of such mappings actually become a problem?
 
-	struct uio_info *p;
-	int count;
 
-Compare and contrast it and decide yourself.
+till now:
+amd 64 cpu does support 1gb page.
 
-> +
-> +	for (count = 0, p = info; count < MAX_PRUSS_EVTOUT_INSTANCE;
-> +	     count++, p++) {
+Intel CPU Nehalem-EX does not. and several vendors do provide 8 sockets
+NUMA system with 1024g and 2048g RAM
 
-Aside of making that constant shorter, you could assign info to p in
-the variable declaration already. So avoid that line break.
+cpu after Nehalem-EX looks support 1gb page.
 
-> +		uio_unregister_device(p);
-> +		kfree(p->name);
-> +	}
-> +	iounmap(prussio_virt_addr);
-> +	dma_free_coherent(&dev->dev, info[0].mem[2].size,
-> +			  info[0].mem[2].internal_addr, info[0].mem[2].addr);
 
-You sure, that iounmap and dma_free_coherent are too happy about being
-called with NULL pointers?
 
-> +
-> +	kfree(info);
-> +	clk_put(pruss_clk);
-> +}
-> +
-> +static int __devinit pruss_probe(struct platform_device *dev)
-> +{
-> +	int ret = -ENODEV, count = 0;
-> +	struct resource *regs_prussio, *regs_l3ram, *regs_ddr;
-> +	struct uio_info *p;
-> +
-> +	info = kzalloc(sizeof(struct uio_info) * MAX_PRUSS_EVTOUT_INSTANCE,
-> +		       GFP_KERNEL);
-> +	if (!info)
-> +		return -ENOMEM;
-> +
-> +	/* Power on PRU in case its not done as part of boot-loader */
-> +	pruss_clk = clk_get(&dev->dev, "pruss");
-> +	if (IS_ERR(pruss_clk)) {
-> +		dev_err(&dev->dev, "Failed to get clock\n");
-> +		ret = PTR_ERR(pruss_clk);
-> +		return ret;
+> 
+> 3. The new code creates linear mapping only for memory regions where
+>    e820 actually says there is memory as opposed to mapping from base
+>    to top.  Again, I'm not sure what the intention of this change was.
+>    Having larger mappings over holes is much cheaper than having to
+>    break down the mappings into smaller sized mappings around the
+>    holes both in terms of memory and run time overhead.  Why would we
+>    want to match the linear address mapping to the e820 map exactly?
 
-Memory leak.
+we don't need to map those holes if there is any.
 
-> +	} else {
-> +		clk_enable(pruss_clk);
-> +	}
-> +
-> +	regs_prussio = platform_get_resource(dev, IORESOURCE_MEM, 0);
-> +	if (!regs_prussio) {
-> +		dev_err(&dev->dev, "No PRUSS I/O resource specified\n");
-> +		goto out_free;
-> +	}
-> +
-> +	regs_l3ram = platform_get_resource(dev, IORESOURCE_MEM, 1);
-> +	if (!regs_l3ram) {
-> +		dev_err(&dev->dev, "No L3 RAM resource specified\n");
-> +		goto out_free;
-> +	}
-> +
-> +	regs_ddr = platform_get_resource(dev, IORESOURCE_MEM, 2);
-> +	if (!regs_ddr) {
-> +		dev_err(&dev->dev, "No External RAM resource specified\n");
-> +		goto out_free;
-> +	}
-> +
-> +	if (!regs_prussio->start || !regs_l3ram->start) {
-> +		dev_err(&dev->dev, "Invalid memory resource\n");
-> +		goto out_free;
-> +	}
-> +
-> +	ddr_virt_addr =
-> +	    dma_alloc_coherent(&dev->dev, regs_ddr->end - regs_ddr->start + 1,
-> +			       &ddr_phy_addr, GFP_KERNEL | GFP_DMA);
-> +	if (!ddr_virt_addr) {
-> +		dev_err(&dev->dev, "Could not allocate external memory\n");
-> +		goto out_free;
-> +	}
-> +
-> +	prussio_virt_addr =
-> +	    ioremap(regs_prussio->start,
-> +		    regs_prussio->end - regs_prussio->start + 1);
+for hotplug case, they should map new added memory later.
 
-Either make those variable names shorter or do:
+> 
+> Also, Yinghai, can you please try to write commit descriptions with
+> more details?  It really sucks for other people when they have to
+> guess what the actual changes and underlying intentions are.  The
+> commit adding init_memory_mapping_high() is very anemic on details
+> about how the behavior changes and the only intention given there is
+> RED-PEN removal even which is largely a miss.
 
-       len = regs_prussio->end - regs_prussio->start + 1;
-       prussio_virt_addr = ioremap(regs_prussio->start, len);
+i don't know what you are talking about. that changelog is clear enough.
 
-Those multi line breaks are irritating and not necessary at all.
-
-They result from mindlessly converting code following an unfortunately
-popular codingstyle which is only readable on extra wide screen
-monitors. I really wonder when people start to understand that the
-human eye can only parse up to a certain line width easily. There is a
-reason why newspapers are printed in columns.
-
-Please be a bit more careful about this. Just mechanically converting
-existing horrible code to 80 chars does not make it more readable and
-less horrible than not converting it at all.
-
-> +	if (prussio_virt_addr) {
-> +		dev_err(&dev->dev, "Can't remap PRUSS I/O  address range\n");
-> +		goto out_free;
-> +	}
-> +
-> +	for (count = 0, p = info; count < MAX_PRUSS_EVTOUT_INSTANCE;
-> +	     count++, p++) {
-
-See above.
-
-	for (cnt = 0, p = info; cnt < MAX_PRUSS_EVT; cnt++, p++) {
-
-is better readable and contains exactly the same amount of
-information.
-
-Thanks,
-
-	tglx
+Yinghai
