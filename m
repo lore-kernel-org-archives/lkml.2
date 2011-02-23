@@ -1,87 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab1BWRQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 12:16:10 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56876 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab1BWRQH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 12:16:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UPp8vhV5JF68m4peoMxqcJNIWlw8sobqzvLiOUgv7T5vVORYd9RFE7fSZUom2qx4jU
-         FeBfbkqnlarRhq2zRQeiIdjKdkT+Ci7vX1cTmjC00sOuEvfNr49oQgKemB5kgQoxtBgb
-         8ziLKigwCheWhyqrLSSWCC+0OmRi5wBv/uEz0=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
-References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
-	<20110222140349.GA20708@kryptos.osrc.amd.com>
-	<AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
-	<AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
-	<AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
-Date: Wed, 23 Feb 2011 19:16:05 +0200
-Message-ID: <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
-Subject: Re: Linux 2.6.38-rc6
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@redhat.com>, linux-fbdev@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
-        Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932388Ab1BWRQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:16:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29174 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124Ab1BWRQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 12:16:48 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110217150257.GA26395@mail.hallyn.com>
+References: <20110217150257.GA26395@mail.hallyn.com> <20110217150224.GA26334@mail.hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: dhowells@redhat.com, LSM <linux-security-module@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
+Subject: Re: [PATCH 1/9] Add a user_namespace as creator/owner of uts_namespace
+Date: Wed, 23 Feb 2011 17:16:33 +0000
+Message-ID: <3139.1298481393@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 6:32 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Feb 22, 2011 at 9:42 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
->> General protection fault:
->> http://i.imgur.com/TBJ6y.jpg
->>
->> dmesg: http://pastebin.com/qD8pR8QH
->> config: http://pastebin.com/XEurtHWi
->
-> That's drivers/video/fbmem.c: fb_release(), and the "Code:"
-> disassembly shows that it is
->
->  1b:   e8 f7 c0 29 00          callq  xyz
->  20:   48 8b 93 b8 03 00 00    mov    0x3b8(%rbx),%rdx
->  27:*  48 8b 42 10             mov    0x10(%rdx),%rax     <-- trapping instruction
->
-> which corresponds to
->
->        mutex_lock(&info->lock);
->        if (info->fbops->fb_release)
->                info->fbops->fb_release(info,1);
->
-> so it looks like 'info->fbops' is invalid. It's in %rdx, and is
-> 0x00d000ae00b500c2, which is definitely not a valid pointer. Looks
-> like some bad corruption (looks like a sequence of 16-bit numbers, but
-> it could be anything).
->
-> Looks like nouveafb took over from vesafb. Did you do anything special
-> to trigger this?
+Serge E. Hallyn <serge@hallyn.com> wrote:
 
-No. Just boot the system.
+>  struct uts_namespace {
+>  	struct kref kref;
+>  	struct new_utsname name;
+> +	struct user_namespace *user_ns;
+>  };
 
->
-> Also, you do seem to have some extra patches (yama at the least). Anything else?
+If a uts_namespace belongs to a user_namespace, should CLONE_NEWUSER then
+imply CLONE_NEWUTS?
 
-I used git clone, nothing else.
-First time 2.6.38-rc6 was working.
-After an update from ubuntu I get that error at boot.
+Or is uts_namespace::user_ns more an implication that the set of users in
+user_namespace are the only ones authorised to alter the uts data.
 
-The dmesg is from Ubuntu 11.04 with their kernel and is working fine.
+I presume that the uts_namespace of a process must be owned by one of the
+user_namespaces in the alternating inheritance chain of namespaces and their
+creators leading from current_user_ns() to init_user_ns.
 
->
->                            Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+With that in mind, looking at patch 3:
+
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
+
+what is it you're actually asking?  I presume it's 'does this user have
+CAP_SYS_ADMIN capability over objects belonging to the uts_namespace's
+user_namespace?'
+
+So, to look at the important bit of patch 2:
+
+-int cap_capable(struct task_struct *tsk, const struct cred *cred, int cap,
+-		int audit)
++int cap_capable(struct task_struct *tsk, const struct cred *cred,
++		struct user_namespace *targ_ns, int cap, int audit)
+ {
+-	return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
++	for (;;) {
++		/* The creator of the user namespace has all caps. */
++		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
++			return 0;
++
++		/* Do we have the necessary capabilities? */
++		if (targ_ns == cred->user->user_ns)
++			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
++
++		/* Have we tried all of the parent namespaces? */
++		if (targ_ns == &init_user_ns)
++			return -EPERM;
++
++		/* If you have the capability in a parent user ns you have it
++		 * in the over all children user namespaces as well, so see
++		 * if this process has the capability in the parent user
++		 * namespace.
++		 */
++		targ_ns = targ_ns->creator->user_ns;
++	}
++
++	/* We never get here */
++	return -EPERM;
+ }
+
+On entry, as we're called from ns_capable(), cred->user is the user that the
+current process is running as, and, as such, may be in a separate namespace
+from uts_namespace - which may itself be in a separate namespace from
+init_user_ns.
+
+So, assume for the sake of argument that there are three user_namespaces along
+the chain from the calling process to the root, and that the uts_namespace
+belongs to the middle one.
+
+		if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
+			return 0;
+
+Can never match because targ_ns->creator cannot be cred->user; even if the
+uts_namespace belongs to our namespace, given that the creator lies outside
+our namespace.
+
+		if (targ_ns == cred->user->user_ns)
+			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
+
+Can only match if we are in the target user_namespace (ie. the one to which
+uts_namespace belongs), whether or not we have CAP_SYS_ADMIN.
+
+Which means that unless the uts_namespace belongs to our user_namespace, we
+cannot change it.  Is that correct?
+
+So ns_capable() restricts you to only doing interesting things to objects that
+belong to a user_namespace if they are in your own user_namespace.  Is that
+correct?
+
+If that is so, is the loop required for ns_capable()?
+
+
+Looking further at patch 2:
+
+	#define nsown_capable(cap) (ns_capable(current_user_ns(), (cap)))
+
+Given what I've said above, I presume the loop isn't necessary here either.
+
+
+I think you're using ns_capable() in two different ways:
+
+ (1) You're using it to see if a process has power over its descendents in a
+     user_namespace that can be traced back to a clone() that it did with
+     CLONE_NEWUSER.
+
+     For example, automatically granting a process permission to kill
+     descendents in a namespace it created.
+
+ (2) You're using it to see if a process can access objects that might be
+     outside its own user_namespace.
+
+     For example, setting the hostname.
+
+Is it worth giving two different interfaces to make this clearer (even if they
+actually do the same thing)?
+
+
+Sorry if this seems rambly, but I'm trying to get my head round your code.
+
+David
+     
