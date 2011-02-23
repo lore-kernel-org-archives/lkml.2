@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab1BWTQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:16:46 -0500
-Received: from kroah.org ([198.145.64.141]:35878 "EHLO coco.kroah.org"
+	id S932458Ab1BWTRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:17:06 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52958 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932440Ab1BWTQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:16:45 -0500
-Date: Wed, 23 Feb 2011 11:16:17 -0800
-From: Greg KH <greg@kroah.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: KY Srinivasan <kys@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Message-ID: <20110223191617.GC1030@kroah.com>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102211200270.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048013C67@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102211549340.2701@localhost6.localdomain6>
+	id S932450Ab1BWTRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 14:17:03 -0500
+Date: Wed, 23 Feb 2011 11:16:58 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+Message-ID: <20110223191658.GV2163@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20110223161645.GA1819@nowhere>
+ <1298479302.7666.94.camel@gandalf.stny.rr.com>
+ <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl>
+ <alpine.DEB.2.00.1102231132140.562@router.home>
+ <1298485027.7666.98.camel@gandalf.stny.rr.com>
+ <alpine.DEB.2.00.1102231225330.3906@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1102211549340.2701@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1102231225330.3906@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 03:51:56PM +0100, Thomas Gleixner wrote:
-> On Mon, 21 Feb 2011, KY Srinivasan wrote:
-> > > > > There are various ways to solve that proper.
-> > > > >
-> > > > >  - You can provide the interrupt number from ACPI/PCI or whatever your HV
-> > > > >    provides as enumeration.
-> > > > >
-> > > > >  - Use a fixed vector like XEN does for the event channel
-> > > > >
-> > > > >  - Use dynamic allocation in the IOAPIC space like the kernel does for
-> > > > >    MSI(-X)
-> > > > >
-> > > > > Thanks,
-> > > > >
-> > > > > 	tglx
+On Wed, Feb 23, 2011 at 12:29:59PM -0600, Christoph Lameter wrote:
+> On Wed, 23 Feb 2011, Steven Rostedt wrote:
+> 
+> > On Wed, 2011-02-23 at 11:34 -0600, Christoph Lameter wrote:
+> >
+> > > > > True, but we could also argue that the multiple checks for being preempt
+> > > > > can also be an issue.
 > > > >
-> > > > I am not claiming that what I have done here is the best possible solution.
-> > > > However, I will submit to you that it is better than what we had here
-> > > > prior to this patch.  I will address this and a  whole lot of other issues
-> > > > in future patches.
-> > > 
-> > > No, it's _NOT_ better in any way. You trade breaking your PV thing
-> > > against breaking random other drivers. Care to explain why you think
-> > > that's better ?
-> > 
-> > The root device for the VM is bound to the PV driver on some distributions.
-> > So, if we cannot load the PV drivers, we do not have a system that boots.
-> > In general, the system performance without these PV drivers is so poor that
-> > for all practical purposes, having the PV drivers is almost a requirement
-> > for having a useable system. While the platform supports configuration of the VM with
-> > some emulated devices, it is not a recommended configuration (because of
-> > performance reasons) for Linux virtual machines on the Hyper-V platform.
+> > > > At least on x86 preemption don't actually need to be disabled: selection
+> > > > of the right per-cpu memory location is done atomically with the rest of
+> > > > the instruction by the segment selector.
+> > >
+> > > Right.
+> >
+> > But a test still needs to be made. Because three access of this_cpu_*()
+> > that gets preempted and scheduled on another CPU can access a different
+> > CPU var for each access. This does not matter how atomic the
+> > this_cpu_*() code is.
 > 
-> It does not matter whether it's recommended or not. If it results in a
-> non usable emulated device it's broken. Just imagine you grab the
-> serial interrupt, which results in not having a debug console. Not at
-> all acceptable.
->  
-> > I have spent significantly more time debating this patch than
-> > developing this patch that I still think improves the current
-> > driver. I will leave it to Greg and other powers that be to decide
-> > if this patch will be accepted. Let me know what your verdict is.
-> 
-> As I said, any other clean solution (and I pointed out 3) over this
-> hack.
+> Right if the kthread context can be rescheduled then either preemption
+> needs to be disabled to guarantee that all three access the same per cpu
+> area data or the code needs to be changed in such a way that a this_cpu
+> RMW instructions can do the mods in one go.
 
-I agree, KY, please fix this up properly, I've dropped this patch from
-my queue now.
+Reschedules can happen in this case due to CPU hotplug events.  :-(
 
-thanks,
-
-greg k-h
+							Thanx, Paul
