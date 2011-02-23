@@ -1,233 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab1BWNxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:53:15 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52564 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755489Ab1BWNxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:53:12 -0500
-From: Pratheesh Gangadhar <pratheesh@ti.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: hjk@hansjkoch.de, gregkh@suse.de, pratheesh@ti.com, amit.chatterjee@ti.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources used by PRUSS UIO driver
-Date: Wed, 23 Feb 2011 19:22:41 +0530
-Message-Id: <1298469161-7644-3-git-send-email-pratheesh@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <1298469161-7644-2-git-send-email-pratheesh@ti.com>
-References: <1298469161-7644-1-git-send-email-pratheesh@ti.com>
- <1298469161-7644-2-git-send-email-pratheesh@ti.com>
+	id S932136Ab1BWNxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:53:36 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33597 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab1BWNxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 08:53:32 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
+        sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
+        jlayton@redhat.com
+Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
+Subject: [PATCH -V5 11/24] vfs: Make acl_permission_check() work for richacls
+Date: Wed, 23 Feb 2011 19:21:58 +0530
+Message-Id: <1298469131-16555-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines PRUSS, ECAP clocks, memory and IRQ resources
-used by PRUSS UIO driver in DA850/AM18xx/OMAPL1-38 devices. UIO
-driver exports 64K I/O region of PRUSS, 128KB L3 RAM and 256KB
-DDR buffer to user space. PRUSS has 8 host event interrupt lines
-mapped to IRQ_DA8XX_EVTOUT0..7 of ARM9 INTC.These in conjunction
-with shared memory can be used to implement IPC between ARM9 and
-PRUSS.
+From: Andreas Gruenbacher <agruen@suse.de>
 
-Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
+Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- arch/arm/mach-davinci/board-da850-evm.c    |    4 ++
- arch/arm/mach-davinci/da850.c              |   35 +++++++++++++
- arch/arm/mach-davinci/devices-da8xx.c      |   73 ++++++++++++++++++++++++++++
- arch/arm/mach-davinci/include/mach/da8xx.h |    3 +
- 4 files changed, 115 insertions(+), 0 deletions(-)
+ fs/namei.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 11f986b..bd85aa3 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -1077,6 +1077,10 @@ static __init void da850_evm_init(void)
- 		pr_warning("da850_evm_init: i2c0 registration failed: %d\n",
- 				ret);
+diff --git a/fs/namei.c b/fs/namei.c
+index 1b6dbc9..d7ff419 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -174,6 +174,20 @@ static int acl_permission_check(struct inode *inode, int mask, unsigned int flag
+ {
+ 	umode_t			mode = inode->i_mode;
  
-+	ret = da8xx_register_pruss();
-+	if (ret)
-+		pr_warning("da850_evm_init: pruss registration failed: %d\n",
-+				ret);
- 
- 	ret = da8xx_register_watchdog();
- 	if (ret)
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index 3443d97..0096d4f 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -238,6 +238,13 @@ static struct clk tptc2_clk = {
- 	.flags		= ALWAYS_ENABLED,
- };
- 
-+static struct clk pruss_clk = {
-+	.name		= "pruss",
-+	.parent		= &pll0_sysclk2,
-+	.lpsc		= DA8XX_LPSC0_DMAX,
-+	.flags		= ALWAYS_ENABLED,
-+};
-+
- static struct clk uart0_clk = {
- 	.name		= "uart0",
- 	.parent		= &pll0_sysclk2,
-@@ -359,6 +366,30 @@ static struct clk usb20_clk = {
- 	.gpsc		= 1,
- };
- 
-+static struct clk ecap0_clk = {
-+	.name		= "ecap0",
-+	.parent		= &pll0_sysclk2,
-+	.lpsc		= DA8XX_LPSC1_ECAP,
-+	.flags		= DA850_CLK_ASYNC3,
-+	.gpsc		= 1,
-+};
-+
-+static struct clk ecap1_clk = {
-+	.name		= "ecap1",
-+	.parent		= &pll0_sysclk2,
-+	.lpsc		= DA8XX_LPSC1_ECAP,
-+	.flags		= DA850_CLK_ASYNC3,
-+	.gpsc		= 1,
-+};
-+
-+static struct clk ecap2_clk = {
-+	.name		= "ecap2",
-+	.parent		= &pll0_sysclk2,
-+	.lpsc		= DA8XX_LPSC1_ECAP,
-+	.flags		= DA850_CLK_ASYNC3,
-+	.gpsc		= 1,
-+};
-+
- static struct clk_lookup da850_clks[] = {
- 	CLK(NULL,		"ref",		&ref_clk),
- 	CLK(NULL,		"pll0",		&pll0_clk),
-@@ -386,6 +417,7 @@ static struct clk_lookup da850_clks[] = {
- 	CLK(NULL,		"tptc1",	&tptc1_clk),
- 	CLK(NULL,		"tpcc1",	&tpcc1_clk),
- 	CLK(NULL,		"tptc2",	&tptc2_clk),
-+	CLK(NULL,		"pruss",	&pruss_clk),
- 	CLK(NULL,		"uart0",	&uart0_clk),
- 	CLK(NULL,		"uart1",	&uart1_clk),
- 	CLK(NULL,		"uart2",	&uart2_clk),
-@@ -403,6 +435,9 @@ static struct clk_lookup da850_clks[] = {
- 	CLK(NULL,		"aemif",	&aemif_clk),
- 	CLK(NULL,		"usb11",	&usb11_clk),
- 	CLK(NULL,		"usb20",	&usb20_clk),
-+	CLK(NULL,		"ecap0",	&ecap0_clk),
-+	CLK(NULL,		"ecap1",	&ecap1_clk),
-+	CLK(NULL,		"ecap2",	&ecap2_clk),
- 	CLK(NULL,		NULL,		NULL),
- };
- 
-diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-index beda8a4..4ea3d1f 100644
---- a/arch/arm/mach-davinci/devices-da8xx.c
-+++ b/arch/arm/mach-davinci/devices-da8xx.c
-@@ -725,3 +725,76 @@ int __init da8xx_register_cpuidle(void)
- 
- 	return platform_device_register(&da8xx_cpuidle_device);
- }
-+static struct resource pruss_resources[] = {
-+	[0] = {
-+		.start  = DA8XX_PRUSS_BASE,
-+		.end    = DA8XX_PRUSS_BASE + SZ_64K - 1,
-+		.flags  = IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start  = DA8XX_L3RAM_BASE,
-+		.end    = DA8XX_L3RAM_BASE + SZ_128K - 1,
-+		.flags  = IORESOURCE_MEM,
-+	},
-+	[2] = {
-+		.start  = 0,
-+		.end    = SZ_256K - 1,
-+		.flags  = IORESOURCE_MEM,
-+	},
-+
-+	[3] = {
-+		.start  = IRQ_DA8XX_EVTOUT0,
-+		.end    = IRQ_DA8XX_EVTOUT0,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	[4] = {
-+		.start  = IRQ_DA8XX_EVTOUT1,
-+		.end    = IRQ_DA8XX_EVTOUT1,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	[5] = {
-+		.start  = IRQ_DA8XX_EVTOUT2,
-+		.end    = IRQ_DA8XX_EVTOUT2,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	[6] = {
-+		.start  = IRQ_DA8XX_EVTOUT3,
-+		.end    = IRQ_DA8XX_EVTOUT3,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	[7] = {
-+		.start  = IRQ_DA8XX_EVTOUT4,
-+		.end    = IRQ_DA8XX_EVTOUT4,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	[8] = {
-+		.start  = IRQ_DA8XX_EVTOUT5,
-+		.end    = IRQ_DA8XX_EVTOUT5,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	[9] = {
-+		.start  = IRQ_DA8XX_EVTOUT6,
-+		.end    = IRQ_DA8XX_EVTOUT6,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+	[10] = {
-+		.start  = IRQ_DA8XX_EVTOUT7,
-+		.end    = IRQ_DA8XX_EVTOUT7,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device pruss_device = {
-+	.name			= "pruss",
-+	.id			= 0,
-+	.num_resources		= ARRAY_SIZE(pruss_resources),
-+	.resource		= pruss_resources,
-+	.dev	 =	{
-+		.coherent_dma_mask = 0xffffffff,
++	if (IS_RICHACL(inode)) {
++		int error = check_acl(inode, mask, flags);
++		if (error != -EAGAIN)
++			return error;
++		if (mask & (MAY_DELETE_SELF | MAY_TAKE_OWNERSHIP |
++			    MAY_CHMOD | MAY_SET_TIMES)) {
++			/*
++			 * The file permission bit cannot grant these
++			 * permissions.
++			 */
++			return -EACCES;
++		}
 +	}
-+};
 +
-+int __init da8xx_register_pruss()
-+{
-+	return platform_device_register(&pruss_device);
-+}
-diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
-index cfcb223..3ed6ee0 100644
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@ -60,6 +60,7 @@ extern unsigned int da850_max_speed;
- #define DA8XX_PLL0_BASE		0x01c11000
- #define DA8XX_TIMER64P0_BASE	0x01c20000
- #define DA8XX_TIMER64P1_BASE	0x01c21000
-+#define DA8XX_PRUSS_BASE	0x01c30000
- #define DA8XX_GPIO_BASE		0x01e26000
- #define DA8XX_PSC1_BASE		0x01e27000
- #define DA8XX_LCD_CNTRL_BASE	0x01e13000
-@@ -68,6 +69,7 @@ extern unsigned int da850_max_speed;
- #define DA8XX_AEMIF_CS2_BASE	0x60000000
- #define DA8XX_AEMIF_CS3_BASE	0x62000000
- #define DA8XX_AEMIF_CTL_BASE	0x68000000
-+#define DA8XX_L3RAM_BASE	0x80000000
- #define DA8XX_DDR2_CTL_BASE	0xb0000000
- #define DA8XX_ARM_RAM_BASE	0xffff0000
- 
-@@ -90,6 +92,7 @@ int da850_register_cpufreq(char *async_clk);
- int da8xx_register_cpuidle(void);
- void __iomem * __init da8xx_get_mem_ctlr(void);
- int da850_register_pm(struct platform_device *pdev);
-+int da8xx_register_pruss(void);
- 
- extern struct platform_device da8xx_serial_device;
- extern struct emac_platform_data da8xx_emac_pdata;
+ 	if (current_fsuid() == inode->i_uid)
+ 		mode >>= 6;
+ 	else {
 -- 
-1.6.0.6
+1.7.1
 
