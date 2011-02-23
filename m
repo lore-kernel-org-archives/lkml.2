@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab1BWR1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 12:27:05 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:50335
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751470Ab1BWR1B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 12:27:01 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
-Date: Wed, 23 Feb 2011 11:26:12 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-api@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, <netdev@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Christoph Lameter <cl@linux.com>,
-        <linuxppc-dev@lists.ozlabs.org>, David Miller <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found on
- the MPC85xx.
-Message-ID: <20110223112612.30071995@schlenkerla>
-In-Reply-To: <20110223165058.GE14597@angua.secretlab.ca>
-References: <cover.1298447722.git.richard.cochran@omicron.at>
-	<be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
-	<20110223165058.GE14597@angua.secretlab.ca>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	id S1755051Ab1BWR2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:28:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36282 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752190Ab1BWR2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 12:28:11 -0500
+Date: Wed, 23 Feb 2011 18:27:34 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        alsa-user@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
+ 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
+ GFP_ATOMIC order > 0
+Message-ID: <20110223172734.GR31195@random.random>
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
+ <4D6367B3.9050306@googlemail.com>
+ <20110222134047.GT13092@random.random>
+ <20110222161513.GC13092@random.random>
+ <4D63F6C0.7060204@internode.on.net>
+ <20110223162432.GL31195@random.random>
+ <20110223171047.GL15652@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110223171047.GL15652@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011 09:50:58 -0700
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Wed, Feb 23, 2011 at 11:38:17AM +0100, Richard Cochran wrote:
-> > +
-> > +* Gianfar PTP clock nodes
-> > +
-> > +General Properties:
-> > +
-> > +  - compatible   Should be "fsl,etsec-ptp"
+On Wed, Feb 23, 2011 at 05:10:47PM +0000, Mel Gorman wrote:
+> On Wed, Feb 23, 2011 at 05:24:32PM +0100, Andrea Arcangeli wrote:
+> > On Wed, Feb 23, 2011 at 04:17:44AM +1030, Arthur Marsh wrote:
+> > > OK, these patches applied together against upstream didn't cause a crash 
+> > > but I did observe:
+> > > 
+> > > significant slowdowns of MIDI playback (moreso than in previous cases, 
+> > > and with less than 20 Meg of swap file in use);
+> > > 
+> > > kswapd0 sharing equal top place in CPU usage at times (e.g. 20 percent).
+> > > 
+> > > If I should try only one of the patches or something else entirely, 
+> > > please let me know.
+> > 
+> > Yes, with irq off, schedule won't run and need_resched won't get set.
+> > 
 > 
-> Should specify an *exact* part; ie: "fsl,mpc8313-etsec-ptp" instead of
-> trying to define a generic catchall.  The reason is that the same
-> marketing name can end up getting applied to a wide range of parts.
-> 
-> Instead, choose one specific device to stand in as the 'common'
-> implementation and get all parts with the same core to claim
-> compatibility with it.  ie: a p2020 might have:
-> 
-> 	compatible = "fsl,mpc2020-etsec-ptp", "fsl,mpc8313-etsec-ptp";
+> Stepping back a little, how did you determine that isolate_migrate was the
+> major problem? In my initial tests using the irqsoff tracer (sampled for
+> the duration fo the test every few seconds and resetting the max latency
+> each time), compaction_alloc() was a far worse source of problems and
+> isolate_migratepage didn't even register. It might be that I'm not testing
+> on large enough machines though.
 
-eTSEC is versioned, that's more reliable than the chip name since chips
-have revisions (rev 2.1 of mpc8313 has eTSEC 1.6, not sure about previous
-revs of mpc8313).  Logic blocks can be and have been uprevved between one
-revision of a chip to the next.  I think "fsl,mpc8313rev2.1-etsec-ptp"
-would be taking things a bit too far (and there could be board-level bugs
-too...).
+I think you're right compaction_alloc is a bigger problem. Your patch
+to isolate_freepages is a must have and in the right direction.
 
-If you really need to know the exact SoC you're on, look in SVR (which
-will provide revision info as well).  Isn't the device tree for things that
-can't be probed?
+However I think having large areas set as PageBuddy may be common too,
+the irq latency source in isolated_migratepages I think needs fixing
+too. We must be guaranteed to release irqs after max N pages (where N
+is SWAP_CLUSTER_MAX in my last two patches).
 
-The eTSEC revision is probeable as well, but due the way PTP is described as
-a separate node, the driver doesn't have straightforward access to those
-registers.
+> In another mail, I posted a patch that dealt with compaction_alloc after
+> finding that IRQs were being disabled for millisecond lengths of time.
+> That length of time for IRQs being disabled could account for the performance
+> loss on the network load. Can test the network load with it applied?
 
-Insisting on an explicit chip also encourages people to claim compatibility
-with that chip without ensuring that it really is fully compatible.
+kswapd was also running at 100% on all CPUs in that test.
 
--Scott
+The z1 that doesn't fix the latency source in compaction but that
+removes compaction from kswapd (a light/hackish version of
+compaction-no-kswapd-3 that I just posted) fixes the problem
+completely for the network load too.
 
+So clearly it's not only a problem we can fix in compaction, the irq
+latency will improve for sure, but we still get an overload from
+kswapd which is not ok I think.
+
+What I am planning to test on the network load is
+high-wmark+compaction_alloc_lowlat+compaction-kswapd-3 vs
+high-wmark+compaction_alloc_lowlat+compaction-no-kswapd-2.
+
+Is this ok? If you want I can test also
+high-wmark+compaction_alloc_lowlat without
+compaction-kswapd-3/compaction-no-kswapd-2 but I think the irq-latency
+source in isolate_migratepages in presence of large PageBuddy regions
+(after any large application started at boot quits) isn't ok. Also I
+think having kswapd at 100% cpu load isn't ok. So I doubt we should
+stop at compaction_alloc_lowlat.
