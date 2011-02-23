@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab1BWJXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 04:23:39 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:34507 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755365Ab1BWJXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 04:23:36 -0500
-Date: Wed, 23 Feb 2011 10:23:14 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, kovariadam@gmail.com
-Subject: Re: FUSE triggering BUG through blkdev_put()
-Message-ID: <20110223102314.129aac51@schatten.dmk.lab>
-In-Reply-To: <1297695340.19726.294.camel@tucsk.pomaz.szeredi.hu>
-References: <20110214105659.GB18742@htj.dyndns.org>
-	<1297695340.19726.294.camel@tucsk.pomaz.szeredi.hu>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932147Ab1BWJYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 04:24:13 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:53930 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab1BWJYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 04:24:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=R4ZNeojqZdcsNaYJYFM6D9l3g3ssEYrs8n4oc6pryeo4GmsJm9vTp2++aI8WER5c6i
+         xU+nGuulAYryusIeMX6WHg6UN6dZkmWKQttvFT+hDWZPkIikbw/w6ZWUDmub7rIVen7r
+         h/bY5Qk3vxz7Ii64gIk7CRxiDhG0CgfNyH2UA=
+Subject: [PATCH 1/2] rtc: rtc-mc13xxx: fix unterminated platform_device_id
+	table
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
+Content-Type: text/plain
+Date: Wed, 23 Feb 2011 17:27:24 +0800
+Message-Id: <1298453244.25444.1.camel@mola>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 15:55:40 +0100
-Miklos Szeredi <mszeredi@suse.cz> wrote:
+The platform_device_id table is supposed to be zero-terminated.
 
-> On Mon, 2011-02-14 at 11:56 +0100, Tejun Heo wrote:
-> > Please take a look at the following bug.
-> > 
-> >  https://bugzilla.kernel.org/show_bug.cgi?id=28642
-> > 
-> > The bug title and description are completely misleading but the
-> > problem seems to have been caused by the recent eviction related
-> > changes.  FUSE ends up blkdev_put'ting while I_CLEAR is still set on
-> > the blkdev's inode triggering BUG_ON() in iput().
-> 
-> Thanks for forwarding.
-> 
-> It doesn't look to me that it's related to changes in fuse inode
-> eviction.  More likely something from the recent inode locking changes.
-> 
-> Thanks,
-> Miklos
-> 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/rtc/rtc-mc13xxx.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-The Fuse Bug has nothing to do with the invisible battery of bug
-28642. To avoid confusion, the fuse bug is tracked here:
-https://bugzilla.kernel.org/show_bug.cgi?id=29202
+diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
+index 5314b15..6e6de98 100644
+--- a/drivers/rtc/rtc-mc13xxx.c
++++ b/drivers/rtc/rtc-mc13xxx.c
+@@ -408,6 +408,7 @@ const struct platform_device_id mc13xxx_rtc_idtable[] = {
+ 	}, {
+ 		.name = "mc13892-rtc",
+ 	},
++	{ }
+ };
+ 
+ static struct platform_driver mc13xxx_rtc_driver = {
+-- 
+1.7.2
 
-Regards,
-Flo
+
+
