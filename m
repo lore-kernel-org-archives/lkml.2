@@ -1,53 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab1BWPTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:19:23 -0500
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:58969 "EHLO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab1BWPTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:19:22 -0500
-Message-ID: <4D652574.8040206@ge.com>
-Date: Wed, 23 Feb 2011 15:19:16 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1753404Ab1BWPVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:21:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60511 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109Ab1BWPVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 10:21:02 -0500
+Date: Wed, 23 Feb 2011 10:20:46 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: remove die_nmi()
+Message-ID: <20110223152046.GA32012@redhat.com>
+References: <4D5D521C0200007800032702@vpn.id2.novell.com>
 MIME-Version: 1.0
-To: Manohar Vanga <manohar.vanga@cern.ch>
-CC: Dan Carpenter <error27@gmail.com>, devel@driverdev.osuosl.org,
-        cota@braap.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: vme: remove unreachable code
-References: <1298403376-28352-1-git-send-email-manohar.vanga@cern.ch> <1298403376-28352-2-git-send-email-manohar.vanga@cern.ch> <4D64D10A.3070702@ge.com> <20110223121726.GR1898@bicker> <4D652344.1020402@ge.com> <20110223151618.GA27806@becoht-mvanga>
-In-Reply-To: <20110223151618.GA27806@becoht-mvanga>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Feb 2011 15:19:14.0545 (UTC) FILETIME=[07C52E10:01CBD36D]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5D521C0200007800032702@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/02/11 15:16, Manohar Vanga wrote:
->>> There are two problems with this loop.  1) It unregisters the device
->>> which failed to register.  2) It is a forever loop.
->>>
->>
->> Even if "i" is a signed int?
+On Thu, Feb 17, 2011 at 03:51:40PM +0000, Jan Beulich wrote:
+> With no caller left, the function and the DIE_NMIWATCHDOG enumerator
+> can both go away.
 > 
-> The infinite loop is because "i" is not decremented anywhere in the loop. Not
-> because of signedness.
-> 
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Ah, yeah, that would help.
-
-Martyn
-
-> Thanks,
-> Manohar Vanga
-
-
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+Acked-by: Don Zickus <dzickus@redhat.com>
