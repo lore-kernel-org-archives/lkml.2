@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab1BWQ74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:59:56 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56647 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab1BWQ7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:59:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KcExaf8yn3g8C7Gp5QYMi6LhE+8RbZZQYMkIvzTxpzRIpkXFsaVVEOEEWA5ZSQi1L9
-         GsQ3abUNc2Tr5/Csw/piJlEKgeGmbCCZM+92Hc0CKMXWmFqUx7QlCDBoNpQorMczYmrm
-         6pEZhq0GxdUYAFD8P0bQTV32xj7YZSEDz+pMo=
-Date: Wed, 23 Feb 2011 08:59:47 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.38-rc6
-Message-ID: <20110223165947.GA22962@core.coreip.homeip.net>
-References: <20110107065448.GC29038@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107065448.GC29038@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932272Ab1BWRAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:00:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10669 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124Ab1BWRAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 12:00:08 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110217150306.GB26395@mail.hallyn.com>
+References: <20110217150306.GB26395@mail.hallyn.com> <20110217150224.GA26334@mail.hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: dhowells@redhat.com, LSM <linux-security-module@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
+Subject: Re: [PATCH 2/9] security: Make capabilities relative to the user namespace.
+Date: Wed, 23 Feb 2011 16:59:19 +0000
+Message-ID: <2761.1298480359@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Serge E. Hallyn <serge@hallyn.com> wrote:
 
-Please pull from:
+> +		/* If you have the capability in a parent user ns you have it
+> +		 * in the over all children user namespaces as well, so see
+> +		 * if this process has the capability in the parent user
+> +		 * namespace.
+> +		 */
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+"... in the over all children user namespaces ..." I think need a couple of
+words dropping.
 
-to receive updates for the input subsystem. You will get a fix for
-recently reported boot time regression (longish serio works badly
-interacting with flush_scheduled_work() used by tty layer), update
-documenting new(ish) 0x0c query in Synaptics protocol and final polishes
-for the tegra keyboard driver (which is new in this release).
-
-Thanks!
-
-
-Changelog:
----------
-
-Dmitry Torokhov (2):
-      Input: synaptics - document 0x0c query
-      Input: serio/gameport - use 'long' system workqueue
-
-Rakesh Iyer (1):
-      Input: tegra-kbc - add function keymap
-
-
-Diffstat:
---------
-
- arch/arm/mach-tegra/include/mach/kbc.h |    1 +
- drivers/input/gameport/gameport.c      |    2 +-
- drivers/input/keyboard/tegra-kbc.c     |   62 ++++++++++++++++++++++++++++++--
- drivers/input/mouse/synaptics.h        |   23 ++++++++++++
- drivers/input/serio/serio.c            |    2 +-
- 5 files changed, 85 insertions(+), 5 deletions(-)
-
--- 
-Dmitry
+David
