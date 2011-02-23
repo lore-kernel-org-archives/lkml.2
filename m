@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab1BWFoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 00:44:37 -0500
-Received: from mail.perches.com ([173.55.12.10]:3856 "EHLO mail.perches.com"
+	id S1753092Ab1BWFog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 00:44:36 -0500
+Received: from mail.perches.com ([173.55.12.10]:3858 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab1BWFmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751932Ab1BWFmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Feb 2011 00:42:31 -0500
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 08/18] MAINTAINERS: Update HVC file patterns
-Date: Tue, 22 Feb 2011 21:42:01 -0800
-Message-Id: <a4668ef19aa2238ced0663763a83e03d72dda15b.1298439175.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 09/18] MAINTAINERS: Quote non-alphanumeric email addresses
+Date: Tue, 22 Feb 2011 21:42:02 -0800
+Message-Id: <70a2035a61c95dfa12a3eeb9b16433ced527d886.1298439175.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.4.rc3
 In-Reply-To: <cover.1298439175.git.joe@perches.com>
 References: <cover.1298439175.git.joe@perches.com>
@@ -19,39 +19,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 728674a7e466628df2aeec6d11a2ae1ef968fb67
-("tty: move hvc drivers to drivers/tty/hvc/")
-moved the files, update the patterns as appropriate.
-
-cc: Greg Kroah-Hartman <gregkh@suse.de>
+Add quotes around email address with periods and commas.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- MAINTAINERS |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ MAINTAINERS |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 6556c9f..a9d971e 100644
+index a9d971e..3508c0f 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -2821,7 +2821,7 @@ F:	mm/hwpoison-inject.c
- HYPERVISOR VIRTUAL CONSOLE DRIVER
- L:	linuxppc-dev@lists.ozlabs.org
- S:	Odd Fixes
--F:	drivers/char/hvc_*
-+F:	drivers/tty/hvc/
+@@ -1052,7 +1052,7 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
  
- iSCSI BOOT FIRMWARE TABLE (iBFT) DRIVER
- M:	Peter Jones <pjones@redhat.com>
-@@ -6104,7 +6104,7 @@ M:	Chris Metcalf <cmetcalf@tilera.com>
- W:	http://www.tilera.com/scm/
+ ARM/TETON BGA MACHINE SUPPORT
+-M:	Mark F. Brown <mark.brown314@gmail.com>
++M:	"Mark F. Brown" <mark.brown314@gmail.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ 
+@@ -1456,7 +1456,7 @@ F:	drivers/mtd/devices/block2mtd.c
+ 
+ BLUETOOTH DRIVERS
+ M:	Marcel Holtmann <marcel@holtmann.org>
+-M:	Gustavo F. Padovan <padovan@profusion.mobi>
++M:	"Gustavo F. Padovan" <padovan@profusion.mobi>
+ L:	linux-bluetooth@vger.kernel.org
+ W:	http://www.bluez.org/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
+@@ -1465,7 +1465,7 @@ F:	drivers/bluetooth/
+ 
+ BLUETOOTH SUBSYSTEM
+ M:	Marcel Holtmann <marcel@holtmann.org>
+-M:	Gustavo F. Padovan <padovan@profusion.mobi>
++M:	"Gustavo F. Padovan" <padovan@profusion.mobi>
+ L:	linux-bluetooth@vger.kernel.org
+ W:	http://www.bluez.org/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
+@@ -2913,7 +2913,7 @@ F:	Documentation/blockdev/cpqarray.txt
+ F:	drivers/block/cpqarray.*
+ 
+ HEWLETT-PACKARD SMART ARRAY RAID DRIVER (hpsa)
+-M:	Stephen M. Cameron <scameron@beardog.cce.hp.com>
++M:	"Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+ L:	iss_storagedev@hp.com
  S:	Supported
- F:	arch/tile/
--F:	drivers/char/hvc_tile.c
-+F:	drivers/tty/hvc/hvc_tile.c
- F:	drivers/net/tile/
+ F:	Documentation/scsi/hpsa.txt
+@@ -4201,7 +4201,7 @@ F:	Documentation/serial/moxa-smartio
+ F:	drivers/char/mxser.*
  
- TLAN NETWORK DRIVER
+ MSI LAPTOP SUPPORT
+-M:	Lee, Chun-Yi <jlee@novell.com>
++M:	"Lee, Chun-Yi" <jlee@novell.com>
+ L:	platform-driver-x86@vger.kernel.org
+ S:	Maintained
+ F:	drivers/platform/x86/msi-laptop.c
 -- 
 1.7.4.rc3
 
