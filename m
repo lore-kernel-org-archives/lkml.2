@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab1BWGOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 01:14:24 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55125 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab1BWGOX (ORCPT
+	id S1752429Ab1BWGRW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 01:17:22 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52468 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab1BWGRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 01:14:23 -0500
+	Wed, 23 Feb 2011 01:17:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type;
-        b=Q6st5o9It6Igx/TwN8a06fTmNxaZzohI2BwPfNfVrGzCi9lQgQ1jToHPvNVBD2NO1w
-         WLnm5rBIN3gj8crb1/YzlwnDhQRwCbwzkT9oKS0i5Xdh4qrCCrNXNQz+e0Japs+wqfTl
-         NQKRCHUHPvHO/4LJmCVRl+s8w4q4PqrP2ogDE=
+        b=ZzoqYmmJ6XqzI9x4gubNAjhbSg94hEs7fbZRQx/IorhXiSmxf/EqvPf2oYzvfG0PIq
+         w7ehqilknwxuJxGBzBdRDHUtDaiHlHSQDgE+DbbvcdQuYk0oTO3GaDhPUf0wvb9ktxLO
+         RO9nR9EASAIJPw5prr69YBLZu7z3kWsgbcOBQ=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
-References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
-	<20110222140349.GA20708@kryptos.osrc.amd.com>
-	<AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
-	<AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
-Date: Wed, 23 Feb 2011 08:14:21 +0200
-Message-ID: <AANLkTimGp1RM7AM1bK2j1gAHtiE8C2MOEpnk96_oSZtJ@mail.gmail.com>
-Subject: Re: Linux 2.6.38-rc6
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <266c414d5dde68db0fe1cd7ce898f80c69e18e1e.1298439175.git.joe@perches.com>
+References: <cover.1298439175.git.joe@perches.com> <266c414d5dde68db0fe1cd7ce898f80c69e18e1e.1298439175.git.joe@perches.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 23 Feb 2011 01:17:00 -0500
+Message-ID: <AANLkTin0TdGZmXa2sYOpZs8kPgrSjb6h0m08Ce9OMjvP@mail.gmail.com>
+Subject: Re: [PATCH 02/18] MAINTAINERS: Change web links from wiki-analog to wiki.analog
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 7:42 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> General protection fault:
-> http://i.imgur.com/TBJ6y.jpg
+On Wed, Feb 23, 2011 at 00:41, Joe Perches <joe@perches.com> wrote:
+> wiki-analog doesn't seem to work, but wiki.analog does.
 
-dmesg: http://pastebin.com/qD8pR8QH
-config: http://pastebin.com/XEurtHWi
+wiki-analog.com should still work (machine seems to be temp down).
+but wiki.analog.com is the final resting place, so changing it now is
+a good a time as any.
+-mike
