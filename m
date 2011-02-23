@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab1BWMZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 07:25:06 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37632 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab1BWMZE (ORCPT
+	id S1754656Ab1BWM2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 07:28:13 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:48519 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab1BWM2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 07:25:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=W6CVs9iOvP27RNxMI8XAybcAvC4WSMiXZKptGv0DHYUatFhmlfpVhjipeTxWU/hOke
-         nmaDiz4t4jTzNsZN+M4rIszd05tuNURYfStvpFDQOhc7IPJx2lVpybcKbGDISv5foMDy
-         vgsNrPkg99uGwZy60dBSscfCKIDct0VmaYPJY=
-Date: Wed, 23 Feb 2011 15:24:43 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Manohar Vanga <manohar.vanga@cern.ch>, devel@driverdev.osuosl.org,
-        gregkh@suse.de, cota@braap.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: vme: fix bug in vme_register_bridge
-Message-ID: <20110223122443.GS1898@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Martyn Welch <martyn.welch@ge.com>,
-	Manohar Vanga <manohar.vanga@cern.ch>, devel@driverdev.osuosl.org,
-	gregkh@suse.de, cota@braap.org, linux-kernel@vger.kernel.org
-References: <1298453209-30821-1-git-send-email-manohar.vanga@cern.ch>
- <4D64D70A.1060007@ge.com>
+	Wed, 23 Feb 2011 07:28:10 -0500
+Date: Wed, 23 Feb 2011 13:29:04 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Funny perf
+Message-ID: <20110223122904.GA3935@aftab>
+References: <20110217182658.GA23443@aftab>
+ <1298456508.2217.357.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D64D70A.1060007@ge.com>
+In-Reply-To: <1298456508.2217.357.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 09:44:42AM +0000, Martyn Welch wrote:
-> On 23/02/11 09:26, Manohar Vanga wrote:
-> > Fix a bug in vme_register_bridge that results in an infinite loop in
-> > the event that device_register fails.
+On Wed, Feb 23, 2011 at 05:21:48AM -0500, Peter Zijlstra wrote:
+> On Thu, 2011-02-17 at 19:26 +0100, Borislav Petkov wrote:
+> > 
+> > so this looks like some of the samples do not belong in the perf.data
+> > output with that garbled cpu field. It lets me also assume that the
+> > sample->time field is also crap so the timestamp check is falsely
+> > tripped. 
+> 
+> Most interesting, I haven't tried to reproduce, but it does sound
+> smelly.
+> 
+> I did have a quick peek at some code I suspected but that all seems in
+> order. I guess someone will have to sit down and figure this out proper,
+> if nobody steps up I guess it'll have to be me, but that also means it
+> might take a while since I've got some other pending stuff to stare at
+> before this :/
 
-[snip]
+Same here, I'll try to play with this a bit more when I get a free
+window. I think the first step should be if someone else tries
+reproducing this to see whether it really is reproducible or there's
+something wrong with my setup.
 
-> > +	/*
-> > +	 * Ignore the failed device and unregister the rest.
-> > +	 */
-> > +	i--;
-> >  	while (i > -1) {
-> >  		dev = &bridge->dev[i];
-> >  		device_unregister(dev);
-> > +		i--;
-> >  	}
+Thanks.
 
-Ah.  I see you fixed the bug already.  Good deal.  Btw, no need to add
-comments for the obvious stuff.
+-- 
+Regards/Gruss,
+Boris.
 
-You still aren't CCing the right list, devel@driverdev.osuosl.org.
-It's not enough for Martyn to sent it to us, because by that point 
-the patch has '> ' chars on every line.
-
-regards,
-dan carpenter
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
