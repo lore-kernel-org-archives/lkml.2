@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab1BWVO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:14:59 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47912 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab1BWVO6 (ORCPT
+	id S1753282Ab1BWVQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:16:33 -0500
+Received: from ishtar.tlinx.org ([173.164.175.65]:33189 "EHLO
+	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752535Ab1BWVQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:14:58 -0500
-Message-ID: <4D657880.50405@ru.mvista.com>
-Date: Thu, 24 Feb 2011 00:13:36 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 23 Feb 2011 16:16:32 -0500
+Message-ID: <4D65792C.8070703@tlinx.org>
+Date: Wed, 23 Feb 2011 13:16:28 -0800
+From: Linda Walsh <lkml@tlinx.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 6/7] arm/dt: Basic tegra devicetree support
-References: <20110223021524.18318.71902.stgit@localhost6.localdomain6> <20110223022234.18318.90592.stgit@localhost6.localdomain6>
-In-Reply-To: <20110223022234.18318.90592.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: starting >=2.6.36 FATAL: Setup length exceeds 31 maximum; kernel setup will overwrite boot loader
+X-Stationery: 0.4.10
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 23-02-2011 5:22, Grant Likely wrote:
+Fatal: Setup length exceeds 31 maximum; kernel setup will overwrite
+boot loader
 
-> This patch adds adds very basic support for booting tegra with a
-> device tree.  It simply allows the existing machine_descs to match
-> against the tegra compatible values so that the kernel can boot.
-> Kernel parameters and the initrd pointer is read out of the tree
-> instead of atags.
+Starting with 2.6.36, I started getting the above message.
 
-> This is not complete device tree support.  This change will be
-> reverted when a new machine_desc is added that can populate the
-> device registrations directly from data in the tree instead of using
-> hard coded data.  That change will be made in a future patch.
+It didn't seem what options I pruned out of the kernel
+ipv6 support, iptables support, any thing I could think of
+that would be a 'large chunk of space', nothing would make
+it "fit" the way 2.6.35 did.
 
-> v2: Fixed cut-and-paste error in commit text
+I didn't turn on options from options from 2.6.35 -> 2.6.36,
+but did turn on things like BIOS blk throttling which seemed
+low cost.  I set the lower BIOS reserved amount to 4K, which
+seemed to be the default under the old system (?), though
+this system hasn't ever been tested w/standby or hibernate
+so don't know if this is a correct setting, but is unlikely relevant.
 
-    Shouldn't this sentence follow the --- tearline?
+So where did this extra length come from?
 
-> Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+I *hoped* it was a fluke w/26.36, that would disappear in 26.37...but
+nep.  In searching for causes I saw one message pointing to the
+XEN subsystem, but I made sure to remove that on both setups and that
+made no difference.
 
-WBR, Sergei
+So what's caused the sudden bump and how do I get around it?
+
+
+
+
+
+
+
