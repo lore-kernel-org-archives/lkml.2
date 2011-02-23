@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab1BWPa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:30:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826Ab1BWPa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:30:57 -0500
-Date: Wed, 23 Feb 2011 10:30:41 -0500
-From: Neil Horman <nhorman@redhat.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org
-Subject: Re: [V4 PATCH 3/3] bond: service netpoll arp queue on master device
-Message-ID: <20110223153041.GE11496@hmsreliant.think-freely.org>
-References: <1298022215-21059-1-git-send-email-amwang@redhat.com>
- <1298022215-21059-3-git-send-email-amwang@redhat.com>
- <4D6526BD.6030306@redhat.com>
+	id S1753978Ab1BWPbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:31:12 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54489 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab1BWPbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 10:31:10 -0500
+Date: Wed, 23 Feb 2011 10:31:04 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, akpm@osdl.org,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 4/5] teach smaps_pte_range() about THP pmds
+Message-ID: <20110223153104.GD2810@mgebm.net>
+References: <20110222015338.309727CA@kernel>
+ <20110222015343.41586948@kernel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KdquIMZPjGJQvRdI"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D6526BD.6030306@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110222015343.41586948@kernel>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 11:24:45PM +0800, Cong Wang wrote:
-> Neil, ping. :)
-> 
-> 于 2011年02月18日 17:43, Amerigo Wang 写道:
-> >Neil pointed out that we can't send ARP reply on behalf of slaves,
-> >we need to move the arp queue to their bond device.
-> >
-> >Signed-off-by: WANG Cong<amwang@redhat.com>
-> >Cc: Neil Horman<nhorman@redhat.com>
-> >
-> >---
-> >  net/core/netpoll.c |    9 +++++++++
-> >  1 files changed, 9 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-> >index f68e694..013e04a 100644
-> >--- a/net/core/netpoll.c
-> >+++ b/net/core/netpoll.c
-> >@@ -193,6 +193,15 @@ void netpoll_poll_dev(struct net_device *dev)
-> >
-> >  	poll_napi(dev);
-> >
-> >+	if (dev->priv_flags&  IFF_SLAVE) {
-> >+		if (dev->npinfo) {
-> >+			struct net_device *bond_dev = dev->master;
-> >+			struct sk_buff *skb;
-> >+			while ((skb = skb_dequeue(&dev->npinfo->arp_tx)))
-> >+				skb_queue_tail(&bond_dev->npinfo->arp_tx, skb);
-> >+		}
-> >+	}
-> >+
-> >  	service_arp_queue(dev->npinfo);
-> >
-> >  	zap_completion_queue();
-> 
-> 
-> -- 
-> 我认识的人越多，我就越喜欢狗。
 
-seems reasonable, thanks!
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+--KdquIMZPjGJQvRdI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, 21 Feb 2011, Dave Hansen wrote:
+
+>=20
+> v2 - used mm->page_table_lock to fix up locking bug that
+> 	Mel pointed out.  Also remove Acks since things
+> 	got changed significantly.
+>=20
+> This adds code to explicitly detect  and handle
+> pmd_trans_huge() pmds.  It then passes HPAGE_SIZE units
+> in to the smap_pte_entry() function instead of PAGE_SIZE.
+>=20
+> This means that using /proc/$pid/smaps now will no longer
+> cause THPs to be broken down in to small pages.
+>=20
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+
+Reviewed-and-tested-by: Eric B Munson <emunson@mgebm.net>
+
+--KdquIMZPjGJQvRdI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNZSg4AAoJEH65iIruGRnNvSsH/AtwBQIVUaJi8Uvm59aCnIiu
+ignraJxSzfqLoUkbGbA2prdsZwY0rk5Dn0Zdm1kzjpD+26YsA9n5JSdPFdzR7TXP
+Srr/Yqs+rgPJPvKE6gJt1jXN8Rtxg1nE1TKxNKHJYHVnH/sLN1MQeSOFrbtBM7sq
+Pil5w7FUII1ZpR/4BAq6fFEohyveXAGVHxZjfHkQNgfW6wP8Wxfulbb/QAf5W4/y
+2FzSIrcDB45IT7c1drWX6zCqURXxOQHuJbye1xNK8XMANOWyfPeUJQeGj0yVd4T1
+5cTXlP2pvYCB49dKmGRJSrtMXEHrF/F6Yv7NEw4M1PYHVLWbV96AevInnin8CNU=
+=zbue
+-----END PGP SIGNATURE-----
+
+--KdquIMZPjGJQvRdI--
