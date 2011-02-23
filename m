@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab1BWNdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:33:16 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52498 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755064Ab1BWNdN convert rfc822-to-8bit (ORCPT
+	id S1755165Ab1BWNdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:33:25 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45312 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755123Ab1BWNdX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:33:13 -0500
-Subject: Re: [CFS Bandwidth Control v4 1/7] sched: introduce primitives to
- account for CFS bandwidth tracking
+	Wed, 23 Feb 2011 08:33:23 -0500
+Subject: Re: [CFS Bandwidth Control v4 4/7] sched: unthrottle cfs_rq(s) who
+ ran out of quota at period refresh
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Paul Turner <pjt@google.com>
 Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
@@ -21,13 +21,13 @@ Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
         Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
         Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-In-Reply-To: <20110216031840.878320737@google.com>
+In-Reply-To: <20110216031841.161743484@google.com>
 References: <20110216031831.571628191@google.com>
-	 <20110216031840.878320737@google.com>
+	 <20110216031841.161743484@google.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 23 Feb 2011 14:32:14 +0100
-Message-ID: <1298467934.2217.767.camel@twins>
+Date: Wed, 23 Feb 2011 14:32:12 +0100
+Message-ID: <1298467932.2217.764.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,252 +36,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2011-02-15 at 19:18 -0800, Paul Turner wrote:
 
-> @@ -245,6 +248,15 @@ struct cfs_rq;
->  
->  static LIST_HEAD(task_groups);
->  
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +struct cfs_bandwidth {
-> +	raw_spinlock_t		lock;
-> +	ktime_t			period;
-> +	u64			runtime, quota;
-> +	struct hrtimer		period_timer;
-> +};
-> +#endif
-
-If you write that as:
-
-struct cfs_bandwidth {
-#ifdef CONFIG_CFS_BANDWIDTH
-	...
-#endif
-};
-
->  /* task group related information */
->  struct task_group {
->  	struct cgroup_subsys_state css;
-> @@ -276,6 +288,10 @@ struct task_group {
->  #ifdef CONFIG_SCHED_AUTOGROUP
->  	struct autogroup *autogroup;
->  #endif
-> +
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +	struct cfs_bandwidth cfs_bandwidth;
-> +#endif
->  };
-
-You can avoid the #ifdef'ery here
-
->  /* task_group_lock serializes the addition/removal of task groups */
-> @@ -370,9 +386,76 @@ struct cfs_rq {
-
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun);
-> +
-> +static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
+> +static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
 > +{
-> +	struct cfs_bandwidth *cfs_b =
-> +		container_of(timer, struct cfs_bandwidth, period_timer);
-> +	ktime_t now;
-> +	int overrun;
-> +	int idle = 0;
+> +	struct rq *rq = rq_of(cfs_rq);
+> +	struct sched_entity *se;
 > +
-> +	for (;;) {
-> +		now = hrtimer_cb_get_time(timer);
-> +		overrun = hrtimer_forward(timer, now, cfs_b->period);
+> +	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
 > +
-> +		if (!overrun)
+> +	update_rq_clock(rq);
+> +	/* (Try to) avoid maintaining share statistics for idle time */
+> +	cfs_rq->load_stamp = cfs_rq->load_last = rq->clock_task;
+
+Ok, so here you try to compensate for some of the weirdness from the
+previous patch.. wouldn't it be much saner to fully consider the
+throttled things dequeued for the load calculation etc.?
+
+> +
+> +	cfs_rq->throttled = 0;
+> +	for_each_sched_entity(se) {
+> +		if (se->on_rq)
 > +			break;
 > +
-> +		idle = do_sched_cfs_period_timer(cfs_b, overrun);
+> +		cfs_rq = cfs_rq_of(se);
+> +		enqueue_entity(cfs_rq, se, ENQUEUE_WAKEUP);
+> +		if (cfs_rq_throttled(cfs_rq))
+> +			break;
+
+That's just weird, it was throttled, you enqueued it but find it
+throttled.
+
 > +	}
 > +
-> +	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
+> +	/* determine whether we need to wake up potentally idle cpu */
+
+SP: potentially, also isn't there a determiner missing?
+
+> +	if (rq->curr == rq->idle && rq->cfs.nr_running)
+> +		resched_task(rq->curr);
 > +}
 > +
-> +static
-> +void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b, u64 quota, u64 period)
-> +{
-> +	raw_spin_lock_init(&cfs_b->lock);
-> +	cfs_b->quota = cfs_b->runtime = quota;
-> +	cfs_b->period = ns_to_ktime(period);
-> +
-> +	hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-> +	cfs_b->period_timer.function = sched_cfs_period_timer;
-> +}
-> +
-> +static
-> +void init_cfs_rq_quota(struct cfs_rq *cfs_rq)
-> +{
-> +	cfs_rq->quota_used = 0;
-> +	if (cfs_rq->tg->cfs_bandwidth.quota == RUNTIME_INF)
-> +		cfs_rq->quota_assigned = RUNTIME_INF;
-> +	else
-> +		cfs_rq->quota_assigned = 0;
-> +}
-> +
-> +static void start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
-> +{
-> +	if (cfs_b->quota == RUNTIME_INF)
-> +		return;
-> +
-> +	if (hrtimer_active(&cfs_b->period_timer))
-> +		return;
-> +
-> +	raw_spin_lock(&cfs_b->lock);
-> +	start_bandwidth_timer(&cfs_b->period_timer, cfs_b->period);
-> +	raw_spin_unlock(&cfs_b->lock);
-> +}
-> +
-> +static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
-> +{
-> +	hrtimer_cancel(&cfs_b->period_timer);
-> +}
-> +#endif
-
-and #else
-
-stubs
-#endif
-
->  /* Real-Time classes' related field in a runqueue: */
->  struct rt_rq {
->  	struct rt_prio_array active;
-> @@ -8038,6 +8121,9 @@ static void init_tg_cfs_entry(struct tas
->  	tg->cfs_rq[cpu] = cfs_rq;
->  	init_cfs_rq(cfs_rq, rq);
->  	cfs_rq->tg = tg;
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +	init_cfs_rq_quota(cfs_rq);
-> +#endif
-
-also avoids #ifdef'ery here
-
->  	tg->se[cpu] = se;
->  	/* se could be NULL for root_task_group */
-> @@ -8173,6 +8259,10 @@ void __init sched_init(void)
->  		 * We achieve this by letting root_task_group's tasks sit
->  		 * directly in rq->cfs (i.e root_task_group->se[] = NULL).
->  		 */
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +		init_cfs_bandwidth(&root_task_group.cfs_bandwidth,
-> +				RUNTIME_INF, sched_cfs_bandwidth_period);
-> +#endif
-
-and here
-
->  		init_tg_cfs_entry(&root_task_group, &rq->cfs, NULL, i, NULL);
->  #endif /* CONFIG_FAIR_GROUP_SCHED */
->  
-> @@ -8415,6 +8505,10 @@ static void free_fair_sched_group(struct
+>  static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
+>  		unsigned long delta_exec)
 >  {
->  	int i;
+> @@ -1535,8 +1569,46 @@ static void account_cfs_rq_quota(struct 
 >  
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +	destroy_cfs_bandwidth(&tg->cfs_bandwidth);
-> +#endif
-
-and here
-
->  	for_each_possible_cpu(i) {
->  		if (tg->cfs_rq)
->  			kfree(tg->cfs_rq[i]);
-> @@ -8442,7 +8536,10 @@ int alloc_fair_sched_group(struct task_g
->  		goto err;
->  
->  	tg->shares = NICE_0_LOAD;
-> -
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +	init_cfs_bandwidth(&tg->cfs_bandwidth, RUNTIME_INF,
-> +			sched_cfs_bandwidth_period);
-> +#endif
-
-and here
-
->  	for_each_possible_cpu(i) {
->  		rq = cpu_rq(i);
->  
-
-> @@ -9107,6 +9204,116 @@ static u64 cpu_shares_read_u64(struct cg
->  
->  	return (u64) tg->shares;
->  }
+>  static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+>  {
+> -	return 1;
+> +	int i, idle = 1;
+> +	u64 delta;
+> +	const struct cpumask *span;
 > +
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
-> +{
-> +	int i;
-> +	static DEFINE_MUTEX(mutex);
+> +	if (cfs_b->quota == RUNTIME_INF)
+> +		return 1;
 > +
-> +	if (tg == &root_task_group)
-> +		return -EINVAL;
-> +
-> +	if (!period)
-> +		return -EINVAL;
-> +
-> +	/*
-> +	 * Ensure we have at least one tick of bandwidth every period.  This is
-> +	 * to prevent reaching a state of large arrears when throttled via
-> +	 * entity_tick() resulting in prolonged exit starvation.
-> +	 */
-> +	if (NS_TO_JIFFIES(quota) < 1)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&mutex);
-> +	raw_spin_lock_irq(&tg->cfs_bandwidth.lock);
-> +	tg->cfs_bandwidth.period = ns_to_ktime(period);
-> +	tg->cfs_bandwidth.runtime = tg->cfs_bandwidth.quota = quota;
-> +	raw_spin_unlock_irq(&tg->cfs_bandwidth.lock);
-> +
-> +	for_each_possible_cpu(i) {
-> +		struct cfs_rq *cfs_rq = tg->cfs_rq[i];
-> +		struct rq *rq = rq_of(cfs_rq);
-> +
-> +		raw_spin_lock_irq(&rq->lock);
-> +		init_cfs_rq_quota(cfs_rq);
-> +		raw_spin_unlock_irq(&rq->lock);
+> +	/* reset group quota */
+> +	raw_spin_lock(&cfs_b->lock);
+> +	cfs_b->runtime = cfs_b->quota;
 
-Any particular reason you didn't mirror rt_rq->rt_runtime_lock?
+Shouldn't that be something like:
 
+cfs_b->runtime = 
+   min(cfs_b->runtime + overrun * cfs_b->quota, cfs_b->quota);
+
+afaict runtime can go negative in which case we need to compensate for
+that, but we cannot ever get more than quota because we allow for
+overcommit, so not limiting things would allow us to accrue an unlimited
+amount of runtime.
+
+Or can only the per-cpu quota muck go negative? In that case it should
+probably be propagated back into the global bw on throttle, otherwise
+you can get deficits on CPUs that remain unused for a while.
+
+> +	raw_spin_unlock(&cfs_b->lock);
+> +
+> +	span = sched_bw_period_mask();
+> +	for_each_cpu(i, span) {
+> +		struct rq *rq = cpu_rq(i);
+> +		struct cfs_rq *cfs_rq = cfs_bandwidth_cfs_rq(cfs_b, i);
+> +
+> +		if (cfs_rq->nr_running)
+> +			idle = 0;
+> +
+> +		if (!cfs_rq_throttled(cfs_rq))
+> +			continue;
+> +
+> +		delta = tg_request_cfs_quota(cfs_rq->tg);
+> +
+> +		if (delta) {
+> +			raw_spin_lock(&rq->lock);
+> +			cfs_rq->quota_assigned += delta;
+> +
+> +			/* avoid race with tg_set_cfs_bandwidth */
+
+*what* race, and *how*
+
+> +			if (cfs_rq_throttled(cfs_rq) &&
+> +			     cfs_rq->quota_used < cfs_rq->quota_assigned)
+> +				unthrottle_cfs_rq(cfs_rq);
+> +			raw_spin_unlock(&rq->lock);
+> +		}
 > +	}
-> +	mutex_unlock(&mutex);
 > +
-> +	return 0;
-> +}
-
-
-> Index: tip/kernel/sched_fair.c
-> ===================================================================
-> --- tip.orig/kernel/sched_fair.c
-> +++ tip/kernel/sched_fair.c
-> @@ -88,6 +88,15 @@ const_debug unsigned int sysctl_sched_mi
->   */
->  unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
->  
-> +
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +/*
-> + * default period for cfs group bandwidth.
-> + * default: 0.5s, units: nanoseconds
-> + */
-> +static u64 sched_cfs_bandwidth_period = 500000000ULL;
-> +#endif
-> +
->  static const struct sched_class fair_sched_class;
->  
->  /**************************************************************
-> @@ -397,6 +406,9 @@ static void __enqueue_entity(struct cfs_
->  
->  	rb_link_node(&se->run_node, parent, link);
->  	rb_insert_color(&se->run_node, &cfs_rq->tasks_timeline);
-> +#ifdef CONFIG_CFS_BANDWIDTH
-> +	start_cfs_bandwidth(&cfs_rq->tg->cfs_bandwidth);
-> +#endif
+> +	return idle;
 >  }
 
-This really needs to life elsewhere, __*_entity() functions are for
-rb-tree muck.
- 
->  static void __dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+This whole positive quota muck makes my head hurt, whatever did you do
+that for? Also it doesn't deal with wrapping, which admittedly won't
+really happen but still.
+
 
 
