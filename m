@@ -1,129 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1BWRWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 12:22:55 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44671 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1BWRWx convert rfc822-to-8bit (ORCPT
+	id S1751492Ab1BWR1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:27:05 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:50335
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751470Ab1BWR1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 12:22:53 -0500
+	Wed, 23 Feb 2011 12:27:01 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
+Date: Wed, 23 Feb 2011 11:26:12 -0600
+From: Scott Wood <scottwood@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
+        Peter Zijlstra <peterz@infradead.org>, <linux-api@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, <netdev@vger.kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>, Christoph Lameter <cl@linux.com>,
+        <linuxppc-dev@lists.ozlabs.org>, David Miller <davem@davemloft.net>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found on
+ the MPC85xx.
+Message-ID: <20110223112612.30071995@schlenkerla>
+In-Reply-To: <20110223165058.GE14597@angua.secretlab.ca>
+References: <cover.1298447722.git.richard.cochran@omicron.at>
+	<be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
+	<20110223165058.GE14597@angua.secretlab.ca>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <4D653C48.4090608@gmail.com>
-References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
- <20110223043447.20795.80653.stgit@localhost6.localdomain6> <4D653C48.4090608@gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 23 Feb 2011 10:22:33 -0700
-X-Google-Sender-Auth: eJopgFfKXgMec8WADowfWL1v_nI
-Message-ID: <AANLkTimp0moaqnRfn8hp_TQJxdh7G8ODG_SkwO_hz8kE@mail.gmail.com>
-Subject: Re: [RFC PATCH 14/15] dt: Eliminate of_platform_{,un}register_driver
-To: Rob Herring <robherring2@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 9:56 AM, Rob Herring <robherring2@gmail.com> wrote:
-> Grant,
->
-> On 02/22/2011 10:34 PM, Grant Likely wrote:
->>
->> Final step to eliminate of_platform_bus_type.  They're all just
->> platform drivers now.
->>
->> Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
->> ---
->
-> snip
->
->> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
->> b/drivers/char/ipmi/ipmi_si_intf.c
->> index b6ae6e9..132951d 100644
->> --- a/drivers/char/ipmi/ipmi_si_intf.c
->> +++ b/drivers/char/ipmi/ipmi_si_intf.c
->> @@ -2556,8 +2556,7 @@ static struct pci_driver ipmi_pci_driver = {
->>
->>
->>  #ifdef CONFIG_PPC_OF
->> -static int __devinit ipmi_of_probe(struct platform_device *dev,
->> -                        const struct of_device_id *match)
->> +static int __devinit ipmi_of_probe(struct platform_device *dev)
->>  {
->>        struct smi_info *info;
->>        struct resource resource;
->> @@ -2568,6 +2567,9 @@ static int __devinit ipmi_of_probe(struct
->> platform_device *dev,
->>
->>        dev_info(&dev->dev, "probing via device tree\n");
->>
->> +       if (!dev->dev.of_match)
->> +               return -EINVAL;
->> +
->>        ret = of_address_to_resource(np, 0,&resource);
->>        if (ret) {
->>                dev_warn(&dev->dev, PFX "invalid address from OF\n");
->> @@ -2600,7 +2602,7 @@ static int __devinit ipmi_of_probe(struct
->> platform_device *dev,
->>                return -ENOMEM;
->>        }
->>
->> -       info->si_type           = (enum si_type) match->data;
->> +       info->si_type           = (enum si_type) dev->dev.of_match->data;
->>        info->addr_source       = SI_DEVICETREE;
->>        info->irq_setup         = std_irq_setup;
->>
->> @@ -2652,9 +2654,9 @@ static struct of_device_id ipmi_match[] =
->>        {},
->>  };
->>
->> -static struct of_platform_driver ipmi_of_platform_driver = {
->> +static struct platform_driver ipmi_of_platform_driver = {
->>        .driver = {
->> -               .name = "ipmi",
->> +               .name = "of-ipmi",
->>                .owner = THIS_MODULE,
->>                .of_match_table = ipmi_match,
->>        },
->> @@ -3396,7 +3398,7 @@ static int __devinit init_ipmi_si(void)
->>  #endif
->>
->>  #ifdef CONFIG_PPC_OF
->> -       of_register_platform_driver(&ipmi_of_platform_driver);
->> +       platform_driver_register(&ipmi_of_platform_driver);
->>        of_registered = 1;
->>  #endif
->>
->> @@ -3457,7 +3459,7 @@ static int __devinit init_ipmi_si(void)
->>
->>  #ifdef CONFIG_PPC_OF
->>                if (of_registered)
->> -
->> of_unregister_platform_driver(&ipmi_of_platform_driver);
->> +
->> platform_driver_unregister(&ipmi_of_platform_driver);
->>  #endif
->>                driver_unregister(&ipmi_driver.driver);
->>                printk(KERN_WARNING PFX
->> @@ -3558,7 +3560,7 @@ static void __exit cleanup_ipmi_si(void)
->>
->>  #ifdef CONFIG_PPC_OF
->>        if (of_registered)
->> -               of_unregister_platform_driver(&ipmi_of_platform_driver);
->> +               platform_driver_unregister(&ipmi_of_platform_driver);
->>  #endif
->>
->>        mutex_lock(&smi_infos_lock);
->
-> Um, you are doing exactly what you said I should not do. Now the driver has
-> 2 platform drivers defined. I have an updated patch that addresses your
-> previous comments. I will send it out later today.
+On Wed, 23 Feb 2011 09:50:58 -0700
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-Thanks.  I wacked this whole series out one evening and converted all
-the drivers at once, so it's not surprising that I missed some
-duplications.  Send me your patch and I'll drop my changes here.
+> On Wed, Feb 23, 2011 at 11:38:17AM +0100, Richard Cochran wrote:
+> > +
+> > +* Gianfar PTP clock nodes
+> > +
+> > +General Properties:
+> > +
+> > +  - compatible   Should be "fsl,etsec-ptp"
+> 
+> Should specify an *exact* part; ie: "fsl,mpc8313-etsec-ptp" instead of
+> trying to define a generic catchall.  The reason is that the same
+> marketing name can end up getting applied to a wide range of parts.
+> 
+> Instead, choose one specific device to stand in as the 'common'
+> implementation and get all parts with the same core to claim
+> compatibility with it.  ie: a p2020 might have:
+> 
+> 	compatible = "fsl,mpc2020-etsec-ptp", "fsl,mpc8313-etsec-ptp";
 
-g.
+eTSEC is versioned, that's more reliable than the chip name since chips
+have revisions (rev 2.1 of mpc8313 has eTSEC 1.6, not sure about previous
+revs of mpc8313).  Logic blocks can be and have been uprevved between one
+revision of a chip to the next.  I think "fsl,mpc8313rev2.1-etsec-ptp"
+would be taking things a bit too far (and there could be board-level bugs
+too...).
+
+If you really need to know the exact SoC you're on, look in SVR (which
+will provide revision info as well).  Isn't the device tree for things that
+can't be probed?
+
+The eTSEC revision is probeable as well, but due the way PTP is described as
+a separate node, the driver doesn't have straightforward access to those
+registers.
+
+Insisting on an explicit chip also encourages people to claim compatibility
+with that chip without ensuring that it really is fully compatible.
+
+-Scott
+
