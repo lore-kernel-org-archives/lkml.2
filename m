@@ -1,839 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab1BWKiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 05:38:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57781 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1BWKiN (ORCPT
+	id S1753543Ab1BWKid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 05:38:33 -0500
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:19305 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753482Ab1BWKib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 05:38:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wxDO0IRZy9ubFdrT85Q96qkcphcrb7LMxVmW7CndsrURnnVMH7NFaFv7W55TPo08RR
-         +fNBiSsk4P9TgB55sqw648b6QJi10cWUHmM2/7WOybpSfSyDbuQBH7PGChng3aW4npQr
-         qTpcp5RiQx8lt6q4IZRnAs+GZ2OVnqcyumcD0=
-Date: Wed, 23 Feb 2011 11:38:17 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found on
- the MPC85xx.
-Message-ID: <be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
-References: <cover.1298447722.git.richard.cochran@omicron.at>
+	Wed, 23 Feb 2011 05:38:31 -0500
+Message-ID: <4D64E2BB.7010000@draigBrady.com>
+Date: Wed, 23 Feb 2011 10:34:35 +0000
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1298447722.git.richard.cochran@omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linda Walsh <lkml@tlinx.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: write 'O_DIRECT' file w/odd amount of data: desirable result?
+References: <4D648D7D.7040500@tlinx.org>
+In-Reply-To: <4D648D7D.7040500@tlinx.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The eTSEC includes a PTP clock with quite a few features. This patch adds
-support for the basic clock adjustment functions, plus two external time
-stamps, one alarm, and the PPS callback.
+On 23/02/11 04:30, Linda Walsh wrote:
+> 
+> 
+> 
+> I understand, somewhat, what is happening.
+> I have two different utils, 'dd' and mbuffer both of
+> which have a 'direct' option to write to disk.
+> mbuffer was from my distro with a direct added, which
+> is
+> 
+> I'm not sure if it's truncating the write to the
+> lower bound of the sector size or the file-allocation-unit size
+> but from a dump, piped into {cat, dd mbuffer}, the
+> output sizes are:
+> 
+> file              size       delta
+> -------------   ----------   ----
+> dumptest.cat    5776419696
+> dumptest.dd     5776343040   76656   
+> dumptest.mbuff  5368709120   407710576
+> 
+> params:
+> 
+> dd of=dumptest.dd bs=512M oflag=direct
+> mbuffer -b 5 -s 512m --direct -f -o dumptest.mbuff
+> 
+> original file size MOD 512M = 407710576 (answer from mbuff).
+> 
+> The disk it is being written to is a RAID with a span
+> size of 640k (64k io*10 data disks) and formatted to
+> indicated that with 'xfs' (stripe-unit=64k stripe=width=10).
+> 
+> This gives a 'coincidental' (??) interpretation for
+> the output from 'dd', where the original file size MOD
+> 640K = 76656  (the amount 'dd' is short).
+> 
+> Was that a coincidence or a fluke?
+> Why didn't 'mbuffer' have the same shortfall -- it's was
+> only related to it's 512m buffer size.
+> 
+> In any event, shouldn't the kernel yield the correct answer
+> in either case?  It would be consistent with the processor it
+> was natively developed on, the x86, where a misaligned memory
+> access doesn't cause a fault at the user level, but is handled
+> correctly, with a slight penalty to speed for the unaligned
+> data parts.
+> 
+> Shouldn't the linux kernel behave similarly?
+> Note, that the mbuffer program indicated an error
+> (which didn't help the 'dump' program that had already exited
+> with what it thought was a 'success'), though a bit
+> cryptic:
+> buffer: error: outputThread: error writing to dumptest.mbuff at offset
+> 0x140000000: Invalid argument
+> 
+> summary: 5509 MByte in  8.4 sec - average of  658 MB/s
+> mbuffer: warning: error during output to dumptest.mbuff: Invalid argument
+> 
+> dd indicated no warning or error.
+> 
+> ----
+> I'm not aware of what either did, but no doubt neither
+> expected an error in the final write and didn't handle the results
+> properly.
+> 
+> However, wouldn't it be a good thing for linux to do 'the right thing'
+> and successfully the last partial write (whichever is the case!), even
+> if it has to be internally buffered and slightly slowed?  Seems
+> correctness of the function should be given preference over the
+> adherence to some limitation where possible.
+> Software should be as forgiving and tolerant and 'err' to the side of
+> least harm -- which I'd argue is getting the data to the disk, NOT
+> generating some 'abnormal end' (ABEND) condition that the software can't
+> handle.
+> I'd think of it like a page-fault of a record not in memory.  The
+> remainder of the I/O record is a 'zero-filled' buffer that fills in the
+> remainder of the sector while the size of the field is set to the size
+> written. ??
+> 
+> Vanilla kernel 2.6.35-7 x86_64 (SMP PREMPT)
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-Acked-by: John Stultz <johnstul@us.ibm.com>
----
- .../devicetree/bindings/net/fsl-tsec-phy.txt       |   57 +++
- arch/powerpc/boot/dts/mpc8313erdb.dts              |   14 +
- arch/powerpc/boot/dts/mpc8572ds.dts                |   14 +
- arch/powerpc/boot/dts/p2020ds.dts                  |   14 +
- arch/powerpc/boot/dts/p2020rdb.dts                 |   14 +
- drivers/net/Makefile                               |    1 +
- drivers/net/gianfar_ptp.c                          |  448 ++++++++++++++++++++
- drivers/net/gianfar_ptp_reg.h                      |  113 +++++
- drivers/ptp/Kconfig                                |   13 +
- 9 files changed, 688 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/gianfar_ptp.c
- create mode 100644 drivers/net/gianfar_ptp_reg.h
+Note dd will turn off O_DIRECT for the last write
+if it's less than the block size.
+http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5929322c
 
-diff --git a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-index edb7ae1..f6edbb8 100644
---- a/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-+++ b/Documentation/devicetree/bindings/net/fsl-tsec-phy.txt
-@@ -74,3 +74,60 @@ Example:
- 		interrupt-parent = <&mpic>;
- 		phy-handle = <&phy0>
- 	};
-+
-+* Gianfar PTP clock nodes
-+
-+General Properties:
-+
-+  - compatible   Should be "fsl,etsec-ptp"
-+  - reg          Offset and length of the register set for the device
-+  - interrupts   There should be at least two interrupts. Some devices
-+                 have as many as four PTP related interrupts.
-+
-+Clock Properties:
-+
-+  - tclk-period  Timer reference clock period in nanoseconds.
-+  - tmr-prsc     Prescaler, divides the output clock.
-+  - tmr-add      Frequency compensation value.
-+  - cksel        0= external clock, 1= eTSEC system clock, 3= RTC clock input.
-+                 Currently the driver only supports choice "1".
-+  - tmr-fiper1   Fixed interval period pulse generator.
-+  - tmr-fiper2   Fixed interval period pulse generator.
-+  - max-adj      Maximum frequency adjustment in parts per billion.
-+
-+  These properties set the operational parameters for the PTP
-+  clock. You must choose these carefully for the clock to work right.
-+  Here is how to figure good values:
-+
-+  TimerOsc     = system clock               MHz
-+  tclk_period  = desired clock period       nanoseconds
-+  NominalFreq  = 1000 / tclk_period         MHz
-+  FreqDivRatio = TimerOsc / NominalFreq     (must be greater that 1.0)
-+  tmr_add      = ceil(2^32 / FreqDivRatio)
-+  OutputClock  = NominalFreq / tmr_prsc     MHz
-+  PulseWidth   = 1 / OutputClock            microseconds
-+  FiperFreq1   = desired frequency in Hz
-+  FiperDiv1    = 1000000 * OutputClock / FiperFreq1
-+  tmr_fiper1   = tmr_prsc * tclk_period * FiperDiv1 - tclk_period
-+  max_adj      = 1000000000 * (FreqDivRatio - 1.0) - 1
-+
-+  The calculation for tmr_fiper2 is the same as for tmr_fiper1. The
-+  driver expects that tmr_fiper1 will be correctly set to produce a 1
-+  Pulse Per Second (PPS) signal, since this will be offered to the PPS
-+  subsystem to synchronize the Linux clock.
-+
-+Example:
-+
-+	ptp_clock@24E00 {
-+		compatible = "fsl,etsec-ptp";
-+		reg = <0x24E00 0xB0>;
-+		interrupts = <12 0x8 13 0x8>;
-+		interrupt-parent = < &ipic >;
-+		tclk-period = <10>;
-+		tmr-prsc    = <100>;
-+		tmr-add     = <0x999999A4>;
-+		cksel       = <0x1>;
-+		tmr-fiper1  = <0x3B9AC9F6>;
-+		tmr-fiper2  = <0x00018696>;
-+		max-adj     = <659999998>;
-+	};
-diff --git a/arch/powerpc/boot/dts/mpc8313erdb.dts b/arch/powerpc/boot/dts/mpc8313erdb.dts
-index 183f2aa..85a7eaa 100644
---- a/arch/powerpc/boot/dts/mpc8313erdb.dts
-+++ b/arch/powerpc/boot/dts/mpc8313erdb.dts
-@@ -208,6 +208,20 @@
- 			sleep = <&pmc 0x00300000>;
- 		};
- 
-+		ptp_clock@24E00 {
-+			compatible = "fsl,etsec-ptp";
-+			reg = <0x24E00 0xB0>;
-+			interrupts = <12 0x8 13 0x8>;
-+			interrupt-parent = < &ipic >;
-+			tclk-period = <10>;
-+			tmr-prsc    = <100>;
-+			tmr-add     = <0x999999A4>;
-+			cksel       = <0x1>;
-+			tmr-fiper1  = <0x3B9AC9F6>;
-+			tmr-fiper2  = <0x00018696>;
-+			max-adj     = <659999998>;
-+		};
-+
- 		enet0: ethernet@24000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-diff --git a/arch/powerpc/boot/dts/mpc8572ds.dts b/arch/powerpc/boot/dts/mpc8572ds.dts
-index cafc128..74208cd 100644
---- a/arch/powerpc/boot/dts/mpc8572ds.dts
-+++ b/arch/powerpc/boot/dts/mpc8572ds.dts
-@@ -324,6 +324,20 @@
- 			};
- 		};
- 
-+		ptp_clock@24E00 {
-+			compatible = "fsl,etsec-ptp";
-+			reg = <0x24E00 0xB0>;
-+			interrupts = <68 2 69 2 70 2 71 2>;
-+			interrupt-parent = < &mpic >;
-+			tclk-period = <5>;
-+			tmr-prsc = <200>;
-+			tmr-add = <0xAAAAAAAB>;
-+			cksel = <1>;
-+			tmr-fiper1 = <0x3B9AC9FB>;
-+			tmr-fiper2 = <0x3B9AC9FB>;
-+			max-adj = <499999999>;
-+		};
-+
- 		enet0: ethernet@24000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-diff --git a/arch/powerpc/boot/dts/p2020ds.dts b/arch/powerpc/boot/dts/p2020ds.dts
-index 1101914..39d73bb 100644
---- a/arch/powerpc/boot/dts/p2020ds.dts
-+++ b/arch/powerpc/boot/dts/p2020ds.dts
-@@ -336,6 +336,20 @@
- 			phy_type = "ulpi";
- 		};
- 
-+		ptp_clock@24E00 {
-+			compatible = "fsl,etsec-ptp";
-+			reg = <0x24E00 0xB0>;
-+			interrupts = <68 2 69 2 70 2>;
-+			interrupt-parent = < &mpic >;
-+			tclk-period = <5>;
-+			tmr-prsc = <200>;
-+			tmr-add = <0xCCCCCCCD>;
-+			cksel = <1>;
-+			tmr-fiper1 = <0x3B9AC9FB>;
-+			tmr-fiper2 = <0x0001869B>;
-+			max-adj = <249999999>;
-+		};
-+
- 		enet0: ethernet@24000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-diff --git a/arch/powerpc/boot/dts/p2020rdb.dts b/arch/powerpc/boot/dts/p2020rdb.dts
-index da4cb0d..5498fb9 100644
---- a/arch/powerpc/boot/dts/p2020rdb.dts
-+++ b/arch/powerpc/boot/dts/p2020rdb.dts
-@@ -396,6 +396,20 @@
- 			phy_type = "ulpi";
- 		};
- 
-+		ptp_clock@24E00 {
-+			compatible = "fsl,etsec-ptp";
-+			reg = <0x24E00 0xB0>;
-+			interrupts = <68 2 69 2 70 2>;
-+			interrupt-parent = < &mpic >;
-+			tclk-period = <5>;
-+			tmr-prsc = <200>;
-+			tmr-add = <0xCCCCCCCD>;
-+			cksel = <1>;
-+			tmr-fiper1 = <0x3B9AC9FB>;
-+			tmr-fiper2 = <0x0001869B>;
-+			max-adj = <249999999>;
-+		};
-+
- 		enet0: ethernet@24000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index b90738d..c303f5f 100644
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_ATL2) += atlx/
- obj-$(CONFIG_ATL1E) += atl1e/
- obj-$(CONFIG_ATL1C) += atl1c/
- obj-$(CONFIG_GIANFAR) += gianfar_driver.o
-+obj-$(CONFIG_PTP_1588_CLOCK_GIANFAR) += gianfar_ptp.o
- obj-$(CONFIG_TEHUTI) += tehuti.o
- obj-$(CONFIG_ENIC) += enic/
- obj-$(CONFIG_JME) += jme.o
-diff --git a/drivers/net/gianfar_ptp.c b/drivers/net/gianfar_ptp.c
-new file mode 100644
-index 0000000..84fff15
---- /dev/null
-+++ b/drivers/net/gianfar_ptp.c
-@@ -0,0 +1,448 @@
-+/*
-+ * PTP 1588 clock using the eTSEC
-+ *
-+ * Copyright (C) 2010 OMICRON electronics GmbH
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+#include <linux/device.h>
-+#include <linux/hrtimer.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/timex.h>
-+#include <linux/io.h>
-+
-+#include <linux/ptp_clock_kernel.h>
-+
-+#include "gianfar_ptp_reg.h"
-+#include "gianfar.h"
-+
-+#define DRIVER		"gianfar_ptp"
-+#define N_ALARM		1 /* first alarm is used internally to reset fipers */
-+#define N_EXT_TS	2
-+#define REG_SIZE	sizeof(struct gianfar_ptp_registers)
-+
-+struct etsects {
-+	struct gianfar_ptp_registers *regs;
-+	struct ptp_clock *clock;
-+	struct ptp_clock_info caps;
-+	int irq;
-+	u64 alarm_interval; /* for periodic alarm */
-+	u64 alarm_value;
-+	u32 tclk_period;  /* nanoseconds */
-+	u32 tmr_prsc;
-+	u32 tmr_add;
-+	u32 cksel;
-+	u32 tmr_fiper1;
-+	u32 tmr_fiper2;
-+};
-+
-+/* Private globals */
-+static struct etsects the_clock;
-+DEFINE_SPINLOCK(register_lock);
-+
-+/*
-+ * Register access functions
-+ */
-+
-+static u64 tmr_cnt_read(struct etsects *etsects)
-+{
-+	u64 ns;
-+	u32 lo, hi;
-+
-+	lo = gfar_read(&etsects->regs->tmr_cnt_l);
-+	hi = gfar_read(&etsects->regs->tmr_cnt_h);
-+	ns = ((u64) hi) << 32;
-+	ns |= lo;
-+	return ns;
-+}
-+
-+static void tmr_cnt_write(struct etsects *etsects, u64 ns)
-+{
-+	u32 hi = ns >> 32;
-+	u32 lo = ns & 0xffffffff;
-+
-+	gfar_write(&etsects->regs->tmr_cnt_l, lo);
-+	gfar_write(&etsects->regs->tmr_cnt_h, hi);
-+}
-+
-+static void set_alarm(struct etsects *etsects)
-+{
-+	u64 ns;
-+	u32 lo, hi;
-+
-+	ns = tmr_cnt_read(etsects) + 1500000000ULL;
-+	ns = div_u64(ns, 1000000000UL) * 1000000000ULL;
-+	ns -= etsects->tclk_period;
-+	hi = ns >> 32;
-+	lo = ns & 0xffffffff;
-+	gfar_write(&etsects->regs->tmr_alarm1_l, lo);
-+	gfar_write(&etsects->regs->tmr_alarm1_h, hi);
-+}
-+
-+static void set_fipers(struct etsects *etsects)
-+{
-+	u32 tmr_ctrl = gfar_read(&etsects->regs->tmr_ctrl);
-+
-+	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl & (~TE));
-+	gfar_write(&etsects->regs->tmr_prsc,   etsects->tmr_prsc);
-+	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
-+	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
-+	set_alarm(etsects);
-+	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|TE);
-+}
-+
-+/*
-+ * Interrupt service routine
-+ */
-+
-+static irqreturn_t isr(int irq, void *priv)
-+{
-+	struct etsects *etsects = priv;
-+	struct ptp_clock_event event;
-+	u64 ns;
-+	u32 ack = 0, lo, hi, mask, val;
-+
-+	val = gfar_read(&etsects->regs->tmr_tevent);
-+
-+	if (val & ETS1) {
-+		ack |= ETS1;
-+		hi = gfar_read(&etsects->regs->tmr_etts1_h);
-+		lo = gfar_read(&etsects->regs->tmr_etts1_l);
-+		event.type = PTP_CLOCK_EXTTS;
-+		event.index = 0;
-+		event.timestamp = ((u64) hi) << 32;
-+		event.timestamp |= lo;
-+		ptp_clock_event(etsects->clock, &event);
-+	}
-+
-+	if (val & ETS2) {
-+		ack |= ETS2;
-+		hi = gfar_read(&etsects->regs->tmr_etts2_h);
-+		lo = gfar_read(&etsects->regs->tmr_etts2_l);
-+		event.type = PTP_CLOCK_EXTTS;
-+		event.index = 1;
-+		event.timestamp = ((u64) hi) << 32;
-+		event.timestamp |= lo;
-+		ptp_clock_event(etsects->clock, &event);
-+	}
-+
-+	if (val & ALM2) {
-+		ack |= ALM2;
-+		if (etsects->alarm_value) {
-+			event.type = PTP_CLOCK_ALARM;
-+			event.index = 0;
-+			event.timestamp = etsects->alarm_value;
-+			ptp_clock_event(etsects->clock, &event);
-+		}
-+		if (etsects->alarm_interval) {
-+			ns = etsects->alarm_value + etsects->alarm_interval;
-+			hi = ns >> 32;
-+			lo = ns & 0xffffffff;
-+			spin_lock(&register_lock);
-+			gfar_write(&etsects->regs->tmr_alarm2_l, lo);
-+			gfar_write(&etsects->regs->tmr_alarm2_h, hi);
-+			spin_unlock(&register_lock);
-+			etsects->alarm_value = ns;
-+		} else {
-+			gfar_write(&etsects->regs->tmr_tevent, ALM2);
-+			spin_lock(&register_lock);
-+			mask = gfar_read(&etsects->regs->tmr_temask);
-+			mask &= ~ALM2EN;
-+			gfar_write(&etsects->regs->tmr_temask, mask);
-+			spin_unlock(&register_lock);
-+			etsects->alarm_value = 0;
-+			etsects->alarm_interval = 0;
-+		}
-+	}
-+
-+	if (val & PP1) {
-+		ack |= PP1;
-+		event.type = PTP_CLOCK_PPS;
-+		ptp_clock_event(etsects->clock, &event);
-+	}
-+
-+	if (ack) {
-+		gfar_write(&etsects->regs->tmr_tevent, ack);
-+		return IRQ_HANDLED;
-+	} else
-+		return IRQ_NONE;
-+}
-+
-+/*
-+ * PTP clock operations
-+ */
-+
-+static int ptp_gianfar_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
-+{
-+	u64 adj;
-+	u32 diff, tmr_add;
-+	int neg_adj = 0;
-+	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-+
-+	if (ppb < 0) {
-+		neg_adj = 1;
-+		ppb = -ppb;
-+	}
-+	tmr_add = etsects->tmr_add;
-+	adj = tmr_add;
-+	adj *= ppb;
-+	diff = div_u64(adj, 1000000000ULL);
-+
-+	tmr_add = neg_adj ? tmr_add - diff : tmr_add + diff;
-+
-+	gfar_write(&etsects->regs->tmr_add, tmr_add);
-+
-+	return 0;
-+}
-+
-+static int ptp_gianfar_adjtime(struct ptp_clock_info *ptp, s64 delta)
-+{
-+	s64 now;
-+	unsigned long flags;
-+	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-+
-+	spin_lock_irqsave(&register_lock, flags);
-+
-+	now = tmr_cnt_read(etsects);
-+	now += delta;
-+	tmr_cnt_write(etsects, now);
-+
-+	spin_unlock_irqrestore(&register_lock, flags);
-+
-+	set_fipers(etsects);
-+
-+	return 0;
-+}
-+
-+static int ptp_gianfar_gettime(struct ptp_clock_info *ptp, struct timespec *ts)
-+{
-+	u64 ns;
-+	u32 remainder;
-+	unsigned long flags;
-+	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-+
-+	spin_lock_irqsave(&register_lock, flags);
-+
-+	ns = tmr_cnt_read(etsects);
-+
-+	spin_unlock_irqrestore(&register_lock, flags);
-+
-+	ts->tv_sec = div_u64_rem(ns, 1000000000, &remainder);
-+	ts->tv_nsec = remainder;
-+	return 0;
-+}
-+
-+static int ptp_gianfar_settime(struct ptp_clock_info *ptp,
-+			       const struct timespec *ts)
-+{
-+	u64 ns;
-+	unsigned long flags;
-+	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-+
-+	ns = ts->tv_sec * 1000000000ULL;
-+	ns += ts->tv_nsec;
-+
-+	spin_lock_irqsave(&register_lock, flags);
-+
-+	tmr_cnt_write(etsects, ns);
-+	set_fipers(etsects);
-+
-+	spin_unlock_irqrestore(&register_lock, flags);
-+
-+	return 0;
-+}
-+
-+static int ptp_gianfar_enable(struct ptp_clock_info *ptp,
-+			      struct ptp_clock_request *rq, int on)
-+{
-+	struct etsects *etsects = container_of(ptp, struct etsects, caps);
-+	unsigned long flags;
-+	u32 bit, mask;
-+
-+	switch (rq->type) {
-+	case PTP_CLK_REQ_EXTTS:
-+		switch (rq->extts.index) {
-+		case 0:
-+			bit = ETS1EN;
-+			break;
-+		case 1:
-+			bit = ETS2EN;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+		spin_lock_irqsave(&register_lock, flags);
-+		mask = gfar_read(&etsects->regs->tmr_temask);
-+		if (on)
-+			mask |= bit;
-+		else
-+			mask &= ~bit;
-+		gfar_write(&etsects->regs->tmr_temask, mask);
-+		spin_unlock_irqrestore(&register_lock, flags);
-+		return 0;
-+
-+	case PTP_CLK_REQ_PPS:
-+		spin_lock_irqsave(&register_lock, flags);
-+		mask = gfar_read(&etsects->regs->tmr_temask);
-+		if (on)
-+			mask |= PP1EN;
-+		else
-+			mask &= ~PP1EN;
-+		gfar_write(&etsects->regs->tmr_temask, mask);
-+		spin_unlock_irqrestore(&register_lock, flags);
-+		return 0;
-+
-+	default:
-+		break;
-+	}
-+
-+	return -EOPNOTSUPP;
-+}
-+
-+static struct ptp_clock_info ptp_gianfar_caps = {
-+	.owner		= THIS_MODULE,
-+	.name		= "gianfar clock",
-+	.max_adj	= 512000,
-+	.n_alarm	= N_ALARM,
-+	.n_ext_ts	= N_EXT_TS,
-+	.n_per_out	= 0,
-+	.pps		= 1,
-+	.adjfreq	= ptp_gianfar_adjfreq,
-+	.adjtime	= ptp_gianfar_adjtime,
-+	.gettime	= ptp_gianfar_gettime,
-+	.settime	= ptp_gianfar_settime,
-+	.enable		= ptp_gianfar_enable,
-+};
-+
-+/* OF device tree */
-+
-+static int get_of_u32(struct device_node *node, char *str, u32 *val)
-+{
-+	int plen;
-+	const u32 *prop = of_get_property(node, str, &plen);
-+
-+	if (!prop || plen != sizeof(*prop))
-+		return -1;
-+	*val = *prop;
-+	return 0;
-+}
-+
-+static int gianfar_ptp_probe(struct platform_device *dev,
-+			     const struct of_device_id *match)
-+{
-+	struct device_node *node = dev->dev.of_node;
-+	struct etsects *etsects = &the_clock;
-+	struct timespec now;
-+	u32 tmr_ctrl;
-+
-+	etsects->caps = ptp_gianfar_caps;
-+
-+	if (get_of_u32(node, "tclk-period", &etsects->tclk_period) ||
-+	    get_of_u32(node, "tmr-prsc", &etsects->tmr_prsc) ||
-+	    get_of_u32(node, "tmr-add", &etsects->tmr_add) ||
-+	    get_of_u32(node, "cksel", &etsects->cksel) ||
-+	    get_of_u32(node, "tmr-fiper1", &etsects->tmr_fiper1) ||
-+	    get_of_u32(node, "tmr-fiper2", &etsects->tmr_fiper2) ||
-+	    get_of_u32(node, "max-adj", &etsects->caps.max_adj)) {
-+		pr_err("device tree node missing required elements\n");
-+		return -ENODEV;
-+	}
-+
-+	etsects->irq = irq_of_parse_and_map(node, 0);
-+
-+	if (etsects->irq == NO_IRQ) {
-+		pr_err("irq not in device tree\n");
-+		return -ENODEV;
-+	}
-+	if (request_irq(etsects->irq, isr, 0, DRIVER, etsects)) {
-+		pr_err("request_irq failed\n");
-+		return -ENODEV;
-+	}
-+	etsects->regs = of_iomap(node, 0);
-+	if (!etsects->regs) {
-+		pr_err("of_iomap ptp registers failed\n");
-+		return -EINVAL;
-+	}
-+	getnstimeofday(&now);
-+	ptp_gianfar_settime(&etsects->caps, &now);
-+
-+	tmr_ctrl =
-+	  (etsects->tclk_period & TCLK_PERIOD_MASK) << TCLK_PERIOD_SHIFT |
-+	  (etsects->cksel & CKSEL_MASK) << CKSEL_SHIFT;
-+
-+	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl);
-+	gfar_write(&etsects->regs->tmr_add,    etsects->tmr_add);
-+	gfar_write(&etsects->regs->tmr_prsc,   etsects->tmr_prsc);
-+	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
-+	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
-+	set_alarm(etsects);
-+	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|FS|RTPE|TE);
-+
-+	etsects->clock = ptp_clock_register(&etsects->caps);
-+
-+	return IS_ERR(etsects->clock) ? PTR_ERR(etsects->clock) : 0;
-+}
-+
-+static int gianfar_ptp_remove(struct platform_device *dev)
-+{
-+	gfar_write(&the_clock.regs->tmr_temask, 0);
-+	gfar_write(&the_clock.regs->tmr_ctrl,   0);
-+
-+	ptp_clock_unregister(the_clock.clock);
-+	free_irq(the_clock.irq, &the_clock);
-+	iounmap(the_clock.regs);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id match_table[] = {
-+	{ .compatible = "fsl,etsec-ptp" },
-+	{},
-+};
-+
-+static struct of_platform_driver gianfar_ptp_driver = {
-+	.driver = {
-+		.name		= "gianfar_ptp",
-+		.of_match_table	= match_table,
-+		.owner		= THIS_MODULE,
-+	},
-+	.probe       = gianfar_ptp_probe,
-+	.remove      = gianfar_ptp_remove,
-+};
-+
-+/* module operations */
-+
-+static int __init ptp_gianfar_init(void)
-+{
-+	return of_register_platform_driver(&gianfar_ptp_driver);
-+}
-+
-+module_init(ptp_gianfar_init);
-+
-+static void __exit ptp_gianfar_exit(void)
-+{
-+	of_unregister_platform_driver(&gianfar_ptp_driver);
-+}
-+
-+module_exit(ptp_gianfar_exit);
-+
-+MODULE_AUTHOR("Richard Cochran <richard.cochran@omicron.at>");
-+MODULE_DESCRIPTION("PTP clock using the eTSEC");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/net/gianfar_ptp_reg.h b/drivers/net/gianfar_ptp_reg.h
-new file mode 100644
-index 0000000..95e171f
---- /dev/null
-+++ b/drivers/net/gianfar_ptp_reg.h
-@@ -0,0 +1,113 @@
-+/* gianfar_ptp_reg.h
-+ * Generated by regen.tcl on Thu May 13 01:38:57 PM CEST 2010
-+ *
-+ * PTP 1588 clock using the gianfar eTSEC
-+ *
-+ * Copyright (C) 2010 OMICRON electronics GmbH
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+#ifndef _GIANFAR_PTP_REG_H_
-+#define _GIANFAR_PTP_REG_H_
-+
-+struct gianfar_ptp_registers {
-+	u32 tmr_ctrl;     /* Timer control register */
-+	u32 tmr_tevent;   /* Timestamp event register */
-+	u32 tmr_temask;   /* Timer event mask register */
-+	u32 tmr_pevent;   /* Timestamp event register */
-+	u32 tmr_pemask;   /* Timer event mask register */
-+	u32 tmr_stat;     /* Timestamp status register */
-+	u32 tmr_cnt_h;    /* Timer counter high register */
-+	u32 tmr_cnt_l;    /* Timer counter low register */
-+	u32 tmr_add;      /* Timer drift compensation addend register */
-+	u32 tmr_acc;      /* Timer accumulator register */
-+	u32 tmr_prsc;     /* Timer prescale */
-+	u8  res1[4];
-+	u32 tmroff_h;     /* Timer offset high */
-+	u32 tmroff_l;     /* Timer offset low */
-+	u8  res2[8];
-+	u32 tmr_alarm1_h; /* Timer alarm 1 high register */
-+	u32 tmr_alarm1_l; /* Timer alarm 1 high register */
-+	u32 tmr_alarm2_h; /* Timer alarm 2 high register */
-+	u32 tmr_alarm2_l; /* Timer alarm 2 high register */
-+	u8  res3[48];
-+	u32 tmr_fiper1;   /* Timer fixed period interval */
-+	u32 tmr_fiper2;   /* Timer fixed period interval */
-+	u32 tmr_fiper3;   /* Timer fixed period interval */
-+	u8  res4[20];
-+	u32 tmr_etts1_h;  /* Timestamp of general purpose external trigger */
-+	u32 tmr_etts1_l;  /* Timestamp of general purpose external trigger */
-+	u32 tmr_etts2_h;  /* Timestamp of general purpose external trigger */
-+	u32 tmr_etts2_l;  /* Timestamp of general purpose external trigger */
-+};
-+
-+/* Bit definitions for the TMR_CTRL register */
-+#define ALM1P                 (1<<31) /* Alarm1 output polarity */
-+#define ALM2P                 (1<<30) /* Alarm2 output polarity */
-+#define FS                    (1<<28) /* FIPER start indication */
-+#define PP1L                  (1<<27) /* Fiper1 pulse loopback mode enabled. */
-+#define PP2L                  (1<<26) /* Fiper2 pulse loopback mode enabled. */
-+#define TCLK_PERIOD_SHIFT     (16) /* 1588 timer reference clock period. */
-+#define TCLK_PERIOD_MASK      (0x3ff)
-+#define RTPE                  (1<<15) /* Record Tx Timestamp to PAL Enable. */
-+#define FRD                   (1<<14) /* FIPER Realignment Disable */
-+#define ESFDP                 (1<<11) /* External Tx/Rx SFD Polarity. */
-+#define ESFDE                 (1<<10) /* External Tx/Rx SFD Enable. */
-+#define ETEP2                 (1<<9) /* External trigger 2 edge polarity */
-+#define ETEP1                 (1<<8) /* External trigger 1 edge polarity */
-+#define COPH                  (1<<7) /* Generated clock (TSEC_1588_GCLK) output phase. */
-+#define CIPH                  (1<<6) /* External oscillator input clock phase. */
-+#define TMSR                  (1<<5) /* Timer soft reset. When enabled, it resets all the timer registers and state machines. */
-+#define BYP                   (1<<3) /* Bypass drift compensated clock */
-+#define TE                    (1<<2) /* 1588 timer enable. If not enabled, all the timer registers and state machines are disabled. */
-+#define CKSEL_SHIFT           (0) /* 1588 Timer reference clock source select. */
-+#define CKSEL_MASK            (0x3)
-+
-+/* Bit definitions for the TMR_TEVENT register */
-+#define ETS2                  (1<<25) /* External trigger 2 timestamp sampled */
-+#define ETS1                  (1<<24) /* External trigger 1 timestamp sampled */
-+#define ALM2                  (1<<17) /* Current time equaled alarm time register 2 */
-+#define ALM1                  (1<<16) /* Current time equaled alarm time register 1 */
-+#define PP1                   (1<<7) /* Indicates that a periodic pulse has been generated based on FIPER1 register */
-+#define PP2                   (1<<6) /* Indicates that a periodic pulse has been generated based on FIPER2 register */
-+#define PP3                   (1<<5) /* Indicates that a periodic pulse has been generated based on FIPER3 register */
-+
-+/* Bit definitions for the TMR_TEMASK register */
-+#define ETS2EN                (1<<25) /* External trigger 2 timestamp sample event enable */
-+#define ETS1EN                (1<<24) /* External trigger 1 timestamp sample event enable */
-+#define ALM2EN                (1<<17) /* Timer ALM2 event enable */
-+#define ALM1EN                (1<<16) /* Timer ALM1 event enable */
-+#define PP1EN                 (1<<7) /* Periodic pulse event 1 enable */
-+#define PP2EN                 (1<<6) /* Periodic pulse event 2 enable */
-+
-+/* Bit definitions for the TMR_PEVENT register */
-+#define TXP2                  (1<<9) /* Indicates that a PTP frame has been transmitted and its timestamp is stored in TXTS2 register */
-+#define TXP1                  (1<<8) /* Indicates that a PTP frame has been transmitted and its timestamp is stored in TXTS1 register */
-+#define RXP                   (1<<0) /* Indicates that a PTP frame has been received */
-+
-+/* Bit definitions for the TMR_PEMASK register */
-+#define TXP2EN                (1<<9) /* Transmit PTP packet event 2 enable */
-+#define TXP1EN                (1<<8) /* Transmit PTP packet event 1 enable */
-+#define RXPEN                 (1<<0) /* Receive PTP packet event enable */
-+
-+/* Bit definitions for the TMR_STAT register */
-+#define STAT_VEC_SHIFT        (0) /* Timer general purpose status vector */
-+#define STAT_VEC_MASK         (0x3f)
-+
-+/* Bit definitions for the TMR_PRSC register */
-+#define PRSC_OCK_SHIFT        (0) /* Output clock division/prescale factor. */
-+#define PRSC_OCK_MASK         (0xffff)
-+
-+#endif
-diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
-index 70d4bb1..12eb844 100644
---- a/drivers/ptp/Kconfig
-+++ b/drivers/ptp/Kconfig
-@@ -27,4 +27,17 @@ config PTP_1588_CLOCK
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called ptp.
- 
-+config PTP_1588_CLOCK_GIANFAR
-+	tristate "Freescale eTSEC as PTP clock"
-+	depends on PTP_1588_CLOCK
-+	depends on GIANFAR
-+	help
-+	  This driver adds support for using the eTSEC as a PTP
-+	  clock. This clock is only useful if your PTP programs are
-+	  getting hardware time stamps on the PTP Ethernet packets
-+	  using the SO_TIMESTAMPING API.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called gianfar_ptp.
-+
- endmenu
--- 
-1.7.0.4
+Note also you mentioned that you piped from dump to dd.
+For dd reading from a pipe I strongly suggest you specify iflag=fullblock
 
+If there is still an issue, it seems from the above that the kernel is throwing
+away data and not indicating this through the last non O_DIRECT write().
+
+cheers,
+Pádraig.
