@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab1BWESD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:18:03 -0500
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61505 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab1BWESB (ORCPT
+	id S1752992Ab1BWEUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:20:05 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46288 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab1BWEUD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:18:01 -0500
-Message-ID: <4D648A65.2040107@dcl.info.waseda.ac.jp>
-Date: Wed, 23 Feb 2011 13:17:41 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b10pre) Gecko/20110114 Thunderbird/3.3a2
+	Tue, 22 Feb 2011 23:20:03 -0500
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf lock: clean the options for perf record
-References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <4D63D685.2010401@dcl.info.waseda.ac.jp> <1298389415.2217.243.camel@twins> <20110222182206.GB1799@nowhere>
-In-Reply-To: <20110222182206.GB1799@nowhere>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF03112A5C22@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF03112A5C22@HQMAIL01.nvidia.com>
+Date: Tue, 22 Feb 2011 20:20:01 -0800
+Message-ID: <AANLkTin3VFp=JhiCb5Sft3pvGw2o4k4qqtbx-PNUGfUD@mail.gmail.com>
+Subject: Re: Problem with "ARM: tegra: Move tegra_common_init to tegra_init_early"
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Russell King - ARM Linux (linux@arm.linux.org.uk)" 
+	<linux@arm.linux.org.uk>,
+        "konkers@android.com" <konkers@android.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011å¹´02æœˆ23æ—¥ 03:22, Frederic Weisbecker wrote:
-> On Tue, Feb 22, 2011 at 04:43:35PM +0100, Peter Zijlstra wrote:
->> On Wed, 2011-02-23 at 00:30 +0900, Hitoshi Mitake wrote:
->>> How do you think about it?
->>
->> Most of the lock code (esp the spinlock stuff) is already way over the
->> threshold of sanity, adding to that for some dubious reasons doesn't
->> seem like a good idea.
->>
->> I'm still not at all sure why people want all this lock tracing.
->
-> Right, well I can imagine many usecases that could make lock
-> tracing bring more value than what lockstat already provides,
-> through a tool like perf lock if we enhance it.
->
-> We should probably first focus on developing the tooling side
-> and make it useful enough that optimizations in the kernel
-> side become desirable.
->
+Grmbl. I missed the:
 
-Yes, lockstat only provides the lock usage statistics of
-entire of the system. perf lock will be able to provide the partial
-information of specified term, or the degree of dependency
-between locks.
+[    0.000000] Failed to register IRQ 136 for DMA 0
+
+When I booted the series on harmony and seaboard last night, since the
+board came up to prompt and seemed otherwise healthy. Sorry about
+that.
+
+
+-Olof
+
+
+On Tue, Feb 22, 2011 at 7:12 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> The following commit makes the Tegra APB DMA engine fail to initialize correctly:
+>
+> commit 0cf6230af909a86f81907455eca2a5c9b8f68fe6
+>
+>    ARM: tegra: Move tegra_common_init to tegra_init_early
+>
+>    Move tegra_common_init to tegra_init_early, and set it
+>    as the init_early entry in the machine struct.
+>    Initializes the clocks earlier so that timers can enable
+>    their clocks.
+>
+>    Also reorders the members in the Harmony and Trimslice
+>    boards' machine structs to match the order they are
+>    called in.
+>
+> The reason is that tegra_init_early_ calls tegra_dma_init which calls
+> request_threaded_irq, which fails since the IRQ hasn't yet been marked valid;
+> that only happens in tegra_init_irq, which gets called after tegra_init_early.
+>
+> This used to work OK, since tegra_init_early was tegra_common_init, which got
+> called after tegra_init_irq, basically from the beginning of tegra_harmony_init.
+>
+> I tried moving the call to tegra_dma_init back to each of the very end of
+> tegra_init_irq and the very beginning of tegra_harmony_init. Both of these
+> resulted in a kernel that wouldn't boot.
+>
+> Simply removing the call to tegra_dma_init completely does allow the kernel
+> to boot, but obviously, DMA isn't available.
+>
+> I'm a little stumped why moving tegra_dma_init causes a boot failure. Does
+> anyone have any helpful ideas, or any alternative ways to fix the underlying
+> problem?
+>
+> Thanks.
+>
+> --
+> nvpublic
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
