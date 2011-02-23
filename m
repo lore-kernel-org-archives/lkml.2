@@ -1,116 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab1BWP1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:27:12 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63530 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316Ab1BWP1L (ORCPT
+	id S1753601Ab1BWPak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:30:40 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64979 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab1BWPai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:27:11 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=jykEKp_yVDgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=7d_E57ReAAAA:8 a=3SfDCf3JwqN6CcffznkA:9 a=Yv7c2wvOB5P8hUxijpQA:7 a=ItIKTd4gsPwtveJ3MahP-tBH8HwA:4 a=PUjeQqilurYA:10 a=D6-X0JM3zdQA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] debug rcu head support !PREEMPT config
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-In-Reply-To: <BLU0-SMTP1519908E0ACAEE1384F71896DB0@phx.gbl>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
-	 <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1298431409.7666.76.camel@gandalf.stny.rr.com>
-	 <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
-	 <1298472914.7666.85.camel@gandalf.stny.rr.com>
-	 <BLU0-SMTP1519908E0ACAEE1384F71896DB0@phx.gbl>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 23 Feb 2011 10:27:07 -0500
-Message-ID: <1298474827.7666.86.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Feb 2011 10:30:38 -0500
+Date: Wed, 23 Feb 2011 10:30:30 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, akpm@osdl.org,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 1/5] pagewalk: only split huge pages when necessary
+Message-ID: <20110223153030.GA2810@mgebm.net>
+References: <20110222015338.309727CA@kernel>
+ <20110222015339.0C9A2212@kernel>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+Content-Disposition: inline
+In-Reply-To: <20110222015339.0C9A2212@kernel>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-23 at 10:13 -0500, Mathieu Desnoyers wrote:
-> Remove DEBUG_RCU_HEAD dependency on PREEMPT config. Handle the unability to
-> detect if within a RCU read-side critical section by never performing any
-> attempt to recover from a failure situation in the fixup handlers. Just print
-> the warnings.
-> 
-> This patch is only compile-tested.
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> ---
->  kernel/rcupdate.c |   17 +++++++++++++++++
->  lib/Kconfig.debug |    2 +-
->  2 files changed, 18 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6-lttng/lib/Kconfig.debug
-> ===================================================================
-> --- linux-2.6-lttng.orig/lib/Kconfig.debug
-> +++ linux-2.6-lttng/lib/Kconfig.debug
-> @@ -313,7 +313,7 @@ config DEBUG_OBJECTS_WORK
->  
->  config DEBUG_OBJECTS_RCU_HEAD
->  	bool "Debug RCU callbacks objects"
-> -	depends on DEBUG_OBJECTS && PREEMPT
-> +	depends on DEBUG_OBJECTS
->  	help
->  	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
->  
-> Index: linux-2.6-lttng/kernel/rcupdate.c
-> ===================================================================
-> --- linux-2.6-lttng.orig/kernel/rcupdate.c
-> +++ linux-2.6-lttng/kernel/rcupdate.c
-> @@ -142,7 +142,14 @@ static int rcuhead_fixup_init(void *addr
->  		 * Ensure that queued callbacks are all executed.
->  		 * If we detect that we are nested in a RCU read-side critical
->  		 * section, we should simply fail, otherwise we would deadlock.
-> +		 * In !PREEMPT configurations, there is no way to tell if we are
-> +		 * in a RCU read-side critical section or not, so we never
-> +		 * attempt any fixup and just print a warning.
->  		 */
-> +#ifndef CONFIG_PREEMPT
-> +		WARN_ON(1);
-> +		return 0;
-> +#endif
->  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
->  		    irqs_disabled()) {
->  			WARN_ON(1);
-> @@ -184,7 +191,14 @@ static int rcuhead_fixup_activate(void *
->  		 * Ensure that queued callbacks are all executed.
->  		 * If we detect that we are nested in a RCU read-side critical
->  		 * section, we should simply fail, otherwise we would deadlock.
-> +		 * In !PREEMPT configurations, there is no way to tell if we are
-> +		 * in a RCU read-side critical section or not, so we never
-> +		 * attempt any fixup and just print a warning.
->  		 */
-> +#ifndef CONFIG_PREEMPT
-> +		WARN_ON(1);
-> +		return 0;
-> +#endif
->  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
->  		    irqs_disabled()) {
->  			WARN_ON(1);
-> @@ -214,6 +228,9 @@ static int rcuhead_fixup_free(void *addr
->  		 * Ensure that queued callbacks are all executed.
->  		 * If we detect that we are nested in a RCU read-side critical
->  		 * section, we should simply fail, otherwise we would deadlock.
-> +		 * In !PREEMPT configurations, there is no way to tell if we are
-> +		 * in a RCU read-side critical section or not, so we never
-> +		 * attempt any fixup and just print a warning.
->  		 */
->  #ifndef CONFIG_PREEMPT
->  		WARN_ON(1);
 
-Hmm, I wonder if s/WARN_ON/WARN_ON_ONCE/g is in order. Why spam the
-console if it happens to trigger all the time?
+--9amGYk9869ThD9tj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- Steve
+On Mon, 21 Feb 2011, Dave Hansen wrote:
 
+>=20
+> v2 - rework if() block, and remove  now redundant split_huge_page()
+>=20
+> Right now, if a mm_walk has either ->pte_entry or ->pmd_entry
+> set, it will unconditionally split any transparent huge pages
+> it runs in to.  In practice, that means that anyone doing a
+>=20
+> 	cat /proc/$pid/smaps
+>=20
+> will unconditionally break down every huge page in the process
+> and depend on khugepaged to re-collapse it later.  This is
+> fairly suboptimal.
+>=20
+> This patch changes that behavior.  It teaches each ->pmd_entry
+> handler (there are five) that they must break down the THPs
+> themselves.  Also, the _generic_ code will never break down
+> a THP unless a ->pte_entry handler is actually set.
+>=20
+> This means that the ->pmd_entry handlers can now choose to
+> deal with THPs without breaking them down.
+>=20
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 
+I have been running this set for serveral hours now and viewing
+various smaps files is not causing wild shifts in my AnonHugePages:
+counter.
+
+Reviewed-and-tested-by: Eric B Munson <emunson@mgebm.net>
+
+--9amGYk9869ThD9tj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNZSgWAAoJEH65iIruGRnNCcsH/2dNeUbCWtqFwt4w9xYj/SOH
+JcdRS8AMG826/O/8Alp7k2HktNyb50cSB2JgUJuM4xjhR8sskQnEkX6SDrubREhD
+vuLEYGGqhmVA2hcRj1ao+bkJnegzzq1xpcAXJuptjgkv/+KrM+cMNGJd0RXaMHYw
+spNMkDSzmIZYnBHMl+MAOnErvhVZYaumAxLJRs1TWBfUNm86FA97zlYi7A1gSRfR
+1aximEpHTlI8oky099vQnLeO3CgwbJTco0QhwJkU7qNcZyE9gx6UDqLeUlKbuvRb
+Uw7UwGnAxgImDbX3NGBduk25eSCsJ2CX8EV7SH2cLuacs9hokxxnSiR5+3jTlOQ=
+=ePjJ
+-----END PGP SIGNATURE-----
+
+--9amGYk9869ThD9tj--
