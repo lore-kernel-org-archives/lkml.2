@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab1BWPzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:55:35 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:34644 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754352Ab1BWPzd (ORCPT
+	id S1754565Ab1BWP7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:59:33 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42374 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754456Ab1BWP7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:55:33 -0500
-X-Authenticated: #52724904
-X-Provags-ID: V01U2FsdGVkX1/zGGdQrhjznMIPJzbckFhFDm8HDCD1HeeNH7eHY6
-	GNXzC5OAWThtNt
-From: David Jenni <dave.j@gmx.ch>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Jenni <dave.j@gmx.ch>
-Subject: [PATCH] Filesystem: fifo: Fixed coding style issue.
-Date: Wed, 23 Feb 2011 16:51:05 +0100
-Message-Id: <1298476265-437-1-git-send-email-dave.j@gmx.ch>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	Wed, 23 Feb 2011 10:59:32 -0500
+Date: Wed, 23 Feb 2011 10:59:29 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jiri Slaby <jirislaby@gmail.com>
+cc: "Rafael J. Wysocki" <rjw@suse.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
+In-Reply-To: <4D64F678.10309@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1102231058240.2233-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issue.
+On Wed, 23 Feb 2011, Jiri Slaby wrote:
 
-Signed-off-by: David Jenni <dave.j@gmx.ch>
----
- fs/fifo.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> On 02/22/2011 04:36 PM, Alan Stern wrote:
+> > By the way, are you booting with no_console_suspend?  And do you do 
+> > "echo 8 >/proc/sys/kernel/printk" (or equivalently, Alt-SysRq-8) before 
+> > suspending?
+> 
+> Nope.
 
-diff --git a/fs/fifo.c b/fs/fifo.c
-index 4e303c2..b1a524d 100644
---- a/fs/fifo.c
-+++ b/fs/fifo.c
-@@ -66,8 +66,7 @@ static int fifo_open(struct inode *inode, struct file *filp)
- 				/* suppress POLLHUP until we have
- 				 * seen a writer */
- 				filp->f_version = pipe->w_counter;
--			} else 
--			{
-+			} else {
- 				wait_for_partner(inode, &pipe->w_counter);
- 				if(signal_pending(current))
- 					goto err_rd;
--- 
-1.7.3.4
+If you do, it's possible you might get some useful information on the 
+screen the next time one of these hangs occurs.
+
+Alan Stern
 
