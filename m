@@ -1,65 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab1BWQor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:44:47 -0500
-Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:38202 "EHLO
-	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754973Ab1BWQoq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:44:46 -0500
-Date: Wed, 23 Feb 2011 17:44:27 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
- PTRACE_ATTACH
-Message-ID: <20110223164427.GA22359@host1.dyn.jankratochvil.net>
-References: <20110219201603.GB8662@redhat.com>
- <20110219200637.GA8662@redhat.com>
- <20110220094050.GA7714@host1.dyn.jankratochvil.net>
- <20110220171658.GA27355@redhat.com>
- <20110220185204.GA14737@host1.dyn.jankratochvil.net>
- <20110220203819.GB32682@redhat.com>
- <20110220212053.GA23412@host1.dyn.jankratochvil.net>
- <20110221142325.GA16664@redhat.com>
+	id S932166Ab1BWQse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:48:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755076Ab1BWQsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 11:48:33 -0500
+Date: Wed, 23 Feb 2011 17:47:57 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Arthur Marsh <arthur.marsh@internode.on.net>
+Cc: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
+ 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
+ GFP_ATOMIC order > 0
+Message-ID: <20110223164757.GO31195@random.random>
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
+ <4D6367B3.9050306@googlemail.com>
+ <20110222134047.GT13092@random.random>
+ <20110222161513.GC13092@random.random>
+ <4D63F6C0.7060204@internode.on.net>
+ <20110223162432.GL31195@random.random>
+ <20110223163639.GM31195@random.random>
+ <20110223164001.GN31195@random.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110221142325.GA16664@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110223164001.GN31195@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011 15:23:25 +0100, Oleg Nesterov wrote:
-> On 02/20, Jan Kratochvil wrote:
-> > Now if new GDB should allow inferior functions calls on previously
-> > `(T) stopped' process doing PTRACE_CONT(SIGCONT)
-> 
-> No, no, this won't work. You need to send SIGCONT via kill/tkill. Once
-> again, we can add the special case for PTRACE_CONT(SIGCONT), but please
-> look at Roland's comment: http://marc.info/?l=linux-kernel&m=129796917823181
-> 
-> And given that currently gdb does PTRACE_CONT(0) this special case can't
-> help anyway unless you change gdb.
+On Wed, Feb 23, 2011 at 05:40:01PM +0100, Andrea Arcangeli wrote:
+> I noticed a buglet in this break... need to repost sorry. compaction-no-kswapd-2.
 
-I would better play with a patched kernel.
+and one part of the diff went missing during quilt ref...  no luck. Try
+#3. So here a compaction-no-kswapd-3. Apologies for the flood.
 
+===
+Subject: compaction: fix high compaction latencies and remove compaction-kswapd
 
-> > but how to make it `(T) stopped' afterwards?  PTRACE_CONT(SIGSTOP)
-> > right after the inferior call will make the old kernels run the inferior - we
-> > do not want that.
-> 
-> Hmm... probably I am totally confused... but PTRACE_CONT(SIGSTOP)
-> should work in this case, the tracee reports SIGTRAP after the single-step
-> (if I understand correctly how gdb implements this).
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-The inferior call returns to a breakpoint (0xcc), this is the reason of the
-SIGTRAP at the end.  I expect PTRACE_CONT(SIGSTOP) could work even in such
-case.
+We need to proper spin_unlock_irq/cond_resched in the compaction loop to avoid
+hurting latencies. We must also stop calling compaction from kswapd as that
+creates too high load during memory pressure that can't be offseted by the
+improved performance of hugepage allocations. NOTE: this is not related to THP
+as all THP allocations uses __GFP_NO_KSWAPD, this is only related to usually
+small order allocations like the kernel stack that make kswapd go wild with
+compaction.
 
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ mm/compaction.c |   40 +++++++++++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 19 deletions(-)
 
-Thanks,
-Jan
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -271,9 +271,27 @@ static unsigned long isolate_migratepage
+ 	}
+ 
+ 	/* Time to isolate some pages for migration */
++	cond_resched();
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		struct page *page;
++		int unlocked = 0;
++
++		/* give a chance to irqs before checking need_resched() */
++		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
++			spin_unlock_irq(&zone->lru_lock);
++			unlocked = 1;
++		}
++		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
++			if (!unlocked)
++				spin_unlock_irq(&zone->lru_lock);
++			cond_resched();
++			spin_lock_irq(&zone->lru_lock);
++			if (fatal_signal_pending(current))
++				break;
++		} else if (unlocked)
++			spin_lock_irq(&zone->lru_lock);
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
+@@ -397,10 +415,7 @@ static int compact_finished(struct zone 
+ 		return COMPACT_COMPLETE;
+ 
+ 	/* Compaction run is not finished if the watermark is not met */
+-	if (cc->compact_mode != COMPACT_MODE_KSWAPD)
+-		watermark = low_wmark_pages(zone);
+-	else
+-		watermark = high_wmark_pages(zone);
++	watermark = low_wmark_pages(zone);
+ 	watermark += (1 << cc->order);
+ 
+ 	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
+@@ -413,15 +428,6 @@ static int compact_finished(struct zone 
+ 	if (cc->order == -1)
+ 		return COMPACT_CONTINUE;
+ 
+-	/*
+-	 * Generating only one page of the right order is not enough
+-	 * for kswapd, we must continue until we're above the high
+-	 * watermark as a pool for high order GFP_ATOMIC allocations
+-	 * too.
+-	 */
+-	if (cc->compact_mode == COMPACT_MODE_KSWAPD)
+-		return COMPACT_CONTINUE;
+-
+ 	/* Direct compactor: Is a suitable page free? */
+ 	for (order = cc->order; order < MAX_ORDER; order++) {
+ 		/* Job done if page is free of the right migratetype */
+@@ -543,8 +549,7 @@ static int compact_zone(struct zone *zon
+ 
+ unsigned long compact_zone_order(struct zone *zone,
+ 				 int order, gfp_t gfp_mask,
+-				 bool sync,
+-				 int compact_mode)
++				 bool sync)
+ {
+ 	struct compact_control cc = {
+ 		.nr_freepages = 0,
+@@ -553,7 +558,6 @@ unsigned long compact_zone_order(struct 
+ 		.migratetype = allocflags_to_migratetype(gfp_mask),
+ 		.zone = zone,
+ 		.sync = sync,
+-		.compact_mode = compact_mode,
+ 	};
+ 	INIT_LIST_HEAD(&cc.freepages);
+ 	INIT_LIST_HEAD(&cc.migratepages);
+@@ -599,8 +603,7 @@ unsigned long try_to_compact_pages(struc
+ 								nodemask) {
+ 		int status;
+ 
+-		status = compact_zone_order(zone, order, gfp_mask, sync,
+-					    COMPACT_MODE_DIRECT_RECLAIM);
++		status = compact_zone_order(zone, order, gfp_mask, sync);
+ 		rc = max(status, rc);
+ 
+ 		/* If a normal allocation would succeed, stop compacting */
+@@ -631,7 +634,6 @@ static int compact_node(int nid)
+ 			.nr_freepages = 0,
+ 			.nr_migratepages = 0,
+ 			.order = -1,
+-			.compact_mode = COMPACT_MODE_DIRECT_RECLAIM,
+ 		};
+ 
+ 		zone = &pgdat->node_zones[zoneid];
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index dfa2ed4..cc9f7a4 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -11,9 +11,6 @@
+ /* The full zone was compacted */
+ #define COMPACT_COMPLETE	3
+ 
+-#define COMPACT_MODE_DIRECT_RECLAIM	0
+-#define COMPACT_MODE_KSWAPD		1
+-
+ #ifdef CONFIG_COMPACTION
+ extern int sysctl_compact_memory;
+ extern int sysctl_compaction_handler(struct ctl_table *table, int write,
+@@ -28,8 +25,7 @@ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			bool sync);
+ extern unsigned long compaction_suitable(struct zone *zone, int order);
+ extern unsigned long compact_zone_order(struct zone *zone, int order,
+-					gfp_t gfp_mask, bool sync,
+-					int compact_mode);
++					gfp_t gfp_mask, bool sync);
+ 
+ /* Do not skip compaction more than 64 times */
+ #define COMPACT_MAX_DEFER_SHIFT 6
+@@ -74,8 +70,7 @@ static inline unsigned long compaction_suitable(struct zone *zone, int order)
+ }
+ 
+ static inline unsigned long compact_zone_order(struct zone *zone, int order,
+-					       gfp_t gfp_mask, bool sync,
+-					       int compact_mode)
++					       gfp_t gfp_mask, bool sync)
+ {
+ 	return COMPACT_CONTINUE;
+ }
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 17497d0..0e7121d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2385,7 +2385,6 @@ loop_again:
+ 		 * cause too much scanning of the lower zones.
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+-			int compaction;
+ 			struct zone *zone = pgdat->node_zones + i;
+ 			int nr_slab;
+ 
+@@ -2416,24 +2415,9 @@ loop_again:
+ 			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+ 			total_scanned += sc.nr_scanned;
+ 
+-			compaction = 0;
+-			if (order &&
+-			    zone_watermark_ok(zone, 0,
+-					       high_wmark_pages(zone),
+-					      end_zone, 0) &&
+-			    !zone_watermark_ok(zone, order,
+-					       high_wmark_pages(zone),
+-					       end_zone, 0)) {
+-				compact_zone_order(zone,
+-						   order,
+-						   sc.gfp_mask, false,
+-						   COMPACT_MODE_KSWAPD);
+-				compaction = 1;
+-			}
+-
+ 			if (zone->all_unreclaimable)
+ 				continue;
+-			if (!compaction && nr_slab == 0 &&
++			if (nr_slab == 0 &&
+ 			    !zone_reclaimable(zone))
+ 				zone->all_unreclaimable = 1;
+ 			/*
