@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab1BWQ7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:59:31 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:4646 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab1BWQ7a (ORCPT
+	id S932256Ab1BWQ74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:59:56 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56647 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124Ab1BWQ7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:59:30 -0500
-Message-ID: <4D653CF1.30009@caviumnetworks.com>
-Date: Wed, 23 Feb 2011 08:59:29 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 23 Feb 2011 11:59:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KcExaf8yn3g8C7Gp5QYMi6LhE+8RbZZQYMkIvzTxpzRIpkXFsaVVEOEEWA5ZSQi1L9
+         GsQ3abUNc2Tr5/Csw/piJlEKgeGmbCCZM+92Hc0CKMXWmFqUx7QlCDBoNpQorMczYmrm
+         6pEZhq0GxdUYAFD8P0bQTV32xj7YZSEDz+pMo=
+Date: Wed, 23 Feb 2011 08:59:47 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.38-rc6
+Message-ID: <20110223165947.GA22962@core.coreip.homeip.net>
+References: <20110107065448.GC29038@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: David Gibson <david@gibson.dropbear.id.au>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 02/10] MIPS: Octeon: Add device tree source files.
-References: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com> <1298408274-20856-3-git-send-email-ddaney@caviumnetworks.com> <20110223000759.GA26300@yookeroo>
-In-Reply-To: <20110223000759.GA26300@yookeroo>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Feb 2011 16:59:30.0139 (UTC) FILETIME=[0957FAB0:01CBD37B]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107065448.GC29038@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 04:07 PM, David Gibson wrote:
-> On Tue, Feb 22, 2011 at 12:57:46PM -0800, David Daney wrote:
->> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
->> ---
->>   arch/mips/cavium-octeon/.gitignore      |    2 +
->>   arch/mips/cavium-octeon/Makefile        |   13 ++
->>   arch/mips/cavium-octeon/octeon_3xxx.dts |  314 +++++++++++++++++++++++++++++++
->>   arch/mips/cavium-octeon/octeon_68xx.dts |   99 ++++++++++
->>   4 files changed, 428 insertions(+), 0 deletions(-)
->>   create mode 100644 arch/mips/cavium-octeon/.gitignore
->>   create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
->>   create mode 100644 arch/mips/cavium-octeon/octeon_68xx.dts
->>
-[...]
+Hi Linus,
 
->> +    };
->> +  };
->
-> Uh.. where are the CPUs?
->
+Please pull from:
 
-The number and type of CPUs can be (and is) probed.  There is an 
-existing mechanism for the bootloader to communicate which CPUs should 
-be used.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-Likewise for memory, there is an existing mechanism for the bootloader 
-to communicate which memory should be used.
+to receive updates for the input subsystem. You will get a fix for
+recently reported boot time regression (longish serio works badly
+interacting with flush_scheduled_work() used by tty layer), update
+documenting new(ish) 0x0c query in Synaptics protocol and final polishes
+for the tegra keyboard driver (which is new in this release).
 
-It is possible that in the future, we would want to put CPUs and Memory 
-in the Device Tree.  If we do, we can add that without having to disturb 
-the 'soc' device bindings.
+Thanks!
 
-My main motivation for this first patch set is to get sane bindings for 
-all the 'soc' devices  And to that end, your feedback has been quite useful.
 
-Thanks,
-David Daney
+Changelog:
+---------
+
+Dmitry Torokhov (2):
+      Input: synaptics - document 0x0c query
+      Input: serio/gameport - use 'long' system workqueue
+
+Rakesh Iyer (1):
+      Input: tegra-kbc - add function keymap
+
+
+Diffstat:
+--------
+
+ arch/arm/mach-tegra/include/mach/kbc.h |    1 +
+ drivers/input/gameport/gameport.c      |    2 +-
+ drivers/input/keyboard/tegra-kbc.c     |   62 ++++++++++++++++++++++++++++++--
+ drivers/input/mouse/synaptics.h        |   23 ++++++++++++
+ drivers/input/serio/serio.c            |    2 +-
+ 5 files changed, 85 insertions(+), 5 deletions(-)
+
+-- 
+Dmitry
