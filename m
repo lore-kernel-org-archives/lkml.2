@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785Ab1BWU3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:29:12 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:50931 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab1BWU3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:29:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=pS1oTvMyWL6cZloaWUcYtfOhNfP7YKDn9q3jygGHrCPTnFBOcTSxTIBH25SUzCUAeF
-         vQHmsJKjZFstJ2SoP4Lw==
+	id S932566Ab1BWUac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:30:32 -0500
+Received: from cantor.suse.de ([195.135.220.2]:50965 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab1BWUab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:30:31 -0500
+Date: Wed, 23 Feb 2011 12:29:15 -0800
+From: Greg KH <gregkh@suse.de>
+To: Timur Tabi <timur@freescale.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: How important is it that tty_write_room doesn't lie?
+Message-ID: <20110223202915.GB9081@suse.de>
+References: <4D656679.90907@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinjhY3oiFTq2xq4fwQ-mtLZ8ph435+nc5irM7wZ@mail.gmail.com>
-References: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
- <20110223015320.13068.77428.stgit@mike.mtv.corp.google.com> <AANLkTinjhY3oiFTq2xq4fwQ-mtLZ8ph435+nc5irM7wZ@mail.gmail.com>
-From: Mike Waychison <mikew@google.com>
-Date: Wed, 23 Feb 2011 12:28:46 -0800
-Message-ID: <AANLkTi=+-Wc0bWdpvR+X6UszLf7MXKYgi8Oo6anN-jR8@mail.gmail.com>
-Subject: Re: [PATCH v2 2/5] firmware: Basic dmi-sysfs support
-To: Tony Luck <tony.luck@intel.com>
-Cc: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>, Jon Mayer <jonmayer@google.com>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
-        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd2bd1ccb90e6049cf8f2df
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D656679.90907@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd2bd1ccb90e6049cf8f2df
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Feb 23, 2011 at 01:56:41PM -0600, Timur Tabi wrote:
+> Greg,
+> 
+> As you may remember, I have a combination console/tty driver that talks to a
+> serial-like FIFO provided by our hypervisor.  Both tty_operations.write() and
+> console.write() talk to the same FIFO for character output.
+> 
+> I've implemented a tty_operations.write_room() function that queries the
+> hypervisor for amount of free space in the FIFO.  I've noticed a subtle bug in
+> this function, and I was hoping for some advice on how to fix it.
+> 
+> I believe I might have a problem when the following events happen in this order:
+> 
+> 1) The TTY layer calls write_room() to determine the amount of free space in the
+> FIFO.
+> 
+> 2) The *console* layer calls console.write() to write some data (e.g. the kernel
+> interrupted the TTY layer and executed a printk)
+> 
+> 3) Control returns to the TTY layer, which calls tty_operations.write(),
+> assuming that the number returned by the previous call to write_room() is still
+> correct.
+> 
+> Because of the interjected console write, the FIFO no longer has a much room as
+> write_room() said it does.  When the TTY layer calls tty_operations.write(), my
+> driver returns a number smaller than the size of the buffer passed to (i.e. not
+> all characters were written).  The TTY layer, not expecting this, loses data.
 
-On Wed, Feb 23, 2011 at 11:43 AM, Tony Luck <tony.luck@intel.com> wrote:
-> On Tue, Feb 22, 2011 at 5:53 PM, Mike Waychison <mikew@google.com> wrote:
->> +static void __init dmi_sysfs_register_handle(const struct dmi_header *d=
-h,
->> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
-=A0 =A0 =A0 =A0 =A0void *_ret)
->> +{
->
-> I'm seeing some unaligned references from this function
-> on ia64. =A0Code is loading a 2-byte value from an odd
-> address. We are dereferencing "dh", so looking at the
-> dmi_header definition, I'd have thought that we must
-> be touching dh->handle:
->
-> struct dmi_header {
-> =A0 =A0 =A0 =A0u8 type;
-> =A0 =A0 =A0 =A0u8 length;
-> =A0 =A0 =A0 =A0u16 handle;
-> };
->
-> I don't see any code in this function that does this,
-> so I assume there is some inlining or macro stuff
-> happening.
+Um, the tty layer should not loose data, but it is hard, if not
+impossible, to re-write from within the tty layer due to lots of
+different issues (if the data came from within it's hard, if it came
+from userspace, it should be fine.)
 
-Ya, I don't think there is anything that guarantees that dmi_header is
-aligned.   The access is probably the struct copy I did here:
+> Is my assessment of the situation correct?  If so, is there any way around this
+> problem that doesn't require implementing *two* software FIFOs in the driver:
+> one for the console interface, and one for the TTY interface?  If every driver
+> needs a FIFO like this, wouldn't it be simpler for the TTY and console layers to
+> provide their own FIFOs?  I feel like I'm missing something obvious.
 
-        /* Set the key */
-        entry->dh =3D *dh;
+I think that people don't normally hit this as the console code isn't
+used as a tty and a console at the same time, right?
 
-What if we changed that guy to use memcpy?  We'd probably need to
-memcpy the dmi_system_event_log as well.  Patch attached (applies on
-top of the entire patchset).
+How big is your buffer in your FIFO?  Can you always just say you have a
+smaller ammount in order to try to work around the tty layer trying to
+send you a few extra bytes at times?
 
---000e0cd2bd1ccb90e6049cf8f2df
-Content-Type: application/octet-stream; name=patch
-Content-Disposition: attachment; filename=patch
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gkip513f0
+thanks,
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZmlybXdhcmUvZG1pLXN5c2ZzLmMgYi9kcml2ZXJzL2Zpcm13
-YXJlL2RtaS1zeXNmcy5jCmluZGV4IGE1YWZkODAuLmViMjZkNjIgMTAwNjQ0Ci0tLSBhL2RyaXZl
-cnMvZmlybXdhcmUvZG1pLXN5c2ZzLmMKKysrIGIvZHJpdmVycy9maXJtd2FyZS9kbWktc3lzZnMu
-YwpAQCAtMjYzLDIwICsyNjMsMTYgQEAgc3RydWN0IGRtaV9zeXN0ZW1fZXZlbnRfbG9nIHsKIAl1
-OAlzdXBwb3J0ZWRfbG9nX3R5cGVfZGVzY3JpcHRvc1swXTsKIH0gX19wYWNrZWQ7CiAKLXN0YXRp
-YyBjb25zdCBzdHJ1Y3QgZG1pX3N5c3RlbV9ldmVudF9sb2cgKnRvX3NlbChjb25zdCBzdHJ1Y3Qg
-ZG1pX2hlYWRlciAqZGgpCi17Ci0JcmV0dXJuIChjb25zdCBzdHJ1Y3QgZG1pX3N5c3RlbV9ldmVu
-dF9sb2cgKilkaDsKLX0KLQogI2RlZmluZSBETUlfU1lTRlNfU0VMX0ZJRUxEKF9maWVsZCkgXAog
-c3RhdGljIHNzaXplX3QgZG1pX3N5c2ZzX3NlbF8jI19maWVsZChzdHJ1Y3QgZG1pX3N5c2ZzX2Vu
-dHJ5ICplbnRyeSwgXAogCQkJCSAgICAgIGNvbnN0IHN0cnVjdCBkbWlfaGVhZGVyICpkaCwgXAog
-CQkJCSAgICAgIGNoYXIgKmJ1ZikgXAogeyBcCi0JY29uc3Qgc3RydWN0IGRtaV9zeXN0ZW1fZXZl
-bnRfbG9nICpzZWwgPSB0b19zZWwoZGgpOyBcCi0JaWYgKHNpemVvZigqc2VsKSA+IGRtaV9lbnRy
-eV9sZW5ndGgoZGgpKSBcCisJc3RydWN0IGRtaV9zeXN0ZW1fZXZlbnRfbG9nIHNlbDsgXAorCWlm
-IChzaXplb2Yoc2VsKSA+IGRtaV9lbnRyeV9sZW5ndGgoZGgpKSBcCiAJCXJldHVybiAtRUlPOyBc
-Ci0JcmV0dXJuIHNwcmludGYoYnVmLCAiJXVcbiIsIHNlbC0+X2ZpZWxkKTsgXAorCW1lbWNweSgm
-c2VsLCBkaCwgc2l6ZW9mKHNlbCkpOyBcCisJcmV0dXJuIHNwcmludGYoYnVmLCAiJXVcbiIsIHNl
-bC5fZmllbGQpOyBcCiB9IFwKIHN0YXRpYyBETUlfU1lTRlNfTUFQUEVEX0FUVFIoc2VsLCBfZmll
-bGQpCiAKQEAgLTQwMywyNiArMzk5LDI4IEBAIHN0YXRpYyBzc2l6ZV90IGRtaV9zZWxfcmF3X3Jl
-YWRfaGVscGVyKHN0cnVjdCBkbWlfc3lzZnNfZW50cnkgKmVudHJ5LAogCQkJCSAgICAgICB2b2lk
-ICpfc3RhdGUpCiB7CiAJc3RydWN0IGRtaV9yZWFkX3N0YXRlICpzdGF0ZSA9IF9zdGF0ZTsKLQlj
-b25zdCBzdHJ1Y3QgZG1pX3N5c3RlbV9ldmVudF9sb2cgKnNlbCA9IHRvX3NlbChkaCk7CisJc3Ry
-dWN0IGRtaV9zeXN0ZW1fZXZlbnRfbG9nIHNlbDsKIAotCWlmIChzaXplb2YoKnNlbCkgPiBkbWlf
-ZW50cnlfbGVuZ3RoKGRoKSkKKwlpZiAoc2l6ZW9mKHNlbCkgPiBkbWlfZW50cnlfbGVuZ3RoKGRo
-KSkKIAkJcmV0dXJuIC1FSU87CiAKLQlzd2l0Y2ggKHNlbC0+YWNjZXNzX21ldGhvZCkgeworCW1l
-bWNweSgmc2VsLCBkaCwgc2l6ZW9mKHNlbCkpOworCisJc3dpdGNoIChzZWwuYWNjZXNzX21ldGhv
-ZCkgewogCWNhc2UgRE1JX1NFTF9BQ0NFU1NfTUVUSE9EX0lPODoKIAljYXNlIERNSV9TRUxfQUND
-RVNTX01FVEhPRF9JTzJ4ODoKIAljYXNlIERNSV9TRUxfQUNDRVNTX01FVEhPRF9JTzE2OgotCQly
-ZXR1cm4gZG1pX3NlbF9yYXdfcmVhZF9pbyhlbnRyeSwgc2VsLCBzdGF0ZS0+YnVmLAorCQlyZXR1
-cm4gZG1pX3NlbF9yYXdfcmVhZF9pbyhlbnRyeSwgJnNlbCwgc3RhdGUtPmJ1ZiwKIAkJCQkJICAg
-c3RhdGUtPnBvcywgc3RhdGUtPmNvdW50KTsKIAljYXNlIERNSV9TRUxfQUNDRVNTX01FVEhPRF9Q
-SFlTMzI6Ci0JCXJldHVybiBkbWlfc2VsX3Jhd19yZWFkX3BoeXMzMihlbnRyeSwgc2VsLCBzdGF0
-ZS0+YnVmLAorCQlyZXR1cm4gZG1pX3NlbF9yYXdfcmVhZF9waHlzMzIoZW50cnksICZzZWwsIHN0
-YXRlLT5idWYsCiAJCQkJCSAgICAgICBzdGF0ZS0+cG9zLCBzdGF0ZS0+Y291bnQpOwogCWNhc2Ug
-RE1JX1NFTF9BQ0NFU1NfTUVUSE9EX0dQTlY6CiAJCXByX2luZm8oImRtaS1zeXNmczogR1BOViBz
-dXBwb3J0IG1pc3NpbmcuXG4iKTsKIAkJcmV0dXJuIC1FSU87CiAJZGVmYXVsdDoKIAkJcHJfaW5m
-bygiZG1pLXN5c2ZzOiBVbmtub3duIGFjY2VzcyBtZXRob2QgJTAyeFxuIiwKLQkJCXNlbC0+YWNj
-ZXNzX21ldGhvZCk7CisJCQlzZWwuYWNjZXNzX21ldGhvZCk7CiAJCXJldHVybiAtRUlPOwogCX0K
-IH0KQEAgLTU5NSw3ICs1OTMsNyBAQCBzdGF0aWMgdm9pZCBfX2luaXQgZG1pX3N5c2ZzX3JlZ2lz
-dGVyX2hhbmRsZShjb25zdCBzdHJ1Y3QgZG1pX2hlYWRlciAqZGgsCiAJfQogCiAJLyogU2V0IHRo
-ZSBrZXkgKi8KLQllbnRyeS0+ZGggPSAqZGg7CisJbWVtY3B5KCZlbnRyeS0+ZGgsIGRoLCBzaXpl
-b2YoKmRoKSk7CiAJZW50cnktPmluc3RhbmNlID0gaW5zdGFuY2VfY291bnRzW2RoLT50eXBlXSsr
-OwogCWVudHJ5LT5wb3NpdGlvbiA9IHBvc2l0aW9uX2NvdW50Kys7CiAK
---000e0cd2bd1ccb90e6049cf8f2df--
+greg k-h
