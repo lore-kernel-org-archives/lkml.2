@@ -1,46 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab1BWT1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:27:45 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43746 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755658Ab1BWT1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:27:42 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/1] perf/core improvement
-Date: Wed, 23 Feb 2011 16:27:28 -0300
-Message-Id: <1298489249-7777-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932526Ab1BWT26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:28:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932363Ab1BWT24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 14:28:56 -0500
+Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable
+ memory slots using wbtree
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com
+In-Reply-To: <1298484395.18387.28.camel@x201>
+References: <1298386481.5764.60.camel@x201>
+	 <20110222183822.22026.62832.stgit@s20.home>  <4D6507C9.1000906@redhat.com>
+	 <1298484395.18387.28.camel@x201>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Feb 2011 12:28:52 -0700
+Message-ID: <1298489332.18387.56.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Wed, 2011-02-23 at 11:06 -0700, Alex Williamson wrote:
+> On Wed, 2011-02-23 at 15:12 +0200, Avi Kivity wrote:
+> > On 02/22/2011 08:54 PM, Alex Williamson wrote:
+> > > This series introduces a new weight-balanced binary tree (wbtree) for
+> > > general use.  It's largely leveraged from the rbtree, copying it's
+> > > rotate functions, while introducing different rebalance and erase
+> > > functions.  This tree is particularly useful for managing memory
+> > > ranges, where it's desirable to have the most likely targets (the
+> > > largest ranges) at the top of each subtree.
+> > >
+> > > Patches 2&  3 go on to convert the KVM memory slots to a growable
+> > > array and make use of wbtree for efficient managment.  Trying to
+> > > exercise the worst case for this data structure, I ran netperf
+> > > TCP_RR on an emulated rtl8139 NIC connected directly to the host
+> > > via a tap.  Both qemu-kvm and the netserver on the host were
+> > > pinned to optimal CPUs with taskset.  This series resulted in
+> > > a 3% improvement for this test.
+> > >
+> > 
+> > In this case, I think most of the faults (at least after the guest was 
+> > warmed up) missed the tree completely.  
+> 
+> Except for the mmio faults for the NIC, which will traverse the entire
+> depth of that branch of the tree for every access.
+> 
+> > In this case a weight balanced 
+> > tree is hardly optimal (it is optimized for hits), so I think you'll see 
+> > a bigger gain from the mmio fault optimization.  You'll probably see 
+> > most of the gain running mmu intensive tests with ept=0.
+> 
+> Right, the gain expected by this test is that we're only traversing 6-7
+> tree nodes until we don't find a match, versus the full 32 entries of
+> the original memslot array.  So it's effectively comparing worst case
+> scenarios for both data structures.
+> 
+> Hopefully the followup with kernbench run with ept=0 show that there's
+> also still a benefit in the data match scenario.  The existing array
+> ends up being nearly optimal for memory hits since it registers memory
+> from 1M - 3.5G in slot0 and 4G - 10.5G in slot1.  For the tree, we jump
+> straight to the bigger slot.  I'll run one more set of kernbench tests
+> with the original code, just reversing slots 0&1 to see if we take much
+> of a hit from the tree overhead.  Thanks,
 
-        Please consider pulling from:
+I had forgotten about <1M mem, so actually the slot configuration was:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+0: <1M
+1: 1M - 3.5G
+2: 4G+
 
-Regards,
+I stacked the deck in favor of the static array (0: 4G+, 1: 1M-3.5G, 2:
+<1M), and got these kernbench results:
 
-- Arnaldo
+            base (stdev)    reorder (stdev)   wbtree (stdev)
+--------+-----------------+----------------+----------------+
+Elapsed |  42.809 (0.19)  |  42.160 (0.22) |  42.305 (0.23) |
+User    | 115.709 (0.22)  | 114.358 (0.40) | 114.720 (0.31) |
+System  |  41.605 (0.14)  |  40.741 (0.22) |  40.924 (0.20) |
+%cpu    |   366.9 (1.45)  |   367.4 (1.17) |   367.6 (1.51) |
+context |  7272.3 (68.6)  |  7248.1 (89.7) |  7249.5 (97.8) |
+sleeps  | 14826.2 (110.6) | 14780.7 (86.9) | 14798.5 (63.0) |
 
-Arnaldo Carvalho de Melo (1):
-  perf annotate: Show better message when no vmlinux is found
+So, wbtree is only slightly behind reordering, and the standard
+deviation suggests the runs are mostly within the noise of each other.
+Thanks,
 
- tools/perf/util/annotate.c          |   15 +++++++++++++--
- tools/perf/util/ui/browsers/hists.c |    8 --------
- 2 files changed, 13 insertions(+), 10 deletions(-)
+Alex
+
+
 
