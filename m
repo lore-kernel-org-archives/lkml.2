@@ -1,217 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab1BWN54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:57:56 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:52650 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493Ab1BWNyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:54:11 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
-        sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
-        jlayton@redhat.com
-Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
-Subject: [PATCH -V5 17/24] richacl: Create-time inheritance
-Date: Wed, 23 Feb 2011 19:22:04 +0530
-Message-Id: <1298469131-16555-18-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S932346Ab1BWN6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:58:06 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:39360
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932253Ab1BWN6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 08:58:01 -0500
+Date: Wed, 23 Feb 2011 13:58:14 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: David Howells <dhowells@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
+Subject: Re: User namespaces and keys
+Message-ID: <20110223135814.GA1859@mail.hallyn.com>
+References: <20110217150224.GA26334@mail.hallyn.com>
+ <29677.1298462729@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <29677.1298462729@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a new file is created, it can inherit an acl from its parent
-directory; this is similar to how default acls work in POSIX (draft)
-ACLs.
+Quoting David Howells (dhowells@redhat.com):
+> 
+> I guess we need to look at how to mix keys and namespaces again.
 
-As with POSIX ACLs, if a file inherits an acl from its parent directory,
-the intersection between the create mode and the permissions granted by
-the inherited acl determines the file masks and file permission bits,
-and the umask is ignored.
+>From strictly kernel pov, at the moment, keys are strictly usable only
+by the user in your own user namespace.
 
-Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/Makefile             |    2 +-
- fs/richacl_base.c       |   69 +++++++++++++++++++++++++++++++++++++++++++++++
- fs/richacl_inode.c      |   59 ++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl.h |    4 +++
- 4 files changed, 133 insertions(+), 1 deletions(-)
- create mode 100644 fs/richacl_inode.c
+We may want to look at this again, but for now I think that would be a
+safe enough default.  Later, we'll probably want the user creating a
+child_user_ns to allow his keys to be inherited by the child user_ns.
+Though, as I type that, it seems to me that that'll just become a
+maintenance pain, and it's just plain safer to have the user re-enter
+his keys, sharing them over a file if needed.
 
-diff --git a/fs/Makefile b/fs/Makefile
-index ed79438..e313219 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -49,7 +49,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
- 
- obj-$(CONFIG_FS_RICHACL)	+= richacl.o
--richacl-y			:= richacl_base.o
-+richacl-y			:= richacl_base.o richacl_inode.o
- 
- obj-y				+= quota/
- 
-diff --git a/fs/richacl_base.c b/fs/richacl_base.c
-index a6e3199..5e926ad 100644
---- a/fs/richacl_base.c
-+++ b/fs/richacl_base.c
-@@ -492,3 +492,72 @@ is_everyone:
- 	return denied ? -EACCES : 0;
- }
- EXPORT_SYMBOL_GPL(richacl_permission);
-+
-+/**
-+ * richacl_inherit  -  compute the inherited acl of a new file
-+ * @dir_acl:	acl of the containing direcory
-+ * @isdir:	inherit by a directory or non-directory?
-+ *
-+ * A directory can have acl entries which files and/or directories created
-+ * inside the directory will inherit.  This function computes the acl for such
-+ * a new file.  If there is no inheritable acl, it will return %NULL.
-+ */
-+struct richacl *
-+richacl_inherit(const struct richacl *dir_acl, int isdir)
-+{
-+	const struct richace *dir_ace;
-+	struct richacl *acl = NULL;
-+	struct richace *ace;
-+	int count = 0;
-+
-+	if (isdir) {
-+		richacl_for_each_entry(dir_ace, dir_acl) {
-+			if (!richace_is_inheritable(dir_ace))
-+				continue;
-+			count++;
-+		}
-+		if (!count)
-+			return NULL;
-+		acl = richacl_alloc(count);
-+		if (!acl)
-+			return ERR_PTR(-ENOMEM);
-+		ace = acl->a_entries;
-+		richacl_for_each_entry(dir_ace, dir_acl) {
-+			if (!richace_is_inheritable(dir_ace))
-+				continue;
-+			memcpy(ace, dir_ace, sizeof(struct richace));
-+			if (dir_ace->e_flags & ACE4_NO_PROPAGATE_INHERIT_ACE)
-+				richace_clear_inheritance_flags(ace);
-+			if ((dir_ace->e_flags & ACE4_FILE_INHERIT_ACE) &&
-+			    !(dir_ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE))
-+				ace->e_flags |= ACE4_INHERIT_ONLY_ACE;
-+			ace++;
-+		}
-+	} else {
-+		richacl_for_each_entry(dir_ace, dir_acl) {
-+			if (!(dir_ace->e_flags & ACE4_FILE_INHERIT_ACE))
-+				continue;
-+			count++;
-+		}
-+		if (!count)
-+			return NULL;
-+		acl = richacl_alloc(count);
-+		if (!acl)
-+			return ERR_PTR(-ENOMEM);
-+		ace = acl->a_entries;
-+		richacl_for_each_entry(dir_ace, dir_acl) {
-+			if (!(dir_ace->e_flags & ACE4_FILE_INHERIT_ACE))
-+				continue;
-+			memcpy(ace, dir_ace, sizeof(struct richace));
-+			richace_clear_inheritance_flags(ace);
-+			/*
-+			 * ACE4_DELETE_CHILD is meaningless for
-+			 * non-directories, so clear it.
-+			 */
-+			ace->e_mask &= ~ACE4_DELETE_CHILD;
-+			ace++;
-+		}
-+	}
-+
-+	return acl;
-+}
-diff --git a/fs/richacl_inode.c b/fs/richacl_inode.c
-new file mode 100644
-index 0000000..31e6925
---- /dev/null
-+++ b/fs/richacl_inode.c
-@@ -0,0 +1,59 @@
-+/*
-+ * Copyright (C) 2010  Novell, Inc.
-+ * Written by Andreas Gruenbacher <agruen@suse.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/sched.h>
-+#include <linux/module.h>
-+#include <linux/fs.h>
-+#include <linux/richacl.h>
-+
-+/**
-+ * richacl_inherit_inode  -  compute inherited acl and file mode
-+ * @dir_acl:	acl of the containing direcory
-+ * @inode:	inode of the new file (create mode in i_mode)
-+ *
-+ * The file permission bits in inode->i_mode must be set to the create mode.
-+ * If there is an inheritable acl, the maximum permissions that the acl grants
-+ * will be computed and permissions not granted by the acl will be removed from
-+ * inode->i_mode.  If there is no inheritable acl, the umask will be applied
-+ * instead.
-+ */
-+struct richacl *
-+richacl_inherit_inode(const struct richacl *dir_acl, struct inode *inode)
-+{
-+	struct richacl *acl;
-+	mode_t mask;
-+
-+	acl = richacl_inherit(dir_acl, S_ISDIR(inode->i_mode));
-+	if (acl) {
-+
-+		richacl_compute_max_masks(acl);
-+
-+		/*
-+		 * Ensure that the acl will not grant any permissions beyond
-+		 * the create mode.
-+		 */
-+		acl->a_flags |= ACL4_MASKED;
-+		acl->a_owner_mask &= richacl_mode_to_mask(inode->i_mode >> 6) |
-+				     ACE4_POSIX_OWNER_ALLOWED;
-+		acl->a_group_mask &= richacl_mode_to_mask(inode->i_mode >> 3);
-+		acl->a_other_mask &= richacl_mode_to_mask(inode->i_mode);
-+		mask = ~S_IRWXUGO | richacl_masks_to_mode(acl);
-+	} else
-+		mask = ~current_umask();
-+
-+	inode->i_mode &= mask;
-+	return acl;
-+}
-+EXPORT_SYMBOL_GPL(richacl_inherit_inode);
-diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index c9d2761..630bf86 100644
---- a/include/linux/richacl.h
-+++ b/include/linux/richacl.h
-@@ -291,5 +291,9 @@ extern void richacl_compute_max_masks(struct richacl *);
- extern struct richacl *richacl_chmod(struct richacl *, mode_t);
- extern int richacl_permission(struct inode *, const struct richacl *,
- 			      unsigned int);
-+extern struct richacl *richacl_inherit(const struct richacl *, int);
- 
-+/* richacl_inode.c */
-+extern struct richacl *richacl_inherit_inode(const struct richacl *,
-+					     struct inode *);
- #endif /* __RICHACL_H */
--- 
-1.7.1
+I'm going to not consider the TPM at the moment :)
 
+> Possibly the trickiest problem with keys is how to upcall key construction to
+> /sbin/request-key when the keys may be of a different user namespace.
+
+Hm, jinkeys, yes.
+
+-serge
