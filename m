@@ -1,99 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab1BWV4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:56:10 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:31945 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754416Ab1BWV4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:56:09 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEABIQZU120uZw/2dsb2JhbACmHnS8KYVeBJFr
-Message-ID: <4D65825F.5080403@internode.on.net>
-Date: Thu, 24 Feb 2011 08:25:43 +1030
-From: Arthur Marsh <arthur.marsh@internode.on.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-AU; rv:1.9.2.13) Gecko/20101213 Icedove/3.1.7
+	id S1755958Ab1BWV5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:57:14 -0500
+Received: from kroah.org ([198.145.64.141]:53254 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754807Ab1BWV5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 16:57:13 -0500
+Date: Wed, 23 Feb 2011 13:56:58 -0800
+From: Greg KH <greg@kroah.com>
+To: Hank Janssen <hjanssen@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        KY Srinivasan <kys@microsoft.com>
+Subject: Re: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
+ using pr_err now
+Message-ID: <20110223215658.GB16908@kroah.com>
+References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
+ <20110223191533.GB1030@kroah.com>
+ <8AFC7968D54FB448A30D8F38F259C56233FADA94@TK5EX14MBXC118.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified
- - 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd
- for GFP_ATOMIC order > 0
-References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net> <4D6367B3.9050306@googlemail.com> <20110222134047.GT13092@random.random> <20110222161513.GC13092@random.random> <4D63F6C0.7060204@internode.on.net> <20110223162432.GL31195@random.random> <20110223165550.GP31195@random.random> <4D65691E.9080600@internode.on.net> <20110223212541.GV31195@random.random>
-In-Reply-To: <20110223212541.GV31195@random.random>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8AFC7968D54FB448A30D8F38F259C56233FADA94@TK5EX14MBXC118.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 23, 2011 at 07:41:28PM +0000, Hank Janssen wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Wednesday, February 23, 2011 11:16 AM
+> > 
+> > On Tue, Feb 22, 2011 at 03:32:41PM -0800, Hank Janssen wrote:
+> > > This group of patches removes all DPRINT from hv_vmbus.ko.
+> > > It is divided in several patches due to size.
+> > >
+> > > All DPRINT calls have been removed, and where needed have been
+> > > replaced with pr_XX native calls. Many debug DPRINT calls have
+> > > been removed outright.
+> > >
+> > > The amount of clutter this driver prints has been
+> > > significantly reduced.
+> > >
+> > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > >
+> > > ---
+> > >  drivers/staging/hv/hv.c |   88 +++++++++++--------------------------
+> > ---------
+> > >  1 files changed, 21 insertions(+), 67 deletions(-)
+> 
+> > > -		DPRINT_INFO(VMBUS, "OS Build:%d-%d.%d-%d-%d.%d",\
+> > > -			    eax,
+> > > -			    ebx >> 16,
+> > > -			    ebx & 0xFFFF,
+> > > -			    ecx,
+> > > -			    edx >> 24,
+> > > -			    edx & 0xFFFFFF);
+> > > +
+> > > +		pr_info("%s: Hyper-V Host OS Build:%d-%d.%d-%d-%d.%d",
+> > > +			VMBUS_MOD,
+> > > +			eax,
+> > > +			ebx >> 16,
+> > > +			ebx & 0xFFFF,
+> > > +			ecx,
+> > > +			edx >> 24,
+> > > +			edx & 0xFFFFFF);
+> > 
+> > Why did you keep this one?  Why is it needed?
+> 
+> This tells me what version the host is running. I frequently ask customers if 
+> they are running on Host version X or Y. This tells me that with certainty 
+> what they are running. The number of times I got from a customer that
+> they are running X while I knew that would not be possible has been pretty
+> high.
 
+Ok, fair enough.
 
-Andrea Arcangeli wrote, on 24/02/11 07:55:
-> On Thu, Feb 24, 2011 at 06:37:58AM +1030, Arthur Marsh wrote:
->> kswapd-high_wmark + compaction-kswapd-2 - kswapd0 CPU up to 11 percent
->> and slightly less pronounced slowdowns of MIDI playback compared to
->> previous patches.
->>
->> kswapd-high_wmark + compaction-no-kswapd-3 - kswapd0 CPU up to 2.3
->> percent and no noticable slowdown of MIDI playback.
->>
->> Mel Gorman's mm/compaction.c patch - kswapd0 CPU up to 20 percent and no
->> noticable slowdown of MIDI playback.
->>
->> Thanks everyone for the help with this.
->
-> Ok then I think it's safer to go with compaction-no-kswapd-3.
+> > >  	if (!query_hypervisor_presence()) {
+> > > -		DPRINT_ERR(VMBUS, "No Windows hypervisor detected!!");
+> > > +		pr_err("%s: %s No Hyper-V detected", VMBUS_MOD, __func__);
+> > 
+> > Why the __func__?  That should never be needed as it is trivial to see
+> > what is happening, the user doesn't need to know the function name,
+> > right?
+> > 
+> > Please remove them from all of these calls.
+> 
+> The new patch will have these removed. When I checked other drivers 
+> in the drivers subdirectory the __func__ is used 15455 times most
+> of these are in print, debug or error lines. The __func__ in this
+> case only shows up if an error occurs. 
+> 
+> But as requested, I will remove them.
 
-One more combination I tried:
+Thanks.
 
-Mel Gorman's mm/compaction.c patch with Andrea Archangeli's 
-kswapd-high_wmark + compaction-no-kswapd-3 patches - kswapd0 CPU less 
-than 2 percent and no noticable slowdown of MIDI playback.
+> > Oh, and you obviously didn't test these patches as your syslog would be
+> > a mess if you did.  Which is NOT ok, and makes me grumpy:
+> > 	http://www.kroah.com/log/linux/maintainer-05.html
+> > 
+> > bah, I should just make a numbered list and just start saying: "This
+> > patch fails point #4" or something like that, it would save me in
+> > typing...
+> > 
+> 
+> They where compile and run tested. And syslog was not a mess. What did
+> I mess up here? The amount of printouts now are a fraction of what they
+> where before.
 
-This may be better performing than compaction-no-kswapd-3 alone but is 
-not conclusive.
+You forgot to put '\n' at the end of all of your pr_XXX lines, so they
+will be merged with the next one, messing up your syslog.  Joe also
+pointed this problem out.
 
->
-> I also created a git tree in case anybody else wants to test in easier
-> way.
->
-> git clone --reference linux-2.6.git git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-> (or "git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git")
-> cd aa
-> git checkout -f 3d74399aaece29047beba13a81650538af8db67a
-> (compaction-kswapd+compaction_alloc_lowlat)
-> git checkout -f f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27
-> (compaction-no-kswapd+rest+compaction_alloc_lowlat)
-> git checkout -f 859e705548f7377b1803b05b2904bae77495fd1e (only
-> compaction_alloc_lowlat)
->
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=3d74399aaece29047beba13a81650538af8db67a
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=859e705548f7377b1803b05b2904bae77495fd1e
->
-> Arthur could you give one more spin to the
-> 3d74399aaece29047beba13a81650538af8db67a tree? (or do you prefer an
-> updated patch compaction-kswapd-3?)
+Take a look at your syslog to see what I am talking about...
 
-If you can send me an updated patch compaction-no-kswapd-3 (I presume 
-that kswapd-high_wmark is still needed) it would be easier for me to apply.
+thanks,
 
->
-> I'd like to get 3d74399aaece29047beba13a81650538af8db67a tested again
-> because I did one more modification included in the git version
-> compared to the patch version (nr_slab was not always initialized and
-> it could lead to slightly higher kswapd cpu load than intended). I
-> doubt it will help though (just in case).
->
-> Mel what you think? If f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27 is
-> still the only one that shows no regression, I think it's safe to
-> apply it to 2.6.38 and revert the compaction in kswapd feature. Then
-> we can add compaction to kswapd later with no hurry.
->
-> Thanks a lot for the help and quick feedback!
-> Andrea
->
-
-Arthur.
+greg k-h
