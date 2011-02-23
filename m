@@ -1,70 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab1BWNzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:55:06 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:37052 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab1BWNyj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:54:39 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
-        sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
-        jlayton@redhat.com
-Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
-Subject: [PATCH -V5 05/24] vfs: Add IS_RICHACL() test for richacl support
-Date: Wed, 23 Feb 2011 19:21:52 +0530
-Message-Id: <1298469131-16555-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S932311Ab1BWNzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:55:17 -0500
+Received: from mail.aknet.ru ([78.158.192.28]:55657 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755625Ab1BWNzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 08:55:12 -0500
+Message-ID: <4D6510A3.90905@aknet.ru>
+Date: Wed, 23 Feb 2011 16:50:27 +0300
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Linux kernel <linux-kernel@vger.kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+Subject: [path][rfc] add PR_DETACH prctl command
+Content-Type: multipart/mixed;
+ boundary="------------010908090001040602030908"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@suse.de>
+This is a multi-part message in MIME format.
+--------------010908090001040602030908
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Introduce a new MS_RICHACL super-block flag and a new IS_RICHACL() test
-which file systems like nfs can use.  IS_ACL() is true if IS_POSIXACL()
-or IS_RICHACL() is true.
+Hi.
 
-Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- include/linux/fs.h |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+The attched patch adds the PR_DETACH prctl command.
+It is needed for those rare but unfortunate cases, where
+you can't daemonize your process before creating a thread.
+The effect of this command is similar to the fork() and then
+exit() on parent, except that:
+1. PID does not change
+2. Threads are not destroyed
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 70c7779..e542157 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -214,6 +214,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_RICHACL	(1<<25) /* Supports richacls */
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
- #define MS_NOUSER	(1<<31)
-@@ -272,6 +273,7 @@ struct inodes_stat_t {
- #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
- #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
- #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
-+#define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
- 
- #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
-@@ -284,7 +286,7 @@ struct inodes_stat_t {
-  * IS_ACL() tells the VFS to not apply the umask
-  * and use iop->check_acl for acl permission checks when defined.
-  */
--#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
-+#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL | MS_RICHACL)
- 
- /* the read-only stuff doesn't really belong here, but any other place is
-    probably as bad and I don't want to create yet another include file. */
--- 
-1.7.1
+It would be nice to know what people think about such an
+approach.
 
+Signed-off-by: stsp@aknet.ru
+CC: Oleg Nesterov <oleg@redhat.com>
+
+--------------010908090001040602030908
+Content-Type: text/plain;
+ name="pr_detach.diff"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="pr_detach.diff"
+
+ZGlmZiAtLWdpdCBhL2ZzL3Byb2MvYXJyYXkuYyBiL2ZzL3Byb2MvYXJyYXkuYwppbmRleCA3
+Yzk5YzFjLi5jY2NjZmE4IDEwMDY0NAotLS0gYS9mcy9wcm9jL2FycmF5LmMKKysrIGIvZnMv
+cHJvYy9hcnJheS5jCkBAIC00NjIsNyArNDYyLDcgQEAgc3RhdGljIGludCBkb190YXNrX3N0
+YXQoc3RydWN0IHNlcV9maWxlICptLCBzdHJ1Y3QgcGlkX25hbWVzcGFjZSAqbnMsCiAJLyog
+Y29udmVydCBuc2VjIC0+IHRpY2tzICovCiAJc3RhcnRfdGltZSA9IG5zZWNfdG9fY2xvY2tf
+dChzdGFydF90aW1lKTsKIAotCXNlcV9wcmludGYobSwgIiVkICglcykgJWMgJWQgJWQgJWQg
+JWQgJWQgJXUgJWx1IFwKKwlzZXFfcHJpbnRmKG0sICIlZCAoJXMpICVjICVkICVkICVkICVk
+ICVkICVsbHUgJWx1IFwKICVsdSAlbHUgJWx1ICVsdSAlbHUgJWxkICVsZCAlbGQgJWxkICVk
+IDAgJWxsdSAlbHUgJWxkICVsdSAlbHUgJWx1ICVsdSAlbHUgXAogJWx1ICVsdSAlbHUgJWx1
+ICVsdSAlbHUgJWx1ICVsdSAlZCAlZCAldSAldSAlbGx1ICVsdSAlbGRcbiIsCiAJCXBpZF9u
+cl9ucyhwaWQsIG5zKSwKZGlmZiAtLWdpdCBhL2luY2x1ZGUvYXNtLWdlbmVyaWMvc2lnaW5m
+by5oIGIvaW5jbHVkZS9hc20tZ2VuZXJpYy9zaWdpbmZvLmgKaW5kZXggOTQyZDMwYi4uMWRh
+OWMyMCAxMDA2NDQKLS0tIGEvaW5jbHVkZS9hc20tZ2VuZXJpYy9zaWdpbmZvLmgKKysrIGIv
+aW5jbHVkZS9hc20tZ2VuZXJpYy9zaWdpbmZvLmgKQEAgLTIxOCw3ICsyMTgsOCBAQCB0eXBl
+ZGVmIHN0cnVjdCBzaWdpbmZvIHsKICNkZWZpbmUgQ0xEX1RSQVBQRUQJKF9fU0lfQ0hMRHw0
+KQkvKiB0cmFjZWQgY2hpbGQgaGFzIHRyYXBwZWQgKi8KICNkZWZpbmUgQ0xEX1NUT1BQRUQJ
+KF9fU0lfQ0hMRHw1KQkvKiBjaGlsZCBoYXMgc3RvcHBlZCAqLwogI2RlZmluZSBDTERfQ09O
+VElOVUVECShfX1NJX0NITER8NikJLyogc3RvcHBlZCBjaGlsZCBoYXMgY29udGludWVkICov
+Ci0jZGVmaW5lIE5TSUdDSExECTYKKyNkZWZpbmUgQ0xEX0RFVEFDSEVECShfX1NJX0NITER8
+NykJLyogY2hpbGQgaGFzIGRldGFjaGVkICovCisjZGVmaW5lIE5TSUdDSExECTcKIAogLyoK
+ICAqIFNJR1BPTEwgc2lfY29kZXMKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvcHJjdGwu
+aCBiL2luY2x1ZGUvbGludXgvcHJjdGwuaAppbmRleCBhM2JhZWIyLi5mYmQyNDUxIDEwMDY0
+NAotLS0gYS9pbmNsdWRlL2xpbnV4L3ByY3RsLmgKKysrIGIvaW5jbHVkZS9saW51eC9wcmN0
+bC5oCkBAIC0xMDIsNCArMTAyLDYgQEAKIAogI2RlZmluZSBQUl9NQ0VfS0lMTF9HRVQgMzQK
+IAorI2RlZmluZSBQUl9ERVRBQ0ggMzUKKwogI2VuZGlmIC8qIF9MSU5VWF9QUkNUTF9IICov
+CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3NjaGVkLmggYi9pbmNsdWRlL2xpbnV4L3Nj
+aGVkLmgKaW5kZXggNzc3ZDhhNS4uNzVjOTc3ZSAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51
+eC9zY2hlZC5oCisrKyBiL2luY2x1ZGUvbGludXgvc2NoZWQuaApAQCAtMTE5NCw3ICsxMTk0
+LDcgQEAgc3RydWN0IHRhc2tfc3RydWN0IHsKIAl2b2xhdGlsZSBsb25nIHN0YXRlOwkvKiAt
+MSB1bnJ1bm5hYmxlLCAwIHJ1bm5hYmxlLCA+MCBzdG9wcGVkICovCiAJdm9pZCAqc3RhY2s7
+CiAJYXRvbWljX3QgdXNhZ2U7Ci0JdW5zaWduZWQgaW50IGZsYWdzOwkvKiBwZXIgcHJvY2Vz
+cyBmbGFncywgZGVmaW5lZCBiZWxvdyAqLworCXU2NCBmbGFnczsJLyogcGVyIHByb2Nlc3Mg
+ZmxhZ3MsIGRlZmluZWQgYmVsb3cgKi8KIAl1bnNpZ25lZCBpbnQgcHRyYWNlOwogCiAJaW50
+IGxvY2tfZGVwdGg7CQkvKiBCS0wgbG9jayBkZXB0aCAqLwpAQCAtMTc0Niw2ICsxNzQ2LDcg
+QEAgZXh0ZXJuIHZvaWQgdGhyZWFkX2dyb3VwX3RpbWVzKHN0cnVjdCB0YXNrX3N0cnVjdCAq
+cCwgY3B1dGltZV90ICp1dCwgY3B1dGltZV90ICoKICNkZWZpbmUgUEZfTVVURVhfVEVTVEVS
+CTB4MjAwMDAwMDAJLyogVGhyZWFkIGJlbG9uZ3MgdG8gdGhlIHJ0IG11dGV4IHRlc3RlciAq
+LwogI2RlZmluZSBQRl9GUkVFWkVSX1NLSVAJMHg0MDAwMDAwMAkvKiBGcmVlemVyIHNob3Vs
+ZCBub3QgY291bnQgaXQgYXMgZnJlZXphYmxlICovCiAjZGVmaW5lIFBGX0ZSRUVaRVJfTk9T
+SUcgMHg4MDAwMDAwMAkvKiBGcmVlemVyIHdvbid0IHNlbmQgc2lnbmFscyB0byBpdCAqLwor
+I2RlZmluZSBQRl9ERVRBQ0gJIDB4MTAwMDAwMDAwVUxMCS8qIERldGFjaCBmcm9tIHBhcmVu
+dCAqLwogCiAvKgogICogT25seSB0aGUgX2N1cnJlbnRfIHRhc2sgY2FuIHJlYWQvd3JpdGUg
+dG8gdHNrLT5mbGFncywgYnV0IG90aGVyCmRpZmYgLS1naXQgYS9rZXJuZWwvY3B1LmMgYi9r
+ZXJuZWwvY3B1LmMKaW5kZXggMTU2Y2M1NS4uZjExYzFjYSAxMDA2NDQKLS0tIGEva2VybmVs
+L2NwdS5jCisrKyBiL2tlcm5lbC9jcHUuYwpAQCAtMTgxLDcgKzE4MSw3IEBAIHN0YXRpYyBp
+bmxpbmUgdm9pZCBjaGVja19mb3JfdGFza3MoaW50IGNwdSkKIAkJICAgICghY3B1dGltZV9l
+cShwLT51dGltZSwgY3B1dGltZV96ZXJvKSB8fAogCQkgICAgICFjcHV0aW1lX2VxKHAtPnN0
+aW1lLCBjcHV0aW1lX3plcm8pKSkKIAkJCXByaW50ayhLRVJOX1dBUk5JTkcgIlRhc2sgJXMg
+KHBpZCA9ICVkKSBpcyBvbiBjcHUgJWQgIgotCQkJCSIoc3RhdGUgPSAlbGQsIGZsYWdzID0g
+JXgpXG4iLAorCQkJCSIoc3RhdGUgPSAlbGQsIGZsYWdzID0gJWxseClcbiIsCiAJCQkJcC0+
+Y29tbSwgdGFza19waWRfbnIocCksIGNwdSwKIAkJCQlwLT5zdGF0ZSwgcC0+ZmxhZ3MpOwog
+CX0KZGlmZiAtLWdpdCBhL2tlcm5lbC9leGl0LmMgYi9rZXJuZWwvZXhpdC5jCmluZGV4IGY5
+YTQ1ZWIuLjJjOGYwNTAgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9leGl0LmMKKysrIGIva2VybmVs
+L2V4aXQuYwpAQCAtMTUwNyw2ICsxNTA3LDM4IEBAIHN0YXRpYyBpbnQgd2FpdF90YXNrX2Nv
+bnRpbnVlZChzdHJ1Y3Qgd2FpdF9vcHRzICp3bywgc3RydWN0IHRhc2tfc3RydWN0ICpwKQog
+CXJldHVybiByZXR2YWw7CiB9CiAKK3N0YXRpYyBpbnQgd2FpdF90YXNrX2RldGFjaGVkKHN0
+cnVjdCB3YWl0X29wdHMgKndvLCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKnApCit7CisJaW50IHJl
+dHZhbCA9IDA7CisJcGlkX3QgcGlkID0gdGFza19waWRfdm5yKHApOworCXVpZF90IHVpZCA9
+IF9fdGFza19jcmVkKHApLT51aWQ7CisKKwlnZXRfdGFza19zdHJ1Y3QocCk7CisJaWYgKHVu
+bGlrZWx5KHdvLT53b19mbGFncyAmIFdOT1dBSVQpKSB7CisJCXJlYWRfdW5sb2NrKCZ0YXNr
+bGlzdF9sb2NrKTsKKwkJcmV0dXJuIHdhaXRfbm9yZWFwX2NvcHlvdXQod28sIHAsIHBpZCwg
+dWlkLCBDTERfREVUQUNIRUQsCisJCQlwLT5leGl0X2NvZGUgPj4gOCk7CisJfQorCisJcC0+
+ZmxhZ3MgJj0gflBGX0RFVEFDSDsKKwlpZiAoIXB0cmFjZV9yZXBhcmVudGVkKHApKQorCQlw
+LT5wYXJlbnQgPSBpbml0X3BpZF9ucy5jaGlsZF9yZWFwZXI7CisJcC0+cmVhbF9wYXJlbnQg
+PSBpbml0X3BpZF9ucy5jaGlsZF9yZWFwZXI7CisJcC0+ZXhpdF9zaWduYWwgPSBTSUdDSExE
+OworCWxpc3RfbW92ZV90YWlsKCZwLT5zaWJsaW5nLCAmcC0+cmVhbF9wYXJlbnQtPmNoaWxk
+cmVuKTsKKworCXJlYWRfdW5sb2NrKCZ0YXNrbGlzdF9sb2NrKTsKKwlpZiAod28tPndvX3N0
+YXQpCisJCXJldHZhbCA9IHB1dF91c2VyKHAtPmV4aXRfY29kZSwgd28tPndvX3N0YXQpOwor
+CisJaWYgKCFyZXR2YWwpCisJCXJldHZhbCA9IHdhaXRfbm9yZWFwX2NvcHlvdXQod28sIHAs
+IHBpZCwgdWlkLCBDTERfREVUQUNIRUQsCisJCQlwLT5leGl0X2NvZGUgPj4gOCk7CisJZWxz
+ZQorCQlwdXRfdGFza19zdHJ1Y3QocCk7CisJcmV0dXJuIHJldHZhbDsKK30KKwogLyoKICAq
+IENvbnNpZGVyIEBwIGZvciBhIHdhaXQgYnkgQHBhcmVudC4KICAqCkBAIC0xNTQ5LDYgKzE1
+ODEsOSBAQCBzdGF0aWMgaW50IHdhaXRfY29uc2lkZXJfdGFzayhzdHJ1Y3Qgd2FpdF9vcHRz
+ICp3bywgaW50IHB0cmFjZSwKIAlpZiAocC0+ZXhpdF9zdGF0ZSA9PSBFWElUX0RFQUQpCiAJ
+CXJldHVybiAwOwogCisJaWYgKHAtPmZsYWdzICYgUEZfREVUQUNIKQorCQlyZXR1cm4gd2Fp
+dF90YXNrX2RldGFjaGVkKHdvLCBwKTsKKwogCS8qCiAJICogV2UgZG9uJ3QgcmVhcCBncm91
+cCBsZWFkZXJzIHdpdGggc3VidGhyZWFkcy4KIAkgKi8KZGlmZiAtLWdpdCBhL2tlcm5lbC9z
+aWduYWwuYyBiL2tlcm5lbC9zaWduYWwuYwppbmRleCA0ZTNjZmYxLi4yY2Q0OTVhIDEwMDY0
+NAotLS0gYS9rZXJuZWwvc2lnbmFsLmMKKysrIGIva2VybmVsL3NpZ25hbC5jCkBAIC0xNDUw
+LDEwICsxNDUwLDEwIEBAIGludCBkb19ub3RpZnlfcGFyZW50KHN0cnVjdCB0YXNrX3N0cnVj
+dCAqdHNrLCBpbnQgc2lnKQogCiAJQlVHX09OKHNpZyA9PSAtMSk7CiAKLSAJLyogZG9fbm90
+aWZ5X3BhcmVudF9jbGRzdG9wIHNob3VsZCBoYXZlIGJlZW4gY2FsbGVkIGluc3RlYWQuICAq
+LwotIAlCVUdfT04odGFza19pc19zdG9wcGVkX29yX3RyYWNlZCh0c2spKTsKKwkvKiBkb19u
+b3RpZnlfcGFyZW50X2NsZHN0b3Agc2hvdWxkIGhhdmUgYmVlbiBjYWxsZWQgaW5zdGVhZC4g
+ICovCisJQlVHX09OKHRhc2tfaXNfc3RvcHBlZF9vcl90cmFjZWQodHNrKSk7CiAKLQlCVUdf
+T04oIXRhc2tfcHRyYWNlKHRzaykgJiYKKwlCVUdfT04oIXRhc2tfcHRyYWNlKHRzaykgJiYg
+KHRzay0+ZmxhZ3MgJiBQRl9FWElUSU5HKSAmJgogCSAgICAgICAodHNrLT5ncm91cF9sZWFk
+ZXIgIT0gdHNrIHx8ICF0aHJlYWRfZ3JvdXBfZW1wdHkodHNrKSkpOwogCiAJaW5mby5zaV9z
+aWdubyA9IHNpZzsKZGlmZiAtLWdpdCBhL2tlcm5lbC9zeXMuYyBiL2tlcm5lbC9zeXMuYwpp
+bmRleCAxOGRhNzAyLi5jMDkyMDVmIDEwMDY0NAotLS0gYS9rZXJuZWwvc3lzLmMKKysrIGIv
+a2VybmVsL3N5cy5jCkBAIC0xNzM2LDYgKzE3MzYsMjIgQEAgU1lTQ0FMTF9ERUZJTkU1KHBy
+Y3RsLCBpbnQsIG9wdGlvbiwgdW5zaWduZWQgbG9uZywgYXJnMiwgdW5zaWduZWQgbG9uZywg
+YXJnMywKIAkJCWVsc2UKIAkJCQllcnJvciA9IFBSX01DRV9LSUxMX0RFRkFVTFQ7CiAJCQli
+cmVhazsKKwkJY2FzZSBQUl9ERVRBQ0g6CisJCQllcnJvciA9IC1FUEVSTTsKKwkJCS8qIGlm
+IHBhcmVudCBpcyBpbml0LCBvciBub3QgYSBncm91cCBsZWFkZXIgLSBiYWlsICovCisJCQlp
+ZiAobWUtPnJlYWxfcGFyZW50ID09IGluaXRfcGlkX25zLmNoaWxkX3JlYXBlcikKKwkJCQli
+cmVhazsKKwkJCWlmIChtZS0+Z3JvdXBfbGVhZGVyICE9IG1lKQorCQkJCWJyZWFrOworCQkJ
+aWYgKGFyZzIgJiB+MHhmZikKKwkJCQlicmVhazsKKwkJCXdyaXRlX2xvY2tfaXJxKCZ0YXNr
+bGlzdF9sb2NrKTsKKwkJCW1lLT5leGl0X2NvZGUgPSBhcmcyIDw8IDg7CisJCQltZS0+Zmxh
+Z3MgfD0gUEZfREVUQUNIOworCQkJZG9fbm90aWZ5X3BhcmVudChtZSwgbWUtPmV4aXRfc2ln
+bmFsKTsKKwkJCXdyaXRlX3VubG9ja19pcnEoJnRhc2tsaXN0X2xvY2spOworCQkJZXJyb3Ig
+PSAwOworCQkJYnJlYWs7CiAJCWRlZmF1bHQ6CiAJCQllcnJvciA9IC1FSU5WQUw7CiAJCQli
+cmVhazsK
+--------------010908090001040602030908--
