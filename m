@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab1BWULX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:11:23 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:38764
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755465Ab1BWULV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:11:21 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
-        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: [PATCH 2/4] staging: hv: Fix the code depending on struct netvsc_driver_context data order
-Date: Wed, 23 Feb 2011 12:19:56 -0800
-Message-Id: <1298492398-16522-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <1298492398-16522-1-git-send-email-haiyangz@microsoft.com>
-References: <1298492398-16522-1-git-send-email-haiyangz@microsoft.com>
+	id S932572Ab1BWULw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:11:52 -0500
+Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.182]:28933
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932557Ab1BWULt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:11:49 -0500
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 15:11:49 EST
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh2a8h637h668h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
+Message-ID: <4D656679.90907@freescale.com>
+Date: Wed, 23 Feb 2011 13:56:41 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101213 Fedora/2.0.11-1.fc13 SeaMonkey/2.0.11
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: How important is it that tty_write_room doesn't lie?
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch fixed the code depending on the exact order of fields in the
-struct netvsc_driver_context. Now, we use container_of() instead of type
-casting from the first field to the container struct.
+Greg,
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+As you may remember, I have a combination console/tty driver that talks to a
+serial-like FIFO provided by our hypervisor.  Both tty_operations.write() and
+console.write() talk to the same FIFO for character output.
 
----
- drivers/staging/hv/netvsc_drv.c |   14 ++++++--------
- 1 files changed, 6 insertions(+), 8 deletions(-)
+I've implemented a tty_operations.write_room() function that queries the
+hypervisor for amount of free space in the FIFO.  I've noticed a subtle bug in
+this function, and I was hoping for some advice on how to fix it.
 
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 364b6c7..c78624c 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -49,8 +49,6 @@ struct net_device_context {
- };
- 
- struct netvsc_driver_context {
--	/* !! These must be the first 2 fields !! */
--	/* Which is a bug FIXME! */
- 	struct driver_context drv_ctx;
- 	struct netvsc_driver drv_obj;
- };
-@@ -137,8 +135,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
- 	struct driver_context *driver_ctx =
- 	    driver_to_driver_context(net_device_ctx->device_ctx->device.driver);
--	struct netvsc_driver_context *net_drv_ctx =
--		(struct netvsc_driver_context *)driver_ctx;
-+	struct netvsc_driver_context *net_drv_ctx = container_of(driver_ctx,
-+		struct netvsc_driver_context, drv_ctx);
- 	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
- 	struct hv_netvsc_packet *packet;
- 	int ret;
-@@ -342,8 +340,8 @@ static int netvsc_probe(struct device *device)
- {
- 	struct driver_context *driver_ctx =
- 		driver_to_driver_context(device->driver);
--	struct netvsc_driver_context *net_drv_ctx =
--		(struct netvsc_driver_context *)driver_ctx;
-+	struct netvsc_driver_context *net_drv_ctx = container_of(driver_ctx,
-+		struct netvsc_driver_context, drv_ctx);
- 	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
- 	struct vm_device *device_ctx = device_to_vm_device(device);
- 	struct hv_device *device_obj = &device_ctx->device_obj;
-@@ -414,8 +412,8 @@ static int netvsc_remove(struct device *device)
- {
- 	struct driver_context *driver_ctx =
- 		driver_to_driver_context(device->driver);
--	struct netvsc_driver_context *net_drv_ctx =
--		(struct netvsc_driver_context *)driver_ctx;
-+	struct netvsc_driver_context *net_drv_ctx = container_of(driver_ctx,
-+		struct netvsc_driver_context, drv_ctx);
- 	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
- 	struct vm_device *device_ctx = device_to_vm_device(device);
- 	struct net_device *net = dev_get_drvdata(&device_ctx->device);
+I believe I might have a problem when the following events happen in this order:
+
+1) The TTY layer calls write_room() to determine the amount of free space in the
+FIFO.
+
+2) The *console* layer calls console.write() to write some data (e.g. the kernel
+interrupted the TTY layer and executed a printk)
+
+3) Control returns to the TTY layer, which calls tty_operations.write(),
+assuming that the number returned by the previous call to write_room() is still
+correct.
+
+Because of the interjected console write, the FIFO no longer has a much room as
+write_room() said it does.  When the TTY layer calls tty_operations.write(), my
+driver returns a number smaller than the size of the buffer passed to (i.e. not
+all characters were written).  The TTY layer, not expecting this, loses data.
+
+Is my assessment of the situation correct?  If so, is there any way around this
+problem that doesn't require implementing *two* software FIFOs in the driver:
+one for the console interface, and one for the TTY interface?  If every driver
+needs a FIFO like this, wouldn't it be simpler for the TTY and console layers to
+provide their own FIFOs?  I feel like I'm missing something obvious.
+
 -- 
-1.6.3.2
+Timur Tabi
+Linux kernel developer at Freescale
 
