@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab1BWOBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 09:01:04 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52528 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755415Ab1BWNxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:53:03 -0500
-From: Pratheesh Gangadhar <pratheesh@ti.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: hjk@hansjkoch.de, gregkh@suse.de, pratheesh@ti.com, amit.chatterjee@ti.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 0/2] Add PRUSS UIO driver support
-Date: Wed, 23 Feb 2011 19:22:39 +0530
-Message-Id: <1298469161-7644-1-git-send-email-pratheesh@ti.com>
-X-Mailer: git-send-email 1.6.2.4
+	id S1755408Ab1BWNw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:52:59 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60235 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158Ab1BWNwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 08:52:55 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
+        sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
+        jlayton@redhat.com
+Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl interoperability 
+Date: Wed, 23 Feb 2011 19:21:47 +0530
+Message-Id: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series add support for PRUSS (Programmable Real-time Unit Sub
-System) UIO driver in Texas Instruments DA850, AM18xx and OMAPL1-38 processors.
-PRUSS is programmable RISC core which can be used to implement Soft IPs
-(eg:- DMA, CAN, UART,SmartCard) and Industrial communications data link layers
-(eg:- PROFIBUS). UIO driver exposes PRUSS resources like memory and interrupts 
-to user space application.PRUSS UIO application API can be used to control PRUs
- in PRUSS, setup PRU INTC, load firmware to PRUs and implement IPC between Host
- processor and PRUs. More information on PRUSS and UIO linux user space API 
-available in the links below
+Hi,
 
-http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
-http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
-http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader_API_Guide
+The following set of patches implements VFS and ext4 changes needed to implement
+a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+extended by file masks to fit into the standard POSIX file permission model.
+They are designed to work seamlessly locally as well as across the NFSv4 and
+CIFS/SMB2 network file system protocols.
 
-Pratheesh Gangadhar (2):
-  PRUSS UIO driver support
-  Defines DA850/AM18xx/OMAPL1-38 SOC resources used by PRUSS UIO driver
+Full patch series including NFS server and client changes can be found at
+git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git  richacl
+or
+git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richacl
 
- arch/arm/mach-davinci/board-da850-evm.c    |    4 +
- arch/arm/mach-davinci/da850.c              |   35 +++++
- arch/arm/mach-davinci/devices-da8xx.c      |   73 +++++++++
- arch/arm/mach-davinci/include/mach/da8xx.h |    3 +
- drivers/uio/Kconfig                        |   17 ++
- drivers/uio/Makefile                       |    1 +
- drivers/uio/uio_pruss.c                    |  223 ++++++++++++++++++++++++++++
- 7 files changed, 356 insertions(+), 0 deletions(-)
- create mode 100644 drivers/uio/uio_pruss.c
+A user-space utility for displaying and changing richacls is available at [4]
+(a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+
+[4] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/richacl.git master
+
+To test richacl on ext4 use -o richacl mount option. This mount option may later be
+dropped in favour of a feature flag.
+
+More details regarding richacl can be found at
+http://acl.bestbits.at/richacl/
+
+Changes from v4:
+a) rebase to 2.6.38-rc6
+b) Fixes for MAY_DELETE_CHILD and MAY_DELETE_SELF when directory have sticky bits
+c) Fixes for NFsv4  permission checking to make it work better with new MAY_* flags
+
+
+-aneesh
 
