@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173Ab1BWF3N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 00:29:13 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:36627 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab1BWF3L (ORCPT
+	id S1751371Ab1BWFa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 00:30:59 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58273 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750914Ab1BWFa5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 00:29:11 -0500
-Message-ID: <86364E209B534BF1ADB2764227483070@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Greg KH" <gregkh@suse.de>, "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-Cc: "Arnd Bergmann" <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, <sachi@mistralsolutions.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <nsekhar@ti.com>,
-        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
-        "Stalin Srinivasan" <stalin.s@mistralsolutions.com>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <20110218143500.23b3044b@lxorguk.ukuu.org.uk> <alpine.LFD.2.00.1102181917520.2701@localhost6.localdomain6> <201102181951.32631.arnd@arndb.de> <9826735BD9DD48A599C595D28C4A05F0@subhasishg> <20110222143704.GA978@suse.de>
-In-Reply-To: <20110222143704.GA978@suse.de>
-Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
-Date: Wed, 23 Feb 2011 11:00:25 +0530
-Organization: Mistral Solutions
+	Wed, 23 Feb 2011 00:30:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,210,1297065600"; 
+   d="scan'208";a="890327783"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Haicheng Li <haicheng.li@linux.intel.com>,
+        David Rientjes <rientjes@google.com>
+CC: "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "dave@linux.vnet.ibm.com" <dave@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "You, Yongkang" <yongkang.you@intel.com>
+Date: Wed, 23 Feb 2011 13:29:24 +0800
+Subject: RE: [0/7, v9] NUMA Hotplug Emulator (v9)
+Thread-Topic: [0/7, v9] NUMA Hotplug Emulator (v9)
+Thread-Index: AcvTCebv/xW0mlHQTD+t/MdK/atwoAAEIF/A
+Message-ID: <749B9D3DBF0F054390025D9EAFF47F22333D016D@shsmsx501.ccr.corp.intel.com>
+References: <20101210073119.156388875@intel.com>
+ <alpine.DEB.2.00.1102221429030.31758@chino.kir.corp.google.com>
+ <4D647F1D.2000307@linux.intel.com>
+In-Reply-To: <4D647F1D.2000307@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I could not follow the recommendations clearly.
-This is just to clarify.
+I am rebasing the patch now. I will send out it when i finish.
 
-Currently, I have the following files for the suart implementation:
-
-drivers/tty/serial/da8xx_pruss/pruss_suart_api.h
-drivers/tty/serial/da8xx_pruss/pruss_suart_err.h
-drivers/tty/serial/da8xx_pruss/pruss_suart_regs.h
-drivers/tty/serial/da8xx_pruss/pruss_suart_board.h
-drivers/tty/serial/da8xx_pruss/pruss_suart_mcasp.h
-drivers/tty/serial/da8xx_pruss/pruss_suart_utils.h
-
-drivers/tty/serial/da8xx_pruss/pruss_suart_api.c
-drivers/tty/serial/da8xx_pruss/pruss_suart.c
-drivers/tty/serial/da8xx_pruss/pruss_suart_utils.c
-
-Of these, I will be removing pruss_suart_err.h as part of the Linux error 
-code cleanup.
-But, I need to keep at least  pruss_suart_board.h as a separate file, as 
-this defines
-configurations which will be often modified by users, I don't want to mix it 
-with other files.
-
-Should I combine rest of the headers into a single file ? and keep the other 
-three .c files under "drivers/tty/serial/"
-and remove the da8xx_pruss directory altogether.
+best regards
+yang
 
 
---------------------------------------------------
-From: "Greg KH" <gregkh@suse.de>
-Sent: Tuesday, February 22, 2011 8:07 PM
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Cc: "Arnd Bergmann" <arnd@arndb.de>; <linux-arm-kernel@lists.infradead.org>; 
-"Thomas Gleixner" <tglx@linutronix.de>; "Alan Cox" 
-<alan@lxorguk.ukuu.org.uk>; <sachi@mistralsolutions.com>; 
-<davinci-linux-open-source@linux.davincidsp.com>; <nsekhar@ti.com>; "open 
-list" <linux-kernel@vger.kernel.org>; <m-watkins@ti.com>
-Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
-
-> On Tue, Feb 22, 2011 at 02:12:32PM +0530, Subhasish Ghosh wrote:
->> Hello,
->>
->> I had kept separate files to affirm the modularity and ease of
->> portability of the system.
->>
->> There are three different interfaces,
->> 1. The Linux driver interface
->> 2. The PRU control interface
->> 3. The McASP serializer interface.
->>
->> To maintain modularity, I  had classified the files respectively as :
->> 1.  pruss_suart.c
->> 2.  pruss_suart_api.c
->> 3.  pruss_suart_utils.c
->>
->> This is not a single device which can be expressed as a single file,
->> but functionally different devices logically cascaded together to
->> work in unison.
->>
->> We use the PRU for packet processing, but the actual data is
->> transmitted/received through the
->> McASP, which we use as a serializer.
->>
->> I feel to combine these disparate functionalities into a single file
->> will not
->>
->> 1. Help better understanding the device. I mean, why should a TTY
->> UART driver be aware of the McASP or the PRU.
->> 2. In case of a bug in the API layer or McASP, the driver need not
->> be touched, thus improve maintainability.
->> 3. If we need to port it to another Linux version, just editing the
->> driver file should suffice, this will reduce bugs while porting.
->
-> If your code is in the kernel tree, you do not need to ever port it to a
-> new version, as it will happen automatically as new kernels are
-> released, so this really isn't anything to worry about.
->
->> To me, combining all of these into a single file only creates a
->> mess. This is the reason I had separated them into different files!!
->> I don't understand why should it be better to have all of these into
->> a single file.
->
-> As Alan stated, just use 3 files in the directory with the other
-> drivers, you don't need a subdir for something small like this.
->
-> thanks,
->
-> greg k-h 
-
+> -----Original Message-----
+> From: Haicheng Li [mailto:haicheng.li@linux.intel.com]
+> Sent: Wednesday, February 23, 2011 11:30 AM
+> To: David Rientjes
+> Cc: Zheng, Shaohui; Andrew Morton; linux-mm@kvack.org;
+> linux-kernel@vger.kernel.org; lethal@linux-sh.org; Andi Kleen;
+> dave@linux.vnet.ibm.com; Greg Kroah-Hartman; Zhang, Yang Z; You, Yongkang
+> Subject: Re: [0/7, v9] NUMA Hotplug Emulator (v9)
+> 
+> Shaohui is out of position recently. Include Yang Zhang and Yongkang You in
+> this loop, who are Shaohui's backup.
+> 
+> David Rientjes wrote:
+> > On Fri, 10 Dec 2010, shaohui.zheng@intel.com wrote:
+> >
+> >> v9:
+> >>
+> >> Solve the bug reported by Eric B Munson, check the return value of
+> cpu_down when do
+> >>  CPU release.
+> >>
+> >> Solve the conflicts with Tejun Heo' Unificaton NUMA code, re-work patch 5
+> based on his
+> >> patch.
+> >>
+> >> Some small changes on debugfs per-node add_memory interface.
+> >>
+> >
+> > Hi Shaohui,
+> >
+> > Tejun's NUMA unification work has been merged into x86/mm, so I think it
+> > would possible to rebase your hotplug emulator patchset on top of it
+> > without too many conflicts now.
+> >
+> > It should probably be based on x86/mm from
+> > http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
