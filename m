@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab1BWHlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 02:41:12 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:3718 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456Ab1BWHlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 02:41:10 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-To: "Greg KH" <gregkh@suse.de>, "Ben Hutchings" <ben@decadent.org.uk>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "Roland Vossen" <rvossen@broadcom.com>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [Stable-review] [28/70] staging: brcm80211: bugfix for
- softmac crash on multi cpu configurations
-References: <20110222221839.853712243@clark.kroah.org>
- <1298427787.2211.498.camel@localhost>
-Date: Wed, 23 Feb 2011 08:40:53 +0100
+	id S1753629Ab1BWHm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 02:42:59 -0500
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:27012 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752297Ab1BWHm6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 02:42:58 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEABZJZE1R8sgG/2dsb2JhbACmJXS9RQ2FUQQ
+Date: Wed, 23 Feb 2011 08:42:55 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: linux-next: manual merge of the watchdog tree with the sh tree
+Message-ID: <20110223074255.GL3790@infomag.iguana.be>
+References: <20110223143446.8646373f.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vrciafbg3ri7v4@arend-laptop>
-In-Reply-To: <1298427787.2211.498.camel@localhost>
-User-Agent: Opera Mail/11.01 (Linux)
-X-WSS-ID: 617A65073BS2259015-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110223143446.8646373f.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011 03:23:07 +0100, Ben Hutchings <ben@decadent.org.uk>  
-wrote:
+Hi Stephen,
 
-> On Tue, 2011-02-22 at 14:17 -0800, Greg KH wrote:
->> 2.6.37-stable review patch.  If anyone has any objections, please let  
->> us know.
->>
->> ------------------
->
-> Why is this so different?
->
+> Today's linux-next merge of the watchdog tree got a conflict in
+> drivers/watchdog/shwdt.c between commits b1fa888e0124 ("watchdog: shwdt:
+> Kill off mmap stub and superfluous comments") and 8f5585ec3d17
+> ("watchdog: shwdt: driver model conversion") from the sh tree and commit
+> e273d97a2281 ("watchdog: cleanup spaces before tabs") from the watchdog
+> tree.
+> 
+> The spaces seem to have been cleaned up in the former patches, so I used
+> the sh tree version of this file.
 
-Hi Ben,
+I will redo that patch tonight so that you don't have any issues with it tomorrow.
 
-I think you are right. The diff below actually is from another commit  
-which I posted for stable review titled:
-
-staging: brcm80211: remove assert to avoid panic since 2.6.37 kernel
-
-Gr. AvS
-
->
-> Ben.
->
-> [...]
->>  drivers/staging/brcm80211/sys/wlc_mac80211.c |    1 -
->>  1 file changed, 1 deletion(-)
--- 
-"The most merciful thing in the world, I think, is the inability of the  
-human
-mind to correlate all its contents." - "The Call of Cthulhu"
+Thanks,
+Wim.
 
