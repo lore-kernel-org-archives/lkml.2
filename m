@@ -1,110 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab1BWP0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:26:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab1BWP0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:26:33 -0500
-Date: Wed, 23 Feb 2011 10:23:54 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] blk-throttle: writeback and swap IO control
-Message-ID: <20110223152354.GA2526@redhat.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
- <20110222193403.GG28269@redhat.com>
- <20110222224141.GA23723@linux.develer.com>
- <20110223000358.GM28269@redhat.com>
- <20110223083206.GA2174@linux.develer.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110223083206.GA2174@linux.develer.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753766Ab1BWP1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:27:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63530 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab1BWP1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 10:27:11 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=jykEKp_yVDgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=7d_E57ReAAAA:8 a=3SfDCf3JwqN6CcffznkA:9 a=Yv7c2wvOB5P8hUxijpQA:7 a=ItIKTd4gsPwtveJ3MahP-tBH8HwA:4 a=PUjeQqilurYA:10 a=D6-X0JM3zdQA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] debug rcu head support !PREEMPT config
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com
+In-Reply-To: <BLU0-SMTP1519908E0ACAEE1384F71896DB0@phx.gbl>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+	 <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1298431409.7666.76.camel@gandalf.stny.rr.com>
+	 <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
+	 <1298472914.7666.85.camel@gandalf.stny.rr.com>
+	 <BLU0-SMTP1519908E0ACAEE1384F71896DB0@phx.gbl>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 23 Feb 2011 10:27:07 -0500
+Message-ID: <1298474827.7666.86.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Agreed. Granularity of per inode level might be accetable in many 
-> > cases. Again, I am worried faster group getting stuck behind slower
-> > group.
-> > 
-> > I am wondering if we are trying to solve the problem of ASYNC write throttling
-> > at wrong layer. Should ASYNC IO be throttled before we allow task to write to
-> > page cache. The way we throttle the process based on dirty ratio, can we
-> > just check for throttle limits also there or something like that.(I think
-> > that's what you had done in your initial throttling controller implementation?)
+On Wed, 2011-02-23 at 10:13 -0500, Mathieu Desnoyers wrote:
+> Remove DEBUG_RCU_HEAD dependency on PREEMPT config. Handle the unability to
+> detect if within a RCU read-side critical section by never performing any
+> attempt to recover from a failure situation in the fixup handlers. Just print
+> the warnings.
 > 
-> Right. This is exactly the same approach I've used in my old throttling
-> controller: throttle sync READs and WRITEs at the block layer and async
-> WRITEs when the task is dirtying memory pages.
+> This patch is only compile-tested.
 > 
-> This is probably the simplest way to resolve the problem of faster group
-> getting blocked by slower group, but the controller will be a little bit
-> more leaky, because the writeback IO will be never throttled and we'll
-> see some limited IO spikes during the writeback.
-
-Yes writeback will not be throttled. Not sure how big a problem that is.
-
-- We have controlled the input rate. So that should help a bit.
-- May be one can put some high limit on root cgroup to in blkio throttle
-  controller to limit overall WRITE rate of the system.
-- For SATA disks, try to use CFQ which can try to minimize the impact of
-  WRITE.
-
-It will atleast provide consistent bandwindth experience to application.
-
->However, this is always
-> a better solution IMHO respect to the current implementation that is
-> affected by that kind of priority inversion problem.
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> ---
+>  kernel/rcupdate.c |   17 +++++++++++++++++
+>  lib/Kconfig.debug |    2 +-
+>  2 files changed, 18 insertions(+), 1 deletion(-)
 > 
-> I can try to add this logic to the current blk-throttle controller if
-> you think it is worth to test it.
+> Index: linux-2.6-lttng/lib/Kconfig.debug
+> ===================================================================
+> --- linux-2.6-lttng.orig/lib/Kconfig.debug
+> +++ linux-2.6-lttng/lib/Kconfig.debug
+> @@ -313,7 +313,7 @@ config DEBUG_OBJECTS_WORK
+>  
+>  config DEBUG_OBJECTS_RCU_HEAD
+>  	bool "Debug RCU callbacks objects"
+> -	depends on DEBUG_OBJECTS && PREEMPT
+> +	depends on DEBUG_OBJECTS
+>  	help
+>  	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
+>  
+> Index: linux-2.6-lttng/kernel/rcupdate.c
+> ===================================================================
+> --- linux-2.6-lttng.orig/kernel/rcupdate.c
+> +++ linux-2.6-lttng/kernel/rcupdate.c
+> @@ -142,7 +142,14 @@ static int rcuhead_fixup_init(void *addr
+>  		 * Ensure that queued callbacks are all executed.
+>  		 * If we detect that we are nested in a RCU read-side critical
+>  		 * section, we should simply fail, otherwise we would deadlock.
+> +		 * In !PREEMPT configurations, there is no way to tell if we are
+> +		 * in a RCU read-side critical section or not, so we never
+> +		 * attempt any fixup and just print a warning.
+>  		 */
+> +#ifndef CONFIG_PREEMPT
+> +		WARN_ON(1);
+> +		return 0;
+> +#endif
+>  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+>  		    irqs_disabled()) {
+>  			WARN_ON(1);
+> @@ -184,7 +191,14 @@ static int rcuhead_fixup_activate(void *
+>  		 * Ensure that queued callbacks are all executed.
+>  		 * If we detect that we are nested in a RCU read-side critical
+>  		 * section, we should simply fail, otherwise we would deadlock.
+> +		 * In !PREEMPT configurations, there is no way to tell if we are
+> +		 * in a RCU read-side critical section or not, so we never
+> +		 * attempt any fixup and just print a warning.
+>  		 */
+> +#ifndef CONFIG_PREEMPT
+> +		WARN_ON(1);
+> +		return 0;
+> +#endif
+>  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+>  		    irqs_disabled()) {
+>  			WARN_ON(1);
+> @@ -214,6 +228,9 @@ static int rcuhead_fixup_free(void *addr
+>  		 * Ensure that queued callbacks are all executed.
+>  		 * If we detect that we are nested in a RCU read-side critical
+>  		 * section, we should simply fail, otherwise we would deadlock.
+> +		 * In !PREEMPT configurations, there is no way to tell if we are
+> +		 * in a RCU read-side critical section or not, so we never
+> +		 * attempt any fixup and just print a warning.
+>  		 */
+>  #ifndef CONFIG_PREEMPT
+>  		WARN_ON(1);
 
-At this point of time I have few concerns with this approach.
+Hmm, I wonder if s/WARN_ON/WARN_ON_ONCE/g is in order. Why spam the
+console if it happens to trigger all the time?
 
-- Configuration issues. Asking user to plan for SYNC ans ASYNC IO
-  separately is inconvenient. One has to know the nature of workload.
+-- Steve
 
-- Most likely we will come up with global limits (atleast to begin with),
-  and not per device limit. That can lead to contention on one single
-  lock and scalability issues on big systems.
 
-Having said that, this approach should reduce the kernel complexity a lot.
-So if we can do some intelligent locking to limit the overhead then it
-will boil down to reduced complexity in kernel vs ease of use to user. I 
-guess at this point of time I am inclined towards keeping it simple in
-kernel.
-
-Couple of people have asked me that we have backup jobs running at night
-and we want to reduce the IO bandwidth of these jobs to limit the impact
-on latency of other jobs, I guess this approach will definitely solve
-that issue.
-
-IMHO, it might be worth trying this approach and see how well does it work. It
-might not solve all the problems but can be helpful in many situations.
-
-I feel that for proportional bandwidth division, implementing ASYNC
-control at CFQ will make sense because even if things get serialized in
-higher layers, consequences are not very bad as it is work conserving
-algorithm. But for throttling serialization will lead to bad consequences.
-
-May be one can think of new files in blkio controller to limit async IO
-per group during page dirty time.
-
-blkio.throttle.async.write_bps_limit
-blkio.throttle.async.write_iops_limit
-
-Thanks
-Vivek
