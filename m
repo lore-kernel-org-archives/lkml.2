@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab1BWBx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:53:57 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:46141 "EHLO
+	id S1754317Ab1BWByI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:54:08 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:46275 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab1BWBxy (ORCPT
+	with ESMTP id S1755883Ab1BWByD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 20:53:54 -0500
+	Tue, 22 Feb 2011 20:54:03 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=yyZvJRT/WsjeGnwq+Ya214INE5bLv4v6uQoBaqKPOPa14qLYKOOXUdNXDGwhGn9ul
-	55PlvjGHMO36g9p0dED2w==
-Subject: [PATCH v2 5/5] firmware: Add documentation for /sys/firmware/dmi
+	b=DbXz+dR/SQxj42soqK+BG3Mb5Zst7v5ljj8TOW7Y8Q7kodNsJtwMqyotDvIQxO9oo
+	e4N0eXuQUckOATf126jLA==
+Subject: [PATCH v2 3/5] firmware: Break out system_event_log in dmi-sysfs
 To: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
         Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Robert Lippert <rlippert@google.com>
@@ -22,8 +22,8 @@ Cc: Jon Mayer <jonmayer@google.com>, Tony Luck <tony.luck@intel.com>,
         Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
         linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
         David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
-Date: Tue, 22 Feb 2011 17:53:36 -0800
-Message-ID: <20110223015336.13068.16554.stgit@mike.mtv.corp.google.com>
+Date: Tue, 22 Feb 2011 17:53:26 -0800
+Message-ID: <20110223015326.13068.58029.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
 References: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -35,134 +35,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new ABI added by the dmi-sysfs module.
+The optional type 15 entry of the DMI table describes a non-volatile
+storage-backed system event log.
+
+In preparation for the next commit which exposes the raw bits of the
+event log to userland, create a new sub-directory within the dmi entry
+called "system_event_log" and expose attribute files that describe the
+event log itself.
+
+Currently, only a single child object is permitted within a
+dmi_sysfs_entry.  We simply point at this child from the dmi_sysfs_entry
+if it exists.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
-Changelog:
-- v2
-   - Added blurbs about 'type' and 'instance' attributes added in this
-     version.
-   - Grammar fixes from Tim Hockin.
----
- Documentation/ABI/testing/sysfs-firmware-dmi |  110 ++++++++++++++++++++++++++
- 1 files changed, 110 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-dmi
+ drivers/firmware/dmi-sysfs.c |  159 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 159 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
-new file mode 100644
-index 0000000..ba9da95
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-firmware-dmi
-@@ -0,0 +1,110 @@
-+What:		/sys/firmware/dmi/
-+Date:		February 2011
-+Contact:	Mike Waychison <mikew@google.com>
-+Description:
-+		Many machines' firmware (x86 and ia64) export DMI /
-+		SMBIOS tables to the operating system.  Getting at this
-+		information is often valuable to userland, especially in
-+		cases where there are OEM extensions used.
+diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+index 2d8a04a..d209610 100644
+--- a/drivers/firmware/dmi-sysfs.c
++++ b/drivers/firmware/dmi-sysfs.c
+@@ -35,6 +35,7 @@ struct dmi_sysfs_entry {
+ 	int instance;
+ 	int position;
+ 	struct list_head list;
++	struct kobject *child;
+ };
+ 
+ /*
+@@ -77,6 +78,10 @@ struct dmi_sysfs_mapped_attribute dmi_sysfs_attr_##_entry##_##_name = { \
+ /*************************************************
+  * Generic DMI entry support.
+  *************************************************/
++static void dmi_entry_free(struct kobject *kobj)
++{
++	kfree(kobj);
++}
+ 
+ static struct dmi_sysfs_entry *to_entry(struct kobject *kobj)
+ {
+@@ -186,6 +191,146 @@ static size_t dmi_entry_length(const struct dmi_header *dh)
+ }
+ 
+ /*************************************************
++ * Support bits for specialized DMI entry support
++ *************************************************/
++struct dmi_entry_attr_show_data {
++	struct attribute *attr;
++	char *buf;
++};
 +
-+		The kernel itself does not rely on the majority of the
-+		information in these tables being correct.  It equally
-+		cannot ensure that the data as exported to userland is
-+		without error either.
++static ssize_t dmi_entry_attr_show_helper(struct dmi_sysfs_entry *entry,
++					  const struct dmi_header *dh,
++					  void *_data)
++{
++	struct dmi_entry_attr_show_data *data = _data;
++	struct dmi_sysfs_mapped_attribute *attr;
 +
-+		DMI is structured as a large table of entries, where
-+		each entry has a common header indicating the type and
-+		length of the entry, as well as 'handle' that is
-+		supposed to be unique amongst all entries.
++	attr = container_of(data->attr,
++			    struct dmi_sysfs_mapped_attribute, attr);
++	return attr->show(entry, dh, data->buf);
++}
 +
-+		Some entries are required by the specification, but many
-+		others are optional.  In general though, users should
-+		never expect to find a specific entry type on their
-+		system unless they know for certain what their firmware
-+		is doing.  Machine to machine will vary.
++static ssize_t dmi_entry_attr_show(struct kobject *kobj,
++				   struct attribute *attr,
++				   char *buf)
++{
++	struct dmi_entry_attr_show_data data = {
++		.attr = attr,
++		.buf  = buf,
++	};
++	/* Find the entry according to our parent and call the
++	 * normalized show method hanging off of the attribute */
++	return find_dmi_entry(to_entry(kobj->parent),
++			      dmi_entry_attr_show_helper, &data);
++}
 +
-+		Multiple entries of the same type are allowed.  In order
-+		to handle these duplicate entry types, each entry is
-+		assigned by the operating system an 'instance', which is
-+		derived from an entry type's ordinal position.  That is
-+		to say, if there are 'N' multiple entries with the same type
-+		'T' in the DMI tables (adjacent or spread apart, it
-+		doesn't matter), they will be represented in sysfs as
-+		entries "T-0" through "T-(N-1)":
++static const struct sysfs_ops dmi_sysfs_specialize_attr_ops = {
++	.show = dmi_entry_attr_show,
++};
 +
-+		Example entry directories:
++/*************************************************
++ * Specialized DMI entry support.
++ *************************************************/
 +
-+			/sys/firmware/dmi/entries/17-0
-+			/sys/firmware/dmi/entries/17-1
-+			/sys/firmware/dmi/entries/17-2
-+			/sys/firmware/dmi/entries/17-3
-+			...
++/*** Type 15 - System Event Table ***/
 +
-+		Instance numbers are used in lieu of the firmware
-+		assigned entry handles as the kernel itself makes no
-+		guarantees that handles as exported are unique, and
-+		there are likely firmware images that get this wrong in
-+		the wild.
++#define DMI_SEL_ACCESS_METHOD_IO8	0x00
++#define DMI_SEL_ACCESS_METHOD_IO2x8	0x01
++#define DMI_SEL_ACCESS_METHOD_IO16	0x02
++#define DMI_SEL_ACCESS_METHOD_PHYS32	0x03
++#define DMI_SEL_ACCESS_METHOD_GPNV	0x04
 +
-+		Each DMI entry in sysfs has the common header values
-+		exported as attributes:
++struct dmi_system_event_log {
++	struct dmi_header header;
++	u16	area_length;
++	u16	header_start_offset;
++	u16	data_start_offset;
++	u8	access_method;
++	u8	status;
++	u32	change_token;
++	union {
++		struct {
++			u16 index_addr;
++			u16 data_addr;
++		} io;
++		u32	phys_addr32;
++		u16	gpnv_handle;
++		u32	access_method_address;
++	};
++	u8	header_format;
++	u8	type_descriptors_supported_count;
++	u8	per_log_type_descriptor_length;
++	u8	supported_log_type_descriptos[0];
++} __packed;
 +
-+		handle	: The 16bit 'handle' that is assigned to this
-+			  entry by the firmware.  This handle may be
-+			  referred to by other entries.
-+		length	: The length of the entry, as presented in the
-+			  entry itself.  Note that this is _not the
-+			  total count of bytes associated with the
-+			  entry_.  This value represents the length of
-+			  the "formatted" portion of the entry.  This
-+			  "formatted" region is sometimes followed by
-+			  the "unformatted" region composed of nul
-+			  terminated strings, with termination signalled
-+			  by a two nul characters in series.
-+		raw	: The raw bytes of the entry. This includes the
-+			  "formatted" portion of the entry, the
-+			  "unformatted" strings portion of the entry,
-+			  and the two terminating nul characters.
-+		type	: The type of the entry.  This value is the same
-+			  as found in the directory name.  It indicates
-+			  how the rest of the entry should be
-+			  interpreted.
-+		instance: The instance ordinal of the entry for the
-+			  given type.  This value is the same as found
-+			  in the parent directory name.
-+		position: The position of the entry within the entirety
-+			  of the entirety.
++static const struct dmi_system_event_log *to_sel(const struct dmi_header *dh)
++{
++	return (const struct dmi_system_event_log *)dh;
++}
 +
-+		=== Entry Specialization ===
++#define DMI_SYSFS_SEL_FIELD(_field) \
++static ssize_t dmi_sysfs_sel_##_field(struct dmi_sysfs_entry *entry, \
++				      const struct dmi_header *dh, \
++				      char *buf) \
++{ \
++	const struct dmi_system_event_log *sel = to_sel(dh); \
++	if (sizeof(*sel) > dmi_entry_length(dh)) \
++		return -EIO; \
++	return sprintf(buf, "%u\n", sel->_field); \
++} \
++static DMI_SYSFS_MAPPED_ATTR(sel, _field)
 +
-+		Some entry types may have other information available in
-+		sysfs.
++DMI_SYSFS_SEL_FIELD(area_length);
++DMI_SYSFS_SEL_FIELD(header_start_offset);
++DMI_SYSFS_SEL_FIELD(data_start_offset);
++DMI_SYSFS_SEL_FIELD(access_method);
++DMI_SYSFS_SEL_FIELD(status);
++DMI_SYSFS_SEL_FIELD(change_token);
++DMI_SYSFS_SEL_FIELD(access_method_address);
++DMI_SYSFS_SEL_FIELD(header_format);
++DMI_SYSFS_SEL_FIELD(type_descriptors_supported_count);
++DMI_SYSFS_SEL_FIELD(per_log_type_descriptor_length);
 +
-+		--- Type 15 - System Event Log ---
++static struct attribute *dmi_sysfs_sel_attrs[] = {
++	&dmi_sysfs_attr_sel_area_length.attr,
++	&dmi_sysfs_attr_sel_header_start_offset.attr,
++	&dmi_sysfs_attr_sel_data_start_offset.attr,
++	&dmi_sysfs_attr_sel_access_method.attr,
++	&dmi_sysfs_attr_sel_status.attr,
++	&dmi_sysfs_attr_sel_change_token.attr,
++	&dmi_sysfs_attr_sel_access_method_address.attr,
++	&dmi_sysfs_attr_sel_header_format.attr,
++	&dmi_sysfs_attr_sel_type_descriptors_supported_count.attr,
++	&dmi_sysfs_attr_sel_per_log_type_descriptor_length.attr,
++	NULL,
++};
 +
-+		This entry allows the firmware to export a log of
-+		events the system has taken.  This information is
-+		typically backed by nvram, but the implementation
-+		details are abstracted by this table.  This entries data
-+		is exported in the directory:
 +
-+		/sys/firmware/dmi/entries/15-0/system_event_log
++static struct kobj_type dmi_system_event_log_ktype = {
++	.release = dmi_entry_free,
++	.sysfs_ops = &dmi_sysfs_specialize_attr_ops,
++	.default_attrs = dmi_sysfs_sel_attrs,
++};
 +
-+		and has the following attributes (documented in the
-+		SMBIOS / DMI specification under "System Event Log (Type 15)":
++static int dmi_system_event_log(struct dmi_sysfs_entry *entry)
++{
++	int ret;
 +
-+		area_length
-+		header_start_offset
-+		data_start_offset
-+		access_method
-+		status
-+		change_token
-+		access_method_address
-+		header_format
-+		per_log_type_descriptor_length
-+		type_descriptors_supported_count
++	entry->child = kzalloc(sizeof(*entry->child), GFP_KERNEL);
++	if (!entry->child)
++		return -ENOMEM;
++	ret = kobject_init_and_add(entry->child,
++				   &dmi_system_event_log_ktype,
++				   &entry->kobj,
++				   "system_event_log");
++	if (ret)
++		goto out_free;
++out_free:
++	kfree(entry->child);
++	return ret;
++}
 +
-+		As well, the kernel exports the binary attribute:
++/*************************************************
+  * Generic DMI entry support.
+  *************************************************/
+ 
+@@ -325,6 +470,18 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
+ 	list_add_tail(&entry->list, &entry_list);
+ 	spin_unlock(&entry_list_lock);
+ 
++	/* Handle specializations by type */
++	switch (dh->type) {
++	case DMI_ENTRY_SYSTEM_EVENT_LOG:
++		*ret = dmi_system_event_log(entry);
++		break;
++	default:
++		/* No specialization */
++		break;
++	}
++	if (*ret)
++		goto out_err;
 +
-+		raw_event_log	: The raw binary bits of the event log
-+				  as described by the DMI entry.
+ 	/* Create the raw binary file to access the entry */
+ 	*ret = sysfs_create_bin_file(&entry->kobj, &dmi_entry_raw_attr);
+ 	if (*ret)
+@@ -332,6 +489,7 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
+ 
+ 	return;
+ out_err:
++	kobject_put(entry->child);
+ 	kobject_put(&entry->kobj);
+ 	return;
+ }
+@@ -342,6 +500,7 @@ static void cleanup_entry_list(void)
+ 
+ 	/* No locks, we are on our way out */
+ 	list_for_each_entry_safe(entry, next, &entry_list, list) {
++		kobject_put(entry->child);
+ 		kobject_put(&entry->kobj);
+ 	}
+ }
 
