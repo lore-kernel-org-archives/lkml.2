@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab1BWCnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 21:43:17 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49559 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab1BWCnQ (ORCPT
+	id S1756046Ab1BWCoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 21:44:30 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57141 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755809Ab1BWCo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 21:43:16 -0500
-Date: Wed, 23 Feb 2011 08:13:05 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>
-Subject: Re: [CFS Bandwidth Control v4 6/7] sched: hierarchical task
- accounting for SCHED_OTHER
-Message-ID: <20110223024305.GE3379@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110216031831.571628191@google.com>
- <20110216031841.352204682@google.com>
- <4D646AC0.7030809@jp.fujitsu.com>
+	Tue, 22 Feb 2011 21:44:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=b+CdBiu2h8gLz4NN2H68o3SvDqUTSmWgrQtbQvqQjmdkQdYzbVHfRWUbuGW2YcQ0zb
+         X7gLxgGiDRIWgKX71TM89Yqd0L8rQyYtfmQuXq5YnoCkdxye8iZ7u+7vcAwcQjmTU7ZZ
+         i1s+JRxPGyJoJg5DxB2SJ6koyeqTBodQTyeMs=
+Date: Wed, 23 Feb 2011 03:44:24 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+Message-ID: <20110223024420.GA5809@nowhere>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D646AC0.7030809@jp.fujitsu.com>
+In-Reply-To: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> [2011-02-23 11:02:40]:
+On Tue, Feb 22, 2011 at 05:39:40PM -0800, Paul E. McKenney wrote:
+> +static int rcu_node_kthread(void *arg)
+> +{
+> +	int cpu;
+> +	unsigned long flags;
+> +	unsigned long mask;
+> +	struct rcu_node *rnp = (struct rcu_node *)arg;
+> +	struct sched_param sp;
+> +	struct task_struct *t;
+> +
+> +	for (;;) {
+> +		wait_event_interruptible(rnp->node_wq, rnp->wakemask != 0 ||
+> +						       kthread_should_stop());
+> +		if (kthread_should_stop())
+> +			break;
+> +		raw_spin_lock_irqsave(&rnp->lock, flags);
+> +		mask = rnp->wakemask;
+> +		rnp->wakemask = 0;
+> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> +		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1) {
 
-> (2011/02/16 12:18), Paul Turner wrote:
-> > @@ -1428,6 +1464,7 @@ enqueue_task_fair(struct rq *rq, struct 
-> >  		update_cfs_shares(cfs_rq);
-> >  	}
-> >  
-> > +	account_hier_tasks(&p->se, 1);
-> >  	hrtick_update(rq);
-> >  }
-> >  
-> > @@ -1461,6 +1498,7 @@ static void dequeue_task_fair(struct rq 
-> >  		update_cfs_shares(cfs_rq);
-> >  	}
-> >  
-> > +	account_hier_tasks(&p->se, -1);
-> >  	hrtick_update(rq);
-> >  }
-> >  
-> 
-> Why hrtick_update() is need to be delayed after modifying nr_running? 
-> You should not impact current hrtick logic without once mentioning.
-> 
-> > Index: tip/kernel/sched_rt.c
-> > ===================================================================
-> > --- tip.orig/kernel/sched_rt.c
-> > +++ tip/kernel/sched_rt.c
-> > @@ -906,6 +906,8 @@ enqueue_task_rt(struct rq *rq, struct ta
-> >  
-> >  	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
-> >  		enqueue_pushable_task(rq, p);
-> > +
-> > +	inc_nr_running(rq);
-> >  }
-> >  
-> >  static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
-> > @@ -916,6 +918,8 @@ static void dequeue_task_rt(struct rq *r
-> >  	dequeue_rt_entity(rt_se);
-> >  
-> >  	dequeue_pushable_task(rq, p);
-> > +
-> > +	dec_nr_running(rq);
-> >  }
-> >  
-> >  /*
-> 
-> I think similar change for sched_stoptask.c is required.
-> 
-> In fact I could not boot tip/master with this v4 patchset.
-> It reports rcu stall warns without applying following tweak:
-> 
-> --- a/kernel/sched_stoptask.c
-> +++ b/kernel/sched_stoptask.c
-> @@ -35,11 +35,13 @@ static struct task_struct *pick_next_task_stop(struct rq *rq
->  static void
->  enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
->  {
-> +       inc_nr_running(rq);
->  }
-> 
->  static void
->  dequeue_task_stop(struct rq *rq, struct task_struct *p, int flags)
->  {
-> +       dec_nr_running(rq);
->  }
->
+I may be confused, but shouldn't it be mask >>= 1 instead?
 
-Good catch!
+rnp->wakemask is the unioned rdp->grpmask of the cpu(s) for which we woke that
+node thread up. Those mask start from 0, so what you want with the below
+check is to watch if the next CPU in group range is in the wakeup mask by shifting
+to the right.
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
+No?
 
--- 
-	Three Cheers,
-	Balbir
+> +			if ((mask & 0x1) == 0)
+> +				continue;
+> +			preempt_disable();
+> +			per_cpu(rcu_cpu_has_work, cpu) = 1;
+> +			t = per_cpu(rcu_cpu_kthread_task, cpu);
+> +			if (t == NULL) {
+> +				preempt_enable();
+> +				continue;
+> +			}
+> +			sp.sched_priority = RCU_KTHREAD_PRIO;
+> +			sched_setscheduler_nocheck(t, cpu, &sp);
+> +			wake_up_process(t);
+> +			preempt_enable();
+> +		}
+> +	}
+> +	return 0;
+> +}
