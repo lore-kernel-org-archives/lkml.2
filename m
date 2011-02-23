@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab1BWKpR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 05:45:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753260Ab1BWKpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 05:45:15 -0500
-Message-ID: <4D64E52E.5090905@redhat.com>
-Date: Wed, 23 Feb 2011 07:45:02 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753684Ab1BWKuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 05:50:05 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40626 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab1BWKuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 05:50:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tCmjewzpeI7PLDHTDA7VwDtzZVFNyB4x0u0f6fdIZpaEqbwZmpTaegrQCgkWpi9Ni/
+         AEj9upsb+LAvmNz8fi16Zp0GiSya1tgzmYqkslGsIDbgU2GcRFNzc4dlmvitG6IDbd0z
+         1PvZqrq/HtM2AuZezOc2LkE8tfQpP2wPaKw7A=
+Date: Wed, 23 Feb 2011 11:50:07 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH V11 0/4] ptp: IEEE 1588 hardware clock support
+Message-ID: <20110223105007.GA31292@riccoc20.at.omicron.at>
+References: <cover.1298447722.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jeroen Vreeken <pe1rxq@amsat.org>, Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH 17/18] MAINTAINERS: USB SE401 moved to staging, update
- pattern
-References: <cover.1298439175.git.joe@perches.com> <b71216322abdb099ca0fc5a5fa997fa03ed773d0.1298439175.git.joe@perches.com>
-In-Reply-To: <b71216322abdb099ca0fc5a5fa997fa03ed773d0.1298439175.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1298447722.git.richard.cochran@omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 23-02-2011 02:42, Joe Perches escreveu:
-> And set the status to Orphan.
-> 
-> cc: Jeroen Vreeken <pe1rxq@amsat.org>
-> cc: Hans Verkuil <hverkuil@xs4all.nl>
-> cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+* Previous Discussions
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  MAINTAINERS |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index cdab39b..2b4dfa4 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6420,12 +6420,11 @@ S:	Maintained
->  F:	drivers/net/usb/rtl8150.c
->  
->  USB SE401 DRIVER
-> -M:	Jeroen Vreeken <pe1rxq@amsat.org>
->  L:	linux-usb@vger.kernel.org
->  W:	http://www.chello.nl/~j.vreeken/se401/
-> -S:	Maintained
-> +S:	Orphan
->  F:	Documentation/video4linux/se401.txt
-> -F:	drivers/media/video/se401.*
-> +F:	drivers/staging/se401/
->  
->  USB SERIAL BELKIN F5U103 DRIVER
->  M:	William Greathouse <wgreathouse@smva.com>
+  This patch set previously appeared on the netdev list. Since V5 of
+  the character device patch set, the discussion has moved to the
+  lkml.
 
+  - IEEE 1588 hardware clock support [V5]
+    http://lkml.org/lkml/2010/8/16/90
+
+  - POSIX clock tuning syscall with static clock ids
+    http://lkml.org/lkml/2010/8/23/49
+
+  - POSIX clock tuning syscall with dynamic clock ids
+    http://lkml.org/lkml/2010/9/3/119
+
+  - IEEE 1588 hardware clock support [V6]
+    http://lkml.org/lkml/2010/9/23/310
+
+  - Dynamic clock devices [RFC]
+    http://lkml.org/lkml/2010/11/4/290
+
+  - IEEE 1588 hardware clock support [V7]
+    http://lkml.org/lkml/2010/12/16/195
+
+  - IEEE 1588 hardware clock support [V8]
+    http://lkml.org/lkml/2010/12/31/128
+
+  - IEEE 1588 hardware clock support [V9]
+    http://lkml.org/lkml/2011/1/13/65
+
+  - IEEE 1588 hardware clock support [V10]
+    http://lkml.org/lkml/2011/1/27/71
+
+  - Thomas Gleixner: Rework of the PTP support series core code
+    http://lkml.org/lkml/2011/2/1/137
