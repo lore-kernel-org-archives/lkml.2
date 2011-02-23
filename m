@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab1BWMYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 07:24:35 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52307 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab1BWMYc convert rfc822-to-8bit (ORCPT
+	id S1754682Ab1BWMZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 07:25:06 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:37632 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab1BWMZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 07:24:32 -0500
-Subject: Re: [CFS Bandwidth Control v4 4/7] sched: unthrottle cfs_rq(s) who
- ran out of quota at period refresh
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-In-Reply-To: <20110216031841.161743484@google.com>
-References: <20110216031831.571628191@google.com>
-	 <20110216031841.161743484@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 23 Feb 2011 13:23:38 +0100
-Message-ID: <1298463818.2217.497.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 23 Feb 2011 07:25:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=W6CVs9iOvP27RNxMI8XAybcAvC4WSMiXZKptGv0DHYUatFhmlfpVhjipeTxWU/hOke
+         nmaDiz4t4jTzNsZN+M4rIszd05tuNURYfStvpFDQOhc7IPJx2lVpybcKbGDISv5foMDy
+         vgsNrPkg99uGwZy60dBSscfCKIDct0VmaYPJY=
+Date: Wed, 23 Feb 2011 15:24:43 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Manohar Vanga <manohar.vanga@cern.ch>, devel@driverdev.osuosl.org,
+        gregkh@suse.de, cota@braap.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: vme: fix bug in vme_register_bridge
+Message-ID: <20110223122443.GS1898@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Martyn Welch <martyn.welch@ge.com>,
+	Manohar Vanga <manohar.vanga@cern.ch>, devel@driverdev.osuosl.org,
+	gregkh@suse.de, cota@braap.org, linux-kernel@vger.kernel.org
+References: <1298453209-30821-1-git-send-email-manohar.vanga@cern.ch>
+ <4D64D70A.1060007@ge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D64D70A.1060007@ge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-15 at 19:18 -0800, Paul Turner wrote:
+On Wed, Feb 23, 2011 at 09:44:42AM +0000, Martyn Welch wrote:
+> On 23/02/11 09:26, Manohar Vanga wrote:
+> > Fix a bug in vme_register_bridge that results in an infinite loop in
+> > the event that device_register fails.
 
-> +static inline const struct cpumask *sched_bw_period_mask(void)
-> +{
-> +       return cpu_rq(smp_processor_id())->rd->span;
-> +}
+[snip]
 
-Some day I'm going to bite the bullet and merge part of cpusets into
-this controller and have Balbir take the node part into the memcg thing
-and then make (cpu||memcg) ^ cpuset
+> > +	/*
+> > +	 * Ignore the failed device and unregister the rest.
+> > +	 */
+> > +	i--;
+> >  	while (i > -1) {
+> >  		dev = &bridge->dev[i];
+> >  		device_unregister(dev);
+> > +		i--;
+> >  	}
 
-Feh.
+Ah.  I see you fixed the bug already.  Good deal.  Btw, no need to add
+comments for the obvious stuff.
+
+You still aren't CCing the right list, devel@driverdev.osuosl.org.
+It's not enough for Martyn to sent it to us, because by that point 
+the patch has '> ' chars on every line.
+
+regards,
+dan carpenter
