@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab1BWKOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 05:14:01 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:33625 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab1BWKN7 (ORCPT
+	id S1752400Ab1BWKPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 05:15:41 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55945 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab1BWKPk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 05:13:59 -0500
-Date: Wed, 23 Feb 2011 15:43:49 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: Bharata B Rao <bharata@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-Subject: Re: [CFS Bandwidth Control v4 5/7] sched: add exports tracking cfs
- bandwidth control statistics
-Message-ID: <20110223101349.GL3379@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110216031831.571628191@google.com>
- <20110216031841.258879435@google.com>
- <20110222031420.GI10342@balbir.in.ibm.com>
- <20110222041332.GA2753@in.ibm.com>
- <20110222044035.GL10342@balbir.in.ibm.com>
- <AANLkTinsxWgRAV5JvAnX5B7nXFWp9sE7y41gHJtkwg=6@mail.gmail.com>
+	Wed, 23 Feb 2011 05:15:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=srRDGNdQFxhzXasECNOnMZzc/YclI2a+pjg8JJM3dv07cHNX/3oSDFX4NKVOmvGf/A
+         WUpZB6KyhVtT5X/+nmezujGoSS96oEDdNkH16v75JOLrQu3dquaDB3mDyUgqyllRDmAi
+         LBezaBSeESNzLtw5Y5+nJ9j77VNNLbspPaKW8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <AANLkTinsxWgRAV5JvAnX5B7nXFWp9sE7y41gHJtkwg=6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110216165456.GA3090@nowhere>
+References: <201011181650.00152.roucaries.bastien@gmail.com>
+	<20101223034229.GF1739@nowhere>
+	<201101300108.32383.roucaries.bastien@gmail.com>
+	<201102161722.24963.roucaries.bastien@gmail.com>
+	<20110216165456.GA3090@nowhere>
+Date: Wed, 23 Feb 2011 11:15:38 +0100
+Message-ID: <AANLkTi=wkhYjy9D-GpgjLvg6zK88uZ8FkBb5fM6Y1-xd@mail.gmail.com>
+Subject: Re: Regression with dataloss: Reiserfs deadlock in 2.6.36 and 2.6.37,
+ know working 2.6.33
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linus@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Turner <pjt@google.com> [2011-02-23 00:03:42]:
-
-> On Mon, Feb 21, 2011 at 8:40 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > * Bharata B Rao <bharata@linux.vnet.ibm.com> [2011-02-22 09:43:33]:
-> >
-> >> >
-> >> > Should we consider integrating this in cpuacct, it would be difficult
-> >> > if we spill over stats between controllers.
-> >>
-> >> Given that cpuacct controller can be mounted independently, I am not sure
-> >> if we should integrate these stats. These stats come from cpu controller.
-> >
-> > The accounting controller was created to account. I'd still prefer
-> > cpuacct, so that I can find everything in one place. NOTE: cpuacct was
-> > created so that we do accounting with control - just account. I think
-> > splitting stats creates a usability mess - no?
-> >
-> 
-> One problem with rolling it into cpuacct is that some of the
-> statistics have a 1:1 association with the hierarchy being throttled.
-> For example, the number of periods in which throttling occurred or the
-> count of elapsed periods.
-> 
-> If it were rolled into cpuacct the only meaningful export would be the
-> total throttled time -- perhaps this is sufficient?
+On Wed, Feb 16, 2011 at 5:55 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Feb 16, 2011 at 05:22:21PM +0100, Bastien ROUCARIES wrote:
+>> Le dimanche 30 janvier 2011 01:08:29, Bastien ROUCARIES a écrit :
+>> > Le jeudi 23 décembre 2010 04:42:33, Frederic Weisbecker a écrit :
+>> > Hi,
+>> >
+>> Dear Andrew,
+>>
+>> Since three month I suffer fo regular dataloss in reiserfs kernel. I have posted all the detail  on #29162 under bugzilla.
+>>
+>> This bug freeze my notebook every hour between 6 hours. using git pull and compiling kernel seems to exercice this bugs.
+>>
+>> Frederic is really busy by academic millestones and I really thank him for his previous help, do you know somebody willing to
+>> help?
+>>
+>> I could test some patch if needed.
+>>
+>> Thank you
+>>
+>> Bastien
 >
+> Note, in the beginning of march, I'll have time to handle that again, in case nobody else shows
+> up until then.
+>
+I Should add that some unrelated file but opened file are
+overwritten.. For instance an xml file opened by akregator was
+overwritten by a perl file opened under emacs during the crash...
 
-Good point, lets keep it as is. nr_throttled and nr_periods is also
-important (although it can be derived).
+This bug seems pretty serious and I have no idea to explain this behavior...
 
--- 
-	Three Cheers,
-	Balbir
+Bastien
