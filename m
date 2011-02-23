@@ -1,260 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab1BWByI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:54:08 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:46275 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab1BWByD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 20:54:03 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=DbXz+dR/SQxj42soqK+BG3Mb5Zst7v5ljj8TOW7Y8Q7kodNsJtwMqyotDvIQxO9oo
-	e4N0eXuQUckOATf126jLA==
-Subject: [PATCH v2 3/5] firmware: Break out system_event_log in dmi-sysfs
-To: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>
-From: Mike Waychison <mikew@google.com>
-Cc: Jon Mayer <jonmayer@google.com>, Tony Luck <tony.luck@intel.com>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
-        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
-Date: Tue, 22 Feb 2011 17:53:26 -0800
-Message-ID: <20110223015326.13068.58029.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
-References: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+	id S1755932Ab1BWBxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:53:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39482 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755803Ab1BWBwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 20:52:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,209,1297065600"; 
+   d="scan'208";a="712021909"
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>, aarcange@redhat.com
+Subject: [PATCH 8/8] Add VM counters for transparent hugepages
+Date: Tue, 22 Feb 2011 17:52:02 -0800
+Message-Id: <1298425922-23630-9-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
+References: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The optional type 15 entry of the DMI table describes a non-volatile
-storage-backed system event log.
+From: Andi Kleen <ak@linux.intel.com>
 
-In preparation for the next commit which exposes the raw bits of the
-event log to userland, create a new sub-directory within the dmi entry
-called "system_event_log" and expose attribute files that describe the
-event log itself.
+I found it difficult to make sense of transparent huge pages without
+having any counters for its actions. Add some counters to vmstat
+for allocation of transparent hugepages and fallback to smaller
+pages.
 
-Currently, only a single child object is permitted within a
-dmi_sysfs_entry.  We simply point at this child from the dmi_sysfs_entry
-if it exists.
+Optional patch, but useful for development and understanding the system.
 
-Signed-off-by: Mike Waychison <mikew@google.com>
+Cc: aarcange@redhat.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/firmware/dmi-sysfs.c |  159 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 159 insertions(+), 0 deletions(-)
+ include/linux/vmstat.h |    7 +++++++
+ mm/huge_memory.c       |   13 ++++++++++---
+ mm/vmstat.c            |    8 ++++++++
+ 3 files changed, 25 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
-index 2d8a04a..d209610 100644
---- a/drivers/firmware/dmi-sysfs.c
-+++ b/drivers/firmware/dmi-sysfs.c
-@@ -35,6 +35,7 @@ struct dmi_sysfs_entry {
- 	int instance;
- 	int position;
- 	struct list_head list;
-+	struct kobject *child;
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 9b5c63d..7794d1a7 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -58,6 +58,13 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		UNEVICTABLE_PGCLEARED,	/* on COW, page truncate */
+ 		UNEVICTABLE_PGSTRANDED,	/* unable to isolate on unlock */
+ 		UNEVICTABLE_MLOCKFREED,
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	        THP_DIRECT_ALLOC,
++		THP_DAEMON_ALLOC,	
++		THP_DIRECT_FALLBACK,	
++		THP_DAEMON_ALLOC_FAILED,
++		THP_SPLIT,
++#endif
+ 		NR_VM_EVENT_ITEMS
  };
  
- /*
-@@ -77,6 +78,10 @@ struct dmi_sysfs_mapped_attribute dmi_sysfs_attr_##_entry##_##_name = { \
- /*************************************************
-  * Generic DMI entry support.
-  *************************************************/
-+static void dmi_entry_free(struct kobject *kobj)
-+{
-+	kfree(kobj);
-+}
- 
- static struct dmi_sysfs_entry *to_entry(struct kobject *kobj)
- {
-@@ -186,6 +191,146 @@ static size_t dmi_entry_length(const struct dmi_header *dh)
- }
- 
- /*************************************************
-+ * Support bits for specialized DMI entry support
-+ *************************************************/
-+struct dmi_entry_attr_show_data {
-+	struct attribute *attr;
-+	char *buf;
-+};
-+
-+static ssize_t dmi_entry_attr_show_helper(struct dmi_sysfs_entry *entry,
-+					  const struct dmi_header *dh,
-+					  void *_data)
-+{
-+	struct dmi_entry_attr_show_data *data = _data;
-+	struct dmi_sysfs_mapped_attribute *attr;
-+
-+	attr = container_of(data->attr,
-+			    struct dmi_sysfs_mapped_attribute, attr);
-+	return attr->show(entry, dh, data->buf);
-+}
-+
-+static ssize_t dmi_entry_attr_show(struct kobject *kobj,
-+				   struct attribute *attr,
-+				   char *buf)
-+{
-+	struct dmi_entry_attr_show_data data = {
-+		.attr = attr,
-+		.buf  = buf,
-+	};
-+	/* Find the entry according to our parent and call the
-+	 * normalized show method hanging off of the attribute */
-+	return find_dmi_entry(to_entry(kobj->parent),
-+			      dmi_entry_attr_show_helper, &data);
-+}
-+
-+static const struct sysfs_ops dmi_sysfs_specialize_attr_ops = {
-+	.show = dmi_entry_attr_show,
-+};
-+
-+/*************************************************
-+ * Specialized DMI entry support.
-+ *************************************************/
-+
-+/*** Type 15 - System Event Table ***/
-+
-+#define DMI_SEL_ACCESS_METHOD_IO8	0x00
-+#define DMI_SEL_ACCESS_METHOD_IO2x8	0x01
-+#define DMI_SEL_ACCESS_METHOD_IO16	0x02
-+#define DMI_SEL_ACCESS_METHOD_PHYS32	0x03
-+#define DMI_SEL_ACCESS_METHOD_GPNV	0x04
-+
-+struct dmi_system_event_log {
-+	struct dmi_header header;
-+	u16	area_length;
-+	u16	header_start_offset;
-+	u16	data_start_offset;
-+	u8	access_method;
-+	u8	status;
-+	u32	change_token;
-+	union {
-+		struct {
-+			u16 index_addr;
-+			u16 data_addr;
-+		} io;
-+		u32	phys_addr32;
-+		u16	gpnv_handle;
-+		u32	access_method_address;
-+	};
-+	u8	header_format;
-+	u8	type_descriptors_supported_count;
-+	u8	per_log_type_descriptor_length;
-+	u8	supported_log_type_descriptos[0];
-+} __packed;
-+
-+static const struct dmi_system_event_log *to_sel(const struct dmi_header *dh)
-+{
-+	return (const struct dmi_system_event_log *)dh;
-+}
-+
-+#define DMI_SYSFS_SEL_FIELD(_field) \
-+static ssize_t dmi_sysfs_sel_##_field(struct dmi_sysfs_entry *entry, \
-+				      const struct dmi_header *dh, \
-+				      char *buf) \
-+{ \
-+	const struct dmi_system_event_log *sel = to_sel(dh); \
-+	if (sizeof(*sel) > dmi_entry_length(dh)) \
-+		return -EIO; \
-+	return sprintf(buf, "%u\n", sel->_field); \
-+} \
-+static DMI_SYSFS_MAPPED_ATTR(sel, _field)
-+
-+DMI_SYSFS_SEL_FIELD(area_length);
-+DMI_SYSFS_SEL_FIELD(header_start_offset);
-+DMI_SYSFS_SEL_FIELD(data_start_offset);
-+DMI_SYSFS_SEL_FIELD(access_method);
-+DMI_SYSFS_SEL_FIELD(status);
-+DMI_SYSFS_SEL_FIELD(change_token);
-+DMI_SYSFS_SEL_FIELD(access_method_address);
-+DMI_SYSFS_SEL_FIELD(header_format);
-+DMI_SYSFS_SEL_FIELD(type_descriptors_supported_count);
-+DMI_SYSFS_SEL_FIELD(per_log_type_descriptor_length);
-+
-+static struct attribute *dmi_sysfs_sel_attrs[] = {
-+	&dmi_sysfs_attr_sel_area_length.attr,
-+	&dmi_sysfs_attr_sel_header_start_offset.attr,
-+	&dmi_sysfs_attr_sel_data_start_offset.attr,
-+	&dmi_sysfs_attr_sel_access_method.attr,
-+	&dmi_sysfs_attr_sel_status.attr,
-+	&dmi_sysfs_attr_sel_change_token.attr,
-+	&dmi_sysfs_attr_sel_access_method_address.attr,
-+	&dmi_sysfs_attr_sel_header_format.attr,
-+	&dmi_sysfs_attr_sel_type_descriptors_supported_count.attr,
-+	&dmi_sysfs_attr_sel_per_log_type_descriptor_length.attr,
-+	NULL,
-+};
-+
-+
-+static struct kobj_type dmi_system_event_log_ktype = {
-+	.release = dmi_entry_free,
-+	.sysfs_ops = &dmi_sysfs_specialize_attr_ops,
-+	.default_attrs = dmi_sysfs_sel_attrs,
-+};
-+
-+static int dmi_system_event_log(struct dmi_sysfs_entry *entry)
-+{
-+	int ret;
-+
-+	entry->child = kzalloc(sizeof(*entry->child), GFP_KERNEL);
-+	if (!entry->child)
-+		return -ENOMEM;
-+	ret = kobject_init_and_add(entry->child,
-+				   &dmi_system_event_log_ktype,
-+				   &entry->kobj,
-+				   "system_event_log");
-+	if (ret)
-+		goto out_free;
-+out_free:
-+	kfree(entry->child);
-+	return ret;
-+}
-+
-+/*************************************************
-  * Generic DMI entry support.
-  *************************************************/
- 
-@@ -325,6 +470,18 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
- 	list_add_tail(&entry->list, &entry_list);
- 	spin_unlock(&entry_list_lock);
- 
-+	/* Handle specializations by type */
-+	switch (dh->type) {
-+	case DMI_ENTRY_SYSTEM_EVENT_LOG:
-+		*ret = dmi_system_event_log(entry);
-+		break;
-+	default:
-+		/* No specialization */
-+		break;
-+	}
-+	if (*ret)
-+		goto out_err;
-+
- 	/* Create the raw binary file to access the entry */
- 	*ret = sysfs_create_bin_file(&entry->kobj, &dmi_entry_raw_attr);
- 	if (*ret)
-@@ -332,6 +489,7 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
- 
- 	return;
- out_err:
-+	kobject_put(entry->child);
- 	kobject_put(&entry->kobj);
- 	return;
- }
-@@ -342,6 +500,7 @@ static void cleanup_entry_list(void)
- 
- 	/* No locks, we are on our way out */
- 	list_for_each_entry_safe(entry, next, &entry_list, list) {
-+		kobject_put(entry->child);
- 		kobject_put(&entry->kobj);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 877756e..4ef8c32 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -680,13 +680,15 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			return VM_FAULT_OOM;
+ 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+ 					  vma, haddr, numa_node_id(), 0);
+-		if (unlikely(!page))
++		if (unlikely(!page)) {
++			count_vm_event(THP_DIRECT_FALLBACK);
+ 			goto out;
++		}
+ 		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+ 			put_page(page);
+ 			goto out;
+ 		}
+-
++		count_vm_event(THP_DIRECT_ALLOC);
+ 		return __do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page);
  	}
- }
+ out:
+@@ -909,6 +911,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		new_page = NULL;
+ 
+ 	if (unlikely(!new_page)) {
++		count_vm_event(THP_DIRECT_FALLBACK);
+ 		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
+ 						   pmd, orig_pmd, page, haddr);
+ 		put_page(page);
+@@ -921,7 +924,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		ret |= VM_FAULT_OOM;
+ 		goto out;
+ 	}
+-
++	count_vm_event(THP_DIRECT_ALLOC);
+ 	copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
+ 	__SetPageUptodate(new_page);
+ 
+@@ -1780,6 +1783,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 				      node, __GFP_OTHER_NODE);
+ 	if (unlikely(!new_page)) {
+ 		up_read(&mm->mmap_sem);
++		count_vm_event(THP_DAEMON_ALLOC_FAILED);
+ 		*hpage = ERR_PTR(-ENOMEM);
+ 		return;
+ 	}
+@@ -2286,6 +2290,9 @@ void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
+ 		spin_unlock(&mm->page_table_lock);
+ 		return;
+ 	}
++
++	count_vm_event(THP_SPLIT);
++
+ 	page = pmd_page(*pmd);
+ 	VM_BUG_ON(!page_count(page));
+ 	get_page(page);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 2b461ed..f3ab7e9 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -946,6 +946,14 @@ static const char * const vmstat_text[] = {
+ 	"unevictable_pgs_stranded",
+ 	"unevictable_pgs_mlockfreed",
+ #endif
++
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	"thp_direct_alloc",
++	"thp_daemon_alloc",
++	"thp_direct_fallback",
++	"thp_daemon_alloc_failed",
++	"thp_split",
++#endif
+ };
+ 
+ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
+-- 
+1.7.4
 
