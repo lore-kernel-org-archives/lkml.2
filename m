@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab1BWEUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 23:20:05 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46288 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab1BWEUD convert rfc822-to-8bit (ORCPT
+	id S1753346Ab1BWEVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 23:21:00 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:36766 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752215Ab1BWEU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 23:20:03 -0500
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF03112A5C22@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF03112A5C22@HQMAIL01.nvidia.com>
-Date: Tue, 22 Feb 2011 20:20:01 -0800
-Message-ID: <AANLkTin3VFp=JhiCb5Sft3pvGw2o4k4qqtbx-PNUGfUD@mail.gmail.com>
-Subject: Re: Problem with "ARM: tegra: Move tegra_common_init to tegra_init_early"
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: "Colin Cross (ccross@android.com)" <ccross@android.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Russell King - ARM Linux (linux@arm.linux.org.uk)" 
-	<linux@arm.linux.org.uk>,
-        "konkers@android.com" <konkers@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Feb 2011 23:20:59 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19RBL8O3KdRqN3gcT8L3R2LfL2OVmrlAjf0D5V7qg
+	2tXugsnS+dtIe2
+Subject: Re: [PATCH 1/2] sched: allow SCHED_BATCH to preempt SCHED_IDLE
+ tasks
+From: Mike Galbraith <efault@gmx.de>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        richard.purdie@linuxfoundation.org
+In-Reply-To: <1298408674-3130-2-git-send-email-dvhart@linux.intel.com>
+References: <1298408674-3130-1-git-send-email-dvhart@linux.intel.com>
+	 <1298408674-3130-2-git-send-email-dvhart@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Feb 2011 05:20:54 +0100
+Message-ID: <1298434854.7856.24.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grmbl. I missed the:
+On Tue, 2011-02-22 at 13:04 -0800, Darren Hart wrote:
+> Perform the test for SCHED_IDLE before testing for SCHED_BATCH (and ensure idle
+> tasks don't preempt idle tasks) so the non-interactive, but still important,
+> SCHED_BATCH tasks will run in favor of the very low priority SCHED_IDLE tasks.
 
-[    0.000000] Failed to register IRQ 136 for DMA 0
+Yeah, that could be construed as a fairness fix for light SCHED_BATCH vs
+a heavy SCHED_IDLE.  It should lower latencies for both when mixed.
 
-When I booted the series on harmony and seaboard last night, since the
-board came up to prompt and seemed otherwise healthy. Sorry about
-that.
+Acked-by: Mike Galbraith <efault@gmx.de>
 
+Nit below.
 
--Olof
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Richard Purdie <richard.purdie@linuxfoundation.org>
+> ---
+>  kernel/sched_fair.c |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 0c26e2d..ff04bbd 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1857,16 +1857,18 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+>  	if (test_tsk_need_resched(curr))
+>  		return;
+>  
+> +	/* Idle tasks are by definition preempted by non-idle tasks. */
+> +	if (unlikely(curr->policy == SCHED_IDLE) &&
+> +	    likely(p->policy != SCHED_IDLE))
+> +		goto preempt;
+> +
 
+if (unlikely(curr->policy == SCHED_IDLE && p->policy != curr->policy))
+	goto preempt;
 
-On Tue, Feb 22, 2011 at 7:12 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> The following commit makes the Tegra APB DMA engine fail to initialize correctly:
->
-> commit 0cf6230af909a86f81907455eca2a5c9b8f68fe6
->
->    ARM: tegra: Move tegra_common_init to tegra_init_early
->
->    Move tegra_common_init to tegra_init_early, and set it
->    as the init_early entry in the machine struct.
->    Initializes the clocks earlier so that timers can enable
->    their clocks.
->
->    Also reorders the members in the Harmony and Trimslice
->    boards' machine structs to match the order they are
->    called in.
->
-> The reason is that tegra_init_early_ calls tegra_dma_init which calls
-> request_threaded_irq, which fails since the IRQ hasn't yet been marked valid;
-> that only happens in tegra_init_irq, which gets called after tegra_init_early.
->
-> This used to work OK, since tegra_init_early was tegra_common_init, which got
-> called after tegra_init_irq, basically from the beginning of tegra_harmony_init.
->
-> I tried moving the call to tegra_dma_init back to each of the very end of
-> tegra_init_irq and the very beginning of tegra_harmony_init. Both of these
-> resulted in a kernel that wouldn't boot.
->
-> Simply removing the call to tegra_dma_init completely does allow the kernel
-> to boot, but obviously, DMA isn't available.
->
-> I'm a little stumped why moving tegra_dma_init causes a boot failure. Does
-> anyone have any helpful ideas, or any alternative ways to fix the underlying
-> problem?
->
-> Thanks.
->
-> --
-> nvpublic
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Looks better to me.
+
+	-Mike
+
