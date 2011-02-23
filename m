@@ -1,100 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab1BWDBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 22:01:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:52640 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753561Ab1BWDBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 22:01:54 -0500
-Message-ID: <4D64788F.6040408@cn.fujitsu.com>
-Date: Wed, 23 Feb 2011 11:01:35 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1756088Ab1BWDGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 22:06:01 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:45831 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876Ab1BWDGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 22:06:00 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6265"; a="75876286"
+From: David Brown <davidb@codeaurora.org>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Daniel Walker <dwalker@fifo99.com>, Dima Zavin <dima@android.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Kenneth Heitke <kheitke@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
+        tsoni@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        ARM PORT <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] msm: add single-wire serial bus interface (SSBI) driver
+References: <1297989299-27320-1-git-send-email-kheitke@codeaurora.org>
+	<1297989432.9680.50.camel@c-dwalke-linux.qualcomm.com>
+	<4D5DC289.1090004@codeaurora.org>
+	<1298054771.17758.1.camel@c-dwalke-linux.qualcomm.com>
+	<AANLkTi=0Pxg09x8DdVDVy9Ur7r1dgB+4LM3q0hM4_8Rg@mail.gmail.com>
+	<1298419839.17118.5.camel@m0nster> <8ya62sbli3z.fsf@huya.qualcomm.com>
+	<alpine.LFD.2.00.1102222049410.22028@xanadu.home>
+X-Hashcash: 1:20:110223:bryanh@codeaurora.org::K1KAso7tZaxOWpCz:000000000000000000000000000000000000000007n2
+X-Hashcash: 1:20:110223:pavel@ucw.cz::y19RmuxahCcoznQf:000002TPL
+X-Hashcash: 1:20:110223:dima@android.com::+ftcYgrcpARixWiX:02y30
+X-Hashcash: 1:20:110223:linux-arm-kernel@lists.infradead.org::2rpKa0hJ3BUNacOa:000000000000000000000000027v+
+X-Hashcash: 1:20:110223:linux-kernel@vger.kernel.org::7pJXeAF+HKf5QGWv:0000000000000000000000000000000006hc8
+X-Hashcash: 1:20:110223:tsoni@codeaurora.org::K2aUEgs1vPxeLhnb:000000000000000000000000000000000000000002v50
+X-Hashcash: 1:20:110223:kheitke@codeaurora.org::o6z3tpmNoSfaW+p7:0000000000000000000000000000000000000004Kzu
+X-Hashcash: 1:20:110223:dwalker@fifo99.com::OCnp/faM5ePCahx1:00000000000000000000000000000000000000000004Qvo
+X-Hashcash: 1:20:110223:nico@fluxnic.net::H8HHorZfdgg20HT7:07lBR
+X-Hashcash: 1:20:110223:linux-arm-msm@vger.kernel.org::O/PkNJ9owsyI34Yr:00000000000000000000000000000000DS8m
+Date: Tue, 22 Feb 2011 19:05:58 -0800
+In-Reply-To: <alpine.LFD.2.00.1102222049410.22028@xanadu.home> (Nicolas
+	Pitre's message of "Tue, 22 Feb 2011 21:37:28 -0500 (EST)")
+Message-ID: <8ya8vx7jvqh.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
-CC: Justin TerAvest <teravest@google.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        Chad Talbott <ctalbott@google.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/6 v5.1] cfq-iosched: Introduce CFQ group hierarchical scheduling
- and "use_hierarchy" interface
-References: <4D61FE91.60705@cn.fujitsu.com> <4D6201A3.70301@cn.fujitsu.com>
-In-Reply-To: <4D6201A3.70301@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-23 11:00:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-23 11:00:50,
-	Serialize complete at 2011-02-23 11:00:50
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Feb 22 2011, Nicolas Pitre wrote:
 
-I rebase this series on top of *for-next* branch, it will make merging life easier.
+> And if someone else comes up with a SSBI interface, then it will be much 
+> easier to notice the already existing driver if it is in the driver 
+> directory rather than somewhere else in some unrelated (from that 
+> person's pov) obscure directory.
 
-Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
-in the way that it puts all CFQ queues in a hidden group and schedules with other 
-CFQ group under their parent. The patchset is available here,
-http://lkml.org/lkml/2010/8/30/30
+Well, I'm fairly sure that nobody would be making an SSBI interface, but
+point taken.
 
-Vivek think this approach isn't so instinct that we should treat CFQ queues
-and groups at the same level. Here is the new approach for hierarchical 
-scheduling based on Vivek's suggestion. The most big change of CFQ is that
-it gets rid of cfq_slice_offset logic, and makes use of vdisktime for CFQ
-queue scheduling just like CFQ group does. But I still give cfqq some jump 
-in vdisktime based on ioprio, thanks for Vivek to point out this. Now CFQ 
-queue and CFQ group use the same scheduling algorithm. 
+>> It seems kind of unusual to create an entirely new directory under
+>> drivers to hold what will only ever be a single driver.
+>
+> Well, a couple examples exist already: drivers/dca, drivers/nfc, 
+> drivers/sn, drivers/tc, drivers/vlynq, etc.  And if you expect to have 
+> more oddball msm drivers then you can create a drivers/msm directory, 
+> similar to the existing drivers/macintosh, drivers/parisc, drivers/s390, 
+> drivers/sh, drivers/video/omap, drivers/video/omap2, etc.
 
-"use_hierarchy" interface is now added to switch between hierarchical mode
-and flat mode. It works as memcg.
+drivers/msm seems like a reasonable place.  We already have other
+drivers that are in appropriate places.
 
-V4 -> V5 Changes:
-- Change boosting base to a smaller value.
-- Rename repostion_time to position_time
-- Replace duplicated code by calling cfq_scale_slice()
-- Remove redundant use_hierarchy in cfqd
-- Fix grp_service_tree comment
-- Rename init_cfqe() to init_group_cfqe()
+So what kinds of things constitute drivers versus arch-specific code?
+Currently, iommu drivers seem to be sprinkled throughout arch.
 
---
-V3 -> V4 Changes:
-- Take io class into account when calculating the boost value.
-- Refine the vtime boosting logic as Vivek's Suggestion.
-- Make the calculation of group slice cross all service trees under a group.
-- Modify Documentation in terms of Vivek's comments.
+We also have a shared-memory driver-type thing that is only used by
+other drivers.  Does that make sense to be in drivers/msm?
 
---
-V2 -> V3 Changes:
-- Starting from cfqd->grp_service_tree for both hierarchical mode and flat mode
-- Avoid recursion when allocating cfqg and force dispatch logic
-- Fix a bug when boosting vdisktime
-- Adjusting total_weight accordingly when changing weight
-- Change group slice calculation into a hierarchical way
-- Keep flat mode rather than deleting it first then adding it later
-- kfree the parent cfqg if there nobody references to it
-- Simplify select_queue logic by using some wrap function
-- Make "use_hierarchy" interface work as memcg
-- Make use of time_before() for vdisktime compare
-- Update Document
-- Fix some code style problems
-
---
-V1 -> V2 Changes:
-- Raname "struct io_sched_entity" to "struct cfq_entity" and don't differentiate
-  queue_entity and group_entity, just use cfqe instead.
-- Give newly added cfqq a small vdisktime jump accord to its ioprio.
-- Make flat mode as default CFQ group scheduling mode.
-- Introduce "use_hierarchy" interface.
-- Update blkio cgroup documents
-
- Documentation/cgroups/blkio-controller.txt |   81 +-
- block/blk-cgroup.c                         |   61 +
- block/blk-cgroup.h                         |    3
- block/cfq-iosched.c                        |  959 ++++++++++++++++++++---------
- 4 files changed, 815 insertions(+), 289 deletions(-)
+Ken, do you mind moving this driver into 'drivers/msm' as the first one
+there?
 
 Thanks,
-Gui
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
