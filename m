@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab1BWWKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 17:10:40 -0500
-Received: from faui03.informatik.uni-erlangen.de ([131.188.30.103]:32837 "EHLO
-	faui03.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753546Ab1BWWKj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 17:10:39 -0500
-Date: Wed, 23 Feb 2011 23:10:37 +0100
-From: Alexander Wuerstlein <arw@arw.name>
-To: hayeswang <hayeswang@realtek.com>
-Cc: "'David S. Miller'" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        "'franois romieu'" <romieu@fr.zoreil.com>
-Subject: Re: r8169 hangs machine on kernel boot (bisected)
-Message-ID: <20110223221037.GB23099@cip.informatik.uni-erlangen.de>
-References: <20110216223438.GZ15516@cip.informatik.uni-erlangen.de>
- <CDC3F2AD9A574AC4B7DDDB7D64329A79@realtek.com.tw>
- <20110218173013.GC15516@cip.informatik.uni-erlangen.de>
- <74B28238B88A415E96A0B885B5B6A8A6@realtek.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74B28238B88A415E96A0B885B5B6A8A6@realtek.com.tw>
-X-Echelon-Scan: plutonium bomb dirty irak allah satan bush victory c4 cocaine
- saddam wtc holy war believe god cia nsa
-X-Echelon-Result: Terrorist
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932593Ab1BWWL1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 17:11:27 -0500
+Received: from ozlabs.org ([203.10.76.45]:49468 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753942Ab1BWWL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 17:11:26 -0500
+Date: Thu, 24 Feb 2011 09:11:21 +1100
+From: Anton Blanchard <anton@samba.org>
+To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Matthew McClintock <msm@freescale.com>,
+        "Livingston, John A" <john.a.livingston@boeing.com>
+Subject: Re: mpc85xx: kexec build broken by "powerpc/kexec: Remove
+ ppc_md.machine_kexec"
+Message-ID: <20110224091121.43b31dad@kryten>
+In-Reply-To: <B87A2622-0006-4FC8-893A-41DBBF0CA170@boeing.com>
+References: <B87A2622-0006-4FC8-893A-41DBBF0CA170@boeing.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-02-22 13:31, hayeswang <hayeswang@realtek.com> wrote:
-> Hello,
+
+Hi Kyle,
+
+> As far as I can tell, "machine_kexec" was removed in commit c9486878
+> (powerpc/kexec: Remove ppc_md.machine_kexec) on Jan 6th, 2011, which
+> claims that it was not used.
 > 
-> please use the patch of the attatched file to check if it fix the issue. Thanks.
+> Unfortunately it looks like it *is* used by the mpc85xx kexec()
+> support (commit f933a41e), added on Jul 21, 2010.
 
-I also just tested with 2.6.38-rc5 (in addition to the test with current
-git which I mailed about yesterday) and can also confirm, that your
-patch fixes the issue with 2.6.38-rc5.
+Thanks for the report. Testing a patch now.
 
-
-Thanks again.
-
-
-
-
-Ciao,
-
-Alexander Wuerstlein.
+Anton
