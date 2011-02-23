@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab1BWNg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:36:58 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58223 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab1BWNg4 (ORCPT
+	id S1755123Ab1BWNkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:40:10 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:37622 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab1BWNkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:36:56 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/2] perf top browser: Adjust the browser indexes when refreshing
-Date: Wed, 23 Feb 2011 10:36:26 -0300
-Message-Id: <1298468187-6096-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1298468187-6096-1-git-send-email-acme@infradead.org>
-References: <1298468187-6096-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 23 Feb 2011 08:40:08 -0500
+From: Ike Panhc <ike.pan@canonical.com>
+To: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [PATCH] ideapad: read brightness setting on brightness key notify
+Date: Wed, 23 Feb 2011 21:39:59 +0800
+Message-Id: <1298468399-3642-1-git-send-email-ike.pan@canonical.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=25922
 
-This is not a problem when we're not at the bottom of the active symbols
-list, so was not noticed, but at the end of the screen it falls apart.
+On ideapad Y530, the brightness key notify will be blocked if the last notify
+is not responsed by getting the brightness value. Read value when we get the
+notify shall fix the problem and will not have any difference on other ideapads.
 
-Fix it by adjusting the ui_browser indexes according to the new number
-of entries in the rb_tree and by seeking from the start of the rb_tree
-to find the new symbol at the top of the screen.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Ike Panhc <ike.pan@canonical.com>
 ---
- tools/perf/util/ui/browsers/top.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+ drivers/platform/x86/ideapad-laptop.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
-index 377ff58..2f47224 100644
---- a/tools/perf/util/ui/browsers/top.c
-+++ b/tools/perf/util/ui/browsers/top.c
-@@ -70,6 +70,7 @@ static void perf_top_browser__write(struct ui_browser *browser, void *entry, int
- static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
- {
- 	struct perf_top *top = browser->b.priv;
-+	u64 top_idx = browser->b.top_idx;
- 
- 	browser->root = RB_ROOT;
- 	browser->b.top = NULL;
-@@ -82,7 +83,29 @@ static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
- 		if (browser->sym_width + browser->dso_width > browser->b.width - 29)
- 			browser->sym_width = browser->b.width - browser->dso_width - 29;
- 	}
-+
-+	/*
-+	 * Adjust the ui_browser indexes since the entries in the browser->root
-+	 * rb_tree may have changed, then seek it from start, so that we get a
-+	 * possible new top of the screen.
-+ 	 */
- 	browser->b.nr_entries = top->rb_entries;
-+
-+	if (top_idx >= browser->b.nr_entries) {
-+		if (browser->b.height >= browser->b.nr_entries)
-+			top_idx = browser->b.nr_entries - browser->b.height;
-+		else
-+			top_idx = 0;
-+	}
-+
-+	if (browser->b.index >= top_idx + browser->b.height)
-+		browser->b.index = top_idx + browser->b.index - browser->b.top_idx;
-+
-+	if (browser->b.index >= browser->b.nr_entries)
-+		browser->b.index = browser->b.nr_entries - 1;
-+
-+	browser->b.top_idx = top_idx;
-+	browser->b.seek(&browser->b, top_idx, SEEK_SET);
- }
- 
- static void perf_top_browser__annotate(struct perf_top_browser *browser)
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index 114d952..21b1018 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -459,6 +459,8 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
+ 		if (test_bit(vpc_bit, &vpc1)) {
+ 			if (vpc_bit == 9)
+ 				ideapad_sync_rfk_state(adevice);
++			else if (vpc_bit == 4)
++				read_ec_data(handle, 0x12, &vpc2);
+ 			else
+ 				ideapad_input_report(priv, vpc_bit);
+ 		}
 -- 
-1.6.2.5
+1.7.4.1
 
