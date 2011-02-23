@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab1BWHau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 02:30:50 -0500
-Received: from nm25-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.73]:44580 "HELO
-	nm25-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752948Ab1BWHat (ORCPT
+	id S1753516Ab1BWHfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 02:35:23 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:38895 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753175Ab1BWHfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 02:30:49 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 442524.91172.bm@omp1041.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=bZ+AAJIfWZpuUtYHUVdFPeuiUecD6WbeeKe6TCHpO5ZkFLfb53+xRoIMqAR/eXbaJhsFwC3CbGiYQcYbHGXWbNlxkW1m7q7kJfI9nKrWuUqAkDP1nMu6Wgu3Dt9FHw+BHG1AGhXtJzgx4IQCe59u6YAM76pvFw7ErAQ7Pjxlj6s=;
-Message-ID: <49961.78014.qm@web121808.mail.ne1.yahoo.com>
-X-YMail-OSG: uuQR_3AVM1kGFYiiYc8mrC_bQ5dQHL356rbj3S8IFscLXA3
- RU9BdesNcXV6r4m5ZUyH8Mk6_jDnrUvkRaThDFbQSP_V.Ao0IsDd_e4VQ0Ik
- 8fl81uTziiH4PNn0OJmGFFbbCRF3JuJPQIhXyGZ40odZzb0l3LEBsyDB2ety
- Xel.BeIXnHKxmx7SmmieKd91cMpTUfe1FAuf8YB84N07jH0gL7whNHMWE.Yp
- 42cJWiQobGxc-
-X-Mailer: YahooMailWebService/0.8.109.292656
-Date: Tue, 22 Feb 2011 23:30:20 -0800 (PST)
-From: GAURAV YADAV <gaurav_christmas@yahoo.com>
-To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
-        ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
-        preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 23 Feb 2011 02:35:22 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+56KYn9+G5iHUlolwnydxkl8AkxmwaWSu2Usbvdi
+	Yt+jOKwPsYj5gt
+Subject: Re: [GIT PULL 0/2] perf/core TUI live annotate and a cleanup
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <20110223072842.GC15175@elte.hu>
+References: <1298400790-29453-1-git-send-email-acme@infradead.org>
+	 <20110223072842.GC15175@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Feb 2011 08:35:17 +0100
+Message-ID: <1298446517.7856.143.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.montmorency-auto-ecole.com/gift.php?aolid=8564
+On Wed, 2011-02-23 at 08:28 +0100, Ingo Molnar wrote:
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> 
+> > Hi Ingo,
+> > 
+> >         Please consider pulling from:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> > 
+> > 	Mike, if you can give it some stress, I'd appreciate.
+> > 
+> > Regards,
+> > 
+> > - Arnaldo
+> > 
+> > Arnaldo Carvalho de Melo (2):
+> >   perf probe: Remove redundant checks
+> >   perf top: Live TUI Annotation
+> 
+> Yummie! :-)
 
+(indeed, I will take it out for a spin)
 
-      
