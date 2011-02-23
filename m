@@ -1,179 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab1BWX5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:57:19 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60200
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753024Ab1BWX5R convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:57:17 -0500
-Date: Wed, 23 Feb 2011 15:57:54 -0800 (PST)
-Message-Id: <20110223.155754.232753422.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754665Ab1BWX6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:58:54 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56649 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753024Ab1BWX6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 18:58:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 23 Feb 2011 15:58:02 -0800
+Message-ID: <AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, Indan Zupancic <indan@nul.nu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 23, 2011 at 3:17 PM, Dave Airlie <airlied@linux.ie> wrote:
+>
+> Nothing too major,
+>
+> Two regression fixers (one revert that got fixes properly elsewhere), some
+> timestamp fixes and an agp module reload fix.
 
-1) Eric B.'s remaining on-stack list_head fixes.
+Pulled. However, what about the report from	Pavel Machek <pavel@ucw.cz>:
 
-2) inet_twsk_deschedule() called in wrong context, from Eric Dumazet.
+> >      drm/i915: Completely disable fence pipelining.
+>
+> Reverting this commit helps in v2.6.38-rc5+ when screen is not fully updated,
+> or has a corrupted picture like horizontal black or white stripes. Using a
+> compositor like compiz may help to avoid the problem.
+>
+> See bug https://bugzilla.kernel.org/show_bug.cgi?id=27572
 
-3) sfc ethtool large stack usage exposes uninitialzed kernel data to
-   user sometimes, from Eric Dumazet.
+Any update on that one? There's that whole "return -EINVAL for
+I915_PARAM_HAS_RELAXED_FENCING" patch thing?
 
-4) Packet scheduler private data needs to be long aligned, also from
-   Eric Dumazet.
-
-5) R8169 bug fixes from Hayes Wang via Francois Romieu.
-
-6) Timewait socket fix in tproxy from Florian Westphal.
-
-7) Someone actually tried to use the ipv6 multicast snooping support
-   in bridging and it had lots of bugs.  All fixed by Linus Lüssing.
-   a) packet header u16 access needs ntohs()
-   b) parsing mldv2 packets at wrong offset
-   c) MAC address creation for ipv6 is wrong
-   d) multicast entries stored in table with ETH_P_IP instead of ETH_P_IPV6
-
-8) DM9000B locking and PHY power fixes from Henry Nestler.
-
-9) TCP's undo_retrans can go negative, fix from Yuchung Cheng.
-
-10) cfg80211 deadlock fix from Daniel J Blueman
-
-Please pull, thanks a lot.
-
-The following changes since commit 4a508dd259f5995b8d31c576b894263f5947d654:
-
-  Merge branch 'for-2639-rc4/i2c-fixes' of git://git.fluff.org/bjdooks/linux (2011-02-22 17:13:16 -0800)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Cho, Yu-Chen (1):
-      Bluetooth: Add Atheros BT AR5BBU12 fw supported
-
-Christian Lamparter (1):
-      p54pci: update receive dma buffers before and after processing
-
-Daniel J Blueman (1):
-      fix cfg80211_wext_siwfreq lock ordering...
-
-David S. Miller (3):
-      Merge branch 'master' of git://git.kernel.org/.../kaber/nf-2.6
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-      Merge branch 'r8169-davem' of git://git.kernel.org/.../romieu/netdev-2.6
-
-Eric Dumazet (3):
-      tcp: fix inet_twsk_deschedule()
-      sfc: lower stack usage in efx_ethtool_self_test
-      net_sched: long word align struct qdisc_skb_cb data
-
-Eric W. Biederman (1):
-      net: Fix more stale on-stack list_head objects.
-
-Florian Westphal (1):
-      netfilter: tproxy: do not assign timewait sockets to skb->sk
-
-Gertjan van Wingerde (1):
-      rt2x00: Fix WPA TKIP Michael MIC failures.
-
-Hayes Wang (3):
-      r8169: fix incorrect args to oob notify.
-      r8169: correct settings of rtl8102e.
-      r8169: fix RTL8168DP power off issue.
-
-Henry Nestler (2):
-      DM9000B: Fix reg_save after spin_lock in dm9000_timeout
-      DM9000B: Fix PHY power for network down/up
-
-Jiri Bohac (1):
-      sctp: fix reporting of unknown parameters
-
-Joerg Marx (1):
-      netfilter: ip6t_LOG: fix a flaw in printing the MAC
-
-John Fastabend (1):
-      net: dcb: match dcb_app protocol field with 802.1Qaz spec
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth-2.6
-
-Linus Lüssing (7):
-      bridge: Fix IPv6 multicast snooping by storing correct protocol type
-      bridge: Fix IPv6 multicast snooping by correcting offset in MLDv2 report
-      bridge: Add missing ntohs()s for MLDv2 report parsing
-      ipv6: Add IPv6 multicast address flag defines
-      bridge: Allow mcast snooping for transient link local addresses too
-      bridge: Fix MLD queries' ethernet source address
-      bridge: Use IPv6 link-local address for multicast listener queries
-
-Mohammed Shafi Shajakhan (1):
-      ath9k: Fix ath9k prevents CPU to enter C3 states
-
-Nick Kossifidis (1):
-      ath5k: Fix fast channel switching
-
-Nikolay Ledovskikh (1):
-      ath5k: Correct channel setting for AR2317 chip
-
-Oliver Neukum (1):
-      Bluetooth: fix crash with quirky dongles doing sound
-
-Shahar Havivi (1):
-      Added support for usb ethernet (0x0fe6, 0x9700)
-
-Stanislaw Gruszka (1):
-      mac80211: fix conn_mon_timer running after disassociate
-
-Vladislav P (1):
-      Bluetooth: Release BTM while sleeping to avoid deadlock
-
-Xose Vazquez Perez (1):
-      wireless: rt2x00: rt2800pci.c: add two ids
-
-Yuchung Cheng (1):
-      tcp: undo_retrans counter fixes
-
- drivers/bluetooth/ath3k.c               |    3 +
- drivers/bluetooth/btusb.c               |    7 +-
- drivers/net/dm9000.c                    |    9 +-
- drivers/net/r8169.c                     |   42 +++++----
- drivers/net/sfc/ethtool.c               |   22 +++--
- drivers/net/usb/dm9601.c                |    4 +
- drivers/net/wireless/ath/ath5k/phy.c    |  143 +++++++++++++++++++------------
- drivers/net/wireless/ath/ath9k/ath9k.h  |    6 --
- drivers/net/wireless/ath/ath9k/init.c   |    8 --
- drivers/net/wireless/ath/ath9k/main.c   |    8 --
- drivers/net/wireless/p54/p54pci.c       |   14 ++-
- drivers/net/wireless/rt2x00/rt2800pci.c |    8 ++
- drivers/net/wireless/rt2x00/rt2800usb.c |    6 ++
- include/linux/dcbnl.h                   |    2 +-
- include/net/ipv6.h                      |   12 +++
- include/net/netfilter/nf_tproxy_core.h  |   12 +---
- include/net/sch_generic.h               |    2 +-
- net/bluetooth/rfcomm/tty.c              |    2 +
- net/bridge/br_multicast.c               |   23 +++---
- net/ipv4/inet_timewait_sock.c           |    2 +
- net/ipv4/tcp_input.c                    |    5 +-
- net/ipv4/tcp_output.c                   |    2 +-
- net/ipv6/netfilter/ip6t_LOG.c           |    2 +-
- net/mac80211/iface.c                    |    1 +
- net/mac80211/mlme.c                     |    6 ++
- net/netfilter/nf_tproxy_core.c          |   27 +++---
- net/netfilter/xt_TPROXY.c               |   22 +++++-
- net/netfilter/xt_socket.c               |   13 +++-
- net/sched/sch_generic.c                 |    1 +
- net/sctp/sm_make_chunk.c                |   10 +-
- net/wireless/wext-compat.c              |    4 +-
- 31 files changed, 258 insertions(+), 170 deletions(-)
+                 Linus
