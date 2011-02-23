@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab1BWXT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:19:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752595Ab1BWXT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:19:28 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <m1lj16ih0n.fsf@fess.ebiederm.org>
-References: <m1lj16ih0n.fsf@fess.ebiederm.org> <20110217150257.GA26395@mail.hallyn.com> <20110217150224.GA26334@mail.hallyn.com> <3139.1298481393@redhat.com>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: dhowells@redhat.com, "Serge E. Hallyn" <serge@hallyn.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com
-Subject: Re: [PATCH 1/9] Add a user_namespace as creator/owner of uts_namespace
-Date: Wed, 23 Feb 2011 23:19:08 +0000
-Message-ID: <8559.1298503148@redhat.com>
+	id S1754948Ab1BWXa0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:30:26 -0500
+Received: from vs1.gondor.com ([78.47.100.202]:52678 "EHLO
+	mail.moria.gondor.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754856Ab1BWXaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 18:30:24 -0500
+Date: Thu, 24 Feb 2011 00:30:22 +0100
+From: Jan Niehusmann <jan@gondor.com>
+To: linux-kernel@vger.kernel.org
+Subject: memory corruption when (un)plugging VGA cable
+Message-ID: <20110223233022.GA3439@x61s.reliablesolutions.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric W. Biederman <ebiederm@xmission.com> wrote:
+On a Thinkpad x61s, I noticed some memory corruption when
+plugging/unplugging the external VGA connection.
 
-> > Which means that unless the uts_namespace belongs to our user_namespace, we
-> > cannot change it.  Is that correct?
-> 
-> No.  If you are root in a parent namespace you can also change it.
+Symptoms:
+---------
 
-But surely, by definition, if you're a user in this namespace, you can't also
-be root in a parent namespace...
+4 bytes at the beginning of a page get overwritten by zeroes. 
+The address of the corruption varies when rebooting the machine, but
+stays constant while it's running (so it's possible to repeatedly write
+some data and then corrupt it again by plugging the cable).
 
-For the case I worked through current_user() is a member of current_user_ns()
-and can't also be a member of its parent, grandparent, etc. - or can it?
+Some example addresses I observed were:
+0x998da000
+0xb4e6a000
+0xb4854000
+0xb4843000
+(locations in /dev/mem - this is physical memory, right?)
 
-David
+Environment:
+------------
+
+2.6.37.1, x86_64, Thinkpad x61s, Intel GM965 with integrated graphics,
+6GB of RAM (this may be triggering the problem, as officially, only 4GB
+are supported).
+
+I first observed the issue in November 2010, running 2.6.36, and then
+again in January, with 2.6.37. Obviously, it doesn't get triggered too
+often in day-to-day use (or just isn't noticed), so I'm not sure since
+when it actually happened.
+
+How to trigger:
+---------------
+
+I first noticed the problem after suspend-to-ram. Later I noticed it's
+also possible to trigger the issue by just plugging the VGA cable, so I
+guess suspending/resuming only triggers it because it also dis/enables
+the VGA output.
+
+Today I spent some time to actively reproduce the issue, successfully.
+
+To reliably detect the problem, I filled up a tmpfs mount with a big
+file (3GB) with known content, which makes the corruption hit part of
+that file very often. That way, I can reproduce & detect the corruption
+within a few minutes (usually after 1-2 reboots).
+
+When plugging the cable while displaying a text console, the backlight
+of the internal display goes darker a few moments after actually plugging
+the cable. That seems to be the moment when the corruption occurs.
+
+
+I tried to find the cause by setting a dataw breakpoint with kdb. 
+The breakpoint works (verified by writing to the affected file), but
+doesn't trigger when the corruption occurs. Not sure what that means.
+
+
+Suggestions on what I could try to find the cause are very welcome!
+
