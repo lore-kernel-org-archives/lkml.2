@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab1BWB31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 20:29:27 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58566 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab1BWB30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 20:29:26 -0500
-Message-ID: <4D64632E.1040609@cn.fujitsu.com>
-Date: Wed, 23 Feb 2011 09:30:22 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755663Ab1BWBce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 20:32:34 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38544 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab1BWBcd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 20:32:33 -0500
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH 4/7] KVM: sort memslots and use binary search to search
- the right slot
-References: <4D636EF8.60800@cn.fujitsu.com> <4D636FE8.8000505@cn.fujitsu.com> <4D63C753.3030906@redhat.com>
-In-Reply-To: <4D63C753.3030906@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-23 09:28:21,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-23 09:28:22,
-	Serialize complete at 2011-02-23 09:28:22
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110221232902.GA3440@x61s.reliablesolutions.de>
+References: <20110221232902.GA3440@x61s.reliablesolutions.de>
+Date: Tue, 22 Feb 2011 17:32:32 -0800
+Message-ID: <AANLkTimnFUxjzUBX_c0dAcJn-GFxWo2HCxbrCwPz+qET@mail.gmail.com>
+Subject: Re: TX VLAN acceleration on bridges broken in 2.6.37?
+From: Jesse Gross <jesse@nicira.com>
+To: Jan Niehusmann <jan@gondor.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 10:25 PM, Avi Kivity wrote:
-> On 02/22/2011 10:12 AM, Xiao Guangrong wrote:
->> Sort memslots then search the slot with binary search to speed up the
->> slot searching
->>
-> 
-> I'm not sure if a binary search is the right algorithm here.  It introduces a lot of branches which may be mispredicted.
-> 
-> Options we've discussed are:
-> 
-> - Sort slots by size, use linear search (so the largest slots are found quickly)
-> - Weighted balanced tree http://en.wikipedia.org/wiki/Weight-balanced_tree, use weight == slot size
-> 
+On Mon, Feb 21, 2011 at 3:29 PM, Jan Niehusmann <jan@gondor.com> wrote:
+> With the following configuration, sending vlan tagged traffic from a
+> bridged interface doesn't work in 2.6.37.
+> The same configuration does work with 2.6.36:
+>
+> - bridge br0 with physical interface eth0
+> - eth0 being an e1000e device (don't know if that's important)
+> - vlan interface br0.10
+> - (on 2.6.37) tx vlan acceleration active on br0 (default)
+>
+> Networking on br0.10 doesn't work, and tcpdump on eth0 shows packets
+> sent on br0.10 as untagged, instead of vlan 10 tagged.
+>
+> After turning vlan tx offloading off with 'ethtool -K br0 txvlan off',
+> everything works as expected, again.
+>
+> The workaround is made permanent by reverting "bridge: Add support for
+> TX vlan offload.", 361ff8a6cf90d62c0071b7e532e37369bfd3ae77, turning
+> of the feature on bridges completely.
 
-Yeah, there are the better chooses.
-
-> Both options still make the miss case (mmio) slow.  We could cache the result of a miss in an spte by using a reserved bit, and checking the page fault error code (or seeing if we get an ept violation or ept misconfiguration), so if we get repeated mmio on a page, we don't need to search the slot list/tree.
-> 
-
-Sounds good! Will do it, thanks!
-
+I tested this at one point and it worked but it sounds like something
+broke after that.  It's probably fairly simple, so I'd rather just fix
+the problem instead of reverting the commit.  I'm just coming back
+from vacation and am trying to catch up but I'll try to look at it in
+the next couple of days.
