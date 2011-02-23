@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab1BWQnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:43:16 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37260 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab1BWQnO (ORCPT
+	id S932157Ab1BWQor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:44:47 -0500
+Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:38202 "EHLO
+	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754973Ab1BWQoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:43:14 -0500
+	Wed, 23 Feb 2011 11:44:46 -0500
+Date: Wed, 23 Feb 2011 17:44:27 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110223164427.GA22359@host1.dyn.jankratochvil.net>
+References: <20110219201603.GB8662@redhat.com>
+ <20110219200637.GA8662@redhat.com>
+ <20110220094050.GA7714@host1.dyn.jankratochvil.net>
+ <20110220171658.GA27355@redhat.com>
+ <20110220185204.GA14737@host1.dyn.jankratochvil.net>
+ <20110220203819.GB32682@redhat.com>
+ <20110220212053.GA23412@host1.dyn.jankratochvil.net>
+ <20110221142325.GA16664@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1298445725.20733.2.camel@perseus>
-References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
- <1295420817.3076.24.camel@perseus> <1297779902.13007.86.camel@perseus> <1298445725.20733.2.camel@perseus>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 Feb 2011 08:37:17 -0800
-Message-ID: <AANLkTim_JWgT_kK506Lu8-vNC0rkBhCvO+7-CFb66nNP@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
-To: Ian Kent <raven@themaw.net>
-Cc: Nick Piggin <npiggin@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110221142325.GA16664@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:22 PM, Ian Kent <raven@themaw.net> wrote:
->
-> Nick, what stops a dentry from going away during the rcu-walk?
+On Mon, 21 Feb 2011 15:23:25 +0100, Oleg Nesterov wrote:
+> On 02/20, Jan Kratochvil wrote:
+> > Now if new GDB should allow inferior functions calls on previously
+> > `(T) stopped' process doing PTRACE_CONT(SIGCONT)
+> 
+> No, no, this won't work. You need to send SIGCONT via kill/tkill. Once
+> again, we can add the special case for PTRACE_CONT(SIGCONT), but please
+> look at Roland's comment: http://marc.info/?l=linux-kernel&m=129796917823181
+> 
+> And given that currently gdb does PTRACE_CONT(0) this special case can't
+> help anyway unless you change gdb.
 
-Dentries (and now inodes) are all RCU-free'd. So the dentry might "go
-away", but it wouldn't actually be physically free'd, and you can
-still access it.
+I would better play with a patched kernel.
 
-                            Linus
+
+> > but how to make it `(T) stopped' afterwards?  PTRACE_CONT(SIGSTOP)
+> > right after the inferior call will make the old kernels run the inferior - we
+> > do not want that.
+> 
+> Hmm... probably I am totally confused... but PTRACE_CONT(SIGSTOP)
+> should work in this case, the tracee reports SIGTRAP after the single-step
+> (if I understand correctly how gdb implements this).
+
+The inferior call returns to a breakpoint (0xcc), this is the reason of the
+SIGTRAP at the end.  I expect PTRACE_CONT(SIGSTOP) could work even in such
+case.
+
+
+Thanks,
+Jan
