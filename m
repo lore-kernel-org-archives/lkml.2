@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1BWDVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 22:21:24 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:62588 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab1BWDVW (ORCPT
+	id S1756172Ab1BWDXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 22:23:38 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43518 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876Ab1BWDXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 22:21:22 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 22 Feb 2011 22:21:21 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Dima Zavin <dima@android.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Kenneth Heitke <kheitke@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
-        tsoni@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        ARM PORT <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] msm: add single-wire serial bus interface (SSBI) driver
-In-reply-to: <8ya8vx7jvqh.fsf@huya.qualcomm.com>
-Message-id: <alpine.LFD.2.00.1102222209350.22028@xanadu.home>
-References: <1297989299-27320-1-git-send-email-kheitke@codeaurora.org>
- <1297989432.9680.50.camel@c-dwalke-linux.qualcomm.com>
- <4D5DC289.1090004@codeaurora.org>
- <1298054771.17758.1.camel@c-dwalke-linux.qualcomm.com>
- <AANLkTi=0Pxg09x8DdVDVy9Ur7r1dgB+4LM3q0hM4_8Rg@mail.gmail.com>
- <1298419839.17118.5.camel@m0nster> <8ya62sbli3z.fsf@huya.qualcomm.com>
- <alpine.LFD.2.00.1102222049410.22028@xanadu.home>
- <8ya8vx7jvqh.fsf@huya.qualcomm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 22 Feb 2011 22:23:37 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=jNfASM90n5oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=5Qxpq5KOVw4_Z7Jd1pAA:9 a=GuYZ4DUI6UhbekDiIaWXpJajX_IA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH RFC tip/core/rcu 05/11] rcu: add comment saying why
+ DEBUG_OBJECTS_RCU_HEAD depends on PREEMPT.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
+In-Reply-To: <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+	 <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 22 Feb 2011 22:23:29 -0500
+Message-ID: <1298431409.7666.76.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Feb 2011, David Brown wrote:
-
-> On Tue, Feb 22 2011, Nicolas Pitre wrote:
+On Tue, 2011-02-22 at 17:39 -0800, Paul E. McKenney wrote:
+> The build will break if you change the Kconfig to allow
+> DEBUG_OBJECTS_RCU_HEAD and !PREEMPT, so document the reasoning
+> near where the breakage would occur.
 > 
-> > And if someone else comes up with a SSBI interface, then it will be much 
-> > easier to notice the already existing driver if it is in the driver 
-> > directory rather than somewhere else in some unrelated (from that 
-> > person's pov) obscure directory.
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcupdate.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> Well, I'm fairly sure that nobody would be making an SSBI interface, but
-> point taken.
+> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+> index afd21d1..f3240e9 100644
+> --- a/kernel/rcupdate.c
+> +++ b/kernel/rcupdate.c
+> @@ -214,6 +214,11 @@ static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
+>  		 * Ensure that queued callbacks are all executed.
+>  		 * If we detect that we are nested in a RCU read-side critical
+>  		 * section, we should simply fail, otherwise we would deadlock.
+> +		 * Note that the machinery to reliably determine whether
+> +		 * or not we are in an RCU read-side critical section
+> +		 * exists only in the preemptible RCU implementations
+> +		 * (TINY_PREEMPT_RCU and TREE_PREEMPT_RCU), which is why
+> +		 * DEBUG_OBJECTS_RCU_HEAD is disallowed if !PREEMPT.
+>  		 */
 
-It's not necessarily the SSBI interface per se that is interesting to 
-other people, but rather the fact that the code driving it might be 
-relying upon generic kernel infrastructure, such as driver or bus 
-registration, interrupt requests, resource allocation, etc.
+Shouldn't this comment also be in the kconfig where
+DEBUG_OBJECTS_RCU_HEAD is defined?
 
-> So what kinds of things constitute drivers versus arch-specific code?
-> Currently, iommu drivers seem to be sprinkled throughout arch.
+-- Steve
 
-Yes, and so are clock source and clock event "drivers".  Some things 
-fall into a gray area and this is not always clear what the proper 
-location is for them.  But as a rule of thumb you should follow what 
-most other people did, and if there is no example to follow then just go 
-with drivers/msm/ by default which should be a pretty safe bet.
+>  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+>  		    irqs_disabled()) {
 
 
-Nicolas
