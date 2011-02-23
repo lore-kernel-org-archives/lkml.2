@@ -1,108 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab1BWAIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 19:08:00 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57210 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751451Ab1BWAH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 19:07:59 -0500
-Date: Wed, 23 Feb 2011 00:09:58 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] tty: add TIOCVHANGUP: time for revoke() in f_ops ?
-Message-ID: <20110223000958.7c18fdef@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110222231536.GA18066@kroah.com>
-References: <1297964368.2165.1.camel@yio>
-	<20110218095048.4e9f1e1a@lxorguk.ukuu.org.uk>
-	<20110222231536.GA18066@kroah.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754983Ab1BWAIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 19:08:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64081 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753982Ab1BWAIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 19:08:41 -0500
+Date: Tue, 22 Feb 2011 19:07:19 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
+Message-ID: <20110223000718.GN28269@redhat.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <1298394776-9957-5-git-send-email-arighi@develer.com>
+ <20110222210030.GI28269@redhat.com>
+ <20110222230534.GD23723@linux.develer.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222230534.GD23723@linux.develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You could do that already today with the vhangup() syscall, right?
-
-Yes - hence the permission checks are excessive right now.
-
-> > You would still need to be very careful how you used it from the admin
-> > side because the parallel
+On Wed, Feb 23, 2011 at 12:05:34AM +0100, Andrea Righi wrote:
+> On Tue, Feb 22, 2011 at 04:00:30PM -0500, Vivek Goyal wrote:
+> > On Tue, Feb 22, 2011 at 06:12:55PM +0100, Andrea Righi wrote:
+> > > Add the tracking of buffered (writeback) and anonymous pages.
+> > > 
+> > > Dirty pages in the page cache can be processed asynchronously by the
+> > > per-bdi flusher kernel threads or by any other thread in the system,
+> > > according to the writeback policy.
+> > > 
+> > > For this reason the real writes to the underlying block devices may
+> > > occur in a different IO context respect to the task that originally
+> > > generated the dirty pages involved in the IO operation. This makes
+> > > the tracking and throttling of writeback IO more complicate respect to
+> > > the synchronous IO from the blkio controller's point of view.
+> > > 
+> > > The idea is to save the cgroup owner of each anonymous page and dirty
+> > > page in page cache. A page is associated to a cgroup the first time it
+> > > is dirtied in memory (for file cache pages) or when it is set as
+> > > swap-backed (for anonymous pages). This information is stored using the
+> > > page_cgroup functionality.
+> > > 
+> > > Then, at the block layer, it is possible to retrieve the throttle group
+> > > looking at the bio_page(bio). If the page was not explicitly associated
+> > > to any cgroup the IO operation is charged to the current task/cgroup, as
+> > > it was done by the previous implementation.
+> > > 
+> > > Signed-off-by: Andrea Righi <arighi@develer.com>
+> > > ---
+> > >  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
+> > >  include/linux/blkdev.h |   26 ++++++++++++++-
+> > >  2 files changed, 111 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> > > index 9ad3d1e..a50ee04 100644
+> > > --- a/block/blk-throttle.c
+> > > +++ b/block/blk-throttle.c
+> > > @@ -8,6 +8,10 @@
+> > >  #include <linux/slab.h>
+> > >  #include <linux/blkdev.h>
+> > >  #include <linux/bio.h>
+> > > +#include <linux/memcontrol.h>
+> > > +#include <linux/mm_inline.h>
+> > > +#include <linux/pagemap.h>
+> > > +#include <linux/page_cgroup.h>
+> > >  #include <linux/blktrace_api.h>
+> > >  #include <linux/blk-cgroup.h>
+> > >  
+> > > @@ -221,6 +225,85 @@ done:
+> > >  	return tg;
+> > >  }
+> > >  
+> > > +static inline bool is_kernel_io(void)
+> > > +{
+> > > +	return !!(current->flags & (PF_KTHREAD | PF_KSWAPD | PF_MEMALLOC));
+> > > +}
+> > > +
+> > > +static int throtl_set_page_owner(struct page *page, struct mm_struct *mm)
+> > > +{
+> > > +	struct blkio_cgroup *blkcg;
+> > > +	unsigned short id = 0;
+> > > +
+> > > +	if (blkio_cgroup_disabled())
+> > > +		return 0;
+> > > +	if (!mm)
+> > > +		goto out;
+> > > +	rcu_read_lock();
+> > > +	blkcg = task_to_blkio_cgroup(rcu_dereference(mm->owner));
+> > > +	if (likely(blkcg))
+> > > +		id = css_id(&blkcg->css);
+> > > +	rcu_read_unlock();
+> > > +out:
+> > > +	return page_cgroup_set_owner(page, id);
+> > > +}
+> > > +
+> > > +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
+> > > +{
+> > > +	return throtl_set_page_owner(page, mm);
+> > > +}
+> > > +EXPORT_SYMBOL(blk_throtl_set_anonpage_owner);
+> > > +
+> > > +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
+> > > +{
+> > > +	if (is_kernel_io() || !page_is_file_cache(page))
+> > > +		return 0;
+> > > +	return throtl_set_page_owner(page, mm);
+> > > +}
+> > > +EXPORT_SYMBOL(blk_throtl_set_filepage_owner);
 > > 
-> > 	CPU1					CPU2
-> > 	vhangup()				chmod()
-> > 	process vhangup
-> > 	return
-> > 	chown to user1
-> > 						chmod to 777
-> > 						syscall ends (fd
-> > 						revocation takes effect)
-> > 
-> > 	Oops, 0wned
-> > 
-> > case is not handled by the paths you are using. So to actually do this
-> > you need rather more infrastructure work to ensure the existing calls
-> > have completed before returning.
+> > Why are we exporting all these symbols?
 > 
-> But wouldn't this race still happen no matter if vhangup() is in the mix
-> or not?  I don't see how adding this ioctl changes anything here, what
-> am I missing?
-
-The current users actually handle this - mostly by accident partly by
-their nature.
-
-> It's not a "real" revoke, more like vhangup(file_descriptor) only.
-> revoke() involves a lot more than just this.
-
-Real revoke is no different. General purpose real revoke for arbitary
-objects is a nightmare - but guess what *NO* Unixalike implements that.
- 
-> > I'd guess you need to add a counter to the tty f_ops entry/exit points to
-> > know when that occurs, and wake_up the revoke path when ready
-> > (remembering two revokes in parallel shouldn't deadlock! so need
-> > counting too)
+> Right. Probably a single one is enough:
 > 
-> Again, I'm confused, how does the locking differ from vhangup() today?
+>  int blk_throtl_set_page_owner(struct page *page,
+> 			struct mm_struct *mm, bool anon);
 
-Our vhangup users are not under the delusion that the interface is race
-free. Really it wants fixing anyway, but exposing the race with an
-inviting new way to screw up isn't good - and the usage model of
-vhangup(fd) is such that you can't actually use the ABI for anything
-interesting without fixing it.
+Who is going to use this single export? Which module?
 
-Also vhangup(fd) with the bug fixed *IS* revoke() so lets stop pretending
-it isn't. It's far better to add revoke to the VFS at this point and wire
-that to the vhangup + race fixes code that has to be done anyway. In fact
-I think it has to be done at that level ultimately to make sure any open
-versus hangup races are caught.
-
-It's a new file op to which everyone else (for now) says NULL = no can
-do. Really for desktop switching we also want it for some other devices,
-so the infrastructure is needed anyway.
-
-revoke is hard, vhangup(fd) is revoke, the rest inevitably follows, but
-once it's done then you can add it to a few other cdevs and do all the
-nice desktop switching stuff right as well.
-
-It's basically 3 things
-- Lennarts bits for vhangup on an fd
-- A revoke vfs op
-- Counting people in and out of the tty syscalls - which is a hit but its
-  not gigabit stuff so won't hurt. Again very easy to implement, and if
-  it causes performance corner cases on 4000 CPU boxes smart people can
-  fix it later for that. We should do this one anyway
-- Ideally dealing with parallel open/revoke paths, which needs the cdev
-  code involved
-
-Its not a quick patch - that's why its not happened yet, vhangup(fd)
-quickfix Lennart style is unfortunately a useless bodge job which like
-most bodge jobs is simply going to spring leaks and need fixing again.
-
-Alan
+Thanks
+Vivek
