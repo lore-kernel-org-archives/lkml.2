@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab1BWPZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 10:25:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11832 "EHLO mx1.redhat.com"
+	id S1753534Ab1BWPZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:25:21 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:59813 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab1BWPZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 10:25:08 -0500
-Message-ID: <4D6526BD.6030306@redhat.com>
-Date: Wed, 23 Feb 2011 23:24:45 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753467Ab1BWPZQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 10:25:16 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        Juha Kuikka <juha.kuikka@elektrobit.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Feb 2011 20:54:52 +0530
+Subject: RE: [PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to
+ DA8XX_LPSC0_PRUSS.
+Thread-Topic: [PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to
+ DA8XX_LPSC0_PRUSS.
+Thread-Index: AcvJ9IVGoMH2dRbyQkavQFCVaaoNDwJdM7EQ
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BE4916D@dbde02.ent.ti.com>
+References: <1297433905-27925-1-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <1297433905-27925-1-git-send-email-subhasish@mistralsolutions.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Amerigo Wang <amwang@redhat.com>
-CC: linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org
-Subject: Re: [V4 PATCH 3/3] bond: service netpoll arp queue on master device
-References: <1298022215-21059-1-git-send-email-amwang@redhat.com> <1298022215-21059-3-git-send-email-amwang@redhat.com>
-In-Reply-To: <1298022215-21059-3-git-send-email-amwang@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neil, ping. :)
+Hi Subhasish,
 
-于 2011年02月18日 17:43, Amerigo Wang 写道:
-> Neil pointed out that we can't send ARP reply on behalf of slaves,
-> we need to move the arp queue to their bond device.
->
-> Signed-off-by: WANG Cong<amwang@redhat.com>
-> Cc: Neil Horman<nhorman@redhat.com>
->
+Please add a "davinci: " prefix to the subject line of
+mach-davinci patches. The patch is not really specific
+to DA830.
+
+On Fri, Feb 11, 2011 at 19:48:25, Subhasish Ghosh wrote:
+> The PRUSS was named as DMAX on da830 platform.
+> This patch resolves the naming conflict by replacing the macro
+> DA8XX_LPSC0_DMAX with DA8XX_LPSC0_PRUSS.
+
+This description is inaccurate. Firstly, there is no naming
+conflict. DMAX is an internal name for the module which is
+known as PRUSS in TI public documentation. This patch just
+gets the code in sync with TI documentation.
+
+Can you please update the subject and re-spin this patch?
+
+Thanks,
+Sekhar
+
+> 
+> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
 > ---
->   net/core/netpoll.c |    9 +++++++++
->   1 files changed, 9 insertions(+), 0 deletions(-)
->
-> diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-> index f68e694..013e04a 100644
-> --- a/net/core/netpoll.c
-> +++ b/net/core/netpoll.c
-> @@ -193,6 +193,15 @@ void netpoll_poll_dev(struct net_device *dev)
->
->   	poll_napi(dev);
->
-> +	if (dev->priv_flags&  IFF_SLAVE) {
-> +		if (dev->npinfo) {
-> +			struct net_device *bond_dev = dev->master;
-> +			struct sk_buff *skb;
-> +			while ((skb = skb_dequeue(&dev->npinfo->arp_tx)))
-> +				skb_queue_tail(&bond_dev->npinfo->arp_tx, skb);
-> +		}
-> +	}
-> +
->   	service_arp_queue(dev->npinfo);
->
->   	zap_completion_queue();
+>  arch/arm/mach-davinci/da830.c            |    2 +-
+>  arch/arm/mach-davinci/include/mach/psc.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-davinci/da830.c b/arch/arm/mach-davinci/da830.c
+> index ec23ab4..0577a5d 100644
+> --- a/arch/arm/mach-davinci/da830.c
+> +++ b/arch/arm/mach-davinci/da830.c
+> @@ -148,7 +148,7 @@ static struct clk scr2_ss_clk = {
+>  static struct clk dmax_clk = {
+>  	.name		= "dmax",
+>  	.parent		= &pll0_sysclk2,
+> -	.lpsc		= DA8XX_LPSC0_DMAX,
+> +	.lpsc		= DA8XX_LPSC0_PRUSS,
+>  	.flags		= ALWAYS_ENABLED,
+>  };
+>  
+> diff --git a/arch/arm/mach-davinci/include/mach/psc.h b/arch/arm/mach-davinci/include/mach/psc.h
+> index 62b0858..a47e6f2 100644
+> --- a/arch/arm/mach-davinci/include/mach/psc.h
+> +++ b/arch/arm/mach-davinci/include/mach/psc.h
+> @@ -150,7 +150,7 @@
+>  #define DA8XX_LPSC0_SCR0_SS		10
+>  #define DA8XX_LPSC0_SCR1_SS		11
+>  #define DA8XX_LPSC0_SCR2_SS		12
+> -#define DA8XX_LPSC0_DMAX		13
+> +#define DA8XX_LPSC0_PRUSS		13
+>  #define DA8XX_LPSC0_ARM			14
+>  #define DA8XX_LPSC0_GEM			15
+>  
+> -- 
+> 1.7.2.3
+> 
+> 
 
-
--- 
-我认识的人越多，我就越喜欢狗。
