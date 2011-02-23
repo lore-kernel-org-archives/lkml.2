@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab1BWX6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:58:54 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56649 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753024Ab1BWX6x (ORCPT
+	id S1754920Ab1BWX7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:59:07 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44478 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725Ab1BWX7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:58:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 Feb 2011 15:58:02 -0800
-Message-ID: <AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-To: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org, Indan Zupancic <indan@nul.nu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Feb 2011 18:59:05 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 24 Feb 2011 08:52:27 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] page_cgroup: Reduce allocation overhead for
+ page_cgroup array for CONFIG_SPARSEMEM
+Message-Id: <20110224085227.1a3e185b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1298485162.7236.4.camel@nimitz>
+References: <20110223151047.GA7275@tiehlicka.suse.cz>
+	<1298485162.7236.4.camel@nimitz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 3:17 PM, Dave Airlie <airlied@linux.ie> wrote:
->
-> Nothing too major,
->
-> Two regression fixers (one revert that got fixes properly elsewhere), some
-> timestamp fixes and an agp module reload fix.
+On Wed, 23 Feb 2011 10:19:22 -0800
+Dave Hansen <dave@linux.vnet.ibm.com> wrote:
 
-Pulled. However, what about the report from	Pavel Machek <pavel@ucw.cz>:
+> On Wed, 2011-02-23 at 16:10 +0100, Michal Hocko wrote:
+> > We can reduce this internal fragmentation by splitting the single
+> > page_cgroup array into more arrays where each one is well kmalloc
+> > aligned. This patch implements this idea. 
+> 
+> How about using alloc_pages_exact()?  These things aren't allocated
+> often enough to really get most of the benefits of being in a slab.
+> That'll at least get you down to a maximum of about PAGE_SIZE wasted.  
+> 
 
-> >      drm/i915: Completely disable fence pipelining.
->
-> Reverting this commit helps in v2.6.38-rc5+ when screen is not fully updated,
-> or has a corrupted picture like horizontal black or white stripes. Using a
-> compositor like compiz may help to avoid the problem.
->
-> See bug https://bugzilla.kernel.org/show_bug.cgi?id=27572
+yes, alloc_pages_exact() is much better.
 
-Any update on that one? There's that whole "return -EINVAL for
-I915_PARAM_HAS_RELAXED_FENCING" patch thing?
+packing page_cgroups for multiple sections causes breakage in memory hotplug logic.
 
-                 Linus
+Thanks,
+-Kame
+
