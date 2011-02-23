@@ -1,112 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab1BWN7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 08:59:11 -0500
-Received: from blu0-omc1-s2.blu0.hotmail.com ([65.55.116.13]:47487 "EHLO
-	blu0-omc1-s2.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755495Ab1BWN7G (ORCPT
+	id S932263Ab1BWN7g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:59:36 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35093 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755466Ab1BWNx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 08:59:06 -0500
-X-Originating-IP: [174.91.193.52]
-X-Originating-Email: [pdumas9@sympatico.ca]
-Message-ID: <BLU0-SMTP40E8B221558CE29131E87796DB0@phx.gbl>
-Date: Wed, 23 Feb 2011 08:59:01 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 05/11] rcu: add comment saying why
-	DEBUG_OBJECTS_RCU_HEAD depends on PREEMPT.
-References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com> <1298431409.7666.76.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1298431409.7666.76.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 08:56:48 up 321 days, 23:46,  6 users,  load average: 1.61, 1.56,
-	1.55
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 23 Feb 2011 13:59:05.0338 (UTC) FILETIME=[D5426DA0:01CBD361]
+	Wed, 23 Feb 2011 08:53:29 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: sfrench@us.ibm.com, agruen@linbit.com, dilger.kernel@dilger.ca,
+        sandeen@redhat.com, tytso@mit.edu, bfields@fieldses.org,
+        jlayton@redhat.com
+Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andreas Gruenbacher <agruen@suse.de>
+Subject: [PATCH -V5 10/24] vfs: Add permission flags for setting file attributes
+Date: Wed, 23 Feb 2011 19:21:57 +0530
+Message-Id: <1298469131-16555-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Tue, 2011-02-22 at 17:39 -0800, Paul E. McKenney wrote:
-> > The build will break if you change the Kconfig to allow
-> > DEBUG_OBJECTS_RCU_HEAD and !PREEMPT, so document the reasoning
-> > near where the breakage would occur.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcupdate.c |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-> > index afd21d1..f3240e9 100644
-> > --- a/kernel/rcupdate.c
-> > +++ b/kernel/rcupdate.c
-> > @@ -214,6 +214,11 @@ static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
-> >  		 * Ensure that queued callbacks are all executed.
-> >  		 * If we detect that we are nested in a RCU read-side critical
-> >  		 * section, we should simply fail, otherwise we would deadlock.
-> > +		 * Note that the machinery to reliably determine whether
-> > +		 * or not we are in an RCU read-side critical section
-> > +		 * exists only in the preemptible RCU implementations
-> > +		 * (TINY_PREEMPT_RCU and TREE_PREEMPT_RCU), which is why
-> > +		 * DEBUG_OBJECTS_RCU_HEAD is disallowed if !PREEMPT.
-> >  		 */
-> 
-> Shouldn't this comment also be in the kconfig where
-> DEBUG_OBJECTS_RCU_HEAD is defined?
+From: Andreas Gruenbacher <agruen@suse.de>
 
-hrm, but this is a "rcuhead_fixup_init" : it does not need to always
-succeed. It's just that when it is safe to recover from an error
-situation, it does it. We could do:
+Some permission models can allow processes to take ownership of a file,
+change the file permissions, and set the file timestamps.  Introduce new
+permission mask flags and check for those permissions in
+inode_change_ok().
 
-#ifdef CONFIG_PREEMPT
-                /*
-                 * Ensure that queued callbacks are all executed.
-                 * If we detect that we are nested in a RCU read-side
-                 * critical
-                 * section, we should simply fail, otherwise we would
-                 * deadlock.
-                 */
-                if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-                    irqs_disabled()) {
-                        WARN_ON(1);
-                        return 0;
-                }
-                rcu_barrier();
-                rcu_barrier_sched();
-                rcu_barrier_bh();
-                debug_object_init(head, &rcuhead_debug_descr);
-                return 1;
-#else
-		return 0;
-#endif
+Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/attr.c          |   49 ++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/fs.h |    3 +++
+ 2 files changed, 41 insertions(+), 11 deletions(-)
 
-instead, no ?
-
-Mathieu
-
-> 
-> -- Steve
-> 
-> >  		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-> >  		    irqs_disabled()) {
-> 
-> 
-
+diff --git a/fs/attr.c b/fs/attr.c
+index f081b5a..793f34c 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -13,6 +13,20 @@
+ #include <linux/fsnotify.h>
+ #include <linux/fcntl.h>
+ #include <linux/security.h>
++#include <linux/richacl.h>
++
++static int richacl_change_ok(struct inode *inode, int mask)
++{
++	if (!IS_RICHACL(inode))
++		return -EPERM;
++
++	if (inode->i_op->permission)
++		return inode->i_op->permission(inode, mask, 0);
++	else if (inode->i_op->check_acl)
++		return inode->i_op->check_acl(inode, mask, 0);
++	else
++		return -EPERM;
++}
+ 
+ /**
+  * inode_change_ok - check if attribute changes to an inode are allowed
+@@ -47,20 +61,29 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
+ 	/* Make sure a caller can chown. */
+ 	if ((ia_valid & ATTR_UID) &&
+ 	    (current_fsuid() != inode->i_uid ||
+-	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
+-		return -EPERM;
++	     attr->ia_uid != inode->i_uid) &&
++	    (current_fsuid() != attr->ia_uid ||
++	     richacl_change_ok(inode, MAY_TAKE_OWNERSHIP)) &&
++	    !capable(CAP_CHOWN))
++		goto error;
+ 
+ 	/* Make sure caller can chgrp. */
+-	if ((ia_valid & ATTR_GID) &&
+-	    (current_fsuid() != inode->i_uid ||
+-	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
+-	    !capable(CAP_CHOWN))
+-		return -EPERM;
++	if (ia_valid & ATTR_GID) {
++		int in_group = in_group_p(attr->ia_gid);
++		if ((current_fsuid() != inode->i_uid ||
++		     (!in_group && attr->ia_gid != inode->i_gid)) &&
++		    (!in_group ||
++		     richacl_change_ok(inode, MAY_TAKE_OWNERSHIP)) &&
++		    !capable(CAP_CHOWN))
++			goto error;
++	}
+ 
+ 	/* Make sure a caller can chmod. */
+ 	if (ia_valid & ATTR_MODE) {
+-		if (!is_owner_or_cap(inode))
+-			return -EPERM;
++		if (current_fsuid() != inode->i_uid &&
++		    richacl_change_ok(inode, MAY_CHMOD) &&
++		    !capable(CAP_FOWNER))
++			goto error;
+ 		/* Also check the setgid bit! */
+ 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
+ 				inode->i_gid) && !capable(CAP_FSETID))
+@@ -69,11 +92,15 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
+ 
+ 	/* Check for setting the inode time. */
+ 	if (ia_valid & (ATTR_MTIME_SET | ATTR_ATIME_SET | ATTR_TIMES_SET)) {
+-		if (!is_owner_or_cap(inode))
+-			return -EPERM;
++		if (current_fsuid() != inode->i_uid &&
++		    richacl_change_ok(inode, MAY_SET_TIMES) &&
++		    !capable(CAP_FOWNER))
++			goto error;
+ 	}
+ 
+ 	return 0;
++error:
++	return -EPERM;
+ }
+ EXPORT_SYMBOL(inode_change_ok);
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 3ae23a2..1627592 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -66,6 +66,9 @@ struct inodes_stat_t {
+ #define MAY_CREATE_DIR 256
+ #define MAY_DELETE_CHILD 512
+ #define MAY_DELETE_SELF 1024
++#define MAY_TAKE_OWNERSHIP 2048
++#define MAY_CHMOD 4096
++#define MAY_SET_TIMES 8192
+ 
+ /*
+  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.1
+
