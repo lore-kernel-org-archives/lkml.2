@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab1BWCWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 21:22:22 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41510 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab1BWCWT (ORCPT
+	id S1756083Ab1BWCWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 21:22:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39318 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755998Ab1BWCWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 21:22:19 -0500
-Subject: [PATCH v4 2/7] arm/dt: Allow CONFIG_OF on ARM
+	Tue, 22 Feb 2011 21:22:32 -0500
+Subject: [PATCH v4 5/7] arm/dt: Basic versatile devicetree support
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
         Russell King <linux@arm.linux.org.uk>
-Date: Tue, 22 Feb 2011 19:22:13 -0700
-Message-ID: <20110223022213.18318.27032.stgit@localhost6.localdomain6>
+Date: Tue, 22 Feb 2011 19:22:29 -0700
+Message-ID: <20110223022229.18318.6248.stgit@localhost6.localdomain6>
 In-Reply-To: <20110223021524.18318.71902.stgit@localhost6.localdomain6>
 References: <20110223021524.18318.71902.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -24,205 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
+This patch adds adds very basic support for booting versatile with a
+device tree.  It simply allows the existing machine_descs to match
+against the versatile ab & pb compatible values so that the kernel can
+boot.  Kernel parameters and the initrd pointer is read out of the
+tree instead of atags.
 
-Add some basic empty infrastructure for DT support on ARM.
+This is not complete device tree support.  This change will be
+reverted when a new machine_desc is added that can populate the
+versatile device registrations directly from data in the tree instead
+of using hard coded data.  That change will be made in a future patch.
 
-v3: - moved cmd_line export and initrd setup to this patch to make the
-      series bisectable.
-    - switched to alloc_bootmem_align() for allocation when
-      unflattening the device tree.  memblock_alloc() was not the
-      right interface.
-
-Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/arm/Kconfig             |    7 ++++++
- arch/arm/include/asm/prom.h  |   25 ++++++++++++++++++++++
- arch/arm/include/asm/setup.h |    3 +++
- arch/arm/kernel/Makefile     |    1 +
- arch/arm/kernel/devtree.c    |   47 ++++++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c      |    4 ++--
- arch/arm/mm/init.c           |    9 ++++++++
- 7 files changed, 94 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/include/asm/prom.h
- create mode 100644 arch/arm/kernel/devtree.c
+ arch/arm/mach-versatile/versatile_ab.c |    6 ++++++
+ arch/arm/mach-versatile/versatile_pb.c |    6 ++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 166efa2..92bae09 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1611,6 +1611,13 @@ endmenu
+diff --git a/arch/arm/mach-versatile/versatile_ab.c b/arch/arm/mach-versatile/versatile_ab.c
+index aa9730f..62053df 100644
+--- a/arch/arm/mach-versatile/versatile_ab.c
++++ b/arch/arm/mach-versatile/versatile_ab.c
+@@ -33,6 +33,11 @@
  
- menu "Boot options"
+ #include "core.h"
  
-+config USE_OF
-+	bool "Flattened Device Tree support"
-+	select OF
-+	select OF_EARLY_FLATTREE
-+	help
-+	  Include support for flattened device tree machine descriptions.
++static const char *versatile_ab_match[] __initdata = {
++	"arm,versatile-ab",
++	NULL,
++};
 +
- # Compressed boot loader in ROM.  Yes, we really want to ask about
- # TEXT and BSS so we preserve their values in the config files.
- config ZBOOT_ROM_TEXT
-diff --git a/arch/arm/include/asm/prom.h b/arch/arm/include/asm/prom.h
-new file mode 100644
-index 0000000..8f1037f
---- /dev/null
-+++ b/arch/arm/include/asm/prom.h
-@@ -0,0 +1,25 @@
-+/*
-+ *  arch/arm/include/asm/prom.h
-+ *
-+ *  Copyright (C) 2009 Canonical Ltd. <jeremy.kerr@canonical.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#ifndef __ASMARM_PROM_H
-+#define __ASMARM_PROM_H
-+
-+#ifdef CONFIG_OF
-+
-+#include <asm/setup.h>
-+#include <asm/irq.h>
-+
-+static inline void irq_dispose_mapping(unsigned int virq)
-+{
-+	return;
-+}
-+
-+#endif /* CONFIG_OF */
-+#endif /* ASMARM_PROM_H */
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index f1e5a9b..1cec82a 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -221,6 +221,9 @@ extern struct meminfo meminfo;
- #define bank_phys_end(bank)	((bank)->start + (bank)->size)
- #define bank_phys_size(bank)	(bank)->size
- 
-+extern int arm_add_memory(unsigned long start, unsigned long size);
-+extern char cmd_line[COMMAND_LINE_SIZE];
-+
- #endif  /*  __KERNEL__  */
- 
- #endif
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 185ee82..8df05fd 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
- obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
- obj-$(CONFIG_HAVE_TCM)		+= tcm.o
-+obj-$(CONFIG_OF)		+= devtree.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump.o
- obj-$(CONFIG_SWP_EMULATE)	+= swp_emulate.o
- CFLAGS_swp_emulate.o		:= -Wa,-march=armv7-a
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-new file mode 100644
-index 0000000..75e3df8
---- /dev/null
-+++ b/arch/arm/kernel/devtree.c
-@@ -0,0 +1,47 @@
-+/*
-+ *  linux/arch/arm/kernel/devtree.c
-+ *
-+ *  Copyright (C) 2009 Canonical Ltd. <jeremy.kerr@canonical.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/types.h>
-+#include <linux/bootmem.h>
-+#include <linux/memblock.h>
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/setup.h>
-+#include <asm/page.h>
-+
-+void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-+{
-+	arm_add_memory(base, size);
-+}
-+
-+void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-+{
-+	return alloc_bootmem_align(size, align);
-+}
-+
-+/**
-+ * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
-+ *
-+ * Currently the mapping mechanism is trivial; simple flat hwirq numbers are
-+ * mapped 1:1 onto Linux irq numbers.  Cascaded irq controllers are not
-+ * supported.
-+ */
-+unsigned int irq_create_of_mapping(struct device_node *controller,
-+				   const u32 *intspec, unsigned int intsize)
-+{
-+	return intspec[0];
-+}
-+EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index a40216e..8e046f1 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -125,7 +125,7 @@ EXPORT_SYMBOL(elf_platform);
- 
- static const char *cpu_name;
- static const char *machine_name;
--static char __initdata cmd_line[COMMAND_LINE_SIZE];
-+char cmd_line[COMMAND_LINE_SIZE];
- struct machine_desc *machine_desc __initdata;
- 
- static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
-@@ -466,7 +466,7 @@ static struct machine_desc * __init setup_machine(unsigned int nr)
- 		/* can't use cpu_relax() here as it may require MMU setup */;
+ MACHINE_START(VERSATILE_AB, "ARM-Versatile AB")
+ 	/* Maintainer: ARM Ltd/Deep Blue Solutions Ltd */
+ 	.boot_params	= 0x00000100,
+@@ -40,4 +45,5 @@ MACHINE_START(VERSATILE_AB, "ARM-Versatile AB")
+ 	.init_irq	= versatile_init_irq,
+ 	.timer		= &versatile_timer,
+ 	.init_machine	= versatile_init,
++	.dt_compat	= versatile_ab_match,
+ MACHINE_END
+diff --git a/arch/arm/mach-versatile/versatile_pb.c b/arch/arm/mach-versatile/versatile_pb.c
+index bf46964..eba12fa 100644
+--- a/arch/arm/mach-versatile/versatile_pb.c
++++ b/arch/arm/mach-versatile/versatile_pb.c
+@@ -106,6 +106,11 @@ static void __init versatile_pb_init(void)
+ 	}
  }
  
--static int __init arm_add_memory(unsigned long start, unsigned long size)
-+int __init arm_add_memory(unsigned long start, unsigned long size)
- {
- 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
- 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index cddd684..a2ba1d1 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -15,6 +15,7 @@
- #include <linux/mman.h>
- #include <linux/nodemask.h>
- #include <linux/initrd.h>
-+#include <linux/of_fdt.h>
- #include <linux/highmem.h>
- #include <linux/gfp.h>
- #include <linux/memblock.h>
-@@ -71,6 +72,14 @@ static int __init parse_tag_initrd2(const struct tag *tag)
- 
- __tagtable(ATAG_INITRD2, parse_tag_initrd2);
- 
-+#ifdef CONFIG_OF_FLATTREE
-+void __init early_init_dt_setup_initrd_arch(unsigned long start, unsigned long end)
-+{
-+	phys_initrd_start = start;
-+	phys_initrd_size = end - start + 1;
-+}
-+#endif /* CONFIG_OF_FLATTREE */
++static const char *versatile_pb_match[] __initdata = {
++	"arm,versatile-pb",
++	NULL,
++};
 +
- /*
-  * This keeps memory configuration data used by a couple memory
-  * initialization functions, as well as show_mem() for the skipping
+ MACHINE_START(VERSATILE_PB, "ARM-Versatile PB")
+ 	/* Maintainer: ARM Ltd/Deep Blue Solutions Ltd */
+ 	.boot_params	= 0x00000100,
+@@ -113,4 +118,5 @@ MACHINE_START(VERSATILE_PB, "ARM-Versatile PB")
+ 	.init_irq	= versatile_init_irq,
+ 	.timer		= &versatile_timer,
+ 	.init_machine	= versatile_pb_init,
++	.dt_compat	= versatile_pb_match,
+ MACHINE_END
 
