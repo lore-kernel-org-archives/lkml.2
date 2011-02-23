@@ -1,278 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab1BWXxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:53:07 -0500
-Received: from www.tglx.de ([62.245.132.106]:56026 "EHLO www.tglx.de"
+	id S1755106Ab1BWXxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:53:10 -0500
+Received: from www.tglx.de ([62.245.132.106]:56028 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754437Ab1BWXxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:53:02 -0500
-Message-Id: <20110223234956.388095876@linutronix.de>
+	id S1754899Ab1BWXxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 18:53:08 -0500
+Message-Id: <20110223234956.772668648@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Wed, 23 Feb 2011 23:52:13 -0000
+Date: Wed, 23 Feb 2011 23:52:23 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 1/5] genirq: Prepare the handling of shared oneshot interrupts
+Subject: [patch 5/5] genirq: Provide forced interrupt threading
 References: <20110223231601.613115832@linutronix.de>
 Content-Disposition: inline;
-	filename=genirq-prepare-handling-shared-oneshot-interrupts.patch
+	filename=genirq-provide-forced-interrupt-threading.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For level type interrupts we need to track how many threads are on
-flight to avoid useless interrupt storms when not all thread handlers
-have finished yet. Keep track of the woken threads and only unmask
-when there are no more threads in flight.
+Add a commandline parameter "threadirqs" which forces all interrupts except
+those marked IRQF_NO_THREAD to run threaded. That's mostly a debug option to
+allow retrieving better debug data from crashing interrupt handlers. If
+"threadirqs" is not enabled on the kernel command line, then there is no
+impact in the interrupt hotpath.
 
-Yes, I'm lazy and using a bitfield. But not only because I'm lazy, the
-main reason is that it's way simpler than using a refcount. A refcount
-based solution would need to keep track of various things like
-crashing the irq thread, spurious interrupts coming in,
-disables/enables, free_irq() and some more. The bitfield keeps the
-tracking simple and makes things just work. It's also nicely confined
-to the thread code pathes and does not require additional checks all
-over the place.
+Architecture code needs to select CONFIG_IRQ_FORCED_THREADING after
+marking the interrupts which cant be threaded IRQF_NO_THREAD. All
+interrupts which have IRQF_TIMER set are implict marked
+IRQF_NO_THREAD. Also all PER_CPU interrupts are excluded.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/interrupt.h |    2 +
- include/linux/irqdesc.h   |    2 +
- kernel/irq/handle.c       |   34 ++++++++++++++++++-----------
- kernel/irq/manage.c       |   53 ++++++++++++++++++++++++++++++++++++++++------
- 4 files changed, 72 insertions(+), 19 deletions(-)
+ Documentation/kernel-parameters.txt |    4 ++
+ include/linux/interrupt.h           |    7 +++
+ kernel/irq/Kconfig                  |    3 +
+ kernel/irq/internals.h              |    2 +
+ kernel/irq/manage.c                 |   67 +++++++++++++++++++++++++++++++++---
+ kernel/softirq.c                    |   16 +++++++-
+ 6 files changed, 93 insertions(+), 6 deletions(-)
 
+Index: linux-2.6-tip/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6-tip.orig/Documentation/kernel-parameters.txt
++++ linux-2.6-tip/Documentation/kernel-parameters.txt
+@@ -2436,6 +2436,10 @@ and is between 256 and 4096 characters. 
+ 			<deci-seconds>: poll all this frequency
+ 			0: no polling (default)
+ 
++	threadirqs	[KNL]
++			Force threading of all interrupt handlers except those
++			marked explicitely IRQF_NO_THREAD.
++
+ 	topology=	[S390]
+ 			Format: {off | on}
+ 			Specify if the kernel should make use of the cpu
 Index: linux-2.6-tip/include/linux/interrupt.h
 ===================================================================
 --- linux-2.6-tip.orig/include/linux/interrupt.h
 +++ linux-2.6-tip/include/linux/interrupt.h
-@@ -99,6 +99,7 @@ typedef irqreturn_t (*irq_handler_t)(int
-  * @thread_fn:	interupt handler function for threaded interrupts
-  * @thread:	thread pointer for threaded interrupts
-  * @thread_flags:	flags related to @thread
-+ * @thread_mask:	bitmask for keeping track of @thread activity
-  */
- struct irqaction {
- 	irq_handler_t handler;
-@@ -109,6 +110,7 @@ struct irqaction {
- 	irq_handler_t thread_fn;
- 	struct task_struct *thread;
- 	unsigned long thread_flags;
-+	unsigned long thread_mask;
- 	const char *name;
- 	struct proc_dir_entry *dir;
- } ____cacheline_internodealigned_in_smp;
-Index: linux-2.6-tip/include/linux/irqdesc.h
-===================================================================
---- linux-2.6-tip.orig/include/linux/irqdesc.h
-+++ linux-2.6-tip/include/linux/irqdesc.h
-@@ -28,6 +28,7 @@ struct timer_rand_state;
-  * @lock:		locking for SMP
-  * @affinity_notify:	context for notification of affinity changes
-  * @pending_mask:	pending rebalanced interrupts
-+ * @threads_oneshot:	bitfield to handle shared oneshot threads
-  * @threads_active:	number of irqaction threads currently running
-  * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
-  * @dir:		/proc/irq/ procfs entry
-@@ -86,6 +87,7 @@ struct irq_desc {
- 	cpumask_var_t		pending_mask;
- #endif
- #endif
-+	unsigned long		threads_oneshot;
- 	atomic_t		threads_active;
- 	wait_queue_head_t       wait_for_threads;
- #ifdef CONFIG_PROC_FS
-Index: linux-2.6-tip/kernel/irq/handle.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/handle.c
-+++ linux-2.6-tip/kernel/irq/handle.c
-@@ -51,6 +51,26 @@ static void warn_no_thread(unsigned int 
- 	       "but no thread function available.", irq, action->name);
+@@ -383,6 +383,13 @@ static inline int disable_irq_wake(unsig
  }
+ #endif /* CONFIG_GENERIC_HARDIRQS */
  
-+static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
-+{
-+	/*
-+	 * Wake up the handler thread for this action. In case the
-+	 * thread crashed and was killed we just pretend that we
-+	 * handled the interrupt. The hardirq handler has disabled the
-+	 * device interrupt, so no irq storm is lurking.
-+	 */
-+	if (!test_bit(IRQTF_DIED, &action->thread_flags) &&
-+	    !test_and_set_bit(IRQTF_RUNTHREAD, &action->thread_flags)) {
-+		/*
-+		 * We or the mask lockless. Safe because the code
-+		 * which clears the mask is serialized
-+		 * vs. IRQ_INPROGRESS.
-+		 */
-+		desc->threads_oneshot |= action->thread_mask;
-+		wake_up_process(action->thread);
-+	}
-+}
 +
- irqreturn_t
- handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
- {
-@@ -84,19 +104,7 @@ handle_irq_event_percpu(struct irq_desc 
- 				break;
- 			}
++#ifdef CONFIG_IRQ_FORCED_THREADING
++extern bool force_irqthreads;
++#else
++#define force_irqthreads	(0)
++#endif
++
+ #ifndef __ARCH_SET_SOFTIRQ_PENDING
+ #define set_softirq_pending(x) (local_softirq_pending() = (x))
+ #define or_softirq_pending(x)  (local_softirq_pending() |= (x))
+Index: linux-2.6-tip/kernel/irq/Kconfig
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/Kconfig
++++ linux-2.6-tip/kernel/irq/Kconfig
+@@ -38,6 +38,9 @@ config HARDIRQS_SW_RESEND
+ config IRQ_PREFLOW_FASTEOI
+        bool
  
--			/*
--			 * Wake up the handler thread for this
--			 * action. In case the thread crashed and was
--			 * killed we just pretend that we handled the
--			 * interrupt. The hardirq handler above has
--			 * disabled the device interrupt, so no irq
--			 * storm is lurking.
--			 */
--			if (likely(!test_bit(IRQTF_DIED,
--					     &action->thread_flags))) {
--				set_bit(IRQTF_RUNTHREAD, &action->thread_flags);
--				wake_up_process(action->thread);
--			}
-+			irq_wake_thread(desc, action);
++config IRQ_FORCED_THREADING
++       bool
++
+ config SPARSE_IRQ
+ 	bool "Support sparse irq numbering"
+ 	depends on HAVE_SPARSE_IRQ
+Index: linux-2.6-tip/kernel/irq/internals.h
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/internals.h
++++ linux-2.6-tip/kernel/irq/internals.h
+@@ -27,12 +27,14 @@ extern int noirqdebug;
+  * IRQTF_DIED      - handler thread died
+  * IRQTF_WARNED    - warning "IRQ_WAKE_THREAD w/o thread_fn" has been printed
+  * IRQTF_AFFINITY  - irq thread is requested to adjust affinity
++ * IRQTF_FORCED_THREAD  - irq action is force threaded
+  */
+ enum {
+ 	IRQTF_RUNTHREAD,
+ 	IRQTF_DIED,
+ 	IRQTF_WARNED,
+ 	IRQTF_AFFINITY,
++	IRQTF_FORCED_THREAD,
+ };
  
- 			/* Fall through to add to randomness */
- 		case IRQ_HANDLED:
+ /*
 Index: linux-2.6-tip/kernel/irq/manage.c
 ===================================================================
 --- linux-2.6-tip.orig/kernel/irq/manage.c
 +++ linux-2.6-tip/kernel/irq/manage.c
-@@ -617,8 +617,11 @@ static int irq_wait_for_interrupt(struct
-  * handler finished. unmask if the interrupt has not been disabled and
-  * is marked MASKED.
-  */
--static void irq_finalize_oneshot(unsigned int irq, struct irq_desc *desc)
-+static void irq_finalize_oneshot(struct irq_desc *desc,
-+				 struct irqaction *action, bool force)
- {
-+	if (!(desc->istate & IRQS_ONESHOT))
-+		return;
- again:
- 	chip_bus_lock(desc);
- 	raw_spin_lock_irq(&desc->lock);
-@@ -631,6 +634,10 @@ again:
- 	 * on the other CPU. If we unmask the irq line then the
- 	 * interrupt can come in again and masks the line, leaves due
- 	 * to IRQS_INPROGRESS and the irq line is masked forever.
-+	 *
-+	 * This also serializes the state of shared oneshot handlers
-+	 * versus "desc->threads_onehsot |= action->thread_mask;" in
-+	 * handle_irq_event().
- 	 */
- 	if (unlikely(desc->istate & IRQS_INPROGRESS)) {
- 		raw_spin_unlock_irq(&desc->lock);
-@@ -639,11 +646,23 @@ again:
- 		goto again;
- 	}
+@@ -17,6 +17,17 @@
  
--	if (!(desc->istate & IRQS_DISABLED) && (desc->istate & IRQS_MASKED)) {
-+	/*
-+	 * Now check again, whether the thread should run. Otherwise
-+	 * we would clear the threads_oneshot bit of this thread which
-+	 * was just set.
-+	 */
-+	if (!force && test_bit(IRQTF_RUNTHREAD, &action->thread_flags))
-+		goto out_unlock;
+ #include "internals.h"
+ 
++#ifdef CONFIG_IRQ_FORCED_THREADING
++__read_mostly bool force_irqthreads;
 +
-+	desc->threads_oneshot &= ~action->thread_mask;
++static int __init setup_forced_irqthreads(char *arg)
++{
++	force_irqthreads = true;
++	return 0;
++}
++early_param("threadirqs", setup_forced_irqthreads);
++#endif
 +
-+	if (!desc->threads_oneshot && !(desc->istate & IRQS_DISABLED) &&
-+	    (desc->istate & IRQS_MASKED)) {
- 		irq_compat_clr_masked(desc);
- 		desc->istate &= ~IRQS_MASKED;
- 		desc->irq_data.chip->irq_unmask(&desc->irq_data);
- 	}
-+out_unlock:
- 	raw_spin_unlock_irq(&desc->lock);
- 	chip_bus_sync_unlock(desc);
- }
-@@ -691,7 +710,7 @@ static int irq_thread(void *data)
+ /**
+  *	synchronize_irq - wait for pending IRQ handlers (on other CPUs)
+  *	@irq: interrupt number to wait for
+@@ -701,6 +712,32 @@ irq_thread_check_affinity(struct irq_des
+ #endif
+ 
+ /*
++ * Interrupts which are not explicitely requested as threaded
++ * interrupts rely on the implicit bh/preempt disable of the hard irq
++ * context. So we need to disable bh here to avoid deadlocks and other
++ * side effects.
++ */
++static void
++irq_forced_thread_fn(struct irq_dessc *desc, struct irqaction *action)
++{
++	local_bh_disable();
++	action->thread_fn(action->irq, action->dev_id);
++	irq_finalize_oneshot(desc, action, false);
++	local_bh_enable();
++}
++
++/*
++ * Interrupts explicitely requested as threaded interupts want to be
++ * preemtible - many of them need to sleep and wait for slow busses to
++ * complete.
++ */
++static void irq_thread_fn(struct irq_dessc *desc, struct irqaction *action)
++{
++	action->thread_fn(action->irq, action->dev_id);
++	irq_finalize_oneshot(desc, action, false);
++}
++
++/*
+  * Interrupt handler thread
+  */
+ static int irq_thread(void *data)
+@@ -710,8 +747,15 @@ static int irq_thread(void *data)
  	};
  	struct irqaction *action = data;
  	struct irq_desc *desc = irq_to_desc(action->irq);
--	int wake, oneshot = desc->istate & IRQS_ONESHOT;
-+	int wake;
++	void (*handler_fn)(struct irq_desc *desc, struct irq_action *action);
+ 	int wake;
  
++	if (force_irqthreads & test_bit(IRQTF_FORCED_THREAD,
++					&action->thread_flags))
++		handler_fn = irq_forced_thread_fn;
++	else
++		handler_fn = irq_thread_fn;
++
  	sched_setscheduler(current, SCHED_FIFO, &param);
  	current->irqaction = action;
-@@ -719,8 +738,7 @@ static int irq_thread(void *data)
  
- 			action->thread_fn(action->irq, action->dev_id);
- 
--			if (oneshot)
--				irq_finalize_oneshot(action->irq, desc);
-+			irq_finalize_oneshot(desc, action, false);
+@@ -735,10 +779,7 @@ static int irq_thread(void *data)
+ 			raw_spin_unlock_irq(&desc->lock);
+ 		} else {
+ 			raw_spin_unlock_irq(&desc->lock);
+-
+-			action->thread_fn(action->irq, action->dev_id);
+-
+-			irq_finalize_oneshot(desc, action, false);
++			handler_fn(desc->action);
  		}
  
  		wake = atomic_dec_and_test(&desc->threads_active);
-@@ -729,6 +747,9 @@ static int irq_thread(void *data)
- 			wake_up(&desc->wait_for_threads);
- 	}
+@@ -788,6 +829,22 @@ void exit_irq_thread(void)
+ 	set_bit(IRQTF_DIED, &tsk->irqaction->flags);
+ }
  
-+	/* Prevent a stale desc->threads_oneshot */
-+	irq_finalize_oneshot(desc, action, true);
++static void irq_setup_forced_threading(struct irqaction *new)
++{
++	if (!force_irqthreads)
++		return;
++	if (new->flags & (IRQF_NO_THREAD | IRQF_PERCPU | IRQF_ONESHOT))
++		return;
 +
- 	/*
- 	 * Clear irqaction. Otherwise exit_irq_thread() would make
- 	 * fuzz about an active irq thread going into nirvana.
-@@ -743,6 +764,7 @@ static int irq_thread(void *data)
- void exit_irq_thread(void)
- {
- 	struct task_struct *tsk = current;
-+	struct irq_desc *desc;
- 
- 	if (!tsk->irqaction)
- 		return;
-@@ -751,6 +773,14 @@ void exit_irq_thread(void)
- 	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
- 	       tsk->comm ? tsk->comm : "", tsk->pid, tsk->irqaction->irq);
- 
-+	desc = irq_to_desc(tsk->irqaction->irq);
++	new->flags |= IRQF_ONESHOT;
 +
-+	/*
-+	 * Prevent a stale desc->threads_oneshot. Must be called
-+	 * before setting the IRQTF_DIED flag.
-+	 */
-+	irq_finalize_oneshot(desc, tsk->irqaction, true);
-+
- 	/*
- 	 * Set the THREAD DIED flag to prevent further wakeups of the
- 	 * soon to be gone threaded handler.
-@@ -767,7 +797,7 @@ __setup_irq(unsigned int irq, struct irq
- {
- 	struct irqaction *old, **old_ptr;
- 	const char *old_name = NULL;
--	unsigned long flags;
-+	unsigned long flags, thread_mask = 0;
- 	int ret, nested, shared = 0;
- 	cpumask_var_t mask;
- 
-@@ -865,12 +895,23 @@ __setup_irq(unsigned int irq, struct irq
- 
- 		/* add new interrupt at end of irq queue */
- 		do {
-+			thread_mask |= old->thread_mask;
- 			old_ptr = &old->next;
- 			old = *old_ptr;
- 		} while (old);
- 		shared = 1;
- 	}
- 
-+	/*
-+	 * Setup the thread mask for this irqaction. Unlikely to have
-+	 * 32 resp 64 irqs sharing one line, but who knows.
-+	 */
-+	if (new->flags & IRQF_ONESHOT && thread_mask == ~0UL) {
-+		ret = -EBUSY;
-+		goto out_mask;
++	if (!new->thread_fn) {
++		set_bit(IRQTF_FORCED_THREAD, &new->thread_flags);
++		new->thread_fn = new->handler;
++		new->handler = irq_default_primary_handler;
 +	}
-+	new->thread_mask = 1 << ffz(thread_mask);
++}
 +
- 	if (!shared) {
- 		irq_chip_set_defaults(desc->irq_data.chip);
+ /*
+  * Internal function to register an irqaction - typically used to
+  * allocate special interrupts that are part of the architecture.
+@@ -837,6 +894,8 @@ __setup_irq(unsigned int irq, struct irq
+ 		 * dummy function which warns when called.
+ 		 */
+ 		new->handler = irq_nested_primary_handler;
++	} else {
++		irq_setup_forced_threading(new);
+ 	}
  
+ 	/*
+Index: linux-2.6-tip/kernel/softirq.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/softirq.c
++++ linux-2.6-tip/kernel/softirq.c
+@@ -311,9 +311,21 @@ void irq_enter(void)
+ }
+ 
+ #ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
+-# define invoke_softirq()	__do_softirq()
++static inline void invoke_softirq(void)
++{
++	if (!force_irqthreads)
++		__do_softirq();
++	else
++		wakeup_softirqd();
++}
+ #else
+-# define invoke_softirq()	do_softirq()
++static inline void invoke_softirq(void)
++{
++	if (!force_irqthreads)
++		do_softirq();
++	else
++		wakeup_softirqd();
++}
+ #endif
+ 
+ /*
 
 
