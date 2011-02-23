@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab1BWOzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 09:55:19 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48198 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab1BWOzS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 09:55:18 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=jNfASM90n5oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=sm3AeqNnQvzIxt51lBgA:9 a=UEp2HycnOxRSpl29hPiMVDN_Hh8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH RFC tip/core/rcu 05/11] rcu: add comment saying why
- DEBUG_OBJECTS_RCU_HEAD depends on PREEMPT.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-In-Reply-To: <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
-	 <1298425183-21265-5-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1298431409.7666.76.camel@gandalf.stny.rr.com>
-	 <BLU0-SMTP615CB0BE0A2623EF62925096DB0@phx.gbl>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 23 Feb 2011 09:55:14 -0500
-Message-ID: <1298472914.7666.85.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752877Ab1BWPA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 10:00:59 -0500
+Received: from ra.se.axis.com ([195.60.68.13]:45343 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab1BWPA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 10:00:57 -0500
+Date: Wed, 23 Feb 2011 16:00:47 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dmitry Torokhov <dtor@vmware.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in
+	module versions
+Message-ID: <20110223150047.GC13204@axis.com>
+References: <20110217.142320.102554706.davem@davemloft.net> <AANLkTinMfTss+9K7fPQbxoMD7d-U_AyCc29_RRPRija3@mail.gmail.com> <AANLkTikd-OBhe6-wK7-Xvv-asNSeVKs+0-a0d3FF2KVu@mail.gmail.com> <1298074455.2460.85.camel@pasglop> <87pqqmrq9q.fsf@rustcorp.com.au> <1298339909.8833.135.camel@pasglop> <AANLkTimyaA+JdBHekm69R5Y2A2DEdPdndFLrKJAaz=vt@mail.gmail.com> <20110222070240.GA21765@dtor-ws.eng.vmware.com> <20110222170849.GW13204@axis.com> <AANLkTikd9QJZVoN+N4yLfr+Y+GWkB1EvShrgvb39Fp=0@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikd9QJZVoN+N4yLfr+Y+GWkB1EvShrgvb39Fp=0@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-23 at 08:59 -0500, Mathieu Desnoyers wrote:
-
-> #ifdef CONFIG_PREEMPT
->                 /*
->                  * Ensure that queued callbacks are all executed.
->                  * If we detect that we are nested in a RCU read-side
->                  * critical
->                  * section, we should simply fail, otherwise we would
->                  * deadlock.
->                  */
->                 if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
->                     irqs_disabled()) {
->                         WARN_ON(1);
->                         return 0;
->                 }
->                 rcu_barrier();
->                 rcu_barrier_sched();
->                 rcu_barrier_bh();
->                 debug_object_init(head, &rcuhead_debug_descr);
->                 return 1;
-> #else
-> 		return 0;
-> #endif
+On Tue, Feb 22, 2011 at 09:47:09PM +0100, Linus Torvalds wrote:
+> On Tue, Feb 22, 2011 at 9:08 AM, Jesper Nilsson <jesper.nilsson@axis.com> wrote:
+> > True, at least until I've made sure that there isn't any
+> > underlying reason for CRISv32 to put __param in a different place...
+> >
+> > Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 > 
-> instead, no ?
+> I really am not going to apply a patch that likely just adds another
+> redundant field to the linker scripts. So the ack I'm just ignoring,
 
-BTW, if you do end up doing such a thing...
+:-)
 
-#ifndef CONFIG_PREEMPT
-	return 0;
-#endif
+> But it would be good to get the "remove the legacy __param thing
+> because it's already there from the asm-generic version" confirmed by
+> testing, and not just looking at the source code.
 
-before all that would be much cleaner.
+Testing shows no problems with the below patch.
 
-Just make sure any non defined in PREEMPT macros/functions are defined
-as nops in !CONFIG_PREEMPT
+>From f8c17a94940a012f237986b4f40ca557a88f9019 Mon Sep 17 00:00:00 2001
+From: Jesper Nilsson <jespern@axis.com>
+Date: Wed, 23 Feb 2011 13:04:25 +0100
+Subject: [PATCH] Drop redundant __param section for CRISv32.
 
--- Steve
+The __param section is already brought in by RODATA above.
 
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+---
+ arch/cris/kernel/vmlinux.lds.S |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
+diff --git a/arch/cris/kernel/vmlinux.lds.S b/arch/cris/kernel/vmlinux.lds.S
+index 917b727..e8adc35 100644
+--- a/arch/cris/kernel/vmlinux.lds.S
++++ b/arch/cris/kernel/vmlinux.lds.S
+@@ -75,11 +75,6 @@ SECTIONS
+ 	INIT_TEXT_SECTION(PAGE_SIZE)
+ 	.init.data : { INIT_DATA }
+ 	.init.setup : { INIT_SETUP(16) }
+-#ifdef CONFIG_ETRAX_ARCH_V32
+-	__start___param = .;
+-	__param : { *(__param) }
+-	__stop___param = .;
+-#endif
+ 	.initcall.init : {
+ 		INIT_CALLS
+ 	}
+-- 
+1.7.4
+
+>                      Linus
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
