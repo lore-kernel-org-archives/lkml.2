@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab1BWKuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 05:50:05 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40626 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab1BWKuD (ORCPT
+	id S1753884Ab1BWKuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 05:50:21 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:56144 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab1BWKuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 05:50:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tCmjewzpeI7PLDHTDA7VwDtzZVFNyB4x0u0f6fdIZpaEqbwZmpTaegrQCgkWpi9Ni/
-         AEj9upsb+LAvmNz8fi16Zp0GiSya1tgzmYqkslGsIDbgU2GcRFNzc4dlmvitG6IDbd0z
-         1PvZqrq/HtM2AuZezOc2LkE8tfQpP2wPaKw7A=
-Date: Wed, 23 Feb 2011 11:50:07 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH V11 0/4] ptp: IEEE 1588 hardware clock support
-Message-ID: <20110223105007.GA31292@riccoc20.at.omicron.at>
-References: <cover.1298447722.git.richard.cochran@omicron.at>
-MIME-Version: 1.0
+	Wed, 23 Feb 2011 05:50:16 -0500
+Date: Wed, 23 Feb 2011 11:46:22 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 1/2] net/r8169: adjust rtl8169_set_speed_xmii function
+Message-ID: <20110223104622.GA12700@electric-eye.fr.zoreil.com>
+References: <1298366782-1508-1-git-send-email-hayeswang@realtek.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1298447722.git.richard.cochran@omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1298366782-1508-1-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Previous Discussions
+I'll give both series a try this evening before formally Acking-by.
+I have no comment left regarding the content itself.
 
-  This patch set previously appeared on the netdev list. Since V5 of
-  the character device patch set, the discussion has moved to the
-  lkml.
+In the future it will help if you add some hint for the target of the
+patches. Say [PATCH net-next 1/2] and [PATCH net-next 2/2] for the -next
+material (as opposed to the bugfixes).
 
-  - IEEE 1588 hardware clock support [V5]
-    http://lkml.org/lkml/2010/8/16/90
+The messages are strangely threaded here. I'll probably wrap them in
+two separate branches.
 
-  - POSIX clock tuning syscall with static clock ids
-    http://lkml.org/lkml/2010/8/23/49
-
-  - POSIX clock tuning syscall with dynamic clock ids
-    http://lkml.org/lkml/2010/9/3/119
-
-  - IEEE 1588 hardware clock support [V6]
-    http://lkml.org/lkml/2010/9/23/310
-
-  - Dynamic clock devices [RFC]
-    http://lkml.org/lkml/2010/11/4/290
-
-  - IEEE 1588 hardware clock support [V7]
-    http://lkml.org/lkml/2010/12/16/195
-
-  - IEEE 1588 hardware clock support [V8]
-    http://lkml.org/lkml/2010/12/31/128
-
-  - IEEE 1588 hardware clock support [V9]
-    http://lkml.org/lkml/2011/1/13/65
-
-  - IEEE 1588 hardware clock support [V10]
-    http://lkml.org/lkml/2011/1/27/71
-
-  - Thomas Gleixner: Rework of the PTP support series core code
-    http://lkml.org/lkml/2011/2/1/137
+-- 
+Ueimor
