@@ -1,326 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab1BWQZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:25:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44834 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754657Ab1BWQZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:25:10 -0500
-Date: Wed, 23 Feb 2011 17:24:32 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Arthur Marsh <arthur.marsh@internode.on.net>
-Cc: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
- 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
- GFP_ATOMIC order > 0
-Message-ID: <20110223162432.GL31195@random.random>
-References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
- <4D6367B3.9050306@googlemail.com>
- <20110222134047.GT13092@random.random>
- <20110222161513.GC13092@random.random>
- <4D63F6C0.7060204@internode.on.net>
+	id S1754824Ab1BWQZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:25:45 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:34161 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754657Ab1BWQZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 11:25:43 -0500
+Date: Wed, 23 Feb 2011 09:25:38 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [RFC PATCH 07/10] i2c: Convert i2c-octeon.c to use device tree.
+Message-ID: <20110223162538.GB14597@angua.secretlab.ca>
+References: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
+ <1298408274-20856-8-git-send-email-ddaney@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="zhXaljGHf11kAtnf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D63F6C0.7060204@internode.on.net>
+In-Reply-To: <1298408274-20856-8-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Feb 23, 2011 at 04:17:44AM +1030, Arthur Marsh wrote:
-> OK, these patches applied together against upstream didn't cause a crash 
-> but I did observe:
+On Tue, Feb 22, 2011 at 12:57:51PM -0800, David Daney wrote:
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+> Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+> Cc: linux-i2c@vger.kernel.org
+> ---
+>  arch/mips/cavium-octeon/octeon-platform.c |   84 ---------------------------
+>  arch/mips/include/asm/octeon/octeon.h     |    5 --
+>  drivers/i2c/busses/i2c-octeon.c           |   88 +++++++++++++---------------
+>  3 files changed, 41 insertions(+), 136 deletions(-)
 > 
-> significant slowdowns of MIDI playback (moreso than in previous cases, 
-> and with less than 20 Meg of swap file in use);
+> diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
+> index 56dbe54..99a20c6 100644
+> --- a/drivers/i2c/busses/i2c-octeon.c
+> +++ b/drivers/i2c/busses/i2c-octeon.c
+> @@ -11,17 +11,21 @@
+>   * warranty of any kind, whether express or implied.
+>   */
+>  
+> +#include <linux/platform_device.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+> +#include <linux/interrupt.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_i2c.h>
+
+Nit: generally the of_*.h headers are kept together.  Also this patch
+probably won't need of_address.h or of_irq.h after addressing my
+comments below.
+
+> +#include <linux/delay.h>
+>  #include <linux/sched.h>
+>  #include <linux/slab.h>
+>  #include <linux/init.h>
+> -
+> -#include <linux/io.h>
+>  #include <linux/i2c.h>
+> -#include <linux/interrupt.h>
+> -#include <linux/delay.h>
+> -#include <linux/platform_device.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+>  
+>  #include <asm/octeon/octeon.h>
+>  
+> @@ -67,9 +71,7 @@ struct octeon_i2c {
+>  	int irq;
+>  	int twsi_freq;
+>  	int sys_freq;
+> -	resource_size_t twsi_phys;
+>  	void __iomem *twsi_base;
+> -	resource_size_t regsize;
+>  	struct device *dev;
+>  };
+>  
+> @@ -511,17 +513,18 @@ static int __devinit octeon_i2c_initlowlevel(struct octeon_i2c *i2c)
+>  	return -EIO;
+>  }
+>  
+> -static int __devinit octeon_i2c_probe(struct platform_device *pdev)
+> +static int __devinit octeon_i2c_probe(struct platform_device *pdev,
+> +				      const struct of_device_id *match)
+>  {
+>  	int irq, result = 0;
+>  	struct octeon_i2c *i2c;
+> -	struct octeon_i2c_data *i2c_data;
+> -	struct resource *res_mem;
+> +	const __be32 *data;
+> +	int len;
+>  
+>  	/* All adaptors have an irq.  */
+> -	irq = platform_get_irq(pdev, 0);
+> -	if (irq < 0)
+> -		return irq;
+> +	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
+> +	if (!irq)
+> +		return -ENXIO;
+
+Platform_get_irq() works for dt registered devices, this hunk can be
+dropped.
+
+>  
+>  	i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
+>  	if (!i2c) {
+> @@ -530,32 +533,16 @@ static int __devinit octeon_i2c_probe(struct platform_device *pdev)
+>  		goto out;
+>  	}
+>  	i2c->dev = &pdev->dev;
+> -	i2c_data = pdev->dev.platform_data;
+> -
+> -	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -
+> -	if (res_mem == NULL) {
+> -		dev_err(i2c->dev, "found no memory resource\n");
+> -		result = -ENXIO;
+> -		goto fail_region;
+> -	}
+
+Ditto for platform_get_resource()
+
+>  
+> -	if (i2c_data == NULL) {
+> -		dev_err(i2c->dev, "no I2C frequency data\n");
+> -		result = -ENXIO;
+> -		goto fail_region;
+> -	}
+> +	data = of_get_property(pdev->dev.of_node, "clock-rate", &len);
+> +	if (data && len == sizeof(*data))
+> +		i2c->twsi_freq = be32_to_cpup(data);
+> +	else
+> +		i2c->twsi_freq = 100000;
+
+Seems to me that if the clock-rate (although it should be called
+clock-frequency) property is not present, the driver should complain
+loudly and refuse to load.  Don't fudge it.
+
+>  
+> -	i2c->twsi_phys = res_mem->start;
+> -	i2c->regsize = resource_size(res_mem);
+> -	i2c->twsi_freq = i2c_data->i2c_freq;
+> -	i2c->sys_freq = i2c_data->sys_freq;
+> +	i2c->sys_freq = octeon_get_io_clock_rate();
+>  
+> -	if (!request_mem_region(i2c->twsi_phys, i2c->regsize, res_mem->name)) {
+> -		dev_err(i2c->dev, "request_mem_region failed\n");
+> -		goto fail_region;
+> -	}
+> -	i2c->twsi_base = ioremap(i2c->twsi_phys, i2c->regsize);
+> +	i2c->twsi_base = of_iomap(pdev->dev.of_node, 0);
+
+This hunk can also be dropped.
+
+>  
+>  	init_waitqueue_head(&i2c->queue);
+>  
+> @@ -581,27 +568,27 @@ static int __devinit octeon_i2c_probe(struct platform_device *pdev)
+>  
+>  	i2c->adap = octeon_i2c_ops;
+>  	i2c->adap.dev.parent = &pdev->dev;
+> -	i2c->adap.nr = pdev->id >= 0 ? pdev->id : 0;
+> +	i2c->adap.dev.of_node = pdev->dev.of_node;
+>  	i2c_set_adapdata(&i2c->adap, i2c);
+>  	platform_set_drvdata(pdev, i2c);
+>  
+> -	result = i2c_add_numbered_adapter(&i2c->adap);
+> +	result = i2c_add_adapter(&i2c->adap);
+>  	if (result < 0) {
+>  		dev_err(i2c->dev, "failed to add adapter\n");
+>  		goto fail_add;
+>  	}
+> -
+>  	dev_info(i2c->dev, "version %s\n", DRV_VERSION);
+>  
+> -	return result;
+> +	of_i2c_register_devices(&i2c->adap);
+> +
+> +	return 0;
+>  
+>  fail_add:
+>  	platform_set_drvdata(pdev, NULL);
+>  	free_irq(i2c->irq, i2c);
+>  fail_irq:
+>  	iounmap(i2c->twsi_base);
+> -	release_mem_region(i2c->twsi_phys, i2c->regsize);
+> -fail_region:
+> +
+>  	kfree(i2c);
+>  out:
+>  	return result;
+> @@ -615,17 +602,25 @@ static int __devexit octeon_i2c_remove(struct platform_device *pdev)
+>  	platform_set_drvdata(pdev, NULL);
+>  	free_irq(i2c->irq, i2c);
+>  	iounmap(i2c->twsi_base);
+> -	release_mem_region(i2c->twsi_phys, i2c->regsize);
+>  	kfree(i2c);
+>  	return 0;
+>  };
+>  
+> -static struct platform_driver octeon_i2c_driver = {
+> +static struct of_device_id octeon_i2c_match[] = {
+> +	{
+> +		.compatible = "octeon,twsi",
+
+Need documentation for this binding added to
+Documentation/devicetree/bindings.  Compatible values for SoC devices
+should generally be in the form "<vendor>,<soc-name>-<device-name>".
+
+> +	},
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, octeon_i2c_match);
+> +
+> +static struct of_platform_driver octeon_i2c_driver = {
+
+of_platform_driver is deprecated.  As long as the .of_match_table is
+populated, a normal platform_driver will just work.
+
+>  	.probe		= octeon_i2c_probe,
+>  	.remove		= __devexit_p(octeon_i2c_remove),
+>  	.driver		= {
+>  		.owner	= THIS_MODULE,
+>  		.name	= DRV_NAME,
+> +		.of_match_table = octeon_i2c_match,
+>  	},
+>  };
+>  
+> @@ -633,20 +628,19 @@ static int __init octeon_i2c_init(void)
+>  {
+>  	int rv;
+>  
+> -	rv = platform_driver_register(&octeon_i2c_driver);
+> +	rv = of_register_platform_driver(&octeon_i2c_driver);
+
+Drop this change.
+
+On that note, this routine is typically simplified to:
++ {
++ 	return platform_driver_register(&octeon_i2c_driver);
++ }
+
+>  
+>  static void __exit octeon_i2c_exit(void)
+>  {
+> -	platform_driver_unregister(&octeon_i2c_driver);
+> +	of_unregister_platform_driver(&octeon_i2c_driver);
+
+Drop this hunk.
+
+>  }
+>  
+>  MODULE_AUTHOR("Michael Lawnick <michael.lawnick.ext@nsn.com>");
+>  MODULE_DESCRIPTION("I2C-Bus adapter for Cavium OCTEON processors");
+>  MODULE_LICENSE("GPL");
+>  MODULE_VERSION(DRV_VERSION);
+> -MODULE_ALIAS("platform:" DRV_NAME);
+>  
+>  module_init(octeon_i2c_init);
+>  module_exit(octeon_i2c_exit);
+> -- 
+> 1.7.2.3
 > 
-> kswapd0 sharing equal top place in CPU usage at times (e.g. 20 percent).
-> 
-> If I should try only one of the patches or something else entirely, 
-> please let me know.
-
-Yes, with irq off, schedule won't run and need_resched won't get set.
-
-So let's try this.
-
-In case this doesn't fix I definitely give it up with compaction in
-kswapd as GFP_ATOMIC will likely not get an huge benefit out of
-compaction anyway because 1) the allocations from GFP_ATOMIC are
-likely short lived, 2) the cost of the compaction scan loop +
-migration may be higher than the benefit we get from jumbo frames
-
-So if this doesn't fix it, I'll already post a definitive fix that
-removes compaction from kswapd (but leaves it enabled for direct
-reclaim for all order sizes including kernel stack). I already
-verified that this solves not just the midi latency issue but the
-other server benchmark that I'm dealing with. Then we can think at
-compaction+kswapd later for 2.6.39 but I think we need to close this
-kswapd issue in time for 2.6.38. So if the below isn't enough the next
-patch should be applied. I'll get those two patches tested in the
-server load too, and I'll let you know how the results are when it
-finishes.
-
-Please apply also the attached "kswapd-high-wmark" before the below
-one.
-
-====
-Subject: compaction: fix high latencies created by kswapd
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-We need to proper spin_unlock_irq/cond_resched in the compaction loop to avoid
-hurting latencies. We must also stop being too aggressive insisting with
-compaction within kswapd if compaction don't make progress in every zone.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/compaction.h |    6 +++++
- mm/compaction.c            |   53 +++++++++++++++++++++++++++++++++++++--------
- mm/vmscan.c                |   39 +++++++++++++++++++--------------
- 3 files changed, 73 insertions(+), 25 deletions(-)
-
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -271,9 +271,27 @@ static unsigned long isolate_migratepage
- 	}
- 
- 	/* Time to isolate some pages for migration */
-+	cond_resched();
- 	spin_lock_irq(&zone->lru_lock);
- 	for (; low_pfn < end_pfn; low_pfn++) {
- 		struct page *page;
-+		int unlocked = 0;
-+
-+		/* give a chance to irqs before checking need_resched() */
-+		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			unlocked = 1;
-+		}
-+		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
-+			if (fatal_signal_pending(current))
-+				break;
-+			if (!unlocked)
-+				spin_unlock_irq(&zone->lru_lock);
-+			cond_resched();
-+			spin_lock_irq(&zone->lru_lock);
-+		} else if (unlocked)
-+			spin_lock_irq(&zone->lru_lock);
-+
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
- 		nr_scanned++;
-@@ -436,6 +454,28 @@ static int compact_finished(struct zone 
- 	return COMPACT_CONTINUE;
- }
- 
-+static unsigned long compaction_watermark(struct zone *zone, int order)
-+{
-+	/*
-+	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
-+	 * This is because during migration, copies of pages need to be
-+	 * allocated and for a short time, the footprint is higher
-+	 */
-+	return low_wmark_pages(zone) + (2UL << order);
-+}
-+
-+static int __compaction_need_reclaim(struct zone *zone, int order,
-+				     unsigned long watermark)
-+{
-+	return !zone_watermark_ok(zone, 0, watermark, 0, 0);
-+}
-+
-+int compaction_need_reclaim(struct zone *zone, int order)
-+{
-+	return __compaction_need_reclaim(zone, order,
-+					 compaction_watermark(zone, order));
-+}
-+
- /*
-  * compaction_suitable: Is this suitable to run compaction on this zone now?
-  * Returns
-@@ -449,21 +489,16 @@ unsigned long compaction_suitable(struct
- 	unsigned long watermark;
- 
- 	/*
--	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
--	 * This is because during migration, copies of pages need to be
--	 * allocated and for a short time, the footprint is higher
--	 */
--	watermark = low_wmark_pages(zone) + (2UL << order);
--	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
--		return COMPACT_SKIPPED;
--
--	/*
- 	 * order == -1 is expected when compacting via
- 	 * /proc/sys/vm/compact_memory
- 	 */
- 	if (order == -1)
- 		return COMPACT_CONTINUE;
- 
-+	watermark = compaction_watermark(zone, order);
-+	if (__compaction_need_reclaim(zone, order, watermark))
-+		return COMPACT_SKIPPED;
-+
- 	/*
- 	 * fragmentation index determines if allocation failures are due to
- 	 * low memory or external fragmentation
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2385,9 +2385,9 @@ loop_again:
- 		 * cause too much scanning of the lower zones.
- 		 */
- 		for (i = 0; i <= end_zone; i++) {
--			int compaction;
- 			struct zone *zone = pgdat->node_zones + i;
- 			int nr_slab;
-+			int local_order;
- 
- 			if (!populated_zone(zone))
- 				continue;
-@@ -2407,20 +2407,21 @@ loop_again:
- 			 * We put equal pressure on every zone, unless one
- 			 * zone has way too many pages free already.
- 			 */
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone), end_zone, 0))
-+			if (!zone_watermark_ok_safe(zone, 0,
-+					high_wmark_pages(zone), end_zone, 0) ||
-+			    compaction_need_reclaim(zone, order)) {
- 				shrink_zone(priority, zone, &sc);
--			reclaim_state->reclaimed_slab = 0;
--			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
--						lru_pages);
--			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
--			total_scanned += sc.nr_scanned;
-+				reclaim_state->reclaimed_slab = 0;
-+				nr_slab = shrink_slab(sc.nr_scanned,
-+						      GFP_KERNEL,
-+						      lru_pages);
-+				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
-+				total_scanned += sc.nr_scanned;
-+			}
- 
--			compaction = 0;
-+			local_order = order;
- 			if (order &&
--			    zone_watermark_ok(zone, 0,
--					       high_wmark_pages(zone),
--					      end_zone, 0) &&
-+			    !compaction_need_reclaim(zone, order) &&
- 			    !zone_watermark_ok(zone, order,
- 					       high_wmark_pages(zone),
- 					       end_zone, 0)) {
-@@ -2428,12 +2429,18 @@ loop_again:
- 						   order,
- 						   sc.gfp_mask, false,
- 						   COMPACT_MODE_KSWAPD);
--				compaction = 1;
-+				/*
-+				 * Let kswapd stop immediately even if
-+				 * compaction didn't succeed to
-+				 * generate "high_wmark_pages" of the
-+				 * max order wanted in every zone.
-+				 */
-+				local_order = 0;
- 			}
- 
- 			if (zone->all_unreclaimable)
- 				continue;
--			if (!compaction && nr_slab == 0 &&
-+			if (nr_slab == 0 &&
- 			    !zone_reclaimable(zone))
- 				zone->all_unreclaimable = 1;
- 			/*
-@@ -2445,7 +2452,7 @@ loop_again:
- 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
- 				sc.may_writepage = 1;
- 
--			if (!zone_watermark_ok_safe(zone, order,
-+			if (!zone_watermark_ok_safe(zone, local_order,
- 					high_wmark_pages(zone), end_zone, 0)) {
- 				all_zones_ok = 0;
- 				/*
-@@ -2453,7 +2460,7 @@ loop_again:
- 				 * means that we have a GFP_ATOMIC allocation
- 				 * failure risk. Hurry up!
- 				 */
--				if (!zone_watermark_ok_safe(zone, order,
-+				if (!zone_watermark_ok_safe(zone, local_order,
- 					    min_wmark_pages(zone), end_zone, 0))
- 					has_under_min_watermark_zone = 1;
- 			} else {
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -26,6 +26,7 @@ extern int fragmentation_index(struct zo
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *mask,
- 			bool sync);
-+extern int compaction_need_reclaim(struct zone *zone, int order);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
- extern unsigned long compact_zone_order(struct zone *zone, int order,
- 					gfp_t gfp_mask, bool sync,
-@@ -68,6 +69,11 @@ static inline unsigned long try_to_compa
- 	return COMPACT_CONTINUE;
- }
- 
-+static inline int compaction_need_reclaim(struct zone *zone, int order)
-+{
-+	return 0;
-+}
-+
- static inline unsigned long compaction_suitable(struct zone *zone, int order)
- {
- 	return COMPACT_SKIPPED;
-
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=kswapd-high_wmark
-
-Subject: vmscan: kswapd must not free more than high_wmark pages
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-When the min_free_kbytes is set with `hugeadm
---set-recommended-min_free_kbytes" or with THP enabled (which runs the
-equivalent of "hugeadm --set-recommended-min_free_kbytes" to activate
-anti-frag at full effectiveness automatically at boot) the high wmark
-of some zone is as high as ~88M. 88M free on a 4G system isn't
-horrible, but 88M*8 = 704M free on a 4G system is definitely
-unbearable. This only tends to be visible on 4G systems with tiny
-over-4g zone where kswapd insists to reach the high wmark on the
-over-4g zone but doing so it shrunk up to 704M from the normal zone by
-mistake.
-
-For the trivial case where kswapd isn't waken until all zones hit the low wmark
-and there is no concurrency between allocator and kswapd freeing, rotating more
-the tiny above4g lru than "high-low" despite we only allocated "high-low" cache
-into it doesn't sound obviously right either. Bigger gap to me looks like will
-do more harm than good and if we need a real guarantee of balancing we should
-rotate the allocations across the zones (bigger lru in a zone will require it
-to be hit more frequently because it'll rotate slower than the other zones, the
-bias should not even dependent on the zone size but on the lru size).
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2408,7 +2408,7 @@ loop_again:
- 			 * zone has way too many pages free already.
- 			 */
- 			if (!zone_watermark_ok_safe(zone, order,
--					8*high_wmark_pages(zone), end_zone, 0))
-+					high_wmark_pages(zone), end_zone, 0))
- 				shrink_zone(priority, zone, &sc);
- 			reclaim_state->reclaimed_slab = 0;
- 			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
-
---zhXaljGHf11kAtnf--
