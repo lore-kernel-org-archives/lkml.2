@@ -1,82 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab1BWXh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:37:29 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57548 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1BWXh1 convert rfc822-to-8bit (ORCPT
+	id S1752429Ab1BWXkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:40:16 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43990 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab1BWXkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:37:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dB5eW7gPFAniVZdU28479DudL4BHSK4LERyjgrkuleEjJUB8BN9y7ffMAsQh1IYqVK
-         9AP0gTZqRU4fBvDVQnFpZIjBRZsiFuOmCNNwhhfAknm2MwJjZaU/nniYnibm+zHogWbe
-         mbXaaZE+rFJHO5Z+sQc9GpUX8S7RKEth1G0mE=
+	Wed, 23 Feb 2011 18:40:14 -0500
+Date: Wed, 23 Feb 2011 16:28:15 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name'
+ brokenness (v2)
+Message-ID: <20110223232815.GC5404@angua.secretlab.ca>
+References: <20110223150357.5a40793d@queued.net>
 MIME-Version: 1.0
-In-Reply-To: <20110223144445.86d0ca2b.akpm@linux-foundation.org>
-References: <1297355626-5152-1-git-send-email-minchan.kim@gmail.com>
-	<20110219234121.GA2546@barrios-desktop>
-	<20110223144445.86d0ca2b.akpm@linux-foundation.org>
-Date: Thu, 24 Feb 2011 08:37:27 +0900
-Message-ID: <AANLkTik47+rots2XsouMiCnefmxeC_n=Q9mwBSyE9YjC@mail.gmail.com>
-Subject: Re: [PATCH] mm: optimize replace_page_cache_page
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110223150357.5a40793d@queued.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 7:44 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 20 Feb 2011 08:41:21 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> Resend.
->
-> Reignore.
->
->> he patch is based on mmotm-2011-02-04 +
->> mm-add-replace_page_cache_page-function-add-freepage-hook.patch.
->>
->> On Fri, Feb 11, 2011 at 01:33:46AM +0900, Minchan Kim wrote:
->> > This patch optmizes replace_page_cache_page.
->> >
->> > 1) remove radix_tree_preload
->> > 2) single radix_tree_lookup_slot and replace radix tree slot
->> > 3) page accounting optimization if both pages are in same zone.
->> >
->> > Cc: Miklos Szeredi <mszeredi@suse.cz>
->> > Cc: Rik van Riel <riel@redhat.com>
->> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> > Cc: Mel Gorman <mel@csn.ul.ie>
->> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> > ---
->> >  mm/filemap.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++---------
->> >  1 files changed, 51 insertions(+), 10 deletions(-)
->> >
->> > Hi Miklos,
->> > This patch is totally not tested.
->> > Could you test this patch?
->
-> ^^^ Because of this.
->
-> Is it tested yet?
->
+On Wed, Feb 23, 2011 at 03:03:57PM -0800, Andres Salomon wrote:
+> 
+> Commit e2f2a93b changed dp->name from using the 'name' property to
+> using package-to-path.  This fixed /proc/device-tree creation by
+> eliminating conflicts between names (the 'name' property provides
+> names like 'battery', whereas package-to-path provides names like
+> '/foo/bar/battery@0', which we stripped to 'battery@0').  However,
+> it also breaks of_device_id table matching.
+> 
+> The fix that we _really_ wanted was to keep dp->name based upon
+> the name property ('battery'), but based dp->full_name upon
+> package-to-path ('battery@0').  This patch does just that.
+> 
+> This also changes OLPC behavior to use the full result from
+> package-to-path for full_name, rather than stripping the directory
+> out.  In practice, the strings end up being exactly the same; this
+> change saves time, code, and memory.
+> 
+> Note that this affects sparc by reverting dp->name back to what
+> sparc was originally doing (looking at the name property).
+> 
+> v2: combine two patches and revert of_pdt_node_name to original version.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-Miklos. Could you test this?
-If you are busy, let me know how to test it. I will.
-Thanks.
+Hi Andres, comments below.
 
+g.
 
--- 
-Kind regards,
-Minchan Kim
+> ---
+>  drivers/of/pdt.c |   42 +++++++++++++++---------------------------
+>  1 files changed, 15 insertions(+), 27 deletions(-)
+> 
+> diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+> index 28295d0..a7aa85e 100644
+> --- a/drivers/of/pdt.c
+> +++ b/drivers/of/pdt.c
+> @@ -134,7 +134,7 @@ static char * __init of_pdt_get_one_property(phandle node, const char *name)
+>  
+>  static char * __init of_pdt_try_pkg2path(phandle node)
+>  {
+> -	char *res, *buf = NULL;
+> +	char *buf = NULL;
+>  	int len;
+>  
+>  	if (!of_pdt_prom_ops->pkg2path)
+> @@ -147,29 +147,6 @@ static char * __init of_pdt_try_pkg2path(phandle node)
+>  		pr_err("%s: package-to-path failed\n", __func__);
+>  		return NULL;
+>  	}
+> -
+> -	res = strrchr(buf, '/');
+> -	if (!res) {
+> -		pr_err("%s: couldn't find / in %s\n", __func__, buf);
+> -		return NULL;
+> -	}
+> -	return res+1;
+> -}
+> -
+> -/*
+> - * When fetching the node's name, first try using package-to-path; if
+> - * that fails (either because the arch hasn't supplied a PROM callback,
+> - * or some other random failure), fall back to just looking at the node's
+> - * 'name' property.
+> - */
+> -static char * __init of_pdt_build_name(phandle node)
+> -{
+> -	char *buf;
+> -
+> -	buf = of_pdt_try_pkg2path(node);
+> -	if (!buf)
+> -		buf = of_pdt_get_one_property(node, "name");
+> -
+>  	return buf;
+>  }
+>  
+
+It seems to me that of_pdt_build_full_name will still be missing the
+'@<addr>' component on non-sparc non-olpc builds because it uses the
+broken of_pdt_node_name().  That needs to be fixed too, even if there
+are no current users (or removed).
+
+> @@ -187,7 +164,7 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+>  
+>  	kref_init(&dp->kref);
+>  
+> -	dp->name = of_pdt_build_name(node);
+> +	dp->name = of_pdt_get_one_property(node, "name");
+>  	dp->type = of_pdt_get_one_property(node, "device_type");
+>  	dp->phandle = node;
+>  
+> @@ -198,11 +175,22 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+>  	return dp;
+>  }
+>  
+> -static char * __init of_pdt_build_full_name(struct device_node *dp)
+> +static char * __init of_pdt_build_full_name(struct device_node *dp,
+> +		phandle node)
+
+Is dp->phandle not suitable here?
+
+>  {
+>  	int len, ourlen, plen;
+>  	char *n;
+>  
+> +	/*
+> +	 * When fetching the full name we want the name we see with
+> +	 * package-to-path (ie, '/foo/bar/battery@0') rather than what
+> +	 * we see with the name property (ie, 'battery').
+> +	 */
+> +	n = of_pdt_try_pkg2path(node);
+> +	if (n)
+> +		return n;
+> +
+> +	/* Older method for determining full name */
+>  	plen = strlen(dp->parent->full_name);
+>  	ourlen = strlen(of_pdt_node_name(dp));
+>  	len = ourlen + plen + 2;
+> @@ -243,7 +231,7 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
+>  #if defined(CONFIG_SPARC)
+>  		dp->path_component_name = build_path_component(dp);
+>  #endif
+
+I still think it would be useful to remove the #if
+defined(CONFIG_SPARC) from path_component_name, and it might be the
+best way to solve my comment about broken of_pdt_node_name above.
+
+> -		dp->full_name = of_pdt_build_full_name(dp);
+> +		dp->full_name = of_pdt_build_full_name(dp, node);
+>  
+>  		dp->child = of_pdt_build_tree(dp,
+>  				of_pdt_prom_ops->getchild(node), nextp);
+> -- 
+> 1.7.2.3
+> 
