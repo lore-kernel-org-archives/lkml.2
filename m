@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab1BWUhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:37:23 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53886 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab1BWUhU (ORCPT
+	id S932629Ab1BWUjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:39:25 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40108 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab1BWUjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:37:20 -0500
-Date: Wed, 23 Feb 2011 13:37:15 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Andres Salomon <dilinger@queued.net>,
-        David Woodhouse <dwmw2@infradead.org>, cbou@mail.ru,
-        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, dmitry.torokhov@gmail.com,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name'
- brokenness
-Message-ID: <20110223203715.GU14597@angua.secretlab.ca>
-References: <20110216222820.487AE9D401C@zog.reactivated.net>
- <1297896277.3011.5.camel@macbook.infradead.org>
- <AANLkTikAF2X1A5jfoNfCPRhZkZ7qPdZ57c8B5b9z4+qr@mail.gmail.com>
- <20110218190659.7f955e4c@queued.net>
- <20110223194352.GR14597@angua.secretlab.ca>
- <20110223115414.547b8c17@queued.net>
- <AANLkTi=D1eWGsN4JVWEGeHp3AXfpbOOKr9Fq7juGAXtT@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=D1eWGsN4JVWEGeHp3AXfpbOOKr9Fq7juGAXtT@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 23 Feb 2011 15:39:24 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: linux-next still missing patch for zcache modular Kconfig/build issue
+In-Reply-To: Your message of "Wed, 23 Feb 2011 12:23:34 PST."
+             <fc9a9123-cc27-4754-9222-796890553ee6@default>
+From: Valdis.Kletnieks@vt.edu
+References: <21508.1298491740@localhost>
+            <fc9a9123-cc27-4754-9222-796890553ee6@default>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1298493554_5041P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 23 Feb 2011 15:39:14 -0500
+Message-ID: <30338.1298493554@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4D657073.005F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 08:06:47PM +0000, Daniel Drake wrote:
-> On 23 February 2011 19:54, Andres Salomon <dilinger@queued.net> wrote:
-> >> Wait; why are you binding to a device based on name?  Binding by name
-> >> and/or device_type is strongly discouraged for new code.  Use
-> >> compatible instead.
-> >>
-> >
-> > Daniel posted a separate patch showing his code, would you mind
-> > commenting on that?  I noticed he didn't cc you though, here's the
-> > patch:
-> >
-> > https://patchwork.kernel.org/patch/574901/
+--==_Exmh_1298493554_5041P
+Content-Type: text/plain; charset=us-ascii
+
+On Wed, 23 Feb 2011 12:23:34 PST, Dan Magenheimer said:
+> GregKH hasn't yet pulled the fix into staging-next, which feeds
+> into linux-next.  See:
 > 
-> It does bind to the name.
-> We don't currently have a compatible property for the battery device.
-> We could fix that with a firmware upgrade, but it would break
-> compatibility with all existing installs. I guess this is still the
-> recommended approach...
+> https://lkml.org/lkml/2011/2/18/311
+> https://lkml.org/lkml/2011/2/18/342
 
-Hi Daniel,
+Oh OK. Just wanted to make sure it hadn't gotten misplaced - I'm a few days
+behind on reading lkml, and missed where Nitin had to respin the patch...
 
-As mentioned in my reply to your patch, the solution to this is fix up
-the missing compatible property in the board support code before it
-pollutes the global matching namespace.
 
-g.
+--==_Exmh_1298493554_5041P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNZXBycC3lWbTT17ARAj2CAJ9cNTudgdtdzBFIuZTUjYJYTSMfTACgsapB
+xJy2lCxRyQzFWotiASzfC5Y=
+=GRDy
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1298493554_5041P--
 
