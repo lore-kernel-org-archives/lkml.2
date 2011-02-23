@@ -1,209 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab1BWM7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 07:59:07 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42533 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab1BWM7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 07:59:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=p2iMQDMXfhhx/6AzV/pXViV1envzkYmRTOjaLwYFB5bGRrBt69oP9W9rFCCBD9a2xE
-         sqqCf91KVBCtTFUakej9uThF+8wp2gT0O2qvKruve2Zc6Z46kHZ8HepxQipvWGzofQ0K
-         Ah4366PWff9oDOkFWGuOdDYSKY9QEwN/mjz78=
-Subject: Re: [PATCH v5] EHCI bus glue for on-chip PMC MSP USB controller
-From: Anoop P A <anoop.pa@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: "gregkh @ suse . de" <gregkh@suse.de>,
-        "dbrownell @ users . sourceforge . net" 
-	<dbrownell@users.sourceforge.net>,
-        "stern @ rowland . harvard . edu" <stern@rowland.harvard.edu>,
-        "pkondeti @ codeaurora . org" <pkondeti@codeaurora.org>,
-        "jacob . jun . pan @ intel . com" <jacob.jun.pan@intel.com>,
-        "linux-usb @ vger . kernel . org" <linux-usb@vger.kernel.org>,
-        "alek . du @ intel . com" <alek.du@intel.com>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        "gadiyar @ ti . com" <gadiyar@ti.com>,
-        "ralf @ linux-mips . org" <ralf@linux-mips.org>,
-        "linux-mips @ linux-mips . org" <linux-mips@linux-mips.org>,
-        Greg KH <greg@kroah.com>
-In-Reply-To: <20110222200427.GB1966@bicker>
-References: <4D5ABB65.3090101@parrot.com>
-	 <1298388933-13707-1-git-send-email-anoop.pa@gmail.com>
-	 <20110222200427.GB1966@bicker>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Feb 2011 18:52:23 +0530
-Message-ID: <1298467343.9950.119.camel@paanoop1-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754596Ab1BWNJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 08:09:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64649 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917Ab1BWNJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 08:09:26 -0500
+Message-ID: <4D6506FB.2090809@redhat.com>
+Date: Wed, 23 Feb 2011 15:09:15 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 1/3] Weight-balanced tree
+References: <20110222183822.22026.62832.stgit@s20.home> <20110222185456.22026.28200.stgit@s20.home>
+In-Reply-To: <20110222185456.22026.28200.stgit@s20.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 23:04 +0300, Dan Carpenter wrote:
-> On Tue, Feb 22, 2011 at 09:05:33PM +0530, Anoop P.A wrote:
-> > From: Anoop <paanoop1@paanoop1-desktop.(none)>
-> > 
-> > This patch add bus glue for USB controller commonly found in PMC-Sierra MSP71xx family of SoC's.
-> > 
-> > 
-> > Signed-off-by: Anoop P A <anoop.pa@gmail.com>
-> > ---
-> > Changes.
-> > ehci-pmcmsp.c is based on latest ehci-pci.c.Addressed some stylistic issue pointed by Greg.
-> > Addressed comments from Matthieu CASTET.
-> 
-> Could you spell that out more completely next time? 
+On 02/22/2011 08:55 PM, Alex Williamson wrote:
+> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> ---
+>
+>   include/linux/wbtree.h |   55 ++++++++++++++++
+>   lib/Makefile           |    3 +
+>   lib/wbtree.c           |  170 ++++++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 227 insertions(+), 1 deletions(-)
+>   create mode 100644 include/linux/wbtree.h
+>   create mode 100644 lib/wbtree.c
+>
 
-OK 
+Andrew, can we add something like this to the tree?  Can it go through 
+the kvm tree?
 
-> 
-> > +config USB_EHCI_HCD_PMC_MSP
-> > +	tristate "EHCI support for on-chip PMC MSP USB controller"
-> 
-> Better to say "EHCI support for on-chip PMC-Sierra MSP71xx USB controllers"
-Ok will change that
+> diff --git a/include/linux/wbtree.h b/include/linux/wbtree.h
+> new file mode 100644
+> index 0000000..ef70f6f
+> --- /dev/null
+> +++ b/include/linux/wbtree.h
+> @@ -0,0 +1,55 @@
+> +/*
+> + * Weight-balanced binary tree
+> + *
+> + * The balance of this tree is based on search probability.  The
+> + * heaviest weighted nodes (the ones we're most likely to hit), are
+> + * at the top of each subtree.
+> + *
+> + * Copywrite (C) 2011 Red Hat, Inc.
+> + *
+> + * Authors:
+> + *   Alex Williamson<alex.williamson@redhat.com>
+> + *
+> + * This work is licensed under the terms of the GNU GPL, version 2.  See
+> + * the COPYING file in the top-level directory.
+> + */
+> +#ifndef _LINUX_WBTREE_H
+> +#define _LINUX_WBTREE_H
+> +
+> +#include<linux/kernel.h>
+> +#include<linux/stddef.h>
+> +
+> +struct wb_node {
+> +	struct wb_node *wb_parent;
+> +	struct wb_node *wb_left;
+> +	struct wb_node *wb_right;
+> +	unsigned long wb_weight;
+> +};
+> +
+> +struct wb_root {
+> +	struct wb_node *wb_node;
+> +};
+> +
+> +#define WB_ROOT (struct wb_root) { NULL, }
+> +#define wb_entry(ptr, type, member) container_of(ptr, type, member)
+> +
+> +extern void wb_rebalance(struct wb_node *node, struct wb_root *root);
+> +extern void wb_erase(struct wb_node *node, struct wb_root *root);
+> +extern struct wb_node *wb_first(struct wb_root *root);
+> +extern struct wb_node *wb_last(struct wb_root *root);
+> +extern struct wb_node *wb_next(struct wb_node *node);
+> +extern struct wb_node *wb_prev(struct wb_node *node);
+> +
+> +static inline void wb_set_weight(struct wb_node *node, unsigned long weight)
+> +{
+> +	node->wb_weight = weight;
+> +}
+> +
+> +static inline void wb_link_node(struct wb_node *node, struct wb_node *parent,
+> +				struct wb_node **wb_link)
+> +{
+> +	node->wb_left = node->wb_right = NULL;
+> +	node->wb_parent = parent;
+> +	*wb_link = node;
+> +}
+> +#endif /* _LINUX_WBTREE_H */
+> diff --git a/lib/Makefile b/lib/Makefile
+> index cbb774f..5c42e63 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -21,7 +21,8 @@ lib-y	+= kobject.o kref.o klist.o
+>
+>   obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+>   	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+> -	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o
+> +	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o \
+> +	 wbtree.o
+>
 
-> 
-> > +	depends on USB_EHCI_HCD && MSP_HAS_USB
-> > +	default y
-> 
-> New features always default to No.
-O.k
+obj-$(CONFIG_WEIGHT_BALANCED_TREE) += wbtree.o
 
-> 
-> > +#include <msp_usb.h>
-> 
-> Cannot find the msp_usb.h in linux-next.  Doesn't compile.
-msp_usb.h has made it's way to linux-mips queue tree along with the
-platform code
+then kvm can select it, and the impact on non-kvm kernels is removed.
 
-> 
-> > +static void usb_hcd_tdi_set_mode(struct ehci_hcd *ehci)
-> > +{
-> > +	u8 *base;
-> > +	u8 *statreg;
-> > +	u8 *fiforeg;
-> > +	u32 val;
-> > +	struct ehci_regs *reg_base = ehci->regs;
-> > +
-> > +	/* get register base */
-> > +	base = (u8 *)reg_base + USB_EHCI_REG_USB_MODE;
-> > +	statreg = (u8 *)reg_base + USB_EHCI_REG_USB_STATUS;
-> > +	fiforeg = (u8 *)reg_base + USB_EHCI_REG_USB_FIFO;
-> > +
-> > +	/* Disable controller mode stream */
-> > +	val = ehci_readl(ehci, (u32 *)base);
-> 
-> It doesn't compile so I can't test this, but I think that this will
-> cause a sparse warning.  "base" should have an __iomem tag.  Please
-> run sparse on this driver.
-Looks like mips platform build has been broken on linux-next ( unable to
-configure) . However I have tested code with linux-queue tree ( mips)
-and didn't see any such warnings
+>   ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+>   CFLAGS_kobject.o += -DDEBUG
+> diff --git a/lib/wbtree.c b/lib/wbtree.c
+> new file mode 100644
+> index 0000000..54c3817
+> --- /dev/null
+> +++ b/lib/wbtree.c
+> @@ -0,0 +1,170 @@
+> +/*
+> + * Weight-balanced binary tree
+> + *
+> + * The balance of this tree is based on search probability.  The
+> + * heaviest weighted nodes (the ones we're most likely to hit), are
+> + * at the top of each subtree.
+> + *
+> + * Copywrite (C) 2011 Red Hat, Inc.
+> + *
+> + * Authors:
+> + *   Alex Williamson<alex.williamson@redhat.com>
+> + *
+> + * This work is licensed under the terms of the GNU GPL, version 2.  See
+> + * the COPYING file in the top-level directory.
+> + */
+> +#include<linux/wbtree.h>
+> +#include<linux/module.h>
+> +
+> +static void __wb_rotate_left(struct wb_node *node, struct wb_root *root)
+> +{
+> +	struct wb_node *right = node->wb_right;
+> +	struct wb_node *parent = node->wb_parent;
+> +
+> +	if ((node->wb_right = right->wb_left))
+> +		right->wb_left->wb_parent = node;
+> +	right->wb_left = node;
+> +
+> +	right->wb_parent = parent;
+> +
+> +	if (parent) {
+> +		if (node == parent->wb_left)
+> +			parent->wb_left = right;
+> +		else
+> +			parent->wb_right = right;
+> +	} else
+> +		root->wb_node = right;
+> +
+> +	node->wb_parent = right;
+> +}
+> +
+> +static void __wb_rotate_right(struct wb_node *node, struct wb_root *root)
+> +{
+> +	struct wb_node *left = node->wb_left;
+> +	struct wb_node *parent = node->wb_parent;
+> +
+> +	if ((node->wb_left = left->wb_right))
+> +		left->wb_right->wb_parent = node;
+> +	left->wb_right = node;
+> +
+> +	left->wb_parent = parent;
+> +
+> +	if (parent) {
+> +		if (node == parent->wb_right)
+> +			parent->wb_right = left;
+> +		else
+> +			parent->wb_left = left;
+> +	} else
+> +		root->wb_node = left;
+> +
+> +	node->wb_parent = left;
+> +}
+> +
+> +void wb_rebalance(struct wb_node *node, struct wb_root *root)
+> +{
+> +	while (node->wb_parent&&  node->wb_parent->wb_weight<  node->wb_weight) {
+> +		if (node == node->wb_parent->wb_left)
+> +			__wb_rotate_right(node->wb_parent, root);
+> +		else
+> +			__wb_rotate_left(node->wb_parent, root);
+> +	}
+> +}
+> +EXPORT_SYMBOL(wb_rebalance);
+> +
+> +void wb_erase(struct wb_node *node, struct wb_root *root)
+> +{
+> +	while (node->wb_left || node->wb_right) {
+> +		if (!node->wb_left)
+> +			__wb_rotate_left(node, root);
+> +		else if (!node->wb_right)
+> +			__wb_rotate_right(node, root);
+> +		else {
+> +			if (node->wb_left->wb_weight>
+> +			    node->wb_right->wb_weight)
+> +				__wb_rotate_right(node, root);
+> +			else
+> +				__wb_rotate_left(node, root);
+> +		}
+> +	}
+> +
+> +	if (node->wb_parent) {
+> +		if (node->wb_parent->wb_left == node)
+> +			node->wb_parent->wb_left = NULL;
+> +		else
+> +			node->wb_parent->wb_right = NULL;
+> +	} else
+> +		root->wb_node = NULL;
+> +}
+> +EXPORT_SYMBOL(wb_erase);
+> +
+> +struct wb_node *wb_first(struct wb_root *root)
+> +{
+> +	struct wb_node *node;
+> +
+> +	node = root->wb_node;
+> +	if (!node)
+> +		return NULL;
+> +
+> +	while (node->wb_left)
+> +		node = node->wb_left;
+> +
+> +	return node;
+> +}
+> +EXPORT_SYMBOL(wb_first);
+> +
+> +struct wb_node *wb_last(struct wb_root *root)
+> +{
+> +	struct wb_node *node;
+> +
+> +	node = root->wb_node;
+> +	if (!node)
+> +		return NULL;
+> +
+> +	while (node->wb_right)
+> +		node = node->wb_right;
+> +
+> +	return node;
+> +}
+> +EXPORT_SYMBOL(wb_last);
+> +
+> +struct wb_node *wb_next(struct wb_node *node)
+> +{
+> +	struct wb_node *parent;
+> +
+> +	if (node->wb_parent == node)
+> +		return NULL;
+> +
+> +	if (node->wb_right) {
+> +		node = node->wb_right;
+> +		while (node->wb_left)
+> +			node = node->wb_left;
+> +		return node;
+> +	}
+> +
+> +	while ((parent = node->wb_parent)&&  node == parent->wb_right)
+> +		node = parent;
+> +
+> +	return parent;
+> +}
+> +EXPORT_SYMBOL(wb_next);
+> +
+> +struct wb_node *wb_prev(struct wb_node *node)
+> +{
+> +	struct wb_node *parent;
+> +
+> +	if (node->wb_parent == node)
+> +		return NULL;
+> +
+> +	if (node->wb_left) {
+> +		node = node->wb_left;
+> +		while (node->wb_right)
+> +			node = node->wb_right;
+> +		return node;
+> +	}
+> +
+> +	while ((parent = node->wb_parent)&&  node == parent->wb_left)
+> +		node = parent;
+> +
+> +	return parent;
+> +}
+> +EXPORT_SYMBOL(wb_prev);
+>
 
-> 
-> > +/* called after powerup, by probe or system-pm "wakeup" */
-> > +static int ehci_msp_reinit(struct ehci_hcd *ehci)
-> > +{
-> > +	ehci_port_power(ehci, 0);
-> > +
-> > +	return 0;
-> 
-> Better to make this function void.
-O.K
-> 
-> > +}
-> > +
-> > +/* called during probe() after chip reset completes */
-> > +static int ehci_msp_setup(struct usb_hcd *hcd)
-> > +{
-> > +	struct ehci_hcd		*ehci = hcd_to_ehci(hcd);
-> > +	u32			temp;
-> > +	int			retval;
-> 
-> Needs a blank line here to separate declarations from code.
-O.K
-> 
-> > +	ehci->big_endian_mmio = 1;
-> > +	ehci->big_endian_desc = 1;
-> > +
-> > +	ehci->caps = hcd->regs;
-> > +	ehci->regs = hcd->regs +
-> > +			HC_LENGTH(ehci_readl(ehci, &ehci->caps->hc_capbase));
-> 
-> [snip]
-> 
-> > +	/* data structure init */
-> > +	retval = ehci_init(hcd);
-> > +	if (retval)
-> > +		return retval;
-> > +
-> > +	temp = HCS_N_CC(ehci->hcs_params) * HCS_N_PCC(ehci->hcs_params);
-> > +	temp &= 0x0f;
-> 
-> companion HCs * ports per CC & 0xf?
-> 
-> What's the &= 0x0f for?  It's left out of the printk.
-Code got carried forward from ehci-pci.c . Is that says ehci-pci.c is
-uptodate? .  
-> 
-> > +	if (temp && HCS_N_PORTS(ehci->hcs_params) > temp) {
-> > +		ehci_dbg(ehci, "bogus port configuration: "
-> > +			"cc=%d x pcc=%d < ports=%d\n",
-> > +			HCS_N_CC(ehci->hcs_params),
-> > +			HCS_N_PCC(ehci->hcs_params),
-> > +			HCS_N_PORTS(ehci->hcs_params));
-> > +	}
-> 
-> [snip]
-> 
-> > +/*-------------------------------------------------------------------------*/
-> 
-> No need for these blank comments.
-O.K
-> 
-> > +
-> > +static void msp_start_hc(struct platform_device *dev)
-> > +{
-> > +}
-> > +
-> > +static void msp_stop_hc(struct platform_device *dev)
-> > +{
-> > +}
-> > +
-> 
-> I don't understand the point of these empty functions.
-Will  remove it.
-> 
-> > +static int ehci_msp_suspend(struct device *dev)
-> > +{
-> > +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-> > +	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-> > +	unsigned long flags;
-> > +	int rc;
-> > +
-> > +	return 0;
-> > +	rc = 0;
-> > +
-> > +	if (time_before(jiffies, ehci->next_statechange))
-> > +		usleep(10000);
-> 
-> Is there still a usleep() function?  Either way, can you send us
-> something that compiles on linux-next?
-Again code got carried from ehci-pci.c .(changed msleep to usleep as
-checkpatch complained about it). I am unable to compile mips targets in
-linux-next tree . However this patch is tested with both linux-stable
-and linux-queue tree of l-m-o
 
-> 
-> regards,
-> dan carpenter
-> 
-> 
-
+-- 
+error compiling committee.c: too many arguments to function
 
