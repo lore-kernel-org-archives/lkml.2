@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab1BWRPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 12:15:00 -0500
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:44943 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755210Ab1BWRO7 (ORCPT
+	id S932379Ab1BWRQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 12:16:10 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56876 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab1BWRQH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 12:14:59 -0500
-Subject: [PATCH] module: reorder kparam_array to remove alignment padding
- on 64 bit builds
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Feb 2011 17:14:56 +0000
-Message-ID: <1298481296.2130.7.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Feb 2011 12:16:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UPp8vhV5JF68m4peoMxqcJNIWlw8sobqzvLiOUgv7T5vVORYd9RFE7fSZUom2qx4jU
+         FeBfbkqnlarRhq2zRQeiIdjKdkT+Ci7vX1cTmjC00sOuEvfNr49oQgKemB5kgQoxtBgb
+         8ziLKigwCheWhyqrLSSWCC+0OmRi5wBv/uEz0=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
+References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
+	<20110222140349.GA20708@kryptos.osrc.amd.com>
+	<AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
+	<AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
+	<AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
+Date: Wed, 23 Feb 2011 19:16:05 +0200
+Message-ID: <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
+Subject: Re: Linux 2.6.38-rc6
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@redhat.com>, linux-fbdev@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
+        Borislav Petkov <bp@amd64.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder structure kparam_array to remove 8 bytes of alignment padding on
-64 bit builds, dropping its size from 40 to 32 bytes.
+On Wed, Feb 23, 2011 at 6:32 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Feb 22, 2011 at 9:42 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+>> General protection fault:
+>> http://i.imgur.com/TBJ6y.jpg
+>>
+>> dmesg: http://pastebin.com/qD8pR8QH
+>> config: http://pastebin.com/XEurtHWi
+>
+> That's drivers/video/fbmem.c: fb_release(), and the "Code:"
+> disassembly shows that it is
+>
+>  1b:   e8 f7 c0 29 00          callq  xyz
+>  20:   48 8b 93 b8 03 00 00    mov    0x3b8(%rbx),%rdx
+>  27:*  48 8b 42 10             mov    0x10(%rdx),%rax     <-- trapping instruction
+>
+> which corresponds to
+>
+>        mutex_lock(&info->lock);
+>        if (info->fbops->fb_release)
+>                info->fbops->fb_release(info,1);
+>
+> so it looks like 'info->fbops' is invalid. It's in %rdx, and is
+> 0x00d000ae00b500c2, which is definitely not a valid pointer. Looks
+> like some bad corruption (looks like a sequence of 16-bit numbers, but
+> it could be anything).
+>
+> Looks like nouveafb took over from vesafb. Did you do anything special
+> to trigger this?
 
-Also update the macro module_param_array_named to initialise the
-structure using its member names to allow it to be changed without
-touching all its call sites.
+No. Just boot the system.
 
-'git grep' finds module_param_array in 1037 places so this patch will
-save a small amount of data space across many modules.
+>
+> Also, you do seem to have some extra patches (yama at the least). Anything else?
 
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-----
+I used git clone, nothing else.
+First time 2.6.38-rc6 was working.
+After an update from ubuntu I get that error at boot.
 
-patch against v2.6.38-rc6
-compiled & tested on x86_64
+The dmesg is from Ubuntu 11.04 with their kernel and is working fine.
 
-regards
-Richard
-
-
-
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 07b4195..ddaae98 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -67,9 +67,9 @@ struct kparam_string {
- struct kparam_array
- {
- 	unsigned int max;
-+	unsigned int elemsize;
- 	unsigned int *num;
- 	const struct kernel_param_ops *ops;
--	unsigned int elemsize;
- 	void *elem;
- };
- 
-@@ -371,8 +371,9 @@ extern int param_get_invbool(char *buffer, const struct kernel_param *kp);
-  */
- #define module_param_array_named(name, array, type, nump, perm)		\
- 	static const struct kparam_array __param_arr_##name		\
--	= { ARRAY_SIZE(array), nump, &param_ops_##type,			\
--	    sizeof(array[0]), array };					\
-+	= { .max = ARRAY_SIZE(array), .num = nump,                      \
-+	    .ops = &param_ops_##type,					\
-+	    .elemsize = sizeof(array[0]), .elem = array };		\
- 	__module_param_call(MODULE_PARAM_PREFIX, name,			\
- 			    &param_array_ops,				\
- 			    .arr = &__param_arr_##name,			\
-
-
+>
+>                            Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
