@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab1BWAJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 19:09:57 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:44160 "EHLO mx2.parallels.com"
+	id S1755472Ab1BWAKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 19:10:44 -0500
+Received: from fifo99.com ([67.223.236.141]:55722 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918Ab1BWAJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 19:09:55 -0500
-Message-ID: <4D64504D.6070306@parallels.com>
-Date: Tue, 22 Feb 2011 18:09:49 -0600
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: netdev <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        Mariusz Kozlowski <mk@lab.zgora.pl>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>
-Subject: Re: net: update Documentation/networking/00-INDEX
-References: <4D6095E3.2040103@parallels.com>	<20110221185205.GA23284@mako-laptop>	<4D62C43F.5040302@parallels.com>	<20110221120303.48106f6c.rdunlap@xenotime.net> <20110222142343.f3318134.rdunlap@xenotime.net>
-In-Reply-To: <20110222142343.f3318134.rdunlap@xenotime.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1755194Ab1BWAKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 19:10:42 -0500
+Subject: Re: [PATCH] msm: add single-wire serial bus interface (SSBI) driver
+From: Daniel Walker <dwalker@fifo99.com>
+To: Dima Zavin <dima@android.com>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        Kenneth Heitke <kheitke@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
+        davidb@codeaurora.org, tsoni@codeaurora.org,
+        linux-arm-msm@vger.kernel.org,
+        ARM PORT <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTi=0Pxg09x8DdVDVy9Ur7r1dgB+4LM3q0hM4_8Rg@mail.gmail.com>
+References: <1297989299-27320-1-git-send-email-kheitke@codeaurora.org>
+	 <1297989432.9680.50.camel@c-dwalke-linux.qualcomm.com>
+	 <4D5DC289.1090004@codeaurora.org>
+	 <1298054771.17758.1.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTi=0Pxg09x8DdVDVy9Ur7r1dgB+4LM3q0hM4_8Rg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Feb 2011 16:10:39 -0800
+Message-ID: <1298419839.17118.5.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [24.27.19.110]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 04:23 PM, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Clean up entries in 00-INDEX: drop files that have been removed.
-> 
-> Reported-by: Rob Landley <rlandley@parallels.com>
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 2011-02-22 at 12:47 -0800, Dima Zavin wrote:
 
-Acked-by: Rob Landley <rlandley@parallels.com>
+> What is the problem leaving it under arch/arm/mach-msm?
+
+Because it's a driver.
+
+Daniel
+
