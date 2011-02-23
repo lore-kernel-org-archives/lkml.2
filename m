@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab1BWSJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 13:09:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41788 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab1BWSJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 13:09:26 -0500
-Date: Wed, 23 Feb 2011 10:06:27 -0800
-From: Greg KH <gregkh@suse.de>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        Roland Vossen <rvossen@broadcom.com>,
-        Brett Rudley <brudley@broadcom.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [Stable-review] [28/70] staging: brcm80211: bugfix for softmac
- crash on multi cpu configurations
-Message-ID: <20110223180627.GB30106@suse.de>
-References: <20110222221839.853712243@clark.kroah.org>
- <1298427787.2211.498.camel@localhost>
- <op.vrciafbg3ri7v4@arend-laptop>
+	id S1753534Ab1BWSKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 13:10:47 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36159 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab1BWSKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 13:10:45 -0500
+Date: Wed, 23 Feb 2011 11:10:42 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 07/15] dt: uartlite: merge platform and of_platform
+ driver bindings
+Message-ID: <20110223181042.GK14597@angua.secretlab.ca>
+References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
+ <20110223043411.20795.57850.stgit@localhost6.localdomain6>
+ <877hcryvom.fsf@macbook.be.48ers.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <op.vrciafbg3ri7v4@arend-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <877hcryvom.fsf@macbook.be.48ers.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 08:40:53AM +0100, Arend van Spriel wrote:
-> On Wed, 23 Feb 2011 03:23:07 +0100, Ben Hutchings
-> <ben@decadent.org.uk> wrote:
+On Wed, Feb 23, 2011 at 09:58:01AM +0100, Peter Korsgaard wrote:
+> >>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
 > 
-> >On Tue, 2011-02-22 at 14:17 -0800, Greg KH wrote:
-> >>2.6.37-stable review patch.  If anyone has any objections,
-> >>please let us know.
-> >>
-> >>------------------
-> >
-> >Why is this so different?
-> >
+>  Grant> of_platform_driver is getting removed, and a single platform_driver
+>  Grant> can now support both devicetree and non-devicetree use cases.  This
+>  Grant> patch merges the two driver registrations.
 > 
-> Hi Ben,
+> Wee!
 > 
-> I think you are right. The diff below actually is from another
-> commit which I posted for stable review titled:
+>  Grant>  static int __devinit ulite_probe(struct platform_device *pdev)
+>  Grant>  {
+>  Grant>  	struct resource *res, *res2;
+>  Grant> +	const __be32 *prop;
+>  Grant> +	int id = pdev->id;
+>  
+>  Grant>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  Grant>  	if (!res)
+>  Grant> @@ -583,7 +586,13 @@ static int __devinit ulite_probe(struct platform_device *pdev)
+>  Grant>  	if (!res2)
+>  Grant>  		return -ENODEV;
+>  
+>  Grant> -	return ulite_assign(&pdev->dev, pdev->id, res->start, res2->start);
+>  Grant> +#ifdef CONFIG_OF
+>  Grant> +	prop = of_get_property(pdev->dev.of_node, "port-number", NULL);
+>  Grant> +	if (prop)
+>  Grant> +		id = be32_to_cpup(prop);
+>  Grant> +#endif
+>  Grant> +
+>  Grant> +	return ulite_assign(&pdev->dev, id, res->start, res2->start);
+>  Grant>  }
 > 
-> staging: brcm80211: remove assert to avoid panic since 2.6.37 kernel
+> Isn't this going to give a build warning about prop being unused on
+> !CONFIG_OF builds? Perhaps move it down into the CONFIG_OF conditional?
 
-So, what should I do here?  Drop the referenced patch from the
-.37-stable queue, or do you have the text for the changelog that I
-should use here instead?
+I'd actually like to be rid of 'port-number' entirely; but that's
+another day's debate.  I'll fix this up.
 
-confused,
+g.
 
-greg k-h
