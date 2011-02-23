@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab1BWUom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:44:42 -0500
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:28887 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752243Ab1BWUol (ORCPT
+	id S1755929Ab1BWUo7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:44:59 -0500
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:41191 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752353Ab1BWUo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:44:41 -0500
+	Wed, 23 Feb 2011 15:44:58 -0500
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPf+ZE1R8sEZ/2dsb2JhbACmIHS8Hg2FUQQ
-Date: Wed, 23 Feb 2011 21:44:36 +0100
+X-IronPort-Anti-Spam-Result: AvsEAKv/ZE1R8sEZ/2dsb2JhbACmIHS8FQ2FUQQ
+Date: Wed, 23 Feb 2011 21:44:56 +0100
 From: Wim Van Sebroeck <wim@iguana.be>
 To: LKML <linux-kernel@vger.kernel.org>,
         Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
 Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [RFC] [PATCH 8/10] Generic Watchdog Timer Driver
-Message-ID: <20110223204436.GA7465@infomag.iguana.be>
+Subject: [RFC] [PATCH 9/10] Generic Watchdog Timer Driver
+Message-ID: <20110223204456.GA7481@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,118 +25,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 5752d34c58c9b654c2fa753b94acc67602836420
+commit 2f28f0348ea738eb71177f348cbf33ce7fd38bf6
 Author: Wim Van Sebroeck <wim@iguana.be>
-Date:   Sun Jul 18 10:51:52 2010 +0000
+Date:   Sun Jul 18 10:56:19 2010 +0000
 
-    watchdog: WatchDog Timer Driver Core - Part 8
+    watchdog: WatchDog Timer Driver Core - Part 9
     
-    Add support for the nowayout feature to the
-    WatchDog Timer Driver Core framework.
-    This feature prevents the watchdog timer from being
-    stopped.
+    Add support for a parent device so that it can
+    be set as the parent of the misc_device.
     
     Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
     Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 
 diff --git a/Documentation/watchdog/src/watchdog-with-timer-example.c b/Documentation/watchdog/src/watchdog-with-timer-example.c
-index 158c61d..8ba5d5f 100644
+index 8ba5d5f..8efd6d2 100644
 --- a/Documentation/watchdog/src/watchdog-with-timer-example.c
 +++ b/Documentation/watchdog/src/watchdog-with-timer-example.c
-@@ -45,6 +45,11 @@ module_param(timeout, int, 0);
- MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds. "
- 	"(default = " __MODULE_STRING(WDT_TIMEOUT) ")");
+@@ -82,7 +82,7 @@ static void wdt_timer_tick(unsigned long data)
+ 		wdt_reset();
+ 		mod_timer(&timer, jiffies + WDT_HEARTBEAT);
+ 	} else
+-		printk(KERN_CRIT PFX "I will reboot your machine !\n");
++		dev_crit(wdt_dev.parent, "I will reboot your machine !\n");
+ }
  
-+static int nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, int, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started. "
-+	"(default = " __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
- static struct watchdog_device wdt_dev;
- static void wdt_timer_tick(unsigned long data);
- static DEFINE_TIMER(timer, wdt_timer_tick, 0, 0);
-@@ -152,6 +157,8 @@ static int __devinit wdt_probe(struct platform_device *pdev)
+ /*
+@@ -102,7 +102,7 @@ static int wdt_start(struct watchdog_device *wdd)
+ 	mod_timer(&timer, jiffies + WDT_HEARTBEAT);
+ 
+ 	/* Start the watchdog timer hardware here */
+-	printk(KERN_INFO PFX "wdt_start\n");
++	dev_info(wdt_dev.parent, "wdt_start\n");
+ 
+ 	return 0;
+ }
+@@ -110,7 +110,7 @@ static int wdt_start(struct watchdog_device *wdd)
+ static int wdt_stop(struct watchdog_device *wdd)
+ {
+ 	/* The watchdog timer hardware can not be stopped... */
+-	printk(KERN_INFO PFX "wdt_stop\n");
++	dev_info(wdt_dev.parent, "wdt_stop\n");
+ 
+ 	return 0;
+ }
+@@ -157,18 +157,19 @@ static int __devinit wdt_probe(struct platform_device *pdev)
  
  	/* Set watchdog_device parameters */
  	wdt_dev.timeout = timeout;
-+	if (nowayout)
-+		set_bit(WDOG_NO_WAY_OUT, &wdt_dev.status);
++	wdt_dev.parent = &pdev->dev;
+ 	if (nowayout)
+ 		set_bit(WDOG_NO_WAY_OUT, &wdt_dev.status);
  
  	/* Register the watchdog timer device */
  	res = register_watchdogdevice(&wdt_dev);
+ 	if (res) {
+-		printk(KERN_ERR PFX
++		dev_err(wdt_dev.parent,
+ 				"register_watchdogdevice returned %d\n", res);
+ 		return res;
+ 	}
+ 
+-	printk(KERN_INFO PFX "enabled (timeout=%d sec)\n", timeout);
++	dev_info(wdt_dev.parent, "enabled (timeout=%d sec)\n", timeout);
+ 
+ 	return 0;
+ }
+@@ -179,7 +180,7 @@ static int __devexit wdt_remove(struct platform_device *pdev)
+ 	unregister_watchdogdevice(&wdt_dev);
+ 
+ 	/* stop and delete the timer */
+-	printk(KERN_WARNING PFX "I quit now, hardware will probably reboot!\n");
++	dev_warn(wdt_dev.parent, "I quit now, hardware will probably reboot!\n");
+ 	del_timer(&timer);
+ 
+ 	/* Unregister other stuff */
 diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
-index 036c30f..91c4299 100644
+index 91c4299..aa4f836 100644
 --- a/Documentation/watchdog/watchdog-kernel-api.txt
 +++ b/Documentation/watchdog/watchdog-kernel-api.txt
-@@ -57,8 +57,8 @@ It contains following fields:
+@@ -42,6 +42,7 @@ struct watchdog_device {
+ 	char *name;
+ 	const struct watchdog_info *info;
+ 	const struct watchdog_ops *ops;
++	struct device *parent;
+ 	int timeout;
+ 	int bootstatus;
+ 	long status;
+@@ -52,6 +53,8 @@ It contains following fields:
+ * info: a pointer to a watchdog_info structure. This structure gives some
+   additional information about the watchdog timer itself.
+ * ops: a pointer to the list of watchdog operations that the watchdog supports.
++* parent: a pointer to the parent device of the watchdog. This will be set
++  as the parent of the misc device.
+ * timeout: the watchdog timer's timeout value (in seconds).
+ * bootstatus: status of the device after booting (reported with watchdog
    WDIOF_* status bits).
- * status: this field contains a number of status bits that give extra
-   information about the status of the device (Like: is the watchdog timer
--  running/active, is the device opened via the /dev/watchdog interface or not,
--  ...)
-+  running/active, is the nowayout bit set, is the device opened via
-+  the /dev/watchdog interface or not, ...)
- 
- The list of watchdog operations is defined as:
- 
-@@ -123,6 +123,8 @@ bit-operations. The status bit's that are defined are:
-   is active or not. When the watchdog is active after booting, then you should
-   set this status bit (Note: when you register the watchdog timer device with
-   this bit set, then opening /dev/watchdog will skip the start operation)
-+* WDOG_NO_WAY_OUT: this bit stores the nowayout setting for the watchdog.
-+  If this bit is set then the watchdog timer will not be able to stop.
- * WDOG_DEV_OPEN: this status bit shows whether or not the watchdog device
-   was opened via /dev/watchdog.
-   (This bit should only be used by the WatchDog Timer Driver Core).
-@@ -135,6 +137,6 @@ bit-operations. The status bit's that are defined are:
-   has been sent (so that we can support the magic close feature).
-   (This bit should only be used by the WatchDog Timer Driver Core).
- 
--Note: The WatchDog Timer Driver Core supports the magic close feauture. To use
--the magic close feauture you must set the WDIOF_MAGICCLOSE bit in the options
--field of the watchdog's info structure.
-+Note: The WatchDog Timer Driver Core supports the nowayout feature and the
-+magic close feauture. To use the magic close feauture you must set the
-+WDIOF_MAGICCLOSE bit in the options field of the watchdog's info structure.
 diff --git a/drivers/watchdog/core/watchdog_dev.c b/drivers/watchdog/core/watchdog_dev.c
-index 4a99aeb..76be752 100644
+index 76be752..ad080fe 100644
 --- a/drivers/watchdog/core/watchdog_dev.c
 +++ b/drivers/watchdog/core/watchdog_dev.c
-@@ -124,11 +124,15 @@ static int watchdog_start(struct watchdog_device *wddev)
-  *	Stop the watchdog if it is still active and unmark it active.
-  *	This function returns zero on success or a negative errno code for
-  *	failure.
-+ *	If the 'nowayout' feature was set, the watchdog cannot be stopped.
-  */
+@@ -394,6 +394,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
  
- static int watchdog_stop(struct watchdog_device *wddev)
- {
--	int err;
-+	int err = -1;
-+
-+	if (test_bit(WDOG_NO_WAY_OUT, &wdd->status))
-+		return err;
- 
- 	if (test_bit(WDOG_ACTIVE, &wdd->status)) {
- 		err = wddev->ops->stop(wddev);
-@@ -149,7 +153,7 @@ static int watchdog_stop(struct watchdog_device *wddev)
-  *
-  *	A write to a watchdog device is defined as a keepalive ping.
-  *	Writing the magic 'V' sequence allows the next close to turn
-- *	off the watchdog.
-+ *	off the watchdog (if 'nowayout' is not set).
-  */
- 
- static ssize_t watchdog_write(struct file *file, const char __user *data,
+ 	/* Register the miscdevice */
+ 	dbg("Register a new /dev/watchdog device");
++	watchdog_miscdev.parent = watchdog->parent;
+ 	err = misc_register(&watchdog_miscdev);
+ 	if (err != 0) {
+ 		printk(KERN_ERR
 diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-index 7dbb135..40ed78c 100644
+index 40ed78c..d264493 100644
 --- a/include/linux/watchdog.h
 +++ b/include/linux/watchdog.h
-@@ -88,6 +88,7 @@ struct watchdog_device {
- #define WDOG_ORPHAN		2	/* is the device module still loaded
- 					 * after closing /dev/watchdog */
- #define WDOG_EXPECT_RELEASE	3	/* did we receive the magic char ? */
-+#define WDOG_NO_WAY_OUT		4	/* is 'nowayout' feature set ? */
- };
- 
- /* drivers/watchdog/core/watchdog_core.c */
+@@ -79,6 +79,7 @@ struct watchdog_device {
+ 	char *name;
+ 	const struct watchdog_info *info;
+ 	const struct watchdog_ops *ops;
++	struct device *parent;
+ 	int bootstatus;
+ 	int timeout;
+ 	long status;
