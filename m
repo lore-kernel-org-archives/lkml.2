@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab1BWCt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 21:49:29 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:37416 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab1BWCt2 (ORCPT
+	id S1756092Ab1BWCwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 21:52:47 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64901 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756070Ab1BWCwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 21:49:28 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/2] Add a common struct clk
-Date: Wed, 23 Feb 2011 10:49:17 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-References: <1298256658.861611.43913489619.0.gpush@pororo> <1298256658.862188.178150188637.1.gpush@pororo> <20110222201725.GF22310@pengutronix.de>
-In-Reply-To: <20110222201725.GF22310@pengutronix.de>
+	Tue, 22 Feb 2011 21:52:45 -0500
+Subject: [PATCH] dt: add a match table pointer to struct device
+To: devicetree-discuss@lists.ozlabs.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 22 Feb 2011 19:52:34 -0700
+Message-ID: <20110223025233.25131.47193.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102231049.17466.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+Add a new .of_match field to struct device which points at the
+matching device driver .of_match_table entry when a device is probed
+via the device tree
 
-> > +static inline void clk_common_init(struct clk *clk) { }
-> > +
-> > +/*
-> > + * For !CONFIG_USE_COMMON_STRUCT_CLK, we don't enforce any atomicity
-> > + * requirements for clk_enable/clk_disable, so the prepare and unprepare
-> > + * functions are no-ops
-> > + */
-> > +int clk_prepare(struct clk *clk) { return 0; }
-> > +void clk_unprepare(struct clk *clk) { }
-> 
-> these should be static inline.  Otherwise these functions end up in many
-> files and so provoke a build failure.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ include/linux/device.h    |    1 +
+ include/linux/of_device.h |    5 +++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-Ugh, brown paper bag time. Thanks for that, I'll update this patch.
+diff --git a/include/linux/device.h b/include/linux/device.h
+index ca5d252..8d8e267 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -441,6 +441,7 @@ struct device {
+ 	struct dev_archdata	archdata;
+ 
+ 	struct device_node	*of_node; /* associated device tree node */
++	const struct of_device_id *of_match; /* matching of_device_id from driver */
+ 
+ 	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
+ 
+diff --git a/include/linux/of_device.h b/include/linux/of_device.h
+index 975d347..8bfe6c1 100644
+--- a/include/linux/of_device.h
++++ b/include/linux/of_device.h
+@@ -18,10 +18,11 @@ extern void of_device_make_bus_id(struct device *dev);
+  * @drv: the device_driver structure to test
+  * @dev: the device structure to match against
+  */
+-static inline int of_driver_match_device(const struct device *dev,
++static inline int of_driver_match_device(struct device *dev,
+ 					 const struct device_driver *drv)
+ {
+-	return of_match_device(drv->of_match_table, dev) != NULL;
++	dev->of_match = of_match_device(drv->of_match_table, dev);
++	return dev->of_match != NULL;
+ }
+ 
+ extern struct platform_device *of_dev_get(struct platform_device *dev);
 
-Cheers,
-
-
-Jeremy
