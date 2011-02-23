@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1BWVHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:07:54 -0500
-Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:61613 "EHLO
-	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab1BWVHx convert rfc822-to-8bit (ORCPT
+	id S932716Ab1BWVIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:08:15 -0500
+Received: from usmamail.tilera.com ([206.83.70.70]:19995 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab1BWVIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:07:53 -0500
-X-Greylist: delayed 741 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 16:07:53 EST
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Matthew McClintock <msm@freescale.com>,
-        "Livingston, John A" <john.a.livingston@boeing.com>
-Date: Wed, 23 Feb 2011 14:54:53 -0600
-Subject: mpc85xx: kexec build broken by "powerpc/kexec: Remove
- ppc_md.machine_kexec"
-Thread-Topic: mpc85xx: kexec build broken by "powerpc/kexec: Remove
- ppc_md.machine_kexec"
-Thread-Index: AcvTm+3PhuC/z/OLQUqABeNiYNP2Lw==
-Message-ID: <B87A2622-0006-4FC8-893A-41DBBF0CA170@boeing.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Feb 2011 16:08:13 -0500
+Message-ID: <4D65773B.1040300@tilera.com>
+Date: Wed, 23 Feb 2011 16:08:11 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/3] tile: Cleanup irq chips and irq_desc accessors
+References: <20110206230305.461141290@linutronix.de> <4D657405.3050105@tilera.com> <alpine.LFD.2.00.1102232155460.2701@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1102232155460.2701@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+On 2/23/2011 3:56 PM, Thomas Gleixner wrote:
+> On Wed, 23 Feb 2011, Chris Metcalf wrote:
+>
+>> On 2/6/2011 6:04 PM, Thomas Gleixner wrote:
+>>> Convert the irq chips to the new callback functions and use proper
+>>> accessors for irq_desc. Select GENERIC_HARDIRQS_NO_DEPRECATED
+>> For the series:
+>>
+>> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+>>
+>> Sorry for the late response, but your email came while I was still trying
+>> to catch up with my email from a week's vacation, and I'm just re-triaging
+>> my inbox now :-)
+> No problem. Can you takes this via your tree for .39 ? It does not
+> depend on any changes in the core code.
 
-I just started trying to update some patches for our P2020-based unit to the latest Linus upstream, hoping to take advantage of the recent mpc85xx kexec() support.
+Sure.  Done.
 
-Unfortunately I'm getting a compile error:
-
-arch/powerpc/platforms/85xx/smp.c:241: error: 'struct machdep_calls' has no member named 'machine_kexec'
-
-As far as I can tell, "machine_kexec" was removed in commit c9486878 (powerpc/kexec: Remove ppc_md.machine_kexec) on Jan 6th, 2011, which claims that it was not used.
-
-Unfortunately it looks like it *is* used by the mpc85xx kexec() support (commit f933a41e), added on Jul 21, 2010.
-
-Cheers,
-Kyle Moffett
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
