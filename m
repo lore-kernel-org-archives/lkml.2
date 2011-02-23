@@ -1,55 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab1BWTWJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:22:09 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:48801 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752252Ab1BWTWI (ORCPT
+	id S1755666Ab1BWTWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:22:46 -0500
+Received: from smtp.microsoft.com ([131.107.115.215]:47547 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab1BWTWp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:22:08 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Wp7klwkVM1lheoudyrZ8k1djuH.ZQ64OC6354leuchmX8Tf
- A.6Jyt4ai2AKzbSn3Kg22eZNWZPD0LeDWWG6AeKZCg2_g5TNVKuBZ8ngXIfV
- F.rlMIsvzPb9KHeYdtPNwu8JMLIQj.ukfZj80L4Cf8QgFYiIULu1JnUbCFz4
- FICb8R0Gp7KkY4eFeeWL9mpIIHt0CtAg3yNv44nH_0mTt7V57LRtgFAxoHhl
- q10IVpbB0uYm3r8unqUe0l1MQhd17ZQlwbTonIiiR5c2wl9T45U_A8peru9S
- wfCHMSgb2fxES7DA5M8AmzZ4WHeQ7bk9DVXvKG46rVJNvZVA-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 23 Feb 2011 13:22:02 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-In-Reply-To: <20110223191043.GU2163@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1102231320050.4823@router.home>
-References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com> <20110223161645.GA1819@nowhere> <1298479302.7666.94.camel@gandalf.stny.rr.com> <BLU0-SMTP65F733B8D1D704C7EA1F8796DB0@phx.gbl>
- <alpine.DEB.2.00.1102231132140.562@router.home> <20110223191043.GU2163@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 23 Feb 2011 14:22:45 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QJKYYA//++VECAAJKGgP//jS1QgAIW1ACAADc3wIABA5+A//+vqhAAEg2vAABt0K6AABCP96A=
+Date: Wed, 23 Feb 2011 19:22:45 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048014E4A@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
+ <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102211200270.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048013C67@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102211549340.2701@localhost6.localdomain6>
+ <20110223191617.GC1030@kroah.com>
+In-Reply-To: <20110223191617.GC1030@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011, Paul E. McKenney wrote:
 
-> These do introduce redundant preempt_disable()/preempt_enable() calls, but
-> this is not on a fastpath, so should be OK, and the improved readability
-> is certainly nice.  The read and the write do need to happen on the same
-> CPU, FWIW.
 
-this_cpu_xxx only use preempt_enable/disable() on platforms that do not
-support per cpu atomic instructions. On x86 no preempt enable/disable will
-be inserted.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, February 23, 2011 2:16 PM
+> To: Thomas Gleixner
+> Cc: KY Srinivasan; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> virtualization@lists.osdl.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> 
+> On Mon, Feb 21, 2011 at 03:51:56PM +0100, Thomas Gleixner wrote:
+> > On Mon, 21 Feb 2011, KY Srinivasan wrote:
+> > > > > > There are various ways to solve that proper.
+> > > > > >
+> > > > > >  - You can provide the interrupt number from ACPI/PCI or whatever
+> your HV
+> > > > > >    provides as enumeration.
+> > > > > >
+> > > > > >  - Use a fixed vector like XEN does for the event channel
+> > > > > >
+> > > > > >  - Use dynamic allocation in the IOAPIC space like the kernel does for
+> > > > > >    MSI(-X)
+> > > > > >
+> > > > > > Thanks,
+> > > > > >
+> > > > > > 	tglx
+> > > > >
+> > > > > I am not claiming that what I have done here is the best possible solution.
+> > > > > However, I will submit to you that it is better than what we had here
+> > > > > prior to this patch.  I will address this and a  whole lot of other issues
+> > > > > in future patches.
+> > > >
+> > > > No, it's _NOT_ better in any way. You trade breaking your PV thing
+> > > > against breaking random other drivers. Care to explain why you think
+> > > > that's better ?
+> > >
+> > > The root device for the VM is bound to the PV driver on some distributions.
+> > > So, if we cannot load the PV drivers, we do not have a system that boots.
+> > > In general, the system performance without these PV drivers is so poor that
+> > > for all practical purposes, having the PV drivers is almost a requirement
+> > > for having a useable system. While the platform supports configuration of the
+> VM with
+> > > some emulated devices, it is not a recommended configuration (because of
+> > > performance reasons) for Linux virtual machines on the Hyper-V platform.
+> >
+> > It does not matter whether it's recommended or not. If it results in a
+> > non usable emulated device it's broken. Just imagine you grab the
+> > serial interrupt, which results in not having a debug console. Not at
+> > all acceptable.
+> >
+> > > I have spent significantly more time debating this patch than
+> > > developing this patch that I still think improves the current
+> > > driver. I will leave it to Greg and other powers that be to decide
+> > > if this patch will be accepted. Let me know what your verdict is.
+> >
+> > As I said, any other clean solution (and I pointed out 3) over this
+> > hack.
+> 
+> I agree, KY, please fix this up properly, I've dropped this patch from
+> my queue now.
 
-You can also use the __this_cpu_xxx operations which never add preempt
-disable/enable because they expect the caller to deal with preemption.
+Ok; will do.
+
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
+
