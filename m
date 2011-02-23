@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab1BWUYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 15:24:08 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46826 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337Ab1BWUYG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 15:24:06 -0500
+	id S932576Ab1BWUYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 15:24:22 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:4813 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932556Ab1BWUYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 15:24:20 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+To: "Greg KH" <gregkh@suse.de>
+cc: "Ben Hutchings" <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "Roland Vossen" <rvossen@broadcom.com>,
+        "Brett Rudley" <brudley@broadcom.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [Stable-review] [28/70] staging: brcm80211: bugfix for
+ softmac crash on multi cpu configurations
+References: <20110222221839.853712243@clark.kroah.org>
+ <1298427787.2211.498.camel@localhost> <op.vrciafbg3ri7v4@arend-laptop>
+ <20110223180627.GB30106@suse.de>
+Date: Wed, 23 Feb 2011 21:24:01 +0100
 MIME-Version: 1.0
-Message-ID: <fc9a9123-cc27-4754-9222-796890553ee6@default>
-Date: Wed, 23 Feb 2011 12:23:34 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Valdis.Kletnieks@vt.edu, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
-Subject: RE: linux-next still missing patch for zcache modular Kconfig/build
- issue
-References: <21508.1298491740@localhost>
-In-Reply-To: <21508.1298491740@localhost>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6550.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D656CDB.00B9:SCFMA4539814,ss=1,fgs=0
+From: "Arend van Spriel" <arend@broadcom.com>
+Organization: Broadcom
+Message-ID: <op.vrdhl9qk3ri7v4@arend-laptop>
+In-Reply-To: <20110223180627.GB30106@suse.de>
+User-Agent: Opera Mail/11.01 (Linux)
+X-WSS-ID: 617BB2E13BS2602623-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed;
+ delsp=yes
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
-> Sent: Wednesday, February 23, 2011 1:09 PM
-> Subject: linux-next still missing patch for zcache modular
-> Kconfig/build issue
-> 
-> I know this is a known and solved problem with CONFIG_ZCACHE=m I hit a
-> while back:
-> 
->   Building modules, stage 2.
->   MODPOST 258 modules
-> ERROR: "xv_malloc" [drivers/staging/zcache/zcache.ko] undefined!
-> ERROR: "tmem_new_pool" [drivers/staging/zcache/zcache.ko] undefined!
-> ERROR: "tmem_put" [drivers/staging/zcache/zcache.ko] undefined!
-> ERROR: "tmem_destroy_pool" [drivers/staging/zcache/zcache.ko]
-> undefined!
-> ERROR: "xv_free" [drivers/staging/zcache/zcache.ko] undefined!
-> ERROR: "xv_get_object_size" [drivers/staging/zcache/zcache.ko]
-> undefined!
-> ERROR: "tmem_get" [drivers/staging/zcache/zcache.ko] undefined!
-> ERROR: "tmem_flush_object" [drivers/staging/zcache/zcache.ko]
-> undefined!
-> ERROR: "tmem_flush_page" [drivers/staging/zcache/zcache.ko] undefined!
-> 
-> The patch for this isn't in the linux-next tree I pulled yesterday -
-> what happened to it?
 
+On Wed, 23 Feb 2011 19:06:27 +0100, Greg KH <gregkh@suse.de> wrote:
 
-GregKH hasn't yet pulled the fix into staging-next, which feeds
-into linux-next.  See:
+> On Wed, Feb 23, 2011 at 08:40:53AM +0100, Arend van Spriel wrote:
+>> On Wed, 23 Feb 2011 03:23:07 +0100, Ben Hutchings
+>> <ben@decadent.org.uk> wrote:
+>>
+>> >On Tue, 2011-02-22 at 14:17 -0800, Greg KH wrote:
+>> >>2.6.37-stable review patch.  If anyone has any objections,
+>
+> So, what should I do here?  Drop the referenced patch from the
+> .37-stable queue, or do you have the text for the changelog that I
+> should use here instead?
+>
+> confused,
+>
+Hi Greg,
 
-https://lkml.org/lkml/2011/2/18/311 
-https://lkml.org/lkml/2011/2/18/342 
+Dito here. I submitted a patch for the stable kernel and Roland did one  
+(if I am correct). I have no clue how his commit message came with my  
+patch or vice versa.
+
+>
+> greg k-h
+>
+
+Gr. AvS
+-- 
+"The most merciful thing in the world, I think, is the inability of the  
+human
+mind to correlate all its contents." - "The Call of Cthulhu"
+
