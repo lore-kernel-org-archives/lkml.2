@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab1BWV0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 16:26:05 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60408 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab1BWV0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 16:26:03 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6266"; a="76056803"
-Message-ID: <4D657B69.4000107@codeaurora.org>
-Date: Wed, 23 Feb 2011 13:26:01 -0800
-From: Bryan Huntsman <bryanh@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1755998Ab1BWV0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 16:26:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753150Ab1BWV0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 16:26:22 -0500
+Date: Wed, 23 Feb 2011 22:25:41 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Arthur Marsh <arthur.marsh@internode.on.net>
+Cc: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
+ 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
+ GFP_ATOMIC order > 0
+Message-ID: <20110223212541.GV31195@random.random>
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
+ <4D6367B3.9050306@googlemail.com>
+ <20110222134047.GT13092@random.random>
+ <20110222161513.GC13092@random.random>
+ <4D63F6C0.7060204@internode.on.net>
+ <20110223162432.GL31195@random.random>
+ <20110223165550.GP31195@random.random>
+ <4D65691E.9080600@internode.on.net>
 MIME-Version: 1.0
-To: Daniel Walker <dwalker@fifo99.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MAINTAINERS: Update MSM maintainers
-References: <1298419415-3973-1-git-send-email-davidb@codeaurora.org> <1298420395.17118.6.camel@m0nster> <AANLkTikuaOL7mdARoNtx2ZJGJm6FBrqizrit6_uSaUte@mail.gmail.com>
-In-Reply-To: <AANLkTikuaOL7mdARoNtx2ZJGJm6FBrqizrit6_uSaUte@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D65691E.9080600@internode.on.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 05:12 PM, Linus Torvalds wrote:
-> On Tue, Feb 22, 2011 at 4:19 PM, Daniel Walker <dwalker@fifo99.com> wrote:
->> On Tue, 2011-02-22 at 16:03 -0800, David Brown wrote:
->>> Remove Bryan Huntsman and Daniel Walker from the MSM maintainer list.
->>>
->>
->> No.. I don't sign off on this.. Please ignore this Linus.
+On Thu, Feb 24, 2011 at 06:37:58AM +1030, Arthur Marsh wrote:
+> kswapd-high_wmark + compaction-kswapd-2 - kswapd0 CPU up to 11 percent 
+> and slightly less pronounced slowdowns of MIDI playback compared to 
+> previous patches.
 > 
-> Guys, you need to sort out your differences here..
+> kswapd-high_wmark + compaction-no-kswapd-3 - kswapd0 CPU up to 2.3 
+> percent and no noticable slowdown of MIDI playback.
 > 
->                         Linus
+> Mel Gorman's mm/compaction.c patch - kswapd0 CPU up to 20 percent and no 
+> noticable slowdown of MIDI playback.
+> 
+> Thanks everyone for the help with this.
 
-Daniel, let's do what Linus is asking and figure this out.  What is your
-intention here?  Going forward, David Brown is in the best position to
-handle MSM maintenance since he has direct access to all past, current,
-and future MSM devices as well as all the HW and SW experts at Qualcomm.
-In that spirit, I think it's entirely appropriate for both you and I to
-step back and let David handle this role so that there is one consistent
-and clear voice for MSM.
+Ok then I think it's safer to go with compaction-no-kswapd-3.
 
-- Bryan
+I also created a git tree in case anybody else wants to test in easier
+way.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+git clone --reference linux-2.6.git git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+(or "git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git")
+cd aa
+git checkout -f 3d74399aaece29047beba13a81650538af8db67a
+(compaction-kswapd+compaction_alloc_lowlat)
+git checkout -f f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27
+(compaction-no-kswapd+rest+compaction_alloc_lowlat)
+git checkout -f 859e705548f7377b1803b05b2904bae77495fd1e (only
+compaction_alloc_lowlat)
+
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=3d74399aaece29047beba13a81650538af8db67a
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog;h=859e705548f7377b1803b05b2904bae77495fd1e
+
+Arthur could you give one more spin to the
+3d74399aaece29047beba13a81650538af8db67a tree? (or do you prefer an
+updated patch compaction-kswapd-3?)
+
+I'd like to get 3d74399aaece29047beba13a81650538af8db67a tested again
+because I did one more modification included in the git version
+compared to the patch version (nr_slab was not always initialized and
+it could lead to slightly higher kswapd cpu load than intended). I
+doubt it will help though (just in case).
+
+Mel what you think? If f048d0082bd3c6a1cc3f5e67aa5ef83d1561ec27 is
+still the only one that shows no regression, I think it's safe to
+apply it to 2.6.38 and revert the compaction in kswapd feature. Then
+we can add compaction to kswapd later with no hurry.
+
+Thanks a lot for the help and quick feedback!
+Andrea
