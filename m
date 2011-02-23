@@ -1,84 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab1BWQSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 11:18:32 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34126 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab1BWQSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 11:18:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=v2djcVQUlH0k1GQuPiMy6UE8UIqylCvS9qoE92WlfiVLTc02TkEGgj5TvKeH8CSA/B
-         NvoFDkv0VosTiyfPlqpJgEvue9pkL9luGH7MUvwIatE8K7BZOy4X018iTKSwPcnXBsDC
-         qhX/tptGp/5ilL3LhIeSKavkSyTo16UONn/fg=
-Date: Wed, 23 Feb 2011 17:16:48 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110223161645.GA1819@nowhere>
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1754777Ab1BWQZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 11:25:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754657Ab1BWQZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 11:25:10 -0500
+Date: Wed, 23 Feb 2011 17:24:32 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Arthur Marsh <arthur.marsh@internode.on.net>
+Cc: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
+ 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
+ GFP_ATOMIC order > 0
+Message-ID: <20110223162432.GL31195@random.random>
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
+ <4D6367B3.9050306@googlemail.com>
+ <20110222134047.GT13092@random.random>
+ <20110222161513.GC13092@random.random>
+ <4D63F6C0.7060204@internode.on.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="zhXaljGHf11kAtnf"
 Content-Disposition: inline
-In-Reply-To: <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D63F6C0.7060204@internode.on.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 05:39:40PM -0800, Paul E. McKenney wrote:
-> +/*
-> + * Wake up the current CPU's kthread.  This replaces raise_softirq()
-> + * in earlier versions of RCU.
-> + */
-> +static void invoke_rcu_kthread(void)
-> +{
-> +	unsigned long flags;
-> +	wait_queue_head_t *q;
-> +	int cpu;
-> +
-> +	local_irq_save(flags);
-> +	cpu = smp_processor_id();
-> +	if (per_cpu(rcu_cpu_kthread_task, cpu) == NULL) {
-> +		local_irq_restore(flags);
-> +		return;
-> +	}
-> +	per_cpu(rcu_cpu_has_work, cpu) = 1;
-> +	q = &per_cpu(rcu_cpu_wq, cpu);
 
-I see you make extensive use of per_cpu() accessors even for
-local variables.
+--zhXaljGHf11kAtnf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I tend to think it's better to use __get_cpu_var() for local
-accesses and keep per_cpu() for remote accesses.
+On Wed, Feb 23, 2011 at 04:17:44AM +1030, Arthur Marsh wrote:
+> OK, these patches applied together against upstream didn't cause a crash 
+> but I did observe:
+> 
+> significant slowdowns of MIDI playback (moreso than in previous cases, 
+> and with less than 20 Meg of swap file in use);
+> 
+> kswapd0 sharing equal top place in CPU usage at times (e.g. 20 percent).
+> 
+> If I should try only one of the patches or something else entirely, 
+> please let me know.
 
-There are several reasons for that:
+Yes, with irq off, schedule won't run and need_resched won't get set.
 
-* __get_cpu_var() checks we are in a non-preemptible section,
-per_cpu() doesn't. That may sound of a limited interest for code like the
-above, but by the time code can move, and then we might lose track of some
-things, etc...
+So let's try this.
 
-* local accesses can be optimized by architectures. per_cpu() implies
-finding the local cpu number, and dereference an array of cpu offsets with
-that number to find the local cpu offset.
-__get_cpu_var() does a direct access to __my_cpu_offset which is a nice
-shortcut if the arch implements it.
+In case this doesn't fix I definitely give it up with compaction in
+kswapd as GFP_ATOMIC will likely not get an huge benefit out of
+compaction anyway because 1) the allocations from GFP_ATOMIC are
+likely short lived, 2) the cost of the compaction scan loop +
+migration may be higher than the benefit we get from jumbo frames
 
-* It makes code easier to review: we know that __get_cpu_var() is
-for local accesses and per_cpu() for remote.
+So if this doesn't fix it, I'll already post a definitive fix that
+removes compaction from kswapd (but leaves it enabled for direct
+reclaim for all order sizes including kernel stack). I already
+verified that this solves not just the midi latency issue but the
+other server benchmark that I'm dealing with. Then we can think at
+compaction+kswapd later for 2.6.39 but I think we need to close this
+kswapd issue in time for 2.6.38. So if the below isn't enough the next
+patch should be applied. I'll get those two patches tested in the
+server load too, and I'll let you know how the results are when it
+finishes.
 
-> +	wake_up(q);
-> +	local_irq_restore(flags);
-> +}
+Please apply also the attached "kswapd-high-wmark" before the below
+one.
+
+====
+Subject: compaction: fix high latencies created by kswapd
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+We need to proper spin_unlock_irq/cond_resched in the compaction loop to avoid
+hurting latencies. We must also stop being too aggressive insisting with
+compaction within kswapd if compaction don't make progress in every zone.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/compaction.h |    6 +++++
+ mm/compaction.c            |   53 +++++++++++++++++++++++++++++++++++++--------
+ mm/vmscan.c                |   39 +++++++++++++++++++--------------
+ 3 files changed, 73 insertions(+), 25 deletions(-)
+
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -271,9 +271,27 @@ static unsigned long isolate_migratepage
+ 	}
+ 
+ 	/* Time to isolate some pages for migration */
++	cond_resched();
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		struct page *page;
++		int unlocked = 0;
++
++		/* give a chance to irqs before checking need_resched() */
++		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
++			spin_unlock_irq(&zone->lru_lock);
++			unlocked = 1;
++		}
++		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
++			if (fatal_signal_pending(current))
++				break;
++			if (!unlocked)
++				spin_unlock_irq(&zone->lru_lock);
++			cond_resched();
++			spin_lock_irq(&zone->lru_lock);
++		} else if (unlocked)
++			spin_lock_irq(&zone->lru_lock);
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
+@@ -436,6 +454,28 @@ static int compact_finished(struct zone 
+ 	return COMPACT_CONTINUE;
+ }
+ 
++static unsigned long compaction_watermark(struct zone *zone, int order)
++{
++	/*
++	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
++	 * This is because during migration, copies of pages need to be
++	 * allocated and for a short time, the footprint is higher
++	 */
++	return low_wmark_pages(zone) + (2UL << order);
++}
++
++static int __compaction_need_reclaim(struct zone *zone, int order,
++				     unsigned long watermark)
++{
++	return !zone_watermark_ok(zone, 0, watermark, 0, 0);
++}
++
++int compaction_need_reclaim(struct zone *zone, int order)
++{
++	return __compaction_need_reclaim(zone, order,
++					 compaction_watermark(zone, order));
++}
++
+ /*
+  * compaction_suitable: Is this suitable to run compaction on this zone now?
+  * Returns
+@@ -449,21 +489,16 @@ unsigned long compaction_suitable(struct
+ 	unsigned long watermark;
+ 
+ 	/*
+-	 * Watermarks for order-0 must be met for compaction. Note the 2UL.
+-	 * This is because during migration, copies of pages need to be
+-	 * allocated and for a short time, the footprint is higher
+-	 */
+-	watermark = low_wmark_pages(zone) + (2UL << order);
+-	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
+-		return COMPACT_SKIPPED;
+-
+-	/*
+ 	 * order == -1 is expected when compacting via
+ 	 * /proc/sys/vm/compact_memory
+ 	 */
+ 	if (order == -1)
+ 		return COMPACT_CONTINUE;
+ 
++	watermark = compaction_watermark(zone, order);
++	if (__compaction_need_reclaim(zone, order, watermark))
++		return COMPACT_SKIPPED;
++
+ 	/*
+ 	 * fragmentation index determines if allocation failures are due to
+ 	 * low memory or external fragmentation
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2385,9 +2385,9 @@ loop_again:
+ 		 * cause too much scanning of the lower zones.
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+-			int compaction;
+ 			struct zone *zone = pgdat->node_zones + i;
+ 			int nr_slab;
++			int local_order;
+ 
+ 			if (!populated_zone(zone))
+ 				continue;
+@@ -2407,20 +2407,21 @@ loop_again:
+ 			 * We put equal pressure on every zone, unless one
+ 			 * zone has way too many pages free already.
+ 			 */
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone), end_zone, 0))
++			if (!zone_watermark_ok_safe(zone, 0,
++					high_wmark_pages(zone), end_zone, 0) ||
++			    compaction_need_reclaim(zone, order)) {
+ 				shrink_zone(priority, zone, &sc);
+-			reclaim_state->reclaimed_slab = 0;
+-			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
+-						lru_pages);
+-			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-			total_scanned += sc.nr_scanned;
++				reclaim_state->reclaimed_slab = 0;
++				nr_slab = shrink_slab(sc.nr_scanned,
++						      GFP_KERNEL,
++						      lru_pages);
++				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
++				total_scanned += sc.nr_scanned;
++			}
+ 
+-			compaction = 0;
++			local_order = order;
+ 			if (order &&
+-			    zone_watermark_ok(zone, 0,
+-					       high_wmark_pages(zone),
+-					      end_zone, 0) &&
++			    !compaction_need_reclaim(zone, order) &&
+ 			    !zone_watermark_ok(zone, order,
+ 					       high_wmark_pages(zone),
+ 					       end_zone, 0)) {
+@@ -2428,12 +2429,18 @@ loop_again:
+ 						   order,
+ 						   sc.gfp_mask, false,
+ 						   COMPACT_MODE_KSWAPD);
+-				compaction = 1;
++				/*
++				 * Let kswapd stop immediately even if
++				 * compaction didn't succeed to
++				 * generate "high_wmark_pages" of the
++				 * max order wanted in every zone.
++				 */
++				local_order = 0;
+ 			}
+ 
+ 			if (zone->all_unreclaimable)
+ 				continue;
+-			if (!compaction && nr_slab == 0 &&
++			if (nr_slab == 0 &&
+ 			    !zone_reclaimable(zone))
+ 				zone->all_unreclaimable = 1;
+ 			/*
+@@ -2445,7 +2452,7 @@ loop_again:
+ 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+ 				sc.may_writepage = 1;
+ 
+-			if (!zone_watermark_ok_safe(zone, order,
++			if (!zone_watermark_ok_safe(zone, local_order,
+ 					high_wmark_pages(zone), end_zone, 0)) {
+ 				all_zones_ok = 0;
+ 				/*
+@@ -2453,7 +2460,7 @@ loop_again:
+ 				 * means that we have a GFP_ATOMIC allocation
+ 				 * failure risk. Hurry up!
+ 				 */
+-				if (!zone_watermark_ok_safe(zone, order,
++				if (!zone_watermark_ok_safe(zone, local_order,
+ 					    min_wmark_pages(zone), end_zone, 0))
+ 					has_under_min_watermark_zone = 1;
+ 			} else {
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -26,6 +26,7 @@ extern int fragmentation_index(struct zo
+ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask,
+ 			bool sync);
++extern int compaction_need_reclaim(struct zone *zone, int order);
+ extern unsigned long compaction_suitable(struct zone *zone, int order);
+ extern unsigned long compact_zone_order(struct zone *zone, int order,
+ 					gfp_t gfp_mask, bool sync,
+@@ -68,6 +69,11 @@ static inline unsigned long try_to_compa
+ 	return COMPACT_CONTINUE;
+ }
+ 
++static inline int compaction_need_reclaim(struct zone *zone, int order)
++{
++	return 0;
++}
++
+ static inline unsigned long compaction_suitable(struct zone *zone, int order)
+ {
+ 	return COMPACT_SKIPPED;
+
+--zhXaljGHf11kAtnf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=kswapd-high_wmark
+
+Subject: vmscan: kswapd must not free more than high_wmark pages
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+When the min_free_kbytes is set with `hugeadm
+--set-recommended-min_free_kbytes" or with THP enabled (which runs the
+equivalent of "hugeadm --set-recommended-min_free_kbytes" to activate
+anti-frag at full effectiveness automatically at boot) the high wmark
+of some zone is as high as ~88M. 88M free on a 4G system isn't
+horrible, but 88M*8 = 704M free on a 4G system is definitely
+unbearable. This only tends to be visible on 4G systems with tiny
+over-4g zone where kswapd insists to reach the high wmark on the
+over-4g zone but doing so it shrunk up to 704M from the normal zone by
+mistake.
+
+For the trivial case where kswapd isn't waken until all zones hit the low wmark
+and there is no concurrency between allocator and kswapd freeing, rotating more
+the tiny above4g lru than "high-low" despite we only allocated "high-low" cache
+into it doesn't sound obviously right either. Bigger gap to me looks like will
+do more harm than good and if we need a real guarantee of balancing we should
+rotate the allocations across the zones (bigger lru in a zone will require it
+to be hit more frequently because it'll rotate slower than the other zones, the
+bias should not even dependent on the zone size but on the lru size).
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ mm/vmscan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2408,7 +2408,7 @@ loop_again:
+ 			 * zone has way too many pages free already.
+ 			 */
+ 			if (!zone_watermark_ok_safe(zone, order,
+-					8*high_wmark_pages(zone), end_zone, 0))
++					high_wmark_pages(zone), end_zone, 0))
+ 				shrink_zone(priority, zone, &sc);
+ 			reclaim_state->reclaimed_slab = 0;
+ 			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
+
+--zhXaljGHf11kAtnf--
