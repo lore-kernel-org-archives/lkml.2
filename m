@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab1BWXus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:50:48 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:40457 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752712Ab1BWXur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:50:47 -0500
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 18:50:47 EST
-Date: Wed, 23 Feb 2011 23:52:27 +0100
-From: Michael Trimarchi <trimarchi@gandalf.sssup.it>
-To: linux-kernel@vger.kernel.org
-Cc: a.zummo@towertech.it, john.stultz@linaro.org
-Subject: [PATCH] fix rtc-at91sam9 compilation issue
-Message-ID: <20110223225226.GA22924@gandalf.sssup.it>
+	id S1753770Ab1BWXvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:51:08 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36565 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563Ab1BWXvF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 18:51:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=GMF813dxZWAzTpF9oTVWRjtk9//bvd3XLZfVg0HVq6oPIOy4jSuACGsbfnF689kX8A
+         LXWNpvhKFlkVFHzUgEQfOK1uI1IgHk8sX5RMgSZZ8116CFf9U8H/NvKaObFu6961z0sq
+         C26SwR94In7qA+822D3pUy9QymSZRmiqEmWdA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110222121704.19437.4650.stgit@localhost.localdomain>
+References: <20110222121704.19437.4650.stgit@localhost.localdomain>
+Date: Thu, 24 Feb 2011 09:51:04 +1000
+Message-ID: <AANLkTimPpr+OugTiPpYxNyS78vqActuURw-tnxJVxi18@mail.gmail.com>
+Subject: Re: [PATCH] gma500: Intel GMA500 staging driver
+From: Dave Airlie <airlied@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 22, 2011 at 10:17 PM, Alan Cox <alan@linux.intel.com> wrote:
+> This is an initial staging driver for the GMA500. It's been stripped out
+> of the PVR drivers and crunched together from various bits of code and
+> different kernels.
+>
+> Currently it's unaccelerated but still pretty snappy even compositing with
+> the frame buffer X server.
+>
+> Lots of work is needed to rework the ttm and bo interfaces from being
+> ripped out and then 2D acceleration wants putting back for framebuffer and
+> somehow eventually via DRM.
+>
+> There is no support for the parts without open source userspace (video
+> accelerators, 3D) as per kernel policy.
+>
+> I'm not a DRM expert so if there is anyone with a GMA500 who actually knows
+> something about DRI internals then help would be most welcome.
+>
 
-Fix rtc-at91sam9 compilation issue introduced by the commit
 
-16380c153a69c3784d2afaddfe0a22f353046cf6
+Okay I'm okay with this going into staging but we should work out a
+plan for it going forward.
 
-Signed-off-by: Michael Trimarchi <michael@amarulasolutions.com>
----
- drivers/rtc/rtc-at91sam9.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I don't have any poulsbo hw but if some were to appear I could
+probably expend effort on this.
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index c36749e..62fda98 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -309,7 +309,7 @@ static const struct rtc_class_ops at91_rtc_ops = {
- 	.read_alarm	= at91_rtc_readalarm,
- 	.set_alarm	= at91_rtc_setalarm,
- 	.proc		= at91_rtc_proc,
--	.alarm_irq_enabled = at91_rtc_alarm_irq_enable,
-+	.alarm_irq_enable= at91_rtc_alarm_irq_enable,
- };
- 
- /*
--- 
-1.7.1
+So where do we want to go my opinion is
 
+a) remove all userspace interfaces and simplify ttm memory management usage.
+b) add support to hook this up to the dumb ioctl so we can do trivial
+generic front buffer allocation, so then a libkms + dumb kms
+modesetting driver can work on it.
+c) figure out how to add interface for acceleration users. Whether TTM
+fence interfaces are required etc.
+
+We could probably just add a GEM style buffer allocation interface but
+we'd probably need to do a lot of RE first to figure out what best
+suits the hardware, I'm pretty sure I've haven't heard any glowing
+praise that the current interface suits the hw or is maintainable.
+
+Dave.
