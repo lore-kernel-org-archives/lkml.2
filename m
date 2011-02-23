@@ -1,176 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab1BWAF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 19:05:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19880 "EHLO mx1.redhat.com"
+	id S1754667Ab1BWAHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 19:07:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:42866 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475Ab1BWAF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 19:05:27 -0500
-Date: Tue, 22 Feb 2011 19:03:58 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] blk-throttle: writeback and swap IO control
-Message-ID: <20110223000358.GM28269@redhat.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
- <20110222193403.GG28269@redhat.com>
- <20110222224141.GA23723@linux.develer.com>
+	id S1751451Ab1BWAHl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 19:07:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,209,1297065600"; 
+   d="scan'208";a="392612371"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mike Waychison <mikew@google.com>, Greg KH <greg@kroah.com>
+CC: Olof Johansson <olofj@chromium.org>, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Robert Lippert <rlippert@google.com>, Jon Mayer <jonmayer@google.com>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tim Hockin <thockin@google.com>, David Hendrix <dhendrix@chromium.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Date: Tue, 22 Feb 2011 16:07:32 -0800
+Subject: RE: [PATCH v1 2/5] firmware: Basic dmi-sysfs support
+Thread-Topic: [PATCH v1 2/5] firmware: Basic dmi-sysfs support
+Thread-Index: AcvS6J77td6Dk+3VSViyoKNiDFau7gABOiSQ
+Message-ID: <987664A83D2D224EAE907B061CE93D53019D6606DB@orsmsx505.amr.corp.intel.com>
+References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com>
+ <20110217212805.3967.47547.stgit@mike.mtv.corp.google.com>
+ <20110217215608.GA2451@kroah.com> <4D644736.9050109@google.com>
+In-Reply-To: <4D644736.9050109@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222224141.GA23723@linux.develer.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:41:41PM +0100, Andrea Righi wrote:
-> On Tue, Feb 22, 2011 at 02:34:03PM -0500, Vivek Goyal wrote:
-> > On Tue, Feb 22, 2011 at 06:12:51PM +0100, Andrea Righi wrote:
-> > > Currently the blkio.throttle controller only support synchronous IO requests.
-> > > This means that we always look at the current task to identify the "owner" of
-> > > each IO request.
-> > > 
-> > > However dirty pages in the page cache can be wrote to disk asynchronously by
-> > > the per-bdi flusher kernel threads or by any other thread in the system,
-> > > according to the writeback policy.
-> > > 
-> > > For this reason the real writes to the underlying block devices may
-> > > occur in a different IO context respect to the task that originally
-> > > generated the dirty pages involved in the IO operation. This makes the
-> > > tracking and throttling of writeback IO more complicate respect to the
-> > > synchronous IO from the blkio controller's perspective.
-> > > 
-> > > The same concept is also valid for anonymous pages involed in IO operations
-> > > (swap).
-> > > 
-> > > This patch allow to track the cgroup that originally dirtied each page in page
-> > > cache and each anonymous page and pass these informations to the blk-throttle
-> > > controller. These informations can be used to provide a better service level
-> > > differentiation of buffered writes swap IO between different cgroups.
-> > > 
-> > 
-> > Hi Andrea,
-> > 
-> > Thanks for the patches. Before I look deeper into patches, had few
-> > general queries/thoughts.
-> > 
-> > - So this requires memory controller to be enabled. Does it also require
-> >   these to be co-mounted?
-> 
-> No and no. The blkio controller enables and uses the page_cgroup
-> functionality, but it doesn't depend on the memory controller. It
-> automatically selects CONFIG_MM_OWNER and CONFIG_PAGE_TRACKING (last
-> one added in PATCH 3/5) and this is sufficient to make page_cgroup
-> usable from any generic controller.
-> 
-> > 
-> > - Currently in throttling there is no limit on number of bios queued
-> >   per group. I think this is not necessarily a very good idea because
-> >   if throttling limits are low, we will build very long bio queues. So
-> >   some AIO process can queue up lots of bios, consume lots of memory
-> >   without getting blocked. I am sure there will be other side affects
-> >   too. One of the side affects I noticed is that if an AIO process
-> >   queues up too much of IO, and if I want to kill it now, it just hangs
-> >   there for a really-2 long time (waiting for all the throttled IO
-> >   to complete).
-> > 
-> >   So I was thinking of implementing either per group limit or per io
-> >   context limit and after that process will be put to sleep. (something
-> >   like request descriptor mechanism).
-> 
-> io context limit seems a better solution for now. We can also expect
-> some help from the memory controller, if we'll have the dirty memory
-> limit per cgroup in the future the max amount of bios queued will be
-> automatically limited by this functionality.
-> 
-> > 
-> >   If that's the case, then comes the question of what do to about kernel
-> >   threads. Should they be blocked or not. If these are blocked then a
-> >   fast group will also be indirectly throttled behind a slow group. If
-> >   they are not then we still have the problem of too many bios queued
-> >   in throttling layer.
-> 
-> I think kernel threads should be never forced to sleep, to avoid the
-> classic "priority inversion" problem and create potential DoS in the
-> system.
-> 
-> Also for this part the dirty memory limit per cgroup could help a lot,
-> because a cgroup will never exceed its "quota" of dirty memory, so it
-> will not be able to submit more than a certain amount of bios
-> (corresponding to the dirty memory limit).
+>Looks to be supported on ia64 as well, though I don't have any hardware 
+>to test this code on for that arch.  Tony: I think this DMI exporting 
+>code should just work on ia64 as all it is using is dmi_walk() and 
+>parsing the entries as returned as dmi_headers in the callback.  Does 
+>this sound sane to you?
 
-Per memory cgroup dirty ratio should help a bit. But with intentional
-throttling we always run the risk of faster groups getting stuck behind
-slower groups.
+Yes we have dmi on ia64 too.
 
-Even in the case of buffered WRITES, are you able to run two buffered
-WRITE streams in two groups and then throttle these to respective rates.
-It might be interesting to run that and see what happens.
-
-Practically I feel we shall have to run this with per cgroup memory
-dirty ratio bit hence coumount with memory controller.
-
-> 
-> > 
-> > - What to do about other kernel thread like kjournald which is doing
-> >   IO on behalf of all the filesystem users. If data is also journalled
-> >   then I think again everything got serialized and a faster group got
-> >   backlogged behind a slower one.
-> 
-> This is the most critical issue IMHO.
-> 
-> The blkio controller should need some help from the filesystems to
-> understand which IO request can be throttled and which cannot. At the
-> moment critical IO requests (with critical I mean that are dependency
-> for other requests) and non-critical requests are mixed together in a
-> way that throttling a single request may stop a lot of other requests in
-> the system, and at the block layer it's not possible to retrieve such
-> informations.
-> 
-> I don't have a solution for this right now. Except looking at each
-> filesystem implementation and try to understand how to pass these
-> informations to the block layer.
-
-True. This is very important issue which needs to be sorted out. Because
-if due to journalling if file IO gets serialized behind a really slow
-artificially throlled group, it might be very bad for the overall
-filesystem performance.
-
-I am CCing linux-fsdevel, and hopefully filesystem guys there can give
-us some ideas regarding how it can be handeled.
-
-> 
-> > 
-> > - Two processes doing IO to same file and slower group will throttle
-> >   IO for faster group also. (flushing is per inode). 
-> > 
-> 
-> I think we should accept to have an inode granularity. We could redesign
-> the writeback code to work per-cgroup / per-page, etc. but that would
-> add a huge overhead. The limit of inode granularity could be an
-> acceptable tradeoff, cgroups are supposed to work to different files
-> usually, well.. except when databases come into play (ouch!).
-
-Agreed. Granularity of per inode level might be accetable in many 
-cases. Again, I am worried faster group getting stuck behind slower
-group.
-
-I am wondering if we are trying to solve the problem of ASYNC write throttling
-at wrong layer. Should ASYNC IO be throttled before we allow task to write to
-page cache. The way we throttle the process based on dirty ratio, can we
-just check for throttle limits also there or something like that.(I think
-that's what you had done in your initial throttling controller implementation?)
-
-Thanks
-Vivek
+-Tony
