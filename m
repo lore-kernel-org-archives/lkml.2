@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab1BWXRn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:17:43 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:53763 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417Ab1BWXRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:17:42 -0500
-Date: Wed, 23 Feb 2011 23:17:13 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754402Ab1BWXR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:17:56 -0500
+Received: from smtp.microsoft.com ([131.107.115.214]:29499 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856Ab1BWXRz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 18:17:55 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "KY Srinivasan" <kys@microsoft.com>
+Subject: RE: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
+ using pr_err now
+Thread-Topic: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
+ using pr_err now
+Thread-Index: AQHL0ueeEyAMD95LDk2oP6NgPzLQI5QP/GKA//99kOCAAK+KAP//j+Aw
+Date: Wed, 23 Feb 2011 23:17:54 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56233FAE0E8@TK5EX14MBXC118.redmond.corp.microsoft.com>
+References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
+ <20110223191533.GB1030@kroah.com>
+ <8AFC7968D54FB448A30D8F38F259C56233FADA94@TK5EX14MBXC118.redmond.corp.microsoft.com>
+ <20110223215658.GB16908@kroah.com>
+In-Reply-To: <20110223215658.GB16908@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Nothing too major,
 
-Two regression fixers (one revert that got fixes properly elsewhere), some 
-timestamp fixes and an agp module reload fix.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, February 23, 2011 1:57 PM
+> They where compile and run tested. And syslog was not a mess. What did
+> > I mess up here? The amount of printouts now are a fraction of what
+> > they where before.
+> 
+> You forgot to put '\n' at the end of all of your pr_XXX lines, so they will be
+> merged with the next one, messing up your syslog.  Joe also pointed this
+> problem out.
+> 
+> Take a look at your syslog to see what I am talking about...
 
-Dave.
+I am trying to get some of these patches corrected and out today, but it might
+be tomorrow. So far I have lost power for a minutes or so twice this afternoon.
 
-The following changes since commit d8204a37baf5474d3154eb536c936369be2bd5c0:
+It seems that the threat of snow is enough to lose power where I am in the PNW.
 
-  Merge branch 'urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6 (2011-02-22 09:26:54 -0800)
+Sigh......
 
-are available in the git repository at:
+Hank.
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (1):
-      Revert "drm/radeon/kms: switch back to min->max pll post divider iteration"
-
-Dave Airlie (2):
-      drm/radeon/kms: align height of fb allocation.
-      drm/radeon: fix regression with AA resolve checking
-
-Florian Mickler (1):
-      amd64-agp: fix crash at second module load
-
-Mario Kleiner (3):
-      drm/vblank: Use abs64(diff_ns) for s64 diff_ns instead of abs(diff_ns)
-      drm/vblank: Use memory barriers optimized for atomic_t instead of generics.
-      drm/vblank: Enable precise vblank timestamps for interlaced and doublescan modes.
-
-Paul Bolle (1):
-      drm: drop commented out code and preceding comment
-
- drivers/char/agp/amd64-agp.c            |    9 +++++++--
- drivers/gpu/drm/drm_irq.c               |   26 ++++++++++++++------------
- drivers/gpu/drm/radeon/r100.c           |    4 +---
- drivers/gpu/drm/radeon/radeon_display.c |    2 +-
- drivers/gpu/drm/radeon/radeon_fb.c      |    5 ++++-
- 5 files changed, 27 insertions(+), 19 deletions(-)
