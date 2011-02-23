@@ -1,113 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab1BWTWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 14:22:46 -0500
-Received: from smtp.microsoft.com ([131.107.115.215]:47547 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab1BWTWp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 14:22:45 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QJKYYA//++VECAAJKGgP//jS1QgAIW1ACAADc3wIABA5+A//+vqhAAEg2vAABt0K6AABCP96A=
-Date: Wed, 23 Feb 2011 19:22:45 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048014E4A@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102211200270.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048013C67@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102211549340.2701@localhost6.localdomain6>
- <20110223191617.GC1030@kroah.com>
-In-Reply-To: <20110223191617.GC1030@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932462Ab1BWTXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 14:23:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932298Ab1BWTXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 14:23:02 -0500
+Date: Wed, 23 Feb 2011 20:14:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stas Sergeev <stsp@aknet.ru>
+Cc: Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [path][rfc] add PR_DETACH prctl command
+Message-ID: <20110223191442.GA717@redhat.com>
+References: <4D6510A3.90905@aknet.ru>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6510A3.90905@aknet.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/23, Stas Sergeev wrote:
+>
+> Hi.
+>
+> The attched patch adds the PR_DETACH prctl command.
 
+Hi. The patch doesn't look right at first glance, but to me
+this is not the main problem.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Wednesday, February 23, 2011 2:16 PM
-> To: Thomas Gleixner
-> Cc: KY Srinivasan; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> virtualization@lists.osdl.org; devel@linuxdriverproject.org
-> Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> 
-> On Mon, Feb 21, 2011 at 03:51:56PM +0100, Thomas Gleixner wrote:
-> > On Mon, 21 Feb 2011, KY Srinivasan wrote:
-> > > > > > There are various ways to solve that proper.
-> > > > > >
-> > > > > >  - You can provide the interrupt number from ACPI/PCI or whatever
-> your HV
-> > > > > >    provides as enumeration.
-> > > > > >
-> > > > > >  - Use a fixed vector like XEN does for the event channel
-> > > > > >
-> > > > > >  - Use dynamic allocation in the IOAPIC space like the kernel does for
-> > > > > >    MSI(-X)
-> > > > > >
-> > > > > > Thanks,
-> > > > > >
-> > > > > > 	tglx
-> > > > >
-> > > > > I am not claiming that what I have done here is the best possible solution.
-> > > > > However, I will submit to you that it is better than what we had here
-> > > > > prior to this patch.  I will address this and a  whole lot of other issues
-> > > > > in future patches.
-> > > >
-> > > > No, it's _NOT_ better in any way. You trade breaking your PV thing
-> > > > against breaking random other drivers. Care to explain why you think
-> > > > that's better ?
-> > >
-> > > The root device for the VM is bound to the PV driver on some distributions.
-> > > So, if we cannot load the PV drivers, we do not have a system that boots.
-> > > In general, the system performance without these PV drivers is so poor that
-> > > for all practical purposes, having the PV drivers is almost a requirement
-> > > for having a useable system. While the platform supports configuration of the
-> VM with
-> > > some emulated devices, it is not a recommended configuration (because of
-> > > performance reasons) for Linux virtual machines on the Hyper-V platform.
-> >
-> > It does not matter whether it's recommended or not. If it results in a
-> > non usable emulated device it's broken. Just imagine you grab the
-> > serial interrupt, which results in not having a debug console. Not at
-> > all acceptable.
-> >
-> > > I have spent significantly more time debating this patch than
-> > > developing this patch that I still think improves the current
-> > > driver. I will leave it to Greg and other powers that be to decide
-> > > if this patch will be accepted. Let me know what your verdict is.
-> >
-> > As I said, any other clean solution (and I pointed out 3) over this
-> > hack.
-> 
-> I agree, KY, please fix this up properly, I've dropped this patch from
-> my queue now.
+> It is needed for those rare but unfortunate cases, where
+> you can't daemonize your process before creating a thread.
+> The effect of this command is similar to the fork() and then
+> exit() on parent, except that:
+> 1. PID does not change
+> 2. Threads are not destroyed
+>
+> It would be nice to know what people think about such an
+> approach.
 
-Ok; will do.
+Well. You should somehow convince people we need this ;) This is
+the main problem.
 
-K. Y
-> 
-> thanks,
-> 
-> greg k-h
+I am not going to discuss this, I never know when it comes to the
+new feautures. And you need the authoritative ack, probably you
+can ask Linus + Roland directly.
+
+As for the patch itself,
+
+> +static int wait_task_detached(struct wait_opts *wo, struct task_struct *p)
+> +{
+> +	int retval = 0;
+> +	pid_t pid = task_pid_vnr(p);
+> +	uid_t uid = __task_cred(p)->uid;
+> +
+> +	get_task_struct(p);
+> +	if (unlikely(wo->wo_flags & WNOWAIT)) {
+> +		read_unlock(&tasklist_lock);
+> +		return wait_noreap_copyout(wo, p, pid, uid, CLD_DETACHED,
+> +			p->exit_code >> 8);
+> +	}
+> +
+> +	p->flags &= ~PF_DETACH;
+
+Only current can change its ->flags, this is racy
+
+> +	if (!ptrace_reparented(p))
+> +		p->parent = init_pid_ns.child_reaper;
+> +	p->real_parent = init_pid_ns.child_reaper;
+> +	p->exit_signal = SIGCHLD;
+> +	list_move_tail(&p->sibling, &p->real_parent->children);
+
+No, we can't do this under read_lock(tasklist). And you forgot about
+threads, they also have ->real_parent == old_parent.
+
+The usage of ->exit_code doesn't look right, espeicaily if it is traced.
+
+And other problems afaics....
+
+> @@ -1549,6 +1581,9 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+>  	if (p->exit_state == EXIT_DEAD)
+>  		return 0;
+>
+> +	if (p->flags & PF_DETACH)
+> +		return wait_task_detached(wo, p);
+
+What if it is already dead? We are goint to reparent it, but init
+won't notice the new zombie.
+
+And what if do_wait() was called without WEXITED? say, the old parent
+does waitpid(WSTOPPED).
+
+> @@ -1450,10 +1450,10 @@ int do_notify_parent(struct task_struct *tsk, int sig)
+>  
+>  	BUG_ON(sig == -1);
+>  
+> - 	/* do_notify_parent_cldstop should have been called instead.  */
+> - 	BUG_ON(task_is_stopped_or_traced(tsk));
+> +	/* do_notify_parent_cldstop should have been called instead.  */
+> +	BUG_ON(task_is_stopped_or_traced(tsk));
+>  
+> -	BUG_ON(!task_ptrace(tsk) &&
+> +	BUG_ON(!task_ptrace(tsk) && (tsk->flags & PF_EXITING) &&
+>  	       (tsk->group_leader != tsk || !thread_group_empty(tsk)));
+
+Afaics, you are trying to hide the problem.... The code below can make
+tsk detached if real_parent ignores SIGCHLD.
+
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -1736,6 +1736,22 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+>  			else
+>  				error = PR_MCE_KILL_DEFAULT;
+>  			break;
+> +		case PR_DETACH:
+> +			error = -EPERM;
+> +			/* if parent is init, or not a group leader - bail */
+> +			if (me->real_parent == init_pid_ns.child_reaper)
+
+This is not exactly right. What if the child of init's sub-thread
+does PR_DETACH?
+
+Oleg.
 
