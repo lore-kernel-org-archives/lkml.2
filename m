@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab1BWMRq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 07:17:46 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58214 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab1BWMRo (ORCPT
+	id S1754598Ab1BWMVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 07:21:49 -0500
+Received: from smtpq1.gn.mail.iss.as9143.net ([212.54.34.164]:44262 "EHLO
+	smtpq1.gn.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754412Ab1BWMVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 07:17:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=LT5X7D91IyAqC6xBgQJhlz0TBE8UR2svFwZRpUDkjB1hF6XK5B/YUmHnTJc57ukKWg
-         SY8ZHGpNgPHUkjIN39lV0Og1isVfQvTW55wk2gl/01zIbthBBGm6ZeKl3HOMOYiOQJoH
-         s6OI0tV1LjTCczW+1gOqTmfGkDS6VwuDrbZt8=
-Date: Wed, 23 Feb 2011 15:17:26 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Manohar Vanga <manohar.vanga@cern.ch>, devel@driverdev.osuosl.org,
-        cota@braap.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: vme: remove unreachable code
-Message-ID: <20110223121726.GR1898@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Martyn Welch <martyn.welch@ge.com>,
-	Manohar Vanga <manohar.vanga@cern.ch>, devel@driverdev.osuosl.org,
-	cota@braap.org, linux-kernel@vger.kernel.org
-References: <1298403376-28352-1-git-send-email-manohar.vanga@cern.ch>
- <1298403376-28352-2-git-send-email-manohar.vanga@cern.ch>
- <4D64D10A.3070702@ge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D64D10A.3070702@ge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 23 Feb 2011 07:21:47 -0500
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+From: Hans Nieser <hnsr@xs4all.nl>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110223095538.GA12662@electric-eye.fr.zoreil.com>
+References: <1298396007.23906.27.camel@krikkit>
+	 <20110223095538.GA12662@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Feb 2011 13:21:44 +0100
+Message-ID: <1298463704.31256.29.camel@krikkit>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
+X-ZiggoSMTP-MailScanner-ID: 1PsDiy-000495-SF
+X-ZiggoSMTP-MailScanner: Found to be clean
+X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
+	score=-4.841, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90, PROLO_TRUST_RDNS -3.00, RDNS_DYNAMIC 0.98,
+	TW_SR 0.08)
+X-ZiggoSMTP-MailScanner-From: hnsr@xs4all.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 09:19:06AM +0000, Martyn Welch wrote:
-> On 22/02/11 19:36, Manohar Vanga wrote:
-> > Remove unreachable code from vme_register_bridge
+On Wed, 2011-02-23 at 10:55 +0100, Francois Romieu wrote:
+> Hans Nieser <hnsr@xs4all.nl> :
+> [...]
+> > With your patches applied to 2.6.38-rc6, I have gathered some of the
+> > info you requested from Seblu as well, I hope it's helpful:
 > > 
-> > Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
-
-Please always CC the list.  It's going to be Greg to commit this
-code so CC Greg as well.
-
-./scripts/get_maintainer.pl patch.diff
-
-(Although you should generally remove Tejun from the CC list.)
-
+> > 1: see attachment
 > 
-> Yeah - that's there from development. If the function needed to be extended,
-> that's the next part of the error path.
+> Ok.
+> 
+> The chipset requires no trivial last minute regression fix (yet).
+> 
+> > 2: I'm not sure how to check the size of the packets, but I'm just
+> > fetching a (large) file over http/tcp, so I guess they are mostly of the
+> > size of my MTU which is 1500 looking at ifconfig output
+> 
+> Fine.
+> 
+> Your testcases are always based on a real download, whence including some
+> disk activity, as opposed to a pure network test, right ?
 
-Don't do that.  Kernel style is austere.  Anything that isn't needed
-here and now should be removed.
+Yeah, I just had a little script that wgetted a file from a webserver in
+my LAN and saved it to separate (non-root) fs, then removed it - in a
+loop. When testing on the 2.6.35 and 2.6.35.9 kernels it did max out at
+about 107MiB/s, sometimes falling down a little presumably when disk was
+being touched.
 
-> > --- a/drivers/staging/vme/vme.c
-> > +++ b/drivers/staging/vme/vme.c
-> > @@ -1363,7 +1363,6 @@ int vme_register_bridge(struct vme_bridge *bridge)
-> >  
-> >  	return retval;
-> >  
-> > -	i = VME_SLOTS_MAX;
-> >  err_reg:
-> >  	while (i > -1) {
-> >  		dev = &bridge->dev[i];
+> > For the other vmstat/ethtool/interrupts output, I started the following
+> > commands remotely via ssh a second or two before starting the download,
+> > and the machine locked up a few seconds later:
+> 
+> SysRq is enabled (/etc/sysctl.conf::kernel.sysrq = 1), the computer was
+> switched back on a no-X console before the test. Then the keyboard leds
+> ignore keypresses and the sysrq keys don't display anything in the
+> console, right ?
 
-There are two problems with this loop.  1) It unregisters the device
-which failed to register.  2) It is a forever loop.
+Yep I had X shutdown and switched to VT1, after lock up the LEDs can't
+be toggled anymore and sysrq key combo was nonresponsive (it works if I
+do it before it locks up)
 
-It should be:
-	while (--i >= 0) {
-		dev = &bridge->dev[i];
+> You may enable PCIEASPM_DEBUG, force 'pcie_aspm=off' and switch from
+> SLUB to SLAB but it's a bit cargo-cultish.
 
-Can you fix that up as well and resend.
+I'll give that a try this evening
 
-regards,
-dan carpenter
+> A bisection could help. Bisecting 2.6.35 .. 2.6.35.9 may be enough if
+> 2.6.35.9 works well.
+
+Hmm did you mean bisecting 2.6.36 - 2.6.35.9 ? Since with 2.6.36 and
+above I can get the machine to hang within seconds and performance is
+really bad (10-20MiB/s with wget), while with 2.6.35.9 and 2.6.35
+performance was really good (reaching 107MiB/s most of the time) and
+lock up took 5-10 minutes instead of seconds (I guess I didn't mention
+this in my last e-mail but I managed to get both 2.6.35 and 2.6.35.9 to
+lock up eventually) - but I guess something changed between .35 and .36
+that made the issue easier to trigger.
+
+I can also try even older kernels to see if there is one that doesn't
+lock up at all
+
