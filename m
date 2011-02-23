@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab1BWHzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 02:55:38 -0500
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:38061 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753388Ab1BWHzg (ORCPT
+	id S1754285Ab1BWH4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 02:56:55 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:60100 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab1BWH4y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 02:55:36 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAO1LZE1R8sgG/2dsb2JhbACmJXS9PA2FUQQ
-Date: Wed, 23 Feb 2011 08:55:34 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Simon Braunschmidt <sb@emlix.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: Handling multiple watchdogs
-Message-ID: <20110223075534.GN3790@infomag.iguana.be>
-References: <4A672B97.1070704@emlix.com> <20090722171920.505ffc4b@lxorguk.ukuu.org.uk> <20090722185232.GK2155@infomag.iguana.be> <20110202111516.0154bb4a@lxorguk.ukuu.org.uk>
+	Wed, 23 Feb 2011 02:56:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Tee3ZkuJBf1uHpAF9dQeFy9bnrRa4sWhpasoEaLPkn00DmjucuaO5SWS/aNWB3cnAP
+         ALrv1+V+2vmo2NhH+zMw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110202111516.0154bb4a@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110223075121.GI3379@balbir.in.ibm.com>
+References: <20110216031831.571628191@google.com> <4D61D230.907@cn.fujitsu.com>
+ <AANLkTinyZSeTQd9t9wCp+LMZ+gGM4H0mZBc+daZgnZ5u@mail.gmail.com> <20110223075121.GI3379@balbir.in.ibm.com>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 22 Feb 2011 23:56:20 -0800
+Message-ID: <AANLkTi=_iZfr8EGWqwrsm0D_wP6dNdaVDqAq3pS0fbuW@mail.gmail.com>
+Subject: Re: [CFS Bandwidth Control v4 0/7] Introduction
+To: balbir@linux.vnet.ibm.com
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Tue, Feb 22, 2011 at 11:51 PM, Balbir Singh
+<balbir@linux.vnet.ibm.com> wrote:
+> * Paul Turner <pjt@google.com> [2011-02-22 23:42:48]:
+>
+>> Thanks for the report Xiao -- I wasn't able to reproduce this yet with
+>> a simple guest, I will try a more modern image tomorrow.
+>>
+>> One suspicion is that this might be connected with the missing
+>> runnable accounting in sched_stoptask.c.
+>>
+>
+> I can confirm that, my guests work fine after the changes posted this
+> morning. I still see some lockdep errors, but none associated with the
+> scheduler.
+>
 
-> > 1) make sure that we have the new watchdog core infrastructure going in for 2.6.32.
-> > This new core integrates the common code that we use over and over again. I once
-> > wrote code for it and then Alan had different ideas and thoughts and wrote his updated
-> > code. I reviewed that and I am changing some small bits so that we will have the new
-> 
-> What is the status of this ? I was thinking it had been a while but it
-> seems to be 18 months ago..
+Excellent!
 
-I did that dev_* fix as we agreed on sunday.
-I will sent out the code (for additional comments) out tonight to linux-kernel and linux-watchdog mailing lists.
-Aiming to get it in for 2.6.39.
+Ok, if this is resolved I'll roll this up and repost tomorrow, thanks!
 
-Code can allready be looked at, at:
-http://git.kernel.org/?p=linux/kernel/git/wim/linux-2.6-watchdog-next.git;a=shortlog;h=refs/heads/generic-watchdog
-
-Open issues: get min adn max timeout in so that the generic code can check the boundarys.
-Need to think about MAGIC_CLOSE_FEATURE. There seem to be people that are surprised that if you do a cat /dev/watchdog that the system reboots. Whiwh is normal: it's an open with a close without the magic character. One solution I see is to add a module_param that can disable magic_close_feature. Default will be on though).
-
-And after that we can consider the read function that you proposed.
-
-And then we need to go for the sysfs interface so that we can support multiple watchdogs via sysfs.
-
-Kind regards,
-Wim.
-
+> --
+>        Three Cheers,
+>        Balbir
+>
