@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab1BWFcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 00:32:05 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:57822 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750939Ab1BWFcE (ORCPT
+	id S1751572Ab1BWFcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 00:32:35 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:33069 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab1BWFce convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 00:32:04 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+gdmB/pM6g1lmybMVG9gFLSIetws1LgjS3k7aGJp
-	8FKCYEg4ewv2kW
-Subject: Re: [PATCH 1/2] sched: allow SCHED_BATCH to preempt SCHED_IDLE
- tasks
-From: Mike Galbraith <efault@gmx.de>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        richard.purdie@linuxfoundation.org
-In-Reply-To: <1298434854.7856.24.camel@marge.simson.net>
-References: <1298408674-3130-1-git-send-email-dvhart@linux.intel.com>
-	 <1298408674-3130-2-git-send-email-dvhart@linux.intel.com>
-	 <1298434854.7856.24.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Feb 2011 06:31:58 +0100
-Message-ID: <1298439118.7856.80.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 23 Feb 2011 00:32:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=rDVfKRMNSU+B63dkEYUzfL/a4MzhD43JcvypL/hqSKrhVVSu/PQdKQRiXQY3IygAiH
+         4X0+a0NoRFhER7bB0xG0LHz7vntALXfS8TvP/crkPvC289un+ASukcBYbMJvoBe3D9sm
+         bVc95GfmaqC7uJAokZqso8kb3zKfqXgEVt5uw=
+MIME-Version: 1.0
+In-Reply-To: <m3mxm2mt5n.fsf@fleche.redhat.com>
+References: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
+ <m3hbcfzu9u.fsf@fleche.redhat.com> <AANLkTinMx8mJYiDps3TuuaA1B4NLHi-PuCKm2=sTqyR0@mail.gmail.com>
+ <m3y65qv7m8.fsf@fleche.redhat.com> <AANLkTi=UrBZUttP9Q=2DrNXs8MAw4FXWhv6f_Pz8ad8o@mail.gmail.com>
+ <m3mxm2mt5n.fsf@fleche.redhat.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Wed, 23 Feb 2011 13:32:13 +0800
+Message-ID: <AANLkTinBDpw6wPtOC5f2GhibHcYiGAg2=v2KF1+PTm57@mail.gmail.com>
+Subject: Re: [PATCH] Linux Kernel GDB tracepoint module 2011-02-05
+To: Tom Tromey <tromey@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Michael Snyder <msnyder@vmware.com>,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        "gdb@sourceware.org" <gdb@sourceware.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-23 at 05:20 +0100, Mike Galbraith wrote:
-> On Tue, 2011-02-22 at 13:04 -0800, Darren Hart wrote:
-> > Perform the test for SCHED_IDLE before testing for SCHED_BATCH (and ensure idle
-> > tasks don't preempt idle tasks) so the non-interactive, but still important,
-> > SCHED_BATCH tasks will run in favor of the very low priority SCHED_IDLE tasks.
-> 
-> Yeah, that could be construed as a fairness fix for light SCHED_BATCH vs
-> a heavy SCHED_IDLE.  It should lower latencies for both when mixed.
+Hi Tom,
 
-Hm.  Seems SCHED_IDLE _always_ being preempted is a potential terminal
-starvation bug though, unless preempt_tick() checks spread to guarantee
-that the preempted task will eventually get the CPU back, even in the
-face of massive non-idle wakeup driven load.. which it does not.  (idle
-task holds resource?)
+I have updated the VTA introduce to https://code.google.com/p/kgtp/wiki/HOWTO
+Thanks for your help.
 
-Maybe my imagination has had too much java though.
+Best,
+Hui
 
-	-Mike
-
+On Sat, Feb 12, 2011 at 00:29, Tom Tromey <tromey@redhat.com> wrote:
+>>>>>> ">" == Hui Zhu <teawater@gmail.com> writes:
+>
+>>> Handle the var is enough for KGTP.  Could you send me a introduce
+>>> link for VTA?  I will post the the VTA to the HOWTO of the kgtp.
+>
+> Here's the original plan:
+> http://gcc.gnu.org/wiki/Var_Tracking_Assignments
+>
+> Alexandre also wrote a paper about it for the GCC Summit.  You can
+> probably dig that up without much effort.  There's also a follow-up
+> effort, the paper there is called "Consistent Views at Recommended
+> Breakpoints".  This one hasn't been implemented yet, though.
+>
+> Tom
+>
