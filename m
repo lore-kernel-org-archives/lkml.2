@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab1BWJfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 04:35:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52038 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755049Ab1BWJfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 04:35:44 -0500
-Date: Wed, 23 Feb 2011 10:35:39 +0100
-From: Jan Kara <jack@suse.cz>
-To: "George G. Davis" <gdavis@mvista.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] UDF: Fix compiler warning
-Message-ID: <20110223093539.GA32543@quack.suse.cz>
-References: <20110222190419.GH1397@mvista.com>
+	id S932182Ab1BWJhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 04:37:39 -0500
+Received: from mail-bw0-f51.google.com ([209.85.214.51]:33161 "EHLO
+	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755049Ab1BWJhh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 04:37:37 -0500
+Message-ID: <4D64D55B.50405@monstr.eu>
+Date: Wed, 23 Feb 2011 10:37:31 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222190419.GH1397@mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-i2c@vger.kernel.org,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] i2c: xiic: Use 32bit accesses only
+References: <1298396971-611-1-git-send-email-monstr@monstr.eu> <AANLkTinRVKMdOU-8DYLHe5q92nb3ysKnnG-jq8f++AEs@mail.gmail.com> <4D64C08F.5030604@monstr.eu> <201102230936.09921.arnd@arndb.de>
+In-Reply-To: <201102230936.09921.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-02-11 14:04:19, George G. Davis wrote:
-> From: Dirk Behme <dirk.behme@de.bosch.com>
+Arnd Bergmann wrote:
+> On Wednesday 23 February 2011 09:08:47 Michal Simek wrote:
+>> Grant Likely wrote:
+>>> On Tue, Feb 22, 2011 at 10:49 AM, Michal Simek <monstr@monstr.eu> wrote:
+>>>> i2c driver is used for LE/BE that's why is useful to use
+>>>> 32bit accesses. Then it is not necessary to solve any
+>>>> endian issues.
+>>> Are you sure?  I would expect the BE version needs to use
+>>> io{read,write}32be variants of the accessors.  What platforms have you
+>>> tested on?
+>> iowrite32 is the same with iowrite32be for Microblaze.
+>> I have no problem to change it to iowrite32be if you like.
+>>
+>> I have tested it on microblaze big and little endian platforms.
 > 
-> Fix compiler warning
-> 
-> fs/udf/balloc.c: In function 'udf_bitmap_new_block':
-> fs/udf/balloc.c:273: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
-> fs/udf/balloc.c:285: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
-> fs/udf/balloc.c:311: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
-> fs/udf/balloc.c:325: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
-> 
-> The main fix is to add a cast in ext2_find_next_bit().
-> 
-> As all other usage locations of udf_find_next_one_bit()
-> directly use bh->b_data (which is a char *), the useless
-> (char *) cast in line 311 can be removed, too.
-> 
-> Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
-> Signed-off-by: George G. Davis <gdavis@mvista.com>
-  Thanks. Merged into my tree.
+> I think what Grant was saying is that iowrite32 being the same as
+> iowrite32be is a bug, because iowrite32 is documented to be little-endian.
 
-								Honza
+Can you pointed me to that documentation?
 
-> ---
-> This fixes a long standing ARM Linux kernel UDF_FS build warning [1].
 > 
-> [1] http://armlinux.simtec.co.uk/kautobuild/2.6.37/warnings.html#modules
+> This is probably fine as long as you don't have any PCI devices,
+> but if you ever get PCI support, it won't work.
+
+Microblaze have PCI support but I don't have the board for testing.
+
 > 
->  fs/udf/balloc.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/udf/balloc.c b/fs/udf/balloc.c
-> index 306ee39..8994dd0 100644
-> --- a/fs/udf/balloc.c
-> +++ b/fs/udf/balloc.c
-> @@ -31,7 +31,7 @@
->  #define udf_set_bit(nr, addr) ext2_set_bit(nr, addr)
->  #define udf_test_bit(nr, addr) ext2_test_bit(nr, addr)
->  #define udf_find_next_one_bit(addr, size, offset) \
-> -		ext2_find_next_bit(addr, size, offset)
-> +		ext2_find_next_bit((unsigned long *)(addr), size, offset)
->  
->  static int read_block_bitmap(struct super_block *sb,
->  			     struct udf_bitmap *bitmap, unsigned int block,
-> @@ -297,7 +297,7 @@ repeat:
->  				break;
->  			}
->  		} else {
-> -			bit = udf_find_next_one_bit((char *)bh->b_data,
-> +			bit = udf_find_next_one_bit(bh->b_data,
->  						    sb->s_blocksize << 3,
->  						    group_start << 3);
->  			if (bit < sb->s_blocksize << 3)
-> -- 
-> 1.7.4
-> 
+> Also, it heavily confuses other developers such as Grant and me
+> if one architecture defines things to mean something completely
+> different from the other architectures.
+
+As I see will be good to review microblaze io.h and use generic one.
+
+Thanks,
+Michal
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
