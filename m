@@ -1,140 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab1BWXEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 18:04:04 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:42281 "EHLO lunge.queued.net"
+	id S1754838Ab1BWXHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 18:07:49 -0500
+Received: from kroah.org ([198.145.64.141]:51652 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab1BWXEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 18:04:02 -0500
-Date: Wed, 23 Feb 2011 15:03:57 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH] of/pdt: allow DT device matching by fixing 'name'
- brokenness (v2)
-Message-ID: <20110223150357.5a40793d@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754278Ab1BWXHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 18:07:48 -0500
+Date: Wed, 23 Feb 2011 15:06:54 -0800
+From: Greg KH <greg@kroah.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>, Hank Janssen <hjanssen@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 1/4] staging: hv: Fix the code depending on struct
+ vmbus_driver_context data order
+Message-ID: <20110223230654.GA18829@kroah.com>
+References: <1298492398-16522-1-git-send-email-haiyangz@microsoft.com>
+ <20110223212644.GC23766@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048014F2C@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20110223224829.GA7175@kroah.com>
+ <A1F3067C9B68744AA19F6802BAB8FFDC060EE9@TK5EX14MBXC227.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC060EE9@TK5EX14MBXC227.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 23, 2011 at 10:55:12PM +0000, Haiyang Zhang wrote:
+> > From: Greg KH [mailto:greg@kroah.com]
+> > The layering is almost ok, there is still one more layer here than is
+> > needed, and it should be removed (I already removed lots of layers that
+> > were not needed, just didn't get to this one.)  But the naming also
+> > needs to be fixed up as it is wrong from a "driver model" standpoint
+> > with the rest of the kernel.
+> 
+> So, how about rename the "struct driver_context" to "struct gen_drv_ctx"
+> in this patch? We can deal with the layering in next round of patches.
 
-Commit e2f2a93b changed dp->name from using the 'name' property to
-using package-to-path.  This fixed /proc/device-tree creation by
-eliminating conflicts between names (the 'name' property provides
-names like 'battery', whereas package-to-path provides names like
-'/foo/bar/battery@0', which we stripped to 'battery@0').  However,
-it also breaks of_device_id table matching.
+No, it's not a "driver context" at all.  It is a "hyperv driver", so
+name it as such.
 
-The fix that we _really_ wanted was to keep dp->name based upon
-the name property ('battery'), but based dp->full_name upon
-package-to-path ('battery@0').  This patch does just that.
+A "context" is a void pointer or something that the driver uses
+privately.  And you already have a pointer to the context in the base
+structure so you don't need your own.
 
-This also changes OLPC behavior to use the full result from
-package-to-path for full_name, rather than stripping the directory
-out.  In practice, the strings end up being exactly the same; this
-change saves time, code, and memory.
+You should work on removing the layering now, that will clean this all
+up.
 
-Note that this affects sparc by reverting dp->name back to what
-sparc was originally doing (looking at the name property).
+thanks,
 
-v2: combine two patches and revert of_pdt_node_name to original version.
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/of/pdt.c |   42 +++++++++++++++---------------------------
- 1 files changed, 15 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index 28295d0..a7aa85e 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -134,7 +134,7 @@ static char * __init of_pdt_get_one_property(phandle node, const char *name)
- 
- static char * __init of_pdt_try_pkg2path(phandle node)
- {
--	char *res, *buf = NULL;
-+	char *buf = NULL;
- 	int len;
- 
- 	if (!of_pdt_prom_ops->pkg2path)
-@@ -147,29 +147,6 @@ static char * __init of_pdt_try_pkg2path(phandle node)
- 		pr_err("%s: package-to-path failed\n", __func__);
- 		return NULL;
- 	}
--
--	res = strrchr(buf, '/');
--	if (!res) {
--		pr_err("%s: couldn't find / in %s\n", __func__, buf);
--		return NULL;
--	}
--	return res+1;
--}
--
--/*
-- * When fetching the node's name, first try using package-to-path; if
-- * that fails (either because the arch hasn't supplied a PROM callback,
-- * or some other random failure), fall back to just looking at the node's
-- * 'name' property.
-- */
--static char * __init of_pdt_build_name(phandle node)
--{
--	char *buf;
--
--	buf = of_pdt_try_pkg2path(node);
--	if (!buf)
--		buf = of_pdt_get_one_property(node, "name");
--
- 	return buf;
- }
- 
-@@ -187,7 +164,7 @@ static struct device_node * __init of_pdt_create_node(phandle node,
- 
- 	kref_init(&dp->kref);
- 
--	dp->name = of_pdt_build_name(node);
-+	dp->name = of_pdt_get_one_property(node, "name");
- 	dp->type = of_pdt_get_one_property(node, "device_type");
- 	dp->phandle = node;
- 
-@@ -198,11 +175,22 @@ static struct device_node * __init of_pdt_create_node(phandle node,
- 	return dp;
- }
- 
--static char * __init of_pdt_build_full_name(struct device_node *dp)
-+static char * __init of_pdt_build_full_name(struct device_node *dp,
-+		phandle node)
- {
- 	int len, ourlen, plen;
- 	char *n;
- 
-+	/*
-+	 * When fetching the full name we want the name we see with
-+	 * package-to-path (ie, '/foo/bar/battery@0') rather than what
-+	 * we see with the name property (ie, 'battery').
-+	 */
-+	n = of_pdt_try_pkg2path(node);
-+	if (n)
-+		return n;
-+
-+	/* Older method for determining full name */
- 	plen = strlen(dp->parent->full_name);
- 	ourlen = strlen(of_pdt_node_name(dp));
- 	len = ourlen + plen + 2;
-@@ -243,7 +231,7 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
- #if defined(CONFIG_SPARC)
- 		dp->path_component_name = build_path_component(dp);
- #endif
--		dp->full_name = of_pdt_build_full_name(dp);
-+		dp->full_name = of_pdt_build_full_name(dp, node);
- 
- 		dp->child = of_pdt_build_tree(dp,
- 				of_pdt_prom_ops->getchild(node), nextp);
--- 
-1.7.2.3
-
+greg k-h
