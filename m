@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab1BWAQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 19:16:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41723 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752755Ab1BWAQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 19:16:58 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [15/70] perf timechart: Adjust perf timechart to the new power events
-Date: Wed, 23 Feb 2011 01:17:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arjan van de Ven <arjan@linux.intel.com>,
-        Jean Pihet <j-pihet@ti.com>, Ingo Molnar <mingo@elte.hu>
-References: <20110222221838.567882669@clark.kroah.org>
-In-Reply-To: <20110222221838.567882669@clark.kroah.org>
+	id S1755563Ab1BWARX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 19:17:23 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:36230 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab1BWARV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 19:17:21 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6265"; a="75852994"
+From: David Brown <davidb@codeaurora.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Dima Zavin <dima@android.com>, Bryan Huntsman <bryanh@codeaurora.org>,
+        Kenneth Heitke <kheitke@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
+        tsoni@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        ARM PORT <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] msm: add single-wire serial bus interface (SSBI) driver
+References: <1297989299-27320-1-git-send-email-kheitke@codeaurora.org>
+	<1297989432.9680.50.camel@c-dwalke-linux.qualcomm.com>
+	<4D5DC289.1090004@codeaurora.org>
+	<1298054771.17758.1.camel@c-dwalke-linux.qualcomm.com>
+	<AANLkTi=0Pxg09x8DdVDVy9Ur7r1dgB+4LM3q0hM4_8Rg@mail.gmail.com>
+	<1298419839.17118.5.camel@m0nster>
+X-Hashcash: 1:20:110223:bryanh@codeaurora.org::GjL9j5l+ftNvd7pv:00000000000000000000000000000000000000000U6X
+X-Hashcash: 1:20:110223:linux-kernel@vger.kernel.org::IsNyYDKsbnA8k44x:0000000000000000000000000000000000Mpp
+X-Hashcash: 1:20:110223:dwalker@fifo99.com::5R3xyuBetGCfELUI:00000000000000000000000000000000000000000001uGZ
+X-Hashcash: 1:20:110223:linux-arm-msm@vger.kernel.org::c5bzLySCF7H2KQoT:000000000000000000000000000000002Oa2
+X-Hashcash: 1:20:110223:pavel@ucw.cz::9n63iSzeyh1dyQFx:000002YkR
+X-Hashcash: 1:20:110223:kheitke@codeaurora.org::yk4uPOki7QNKJUpj:0000000000000000000000000000000000000002m6D
+X-Hashcash: 1:20:110223:linux-arm-kernel@lists.infradead.org::s7VKYgunicaVQjrE:00000000000000000000000002UAe
+X-Hashcash: 1:20:110223:dima@android.com::IadTU3Se5xbwrU8r:0437L
+X-Hashcash: 1:20:110223:tsoni@codeaurora.org::Dm6+fz0dbfwIrH2F:00000000000000000000000000000000000000000BC7g
+Date: Tue, 22 Feb 2011 16:17:20 -0800
+In-Reply-To: <1298419839.17118.5.camel@m0nster> (Daniel Walker's message of
+	"Tue, 22 Feb 2011 16:10:39 -0800")
+Message-ID: <8ya62sbli3z.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102230117.20631.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Feb 22 2011, Daniel Walker wrote:
 
-I should have split out this segfault fix.
+> On Tue, 2011-02-22 at 12:47 -0800, Dima Zavin wrote:
+>
+>> What is the problem leaving it under arch/arm/mach-msm?
+>
+> Because it's a driver.
 
-On Tuesday 22 February 2011 23:16:54 Greg KH wrote:
-> 2.6.37-stable review patch.  If anyone has any objections, please let
-> us know.
-> 
-> ------------------
-> 
-> From: Thomas Renninger <trenn@suse.de>
-> 
-> commit 20c457b8587bee4644d998331d9e13be82e05b4c upstream.
-> 
-> [This patch is part of mainline git commit 20c457b8587bee4644d9.
->   This should fix:
->   http://www.mail-archive.com/linux-perf-
->   users@vger.kernel.org/msg00057.html
-> 
->   The regression was introduced by git commit:
->   4c21adf26f8fcf86a755b9b9f55c2e9fd241e1fb]
-Above link is a nice pointer.
-the rest of the changelog (below) does not fit and describes
-the mainline patch, the tiny fix was part of.
+There are a lot of other drivers currently under various arch
+subsystems.  I'm not sure if a driver that is specific to only one arch
+has a strong reason to be elsewhere in the kernel.  If there was a
+possibility of there being other devices that used SSBI, it might make
+sense to put it elsewhere.  But, as far as I know, this device is only
+found on MSM chips.
 
-Don't know whether it's worth to touch it, but if, the changelog (or 
-title) of the patch should be as short as:
-perf: timechart (userspace): Do not segfault on power_end events
+It seems kind of unusual to create an entirely new directory under
+drivers to hold what will only ever be a single driver.
 
-         Thomas
+David
 
-> builtin-timechart must only pass -e power:xy events if they are 
-supported by
-> the running kernel, otherwise try to fetch the old 
-power:power{start,end}
-> events.
-> 
-> For this I added the tiny helper function:
-> 
->    int is_valid_tracepoint(const char *event_string)
-> 
-> to parse-events.[hc], which could be more generic as an interface and 
-support
-> hardware/software/... events, not only tracepoints, but someone else 
-could
-> extend that if needed...
-> 
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-> Acked-by: Jean Pihet <j-pihet@ti.com>
-> LKML-Reference: <1294073445-14812-4-git-send-email-trenn@suse.de>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  tools/perf/builtin-timechart.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/tools/perf/builtin-timechart.c
-> +++ b/tools/perf/builtin-timechart.c
-> @@ -502,7 +502,7 @@ static int process_sample_event(event_t
->  			c_state_start(pe->cpu_id, data.time, pe->value);
->  
->  		if (strcmp(event_str, "power:power_end") == 0)
-> -			c_state_end(pe->cpu_id, data.time);
-> +			c_state_end(data.cpu, data.time);
->  
->  		if (strcmp(event_str, "power:power_frequency") == 0)
->  			p_state_change(pe->cpu_id, data.time, pe->value);
-> 
-> 
-> 
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
