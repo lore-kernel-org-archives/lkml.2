@@ -1,64 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1BWIFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 03:05:37 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:2515 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab1BWIFg convert rfc822-to-8bit (ORCPT
+	id S1754829Ab1BWIMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 03:12:20 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44511 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab1BWIMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 03:05:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=X4uFPGmvzP5A6+zouC5RQwCbidigSmR2qINfh/5sHRg3/gVOs+jQDIE0WO5Wd5mzwQ
-         bU3nUYbXLSoHGOsPQT2w==
+	Wed, 23 Feb 2011 03:12:19 -0500
+Message-ID: <4D64C08F.5030604@monstr.eu>
+Date: Wed, 23 Feb 2011 09:08:47 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-In-Reply-To: <20110222031759.GJ10342@balbir.in.ibm.com>
-References: <20110216031831.571628191@google.com> <20110216031841.352204682@google.com>
- <20110222031759.GJ10342@balbir.in.ibm.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 23 Feb 2011 00:05:02 -0800
-Message-ID: <AANLkTikX0Hpde2LqdqaVMBAV0G056i-gxXbzWunw6uRK@mail.gmail.com>
-Subject: Re: [CFS Bandwidth Control v4 6/7] sched: hierarchical task
- accounting for SCHED_OTHER
-To: balbir@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-i2c@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        John.Linn@xilinx.com
+Subject: Re: [PATCH v3 2/2] i2c: xiic: Use 32bit accesses only
+References: <1298396971-611-1-git-send-email-monstr@monstr.eu> <1298396971-611-2-git-send-email-monstr@monstr.eu> <AANLkTinRVKMdOU-8DYLHe5q92nb3ysKnnG-jq8f++AEs@mail.gmail.com>
+In-Reply-To: <AANLkTinRVKMdOU-8DYLHe5q92nb3ysKnnG-jq8f++AEs@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 7:17 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> * Paul Turner <pjt@google.com> [2011-02-15 19:18:37]:
->
->> +#ifdef CONFIG_CFS_BANDWIDTH
->> +/* maintain hierarchal task counts on group entities */
->> +static void account_hier_tasks(struct sched_entity *se, int delta)
->
-> I don't like the use of hier, I'd expand it to hierarchical
->
+Grant Likely wrote:
+> On Tue, Feb 22, 2011 at 10:49 AM, Michal Simek <monstr@monstr.eu> wrote:
+>> i2c driver is used for LE/BE that's why is useful to use
+>> 32bit accesses. Then it is not necessary to solve any
+>> endian issues.
+> 
+> Are you sure?  I would expect the BE version needs to use
+> io{read,write}32be variants of the accessors.  What platforms have you
+> tested on?
 
-Sure
+iowrite32 is the same with iowrite32be for Microblaze.
+I have no problem to change it to iowrite32be if you like.
 
-> I am not too sure about the RT bits, but other than that
->
->
-> Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
->
->
-> --
->        Three Cheers,
->        Balbir
->
+I have tested it on microblaze big and little endian platforms.
+
+Thanks,
+Michal
+
+
+> 
+>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+>> ---
+>>  drivers/i2c/busses/i2c-xiic.c |   66 +++++++++++++++++------------------------
+>>  1 files changed, 27 insertions(+), 39 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+>> index 0b7647b..78b3b82 100644
+>> --- a/drivers/i2c/busses/i2c-xiic.c
+>> +++ b/drivers/i2c/busses/i2c-xiic.c
+>> @@ -178,21 +178,6 @@ struct xiic_i2c {
+>>  static void xiic_start_xfer(struct xiic_i2c *i2c);
+>>  static void __xiic_start_xfer(struct xiic_i2c *i2c);
+>>
+>> -static inline void xiic_setreg8(struct xiic_i2c *i2c, int reg, u8 value)
+>> -{
+>> -       iowrite8(value, i2c->base + reg);
+>> -}
+>> -
+>> -static inline u8 xiic_getreg8(struct xiic_i2c *i2c, int reg)
+>> -{
+>> -       return ioread8(i2c->base + reg);
+>> -}
+>> -
+>> -static inline void xiic_setreg16(struct xiic_i2c *i2c, int reg, u16 value)
+>> -{
+>> -       iowrite16(value, i2c->base + reg);
+>> -}
+>> -
+>>  static inline void xiic_setreg32(struct xiic_i2c *i2c, int reg, int value)
+>>  {
+>>        iowrite32(value, i2c->base + reg);
+>> @@ -230,10 +215,11 @@ static inline void xiic_irq_clr_en(struct xiic_i2c *i2c, u32 mask)
+>>  static void xiic_clear_rx_fifo(struct xiic_i2c *i2c)
+>>  {
+>>        u8 sr;
+>> -       for (sr = xiic_getreg8(i2c, XIIC_SR_REG_OFFSET);
+>> +       for (sr = xiic_getreg32(i2c, XIIC_SR_REG_OFFSET);
+>>                !(sr & XIIC_SR_RX_FIFO_EMPTY_MASK);
+>> -               sr = xiic_getreg8(i2c, XIIC_SR_REG_OFFSET))
+>> -               xiic_getreg8(i2c, XIIC_DRR_REG_OFFSET);
+>> +               sr = xiic_getreg32(i2c, XIIC_SR_REG_OFFSET)) {
+>> +               xiic_getreg32(i2c, XIIC_DRR_REG_OFFSET);
+>> +       }
+>>  }
+>>
+>>  static void xiic_reinit(struct xiic_i2c *i2c)
+>> @@ -241,13 +227,13 @@ static void xiic_reinit(struct xiic_i2c *i2c)
+>>        xiic_setreg32(i2c, XIIC_RESETR_OFFSET, XIIC_RESET_MASK);
+>>
+>>        /* Set receive Fifo depth to maximum (zero based). */
+>> -       xiic_setreg8(i2c, XIIC_RFD_REG_OFFSET, IIC_RX_FIFO_DEPTH - 1);
+>> +       xiic_setreg32(i2c, XIIC_RFD_REG_OFFSET, IIC_RX_FIFO_DEPTH - 1);
+>>
+>>        /* Reset Tx Fifo. */
+>> -       xiic_setreg8(i2c, XIIC_CR_REG_OFFSET, XIIC_CR_TX_FIFO_RESET_MASK);
+>> +       xiic_setreg32(i2c, XIIC_CR_REG_OFFSET, XIIC_CR_TX_FIFO_RESET_MASK);
+>>
+>>        /* Enable IIC Device, remove Tx Fifo reset & disable general call. */
+>> -       xiic_setreg8(i2c, XIIC_CR_REG_OFFSET, XIIC_CR_ENABLE_DEVICE_MASK);
+>> +       xiic_setreg32(i2c, XIIC_CR_REG_OFFSET, XIIC_CR_ENABLE_DEVICE_MASK);
+>>
+>>        /* make sure RX fifo is empty */
+>>        xiic_clear_rx_fifo(i2c);
+>> @@ -265,8 +251,9 @@ static void xiic_deinit(struct xiic_i2c *i2c)
+>>        xiic_setreg32(i2c, XIIC_RESETR_OFFSET, XIIC_RESET_MASK);
+>>
+>>        /* Disable IIC Device. */
+>> -       cr = xiic_getreg8(i2c, XIIC_CR_REG_OFFSET);
+>> -       xiic_setreg8(i2c, XIIC_CR_REG_OFFSET, cr & ~XIIC_CR_ENABLE_DEVICE_MASK);
+>> +       cr = xiic_getreg32(i2c, XIIC_CR_REG_OFFSET);
+>> +       xiic_setreg32(i2c, XIIC_CR_REG_OFFSET,
+>> +                                       cr & ~XIIC_CR_ENABLE_DEVICE_MASK);
+>>  }
+>>
+>>  static void xiic_read_rx(struct xiic_i2c *i2c)
+>> @@ -274,22 +261,22 @@ static void xiic_read_rx(struct xiic_i2c *i2c)
+>>        u8 bytes_in_fifo;
+>>        int i;
+>>
+>> -       bytes_in_fifo = xiic_getreg8(i2c, XIIC_RFO_REG_OFFSET) + 1;
+>> +       bytes_in_fifo = xiic_getreg32(i2c, XIIC_RFO_REG_OFFSET) + 1;
+>>
+>>        dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d"
+>>                ", SR: 0x%x, CR: 0x%x\n",
+>>                __func__, bytes_in_fifo, xiic_rx_space(i2c),
+>> -               xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+>> -               xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
+>> +               xiic_getreg32(i2c, XIIC_SR_REG_OFFSET),
+>> +               xiic_getreg32(i2c, XIIC_CR_REG_OFFSET));
+>>
+>>        if (bytes_in_fifo > xiic_rx_space(i2c))
+>>                bytes_in_fifo = xiic_rx_space(i2c);
+>>
+>>        for (i = 0; i < bytes_in_fifo; i++)
+>>                i2c->rx_msg->buf[i2c->rx_pos++] =
+>> -                       xiic_getreg8(i2c, XIIC_DRR_REG_OFFSET);
+>> +                       xiic_getreg32(i2c, XIIC_DRR_REG_OFFSET);
+>>
+>> -       xiic_setreg8(i2c, XIIC_RFD_REG_OFFSET,
+>> +       xiic_setreg32(i2c, XIIC_RFD_REG_OFFSET,
+>>                (xiic_rx_space(i2c) > IIC_RX_FIFO_DEPTH) ?
+>>                IIC_RX_FIFO_DEPTH - 1 :  xiic_rx_space(i2c) - 1);
+>>  }
+>> @@ -297,7 +284,7 @@ static void xiic_read_rx(struct xiic_i2c *i2c)
+>>  static int xiic_tx_fifo_space(struct xiic_i2c *i2c)
+>>  {
+>>        /* return the actual space left in the FIFO */
+>> -       return IIC_TX_FIFO_DEPTH - xiic_getreg8(i2c, XIIC_TFO_REG_OFFSET) - 1;
+>> +       return IIC_TX_FIFO_DEPTH - xiic_getreg32(i2c, XIIC_TFO_REG_OFFSET) - 1;
+>>  }
+>>
+>>  static void xiic_fill_tx_fifo(struct xiic_i2c *i2c)
+>> @@ -317,9 +304,9 @@ static void xiic_fill_tx_fifo(struct xiic_i2c *i2c)
+>>                        data |= XIIC_TX_DYN_STOP_MASK;
+>>                        dev_dbg(i2c->adap.dev.parent, "%s TX STOP\n", __func__);
+>>
+>> -                       xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
+>> +                       xiic_setreg32(i2c, XIIC_DTR_REG_OFFSET, data);
+>>                } else
+>> -                       xiic_setreg8(i2c, XIIC_DTR_REG_OFFSET, data);
+>> +                       xiic_setreg32(i2c, XIIC_DTR_REG_OFFSET, data);
+>>        }
+>>  }
+>>
+>> @@ -348,7 +335,8 @@ static void xiic_process(struct xiic_i2c *i2c)
+>>
+>>        dev_dbg(i2c->adap.dev.parent, "%s entry, IER: 0x%x, ISR: 0x%x, "
+>>                "pend: 0x%x, SR: 0x%x, msg: %p, nmsgs: %d\n",
+>> -               __func__, ier, isr, pend, xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
+>> +               __func__, ier, isr, pend,
+>> +               xiic_getreg32(i2c, XIIC_SR_REG_OFFSET),
+>>                i2c->tx_msg, i2c->nmsgs);
+>>
+>>        /* Do not processes a devices interrupts if the device has no
+>> @@ -479,7 +467,7 @@ out:
+>>
+>>  static int xiic_bus_busy(struct xiic_i2c *i2c)
+>>  {
+>> -       u8 sr = xiic_getreg8(i2c, XIIC_SR_REG_OFFSET);
+>> +       u8 sr = xiic_getreg32(i2c, XIIC_SR_REG_OFFSET);
+>>
+>>        return (sr & XIIC_SR_BUS_BUSY_MASK) ? -EBUSY : 0;
+>>  }
+>> @@ -522,17 +510,17 @@ static void xiic_start_recv(struct xiic_i2c *i2c)
+>>        rx_watermark = msg->len;
+>>        if (rx_watermark > IIC_RX_FIFO_DEPTH)
+>>                rx_watermark = IIC_RX_FIFO_DEPTH;
+>> -       xiic_setreg8(i2c, XIIC_RFD_REG_OFFSET, rx_watermark - 1);
+>> +       xiic_setreg32(i2c, XIIC_RFD_REG_OFFSET, rx_watermark - 1);
+>>
+>>        if (!(msg->flags & I2C_M_NOSTART))
+>>                /* write the address */
+>> -               xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET,
+>> +               xiic_setreg32(i2c, XIIC_DTR_REG_OFFSET,
+>>                        (msg->addr << 1) | XIIC_READ_OPERATION |
+>>                        XIIC_TX_DYN_START_MASK);
+>>
+>>        xiic_irq_clr_en(i2c, XIIC_INTR_BNB_MASK);
+>>
+>> -       xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET,
+>> +       xiic_setreg32(i2c, XIIC_DTR_REG_OFFSET,
+>>                msg->len | ((i2c->nmsgs == 1) ? XIIC_TX_DYN_STOP_MASK : 0));
+>>        if (i2c->nmsgs == 1)
+>>                /* very last, enable bus not busy as well */
+>> @@ -551,7 +539,7 @@ static void xiic_start_send(struct xiic_i2c *i2c)
+>>        dev_dbg(i2c->adap.dev.parent, "%s entry, msg: %p, len: %d, "
+>>                "ISR: 0x%x, CR: 0x%x\n",
+>>                __func__, msg, msg->len, xiic_getreg32(i2c, XIIC_IISR_OFFSET),
+>> -               xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
+>> +               xiic_getreg32(i2c, XIIC_CR_REG_OFFSET));
+>>
+>>        if (!(msg->flags & I2C_M_NOSTART)) {
+>>                /* write the address */
+>> @@ -561,7 +549,7 @@ static void xiic_start_send(struct xiic_i2c *i2c)
+>>                        /* no data and last message -> add STOP */
+>>                        data |= XIIC_TX_DYN_STOP_MASK;
+>>
+>> -               xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
+>> +               xiic_setreg32(i2c, XIIC_DTR_REG_OFFSET, data);
+>>        }
+>>
+>>        xiic_fill_tx_fifo(i2c);
+>> @@ -653,7 +641,7 @@ static int xiic_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+>>        int err;
+>>
+>>        dev_dbg(adap->dev.parent, "%s entry SR: 0x%x\n", __func__,
+>> -               xiic_getreg8(i2c, XIIC_SR_REG_OFFSET));
+>> +               xiic_getreg32(i2c, XIIC_SR_REG_OFFSET));
+>>
+>>        err = xiic_busy(i2c);
+>>        if (err)
+>> --
+>> 1.5.5.6
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> 
+> 
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
