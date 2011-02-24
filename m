@@ -1,137 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab1BXPpk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:45:40 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50718 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab1BXPpj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:45:39 -0500
-Date: Thu, 24 Feb 2011 21:15:47 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-Subject: Re: [CFS Bandwidth Control v4 3/7] sched: throttle cfs_rq entities
- which exceed their local quota
-Message-ID: <20110224154547.GA3000@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110216031831.571628191@google.com>
- <20110216031841.068673650@google.com>
- <1298467933.2217.765.camel@twins>
- <20110224052101.GA2755@in.ibm.com>
- <1298545501.2428.18.camel@twins>
+	id S1755909Ab1BXPqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:46:19 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53236 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab1BXPqQ convert rfc822-to-8bit (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 24 Feb 2011 10:46:16 -0500
+Date: Thu, 24 Feb 2011 10:45:03 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
+        Jerome Glisse <jglisse@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] radeon: DMA unmap dummy page during unload/unbind.
+Message-ID: <20110224154503.GA6893@dumpdata.com>
+References: <1298494135-16751-1-git-send-email-konrad.wilk@oracle.com>
+ <1298494135-16751-2-git-send-email-konrad.wilk@oracle.com>
+ <AANLkTi==tDG6wMVNTSYjucZH+g-G3P6OiqSmHXWm8LP9@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1298545501.2428.18.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTi==tDG6wMVNTSYjucZH+g-G3P6OiqSmHXWm8LP9@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D667D37.0105:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 12:05:01PM +0100, Peter Zijlstra wrote:
-> On Thu, 2011-02-24 at 10:51 +0530, Bharata B Rao wrote:
-> > Hi Peter,
-> > 
-> > I will only answer a couple of your questions and let Paul clarify the rest...
-> > 
-> > On Wed, Feb 23, 2011 at 02:32:13PM +0100, Peter Zijlstra wrote:
-> > > On Tue, 2011-02-15 at 19:18 -0800, Paul Turner wrote:
-> > > 
-> > > 
-> > > > @@ -1363,6 +1407,9 @@ enqueue_task_fair(struct rq *rq, struct 
-> > > >  			break;
-> > > >  		cfs_rq = cfs_rq_of(se);
-> > > >  		enqueue_entity(cfs_rq, se, flags);
-> > > > +		/* don't continue to enqueue if our parent is throttled */
-> > > > +		if (cfs_rq_throttled(cfs_rq))
-> > > > +			break;
-> > > >  		flags = ENQUEUE_WAKEUP;
-> > > >  	}
-> > > >  
-> > > > @@ -1390,8 +1437,11 @@ static void dequeue_task_fair(struct rq 
-> > > >  		cfs_rq = cfs_rq_of(se);
-> > > >  		dequeue_entity(cfs_rq, se, flags);
-> > > >  
-> > > > -		/* Don't dequeue parent if it has other entities besides us */
-> > > > -		if (cfs_rq->load.weight)
-> > > > +		/*
-> > > > +		 * Don't dequeue parent if it has other entities besides us,
-> > > > +		 * or if it is throttled
-> > > > +		 */
-> > > > +		if (cfs_rq->load.weight || cfs_rq_throttled(cfs_rq))
-> > > >  			break;
-> > > >  		flags |= DEQUEUE_SLEEP;
-> > > >  	}
-> > > 
-> > > How could we even be running if our parent was throttled?
-> > 
-> > The task isn't running actually. One of its parents up in the heirarchy has
-> > been throttled and been already dequeued. Now this task sits on its immediate
-> > parent's runqueue which isn't throttled but not really running also since
-> > the hierarchy is throttled. In this situation, load balancer can try to pull
-> > this task. When that happens, load balancer tries to dequeue it and this
-> > check will ensure that we don't attempt to dequeue a group entity in our
-> > hierarchy which has already been dequeued.
+On Thu, Feb 24, 2011 at 03:25:43AM -0500, Alex Deucher wrote:
+> On Wed, Feb 23, 2011 at 3:48 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> > git commit 82568565683b4991964a5fc89a9ca0c7122818e8 adds a dummy page
+> > so that if something goes wrong it will at least fetch/write data
+> > _only_ to this location.
+> >
+> > The radeon_gart_init sets it up.. but there is no corresponding
+> > free-ing of this dummy page. There is one invocation to free-ing
+> > the dummy page in r600.c but nothing in the radeon_gart_fini path.
+> >
+> > This patch adds in the unloading/unbind path the free-ing of said
+> > dummy page.
 > 
-> That's insane, its throttled, that means it should be dequeued and
-> should thus invisible for the load-balancer. If it is visible the
-> load-balancer will try and move tasks around to balance load, but all in
-> vain, it'll move phantom loads around and get most confused at best.
+> This patch looks good, but we might as go one step further and just
+> remove the dummy page stuff from r600.c, rv770.c and evergreen.c and
+> just consolidate it in gart_init() and gart_fini().  See the attached
+> patch.
 
-We can't walk the se hierarchy downwards and hence can't really dequeue
-the entire hierarchy if any one entity in the hierarchy is throttled.
-However this semantics of retaining the child entities enqueued while
-dequeuing the entities upwards of a throttled entity makes our life simple
-during unthrottling. We just have to enqueue the entities upwards the
-throttled entity and the rest of the entities downwards automatically become
-available.
-
-While I admit that our load balancing semantics wrt thorttled entities are
-not consistent (we don't allow pulling of tasks directly from throttled
-cfs_rqs, while allow pulling of tasks from a throttled hierarchy as in the
-above case), I am beginning to think if it works out to be advantageous.
-Is there a chance that the task gets to run on other CPU where the hierarchy
-isn't throttled since runtime is still available ?
+Excellent. Thank you!
 
 > 
-> Pure and utter suckage if you ask me.
+> Alex
 > 
-> > > > @@ -1438,10 +1524,16 @@ static void account_cfs_rq_quota(struct 
-> > > >  
-> > > >  	cfs_rq->quota_used += delta_exec;
-> > > >  
-> > > > -	if (cfs_rq->quota_used < cfs_rq->quota_assigned)
-> > > > +	if (cfs_rq_throttled(cfs_rq) ||
-> > > > +		cfs_rq->quota_used < cfs_rq->quota_assigned)
-> > > >  		return;
-> > > 
-> > > So we are throttled but running anyway, I suppose this comes from the PI
-> > > ceiling muck?
-> > 
-> > When a cfs_rq is throttled, its representative se (and all its parent
-> > se's) get dequeued and the task is marked for resched. But the task entity is
-> > still on its throttled parent's cfs_rq (=> task->se.on_rq = 1). Next during
-> > put_prev_task_fair(), we enqueue the task back on its throttled parent's
-> > cfs_rq at which time we end up calling update_curr() on throttled cfs_rq.
-> > This check would help us bail out from that situation.
+> >
+> > Without this patch and if we have CONFIG_DMA_API_DEBUG=y set we
+> > get this:
+> >
+> > [   22.113420] drm: unregistered panic notifier
+> > [   22.126500] [drm] radeon: finishing device.
+> > [   22.130868] [drm] radeon: cp finalized
+> > [   22.135384] [TTM] Finalizing pool allocator.
+> > [   22.139669] [TTM] Zone  kernel: Used memory at exit: 0 kiB.
+> > [   22.145229] [drm] radeon: ttm finalized
+> > [   22.149055] vga_switcheroo: disabled
+> > [   22.153393] ------------[ cut here ]------------
+> > [   22.158021] WARNING: at /home/konrad/ssd/linux/lib/dma-debug.c:689 dma_debug_device_change+0x12e/0x161()
+> > [   22.167475] Hardware name: PowerEdge T105
+> > [   22.171562] pci 0000:01:08.0: DMA-API: device driver has pending DMA allocations while released from device [count=1]
+> >
+> > With this patch we don't see this anymore.
+> >
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/gpu/drm/radeon/radeon_gart.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+> > index 6501611..dc04c7b 100644
+> > --- a/drivers/gpu/drm/radeon/radeon_gart.c
+> > +++ b/drivers/gpu/drm/radeon/radeon_gart.c
+> > @@ -269,4 +269,6 @@ void radeon_gart_fini(struct radeon_device *rdev)
+> >        kfree(rdev->gart.pages_addr);
+> >        rdev->gart.pages = NULL;
+> >        rdev->gart.pages_addr = NULL;
+> > +
+> > +       radeon_dummy_page_fini(rdev);
+> >  }
+> > --
+> > 1.7.1
+> >
+> > _______________________________________________
+> > dri-devel mailing list
+> > dri-devel@lists.freedesktop.org
+> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> >
+
+> From d22bba30a66ba95cabeed7a71c982dfa96521384 Mon Sep 17 00:00:00 2001
+> From: Alex Deucher <alexdeucher@gmail.com>
+> Date: Thu, 24 Feb 2011 03:16:21 -0500
+> Subject: [PATCH] drm/radeon/kms: clean up gart dummy page handling
 > 
-> But why bother with this early exit? At worst you'll call
-> tg_request_cfs_quota() in vain, at best you'll find there is runtime
-> because the period tick just happened on another cpu and you're good to
-> go, yay!
+> As per Konrad's original patch, the dummy page used
+> by the gart code and allocated in radeon_gart_init()
+> was not freed properly in radeon_gart_fini().
+> 
+> At the same time r6xx and newer allocated and freed the
+> dummy page on their own.  So to do Konrad's patch one
+> better, just remove the allocation and freeing of the
+> dummy page in the r6xx, 7xx, evergreen, and ni code and
+> allocate and free in the gart_init/fini() functions for
+> all asics.
+> 
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Jerome Glisse <jglisse@redhat.com>
+> Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+> ---
+>  drivers/gpu/drm/radeon/evergreen.c   |    4 ----
+>  drivers/gpu/drm/radeon/r600.c        |    4 ----
+>  drivers/gpu/drm/radeon/radeon_gart.c |    2 ++
+>  drivers/gpu/drm/radeon/rv770.c       |    4 ----
+>  4 files changed, 2 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+> index 789441e..9ecb2b6 100644
+> --- a/drivers/gpu/drm/radeon/evergreen.c
+> +++ b/drivers/gpu/drm/radeon/evergreen.c
+> @@ -3048,9 +3048,6 @@ int evergreen_init(struct radeon_device *rdev)
+>  {
+>  	int r;
+>  
+> -	r = radeon_dummy_page_init(rdev);
+> -	if (r)
+> -		return r;
+>  	/* This don't do much */
+>  	r = radeon_gem_init(rdev);
+>  	if (r)
+> @@ -3162,7 +3159,6 @@ void evergreen_fini(struct radeon_device *rdev)
+>  	radeon_atombios_fini(rdev);
+>  	kfree(rdev->bios);
+>  	rdev->bios = NULL;
+> -	radeon_dummy_page_fini(rdev);
+>  }
+>  
+>  static void evergreen_pcie_gen2_enable(struct radeon_device *rdev)
+> diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+> index 1252198..88eaffc 100644
+> --- a/drivers/gpu/drm/radeon/r600.c
+> +++ b/drivers/gpu/drm/radeon/r600.c
+> @@ -2510,9 +2510,6 @@ int r600_init(struct radeon_device *rdev)
+>  {
+>  	int r;
+>  
+> -	r = radeon_dummy_page_init(rdev);
+> -	if (r)
+> -		return r;
+>  	if (r600_debugfs_mc_info_init(rdev)) {
+>  		DRM_ERROR("Failed to register debugfs file for mc !\n");
+>  	}
+> @@ -2626,7 +2623,6 @@ void r600_fini(struct radeon_device *rdev)
+>  	radeon_atombios_fini(rdev);
+>  	kfree(rdev->bios);
+>  	rdev->bios = NULL;
+> -	radeon_dummy_page_fini(rdev);
+>  }
+>  
+>  
+> diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+> index 6501611..dc04c7b 100644
+> --- a/drivers/gpu/drm/radeon/radeon_gart.c
+> +++ b/drivers/gpu/drm/radeon/radeon_gart.c
+> @@ -269,4 +269,6 @@ void radeon_gart_fini(struct radeon_device *rdev)
+>  	kfree(rdev->gart.pages_addr);
+>  	rdev->gart.pages = NULL;
+>  	rdev->gart.pages_addr = NULL;
+> +
+> +	radeon_dummy_page_fini(rdev);
+>  }
+> diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
+> index d8ba676..6a312e6 100644
+> --- a/drivers/gpu/drm/radeon/rv770.c
+> +++ b/drivers/gpu/drm/radeon/rv770.c
+> @@ -1256,9 +1256,6 @@ int rv770_init(struct radeon_device *rdev)
+>  {
+>  	int r;
+>  
+> -	r = radeon_dummy_page_init(rdev);
+> -	if (r)
+> -		return r;
+>  	/* This don't do much */
+>  	r = radeon_gem_init(rdev);
+>  	if (r)
+> @@ -1373,7 +1370,6 @@ void rv770_fini(struct radeon_device *rdev)
+>  	radeon_atombios_fini(rdev);
+>  	kfree(rdev->bios);
+>  	rdev->bios = NULL;
+> -	radeon_dummy_page_fini(rdev);
+>  }
+>  
+>  static void rv770_pcie_gen2_enable(struct radeon_device *rdev)
+> -- 
+> 1.7.1.1
+> 
 
-I see your point. I had this check in my version of hard limits patches earlier
-for the reason I described above. Lets see if Paul had any other reason
-to retain this check.
-
-Regards,
-Bharata.
