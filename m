@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1BXDPC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 22:15:02 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34274 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab1BXDPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 22:15:00 -0500
-Date: Thu, 24 Feb 2011 03:14:39 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ian Kent <raven@themaw.net>
-Cc: Nick Piggin <npiggin@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
-Message-ID: <20110224031439.GR22723@ZenIV.linux.org.uk>
-References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
- <1295420817.3076.24.camel@perseus>
- <1297779902.13007.86.camel@perseus>
- <20110224015817.GQ22723@ZenIV.linux.org.uk>
- <1298516618.2916.20.camel@perseus>
+	id S932295Ab1BXDPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 22:15:07 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:56961
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932071Ab1BXDPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 22:15:05 -0500
+Date: Thu, 24 Feb 2011 03:15:18 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
+        dhowells@redhat.com
+Subject: Re: [PATCH] userns: ptrace: incorporate feedback from Eric
+Message-ID: <20110224031518.GA4963@mail.hallyn.com>
+References: <20110217150224.GA26334@mail.hallyn.com>
+ <20110217150333.GE26395@mail.hallyn.com>
+ <m1aahu9hea.fsf@fess.ebiederm.org>
+ <20110218043601.GB9584@mail.hallyn.com>
+ <20110224004901.GB11822@mail.hallyn.com>
+ <20110223165651.cf248f3b.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298516618.2916.20.camel@perseus>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110223165651.cf248f3b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 11:03:38AM +0800, Ian Kent wrote:
-
-> I also have a sick feeling that dentrys may become negative at any point
-> after __d_lookup_rcu() .....
-
-Yes.  To get stability of ->d_inode (assuming the sucker isn't pinned down
-in normal way by ->d_count) you need ->d_lock.
-
-> > Ho-hum...  I can reach RHTS, but I'd rather do that at home boxen, if
-> > possible...  Has it been reproduced on UP boxen with SMP kernels, BTW?
+Quoting Andrew Morton (akpm@linux-foundation.org):
+> On Thu, 24 Feb 2011 00:49:01 +0000
+> "Serge E. Hallyn" <serge@hallyn.com> wrote:
 > 
-> Nope, I'd need to build a kernel specifically for that. I'm not sure how
-> useful that would be though since the test is specifically meant to
-> expose problems with multiple concurrent processes accessing an
-> automount tree. I don't see any problem running the Connectathon tests
-> which is essentially one automount and one client process.
+> > same_or_ancestore_user_ns() was not an appropriate check to
+> > constrain cap_issubset.  Rather, cap_issubset() only is
+> > meaningful when both capsets are in the same user_ns.
+> 
+> I queued this as a fix against
+> userns-allow-ptrace-from-non-init-user-namespaces.patch, but I get the
+> feeling that it would be better to just drop everything and start
+> again?
 
-Heh...  No, it's just that the only SMP box I have locally right now
-is dual ultrasparc.  Anyway, I can live with RHTS.
+Sure, I'll rebase and resend.  I wonder if I should trim the Cc list
+for the next round.
+
+thanks,
+-serge
