@@ -1,40 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab1BXHGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 02:06:07 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:46603 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab1BXHGG (ORCPT
+	id S932531Ab1BXHHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 02:07:44 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56772 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779Ab1BXHHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 02:06:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=uJx2VdHwIp/08FOdqAT+gm6m5EsFnbB0zstoBPqKNLMAcFaQteBWzdk9uNbk7fJK9q
-         RSZKyDlmWFpd5rJjT4Aw==
-Date: Wed, 23 Feb 2011 23:05:59 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Li Zefan <lizf@cn.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Paul Menage <menage@google.com>,
-        miaox@cn.fujitsu.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] cpuset: Add a missing unlock in cpuset_write_resmask()
-In-Reply-To: <4D6601B2.1090207@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1102232305360.5816@chino.kir.corp.google.com>
-References: <4D6601B2.1090207@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 24 Feb 2011 02:07:43 -0500
+Date: Thu, 24 Feb 2011 07:07:24 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ian Kent <raven@themaw.net>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, npiggin@gmail.com
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+Message-ID: <20110224070724.GW22723@ZenIV.linux.org.uk>
+References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
+ <1295420817.3076.24.camel@perseus>
+ <1297779902.13007.86.camel@perseus>
+ <20110224015817.GQ22723@ZenIV.linux.org.uk>
+ <1298516618.2916.20.camel@perseus>
+ <20110224031439.GR22723@ZenIV.linux.org.uk>
+ <1298518137.2916.35.camel@perseus>
+ <20110224035836.GS22723@ZenIV.linux.org.uk>
+ <1298529260.2916.91.camel@perseus>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298529260.2916.91.camel@perseus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011, Li Zefan wrote:
+On Thu, Feb 24, 2011 at 02:34:20PM +0800, Ian Kent wrote:
 
-> Don't forget to release cgroup_mutex if alloc_trial_cpuset() fails.
+> It does now but it doesn't do a whole lot, just checks for a negative
+> dentry, returning false, and drops out of RCU mode when the dentry isn't
+> selected or being checked for expiry yet.
+
+Er?  Where does ->d_revalidate() exist in fs/autofs4?  Mainline doesn't
+have anything of that kind...
+ 
+> I've seen walks fail with a dentry that has gone away (ie. I'm walking
+> in a tree that is being expired, they seem to be trees with no actual
+> mount at their base), which should be because I'm not catching the block
+> request at a higher level dentry. Unfortunately, including a check for
+> the base dentry in __follow_mount_rcu(), regardless of it being a
+> mountpoint, doesn't always catch the need to block either. That the tree
+> is being selected for expire is probably because the expire can't detect
+> a walk within the mount tree when the walker is between the
+> __d_lookup_rcu() and __follow_mount_rcu() calls. Jumping out of rcu-walk
+> mode in an added revalidate reduces the possibility of this happening
+> (assuming walks are sneaking in between dropping and acquiring the
+> vfsmount_lock) but doesn't eliminate it. 
 > 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> At this point I loop back to the trying to work out why a reference gets
+> picked up and the cycle repeats with various small changes to the
+> overall approach.
+> 
+> Actually, it's not just the root of a mount that is getting an extra
+> reference either. When I notice a root dentry has picked up a reference
+> (from a printk) and SIGKILL everything and start umounting manually I
+> get to a point in the tree where I need to umount autofs mounts twice,
+> which usually means nothing more than a get/put mismatch somewhere, but
+> in that case I normally don't see a root dentry pick up a reference.
+> That's confusing me too.
 
-Acked-by: David Rientjes <rientjes@google.com>
+OK, now I'm really confused.  Where does your tree live?
+
+I really don't like the look of autofs4_tree_busy(), BTW - you don't need
+RCU to get races here; just a plain chdir("../../.."); done by a process
+that sits deep enough in subtree you are checking can very well race with
+your check, so that your iterator gets through the new cwd before chdir()
+and through the old one after it...
+
+Maybe I'm missing something subtle here.  A braindump on how you expect
+all "we choose dentry for expiry" stuff to work and what is really required
+from it would be nice...
+ 
+> > BTW, Nick has moved to kernel.dk; whether he's still reachable there is
+> > a question, though - he seems to have disappeared since mid-January.
+> 
+> Yeah, I've forwarded a couple of messages where I forgot to change the
+> email. A few emails back Nick said he was following the thread anyway.
+
+Could you _please_ forward to him the question I tried to ask, without
+any success so far?  Namely, what was the reason for reverting do_filp_open()
+to use of do_path_lookup() in non-create case?  I have a couple of guesses,
+but...
