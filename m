@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab1BXMIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 07:08:21 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42082 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751754Ab1BXMIU (ORCPT
+	id S1753467Ab1BXMK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 07:10:27 -0500
+Received: from mga11.intel.com ([192.55.52.93]:23573 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752286Ab1BXMKZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 07:08:20 -0500
-Date: Thu, 24 Feb 2011 12:10:42 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: Intel GMA500 staging driver
-Message-ID: <20110224121042.6fa3fe37@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTimPpr+OugTiPpYxNyS78vqActuURw-tnxJVxi18@mail.gmail.com>
-References: <20110222121704.19437.4650.stgit@localhost.localdomain>
-	<AANLkTimPpr+OugTiPpYxNyS78vqActuURw-tnxJVxi18@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Feb 2011 07:10:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,217,1297065600"; 
+   d="scan'208";a="661034094"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Marc Koschewski <marc@osknowledge.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "adrian.hunter@nokia.com" <adrian.hunter@nokia.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Feb 2011 20:09:59 +0800
+Subject: RE: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase
+ time
+Thread-Topic: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase
+ time
+Thread-Index: AcvUF0vEdzksXaqvRjeXPoVmoG4C6gABB2vw
+Message-ID: <5D8008F58939784290FAB48F5497519835CE59FE52@shsmsx502.ccr.corp.intel.com>
+References: <20110224111801.GA7169@intel.com>
+ <20110224113756.GB7260@marc.osknowledge.org>
+In-Reply-To: <20110224113756.GB7260@marc.osknowledge.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So where do we want to go my opinion is
+
+
+> -----Original Message-----
+> From: Marc Koschewski [mailto:marc@osknowledge.org]
+> Sent: Thursday, February 24, 2011 7:38 PM
+> To: Dong, Chuanxiao
+> Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; adrian.hunter@nokia.com;
+> linus.walleij@linaro.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase time
 > 
-> a) remove all userspace interfaces and simplify ttm memory management usage.
+> Hi,
+> 
+> * Chuanxiao Dong <chuanxiao.dong@intel.com> [2011-02-24 19:18:01 +0800]:
+> 
+> > Since if clock gating feature is enabled, the clock frequency may be zero when
+> > host clock is gated. In such scenario, mmc_set_mmc_erase_timeout() may have a
+> > division by zero bug.
+> >
+> > So this patch used mmc_host_clk_rate() to fix this.
+> >
+> > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+> > ---
+> >  drivers/mmc/core/core.c |   10 ++++++++--
+> >  1 files changed, 8 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> > index 34a7e8c..12d0eb8 100644
+> > --- a/drivers/mmc/core/core.c
+> > +++ b/drivers/mmc/core/core.c
+> > @@ -1201,8 +1201,14 @@ static void mmc_set_mmc_erase_timeout(struct
+> mmc_card *card,
+> >  		 * less but not that much less, so fudge it by multiplying by 2.
+> >  		 */
+> >  		timeout_clks <<= 1;
+> > -		timeout_us += (timeout_clks * 1000) /
+> > -			      (card->host->ios.clock / 1000);
+> > +
+> > +		/*
+> > +		 * at this moment, host controller maybe clock gated, so make
+> > +		 * sure we can get a correct host clock freq.
+> > +		 */
+> > +		if (mmc_host_clk_rate(card->host))
+> > +			timeout_us += (timeout_clks * 1000) /
+> > +				      (mmc_host_clk_rate(card->host) / 1000);
+> 
+> Why don't you just reuse mmc_host_clk_rate()'s result instead of calling it twice?
+This is a incline function and just return host->ios.clock. Reuse mmc_host_clk_rate()'s result need to add a new variable to save the value.
 
-Some of them appear to be valid/sensible ones for querying mode data and
-config bits. I'm slowly pruning out the rest
-
-> b) add support to hook this up to the dumb ioctl so we can do trivial
-> generic front buffer allocation, so then a libkms + dumb kms
-> modesetting driver can work on it.
-
-What sort of dumb ioctl do you have in mind ?
-
-> c) figure out how to add interface for acceleration users. Whether TTM
-> fence interfaces are required etc.
-
-The fencing seems to be solely for the various capture/acceleration bits
-for video as far as I can tell.
-
-It seems we need two things - issue a 2D command and stuff for
-transferring objects, although it's not clear that the latter is needed.
-
-The old X 2D code is at:
-http://git.moblin.org/cgit.cgi/deprecated/xf86-video-psb/
-
-
-> We could probably just add a GEM style buffer allocation interface but
-> we'd probably need to do a lot of RE first to figure out what best
-> suits the hardware, I'm pretty sure I've haven't heard any glowing
-> praise that the current interface suits the hw or is maintainable.
-
-Nor me
-
-I'll push the 2D bits to the tree but disabled (right now they go pop and
-I've not pinned down what register or other incantation I've missed
-somewhere) so there is a better view of what is needed.
-
-Alan
+Thanks
+Chuanxiao
