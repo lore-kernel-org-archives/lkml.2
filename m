@@ -1,131 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab1BXQwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:52:16 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46539 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab1BXQwL (ORCPT
+	id S1755591Ab1BXQxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:53:32 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35275 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845Ab1BXQx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:52:11 -0500
+	Thu, 24 Feb 2011 11:53:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=iOAUzvjB1FdFz3BSdw6lsRhco27qYEX+kuX1Wunv3YVDzj/Me3TYz/z5Y9iPZzs3iR
-         tsI306X3ejlIzEW5BHHxOCoRrX8fyed0SEgwr72ei2/zSpXSwf9lGi7JG67Ne/WAgiTk
-         FdZSThQWnnCWVlmWYEfn0AC2pnxToGXhf55Rc=
-Date: Thu, 24 Feb 2011 17:50:17 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf lock: clean the options for perf record
-Message-ID: <20110224165014.GB1840@nowhere>
-References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
- <4D63D685.2010401@dcl.info.waseda.ac.jp>
- <1298389415.2217.243.camel@twins>
- <20110222182206.GB1799@nowhere>
- <4D648A65.2040107@dcl.info.waseda.ac.jp>
- <4D667D60.5010903@dcl.info.waseda.ac.jp>
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LpvGXz4QwS1dfVwv0OCLoTiqexilB3NHQvM2xafuSUX98J21D2dLe/spllEeguLzaY
+         GcQ0WhN6EhatorCM3kT/4QTgs2pYTZ7Q/HEf+YQoDRmfDa+8hvWusZyG1wREhvcD4RvO
+         gMe8hSSvC13EGBamcSk/4/pU/imAhldslIFDI=
+Date: Thu, 24 Feb 2011 17:50:04 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
+        Peter Zijlstra <peterz@infradead.org>, linux-api@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, netdev@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>, Christoph Lameter <cl@linux.com>,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found
+ on the MPC85xx.
+Message-ID: <20110224165004.GB15234@riccoc20.at.omicron.at>
+References: <cover.1298447722.git.richard.cochran@omicron.at>
+ <be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
+ <20110223165058.GE14597@angua.secretlab.ca>
+ <20110223112612.30071995@schlenkerla>
+ <20110223175459.GH14597@angua.secretlab.ca>
+ <20110223132444.65dfdda4@schlenkerla>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D667D60.5010903@dcl.info.waseda.ac.jp>
+In-Reply-To: <20110223132444.65dfdda4@schlenkerla>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 12:46:40AM +0900, Hitoshi Mitake wrote:
-> On 2011年02月23日 13:17, Hitoshi Mitake wrote:
-> >On 2011年02月23日 03:22, Frederic Weisbecker wrote:
-> >>On Tue, Feb 22, 2011 at 04:43:35PM +0100, Peter Zijlstra wrote:
-> >>>On Wed, 2011-02-23 at 00:30 +0900, Hitoshi Mitake wrote:
-> >>>>How do you think about it?
-> >>>
-> >>>Most of the lock code (esp the spinlock stuff) is already way over the
-> >>>threshold of sanity, adding to that for some dubious reasons doesn't
-> >>>seem like a good idea.
-> >>>
-> >>>I'm still not at all sure why people want all this lock tracing.
-> >>
-> >>Right, well I can imagine many usecases that could make lock
-> >>tracing bring more value than what lockstat already provides,
-> >>through a tool like perf lock if we enhance it.
-> >>
-> >>We should probably first focus on developing the tooling side
-> >>and make it useful enough that optimizations in the kernel
-> >>side become desirable.
-> >>
-> >
-> >Yes, lockstat only provides the lock usage statistics of
-> >entire of the system. perf lock will be able to provide the partial
-> >information of specified term, or the degree of dependency
-> >between locks.
-> >
+On Wed, Feb 23, 2011 at 01:24:44PM -0600, Scott Wood wrote:
+> Whatever string is used should be written into a binding document.
 > 
-> For trial, I created new tracepoint for rwsem and tested.
-> Names of events are rwsem_{acquire, contended, acquired, release},
-> their meanings are similar to lock_{...}.
+> fsl,etsec-v1.6-ptp seems like it would be just as good for that purpose.
 > 
-> I traced perf bench sched messaging and result was,
-> 
-> mitake@x201i:~/linux/.../tools/perf% ./perf bench sched messaging
-> # Running sched/messaging benchmark...
-> # 20 sender and receiver processes per group
-> # 10 groups == 400 processes run
-> 
->      Total time: 1.252 [sec]
-> mitake@x201i:~/linux/.../tools/perf% sudo ./perf record -R -m 1024
-> -c 1 -e rwsem:rwsem_acquire -e
-> rwsem:rwsem_release,rwsem:rwsem_contended,rwsem:rwsem_acquired
-> ./perf bench sched messaging
-> # Running sched/messaging benchmark...
-> # 20 sender and receiver processes per group
-> # 10 groups == 400 processes run
-> 
->      Total time: 1.332 [sec]
-> [ perf record: Woken up 4 times to write data ]
-> [ perf record: Captured and wrote 13.495 MB perf.data (~589597 samples) ]
-> 
-> raw execution of sched messaging was 1.252 sec, and traced version
-> was 1.332 sec. This overhead is far smaller than the overhead of
-> current lock tracepoints.
+> Even just fsl,etsec-ptp will identify the binding, though it's lacking in
+> identifying the hardware (in the absence of access to the eTSEC ID
+> registers).
 
-Probably because rwsem are only a small bunch of locks among all others.
-If you were to trace only spinlocks, I bet you'd find a significant
-overhead pretty close to a wide lock tracing.
+I read the conversation, and I don't mind admitting that I do not
+understand what you both are arguing/discussing about.
 
-> I think that it is possible to write some meaningful tools
-> like reader/writer ratio measuring. If something can be written,
-> I'll post it.
+How should I set the strings?  Like this?
 
-Consider the situation from another angle: do you think that a lock
-profiling on top of lock types is a kind of workflow that will be
-used?
+arch/powerpc/boot/dts/mpc8313erdb.dts:
+	ptp_clock@24E00 {
+		compatible = "fsl,mpc8313-etsec-ptp";
+	}
+arch/powerpc/boot/dts/mpc8572ds.dts:
+	ptp_clock@24E00 {
+		compatible = "fsl,mpc8572-etsec-ptp";
+	} 
+arch/powerpc/boot/dts/p2020ds.dts:
+	ptp_clock@24E00 {
+		compatible = "fsl,p2020ds-etsec-ptp";
+	} 
+arch/powerpc/boot/dts/p2020rdb.dts:
+	ptp_clock@24E00 {
+		compatible = "fsl,p2020rdb-etsec-ptp";
+	} 
 
-The primary kind of workflow I have in mind for lock tracing is:
+drivers/net/gianfar_ptp.c:
 
-1) Let's look at the big picture, trace all locks and find those
-that seem to be an issue (too much waiting time, too much
-acquire time, etc...).
+static struct of_device_id match_table[] = {
+	{ .compatible = "fsl,mpc8313-etsec-ptp" },
+	{ .compatible = "fsl,mpc8572-etsec-ptp" },
+	{ .compatible = "fsl,p2020ds-etsec-ptp" },
+	{ .compatible = "fsl,p2020rdb-etsec-ptp" },
+	{},
+};
 
-2) Pick one we are interested in and dig into details
+Please let me know if this is what you meant.
 
-But I can't figure out any common worklow that would be based
-on mutex only tracing, or rwsem only tracing.
-Or actually I can imagine such worklow. Every kind of lock
-type have their own scale of latencies so it's interesting
-to group the analysis per family. But I rather see
-that as a secondary worklow. Once we'll have more finegrained
-analysis on the tools for example, like comparison between
-read and write latencies on some rwsems and so.
-
-So once we have some such finegrained and useful features in the
-tooling side, then justifying such change in the kernel is going
-to be much more uncontroversial.
+Thanks,
+Richard
