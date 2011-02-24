@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab1BXJ5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 04:57:07 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:59879 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932172Ab1BXJ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 04:57:05 -0500
-Message-ID: <4D662B64.6030800@free.fr>
-Date: Thu, 24 Feb 2011 10:56:52 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S932372Ab1BXJ7o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 04:59:44 -0500
+Received: from mail1.matrix-vision.com ([78.47.19.71]:48503 "EHLO
+	mail1.matrix-vision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932172Ab1BXJ7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 04:59:43 -0500
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Feb 2011 04:59:43 EST
+Message-ID: <4D662A9E.90007@matrix-vision.de>
+Date: Thu, 24 Feb 2011 10:53:34 +0100
+From: Michael Jones <michael.jones@matrix-vision.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101029 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Andrew Morton <akpm@osdl.org>, Oleg Nesterov <oleg@redhat.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-Subject: Re: [PATCH 5/4] Clean up capability.h and capability.c
-References: <20110221040156.GA12580@mail.hallyn.com> <20110224002249.GA28659@mail.hallyn.com>
-In-Reply-To: <20110224002249.GA28659@mail.hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: balbi@ti.com
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Alexander Holler <holler@ahsoftware.de>, Greg KH <gregkh@suse.de>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org
+Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
+References: <4D64C81B.5060807@ahsoftware.de> <Pine.LNX.4.44L0.1102231021210.2233-100000@iolanthe.rowland.org> <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-MV-Disclaimer: true (erinome)
+X-AV-Checked: ClamAV using ClamSMTP (erinome)
+X-AV-Checked: ClamAV using ClamSMTP (mail1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2011 01:22 AM, Serge E. Hallyn wrote:
-> Convert macros to functions to let type safety do its thing.  Switch
-> some functions from ints to more appropriate bool.  Move all forward
-> declarations together to top of the #ifdef __KERNEL__ section.  Use
-> kernel-doc format for comments.
->
-> Some macros couldn't be converted because they use functions from
-> security.h which sometimes are extern and sometimes static inline,
-> and we don't want to #include security.h in capability.h.
->
-> Also add a real current_user_ns function (and convert the existing
-> macro to _current_user_ns() so we can use it in capability.h
-> without #including cred.h.
->
-> Signed-off-by: Serge E. Hallyn<serge.hallyn@canonical.com>
-> ---
+On 02/24/2011 09:57 AM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
+>> In both cases, it appears that the problem is caused by the fact that 
+>> the musb host-controller driver doesn't set the hcd->has_tt flag.
+>>
+>> Felipe, you should know where it belongs.  It should be easy enough to 
+>> add.
+> 
+> Sure Alan, it's attached to this mail. Compile tested only though.
+> Michael, would you care to give your tested-by ?
+> 
 
-Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
+Alexander already did, but I can do now, too.  Thanks for the fix.
 
+Tested-by: Michael Jones <michael.jones@matrix-vision.de>
+
+MATRIX VISION GmbH, Talstrasse 16, DE-71570 Oppenweiler
+Registergericht: Amtsgericht Stuttgart, HRB 271090
+Geschaeftsfuehrer: Gerhard Thullner, Werner Armingeon, Uwe Furtner
