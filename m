@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1BXP0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:26:40 -0500
-Received: from cantor.suse.de ([195.135.220.2]:50962 "EHLO mx1.suse.de"
+	id S1755313Ab1BXPjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:39:08 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34893 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108Ab1BXP0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:26:37 -0500
-Message-ID: <4D6678AA.9000503@suse.cz>
-Date: Thu, 24 Feb 2011 16:26:34 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1754697Ab1BXPjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 10:39:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,218,1297065600"; 
+   d="scan'208";a="890879804"
+Date: Thu, 24 Feb 2011 07:38:55 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/3] xhci: Fix cycle bit calculation during stall
+ handling.
+Message-ID: <20110224153855.GA25590@xanatos>
+References: <cover.1298514502.git.sarah.a.sharp@linux.intel.com>
+ <e1b54e2b29b06b62174de33a74fa7469173abc92.1298514502.git.sarah.a.sharp@linux.intel.com>
+ <4D663E80.8050906@ru.mvista.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] kbuild: reenable section mismatch analysis
-References: <20110216200734.GA25184@merkur.ravnborg.org> <1298062040-2774-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1298062040-2774-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D663E80.8050906@ru.mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.2.2011 21:47, Uwe Kleine-König wrote:
-> This was disabled in commit
+On Thu, Feb 24, 2011 at 02:18:24PM +0300, Sergei Shtylyov wrote:
+> Hello.
 > 
-> 	e5f95c8 (kbuild: print only total number of section mismatces found)
+> On 24-02-2011 5:31, Sarah Sharp wrote:
 > 
-> because there were too many warnings.  Now we're down to a reasonable
-> number again, so we start scaring people with the details.
+> >+	if (ep_ring->first_seg == ep_ring->first_seg->next&&
+> >+			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
+> >+			state->new_cycle_state ^= 0x1;
 > 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>    The last line seems overindented.
 
-OK, applied to kbuild-2.6.git#kbuild.
+Hi Sergei,
 
-Thanks,
-Michal
+checkpatch.pl doesn't complain about it.  It is not a good use of my
+time to respin this patch for one stylistic change that is not a
+violation of the Kernel community norms.
+
+I really feel strongly that you are wasting the community's time by
+commenting on style when it is only a violation of your personal style,
+without providing any useful feedback on the code itself.
+
+I feel so strongly that I'm seriously considering setting up a feedback
+bot for you.  It would run any patch you reply to through checkpatch.pl,
+and send you a small reminder when the patch passes, but you complained
+about style.  I think it would allow you to have a sense of how
+frustrating it is to receive these unnecessary stylistic comments.
+
+Sarah Sharp
