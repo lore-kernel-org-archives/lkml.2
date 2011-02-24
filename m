@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab1BXHX0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 02:23:26 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:40970 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751904Ab1BXHXZ (ORCPT
+	id S1752323Ab1BXH2S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 02:28:18 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56427 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab1BXH2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 02:23:25 -0500
-X-Sasl-enc: H+NsPuztdYfHws2R725B3jErSNwItDBoINW2Tsc+eevc 1298532203
-Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
-From: Ian Kent <raven@themaw.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-In-Reply-To: <20110224054701.GU22723@ZenIV.linux.org.uk>
-References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
-	 <1295420817.3076.24.camel@perseus> <1297779902.13007.86.camel@perseus>
-	 <20110224015817.GQ22723@ZenIV.linux.org.uk>
-	 <1298516618.2916.20.camel@perseus>
-	 <20110224031439.GR22723@ZenIV.linux.org.uk>
-	 <1298518137.2916.35.camel@perseus>
-	 <20110224035836.GS22723@ZenIV.linux.org.uk>
-	 <20110224054701.GU22723@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Feb 2011 15:23:17 +0800
-Message-ID: <1298532197.31595.1.camel@perseus>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Feb 2011 02:28:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=rCKEgBF258plaM5qZQkB1wW5qzKK5QY+EdzCWd7tIkTJpQUU2tOBmU9oL/WWILAZdU
+         VlmuUvgf3IVkl37OImA0yDEj8NbEU7miAYc0Ls5aAFfaU2iukIJgXdC4C6jgQ2eynzP6
+         LLT679qHu+yulB2ek3+i866FOzwSdyPSQ2u3w=
+MIME-Version: 1.0
+In-Reply-To: <20110131.203556.193730771.davem@davemloft.net>
+References: <AANLkTimWuBfeYPOsOFpTiAGS5uHysevAHiOg0svBQ4zW@mail.gmail.com>
+ <AANLkTimz7gx7BAQG8RBswDCxnTuVtt3u+YoBZk8+RgEz@mail.gmail.com>
+ <AANLkTikgDsM15DO7u2SP15xx=Y_pg6JdCLrie8ACobJP@mail.gmail.com> <20110131.203556.193730771.davem@davemloft.net>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Thu, 24 Feb 2011 15:27:55 +0800
+Message-ID: <AANLkTimorcNAEbSpuE_dUXKuOBZDcDcGSJ2cGefniThc@mail.gmail.com>
+Subject: Re: [PATCH v4] net: add Faraday FTMAC100 10/100 Ethernet driver
+To: David Miller <davem@davemloft.net>
+Cc: mirqus@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
+        dilinger@queued.net, ratbert@faraday-tech.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 05:47 +0000, Al Viro wrote:
-> On Thu, Feb 24, 2011 at 03:58:37AM +0000, Al Viro wrote:
-> > On Thu, Feb 24, 2011 at 11:28:57AM +0800, Ian Kent wrote:
-> > 
-> > > Ha, I haven't even turned on my Ultrsparc 2 in months, it's only got an
-> > > old version of Solaris on it now anyway, ;)
-> > 
-> > U60, with lenny (and mainline kernel) on it.  Probably ought to upgrade
-> > to squeeze one of those days...  It works, all right, but it's only 2-way,
-> > so reproducing would probably be harder.  Plus the fun of building the tests
-> > themselves on somewhat different userland...
-> > 
-> > Anyway, I wonder why you care about __d_lookup_rcu() and ->d_inode stability;
-> > d_mountpoint() _is_ stable at that point (we hold vfsmount_lock) and you
-> > don't seem to look at ->d_inode at all in RCU case.  Note that ->d_automount()
-> > is never called in RCU case at all; nor is ->lookup() and friends, so you
-> > really only have ->d_manage() to cope with, what with autofs4 having no
-> > ->d_revalidate() anymore.
-> 
-> FWIW, can we _ever_ get to __do_follow_link() with link->mnt != nd->path.mnt?
-> It's probably not what's happening here, or we would've stepped on another
-> BUG_ON(), but still it might be worth checking...
-> 
-> AFAICS, if we ever get there that way, we are fscked, so the check before
-> mntget() ought to replaced with BUG_ON(link->mnt != nd->path.mnt)...
+Hi David,
 
-Yeah, don't think autofs can go their with no ->follow_link() defined.
-I've largely ignored that code to date.
+On Tue, Feb 1, 2011 at 12:35 PM, David Miller <davem@davemloft.net> wrote:
+> From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+> Date: Tue, 1 Feb 2011 11:56:16 +0800
+>
+>> If I simply allocate a page for each rx ring entry, I still need to allocate
+>> an skb and copy at least packet header in first page to skb->data. Then
+>> add the page of rest of payload to skb by skb_fill_page_desc().
+>
+> You should attach the pages, the use __pskb_pull_tail() to bring in the
+> headers to the linear skb->data area.
+>
+> See drivers/net/niu.c:niu_process_rx_pkt().
 
+I tried two ways to implement zero-copy.
+One is to preallocate skb big enough for any rx packet and use the skb
+as rx buffer.
+The other is use page as rx buffer, use skb_fill_page_desc() to add a
+data page to
+skb and then pull only header to skb by __pskb_pull_tail() as you suggested.
 
+Two implementations are slower than the original memcpy version.
+(benchmarked with iperf)
+
+I guess the problem is because a HW restriction that the rx buffer must be
+64 bits aligned. Since I cannot make rx buffer starts at offset 2 bytes, the
+IP header, TCP header and data are not 4 bytes aligned. The performance
+drops drastically.
+
+Therefore, I will submit later a v6 which is still using memcpy().
+
+best regards,
+Po-Yu Chuang
