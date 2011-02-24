@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab1BXKJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 05:09:08 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42495 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1BXKJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 05:09:06 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 24 Feb 2011 19:02:47 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] page_cgroup: Reduce allocation overhead for
- page_cgroup array for CONFIG_SPARSEMEM
-Message-Id: <20110224190247.bdc2e6f8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110224093519.GB20922@tiehlicka.suse.cz>
-References: <20110223151047.GA7275@tiehlicka.suse.cz>
-	<1298485162.7236.4.camel@nimitz>
-	<20110224085227.1a3e185b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110224093519.GB20922@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755036Ab1BXKRs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 05:17:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753005Ab1BXKRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 05:17:47 -0500
+Message-ID: <4D663044.3080000@redhat.com>
+Date: Thu, 24 Feb 2011 12:17:40 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+CC: KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+ boot
+References: <20110223234258.GA29548@nik-comp.lan>
+In-Reply-To: <20110223234258.GA29548@nik-comp.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 10:35:19 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On 02/24/2011 01:42 AM, Nikola Ciprich wrote:
+> Hello Avi et al,
+> seems like I've hit regression in 2.6.37:
+> 32bit SMP centos guest stopped booting, they just hang during initrd phase. (haven't tried
+> different distros)
+> UP guest are OK.
+> when I (forcibly) compiled kvm-kmod-2.6.36.2 and used it in 2.6.37, even
+> the SMP guests boot fine.
+> does somebody have a tip on where the problem could be, or should I bisect this?
+> I tried on 2 different machines, host is x86_64, qemu-kvm 0.13.0, 0.14.0.
+> If I shall provide more information (or bisect), please let me know.
 
-> On Thu 24-02-11 08:52:27, KAMEZAWA Hiroyuki wrote:
-> > On Wed, 23 Feb 2011 10:19:22 -0800
-> > Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> > 
-> > > On Wed, 2011-02-23 at 16:10 +0100, Michal Hocko wrote:
-> > > > We can reduce this internal fragmentation by splitting the single
-> > > > page_cgroup array into more arrays where each one is well kmalloc
-> > > > aligned. This patch implements this idea. 
-> > > 
-> > > How about using alloc_pages_exact()?  These things aren't allocated
-> > > often enough to really get most of the benefits of being in a slab.
-> > > That'll at least get you down to a maximum of about PAGE_SIZE wasted.  
-> > > 
-> > 
-> > yes, alloc_pages_exact() is much better.
-> > 
-> > packing page_cgroups for multiple sections causes breakage in memory hotplug logic.
-> 
-> I am not sure I understand this. What do you mean by packing
-> page_cgroups for multiple sections? The patch I have posted doesn't do
-> any packing. Or do you mean that using a double array can break hotplog?
-> Not that this would change anything, alloc_pages_exact is really a
-> better solution, I am just curious ;) 
-> 
+Bisect is of course great, if laborious.  Meanwhile can you post 'info 
+registers' for all cpus?  Is the guest consuming cpu?  kvm_stat output?
 
-Sorry, it seems I failed to read code correctly. 
-You just implemented 2 level table..
-
-
-Thanks,
--Kame
-
+-- 
+error compiling committee.c: too many arguments to function
 
