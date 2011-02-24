@@ -1,973 +1,631 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab1BXMNa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 07:13:30 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53480 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab1BXMN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 07:13:27 -0500
-Date: Thu, 24 Feb 2011 09:36:24 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC] [PATCH 1/10] Generic Watchdog Timer Driver
-Message-ID: <20110224093624.GA15118@pulham.picochip.com>
-References: <20110223204206.GA7138@infomag.iguana.be>
+	id S1753902Ab1BXMNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 07:13:47 -0500
+Received: from cantor.suse.de ([195.135.220.2]:45123 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751Ab1BXMNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 07:13:43 -0500
+Date: Thu, 24 Feb 2011 13:13:39 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Alex,Shi" <alex.shi@intel.com>
+Cc: Jan Kara <jack@suse.cz>, "Li, Shaohua" <shaohua.li@intel.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs
+ machine
+Message-ID: <20110224121339.GE23042@quack.suse.cz>
+References: <1295402148.4773.143.camel@debian>
+ <1295402606.1949.871.camel@sli10-conroe>
+ <20110120151656.GC18875@redhat.com>
+ <20110126081529.GA28909@sli10-conroe.sh.intel.com>
+ <1297502512.29573.26.camel@debian>
+ <AANLkTi=B6kabp+NvRJC_g-AqQO0ZOvnEDYpVFmScttR6@mail.gmail.com>
+ <1297650318.29573.2482.camel@debian>
+ <1297732201.24560.2.camel@sli10-conroe>
+ <20110221164909.GG6584@quack.suse.cz>
+ <1298449487.14712.1064.camel@debian>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="UPT3ojh+0CqEDtpF"
 Content-Disposition: inline
-In-Reply-To: <20110223204206.GA7138@infomag.iguana.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1298449487.14712.1064.camel@debian>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
 
-Looks like a nice series, a couple of nitpicks inline but otherwise 
-great!  Thanks for doing this, it looks like it'll make a big 
-improvement to the watchdog system!
+--UPT3ojh+0CqEDtpF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Jamie
+On Wed 23-02-11 16:24:47, Alex,Shi wrote:
+> Though these patches can not totally recovered the problem, but they are
+> quite helpful with ccache enabled situation. It increase 10% performance
+> on 38-rc1 kernel. 
+  OK and what was the original performance drop with WRITE_SYNC change?
 
-On Wed, Feb 23, 2011 at 09:42:06PM +0100, Wim Van Sebroeck wrote:
-> commit 608917b2dba29a26d352124d1371aafcd81cfb8c
-> Author: Wim Van Sebroeck <wim@iguana.be>
-> Date:   Fri Jun 18 08:40:15 2010 +0000
-> 
->     watchdog: WatchDog Timer Driver Core - Part 1
->     
->     The WatchDog Timer Driver Core is a framework
->     that contains the common code for all watchdog-driver's.
->     It also introduces a watchdog device structure and the
->     operations that go with it.
->     
->     This is the introduction of this framework. This part
->     supports the minimal watchdog userspace API (or with
->     other words: the functionality to use /dev/watchdog's
->     open, release and write functionality as defined in
->     the simplest watchdog API). Extra functionality will
->     follow in the next set of patches.
->     
->     Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
->     Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-> 
-> diff --git a/Documentation/watchdog/src/watchdog-with-timer-example.c b/Documentation/watchdog/src/watchdog-with-timer-example.c
-> new file mode 100644
-> index 0000000..d0b6056
-> --- /dev/null
-> +++ b/Documentation/watchdog/src/watchdog-with-timer-example.c
-> @@ -0,0 +1,210 @@
-> +/*
-> + * Watchdog timer driver example with timer.
-> + *
-> + * Copyright (C) 2009-2010 Wim Van Sebroeck <wim@iguana.be>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +/*
-> + * This is an example driver where the hardware does not support
-> + * stopping the watchdog timer.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/errno.h>
-> +#include <linux/err.h>
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/jiffies.h>
-> +#include <linux/timer.h>
-> +#include <linux/bitops.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/io.h>
-> +#include <linux/platform_device.h>
-> +
-> +#define DRV_NAME "wdt"
-> +#define PFX DRV_NAME ": "
+> I have tried to enabled they to latest rc6 kernel but failed. the vmstat output is here: 
+> with patches:
+  I'm attaching patches rebased on top of latest Linus's tree. 
+Corrado, could you possibly run your fsync-heavy tests so that we see
+whether there isn't negative impact of my patches on your fsync-heavy
+workload? Thanks.
 
-Is it worth using pr_fmt() and friends rather than printk() with 
-explicit levels and prefixes throughout the code?
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-> +
-> +/* Hardware heartbeat in seconds */
-> +#define WDT_HW_HEARTBEAT 2
-> +
-> +/* Timer heartbeat (500ms) */
-> +#define WDT_HEARTBEAT	(HZ/2)	/* should be <= ((WDT_HW_HEARTBEAT*HZ)/2) */
-> +
-> +/* User land timeout */
-> +#define WDT_TIMEOUT 15
-> +static int timeout = WDT_TIMEOUT;
-> +module_param(timeout, int, 0);
-> +MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds. "
-> +	"(default = " __MODULE_STRING(WDT_TIMEOUT) ")");
-> +
-> +static void wdt_timer_tick(unsigned long data);
-> +static DEFINE_TIMER(timer, wdt_timer_tick, 0, 0);
-> +					/* The timer that pings the watchdog */
-> +static unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
-> +static unsigned long running;		/* is watchdog running for userspace? */
-> +
-> +static struct platform_device *wdt_platform_device;
-> +
-> +/*
-> + * Reset the watchdog timer.  (ie, pat the watchdog)
-> + */
-> +static inline void wdt_reset(void)
-> +{
-> +	/* Reset the watchdog timer hardware here */
-> +}
-> +
-> +/*
-> + * Timer tick: the timer will make sure that the watchdog timer hardware
-> + * is being reset in time. The conditions to do this are:
-> + *  1) the watchog timer has been started and /dev/watchdog is open
-> + *     and there is still time left before userspace should send the
-> + *     next heartbeat/ping. (note: the internal heartbeat is much smaller
-> + *     then the external/userspace heartbeat).
-> + *  2) the watchdog timer has been stopped by userspace.
-> + */
-> +static void wdt_timer_tick(unsigned long data)
-> +{
-> +	if (time_before(jiffies, next_heartbeat) ||
-> +			(!running)) {
-> +		wdt_reset();
-> +		mod_timer(&timer, jiffies + WDT_HEARTBEAT);
-> +	} else
-> +		printk(KERN_CRIT PFX "I will reboot your machine !\n");
-> +}
-> +
-> +/*
-> + * The watchdog operations
-> + */
-> +static int wdt_ping(struct watchdog_device *wdd)
-> +{
-> +	/* calculate when the next userspace timeout will be */
-> +	next_heartbeat = jiffies + timeout * HZ;
-> +	return 0;
-> +}
-> +
-> +static int wdt_start(struct watchdog_device *wdd)
-> +{
-> +	/* calculate the next userspace timeout and modify the timer */
-> +	wdt_ping(wdd);
-> +	mod_timer(&timer, jiffies + WDT_HEARTBEAT);
-> +
-> +	/* Start the watchdog timer hardware here */
-> +	printk(KERN_INFO PFX "wdt_start\n");
-> +
-> +	running = 1;
-> +	return 0;
-> +}
-> +
-> +static int wdt_stop(struct watchdog_device *wdd)
-> +{
-> +	/* The watchdog timer hardware can not be stopped... */
-> +	printk(KERN_INFO PFX "wdt_stop\n");
-> +
-> +	running = 0;
-> +	return 0;
-> +}
-> +
-> +/*
-> + * The watchdog kernel structures
-> + */
-> +static const struct watchdog_ops wdt_ops = {
-> +	.start =	wdt_start,
-> +	.stop =		wdt_stop,
-> +	.ping =		wdt_ping,
-> +};
-> +
-> +static struct watchdog_device wdt_dev = {
-> +	.name =		DRV_NAME,
-> +	.ops =		&wdt_ops,
-> +};
-> +
-> +/*
-> + * The watchdog timer drivers init and exit routines
-> + */
-> +static int __devinit wdt_probe(struct platform_device *pdev)
-> +{
-> +	int res;
-> +
-> +	/* Register other stuff */
-> +
-> +	/* Register the watchdog timer device */
-> +	res = register_watchdogdevice(&wdt_dev);
-> +	if (res) {
-> +		printk(KERN_ERR PFX
-> +				"register_watchdogdevice returned %d\n", res);
-> +		return res;
-> +	}
-> +
-> +	printk(KERN_INFO PFX "enabled (timeout=%d sec)\n", timeout);
-> +
-> +	return 0;
-> +}
-> +
-> +static int __devexit wdt_remove(struct platform_device *pdev)
-> +{
-> +	/* Unregister the watchdog timer device */
-> +	unregister_watchdogdevice(&wdt_dev);
-> +
-> +	/* stop and delete the timer */
-> +	printk(KERN_WARNING PFX "I quit now, hardware will probably reboot!\n");
-> +	del_timer(&timer);
-> +
-> +	/* Unregister other stuff */
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver wdt_driver = {
-> +	.probe		= wdt_probe,
-> +	.remove		= __devexit_p(wdt_remove),
-> +	.driver		= {
-> +		.name	= DRV_NAME,
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init wdt_init(void)
-> +{
-> +	int err;
-> +
-> +	printk(KERN_INFO "WDT driver initialising.\n");
-> +
-> +	err = platform_driver_register(&wdt_driver);
-> +	if (err)
-> +		return err;
-> +
-> +	wdt_platform_device = platform_device_register_simple(DRV_NAME,
-> +								-1, NULL, 0);
-> +	if (IS_ERR(wdt_platform_device)) {
-> +		err = PTR_ERR(wdt_platform_device);
-> +		goto unreg_platform_driver;
-> +	}
-> +
-> +	return 0;
-> +
-> +unreg_platform_driver:
-> +	platform_driver_unregister(&wdt_driver);
-> +	return err;
-> +}
-> +
-> +static void __exit wdt_exit(void)
-> +{
-> +	platform_device_unregister(wdt_platform_device);
-> +	platform_driver_unregister(&wdt_driver);
-> +	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
-> +}
-> +
-> +module_init(wdt_init);
-> +module_exit(wdt_exit);
-> +
-> +MODULE_AUTHOR("Wim Van Sebroeck <wim@iguana.be>");
-> +MODULE_DESCRIPTION("WatchDog Timer Driver example with timer");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:" DRV_NAME);
-> diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
-> new file mode 100644
-> index 0000000..e69d1cc
-> --- /dev/null
-> +++ b/Documentation/watchdog/watchdog-kernel-api.txt
-> @@ -0,0 +1,97 @@
-> +The Linux WatchDog Timer Driver Core kernel API.
-> +===============================================
-> +Last reviewed: 09-Jun-2010
-> +
-> +Wim Van Sebroeck <wim@iguana.be>
-> +
-> +Introduction
-> +------------
-> +This document does not describe what a WatchDog Timer (WDT) Driver or Device is.
-> +It also does not describe the API which can be used by user space to communicate
-> +with a WatchDog Timer. If you want to know this then please read the following
-> +file: Documentation/watchdog/watchdog-api.txt .
-> +
-> +So what does this document describe? It describes the API that can be used by
-> +WatchDog Timer Drivers that want to use the WatchDog Timer Driver Core
-> +Framework. This framework provides all interfacing towards user space so that
-> +the same code does not have to be reproduced each time. This also means that
-> +a watchdog timer driver then only needs to provide the different routines
-> +(operations) that control the watchdog timer (WDT).
-> +
-> +The API
-> +-------
-> +Each watchdog timer driver that wants to use the WatchDog Timer Driver Core
-> +must #include <linux/watchdog.h> (you would have to do this anyway when
-> +writing a watchdog device driver). This include file contains following
-> +register/unregister routines:
-> +
-> +extern int register_watchdogdevice(struct watchdog_device *);
-> +extern void unregister_watchdogdevice(struct watchdog_device *);
-> +
-> +The register_watchdogdevice routine registers a watchdog timer device.
-> +The parameter of this routine is a pointer to a watchdog_device structure.
-> +This routine returns zero on success and a negative errno code for failure.
-> +
-> +The unregister_watchdogdevice routine deregisters a registered watchdog timer
-> +device. The parameter of this routine is the pointer to the registered
-> +watchdog_device structure.
-> +
-> +The watchdog device structure looks like this:
-> +
-> +struct watchdog_device {
-> +	char *name;
-> +	const struct watchdog_ops *ops;
-> +	long status;
-> +};
-> +
-> +It contains following fields:
-> +* name: a pointer to the (preferably unique) name of the watchdog timer device.
-> +* ops: a pointer to the list of watchdog operations that the watchdog supports.
-> +* status: this field contains a number of status bits that give extra
-> +  information about the status of the device (Like: is the device opened via
-> +  the /dev/watchdog interface or not, ...)
-> +
-> +The list of watchdog operations is defined as:
-> +
-> +struct watchdog_ops {
-> +	/* mandatory operations */
-> +	int (*start)(struct watchdog_device *);
-> +	int (*stop)(struct watchdog_device *);
-> +	/* optional operations */
-> +	int (*ping)(struct watchdog_device *);
-> +};
-> +
-> +Some operations are mandatory and some are optional. The mandatory operations
-> +are:
-> +* start: this is a pointer to the routine that starts the watchdog timer
-> +  device.
-> +  The routine needs a pointer to the watchdog timer device structure as a
-> +  parameter. It returns zero on success or a negative errno code for failure.
-> +* stop: with this routine the watchdog timer device is being stopped.
-> +  The routine needs a pointer to the watchdog timer device structure as a
-> +  parameter. It returns zero on success or a negative errno code for failure.
-> +  Some watchdog timer hardware can only be started and not be stopped. The
-> +  driver supporting this hardware needs to make sure that a start and stop
-> +  routine is being provided. This can be done by using a timer in the driver
-> +  that regularly sends a keepalive ping to the watchdog timer hardware.
-> +  (See Documentation/watchdog/src/watchdog-with-timer-example.c for an
-> +  example).
-> +
-> +Not all watchdog timer hardware supports the same functionality. That's why
-> +all other routines/operations are optional. They only need to be provided if
-> +they are supported. These optional routines/operations are:
-> +* ping: this is the routine that sends a keepalive ping to the watchdog timer
-> +  hardware.
-> +  The routine needs a pointer to the watchdog timer device structure as a
-> +  parameter. It returns zero on success or a negative errno code for failure.
-> +  Most hardware that does not support this as a separate function uses the
-> +  start function to restart the watchdog timer hardware. And that's also what
-> +  the watchdog timer driver core does: to send a keepalive ping to the watchdog
-> +  timer hardware it will either use the ping operation (when available) or the
-> +  start operation (when the ping operation is not available).
-> +
-> +The status bits should (preferably) be set with the set_bit and clear_bit alike
-> +bit-operations. The status bit's that are defined are:
-> +* WDOG_DEV_OPEN: this status bit shows whether or not the watchdog device
-> +  was opened via /dev/watchdog.
-> +  (This bit should only be used by the WatchDog Timer Driver Core).
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 6c216f9..15bc0de 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -37,6 +37,8 @@ config WATCHDOG_NOWAYOUT
->  	  get killed. If you say Y here, the watchdog cannot be stopped once
->  	  it has been started.
->  
-> +source "drivers/watchdog/core/Kconfig"
-> +
->  #
->  # General Watchdog drivers
->  #
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index d520bf9..ffdacc3 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -2,6 +2,8 @@
->  # Makefile for the WatchDog device drivers.
->  #
->  
-> +obj-$(CONFIG_WATCHDOG)  += core/
-> +
->  # Only one watchdog can succeed. We probe the ISA/PCI/USB based
->  # watchdog-cards first, then the architecture specific watchdog
->  # drivers and then the architecture independant "softdog" driver.
-> diff --git a/drivers/watchdog/core/Kconfig b/drivers/watchdog/core/Kconfig
-> new file mode 100644
-> index 0000000..9a64ae2
-> --- /dev/null
-> +++ b/drivers/watchdog/core/Kconfig
-> @@ -0,0 +1,30 @@
-> +#
-> +# Watchdog timer driver core
-> +#
-> +
-> +if WATCHDOG
-> +
-> +config WATCHDOG_CORE
-> +	tristate "WatchDog Timer Driver Core"
-> +	depends on EXPERIMENTAL
-> +	default m
-> +	---help---
-> +	  Say Y here if you want to use the new watchdog timer driver core.
-> +	  This driver provides a framework for all watchdog timer drivers
-> +	  and gives them the /dev/watchdog interface (and later also the
-> +	  sysfs interface).
-> +
-> +	  To compile this driver as a module, choose M here: the module will
-> +	  be called watchdog.
-> +
-> +config WATCHDOG_DEBUG_CORE
-> +	bool "WatchDog Timer Driver Core debugging output"
-> +	depends on WATCHDOG_CORE
-> +	default n
-> +	---help---
-> +	  Say Y here if you want the Watchdog Timer Driver Core to
-> +	  produce debugging information. Select this if you are having a
-> +	  problem with the watchdog timer driver core and want to see
-> +	  more of what is really happening.
-> +
-> +endif # WATCHDOG
-> diff --git a/drivers/watchdog/core/Makefile b/drivers/watchdog/core/Makefile
-> new file mode 100644
-> index 0000000..30d8159
-> --- /dev/null
-> +++ b/drivers/watchdog/core/Makefile
-> @@ -0,0 +1,6 @@
-> +#
-> +# Makefile for the WatchDog Timer Driver Core.
-> +#
-> +
-> +watchdog-objs	+= watchdog_core.o watchdog_dev.o
-> +obj-$(CONFIG_WATCHDOG_CORE)	+= watchdog.o
-> diff --git a/drivers/watchdog/core/watchdog_core.c b/drivers/watchdog/core/watchdog_core.c
-> new file mode 100644
-> index 0000000..d37006c
-> --- /dev/null
-> +++ b/drivers/watchdog/core/watchdog_core.c
-> @@ -0,0 +1,133 @@
-> +/*
-> + *	watchdog_core.c
-> + *
-> + *	(c) Copyright 2008-2010 Alan Cox <alan@lxorguk.ukuu.org.uk>,
-> + *						All Rights Reserved.
-> + *
-> + *	(c) Copyright 2008-2010 Wim Van Sebroeck <wim@iguana.be>.
-> + *
-> + *	This source code is part of the generic code that can be used
-> + *	by all the watchdog timer drivers.
-> + *
-> + *	Based on source code of the following authors:
-> + *	  Matt Domsch <Matt_Domsch@dell.com>,
-> + *	  Rob Radez <rob@osinvestor.com>,
-> + *	  Rusty Lynch <rusty@linux.co.intel.com>
-> + *	  Satyam Sharma <satyam@infradead.org>
-> + *	  Randy Dunlap <randy.dunlap@oracle.com>
-> + *
-> + *	This program is free software; you can redistribute it and/or
-> + *	modify it under the terms of the GNU General Public License
-> + *	as published by the Free Software Foundation; either version
-> + *	2 of the License, or (at your option) any later version.
-> + *
-> + *	Neither Alan Cox, CymruNet Ltd., Wim Van Sebroeck nor Iguana vzw.
-> + *	admit liability nor provide warranty for any of this software.
-> + *	This material is provided "AS-IS" and at no charge.
-> + */
-> +
-> +#include <linux/module.h>	/* For EXPORT_SYMBOL//module stuff/... */
-> +#include <linux/types.h>	/* For standard types */
-> +#include <linux/errno.h>	/* For the -ENODEV/... values */
-> +#include <linux/kernel.h>	/* For printk/panic/... */
-> +#include <linux/watchdog.h>	/* For watchdog specific items */
-> +#include <linux/init.h>		/* For __init/__exit/... */
-> +
-> +#include "watchdog_core.h"	/* For watchdog_dev_register/... */
-> +
-> +/*
-> + *	Version information
-> + */
-> +#define DRV_VERSION	"0.01"
-> +#define DRV_NAME	"watchdog_core"
-> +#define PFX DRV_NAME	": "
-> +
-> +/**
-> + *	register_watchdogdevice	-	register a watchdog device
-> + *	@wdd: watchdog device
-> + *
-> + *	Register a watchdog device with the kernel so that the
-> + *	watchdog timer can be accessed from userspace.
-> + *
-> + *	A zero is returned on success and a negative errno code for
-> + *	failure.
-> + */
-> +int register_watchdogdevice(struct watchdog_device *wdd)
-> +{
-> +	int ret;
-> +
-> +	/* Make sure we have a valid watchdog_device structure */
-> +	if (wdd == NULL || wdd->ops == NULL)
-> +		return -ENODATA;
-> +
-> +	/* Make sure that the mandatory operations are supported */
-> +	if (wdd->ops->start == NULL || wdd->ops->stop == NULL)
-> +		return -ENODATA;
-> +
-> +	/* Note: now that all watchdog_device data has been verified, we
-> +	 * will not check this anymore in other functions. If data get's
-> +	 * corrupted in a later stage then we expect a kernel panic! */
-> +
-> +	/* The future version will have to manage a list of all
-> +	 * registered watchdog devices. To start we will only
-> +	 * support 1 watchdog device via the /dev/watchdog interface */
-> +
-> +	/* create the /dev/watchdog interface */
-> +	ret = watchdog_dev_register(wdd);
-> +	if (ret) {
-> +		printk(KERN_ERR PFX "error registering /dev/watchdog (err=%d)",
-> +			ret);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
+--UPT3ojh+0CqEDtpF
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-jbd2-Refine-commit-writeout-logic.patch"
 
-Should this function also take a reference on the module implementing 
-the driver?  Perhaps add a 'struct module *owner' to the 'struct 
-watchdog_ops' and do a try_module_get() here?  We'd also need the 
-corresponding module_put() in unregister_watchdogdevice().
+>From 555d33d45bd38a8da6b187a15ad5eb9e9c4f1ab9 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Wed, 19 Jan 2011 13:45:04 +0100
+Subject: [PATCH 1/2] jbd2: Refine commit writeout logic
 
-> +EXPORT_SYMBOL(register_watchdogdevice);
-> +
-> +/**
-> + *	unregister_watchdogdevice	-	unregister a watchdog device
-> + *	@wdd: watchdog device to unregister
-> + *
-> + *	Unregister a watchdog device that was previously successfully
-> + *	registered with register_watchdogdevice().
-> + */
-> +void unregister_watchdogdevice(struct watchdog_device *wdd)
-> +{
-> +	int ret;
-> +
-> +	/* Make sure we have a valid watchdog_device structure */
-> +	if (wdd == NULL)
-> +		return;
-> +
-> +	/* The future version will check if this watchdog can be found
-> +	 * in the list of registered watchdog devices */
-> +
-> +	/* remove the /dev/watchdog interface */
-> +	ret = watchdog_dev_unregister(wdd);
-> +	if (ret)
-> +		printk(KERN_ERR PFX
-> +			"error unregistering /dev/watchdog (err=%d)", ret);
-> +}
-> +EXPORT_SYMBOL(unregister_watchdogdevice);
-> +
-> +static int __init watchdog_init(void)
-> +{
-> +	printk(KERN_INFO "Watchdog timer driver core v%s loaded\n",
-> +		DRV_VERSION);
-> +	return 0;
-> +}
-> +
-> +static void __exit watchdog_exit(void)
-> +{
-> +	printk(KERN_INFO "Watchdog timer driver core unloaded\n");
-> +}
-> +
-> +module_init(watchdog_init);
-> +module_exit(watchdog_exit);
-> +
-> +MODULE_AUTHOR("Alan Cox <alan@lxorguk.ukuu.org.uk>, "
-> +		"Wim Van Sebroeck <wim@iguana.be>");
-> +MODULE_DESCRIPTION("WatchDog Timer Driver Core");
-> +MODULE_VERSION(DRV_VERSION);
-> +MODULE_LICENSE("GPL");
-> +MODULE_SUPPORTED_DEVICE("watchdog");
-> diff --git a/drivers/watchdog/core/watchdog_core.h b/drivers/watchdog/core/watchdog_core.h
-> new file mode 100644
-> index 0000000..bc11d3c
-> --- /dev/null
-> +++ b/drivers/watchdog/core/watchdog_core.h
-> @@ -0,0 +1,33 @@
-> +/*
-> + *	watchdog_core.h
-> + *
-> + *	(c) Copyright 2008-2010 Alan Cox <alan@lxorguk.ukuu.org.uk>,
-> + *						All Rights Reserved.
-> + *
-> + *	(c) Copyright 2008-2010 Wim Van Sebroeck <wim@iguana.be>.
-> + *
-> + *	This source code is part of the generic code that can be used
-> + *	by all the watchdog timer drivers.
-> + *
-> + *	Based on source code of the following authors:
-> + *	  Matt Domsch <Matt_Domsch@dell.com>,
-> + *	  Rob Radez <rob@osinvestor.com>,
-> + *	  Rusty Lynch <rusty@linux.co.intel.com>
-> + *	  Satyam Sharma <satyam@infradead.org>
-> + *	  Randy Dunlap <randy.dunlap@oracle.com>
-> + *
-> + *	This program is free software; you can redistribute it and/or
-> + *	modify it under the terms of the GNU General Public License
-> + *	as published by the Free Software Foundation; either version
-> + *	2 of the License, or (at your option) any later version.
-> + *
-> + *	Neither Alan Cox, CymruNet Ltd., Wim Van Sebroeck nor Iguana vzw.
-> + *	admit liability nor provide warranty for any of this software.
-> + *	This material is provided "AS-IS" and at no charge.
-> + */
-> +
-> +/*
-> + *	External functions/procedures
-> + */
-> +extern int watchdog_dev_register(struct watchdog_device *);
-> +extern int watchdog_dev_unregister(struct watchdog_device *);
-> diff --git a/drivers/watchdog/core/watchdog_dev.c b/drivers/watchdog/core/watchdog_dev.c
-> new file mode 100644
-> index 0000000..881ca42
-> --- /dev/null
-> +++ b/drivers/watchdog/core/watchdog_dev.c
-> @@ -0,0 +1,281 @@
-> +/*
-> + *	watchdog_dev.c
-> + *
-> + *	(c) Copyright 2008-2010 Alan Cox <alan@lxorguk.ukuu.org.uk>,
-> + *						All Rights Reserved.
-> + *
-> + *	(c) Copyright 2008-2010 Wim Van Sebroeck <wim@iguana.be>.
-> + *
-> + *
-> + *	This source code is part of the generic code that can be used
-> + *	by all the watchdog timer drivers.
-> + *
-> + *	This part of the generic code takes care of the following
-> + *	misc device: /dev/watchdog.
-> + *
-> + *	Based on source code of the following authors:
-> + *	  Matt Domsch <Matt_Domsch@dell.com>,
-> + *	  Rob Radez <rob@osinvestor.com>,
-> + *	  Rusty Lynch <rusty@linux.co.intel.com>
-> + *	  Satyam Sharma <satyam@infradead.org>
-> + *	  Randy Dunlap <randy.dunlap@oracle.com>
-> + *
-> + *	This program is free software; you can redistribute it and/or
-> + *	modify it under the terms of the GNU General Public License
-> + *	as published by the Free Software Foundation; either version
-> + *	2 of the License, or (at your option) any later version.
-> + *
-> + *	Neither Alan Cox, CymruNet Ltd., Wim Van Sebroeck nor Iguana vzw.
-> + *	admit liability nor provide warranty for any of this software.
-> + *	This material is provided "AS-IS" and at no charge.
-> + */
-> +
-> +#include <linux/module.h>	/* For EXPORT_SYMBOL/module stuff/... */
-> +#include <linux/types.h>	/* For standard types (like size_t) */
-> +#include <linux/errno.h>	/* For the -ENODEV/... values */
-> +#include <linux/kernel.h>	/* For printk/panic/... */
-> +#include <linux/fs.h>		/* For file operations */
-> +#include <linux/watchdog.h>	/* For watchdog specific items */
-> +#include <linux/miscdevice.h>	/* For handling misc devices */
-> +#include <linux/init.h>		/* For __init/__exit/... */
-> +#include <linux/uaccess.h>	/* For copy_to_user/put_user/... */
-> +
-> +/*
-> + *	Version information
-> + */
-> +#define DRV_VERSION	"0.01"
-> +#define DRV_NAME	"watchdog_dev"
-> +#define PFX DRV_NAME	": "
-> +
-> +/*
-> + *	Debugging Macros
-> + */
-> +#ifdef CONFIG_WATCHDOG_DEBUG_CORE
-> +#define trace(format, args...) \
-> +	printk(KERN_INFO PFX "%s(" format ")\n", __func__ , ## args)
-> +#define dbg(format, args...) \
-> +	printk(KERN_DEBUG PFX "%s: " format "\n", __func__, ## args)
-> +#else
-> +#define trace(format, args...) do { } while (0)
-> +#define dbg(format, args...) do { } while (0)
-> +#endif
-> +
-> +/*
-> + *	Locally used variables
-> + */
-> +
-> +/* make sure we only register one /dev/watchdog device */
-> +static unsigned long register_busy;
+Currently we write out all journal buffers in WRITE_SYNC mode. This improves
+performance for fsync heavy workloads but hinders performance when writes
+are mostly asynchronous. So add possibility for callers starting a transaction
+commit to specify whether they are going to wait for the commit and submit
+journal writes in WRITE_SYNC mode only in that case.
 
-I first read this to mean that a registration was in progress not that a 
-watchdog is registered.  Rename to watchdog_is_registered or similar?
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/ext4/fsync.c       |    2 +-
+ fs/ext4/super.c       |    2 +-
+ fs/jbd2/checkpoint.c  |    2 +-
+ fs/jbd2/commit.c      |    4 ++--
+ fs/jbd2/journal.c     |   19 ++++++++++---------
+ fs/jbd2/transaction.c |   15 +++++++++------
+ fs/ocfs2/aops.c       |    2 +-
+ fs/ocfs2/super.c      |    2 +-
+ include/linux/jbd2.h  |   18 ++++++++++--------
+ 9 files changed, 36 insertions(+), 30 deletions(-)
 
-> +/* the watchdog device behind /dev/watchdog */
-> +static struct watchdog_device *wdd;
-> +
-> +/*
-> + *	/dev/watchdog operations
-> + */
-> +
-> +/*
-> + *	watchdog_ping: ping the watchdog.
-> + *	@wddev: the watchdog device to ping
-> + *
-> + *	If the watchdog has no own ping operation then it needs to be
-> + *	restarted via the start operation. This wrapper function does
-> + *	exactly that.
-> + */
-> +
-> +static int watchdog_ping(struct watchdog_device *wddev)
-> +{
-> +	if (wddev->ops->ping)
-> +		return wddev->ops->ping(wddev);  /* ping the watchdog */
-> +	else
-> +		return wddev->ops->start(wddev); /* restart the watchdog */
-> +}
-> +
-> +/*
-> + *	watchdog_write: writes to the watchdog.
-> + *	@file: file from VFS
-> + *	@data: user address of data
-> + *	@len: length of data
-> + *	@ppos: pointer to the file offset
-> + *
-> + *	A write to a watchdog device is defined as a keepalive ping.
-> + */
-> +
-> +static ssize_t watchdog_write(struct file *file, const char __user *data,
-> +						size_t len, loff_t *ppos)
-> +{
-> +	size_t i;
-> +	char c;
-> +
-> +	trace("%p, %p, %zu, %p", file, data, len, ppos);
-> +
-> +	if (len == 0)	/* Can we see this even ? */
-> +		return 0;
-> +
-> +	for (i = 0; i != len; i++) {
-> +		if (get_user(c, data + i))
-> +			return -EFAULT;
-> +	}
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index 7829b28..19434da 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -198,7 +198,7 @@ int ext4_sync_file(struct file *file, int datasync)
+ 		return ext4_force_commit(inode->i_sb);
+ 
+ 	commit_tid = datasync ? ei->i_datasync_tid : ei->i_sync_tid;
+-	if (jbd2_log_start_commit(journal, commit_tid)) {
++	if (jbd2_log_start_commit(journal, commit_tid, true)) {
+ 		/*
+ 		 * When the journal is on a different device than the
+ 		 * fs data disk, we need to issue the barrier in
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index f6a318f..bfce0d6 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4115,7 +4115,7 @@ static int ext4_sync_fs(struct super_block *sb, int wait)
+ 
+ 	trace_ext4_sync_fs(sb, wait);
+ 	flush_workqueue(sbi->dio_unwritten_wq);
+-	if (jbd2_journal_start_commit(sbi->s_journal, &target)) {
++	if (jbd2_journal_start_commit(sbi->s_journal, &target, true)) {
+ 		if (wait)
+ 			jbd2_log_wait_commit(sbi->s_journal, target);
+ 	}
+diff --git a/fs/jbd2/checkpoint.c b/fs/jbd2/checkpoint.c
+index 6a79fd0..3436d53 100644
+--- a/fs/jbd2/checkpoint.c
++++ b/fs/jbd2/checkpoint.c
+@@ -309,7 +309,7 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
+ 			       "Waiting for Godot: block %llu\n",
+ 			       journal->j_devname,
+ 			       (unsigned long long) bh->b_blocknr);
+-		jbd2_log_start_commit(journal, tid);
++		jbd2_log_start_commit(journal, tid, true);
+ 		jbd2_log_wait_commit(journal, tid);
+ 		ret = 1;
+ 	} else if (!buffer_dirty(bh)) {
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index f3ad159..19973eb 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -329,7 +329,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+ 	int tag_bytes = journal_tag_bytes(journal);
+ 	struct buffer_head *cbh = NULL; /* For transactional checksums */
+ 	__u32 crc32_sum = ~0;
+-	int write_op = WRITE_SYNC;
++	int write_op = WRITE;
+ 
+ 	/*
+ 	 * First job: lock down the current transaction and wait for
+@@ -368,7 +368,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+ 	 * we unplug the device. We don't do explicit unplugging in here,
+ 	 * instead we rely on sync_buffer() doing the unplug for us.
+ 	 */
+-	if (commit_transaction->t_synchronous_commit)
++	if (tid_geq(journal->j_commit_waited, commit_transaction->t_tid))
+ 		write_op = WRITE_SYNC_PLUG;
+ 	trace_jbd2_commit_locking(journal, commit_transaction);
+ 	stats.run.rs_wait = commit_transaction->t_max_wait;
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 97e7346..04835d6 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -476,7 +476,7 @@ int __jbd2_log_space_left(journal_t *journal)
+  * Called with j_state_lock locked for writing.
+  * Returns true if a transaction commit was started.
+  */
+-int __jbd2_log_start_commit(journal_t *journal, tid_t target)
++int __jbd2_log_start_commit(journal_t *journal, tid_t target, bool will_wait)
+ {
+ 	/*
+ 	 * Are we already doing a recent enough commit?
+@@ -486,7 +486,8 @@ int __jbd2_log_start_commit(journal_t *journal, tid_t target)
+ 		 * We want a new commit: OK, mark the request and wakeup the
+ 		 * commit thread.  We do _not_ do the commit ourselves.
+ 		 */
+-
++		if (will_wait && !tid_geq(journal->j_commit_waited, target))
++			journal->j_commit_waited = target;
+ 		journal->j_commit_request = target;
+ 		jbd_debug(1, "JBD: requesting commit %d/%d\n",
+ 			  journal->j_commit_request,
+@@ -497,12 +498,12 @@ int __jbd2_log_start_commit(journal_t *journal, tid_t target)
+ 	return 0;
+ }
+ 
+-int jbd2_log_start_commit(journal_t *journal, tid_t tid)
++int jbd2_log_start_commit(journal_t *journal, tid_t tid, bool will_wait)
+ {
+ 	int ret;
+ 
+ 	write_lock(&journal->j_state_lock);
+-	ret = __jbd2_log_start_commit(journal, tid);
++	ret = __jbd2_log_start_commit(journal, tid, will_wait);
+ 	write_unlock(&journal->j_state_lock);
+ 	return ret;
+ }
+@@ -539,7 +540,7 @@ int jbd2_journal_force_commit_nested(journal_t *journal)
+ 	tid = transaction->t_tid;
+ 	read_unlock(&journal->j_state_lock);
+ 	if (need_to_start)
+-		jbd2_log_start_commit(journal, tid);
++		jbd2_log_start_commit(journal, tid, true);
+ 	jbd2_log_wait_commit(journal, tid);
+ 	return 1;
+ }
+@@ -549,7 +550,7 @@ int jbd2_journal_force_commit_nested(journal_t *journal)
+  * if a transaction is going to be committed (or is currently already
+  * committing), and fills its tid in at *ptid
+  */
+-int jbd2_journal_start_commit(journal_t *journal, tid_t *ptid)
++int jbd2_journal_start_commit(journal_t *journal, tid_t *ptid, bool will_wait)
+ {
+ 	int ret = 0;
+ 
+@@ -557,7 +558,7 @@ int jbd2_journal_start_commit(journal_t *journal, tid_t *ptid)
+ 	if (journal->j_running_transaction) {
+ 		tid_t tid = journal->j_running_transaction->t_tid;
+ 
+-		__jbd2_log_start_commit(journal, tid);
++		__jbd2_log_start_commit(journal, tid, will_wait);
+ 		/* There's a running transaction and we've just made sure
+ 		 * it's commit has been scheduled. */
+ 		if (ptid)
+@@ -1564,7 +1565,7 @@ int jbd2_journal_flush(journal_t *journal)
+ 	/* Force everything buffered to the log... */
+ 	if (journal->j_running_transaction) {
+ 		transaction = journal->j_running_transaction;
+-		__jbd2_log_start_commit(journal, transaction->t_tid);
++		__jbd2_log_start_commit(journal, transaction->t_tid, true);
+ 	} else if (journal->j_committing_transaction)
+ 		transaction = journal->j_committing_transaction;
+ 
+@@ -1680,7 +1681,7 @@ void __jbd2_journal_abort_hard(journal_t *journal)
+ 	journal->j_flags |= JBD2_ABORT;
+ 	transaction = journal->j_running_transaction;
+ 	if (transaction)
+-		__jbd2_log_start_commit(journal, transaction->t_tid);
++		__jbd2_log_start_commit(journal, transaction->t_tid, false);
+ 	write_unlock(&journal->j_state_lock);
+ }
+ 
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index 1d11910..340dd5e 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -226,7 +226,7 @@ repeat:
+ 		need_to_start = !tid_geq(journal->j_commit_request, tid);
+ 		read_unlock(&journal->j_state_lock);
+ 		if (need_to_start)
+-			jbd2_log_start_commit(journal, tid);
++			jbd2_log_start_commit(journal, tid, false);
+ 		schedule();
+ 		finish_wait(&journal->j_wait_transaction_locked, &wait);
+ 		goto repeat;
+@@ -469,8 +469,12 @@ int jbd2__journal_restart(handle_t *handle, int nblocks, int gfp_mask)
+ 	spin_unlock(&transaction->t_handle_lock);
+ 
+ 	jbd_debug(2, "restarting handle %p\n", handle);
++<<<<<<< HEAD
+ 	tid = transaction->t_tid;
+ 	need_to_start = !tid_geq(journal->j_commit_request, tid);
++=======
++	__jbd2_log_start_commit(journal, transaction->t_tid, false);
++>>>>>>> jbd2: Refine commit writeout logic
+ 	read_unlock(&journal->j_state_lock);
+ 	if (need_to_start)
+ 		jbd2_log_start_commit(journal, tid);
+@@ -1368,8 +1372,6 @@ int jbd2_journal_stop(handle_t *handle)
+ 		}
+ 	}
+ 
+-	if (handle->h_sync)
+-		transaction->t_synchronous_commit = 1;
+ 	current->journal_info = NULL;
+ 	atomic_sub(handle->h_buffer_credits,
+ 		   &transaction->t_outstanding_credits);
+@@ -1390,15 +1392,16 @@ int jbd2_journal_stop(handle_t *handle)
+ 
+ 		jbd_debug(2, "transaction too old, requesting commit for "
+ 					"handle %p\n", handle);
+-		/* This is non-blocking */
+-		jbd2_log_start_commit(journal, transaction->t_tid);
+-
+ 		/*
+ 		 * Special case: JBD2_SYNC synchronous updates require us
+ 		 * to wait for the commit to complete.
+ 		 */
+ 		if (handle->h_sync && !(current->flags & PF_MEMALLOC))
+ 			wait_for_commit = 1;
++
++		/* This is non-blocking */
++		jbd2_log_start_commit(journal, transaction->t_tid,
++				      wait_for_commit);
+ 	}
+ 
+ 	/*
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 1fbb0e2..d493f32 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -1659,7 +1659,7 @@ static int ocfs2_try_to_free_truncate_log(struct ocfs2_super *osb,
+ 		goto out;
+ 	}
+ 
+-	if (jbd2_journal_start_commit(osb->journal->j_journal, &target)) {
++	if (jbd2_journal_start_commit(osb->journal->j_journal, &target, true)) {
+ 		jbd2_log_wait_commit(osb->journal->j_journal, target);
+ 		ret = 1;
+ 	}
+diff --git a/fs/ocfs2/super.c b/fs/ocfs2/super.c
+index 38f986d..45d9f82 100644
+--- a/fs/ocfs2/super.c
++++ b/fs/ocfs2/super.c
+@@ -414,7 +414,7 @@ static int ocfs2_sync_fs(struct super_block *sb, int wait)
+ 	}
+ 
+ 	if (jbd2_journal_start_commit(OCFS2_SB(sb)->journal->j_journal,
+-				      &target)) {
++				      &target, wait)) {
+ 		if (wait)
+ 			jbd2_log_wait_commit(OCFS2_SB(sb)->journal->j_journal,
+ 					     target);
+diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+index 27e79c2..46aaf45 100644
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -631,11 +631,6 @@ struct transaction_s
+ 	 */
+ 	atomic_t		t_handle_count;
+ 
+-	/*
+-	 * This transaction is being forced and some process is
+-	 * waiting for it to finish.
+-	 */
+-	unsigned int t_synchronous_commit:1;
+ 	unsigned int t_flushed_data_blocks:1;
+ 
+ 	/*
+@@ -900,6 +895,13 @@ struct journal_s
+ 	tid_t			j_commit_request;
+ 
+ 	/*
++	 * Sequence number of the most recent transaction someone is waiting
++	 * for to commit.
++	 * [j_state_lock]
++	 */
++	tid_t			j_commit_waited;
++
++	/*
+ 	 * Journal uuid: identifies the object (filesystem, LVM volume etc)
+ 	 * backed by this journal.  This will eventually be replaced by an array
+ 	 * of uuids, allowing us to index multiple devices within a single
+@@ -1200,9 +1202,9 @@ extern void	jbd2_journal_switch_revoke_table(journal_t *journal);
+  */
+ 
+ int __jbd2_log_space_left(journal_t *); /* Called with journal locked */
+-int jbd2_log_start_commit(journal_t *journal, tid_t tid);
+-int __jbd2_log_start_commit(journal_t *journal, tid_t tid);
+-int jbd2_journal_start_commit(journal_t *journal, tid_t *tid);
++int jbd2_log_start_commit(journal_t *journal, tid_t tid, bool will_wait);
++int __jbd2_log_start_commit(journal_t *journal, tid_t tid, bool will_wait);
++int jbd2_journal_start_commit(journal_t *journal, tid_t *tid, bool will_wait);
+ int jbd2_journal_force_commit_nested(journal_t *journal);
+ int jbd2_log_wait_commit(journal_t *journal, tid_t tid);
+ int jbd2_log_do_checkpoint(journal_t *journal);
+-- 
+1.7.1
 
-Shouldn't this loop be added in the patch where you add the magic close 
-support?
 
-> +
-> +	/* someone wrote to us, so we sent the watchdog a keepalive ping */
-> +	watchdog_ping(wdd);
-> +
-> +	return len;
-> +}
-> +
-> +/*
-> + *	watchdog_open: open the /dev/watchdog device.
-> + *	@inode: inode of device
-> + *	@file: file handle to device
-> + *
-> + *	When the /dev/watchdog device get's opened, we start the watchdog.
-> + *	Watch out: the /dev/watchdog device is single open, so we make sure
-> + *	it can only be opened once.
-> + */
-> +
-> +static int watchdog_open(struct inode *inode, struct file *file)
-> +{
-> +	int err;
-> +
-> +	trace("%p, %p", inode, file);
-> +
-> +	/* the watchdog is single open! */
-> +	if (test_and_set_bit(WDOG_DEV_OPEN, &wdd->status))
-> +		return -EBUSY;
-> +
-> +	/* start the watchdog */
-> +	err = wdd->ops->start(wdd);
-> +	if (err < 0)
-> +		goto out;
-> +
-> +	/* dev/watchdog is a virtual (and thus non-seekable) filesystem */
-> +	return nonseekable_open(inode, file);
-> +
-> +out:
-> +	clear_bit(WDOG_DEV_OPEN, &wdd->status);
-> +	return err;
-> +}
-> +
-> +/*
-> + *      watchdog_release: release the /dev/watchdog device.
-> + *      @inode: inode of device
-> + *      @file: file handle to device
-> + *
-> + *	This is the code for when /dev/watchdog get's closed.
-> + */
-> +
-> +static int watchdog_release(struct inode *inode, struct file *file)
-> +{
-> +	int err = -1;
-> +
-> +	trace("%p, %p", inode, file);
-> +
-> +	/* stop the watchdog */
-> +	err = wdd->ops->stop(wdd);
-> +	if (err != 0) {
-> +		printk(KERN_CRIT "%s: not stopping watchdog!\n", wdd->name);
-> +		watchdog_ping(wdd);
-> +	}
-> +
-> +	/* make sure that /dev/watchdog can be re-opened */
-> +	clear_bit(WDOG_DEV_OPEN, &wdd->status);
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + *	/dev/watchdog kernel interfaces
-> + */
-> +
-> +static const struct file_operations watchdog_fops = {
-> +	.owner		= THIS_MODULE,
-> +	.llseek		= no_llseek,
-> +	.write		= watchdog_write,
-> +	.open		= watchdog_open,
-> +	.release	= watchdog_release,
-> +};
-> +
-> +static struct miscdevice watchdog_miscdev = {
-> +	.minor		= WATCHDOG_MINOR,
-> +	.name		= "watchdog",
-> +	.fops		= &watchdog_fops,
-> +};
-> +
-> +/*
-> + *	/dev/watchdog register and unregister functions
-> + */
-> +
-> +/*
-> + *	watchdog_dev_register:
-> + *	@watchdog: watchdog device
-> + *
-> + *	Register a watchdog device as /dev/watchdog. /dev/watchdog
-> + *	is actually a miscdevice and thus we set it up like that.
-> + */
-> +
-> +int watchdog_dev_register(struct watchdog_device *watchdog)
-> +{
-> +	int err;
-> +
-> +	trace("%p", watchdog);
-> +
-> +	/* Only one device can register for /dev/watchdog */
-> +	if (test_and_set_bit(0, &register_busy)) {
-> +		printk(KERN_ERR PFX
-> +			"only one watchdog can use /dev/watchdog.\n");
-> +		return -EBUSY;
-> +	}
-> +
-> +	wdd = watchdog;
-> +
-> +	/* Register the miscdevice */
-> +	dbg("Register a new /dev/watchdog device");
-> +	err = misc_register(&watchdog_miscdev);
-> +	if (err != 0) {
-> +		printk(KERN_ERR
-> +			"%s: cannot register miscdev on minor=%d (err=%d).\n",
-> +			watchdog->name, WATCHDOG_MINOR, err);
-> +		goto out;
-> +	}
-> +
-> +	return 0;
-> +
-> +out:
-> +	wdd = NULL;
-> +	clear_bit(0, &register_busy);
-> +	return err;
-> +}
-> +EXPORT_SYMBOL(watchdog_dev_register);
-> +
-> +/*
-> + *	watchdog_dev_unregister:
-> + *	@watchdog: watchdog device
-> + *
-> + *	Deregister the /dev/watchdog device.
-> + */
-> +
-> +int watchdog_dev_unregister(struct watchdog_device *watchdog)
-> +{
-> +	trace("%p", watchdog);
-> +
-> +	/* Check that a watchdog device was registered in the past */
-> +	if (!test_bit(0, &register_busy) || !wdd)
-> +		return -ENODEV;
-> +
-> +	/* We can only unregister the watchdog device that was registered */
-> +	if (watchdog != wdd) {
-> +		printk(KERN_ERR PFX
-> +			"%s: watchdog was not registered as /dev/watchdog.\n",
-> +			watchdog->name);
-> +		return -ENODEV;
-> +	}
-> +
-> +	/* Unregister the miscdevice */
-> +	dbg("Unregister /dev/watchdog device");
-> +	misc_deregister(&watchdog_miscdev);
-> +	wdd = NULL;
-> +	clear_bit(0, &register_busy);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(watchdog_dev_unregister);
-> +
-> +MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-> diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-> index 011bcfe..4d00bf8 100644
-> --- a/include/linux/watchdog.h
-> +++ b/include/linux/watchdog.h
-> @@ -59,6 +59,31 @@ struct watchdog_info {
->  #define WATCHDOG_NOWAYOUT	0
->  #endif
->  
-> +struct watchdog_ops;
-> +struct watchdog_device;
-> +
-> +/* The watchdog-devices operations */
-> +struct watchdog_ops {
-> +	/* mandatory operations */
-> +	int (*start)(struct watchdog_device *);
-> +	int (*stop)(struct watchdog_device *);
-> +	/* optional operations */
-> +	int (*ping)(struct watchdog_device *);
-> +};
-> +
-> +/* The structure that defines a watchdog device */
-> +struct watchdog_device {
-> +	char *name;
-> +	const struct watchdog_ops *ops;
-> +	long status;
-> +#define WDOG_DEV_OPEN		1	/* is the watchdog opened via
-> +					 * /dev/watchdog */
-> +};
-> +
-> +/* drivers/watchdog/core/watchdog_core.c */
-> +extern int register_watchdogdevice(struct watchdog_device *);
-> +extern void unregister_watchdogdevice(struct watchdog_device *);
-> +
->  #endif	/* __KERNEL__ */
->  
->  #endif  /* ifndef _LINUX_WATCHDOG_H */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--UPT3ojh+0CqEDtpF
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0002-jbd-Refine-commit-writeout-logic.patch"
+
+>From 3e4f42155513df7b6d36584e7b8383b86f425467 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Mon, 21 Feb 2011 17:25:37 +0100
+Subject: [PATCH 2/2] jbd: Refine commit writeout logic
+
+Currently we write out all journal buffers in WRITE_SYNC mode. This improves
+performance for fsync heavy workloads but hinders performance when writes
+are mostly asynchronous. So add possibility for callers starting a transaction
+commit to specify whether they are going to wait for the commit and submit
+journal writes in WRITE_SYNC mode only in that case.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/ext3/fsync.c      |    2 +-
+ fs/ext3/super.c      |    2 +-
+ fs/jbd/checkpoint.c  |    2 +-
+ fs/jbd/commit.c      |    4 ++--
+ fs/jbd/journal.c     |   19 ++++++++++---------
+ fs/jbd/transaction.c |    9 ++++-----
+ include/linux/jbd.h  |   21 ++++++++++++---------
+ 7 files changed, 31 insertions(+), 28 deletions(-)
+
+diff --git a/fs/ext3/fsync.c b/fs/ext3/fsync.c
+index 09b13bb..5396dd6 100644
+--- a/fs/ext3/fsync.c
++++ b/fs/ext3/fsync.c
+@@ -81,7 +81,7 @@ int ext3_sync_file(struct file *file, int datasync)
+ 	if (test_opt(inode->i_sb, BARRIER) &&
+ 	    !journal_trans_will_send_data_barrier(journal, commit_tid))
+ 		needs_barrier = 1;
+-	log_start_commit(journal, commit_tid);
++	log_start_commit(journal, commit_tid, true);
+ 	ret = log_wait_commit(journal, commit_tid);
+ 
+ 	/*
+diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+index 85c8cc8..58a4424 100644
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -2497,7 +2497,7 @@ static int ext3_sync_fs(struct super_block *sb, int wait)
+ {
+ 	tid_t target;
+ 
+-	if (journal_start_commit(EXT3_SB(sb)->s_journal, &target)) {
++	if (journal_start_commit(EXT3_SB(sb)->s_journal, &target, true)) {
+ 		if (wait)
+ 			log_wait_commit(EXT3_SB(sb)->s_journal, target);
+ 	}
+diff --git a/fs/jbd/checkpoint.c b/fs/jbd/checkpoint.c
+index e4b87bc..26ca2c3 100644
+--- a/fs/jbd/checkpoint.c
++++ b/fs/jbd/checkpoint.c
+@@ -297,7 +297,7 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
+ 
+ 		spin_unlock(&journal->j_list_lock);
+ 		jbd_unlock_bh_state(bh);
+-		log_start_commit(journal, tid);
++		log_start_commit(journal, tid, true);
+ 		log_wait_commit(journal, tid);
+ 		ret = 1;
+ 	} else if (!buffer_dirty(bh)) {
+diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+index 34a4861..ac188cb 100644
+--- a/fs/jbd/commit.c
++++ b/fs/jbd/commit.c
+@@ -294,7 +294,7 @@ void journal_commit_transaction(journal_t *journal)
+ 	int first_tag = 0;
+ 	int tag_flag;
+ 	int i;
+-	int write_op = WRITE_SYNC;
++	int write_op = WRITE;
+ 
+ 	/*
+ 	 * First job: lock down the current transaction and wait for
+@@ -332,7 +332,7 @@ void journal_commit_transaction(journal_t *journal)
+ 	 * we unplug the device. We don't do explicit unplugging in here,
+ 	 * instead we rely on sync_buffer() doing the unplug for us.
+ 	 */
+-	if (commit_transaction->t_synchronous_commit)
++	if (tid_geq(journal->j_commit_waited, commit_transaction->t_tid))
+ 		write_op = WRITE_SYNC_PLUG;
+ 	spin_lock(&commit_transaction->t_handle_lock);
+ 	while (commit_transaction->t_updates) {
+diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+index da1b5e4..5743b4c 100644
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -434,7 +434,7 @@ int __log_space_left(journal_t *journal)
+ /*
+  * Called under j_state_lock.  Returns true if a transaction commit was started.
+  */
+-int __log_start_commit(journal_t *journal, tid_t target)
++int __log_start_commit(journal_t *journal, tid_t target, bool will_wait)
+ {
+ 	/*
+ 	 * Are we already doing a recent enough commit?
+@@ -444,7 +444,8 @@ int __log_start_commit(journal_t *journal, tid_t target)
+ 		 * We want a new commit: OK, mark the request and wakeup the
+ 		 * commit thread.  We do _not_ do the commit ourselves.
+ 		 */
+-
++		if (will_wait && !tid_geq(journal->j_commit_waited, target))
++			journal->j_commit_waited = target;
+ 		journal->j_commit_request = target;
+ 		jbd_debug(1, "JBD: requesting commit %d/%d\n",
+ 			  journal->j_commit_request,
+@@ -455,12 +456,12 @@ int __log_start_commit(journal_t *journal, tid_t target)
+ 	return 0;
+ }
+ 
+-int log_start_commit(journal_t *journal, tid_t tid)
++int log_start_commit(journal_t *journal, tid_t tid, bool will_wait)
+ {
+ 	int ret;
+ 
+ 	spin_lock(&journal->j_state_lock);
+-	ret = __log_start_commit(journal, tid);
++	ret = __log_start_commit(journal, tid, will_wait);
+ 	spin_unlock(&journal->j_state_lock);
+ 	return ret;
+ }
+@@ -483,7 +484,7 @@ int journal_force_commit_nested(journal_t *journal)
+ 	spin_lock(&journal->j_state_lock);
+ 	if (journal->j_running_transaction && !current->journal_info) {
+ 		transaction = journal->j_running_transaction;
+-		__log_start_commit(journal, transaction->t_tid);
++		__log_start_commit(journal, transaction->t_tid, true);
+ 	} else if (journal->j_committing_transaction)
+ 		transaction = journal->j_committing_transaction;
+ 
+@@ -503,7 +504,7 @@ int journal_force_commit_nested(journal_t *journal)
+  * if a transaction is going to be committed (or is currently already
+  * committing), and fills its tid in at *ptid
+  */
+-int journal_start_commit(journal_t *journal, tid_t *ptid)
++int journal_start_commit(journal_t *journal, tid_t *ptid, bool will_wait)
+ {
+ 	int ret = 0;
+ 
+@@ -511,7 +512,7 @@ int journal_start_commit(journal_t *journal, tid_t *ptid)
+ 	if (journal->j_running_transaction) {
+ 		tid_t tid = journal->j_running_transaction->t_tid;
+ 
+-		__log_start_commit(journal, tid);
++		__log_start_commit(journal, tid, will_wait);
+ 		/* There's a running transaction and we've just made sure
+ 		 * it's commit has been scheduled. */
+ 		if (ptid)
+@@ -1439,7 +1440,7 @@ int journal_flush(journal_t *journal)
+ 	/* Force everything buffered to the log... */
+ 	if (journal->j_running_transaction) {
+ 		transaction = journal->j_running_transaction;
+-		__log_start_commit(journal, transaction->t_tid);
++		__log_start_commit(journal, transaction->t_tid, true);
+ 	} else if (journal->j_committing_transaction)
+ 		transaction = journal->j_committing_transaction;
+ 
+@@ -1573,7 +1574,7 @@ static void __journal_abort_hard(journal_t *journal)
+ 	journal->j_flags |= JFS_ABORT;
+ 	transaction = journal->j_running_transaction;
+ 	if (transaction)
+-		__log_start_commit(journal, transaction->t_tid);
++		__log_start_commit(journal, transaction->t_tid, false);
+ 	spin_unlock(&journal->j_state_lock);
+ }
+ 
+diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
+index 5b2e4c3..a12c0a3 100644
+--- a/fs/jbd/transaction.c
++++ b/fs/jbd/transaction.c
+@@ -178,7 +178,7 @@ repeat_locked:
+ 		spin_unlock(&transaction->t_handle_lock);
+ 		prepare_to_wait(&journal->j_wait_transaction_locked, &wait,
+ 				TASK_UNINTERRUPTIBLE);
+-		__log_start_commit(journal, transaction->t_tid);
++		__log_start_commit(journal, transaction->t_tid, false);
+ 		spin_unlock(&journal->j_state_lock);
+ 		schedule();
+ 		finish_wait(&journal->j_wait_transaction_locked, &wait);
+@@ -411,7 +411,7 @@ int journal_restart(handle_t *handle, int nblocks)
+ 	spin_unlock(&transaction->t_handle_lock);
+ 
+ 	jbd_debug(2, "restarting handle %p\n", handle);
+-	__log_start_commit(journal, transaction->t_tid);
++	__log_start_commit(journal, transaction->t_tid, false);
+ 	spin_unlock(&journal->j_state_lock);
+ 
+ 	lock_map_release(&handle->h_lockdep_map);
+@@ -1431,8 +1431,6 @@ int journal_stop(handle_t *handle)
+ 		}
+ 	}
+ 
+-	if (handle->h_sync)
+-		transaction->t_synchronous_commit = 1;
+ 	current->journal_info = NULL;
+ 	spin_lock(&journal->j_state_lock);
+ 	spin_lock(&transaction->t_handle_lock);
+@@ -1463,7 +1461,8 @@ int journal_stop(handle_t *handle)
+ 		jbd_debug(2, "transaction too old, requesting commit for "
+ 					"handle %p\n", handle);
+ 		/* This is non-blocking */
+-		__log_start_commit(journal, transaction->t_tid);
++		__log_start_commit(journal, transaction->t_tid,
++			handle->h_sync && !(current->flags & PF_MEMALLOC));
+ 		spin_unlock(&journal->j_state_lock);
+ 
+ 		/*
+diff --git a/include/linux/jbd.h b/include/linux/jbd.h
+index e069650..c38f73e 100644
+--- a/include/linux/jbd.h
++++ b/include/linux/jbd.h
+@@ -541,12 +541,6 @@ struct transaction_s
+ 	 * How many handles used this transaction? [t_handle_lock]
+ 	 */
+ 	int t_handle_count;
+-
+-	/*
+-	 * This transaction is being forced and some process is
+-	 * waiting for it to finish.
+-	 */
+-	unsigned int t_synchronous_commit:1;
+ };
+ 
+ /**
+@@ -594,6 +588,8 @@ struct transaction_s
+  *  transaction
+  * @j_commit_request: Sequence number of the most recent transaction wanting
+  *     commit
++ * @j_commit_waited: Sequence number of the most recent transaction someone
++ *     is waiting for to commit.
+  * @j_uuid: Uuid of client object.
+  * @j_task: Pointer to the current commit thread for this journal
+  * @j_max_transaction_buffers:  Maximum number of metadata buffers to allow in a
+@@ -762,6 +758,13 @@ struct journal_s
+ 	tid_t			j_commit_request;
+ 
+ 	/*
++	 * Sequence number of the most recent transaction someone is waiting
++	 * for to commit.
++	 * [j_state_lock]
++	 */
++	tid_t                   j_commit_waited;
++
++	/*
+ 	 * Journal uuid: identifies the object (filesystem, LVM volume etc)
+ 	 * backed by this journal.  This will eventually be replaced by an array
+ 	 * of uuids, allowing us to index multiple devices within a single
+@@ -985,9 +988,9 @@ extern void	journal_switch_revoke_table(journal_t *journal);
+  */
+ 
+ int __log_space_left(journal_t *); /* Called with journal locked */
+-int log_start_commit(journal_t *journal, tid_t tid);
+-int __log_start_commit(journal_t *journal, tid_t tid);
+-int journal_start_commit(journal_t *journal, tid_t *tid);
++int log_start_commit(journal_t *journal, tid_t tid, bool will_wait);
++int __log_start_commit(journal_t *journal, tid_t tid, bool will_wait);
++int journal_start_commit(journal_t *journal, tid_t *tid, bool will_wait);
+ int journal_force_commit_nested(journal_t *journal);
+ int log_wait_commit(journal_t *journal, tid_t tid);
+ int log_do_checkpoint(journal_t *journal);
+-- 
+1.7.1
+
+
+--UPT3ojh+0CqEDtpF--
