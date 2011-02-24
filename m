@@ -1,79 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1BXMkn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 07:40:43 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:57098 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754853Ab1BXMkk (ORCPT
+	id S1754989Ab1BXMtk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 07:49:40 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59817 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753583Ab1BXMti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 07:40:40 -0500
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX18XQv1p3WAXcrtA1i1ZkOOyJfysOtM0A4d1vprlDX
-	7b40wHRq98VvNN
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: [PATCH] inotify: dont skip removing mark from idr when creation of ignore event failed
-Date: Thu, 24 Feb 2011 13:36:22 +0100
-Message-Id: <1298550982-27080-1-git-send-email-LinoSanfilippo@gmx.de>
-X-Mailer: git-send-email 1.7.1
-X-Y-GMX-Trusted: 0
+	Thu, 24 Feb 2011 07:49:38 -0500
+Date: Thu, 24 Feb 2011 12:51:39 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: gregkh@suse.de, alan@linux.intel.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: gma500: Fix compilation error.
+Message-ID: <20110224125139.4fb56e37@lxorguk.ukuu.org.uk>
+In-Reply-To: <1298539998-6422-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1298539998-6422-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In inotify_ignored_and_remove_idr() dont skip removing a mark from the idr if
-allocating an "ignored event" failed.
+On Thu, 24 Feb 2011 10:33:18 +0100
+Marek Belisko <marek.belisko@open-nandra.com> wrote:
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
----
-The patch applies against commit ef9bf3b7144bee6ce1da5616015cabc8771206af of
-branch 'origin/for-next' from git.infradead.org/users/eparis/notify.git
+> This patch will fix following compilation error:
 
- fs/notify/inotify/inotify_user.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+The joys of the DRM layer API of the week.
 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 4cd5d5d..3cda8a4 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -522,17 +522,17 @@ void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
- 	struct fsnotify_event_private_data *fsn_event_priv;
- 	int ret;
- 
-+	i_mark = container_of(fsn_mark, struct inotify_inode_mark, fsn_mark);
-+
- 	ignored_event = fsnotify_create_event(NULL, FS_IN_IGNORED, NULL,
- 					      FSNOTIFY_EVENT_NONE, NULL, 0,
- 					      GFP_NOFS);
- 	if (!ignored_event)
--		return;
--
--	i_mark = container_of(fsn_mark, struct inotify_inode_mark, fsn_mark);
-+		goto skip_send_ignore;
- 
- 	event_priv = kmem_cache_alloc(event_priv_cachep, GFP_NOFS);
- 	if (unlikely(!event_priv))
--		goto skip_send_ignore;
-+		goto skip_send_ignore2;
- 
- 	fsn_event_priv = &event_priv->fsnotify_event_priv_data;
- 
-@@ -548,11 +548,12 @@ void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
- 		inotify_free_event_priv(fsn_event_priv);
- 	}
- 
--skip_send_ignore:
-+skip_send_ignore2:
- 
- 	/* matches the reference taken when the event was created */
- 	fsnotify_put_event(ignored_event);
- 
-+skip_send_ignore:
- 	/* remove this mark from the idr */
- 	inotify_remove_from_idr(group, i_mark);
- 
--- 
-1.7.1
-
+Acked-by: Alan Cox <alan@linux.intel.com>
