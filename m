@@ -1,107 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab1BXXgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 18:36:47 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64016 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756434Ab1BXXgp convert rfc822-to-8bit (ORCPT
+	id S1756607Ab1BXXj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 18:39:27 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:37035 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab1BXXj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 18:36:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=N9Ge4KoHyDhw8ALYwKtbJsdqw/EbOevV/GuEhvJWqrEQ/plqbgygkL6iRcD0LV/My3
-         p2J3DvD7ka3oAEgR0Zl7xvfY/Q6s2xIt9d4zLzPUKELlYtzfmimV3KeKQAfBAwNR6npu
-         6HP1d/KC9aYWWiO57Tr5fKq2169HxsFSJd6Rs=
-MIME-Version: 1.0
-In-Reply-To: <20110221122109.GA23087@legolas.emea.dhcp.ti.com>
-References: <20110215113717.GN2570@legolas.emea.dhcp.ti.com>
-	<4D5A672A.7040000@samsung.com>
-	<4D5A6874.1080705@corscience.de>
-	<20110215115349.GQ2570@legolas.emea.dhcp.ti.com>
-	<4D5A6EEC.5000908@maxwell.research.nokia.com>
-	<AANLkTik+6fguqgH8Bpnpqo7Axmquy3caRMELTZVmuN1j@mail.gmail.com>
-	<20110219150024.GA4487@legolas.emea.dhcp.ti.com>
-	<AANLkTik5dwNZrUxjgjKeAQOsp610d6y_TNGg1b5Vc5Zd@mail.gmail.com>
-	<20110221073640.GA3094@legolas.emea.dhcp.ti.com>
-	<AANLkTinf3Wj=nw_2Sx4r-VSsCH+=fzx-25hynH8hB0d9@mail.gmail.com>
-	<20110221122109.GA23087@legolas.emea.dhcp.ti.com>
-Date: Fri, 25 Feb 2011 01:36:44 +0200
-Message-ID: <AANLkTi=4L38=_a4hFyWqBZL1-CPDyp8t3GfW-M1u8wJF@mail.gmail.com>
-Subject: Re: [PATCH resend] video: omap24xxcam: Fix compilation
-From: David Cohen <dacohen@gmail.com>
-To: balbi@ti.com
-Cc: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
-        Thomas Weber <weber@corscience.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-omap@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Tejun Heo <tj@kernel.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Feb 2011 18:39:26 -0500
+From: Thieu Le <thieule@chromium.org>
+To: tyhicks@linux.vnet.ibm.com, kirkland@canonical.com
+Cc: ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org,
+        Thieu Le <thieule@chromium.org>
+Subject: [PATCH] ecryptfs: modify write path to encrypt page in writepage
+Date: Thu, 24 Feb 2011 15:31:26 -0800
+Message-Id: <1298590286-26117-1-git-send-email-thieule@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110224224640.GD8237@boyd.l.tihix.com>
+References: <20110224224640.GD8237@boyd.l.tihix.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 2:21 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Mon, Feb 21, 2011 at 02:09:07PM +0200, David Cohen wrote:
->> On Mon, Feb 21, 2011 at 9:36 AM, Felipe Balbi <balbi@ti.com> wrote:
->> > Hi,
->> >
->> > On Sat, Feb 19, 2011 at 06:04:58PM +0200, David Cohen wrote:
->> >> > I have to disagree. The fundamental problem is the circular dependency
->> >> > between those two files:
->> >> >
->> >> > sched.h uses wait_queue_head_t defined in wait.h
->> >> > wait.h uses TASK_* defined in sched.h
->> >> >
->> >> > So, IMO the real fix would be clear out the circular dependency. Maybe
->> >> > introducing <linux/task.h> to define those TASK_* symbols and include
->> >> > that on sched.h and wait.h
->> >> >
->> >> > Just dig a quick and dirty to try it out and works like a charm
->> >>
->> >> We have 2 problems:
->> >>  - omap24xxcam compilation broken
->> >>  - circular dependency between sched.h and wait.h
->> >>
->> >> To fix the broken compilation we can do what the rest of the kernel is
->> >> doing, which is to include sched.h.
->> >> Then, the circular dependency is fixed by some different approach
->> >> which would probably change *all* current usage of TASK_*.
->> >
->> > considering that 1 is caused by 2 I would fix 2.
->> >
->> >> IMO, there's no need to create a dependency between those issues.
->> >
->> > There's no dependency between them, it's just that the root cause for
->> > this problem is a circular dependency between wait.h and sched.h
->>
->> I did a try to fix this circular dependency and the comment I got was
->> to include sched.h in omap24xxcam.c file:
->> http://marc.info/?l=linux-omap&m=129828637120270&w=2
->>
->> I'm working to remove v4l2 internal device interface from omap24xxcam
->> and then I need this driver's compilation fixed.
->> The whole kernel is including sched.h when wake_up*() macro is used,
->> so this should be our first solution IMO.
->> As I said earlier, no need to make this compilation fix be dependent
->> of wait.h fix (if it's really going to be changed).
->>
->> I think we should proceed with this patch.
->
-> I would wait to hear from Ingo or Peter who are the maintainers for that
-> part, but fine by me.
+Change the write path to encrypt the data only when the page is written to
+disk in ecryptfs_writepage. Previously, ecryptfs encrypts the page in
+ecryptfs_write_end which means that if there are multiple write requests to
+the same page, ecryptfs ends up re-encrypting that page over and over again.
+This patch minimizes the number of encryptions needed.
 
-How about to proceed with this patch?
+Signed-off-by: Thieu Le <thieule@chromium.org>
+---
+ fs/ecryptfs/ecryptfs_kernel.h |    1 -
+ fs/ecryptfs/file.c            |    9 ++++++++-
+ fs/ecryptfs/main.c            |    2 --
+ fs/ecryptfs/mmap.c            |   41 +++++++++++++++++++++++++++--------------
+ fs/ecryptfs/read_write.c      |   12 ++----------
+ fs/ecryptfs/super.c           |    1 -
+ 6 files changed, 37 insertions(+), 29 deletions(-)
 
-Regards,
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index dbc84ed..13517ac 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -297,7 +297,6 @@ struct ecryptfs_inode_info {
+ 	struct inode vfs_inode;
+ 	struct inode *wii_inode;
+ 	struct file *lower_file;
+-	struct mutex lower_file_mutex;
+ 	struct ecryptfs_crypt_stat crypt_stat;
+ };
+ 
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 81e10e6..9f7ce63 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -273,7 +273,14 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+ static int
+ ecryptfs_fsync(struct file *file, int datasync)
+ {
+-	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
++	int rc = 0;
++
++	rc = generic_file_fsync(file, datasync);
++	if (rc)
++		goto out;
++	rc = vfs_fsync(ecryptfs_file_to_lower(file), datasync);
++out:
++	return rc;
+ }
+ 
+ static int ecryptfs_fasync(int fd, struct file *file, int flag)
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 758323a..63e412c 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -122,7 +122,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+ 		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
+ 	int rc = 0;
+ 
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	if (!inode_info->lower_file) {
+ 		struct dentry *lower_dentry;
+ 		struct vfsmount *lower_mnt =
+@@ -138,7 +137,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+ 			inode_info->lower_file = NULL;
+ 		}
+ 	}
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	return rc;
+ }
+ 
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index cc64fca..d36829f 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -62,6 +62,18 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	int rc;
+ 
++	/*
++	 * Refuse to write the page out if we are called from reclaim context
++	 * since our writepage() path may potentially allocate memory when
++	 * calling into the lower fs vfs_write() which may in turn invoke
++	 * us again.
++	 */
++	if (current->flags & PF_MEMALLOC) {
++		redirty_page_for_writepage(wbc, page);
++		rc = 0;
++		goto out;
++	}
++
+ 	rc = ecryptfs_encrypt_page(page);
+ 	if (rc) {
+ 		ecryptfs_printk(KERN_WARNING, "Error encrypting "
+@@ -70,8 +82,8 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+ 		goto out;
+ 	}
+ 	SetPageUptodate(page);
+-	unlock_page(page);
+ out:
++	unlock_page(page);
+ 	return rc;
+ }
+ 
+@@ -486,6 +498,7 @@ static int ecryptfs_write_end(struct file *file,
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+ 		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+ 	int rc;
++	int need_unlock_page = 1;
+ 
+ 	if (crypt_stat->flags & ECRYPTFS_NEW_FILE) {
+ 		ecryptfs_printk(KERN_DEBUG, "ECRYPTFS_NEW_FILE flag set in "
+@@ -512,26 +525,26 @@ static int ecryptfs_write_end(struct file *file,
+ 			"zeros in page with index = [0x%.16lx]\n", index);
+ 		goto out;
+ 	}
+-	rc = ecryptfs_encrypt_page(page);
+-	if (rc) {
+-		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
+-				"index [0x%.16lx])\n", index);
+-		goto out;
+-	}
++	set_page_dirty(page);
++	unlock_page(page);
++	need_unlock_page = 0;
+ 	if (pos + copied > i_size_read(ecryptfs_inode)) {
+ 		i_size_write(ecryptfs_inode, pos + copied);
+ 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
+ 			"[0x%.16llx]\n",
+ 			(unsigned long long)i_size_read(ecryptfs_inode));
++		balance_dirty_pages_ratelimited(mapping);
++		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
++		if (rc) {
++			printk(KERN_ERR "Error writing inode size to metadata; "
++			       "rc = [%d]\n", rc);
++			goto out;
++		}
+ 	}
+-	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
+-	if (rc)
+-		printk(KERN_ERR "Error writing inode size to metadata; "
+-		       "rc = [%d]\n", rc);
+-	else
+-		rc = copied;
++	rc = copied;
+ out:
+-	unlock_page(page);
++	if (need_unlock_page)
++		unlock_page(page);
+ 	page_cache_release(page);
+ 	return rc;
+ }
+diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+index db184ef..85d4309 100644
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -44,15 +44,11 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
+ 	ssize_t rc;
+ 
+ 	inode_info = ecryptfs_inode_to_private(ecryptfs_inode);
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	BUG_ON(!inode_info->lower_file);
+-	inode_info->lower_file->f_pos = offset;
+ 	fs_save = get_fs();
+ 	set_fs(get_ds());
+-	rc = vfs_write(inode_info->lower_file, data, size,
+-		       &inode_info->lower_file->f_pos);
++	rc = vfs_write(inode_info->lower_file, data, size, &offset);
+ 	set_fs(fs_save);
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	mark_inode_dirty_sync(ecryptfs_inode);
+ 	return rc;
+ }
+@@ -234,15 +230,11 @@ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
+ 	mm_segment_t fs_save;
+ 	ssize_t rc;
+ 
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	BUG_ON(!inode_info->lower_file);
+-	inode_info->lower_file->f_pos = offset;
+ 	fs_save = get_fs();
+ 	set_fs(get_ds());
+-	rc = vfs_read(inode_info->lower_file, data, size,
+-		      &inode_info->lower_file->f_pos);
++	rc = vfs_read(inode_info->lower_file, data, size, &offset);
+ 	set_fs(fs_save);
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	return rc;
+ }
+ 
+diff --git a/fs/ecryptfs/super.c b/fs/ecryptfs/super.c
+index 3042fe1..15c969e 100644
+--- a/fs/ecryptfs/super.c
++++ b/fs/ecryptfs/super.c
+@@ -55,7 +55,6 @@ static struct inode *ecryptfs_alloc_inode(struct super_block *sb)
+ 	if (unlikely(!inode_info))
+ 		goto out;
+ 	ecryptfs_init_crypt_stat(&inode_info->crypt_stat);
+-	mutex_init(&inode_info->lower_file_mutex);
+ 	inode_info->lower_file = NULL;
+ 	inode = &inode_info->vfs_inode;
+ out:
+-- 
+1.7.3.1
 
-David
-
->
-> --
-> balbi
->
