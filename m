@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab1BXOzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 09:55:43 -0500
-Received: from mga14.intel.com ([143.182.124.37]:22357 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754324Ab1BXOzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 09:55:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,218,1297065600"; 
-   d="scan'208";a="393516721"
-Subject: Re: [PATCH -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110224142523.GJ5818@one.firstfloor.org>
-References: <1298555968.2220.15.camel@localhost>
-	 <20110224140214.GI5818@one.firstfloor.org>
-	 <1298556684.2220.26.camel@localhost>
-	 <20110224142523.GJ5818@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Feb 2011 22:55:38 +0800
-Message-Id: <1298559338.2220.48.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755565Ab1BXOz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 09:55:58 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65148 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab1BXOzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 09:55:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CiQui8kqgB0ozru7BSwRG8oWCiPIHxq+Vo9QJa8iE/2q/3y/EU2FvCeTSxZ2bQjUWz
+         1z+XI1ERv8QCUOeIXVFvMsFgqWOT8q7hjFRV0bRLUZkqHVpsstb+G6gnC5iU+f+xY+7A
+         mWQOCgGt1/59w3BuyzRUjDJA5ghIT7J5MDRW0=
+Date: Thu, 24 Feb 2011 15:54:38 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        kovariadam@gmail.com, florian@mickler.org, rjw@sisk.pl,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: fix refcounting in BLKBSZSET
+Message-ID: <20110224145438.GO7840@htj.dyndns.org>
+References: <E1PscUb-0004a3-Qi@pomaz-ex.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1PscUb-0004a3-Qi@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 22:25 +0800, Andi Kleen wrote:
-> On Thu, Feb 24, 2011 at 10:11:24PM +0800, Lin Ming wrote:
-> > On Thu, 2011-02-24 at 22:02 +0800, Andi Kleen wrote:
-> > > > +	[ C(OP_READ) ] = {
-> > > > +		[ C(RESULT_ACCESS) ] = 0x04d1, /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
-> > > > +		[ C(RESULT_MISS)   ] = 0x0,
-> > > > +	},
-> > > > +	[ C(OP_WRITE) ] = {
-> > > > +		[ C(RESULT_ACCESS) ] = 0x0424, /* L2_RQSTS.RFO_HITS */
-> > > > +		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS */
-> > > 
-> > > No! You really need offcore here. L2 is not LLC!!!
-> > > See the offcore patchkit which fixes this for Nehalem.
-> > 
-> > Yes, I know that.
-> > But I write it like this for now since the offcore patchkit has not been
-> > merged yet.
+On Thu, Feb 24, 2011 at 03:48:33PM +0100, Miklos Szeredi wrote:
+> [and lkml cc-d too]
 > 
-> It's just wrong. Please don't merge more bugs.
-
-OK. I'll fix it and include this patch in the offcore patchkit.
-
+> This fixes bug 29202 in the 2.6.38 regression list.
 > 
-> -Andi
+> Please apply.
 > 
+> Thanks,
+> Miklos
+> 
+> ----
+> Subject: block: fix refcounting in BLKBSZSET
+> 
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Adam Kovari and others reported that disconnecting an USB drive with
+> an ntfs-3g filesystem would cause "kernel BUG at fs/inode.c:1421!" to
+> be triggered.
+> 
+> The BUG could be traced back to ioctl(BLKBSZSET), which would
+> erroneously decrement the refcount on the bdev.  This is because
+> blkdev_get() expects the refcount to be already incremented and either
+> returns success or decrements the refcount and returns an error.
+> 
+> The bug was introduced by e525fd89 (block: make blkdev_get/put()
+> handle exclusive access), which didn't take into account this behavior
+> of blkdev_get().
+> 
+> Reported-by: Adam Kovari <kovariadam@gmail.com>
+> CC: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 
+Ah, it was me after all.  Sorry about that.
 
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
