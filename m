@@ -1,589 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab1BXQsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:48:19 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:48137 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756479Ab1BXQsP (ORCPT
+	id S1755892Ab1BXQwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:52:16 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46539 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab1BXQwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:48:15 -0500
-Date: Thu, 24 Feb 2011 17:48:07 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Dirk Eibach <eibach@gdsys.de>
-Cc: linux-kernel@vger.kernel.org, guenter.roeck@ericsson.com,
-        lm-sensors@lm-sensors.org, rdunlap@xenotime.net,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3] hwmon: Add support for Texas Instruments ADS1015
-Message-ID: <20110224174807.41c7597f@endymion.delvare>
-In-Reply-To: <1298024158-21076-1-git-send-email-eibach@gdsys.de>
-References: <20110217134203.0556a7ab@endymion.delvare>
- <1298024158-21076-1-git-send-email-eibach@gdsys.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Feb 2011 11:52:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=iOAUzvjB1FdFz3BSdw6lsRhco27qYEX+kuX1Wunv3YVDzj/Me3TYz/z5Y9iPZzs3iR
+         tsI306X3ejlIzEW5BHHxOCoRrX8fyed0SEgwr72ei2/zSpXSwf9lGi7JG67Ne/WAgiTk
+         FdZSThQWnnCWVlmWYEfn0AC2pnxToGXhf55Rc=
+Date: Thu, 24 Feb 2011 17:50:17 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf lock: clean the options for perf record
+Message-ID: <20110224165014.GB1840@nowhere>
+References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+ <4D63D685.2010401@dcl.info.waseda.ac.jp>
+ <1298389415.2217.243.camel@twins>
+ <20110222182206.GB1799@nowhere>
+ <4D648A65.2040107@dcl.info.waseda.ac.jp>
+ <4D667D60.5010903@dcl.info.waseda.ac.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D667D60.5010903@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dirk,
-
-Sorry for the late reply.
-
-On Fri, 18 Feb 2011 11:15:58 +0100, Dirk Eibach wrote:
-> Signed-off-by: Dirk Eibach <eibach@gdsys.de>
-> ---
-> Changes since v1:
-> - fixed/extended Documentation
-> - removed unused register definitions
-> - hardcoded PGA fullscale table size
-> - made sure patch applies against v2.6.38-rc4
-> - reordered functions to avoid forward declaration
-> - results from i2c_smbus_read_word_data() are handled correctly
-> - moved locking into ads1015_read_value()
-> - removed unnecessray clearing of bit
-> - proper error handling in ads1015_read_value()
-> - use DIV_ROUND_CLOSEST for scaling result
-> - removed detect()
+On Fri, Feb 25, 2011 at 12:46:40AM +0900, Hitoshi Mitake wrote:
+> On 2011年02月23日 13:17, Hitoshi Mitake wrote:
+> >On 2011年02月23日 03:22, Frederic Weisbecker wrote:
+> >>On Tue, Feb 22, 2011 at 04:43:35PM +0100, Peter Zijlstra wrote:
+> >>>On Wed, 2011-02-23 at 00:30 +0900, Hitoshi Mitake wrote:
+> >>>>How do you think about it?
+> >>>
+> >>>Most of the lock code (esp the spinlock stuff) is already way over the
+> >>>threshold of sanity, adding to that for some dubious reasons doesn't
+> >>>seem like a good idea.
+> >>>
+> >>>I'm still not at all sure why people want all this lock tracing.
+> >>
+> >>Right, well I can imagine many usecases that could make lock
+> >>tracing bring more value than what lockstat already provides,
+> >>through a tool like perf lock if we enhance it.
+> >>
+> >>We should probably first focus on developing the tooling side
+> >>and make it useful enough that optimizations in the kernel
+> >>side become desirable.
+> >>
+> >
+> >Yes, lockstat only provides the lock usage statistics of
+> >entire of the system. perf lock will be able to provide the partial
+> >information of specified term, or the degree of dependency
+> >between locks.
+> >
 > 
-> Changes since v2:
-> - removed *all* leftovers from detect()
-> - fixed return with mutex held
-> - made sysfs representation configurable
->   (hope this will be the reference implementation for generations to come ;)
-
-Thanks for your continued work on this driver. The changes this time
-are important enough to warrant a full review. Here we go:
-
->  Documentation/hwmon/ads1015 |   72 +++++++++++
->  drivers/hwmon/Kconfig       |   10 ++
->  drivers/hwmon/Makefile      |    1 +
->  drivers/hwmon/ads1015.c     |  295 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/i2c/ads1015.h |   30 +++++
->  5 files changed, 408 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/hwmon/ads1015
->  create mode 100644 drivers/hwmon/ads1015.c
->  create mode 100644 include/linux/i2c/ads1015.h
+> For trial, I created new tracepoint for rwsem and tested.
+> Names of events are rwsem_{acquire, contended, acquired, release},
+> their meanings are similar to lock_{...}.
 > 
-> diff --git a/Documentation/hwmon/ads1015 b/Documentation/hwmon/ads1015
-> new file mode 100644
-> index 0000000..2494e99
-> --- /dev/null
-> +++ b/Documentation/hwmon/ads1015
-> @@ -0,0 +1,72 @@
-> +Kernel driver ads1015
-> +=====================
-> +
-> +Supported chips:
-> +  * Texas Instruments ADS1015
-> +    Prefix: 'ads1015'
-> +    Datasheet: Publicly available at the Texas Instruments website :
-> +               http://focus.ti.com/lit/ds/symlink/ads1015.pdf
-> +
-> +Authors:
-> +        Dirk Eibach, Guntermann & Drunck GmbH <eibach@gdsys.de>
-> +
-> +Description
-> +-----------
-> +
-> +This driver implements support for the Texas Instruments ADS1015.
-> +
-> +This device is a 12-bit A-D converter with 4 inputs.
-> +
-> +The inputs can be used single ended or in certain differential combinations.
-> +
-> +The inputs are mapped to 8 sysfs input files in0_input - in7_input.
-> +The mapping can be configured using platform data or devicetree.
-> +
-> +Data sources for configuration:
-> +0: Voltage over AIN0 and AIN1.
-> +1: Voltage over AIN0 and AIN3.
-> +2: Voltage over AIN1 and AIN3.
-> +3: Voltage over AIN2 and AIN3.
-> +4: Voltage over AIN0 and GND.
-> +5: Voltage over AIN1 and GND.
-> +6: Voltage over AIN2 and GND.
-> +7: Voltage over AIN3 and GND.
-> +Any other value: disable
-> +
-> +By default in0_input is mapped to source 0, in1_input to source 1 and so on.
+> I traced perf bench sched messaging and result was,
+> 
+> mitake@x201i:~/linux/.../tools/perf% ./perf bench sched messaging
+> # Running sched/messaging benchmark...
+> # 20 sender and receiver processes per group
+> # 10 groups == 400 processes run
+> 
+>      Total time: 1.252 [sec]
+> mitake@x201i:~/linux/.../tools/perf% sudo ./perf record -R -m 1024
+> -c 1 -e rwsem:rwsem_acquire -e
+> rwsem:rwsem_release,rwsem:rwsem_contended,rwsem:rwsem_acquired
+> ./perf bench sched messaging
+> # Running sched/messaging benchmark...
+> # 20 sender and receiver processes per group
+> # 10 groups == 400 processes run
+> 
+>      Total time: 1.332 [sec]
+> [ perf record: Woken up 4 times to write data ]
+> [ perf record: Captured and wrote 13.495 MB perf.data (~589597 samples) ]
+> 
+> raw execution of sched messaging was 1.252 sec, and traced version
+> was 1.332 sec. This overhead is far smaller than the overhead of
+> current lock tracepoints.
 
-I see that you went for dynamic naming of sysfs files. I would have
-used a different strategy which would make the code much more simple.
-You can keep static sysfs file names, and instantiate them
-conditionally. Maybe you were not aware of this, but it is perfectly
-fine for an hwmon device to number its inputs non-linearly, and as a
-matter of fact many hwmon driver do this.
+Probably because rwsem are only a small bunch of locks among all others.
+If you were to trace only spinlocks, I bet you'd find a significant
+overhead pretty close to a wide lock tracing.
 
-For example, a setup where each input is used single-ended would result
-in a hwmon device with attributes in4_input, in5_input, in6_input and
-in7_input.
+> I think that it is possible to write some meaningful tools
+> like reader/writer ratio measuring. If something can be written,
+> I'll post it.
 
-> +
-> +Platform Data
-> +-------------
-> +
-> +In linux/i2c/ads1015.h platform data is defined as:
-> +
-> +struct ads1015_platform_data {
-> +	int exported_channels[8];
-> +};
-> +
-> +exported_channels contains the data sources for the 8 sysfs input files.
-> +
-> +Example:
-> +struct ads1015_platform_data data = {
-> +	4, 2, -1, -1, -1, -1, -1, -1 };
-> +
-> +In this case only in0_input and in1_input would be created.
-> +in0_input would give the voltage over AIN0 and GND.
-> +in0_input would give the voltage over AIN1 and AIN3.
+Consider the situation from another angle: do you think that a lock
+profiling on top of lock types is a kind of workflow that will be
+used?
 
-With my proposal, the platform data could be a single bitfield, where
-each bit says enable or disable the corresponding sysfs attribute. For
-example:
+The primary kind of workflow I have in mind for lock tracing is:
 
-struct ads1015_platform_data {
-	unsigned int channels;
-};
+1) Let's look at the big picture, trace all locks and find those
+that seem to be an issue (too much waiting time, too much
+acquire time, etc...).
 
-Example:
-struct ads1015_platform_data data = {
-	.channels = (1 << 4) | (1 << 2)
-}
+2) Pick one we are interested in and dig into details
 
-The only drawback of my proposal is that you can't create the
-attributes by group, you have to create them individually. Not a
-problem in practice though. I suggest that you give it a try and see
-what you prefer.
+But I can't figure out any common worklow that would be based
+on mutex only tracing, or rwsem only tracing.
+Or actually I can imagine such worklow. Every kind of lock
+type have their own scale of latencies so it's interesting
+to group the analysis per family. But I rather see
+that as a secondary worklow. Once we'll have more finegrained
+analysis on the tools for example, like comparison between
+read and write latencies on some rwsems and so.
 
-> +
-> +Devicetree
-> +----------
-> +
-> +The ads1015 node may have an "exported-channels" property with 8 integer
-> +values. The 8 values are the data sources for the 8 sysfs input files.
-> +
-> +Example:
-> +ads1015@49 {
-> +	compatible = "ti,ads1015";
-> +	reg = <0x49>;
-> +	exported-channels = < 4 2 0xff 0xff 0xff 0xff 0xff 0xff >;
-> +};
-> +
-> +In this case only in0_input and in1_input would be created.
-> +in0_input would give the voltage over AIN0 and GND.
-> +in0_input would give the voltage over AIN1 and AIN3.
-
-You meant "in1_input" the second time.
-
-Do you have an actual need for this? I think devicetree attributes have
-to be discussed and documented appropriately? I admit I am not too
-familiar with this.
-
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index 773e484..7e247f7 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -871,6 +871,16 @@ config SENSORS_SMSC47B397
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called smsc47b397.
->  
-> +config SENSORS_ADS1015
-> +	tristate "Texas Instruments ADS1015"
-> +	depends on I2C
-> +	help
-> +	  If you say yes here you get support for Texas Instruments ADS1015
-> +	  12-bit 4-input ADC device.
-> +
-> +	  This driver can also be built as a module.  If so, the module
-> +	  will be called ads1015.
-> +
->  config SENSORS_ADS7828
->  	tristate "Texas Instruments ADS7828"
->  	depends on I2C
-> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> index dde02d9..aae4036 100644
-> --- a/drivers/hwmon/Makefile
-> +++ b/drivers/hwmon/Makefile
-> @@ -29,6 +29,7 @@ obj-$(CONFIG_SENSORS_ADM1026)	+= adm1026.o
->  obj-$(CONFIG_SENSORS_ADM1029)	+= adm1029.o
->  obj-$(CONFIG_SENSORS_ADM1031)	+= adm1031.o
->  obj-$(CONFIG_SENSORS_ADM9240)	+= adm9240.o
-> +obj-$(CONFIG_SENSORS_ADS1015)	+= ads1015.o
->  obj-$(CONFIG_SENSORS_ADS7828)	+= ads7828.o
->  obj-$(CONFIG_SENSORS_ADS7871)	+= ads7871.o
->  obj-$(CONFIG_SENSORS_ADT7411)	+= adt7411.o
-> diff --git a/drivers/hwmon/ads1015.c b/drivers/hwmon/ads1015.c
-> new file mode 100644
-> index 0000000..cf7aff4
-> --- /dev/null
-> +++ b/drivers/hwmon/ads1015.c
-> @@ -0,0 +1,295 @@
-> +/*
-> + * ads1015.c - lm_sensors driver for ads1015 12-bit 4-input ADC
-> + * (C) Copyright 2010
-> + * Dirk Eibach, Guntermann & Drunck GmbH <eibach@gdsys.de>
-> + *
-> + * Based on the ads7828 driver by Steve Hardy.
-> + *
-> + * Datasheet available at: http://focus.ti.com/lit/ds/symlink/ads1015.pdf
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/jiffies.h>
-> +#include <linux/i2c.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-sysfs.h>
-> +#include <linux/err.h>
-> +#include <linux/mutex.h>
-
-You have to include <linux/of.h> for device tree support.
-
-> +#include <linux/i2c/ads1015.h>
-> +
-> +/* ADS1015 registers */
-> +enum {
-> +	ADS1015_CONVERSION = 0,
-> +	ADS1015_CONFIG = 1,
-> +};
-> +
-> +/* PGA fullscale voltages in mV */
-> +static const unsigned int fullscale_table[8] = {
-> +	6144, 4096, 2048, 1024, 512, 256, 256, 256 };
-> +
-> +/* Default set of exported channels */
-> +#define ADS1015_CONFIG_CHANNELS 8
-> +static const int default_channels[ADS1015_CONFIG_CHANNELS] = {
-> +	0, 1, 2, 3, 4, 5, 6, 7 };
-> +
-> +/* strings for sysfs */
-> +static const char *input_names[8] = {
-> +	"in0_input",
-> +	"in1_input",
-> +	"in2_input",
-> +	"in3_input",
-> +	"in4_input",
-> +	"in5_input",
-> +	"in6_input",
-> +	"in7_input"
-> +};
-> +
-> +struct ads1015_data {
-> +	struct device *hwmon_dev;
-> +	struct mutex update_lock; /* mutex protect updates */
-> +	struct sensor_device_attribute attr[ADS1015_CONFIG_CHANNELS];
-> +	struct attribute *attr_table[ADS1015_CONFIG_CHANNELS + 1];
-> +	struct attribute_group attr_group;
-> +};
-> +
-> +static s32 ads1015_read_reg(struct i2c_client *client, unsigned int reg)
-> +{
-> +	s32 data = i2c_smbus_read_word_data(client, reg);
-> +
-> +	return (data < 0) ? data : swab16(data);
-> +}
-> +
-> +static s32 ads1015_write_reg(struct i2c_client *client, unsigned int reg,
-> +			     u16 val)
-> +{
-> +	return i2c_smbus_write_word_data(client, reg, swab16(val));
-> +}
-> +
-> +static int ads1015_read_value(struct i2c_client *client, unsigned int channel,
-> +			      int *value)
-> +{
-> +	u16 config;
-> +	s16 conversion;
-> +	unsigned int pga;
-> +	int fullscale;
-> +	unsigned int k;
-> +	struct ads1015_data *data = i2c_get_clientdata(client);
-> +	int res;
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	/* get fullscale voltage */
-> +	res = ads1015_read_reg(client, ADS1015_CONFIG);
-> +	if (res < 0)
-> +		goto err_unlock;
-> +	config = res;
-> +	pga = (config >> 9) & 0x0007;
-> +	fullscale = fullscale_table[pga];
-
-You only read the fullscale value. Now that we have platform data
-attached to the device, don't you think it would make sense to let the
-user set it, possibly even define different values for each "virtual
-channel"? I can imagine that different scaling factors make sense for
-single-ended vs. differential measurements, or even for different
-single-ended inputs.
-
-This is just a question, BTW, this feature can be added later if needed.
-
-> +
-> +	/* set channel and start single conversion */
-> +	config &= ~(0x0007 << 12);
-> +	config |= (1 << 15) | (1 << 8) | (channel & 0x0007) << 12;
-> +
-> +	/* wait until conversion finished */
-> +	res = ads1015_write_reg(client, ADS1015_CONFIG, config);
-> +	if (res < 0)
-> +		goto err_unlock;
-> +	for (k = 0; k < 5; ++k) {
-> +		schedule_timeout(msecs_to_jiffies(1));
-> +		res = ads1015_read_reg(client, ADS1015_CONFIG);
-> +		if (res < 0)
-> +			goto err_unlock;
-> +		config = res;
-> +		if (config & (1 << 15))
-> +			break;
-> +	}
-> +	if (k == 5) {
-> +		res = -EIO;
-> +		goto err_unlock;
-> +	}
-> +
-> +	res = ads1015_read_reg(client, ADS1015_CONVERSION);
-> +	if (res < 0)
-> +		goto err_unlock;
-> +	conversion = res;
-> +
-> +	mutex_unlock(&data->update_lock);
-> +
-> +	*value = DIV_ROUND_CLOSEST(conversion * fullscale, 0x7ff0);
-> +
-> +	return 0;
-> +
-> +err_unlock:
-> +	mutex_unlock(&data->update_lock);
-> +	return res;
-> +}
-> +
-> +/* sysfs callback function */
-> +static ssize_t show_in(struct device *dev, struct device_attribute *da,
-> +	char *buf)
-> +{
-> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	int in;
-> +	int res;
-> +
-> +	res = ads1015_read_value(client, attr->index, &in);
-> +
-> +	return (res < 0) ? res : sprintf(buf, "%d\n", in);
-> +}
-> +
-> +/*
-> + * Driver interface
-> + */
-> +
-> +static int ads1015_remove(struct i2c_client *client)
-> +{
-> +	struct ads1015_data *data = i2c_get_clientdata(client);
-> +	hwmon_device_unregister(data->hwmon_dev);
-> +	sysfs_remove_group(&client->dev.kobj, &data->attr_group);
-> +	kfree(data);
-> +	return 0;
-> +}
-> +
-> +static void ads1015_get_exported_channels(struct i2c_client *client,
-> +					  int *exported_channels)
-> +{
-> +	struct ads1015_platform_data *pdata = dev_get_platdata(&client->dev);
-> +#ifdef CONFIG_OF
-> +	struct device_node *np = client->dev.of_node;
-> +	const int *of_channels;
-> +	int of_channels_size;
-> +#endif
-> +
-> +	/* prefer platform data */
-> +	if (pdata) {
-> +		memcpy(exported_channels, pdata->exported_channels,
-> +		       sizeof(default_channels));
-> +		return;
-> +	}
-> +
-> +#ifdef CONFIG_OF
-> +	/* fallback on OF */
-> +	of_channels = of_get_property(np, "exported-channels",
-> +				      &of_channels_size);
-> +	if (of_channels && (of_channels_size == sizeof(default_channels))) {
-> +		memcpy(exported_channels, of_channels,
-> +		       sizeof(default_channels));
-> +		return;
-> +	}
-> +#endif
-> +
-> +	/* fallback on default configuration */
-> +	memcpy(exported_channels, default_channels, sizeof(default_channels));
-> +}
-
-Why don't you just return a pointer to the data? You only need the data
-during probe and you make no changes to it, so I see no need to copy
-the data.
-
-> +
-> +/* create sysfs attribute according to channel setup */
-> +static struct attribute *ads1015_export_channel(struct i2c_client *client,
-> +						unsigned int input, int channel)
-> +{
-> +	struct ads1015_data *data = i2c_get_clientdata(client);
-> +	struct sensor_device_attribute attr =
-> +		SENSOR_ATTR(input, S_IRUGO, show_in, NULL, channel);
-> +
-> +	attr_name(attr.dev_attr) = input_names[input];
-> +
-> +	memcpy(&data->attr[input], &attr, sizeof(attr));
-> +
-> +	return &data->attr[input].dev_attr.attr;
-> +}
-> +
-> +static int ads1015_probe(struct i2c_client *client,
-> +			 const struct i2c_device_id *id)
-> +{
-> +	struct ads1015_data *data;
-> +	int err;
-> +	int exported_channels[ADS1015_CONFIG_CHANNELS];
-> +	unsigned int k;
-> +	unsigned int act_attr = 0;
-
-"act"?
-
-> +
-> +	data = kzalloc(sizeof(struct ads1015_data), GFP_KERNEL);
-> +	if (!data) {
-> +		err = -ENOMEM;
-> +		goto exit;
-> +	}
-> +
-> +	i2c_set_clientdata(client, data);
-> +	mutex_init(&data->update_lock);
-> +
-> +	/* Register sysfs hooks */
-> +	data->attr_group.attrs = data->attr_table;
-> +	ads1015_get_exported_channels(client, exported_channels);
-> +	for (k = 0; k < ADS1015_CONFIG_CHANNELS; ++k) {
-> +		int channel = exported_channels[k];
-> +		if ((channel < 0) || (channel > 7))
-
-You don't need all these parentheses.
-
-> +			continue;
-
-Is there any benefit in continuing here, as opposed to breaking?
-Breaking would let you use k below to index data->attr_table, instead
-of tracking act_attr separately.
-
-> +		data->attr_table[act_attr++] =
-> +			ads1015_export_channel(client, k, channel);
-> +	}
-> +	err = sysfs_create_group(&client->dev.kobj, &data->attr_group);
-> +	if (err)
-> +		goto exit_free;
-> +
-> +	data->hwmon_dev = hwmon_device_register(&client->dev);
-> +	if (IS_ERR(data->hwmon_dev)) {
-> +		err = PTR_ERR(data->hwmon_dev);
-> +		goto exit_remove;
-> +	}
-> +
-> +	return 0;
-> +
-> +exit_remove:
-> +	sysfs_remove_group(&client->dev.kobj, &data->attr_group);
-> +exit_free:
-> +	kfree(data);
-> +exit:
-> +	return err;
-> +}
-> +
-> +static const struct i2c_device_id ads1015_id[] = {
-> +	{ "ads1015", 0 },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, ads1015_id);
-> +
-> +static struct i2c_driver ads1015_driver = {
-> +	.driver = {
-> +		.name = "ads1015",
-> +	},
-> +	.probe = ads1015_probe,
-> +	.remove = ads1015_remove,
-> +	.id_table = ads1015_id,
-> +};
-> +
-> +static int __init sensors_ads1015_init(void)
-> +{
-> +	return i2c_add_driver(&ads1015_driver);
-> +}
-> +
-> +static void __exit sensors_ads1015_exit(void)
-> +{
-> +	i2c_del_driver(&ads1015_driver);
-> +}
-> +
-> +MODULE_AUTHOR("Dirk Eibach <eibach@gdsys.de>");
-> +MODULE_DESCRIPTION("ADS1015 driver");
-> +MODULE_LICENSE("GPL");
-> +
-> +module_init(sensors_ads1015_init);
-> +module_exit(sensors_ads1015_exit);
-> diff --git a/include/linux/i2c/ads1015.h b/include/linux/i2c/ads1015.h
-> new file mode 100644
-> index 0000000..152bf5f
-> --- /dev/null
-> +++ b/include/linux/i2c/ads1015.h
-> @@ -0,0 +1,30 @@
-> +/*
-> + * Platform Data for ADS1015 12-bit 4-input ADC
-> + * (C) Copyright 2010
-> + * Dirk Eibach, Guntermann & Drunck GmbH <eibach@gdsys.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> + */
-> +
-> +#ifndef LINUX_ADS1015_H
-> +#define LINUX_ADS1015_H
-> +
-> +#include <linux/types.h>
-
-You don't use anything from that header file.
-
-> +
-> +struct ads1015_platform_data {
-> +	int exported_channels[8];
-> +};
-> +
-> +#endif /* LINUX_ADS1015_H */
-
-
--- 
-Jean Delvare
+So once we have some such finegrained and useful features in the
+tooling side, then justifying such change in the kernel is going
+to be much more uncontroversial.
