@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab1BXF4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 00:56:46 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57837 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab1BXF4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 00:56:45 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 24 Feb 2011 14:50:16 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Daisuke Nishimura <nishmura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: more mem_cgroup_uncharge batching
-Message-Id: <20110224145016.794247a0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LSU.2.00.1102232139560.2239@sister.anvils>
-References: <alpine.LSU.2.00.1102232139560.2239@sister.anvils>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753016Ab1BXGCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 01:02:41 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36497 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752106Ab1BXGCj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 01:02:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110224165328.46c1169b@notabene.brown>
+References: <20110224165328.46c1169b@notabene.brown>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 23 Feb 2011 22:01:49 -0800
+Message-ID: <AANLkTinm95OYw2Sj0DuABTiG6eWzePcfAZyxOE0c4GsT@mail.gmail.com>
+Subject: Re: [PULL REQUEST] md and related patches for 2.6.38
+To: NeilBrown <neilb@suse.de>
+Cc: "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Patterson <andrew.patterson@hp.com>,
+        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011 21:44:33 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+On Wed, Feb 23, 2011 at 9:53 PM, NeilBrown <neilb@suse.de> wrote:
+>
+>  The most noteworthy is :
+>       Fix over-zealous flush_disk when changing device size.
+>
+>  which I include below in full.
 
-> It seems odd that truncate_inode_pages_range(), called not only when
-> truncating but also when evicting inodes, has mem_cgroup_uncharge_start
-> and _end() batching in its second loop to clear up a few leftovers, but
-> not in its first loop that does almost all the work: add them there too.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+Gah.
 
-Thank you.
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Why did you do that butt-ugly "__invalidate_device2()"?
 
+There are something like three users of that existing
+__invalidate_device() function, it would have made for a smaller and
+cleaner patch to just fix them all, rather than change the calling
+convention, create that ugly "2" function, and add the wrapper
+function.
+
+It's _doubly_ crazy, because that's exactly what you did to
+"invalidate_inodes()", so it has this crazy mix of "change one
+function" and "try to maintain another function unchanged".
+
+Why?
+
+                 Linus
