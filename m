@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab1BXPOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:14:00 -0500
-Received: from mail.aknet.ru ([78.158.192.28]:52065 "EHLO mail.aknet.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035Ab1BXPN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:13:57 -0500
-Message-ID: <4D6675B0.2010700@aknet.ru>
-Date: Thu, 24 Feb 2011 18:13:52 +0300
-From: Stas Sergeev <stsp@aknet.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1754832Ab1BXPRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:17:19 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39578 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542Ab1BXPRR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 10:17:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DkybzNTOxwZd5j4zolsFAMVyslV/lmTaS/0s/G0LyVefQGM+KwTtA0HBIeMmKSBma4
+         X0ybQ0fD6eYpjv6ASSbq9uvsFEJ/zMQIWHVscFtfuWhmcWP0CXgObz0dzsdMbzm0MKV4
+         9P6QpmGb0RLhtLQ2VBhvOSyaGHdqMcYJ1qGd0=
+Date: Thu, 24 Feb 2011 16:17:01 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Dominik Klein <dk@in-telegence.net>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        libvir-list@redhat.com
+Subject: Re: Is it a workqueue related issue in 2.6.37 (Was: Re: [libvirt]
+ blkio cgroup [solved])
+Message-ID: <20110224151701.GQ7840@htj.dyndns.org>
+References: <4D6222A8.6090303@in-telegence.net>
+ <20110221184442.GM6428@redhat.com>
+ <4D63BA3B.7070809@in-telegence.net>
+ <20110222152426.GD28269@redhat.com>
+ <20110222190953.GF28269@redhat.com>
+ <4D650D7E.4050908@in-telegence.net>
+ <4D662248.6040405@in-telegence.net>
+ <20110224142303.GA18494@redhat.com>
+ <20110224143105.GL7840@htj.dyndns.org>
+ <4D66720E.70102@in-telegence.net>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [path][rfc] add PR_DETACH prctl command
-References: <4D6510A3.90905@aknet.ru> <20110223191442.GA717@redhat.com> <4D656F87.3090005@aknet.ru> <20110224132906.GA15733@redhat.com>
-In-Reply-To: <20110224132906.GA15733@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D66720E.70102@in-telegence.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-24.02.2011 16:29, Oleg Nesterov wrote:
->> And I really think there is no other
->> way to daemonize the process with threads, than to use something
->> like this patch, or is there?
-> Depends on what "daemonize" means. Even with this patch, setsid()
-> after PR_DETACH can fail because we do not change the pids and
-> the caller can still be pgrp leader.
-Yes, I am using TIOCNOTTY ioctl instead.
-It doesn't detach the entire group from tty though, but the plan
-is to implement also TIOCNOTTY_GRP, in case PR_DETACH is done.
+On Thu, Feb 24, 2011 at 03:58:22PM +0100, Dominik Klein wrote:
+> Hi
+> 
+> > Hmmm...  Maybe the following commit?
+> > 
+> > commit 7576958a9d5a4a677ad7dd40901cdbb6c1110c98
+> 
+> Unfortunately not. This does not fix it for me.
+> 
+> Vivek introduced me to git bisect and I will try to do that tomorrow to
+> find the changeset.
 
-> And. What if the parent of PR_DETACH caller blocks or ignores
-> SIGCHLD or simply doesn't call do_wait()? The caller can run with
-> PR_DETACH set without any effect "forever".
-I am currently rewriting the patch to solve this all.
-What I am trying to do now, is to reparent directly in prctl(),
-but delay the list_move_tail(&p->sibling, &p->real_parent->children);
-to the wait() call. If this is a feasible solution, I'll post the new patch.
+Maybe watching what the workqueue is doing using the following trace
+events could be helpful.
 
-> So, to be honest, I do not think this idea will be accepted, and I don't
-> really understand your motivation. But once again, I never argue with the
-> "we need this feature" requests, no need to convince me.
-Lets see if the clean implementation is possible first. :)
+# grep workqueue /sys/kernel/debug/tracing/available_events
+workqueue:workqueue_insertion
+workqueue:workqueue_execution
+workqueue:workqueue_creation
+workqueue:workqueue_destruction
 
-> The problem is that ptrace uses this ->exit_code member as well.
-> Suppose that the (ptraced) task calls PR_DETACH and, say, recieves
-> a signal after that. See ptrace_signal().
-Also do_signal_stop() seems to alter it.
-Do you mean right now it can't happen that multiple events
-alter the exit_code, and the parent notices only the last one?
-In this case I need to add a separate variable.
+Thanks.
 
-> I understand why you added PF_EXITING. And, once again, this is not
-> right afaics. The current condition is more or less "random" and mostly
-> historical, although correct. If we want to take PF_EXITING into account,
-> we should just add BUG_ON(!(tsk->flags&  PF_EXITING)). IOW, it is just
-> wrong to call this function unless this tsk exits.
-OK, I'll address also this.
-
-Thanks for your time, I am hoping to post the patch that addresses
-the pointed problems.
+-- 
+tejun
