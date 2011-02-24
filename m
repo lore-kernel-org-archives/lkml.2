@@ -1,151 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1BXOzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 09:55:20 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:5461 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab1BXOzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753852Ab1BXOzQ (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Feb 2011 09:55:16 -0500
-X-SpamScore: -2
-X-BigFish: VPS-2(zz4015Lzz1202hzz8275eh8275bh8275dha1495iz32i637h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LH4MPM-01-AZ3-02
-X-M-MSG: 
-Date: Thu, 24 Feb 2011 15:53:46 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: <linux-kernel@vger.kernel.org>, Manoj Iyer <manoj.iyer@canonical.com>,
-        Andre Przywara <andre.przywara@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] x86, quirk: Fix polarity for IRQ0 pin2 override on SB800
-Message-ID: <20110224145346.GD3658@alberich.amd.com>
+Received: from iolanthe.rowland.org ([192.131.102.54]:43004 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751835Ab1BXOzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 09:55:13 -0500
+Date: Thu, 24 Feb 2011 09:55:12 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: btusb autosuspend (was Re: Linux 2.6.38-rc6)
+In-Reply-To: <20110224004333.GA22698@srcf.ucam.org>
+Message-ID: <Pine.LNX.4.44L0.1102240953320.2084-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some SB800 systems polarity for IOAPIC pin2 is wrongly specified as
-low active by BIOS. This caused system hangs after resume from S3 when
-HPET was used in one-shot mode on such systems because a timer
-interrupt was missed (HPET signal is high active).
+On Thu, 24 Feb 2011, Matthew Garrett wrote:
 
-For more details see http://marc.info/?l=linux-kernel&m=129623757413868
+> On Wed, Feb 23, 2011 at 04:25:23PM -0800, Linus Torvalds wrote:
+> > Hmm. Is there any reason we shouldn't revert commit
+> > 556ea928f78a390fe16ae584e6433dff304d3014 given the regression?
+> 
+> I think reverting makes sense at the moment. I haven't seen the reported 
+> issues - I need to figure out if this is related to bus powered/self 
+> powered devices, or what else is causing the difference.
+> 
+> > It apparently had problems before too, and caused autosuspend to be
+> > disabled entirely, judging at least by
+> > 
+> >   https://bugzilla.redhat.com/show_bug.cgi?id=528744
+> > 
+> > but there's obviously the comment about "those should be fixed now".
+> > Apparently there are more issues.
+> 
+> Right, we were autosuspending even when there were active connections. 
+> Marcel told me that ought to be fixed and my testing seemed to agree...
+> 
+> > I have no idea whether this is a USB-level issue, or a driver-level
+> > one. There are no comments about exactly what fixed the input device
+> > issues. So I'm adding both BT and USB people to the discussion.
+> 
+> I'll try to get time to look at this this week. Marcel, any ideas?
 
-Cc: stable@kernel.org # 37.x, 32.x
-Tested-by: Manoj Iyer <manoj.iyer@canonical.com>
-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/include/asm/acpi.h    |    1 +
- arch/x86/kernel/acpi/boot.c    |   16 ++++++++++++----
- arch/x86/kernel/early-quirks.c |   16 +++++++---------
- 3 files changed, 20 insertions(+), 13 deletions(-)
+Take a look at Bugzilla #26182.  I tried adding your address to the CC: 
+list, but the only address I could find that Bugzilla would accept 
+wasn't the same as the addresses you normally use.
 
-Hi,
-
-If still possible please consider this for .38
-
-
-Thanks,
-
-Andreas
-
-
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index 211ca3f..4ea15ca 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -88,6 +88,7 @@ extern int acpi_disabled;
- extern int acpi_pci_disabled;
- extern int acpi_skip_timer_override;
- extern int acpi_use_timer_override;
-+extern int acpi_fix_pin2_polarity;
- 
- extern u8 acpi_sci_flags;
- extern int acpi_sci_override_gsi;
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index b3a7113..ff25db6 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -72,6 +72,7 @@ u8 acpi_sci_flags __initdata;
- int acpi_sci_override_gsi __initdata;
- int acpi_skip_timer_override __initdata;
- int acpi_use_timer_override __initdata;
-+int acpi_fix_pin2_polarity __initdata;
- 
- #ifdef CONFIG_X86_LOCAL_APIC
- static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
-@@ -415,10 +416,17 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
- 		return 0;
- 	}
- 
--	if (acpi_skip_timer_override &&
--	    intsrc->source_irq == 0 && intsrc->global_irq == 2) {
--		printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
--		return 0;
-+	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
-+		if (acpi_skip_timer_override) {
-+			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
-+			return 0;
-+		}
-+		if (acpi_fix_pin2_polarity &&
-+		    (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
-+			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
-+			printk(PREFIX "BIOS IRQ0 pin2 override: "
-+			       "forcing polarity to high active.\n");
-+		}
- 	}
- 
- 	mp_override_legacy_irq(intsrc->source_irq,
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 76b8cd9..9efbdcc 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -143,15 +143,10 @@ static void __init ati_bugs(int num, int slot, int func)
- 
- static u32 __init ati_sbx00_rev(int num, int slot, int func)
- {
--	u32 old, d;
-+	u32 d;
- 
--	d = read_pci_config(num, slot, func, 0x70);
--	old = d;
--	d &= ~(1<<8);
--	write_pci_config(num, slot, func, 0x70, d);
- 	d = read_pci_config(num, slot, func, 0x8);
- 	d &= 0xff;
--	write_pci_config(num, slot, func, 0x70, old);
- 
- 	return d;
- }
-@@ -160,13 +155,16 @@ static void __init ati_bugs_contd(int num, int slot, int func)
- {
- 	u32 d, rev;
- 
--	if (acpi_use_timer_override)
--		return;
--
- 	rev = ati_sbx00_rev(num, slot, func);
-+	if (rev >= 0x40)
-+		acpi_fix_pin2_polarity = 1;
-+
- 	if (rev > 0x13)
- 		return;
- 
-+	if (acpi_use_timer_override)
-+		return;
-+
- 	/* check for IRQ0 interrupt swap */
- 	d = read_pci_config(num, slot, func, 0x64);
- 	if (!(d & (1<<14)))
--- 
-1.7.4.rc3
-
-
+Alan Stern
 
