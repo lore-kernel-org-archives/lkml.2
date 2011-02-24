@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab1BXPCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:02:16 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:40129
+	id S1756275Ab1BXPCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:02:24 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:40138
 	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756231Ab1BXPCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:02:14 -0500
-Date: Thu, 24 Feb 2011 15:02:29 +0000
+	id S1756252Ab1BXPCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 10:02:21 -0500
+Date: Thu, 24 Feb 2011 15:02:36 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: Andrew Morton <akpm@osdl.org>, containers@lists.linux-foundation.org,
@@ -15,8 +15,8 @@ Cc: Andrew Morton <akpm@osdl.org>, containers@lists.linux-foundation.org,
         Michael Kerrisk <mtk.manpages@gmail.com>, dhowells@redhat.com,
         oleg@mail.hallyn.com, dlezcano@mail.hallyn.com,
         LSM <linux-security-module@vger.kernel.org>
-Subject: [PATCH 03/10] allow sethostname in a container
-Message-ID: <20110224150229.GC8262@mail.hallyn.com>
+Subject: [PATCH 04/10] allow killing tasks in your own or child userns
+Message-ID: <20110224150236.GD8262@mail.hallyn.com>
 References: <20110224150150.GA8262@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,131 +27,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 Changelog:
-	Feb 23: let clone_uts_ns() handle setting uts->user_ns
-		To do so we need to pass in the task_struct who'll
-		get the utsname, so we can get its user_ns.
-	Feb 23: As per Oleg's coment, just pass in tsk, instead of two
-		of its members.
+	Dec  8: Fixed bug in my check_kill_permission pointed out by
+	        Eric Biederman.
+	Dec 13: Apply Eric's suggestion to pass target task into kill_ok_by_cred()
+	        for clarity
+	Dec 31: address comment by Eric Biederman:
+		don't need cred/tcred in check_kill_permission.
+	Jan  1: use const cred struct.
+	Jan 11: Per Bastian Blank's advice, clean up kill_ok_by_cred().
+	Feb 16: kill_ok_by_cred: fix bad parentheses
+	Feb 23: per akpm, let compiler inline kill_ok_by_cred
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
 ---
- include/linux/utsname.h |    6 +++---
- kernel/nsproxy.c        |    7 +------
- kernel/sys.c            |    2 +-
- kernel/utsname.c        |   12 +++++++-----
- 4 files changed, 12 insertions(+), 15 deletions(-)
+ kernel/signal.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/utsname.h b/include/linux/utsname.h
-index 2c3c0f5..4e5b021 100644
---- a/include/linux/utsname.h
-+++ b/include/linux/utsname.h
-@@ -54,7 +54,7 @@ static inline void get_uts_ns(struct uts_namespace *ns)
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 4e3cff1..12702b4 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -636,13 +636,33 @@ static inline bool si_fromuser(const struct siginfo *info)
  }
  
- extern struct uts_namespace *copy_utsname(unsigned long flags,
--					struct uts_namespace *ns);
-+					  struct task_struct *tsk);
- extern void free_uts_ns(struct kref *kref);
- 
- static inline void put_uts_ns(struct uts_namespace *ns)
-@@ -71,12 +71,12 @@ static inline void put_uts_ns(struct uts_namespace *ns)
- }
- 
- static inline struct uts_namespace *copy_utsname(unsigned long flags,
--					struct uts_namespace *ns)
-+						 struct task_struct *tsk)
- {
- 	if (flags & CLONE_NEWUTS)
- 		return ERR_PTR(-EINVAL);
- 
--	return ns;
-+	return tsk->nsproxy->uts_ns;
- }
- #endif
- 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 034dc2e..b97fc9d 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -69,16 +69,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 		goto out_ns;
- 	}
- 
--	new_nsp->uts_ns = copy_utsname(flags, tsk->nsproxy->uts_ns);
-+	new_nsp->uts_ns = copy_utsname(flags, tsk);
- 	if (IS_ERR(new_nsp->uts_ns)) {
- 		err = PTR_ERR(new_nsp->uts_ns);
- 		goto out_uts;
- 	}
--	if (new_nsp->uts_ns != tsk->nsproxy->uts_ns) {
--		put_user_ns(new_nsp->uts_ns->user_ns);
--		new_nsp->uts_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
--		get_user_ns(new_nsp->uts_ns->user_ns);
--	}
- 
- 	new_nsp->ipc_ns = copy_ipcs(flags, tsk->nsproxy->ipc_ns);
- 	if (IS_ERR(new_nsp->ipc_ns)) {
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 18da702..7a1bbad 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1177,7 +1177,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
- 	int errno;
- 	char tmp[__NEW_UTS_LEN];
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
- 		return -EPERM;
- 	if (len < 0 || len > __NEW_UTS_LEN)
- 		return -EINVAL;
-diff --git a/kernel/utsname.c b/kernel/utsname.c
-index a7b3a8d..4464617 100644
---- a/kernel/utsname.c
-+++ b/kernel/utsname.c
-@@ -31,7 +31,8 @@ static struct uts_namespace *create_uts_ns(void)
-  * @old_ns: namespace to clone
-  * Return NULL on error (failure to kmalloc), new ns otherwise
+ /*
++ * called with RCU read lock from check_kill_permission()
++ */
++static int kill_ok_by_cred(struct task_struct *t)
++{
++	const struct cred *cred = current_cred();
++	const struct cred *tcred = __task_cred(t);
++
++	if (cred->user->user_ns == tcred->user->user_ns &&
++	    (cred->euid == tcred->suid ||
++	     cred->euid == tcred->uid ||
++	     cred->uid  == tcred->suid ||
++	     cred->uid  == tcred->uid))
++		return 1;
++
++	if (ns_capable(tcred->user->user_ns, CAP_KILL))
++		return 1;
++
++	return 0;
++}
++
++/*
+  * Bad permissions for sending the signal
+  * - the caller must hold the RCU read lock
   */
--static struct uts_namespace *clone_uts_ns(struct uts_namespace *old_ns)
-+static struct uts_namespace *clone_uts_ns(struct task_struct *tsk,
-+					  struct uts_namespace *old_ns)
+ static int check_kill_permission(int sig, struct siginfo *info,
+ 				 struct task_struct *t)
  {
- 	struct uts_namespace *ns;
+-	const struct cred *cred, *tcred;
+ 	struct pid *sid;
+ 	int error;
  
-@@ -41,8 +42,7 @@ static struct uts_namespace *clone_uts_ns(struct uts_namespace *old_ns)
+@@ -656,14 +676,8 @@ static int check_kill_permission(int sig, struct siginfo *info,
+ 	if (error)
+ 		return error;
  
- 	down_read(&uts_sem);
- 	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
--	ns->user_ns = old_ns->user_ns;
--	get_user_ns(ns->user_ns);
-+	ns->user_ns = get_user_ns(task_cred_xxx(tsk, user)->user_ns);
- 	up_read(&uts_sem);
- 	return ns;
- }
-@@ -53,8 +53,10 @@ static struct uts_namespace *clone_uts_ns(struct uts_namespace *old_ns)
-  * utsname of this process won't be seen by parent, and vice
-  * versa.
-  */
--struct uts_namespace *copy_utsname(unsigned long flags, struct uts_namespace *old_ns)
-+struct uts_namespace *copy_utsname(unsigned long flags,
-+				   struct task_struct *tsk)
- {
-+	struct uts_namespace *old_ns = tsk->nsproxy->uts_ns;
- 	struct uts_namespace *new_ns;
- 
- 	BUG_ON(!old_ns);
-@@ -63,7 +65,7 @@ struct uts_namespace *copy_utsname(unsigned long flags, struct uts_namespace *ol
- 	if (!(flags & CLONE_NEWUTS))
- 		return old_ns;
- 
--	new_ns = clone_uts_ns(old_ns);
-+	new_ns = clone_uts_ns(tsk, old_ns);
- 
- 	put_uts_ns(old_ns);
- 	return new_ns;
+-	cred = current_cred();
+-	tcred = __task_cred(t);
+ 	if (!same_thread_group(current, t) &&
+-	    (cred->euid ^ tcred->suid) &&
+-	    (cred->euid ^ tcred->uid) &&
+-	    (cred->uid  ^ tcred->suid) &&
+-	    (cred->uid  ^ tcred->uid) &&
+-	    !capable(CAP_KILL)) {
++	    !kill_ok_by_cred(t)) {
+ 		switch (sig) {
+ 		case SIGCONT:
+ 			sid = task_session(t);
 -- 
 1.7.0.4
 
