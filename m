@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab1BXCbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 21:31:52 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58746 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753160Ab1BXCbv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 21:31:51 -0500
+	id S1755604Ab1BXCmX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 21:42:23 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59435 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab1BXCmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 21:42:22 -0500
+Date: Wed, 23 Feb 2011 23:42:51 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Marcel Holtmann <marcel@holtmann.org>, Matthew Garrett <mjg@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: btusb autosuspend (was Re: Linux 2.6.38-rc6)
+Message-ID: <20110224024251.GA2155@joana>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Matthew Garrett <mjg@redhat.com>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Jeff Chua <jeff.chua.linux@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <AANLkTimTzjHkVQGPBRXrcb6M1_xaDY_==pB5ZyB9CJpR@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110223234956.388095876@linutronix.de>
-References: <20110223231601.613115832@linutronix.de> <20110223234956.388095876@linutronix.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 Feb 2011 18:30:56 -0800
-Message-ID: <AANLkTikoYrPjf4-6X7PLUShXXXrDU45t_T+ZkxyCtLnG@mail.gmail.com>
-Subject: Re: [patch 1/5] genirq: Prepare the handling of shared oneshot interrupts
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimTzjHkVQGPBRXrcb6M1_xaDY_==pB5ZyB9CJpR@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 3:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> +               /*
-> +                * We or the mask lockless. Safe because the code
-> +                * which clears the mask is serialized
-> +                * vs. IRQ_INPROGRESS.
-> +                */
-> +               desc->threads_oneshot |= action->thread_mask;
-> +               wake_up_process(action->thread);
+Hi Linus,
 
-That comment makes no sense.
+* Linus Torvalds <torvalds@linux-foundation.org> [2011-02-23 16:25:23 -0800]:
 
-What has "code which clears the mask" to do with anything?
+> Hmm. Is there any reason we shouldn't revert commit
+> 556ea928f78a390fe16ae584e6433dff304d3014 given the regression?
 
-Even if another CPU _sets_ a bit, doing so in parallel will lose bits
-if it's not locked. One CPU will read the old value, set its bit, and
-store the new value: with the race, only one of the bits will be set.
+Go ahead and revert it, I don't have too much clue on the USB autosuspend
+subsystem to be able to fix this before the 2.6.38 release.
+Then we can bring this patch back together with the fix for the -next release.
 
-So maybe the code is safe, but the comment is still totally wrong. You
-had better be safe not just against people clearing bits, you need to
-be safe against ANY OTHER WRITER (clear or set), including very much
-OTHER BITS in the same word.
-
-So if it really is safe, comment on ALL the cases.
-
-                     Linus
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
