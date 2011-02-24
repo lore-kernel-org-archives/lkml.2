@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab1BXGx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 01:53:57 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:62882 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab1BXGxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 01:53:54 -0500
-Date: Thu, 24 Feb 2011 15:47:45 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: more mem_cgroup_uncharge batching
-Message-Id: <20110224154745.b7d7a0ac.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <alpine.LSU.2.00.1102232139560.2239@sister.anvils>
-References: <alpine.LSU.2.00.1102232139560.2239@sister.anvils>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755944Ab1BXGzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 01:55:14 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51221 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753235Ab1BXGzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 01:55:12 -0500
+Message-ID: <4D660130.8020009@cn.fujitsu.com>
+Date: Thu, 24 Feb 2011 14:56:48 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Paul Menage <menage@google.com>, David Rientjes <rientjes@google.com>,
+        =?UTF-8?B?57yqIOWLsA==?= <miaox@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: [PATCH v2 1/4] cpuset: Remove unneeded NODEMASK_ALLOC() in cpuset_sprintf_memlist()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-24 14:54:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-24 14:54:08,
+	Serialize complete at 2011-02-24 14:54:08
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011 21:44:33 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+It's not necessary to copy cpuset->mems_allowed to a buffer
+allocated by NODEMASK_ALLOC(). Just pass it to nodelist_scnprintf().
 
-> It seems odd that truncate_inode_pages_range(), called not only when
-> truncating but also when evicting inodes, has mem_cgroup_uncharge_start
-> and _end() batching in its second loop to clear up a few leftovers, but
-> not in its first loop that does almost all the work: add them there too.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-Thank you catching this. This patch has already got enough ack's, but anyway:
+As spotted by Paul, a side effect is we fix a bug that the function
+can return -ENOMEM but the caller doesn't expect negative return
+value. Therefore change the return value of cpuset_sprintf_cpulist()
+and cpuset_sprintf_memlist() from int to size_t.
 
-	Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Acked-by: Paul Menage <menage@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ kernel/cpuset.c |   24 ++++++++----------------
+ 1 files changed, 8 insertions(+), 16 deletions(-)
 
-P.S.
-My address is "nishimura@mxp.nes.nec.co.jp", not "nishmura@mxp.nes.nec.co.jp" :)
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 10f1835..e79650b 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1607,34 +1607,26 @@ static int cpuset_write_resmask(struct cgroup *cgrp, struct cftype *cft,
+  * across a page fault.
+  */
+ 
+-static int cpuset_sprintf_cpulist(char *page, struct cpuset *cs)
++static size_t cpuset_sprintf_cpulist(char *page, struct cpuset *cs)
+ {
+-	int ret;
++	size_t count;
+ 
+ 	mutex_lock(&callback_mutex);
+-	ret = cpulist_scnprintf(page, PAGE_SIZE, cs->cpus_allowed);
++	count = cpulist_scnprintf(page, PAGE_SIZE, cs->cpus_allowed);
+ 	mutex_unlock(&callback_mutex);
+ 
+-	return ret;
++	return count;
+ }
+ 
+-static int cpuset_sprintf_memlist(char *page, struct cpuset *cs)
++static size_t cpuset_sprintf_memlist(char *page, struct cpuset *cs)
+ {
+-	NODEMASK_ALLOC(nodemask_t, mask, GFP_KERNEL);
+-	int retval;
+-
+-	if (mask == NULL)
+-		return -ENOMEM;
++	size_t count;
+ 
+ 	mutex_lock(&callback_mutex);
+-	*mask = cs->mems_allowed;
++	count = nodelist_scnprintf(page, PAGE_SIZE, cs->mems_allowed);
+ 	mutex_unlock(&callback_mutex);
+ 
+-	retval = nodelist_scnprintf(page, PAGE_SIZE, *mask);
+-
+-	NODEMASK_FREE(mask);
+-
+-	return retval;
++	return count;
+ }
+ 
+ static ssize_t cpuset_common_file_read(struct cgroup *cont,
+-- 
+1.7.3.1
