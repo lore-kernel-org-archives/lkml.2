@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab1BXSHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:07:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:59766 "EHLO mga11.intel.com"
+	id S1755456Ab1BXSH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:07:26 -0500
+Received: from mga14.intel.com ([143.182.124.37]:27956 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557Ab1BXSHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:07:07 -0500
+	id S1754926Ab1BXSHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 13:07:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,219,1297065600"; 
-   d="scan'208";a="890936971"
+   d="scan'208";a="393622995"
 From: james_p_freyensee@linux.intel.com
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
         james_p_freyensee@linux.intel.com, christophe.guerard@intel.com
-Subject: [PATCH 02/10] Kernel documentation for the PTI feature.
-Date: Thu, 24 Feb 2011 10:06:56 -0800
-Message-Id: <1298570824-26085-3-git-send-email-james_p_freyensee@linux.intel.com>
+Subject: [PATCH 06/10] n_tracerouter and n_tracesink additions.
+Date: Thu, 24 Feb 2011 10:07:00 -0800
+Message-Id: <1298570824-26085-7-git-send-email-james_p_freyensee@linux.intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <james_p_freyensee@linux.intel.com>
 References: <james_p_freyensee@linux.intel.com>
@@ -25,117 +25,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-This provides Kernel documentation for the PTI
-feature for Linux mobile solutions.
+This patch adds line discipline numbers to n_tracerouter and
+n_tracesink line disciplines for the Intel-Atom PTI implementation
+for mobile devices.
 
 Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- Documentation/pti/pti_intel_mid.txt |   96 +++++++++++++++++++++++++++++++++++
- 1 files changed, 96 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/pti/pti_intel_mid.txt
+ include/linux/tty.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/pti/pti_intel_mid.txt b/Documentation/pti/pti_intel_mid.txt
-new file mode 100644
-index 0000000..8e9837d
---- /dev/null
-+++ b/Documentation/pti/pti_intel_mid.txt
-@@ -0,0 +1,96 @@
-+The Intel MID PTI project is HW implemented in Intel Atom
-+system-on-a-chip designs based on the Parallel Trace
-+Interface for MIPI P1149.7 cJTAG standard.  The kernel solution
-+for this platform involves the following files:
-+
-+./include/linux/pti.h
-+./drivers/.../n_tracesink.h
-+./drivers/.../n_tracerouter.c
-+./drivers/.../n_tracesink.c
-+./drivers/.../pti.c
-+
-+pti.c is the driver that enables various debugging features
-+popular on certain mobile manufacturers.  n_tracerouter.c
-+and n_tracesink.c allow extra system information to be
-+collected and routed to the pti driver, such as trace
-+debugging data from a modem.  Although n_tracerouter
-+and n_tracesink are a part of the complete PTI solution,
-+these two line disciplines can work separately from
-+pti.c and route any data stream from one /dev/tty node
-+to another /dev/tty node via kernel-space.  This provides
-+a stable, reliable connection that will not break unless
-+the user-space application shuts down (plus avoids
-+kernel->user->kernel context switch overheads of routing
-+data).
-+
-+An example debugging usage for this driver system:
-+   *Hook /dev/ttyPTI0 to syslogd.  Opening this port will also start
-+    a console device to further capture debugging messages to PTI.
-+   *Hook /dev/ttyPTI1 to modem debugging data to write to PTI HW.
-+    This is where n_tracerouter and n_tracesink are used.
-+   *Hook /dev/pti to a user-level debugging application for writing
-+    to PTI HW.
-+   *Use mipi_* Kernel Driver API in other device drivers for
-+    debugging to PTI by first requesting a PTI write address via
-+    mipi_request_masterchannel(1).
-+
-+Below is example pseudo-code on how a 'privileged' application
-+can hook up n_tracerouter and n_tracesink to any tty on
-+a system.  'Privileged' means the application has enough
-+privileges to successfully manipulate the ldisc drivers
-+but is not just blindly executing as 'root'.
-+
-+Note that n_tracerouter depends on n_tracesink.
-+
-+/////////// To hook up n_tracerouter and n_tracesink /////////
-+
-+#include <errno.h>
-+#define ONE_TTY "/dev/ttyOne"
-+#define TWO_TTY "/dev/ttyTwo"
-+
-+// needed global to hand onto ldisc connection
-+static int g_fd_source = -1;
-+static int g_fd_sink  = -1;
-+
-+// these two vars used to grab LDISC values from loaded ldisc drivers
-+// in OS.  Look at /proc/tty/ldiscs to get the right numbers from
-+// the ldiscs loaded in the system.
-+int source_ldisc_num, sink_ldisc_num = -1;
-+int retval;
-+
-+g_fd_source = open(ONE_TTY, O_RDWR); // must be R/W
-+g_fd_sink   = open(TWO_TTY, O_RDWR); // must be R/W
-+
-+if (g_fd_source <= 0) || (g_fd_sink <= 0) {
-+   // doubt you'll want to use these exact error lines of code
-+   printf("Error on open(). errno: %d\n",errno);
-+   return errno;
-+}
-+
-+retval = ioctl(g_fd_sink, TIOCSETD, &sink_ldisc_num);
-+if (retval < 0) {
-+   printf("Error on ioctl().  errno: %d\n", errno);
-+   return errno;
-+}
-+
-+retval = ioctl(g_fd_source, TIOCSETD, &source_ldisc_num);
-+if (retval < 0) {
-+   printf("Error on ioctl().  errno: %d\n", errno);
-+   return errno;
-+}
-+
-+/////////// To disconnect n_tracerouter and n_tracesink ////////
-+
-+// First make sure data through the ldiscs has stopped.
-+
-+// Second, disconnect ldiscs.  This provides a
-+// little cleaner shutdown on tty stack.
-+sink_ldisc_num = 0;
-+source_ldisc_num = 0;
-+ioctl(g_fd_uart, TIOCSETD, &sink_ldisc_num);
-+ioctl(g_fd_gadget, TIOCSETD, &source_ldisc_num);
-+
-+// Three, program closes connection, and cleanup:
-+close(g_fd_uart);
-+close(g_fd_gadget);
-+g_fd_uart = g_fd_gadget = NULL;
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 54e4eaa..c507f53 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -50,6 +50,8 @@
+ #define N_CAIF		20      /* CAIF protocol for talking to modems */
+ #define N_GSM0710	21	/* GSM 0710 Mux */
+ #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
++#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
++#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
+ 
+ /*
+  * This character is the same as _POSIX_VDISABLE: it cannot be used as
 -- 
 1.7.2.3
 
