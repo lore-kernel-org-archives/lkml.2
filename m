@@ -1,185 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab1BXEWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 23:22:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6564 "EHLO mx1.redhat.com"
+	id S932494Ab1BXEhD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 23:37:03 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:40044 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932383Ab1BXEWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 23:22:42 -0500
-Date: Thu, 24 Feb 2011 05:22:22 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>, Andi Kleen <andi@firstfloor.org>,
-        Hugh Dickins <hughd@google.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] fix pgd_lock deadlock
-Message-ID: <20110224042222.GG31195@random.random>
-References: <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6>
- <20110215195450.GO5935@random.random>
- <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
- <20110216183304.GD5935@random.random>
- <20110217101941.GH2380@redhat.com>
- <20110221143023.GF13092@random.random>
- <20110221145350.GH25382@redhat.com>
- <4D6378760200007800033104@vpn.id2.novell.com>
- <20110222134956.GU13092@random.random>
- <4D63D4CD020000780003320A@vpn.id2.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D63D4CD020000780003320A@vpn.id2.novell.com>
+	id S932430Ab1BXEhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 23:37:01 -0500
+Date: Wed, 23 Feb 2011 20:36:49 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name'
+ brokenness (v2)
+Message-ID: <20110223203649.4fcbe1db@queued.net>
+In-Reply-To: <20110224040638.GB22111@angua.secretlab.ca>
+References: <20110223150357.5a40793d@queued.net>
+	<20110223232815.GC5404@angua.secretlab.ca>
+	<20110223161630.3ae470bf@queued.net>
+	<20110224040638.GB22111@angua.secretlab.ca>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 02:22:53PM +0000, Jan Beulich wrote:
-> >>> On 22.02.11 at 14:49, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> > On Tue, Feb 22, 2011 at 07:48:54AM +0000, Jan Beulich wrote:
-> >> A possible alternative would be to acquire the page table lock
-> >> in vmalloc_sync_all() only in the Xen case (perhaps by storing
-> >> NULL into page->index in pgd_set_mm() when not running on
-> >> Xen). This is utilizing the fact that there aren't (supposed to
-> >> be - for non-pvops this is definitely the case) any TLB flush IPIs
-> >> under Xen, and hence the race you're trying to fix doesn't
-> >> exist there (while non-Xen doesn't need the extra locking).
+On Wed, 23 Feb 2011 21:06:38 -0700
+Grant Likely <grant.likely@secretlab.ca> wrote:
+
+> On Wed, Feb 23, 2011 at 04:16:30PM -0800, Andres Salomon wrote:
+> > On Wed, 23 Feb 2011 16:28:15 -0700
+> > Grant Likely <grant.likely@secretlab.ca> wrote:
 > > 
-> > That's sure ok with me. Can we use a global runtime to check if the
-> > guest is running under Xen paravirt, instead of passing that info
-> > through page->something?
+> > > On Wed, Feb 23, 2011 at 03:03:57PM -0800, Andres Salomon wrote:
+> > > > 
+> > > > Commit e2f2a93b changed dp->name from using the 'name' property
+> > > > to using package-to-path.  This fixed /proc/device-tree
+> > > > creation by eliminating conflicts between names (the 'name'
+> > > > property provides names like 'battery', whereas package-to-path
+> > > > provides names like '/foo/bar/battery@0', which we stripped to
+> > > > 'battery@0').  However, it also breaks of_device_id table
+> > > > matching.
+> > > > 
+> > > > The fix that we _really_ wanted was to keep dp->name based upon
+> > > > the name property ('battery'), but based dp->full_name upon
+> > > > package-to-path ('battery@0').  This patch does just that.
+> > > > 
+> > > > This also changes OLPC behavior to use the full result from
+> > > > package-to-path for full_name, rather than stripping the
+> > > > directory out.  In practice, the strings end up being exactly
+> > > > the same; this change saves time, code, and memory.
+> > > > 
+> > > > Note that this affects sparc by reverting dp->name back to what
+> > > > sparc was originally doing (looking at the name property).
+> > > > 
+> > > > v2: combine two patches and revert of_pdt_node_name to original
+> > > > version.
+> > > > 
+> > > > Signed-off-by: Andres Salomon <dilinger@queued.net>
+> > > 
+> > > Hi Andres, comments below.
+> > > 
+> > > g.
+> > > 
+> > > > ---
+> > > >  drivers/of/pdt.c |   42
+> > > > +++++++++++++++--------------------------- 1 files changed, 15
+> > > > insertions(+), 27 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+> > > > index 28295d0..a7aa85e 100644
+> > > > --- a/drivers/of/pdt.c
+> > > > +++ b/drivers/of/pdt.c
+> > > > @@ -134,7 +134,7 @@ static char * __init
+> > > > of_pdt_get_one_property(phandle node, const char *name) 
+> > > >  static char * __init of_pdt_try_pkg2path(phandle node)
+> > > >  {
+> > > > -	char *res, *buf = NULL;
+> > > > +	char *buf = NULL;
+> > > >  	int len;
+> > > >  
+> > > >  	if (!of_pdt_prom_ops->pkg2path)
+> > > > @@ -147,29 +147,6 @@ static char * __init
+> > > > of_pdt_try_pkg2path(phandle node) pr_err("%s: package-to-path
+> > > > failed\n", __func__); return NULL;
+> > > >  	}
+> > > > -
+> > > > -	res = strrchr(buf, '/');
+> > > > -	if (!res) {
+> > > > -		pr_err("%s: couldn't find / in %s\n", __func__,
+> > > > buf);
+> > > > -		return NULL;
+> > > > -	}
+> > > > -	return res+1;
+> > > > -}
+> > > > -
+> > > > -/*
+> > > > - * When fetching the node's name, first try using
+> > > > package-to-path; if
+> > > > - * that fails (either because the arch hasn't supplied a PROM
+> > > > callback,
+> > > > - * or some other random failure), fall back to just looking at
+> > > > the node's
+> > > > - * 'name' property.
+> > > > - */
+> > > > -static char * __init of_pdt_build_name(phandle node)
+> > > > -{
+> > > > -	char *buf;
+> > > > -
+> > > > -	buf = of_pdt_try_pkg2path(node);
+> > > > -	if (!buf)
+> > > > -		buf = of_pdt_get_one_property(node, "name");
+> > > > -
+> > > >  	return buf;
+> > > >  }
+> > > >  
+> > > 
+> > > It seems to me that of_pdt_build_full_name will still be missing
+> > > the '@<addr>' component on non-sparc non-olpc builds because it
+> > > uses the broken of_pdt_node_name().  That needs to be fixed too,
+> > > even if there are no current users (or removed).
+> > 
+> > 
+> > The intent if for them to use the pkg2path hook.  If
+> > they can't use that, they'll need an architecture-specific way to
+> > figure out the @<addr> component.  It may even be possible for sparc
+> > to use package-to-path; but either way, if an architecture doesn't
+> > have package-to-path (OLPC and powerpc have it; I don't know about
+> > sparc), and can't fake it, it'll need to do something special.
+> > 
+> > If the pkg2path hook isn't set and we're not sparc, we fall back to
+> > dp->name.  That sucks, but I don't know of a better way to do
+> > things.
 > 
-> If everyone's okay with putting a couple of "if (xen_pv_domain())"
-> into mm/fault.c - sure. I would have thought that this wouldn't be
-> liked, hence the suggestion to make this depend on seeing the
-> backlink be non-NULL.
+> More that sucks, it is just plain *wrong*.  :-)
+> 
+> so, to sum up, of_pdt_build_tree goes through the following process:
+> 
+> 1) dp = of_pdt_create_node
+>   - dp->name = of_pdt_get_one_property(node, "name"); /* name w/o
+> addr */
+> 
+> 2) (SPARC) dp->path_component_name = build_path_component(dp);
+>   - format <node name>@<address>
+>   - uses dp->name value
+>   - not on OLPC
 
-What about this? The page->private logic gets optimized away at
-compile time with XEN=n.
+Also:
+  - returns only the node name, not the full path
+  - implemented differently depending upon bus type (see
+    pci_path_component/sbus_path_component/ebus_path_component/ambapp_path_component)
+  - sparc32 implemented differently versus sparc64
 
-The removal of _irqsave from pgd_lock, I'll delay it as it's no bugfix
-anymore.
+> 
+> 3) dp->full_name = of_pdt_build_full_name(dp)
+>   - (SPARC) use dp->path_component_name
+>   - (OLPC) depend on value from of_pdt_try_pkg2path(node);
+>   - (others) fake it with an incorrect value?
+> 
+> Am I correct?
 
-===
-Subject: xen: stop taking the page_table_lock with irq disabled
+No.
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+(others) use of_pdt_try_pkg2path
 
-It's forbidden to take the page_table_lock with the irq disabled or if there's
-contention the IPIs (for tlb flushes) sent with the page_table_lock held will
-never run leading to a deadlock.
+The reason why we fall back to dp->name is because I don't know what
+other architectures out there might not have package-to-path.  I'm
+perfectly fine with falling back to a WARN or BUG.
 
-Only Xen needs the page_table_lock and Xen won't need IPI TLB flushes hence the
-deadlock doesn't exist for Xen.
+> 
+> Faking it is clearly not acceptable.  The solution is to *force* all
+> platforms to implement a method for obtaining the full path.  That
+> means BUG() or WARN() if pkg2path is not populated, or if it returns
+> NULL.  It also means no mucking about with of_pdt_try_pkg2path().
+> Call ops->pkg2path directly and complain loudly when it does not work.
+> 
+> I see two choices:
+> 1) implement ops->pkg2path for SPARC, but back it with
+>    build_path_component() instead of a call to OF
+> 2) #ifdef of_pdt_build_full_name() to use the current behaviour for
+>    SPARC, but call pkg2path for everyone else.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- arch/x86/include/asm/pgtable.h |    5 +++--
- arch/x86/mm/fault.c            |   10 ++++++----
- arch/x86/mm/init_64.c          |   10 ++++++----
- arch/x86/mm/pgtable.c          |    9 +++------
- 4 files changed, 18 insertions(+), 16 deletions(-)
+Either of these are fine, but I don't think they should be within the
+scope of the proposed patch.  I'd like to hear from Davem about whether
+#1 is doable.  Also note that ops are different for sparc32 and sparc64.
 
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -235,14 +235,16 @@ void vmalloc_sync_all(void)
- 
- 		spin_lock_irqsave(&pgd_lock, flags);
- 		list_for_each_entry(page, &pgd_list, lru) {
--			spinlock_t *pgt_lock;
-+			struct mm_struct *mm;
- 			pmd_t *ret;
- 
--			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
-+			mm = pgd_page_get_mm(page);
- 
--			spin_lock(pgt_lock);
-+			if (mm)
-+				spin_lock(&mm->page_table_lock);
- 			ret = vmalloc_sync_one(page_address(page), address);
--			spin_unlock(pgt_lock);
-+			if (mm)
-+				spin_unlock(&mm->page_table_lock);
- 
- 			if (!ret)
- 				break;
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -114,11 +114,12 @@ void sync_global_pgds(unsigned long star
- 		spin_lock_irqsave(&pgd_lock, flags);
- 		list_for_each_entry(page, &pgd_list, lru) {
- 			pgd_t *pgd;
--			spinlock_t *pgt_lock;
-+			struct mm_struct *mm;
- 
- 			pgd = (pgd_t *)page_address(page) + pgd_index(address);
--			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
--			spin_lock(pgt_lock);
-+			mm = pgd_page_get_mm(page);
-+			if (mm)
-+				spin_lock(&mm->page_table_lock);
- 
- 			if (pgd_none(*pgd))
- 				set_pgd(pgd, *pgd_ref);
-@@ -126,7 +127,8 @@ void sync_global_pgds(unsigned long star
- 				BUG_ON(pgd_page_vaddr(*pgd)
- 				       != pgd_page_vaddr(*pgd_ref));
- 
--			spin_unlock(pgt_lock);
-+			if (mm)
-+				spin_unlock(&mm->page_table_lock);
- 		}
- 		spin_unlock_irqrestore(&pgd_lock, flags);
- 	}
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -4,6 +4,7 @@
- #include <asm/pgtable.h>
- #include <asm/tlb.h>
- #include <asm/fixmap.h>
-+#include <xen/xen.h>
- 
- #define PGALLOC_GFP GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO
- 
-@@ -91,12 +92,8 @@ static inline void pgd_list_del(pgd_t *p
- static void pgd_set_mm(pgd_t *pgd, struct mm_struct *mm)
- {
- 	BUILD_BUG_ON(sizeof(virt_to_page(pgd)->index) < sizeof(mm));
--	virt_to_page(pgd)->index = (pgoff_t)mm;
--}
--
--struct mm_struct *pgd_page_get_mm(struct page *page)
--{
--	return (struct mm_struct *)page->index;
-+	if (xen_pv_domain())
-+		virt_to_page(pgd)->index = (pgoff_t)mm;
- }
- 
- static void pgd_ctor(struct mm_struct *mm, pgd_t *pgd)
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -28,8 +28,6 @@ extern unsigned long empty_zero_page[PAG
- extern spinlock_t pgd_lock;
- extern struct list_head pgd_list;
- 
--extern struct mm_struct *pgd_page_get_mm(struct page *page);
--
- #ifdef CONFIG_PARAVIRT
- #include <asm/paravirt.h>
- #else  /* !CONFIG_PARAVIRT */
-@@ -83,6 +81,9 @@ extern struct mm_struct *pgd_page_get_mm
- 
- #endif	/* CONFIG_PARAVIRT */
- 
-+#define pgd_page_get_mm(__page) \
-+	((struct mm_struct *)(xen_pv_domain() ? (__page)->index : 0))
-+
- /*
-  * The following only work if pte_present() is true.
-  * Undefined behaviour if not..
+
+
+> 
+> Actually, I'd like to see build_path_component() refactored to return
+> the full_name instead.  It is trivial to get the path component from
+
+
+Again, this is Davem-land; I don't have a sparc machine to test any of
+this with.  The proposed patch is a bug fix that I'd like to see go in;
+I'm perfectly happy to refactor the APIs after that.
+
+
+> the full name at any time, but it is not trivial to go the other
+> direction.... but that is probably more surgery than should be done in
+> this immediate bug-fix.  I'm assuming a fix is necessary before 2.6.38
+> is finalized?
+
+Well, a fix only affects Daniel's work.  It does, however, fix a bug
+in sparc code.  I don't know if that breaks anything in practice.
