@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab1BXQnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:43:42 -0500
-Received: from cantor.suse.de ([195.135.220.2]:53211 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756289Ab1BXQnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:43:39 -0500
-Date: Thu, 24 Feb 2011 17:43:35 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Dave Chinner <david@fromorbit.com>, "Darrick J. Wong" <djwong@us.ibm.com>,
-        Andreas Dilger <adilger@dilger.ca>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation
- problem
-Message-ID: <20110224164335.GG23042@quack.suse.cz>
-References: <20110222020022.GH32261@tux1.beaverton.ibm.com>
- <180713DB-114C-454B-A91E-063AB0116251@dilger.ca>
- <20110222194538.GU27190@tux1.beaverton.ibm.com>
- <20110222225351.GG3166@dastard>
- <yq1vd0awwfh.fsf@sermon.lab.mkp.net>
+	id S1756440Ab1BXQpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:45:54 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:65166 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385Ab1BXQpw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 11:45:52 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=dgxeImJIUbAA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=gIi8eh1RuD-OM48fK5gA:9 a=3GD2gb478Pu92ku-O5sA:7 a=ESapBTcUgUwymrjvM5GFnfxP7BAA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 24 Feb 2011 11:45:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Justin Mattock <justinmattock@gmail.com>
+Cc: git@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: gitk with the latest branch makes the system unusable for some
+ time
+Message-ID: <20110224164551.GD888@home.goodmis.org>
+References: <AANLkTim3MW0PmD5_tra4nmRapfgHJ9K_usJWGVK3AOUC@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <yq1vd0awwfh.fsf@sermon.lab.mkp.net>
+In-Reply-To: <AANLkTim3MW0PmD5_tra4nmRapfgHJ9K_usJWGVK3AOUC@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 23-02-11 11:24:50, Martin K. Petersen wrote:
-> >>>>> "Dave" == Dave Chinner <david@fromorbit.com> writes:
-> 
-> >> Agreed.  I too am curious to study which circumstances favor copying
-> >> vs blocking.
-> 
-> Dave> IMO blocking is generally preferable in high throughput threaded
-> Dave> workloads as there is always another thread that can do useful
-> Dave> work while we wait for IO to complete. Most use cases for DIF
-> Dave> center around high throughput environments....
-> 
-> Yeah.
-> 
-> A while back I did a bunch of tests with a liberal amount of
-> wait_on_page_writeback() calls added to (I think) ext2, ext3, and
-> XFS. For my regular workloads there was no measurable change (kernel
-> builds, random database and I/O tests). I'm sure we'll unearth some apps
-> that will suffer when DI is on but so far I'm not too worried about
-> blocking in the data path.
-> 
-> My main concern is wrt. metadata because that's where extN really
-> hurts. Simple test: Unpack a kernel tarball and watch the directory
-> block fireworks. Given how frequently those buffers get hit I'm sure
-> blocking would cause performance to tank completely. I looked into
-> fixing this in ext2 but I had to stop because my eyes were bleeding.
-  Ext2 is problematic yes, but ext[34] should be OK because we do
-metadata copy anyway because of journalling. So for ext[34] you shouldn't
-need any additional metadata protection since JBD does it for you (apart
-from nojournal mode of ext4 of course).
+Hi Justin,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Tue, Feb 22, 2011 at 03:53:08PM -0800, Justin Mattock wrote:
+> not sure if there is any reports of this or not, basically using gitk
+> on my macbookpro2,2 makes the system extremely slow and unusable
+> (after a while can finally use the system)
+> 
+> in dmesg I am seeing this:
+> 
+
+
+> [ 6089.367430] [ 2593]  1000  2593    26616        1   1       0
+>       0 bash
+> [ 6089.367435] [ 2717]  1000  2717   326078   204267   0       0
+>       0 wish
+> [ 6089.367439] [ 2729]  1000  2729   141207     7349   0       0
+>       0 git
+> [ 6089.367444] Out of memory: Kill process 2717 (wish) score 802 or
+> sacrifice child
+
+Looks like a memory leak in gitk and nothing to do with the kernel. I
+would take this up with them.
+
+-- Steve
+
