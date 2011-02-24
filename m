@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab1BXQio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:38:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41625 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756301Ab1BXQim (ORCPT
+	id S1756400Ab1BXQiw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:38:52 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52117 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756379Ab1BXQis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:38:42 -0500
+	Thu, 24 Feb 2011 11:38:48 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=mN7ZcCAKFbIA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=4XXrQqqHCXNTUQO3fVIA:9 a=olrQjJ-KNaLQMzUOaHIA:7 a=3ODR_NZB3-bt-v4t1-gmwlBpLFEA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 24 Feb 2011 11:38:44 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Dan Carpenter <error27@gmail.com>, Greg KH <gregkh@suse.de>,
+        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
+ interfaces
+Message-ID: <20110224163844.GC888@home.goodmis.org>
+References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
+ <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
+ <20110222181613.GU4000@outflux.net>
+ <20110222191333.GA9991@suse.de>
+ <20110222192248.GX4000@outflux.net>
+ <20110222193314.GA11033@suse.de>
+ <20110222202915.GC1966@bicker>
+ <20110222205847.GA1867@khazad-dum.debian.net>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
-References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
- <20110222140349.GA20708@kryptos.osrc.amd.com> <AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
- <AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
- <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
- <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
- <AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com> <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 24 Feb 2011 08:37:11 -0800
-Message-ID: <AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com>
-Subject: Re: Linux 2.6.38-rc6
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>, linux-fbdev@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
-        Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=000325575896e6facf049d09d67d
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222205847.GA1867@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000325575896e6facf049d09d67d
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Feb 22, 2011 at 05:58:47PM -0300, Henrique de Moraes Holschuh wrote:
+> 
+> I do wish this went in.  debugfs is a hazard, both security-wise and
+> kernel-quality wise.  Anything that has to end up enabled in a distro
+> kernel really does not belong in debugfs.  In fact, if you would object
+> to a kernel taint if a feature is used, IMO it certainly don't belong on
+> debugfs.
+> 
 
-On Thu, Feb 24, 2011 at 5:20 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
->>
->> Every boot?
->
-> Yes.
->
->> And just out of interest, what happens if you don't have the vesafb
->> driver at all?
->
-> I used 'e' option from grub, removed the 'set gfxpayload = $linux_gfx_mode'
-> and it works.
->
-> dmesg: http://pastebin.com/JAZsk4vD
+As I am one of the culprits of adding tool interfaces into debugfs, I'll
+give my opinion too.
 
-Hmm. So it definitely seems to be the hand-over.
+When I first started using debugfs, it was because it was so much easier
+to add files to than /sys, and I remember /proc is something we do not
+want to add more functionality to.
 
-Does this patch make any difference? When we unregister the old
-framebuffer, we still leave it in the registered_fb[] array, which
-looks wrong. But it would also be interesting to hear if setting
-CONFIG_SLUB_DEBUG_ON or CONFIG_DEBUG_PAGEALLOC makes any difference
-(they'd help detect accesses to free'd data structures).
+It was also because we had no idea how ftrace was going to be used and
+what the final ABI was going to be. I was hoping that we can experiment
+with the interface and after some time we could move it out of debugfs
+with a stable ABI. But this, for various reasons, never materialized.
 
-                          Linus
+Currently things are still in a large flux, and I do not know how this
+will play out. Although the changes in /debugfs/tracing has toned down a
+lot, there's also the work going in on how to merge perf and ftrace.
+This may start changes as well, and perhaps deprecate interfaces. I
+don't know.
 
---000325575896e6facf049d09d67d
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gkjwbfnb0
+Having debugfs as the main interface was not the goal of all this, but
+we seemed to have just gotten stuck with it.
 
-IGRyaXZlcnMvdmlkZW8vZmJtZW0uYyB8ICAgIDEgKwogMSBmaWxlcyBjaGFuZ2VkLCAxIGluc2Vy
-dGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy92aWRlby9mYm1l
-bS5jIGIvZHJpdmVycy92aWRlby9mYm1lbS5jCmluZGV4IGUyYmY5NTMuLmU4Zjg5MjUgMTAwNjQ0
-Ci0tLSBhL2RyaXZlcnMvdmlkZW8vZmJtZW0uYworKysgYi9kcml2ZXJzL3ZpZGVvL2ZibWVtLmMK
-QEAgLTE1MTEsNiArMTUxMSw3IEBAIHZvaWQgcmVtb3ZlX2NvbmZsaWN0aW5nX2ZyYW1lYnVmZmVy
-cyhzdHJ1Y3QgYXBlcnR1cmVzX3N0cnVjdCAqYSwKIAkJCSAgICAgICAiJXMgdnMgJXMgLSByZW1v
-dmluZyBnZW5lcmljIGRyaXZlclxuIiwKIAkJCSAgICAgICBuYW1lLCByZWdpc3RlcmVkX2ZiW2ld
-LT5maXguaWQpOwogCQkJdW5yZWdpc3Rlcl9mcmFtZWJ1ZmZlcihyZWdpc3RlcmVkX2ZiW2ldKTsK
-KwkJCXJlZ2lzdGVyZWRfZmJbaV0gPSBOVUxMOwogCQl9CiAJfQogfQo=
---000325575896e6facf049d09d67d--
+-- Steve
+
