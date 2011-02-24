@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab1BXDe0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 22:34:26 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:58118 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932298Ab1BXDeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 22:34:25 -0500
-Date: Wed, 23 Feb 2011 19:33:10 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Axel Lin <axel.lin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 2/2] hwmon: adt7411: add MODULE_DEVICE_TABLE
-Message-ID: <20110224033310.GB4596@ericsson.com>
-References: <1298514037.19027.3.camel@mola>
- <1298514121.19027.5.camel@mola>
+	id S932368Ab1BXDnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 22:43:41 -0500
+Received: from teddy.stmarytx.edu ([69.150.209.230]:9274 "EHLO
+	teddy.stmarytx.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932229Ab1BXDnl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 22:43:41 -0500
+X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 22:43:41 EST
+From: "Barragan, Erika" <ebarragan@stmarytx.edu>
+Subject: Mailbox Quota Exceeded!!!
+Thread-Topic: Mailbox Quota Exceeded!!!
+Thread-Index: AcvT1E6GMSm3+2ewTPCYVSFREAmb6w==
+Date: Thu, 24 Feb 2011 03:38:31 +0000
+Message-ID: <F3FFC46A37113B428272DE5306380F98D0B6E9@EXCH1.stmarytx.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [82.128.59.124]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1298514121.19027.5.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 09:22:01PM -0500, Axel Lin wrote:
-> The device table is required to load modules based on modaliases.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+System Administrator,
 
-Applied.
 
-Thanks,
-Guenter
+
+Your mailbox has exceeded it limit/quota set by your Administrator, and you will be having problems in
+
+sending and receiving new mails. To prevent this, please click on the link below to Re-validate your account.
+
+
+
+http://forms3.createforms.com/102040/form_2_1.html
+
+
+
+Regards,
+
+Barragan Erika,
+
+Online Co-odinator.
