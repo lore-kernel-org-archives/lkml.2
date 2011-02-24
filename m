@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab1BXFeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 00:34:46 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:35154 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab1BXFeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 00:34:44 -0500
-Date: Thu, 24 Feb 2011 16:34:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>
-Subject: linux-next: manual merge of the tty tree with Linus' tree
-Message-Id: <20110224163439.05352f9b.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751730Ab1BXFfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 00:35:54 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:30430 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab1BXFfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 00:35:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=tszuuuMgw8VHCJ7J547wouJovgx1TsgnNh7AOVTYharIA6eTMSD7oNvsX5IDnUPd8Z
+         bLqnNTQt0p98E9VPGdXg==
+Date: Wed, 23 Feb 2011 21:35:51 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Nick Piggin <npiggin@kernel.dk>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>, Salman Qazi <sqazi@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] mm: don't return 0 too early from find_get_pages()
+Message-ID: <alpine.LSU.2.00.1102232132080.2239@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Callers of find_get_pages(), or its wrapper pagevec_lookup() - notably
+truncate_inode_pages_range() - stop looking further when it returns 0.
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/char/Makefile between commit
-51df0acc3d76cf41d5496ef044cc5717ab5c7f71 ("virtio: console: Move file
-back to drivers/char/") from Linus' tree and commit
-a6afd9f3e819de4795fcd356e5bfad446e4323f2 ("tty: move a number of tty
-drivers from drivers/char/ to drivers/tty/") (and later ones) from the tty
-tree.
+But if an interrupt comes just after its radix_tree_gang_lookup_slot(),
+especially if we have preemptible RCU enabled, isn't it conceivable
+that all 14 pages returned could be removed from the page cache by
+shrink_page_list(), before find_get_pages() gets to process them?  So
+causing it to return 0 although there may be plenty more pages beyond.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Make find_get_pages() and find_get_pages_tag() check for this unlikely
+case, and restart should it occur; but callers of find_get_pages_contig()
+have no such expectation, it's okay for that to return 0 early.
 
-diff --cc drivers/char/Makefile
-index 8238f89,3ca1f62..0000000
---- a/drivers/char/Makefile
-+++ b/drivers/char/Makefile
-@@@ -5,32 -5,7 +5,8 @@@
-  obj-y				+= mem.o random.o
-  obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
-  obj-y				+= misc.o
-- obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
-- obj-$(CONFIG_MVME147_SCC)	+= generic_serial.o vme_scc.o
-- obj-$(CONFIG_MVME162_SCC)	+= generic_serial.o vme_scc.o
-- obj-$(CONFIG_BVME6000_SCC)	+= generic_serial.o vme_scc.o
-- obj-$(CONFIG_ROCKETPORT)	+= rocket.o
-- obj-$(CONFIG_SERIAL167)		+= serial167.o
-- obj-$(CONFIG_CYCLADES)		+= cyclades.o
-- obj-$(CONFIG_STALLION)		+= stallion.o
-- obj-$(CONFIG_ISTALLION)		+= istallion.o
-- obj-$(CONFIG_NOZOMI)		+= nozomi.o
-- obj-$(CONFIG_DIGIEPCA)		+= epca.o
-- obj-$(CONFIG_SPECIALIX)		+= specialix.o
-- obj-$(CONFIG_MOXA_INTELLIO)	+= moxa.o
-- obj-$(CONFIG_A2232)		+= ser_a2232.o generic_serial.o
-  obj-$(CONFIG_ATARI_DSP56K)	+= dsp56k.o
-- obj-$(CONFIG_MOXA_SMARTIO)	+= mxser.o
-- obj-$(CONFIG_COMPUTONE)		+= ip2/
-- obj-$(CONFIG_RISCOM8)		+= riscom8.o
-- obj-$(CONFIG_ISI)		+= isicom.o
-- obj-$(CONFIG_SYNCLINK)		+= synclink.o
-- obj-$(CONFIG_SYNCLINKMP)	+= synclinkmp.o
-- obj-$(CONFIG_SYNCLINK_GT)	+= synclink_gt.o
-- obj-$(CONFIG_AMIGA_BUILTIN_SERIAL) += amiserial.o
-- obj-$(CONFIG_SX)		+= sx.o generic_serial.o
-- obj-$(CONFIG_RIO)		+= rio/ generic_serial.o
- +obj-$(CONFIG_VIRTIO_CONSOLE)	+= virtio_console.o
-  obj-$(CONFIG_RAW_DRIVER)	+= raw.o
-  obj-$(CONFIG_SGI_SNSC)		+= snsc.o snsc_event.o
-  obj-$(CONFIG_MSPEC)		+= mspec.o
+I have not seen this in practice, just worried by the possibility.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+
+ mm/filemap.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+--- 2.6.38-rc6/mm/filemap.c	2011-01-18 22:04:56.000000000 -0800
++++ linux/mm/filemap.c	2011-02-23 16:06:19.000000000 -0800
+@@ -800,6 +800,13 @@ repeat:
+ 		pages[ret] = page;
+ 		ret++;
+ 	}
++
++	/*
++	 * If all entries were removed before we could secure them,
++	 * try again, because callers stop trying once 0 is returned.
++	 */
++	if (unlikely(!ret && nr_found))
++		goto restart;
+ 	rcu_read_unlock();
+ 	return ret;
+ }
+@@ -909,6 +916,13 @@ repeat:
+ 		pages[ret] = page;
+ 		ret++;
+ 	}
++
++	/*
++	 * If all entries were removed before we could secure them,
++	 * try again, because callers stop trying once 0 is returned.
++	 */
++	if (unlikely(!ret && nr_found))
++		goto restart;
+ 	rcu_read_unlock();
+ 
+ 	if (ret)
