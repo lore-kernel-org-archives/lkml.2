@@ -1,42 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab1BXL0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 06:26:47 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43373 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756195Ab1BXL0p (ORCPT
+	id S1756198Ab1BXL2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 06:28:16 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41268 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756167Ab1BXL2P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 06:26:45 -0500
-Date: Thu, 24 Feb 2011 11:29:02 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Timur Tabi <timur@freescale.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: How important is it that tty_write_room doesn't lie?
-Message-ID: <20110224112902.71047445@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110223202915.GB9081@suse.de>
-References: <4D656679.90907@freescale.com>
-	<20110223202915.GB9081@suse.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Feb 2011 06:28:15 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michael Williamson <michael.williamson@criticallink.com>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Feb 2011 16:57:54 +0530
+Subject: RE: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+Thread-Topic: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+Thread-Index: AcvUDOqY4l6szl1cQaeup6EBwHNnVwAAQGkg
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BE49711@dbde02.ent.ti.com>
+References: <1297434088-27995-1-git-send-email-subhasish@mistralsolutions.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com>
+ <886E26C48DE446C3937D89ECF86030B2@subhasishg>
+In-Reply-To: <886E26C48DE446C3937D89ECF86030B2@subhasishg>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think that people don't normally hit this as the console code isn't
-> used as a tty and a console at the same time, right?
+Hi Subhasish,
 
-And also on most hardware that it doesn't actually matter.
+On Thu, Feb 24, 2011 at 15:54:56, Subhasish Ghosh wrote:
+> --------------------------------------------------
+> From: "Nori, Sekhar" <nsekhar@ti.com>
+> Sent: Wednesday, February 23, 2011 9:00 PM
+> To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>; 
+> <davinci-linux-open-source@linux.davincidsp.com>
+> Cc: <linux-arm-kernel@lists.infradead.org>; "Watkins, Melissa" 
+> <m-watkins@ti.com>; <sachi@mistralsolutions.com>; "Kevin Hilman" 
+> <khilman@deeprootsystems.com>; "Russell King" <linux@arm.linux.org.uk>; 
+> "Michael Williamson" <michael.williamson@criticallink.com>; "Chemparathy, 
+> Cyril" <cyril@ti.com>; "Sergei Shtylyov" <sshtylyov@ru.mvista.com>; "open 
+> list" <linux-kernel@vger.kernel.org>
+> Subject: RE: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+> 
+> > Hi Subhasish,
+> >
+> > On Fri, Feb 11, 2011 at 19:51:28, Subhasish Ghosh wrote:
+> >> This patch modifies the sram allocator to allocate memory
+> >> from the DA8XX shared RAM.
+> >
+> > It will be nice to know if you tried suspend-to-RAM
+> > after this change and found it to be working.
+> >
+> 
+> SG -- My file system is currently mounted from MMC.
+>           Suspend to RAM seems to have bug with MMC.
+>            (http://processors.wiki.ti.com/index.php/OMAP-L1_Linux_Drivers_Usage#Suspend-to-RAM)
 
-The underlying logic is that printk output is important, and Linus has
-always insisted that what matters is that it gets out, even with
-collateral damage be that vt output mangling or serial losses.
+You can try Kevin's suggestion here:
 
-If it's an actual problem in your environment you could do a bit of quiet
-internal buffering (or report less than you really have if your fifo
-queue is big)
+http://linux.davincidsp.com/pipermail/davinci-linux-open-source/2011-January/021807.html
 
-Alan
+>           I had tried NFS earlier, but I think there is some problem with 
+> NFS boot and udev with this kernel.
+
+Anyway there are some problems reported with Ethernet
+driver and suspend on the latest kernel. Folks inside
+TI are working on it.
+
+>            So, currently I will not be able to do it, but will try if I get 
+> a chance.
+
+How about using ramdisk?
+
+Thanks,
+Sekhar
+
+> > Thanks,
+> > Sekhar
+> >
+> >>
+> >> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+> >> ---
+> >>  arch/arm/mach-davinci/da850.c              |    6 +++---
+> >>  arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
+> >>  2 files changed, 4 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mach-davinci/da850.c 
+> >> b/arch/arm/mach-davinci/da850.c
+> >> index 3443d97..8a4de97 100644
+> >> --- a/arch/arm/mach-davinci/da850.c
+> >> +++ b/arch/arm/mach-davinci/da850.c
+> >> @@ -711,7 +711,7 @@ static struct map_desc da850_io_desc[] = {
+> >>  },
+> >>  {
+> >>  .virtual = SRAM_VIRT,
+> >> - .pfn = __phys_to_pfn(DA8XX_ARM_RAM_BASE),
+> >> + .pfn = __phys_to_pfn(DA8XX_SHARED_RAM_BASE),
+> >>  .length = SZ_8K,
+> >>  .type = MT_DEVICE
+> >>  },
+> >> @@ -1083,8 +1083,8 @@ static struct davinci_soc_info 
+> >> davinci_soc_info_da850 = {
+> >>  .gpio_irq = IRQ_DA8XX_GPIO0,
+> >>  .serial_dev = &da8xx_serial_device,
+> >>  .emac_pdata = &da8xx_emac_pdata,
+> >> - .sram_dma = DA8XX_ARM_RAM_BASE,
+> >> - .sram_len = SZ_8K,
+> >> + .sram_dma = DA8XX_SHARED_RAM_BASE,
+> >> + .sram_len = SZ_128K,
+> >>  .reset_device = &da8xx_wdt_device,
+> >>  };
+> >>
+> >> diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h 
+> >> b/arch/arm/mach-davinci/include/mach/da8xx.h
+> >> index cfcb223..c3c3339 100644
+> >> --- a/arch/arm/mach-davinci/include/mach/da8xx.h
+> >> +++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+> >> @@ -70,6 +70,7 @@ extern unsigned int da850_max_speed;
+> >>  #define DA8XX_AEMIF_CTL_BASE 0x68000000
+> >>  #define DA8XX_DDR2_CTL_BASE 0xb0000000
+> >>  #define DA8XX_ARM_RAM_BASE 0xffff0000
+> >> +#define DA8XX_SHARED_RAM_BASE 0x80000000
+> >>
+> >>  void __init da830_init(void);
+> >>  void __init da850_init(void);
+> >> -- 
+> >> 1.7.2.3
+> >>
+> >>
+> > 
+> 
+
