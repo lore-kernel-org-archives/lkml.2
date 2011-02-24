@@ -1,113 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab1BXR2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:28:24 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:9920 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab1BXR2W (ORCPT
+	id S1753469Ab1BXRdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:33:46 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38824 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1BXRdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:28:22 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzz8275bhz2dh2a8h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
-Date: Thu, 24 Feb 2011 11:27:31 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-api@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, <netdev@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Christoph Lameter <cl@linux.com>,
-        <linuxppc-dev@lists.ozlabs.org>, David Miller <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found on
- the MPC85xx.
-Message-ID: <20110224112731.2d9bf080@schlenkerla>
-In-Reply-To: <20110224165004.GB15234@riccoc20.at.omicron.at>
-References: <cover.1298447722.git.richard.cochran@omicron.at>
-	<be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
-	<20110223165058.GE14597@angua.secretlab.ca>
-	<20110223112612.30071995@schlenkerla>
-	<20110223175459.GH14597@angua.secretlab.ca>
-	<20110223132444.65dfdda4@schlenkerla>
-	<20110224165004.GB15234@riccoc20.at.omicron.at>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Thu, 24 Feb 2011 12:33:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Date: Thu, 24 Feb 2011 18:33:40 +0100
+Message-ID: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
+Subject: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 17:50:04 +0100
-Richard Cochran <richardcochran@gmail.com> wrote:
+Please find below a new proposal for adding trace events for cpu hotplug:
+-the lock/unlock of cpu_add_remove_lock mutex is now outside the trace
 
-> On Wed, Feb 23, 2011 at 01:24:44PM -0600, Scott Wood wrote:
-> > Whatever string is used should be written into a binding document.
-> > 
-> > fsl,etsec-v1.6-ptp seems like it would be just as good for that purpose.
-> > 
-> > Even just fsl,etsec-ptp will identify the binding, though it's lacking in
-> > identifying the hardware (in the absence of access to the eTSEC ID
-> > registers).
-> 
-> I read the conversation, and I don't mind admitting that I do not
-> understand what you both are arguing/discussing about.
-> 
-> How should I set the strings?  Like this?
-> 
-> arch/powerpc/boot/dts/mpc8313erdb.dts:
-> 	ptp_clock@24E00 {
-> 		compatible = "fsl,mpc8313-etsec-ptp";
-> 	}
-> arch/powerpc/boot/dts/mpc8572ds.dts:
-> 	ptp_clock@24E00 {
-> 		compatible = "fsl,mpc8572-etsec-ptp";
-> 	} 
-> arch/powerpc/boot/dts/p2020ds.dts:
-> 	ptp_clock@24E00 {
-> 		compatible = "fsl,p2020ds-etsec-ptp";
-> 	} 
-> arch/powerpc/boot/dts/p2020rdb.dts:
-> 	ptp_clock@24E00 {
-> 		compatible = "fsl,p2020rdb-etsec-ptp";
-> 	} 
-> 
-> drivers/net/gianfar_ptp.c:
-> 
-> static struct of_device_id match_table[] = {
-> 	{ .compatible = "fsl,mpc8313-etsec-ptp" },
-> 	{ .compatible = "fsl,mpc8572-etsec-ptp" },
-> 	{ .compatible = "fsl,p2020ds-etsec-ptp" },
-> 	{ .compatible = "fsl,p2020rdb-etsec-ptp" },
-> 	{},
-> };
+The goal is to measure the latency of each part (kernel, architecture)
+and also to trace the cpu hotplug activity with other power events. I
+have tested these traces events on an arm platform.
 
-Those last two are boards, not chips.  I don't think even Grant is asking
-to take things that far.
+Subject: [PATCH 2/2] add hotplug tracepoint
 
-My vote, if it goes in a separate node at all, is "fsl,etsec-ptp", and let
-the driver use SVR.  Even encoding an etsec version in the compatible
-string would be difficult, unless fixed up by u-boot, as it appears to
-differ based on chip revision (and the chip manuals seem to often not match
-the hardware regarding the advertised eTSEC revision) and we don't normally
-have separate dts files for different revisions of the same chip.  Plus,
-our docs (at least the public ones) don't seem to be very helpful in
-determining what version of eTSEC implies what.
+this patch adds new events for cpu hotplug tracing
+ * plug/unplug sequence
+ * core and architecture latency measurements
 
-If you want to use chip-based compatibles instead, then use the actual name
-of the chip.  You'll need to verify 100% compatibility if you want to claim
-compatibility with another chip; it's probably easier/safer to just list
-every single Freescale chip that has this type of PTP in a huge compatible
-table, like PCI drivers do.
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/cpu.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
--Scott
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 156cc55..8abb84b 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -16,6 +16,9 @@
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
 
++#define CREATE_TRACE_POINTS
++#include <trace/events/cpu_hotplug.h>
++
+ #ifdef CONFIG_SMP
+ /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+ static DEFINE_MUTEX(cpu_add_remove_lock);
+@@ -197,10 +200,13 @@ struct take_cpu_down_param {
+ static int __ref take_cpu_down(void *_param)
+ {
+ 	struct take_cpu_down_param *param = _param;
++	unsigned int cpu = (unsigned int)(param->hcpu);
+ 	int err;
+
+ 	/* Ensure this CPU doesn't handle any more interrupts. */
++	trace_cpu_hotplug_disable_start(cpu);
+ 	err = __cpu_disable();
++	trace_cpu_hotplug_disable_end(cpu);
+ 	if (err < 0)
+ 		return err;
+
+@@ -256,7 +262,9 @@ static int __ref _cpu_down(unsigned int cpu, int
+tasks_frozen)
+ 		cpu_relax();
+
+ 	/* This actually kills the CPU. */
++	trace_cpu_hotplug_die_start(cpu);
+ 	__cpu_die(cpu);
++	trace_cpu_hotplug_die_end(cpu);
+
+ 	/* CPU is completely dead: tell everyone.  Too late to complain. */
+ 	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
+@@ -276,6 +284,8 @@ int __ref cpu_down(unsigned int cpu)
+
+ 	cpu_maps_update_begin();
+
++	trace_cpu_hotplug_down_start(cpu);
++
+ 	if (cpu_hotplug_disabled) {
+ 		err = -EBUSY;
+ 		goto out;
+@@ -284,6 +294,8 @@ int __ref cpu_down(unsigned int cpu)
+ 	err = _cpu_down(cpu, 0);
+
+ out:
++	trace_cpu_hotplug_down_end(cpu);
++
+ 	cpu_maps_update_done();
+ 	return err;
+ }
+@@ -310,7 +322,9 @@ static int __cpuinit _cpu_up(unsigned int cpu, int
+tasks_frozen)
+ 	}
+
+ 	/* Arch-specific enabling code. */
++	trace_cpu_hotplug_arch_up_start(cpu);
+ 	ret = __cpu_up(cpu);
++	trace_cpu_hotplug_arch_up_end(cpu);
+ 	if (ret != 0)
+ 		goto out_notify;
+ 	BUG_ON(!cpu_online(cpu));
+@@ -369,6 +383,8 @@ int __cpuinit cpu_up(unsigned int cpu)
+
+ 	cpu_maps_update_begin();
+
++	trace_cpu_hotplug_up_start(cpu);
++
+ 	if (cpu_hotplug_disabled) {
+ 		err = -EBUSY;
+ 		goto out;
+@@ -377,6 +393,8 @@ int __cpuinit cpu_up(unsigned int cpu)
+ 	err = _cpu_up(cpu, 0);
+
+ out:
++	trace_cpu_hotplug_up_end(cpu);
++
+ 	cpu_maps_update_done();
+ 	return err;
+ }
+-- 
+1.7.1
