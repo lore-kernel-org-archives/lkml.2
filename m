@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab1BXRIk (ORCPT <rfc822;w@1wt.eu>);
+	id S1756050Ab1BXRIo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:08:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755364Ab1BXRIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Feb 2011 12:08:40 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:21969
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753875Ab1BXRIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:08:37 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzz8275bhz2dh2a8h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
-Date: Thu, 24 Feb 2011 11:08:04 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-api@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, <netdev@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Christoph Lameter <cl@linux.com>,
-        <linuxppc-dev@lists.ozlabs.org>, David Miller <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found on
- the MPC85xx.
-Message-ID: <20110224110804.74b546c0@schlenkerla>
-In-Reply-To: <20110224163944.GA15234@riccoc20.at.omicron.at>
-References: <cover.1298447722.git.richard.cochran@omicron.at>
-	<be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
-	<20110223165058.GE14597@angua.secretlab.ca>
-	<20110223112612.30071995@schlenkerla>
-	<20110223175459.GH14597@angua.secretlab.ca>
-	<20110224163944.GA15234@riccoc20.at.omicron.at>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Message-ID: <4D669089.6080007@redhat.com>
+Date: Thu, 24 Feb 2011 12:08:25 -0500
+From: Satoru Moriya <smoriya@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH 3/3][RESEND] Provide control over unmapped pages (v4)
+References: <20110201165329.12377.13683.stgit@localhost6.localdomain6> <20110201165533.12377.11775.stgit@localhost6.localdomain6>
+In-Reply-To: <20110201165533.12377.11775.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 17:39:44 +0100
-Richard Cochran <richardcochran@gmail.com> wrote:
+On 02/01/2011 11:55 AM, Balbir Singh wrote:
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 7b56473..2ac8549 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1660,6 +1660,9 @@ zonelist_scan:
+>  			unsigned long mark;
+>  			int ret;
+>  
+> +			if (should_reclaim_unmapped_pages(zone))
+> +				wakeup_kswapd(zone, order, classzone_idx);
+> +
+>  			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
+>  			if (zone_watermark_ok(zone, order, mark,
+>  				    classzone_idx, alloc_flags))
 
-> On Wed, Feb 23, 2011 at 10:54:59AM -0700, Grant Likely wrote:
-> > On Wed, Feb 23, 2011 at 11:26:12AM -0600, Scott Wood wrote:
-> 
-> > > The eTSEC revision is probeable as well, but due the way PTP is described as
-> > > a separate node, the driver doesn't have straightforward access to those
-> > > registers.
-> > 
-> > Ignorant question: Should the ptp be described as a separate node?
-> 
-> Well, the PTP Hardware Clock function is logically separate from the
-> MAC function.
+<snip>
 
-The eTSEC node doesn't describe the MAC function, it describes the whole
-device (or at least it should... we make an exception for MDIO, which
-should probably have been a subnode instead).
+> +int sysctl_max_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
+> +	void __user *buffer, size_t *length, loff_t *ppos)
+> +{
+> +	struct zone *zone;
+> +	int rc;
+> +
+> +	rc = proc_dointvec_minmax(table, write, buffer, length, ppos);
+> +	if (rc)
+> +		return rc;
+> +
+> +	for_each_zone(zone)
+> +		zone->max_unmapped_pages = (zone->present_pages *
+> +				sysctl_max_unmapped_ratio) / 100;
+> +	return 0;
+> +}
+> +#endif
+> +
 
-> PHCs can be implemented in the MAC, in the PHY, or in
-> between in an FPGA on MII bus.
-> 
-> If the PHC is in the MAC, then it might be wise to implement one
-> driver that offers both the MAC and the PHC.
-> 
-> In the case of gianfar, it is not really necessary to combine the PHC
-> into the gianfar driver, since the registers are pretty well
-> separated.
+<snip>
 
-How the drivers are structured in Linux is a separate concern from how the
-devices are described in the device tree.  The tree is supposed to be an
-OS-independent representation of hardware.
+> +
+> +bool should_reclaim_unmapped_pages(struct zone *zone)
+> +{
+> +	if (unlikely(unmapped_page_control) &&
+> +		(zone_unmapped_file_pages(zone) > zone->max_unmapped_pages))
+> +		return true;
+> +	return false;
+> +}
+> +#endif
 
-If Linux has multiple drivers that correspond to portions of one node, a
-toplevel driver can register platform devices for the components, adding
-in any additional information like versioning that it gets from the
-toplevel registers.
+Why don't you limit the amount of unmapped pages for the whole system?
+Current implementation, which limit unmapped pages per zone, may cause unnecessary
+reclaiming. Because if memory access is not balanced among zones(or nodes),
+the kernel may reclaim unmapped pages even though other zones/nodes have enough
+spaces for them.
 
--Scott
+Anyway, I'm interested in this patchset. Because my customers in enterprise area
+want this kind of feature for a long time to avoid direct reclaim completely 
+in a certain situation.
 
+Regards,
+Satoru
