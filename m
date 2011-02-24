@@ -1,133 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab1BXMeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 07:34:22 -0500
-Received: from webbox4.loswebos.de ([213.187.93.205]:37077 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab1BXMeU (ORCPT
+	id S1754629Ab1BXMez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 07:34:55 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40688 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab1BXMex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 07:34:20 -0500
-Date: Thu, 24 Feb 2011 13:34:14 +0100
-From: Marc Koschewski <marc@osknowledge.org>
-To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "adrian.hunter@nokia.com" <adrian.hunter@nokia.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase
- time
-Message-ID: <20110224123352.GA26516@marc.osknowledge.org>
-References: <20110224111801.GA7169@intel.com>
- <20110224113756.GB7260@marc.osknowledge.org>
- <5D8008F58939784290FAB48F5497519835CE59FE52@shsmsx502.ccr.corp.intel.com>
- <20110224122235.GC7260@marc.osknowledge.org>
- <5D8008F58939784290FAB48F5497519835CE59FE57@shsmsx502.ccr.corp.intel.com>
+	Thu, 24 Feb 2011 07:34:53 -0500
+Date: Thu, 24 Feb 2011 10:02:04 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC] [PATCH 6/10] Generic Watchdog Timer Driver
+Message-ID: <20110224100204.GC15118@pulham.picochip.com>
+References: <20110223204350.GA7433@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5D8008F58939784290FAB48F5497519835CE59FE57@shsmsx502.ccr.corp.intel.com>
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://www.kosik.org/pubkey.asc
-X-Blog: http://www.kosik.org/blog/
-X-Operating-System: Linux marc 2.6.37-ck2-dezzy
+In-Reply-To: <20110223204350.GA7433@infomag.iguana.be>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dong, Chuanxiao <chuanxiao.dong@intel.com> [2011-02-24 20:25:21 +0800]:
-
-> > -----Original Message-----
-> > From: Marc Koschewski [mailto:marc@osknowledge.org]
-> > Sent: Thursday, February 24, 2011 8:23 PM
-> > To: Dong, Chuanxiao
-> > Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; adrian.hunter@nokia.com;
-> > linus.walleij@linaro.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase time
-> > 
-> > * Dong, Chuanxiao <chuanxiao.dong@intel.com> [2011-02-24 20:09:59 +0800]:
-> > 
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Marc Koschewski [mailto:marc@osknowledge.org]
-> > > > Sent: Thursday, February 24, 2011 7:38 PM
-> > > > To: Dong, Chuanxiao
-> > > > Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; adrian.hunter@nokia.com;
-> > > > linus.walleij@linaro.org; linux-kernel@vger.kernel.org
-> > > > Subject: Re: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase
-> > time
-> > > >
-> > > > Hi,
-> > > >
-> > > > * Chuanxiao Dong <chuanxiao.dong@intel.com> [2011-02-24 19:18:01 +0800]:
-> > > >
-> > > > > Since if clock gating feature is enabled, the clock frequency may be zero when
-> > > > > host clock is gated. In such scenario, mmc_set_mmc_erase_timeout() may
-> > have a
-> > > > > division by zero bug.
-> > > > >
-> > > > > So this patch used mmc_host_clk_rate() to fix this.
-> > > > >
-> > > > > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> > > > > ---
-> > > > >  drivers/mmc/core/core.c |   10 ++++++++--
-> > > > >  1 files changed, 8 insertions(+), 2 deletions(-)
-> > > > >
-> > > > > diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> > > > > index 34a7e8c..12d0eb8 100644
-> > > > > --- a/drivers/mmc/core/core.c
-> > > > > +++ b/drivers/mmc/core/core.c
-> > > > > @@ -1201,8 +1201,14 @@ static void mmc_set_mmc_erase_timeout(struct
-> > > > mmc_card *card,
-> > > > >  		 * less but not that much less, so fudge it by multiplying by 2.
-> > > > >  		 */
-> > > > >  		timeout_clks <<= 1;
-> > > > > -		timeout_us += (timeout_clks * 1000) /
-> > > > > -			      (card->host->ios.clock / 1000);
-> > > > > +
-> > > > > +		/*
-> > > > > +		 * at this moment, host controller maybe clock gated, so make
-> > > > > +		 * sure we can get a correct host clock freq.
-> > > > > +		 */
-> > > > > +		if (mmc_host_clk_rate(card->host))
-> > > > > +			timeout_us += (timeout_clks * 1000) /
-> > > > > +				      (mmc_host_clk_rate(card->host) / 1000);
-> > > >
-> > > > Why don't you just reuse mmc_host_clk_rate()'s result instead of calling it
-> > twice?
-> > > This is a incline function and just return host->ios.clock. Reuse
-> > mmc_host_clk_rate()'s result need to add a new variable to save the value.
-> > 
-> > It's not inline on trunk and it spinlocks.
-> > 
-> > drivers/mmc/core/host.c:195
-> > 
-> >     194  */
-> >     195 unsigned int mmc_host_clk_rate(struct mmc_host *host)
-> >     196 {
-> OK. With the clock gating framework enabled... I agree. So, what do you think? Add a new variable is better?
-
-I personally would prefer the variable over the spinlock and function call, yes.
-
-And calling the same method with the same parameters on a line and another
-time on the next line is generally a bad idea I think. But maybe that's kind
-of a 'taste', moreover. It just hit my eye when I saw it...
-
-Cheers,
-Marc
-
+On Wed, Feb 23, 2011 at 09:43:51PM +0100, Wim Van Sebroeck wrote:
+> commit afe3de93859443b575407f39a2e655956c02e088
+> Author: Wim Van Sebroeck <wim@iguana.be>
+> Date:   Sun Jul 18 10:39:00 2010 +0000
 > 
-> Thanks
-> Chuanxiao
+>     watchdog: WatchDog Timer Driver Core - Part 6
+>     
+>     Since we don't want that a driver module can be removed
+>     while the watchdog timer is still active, we lock the
+>     driver module (by incremeting the reference counter).
+>     After a clean close of the watchdog driver we unlock the
+>     driver module.
+>     If /dev/watchdog is closed uncleanly (and the watchdog is
+>     still active) then we do not unlock the driver module,
+>     but keep it, so that next time /dev/watchdog get's opened
+>     we can continue triggering the watchdog.
+
+Ahh, I was looking for too much in the earlier patches!  Apologies.
+
+>     
+>     Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>     Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+> 
+> diff --git a/Documentation/watchdog/src/watchdog-with-timer-example.c b/Documentation/watchdog/src/watchdog-with-timer-example.c
+> index f1d4f217..604fd91 100644
+> --- a/Documentation/watchdog/src/watchdog-with-timer-example.c
+> +++ b/Documentation/watchdog/src/watchdog-with-timer-example.c
+> @@ -127,6 +127,7 @@ static const struct watchdog_info wdt_info = {
+>  };
+>  
+>  static const struct watchdog_ops wdt_ops = {
+> +	.owner =	THIS_MODULE,
+>  	.start =	wdt_start,
+>  	.stop =		wdt_stop,
+>  	.ping =		wdt_ping,
+> diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
+> index f15e8d4..472bfea 100644
+> --- a/Documentation/watchdog/watchdog-kernel-api.txt
+> +++ b/Documentation/watchdog/watchdog-kernel-api.txt
+> @@ -63,6 +63,7 @@ It contains following fields:
+>  The list of watchdog operations is defined as:
+>  
+>  struct watchdog_ops {
+> +	struct module *owner;
+>  	/* mandatory operations */
+>  	int (*start)(struct watchdog_device *);
+>  	int (*stop)(struct watchdog_device *);
+> @@ -72,6 +73,10 @@ struct watchdog_ops {
+>  	int (*set_timeout)(struct watchdog_device *, int);
+>  };
+>  
+> +It is important that you first define the module owner of the watchdog timer
+> +driver's operations. This module owner will be used to lock the module when
+> +the watchdog is active. (You don't want to unload the module when you're
+> +watchdog timer device is still active).
+>  Some operations are mandatory and some are optional. The mandatory operations
+>  are:
+>  * start: this is a pointer to the routine that starts the watchdog timer
+> @@ -121,3 +126,8 @@ bit-operations. The status bit's that are defined are:
+>  * WDOG_DEV_OPEN: this status bit shows whether or not the watchdog device
+>    was opened via /dev/watchdog.
+>    (This bit should only be used by the WatchDog Timer Driver Core).
+> +* WDOG_ORPHAN: when /dev/watchdog was closed, but the watchdog is still active
+> +  then we don't unload the module. This bit is set when this situation occurs.
+> +  When re-opening /dev/watchdog before a reboot occurs, you can then still use
+> +  and ping the watchdog timer device.
+> +  (This bit should only be used by the WatchDog Timer Driver Core).
+
+I don't fully understand why the module refcounting is done in the open 
+and release though.  If you moved it into the registration and 
+unregistration then doesn't that remove the need for WDOG_ORPHAN?
+
+> diff --git a/drivers/watchdog/core/watchdog_core.c b/drivers/watchdog/core/watchdog_core.c
+> index 52bc520..d1a824e 100644
+> --- a/drivers/watchdog/core/watchdog_core.c
+> +++ b/drivers/watchdog/core/watchdog_core.c
+> @@ -60,6 +60,10 @@ int register_watchdogdevice(struct watchdog_device *wdd)
+>  	if (wdd == NULL || wdd->info == NULL || wdd->ops == NULL)
+>  		return -ENODATA;
+>  
+> +	/* Make sure that the owner of the watchdog operations exists */
+> +	if (wdd->ops->owner == NULL)
+> +		return -ENODATA;
+
+Won't this be effectively NULL if the module is builtin?  It looks like 
+if it is builtin then THIS_MODULE would be defined as (struct module 
+*)0.
+
+> +
+>  	/* Make sure that the mandatory operations are supported */
+>  	if (wdd->ops->start == NULL || wdd->ops->stop == NULL)
+>  		return -ENODATA;
+> diff --git a/drivers/watchdog/core/watchdog_dev.c b/drivers/watchdog/core/watchdog_dev.c
+> index b80c6e6..d3dfac2 100644
+> --- a/drivers/watchdog/core/watchdog_dev.c
+> +++ b/drivers/watchdog/core/watchdog_dev.c
+> @@ -259,7 +259,7 @@ static long watchdog_ioctl(struct file *file, unsigned int cmd,
+>  
+>  static int watchdog_open(struct inode *inode, struct file *file)
+>  {
+> -	int err;
+> +	int err = -EBUSY;
+>  
+>  	trace("%p, %p", inode, file);
+>  
+> @@ -267,14 +267,26 @@ static int watchdog_open(struct inode *inode, struct file *file)
+>  	if (test_and_set_bit(WDOG_DEV_OPEN, &wdd->status))
+>  		return -EBUSY;
+
+Couldn't wdd be potentially invalid if the module had been unloaded?
+
+>  
+> +	/* if the /dev/watchdog device is open, we don't want the module
+> +	 * to be unloaded. */
+> +	if (!try_module_get(wdd->ops->owner))
+> +		goto out;
+
+Same here.
+
+> +
+>  	/* start the watchdog */
+>  	err = watchdog_start(wdd);
+>  	if (err < 0)
+> -		goto out;
+> +		goto out_mod;
+> +
+> +	/* We leaked a reference to lock the module in on close
+> +	 * now we can reclaim it as we re-opened before triggering */
+> +	if (test_and_clear_bit(WDOG_ORPHAN, &wdd->status))
+> +		module_put(wdd->ops->owner);
+>  
+>  	/* dev/watchdog is a virtual (and thus non-seekable) filesystem */
+>  	return nonseekable_open(inode, file);
+>  
+> +out_mod:
+> +	module_put(wdd->ops->owner);
+>  out:
+>  	clear_bit(WDOG_DEV_OPEN, &wdd->status);
+>  	return err;
+> @@ -296,8 +308,13 @@ static int watchdog_release(struct inode *inode, struct file *file)
+>  
+>  	/* stop the watchdog */
+>  	err = watchdog_stop(wdd);
+> -	if (err < 0) {
+> +
+> +	/* If the watchdog stopped correctly we let the module unload again */
+> +	if (err == 0)
+> +		module_put(wdd->ops->owner);
+> +	else {	/* If not we deliberately leak a module reference */
+>  		printk(KERN_CRIT "%s: not stopping watchdog!\n", wdd->name);
+> +		set_bit(WDOG_ORPHAN, &wdd->status);
+>  		watchdog_ping(wdd);
+>  	}
+>  
+> diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+> index e35f51f..ba08f38 100644
+> --- a/include/linux/watchdog.h
+> +++ b/include/linux/watchdog.h
+> @@ -64,6 +64,7 @@ struct watchdog_device;
+>  
+>  /* The watchdog-devices operations */
+>  struct watchdog_ops {
+> +	struct module *owner;
+>  	/* mandatory operations */
+>  	int (*start)(struct watchdog_device *);
+>  	int (*stop)(struct watchdog_device *);
+> @@ -84,6 +85,8 @@ struct watchdog_device {
+>  #define WDOG_ACTIVE		0	/* is the watchdog running/active */
+>  #define WDOG_DEV_OPEN		1	/* is the watchdog opened via
+>  					 * /dev/watchdog */
+> +#define WDOG_ORPHAN		2	/* is the device module still loaded
+> +					 * after closing /dev/watchdog */
+>  };
+>  
+>  /* drivers/watchdog/core/watchdog_core.c */
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
--- 
-Marc Koschewski
