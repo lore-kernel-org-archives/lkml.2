@@ -1,165 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab1BXT6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 14:58:18 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64770 "EHLO
+	id S1756471Ab1BXT7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 14:59:21 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57210 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab1BXT6Q (ORCPT
+	with ESMTP id S1756218Ab1BXT7U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 14:58:16 -0500
-Date: Thu, 24 Feb 2011 14:57:59 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFS Regression in commit 0b26a0bf6ff398
-Message-ID: <20110224195759.GA2784@mgebm.net>
-References: <20110216005640.GA2841@mgebm.net>
- <1297818155.10103.43.camel@heimdal.trondhjem.org>
+	Thu, 24 Feb 2011 14:59:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pxOHNLVoJN97kH+yH7nKbZqtHpYB5P6EiL+Vfgi8C4FcQM/R0JXbYyglimCiwNf2Rw
+         dKyLEPqc5/vdKqs++L27vmgiEuGNCcYbcFQPLUhqdFo8YYVsgcusNN3RFwZwPsyKVf0H
+         ldcdMUHu5ZYsgEGtjmXwkCmTn7lrHwGgtXG8g=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
-Content-Disposition: inline
-In-Reply-To: <1297818155.10103.43.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110224171209.GE7925@suse.de>
+References: <1298539998-6422-1-git-send-email-marek.belisko@open-nandra.com>
+	<20110224171209.GE7925@suse.de>
+Date: Thu, 24 Feb 2011 20:58:52 +0100
+Message-ID: <AANLkTimTePRqSZ5=oJPrEM1cdu0zNPmWGfm_AbN3OdiJ@mail.gmail.com>
+Subject: Re: [PATCH] staging: gma500: Fix compilation error.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: alan@linux.intel.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg,
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 24, 2011 at 6:12 PM, Greg KH <gregkh@suse.de> wrote:
+> On Thu, Feb 24, 2011 at 10:33:18AM +0100, Marek Belisko wrote:
+>> This patch will fix following compilation error:
+>> drivers/staging/gma500/psb_drv.c:1635: error: unknown field ‘pci_driver’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1636: error: unknown field ‘name’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1636: warning: initialization from incompatible pointer type
+>> drivers/staging/gma500/psb_drv.c:1637: error: unknown field ‘id_table’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1637: warning: excess elements in union initializer
+>> drivers/staging/gma500/psb_drv.c:1637: warning: (near initialization for ‘driver.kdriver’)
+>> drivers/staging/gma500/psb_drv.c:1638: error: unknown field ‘resume’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1638: warning: excess elements in union initializer
+>> drivers/staging/gma500/psb_drv.c:1638: warning: (near initialization for ‘driver.kdriver’)
+>> drivers/staging/gma500/psb_drv.c:1639: error: unknown field ‘suspend’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1639: warning: excess elements in union initializer
+>> drivers/staging/gma500/psb_drv.c:1639: warning: (near initialization for ‘driver.kdriver’)
+>> drivers/staging/gma500/psb_drv.c:1640: error: unknown field ‘probe’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1640: warning: excess elements in union initializer
+>> drivers/staging/gma500/psb_drv.c:1640: warning: (near initialization for ‘driver.kdriver’)
+>> drivers/staging/gma500/psb_drv.c:1641: error: unknown field ‘remove’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1641: warning: excess elements in union initializer
+>> drivers/staging/gma500/psb_drv.c:1641: warning: (near initialization for ‘driver.kdriver’)
+>> drivers/staging/gma500/psb_drv.c:1643: error: unknown field ‘driver’ specified in initializer
+>> drivers/staging/gma500/psb_drv.c:1643: warning: excess elements in union initializer
+>> drivers/staging/gma500/psb_drv.c:1643: warning: (near initialization for ‘driver.kdriver’)
+>> drivers/staging/gma500/psb_drv.c: In function ‘psb_init’:
+>> drivers/staging/gma500/psb_drv.c:1664: error: implicit declaration of function ‘drm_init’
+>> drivers/staging/gma500/psb_drv.c: In function ‘psb_exit’:
+>> drivers/staging/gma500/psb_drv.c:1669: error: implicit declaration of function ‘drm_exit’
+>>
+>> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+>
+> Odd, how come I'm not hitting these in the staging-next tree?  Is it
+> because an api changed in the DRM layer in the linux-next tree?
+Yes DRM api was changed:
+commit 8410ea3b95d105a5be5db501656f44bbb91197c1
+Author: Dave Airlie <airlied@gmail.com>
+Date:   Wed Dec 15 03:16:38 2010 +1000
 
-On Tue, 15 Feb 2011, Trond Myklebust wrote:
+    drm: rework PCI/platform driver interface.
 
-> On Tue, 2011-02-15 at 19:56 -0500, Eric B Munson wrote:=20
-> > While testing some 2.6.38 work my rsync backup script started consuming
-> > large amounts of memory (all available before dying with no more availa=
-ble
-> > memory).  I have bisected the problem back to 0b26a0bf6ff398.  I am
-> > unfamiliar with the NFS code so I don't know where to start looking for=
- a
-> > possible fix.  My backups files from my home directory to an NFS mounted
-> > directory.  The NFS server is a Synology DS-411+ if it matters.  Let me=
- know
-> > if there is any other information I can provide.
->=20
-> Exactly which 2.6.38 kernel are you running, and which NFS version?
->=20
-> I'm having trouble seeing how the patch in question can be responsible
-> for what you are seeing, so please could you provide more details of
-> your test setup.
->=20
+Introduce union kdriver which encapsulate pci_driver struct.
+That's cause of error in gma500.
+>
+> thanks,
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Trond,
+thanks,
 
-I just updated to 2.6.38-rc6 and I still see the regression.  I will add so=
-me
-more information here that might be useful.
+marek
 
-The entries from ps -ef:
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-user   3116  3096  0 14:45 pts/4    00:00:00 /bin/bash /home/emunson/bin/bu
-user   3117  3116  3 14:45 pts/4    00:00:05 rsync -avz --delete --exclude=
-=3D*.
-user   3118  3117 26 14:45 pts/4    00:00:41 rsync -avz --delete --exclude=
-=3D*.
-user   3119  3118  0 14:45 pts/4    00:00:01 rsync -avz --delete --exclude=
-=3D*.
-
-strace from 3117:
-user@machine:~$ sudo strace -p 3117
-Process 3117 attached - interrupt to quit
-select(6, [5], [], NULL, {33, 382426})  =3D 0 (Timeout)
-select(6, [5], [], NULL, {60, 0})       =3D 0 (Timeout)
-select(6, [5], [], NULL, {60, 0})       =3D 0 (Timeout)
-select(6, [5], [], NULL, {60, 0})       =3D 0 (Timeout)
-select(6, [5], [], NULL, {60, 0}
-
-strace from 3118:
-=2E..
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-lstat("linux-2.6/net/netfilter/xt_dscp.c", {st_mode=3DS_IFREG|0644, st_size=
-=3D2890, ...}) =3D 0
-=2E..
-
-These stream by very quickly.
-
-and finally from 3119:
-user@machine:~$ sudo strace -p 3119
-Process 3119 attached - interrupt to quit
-select(5, NULL, [4], [4], {15, 621031}) =3D 0 (Timeout)
-select(5, NULL, [4], [4], {60, 0})      =3D 0 (Timeout)
-select(5, NULL, [4], [4], {60, 0})      =3D 0 (Timeout)
-select(5, NULL, [4], [4], {60, 0})      =3D 0 (Timeout)
-select(5, NULL, [4], [4], {60, 0}
-
-Now from my /etc/fstab:
-
-/dev/mapper/isw_gbdfddifh_Volume02 /               ext4    errors=3Dremount=
--ro 0 1
-/dev/mapper/isw_gbdfddifh_Volume03 none            swap    sw              =
-  0 0
-
-#NFS
-192.168.1.50:/volume1/backup    /mnt/backup     nfs     rsize=3D1048576,wsi=
-ze=3D1048576,user        0 0
-192.168.1.50:/volume1/data      /mnt/data       nfs     rsize=3D1048576,wsi=
-ze=3D1048576,user        0 0
-192.168.1.50:/volume1/music     /mp3            nfs     rsize=3D1048576,wsi=
-ze=3D1048576,user        0 0
-192.168.1.50:/volume1/video     /video          nfs     rsize=3D1048576,wsi=
-ze=3D1048576,user        0 0
-
-The backup script is reading from my home dir (locally mounted on partition=
- 2 of a
-fake raid stripe).  And writing to /mnt/backup/bert-ubuntu.
-
-And here is the error I get when rsync finally dies:
-
-ERROR: out of memory in flist_expand [generator]
-rsync error: error allocating core memory buffers (code 22) at util.c(117) =
-[generator=3D3.0.7]
-rsync: connection unexpectedly closed (9324 bytes received so far) [sender]
-rsync error: error in rsync protocol data stream (code 12) at io.c(601) [se=
-nder=3D3.0.7]
-
-At the point when this happens, rsync is consuming almost all of the free m=
-emory on the system.
-
-I am nost sure if there is anything else that might help, please let me kno=
-w if you need more
-information.
-
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNZrhHAAoJEH65iIruGRnN8XYH/jjGUx5Xr2TH4XWwrUNkx0OH
-3KW9QEfxSp5Cp/1sY5HXNi2+51xcKpKuNdjKwFrAqs+kId7lCaURftLGuoomcUga
-zModHveWPgeQJvCZ3kzJxUDni5R0xYNC+D83zPg56ubiu7b1HbPDDTRCXJNTN4Op
-2s2x0RVkeifa18okbxHAvfaAifrsxUorXcuVWDlmST3FrHZB98vlE8cJ9Sb89p5C
-nkaVkBU8O2chTaObiICpZMXboTWm4T23zRlxntE0HwpcpXdabkvtITTbMbMw3jBR
-n+EnWJfxFAhdIJcj0gVjHca376lN6vJst0PCmzIjNtaa7g5YWdvFa4NguFOO8Ow=
-=XEIu
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
