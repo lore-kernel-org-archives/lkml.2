@@ -1,159 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab1BXPBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:01:01 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59556 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab1BXPA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:00:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=He0QzGPuGZ74yPUwOwAPp6EipDNiL9xBxNDaH2UxOgwkpbzQAlt4jEosEBwHNl2yUt
-         gd+4KZiPBb1Q9nVNDOxwd+l1EaPgmEWmty1DHuTunEcumULuOmf9EuIW5eEiaaIj3kjd
-         7MVf3fzfIy7ntet/Hru6UAul/GftsGy9FAL3c=
-Date: Thu, 24 Feb 2011 16:00:53 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        rostedt@goodmis.org, amit.kucheria@linaro.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH V4 2/2] tracing, perf : add cpu hotplug trace events
-Message-ID: <20110224150050.GA1840@nowhere>
-References: <AANLkTi=z8GjFEK5bUfrfiSikETFywyAcT5ZdnWaJ6ZzA@mail.gmail.com>
+	id S1755886Ab1BXPBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:01:38 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:40114
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755264Ab1BXPBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 10:01:36 -0500
+Date: Thu, 24 Feb 2011 15:01:51 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Andrew Morton <akpm@osdl.org>
+Cc: containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, dhowells@redhat.com,
+        oleg@mail.hallyn.com, dlezcano@mail.hallyn.com,
+        LSM <linux-security-module@vger.kernel.org>, serge@hallyn.com
+Subject: [PATCH 01/10] Add a user_namespace as creator/owner of
+ uts_namespace
+Message-ID: <20110224150150.GA8262@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=z8GjFEK5bUfrfiSikETFywyAcT5ZdnWaJ6ZzA@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 11:23:59AM +0100, Vincent Guittot wrote:
-> Please find below a new proposal for adding trace events for cpu hotplug.
-> The goal is to measure the latency of each part (kernel, architecture)
-> and also to trace the cpu hotplug activity with other power events. I
-> have tested these traces events on an arm platform.
-> 
-> Subject: [PATCH 2/2] add hotplug tracepoint
-> 
-> this patch adds new events for cpu hotplug tracing
->  * plug/unplug sequence
->  * core and architecture latency measurements
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/cpu.c |   18 ++++++++++++++++++
->  1 files changed, 18 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 156cc55..692e819 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -16,6 +16,9 @@
->  #include <linux/mutex.h>
->  #include <linux/gfp.h>
-> 
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/cpu_hotplug.h>
-> +
->  #ifdef CONFIG_SMP
->  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
->  static DEFINE_MUTEX(cpu_add_remove_lock);
-> @@ -197,10 +200,13 @@ struct take_cpu_down_param {
->  static int __ref take_cpu_down(void *_param)
->  {
->  	struct take_cpu_down_param *param = _param;
-> +	unsigned int cpu = (unsigned int)(param->hcpu);
->  	int err;
-> 
->  	/* Ensure this CPU doesn't handle any more interrupts. */
-> +	trace_cpu_hotplug_disable_start(cpu);
->  	err = __cpu_disable();
-> +	trace_cpu_hotplug_disable_end(cpu);
->  	if (err < 0)
->  		return err;
-> 
-> @@ -256,7 +262,9 @@ static int __ref _cpu_down(unsigned int cpu, int
-> tasks_frozen)
->  		cpu_relax();
-> 
->  	/* This actually kills the CPU. */
-> +	trace_cpu_hotplug_die_start(cpu);
->  	__cpu_die(cpu);
-> +	trace_cpu_hotplug_die_end(cpu);
-> 
->  	/* CPU is completely dead: tell everyone.  Too late to complain. */
->  	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
-> @@ -274,6 +282,8 @@ int __ref cpu_down(unsigned int cpu)
->  {
->  	int err;
-> 
-> +	trace_cpu_hotplug_down_start(cpu);
-> +
->  	cpu_maps_update_begin();
-> 
->  	if (cpu_hotplug_disabled) {
-> @@ -285,6 +295,8 @@ int __ref cpu_down(unsigned int cpu)
-> 
->  out:
->  	cpu_maps_update_done();
-> +
-> +	trace_cpu_hotplug_down_end(cpu);
->  	return err;
->  }
->  EXPORT_SYMBOL(cpu_down);
-> @@ -310,7 +322,9 @@ static int __cpuinit _cpu_up(unsigned int cpu, int
-> tasks_frozen)
->  	}
-> 
->  	/* Arch-specific enabling code. */
-> +	trace_cpu_hotplug_arch_up_start(cpu);
->  	ret = __cpu_up(cpu);
-> +	trace_cpu_hotplug_arch_up_end(cpu);
->  	if (ret != 0)
->  		goto out_notify;
->  	BUG_ON(!cpu_online(cpu));
-> @@ -335,6 +349,8 @@ int __cpuinit cpu_up(unsigned int cpu)
->  	pg_data_t	*pgdat;
->  #endif
-> 
-> +	trace_cpu_hotplug_up_start(cpu);
-> +
->  	if (!cpu_possible(cpu)) {
->  		printk(KERN_ERR "can't online cpu %d because it is not "
->  			"configured as may-hotadd at boot time\n", cpu);
-> @@ -376,6 +392,8 @@ int __cpuinit cpu_up(unsigned int cpu)
-> 
->  	err = _cpu_up(cpu, 0);
-> 
-> +	trace_cpu_hotplug_up_end(cpu);
+copy_process() handles CLONE_NEWUSER before the rest of the
+namespaces.  So in the case of clone(CLONE_NEWUSER|CLONE_NEWUTS)
+the new uts namespace will have the new user namespace as its
+owner.  That is what we want, since we want root in that new
+userns to be able to have privilege over it.
 
-You should probably have this call after cpu_maps_update_done(),
-because you put the start before the mutex is locked.
-Just to stay symetric with lock events.
+Changelog:
+	Feb 15: don't set uts_ns->user_ns if we didn't create
+		a new uts_ns.
+	Feb 23: Move extern init_user_ns declaration from
+		init/version.c to utsname.h.
 
-In fact I think it may be better not to include the hotplug lock/unlock
-in the cpu down/up tracing, but trace start once it is locked and trace
-stop before we release it.
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
+---
+ include/linux/utsname.h |    4 ++++
+ init/version.c          |    1 +
+ kernel/nsproxy.c        |    5 +++++
+ kernel/user.c           |    8 ++++++--
+ kernel/utsname.c        |    4 ++++
+ 5 files changed, 20 insertions(+), 2 deletions(-)
 
-It's just that I think you're not interested in including cpu_add_remove_lock
-mutex contention in cpu hotplug traces. That's rather something to be measured
-with lock events if needed.
+diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+index 69f3997..2c3c0f5 100644
+--- a/include/linux/utsname.h
++++ b/include/linux/utsname.h
+@@ -37,9 +37,13 @@ struct new_utsname {
+ #include <linux/nsproxy.h>
+ #include <linux/err.h>
+ 
++struct user_namespace;
++extern struct user_namespace init_user_ns;
++
+ struct uts_namespace {
+ 	struct kref kref;
+ 	struct new_utsname name;
++	struct user_namespace *user_ns;
+ };
+ extern struct uts_namespace init_uts_ns;
+ 
+diff --git a/init/version.c b/init/version.c
+index adff586..86fe0cc 100644
+--- a/init/version.c
++++ b/init/version.c
+@@ -33,6 +33,7 @@ struct uts_namespace init_uts_ns = {
+ 		.machine	= UTS_MACHINE,
+ 		.domainname	= UTS_DOMAINNAME,
+ 	},
++	.user_ns = &init_user_ns,
+ };
+ EXPORT_SYMBOL_GPL(init_uts_ns);
+ 
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index f74e6c0..034dc2e 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -74,6 +74,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		err = PTR_ERR(new_nsp->uts_ns);
+ 		goto out_uts;
+ 	}
++	if (new_nsp->uts_ns != tsk->nsproxy->uts_ns) {
++		put_user_ns(new_nsp->uts_ns->user_ns);
++		new_nsp->uts_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
++		get_user_ns(new_nsp->uts_ns->user_ns);
++	}
+ 
+ 	new_nsp->ipc_ns = copy_ipcs(flags, tsk->nsproxy->ipc_ns);
+ 	if (IS_ERR(new_nsp->ipc_ns)) {
+diff --git a/kernel/user.c b/kernel/user.c
+index 5c598ca..9e03e9c 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -17,9 +17,13 @@
+ #include <linux/module.h>
+ #include <linux/user_namespace.h>
+ 
++/*
++ * userns count is 1 for root user, 1 for init_uts_ns,
++ * and 1 for... ?
++ */
+ struct user_namespace init_user_ns = {
+ 	.kref = {
+-		.refcount	= ATOMIC_INIT(2),
++		.refcount	= ATOMIC_INIT(3),
+ 	},
+ 	.creator = &root_user,
+ };
+@@ -47,7 +51,7 @@ static struct kmem_cache *uid_cachep;
+  */
+ static DEFINE_SPINLOCK(uidhash_lock);
+ 
+-/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->creator */
++/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->user_ns */
+ struct user_struct root_user = {
+ 	.__count	= ATOMIC_INIT(2),
+ 	.processes	= ATOMIC_INIT(1),
+diff --git a/kernel/utsname.c b/kernel/utsname.c
+index 8a82b4b..a7b3a8d 100644
+--- a/kernel/utsname.c
++++ b/kernel/utsname.c
+@@ -14,6 +14,7 @@
+ #include <linux/utsname.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
++#include <linux/user_namespace.h>
+ 
+ static struct uts_namespace *create_uts_ns(void)
+ {
+@@ -40,6 +41,8 @@ static struct uts_namespace *clone_uts_ns(struct uts_namespace *old_ns)
+ 
+ 	down_read(&uts_sem);
+ 	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
++	ns->user_ns = old_ns->user_ns;
++	get_user_ns(ns->user_ns);
+ 	up_read(&uts_sem);
+ 	return ns;
+ }
+@@ -71,5 +74,6 @@ void free_uts_ns(struct kref *kref)
+ 	struct uts_namespace *ns;
+ 
+ 	ns = container_of(kref, struct uts_namespace, kref);
++	put_user_ns(ns->user_ns);
+ 	kfree(ns);
+ }
+-- 
+1.7.0.4
 
-It's a detail, for the rest I'm fine the patches. As Steve said though, it would
-be nice to get feedback from cpu hotplug maintainers (who I'm adding in Cc
-here again).
-
-Thanks.
-
-
-> +
->  out:
->  	cpu_maps_update_done();
->  	return err;
-> -- 
-> 1.7.1
