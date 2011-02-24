@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab1BXDZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 22:25:47 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:51189 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab1BXDZp (ORCPT
+	id S932355Ab1BXD3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 22:29:07 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:55205 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932229Ab1BXD3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 22:25:45 -0500
-Date: Wed, 23 Feb 2011 20:25:39 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name'
- brokenness (v3)
-Message-ID: <20110224032539.GA22111@angua.secretlab.ca>
-References: <20110223150357.5a40793d@queued.net>
- <20110223232815.GC5404@angua.secretlab.ca>
- <20110223163442.2974bd66@queued.net>
- <20110224024708.GA12139@angua.secretlab.ca>
- <20110223185152.7e3c29a9@queued.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110223185152.7e3c29a9@queued.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 23 Feb 2011 22:29:04 -0500
+X-Sasl-enc: QO8IWqzhGHh3fKNMziNkSf+uD8GbheAaQ4lCRvASZvPj 1298518143
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+From: Ian Kent <raven@themaw.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Nick Piggin <npiggin@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+In-Reply-To: <20110224031439.GR22723@ZenIV.linux.org.uk>
+References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
+	 <1295420817.3076.24.camel@perseus> <1297779902.13007.86.camel@perseus>
+	 <20110224015817.GQ22723@ZenIV.linux.org.uk>
+	 <1298516618.2916.20.camel@perseus>
+	 <20110224031439.GR22723@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 11:28:57 +0800
+Message-ID: <1298518137.2916.35.camel@perseus>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 06:51:52PM -0800, Andres Salomon wrote:
-> On Wed, 23 Feb 2011 19:47:08 -0700
-> Grant Likely <grant.likely@secretlab.ca> wrote:
-> > This addresses one of my comments on v2; but it doesn't address the
-> > comment that the broken implementation of of_pdt_node_name for
-> > non-sparc still remains, or am I missing something?
-> > 
-> > g.
-> > 
+On Thu, 2011-02-24 at 03:14 +0000, Al Viro wrote:
+> On Thu, Feb 24, 2011 at 11:03:38AM +0800, Ian Kent wrote:
 > 
+> > I also have a sick feeling that dentrys may become negative at any point
+> > after __d_lookup_rcu() .....
 > 
-> I responded to that -
-> http://www.spinics.net/lists/sparclinux/msg08058.html
+> Yes.  To get stability of ->d_inode (assuming the sucker isn't pinned down
+> in normal way by ->d_count) you need ->d_lock.
+> 
+> > > Ho-hum...  I can reach RHTS, but I'd rather do that at home boxen, if
+> > > possible...  Has it been reproduced on UP boxen with SMP kernels, BTW?
+> > 
+> > Nope, I'd need to build a kernel specifically for that. I'm not sure how
+> > useful that would be though since the test is specifically meant to
+> > expose problems with multiple concurrent processes accessing an
+> > automount tree. I don't see any problem running the Connectathon tests
+> > which is essentially one automount and one client process.
+> 
+> Heh...  No, it's just that the only SMP box I have locally right now
+> is dual ultrasparc.  Anyway, I can live with RHTS.
 
-Weird; that reply didn't show up in my inbox (but my mailer did
-receive it, so it is definitely a problem on my end).  I'll reply
-now...
+If you want to get hold of the test I'm using checkout autofs-RHEL-5,
+"cd autofs-tests/submount-test", "make rpm" and use the resulting
+rh-tests-autofs-submount-test-1.0-15.noarch.rpm. There are some
+beaker/rhts rpm dependencies. Let me know if it gets painful and I'll
+try and work out what you need. The test isn't very flash but it does
+stress autofs.
 
-g.
+Ha, I haven't even turned on my Ultrsparc 2 in months, it's only got an
+old version of Solaris on it now anyway, ;)
+
 
