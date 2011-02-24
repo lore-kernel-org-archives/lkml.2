@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1BXIIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 03:08:11 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:32965 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820Ab1BXIIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 03:08:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=Slo7e3rYG6f6PnZfuwBL7Z9yUEAxQ4Cqm1YVYc3207XIVgYOdADV+KMxMFLfKlip+C
-         oZANcS482dQTSDW5lO8XIwjvvMSa5s9UVdfIi24HISQHdgD7LWYKXmFkN/zWIuPuysbc
-         asJhHh9lHkEZuU5jQxqi31YBMaD561cIU1Nek=
+	id S1755408Ab1BXIQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 03:16:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754635Ab1BXIQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 03:16:46 -0500
+Date: Thu, 24 Feb 2011 09:16:15 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v2] hugetlbfs: correct handling of negative input to
+ /proc/sys/vm/nr_hugepages
+Message-ID: <20110224081615.GE2511@bandura.usersys.redhat.com>
+References: <4D6419C0.8080804@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110223.235129.02262510.davem@davemloft.net>
-References: <AANLkTikgDsM15DO7u2SP15xx=Y_pg6JdCLrie8ACobJP@mail.gmail.com>
- <20110131.203556.193730771.davem@davemloft.net> <AANLkTimorcNAEbSpuE_dUXKuOBZDcDcGSJ2cGefniThc@mail.gmail.com>
- <20110223.235129.02262510.davem@davemloft.net>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Thu, 24 Feb 2011 16:07:48 +0800
-Message-ID: <AANLkTikE_OU_qiBUdiDP39js8jQzGqqo1FYW2uHmw3He@mail.gmail.com>
-Subject: Re: [PATCH v4] net: add Faraday FTMAC100 10/100 Ethernet driver
-To: David Miller <davem@davemloft.net>
-Cc: mirqus@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
-        dilinger@queued.net, ratbert@faraday-tech.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6419C0.8080804@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Tue, Feb 22, 2011 at 09:17:04PM +0100, Petr Holasek wrote:
+> When user insert negative value into /proc/sys/vm/nr_hugepages it
+> will result
+> in the setting a random number of HugePages in system (can be easily showed
+> at /proc/meminfo output). This patch fixes the wrong behavior so that the
+> negative input will result in nr_hugepages value unchanged.
+> 
+> v2: same fix was also done in hugetlb_overcommit_handler function
+>     as suggested by reviewers.
+> 
+> Signed-off-by: Petr Holasek <pholasek@redhat.com>
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  mm/hugetlb.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index bb0b7c1..06de5aa 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1872,8 +1872,7 @@ static int hugetlb_sysctl_handler_common(bool
+> obey_mempolicy,
+>      unsigned long tmp;
+>      int ret;
+> 
+> -    if (!write)
+> -        tmp = h->max_huge_pages;
+> +    tmp = h->max_huge_pages;
+> 
+>      if (write && h->order >= MAX_ORDER)
+>          return -EINVAL;
+> @@ -1938,8 +1937,7 @@ int hugetlb_overcommit_handler(struct
+> ctl_table *table, int write,
+>      unsigned long tmp;
+>      int ret;
+> 
+> -    if (!write)
+> -        tmp = h->nr_overcommit_huge_pages;
+> +    tmp = h->nr_overcommit_huge_pages;
+> 
+>      if (write && h->order >= MAX_ORDER)
+>          return -EINVAL;
+> -- 
+> 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+ 
+Signed-off-by: Anton Arapov <anton@redhat.com>
 
-On Thu, Feb 24, 2011 at 3:51 PM, David Miller <davem@davemloft.net> wrote:
-> From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-> Date: Thu, 24 Feb 2011 15:27:55 +0800
->
->> I guess the problem is because a HW restriction that the rx buffer must be
->> 64 bits aligned. Since I cannot make rx buffer starts at offset 2 bytes, the
->> IP header, TCP header and data are not 4 bytes aligned. The performance
->> drops drastically.
->
-> I cannot believe that after 20 years of commodity ethernet networking
-> chips were first designed, people are still designing hardware that
-> doesn't do this right.
-
-Ha ha...
-Well, this restriction was removed in the later IPs of our company. :-p
-
->
-> Just emit garbage bytes into the sub-word alignment padding if the chip
-> wants to word align it's DMA writes.
-
-Not sure what do you mean. The problem is that HW does not accept a
-base address of RX buffer which is not 8 bytes aligned.
-
-> Even the 15 year old Dec Tulip chips do this properly.
-
-best regards,
-Po-Yu Chuang
+-- 
+Anton
