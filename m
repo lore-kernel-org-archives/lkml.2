@@ -1,86 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab1BXLiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 06:38:00 -0500
-Received: from webbox4.loswebos.de ([213.187.93.205]:49498 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab1BXLh7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 06:37:59 -0500
-Date: Thu, 24 Feb 2011 12:37:56 +0100
-From: Marc Koschewski <marc@osknowledge.org>
-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, adrian.hunter@nokia.com,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase
- time
-Message-ID: <20110224113756.GB7260@marc.osknowledge.org>
-References: <20110224111801.GA7169@intel.com>
+	id S1756175Ab1BXLkO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 06:40:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31710 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263Ab1BXLkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 06:40:12 -0500
+Date: Thu, 24 Feb 2011 12:40:02 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Kyungmin Park <kmpark@infradead.org>
+cc: Lukas Czerner <lczerner@redhat.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] fat: Batched discard support for fat
+In-Reply-To: <AANLkTimnj1Cq1ojs6RkVxqsus1Ab4ycebfcdL05XLrjQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1102241227040.3190@dhcp-27-109.brq.redhat.com>
+References: <20110224051046.GA30130@july> <alpine.LFD.2.00.1102240934360.3190@dhcp-27-109.brq.redhat.com> <AANLkTi==xJLbqSs6E-+cqxRNZqb4ANayCaqUfST_MoqO@mail.gmail.com> <alpine.LFD.2.00.1102241158320.3190@dhcp-27-109.brq.redhat.com>
+ <AANLkTimnj1Cq1ojs6RkVxqsus1Ab4ycebfcdL05XLrjQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224111801.GA7169@intel.com>
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://www.kosik.org/pubkey.asc
-X-Blog: http://www.kosik.org/blog/
-X-Operating-System: Linux marc 2.6.37-ck2-dezzy
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="571140353-282837382-1298547606=:3190"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-* Chuanxiao Dong <chuanxiao.dong@intel.com> [2011-02-24 19:18:01 +0800]:
+--571140353-282837382-1298547606=:3190
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> Since if clock gating feature is enabled, the clock frequency may be zero when
-> host clock is gated. In such scenario, mmc_set_mmc_erase_timeout() may have a
-> division by zero bug.
-> 
-> So this patch used mmc_host_clk_rate() to fix this.
-> 
-> Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> ---
->  drivers/mmc/core/core.c |   10 ++++++++--
->  1 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 34a7e8c..12d0eb8 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1201,8 +1201,14 @@ static void mmc_set_mmc_erase_timeout(struct mmc_card *card,
->  		 * less but not that much less, so fudge it by multiplying by 2.
->  		 */
->  		timeout_clks <<= 1;
-> -		timeout_us += (timeout_clks * 1000) /
-> -			      (card->host->ios.clock / 1000);
-> +
-> +		/*
-> +		 * at this moment, host controller maybe clock gated, so make
-> +		 * sure we can get a correct host clock freq.
-> +		 */
-> +		if (mmc_host_clk_rate(card->host))
-> +			timeout_us += (timeout_clks * 1000) /
-> +				      (mmc_host_clk_rate(card->host) / 1000);
+On Thu, 24 Feb 2011, Kyungmin Park wrote:
 
-Why don't you just reuse mmc_host_clk_rate()'s result instead of calling it twice?
-
-Cheers,
-Marc
-
->  
->  		erase_timeout = timeout_us / 1000;
->  
-> -- 
-> 1.6.6.1
+...snip...
+> >> >> +     while (count < sbi->max_cluster) {
+> >> >> +             if (fatent.entry >= sbi->max_cluster)
+> >> >> +                     fatent.entry = FAT_START_ENT;
+> >> >> +             /* readahead of fat blocks */
+> >> >> +             if ((cur_block & reada_mask) == 0) {
+> >> >> +                     unsigned long rest = sbi->fat_length - cur_block;
+> >> >> +                     fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
+> >> >> +             }
+> >> >> +             cur_block++;
+> >> >> +
+> >> >> +             err = fat_ent_read_block(sb, &fatent);
+> >> >> +             if (err)
+> >> >> +                     goto out;
+> >> >> +
+> >> >> +             do {
+> >> >> +                     if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
+> >> >> +                             free++;
+> >> >> +                             if (!entry)
+> >> >> +                                     entry = fatent.entry;
+> >> >> +                             if (free >= (len - trimmed) && free >= minlen) {
+> >> >
+> >> > It seems to me that you are using len as number of bytes to trim. This
+> >> > is not right and I am sorry for not explaining it correctly. "len" is
+> >> > supposed to be a number of bytes you want to "investigate" from the start.
+> >> > So it means that you will trim every single free extent bigger than minlen
+> >> > between "start" byte and "start + len" byte of the underlying device, or
+> >> > partition.
+> >> No. len is adjusted at fat cluster number. it's not used byte unit.
+> >> I think it's easy to compare with fat internal units.
+> >
+> > Does not matter what units are you using for len. I it just that you are
+> > checking for (free >= (len - trimmed)) which is wrong because len is not
+> > meant to be "overall length of trimmed data" but rather "overall length
+> > of data to walk through and check for free extents" see ext4
+> > implementation for reference.
+> I think I used it as you said. e.g., I want to trim 256 (* minimum
+> discard granularity),
+> First time, I can find 10 entries. and trimmed has 10 and len has still 256.
+> next time, I found the 246 free entries then trim remaining 246 one.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+> do you want to trim it more than given len?
 
--- 
-Marc Koschewski
+Let the "O" be free (bytes, blocks, whatever), and "=" be used.
+Now, we have a filesystem like this.
+
+   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+   ^                                      ^
+   0                                      40
+
+This is how it supposed to wotk if you have called FITIRM with parameters:
+
+start = 0
+minlen = 2
+len = 20
+
+So you will go through (blocks, bytes...) 0 -> 20
+
+   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+   ^                   ^
+   0                   20
+
+So, you will call discard on extents:
+
+0-3
+You'll skip 6 because is smaller than minlen
+10-11
+15-19
+
+
+But in your implementation you will trim extents:
+0-3
+10-11
+15-19
+30-36
+
+Hope it is clear now.
+
+> 
+> Thank you,
+> Kyungmin Park
+> >
+> > Thanks!
+> > -Lukas
+> >
+> >>
+> >> I hope fat peoples comment this one.
+> >>
+> >> Thank you,
+> >> Kyungmin Park
+> >> >
+> >> >> +                                     fat_issue_discard(sb, entry, free);
+> >> >> +                                     trimmed += free;
+> >> >> +                             }
+> >> >> +                             if (trimmed >= len)
+> >> >> +                                     goto done;
+> >> >> +                     } else if (entry) {
+> >> >> +                             if (free >= minlen) {
+> >> >> +                                     fat_issue_discard(sb, entry, free);
+> >> >> +                                     trimmed += free;
+> >> >> +                             }
+> >> >> +                             if (trimmed >= len)
+> >> >> +                                     goto done;
+> >> >> +                             free = 0;
+> >> >> +                             entry = 0;
+> >> >> +                     }
+> >> >> +                     count++;
+> >> >> +             } while (fat_ent_next(sbi, &fatent));
+> >> >> +     }
+> >> >> +     if (free >= minlen) {
+> >> >> +             fat_issue_discard(sb, entry, free);
+> >> >> +             trimmed += free;
+> >> >> +     }
+> >> >> +done:
+> >> >> +     range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
+> >> >> +     fatent_brelse(&fatent);
+> >> >> +out:
+> >> >> +     unlock_fat(sbi);
+> >> >> +     return err;
+> >> >> +}
+
+...snip...
+--571140353-282837382-1298547606=:3190--
