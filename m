@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab1BXPCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:02:39 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:40151
+	id S1756294Ab1BXPCc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:02:32 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:40142
 	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756299Ab1BXPCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:02:36 -0500
-Date: Thu, 24 Feb 2011 15:02:51 +0000
+	id S1756253Ab1BXPC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 10:02:28 -0500
+Date: Thu, 24 Feb 2011 15:02:43 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: Andrew Morton <akpm@osdl.org>, containers@lists.linux-foundation.org,
@@ -15,9 +15,8 @@ Cc: Andrew Morton <akpm@osdl.org>, containers@lists.linux-foundation.org,
         Michael Kerrisk <mtk.manpages@gmail.com>, dhowells@redhat.com,
         oleg@mail.hallyn.com, dlezcano@mail.hallyn.com,
         LSM <linux-security-module@vger.kernel.org>
-Subject: [PATCH 06/10] user namespaces: convert all capable checks in
- kernel/sys.c
-Message-ID: <20110224150251.GF8262@mail.hallyn.com>
+Subject: [PATCH 05/10] Allow ptrace from non-init user namespaces
+Message-ID: <20110224150243.GE8262@mail.hallyn.com>
 References: <20110224150150.GA8262@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,202 +27,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows setuid/setgid in containers.  It also fixes some
-corner cases where kernel logic foregoes capability checks when
-uids are equivalent.  The latter will need to be done throughout
-the whole kernel.
+
+ptrace is allowed to tasks in the same user namespace according to
+the usual rules (i.e. the same rules as for two tasks in the init
+user namespace).  ptrace is also allowed to a user namespace to
+which the current task the has CAP_SYS_PTRACE capability.
 
 Changelog:
-	Jan 11: Use nsown_capable() as suggested by Bastian Blank.
-	Jan 11: Fix logic errors in uid checks pointed out by Bastian.
-	Feb 15: allow prlimit to current (was regression in previous version)
-	Feb 23: remove debugging printks, uninline set_one_prio_perm and
-		make it bool, and document its return value.
+	Dec 31: Address feedback by Eric:
+		. Correct ptrace uid check
+		. Rename may_ptrace_ns to ptrace_capable
+		. Also fix the cap_ptrace checks.
+	Jan  1: Use const cred struct
+	Jan 11: use task_ns_capable() in place of ptrace_capable().
+	Feb 23: same_or_ancestore_user_ns() was not an appropriate
+		check to constrain cap_issubset.  Rather, cap_issubset()
+		only is meaningful when both capsets are in the same
+		user_ns.
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
 ---
- kernel/sys.c |   75 +++++++++++++++++++++++++++++++++++++--------------------
- 1 files changed, 49 insertions(+), 26 deletions(-)
+ include/linux/capability.h |    2 ++
+ kernel/ptrace.c            |   27 +++++++++++++++------------
+ security/commoncap.c       |   40 ++++++++++++++++++++++++++++++++--------
+ 3 files changed, 49 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 7a1bbad..ba2b473 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -119,16 +119,33 @@ EXPORT_SYMBOL(cad_pid);
- void (*pm_power_off_prepare)(void);
- 
- /*
-+ * Returns true if current's euid is same as p's uid or euid,
-+ * or has CAP_SYS_NICE to p's user_ns.
-+ *
-+ * Called with rcu_read_lock, creds are safe
-+ */
-+static bool set_one_prio_perm(struct task_struct *p)
-+{
-+	const struct cred *cred = current_cred(), *pcred = __task_cred(p);
-+
-+	if (pcred->user->user_ns == cred->user->user_ns &&
-+	    (pcred->uid  == cred->euid ||
-+	     pcred->euid == cred->euid))
-+		return true;
-+	if (ns_capable(pcred->user->user_ns, CAP_SYS_NICE))
-+		return true;
-+	return false;
-+}
-+
-+/*
-  * set the priority of a task
-  * - the caller must hold the RCU read lock
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 7c9c829..2ec4a8c 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -553,6 +553,8 @@ static inline kernel_cap_t cap_raise_nfsd_set(const kernel_cap_t a,
   */
- static int set_one_prio(struct task_struct *p, int niceval, int error)
- {
--	const struct cred *cred = current_cred(), *pcred = __task_cred(p);
- 	int no_nice;
+ #define has_capability(t, cap) (security_real_capable((t), &init_user_ns, (cap)) == 0)
  
--	if (pcred->uid  != cred->euid &&
--	    pcred->euid != cred->euid && !capable(CAP_SYS_NICE)) {
-+	if (!set_one_prio_perm(p)) {
- 		error = -EPERM;
- 		goto out;
- 	}
-@@ -502,7 +519,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 	if (rgid != (gid_t) -1) {
- 		if (old->gid == rgid ||
- 		    old->egid == rgid ||
--		    capable(CAP_SETGID))
-+		    nsown_capable(CAP_SETGID))
- 			new->gid = rgid;
- 		else
- 			goto error;
-@@ -511,7 +528,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 		if (old->gid == egid ||
- 		    old->egid == egid ||
- 		    old->sgid == egid ||
--		    capable(CAP_SETGID))
-+		    nsown_capable(CAP_SETGID))
- 			new->egid = egid;
- 		else
- 			goto error;
-@@ -546,7 +563,7 @@ SYSCALL_DEFINE1(setgid, gid_t, gid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (capable(CAP_SETGID))
-+	if (nsown_capable(CAP_SETGID))
- 		new->gid = new->egid = new->sgid = new->fsgid = gid;
- 	else if (gid == old->gid || gid == old->sgid)
- 		new->egid = new->fsgid = gid;
-@@ -613,7 +630,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		new->uid = ruid;
- 		if (old->uid != ruid &&
- 		    old->euid != ruid &&
--		    !capable(CAP_SETUID))
-+		    !nsown_capable(CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -622,7 +639,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		if (old->uid != euid &&
- 		    old->euid != euid &&
- 		    old->suid != euid &&
--		    !capable(CAP_SETUID))
-+		    !nsown_capable(CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -670,7 +687,7 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (capable(CAP_SETUID)) {
-+	if (nsown_capable(CAP_SETUID)) {
- 		new->suid = new->uid = uid;
- 		if (uid != old->uid) {
- 			retval = set_user(new);
-@@ -712,7 +729,7 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!capable(CAP_SETUID)) {
-+	if (!nsown_capable(CAP_SETUID)) {
- 		if (ruid != (uid_t) -1 && ruid != old->uid &&
- 		    ruid != old->euid  && ruid != old->suid)
- 			goto error;
-@@ -776,7 +793,7 @@ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!capable(CAP_SETGID)) {
-+	if (!nsown_capable(CAP_SETGID)) {
- 		if (rgid != (gid_t) -1 && rgid != old->gid &&
- 		    rgid != old->egid  && rgid != old->sgid)
- 			goto error;
-@@ -836,7 +853,7 @@ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
- 
- 	if (uid == old->uid  || uid == old->euid  ||
- 	    uid == old->suid || uid == old->fsuid ||
--	    capable(CAP_SETUID)) {
-+	    nsown_capable(CAP_SETUID)) {
- 		if (uid != old_fsuid) {
- 			new->fsuid = uid;
- 			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
-@@ -869,7 +886,7 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
- 
- 	if (gid == old->gid  || gid == old->egid  ||
- 	    gid == old->sgid || gid == old->fsgid ||
--	    capable(CAP_SETGID)) {
-+	    nsown_capable(CAP_SETGID)) {
- 		if (gid != old_fsgid) {
- 			new->fsgid = gid;
- 			goto change_okay;
-@@ -1179,6 +1196,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
- 
- 	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
- 		return -EPERM;
++#define has_ns_capability(t, ns, cap) (security_real_capable((t), (ns), (cap)) == 0)
 +
- 	if (len < 0 || len > __NEW_UTS_LEN)
- 		return -EINVAL;
- 	down_write(&uts_sem);
-@@ -1226,7 +1244,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- 	int errno;
- 	char tmp[__NEW_UTS_LEN];
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
- 		return -EPERM;
- 	if (len < 0 || len > __NEW_UTS_LEN)
- 		return -EINVAL;
-@@ -1341,6 +1359,8 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
- 	rlim = tsk->signal->rlim + resource;
- 	task_lock(tsk->group_leader);
- 	if (new_rlim) {
-+		/* Keep the capable check against init_user_ns until
-+		   cgroups can contain all limits */
- 		if (new_rlim->rlim_max > rlim->rlim_max &&
- 				!capable(CAP_SYS_RESOURCE))
- 			retval = -EPERM;
-@@ -1384,19 +1404,22 @@ static int check_prlimit_permission(struct task_struct *task)
- {
- 	const struct cred *cred = current_cred(), *tcred;
- 
--	tcred = __task_cred(task);
--	if (current != task &&
--	    (cred->uid != tcred->euid ||
+ /**
+  * has_capability_noaudit - Determine if a task has a superior capability available (unaudited)
+  * @t: The task in question
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 1708b1e..cde4655 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -134,21 +134,24 @@ int __ptrace_may_access(struct task_struct *task, unsigned int mode)
+ 		return 0;
+ 	rcu_read_lock();
+ 	tcred = __task_cred(task);
+-	if ((cred->uid != tcred->euid ||
 -	     cred->uid != tcred->suid ||
 -	     cred->uid != tcred->uid  ||
 -	     cred->gid != tcred->egid ||
 -	     cred->gid != tcred->sgid ||
 -	     cred->gid != tcred->gid) &&
--	     !capable(CAP_SYS_RESOURCE)) {
+-	    !capable(CAP_SYS_PTRACE)) {
+-		rcu_read_unlock();
 -		return -EPERM;
 -	}
-+	if (current == task)
-+		return 0;
- 
--	return 0;
-+	tcred = __task_cred(task);
 +	if (cred->user->user_ns == tcred->user->user_ns &&
 +	    (cred->uid == tcred->euid &&
 +	     cred->uid == tcred->suid &&
@@ -231,14 +91,104 @@ index 7a1bbad..ba2b473 100644
 +	     cred->gid == tcred->egid &&
 +	     cred->gid == tcred->sgid &&
 +	     cred->gid == tcred->gid))
-+		return 0;
-+	if (ns_capable(tcred->user->user_ns, CAP_SYS_RESOURCE))
-+		return 0;
-+
++		goto ok;
++	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
++		goto ok;
++	rcu_read_unlock();
 +	return -EPERM;
- }
++ok:
+ 	rcu_read_unlock();
+ 	smp_rmb();
+ 	if (task->mm)
+ 		dumpable = get_dumpable(task->mm);
+-	if (!dumpable && !capable(CAP_SYS_PTRACE))
++	if (!dumpable && !task_ns_capable(task, CAP_SYS_PTRACE))
+ 		return -EPERM;
  
- SYSCALL_DEFINE4(prlimit64, pid_t, pid, unsigned int, resource,
+ 	return security_ptrace_access_check(task, mode);
+@@ -198,7 +201,7 @@ int ptrace_attach(struct task_struct *task)
+ 		goto unlock_tasklist;
+ 
+ 	task->ptrace = PT_PTRACED;
+-	if (capable(CAP_SYS_PTRACE))
++	if (task_ns_capable(task, CAP_SYS_PTRACE))
+ 		task->ptrace |= PT_PTRACE_CAP;
+ 
+ 	__ptrace_link(task, current);
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 6f4c327..5700ba5 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -128,18 +128,30 @@ int cap_settime(struct timespec *ts, struct timezone *tz)
+  * @child: The process to be accessed
+  * @mode: The mode of attachment.
+  *
++ * If we are in the same or an ancestor user_ns and have all the target
++ * task's capabilities, then ptrace access is allowed.
++ * If we have the ptrace capability to the target user_ns, then ptrace
++ * access is allowed.
++ * Else denied.
++ *
+  * Determine whether a process may access another, returning 0 if permission
+  * granted, -ve if denied.
+  */
+ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
+ {
+ 	int ret = 0;
++	const struct cred *cred, *child_cred;
+ 
+ 	rcu_read_lock();
+-	if (!cap_issubset(__task_cred(child)->cap_permitted,
+-			  current_cred()->cap_permitted) &&
+-	    !capable(CAP_SYS_PTRACE))
+-		ret = -EPERM;
++	cred = current_cred();
++	child_cred = __task_cred(child);
++	if (cred->user->user_ns == child_cred->user->user_ns &&
++	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
++		goto out;
++	if (ns_capable(child_cred->user->user_ns, CAP_SYS_PTRACE))
++		goto out;
++	ret = -EPERM;
++out:
+ 	rcu_read_unlock();
+ 	return ret;
+ }
+@@ -148,18 +160,30 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
+  * cap_ptrace_traceme - Determine whether another process may trace the current
+  * @parent: The task proposed to be the tracer
+  *
++ * If parent is in the same or an ancestor user_ns and has all current's
++ * capabilities, then ptrace access is allowed.
++ * If parent has the ptrace capability to current's user_ns, then ptrace
++ * access is allowed.
++ * Else denied.
++ *
+  * Determine whether the nominated task is permitted to trace the current
+  * process, returning 0 if permission is granted, -ve if denied.
+  */
+ int cap_ptrace_traceme(struct task_struct *parent)
+ {
+ 	int ret = 0;
++	const struct cred *cred, *child_cred;
+ 
+ 	rcu_read_lock();
+-	if (!cap_issubset(current_cred()->cap_permitted,
+-			  __task_cred(parent)->cap_permitted) &&
+-	    !has_capability(parent, CAP_SYS_PTRACE))
+-		ret = -EPERM;
++	cred = __task_cred(parent);
++	child_cred = current_cred();
++	if (cred->user->user_ns == child_cred->user->user_ns &&
++	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
++		goto out;
++	if (has_ns_capability(parent, child_cred->user->user_ns, CAP_SYS_PTRACE))
++		goto out;
++	ret = -EPERM;
++out:
+ 	rcu_read_unlock();
+ 	return ret;
+ }
 -- 
 1.7.0.4
 
