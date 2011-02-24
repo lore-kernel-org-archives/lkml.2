@@ -1,159 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab1BXLkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 06:40:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31710 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263Ab1BXLkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 06:40:12 -0500
-Date: Thu, 24 Feb 2011 12:40:02 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Kyungmin Park <kmpark@infradead.org>
-cc: Lukas Czerner <lczerner@redhat.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2] fat: Batched discard support for fat
-In-Reply-To: <AANLkTimnj1Cq1ojs6RkVxqsus1Ab4ycebfcdL05XLrjQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1102241227040.3190@dhcp-27-109.brq.redhat.com>
-References: <20110224051046.GA30130@july> <alpine.LFD.2.00.1102240934360.3190@dhcp-27-109.brq.redhat.com> <AANLkTi==xJLbqSs6E-+cqxRNZqb4ANayCaqUfST_MoqO@mail.gmail.com> <alpine.LFD.2.00.1102241158320.3190@dhcp-27-109.brq.redhat.com>
- <AANLkTimnj1Cq1ojs6RkVxqsus1Ab4ycebfcdL05XLrjQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="571140353-282837382-1298547606=:3190"
+	id S1752825Ab1BXLtd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 06:49:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46662 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab1BXLtc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 06:49:32 -0500
+Subject: Re: [PATCH 2/2] sched: allow users with rtprio rlimit to change
+ from SCHED_IDLE policy
+From: Peter Zijlstra <peterz@infradead.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        richard.purdie@linuxfoundation.org
+In-Reply-To: <4D657BEE.4040608@linux.intel.com>
+References: <1298408674-3130-1-git-send-email-dvhart@linux.intel.com>
+	 <1298408674-3130-3-git-send-email-dvhart@linux.intel.com>
+	 <1298458989.2217.361.camel@twins>  <20110223111354.GB7448@elte.hu>
+	 <1298459826.2217.363.camel@twins>  <4D652D42.4040801@linux.intel.com>
+	 <1298476805.2217.791.camel@twins>  <4D657BEE.4040608@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 24 Feb 2011 12:49:27 +0100
+Message-ID: <1298548167.2428.41.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---571140353-282837382-1298547606=:3190
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 24 Feb 2011, Kyungmin Park wrote:
-
-...snip...
-> >> >> +     while (count < sbi->max_cluster) {
-> >> >> +             if (fatent.entry >= sbi->max_cluster)
-> >> >> +                     fatent.entry = FAT_START_ENT;
-> >> >> +             /* readahead of fat blocks */
-> >> >> +             if ((cur_block & reada_mask) == 0) {
-> >> >> +                     unsigned long rest = sbi->fat_length - cur_block;
-> >> >> +                     fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
-> >> >> +             }
-> >> >> +             cur_block++;
-> >> >> +
-> >> >> +             err = fat_ent_read_block(sb, &fatent);
-> >> >> +             if (err)
-> >> >> +                     goto out;
-> >> >> +
-> >> >> +             do {
-> >> >> +                     if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
-> >> >> +                             free++;
-> >> >> +                             if (!entry)
-> >> >> +                                     entry = fatent.entry;
-> >> >> +                             if (free >= (len - trimmed) && free >= minlen) {
-> >> >
-> >> > It seems to me that you are using len as number of bytes to trim. This
-> >> > is not right and I am sorry for not explaining it correctly. "len" is
-> >> > supposed to be a number of bytes you want to "investigate" from the start.
-> >> > So it means that you will trim every single free extent bigger than minlen
-> >> > between "start" byte and "start + len" byte of the underlying device, or
-> >> > partition.
-> >> No. len is adjusted at fat cluster number. it's not used byte unit.
-> >> I think it's easy to compare with fat internal units.
-> >
-> > Does not matter what units are you using for len. I it just that you are
-> > checking for (free >= (len - trimmed)) which is wrong because len is not
-> > meant to be "overall length of trimmed data" but rather "overall length
-> > of data to walk through and check for free extents" see ext4
-> > implementation for reference.
-> I think I used it as you said. e.g., I want to trim 256 (* minimum
-> discard granularity),
-> First time, I can find 10 entries. and trimmed has 10 and len has still 256.
-> next time, I found the 246 free entries then trim remaining 246 one.
+On Wed, 2011-02-23 at 13:28 -0800, Darren Hart wrote:
+> From: Darren Hart <dvhart@linux.intel.com>
+> Date: Thu, 17 Feb 2011 15:37:07 -0800
+> Subject: [PATCH] sched: allow users with sufficient RLIMIT_NICE to change from SCHED_IDLE policy
 > 
-> do you want to trim it more than given len?
-
-Let the "O" be free (bytes, blocks, whatever), and "=" be used.
-Now, we have a filesystem like this.
-
-   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
-   ^                                      ^
-   0                                      40
-
-This is how it supposed to wotk if you have called FITIRM with parameters:
-
-start = 0
-minlen = 2
-len = 20
-
-So you will go through (blocks, bytes...) 0 -> 20
-
-   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
-   ^                   ^
-   0                   20
-
-So, you will call discard on extents:
-
-0-3
-You'll skip 6 because is smaller than minlen
-10-11
-15-19
+> The current scheduler implementation returns -EPERM when trying to change from
+> SCHED_IDLE to SCHED_OTHER or SCHED_BATCH.
 
 
-But in your implementation you will trim extents:
-0-3
-10-11
-15-19
-30-36
+>  Since SCHED_IDLE is considered to be
+> equivalent to a nice 20, 
 
-Hope it is clear now.
+Well, its not quite equivalent, its actually 5 times lighter still and
+the preemption behaviour is slightly different as you've found ;-)
+
+> changing to another policy should be allowed provided
+> the RLIMIT_NICE is accounted for.
+> 
+> This patch allows the following test-case to pass with RLIMIT_NICE=40, but still
+> fail with RLIMIT_NICE=10 when the calling process is run from a typical shell
+> (nice 0, or 20 in rlimit terms).
 
 > 
-> Thank you,
-> Kyungmin Park
-> >
-> > Thanks!
-> > -Lukas
-> >
-> >>
-> >> I hope fat peoples comment this one.
-> >>
-> >> Thank you,
-> >> Kyungmin Park
-> >> >
-> >> >> +                                     fat_issue_discard(sb, entry, free);
-> >> >> +                                     trimmed += free;
-> >> >> +                             }
-> >> >> +                             if (trimmed >= len)
-> >> >> +                                     goto done;
-> >> >> +                     } else if (entry) {
-> >> >> +                             if (free >= minlen) {
-> >> >> +                                     fat_issue_discard(sb, entry, free);
-> >> >> +                                     trimmed += free;
-> >> >> +                             }
-> >> >> +                             if (trimmed >= len)
-> >> >> +                                     goto done;
-> >> >> +                             free = 0;
-> >> >> +                             entry = 0;
-> >> >> +                     }
-> >> >> +                     count++;
-> >> >> +             } while (fat_ent_next(sbi, &fatent));
-> >> >> +     }
-> >> >> +     if (free >= minlen) {
-> >> >> +             fat_issue_discard(sb, entry, free);
-> >> >> +             trimmed += free;
-> >> >> +     }
-> >> >> +done:
-> >> >> +     range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
-> >> >> +     fatent_brelse(&fatent);
-> >> >> +out:
-> >> >> +     unlock_fat(sbi);
-> >> >> +     return err;
-> >> >> +}
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Richard Purdie <richard.purdie@linuxfoundation.org>
+> ---
+>  kernel/sched.c |   11 +++++++----
+>  1 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 18d38e4..9bf6284 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -4822,12 +4822,15 @@ recheck:
+>                             param->sched_priority > rlim_rtprio)
+>                                 return -EPERM;
+>                 }
+> +
+>                 /*
+> +                * Treat SCHED_IDLE as nice 20. Only allow a switch to
+> +                * SCHED_NORMAL if the RLIMIT_NICE would normally permit it.
+>                  */
+> +               if (p->policy == SCHED_IDLE && policy != SCHED_IDLE) {
+> +                       if (!can_nice(p, TASK_NICE(p)))
+> +                               return -EPERM;
+> +               }
+>  
+>                 /* can't change other user's priorities */
+>                 if (!check_same_owner(p)) 
 
-...snip...
---571140353-282837382-1298547606=:3190--
+Looks fine, thanks!
