@@ -1,292 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab1BXSJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:09:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6491 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754630Ab1BXSHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:07:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,219,1297065600"; 
-   d="scan'208";a="606213950"
-From: james_p_freyensee@linux.intel.com
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        james_p_freyensee@linux.intel.com, christophe.guerard@intel.com
-Subject: [PATCH 07/10] n_tracesink ldisc addition.
-Date: Thu, 24 Feb 2011 10:07:01 -0800
-Message-Id: <1298570824-26085-8-git-send-email-james_p_freyensee@linux.intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <james_p_freyensee@linux.intel.com>
-References: <james_p_freyensee@linux.intel.com>
+	id S1755684Ab1BXSJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:09:56 -0500
+Received: from smtp.intellicentre.net.au ([203.110.136.135]:3106 "EHLO
+	smtpa.intellicentre.net.au" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753260Ab1BXSJy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 13:09:54 -0500
+X-Greylist: delayed 646 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Feb 2011 13:09:54 EST
+Date: Fri, 25 Feb 2011 04:59:00 +1100
+Message-Id: <201102241759.p1OHx0Vu021498@SBSvmSWeb02.sbs.com.au>
+To: linux-kernel@vger.kernel.org
+Subject: Don't miss Iron Chef on SBS
+From: Stave Price <earn2011@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J Freyensee <james_p_freyensee@linux.intel.com>
+Dear Friend'
 
-This patch adds n_tracesink line discipline driver, which is
-part of the Intel-Atom PTI implementation solution.
+ 
+Hello Friend,
 
-Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
----
- drivers/tty/n_tracesink.c |  247 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 247 insertions(+), 0 deletions(-)
- create mode 100644 drivers/tty/n_tracesink.c
+EMAIL @ HOME BU$INE$$ 2011 START EARNING TODAY!!!
 
-diff --git a/drivers/tty/n_tracesink.c b/drivers/tty/n_tracesink.c
-new file mode 100644
-index 0000000..1ca7028
---- /dev/null
-+++ b/drivers/tty/n_tracesink.c
-@@ -0,0 +1,247 @@
-+/*
-+ *  n_tracesink.c - Trace data router and sink path through tty space.
-+ *
-+ *  Copyright (C) Intel 2011
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2
-+ *  as published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * The trace sink uses the Linux line discipline framework to receive
-+ * trace data coming from the PTI source line discipline driver
-+ * to a user-desired tty port, like USB.
-+ * This is to provide a way to extract modem trace data on
-+ * devices that do not have a PTI HW module, or just need modem
-+ * trace data to come out of a different HW output port.
-+ * This is part of a solution for the P1149.7, compact JTAG, standard.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/ioctl.h>
-+#include <linux/tty.h>
-+#include <linux/tty_ldisc.h>
-+#include <linux/errno.h>
-+#include <linux/string.h>
-+#include <asm-generic/bug.h>
-+#include "n_tracesink.h"
-+
-+/* Other ldisc drivers use 65536 which basically means,
-+ * 'I can always accept 64k' and flow control is off.
-+ * This number is deemed appropriate for this driver.
-+ */
-+#define RECEIVE_ROOM	65536
-+#define DRIVERNAME	"n_tracesink"
-+
-+/* there is a quirk with this ldisc is he can write data
-+ * to a tty from anyone calling his kernel API, which
-+ * meets customer requirements in the drivers/misc/pti.c
-+ * project.  So he needs to know when he can and cannot write when
-+ * the API is called. In theory, the API can be called
-+ * after an init() but before a successful open() which
-+ * would crash the system if tty is not checked.
-+ */
-+static struct tty_struct *this_tty;
-+static DEFINE_MUTEX(writelock);
-+
-+/**
-+ * n_tracesink_open() - Called when a tty is opened by a SW entity.
-+ * @tty: terminal device to the ldisc.
-+ *
-+ * Return:
-+ *      0 for success,
-+ *      -EFAULT = couldn't get a tty kref n_tracesink will sit
-+ *       on top of
-+ *      -EEXIST = open() called successfully once and it cannot
-+ *      be called again.
-+ *
-+ * Caveats: open() should only be successful the first time a
-+ * SW entity calls it.
-+ */
-+static int n_tracesink_open(struct tty_struct *tty)
-+{
-+	int retval = -EEXIST;
-+
-+	mutex_lock(&writelock);
-+	if (this_tty == NULL) {
-+
-+		this_tty = tty_kref_get(tty);
-+
-+		if (this_tty == NULL)
-+			retval = -EFAULT;
-+		else {
-+			tty->disc_data = this_tty;
-+			tty_driver_flush_buffer(tty);
-+			retval = 0;
-+		}
-+	}
-+	mutex_unlock(&writelock);
-+
-+	return retval;
-+}
-+
-+/**
-+ * n_tracesink_close() - close connection
-+ * @tty: terminal device to the ldisc.
-+ *
-+ * Called when a software entity wants to close a connection.
-+ */
-+static void n_tracesink_close(struct tty_struct *tty)
-+{
-+
-+	tty_driver_flush_buffer(tty);
-+
-+	mutex_lock(&writelock);
-+	tty_kref_put(this_tty);
-+	this_tty = NULL;
-+	mutex_unlock(&writelock);
-+
-+	tty->disc_data = NULL;
-+}
-+
-+/**
-+ * n_tracesink_read() - read request from user space
-+ * @tty:  terminal device passed into the ldisc.
-+ * @file: pointer to open file object.
-+ * @buf:  pointer to the data buffer that gets eventually returned.
-+ * @nr:   number of bytes of the data buffer that is returned.
-+ *
-+ * function that allows read() functionality in userspace. By default if this
-+ * is not implemented it returns -EIO. This module is functioning like a
-+ * router via n_tracesink_receivebuf(), and there is no real requirement
-+ * to implement this function. However, an error return value other than
-+ * -EIO should be used just to show that there was an intent not to have
-+ * this function implemented.  Return value based on read() man pages.
-+ *
-+ * Return:
-+ *	 -EINVAL
-+ */
-+static ssize_t n_tracesink_read(struct tty_struct *tty, struct file *file,
-+				unsigned char __user *buf, size_t nr) {
-+	return -EINVAL;
-+}
-+
-+/**
-+ * n_tracesink_write() - Function that allows write() in userspace.
-+ * @tty:  terminal device passed into the ldisc.
-+ * @file: pointer to open file object.
-+ * @buf:  pointer to the data buffer that gets eventually returned.
-+ * @nr:   number of bytes of the data buffer that is returned.
-+ *
-+ * By default if this is not implemented, it returns -EIO.
-+ * This should not be implemented, ever, because
-+ * 1. this driver is functioning like a router via
-+ *    n_tracesink_receivebuf()
-+ * 2. No writes to HW will ever go through this line discpline driver.
-+ * However, an error return value other than -EIO should be used
-+ * just to show that there was an intent not to have this function
-+ * implemented.  Return value based on write() man pages.
-+ *
-+ * Return:
-+ *	-EINVAL
-+ */
-+static ssize_t n_tracesink_write(struct tty_struct *tty, struct file *file,
-+				 const unsigned char *buf, size_t nr) {
-+	return -EINVAL;
-+}
-+
-+/**
-+ * n_tracesink_datadrain() - Kernel API function used to route
-+ *			     trace debugging data to user-defined
-+ *			     port like USB.
-+ *
-+ * @buf:   Trace debuging data buffer to write to tty target
-+ *         port. Null value will return with no write occurring.
-+ * @count: Size of buf. Value of 0 or a negative number will
-+ *         return with no write occuring.
-+ *
-+ * Caveat: If this line discipline does not set the tty it sits
-+ * on top of via an open() call, this API function will not
-+ * call the tty's write() call because it will have no pointer
-+ * to call the write().
-+ */
-+void n_tracesink_datadrain(u8 *buf, int count)
-+{
-+	mutex_lock(&writelock);
-+
-+	if ((buf != NULL) && (count > 0) && (this_tty != NULL))
-+		this_tty->ops->write(this_tty, buf, count);
-+
-+	mutex_unlock(&writelock);
-+}
-+EXPORT_SYMBOL_GPL(n_tracesink_datadrain);
-+
-+/* Flush buffer is not impelemented as the ldisc has no internal buffering
-+ * so the tty_driver_flush_buffer() is sufficient for this driver's needs.
-+ */
-+
-+/*
-+ * tty_ldisc function operations for this driver.
-+ */
-+static struct tty_ldisc_ops tty_n_tracesink = {
-+	.owner		= THIS_MODULE,
-+	.magic		= TTY_LDISC_MAGIC,
-+	.name		= DRIVERNAME,
-+	.open		= n_tracesink_open,
-+	.close		= n_tracesink_close,
-+	.read		= n_tracesink_read,
-+	.write		= n_tracesink_write
-+};
-+
-+/**
-+ * n_tracesink_init-	module initialisation
-+ *
-+ * Registers this module as a line discipline driver.
-+ *
-+ * Return:
-+ *	0 for success, any other value error.
-+ */
-+static int __init n_tracesink_init(void)
-+{
-+	int retval;
-+
-+	/* Note N_TRACESINK is defined in linux/tty.h */
-+	retval = tty_register_ldisc(N_TRACESINK, &tty_n_tracesink);
-+
-+	if (retval < 0)
-+		pr_err("%s: Registration failed: %d\n",
-+					__func__, retval);
-+
-+	return retval;
-+}
-+
-+/**
-+ * n_tracesink_exit -	module unload
-+ *
-+ * Removes this module as a line discipline driver.
-+ */
-+static void __exit n_tracesink_exit(void)
-+{
-+	int retval;
-+
-+	retval = tty_unregister_ldisc(N_TRACESINK);
-+
-+	if (retval < 0)
-+		pr_err("%s: Unregistration failed: %d\n",
-+					__func__,  retval);
-+}
-+
-+module_init(n_tracesink_init);
-+module_exit(n_tracesink_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Jay Freyensee");
-+MODULE_ALIAS_LDISC(N_TRACESINK);
-+MODULE_DESCRIPTION("Trace sink ldisc driver");
--- 
-1.7.2.3
+Congratulations: Get your $750 Commissions Now!!!
+
+Receive an Amazing Bonus worth $10,577.37 + 1,200,000,000  FRESH OPT-IN EMAIL LISTS
+
+Make 1000s Weekly Online! No Scams, No Hype!How Many Emails Can You Process A Day?
+Can You Process 30 Emails a Day? If You Can.You'll Earn $750.00 Every Day!GUARANTEED!
+
+This Is Different,Powerful And Big.The Fast & Easy Of All Email Processing Programs. 
+Finally Anyone Can Make Money In 2 Hours, Earning $1000's Per Week Guaranteed!!!
+Processing Emails From Home. No Experience Necessary!
+
+Your Earnings Are Unlimited... Below are your potential earnings!!! 
+
+Imagine waking up at 10am in the morning, having a quick look at your PC and      
+finding  the exact information you need to collect a quick $200 by lunchtime. 
+You could take  the afternoon off, play some golf, go shopping or spend some  
+quality time with the family. Then do the same thing again in the evening, 
+What a wonderful concept and you could be doing it today. 
+
+Even during the boom years in any economy it's not possible to find a form 
+of free income, BUT THIS IS EXACTLY THAT! and it will make you free money   
+for the rest of your life.
+
+It's Easy To Make Money Everyday Even If You're Starting From Scratch With
+Zero Knowledge, Experience Or Budget!I'll Show You Exactly How.
+
+We've Start putting New 30 Members in YOUR TEAM for the February 21 to 28th 2011
+weekly commission cycle...and GROWING everyday earn by $100 up to $200 or more.
+
+IMPORTANT: February 28, 2011 is the Cut-Off day to lock in your
+position then faster you act the higher commission you  will earn!!!
+
+Go Here To Secure not less than $750 commission Now and it still growing
+as  many people joining under you. if you secure your position right away:
+The $750 commission will Arrive Through your Paypal or Credit Card 0n March   
+20/2011 of..And Hurry For 6 days Remaining Position This Week!!
+
+This Program is Hands Free Once your Membership are set up, you will be 
+able to earn $750 in less than  2 hours a day.I will show you how we do that  
+and then I will help you through the process so that YOU SUCCEED!
+
+You will access your $750 in any ATM when you follow the instructions.
+
+Click below!! and order before cut-off
+
+Secure Your $750 Join Here=>>>> http://rdr.to/1gb
+
+TYPE   DATE & TIME --------- NEW MEMBERS ------------ COUNTRY
+
+P -- FEB.23  @ 2:38  AM-----Adrian Lopez------------- United States
+P -- FEB.23  @ 2:53  AM-----Cristoper Parker -------- United Kingdom
+P -- FEB.23  @ 2:56  AM-----Mandene Armstrong-------- Germany
+M -- FEB.23  @ 4:19  AM-----Gerbert Sindongpa-------- Singapore
+P -- FEB.23  @ 4:28  AM-----Carlo Echevarria--------- Italy
+M -- FEB.23  @ 6:01  AM-----lalaine ferguson--------- Australia
+P -- FEB.23  @ 7:11  AM-----Rebecca Underwood-------- Hungary
+P -- FEB.22  @ 7:39  AM-----Jericho Sanchez---------- Canada
+P -- FEB.22  @ 9:42  AM-----Thomas Coolin------------ Sri Lanka
+M -- FEB.22  @ 9:58  PM-----Grace Taylor------------- Russia
+P -- FEB.22  @ 10:21 PM-----Gina Jonhson------------- New Zealand
+P -- FEB.22  @ 11:24 PM-----Effren Christobal-------- Romania
+M -- FEB.22  @ 11:33 PM-----Tracia Miller------------ Puerto Rico
+P -- FEB.22  @ 11:41 PM-----Jane furlong------------- Potugal
+P -- FEB.22  @ 11:47 PM-----Janice Pulbirds---------- United States
+P -- FEB.22  @ 11:53 PM-----Shirley Roots------------ United States
+P -- FEB.22  @ 1:45  AM --- Ryann Lambert ----------- Europe
+M -- FEB.22  @ 12:34 AM --- Nick Gauci -------------- Calefornia
+M -- FEB.22  @ 10:24 AM --- Don Riley --------------- Netherland
+P -- FEB.22  @ 10:30 AM --- Lorne Whittaker --------- Swetzerland
+P -- FEB.22  @ 02:14 AM --- Ashwani Vohra ----------- Brazil
+M -- FEB.21  @ 2:34  AM --- Kevin Hunter ------------ United States
+P -- FEB.21  @ 1:54  AM --- Charles James Mills ----- South Africa
+P -- FEB.21  @ 12:34 AM --- Delia Lane -------------- New York
+P -- FEB.21  @ 6:45  AM --- Mohamed Suhail Siddique-- Saudi Arabia
+M -- FEB.21  @ 5:34  AM --- Aleksandar Gjuroski ----- Japan
+P -- FEB.21  @ 12:34 PM --- Andrew Karim ------------ England
+P -- FEB.21  @ 8:23  AM --- Carla Pereira ----------- South Korea
+P -- FEB.21  @ 2:34  PM --- Carl Krause ------------- India
+M -- FEB.21  @ 9:14  AM --- David Cook -------------- Denmark
+
+Therefore, you have a GUARANTEED $750 CommissionS  every month from now on!.
+
+Earn $25 Per Process!Each $25 x 30 = $750 Commission will be yours...!
+
+Be Sure to Copy the link below & Paste into your browser and press enter:
+To Secure your $750 commission!
+
+You will access your money in any ATM when you follow the instructions you receive.
+
+Click below!! And order Now before cut-off
+
+Secure Your $750 Join Here=>>>> http://rdr.to/1gb
+
+Just one simple payment of $15. and you could have earn $750 every day,And you    
+can recieve unlimited commissions every 20th of the month. Today its $750 For   
+the start of the month of February if goes up daily until the end of the month.
+
+You must UPGRADE right away or before others do....
+
+Caring for Your Success, Stave Price
+
+
+
+
 
