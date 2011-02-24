@@ -1,47 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab1BXX1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 18:27:07 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:58703 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756527Ab1BXX1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 18:27:05 -0500
-Date: Thu, 24 Feb 2011 15:27:00 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: dsd@laptop.org, sparclinux@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net
-Subject: Re: [PATCH v5] of/promtree: allow DT device matching by fixing
- 'name' brokenness
-Message-ID: <20110224152700.5663b8e7@queued.net>
-In-Reply-To: <20110224194234.GA8907@angua.secretlab.ca>
-References: <20110224165917.3760.24493.stgit@localhost6.localdomain6>
-	<20110224093341.5a809a13@queued.net>
-	<20110224194234.GA8907@angua.secretlab.ca>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756627Ab1BXX3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 18:29:53 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:36733 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab1BXX3w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 18:29:52 -0500
+Message-ID: <1cced1eb38110129d097e1c8b6857d81.squirrel@webmail.greenhost.nl>
+In-Reply-To: <AANLkTimLb4=04vOU7_SrtKpWQvFmDfibHGGsC+CFxwCW@mail.gmail.com>
+References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
+    <AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
+    <0d30dc$l7ehaa@orsmga001.jf.intel.com>
+    <AANLkTi=DXg=ighnPi4FYA29=qegE=c_PtCVWzOymYtmQ@mail.gmail.com>
+    <b5f94200cffe31ff8cbe38d2bd2e35a7.squirrel@webmail.greenhost.nl>
+    <AANLkTimLb4=04vOU7_SrtKpWQvFmDfibHGGsC+CFxwCW@mail.gmail.com>
+Date: Fri, 25 Feb 2011 00:29:34 +0100 (CET)
+Subject: Re: [git pull] drm fixes
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Alex Riesen" <raa.lkml@gmail.com>
+Cc: "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Dave Airlie" <airlied@linux.ie>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, "Daniel Vetter" <daniel@ffwll.ch>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 353bb18b0f14186cd389c275975c39f5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 12:42:34 -0700
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Thu, Feb 24, 2011 at 09:33:41AM -0800, Andres Salomon wrote:
-> > On Thu, 24 Feb 2011 10:04:41 -0700
-> > Grant Likely <grant.likely@secretlab.ca> wrote:
-> > 
-> > > From: Andres Salomon <dilinger@queued.net>
-> > > 
+On Thu, February 24, 2011 20:04, Alex Riesen wrote:
+> On Thu, Feb 24, 2011 at 10:18, Indan Zupancic <indan@nul.nu> wrote:
+>>>>
+>>>> As it turns out this is a bug in the userspace components of the stack for
+>>>> gen2 hardware, with lax kernel side enforcement. Daniel has a fix for both.
+>>>
+>>> Chris, could you point us at the patch? I ask because Daniel left a
+>>> comment in bug discussion that we should ignore some patch from him,
+>>> and there was no mention of anything else.
+>>>
+>>> I'll gladly test a better fix.
+>>
+>> See:
+>>
+>> http://lists.freedesktop.org/archives/dri-devel/2011-February/008658.html
+>
+> This is precisely the link on which Daniel commented:
 [...]
-> I've pushed the latest version out to my devicetree/experimental
-> branch on git://git.secretlab.ca/git/linux-2.6.  Give it a spin and
-> make sure everything is still working for you.
-> 
-> g.
+> And yes, it does not help at all to fix the corruption in the ticket.
 
-I just tried it and it works for me.  Dsd said he'd give it a try
-with his DT matching stuff tomorrow.
+Because there are two (or three) corruption problems! One is fixed by
+Daniels's patch, the other isn't fixed yet AFAIC.
+
+You're grumbling that I'm giving you information about the fix for one
+problem, the one Chris was talking about and you replied to, while you're
+interested in the other one (or both).
+
+>> https://lkml.org/lkml/2011/2/23/34
+>
+> This is just the discussion about the problem described in the ticket.
+> It does not even mention the patch from the previous link, BTW.
+> It does have the patch which returns -EINVAL for I915_PARAM_HAS_RELAXED_FENCING,
+> though.
+>
+> So, AFAICS, at the moment there is no better patch than this:
+>
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> index 17bd766..8f8a6a3 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -764,7 +764,7 @@ static int i915_getparam(struct drm_device *dev, void *data,
+>  		break;
+>  	case I915_PARAM_HAS_RELAXED_FENCING:
+>  		value = 1;
+> -		break;
+> +		return -EINVAL;
+>  	case I915_PARAM_HAS_COHERENT_RINGS:
+>  		value = 1;
+>  		break;
+
+Read those above links again! Daniel's patch fixes that one corruption, the
+above snippet has the same effect and works around the same bug, but neither
+do fix that other corruption mentioned in the ticket.
+
+Greetings,
+
+Indan
+
+
