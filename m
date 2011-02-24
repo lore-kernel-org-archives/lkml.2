@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1BXFog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 00:44:36 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:33070 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab1BXFof (ORCPT
+	id S1752957Ab1BXFrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 00:47:22 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36136 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab1BXFrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 00:44:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=lTKh24vIcG2cHgKeLM1H4uvvCZBANRmfH6iSYam6pSeMUaflxzwNuoJku6e5yc2hby
-         JZ6Qa5kP03OyuRkCMb1g==
-Date: Wed, 23 Feb 2011 21:44:33 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Daisuke Nishimura <nishmura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] memcg: more mem_cgroup_uncharge batching
-Message-ID: <alpine.LSU.2.00.1102232139560.2239@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 24 Feb 2011 00:47:20 -0500
+Date: Thu, 24 Feb 2011 05:47:01 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ian Kent <raven@themaw.net>
+Cc: Nick Piggin <npiggin@kernel.dk>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+Message-ID: <20110224054701.GU22723@ZenIV.linux.org.uk>
+References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
+ <1295420817.3076.24.camel@perseus>
+ <1297779902.13007.86.camel@perseus>
+ <20110224015817.GQ22723@ZenIV.linux.org.uk>
+ <1298516618.2916.20.camel@perseus>
+ <20110224031439.GR22723@ZenIV.linux.org.uk>
+ <1298518137.2916.35.camel@perseus>
+ <20110224035836.GS22723@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110224035836.GS22723@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems odd that truncate_inode_pages_range(), called not only when
-truncating but also when evicting inodes, has mem_cgroup_uncharge_start
-and _end() batching in its second loop to clear up a few leftovers, but
-not in its first loop that does almost all the work: add them there too.
+On Thu, Feb 24, 2011 at 03:58:37AM +0000, Al Viro wrote:
+> On Thu, Feb 24, 2011 at 11:28:57AM +0800, Ian Kent wrote:
+> 
+> > Ha, I haven't even turned on my Ultrsparc 2 in months, it's only got an
+> > old version of Solaris on it now anyway, ;)
+> 
+> U60, with lenny (and mainline kernel) on it.  Probably ought to upgrade
+> to squeeze one of those days...  It works, all right, but it's only 2-way,
+> so reproducing would probably be harder.  Plus the fun of building the tests
+> themselves on somewhat different userland...
+> 
+> Anyway, I wonder why you care about __d_lookup_rcu() and ->d_inode stability;
+> d_mountpoint() _is_ stable at that point (we hold vfsmount_lock) and you
+> don't seem to look at ->d_inode at all in RCU case.  Note that ->d_automount()
+> is never called in RCU case at all; nor is ->lookup() and friends, so you
+> really only have ->d_manage() to cope with, what with autofs4 having no
+> ->d_revalidate() anymore.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+FWIW, can we _ever_ get to __do_follow_link() with link->mnt != nd->path.mnt?
+It's probably not what's happening here, or we would've stepped on another
+BUG_ON(), but still it might be worth checking...
 
- mm/truncate.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- 2.6.38-rc6/mm/truncate.c	2011-01-21 20:54:14.000000000 -0800
-+++ linux/mm/truncate.c	2011-02-23 16:12:19.000000000 -0800
-@@ -225,6 +225,7 @@ void truncate_inode_pages_range(struct a
- 	next = start;
- 	while (next <= end &&
- 	       pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)) {
-+		mem_cgroup_uncharge_start();
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
- 			struct page *page = pvec.pages[i];
- 			pgoff_t page_index = page->index;
-@@ -247,6 +248,7 @@ void truncate_inode_pages_range(struct a
- 			unlock_page(page);
- 		}
- 		pagevec_release(&pvec);
-+		mem_cgroup_uncharge_end();
- 		cond_resched();
- 	}
- 
+AFAICS, if we ever get there that way, we are fscked, so the check before
+mntget() ought to replaced with BUG_ON(link->mnt != nd->path.mnt)...
