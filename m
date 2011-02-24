@@ -1,155 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab1BXN7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 08:59:14 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63838 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab1BXN7N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 08:59:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ClTVRSMJhrkkBTwfmpsAviEaO6tFCHqM2lf80aALDbrAuM3PriKoNI2pfzC68S1vXn
-         4HbCzCHXwYhAH9ibtI8Sfo1T0Jn/xWEAJK9nUyTmlUZvXZI4TL/wD+gGMXBJkrudTbc7
-         +sEgYK9FHSMyFUyZzCwhdkLc50HxViOmM8PjM=
-Date: Thu, 24 Feb 2011 14:59:08 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] bootmem: Move __alloc_memory_core_early() to nobootmem.c
-Message-ID: <20110224135908.GJ7840@htj.dyndns.org>
-References: <1297120632-24933-1-git-send-email-yinghai@kernel.org>
- <1297120632-24933-11-git-send-email-yinghai@kernel.org>
- <20110222154806.0be18267.akpm@linux-foundation.org>
- <4D660375.10005@kernel.org>
- <4D6604DD.8000500@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6604DD.8000500@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755399Ab1BXN7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 08:59:31 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58704 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754111Ab1BXN7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 08:59:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,218,1297065600"; 
+   d="scan'208";a="393491270"
+Subject: [PATCH -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 21:59:28 +0800
+Message-Id: <1298555968.2220.15.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8bc1f91e1f0e977fb95b11d8fa686f5091888110 Mon Sep 17 00:00:00 2001
-From: Yinghai Lu <yinghai@kernel.org>
-Date: Thu, 24 Feb 2011 14:43:06 +0100
+Adds SandyBridge support to perf.
 
-Now that bootmem.c and nobootmem.c are separate, there's no reason to
-define __alloc_memory_core_early(), which is used only by nobootmem,
-inside #ifdef in page_alloc.c.  Move it to nobootmem.c and make it
-static.
-
-This patch doesn't introduce any behavior change.
-
--tj: Updated commit description.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
-Committed to misc:x86-numa with description updated.  Thanks.
+ arch/x86/kernel/cpu/perf_event_intel.c |  111 ++++++++++++++++++++++++++++++++
+ 1 files changed, 111 insertions(+), 0 deletions(-)
 
- include/linux/mm.h |    2 --
- mm/nobootmem.c     |   25 +++++++++++++++++++++++++
- mm/page_alloc.c    |   28 ----------------------------
- 3 files changed, 25 insertions(+), 30 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f6385fc..679300c 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1309,8 +1309,6 @@ int add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid);
- u64 __init find_memory_core_early(int nid, u64 size, u64 align,
- 					u64 goal, u64 limit);
--void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
--				 u64 goal, u64 limit);
- typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
- extern void work_with_active_regions(int nid, work_fn_t work_fn, void *data);
- extern void sparse_memory_present_with_active_regions(int nid);
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 6a018e4..e2bdb07 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -40,6 +40,31 @@ unsigned long max_pfn;
- unsigned long saved_max_pfn;
- #endif
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 084b383..4a132c9 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -76,6 +76,15 @@ static struct event_constraint intel_westmere_event_constraints[] =
+ 	EVENT_CONSTRAINT_END
+ };
  
-+static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit)
++static struct event_constraint intel_snb_event_constraints[] =
 +{
-+	void *ptr;
-+	u64 addr;
++	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
++	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
++	/* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
++	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
++	EVENT_CONSTRAINT_END
++};
 +
-+	if (limit > memblock.current_limit)
-+		limit = memblock.current_limit;
-+
-+	addr = find_memory_core_early(nid, size, align, goal, limit);
-+
-+	if (addr == MEMBLOCK_ERROR)
-+		return NULL;
-+
-+	ptr = phys_to_virt(addr);
-+	memset(ptr, 0, size);
-+	memblock_x86_reserve_range(addr, addr + size, "BOOTMEM");
-+	/*
-+	 * The min_count is set to 0 so that bootmem allocated blocks
-+	 * are never reported as leaks.
-+	 */
-+	kmemleak_alloc(ptr, size, 0, 0);
-+	return ptr;
-+}
-+
- /*
-  * free_bootmem_late - free bootmem pages directly to page allocator
-  * @addr: starting address of the range
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a243a7f..6035136 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3780,34 +3780,6 @@ int __init add_from_early_node_map(struct range *range, int az,
- 	return nr_range;
+ static struct event_constraint intel_gen_event_constraints[] =
+ {
+ 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+@@ -89,6 +98,97 @@ static u64 intel_pmu_event_map(int hw_event)
+ 	return intel_perfmon_event_map[hw_event];
  }
  
--#ifdef CONFIG_NO_BOOTMEM
--void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
--					u64 goal, u64 limit)
--{
--	void *ptr;
--	u64 addr;
--
--	if (limit > memblock.current_limit)
--		limit = memblock.current_limit;
--
--	addr = find_memory_core_early(nid, size, align, goal, limit);
--
--	if (addr == MEMBLOCK_ERROR)
--		return NULL;
--
--	ptr = phys_to_virt(addr);
--	memset(ptr, 0, size);
--	memblock_x86_reserve_range(addr, addr + size, "BOOTMEM");
--	/*
--	 * The min_count is set to 0 so that bootmem allocated blocks
--	 * are never reported as leaks.
--	 */
--	kmemleak_alloc(ptr, size, 0, 0);
--	return ptr;
--}
--#endif
--
--
- void __init work_with_active_regions(int nid, work_fn_t work_fn, void *data)
- {
- 	int i;
--- 
-1.7.1
++static __initconst const u64 snb_hw_cache_event_ids
++				[PERF_COUNT_HW_CACHE_MAX]
++				[PERF_COUNT_HW_CACHE_OP_MAX]
++				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
++{
++ [ C(L1D) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0xf1d0, /* MEM_UOP_RETIRED.LOADS        */
++		[ C(RESULT_MISS)   ] = 0x0151, /* L1D.REPLACEMENT              */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0xf2d0, /* MEM_UOP_RETIRED.STORES       */
++		[ C(RESULT_MISS)   ] = 0x0851, /* L1D.ALL_M_REPLACEMENT        */
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x024e, /* HW_PRE_REQ.DL1_MISS          */
++	},
++ },
++ [ C(L1I ) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0280, /* ICACHE.MISSES */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++ },
++ [ C(LL  ) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x04d1, /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0424, /* L2_RQSTS.RFO_HITS */
++		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS */
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x4f2e, /* L3_LAT_CACHE.REFERENCE       */
++		[ C(RESULT_MISS)   ] = 0x412e, /* L3_LAT_CACHE.MISS            */
++	},
++ },
++ [ C(DTLB) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x01d0, /* MEM_UOP_RETIRED.LOADS */
++		[ C(RESULT_MISS)   ] = 0x0108, /* DTLB_LOAD_MISSES.CAUSES_A_WALK */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0x02d0, /* MEM_UOP_RETIRED.STORES */
++		[ C(RESULT_MISS)   ] = 0x0149, /* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++ },
++ [ C(ITLB) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x1085, /* ITLB_MISSES.STLB_HIT         */
++		[ C(RESULT_MISS)   ] = 0x0185, /* ITLB_MISSES.CAUSES_A_WALK    */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++ },
++ [ C(BPU ) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ALL_BRANCHES */
++		[ C(RESULT_MISS)   ] = 0x00c5, /* BR_MISP_RETIRED.ALL_BRANCHES */
++	},Signed-off-by: Lin Ming <ming.m.lin@intel.com>
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++ },
++};
++
+ static __initconst const u64 westmere_hw_cache_event_ids
+ 				[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+@@ -1062,6 +1162,17 @@ static __init int intel_pmu_init(void)
+ 		pr_cont("Westmere events, ");
+ 		break;
+ 
++	case 42: /* SandyBridge */
++		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
++		       sizeof(hw_cache_event_ids));
++
++		intel_pmu_lbr_init_nhm();
++
++		x86_pmu.event_constraints = intel_snb_event_constraints;
++		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
++		pr_cont("SandyBridge events, ");
++		break;
++
+ 	default:
+ 		/*
+ 		 * default constraints for v2 and up
+
 
