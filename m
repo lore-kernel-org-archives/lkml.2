@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab1BXTgk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 14:36:40 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:57157 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756280Ab1BXTgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 14:36:38 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] Input: bcm5974 - Report button also for zero fingers
-Date: Thu, 24 Feb 2011 20:37:44 +0100
-Message-Id: <1298576264-1563-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.4.1
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1Psgyn-0005NM-CB.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Psgyn-0005NM-CB c461e51bcafd430d8ac29a419b5f4eeb
+	id S1756323Ab1BXTjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 14:39:54 -0500
+Received: from kroah.org ([198.145.64.141]:45096 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755899Ab1BXTjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 14:39:52 -0500
+Date: Thu, 24 Feb 2011 11:39:47 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>
+Subject: Re: linux-next: manual merge of the tty tree with Linus' tree
+Message-ID: <20110224193947.GA15044@kroah.com>
+References: <20110224163439.05352f9b.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110224163439.05352f9b.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the current code, pressing the integrated button with an
-isolating tool does not result in any button report. Fixed
-with this this patch.
+On Thu, Feb 24, 2011 at 04:34:39PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the tty tree got a conflict in
+> drivers/char/Makefile between commit
+> 51df0acc3d76cf41d5496ef044cc5717ab5c7f71 ("virtio: console: Move file
+> back to drivers/char/") from Linus' tree and commit
+> a6afd9f3e819de4795fcd356e5bfad446e4323f2 ("tty: move a number of tty
+> drivers from drivers/char/ to drivers/tty/") (and later ones) from the tty
+> tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Dmitry,
+Thanks, I've merge 2.6.38-rc6 into tty-next so this, and another merge
+issue, should now be resolved.
 
-that nobody every complained about this bug is beyond me...
-
-Thanks,
-Henrik
-
- drivers/input/mouse/bcm5974.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index ee82851..0efaf66 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -430,10 +430,6 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 		ptest = int2bound(&c->p, raw_p);
- 		origin = raw2int(f->origin);
- 
--		/* set the integrated button if applicable */
--		if (c->tp_type == TYPE2)
--			ibt = raw2int(dev->tp_data[BUTTON_TYPE2]);
--
- 		/* while tracking finger still valid, count all fingers */
- 		if (ptest > PRESSURE_LOW && origin) {
- 			abs_p = ptest;
-@@ -452,6 +448,10 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 		}
- 	}
- 
-+	/* set the integrated button if applicable */
-+	if (c->tp_type == TYPE2)
-+		ibt = raw2int(dev->tp_data[BUTTON_TYPE2]);
-+
- 	if (dev->fingers < nmin)
- 		dev->fingers = nmin;
- 	if (dev->fingers > nmax)
--- 
-1.7.4.1
-
+greg k-h
