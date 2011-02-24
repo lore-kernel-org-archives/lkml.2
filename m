@@ -1,53 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab1BXOzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 09:55:11 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64465 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab1BXOzI (ORCPT
+	id S1754585Ab1BXOzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 09:55:20 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:5461 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab1BXOzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 09:55:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pBzHQFALpAd8jZg9ejGk3dxji5bAKJIfvUKXu+yvbsr5zOWQW3hLbpATCGDF0VqjJC
-         X59jU3YYTLVSqLvaFYsqH3+O37/apS/FIP2zbeq3OU9mr2v3cym0OHnZIfTzjuACEwIR
-         MbUT/vAF/GFtohd3iuAaVJ4WMxl+nuEZrXw20=
-Date: Thu, 24 Feb 2011 15:55:03 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: fix refcounting in swapon
-Message-ID: <20110224145503.GP7840@htj.dyndns.org>
-References: <E1PscVt-0004ad-W9@pomaz-ex.szeredi.hu>
+	Thu, 24 Feb 2011 09:55:16 -0500
+X-SpamScore: -2
+X-BigFish: VPS-2(zz4015Lzz1202hzz8275eh8275bh8275dha1495iz32i637h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LH4MPM-01-AZ3-02
+X-M-MSG: 
+Date: Thu, 24 Feb 2011 15:53:46 +0100
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: <linux-kernel@vger.kernel.org>, Manoj Iyer <manoj.iyer@canonical.com>,
+        Andre Przywara <andre.przywara@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] x86, quirk: Fix polarity for IRQ0 pin2 override on SB800
+Message-ID: <20110224145346.GD3658@alberich.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <E1PscVt-0004ad-W9@pomaz-ex.szeredi.hu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 03:49:53PM +0100, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Grab a reference to bdev before calling blkdev_get(), which expects
-> the refcount to be already incremented and either returns success or
-> decrements the refcount and returns an error.
-> 
-> The bug was introduced by e525fd89 (block: make blkdev_get/put()
-> handle exclusive access), which didn't take into account this behavior
-> of blkdev_get().
-> 
-> CC: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+On some SB800 systems polarity for IOAPIC pin2 is wrongly specified as
+low active by BIOS. This caused system hangs after resume from S3 when
+HPET was used in one-shot mode on such systems because a timer
+interrupt was missed (HPET signal is high active).
 
-Acked-by: Tejun Heo <tj@kernel.org>
+For more details see http://marc.info/?l=linux-kernel&m=129623757413868
 
-Thanks.
+Cc: stable@kernel.org # 37.x, 32.x
+Tested-by: Manoj Iyer <manoj.iyer@canonical.com>
+Tested-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/include/asm/acpi.h    |    1 +
+ arch/x86/kernel/acpi/boot.c    |   16 ++++++++++++----
+ arch/x86/kernel/early-quirks.c |   16 +++++++---------
+ 3 files changed, 20 insertions(+), 13 deletions(-)
 
+Hi,
+
+If still possible please consider this for .38
+
+
+Thanks,
+
+Andreas
+
+
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 211ca3f..4ea15ca 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -88,6 +88,7 @@ extern int acpi_disabled;
+ extern int acpi_pci_disabled;
+ extern int acpi_skip_timer_override;
+ extern int acpi_use_timer_override;
++extern int acpi_fix_pin2_polarity;
+ 
+ extern u8 acpi_sci_flags;
+ extern int acpi_sci_override_gsi;
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index b3a7113..ff25db6 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -72,6 +72,7 @@ u8 acpi_sci_flags __initdata;
+ int acpi_sci_override_gsi __initdata;
+ int acpi_skip_timer_override __initdata;
+ int acpi_use_timer_override __initdata;
++int acpi_fix_pin2_polarity __initdata;
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
+@@ -415,10 +416,17 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
+ 		return 0;
+ 	}
+ 
+-	if (acpi_skip_timer_override &&
+-	    intsrc->source_irq == 0 && intsrc->global_irq == 2) {
+-		printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
+-		return 0;
++	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
++		if (acpi_skip_timer_override) {
++			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
++			return 0;
++		}
++		if (acpi_fix_pin2_polarity &&
++		    (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
++			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
++			printk(PREFIX "BIOS IRQ0 pin2 override: "
++			       "forcing polarity to high active.\n");
++		}
+ 	}
+ 
+ 	mp_override_legacy_irq(intsrc->source_irq,
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 76b8cd9..9efbdcc 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -143,15 +143,10 @@ static void __init ati_bugs(int num, int slot, int func)
+ 
+ static u32 __init ati_sbx00_rev(int num, int slot, int func)
+ {
+-	u32 old, d;
++	u32 d;
+ 
+-	d = read_pci_config(num, slot, func, 0x70);
+-	old = d;
+-	d &= ~(1<<8);
+-	write_pci_config(num, slot, func, 0x70, d);
+ 	d = read_pci_config(num, slot, func, 0x8);
+ 	d &= 0xff;
+-	write_pci_config(num, slot, func, 0x70, old);
+ 
+ 	return d;
+ }
+@@ -160,13 +155,16 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ {
+ 	u32 d, rev;
+ 
+-	if (acpi_use_timer_override)
+-		return;
+-
+ 	rev = ati_sbx00_rev(num, slot, func);
++	if (rev >= 0x40)
++		acpi_fix_pin2_polarity = 1;
++
+ 	if (rev > 0x13)
+ 		return;
+ 
++	if (acpi_use_timer_override)
++		return;
++
+ 	/* check for IRQ0 interrupt swap */
+ 	d = read_pci_config(num, slot, func, 0x64);
+ 	if (!(d & (1<<14)))
 -- 
-tejun
+1.7.4.rc3
+
+
+
