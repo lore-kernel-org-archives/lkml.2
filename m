@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab1BXDnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 22:43:41 -0500
-Received: from teddy.stmarytx.edu ([69.150.209.230]:9274 "EHLO
-	teddy.stmarytx.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229Ab1BXDnl convert rfc822-to-8bit (ORCPT
+	id S932395Ab1BXD6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 22:58:44 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39560 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932340Ab1BXD6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 22:43:41 -0500
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 22:43:41 EST
-From: "Barragan, Erika" <ebarragan@stmarytx.edu>
-Subject: Mailbox Quota Exceeded!!!
-Thread-Topic: Mailbox Quota Exceeded!!!
-Thread-Index: AcvT1E6GMSm3+2ewTPCYVSFREAmb6w==
-Date: Thu, 24 Feb 2011 03:38:31 +0000
-Message-ID: <F3FFC46A37113B428272DE5306380F98D0B6E9@EXCH1.stmarytx.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [82.128.59.124]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Wed, 23 Feb 2011 22:58:42 -0500
+Date: Thu, 24 Feb 2011 03:58:37 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ian Kent <raven@themaw.net>
+Cc: Nick Piggin <npiggin@kernel.dk>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+Message-ID: <20110224035836.GS22723@ZenIV.linux.org.uk>
+References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
+ <1295420817.3076.24.camel@perseus>
+ <1297779902.13007.86.camel@perseus>
+ <20110224015817.GQ22723@ZenIV.linux.org.uk>
+ <1298516618.2916.20.camel@perseus>
+ <20110224031439.GR22723@ZenIV.linux.org.uk>
+ <1298518137.2916.35.camel@perseus>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298518137.2916.35.camel@perseus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-System Administrator,
+On Thu, Feb 24, 2011 at 11:28:57AM +0800, Ian Kent wrote:
 
+> Ha, I haven't even turned on my Ultrsparc 2 in months, it's only got an
+> old version of Solaris on it now anyway, ;)
 
+U60, with lenny (and mainline kernel) on it.  Probably ought to upgrade
+to squeeze one of those days...  It works, all right, but it's only 2-way,
+so reproducing would probably be harder.  Plus the fun of building the tests
+themselves on somewhat different userland...
 
-Your mailbox has exceeded it limit/quota set by your Administrator, and you will be having problems in
+Anyway, I wonder why you care about __d_lookup_rcu() and ->d_inode stability;
+d_mountpoint() _is_ stable at that point (we hold vfsmount_lock) and you
+don't seem to look at ->d_inode at all in RCU case.  Note that ->d_automount()
+is never called in RCU case at all; nor is ->lookup() and friends, so you
+really only have ->d_manage() to cope with, what with autofs4 having no
+->d_revalidate() anymore.
 
-sending and receiving new mails. To prevent this, please click on the link below to Re-validate your account.
-
-
-
-http://forms3.createforms.com/102040/form_2_1.html
-
-
-
-Regards,
-
-Barragan Erika,
-
-Online Co-odinator.
+BTW, Nick has moved to kernel.dk; whether he's still reachable there is
+a question, though - he seems to have disappeared since mid-January.
