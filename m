@@ -1,133 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab1BXG1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 01:27:51 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:59067 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab1BXG1u (ORCPT
+	id S1754289Ab1BXGaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 01:30:04 -0500
+Received: from prod-mail-xrelay04.akamai.com ([96.6.114.79]:55216 "EHLO
+	prod-mail-xrelay04.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753644Ab1BXGaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 01:27:50 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next IPv4 connect() call to dest routed over ppp broken
-From: Valdis.Kletnieks@vt.edu
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1298528865_6002P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 24 Feb 2011 01:27:45 -0500
-Message-ID: <18288.1298528865@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4D65FA63.00C1,ss=1,fgs=0,
-	ip=71.197.1.74,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 24 Feb 2011 01:30:03 -0500
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Feb 2011 01:30:02 EST
+From: Josh Hunt <johunt@akamai.com>
+To: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org
+Cc: sandeen@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
+Subject: [RFC][PATCH] ext2: Resolve i_nlink race in ext2_rename
+Date: Wed, 23 Feb 2011 22:21:41 -0800
+Message-Id: <1298528501-32176-1-git-send-email-johunt@akamai.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1298528865_6002P
-Content-Type: text/plain; charset=us-ascii
+[resending: left Jan off the original mail by accident]
 
-l2.6.38-rc5-next-20110222 is giving me trouble with network - specifically IPv4
-routed over a PPP link.  IPv6 seems to be OK, as does IPv4 not over PPP.
-Problem entered sometime after -rc2-mmotm0125 (I didn't try -rc3 or -rc4 due to
-time constraints that kept me from chasing down a different problem I had).
+We have a multi-threaded workload which is currently "losing" files in the form
+of unattached inodes. The workload is link, rename, unlink intensive. This is
+happening on an ext2 filesystem and have reproduced the issue in kernel
+2.6.37.  Here's a sample strace:
 
-I'm at home, so I bring up a PPP link to our VPN endpoint, and route 2 /16s
-via the PPP connection.  So ifconfig and routing look like this:
+    open("/a/tmp/tmpfile.1296184058", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE, 0666) = 9
+    link("/a/tmp/tmpfile.1296184058", "/a/tmp/tmpfile.28117.1296184059") = 0
+    rename("/a/tmp/tmpfile.28117.1296184059", "/a/tmp/tmpfile") = 0
+    stat64("/a/tmp/tmpfile", {st_mode=S_IFREG|0644, st_size=24248267, ...}) = 0
+    link("/a/tmp/tmpfile", "/a/tmp/submit/tmpfile")        = 0
+    open("/a/tmp/tmpfile.1296184058", O_RDONLY) = 13
+    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDWR|O_CREAT|O_EXCL, 0600) = 824
+    rename("/a/tmp/submit/tmpfile", "/a/tmp/submit/tmpfile.send.q9SNoL")                = 0
+    unlink("/a/tmp/tmpfile.1296184058") = 0
+    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 827
+    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 828
+    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 829
+    unlink("/a/tmp/submit/tmpfile.send.q9SNoL") = 0
 
-ppp0      Link encap:Point-to-Point Protocol  
-          inet addr:128.173.34.98  P-t-P:128.173.32.21  Mask:255.255.255.255
-          inet6 addr: 2001:468:c80:3b05:9559:2833:c9c6:4910/64 Scope:Global
-          inet6 addr: fe80::9559:2833:c9c6:4910/10 Scope:Link
-          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1460  Metric:1
-          RX packets:19709 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:14189 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:3 
-          RX bytes:20541163 (19.5 MiB)  TX bytes:1294777 (1.2 MiB)
+The application behavior shown above repeats indefinitely with most filenames
+changing during each iteration except for 'tmpfile'. Looking into this issue I
+see that vfs_rename_other() only takes i_mutex for the new inode and the new
+inode's directory as well as the old directory's mutex. This works for
+modifying the dir entry and appears to be fine for most filesystems, but
+ext2 and a few others (exofs, minix, nilfs2, omfs, sysv, ufs) modify i_nlink
+inside of their respective rename functions without grabbing the i_mutex. The
+modifications are done through calls to inode_inc_link_count(old_inode) and
+inode_dec_link_count(old_inode), etc.
 
-wlan0     Link encap:Ethernet  HWaddr 00:24:D6:53:C5:BA  
-          inet addr:192.168.2.2  Bcast:192.168.2.255  Mask:255.255.255.0
-          inet6 addr: fe80::224:d6ff:fe53:c5ba/64 Scope:Link
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:209585 errors:0 dropped:3 overruns:0 frame:0
-          TX packets:205993 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:169153434 (161.3 MiB)  TX bytes:105289986 (100.4 MiB)
+Taking the mutex for the old inode appears to resolve the issue of the
+lost files/unattached inodes that I am seeing with this workload. I've attached
+a patch below doing what I've described above. If this is an accepted solution
+I believe other filesystems may also be affected by this and I could provide
+a patch for those as well.
 
-% ip route show
-default via 192.168.2.1 dev wlan0  metric 2 
-128.173.0.0/16 dev ppp0  scope link 
-128.173.32.21 via 192.168.2.1 dev wlan0  src 192.168.2.2 
-128.173.32.21 dev ppp0  proto kernel  scope link  src 128.173.34.98 
-192.168.2.0/24 dev wlan0  proto kernel  scope link  src 192.168.2.2 
-198.82.0.0/16 dev ppp0  scope link 
+Thanks
+Josh
 
-strace ntpdate -q 198.82.1.201 (an NTP server of ours, UDP over ppp0):
-....
-socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 3
-connect(3, {sa_family=AF_INET, sin_port=htons(123), sin_addr=inet_addr("198.82.1.201")}, 16) = -1 EINVAL (Invalid argument)
-.. and we're dead.
+ext2_rename modifies old_inode's nlink values through
+inode_inc_link_count(old_inode) and inode_dec_link_count(old_inode) without
+holding old_inode's mutex. vfs_rename_other() only takes the mutex of the new
+inode and directory and old inode's directory. This causes old inode's nlink
+values to become incorrect and results in an unattached inode.
 
-strace ping 198.82.1.201 (ICMP this time, over ppp0):
-...
-socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
-connect(4, {sa_family=AF_INET, sin_port=htons(1025), sin_addr=inet_addr("198.82.1.201")}, 16) = -1 EINVAL (Invalid argument)
-and things fall over from there...
+CC: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+---
+ fs/ext2/namei.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-strace telnet telnet 198.82.161.192 25   (does TCP work?  SMTP to a mail host of ours)
-...
-socket(PF_INET, SOCK_STREAM, IPPROTO_TCP) = 3
-setsockopt(3, SOL_IP, IP_TOS, [16], 4)  = 0
-connect(3, {sa_family=AF_INET, sin_port=htons(25), sin_addr=inet_addr("198.82.161.192")}, 16) = -1 EINVAL (Invalid argument)
-
-Not looking good for the home team, but going to hosts not routed via the PPP interface
-works just fine:
-
-strace ping www.google.com (goes out via wlan0 directly)
-....
-socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
-connect(4, {sa_family=AF_INET, sin_port=htons(1025), sin_addr=inet_addr("72.14.204.99")}, 16) = 0
-getsockname(4, {sa_family=AF_INET, sin_port=htons(60231), sin_addr=inet_addr("192.168.2.2")}, [16]) = 0
-
-If I take down the ppp link, my routing table looks like:
-
-% ip route show
-default via 192.168.2.1 dev wlan0  metric 2 
-128.173.32.21 via 192.168.2.1 dev wlan0  src 192.168.2.2 
-192.168.2.0/24 dev wlan0  proto kernel  scope link  src 192.168.2.2 
-
-and IPv4 to the problem addresses starts working:
-
-strace ping 198.82.1.201  (via wlan0 directly):
-...
-socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
-connect(4, {sa_family=AF_INET, sin_port=htons(1025), sin_addr=inet_addr("198.82.1.201")}, 16) = 0
-getsockname(4, {sa_family=AF_INET, sin_port=htons(60404), sin_addr=inet_addr("192.168.2.2")}, [16]) = 0
-
-Any ideas? I'll probably not have a chance to bisect this for several days...
-
---==_Exmh_1298528865_6002P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNZfphcC3lWbTT17ARAtmjAKCiLq5ro6FynN2xcnQG0r+HySUlyACeMnhw
-jfv0OxL8abRzdJyroKwRnyU=
-=8nAf
------END PGP SIGNATURE-----
-
---==_Exmh_1298528865_6002P--
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 2e1d834..827839a 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -321,6 +321,8 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	dquot_initialize(old_dir);
+ 	dquot_initialize(new_dir);
+ 
++	mutex_lock(&old_inode->i_mutex);
++
+ 	old_de = ext2_find_entry (old_dir, &old_dentry->d_name, &old_page);
+ 	if (!old_de)
+ 		goto out;
+@@ -375,6 +377,7 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 
+ 	ext2_delete_entry (old_de, old_page);
+ 	inode_dec_link_count(old_inode);
++	mutex_unlock(&old_inode->i_mutex);
+ 
+ 	if (dir_de) {
+ 		if (old_dir != new_dir)
+@@ -397,6 +400,7 @@ out_old:
+ 	kunmap(old_page);
+ 	page_cache_release(old_page);
+ out:
++	mutex_unlock(&old_inode->i_mutex);
+ 	return err;
+ }
+ 
+-- 
+1.7.0.4
 
