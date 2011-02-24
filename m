@@ -1,123 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab1BXJdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 04:33:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42091 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab1BXJde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 04:33:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=eKxhNBHIwuGNTBWwA5jkSvWTfoYNr0nYAdlt7C+NPhC7YZT9kHDQ4FCXjNZUvwCqAX
-         aUw5Qp+pM+nGEYmWePR1+TkWQCI5A3/uLNGtYtvEBk7OeSI9X3eZP7iF8TTDX/CFWEjh
-         zAD38hiQXFui4EMBAO7GDGzcuE86FtdJvjfOU=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: alan@linux.intel.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH] staging: gma500: Fix compilation error.
-Date: Thu, 24 Feb 2011 10:33:18 +0100
-Message-Id: <1298539998-6422-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756012Ab1BXJfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 04:35:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35171 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755862Ab1BXJfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 04:35:20 -0500
+Date: Thu, 24 Feb 2011 10:35:19 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] page_cgroup: Reduce allocation overhead for
+ page_cgroup array for CONFIG_SPARSEMEM
+Message-ID: <20110224093519.GB20922@tiehlicka.suse.cz>
+References: <20110223151047.GA7275@tiehlicka.suse.cz>
+ <1298485162.7236.4.camel@nimitz>
+ <20110224085227.1a3e185b.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110224085227.1a3e185b.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will fix following compilation error:
-drivers/staging/gma500/psb_drv.c:1635: error: unknown field ‘pci_driver’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1636: error: unknown field ‘name’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1636: warning: initialization from incompatible pointer type
-drivers/staging/gma500/psb_drv.c:1637: error: unknown field ‘id_table’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1637: warning: excess elements in union initializer
-drivers/staging/gma500/psb_drv.c:1637: warning: (near initialization for ‘driver.kdriver’)
-drivers/staging/gma500/psb_drv.c:1638: error: unknown field ‘resume’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1638: warning: excess elements in union initializer
-drivers/staging/gma500/psb_drv.c:1638: warning: (near initialization for ‘driver.kdriver’)
-drivers/staging/gma500/psb_drv.c:1639: error: unknown field ‘suspend’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1639: warning: excess elements in union initializer
-drivers/staging/gma500/psb_drv.c:1639: warning: (near initialization for ‘driver.kdriver’)
-drivers/staging/gma500/psb_drv.c:1640: error: unknown field ‘probe’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1640: warning: excess elements in union initializer
-drivers/staging/gma500/psb_drv.c:1640: warning: (near initialization for ‘driver.kdriver’)
-drivers/staging/gma500/psb_drv.c:1641: error: unknown field ‘remove’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1641: warning: excess elements in union initializer
-drivers/staging/gma500/psb_drv.c:1641: warning: (near initialization for ‘driver.kdriver’)
-drivers/staging/gma500/psb_drv.c:1643: error: unknown field ‘driver’ specified in initializer
-drivers/staging/gma500/psb_drv.c:1643: warning: excess elements in union initializer
-drivers/staging/gma500/psb_drv.c:1643: warning: (near initialization for ‘driver.kdriver’)
-drivers/staging/gma500/psb_drv.c: In function ‘psb_init’:
-drivers/staging/gma500/psb_drv.c:1664: error: implicit declaration of function ‘drm_init’
-drivers/staging/gma500/psb_drv.c: In function ‘psb_exit’:
-drivers/staging/gma500/psb_drv.c:1669: error: implicit declaration of function ‘drm_exit’
+On Thu 24-02-11 08:52:27, KAMEZAWA Hiroyuki wrote:
+> On Wed, 23 Feb 2011 10:19:22 -0800
+> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+> 
+> > On Wed, 2011-02-23 at 16:10 +0100, Michal Hocko wrote:
+> > > We can reduce this internal fragmentation by splitting the single
+> > > page_cgroup array into more arrays where each one is well kmalloc
+> > > aligned. This patch implements this idea. 
+> > 
+> > How about using alloc_pages_exact()?  These things aren't allocated
+> > often enough to really get most of the benefits of being in a slab.
+> > That'll at least get you down to a maximum of about PAGE_SIZE wasted.  
+> > 
+> 
+> yes, alloc_pages_exact() is much better.
+> 
+> packing page_cgroups for multiple sections causes breakage in memory hotplug logic.
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/staging/gma500/psb_drv.c |   27 ++++++++++++++-------------
- 1 files changed, 14 insertions(+), 13 deletions(-)
+I am not sure I understand this. What do you mean by packing
+page_cgroups for multiple sections? The patch I have posted doesn't do
+any packing. Or do you mean that using a double array can break hotplog?
+Not that this would change anything, alloc_pages_exact is really a
+better solution, I am just curious ;) 
 
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index 2fe09c8..caa5140 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -1632,17 +1632,6 @@ static struct drm_driver driver = {
- 		 .fasync = drm_fasync,
- 		 .read = drm_read,
- 		 },
--	.pci_driver = {
--		       .name = DRIVER_NAME,
--		       .id_table = pciidlist,
--		       .resume = ospm_power_resume,
--		       .suspend = ospm_power_suspend,
--		       .probe = psb_probe,
--		       .remove = psb_remove,
--#ifdef CONFIG_PM
--			.driver.pm = &psb_pm_ops,
--#endif
--		       },
- 	.name = DRIVER_NAME,
- 	.desc = DRIVER_DESC,
- 	.date = PSB_DRM_DRIVER_DATE,
-@@ -1651,6 +1640,18 @@ static struct drm_driver driver = {
- 	.patchlevel = PSB_DRM_DRIVER_PATCHLEVEL
- };
- 
-+static struct pci_driver psb_pci_driver = {
-+	.name = DRIVER_NAME,
-+	.id_table = pciidlist,
-+	.resume = ospm_power_resume,
-+	.suspend = ospm_power_suspend,
-+	.probe = psb_probe,
-+	.remove = psb_remove,
-+#ifdef CONFIG_PM
-+	.driver.pm = &psb_pm_ops,
-+#endif
-+};
-+
- static int psb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
- 	/* MLD Added this from Inaky's patch */
-@@ -1661,12 +1662,12 @@ static int psb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- static int __init psb_init(void)
- {
--	return drm_init(&driver);
-+	return drm_pci_init(&driver, &psb_pci_driver);
- }
- 
- static void __exit psb_exit(void)
- {
--	drm_exit(&driver);
-+	drm_pci_exit(&driver, &psb_pci_driver);
- }
- 
- late_initcall(psb_init);
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
