@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1BXM0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 07:26:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753863Ab1BXM0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 07:26:52 -0500
-Message-ID: <4D664E85.8070808@redhat.com>
-Date: Thu, 24 Feb 2011 14:26:45 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754697Ab1BXMbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 07:31:50 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49046 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab1BXMbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 07:31:49 -0500
+Date: Thu, 24 Feb 2011 09:49:22 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC] [PATCH 2/10] Generic Watchdog Timer Driver
+Message-ID: <20110224094922.GB15118@pulham.picochip.com>
+References: <20110223204228.GA7369@infomag.iguana.be>
 MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        nikola.ciprich@linuxbox.cz
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-References: <20110223234258.GA29548@nik-comp.lan> <4D663044.3080000@redhat.com> <20110224104800.GA29840@pcnci.linuxbox.cz> <4D663886.6080803@redhat.com> <20110224112742.GB29840@pcnci.linuxbox.cz>
-In-Reply-To: <20110224112742.GB29840@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110223204228.GA7369@infomag.iguana.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2011 01:27 PM, Nikola Ciprich wrote:
-> >  Not very useful when the guest is making progress, I'm afraid.
-> can perf report help here?
->
-> >  Can you try a little trace-cmd -e kvm -b 20000?
-> ugh, I'm afraid I'll have some dumb questions here :-[
-> You mean this: git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git ?
+On Wed, Feb 23, 2011 at 09:42:28PM +0100, Wim Van Sebroeck wrote:
+> commit 79a856016f4f4314360d6efbbbc334828006a79f
+> Author: Wim Van Sebroeck <wim@iguana.be>
+> Date:   Fri Jun 18 08:58:13 2010 +0000
+> 
+>     watchdog: WatchDog Timer Driver Core - Part 2
+>     
+>     This part add's the basic ioctl functionality to the
+>     WatchDog Timer Driver Core framework. The supported
+>     ioctl call's are:
+>     	WDIOC_GETSUPPORT
+>     	WDIOC_GETSTATUS
+>     	WDIOC_GETBOOTSTATUS
+>     
+>     Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>     Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+> 
+> diff --git a/Documentation/watchdog/src/watchdog-with-timer-example.c b/Documentation/watchdog/src/watchdog-with-timer-example.c
+> index d0b6056..ed7852a 100644
+> --- a/Documentation/watchdog/src/watchdog-with-timer-example.c
+> +++ b/Documentation/watchdog/src/watchdog-with-timer-example.c
+> @@ -115,6 +115,10 @@ static int wdt_stop(struct watchdog_device *wdd)
+>  /*
+>   * The watchdog kernel structures
+>   */
+> +static const struct watchdog_info wdt_info = {
+> +	.identity =	DRV_NAME,
+> +};
+> +
+>  static const struct watchdog_ops wdt_ops = {
+>  	.start =	wdt_start,
+>  	.stop =		wdt_stop,
+> @@ -123,6 +127,7 @@ static const struct watchdog_ops wdt_ops = {
+>  
+>  static struct watchdog_device wdt_dev = {
+>  	.name =		DRV_NAME,
+> +	.info =		&wdt_info,
+>  	.ops =		&wdt_ops,
+>  };
+>  
+> diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
+> index e69d1cc..9418d4c 100644
+> --- a/Documentation/watchdog/watchdog-kernel-api.txt
+> +++ b/Documentation/watchdog/watchdog-kernel-api.txt
+> @@ -40,13 +40,19 @@ The watchdog device structure looks like this:
+>  
+>  struct watchdog_device {
+>  	char *name;
+> +	const struct watchdog_info *info;
+>  	const struct watchdog_ops *ops;
+> +	int bootstatus;
+>  	long status;
+>  };
+>  
+>  It contains following fields:
+>  * name: a pointer to the (preferably unique) name of the watchdog timer device.
+> +* info: a pointer to a watchdog_info structure. This structure gives some
+> +  additional information about the watchdog timer itself.
+>  * ops: a pointer to the list of watchdog operations that the watchdog supports.
+> +* bootstatus: status of the device after booting (reported with watchdog
+> +  WDIOF_* status bits).
+>  * status: this field contains a number of status bits that give extra
+>    information about the status of the device (Like: is the device opened via
+>    the /dev/watchdog interface or not, ...)
+> @@ -59,6 +65,7 @@ struct watchdog_ops {
+>  	int (*stop)(struct watchdog_device *);
+>  	/* optional operations */
+>  	int (*ping)(struct watchdog_device *);
+> +	int (*status)(struct watchdog_device *);
 
-Yes.  If you have udis86 and udis86-devel installed when building it, 
-it's even better.
+It looks like the actual addition of .status to watchdog_ops happens in 
+the next patch rather than this one.
 
-> and then re-execute qemu-kvm using it? or I'm totally wrong?
-
-You don't have to execute qemu-kvm under it, if you have a running 
-instance you can run trace-cmd in parallel and it will record whatever's 
-happening.
-
-> >  Sure.  Something similar that came up - sometimes Windows IDE drivers
-> >  fall back to PIO mode.  Are you using IDE?  If so, please check whether
-> >  it's using DMA or PIO.
-> I'll check, but this problem occurs only during fsck phase, when to guest boots, then it runs pretty fast..
-> so maybe during boot it might fall back to PIO, but from guest, I guess I won't have a chance
-> to find out.. can I somehow check it from host?
-
-The trace-cmd output will show.  Please run trace-cmd report afterwards 
-and post the results somewhere.
-
-
--- 
-error compiling committee.c: too many arguments to function
-
+Jamie
