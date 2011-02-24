@@ -1,189 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab1BXSet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:34:49 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:54270 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755619Ab1BXSep convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:34:45 -0500
-From: Philip Rakity <prakity@marvell.com>
-To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-CC: Jae hoon Chung <jh80.chung@gmail.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Thu, 24 Feb 2011 10:32:30 -0800
-Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
- cmd
-Thread-Topic: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
- cmd
-Thread-Index: AcvUUTJWyk5EJrMPSE625jvXkM6BRg==
-Message-ID: <79DD18D4-C79A-4B08-B9E6-050D7EF2FC3D@marvell.com>
-References: <20110224111935.GB7169@intel.com>
- <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com>
- <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755923Ab1BXSgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:36:05 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42182 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755441Ab1BXSgD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 13:36:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Vkpn06HHFqatYYmIMZ4P+/qJLIKraqO+6rSRaQaW2JXUPlvHMVJJQJ0rZHd4BZLD/2
+         Ej/O2YWQF7jeTRNuR94G/04RUitOl3JuzkUZfLK6CGYQZY3KXcDndraxEgzDnPHvyOML
+         jagQ/gighWUAiHPJI/Pt7WlEZkcPJAjZXyZv0=
+Date: Thu, 24 Feb 2011 10:35:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>, Takashi Iwai <tiwai@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/3] xhci: Fix cycle bit calculation during stall handling.
+Message-ID: <20110224183555.GA2283@core.coreip.homeip.net>
+References: <cover.1298514502.git.sarah.a.sharp@linux.intel.com>
+ <e1b54e2b29b06b62174de33a74fa7469173abc92.1298514502.git.sarah.a.sharp@linux.intel.com>
+ <4D663E80.8050906@ru.mvista.com>
+ <20110224153855.GA25590@xanatos>
+ <20110224170410.GB7841@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110224170410.GB7841@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Feb 24, 2011, at 6:54 AM, Dong, Chuanxiao wrote:
-
-> Great. Maybe we wouldn't need to add this quirk since give a maximum timeout value is safe for all host controller I think. We would better save the quirk for other really critical silicon bugs.
-
-
-proposed this a while ago and strongly support just removing the quirk for broken timeout and setting the timeout value to maximum of 0xE.
-
-This also handles the case of the sd device having a timeout value too low.  In my testing I have come across SD cards that do not provide the correct value.
-We force our pxa168, pxa910, and mmp2 controllers to have 0xE.  
-
-Philip
-
+On Thu, Feb 24, 2011 at 09:04:10AM -0800, Greg KH wrote:
+> On Thu, Feb 24, 2011 at 07:38:55AM -0800, Sarah Sharp wrote:
+> > On Thu, Feb 24, 2011 at 02:18:24PM +0300, Sergei Shtylyov wrote:
+> > > Hello.
+> > > 
+> > > On 24-02-2011 5:31, Sarah Sharp wrote:
+> > > 
+> > > >+	if (ep_ring->first_seg == ep_ring->first_seg->next&&
+> > > >+			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
+> > > >+			state->new_cycle_state ^= 0x1;
+> > > 
+> > >    The last line seems overindented.
+> > 
+> > Hi Sergei,
+> > 
+> > checkpatch.pl doesn't complain about it.  It is not a good use of my
+> > time to respin this patch for one stylistic change that is not a
+> > violation of the Kernel community norms.
+> > 
+> > I really feel strongly that you are wasting the community's time by
+> > commenting on style when it is only a violation of your personal style,
+> > without providing any useful feedback on the code itself.
+> > 
+> > I feel so strongly that I'm seriously considering setting up a feedback
+> > bot for you.  It would run any patch you reply to through checkpatch.pl,
+> > and send you a small reminder when the patch passes, but you complained
+> > about style.  I think it would allow you to have a sense of how
+> > frustrating it is to receive these unnecessary stylistic comments.
 > 
->> -----Original Message-----
->> From: Jae hoon Chung [mailto:jh80.chung@gmail.com]
->> Sent: Thursday, February 24, 2011 10:18 PM
->> To: Dong, Chuanxiao
->> Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; linux-kernel@vger.kernel.org;
->> arnd@arndb.de; Kyungmin Park
->> Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy cmd
->> 
->> Hi
->> 
->> This patch looks like this. I sent to the RFC patch..
->> 
->> http://marc.info/?l=linux-mmc&m=129109794815028&w=3
->> 
->> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> 
->> ---
->> drivers/mmc/host/sdhci.c  |    6 +++++-
->> include/linux/mmc/sdhci.h |    3 ++-
->> 2 files changed, 7 insertions(+), 2 deletions(-)
->> 
->> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->> index 782c0ee..3b93d97 100644
->> --- a/drivers/mmc/host/sdhci.c
->> +++ b/drivers/mmc/host/sdhci.c
->> @@ -655,8 +655,12 @@ static void sdhci_prepare_data(struct sdhci_host
->> *host, struct mmc_data *data)
->> 
->>       WARN_ON(host->data);
->> 
->> -       if (data == NULL)
->> +       if (data == NULL) {
->> +               if ((host->quirks & SDHCI_QUIRK_SET_DATA_TIMEOUT_VAL)
->> &&
->> +                               (host->cmd->flags & MMC_RSP_BUSY))
->> +                       sdhci_writel(host, 0xE, SDHCI_TIMEOUT_CONTROL);
->>               return;
->> +       }
->> 
->>       /* Sanity checks */
->>       BUG_ON(data->blksz * data->blocks > 524288);
->> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
->> index 1fdc673..315ff49 100644
->> --- a/include/linux/mmc/sdhci.h
->> +++ b/include/linux/mmc/sdhci.h
->> @@ -83,7 +83,8 @@ struct sdhci_host {
->> #define SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12             (1<<28)
->> /* Controller doesn't have HISPD bit field in HI-SPEED SD card */
->> #define SDHCI_QUIRK_NO_HISPD_BIT                       (1<<29)
->> -
->> +/* Controller need set data timeout value when card is busy */
->> +#define SDHCI_QUIRK_SET_DATA_TIMEOUT_VAL               (1<<30)
->>       int irq;                /* Device IRQ */
->>       void __iomem *ioaddr;   /* Mapped address */
->> 
->> --
->> 1.6.0.4
->> 
->> 2011/2/24 Chuanxiao Dong <chuanxiao.dong@intel.com>:
->>> Set the timeout control register for SDHCI host when it needs to send some
->>> commands which need busy signal. Use the maximum timeout value will be safe.
->>> 
->>> Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
->>> ---
->>>  drivers/mmc/host/sdhci.c |   14 ++++++++++----
->>>  1 files changed, 10 insertions(+), 4 deletions(-)
->>> 
->>> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->>> index 9e15f41..32b7475 100644
->>> --- a/drivers/mmc/host/sdhci.c
->>> +++ b/drivers/mmc/host/sdhci.c
->>> @@ -40,7 +40,6 @@
->>> 
->>>  static unsigned int debug_quirks = 0;
->>> 
->>> -static void sdhci_prepare_data(struct sdhci_host *, struct mmc_data *);
->>>  static void sdhci_finish_data(struct sdhci_host *);
->>> 
->>>  static void sdhci_send_command(struct sdhci_host *, struct mmc_command
->> *);
->>> @@ -651,16 +650,23 @@ static void sdhci_set_transfer_irqs(struct sdhci_host
->> *host)
->>>                sdhci_clear_set_irqs(host, dma_irqs, pio_irqs);
->>>  }
->>> 
->>> -static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_data *data)
->>> +static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_command
->> *cmd)
->>>  {
->>>        u8 count;
->>>        u8 ctrl;
->>> +       struct mmc_data *data = cmd->data;
->>>        int ret;
->>> 
->>>        WARN_ON(host->data);
->>> 
->>> -       if (data == NULL)
->>> +       if (data == NULL) {
->>> +               /*
->>> +                * set timeout to be maximum value for command with busy
->> signal.
->>> +                */
->>> +               if (cmd->flags & MMC_RSP_BUSY)
->>> +                       sdhci_writeb(host, 0xE,
->> SDHCI_TIMEOUT_CONTROL);
->>>                return;
->>> +       }
->>> 
->>>        /* Sanity checks */
->>>        BUG_ON(data->blksz * data->blocks > 524288);
->>> @@ -920,7 +926,7 @@ static void sdhci_send_command(struct sdhci_host *host,
->> struct mmc_command *cmd)
->>> 
->>>        host->cmd = cmd;
->>> 
->>> -       sdhci_prepare_data(host, cmd->data);
->>> +       sdhci_prepare_data(host, cmd);
->>> 
->>>        sdhci_writel(host, cmd->arg, SDHCI_ARGUMENT);
->>> 
->>> --
->>> 1.6.6.1
->>> 
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I totally agree, and almost always just filter Sergei's comments away as
+> the large majority of them are pointless and distract from the technical
+> content being discussed.
+> 
 
+I am sorry, but in this case the 'if' body does run together with the
+conditional. No need to repost the patch for this, of course, but might
+be worth fixing locally before pushing into a public branch.
+
+Thanks.
+
+-- 
+Dmitry
