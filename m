@@ -1,62 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab1BXWnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 17:43:49 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:38247 "EHLO gir.skynet.ie"
+	id S1756586Ab1BXWn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 17:43:58 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:50449 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab1BXWns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 17:43:48 -0500
-Date: Thu, 24 Feb 2011 22:43:19 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes (intel only)
-Message-ID: <alpine.DEB.2.00.1102242241280.5315@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756545Ab1BXWnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 17:43:55 -0500
+Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20110224041851.GF31195@random.random>
+References: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
+	 <1298425922-23630-9-git-send-email-andi@firstfloor.org>
+	 <20110224041851.GF31195@random.random>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 24 Feb 2011 14:43:50 -0800
+Message-ID: <1298587430.9138.24.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-02-24 at 05:18 +0100, Andrea Arcangeli wrote:
+> Incremental fix for your patch 8 (I doubt it was intentional).
 
-Hi Linus,
+Bah, sorry.  Should have read one more message down the thread. :)
 
-Since Chris missed my last pull I've got a seprate set of fixes for 
-Intel, should fix an eDP issue, a couple of 855 problems (tiling and 
-buffer coherency),
+-- Dave
 
-Dave.
-
-The following changes since commit ef3242859fae47e728b50b7ce3d17b201a71779a:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2011-02-23 16:02:00 -0800)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Chris Wilson (3):
-      drm/i915: Ignore a hung GPU when flushing the framebuffer prior to a switch
-      agp/intel: Experiment with a 855GM GWB bit
-      drm/i915: Fix unintended recursion in ironlake_disable_rc6
-
-Daniel Vetter (1):
-      drm/i915: fix corruptions on i8xx due to relaxed fencing
-
-Dave Airlie (2):
-      Merge branch 'drm-intel-fixes' of git://git.kernel.org/.../ickle/drm-intel into drm-fixes
-      Merge branch 'drm-intel-fixes' of git://git.kernel.org/.../ickle/drm-intel into drm-fixes
-
-Jesse Barnes (2):
-      drm/i915: don't enable FDI & transcoder interrupts after all
-      drm/i915: skip FDI & PCH enabling for DP_A
-
- drivers/char/agp/intel-agp.h           |    1 +
- drivers/char/agp/intel-gtt.c           |   56 +++++++------------
- drivers/gpu/drm/i915/i915_gem_tiling.c |   16 +++++-
- drivers/gpu/drm/i915/i915_irq.c        |    6 +-
- drivers/gpu/drm/i915/intel_display.c   |   95 +++++++++++++++++++++++++++++---
- 5 files changed, 127 insertions(+), 47 deletions(-)
