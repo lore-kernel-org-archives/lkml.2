@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab1BXQjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:39:43 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:57815 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756290Ab1BXQjl (ORCPT
+	id S1756394Ab1BXQlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:41:51 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57069 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756349Ab1BXQls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:39:41 -0500
-Date: Thu, 24 Feb 2011 22:09:50 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-Subject: Re: [CFS Bandwidth Control v4 3/7] sched: throttle cfs_rq entities
- which exceed their local quota
-Message-ID: <20110224163950.GB3000@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110216031831.571628191@google.com>
- <20110216031841.068673650@google.com>
- <1298467933.2217.765.camel@twins>
- <20110224052101.GA2755@in.ibm.com>
- <1298545501.2428.18.camel@twins>
- <20110224154547.GA3000@in.ibm.com>
- <1298562773.2428.230.camel@twins>
+	Thu, 24 Feb 2011 11:41:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gtR3sYbuEHeqw/0bApVgIzBOMHGqRR4XKDTFAkS8q8UavNgBnitWf249G8FzHzi7g2
+         COdOUJGSE19g0qUOdWlENa+moUp4z39Ojy7IITcZND2Dk6GuSa3SP70JDG7jKaLccLSq
+         xKELzviAWtVN8IL7w4MOMVhedu+0pR0aF7wU8=
+Date: Thu, 24 Feb 2011 17:39:44 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Scott Wood <scottwood@freescale.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
+        Peter Zijlstra <peterz@infradead.org>, linux-api@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, netdev@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>, Christoph Lameter <cl@linux.com>,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found
+ on the MPC85xx.
+Message-ID: <20110224163944.GA15234@riccoc20.at.omicron.at>
+References: <cover.1298447722.git.richard.cochran@omicron.at>
+ <be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
+ <20110223165058.GE14597@angua.secretlab.ca>
+ <20110223112612.30071995@schlenkerla>
+ <20110223175459.GH14597@angua.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298562773.2428.230.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110223175459.GH14597@angua.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 04:52:53PM +0100, Peter Zijlstra wrote:
-> On Thu, 2011-02-24 at 21:15 +0530, Bharata B Rao wrote:
-> > While I admit that our load balancing semantics wrt thorttled entities are
-> > not consistent (we don't allow pulling of tasks directly from throttled
-> > cfs_rqs, while allow pulling of tasks from a throttled hierarchy as in the
-> > above case), I am beginning to think if it works out to be advantageous.
-> > Is there a chance that the task gets to run on other CPU where the hierarchy
-> > isn't throttled since runtime is still available ? 
+On Wed, Feb 23, 2011 at 10:54:59AM -0700, Grant Likely wrote:
+> On Wed, Feb 23, 2011 at 11:26:12AM -0600, Scott Wood wrote:
+
+> > The eTSEC revision is probeable as well, but due the way PTP is described as
+> > a separate node, the driver doesn't have straightforward access to those
+> > registers.
 > 
-> Possible yes, but the load-balancer doesn't know about that, not should
-> it (its complicated, and broken, enough, no need to add more cruft to
-> it).
-> 
-> I'm starting to think you all should just toss all this and start over,
-> its just too smelly.
+> Ignorant question: Should the ptp be described as a separate node?
 
-Hmm... You have brought up 3 concerns:
+Well, the PTP Hardware Clock function is logically separate from the
+MAC function. PHCs can be implemented in the MAC, in the PHY, or in
+between in an FPGA on MII bus.
 
-1. Hierarchy semantics
+If the PHC is in the MAC, then it might be wise to implement one
+driver that offers both the MAC and the PHC.
 
-If you look at the heirarchy semantics we currently have while ignoring the
-load balancer interactions for a moment, I guess what we have is a reasonable
-one.
+In the case of gianfar, it is not really necessary to combine the PHC
+into the gianfar driver, since the registers are pretty well
+separated. Also, given the size and complexity (and churn over time)
+of the gianfar driver, I decided to keep the PHC separate.
 
-- Only group entities are throttled
-- Throttled entities are taken off the runqueue and hence they never
-  get picked up for scheduling.
-- New or child entites are queued up to the throttled entities and not
-  further up. As I said in another thread, having the tree intact and correct
-  underneath the throttled entity allows us to rebuild the hierarchy during
-  unthrottling with least amount of effort.
-- Group entities in a hierarchy are throttled independent of each other based
-  on their bandwidth specification.
+Right now, the driver correctly handles all the clock revisions in the
+boards that I have (mpc8313, mpc8572, p2020ds, p2020rdb).
 
-2. Handling of throttled entities by load balancer
+If checking the revision becomes important, then we can always export
+a function from gianfar to provide this.
 
-This definetely needs to improve and be more consistent. We can work on this.
+Thanks,
 
-3. per-cgroup vs global period specification
-
-I thought per-cgroup specification would be most flexible and hence started
-out with that. This would allow groups/workloads/VMs to define their
-own bandwidth rate.
-
-Let us know if you have other design concerns besides these.
-
-Regards,
-Bharata.
+Richard
