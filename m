@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab1BXPCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:02:32 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:40142
+	id S1756338Ab1BXPCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:02:50 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:40157
 	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756253Ab1BXPC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:02:28 -0500
-Date: Thu, 24 Feb 2011 15:02:43 +0000
+	id S1756263Ab1BXPCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 10:02:46 -0500
+Date: Thu, 24 Feb 2011 15:03:01 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: Andrew Morton <akpm@osdl.org>, containers@lists.linux-foundation.org,
@@ -15,8 +15,8 @@ Cc: Andrew Morton <akpm@osdl.org>, containers@lists.linux-foundation.org,
         Michael Kerrisk <mtk.manpages@gmail.com>, dhowells@redhat.com,
         oleg@mail.hallyn.com, dlezcano@mail.hallyn.com,
         LSM <linux-security-module@vger.kernel.org>
-Subject: [PATCH 05/10] Allow ptrace from non-init user namespaces
-Message-ID: <20110224150243.GE8262@mail.hallyn.com>
+Subject: [PATCH 07/10] add a user namespace owner of ipc ns
+Message-ID: <20110224150301.GG8262@mail.hallyn.com>
 References: <20110224150150.GA8262@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,168 +27,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-ptrace is allowed to tasks in the same user namespace according to
-the usual rules (i.e. the same rules as for two tasks in the init
-user namespace).  ptrace is also allowed to a user namespace to
-which the current task the has CAP_SYS_PTRACE capability.
-
 Changelog:
-	Dec 31: Address feedback by Eric:
-		. Correct ptrace uid check
-		. Rename may_ptrace_ns to ptrace_capable
-		. Also fix the cap_ptrace checks.
-	Jan  1: Use const cred struct
-	Jan 11: use task_ns_capable() in place of ptrace_capable().
-	Feb 23: same_or_ancestore_user_ns() was not an appropriate
-		check to constrain cap_issubset.  Rather, cap_issubset()
-		only is meaningful when both capsets are in the same
-		user_ns.
+	Feb 15: Don't set new ipc->user_ns if we didn't create a new
+		ipc_ns.
+	Feb 23: Move extern declaration to ipc_namespace.h, and group
+		fwd declarations at top.
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
 ---
- include/linux/capability.h |    2 ++
- kernel/ptrace.c            |   27 +++++++++++++++------------
- security/commoncap.c       |   40 ++++++++++++++++++++++++++++++++--------
- 3 files changed, 49 insertions(+), 20 deletions(-)
+ include/linux/ipc_namespace.h |    4 ++++
+ ipc/msgutil.c                 |    1 +
+ ipc/namespace.c               |    9 +++++++--
+ kernel/nsproxy.c              |    5 +++++
+ 4 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index 7c9c829..2ec4a8c 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -553,6 +553,8 @@ static inline kernel_cap_t cap_raise_nfsd_set(const kernel_cap_t a,
-  */
- #define has_capability(t, cap) (security_real_capable((t), &init_user_ns, (cap)) == 0)
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index 5195298..c8cdf0e 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -15,6 +15,8 @@
  
-+#define has_ns_capability(t, ns, cap) (security_real_capable((t), (ns), (cap)) == 0)
+ #define IPCNS_CALLBACK_PRI 0
+ 
++struct user_namespace;
++extern struct user_namespace init_user_ns;
+ 
+ struct ipc_ids {
+ 	int in_use;
+@@ -56,6 +58,8 @@ struct ipc_namespace {
+ 	unsigned int    mq_msg_max;      /* initialized to DFLT_MSGMAX */
+ 	unsigned int    mq_msgsize_max;  /* initialized to DFLT_MSGSIZEMAX */
+ 
++	/* user_ns which owns the ipc ns */
++	struct user_namespace *user_ns;
+ };
+ 
+ extern struct ipc_namespace init_ipc_ns;
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index f095ee2..8b5ce5d 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -32,6 +32,7 @@ struct ipc_namespace init_ipc_ns = {
+ 	.mq_msg_max      = DFLT_MSGMAX,
+ 	.mq_msgsize_max  = DFLT_MSGSIZEMAX,
+ #endif
++	.user_ns = &init_user_ns,
+ };
+ 
+ atomic_t nr_ipc_ns = ATOMIC_INIT(1);
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index a1094ff..aa18899 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -11,10 +11,11 @@
+ #include <linux/slab.h>
+ #include <linux/fs.h>
+ #include <linux/mount.h>
++#include <linux/user_namespace.h>
+ 
+ #include "util.h"
+ 
+-static struct ipc_namespace *create_ipc_ns(void)
++static struct ipc_namespace *create_ipc_ns(struct ipc_namespace *old_ns)
+ {
+ 	struct ipc_namespace *ns;
+ 	int err;
+@@ -43,6 +44,9 @@ static struct ipc_namespace *create_ipc_ns(void)
+ 	ipcns_notify(IPCNS_CREATED);
+ 	register_ipcns_notifier(ns);
+ 
++	ns->user_ns = old_ns->user_ns;
++	get_user_ns(ns->user_ns);
 +
- /**
-  * has_capability_noaudit - Determine if a task has a superior capability available (unaudited)
-  * @t: The task in question
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 1708b1e..cde4655 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -134,21 +134,24 @@ int __ptrace_may_access(struct task_struct *task, unsigned int mode)
- 		return 0;
- 	rcu_read_lock();
- 	tcred = __task_cred(task);
--	if ((cred->uid != tcred->euid ||
--	     cred->uid != tcred->suid ||
--	     cred->uid != tcred->uid  ||
--	     cred->gid != tcred->egid ||
--	     cred->gid != tcred->sgid ||
--	     cred->gid != tcred->gid) &&
--	    !capable(CAP_SYS_PTRACE)) {
--		rcu_read_unlock();
--		return -EPERM;
--	}
-+	if (cred->user->user_ns == tcred->user->user_ns &&
-+	    (cred->uid == tcred->euid &&
-+	     cred->uid == tcred->suid &&
-+	     cred->uid == tcred->uid  &&
-+	     cred->gid == tcred->egid &&
-+	     cred->gid == tcred->sgid &&
-+	     cred->gid == tcred->gid))
-+		goto ok;
-+	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
-+		goto ok;
-+	rcu_read_unlock();
-+	return -EPERM;
-+ok:
- 	rcu_read_unlock();
- 	smp_rmb();
- 	if (task->mm)
- 		dumpable = get_dumpable(task->mm);
--	if (!dumpable && !capable(CAP_SYS_PTRACE))
-+	if (!dumpable && !task_ns_capable(task, CAP_SYS_PTRACE))
- 		return -EPERM;
- 
- 	return security_ptrace_access_check(task, mode);
-@@ -198,7 +201,7 @@ int ptrace_attach(struct task_struct *task)
- 		goto unlock_tasklist;
- 
- 	task->ptrace = PT_PTRACED;
--	if (capable(CAP_SYS_PTRACE))
-+	if (task_ns_capable(task, CAP_SYS_PTRACE))
- 		task->ptrace |= PT_PTRACE_CAP;
- 
- 	__ptrace_link(task, current);
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 6f4c327..5700ba5 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -128,18 +128,30 @@ int cap_settime(struct timespec *ts, struct timezone *tz)
-  * @child: The process to be accessed
-  * @mode: The mode of attachment.
-  *
-+ * If we are in the same or an ancestor user_ns and have all the target
-+ * task's capabilities, then ptrace access is allowed.
-+ * If we have the ptrace capability to the target user_ns, then ptrace
-+ * access is allowed.
-+ * Else denied.
-+ *
-  * Determine whether a process may access another, returning 0 if permission
-  * granted, -ve if denied.
-  */
- int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
- {
- 	int ret = 0;
-+	const struct cred *cred, *child_cred;
- 
- 	rcu_read_lock();
--	if (!cap_issubset(__task_cred(child)->cap_permitted,
--			  current_cred()->cap_permitted) &&
--	    !capable(CAP_SYS_PTRACE))
--		ret = -EPERM;
-+	cred = current_cred();
-+	child_cred = __task_cred(child);
-+	if (cred->user->user_ns == child_cred->user->user_ns &&
-+	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
-+		goto out;
-+	if (ns_capable(child_cred->user->user_ns, CAP_SYS_PTRACE))
-+		goto out;
-+	ret = -EPERM;
-+out:
- 	rcu_read_unlock();
- 	return ret;
+ 	return ns;
  }
-@@ -148,18 +160,30 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
-  * cap_ptrace_traceme - Determine whether another process may trace the current
-  * @parent: The task proposed to be the tracer
-  *
-+ * If parent is in the same or an ancestor user_ns and has all current's
-+ * capabilities, then ptrace access is allowed.
-+ * If parent has the ptrace capability to current's user_ns, then ptrace
-+ * access is allowed.
-+ * Else denied.
-+ *
-  * Determine whether the nominated task is permitted to trace the current
-  * process, returning 0 if permission is granted, -ve if denied.
-  */
- int cap_ptrace_traceme(struct task_struct *parent)
- {
- 	int ret = 0;
-+	const struct cred *cred, *child_cred;
  
- 	rcu_read_lock();
--	if (!cap_issubset(current_cred()->cap_permitted,
--			  __task_cred(parent)->cap_permitted) &&
--	    !has_capability(parent, CAP_SYS_PTRACE))
--		ret = -EPERM;
-+	cred = __task_cred(parent);
-+	child_cred = current_cred();
-+	if (cred->user->user_ns == child_cred->user->user_ns &&
-+	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
-+		goto out;
-+	if (has_ns_capability(parent, child_cred->user->user_ns, CAP_SYS_PTRACE))
-+		goto out;
-+	ret = -EPERM;
-+out:
- 	rcu_read_unlock();
- 	return ret;
+@@ -50,7 +54,7 @@ struct ipc_namespace *copy_ipcs(unsigned long flags, struct ipc_namespace *ns)
+ {
+ 	if (!(flags & CLONE_NEWIPC))
+ 		return get_ipc_ns(ns);
+-	return create_ipc_ns();
++	return create_ipc_ns(ns);
  }
+ 
+ /*
+@@ -105,6 +109,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
+ 	 * order to have a correct value when recomputing msgmni.
+ 	 */
+ 	ipcns_notify(IPCNS_REMOVED);
++	put_user_ns(ns->user_ns);
+ }
+ 
+ /*
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index b97fc9d..ac8a56e 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -80,6 +80,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		err = PTR_ERR(new_nsp->ipc_ns);
+ 		goto out_ipc;
+ 	}
++	if (new_nsp->ipc_ns != tsk->nsproxy->ipc_ns) {
++		put_user_ns(new_nsp->ipc_ns->user_ns);
++		new_nsp->ipc_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
++		get_user_ns(new_nsp->ipc_ns->user_ns);
++	}
+ 
+ 	new_nsp->pid_ns = copy_pid_ns(flags, task_active_pid_ns(tsk));
+ 	if (IS_ERR(new_nsp->pid_ns)) {
 -- 
 1.7.0.4
 
