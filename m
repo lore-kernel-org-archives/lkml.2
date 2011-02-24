@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab1BXH2S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 02:28:18 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56427 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab1BXH2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 02:28:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=rCKEgBF258plaM5qZQkB1wW5qzKK5QY+EdzCWd7tIkTJpQUU2tOBmU9oL/WWILAZdU
-         VlmuUvgf3IVkl37OImA0yDEj8NbEU7miAYc0Ls5aAFfaU2iukIJgXdC4C6jgQ2eynzP6
-         LLT679qHu+yulB2ek3+i866FOzwSdyPSQ2u3w=
+	id S1751993Ab1BXH2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 02:28:31 -0500
+Received: from hera.kernel.org ([140.211.167.34]:35018 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752692Ab1BXH2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 02:28:30 -0500
+Date: Thu, 24 Feb 2011 07:28:06 GMT
+From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
+        mingo@redhat.com, arjan@linux.intel.com, john.stultz@linaro.org,
+        tglx@linutronix.de, jacob.jun.pan@linux.intel.com, mingo@elte.hu
+Reply-To: john.stultz@linaro.org, mingo@redhat.com, hpa@zytor.com,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, tglx@linutronix.de,
+        jacob.jun.pan@linux.intel.com, mingo@elte.hu
+In-Reply-To: <1298506046-439-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1298506046-439-1-git-send-email-jacob.jun.pan@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/mrst: Fix apb timer rating when lapic timer is used
+Message-ID: <tip-7b62dbec908a29f448047099bedb5c64c9cb8808@git.kernel.org>
+Git-Commit-ID: 7b62dbec908a29f448047099bedb5c64c9cb8808
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110131.203556.193730771.davem@davemloft.net>
-References: <AANLkTimWuBfeYPOsOFpTiAGS5uHysevAHiOg0svBQ4zW@mail.gmail.com>
- <AANLkTimz7gx7BAQG8RBswDCxnTuVtt3u+YoBZk8+RgEz@mail.gmail.com>
- <AANLkTikgDsM15DO7u2SP15xx=Y_pg6JdCLrie8ACobJP@mail.gmail.com> <20110131.203556.193730771.davem@davemloft.net>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Thu, 24 Feb 2011 15:27:55 +0800
-Message-ID: <AANLkTimorcNAEbSpuE_dUXKuOBZDcDcGSJ2cGefniThc@mail.gmail.com>
-Subject: Re: [PATCH v4] net: add Faraday FTMAC100 10/100 Ethernet driver
-To: David Miller <davem@davemloft.net>
-Cc: mirqus@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
-        dilinger@queued.net, ratbert@faraday-tech.com
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 24 Feb 2011 07:28:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Commit-ID:  7b62dbec908a29f448047099bedb5c64c9cb8808
+Gitweb:     http://git.kernel.org/tip/7b62dbec908a29f448047099bedb5c64c9cb8808
+Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
+AuthorDate: Wed, 23 Feb 2011 16:07:26 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 24 Feb 2011 08:22:43 +0100
 
-On Tue, Feb 1, 2011 at 12:35 PM, David Miller <davem@davemloft.net> wrote:
-> From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-> Date: Tue, 1 Feb 2011 11:56:16 +0800
->
->> If I simply allocate a page for each rx ring entry, I still need to allocate
->> an skb and copy at least packet header in first page to skb->data. Then
->> add the page of rest of payload to skb by skb_fill_page_desc().
->
-> You should attach the pages, the use __pskb_pull_tail() to bring in the
-> headers to the linear skb->data area.
->
-> See drivers/net/niu.c:niu_process_rx_pkt().
+x86/mrst: Fix apb timer rating when lapic timer is used
 
-I tried two ways to implement zero-copy.
-One is to preallocate skb big enough for any rx packet and use the skb
-as rx buffer.
-The other is use page as rx buffer, use skb_fill_page_desc() to add a
-data page to
-skb and then pull only header to skb by __pskb_pull_tail() as you suggested.
+Need to adjust the clockevent device rating for the structure
+that will be registered with clockevent system instead of the
+temporary structure.
 
-Two implementations are slower than the original memcpy version.
-(benchmarked with iperf)
+Without this fix, APB timer rating will be higher than LAPIC
+timer such that it can not be released later to be used as the
+broadcast timer.
 
-I guess the problem is because a HW restriction that the rx buffer must be
-64 bits aligned. Since I cannot make rx buffer starts at offset 2 bytes, the
-IP header, TCP header and data are not 4 bytes aligned. The performance
-drops drastically.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+LKML-Reference: <1298506046-439-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/apb_timer.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Therefore, I will submit later a v6 which is still using memcpy().
-
-best regards,
-Po-Yu Chuang
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 51ef31a..51d4e16 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -284,7 +284,7 @@ static int __init apbt_clockevent_register(void)
+ 	memcpy(&adev->evt, &apbt_clockevent, sizeof(struct clock_event_device));
+ 
+ 	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT) {
+-		apbt_clockevent.rating = APBT_CLOCKEVENT_RATING - 100;
++		adev->evt.rating = APBT_CLOCKEVENT_RATING - 100;
+ 		global_clock_event = &adev->evt;
+ 		printk(KERN_DEBUG "%s clockevent registered as global\n",
+ 		       global_clock_event->name);
