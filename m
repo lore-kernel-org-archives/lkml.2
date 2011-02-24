@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab1BXRVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:21:46 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53896 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1BXRVp convert rfc822-to-8bit (ORCPT
+	id S1753046Ab1BXRXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:23:43 -0500
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:59780 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751852Ab1BXRXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:21:45 -0500
-Subject: Re: [CFS Bandwidth Control v4 3/7] sched: throttle cfs_rq entities
- which exceed their local quota
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: bharata@linux.vnet.ibm.com
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-In-Reply-To: <20110224163950.GB3000@in.ibm.com>
-References: <20110216031831.571628191@google.com>
-	 <20110216031841.068673650@google.com> <1298467933.2217.765.camel@twins>
-	 <20110224052101.GA2755@in.ibm.com> <1298545501.2428.18.camel@twins>
-	 <20110224154547.GA3000@in.ibm.com> <1298562773.2428.230.camel@twins>
-	 <20110224163950.GB3000@in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 24 Feb 2011 18:20:52 +0100
-Message-ID: <1298568052.2428.366.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 24 Feb 2011 12:23:40 -0500
+Date: Thu, 24 Feb 2011 19:23:27 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Felipe Balbi <balbi@ti.com>, Alexander Holler <holler@ahsoftware.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Michael Jones <michael.jones@matrix-vision.de>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org
+Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
+Message-ID: <20110224172327.GF3528@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <4D64C81B.5060807@ahsoftware.de>
+ <Pine.LNX.4.44L0.1102231021210.2233-100000@iolanthe.rowland.org>
+ <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
+ <4D6621AB.10205@ahsoftware.de>
+ <20110224091638.GH3528@legolas.emea.dhcp.ti.com>
+ <20110224171814.GA8376@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110224171814.GA8376@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 22:09 +0530, Bharata B Rao wrote:
-> On Thu, Feb 24, 2011 at 04:52:53PM +0100, Peter Zijlstra wrote:
-> > On Thu, 2011-02-24 at 21:15 +0530, Bharata B Rao wrote:
-> > > While I admit that our load balancing semantics wrt thorttled entities are
-> > > not consistent (we don't allow pulling of tasks directly from throttled
-> > > cfs_rqs, while allow pulling of tasks from a throttled hierarchy as in the
-> > > above case), I am beginning to think if it works out to be advantageous.
-> > > Is there a chance that the task gets to run on other CPU where the hierarchy
-> > > isn't throttled since runtime is still available ? 
+On Thu, Feb 24, 2011 at 09:18:14AM -0800, Greg KH wrote:
+> On Thu, Feb 24, 2011 at 11:16:38AM +0200, Felipe Balbi wrote:
+> > Hi,
 > > 
-> > Possible yes, but the load-balancer doesn't know about that, not should
-> > it (its complicated, and broken, enough, no need to add more cruft to
-> > it).
+> > On Thu, Feb 24, 2011 at 10:15:23AM +0100, Alexander Holler wrote:
+> > > >On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
+> > > >>In both cases, it appears that the problem is caused by the fact that
+> > > >>the musb host-controller driver doesn't set the hcd->has_tt flag.
+> > > >>
+> > > >>Felipe, you should know where it belongs.  It should be easy enough to
+> > > >>add.
+> > > >
+> > > >Sure Alan, it's attached to this mail. Compile tested only though.
+> > > >Michael, would you care to give your tested-by ?
+> > > 
+> > > I can do, I'm using exactly the same patch since yesterday. ;)
+> > > 
+> > > Tested-by: Alexander Holler <holler@ahsoftware.de>
 > > 
-> > I'm starting to think you all should just toss all this and start over,
-> > its just too smelly.
+> > Thanks a lot Alex, Greg, can you still take this to -rc ? Do you need a
+> > pull request or you can take this one patch ?
 > 
-> Hmm... You have brought up 3 concerns:
+> Wait, where does this need to go?  For the final 2.6.38 release and then
+> also for .37-stable?
 > 
-> 1. Hierarchy semantics
+> Or just .37-stable?
 > 
-> If you look at the heirarchy semantics we currently have while ignoring the
-> load balancer interactions for a moment, I guess what we have is a reasonable
-> one.
+> confused.
 > 
-> - Only group entities are throttled
-> - Throttled entities are taken off the runqueue and hence they never
->   get picked up for scheduling.
-> - New or child entites are queued up to the throttled entities and not
->   further up. As I said in another thread, having the tree intact and correct
->   underneath the throttled entity allows us to rebuild the hierarchy during
->   unthrottling with least amount of effort.
+> And no, I don't need a pull request, I can handle one patch through
+> email :)
 
-It also gets you into all that load-balancer mess, and I'm not going to
-let you off lightly there.
+final .38 and .37-stable :-) Thanks Greg :-)
 
-> - Group entities in a hierarchy are throttled independent of each other based
->   on their bandwidth specification.
-
-That's missing out quite a few details.. for one there is no mention of
-hierarchical implication of/constraints on bandwidth, can children have
-more bandwidth than their parent (I hope not).
-
-> 2. Handling of throttled entities by load balancer
-> 
-> This definetely needs to improve and be more consistent. We can work on this.
-
-Feh, improve is being nice about it, it needs a complete overhaul, the
-current situation is a cobbled together leaky mess.
-
-> 3. per-cgroup vs global period specification
-> 
-> I thought per-cgroup specification would be most flexible and hence started
-> out with that. This would allow groups/workloads/VMs to define their
-> own bandwidth rate.
-
-Most flexible yes, most 'interesting' too, now if you consider running a
-child task is also running the parent entity and therefore you're
-consuming bandwidth up the entire hierarchy, what happens when the
-parent has a much larger period than the child?
-
-In that case your child doesn't get ran while the parent is throttled,
-and the child's period is violated.
-
-
-> Let us know if you have other design concerns besides these.
-
-Yeah, that weird time accounting muck, bandwidth should decrease on
-usage and incremented on replenishment, this gets you 0 as the natural
-boundary between credit and debt, no need to keep two variables.
-
-Also, the above just about covers all the patch set does, isn't that
-enough justification to throw the thing out and start over?
+-- 
+balbi
