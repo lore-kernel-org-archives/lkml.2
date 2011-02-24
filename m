@@ -1,52 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab1BXTKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 14:10:23 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56791 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab1BXTKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 14:10:20 -0500
-Date: Thu, 24 Feb 2011 19:10:13 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ian Kent <raven@themaw.net>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, npiggin@gmail.com
-Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
-Message-ID: <20110224191012.GC22723@ZenIV.linux.org.uk>
-References: <1295420817.3076.24.camel@perseus>
- <1297779902.13007.86.camel@perseus>
- <20110224015817.GQ22723@ZenIV.linux.org.uk>
- <1298516618.2916.20.camel@perseus>
- <20110224031439.GR22723@ZenIV.linux.org.uk>
- <1298518137.2916.35.camel@perseus>
- <20110224035836.GS22723@ZenIV.linux.org.uk>
- <1298529260.2916.91.camel@perseus>
- <20110224070724.GW22723@ZenIV.linux.org.uk>
- <1298542053.3058.56.camel@perseus>
+	id S1756373Ab1BXTUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 14:20:47 -0500
+Received: from www.tglx.de ([62.245.132.106]:56847 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755588Ab1BXTUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 14:20:46 -0500
+Date: Thu, 24 Feb 2011 20:20:36 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: james_p_freyensee@linux.intel.com
+cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+Subject: Re: [PATCH 09/10] n_tracerouter ldisc driver.
+In-Reply-To: <1298570824-26085-10-git-send-email-james_p_freyensee@linux.intel.com>
+Message-ID: <alpine.LFD.2.00.1102242002410.2701@localhost6.localdomain6>
+References: <james_p_freyensee@linux.intel.com> <1298570824-26085-10-git-send-email-james_p_freyensee@linux.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298542053.3058.56.camel@perseus>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 06:07:33PM +0800, Ian Kent wrote:
+On Thu, 24 Feb 2011, james_p_freyensee@linux.intel.com wrote:
+> +
+> +/**
+> + * tracerouter_alloc
+> + *
+> + * Allocates the structure needed for this ldisc.
+> + */
+> +static struct tracerouter_data *tracerouter_alloc(void)
+> +{
+> +	struct tracerouter_data *tptr = kzalloc(
+> +					sizeof(struct tracerouter_data),
+> +					GFP_KERNEL);
+> +	if (tptr == NULL)
+> +		return NULL;
+> +	tptr->opencalled = 0;
 
-> Yes, that's a problem.
-> 
-> Previously the dcache_lock would have blocked on the dput() ... mmm, I'd
-> missed that so far, although Nick didn't talk with me about his changes
-> very much at all and I didn't pay enough attention to his patch series
-> along the way, oops!
+Wheeee!
 
-Actually, dcache_lock blocks only the _final_ dput().  I.e. one that has
-refcount going to 0.  Not the case here, so that's a problem without
-RCU stuff as well.
+You first alloc it with kzalloc and then clear the already zero member
+again ?
+
+That whole crap condenses down to:
+
+     return kzalloc(sizeof(*tptr), GFP_KERNEL);
+
+Which hardly justfies a separate function
+
+> +	return tptr;
+> +}
+> +
+> +/**
+> + * n_tracerouter_open() - Called when a tty is opened by a SW entity.
+> + * @tty: terminal device to the ldisc.
+> + *
+> + * Return:
+> + *      0 for success.
+> + *
+> + * Caveats: This should only be opened one time per SW entity.
+> + */
+> +static int n_tracerouter_open(struct tty_struct *tty)
+> +{
+> +	int retval = -EEXIST;
+> +
+> +	mutex_lock(&routelock);
+> +	if (tr_data->opencalled == 0) {
+> +
+> +		tr_data->kref_tty = tty_kref_get(tty);
+> +		if (tr_data->kref_tty == NULL)
+> +			retval = -EFAULT;
+> +		else {
+
+Please use braces for the if as well. It's just irritating not to have
+them before the else.
+
+> +			tr_data->opencalled = 1;
+> +			tty->disc_data      = tr_data;
+> +			tty->receive_room   = RECEIVE_ROOM;
+> +			tty_driver_flush_buffer(tty);
+> +			retval = 0;
+> +		}
+> +	}
+> +	mutex_unlock(&routelock);
+> +	return retval;
+> +}
+> +
+> +/**
+> + * n_tracerouter_close() - close connection
+> + * @tty: terminal device to the ldisc.
+> + *
+> + * Called when a software entity wants to close a connection.
+> + */
+> +static void n_tracerouter_close(struct tty_struct *tty)
+> +{
+> +	struct tracerouter_data *tptr = tty->disc_data;
+> +
+> +	WARN_ON(tptr->kref_tty != tr_data->kref_tty);
+> +	tty_driver_flush_buffer(tty);
+
+That code probably never run with lockdep as you would get a potential
+deadlock warning. See n_tracerouter_open().
+
+Though the deadlock cannot happen as you are protected by
+tr_data->opencalled it does not make it more correct.
+
+> +	mutex_lock(&routelock);
+> +	tty_kref_put(tr_data->kref_tty);
+> +	tr_data->kref_tty = NULL;
+> +	tr_data->opencalled = 0;
+> +	tty->disc_data = NULL;
+> +	mutex_unlock(&routelock);
+> +}
+> +
+
+Thanks,
+
+	tglx
