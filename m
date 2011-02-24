@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1BXOzQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 09:55:16 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:43004 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751835Ab1BXOzN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 09:55:13 -0500
-Date: Thu, 24 Feb 2011 09:55:12 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: btusb autosuspend (was Re: Linux 2.6.38-rc6)
-In-Reply-To: <20110224004333.GA22698@srcf.ucam.org>
-Message-ID: <Pine.LNX.4.44L0.1102240953320.2084-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754983Ab1BXOzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 09:55:43 -0500
+Received: from mga14.intel.com ([143.182.124.37]:22357 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754324Ab1BXOzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 09:55:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,218,1297065600"; 
+   d="scan'208";a="393516721"
+Subject: Re: [PATCH -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110224142523.GJ5818@one.firstfloor.org>
+References: <1298555968.2220.15.camel@localhost>
+	 <20110224140214.GI5818@one.firstfloor.org>
+	 <1298556684.2220.26.camel@localhost>
+	 <20110224142523.GJ5818@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 22:55:38 +0800
+Message-Id: <1298559338.2220.48.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011, Matthew Garrett wrote:
-
-> On Wed, Feb 23, 2011 at 04:25:23PM -0800, Linus Torvalds wrote:
-> > Hmm. Is there any reason we shouldn't revert commit
-> > 556ea928f78a390fe16ae584e6433dff304d3014 given the regression?
-> 
-> I think reverting makes sense at the moment. I haven't seen the reported 
-> issues - I need to figure out if this is related to bus powered/self 
-> powered devices, or what else is causing the difference.
-> 
-> > It apparently had problems before too, and caused autosuspend to be
-> > disabled entirely, judging at least by
+On Thu, 2011-02-24 at 22:25 +0800, Andi Kleen wrote:
+> On Thu, Feb 24, 2011 at 10:11:24PM +0800, Lin Ming wrote:
+> > On Thu, 2011-02-24 at 22:02 +0800, Andi Kleen wrote:
+> > > > +	[ C(OP_READ) ] = {
+> > > > +		[ C(RESULT_ACCESS) ] = 0x04d1, /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
+> > > > +		[ C(RESULT_MISS)   ] = 0x0,
+> > > > +	},
+> > > > +	[ C(OP_WRITE) ] = {
+> > > > +		[ C(RESULT_ACCESS) ] = 0x0424, /* L2_RQSTS.RFO_HITS */
+> > > > +		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS */
+> > > 
+> > > No! You really need offcore here. L2 is not LLC!!!
+> > > See the offcore patchkit which fixes this for Nehalem.
 > > 
-> >   https://bugzilla.redhat.com/show_bug.cgi?id=528744
-> > 
-> > but there's obviously the comment about "those should be fixed now".
-> > Apparently there are more issues.
+> > Yes, I know that.
+> > But I write it like this for now since the offcore patchkit has not been
+> > merged yet.
 > 
-> Right, we were autosuspending even when there were active connections. 
-> Marcel told me that ought to be fixed and my testing seemed to agree...
-> 
-> > I have no idea whether this is a USB-level issue, or a driver-level
-> > one. There are no comments about exactly what fixed the input device
-> > issues. So I'm adding both BT and USB people to the discussion.
-> 
-> I'll try to get time to look at this this week. Marcel, any ideas?
+> It's just wrong. Please don't merge more bugs.
 
-Take a look at Bugzilla #26182.  I tried adding your address to the CC: 
-list, but the only address I could find that Bugzilla would accept 
-wasn't the same as the addresses you normally use.
+OK. I'll fix it and include this patch in the offcore patchkit.
 
-Alan Stern
+> 
+> -Andi
+> 
+
 
