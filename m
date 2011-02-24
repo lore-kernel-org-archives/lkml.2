@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1BXJfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 04:35:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35171 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755862Ab1BXJfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 04:35:20 -0500
-Date: Thu, 24 Feb 2011 10:35:19 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] page_cgroup: Reduce allocation overhead for
- page_cgroup array for CONFIG_SPARSEMEM
-Message-ID: <20110224093519.GB20922@tiehlicka.suse.cz>
-References: <20110223151047.GA7275@tiehlicka.suse.cz>
- <1298485162.7236.4.camel@nimitz>
- <20110224085227.1a3e185b.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756039Ab1BXJhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 04:37:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36851 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751987Ab1BXJhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 04:37:20 -0500
+Date: Thu, 24 Feb 2011 09:37:17 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Yong Shen <yong.shen@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Alberto Panizzo <maramaopercheseimorto@gmail.com>
+Subject: Re: [PATCH] regulator, mc13xxx: Remove pointless test for unsigned
+ less than zero
+Message-ID: <20110224093717.GG8226@opensource.wolfsonmicro.com>
+References: <alpine.LNX.2.00.1102232341030.28678@swampdragon.chaosbits.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110224085227.1a3e185b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LNX.2.00.1102232341030.28678@swampdragon.chaosbits.net>
+X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 24-02-11 08:52:27, KAMEZAWA Hiroyuki wrote:
-> On Wed, 23 Feb 2011 10:19:22 -0800
-> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+On Wed, Feb 23, 2011 at 11:45:55PM +0100, Jesper Juhl wrote:
+> The variable 'val' is a 'unsigned int', so it can never be less than zero. 
+> This fact makes the "val < 0" part of the test done in BUG_ON() in 
+> mc13xxx_regulator_get_voltage() rather pointles since it can never have 
+> any effect.
+> This patch removes the pointless test.
 > 
-> > On Wed, 2011-02-23 at 16:10 +0100, Michal Hocko wrote:
-> > > We can reduce this internal fragmentation by splitting the single
-> > > page_cgroup array into more arrays where each one is well kmalloc
-> > > aligned. This patch implements this idea. 
-> > 
-> > How about using alloc_pages_exact()?  These things aren't allocated
-> > often enough to really get most of the benefits of being in a slab.
-> > That'll at least get you down to a maximum of about PAGE_SIZE wasted.  
-> > 
-> 
-> yes, alloc_pages_exact() is much better.
-> 
-> packing page_cgroups for multiple sections causes breakage in memory hotplug logic.
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-I am not sure I understand this. What do you mean by packing
-page_cgroups for multiple sections? The patch I have posted doesn't do
-any packing. Or do you mean that using a double array can break hotplog?
-Not that this would change anything, alloc_pages_exact is really a
-better solution, I am just curious ;) 
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
