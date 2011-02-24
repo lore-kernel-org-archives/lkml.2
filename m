@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1BXUsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 15:48:09 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:1196 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659Ab1BXUsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 15:48:06 -0500
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-To: "Roland Vossen" <rvossen@broadcom.com>, "Greg KH" <gregkh@suse.de>
-cc: "Ben Hutchings" <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [Stable-review] [28/70] staging: brcm80211: bugfix for
- softmac crash on multi cpu configurations
-References: <20110222221839.853712243@clark.kroah.org>
- <1298427787.2211.498.camel@localhost> <op.vrciafbg3ri7v4@arend-laptop>
- <20110223180627.GB30106@suse.de> <op.vrdhl9qk3ri7v4@arend-laptop>
- <4D6658D7.1010501@broadcom.com> <20110224182133.GA18081@suse.de>
-Date: Thu, 24 Feb 2011 21:47:49 +0100
-MIME-Version: 1.0
-From: "Arend van Spriel" <arend@broadcom.com>
-Organization: Broadcom
-Message-ID: <op.vrfddzvf3ri7v4@arend-laptop>
-In-Reply-To: <20110224182133.GA18081@suse.de>
-User-Agent: Opera Mail/11.01 (Linux)
-X-WSS-ID: 61781BFD5OK12005578-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed;
- delsp=yes
+	id S1754877Ab1BXUsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 15:48:31 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:53480 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab1BXUs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 15:48:28 -0500
+Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-hotplug@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <alpine.LFD.2.00.1102241536120.31831@xanadu.home>
+References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
+	 <1298573197.2428.457.camel@twins>
+	 <20110224201124.138311ba@lxorguk.ukuu.org.uk>
+	 <alpine.LFD.2.00.1102242115011.2701@localhost6.localdomain6>
+	 <alpine.LFD.2.00.1102241522130.31831@xanadu.home>
+	 <1298579452.5226.834.camel@laptop>
+	 <alpine.LFD.2.00.1102241536120.31831@xanadu.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 21:49:49 +0100
+Message-ID: <1298580589.5226.836.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 19:21:33 +0100, Greg KH <gregkh@suse.de> wrote:
+On Thu, 2011-02-24 at 15:40 -0500, Nicolas Pitre wrote:
+> On Thu, 24 Feb 2011, Peter Zijlstra wrote:
+> 
+> > On Thu, 2011-02-24 at 15:24 -0500, Nicolas Pitre wrote:
+> > 
+> > > Most SMP ARM processors are going to use it soon.  Powering down idle 
+> > > cores provides substantial power saving.
+> > 
+> > And why can't regular idle paths be used? CPU hotplug is a massively
+> > expensive operation.
+> 
+> The idle path assumes that the CPU state is preserved. 
 
->
-> Ok, I'm going to drop this patch now.
->
-> Can someone create the needed patches for the .37-stable tree that
-> should be included and send them to me and cc: stable@kernel.org so I
-> can queue them up for the next .37-stable release after this?
->
+Not much of it,
 
-Hi Greg,
+>  We're talking 
+> about cores completely going down with power pulled beneath them and 
+> eventually rebooted dynamically here.
 
-I sent both patches to you.
-
->
-> thanks,
->
-> greg k-h
->
-
-Gr. AvS
--- 
-"The most merciful thing in the world, I think, is the inability of the  
-human
-mind to correlate all its contents." - "The Call of Cthulhu"
+I think you can get away with actually pulling the power and re-initing
+the cpu to idle from the idle path and the rest of the kernel not
+caring.
 
