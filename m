@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab1BXSlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:41:32 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48074 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab1BXSla (ORCPT
+	id S1756072Ab1BXSmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:42:39 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48462
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754106Ab1BXSmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:41:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=QqUl5RYDUNNfaYcMa2kMk4nsrAJ6vpn+W5l555cLW8DztPq1cw6RBYn5RZuDnn0ITu
-         CPwEbahZN5jCNBbsB98yGMqJY9k730wZBPgK67JWk6jmcpQ3TtyQW49UkzK24FcWdQDA
-         NIaOUKQJOCeHaaRP8ijL9xJPpP29HjdUD9XhI=
-Message-ID: <4D66A647.7050502@gmail.com>
-Date: Thu, 24 Feb 2011 19:41:11 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "Rafael J. Wysocki" <rjw@suse.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-References: <Pine.LNX.4.44L0.1102221029100.1968-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1102221029100.1968-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 24 Feb 2011 13:42:37 -0500
+Date: Thu, 24 Feb 2011 10:43:13 -0800 (PST)
+Message-Id: <20110224.104313.68122155.davem@davemloft.net>
+To: ratbert.chuang@gmail.com
+Cc: mirqus@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
+        dilinger@queued.net, ratbert@faraday-tech.com
+Subject: Re: [PATCH v4] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTikE_OU_qiBUdiDP39js8jQzGqqo1FYW2uHmw3He@mail.gmail.com>
+References: <AANLkTimorcNAEbSpuE_dUXKuOBZDcDcGSJ2cGefniThc@mail.gmail.com>
+	<20110223.235129.02262510.davem@davemloft.net>
+	<AANLkTikE_OU_qiBUdiDP39js8jQzGqqo1FYW2uHmw3He@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 04:36 PM, Alan Stern wrote:
-> By the way, are you booting with no_console_suspend?  And do you do 
-> "echo 8 >/proc/sys/kernel/printk" (or equivalently, Alt-SysRq-8) before 
-> suspending?
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Thu, 24 Feb 2011 16:07:48 +0800
+
+> On Thu, Feb 24, 2011 at 3:51 PM, David Miller <davem@davemloft.net> wrote:
+>> Just emit garbage bytes into the sub-word alignment padding if the chip
+>> wants to word align it's DMA writes.
 > 
-> What about if you leave async enabled for all the USB devices _except_ 
-> usb[1-N]?
+> Not sure what do you mean. The problem is that HW does not accept a
+> base address of RX buffer which is not 8 bytes aligned.
 
-It died right now.
-
-So I booted with no_console_suspend.
-
-thanks,
--- 
-js
+I am saying this is what hardware should do if it has such a
+restriction.
