@@ -1,51 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab1BXEqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 23:46:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45431 "EHLO mail.zytor.com"
+	id S932517Ab1BXEwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 23:52:32 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:58767 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138Ab1BXEqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 23:46:53 -0500
-Message-ID: <4D65E2B4.1010501@zytor.com>
-Date: Wed, 23 Feb 2011 20:46:44 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: =?UTF-8?B?TGludXMgTMO8c3Npbmc=?= <linus.luessing@web.de>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Multicast snooping fixes and suggestions
-References: <1297811961-19249-1-git-send-email-linus.luessing@web.de> <4D65CD81.4070203@zytor.com> <20110224040412.GA25488@gondor.apana.org.au>
-In-Reply-To: <20110224040412.GA25488@gondor.apana.org.au>
-Content-Type: text/plain; charset=UTF-8
+	id S1752138Ab1BXEwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 23:52:31 -0500
+Date: Thu, 24 Feb 2011 15:52:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>
+Subject: linux-next: manual merge of the tip tree with the acpi tree
+Message-Id: <20110224155221.4f35f728.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2011 08:04 PM, Herbert Xu wrote:
-> On Wed, Feb 23, 2011 at 07:16:17PM -0800, H. Peter Anvin wrote:
->>
->> Are these packets likely to address that situation (or am I just plain
->> doing something stupid)?
-> 
-> No these patches deal with IPv6 multicast support in the bridge and
-> are not related to your problem.
-> 
-> If you're using the bridge for virtualisation and you know that
-> you don't have a loop in your setup, then one option would be to
-> disable STP on your bridge.
+Hi all,
 
-Hi,
+Today's linux-next merge of the tip tree got a conflict in
+arch/x86/kernel/acpi/sleep.c between commit
+a69fa313606a51cee99d802c14895330948f60c8 ("ACPI / PM: Drop
+acpi_restore_state_mem()") from the acpi tree and commit
+d1ee433539ea5963a8f946f3428b335d1c5fdb20 ("x86, trampoline: Use the
+unified trampoline setup for ACPI wakeup") from the tip tree.
 
-I have disabled STP on the bridge; it doesn't change the behavior.
-
-	-hpa
-
+Just context (I think).  I fixed it up (see below) and can carry the fix
+as necessary.
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/x86/kernel/acpi/sleep.c
+index 5f1b747,4572c58..0000000
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@@ -33,22 -29,17 +29,17 @@@ static char temp_stack[4096]
+   *
+   * Create an identity mapped page table and copy the wakeup routine to
+   * low memory.
+-  *
+-  * Note that this is too late to change acpi_wakeup_address.
+   */
+ -int acpi_save_state_mem(void)
+ +int acpi_suspend_lowlevel(void)
+  {
+  	struct wakeup_header *header;
++ 	/* address in low memory of the wakeup routine. */
++ 	char *acpi_realmode;
+  
+- 	if (!acpi_realmode) {
+- 		printk(KERN_ERR "Could not allocate memory during boot, "
+- 		       "S3 disabled\n");
+- 		return -ENOMEM;
+- 	}
+- 	memcpy((void *)acpi_realmode, &wakeup_code_start, WAKEUP_SIZE);
++ 	acpi_realmode = TRAMPOLINE_SYM(acpi_wakeup_code);
+  
+- 	header = (struct wakeup_header *)(acpi_realmode + HEADER_OFFSET);
+- 	if (header->signature != 0x51ee1111) {
++ 	header = (struct wakeup_header *)(acpi_realmode + WAKEUP_HEADER_OFFSET);
++ 	if (header->signature != WAKEUP_HEADER_SIGNATURE) {
+  		printk(KERN_ERR "wakeup header does not match\n");
+  		return -EINVAL;
+  	}
+@@@ -111,45 -99,13 +100,6 @@@
+  	return 0;
+  }
+  
+- /**
+-  * acpi_reserve_wakeup_memory - do _very_ early ACPI initialisation
+-  *
+-  * We allocate a page from the first 1MB of memory for the wakeup
+-  * routine for when we come back from a sleep state. The
+-  * runtime allocator allows specification of <16MB pages, but not
+-  * <1MB pages.
+-  */
+- void __init acpi_reserve_wakeup_memory(void)
+- {
+- 	phys_addr_t mem;
+- 
+- 	if ((&wakeup_code_end - &wakeup_code_start) > WAKEUP_SIZE) {
+- 		printk(KERN_ERR
+- 		       "ACPI: Wakeup code way too big, S3 disabled.\n");
+- 		return;
+- 	}
+- 
+- 	mem = memblock_find_in_range(0, 1<<20, WAKEUP_SIZE, PAGE_SIZE);
+- 
+- 	if (mem == MEMBLOCK_ERROR) {
+- 		printk(KERN_ERR "ACPI: Cannot allocate lowmem, S3 disabled.\n");
+- 		return;
+- 	}
+- 	acpi_realmode = (unsigned long) phys_to_virt(mem);
+- 	acpi_wakeup_address = mem;
+- 	memblock_x86_reserve_range(mem, mem + WAKEUP_SIZE, "ACPI WAKEUP");
+- }
+- 
+- int __init acpi_configure_wakeup_memory(void)
+- {
+- 	if (acpi_realmode)
+- 		set_memory_x(acpi_realmode, WAKEUP_SIZE >> PAGE_SHIFT);
+- 
+- 	return 0;
+- }
+- arch_initcall(acpi_configure_wakeup_memory);
+- 
+- 
+ -/*
+ - * acpi_restore_state - undo effects of acpi_save_state_mem
+ - */
+ -void acpi_restore_state_mem(void)
+ -{
+ -}
+ -
+  static int __init acpi_sleep_setup(char *str)
+  {
+  	while ((str != NULL) && (*str != '\0')) {
