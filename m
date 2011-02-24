@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab1BXWbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 17:31:00 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:60616 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754399Ab1BXWa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 17:30:59 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 24 Feb 2011 23:31:59 +0100
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: bcm5974 - Report button also for zero fingers
-Message-ID: <20110224223159.GA6173@polaris.bitmath.org>
-References: <1298576264-1563-1-git-send-email-rydberg@euromail.se>
- <20110224222058.GA2448@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224222058.GA2448@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1PsjhN-0000cR-9w.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PsjhN-0000cR-9w 68fd0f64d46a4fbded933feb6c1a8b84
+	id S1756524Ab1BXWnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 17:43:16 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39784 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755523Ab1BXWnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 17:43:14 -0500
+Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
+        aarcange@redhat.com
+In-Reply-To: <1298425922-23630-9-git-send-email-andi@firstfloor.org>
+References: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
+	 <1298425922-23630-9-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 24 Feb 2011 14:43:04 -0800
+Message-ID: <1298587384.9138.23.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 02:20:59PM -0800, Dmitry Torokhov wrote:
-> On Thu, Feb 24, 2011 at 08:37:44PM +0100, Henrik Rydberg wrote:
-> > With the current code, pressing the integrated button with an
-> > isolating tool does not result in any button report. Fixed
-> > with this this patch.
-> > 
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> > Hi Dmitry,
-> > 
-> > that nobody every complained about this bug is beyond me...
-> 
-> I guess nobody uses styluses to work with the touchpad... I'll apply it
-> of course, but since I do not recall bug reports I'll hold it till .39 I
-> think.
+On Tue, 2011-02-22 at 17:52 -0800, Andi Kleen wrote:
+> @@ -2286,6 +2290,9 @@ void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
+>  		spin_unlock(&mm->page_table_lock);
+>  		return;
+>  	}
+> +
+> +	count_vm_event(THP_SPLIT);
+> +
+>  	page = pmd_page(*pmd);
+>  	VM_BUG_ON(!page_count(page));
+>  	get_page(page);
 
-I was hoping it could slip into 2.6.38 - I can even produce a bug
-report if needed. :-)
+Hey Andi,
 
-Henrik
+Your split counter tracks the split_huge_page_pmd() calls, but misses
+plain split_huge_page() calls.  Did you do this on purpose?  Could we
+move the counter in to the low-level split function like below?
+
+---
+
+ linux-2.6.git-dave/mm/huge_memory.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff -puN mm/huge_memory.c~move-THP_SPLIT mm/huge_memory.c
+--- linux-2.6.git/mm/huge_memory.c~move-THP_SPLIT	2011-02-24 14:37:32.825288409 -0800
++++ linux-2.6.git-dave/mm/huge_memory.c	2011-02-24 14:39:01.767939971 -0800
+@@ -1342,6 +1342,8 @@ static void __split_huge_page(struct pag
+ 	BUG_ON(!PageHead(page));
+ 	BUG_ON(PageTail(page));
+ 
++	count_vm_event(THP_SPLIT);
++
+ 	mapcount = 0;
+ 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+ 		struct vm_area_struct *vma = avc->vma;
+@@ -2293,8 +2295,6 @@ void __split_huge_page_pmd(struct mm_str
+ 		return;
+ 	}
+ 
+-	count_vm_event(THP_SPLIT);
+-
+ 	page = pmd_page(*pmd);
+ 	VM_BUG_ON(!page_count(page));
+ 	get_page(page);
+
+-- Dave
+
