@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444Ab1BXFcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 00:32:07 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:12156 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab1BXFcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 00:32:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=Q5SI+zWZS2xYE1WcWKF+MwOv4Eq/s8/xgtO600a7oHTyQBEtv4cjoeFStoBB3SfvG/
-         /DAbo5pcKPiLOB5l3b6g==
-Date: Wed, 23 Feb 2011 21:31:50 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Nick Piggin <npiggin@kernel.dk>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Wu Fengguang <fengguang.wu@intel.com>, Salman Qazi <sqazi@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] mm: remove worrying dead code from find_get_pages()
-Message-ID: <alpine.LSU.2.00.1102232127590.2239@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1751599Ab1BXFeq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 00:34:46 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:35154 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202Ab1BXFeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 00:34:44 -0500
+Date: Thu, 24 Feb 2011 16:34:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>
+Subject: linux-next: manual merge of the tty tree with Linus' tree
+Message-Id: <20110224163439.05352f9b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The radix_tree_deref_retry() case in find_get_pages() has a strange
-little excrescence, not seen in the other gang lookups: it looks like
-the start of an abandoned attempt to guarantee forward progress in a
-case that cannot arise.
+Hi Greg,
 
-ret should always be 0 here: if it isn't, then going back to restart
-will leak references to pages already gotten.  There used to be a
-comment saying nr_found is necessarily 1 here: that's not quite true,
-but the radix_tree_deref_retry() case is peculiar to the entry at index
-0, when we race with it being moved out of the radix_tree root or back.
+Today's linux-next merge of the tty tree got a conflict in
+drivers/char/Makefile between commit
+51df0acc3d76cf41d5496ef044cc5717ab5c7f71 ("virtio: console: Move file
+back to drivers/char/") from Linus' tree and commit
+a6afd9f3e819de4795fcd356e5bfad446e4323f2 ("tty: move a number of tty
+drivers from drivers/char/ to drivers/tty/") (and later ones) from the tty
+tree.
 
-Remove the worrisome two lines, add a brief comment here and in
-find_get_pages_contig() and find_get_pages_tag(), and a WARN_ON
-in find_get_pages() should it ever be seen elsewhere than at 0.
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-
- mm/filemap.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
---- 2.6.38-rc6/mm/filemap.c	2011-01-18 22:04:56.000000000 -0800
-+++ linux/mm/filemap.c	2011-02-23 15:45:47.000000000 -0800
-@@ -782,9 +782,13 @@ repeat:
- 		page = radix_tree_deref_slot((void **)pages[i]);
- 		if (unlikely(!page))
- 			continue;
-+
-+		/*
-+		 * This can only trigger when the entry at index 0 moves out
-+		 * of or back to the root: none yet gotten, safe to restart.
-+		 */
- 		if (radix_tree_deref_retry(page)) {
--			if (ret)
--				start = pages[ret-1]->index;
-+			WARN_ON(start | i);
- 			goto restart;
- 		}
- 
-@@ -834,6 +838,11 @@ repeat:
- 		page = radix_tree_deref_slot((void **)pages[i]);
- 		if (unlikely(!page))
- 			continue;
-+
-+		/*
-+		 * This can only trigger when the entry at index 0 moves out
-+		 * of or back to the root: none yet gotten, safe to restart.
-+		 */
- 		if (radix_tree_deref_retry(page))
- 			goto restart;
- 
-@@ -894,6 +903,11 @@ repeat:
- 		page = radix_tree_deref_slot((void **)pages[i]);
- 		if (unlikely(!page))
- 			continue;
-+
-+		/*
-+		 * This can only trigger when the entry at index 0 moves out
-+		 * of or back to the root: none yet gotten, safe to restart.
-+		 */
- 		if (radix_tree_deref_retry(page))
- 			goto restart;
- 
+diff --cc drivers/char/Makefile
+index 8238f89,3ca1f62..0000000
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@@ -5,32 -5,7 +5,8 @@@
+  obj-y				+= mem.o random.o
+  obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
+  obj-y				+= misc.o
+- obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+- obj-$(CONFIG_MVME147_SCC)	+= generic_serial.o vme_scc.o
+- obj-$(CONFIG_MVME162_SCC)	+= generic_serial.o vme_scc.o
+- obj-$(CONFIG_BVME6000_SCC)	+= generic_serial.o vme_scc.o
+- obj-$(CONFIG_ROCKETPORT)	+= rocket.o
+- obj-$(CONFIG_SERIAL167)		+= serial167.o
+- obj-$(CONFIG_CYCLADES)		+= cyclades.o
+- obj-$(CONFIG_STALLION)		+= stallion.o
+- obj-$(CONFIG_ISTALLION)		+= istallion.o
+- obj-$(CONFIG_NOZOMI)		+= nozomi.o
+- obj-$(CONFIG_DIGIEPCA)		+= epca.o
+- obj-$(CONFIG_SPECIALIX)		+= specialix.o
+- obj-$(CONFIG_MOXA_INTELLIO)	+= moxa.o
+- obj-$(CONFIG_A2232)		+= ser_a2232.o generic_serial.o
+  obj-$(CONFIG_ATARI_DSP56K)	+= dsp56k.o
+- obj-$(CONFIG_MOXA_SMARTIO)	+= mxser.o
+- obj-$(CONFIG_COMPUTONE)		+= ip2/
+- obj-$(CONFIG_RISCOM8)		+= riscom8.o
+- obj-$(CONFIG_ISI)		+= isicom.o
+- obj-$(CONFIG_SYNCLINK)		+= synclink.o
+- obj-$(CONFIG_SYNCLINKMP)	+= synclinkmp.o
+- obj-$(CONFIG_SYNCLINK_GT)	+= synclink_gt.o
+- obj-$(CONFIG_AMIGA_BUILTIN_SERIAL) += amiserial.o
+- obj-$(CONFIG_SX)		+= sx.o generic_serial.o
+- obj-$(CONFIG_RIO)		+= rio/ generic_serial.o
+ +obj-$(CONFIG_VIRTIO_CONSOLE)	+= virtio_console.o
+  obj-$(CONFIG_RAW_DRIVER)	+= raw.o
+  obj-$(CONFIG_SGI_SNSC)		+= snsc.o snsc_event.o
+  obj-$(CONFIG_MSPEC)		+= mspec.o
