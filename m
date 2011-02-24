@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab1BXTZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 14:25:22 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64530 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756397Ab1BXTZU convert rfc822-to-8bit (ORCPT
+	id S1756336Ab1BXTaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 14:30:00 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54644 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab1BXT37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 14:25:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UPzTWyQ8TJAo7ZHYKwvr/m+/YrKLVcDohxTZDfgHIS645FX5AgOj8VsBboo+WfTTXv
-         /aJoR1hbVG4ytK3rXZHWpzQBtXX8QIHvqpJ2ww6Khv73uel3R35cRxiJQO1nZDWU5xrG
-         qSIHO6et0G7rect7QtLe+e04T1xvVM9Zrb4gY=
+	Thu, 24 Feb 2011 14:29:59 -0500
+Message-ID: <4D66B176.9030300@kernel.org>
+Date: Thu, 24 Feb 2011 11:28:54 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimLb4=04vOU7_SrtKpWQvFmDfibHGGsC+CFxwCW@mail.gmail.com>
-References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
-	<AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
-	<0d30dc$l7ehaa@orsmga001.jf.intel.com>
-	<AANLkTi=DXg=ighnPi4FYA29=qegE=c_PtCVWzOymYtmQ@mail.gmail.com>
-	<b5f94200cffe31ff8cbe38d2bd2e35a7.squirrel@webmail.greenhost.nl>
-	<AANLkTimLb4=04vOU7_SrtKpWQvFmDfibHGGsC+CFxwCW@mail.gmail.com>
-Date: Thu, 24 Feb 2011 20:25:18 +0100
-Message-ID: <AANLkTinD5HJGwxKUKqCtpLY1cNC9JJX8vqECYC8nhpUe@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Alex Riesen <raa.lkml@gmail.com>
-To: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel@ffwll.ch>,
-        Indan Zupancic <indan@nul.nu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: Tejun Heo <tj@kernel.org>, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
+Subject: Re: [GIT PULL tip:x86/mm]
+References: <20110224145128.GM7840@htj.dyndns.org> <4D66AC9C.6080500@kernel.org> <20110224192305.GB15498@elte.hu>
+In-Reply-To: <20110224192305.GB15498@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D66B1A2.0128,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 20:04, Alex Riesen <raa.lkml@gmail.com> wrote:
-> So, AFAICS, at the moment there is no better patch than this:
->
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index 17bd766..8f8a6a3 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -764,7 +764,7 @@ static int i915_getparam(struct drm_device *dev, void *data,
->                break;
->        case I915_PARAM_HAS_RELAXED_FENCING:
->                value = 1;
-> -               break;
-> +               return -EINVAL;
->        case I915_PARAM_HAS_COHERENT_RINGS:
->                value = 1;
->                break;
->
+On 02/24/2011 11:23 AM, Ingo Molnar wrote:
+> 
+> * Yinghai Lu <yinghai@kernel.org> wrote:
+> 
+>> On 02/24/2011 06:51 AM, Tejun Heo wrote:
+>>> Ingo, please pull from the following git branch to receive four
+>>> commits from Yinghai.  HEAD is d1b19426b0 (x86: Rename e820_table_* to
+>>> pgt_buf_*).
+>>>
+>>> The first three separate nobootmem code into mm/nobootmem.c and the
+>>> last one renames e820_table_* variables to pgt_buf_*.  All four
+>>> patches are cleanups and shouldn't cause any behavior difference.
+>>>
+>>>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+>>>
+>>> As usual, if HEAD doesn't appear, please pull from master.
+>>>
+>>>   ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+>>>
+>>> Thanks.
+>>>
+>>> Yinghai Lu (4):
+>>>       bootmem: Separate out CONFIG_NO_BOOTMEM code into nobootmem.c
+>>>       bootmem: Move contig_page_data definition to bootmem.c/nobootmem.c
+>>>       bootmem: Move __alloc_memory_core_early() to nobootmem.c
+>>>       x86: Rename e820_table_* to pgt_buf_*
+>>>
+>>>  arch/x86/include/asm/init.h |    6 +-
+>>>  arch/x86/mm/init.c          |   20 +-
+>>>  arch/x86/mm/init_32.c       |    8 +-
+>>>  arch/x86/mm/init_64.c       |    4 +-
+>>>  arch/x86/xen/mmu.c          |    2 +-
+>>>  include/linux/mm.h          |    2 -
+>>>  mm/Makefile                 |    8 +-
+>>>  mm/bootmem.c                |  180 +-----------------
+>>>  mm/nobootmem.c              |  435 +++++++++++++++++++++++++++++++++++++++++++
+>>>  mm/page_alloc.c             |   37 ----
+>>>  10 files changed, 472 insertions(+), 230 deletions(-)
+>>>  create mode 100644 mm/nobootmem.c
+>>>
+>>
+>> better to put first three into seperate branch. and it is with core code.
+>> something like tip/mm
+>>
+>> So will not pollute tip/x86/mm. and they can be pushed separately.
+> 
+> Well, realistically they will be tested together and will go to Linus under the 
+> x86/mm label anyway, so there's little reason to keep them separate at this point.
+> 
+> So i've pulled them. Thanks guys!
 
-Probably unrelated, but I managed to get a cursor corruption with
-just this patch. So maybe, I still need that fix from Daniel: an X
-cursor seem to meet that pixmap size requirements. And corruption
-picture fits too: stripes and dots in lower left corner of where
-a part of the cursor image should have been.
+DavidR reported that x86/mm broke his numa emulation with 128M etc.
 
-Can't reproduce, though.
+So wonder if that would hold you to push whole tip/x86/mm to Linus for .39
+or need to rebase it while taking the tip/x86/numa-emulation-unify out.
+
+Thanks
+
+Yinghai
