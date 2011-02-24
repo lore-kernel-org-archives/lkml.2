@@ -1,91 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1BXObN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 09:31:13 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43680 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab1BXObK (ORCPT
+	id S1756180Ab1BXOgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 09:36:52 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47067 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755608Ab1BXOgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 09:31:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PK/8lK88mP7nw/MKdnyBViPtQXEFh6gL+0e4+6z/umlEwV2L9u2fEObAc/cDUxbd3H
-         K/r9JDu4Xfdqh2dQGVTXaUnixtSA2ZKFRxO8ccw2k0lrHER+iG5UqZJa3od+26aqGy+c
-         BGuM5viXG9bK3vJLFqXBypULidl2YYCzhfnAo=
-Date: Thu, 24 Feb 2011 15:31:05 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        libvir-list@redhat.com, Dominik Klein <dk@in-telegence.net>
-Subject: Re: Is it a workqueue related issue in 2.6.37 (Was: Re: [libvirt]
- blkio cgroup [solved])
-Message-ID: <20110224143105.GL7840@htj.dyndns.org>
-References: <4D621B9B.3070205@in-telegence.net>
- <4D622002.2040604@in-telegence.net>
- <4D6222A8.6090303@in-telegence.net>
- <20110221184442.GM6428@redhat.com>
- <4D63BA3B.7070809@in-telegence.net>
- <20110222152426.GD28269@redhat.com>
- <20110222190953.GF28269@redhat.com>
- <4D650D7E.4050908@in-telegence.net>
- <4D662248.6040405@in-telegence.net>
- <20110224142303.GA18494@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224142303.GA18494@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Feb 2011 09:36:49 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=687XAutVW18A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=KKAkSRfTAAAA:8 a=v5fW1wrYxGBlHb-qY7EA:9 a=84P3Pl4rMuoNialZdQ6tbyUZRvcA:4 a=PUjeQqilurYA:10 a=WwgC8nHKvroA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH V4 1/2] tracing, perf : add cpu hotplug trace events
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        fweisbec@gmail.com, amit.kucheria@linaro.org,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>
+In-Reply-To: <AANLkTinvZmoXQV3Kb7uyuHsCnDNNGfed0BfRfLaE_CdZ@mail.gmail.com>
+References: <AANLkTi=V8xPzo-T=DMpf-FMF141SrMnb9J9mXqE9pW0w@mail.gmail.com>
+	 <AANLkTinvZmoXQV3Kb7uyuHsCnDNNGfed0BfRfLaE_CdZ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 24 Feb 2011 09:36:46 -0500
+Message-ID: <1298558206.6376.1.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+[ Added Ingo and Rusty ]
 
-On Thu, Feb 24, 2011 at 09:23:03AM -0500, Vivek Goyal wrote:
-> On Thu, Feb 24, 2011 at 10:18:00AM +0100, Dominik Klein wrote:
+On Thu, 2011-02-24 at 15:26 +0100, Vincent Guittot wrote:
+> Hi,
 > 
-> Hi Dominik,
+> Any comments or feedbacks about these both patches ?
+
+I'm fine with these patches and I believe Frederic said he was too. But
+as these patches trace cpu hotplug, it is up to the maintainers of cpu
+hotplug to make the final decision.
+
+-- Steve
+
 > 
-> Thanks for the tests and reports. I checked the latest logs also and
-> I see that cfq has scheduled a work but that work never gets scheduled.
-> I never see the trace message which says cfq_kick_queue().
+> Thanks,
+> Vincent
 > 
-> I am ccing it to lkml and tejun to see if he has any suggestions.
-> 
-> Tejun,
-> 
-> I will give you some details about what we have discussed so far.
-> 
-> Dominik is trying blkio throttling feature and trying to throttle some
-> virtual machines. He is using 2.6.37 kernels and once he launches 3
-> virtual machines he notices that system is kind of frozen. After running
-> some traces we noticed that CFQ has requests but it is not dispatching
-> these to devices any more.
-> 
-> This problem does not show up with deadline scheduler and also goes away
-> with 2.6.38-rc6 kernels.
+> On 31 January 2011 11:22, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+> > Please find below a new proposal for adding trace events for cpu hotplug.
+> > The goal is to measure the latency of each part (kernel, architecture)
+> > and also to trace the cpu hotplug activity with other power events. I
+> > have tested these traces events on an arm platform.
+> >
+> > Subject: [PATCH 1/2] cpu hotplug tracepoint
+> >
+> > this patch adds new events for cpu hotplug tracing
+> >  * plug/unplug sequence
+> >  * core and architecture latency measurements
+> >
+> > Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> > ---
+> >  include/trace/events/cpu_hotplug.h |  103 ++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 103 insertions(+), 0 deletions(-)
+> >  create mode 100644 include/trace/events/cpu_hotplug.h
+> >
+> > diff --git a/include/trace/events/cpu_hotplug.h
+> > b/include/trace/events/cpu_hotplug.h
+> > new file mode 100644
+> > index 0000000..af05775
+> > --- /dev/null
+> > +++ b/include/trace/events/cpu_hotplug.h
+> > @@ -0,0 +1,103 @@
+> > +#undef TRACE_SYSTEM
+> > +#define TRACE_SYSTEM cpu_hotplug
+> > +
+> > +#if !defined(_TRACE_CPU_HOTPLUG_H) || defined(TRACE_HEADER_MULTI_READ)
+> > +#define _TRACE_CPU_HOTPLUG_H
+> > +
+> > +#include <linux/tracepoint.h>
+> > +
+> > +DECLARE_EVENT_CLASS(cpu_hotplug,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid),
+> > +
+> > +       TP_STRUCT__entry(
+> > +               __field(        unsigned int,   cpuid   )
+> > +       ),
+> > +
+> > +       TP_fast_assign(
+> > +               __entry->cpuid = cpuid;
+> > +       ),
+> > +
+> > +       TP_printk("cpuid=%u", __entry->cpuid)
+> > +);
+> > +
+> > +/* Core function of cpu hotplug */
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_down_start,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_down_end,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_up_start,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_up_end,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +/* Architecture function for cpu hotplug */
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_disable_start,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_disable_end,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_die_start,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_die_end,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_up_start,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_up_end,
+> > +
+> > +       TP_PROTO(unsigned int cpuid),
+> > +
+> > +       TP_ARGS(cpuid)
+> > +);
+> > +
+> > +#endif /* _TRACE_CPU_HOTPLUG_H */
+> > +
+> > +/* This part must be outside protection */
+> > +#include <trace/define_trace.h>
+> > --
+> > 1.7.1
+> >
 
-Hmmm...  Maybe the following commit?
 
-commit 7576958a9d5a4a677ad7dd40901cdbb6c1110c98
-Author: Tejun Heo <tj@kernel.org>
-Date:   Mon Feb 14 14:04:46 2011 +0100
-
-    workqueue: wake up a worker when a rescuer is leaving a gcwq
-
-    After executing the matching works, a rescuer leaves the gcwq
-    whether there are more pending works or not.  This may decrease
-    the concurrency level to zero and stall execution until a new work
-    item is queued on the gcwq.
-
-    Make rescuer wake up a regular worker when it leaves a gcwq if
-    there are more works to execute, so that execution isn't stalled.
-
-    Signed-off-by: Tejun Heo <tj@kernel.org>
-    Reported-by: Ray Jui <rjui@broadcom.com>
-    Cc: stable@kernel.org
-
--- 
-tejun
