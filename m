@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab1BXTIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 14:08:39 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31004 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756166Ab1BXTIh (ORCPT
+	id S1756141Ab1BXTKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 14:10:23 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56791 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab1BXTKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 14:08:37 -0500
-Message-ID: <4D66AC9C.6080500@kernel.org>
-Date: Thu, 24 Feb 2011 11:08:12 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Thu, 24 Feb 2011 14:10:20 -0500
+Date: Thu, 24 Feb 2011 19:10:13 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ian Kent <raven@themaw.net>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, npiggin@gmail.com
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+Message-ID: <20110224191012.GC22723@ZenIV.linux.org.uk>
+References: <1295420817.3076.24.camel@perseus>
+ <1297779902.13007.86.camel@perseus>
+ <20110224015817.GQ22723@ZenIV.linux.org.uk>
+ <1298516618.2916.20.camel@perseus>
+ <20110224031439.GR22723@ZenIV.linux.org.uk>
+ <1298518137.2916.35.camel@perseus>
+ <20110224035836.GS22723@ZenIV.linux.org.uk>
+ <1298529260.2916.91.camel@perseus>
+ <20110224070724.GW22723@ZenIV.linux.org.uk>
+ <1298542053.3058.56.camel@perseus>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL tip:x86/mm]
-References: <20110224145128.GM7840@htj.dyndns.org>
-In-Reply-To: <20110224145128.GM7840@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D66ACAA.0055,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298542053.3058.56.camel@perseus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2011 06:51 AM, Tejun Heo wrote:
-> Ingo, please pull from the following git branch to receive four
-> commits from Yinghai.  HEAD is d1b19426b0 (x86: Rename e820_table_* to
-> pgt_buf_*).
-> 
-> The first three separate nobootmem code into mm/nobootmem.c and the
-> last one renames e820_table_* variables to pgt_buf_*.  All four
-> patches are cleanups and shouldn't cause any behavior difference.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
-> 
-> As usual, if HEAD doesn't appear, please pull from master.
-> 
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
-> 
-> Thanks.
-> 
-> Yinghai Lu (4):
->       bootmem: Separate out CONFIG_NO_BOOTMEM code into nobootmem.c
->       bootmem: Move contig_page_data definition to bootmem.c/nobootmem.c
->       bootmem: Move __alloc_memory_core_early() to nobootmem.c
->       x86: Rename e820_table_* to pgt_buf_*
-> 
->  arch/x86/include/asm/init.h |    6 +-
->  arch/x86/mm/init.c          |   20 +-
->  arch/x86/mm/init_32.c       |    8 +-
->  arch/x86/mm/init_64.c       |    4 +-
->  arch/x86/xen/mmu.c          |    2 +-
->  include/linux/mm.h          |    2 -
->  mm/Makefile                 |    8 +-
->  mm/bootmem.c                |  180 +-----------------
->  mm/nobootmem.c              |  435 +++++++++++++++++++++++++++++++++++++++++++
->  mm/page_alloc.c             |   37 ----
->  10 files changed, 472 insertions(+), 230 deletions(-)
->  create mode 100644 mm/nobootmem.c
-> 
+On Thu, Feb 24, 2011 at 06:07:33PM +0800, Ian Kent wrote:
 
-better to put first three into seperate branch. and it is with core code.
-something like tip/mm
+> Yes, that's a problem.
+> 
+> Previously the dcache_lock would have blocked on the dput() ... mmm, I'd
+> missed that so far, although Nick didn't talk with me about his changes
+> very much at all and I didn't pay enough attention to his patch series
+> along the way, oops!
 
-So will not pollute tip/x86/mm. and they can be pushed separately.
-
-Thanks
-
-Yinghai
+Actually, dcache_lock blocks only the _final_ dput().  I.e. one that has
+refcount going to 0.  Not the case here, so that's a problem without
+RCU stuff as well.
