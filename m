@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab1BXTXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 14:23:36 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52097 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498Ab1BXTXe (ORCPT
+	id S1756347Ab1BXTZP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 14:25:15 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:38362 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab1BXTZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 14:23:34 -0500
-Message-ID: <4D66AFDB.5010005@ru.mvista.com>
-Date: Thu, 24 Feb 2011 22:22:03 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/3] xhci: Fix cycle bit calculation during stall handling.
-References: <cover.1298514502.git.sarah.a.sharp@linux.intel.com> <e1b54e2b29b06b62174de33a74fa7469173abc92.1298514502.git.sarah.a.sharp@linux.intel.com> <4D663E80.8050906@ru.mvista.com> <20110224153855.GA25590@xanatos>
-In-Reply-To: <20110224153855.GA25590@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 24 Feb 2011 14:25:09 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=7fdJUjABhSQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=LK_QS28-zRdYMgWlxPsA:9 a=D0t2i6O86gfeCT2cFSI_TOZs7jQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/2] staging: remove null checks before kfree
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: Greg KH <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinBFFU5c_kcXGSnJA-ycY6j7EeKvwAFb59iWMHn@mail.gmail.com>
+References: <1298364821-18915-1-git-send-email-imirkin@alum.mit.edu>
+	 <20110224160828.GA888@home.goodmis.org> <20110224170619.GA7925@suse.de>
+	 <1298568347.6376.3.camel@gandalf.stny.rr.com>
+	 <AANLkTinBFFU5c_kcXGSnJA-ycY6j7EeKvwAFb59iWMHn@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 24 Feb 2011 14:25:06 -0500
+Message-ID: <1298575506.6376.4.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, 2011-02-24 at 19:08 +0000, Ilia Mirkin wrote:
 
-Sarah Sharp wrote:
+> FWIW my reasoning for doing this was that generally the reason you're
+> freeing something is because you allocated it, so kfree(NULL) happens
+> rarely -- error paths, conditional features, etc. If you actually
+> expect the argument to be NULL often, then you would do something like
+> if (unlikely(x)) kfree(x). This is done a few times in the core
+> kernel. I think it makes more sense for kfree to keep the unlikely
+> since in cold paths it won't matter and in hot paths where it is often
+> NULL, there should be a conditional at the call site. [I'm sure you'll
+> note the lack of an attached benchmark... this is just what makes
+> sense to me.]
 
->>> +	if (ep_ring->first_seg == ep_ring->first_seg->next&&
->>> +			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
->>> +			state->new_cycle_state ^= 0x1;
+That unlikely has been there for years, and another year wont hurt
+anything ;)
 
->>    The last line seems overindented.
+I'll run my unlikely clean up again in December, and we'll see what
+needs to be touched then.
 
-> Hi Sergei,
+Thanks,
 
-> checkpatch.pl doesn't complain about it.  It is not a good use of my
-> time to respin this patch for one stylistic change that is not a
-> violation of the Kernel community norms.
+-- Steve
 
-> I really feel strongly that you are wasting the community's time by
-> commenting on style when it is only a violation of your personal style,
-> without providing any useful feedback on the code itself.
 
-    Not only of my personal style, as Dmitry's comment has shown. Like him, I 
-had some trouble seeing where the *if* expression ends and the branch starts, 
-due to both lines starting on the same level of indentation...
-
-> I feel so strongly that I'm seriously considering setting up a feedback
-> bot for you.  It would run any patch you reply to through checkpatch.pl,
-> and send you a small reminder when the patch passes, but you complained
-> about style.  I think it would allow you to have a sense of how
-> frustrating it is to receive these unnecessary stylistic comments.
-
-    Well, I'll try to save you that trouble and avoid commenting on your patches 
-in the future.
-
-> Sarah Sharp
-
-WBR, Sergei
