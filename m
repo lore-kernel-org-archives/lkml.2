@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab1BXWOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 17:14:17 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33596 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755608Ab1BXWOQ (ORCPT
+	id S1756315Ab1BXWT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 17:19:27 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:26421 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601Ab1BXWTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 17:14:16 -0500
-Date: Thu, 24 Feb 2011 14:13:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Petr Holasek <pholasek@redhat.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2] hugetlbfs: correct handling of negative input to
- /proc/sys/vm/nr_hugepages
-Message-Id: <20110224141335.978066c5.akpm@linux-foundation.org>
-In-Reply-To: <20110224141034.d2dfb7de.akpm@linux-foundation.org>
-References: <4D6419C0.8080804@redhat.com>
-	<20110224141034.d2dfb7de.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Feb 2011 17:19:22 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76315575"
+From: Kenneth Heitke <kheitke@codeaurora.org>
+To: davidb@codeaurora.org, dima@android.com
+Cc: linux-arm-msm@vger.kernel.org, tsoni@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, swetland@google.com,
+        Kenneth Heitke <kheitke@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2 1/2] MAINTAINERS: Add drivers/msm to MSM subsystem
+Date: Thu, 24 Feb 2011 15:19:13 -0700
+Message-Id: <1298585954-22422-2-git-send-email-kheitke@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1298585954-22422-1-git-send-email-kheitke@codeaurora.org>
+References: <1298585954-22422-1-git-send-email-kheitke@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 14:10:34 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
+---
+ MAINTAINERS |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> On Tue, 22 Feb 2011 21:17:04 +0100
-> Petr Holasek <pholasek@redhat.com> wrote:
-> 
-> > When user insert negative value into /proc/sys/vm/nr_hugepages it will 
-> > result
-> > in the setting a random number of HugePages in system
-> 
-> Is this true?  afacit the kernel will allocate as many pages as it can
-> and will then set /proc/sys/vm/nr_hugepages to reflect the result. 
-> That's not random.
-> 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6f99e12..e2ca70b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -889,6 +889,7 @@ M:	Daniel Walker <dwalker@fifo99.com>
+ M:	Bryan Huntsman <bryanh@codeaurora.org>
+ L:	linux-arm-msm@vger.kernel.org
+ F:	arch/arm/mach-msm/
++F:	drivers/msm/
+ F:	drivers/video/msm/
+ F:	drivers/mmc/host/msm_sdcc.c
+ F:	drivers/mmc/host/msm_sdcc.h
+-- 
+1.7.3.3
 
-Assuming the above to be correct, I altered the changelog thusly:
-
-: When the user inserts a negative value into /proc/sys/vm/nr_hugepages it
-: will cause the kernel to allocate as many hugepages as possible and to
-: then update /proc/meminfo to reflect this.
-:
-: This changes the behavior so that the negative input will result in
-: nr_hugepages value being unchanged.
-
-and given that, I don't really see why we should change the existing behaviour.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
