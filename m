@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab1BYCls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 21:41:48 -0500
-Received: from web38004.mail.mud.yahoo.com ([209.191.124.115]:36269 "HELO
-	web38004.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753025Ab1BYClr (ORCPT
+	id S1754990Ab1BYCyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 21:54:37 -0500
+Received: from dpusmtpgw.dpu.edu.tr ([194.27.43.31]:64827 "EHLO
+	dpusmtpgw.dumlupinar.edu.tr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754597Ab1BYCye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 21:41:47 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Feb 2011 21:41:47 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=0zUK/xOJ47j7a2bq9+EH6mvxwV2UOpurphqnpup3yTKXeqtsLAnQ+6kj7DDKGGyKB0Du174dlgymAnW4Iju65i/GHwutAnAJmJ1pEy6IM+ffVr22+lrBcmjj+939rF4aSFdgcHFgVyHoobNwgZQhSb4nlJ63A2m6b6KfaYsBSMA=;
-Message-ID: <518456.82543.qm@web38004.mail.mud.yahoo.com>
-X-YMail-OSG: lABlIqUVM1k0YxV6sYe5XzCTb3v4HzNVZbwioMGhIVB3Eo7
- AkjLkf2pNmeQie4vSBIPIYv.RNKIir0jM99PtAd8FPTtZX9T.IICDqOPHP0y
- bcfEF1Q88XG7nog1xIDRwHODnGHdgszlRuoLETahem_0qk71MBiZr81AhkTY
- NFylQksh6Q6hFax7dpQ2PsIuklxkKoXOQGpCVreKle..6OUZXD2Tc1tuRNyR
- bgqj2UT25obFibDeAYH4HMKigmWyFfrMfAQizojKuyKNl8MBs6.kTAkVWexQ
- TxvgHq4ewlsXxIj_JKYPS8dIq81No2mKFTcpJm_xfPIlMDps_AIlOp7ovLB0
- w6NCfNQo-
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.292656
-Date: Thu, 24 Feb 2011 18:35:05 -0800 (PST)
-From: stuart h <stuart_hayes@yahoo.com>
-Subject: [PATCH v2] dcdbas: force SMI to happen when expected
-To: linux-kernel@vger.kernel.org, douglas_warzecha@dell.com
-Cc: shyam_iyer@dell.com
+	Thu, 24 Feb 2011 21:54:34 -0500
+Reply-To: <iandavies822@yahoo.no>
+From: "Ian Davies" <iandavies198@gmail.com>
+Subject: Please i wait to hear from you urgently, it very important
+Date: Thu, 24 Feb 2011 11:14:15 -0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110224200930.B5F185E000D@mail.dumlupinar.edu.tr>
+To: undisclosed-recipients:;
+X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
+X-SurGATE-Result: Clean (Content eval: 37.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I am Ian Davies ;an accredited vendor of Alliot Groups, a subsidiary firm of Emirates International Holding (EIH); A private equity funds holding company that focuses on hedge funds.
 
-This is a reworked version of a very similar patch I sent about three weeks ago... a flaw was pointed out with the original.  That patch didn't make it into the kernel, though, so I'm just sending this one as a new patch.
+I have contacted you in the hope that you can be my associate by accepting to stand as the legal recipient to a Fixed-Income deposit, valued at 25MUSD by provind an International Offshore account to clear the funds.
 
-The dcdbas driver can do an I/O write to cause a SMI to occur.  The SMI handler looks at certain registers and memory locations, so the SMI needs to happen immediately.  On some systems I/O writes are posted, though, causing the SMI to happen well after the "outb" occurred, which causes random failures.  Following the "outb" with an "inb" forces the write to go through even if it is posted.
-
-This patch is against the 2.6.37.1 kernel.
-
-Signed-off-by: Stuart Hayes <stuart_hayes@yahoo.com>
----
-
---- linux-2.6.37/drivers/firmware/dcdbas.c	2011-01-18 10:44:44.869882461 -0500
-+++ linux-2.6.37_test/drivers/firmware/dcdbas.c	2011-02-24 13:23:58.663771596 -0500
-@@ -268,8 +268,10 @@ int dcdbas_smi_request(struct smi_cmd *s
- 	}
- 
- 	/* generate SMI */
-+	/* inb to force posted write through and make SMI happen now */
- 	asm volatile (
--		"outb %b0,%w1"
-+		"outb %b0,%w1\n"
-+		"inb %w1"
- 		: /* no output args */
- 		: "a" (smi_cmd->command_code),
- 		  "d" (smi_cmd->command_address),
+Once I file your details as the new recipient to the funds, the fundswill be approved through the AUTOMATED CLEARING HOUSE (ACH) - A facility used by financial institutions to distribute electronic debit and credit entries to bank accounts and therefore settles such entries. Under the automated clearing house system. 
 
 
+upon approval of your details  as the new recipient; a Credit advice will be issued in your favor and the funds will clear in your account within three banking days. I am willing to give you 40% which is 10MUSD as your commission out of the 25MUSD for your assistance in providing an International Offshore account to clear the funds.
 
-      
+
+I am confident you will be honest enough to adhere to our agreed commissions in spite of the 25MUSD coming through your account. I will need you to forward me your legal names address and phone to file your details on the fund as the new recipient in this first Quater of the financial fiscal year 2011.
+
+Looking forward to working with you.
+Ian Davies
+Accredited vendor
+Alliot Groups PS
+
