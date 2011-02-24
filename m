@@ -1,69 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab1BXD3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 22:29:07 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:55205 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932229Ab1BXD3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 22:29:04 -0500
-X-Sasl-enc: QO8IWqzhGHh3fKNMziNkSf+uD8GbheAaQ4lCRvASZvPj 1298518143
-Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
-From: Ian Kent <raven@themaw.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Nick Piggin <npiggin@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-In-Reply-To: <20110224031439.GR22723@ZenIV.linux.org.uk>
-References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
-	 <1295420817.3076.24.camel@perseus> <1297779902.13007.86.camel@perseus>
-	 <20110224015817.GQ22723@ZenIV.linux.org.uk>
-	 <1298516618.2916.20.camel@perseus>
-	 <20110224031439.GR22723@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Feb 2011 11:28:57 +0800
-Message-ID: <1298518137.2916.35.camel@perseus>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932364Ab1BXDdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 22:33:44 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:44670 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932305Ab1BXDdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 22:33:43 -0500
+Date: Wed, 23 Feb 2011 19:32:51 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sean MacLennan <smaclennan@pikatech.com>,
+        Frank Edelhaeuser <frank.edelhaeuser@spansion.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 1/2] hwmon: ad7414: add MODULE_DEVICE_TABLE
+Message-ID: <20110224033251.GA4596@ericsson.com>
+References: <1298514037.19027.3.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1298514037.19027.3.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 03:14 +0000, Al Viro wrote:
-> On Thu, Feb 24, 2011 at 11:03:38AM +0800, Ian Kent wrote:
+On Wed, Feb 23, 2011 at 09:20:37PM -0500, Axel Lin wrote:
+> The device table is required to load modules based on modaliases.
 > 
-> > I also have a sick feeling that dentrys may become negative at any point
-> > after __d_lookup_rcu() .....
-> 
-> Yes.  To get stability of ->d_inode (assuming the sucker isn't pinned down
-> in normal way by ->d_count) you need ->d_lock.
-> 
-> > > Ho-hum...  I can reach RHTS, but I'd rather do that at home boxen, if
-> > > possible...  Has it been reproduced on UP boxen with SMP kernels, BTW?
-> > 
-> > Nope, I'd need to build a kernel specifically for that. I'm not sure how
-> > useful that would be though since the test is specifically meant to
-> > expose problems with multiple concurrent processes accessing an
-> > automount tree. I don't see any problem running the Connectathon tests
-> > which is essentially one automount and one client process.
-> 
-> Heh...  No, it's just that the only SMP box I have locally right now
-> is dual ultrasparc.  Anyway, I can live with RHTS.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-If you want to get hold of the test I'm using checkout autofs-RHEL-5,
-"cd autofs-tests/submount-test", "make rpm" and use the resulting
-rh-tests-autofs-submount-test-1.0-15.noarch.rpm. There are some
-beaker/rhts rpm dependencies. Let me know if it gets painful and I'll
-try and work out what you need. The test isn't very flash but it does
-stress autofs.
+Applied.
 
-Ha, I haven't even turned on my Ultrsparc 2 in months, it's only got an
-old version of Solaris on it now anyway, ;)
-
-
+Thanks,
+Guenter
