@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab1BXAIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 19:08:30 -0500
-Received: from gwu.lbox.cz ([62.245.111.132]:58986 "EHLO gwu.lbox.cz"
+	id S932065Ab1BXAJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 19:09:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32483 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab1BXAI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 19:08:29 -0500
-X-Greylist: delayed 1528 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Feb 2011 19:08:28 EST
-Date: Thu, 24 Feb 2011 00:42:58 +0100
-From: Nikola Ciprich <extmaillist@linuxbox.cz>
-To: KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Cc: nikola.ciprich@linuxbox.cz
-Subject: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't boot
-Message-ID: <20110223234258.GA29548@nik-comp.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 4625972 records (last update: 20110223)
-X-Spam-Score: N/A (trusted relay)
+	id S1753017Ab1BXAJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 19:09:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,214,1297065600"; 
+   d="scan'208";a="605916639"
+From: jacob.jun.pan@linux.intel.com
+To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH] x86/mrst: fix apb timer rating when lapic timer is used
+Date: Wed, 23 Feb 2011 16:07:26 -0800
+Message-Id: <1298506046-439-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Avi et al,
-seems like I've hit regression in 2.6.37:
-32bit SMP centos guest stopped booting, they just hang during initrd phase. (haven't tried
-different distros)
-UP guest are OK.
-when I (forcibly) compiled kvm-kmod-2.6.36.2 and used it in 2.6.37, even
-the SMP guests boot fine.
-does somebody have a tip on where the problem could be, or should I bisect this?
-I tried on 2 different machines, host is x86_64, qemu-kvm 0.13.0, 0.14.0.
-If I shall provide more information (or bisect), please let me know.
-cheers!
-nik
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
+Need to adjust the clockevent device rating for the structure that will
+be registered with clockevent system instead of the temporary structure.
 
+Without this fix, APB timer rating will be higher than LAPIC timer such
+that it can not be released later to be used as the broadcast timer.
+
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ arch/x86/kernel/apb_timer.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 671d5aa..1293c70 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -284,7 +284,7 @@ static int __init apbt_clockevent_register(void)
+ 	memcpy(&adev->evt, &apbt_clockevent, sizeof(struct clock_event_device));
+ 
+ 	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT) {
+-		apbt_clockevent.rating = APBT_CLOCKEVENT_RATING - 100;
++		adev->evt.rating = APBT_CLOCKEVENT_RATING - 100;
+ 		global_clock_event = &adev->evt;
+ 		printk(KERN_DEBUG "%s clockevent registered as global\n",
+ 		       global_clock_event->name);
 -- 
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
+1.7.0.4
 
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
