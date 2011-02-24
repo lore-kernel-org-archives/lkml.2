@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1BXICL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 03:02:11 -0500
-Received: from mail143.messagelabs.com ([216.82.254.35]:54574 "HELO
-	mail143.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754504Ab1BXICJ convert rfc822-to-8bit (ORCPT
+	id S1754896Ab1BXIFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 03:05:00 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:39054 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754504Ab1BXIE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 03:02:09 -0500
-X-VirusChecked: Checked
-X-Env-Sender: fschaef9@visteon.com
-X-Msg-Ref: server-7.tower-143.messagelabs.com!1298534493!78157046!5
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [213.71.174.167]
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Interrupt Latencies
-Date: Thu, 24 Feb 2011 09:01:38 +0100
-Message-ID: <060E4307CE6CA14BB4F7B4A25ECA052904BB7841@VEUMBV03.vistcorp.ad.visteon.com>
-In-Reply-To: <4D63AD35.6050808@ladisch.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Interrupt Latencies
-Thread-Index: AcvSjJoWWC11ZKQ8Qfei8PHhvmrPNABbE8KA
-References: <060E4307CE6CA14BB4F7B4A25ECA052904B73AD1@VEUMBV03.vistcorp.ad.visteon.com> <4D63AD35.6050808@ladisch.de>
-From: "Schaefer Dr, Frank-Rene ()" <fschaef9@visteon.com>
-To: <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 24 Feb 2011 08:01:37.0693 (UTC) FILETIME=[0FE144D0:01CBD3F9]
+	Thu, 24 Feb 2011 03:04:59 -0500
+X-Authenticated: #23875046
+X-Provags-ID: V01U2FsdGVkX19PbfEpJ6lPtYgOoT948fmaggviXrrg1by1P2AjsF
+	PZWjAjzKi/TaxE
+Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
+From: Alexey Fisher <bug-track@fisher-privat.net>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com
+In-Reply-To: <8739r8q4s3.fsf@devron.myhome.or.jp>
+References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
+	 <1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
+	 <87hbfppfu3.fsf@devron.myhome.or.jp> <1289392908.6057.44.camel@zwerg>
+	 <87d3qdp9oa.fsf@devron.myhome.or.jp> <1289401644.2438.34.camel@mini>
+	 <878w11p1wk.fsf@devron.myhome.or.jp> <1289408312.3636.10.camel@mini>
+	 <8739r8q4s3.fsf@devron.myhome.or.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 09:04:52 +0100
+Message-ID: <1298534692.6569.0.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In response to Thomas Gleixner:
+Hi,
 
-> Interrupt latency depends on various factors:
+are there any updates on this issue?
+
+Am Donnerstag, den 11.11.2010, 05:53 +0900 schrieb OGAWA Hirofumi:
+> Alexey Fisher <bug-track@fisher-privat.net> writes:
 > 
->   - Interrupt disabled code regions
-Could you tell us how this could be detected or measured?
-Is there a central place, where we could toggle a pin to 
-see when interrupts are enabled/disabled? 
-
->   - Concurrent interrupts and the ordering of handling
-We are only considering the best times that we measure.
-The only other interrupts are SATA and system timer, I guess.
-
->   - Deep idle states
-You mean 'suspend' or some type of CPU sleep. Could you elaborate?
-We do not suspend. This should also only be the case for the 
-first chunk that is transmitted. But the latencies remain
-over longer time spans.
-
->   - Bus contention
-Nothing else is running. 
-
->   - Cache misses
-We cannot make any statements about that. But, we are **not** 
-working on huge data or code regions.
-
+> >> Also, yes. It would be complicate more or less than one FS. And maybe I
+> >> can understand why you want to concentrate FAT.
+> >> 
+> >> But I'm afraid to implement for only FAT. If there is not any some sort
+> >> of agreement by others, it may have to re-implement. If that happen, FAT
+> >> can be bothered by compatible (or have to maintain both of old and new
+> >> for a while). Because the notified data are some sort of ABI, IMO.
+> >> 
+> >> This is why I'm careful about this, and can't say easily - "let's try it
+> >> on FAT".
 > >
-> >       pin IN        .-------------------------
-> >       ______________|
+> > I'm not sure if we talk about same thing now :D
+> > By notification you mean the idea to notify userspace about error?
+> > correct?
+> 
+> Sure. I was talking about "to notify userspace". :)
+> 
+> > In my previous email i switched the point, it will be to complicate for
+> > now to work on notification system. For now i'll be happy to see grep
+> > friendly logs. Same like ext2,3,4 do
 > >
-> >       pin OUT                     .-----------
-> >       ____________________________|
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4cf46b67eb6de94532c1bea11d2479d085229d0e
 > >
-> >                     |<- latency ->|
-> >
+> > In long term it will be good to have such notification system. So i will
+> > start new tread about it. 
+> 
+> OK, I see. I'll review patches. Looks good though.
+> 
+> Thanks.
 
-> How is that interrupt connected to the CPU/chipset? 
-The port is part of the chipset connected internally 
-via PCI.
-
-> Which driver(s) is/are involved ? 
-http://lxr.free-electrons.com/source/drivers/gpio/pl061.c
-
-> How is the pin OUT accessed from the driver?
-gpio_set_value(Pin, Value);
-
-we measured the delay and could find that it was in the range
-of some nano seconds.
-
-Best Regards
-
-Frank Schäfer and Joachim Becker.
 
