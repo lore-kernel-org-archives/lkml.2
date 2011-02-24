@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab1BXGe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 01:34:29 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:55183 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753644Ab1BXGe1 (ORCPT
+	id S932346Ab1BXGhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 01:37:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49693 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754161Ab1BXGhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 01:34:27 -0500
-X-Sasl-enc: hnfJ+VN+qHvkKDV++U+15oG5gcQG+XCN5WoYKG5LnkW8 1298529266
-Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
-From: Ian Kent <raven@themaw.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, npiggin@gmail.com
-In-Reply-To: <20110224035836.GS22723@ZenIV.linux.org.uk>
-References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
-	 <1295420817.3076.24.camel@perseus> <1297779902.13007.86.camel@perseus>
-	 <20110224015817.GQ22723@ZenIV.linux.org.uk>
-	 <1298516618.2916.20.camel@perseus>
-	 <20110224031439.GR22723@ZenIV.linux.org.uk>
-	 <1298518137.2916.35.camel@perseus>
-	 <20110224035836.GS22723@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Feb 2011 14:34:20 +0800
-Message-ID: <1298529260.2916.91.camel@perseus>
+	Thu, 24 Feb 2011 01:37:45 -0500
+Date: Wed, 23 Feb 2011 22:37:37 -0800
+From: Stephen Hemminger <shemminger@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Linus =?ISO-8859-1?B?TPxz?= =?ISO-8859-1?B?c2luZw==?= 
+	<linus.luessing@web.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Multicast snooping fixes and suggestions
+Message-ID: <20110223223737.594932a8@nehalam>
+In-Reply-To: <89132767-587d-4186-8eac-9692bed59a44@email.android.com>
+References: <1297811961-19249-1-git-send-email-linus.luessing@web.de>
+	<4D65CD81.4070203@zytor.com>
+	<20110224040412.GA25488@gondor.apana.org.au>
+	<4D65E2B4.1010501@zytor.com>
+	<20110224054232.GA26064@gondor.apana.org.au>
+	<89132767-587d-4186-8eac-9692bed59a44@email.android.com>
+Organization: Linux Foundation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 03:58 +0000, Al Viro wrote:
-> 
-> Anyway, I wonder why you care about __d_lookup_rcu() and ->d_inode stability;
-> d_mountpoint() _is_ stable at that point (we hold vfsmount_lock) and you
-> don't seem to look at ->d_inode at all in RCU case.  Note that ->d_automount()
-> is never called in RCU case at all; nor is ->lookup() and friends, so you
-> really only have ->d_manage() to cope with, what with autofs4 having no
-> ->d_revalidate() anymore.
+On Wed, 23 Feb 2011 21:57:32 -0800
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-It does now but it doesn't do a whole lot, just checks for a negative
-dentry, returning false, and drops out of RCU mode when the dentry isn't
-selected or being checked for expiry yet.
+> Ok, so stupid question... how do hardware switches deal with this? It would seem to me that if everyone behind say a Cisco switch had these kind of issues they would have limited appeal...
 
-Indeed, I shouldn't need to care about it and checking for it doesn't
-seem to do a whole lot.
+Real bridges run current newwer Spanning Tree Protocol that converges faster.
+The current Linux STP code is on older standard (around 2001). The current STP
+standard use RSTP which converges much faster.
+  http://en.wikipedia.org/wiki/Spanning_Tree_Protocol
 
-I've seen walks fail with a dentry that has gone away (ie. I'm walking
-in a tree that is being expired, they seem to be trees with no actual
-mount at their base), which should be because I'm not catching the block
-request at a higher level dentry. Unfortunately, including a check for
-the base dentry in __follow_mount_rcu(), regardless of it being a
-mountpoint, doesn't always catch the need to block either. That the tree
-is being selected for expire is probably because the expire can't detect
-a walk within the mount tree when the walker is between the
-__d_lookup_rcu() and __follow_mount_rcu() calls. Jumping out of rcu-walk
-mode in an added revalidate reduces the possibility of this happening
-(assuming walks are sneaking in between dropping and acquiring the
-vfsmount_lock) but doesn't eliminate it. 
+There is a userspace RSTP daemon that almost nobody uses.
 
-At this point I loop back to the trying to work out why a reference gets
-picked up and the cycle repeats with various small changes to the
-overall approach.
+There are a number of other STP enhancements that are needed like
+STP protection and MSTP, as welll as the Cisco non-standard STP VLAN stuff.
 
-Actually, it's not just the root of a mount that is getting an extra
-reference either. When I notice a root dentry has picked up a reference
-(from a printk) and SIGKILL everything and start umounting manually I
-get to a point in the tree where I need to umount autofs mounts twice,
-which usually means nothing more than a get/put mismatch somewhere, but
-in that case I normally don't see a root dentry pick up a reference.
-That's confusing me too.
-
-> 
-> BTW, Nick has moved to kernel.dk; whether he's still reachable there is
-> a question, though - he seems to have disappeared since mid-January.
-
-Yeah, I've forwarded a couple of messages where I forgot to change the
-email. A few emails back Nick said he was following the thread anyway.
-
-Ian
-
-
+Fixing STP and testing it is a fairly project, too big for a spare time
+effort and currently not something high enough on the project chart for me to
+be able to dedicate much company time on. Contributions welcome.
