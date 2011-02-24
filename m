@@ -1,74 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab1BXGhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 01:37:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49623 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381Ab1BXGhw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 01:37:52 -0500
-Date: Thu, 24 Feb 2011 06:37:49 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Josh Hunt <johunt@akamai.com>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org, sandeen@redhat.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC][PATCH] ext2: Resolve i_nlink race in ext2_rename
-Message-ID: <20110224063749.GV22723@ZenIV.linux.org.uk>
-References: <1298528501-32176-1-git-send-email-johunt@akamai.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298528501-32176-1-git-send-email-johunt@akamai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755791Ab1BXGid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 01:38:33 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:39209 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754161Ab1BXGib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 01:38:31 -0500
+Date: Wed, 23 Feb 2011 22:38:22 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH] of/pdt: allow DT device matching by fixing 'name'
+ brokenness (v4)
+Message-ID: <20110223223822.48718b63@queued.net>
+In-Reply-To: <20110224053814.GA6046@angua.secretlab.ca>
+References: <20110223150357.5a40793d@queued.net>
+	<20110223232815.GC5404@angua.secretlab.ca>
+	<20110223161630.3ae470bf@queued.net>
+	<20110224040638.GB22111@angua.secretlab.ca>
+	<20110223203649.4fcbe1db@queued.net>
+	<20110224053814.GA6046@angua.secretlab.ca>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 10:21:41PM -0800, Josh Hunt wrote:
-> [resending: left Jan off the original mail by accident]
-> 
-> We have a multi-threaded workload which is currently "losing" files in the form
-> of unattached inodes. The workload is link, rename, unlink intensive. This is
-> happening on an ext2 filesystem and have reproduced the issue in kernel
-> 2.6.37.  Here's a sample strace:
-> 
->     open("/a/tmp/tmpfile.1296184058", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE, 0666) = 9
->     link("/a/tmp/tmpfile.1296184058", "/a/tmp/tmpfile.28117.1296184059") = 0
->     rename("/a/tmp/tmpfile.28117.1296184059", "/a/tmp/tmpfile") = 0
->     stat64("/a/tmp/tmpfile", {st_mode=S_IFREG|0644, st_size=24248267, ...}) = 0
->     link("/a/tmp/tmpfile", "/a/tmp/submit/tmpfile")        = 0
->     open("/a/tmp/tmpfile.1296184058", O_RDONLY) = 13
->     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDWR|O_CREAT|O_EXCL, 0600) = 824
->     rename("/a/tmp/submit/tmpfile", "/a/tmp/submit/tmpfile.send.q9SNoL")                = 0
->     unlink("/a/tmp/tmpfile.1296184058") = 0
->     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 827
->     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 828
->     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 829
->     unlink("/a/tmp/submit/tmpfile.send.q9SNoL") = 0
-> 
-> The application behavior shown above repeats indefinitely with most filenames
-> changing during each iteration except for 'tmpfile'. Looking into this issue I
-> see that vfs_rename_other() only takes i_mutex for the new inode and the new
-> inode's directory as well as the old directory's mutex. This works for
-> modifying the dir entry and appears to be fine for most filesystems, but
-> ext2 and a few others (exofs, minix, nilfs2, omfs, sysv, ufs) modify i_nlink
-> inside of their respective rename functions without grabbing the i_mutex. The
-> modifications are done through calls to inode_inc_link_count(old_inode) and
-> inode_dec_link_count(old_inode), etc.
-> 
-> Taking the mutex for the old inode appears to resolve the issue of the
-> lost files/unattached inodes that I am seeing with this workload. I've attached
-> a patch below doing what I've described above. If this is an accepted solution
-> I believe other filesystems may also be affected by this and I could provide
-> a patch for those as well.
 
-I don't know...  The thing is, we mostly do that to make life easier for
-fsck in case of crash.  Other than that, there's no reason to play with
-link count of that sucker at all.  The question is, do we really want
-such rename() interrupted by dirty shutdown to result in what looks like two
-legitimate links to that inode without any indications of what had happened?
-Note that fsck (at least on ext2) will correct link counts anyway and if
-nothing else, we probably want some noise pointing to the inode in question...
+Commit e2f2a93b changed dp->name from using the 'name' property to
+using package-to-path.  This fixed /proc/device-tree creation by
+eliminating conflicts between names (the 'name' property provides
+names like 'battery', whereas package-to-path provides names like
+'/foo/bar/battery@0', which we stripped to 'battery@0').  However,
+it also breaks of_device_id table matching.
 
-IOW, maybe it's better to rip these inc/dec for old_inode out and replace
-them with mark_inode_dirty() in place where we currently do dec.  Comments?
+The fix that we _really_ wanted was to keep dp->name based upon
+the name property ('battery'), but based dp->full_name upon
+package-to-path ('battery@0').  This patch does just that.
+
+This also changes OLPC behavior to use the full result from
+package-to-path for full_name, rather than stripping the directory
+out.  In practice, the strings end up being exactly the same; this
+change saves time, code, and memory.
+
+v2: combine two patches and revert of_pdt_node_name to original version
+v3: use dp->phandle instead of passing around node
+v4: warn/bail out for non-sparc archs if pkg2path is not set
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/of/pdt.c |   50 ++++++++++++++++++++++----------------------------
+ 1 files changed, 22 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+index 28295d0..61f6308 100644
+--- a/drivers/of/pdt.c
++++ b/drivers/of/pdt.c
+@@ -48,7 +48,9 @@ static inline void irq_trans_init(struct device_node *dp) { }
+ 
+ static inline const char *of_pdt_node_name(struct device_node *dp)
+ {
+-	return dp->name;
++	/* non-sparc archs should be setting a pkg2path hook */
++	WARN_ON(1);
++	return NULL;
+ }
+ 
+ #endif /* !CONFIG_SPARC */
+@@ -134,7 +136,7 @@ static char * __init of_pdt_get_one_property(phandle node, const char *name)
+ 
+ static char * __init of_pdt_try_pkg2path(phandle node)
+ {
+-	char *res, *buf = NULL;
++	char *buf = NULL;
+ 	int len;
+ 
+ 	if (!of_pdt_prom_ops->pkg2path)
+@@ -147,29 +149,6 @@ static char * __init of_pdt_try_pkg2path(phandle node)
+ 		pr_err("%s: package-to-path failed\n", __func__);
+ 		return NULL;
+ 	}
+-
+-	res = strrchr(buf, '/');
+-	if (!res) {
+-		pr_err("%s: couldn't find / in %s\n", __func__, buf);
+-		return NULL;
+-	}
+-	return res+1;
+-}
+-
+-/*
+- * When fetching the node's name, first try using package-to-path; if
+- * that fails (either because the arch hasn't supplied a PROM callback,
+- * or some other random failure), fall back to just looking at the node's
+- * 'name' property.
+- */
+-static char * __init of_pdt_build_name(phandle node)
+-{
+-	char *buf;
+-
+-	buf = of_pdt_try_pkg2path(node);
+-	if (!buf)
+-		buf = of_pdt_get_one_property(node, "name");
+-
+ 	return buf;
+ }
+ 
+@@ -187,7 +166,7 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+ 
+ 	kref_init(&dp->kref);
+ 
+-	dp->name = of_pdt_build_name(node);
++	dp->name = of_pdt_get_one_property(node, "name");
+ 	dp->type = of_pdt_get_one_property(node, "device_type");
+ 	dp->phandle = node;
+ 
+@@ -201,10 +180,25 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+ static char * __init of_pdt_build_full_name(struct device_node *dp)
+ {
+ 	int len, ourlen, plen;
++	const char *name;
+ 	char *n;
+ 
++	/*
++	 * When fetching the full name we want the name we see with
++	 * package-to-path (ie, '/foo/bar/battery@0') rather than what
++	 * we see with the name property (ie, 'battery').
++	 */
++	n = of_pdt_try_pkg2path(dp->phandle);
++	if (n)
++		return n;
++
++	name = of_pdt_node_name(dp);
++	if (!name)
++		return NULL;
++
++	/* Older method for determining full name */
+ 	plen = strlen(dp->parent->full_name);
+-	ourlen = strlen(of_pdt_node_name(dp));
++	ourlen = strlen(name);
+ 	len = ourlen + plen + 2;
+ 
+ 	n = prom_early_alloc(len);
+@@ -213,7 +207,7 @@ static char * __init of_pdt_build_full_name(struct device_node *dp)
+ 		strcpy(n + plen, "/");
+ 		plen++;
+ 	}
+-	strcpy(n + plen, of_pdt_node_name(dp));
++	strcpy(n + plen, name);
+ 
+ 	return n;
+ }
+-- 
+1.7.2.3
+
