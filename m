@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab1BXSUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:20:20 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59774 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab1BXSUO (ORCPT
+	id S1754699Ab1BXSW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:22:27 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60930 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab1BXSW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:20:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=cc:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:mime-version:subject:date:references
-         :x-mailer;
-        b=raRhcMQAfzlIJp0+rpyWaKswnwkmdA7gJmqZP+fuyXs8fqk+4J9/isrllPypEPjzze
-         opmFlnshdzfxr3KgzBBIoRo8WZfTQ9wTS4vYQhZtmgvQnuTItyXqNkCPr6hYmReI0bsC
-         RVzGo8ColriAUI4lpyFi96R8fx2yonyjQNXYs=
-Cc: git@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-Id: <C89C2D5B-9DD7-42FD-8CB5-E33EDC919DEE@gmail.com>
-From: Justin Mattock <justinmattock@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <20110224164551.GD888@home.goodmis.org>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: gitk with the latest branch makes the system unusable for some time
-Date: Thu, 24 Feb 2011 10:20:12 -0800
-References: <AANLkTim3MW0PmD5_tra4nmRapfgHJ9K_usJWGVK3AOUC@mail.gmail.com> <20110224164551.GD888@home.goodmis.org>
-X-Mailer: Apple Mail (2.936)
+	Thu, 24 Feb 2011 13:22:26 -0500
+Date: Thu, 24 Feb 2011 13:20:33 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Petr Holasek <pholasek@redhat.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] hugetlbfs: correct handling of negative input to
+ /proc/sys/vm/nr_hugepages
+Message-ID: <20110224182033.GA30387@mgebm.net>
+References: <1298303270-3184-1-git-send-email-pholasek@redhat.com>
+ <20110222100235.GA15652@csn.ul.ie>
+ <20110223161818.9876cc10.akpm@linux-foundation.org>
+ <20110224094912.GO15652@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fUYQa+Pmc3FrFX/N"
+Content-Disposition: inline
+In-Reply-To: <20110224094912.GO15652@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Feb 24, 2011, at 8:45 AM, Steven Rostedt wrote:
+--fUYQa+Pmc3FrFX/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi Justin,
->
-> On Tue, Feb 22, 2011 at 03:53:08PM -0800, Justin Mattock wrote:
->> not sure if there is any reports of this or not, basically using gitk
->> on my macbookpro2,2 makes the system extremely slow and unusable
->> (after a while can finally use the system)
->>
->> in dmesg I am seeing this:
->>
->
->
->> [ 6089.367430] [ 2593]  1000  2593    26616        1   1       0
->>      0 bash
->> [ 6089.367435] [ 2717]  1000  2717   326078   204267   0       0
->>      0 wish
->> [ 6089.367439] [ 2729]  1000  2729   141207     7349   0       0
->>      0 git
->> [ 6089.367444] Out of memory: Kill process 2717 (wish) score 802 or
->> sacrifice child
->
-> Looks like a memory leak in gitk and nothing to do with the kernel. I
-> would take this up with them.
->
-> -- Steve
->
+On Thu, 24 Feb 2011, Mel Gorman wrote:
 
+> On Wed, Feb 23, 2011 at 04:18:18PM -0800, Andrew Morton wrote:
+> > On Tue, 22 Feb 2011 10:02:36 +0000
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> >=20
+> > > On Mon, Feb 21, 2011 at 04:47:49PM +0100, Petr Holasek wrote:
+> > > > When user insert negative value into /proc/sys/vm/nr_hugepages it w=
+ill result
+> > > > in the setting a random number of HugePages in system (can be easil=
+y showed
+> > > > at /proc/meminfo output).
+> > >=20
+> > > I bet you a shiny penny that the value of HugePages becomes the maxim=
+um
+> > > number that could be allocated by the system at the time rather than a
+> > > random value.
+> >=20
+> > That seems to be the case from my reading.  In which case the patch
+> > removes probably-undocumented and possibly-useful existing behavior.
+> >=20
+>=20
+> It's not proof that no one does this but I'm not aware of any documentati=
+on
+> related to hugetlbfs that recommends writing negative values to take adva=
+ntage
+> of this side-effect. It's more likely they simply wrote a very large numb=
+er
+> to nr_hugepages if they wanted "as many hugepages as possible" as it makes
+> more intuitive sense than asking for a negative amount of pages. hugeadm =
+at
+> least is not depending on this behaviour AFAIK.
 
-cool... I haven't had a chance yet to upgrade git(external things in  
-life)
-but once I get to it I will, and see.
+That is correct, hugeadm never writes negative values to huge page pool siz=
+es.
 
-Thanks
+--fUYQa+Pmc3FrFX/N
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Justin P. Mattock
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNZqFxAAoJEH65iIruGRnNZFIH/ja1AgjpNu57iF4BLYANI3Q8
+qYy1oerxQTil8d5488NoHVAf7qTWVmXpOTy+E0+u7VPOqsCEYQbyQVBBgUabcS8U
+TX7MeijKY69l+KzEbkDGudWDnOrLMP55V6vmDSYVte4Oawi7o2qA4vmkEqmPvuvI
+X7N5r7B5pjHjiVsASaWNtpw0HuWBwjnKgzUajIlyTvMN7d+tGQmYTV5wL+kRTCbC
+1yfbiAdzYZ3A5nTIJbmVLzMlC2ZtCiUL9Wu9BZ6n05DEZtU06dbzSKzP4GVTmK78
+GwucW/aQIrYBH6kGy4iTgDWFs6ED0+NoTZerdYa4KOXP4gxNXwPchwS+bDMFdK4=
+=nHB7
+-----END PGP SIGNATURE-----
+
+--fUYQa+Pmc3FrFX/N--
