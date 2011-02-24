@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1BXBZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 20:25:37 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48882 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab1BXBZg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 20:25:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Z6hBLtjHZMLhKegr7+yF0Pgo9UU6msLnQKYzknUSflEIyYqNot3jZAgyatM/B5JhL3
-         pr4o2/U/mdSfx0NK8iPhs0ACUbixvDt0tOe9RmA5JFcUP10L4uZSTuknHtsEe5VsC3kt
-         guawV92krVLK8vuafQM06E2My/matd1pMHhOA=
-Subject: [PATCH] rtc: rtc-ds1390/rtc-ds3234/rtc-m41t94: eliminate compile
-	warning
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Jackson <mpfj@mimc.co.uk>, Dennis Aberilla <denzzzhome@yahoo.com>,
-        "Kim B. Heino" <Kim.Heino@bluegiga.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
-Content-Type: text/plain
-Date: Thu, 24 Feb 2011 09:28:50 +0800
-Message-Id: <1298510930.19027.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S932269Ab1BXB2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 20:28:30 -0500
+Received: from kroah.org ([198.145.64.141]:46408 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932217Ab1BXB23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 20:28:29 -0500
+Date: Wed, 23 Feb 2011 17:29:24 -0800
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: Hank Janssen <hjanssen@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
+ using pr_err now
+Message-ID: <20110224012924.GA16496@kroah.com>
+References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
+ <20110223191533.GB1030@kroah.com>
+ <8AFC7968D54FB448A30D8F38F259C56233FADA94@TK5EX14MBXC118.redmond.corp.microsoft.com>
+ <20110223215658.GB16908@kroah.com>
+ <8AFC7968D54FB448A30D8F38F259C56233FAE0E8@TK5EX14MBXC118.redmond.corp.microsoft.com>
+ <1298509049.32283.21.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298509049.32283.21.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliminate the following compile warning:
-drivers/rtc/rtc-ds1390.c: In function 'ds1390_remove':
-drivers/rtc/rtc-ds1390.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
-drivers/rtc/rtc-ds3234.c: In function 'ds3234_remove':
-drivers/rtc/rtc-ds3234.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
-drivers/rtc/rtc-m41t94.c: In function 'm41t94_remove':
-drivers/rtc/rtc-m41t94.c:139: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
+On Wed, Feb 23, 2011 at 04:57:29PM -0800, Joe Perches wrote:
+> On Wed, 2011-02-23 at 23:17 +0000, Hank Janssen wrote:
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:greg@kroah.com]
+> > > Sent: Wednesday, February 23, 2011 1:57 PM
+> > > They where compile and run tested. And syslog was not a mess. What did
+> > > > I mess up here? The amount of printouts now are a fraction of what
+> > > > they where before.
+> > > You forgot to put '\n' at the end of all of your pr_XXX lines, so they will be
+> > > merged with the next one, messing up your syslog.  Joe also pointed this
+> > > problem out.
+> > > Take a look at your syslog to see what I am talking about...
+> 
+> Greg, there probably isn't any problem with his syslog.
+> 
+> Running together of messages without terminating newlines
+> did used to happen though until commit
+> 5fd29d6ccbc98884569d6f3105aeca70858b3e0f
+> ("printk: clean up handling of log-levels and newlines")
+> changed behavior so that newlines are emitted if necessary
+> before every "<.>" loglevel but "<c>".
+> 
+> That means that adding trailing newlines to pr_<level>
+> calls aren't _really_ necessary unless the pr_<level>
+> is followed by a bare printk without KERN_<LEVEL>.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Mark Jackson <mpfj@mimc.co.uk>
-Cc: Dennis Aberilla <denzzzhome@yahoo.com>
-Cc: Kim B. Heino <Kim.Heino@bluegiga.com>
----
- drivers/rtc/rtc-ds1390.c |    2 +-
- drivers/rtc/rtc-ds3234.c |    2 +-
- drivers/rtc/rtc-m41t94.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Ah, I didn't realize that this had changed, my mistake, nevermind :)
 
-diff --git a/drivers/rtc/rtc-ds1390.c b/drivers/rtc/rtc-ds1390.c
-index 26a86d2..4832248 100644
---- a/drivers/rtc/rtc-ds1390.c
-+++ b/drivers/rtc/rtc-ds1390.c
-@@ -158,7 +158,7 @@ static int __devinit ds1390_probe(struct spi_device *spi)
- 
- static int __devexit ds1390_remove(struct spi_device *spi)
- {
--	struct ds1390 *chip = platform_get_drvdata(spi);
-+	struct ds1390 *chip = dev_get_drvdata(&spi->dev);
- 
- 	rtc_device_unregister(chip->rtc);
- 	kfree(chip);
-diff --git a/drivers/rtc/rtc-ds3234.c b/drivers/rtc/rtc-ds3234.c
-index a774ca3..07a558e 100644
---- a/drivers/rtc/rtc-ds3234.c
-+++ b/drivers/rtc/rtc-ds3234.c
-@@ -158,7 +158,7 @@ static int __devinit ds3234_probe(struct spi_device *spi)
- 
- static int __devexit ds3234_remove(struct spi_device *spi)
- {
--	struct rtc_device *rtc = platform_get_drvdata(spi);
-+	struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
- 
- 	rtc_device_unregister(rtc);
- 	return 0;
-diff --git a/drivers/rtc/rtc-m41t94.c b/drivers/rtc/rtc-m41t94.c
-index c8c97a4..21e6091 100644
---- a/drivers/rtc/rtc-m41t94.c
-+++ b/drivers/rtc/rtc-m41t94.c
-@@ -136,7 +136,7 @@ static int __devinit m41t94_probe(struct spi_device *spi)
- 
- static int __devexit m41t94_remove(struct spi_device *spi)
- {
--	struct rtc_device *rtc = platform_get_drvdata(spi);
-+	struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
- 
- 	if (rtc)
- 		rtc_device_unregister(rtc);
--- 
-1.7.2
+> I still think it's better from a style perspective to keep
+> adding terminating newlines until most all of the printks
+> are converted to pr_<level>.
 
+Yes, that would be good to have done.
 
+thanks,
 
+greg k-h
