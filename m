@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab1BXXZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 18:25:00 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60899 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527Ab1BXXY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 18:24:58 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=inHTpO_ulcMA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ilvd3-_EowockOxowN0A:9 a=m5peLU_MgHo21jpE5zrn_ewuwrwA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Thu, 24 Feb 2011 18:24:56 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] expose kvmclock upper msr set.
-Message-ID: <20110224232456.GG888@home.goodmis.org>
-References: <1298483054-1665-1-git-send-email-glommer@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298483054-1665-1-git-send-email-glommer@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756623Ab1BXX1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 18:27:07 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:58703 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756527Ab1BXX1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 18:27:05 -0500
+Date: Thu, 24 Feb 2011 15:27:00 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: dsd@laptop.org, sparclinux@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net
+Subject: Re: [PATCH v5] of/promtree: allow DT device matching by fixing
+ 'name' brokenness
+Message-ID: <20110224152700.5663b8e7@queued.net>
+In-Reply-To: <20110224194234.GA8907@angua.secretlab.ca>
+References: <20110224165917.3760.24493.stgit@localhost6.localdomain6>
+	<20110224093341.5a809a13@queued.net>
+	<20110224194234.GA8907@angua.secretlab.ca>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 12:44:14PM -0500, Glauber Costa wrote:
-> We've been supporting kvmclock MSRs in the 0x4b564d00-0x4b564dff range
-> for a while now, but we're not exposing it yet, meaning nobody is using it.
-> This simple patch takes care of that.
+On Thu, 24 Feb 2011 12:42:34 -0700
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-Is nobody using it because it was never exposed? Or because nobody ever
-needed it, and we don't care (thus don't bother supporting it).
+> On Thu, Feb 24, 2011 at 09:33:41AM -0800, Andres Salomon wrote:
+> > On Thu, 24 Feb 2011 10:04:41 -0700
+> > Grant Likely <grant.likely@secretlab.ca> wrote:
+> > 
+> > > From: Andres Salomon <dilinger@queued.net>
+> > > 
+[...]
+> I've pushed the latest version out to my devicetree/experimental
+> branch on git://git.secretlab.ca/git/linux-2.6.  Give it a spin and
+> make sure everything is still working for you.
+> 
+> g.
 
--- Steve
-
+I just tried it and it works for me.  Dsd said he'd give it a try
+with his DT matching stuff tomorrow.
