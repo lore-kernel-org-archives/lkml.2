@@ -1,160 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1BXR5I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:57:08 -0500
-Received: from www.tglx.de ([62.245.132.106]:37090 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930Ab1BXR5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:57:03 -0500
-Date: Thu, 24 Feb 2011 18:56:19 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 1/5] genirq: Prepare the handling of shared oneshot
- interrupts
-In-Reply-To: <AANLkTikoYrPjf4-6X7PLUShXXXrDU45t_T+ZkxyCtLnG@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1102241849310.2701@localhost6.localdomain6>
-References: <20110223231601.613115832@linutronix.de> <20110223234956.388095876@linutronix.de> <AANLkTikoYrPjf4-6X7PLUShXXXrDU45t_T+ZkxyCtLnG@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754886Ab1BXR5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:57:24 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:44332 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754723Ab1BXR5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 12:57:21 -0500
+Date: Thu, 24 Feb 2011 12:57:20 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Greg KH <gregkh@suse.de>, Alexander Holler <holler@ahsoftware.de>,
+        Michael Jones <michael.jones@matrix-vision.de>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <stable@kernel.org>, <stable-review@kernel.org>,
+        <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
+In-Reply-To: <20110224172327.GF3528@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1102241255100.2084-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-322103401-1298570180=:2701"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, 24 Feb 2011, Felipe Balbi wrote:
 
----1463795968-322103401-1298570180=:2701
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 23 Feb 2011, Linus Torvalds wrote:
-> On Wed, Feb 23, 2011 at 3:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > +               /*
-> > +                * We or the mask lockless. Safe because the code
-> > +                * which clears the mask is serialized
-> > +                * vs. IRQ_INPROGRESS.
-> > +                */
-> > +               desc->threads_oneshot |= action->thread_mask;
-> > +               wake_up_process(action->thread);
+> On Thu, Feb 24, 2011 at 09:18:14AM -0800, Greg KH wrote:
+> > On Thu, Feb 24, 2011 at 11:16:38AM +0200, Felipe Balbi wrote:
+> > > Hi,
+> > > 
+> > > On Thu, Feb 24, 2011 at 10:15:23AM +0100, Alexander Holler wrote:
+> > > > >On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
+> > > > >>In both cases, it appears that the problem is caused by the fact that
+> > > > >>the musb host-controller driver doesn't set the hcd->has_tt flag.
+> > > > >>
+> > > > >>Felipe, you should know where it belongs.  It should be easy enough to
+> > > > >>add.
+> > > > >
+> > > > >Sure Alan, it's attached to this mail. Compile tested only though.
+> > > > >Michael, would you care to give your tested-by ?
+> > > > 
+> > > > I can do, I'm using exactly the same patch since yesterday. ;)
+> > > > 
+> > > > Tested-by: Alexander Holler <holler@ahsoftware.de>
+> > > 
+> > > Thanks a lot Alex, Greg, can you still take this to -rc ? Do you need a
+> > > pull request or you can take this one patch ?
+> > 
+> > Wait, where does this need to go?  For the final 2.6.38 release and then
+> > also for .37-stable?
+> > 
+> > Or just .37-stable?
+> > 
+> > confused.
+> > 
+> > And no, I don't need a pull request, I can handle one patch through
+> > email :)
 > 
-> That comment makes no sense.
-> 
-> What has "code which clears the mask" to do with anything?
-> 
-> Even if another CPU _sets_ a bit, doing so in parallel will lose bits
-> if it's not locked. One CPU will read the old value, set its bit, and
-> store the new value: with the race, only one of the bits will be set.
-> 
-> So maybe the code is safe, but the comment is still totally wrong. You
-> had better be safe not just against people clearing bits, you need to
-> be safe against ANY OTHER WRITER (clear or set), including very much
-> OTHER BITS in the same word.
-> 
-> So if it really is safe, comment on ALL the cases.
+> final .38 and .37-stable :-) Thanks Greg :-)
 
-Fair enough, that comment really sucks if you are not familiar with
-the gory details of that code.
+It's important that this patch appear in .37-stable at the same time as
+the $SUBJECT patch.  If that means delaying $SUBJECT for one release, 
+so be it -- it was not a very important change.
 
-What about the following replacement, which might be overly detailed,
-but that's exactly how it works.
+Alan Stern
 
-Thanks,
-
-	tglx
-
-Index: linux-2.6-tip/kernel/irq/handle.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/handle.c
-+++ linux-2.6-tip/kernel/irq/handle.c
-@@ -57,18 +57,60 @@ static void irq_wake_thread(struct irq_d
- 	 * Wake up the handler thread for this action. In case the
- 	 * thread crashed and was killed we just pretend that we
- 	 * handled the interrupt. The hardirq handler has disabled the
--	 * device interrupt, so no irq storm is lurking.
-+	 * device interrupt, so no irq storm is lurking. If the
-+	 * RUNTHREAD bit is already set, nothing to do.
- 	 */
--	if (!test_bit(IRQTF_DIED, &action->thread_flags) &&
--	    !test_and_set_bit(IRQTF_RUNTHREAD, &action->thread_flags)) {
--		/*
--		 * We or the mask lockless. Safe because the code
--		 * which clears the mask is serialized
--		 * vs. IRQ_INPROGRESS.
--		 */
--		desc->threads_oneshot |= action->thread_mask;
--		wake_up_process(action->thread);
--	}
-+	if (test_bit(IRQTF_DIED, &action->thread_flags) ||
-+	    test_and_set_bit(IRQTF_RUNTHREAD, &action->thread_flags))
-+		return;
-+
-+	/*
-+	 * It's safe to OR the mask lockless here. We have only two
-+	 * places which write to threads_oneshot: This code and the
-+	 * irq thread.
-+	 *
-+	 * This code is the hard irq context and can never run on two
-+	 * cpus in parallel. If it ever does we have more serious
-+	 * problems than this bitmask.
-+	 *
-+	 * The irq threads of this irq which clear their "running" bit
-+	 * in threads_oneshot are serialized via desc->lock against
-+	 * each other and they are serialized against this code by
-+	 * IRQS_INPROGRESS.
-+	 *
-+	 * Hard irq handler:
-+	 *
-+	 *	spin_lock(desc->lock);
-+	 *	desc->state |= IRQS_INPROGRESS;
-+	 *	spin_unlock(desc->lock);
-+	 *	set_bit(IRQTF_RUNTHREAD, &action->thread_flags);
-+	 *	desc->threads_oneshot |= mask;
-+	 *	spin_unlock(desc->lock);
-+	 *	desc->state &= ~IRQS_INPROGRESS;
-+	 *	spin_unlock(desc->lock);
-+	 *
-+	 * irq thread:
-+	 *
-+	 * again:
-+	 *	spin_lock(desc->lock);
-+	 *	if (desc->state & IRQS_INPROGRESS) {
-+	 *		spin_unlock(desc->lock);
-+	 *		while(desc->state & IRQS_INPROGRESS)
-+	 *			cpu_relax();
-+	 *		goto again;
-+	 *	}
-+	 *	if (!test_bit(IRQTF_RUNTHREAD, &action->thread_flags))
-+	 *		desc->threads_oneshot &= ~mask;
-+	 *	spin_unlock(desc->lock);
-+	 *
-+	 * So either the thread waits for us to clear IRQS_INPROGRESS
-+	 * or we are waiting in the flow handler for desc->lock to be
-+	 * released before we reach this point. The thread also checks
-+	 * IRQTF_RUNTHREAD under desc->lock. If set it leaves
-+	 * threads_oneshot untouched and runs the thread another time.
-+	 */
-+	desc->threads_oneshot |= action->thread_mask;
-+	wake_up_process(action->thread);
- }
- 
- irqreturn_t
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -637,7 +637,8 @@ again:
- 	 *
- 	 * This also serializes the state of shared oneshot handlers
- 	 * versus "desc->threads_onehsot |= action->thread_mask;" in
--	 * handle_irq_event().
-+	 * irq_wake_thread(). See the comment there which explains the
-+	 * serialization.
- 	 */
- 	if (unlikely(desc->istate & IRQS_INPROGRESS)) {
- 		raw_spin_unlock_irq(&desc->lock);
----1463795968-322103401-1298570180=:2701--
