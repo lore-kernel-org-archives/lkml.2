@@ -1,40 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab1BXAEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 19:04:31 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55610 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab1BXAEa (ORCPT
+	id S1755420Ab1BXAHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 19:07:14 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46038 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753676Ab1BXAHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 19:04:30 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 24 Feb 2011 08:58:05 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] page_cgroup: make page tracking available for blkio
-Message-Id: <20110224085805.14766e93.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110223085911.GC2174@linux.develer.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
-	<1298394776-9957-4-git-send-email-arighi@develer.com>
-	<20110222130145.37cb151e@bike.lwn.net>
-	<20110222230146.GB23723@linux.develer.com>
-	<20110222230630.GL28269@redhat.com>
-	<20110222233718.GF23723@linux.develer.com>
-	<20110223134910.abbdc931.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110223085911.GC2174@linux.develer.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 23 Feb 2011 19:07:12 -0500
+Date: Wed, 23 Feb 2011 16:06:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Pratyush Anand <pratyush.anand@st.com>
+Cc: <rdunlap@xenotime.net>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <gregkh@suse.de>, <jbarnes@virtuousgeek.org>, <viresh.kumar@st.com>,
+        <shiraz.hashim@st.com>
+Subject: Re: [PATCH V5 Resend] ST SPEAr: PCIE gadget suppport
+Message-Id: <20110223160632.0b21c550.akpm@linux-foundation.org>
+In-Reply-To: <1298276455-23989-1-git-send-email-pratyush.anand@st.com>
+References: <1298276455-23989-1-git-send-email-pratyush.anand@st.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -42,37 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011 09:59:11 +0100
-Andrea Righi <arighi@develer.com> wrote:
+On Mon, 21 Feb 2011 13:50:55 +0530
+Pratyush Anand <pratyush.anand@st.com> wrote:
 
-> > 
-> > I wonder I can make pc->mem_cgroup to be pc->memid(16bit), then, 
-> > ==
-> > static inline struct mem_cgroup *get_memcg_from_pc(struct page_cgroup *pc)
-> > {
-> >     struct cgroup_subsys_state *css = css_lookup(&mem_cgroup_subsys, pc->memid);
-> >     return container_of(css, struct mem_cgroup, css);
-> > }
-> > ==
-> > Overhead will be seen at updating file statistics and LRU management.
-> > 
-> > But, hmm, can't you do that tracking without page_cgroup ?
-> > Because the number of dirty/writeback pages are far smaller than total pages,
-> > chasing I/O with dynamic structure is not very bad..
-> > 
-> > prepareing [pfn -> blkio] record table and move that information to struct bio
-> > in dynamic way is very difficult ?
+> This is a configurable gadget. can be configured by configfs interface. Any
+> IP available at PCIE bus can be programmed to be used by host
+> controller.It supoorts both INTX and MSI.
+> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
+> with size 0x1000
 > 
-> This would be ok for dirty pages, but consider that we're also tracking
-> anonymous pages. So, if we want to control the swap IO we actually need
-> to save this information for a lot of pages and at the end I think we'll
-> basically duplicate the page_cgroup code.
+> Changes since V4:
+> - All documentation related comments incorporated
 > 
+> Changes since V3:
+> - support for multiple instances of such device
 
-swap io is always started with bio and the task/mm_struct.
-So, if we can record information in bio, no page tracking is required.
-You can record information to bio just by reading mm->owner.
+^^ This doesn't seem to agree with the documentation.
 
-Thanks,
--Kame
+> ...
+>
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/configfs-spear-pcie-gadget
+> @@ -0,0 +1,30 @@
+> +What:		/config/pcie-gadget
+> +Date:		Feb 2011
+> +KernelVersion:	2.6.37
+> +Contact:	Pratyush Anand <pratyush.anand@st.com>
+> +Description:
+> +
+> +	Interface is used to configure selected dual mode PCIe controller
+> +	as device and then program its various registers to configure it
+> +	as a particular device type.
+> +	This interfaces can be used to show spear's PCIe device capability.
+> +
+> +	Nodes are only visible when configfs is mounted. To mount configfs
+> +	in /config directory use:
+> +	# mount -t configfs none /config/
+> +
+> +	/config/pcie-gadget/
+> +		link ... used to enable ltssm and read its status.
+> +		int_type ...used to configure and read type of supported
+> +			interrupt
+> +		no_of_msi ... used to configure number of MSI vector needed and
+> +			to read no of MSI granted.
+> +		inta ... write 1 to assert INTA and 0 to de-assert.
+> +		send_msi ... write MSI vector to be sent.
+> +		vendor_id ... used to write and read vendor id (hex)
+> +		device_id ... used to write and read device id (hex)
+> +		bar0_size ... used to write and read bar0_size
+> +		bar0_address ... used to write and read bar0 mapped area in hex.
+> +		bar0_rw_offset ... used to write and read offset of bar0 where
+> +			bar0_data will be written or read.
+> +		bar0_data ... used to write and read data at bar0_rw_offset.
+
+What's the configfs naming scheme for the second and later devices?
+
 
