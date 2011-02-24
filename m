@@ -1,172 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab1BXN7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 08:59:31 -0500
-Received: from mga03.intel.com ([143.182.124.21]:58704 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111Ab1BXN7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 08:59:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,218,1297065600"; 
-   d="scan'208";a="393491270"
-Subject: [PATCH -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Feb 2011 21:59:28 +0800
-Message-Id: <1298555968.2220.15.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755481Ab1BXOAF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 09:00:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63610 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248Ab1BXOAC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 09:00:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mze+hk2wsngW6JR8Skhr6iBaitjJWUAsQYAwmGyvFhBlLJPz8m3bVAzBBaNlxqPwKu
+         TS98IqmDAQzAEqwx2WRraJQpJZNqlmZOgCg1mjzC6VfAX8b68TXOaEFNPGc7LrKZ36N/
+         /XWHzdd1Yx2dMU3+9+Coex78k5eGrTAsj6Anw=
+Date: Thu, 24 Feb 2011 14:59:55 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] x86: Rename e820_table_* to pgt_buf_*
+Message-ID: <20110224135955.GK7840@htj.dyndns.org>
+References: <4D5C3A0F.3080107@kernel.org>
+ <4D5C501E.50805@kernel.org>
+ <20110216224416.GC29600@atj.dyndns.org>
+ <20110217130526.GB27911@elte.hu>
+ <20110217132435.GV19830@htj.dyndns.org>
+ <20110217135628.GB7018@elte.hu>
+ <4D5D48DA.6020908@kernel.org>
+ <20110217161649.GD14168@elte.hu>
+ <4D660701.3030805@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D660701.3030805@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds SandyBridge support to perf.
+>From d1b19426b04787e48f2689923e28d37b488969b0 Mon Sep 17 00:00:00 2001
+From: Yinghai Lu <yinghai@kernel.org>
+Date: Thu, 24 Feb 2011 14:46:24 +0100
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+e820_table_{start|end|top}, which are used to buffer page table
+allocation during early boot, are now derived from memblock and don't
+have much to do with e820.  Change the names so that they reflect what
+they're used for.
+
+This patch doesn't introduce any behavior change.
+
+-v2: Ingo found that earlier patch "x86: Use early pre-allocated page
+     table buffer top-down" caused crash on 32bit and needed to be
+     dropped.  This patch was updated to reflect the change.
+
+-tj: Updated commit description.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |  111 ++++++++++++++++++++++++++++++++
- 1 files changed, 111 insertions(+), 0 deletions(-)
+Committed to misc:x86-numa with description updated.  Thanks.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 084b383..4a132c9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -76,6 +76,15 @@ static struct event_constraint intel_westmere_event_constraints[] =
- 	EVENT_CONSTRAINT_END
- };
+ arch/x86/include/asm/init.h |    6 +++---
+ arch/x86/mm/init.c          |   20 ++++++++++----------
+ arch/x86/mm/init_32.c       |    8 ++++----
+ arch/x86/mm/init_64.c       |    4 ++--
+ arch/x86/xen/mmu.c          |    2 +-
+ 5 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index 36fb1a6..8dbe353 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -11,8 +11,8 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long page_size_mask);
  
-+static struct event_constraint intel_snb_event_constraints[] =
-+{
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-+	/* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
-+	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct event_constraint intel_gen_event_constraints[] =
- {
- 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-@@ -89,6 +98,97 @@ static u64 intel_pmu_event_map(int hw_event)
- 	return intel_perfmon_event_map[hw_event];
+ 
+-extern unsigned long __initdata e820_table_start;
+-extern unsigned long __meminitdata e820_table_end;
+-extern unsigned long __meminitdata e820_table_top;
++extern unsigned long __initdata pgt_buf_start;
++extern unsigned long __meminitdata pgt_buf_end;
++extern unsigned long __meminitdata pgt_buf_top;
+ 
+ #endif /* _ASM_X86_INIT_32_H */
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index b8054e0..286d289 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -18,9 +18,9 @@
+ 
+ DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+ 
+-unsigned long __initdata e820_table_start;
+-unsigned long __meminitdata e820_table_end;
+-unsigned long __meminitdata e820_table_top;
++unsigned long __initdata pgt_buf_start;
++unsigned long __meminitdata pgt_buf_end;
++unsigned long __meminitdata pgt_buf_top;
+ 
+ int after_bootmem;
+ 
+@@ -73,12 +73,12 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
+ 	if (base == MEMBLOCK_ERROR)
+ 		panic("Cannot find space for the kernel page tables");
+ 
+-	e820_table_start = base >> PAGE_SHIFT;
+-	e820_table_end = e820_table_start;
+-	e820_table_top = e820_table_start + (tables >> PAGE_SHIFT);
++	pgt_buf_start = base >> PAGE_SHIFT;
++	pgt_buf_end = pgt_buf_start;
++	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+ 
+ 	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
+-		end, e820_table_start << PAGE_SHIFT, e820_table_top << PAGE_SHIFT);
++		end, pgt_buf_start << PAGE_SHIFT, pgt_buf_top << PAGE_SHIFT);
  }
  
-+static __initconst const u64 snb_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xf1d0, /* MEM_UOP_RETIRED.LOADS        */
-+		[ C(RESULT_MISS)   ] = 0x0151, /* L1D.REPLACEMENT              */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xf2d0, /* MEM_UOP_RETIRED.STORES       */
-+		[ C(RESULT_MISS)   ] = 0x0851, /* L1D.ALL_M_REPLACEMENT        */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x024e, /* HW_PRE_REQ.DL1_MISS          */
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0280, /* ICACHE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x04d1, /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0424, /* L2_RQSTS.RFO_HITS */
-+		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x4f2e, /* L3_LAT_CACHE.REFERENCE       */
-+		[ C(RESULT_MISS)   ] = 0x412e, /* L3_LAT_CACHE.MISS            */
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01d0, /* MEM_UOP_RETIRED.LOADS */
-+		[ C(RESULT_MISS)   ] = 0x0108, /* DTLB_LOAD_MISSES.CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x02d0, /* MEM_UOP_RETIRED.STORES */
-+		[ C(RESULT_MISS)   ] = 0x0149, /* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x1085, /* ITLB_MISSES.STLB_HIT         */
-+		[ C(RESULT_MISS)   ] = 0x0185, /* ITLB_MISSES.CAUSES_A_WALK    */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ALL_BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0x00c5, /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	},Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
- static __initconst const u64 westmere_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -1062,6 +1162,17 @@ static __init int intel_pmu_init(void)
- 		pr_cont("Westmere events, ");
- 		break;
+ struct map_range {
+@@ -272,9 +272,9 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
  
-+	case 42: /* SandyBridge */
-+		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-+		       sizeof(hw_cache_event_ids));
-+
-+		intel_pmu_lbr_init_nhm();
-+
-+		x86_pmu.event_constraints = intel_snb_event_constraints;
-+		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
-+		pr_cont("SandyBridge events, ");
-+		break;
-+
- 	default:
- 		/*
- 		 * default constraints for v2 and up
-
+ 	__flush_tlb_all();
+ 
+-	if (!after_bootmem && e820_table_end > e820_table_start)
+-		memblock_x86_reserve_range(e820_table_start << PAGE_SHIFT,
+-				 e820_table_end << PAGE_SHIFT, "PGTABLE");
++	if (!after_bootmem && pgt_buf_end > pgt_buf_start)
++		memblock_x86_reserve_range(pgt_buf_start << PAGE_SHIFT,
++				 pgt_buf_end << PAGE_SHIFT, "PGTABLE");
+ 
+ 	if (!after_bootmem)
+ 		early_memtest(start, end);
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 5d43fa5..73ad7eb 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -62,10 +62,10 @@ bool __read_mostly __vmalloc_start_set = false;
+ 
+ static __init void *alloc_low_page(void)
+ {
+-	unsigned long pfn = e820_table_end++;
++	unsigned long pfn = pgt_buf_end++;
+ 	void *adr;
+ 
+-	if (pfn >= e820_table_top)
++	if (pfn >= pgt_buf_top)
+ 		panic("alloc_low_page: ran out of memory");
+ 
+ 	adr = __va(pfn * PAGE_SIZE);
+@@ -163,8 +163,8 @@ static pte_t *__init page_table_kmap_check(pte_t *pte, pmd_t *pmd,
+ 	if (pmd_idx_kmap_begin != pmd_idx_kmap_end
+ 	    && (vaddr >> PMD_SHIFT) >= pmd_idx_kmap_begin
+ 	    && (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end
+-	    && ((__pa(pte) >> PAGE_SHIFT) < e820_table_start
+-		|| (__pa(pte) >> PAGE_SHIFT) >= e820_table_end)) {
++	    && ((__pa(pte) >> PAGE_SHIFT) < pgt_buf_start
++		|| (__pa(pte) >> PAGE_SHIFT) >= pgt_buf_end)) {
+ 		pte_t *newpte;
+ 		int i;
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 4f1f461..470cc47 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -314,7 +314,7 @@ void __init cleanup_highmap(void)
+ 
+ static __ref void *alloc_low_page(unsigned long *phys)
+ {
+-	unsigned long pfn = e820_table_end++;
++	unsigned long pfn = pgt_buf_end++;
+ 	void *adr;
+ 
+ 	if (after_bootmem) {
+@@ -324,7 +324,7 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 		return adr;
+ 	}
+ 
+-	if (pfn >= e820_table_top)
++	if (pfn >= pgt_buf_top)
+ 		panic("alloc_low_page: ran out of memory");
+ 
+ 	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 5e92b61..13783a1 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1443,7 +1443,7 @@ static __init pte_t mask_rw_pte(pte_t *ptep, pte_t pte)
+ 	 * early_ioremap fixmap slot, make sure it is RO.
+ 	 */
+ 	if (!is_early_ioremap_ptep(ptep) &&
+-	    pfn >= e820_table_start && pfn < e820_table_end)
++	    pfn >= pgt_buf_start && pfn < pgt_buf_end)
+ 		pte = pte_wrprotect(pte);
+ 
+ 	return pte;
+-- 
+1.7.1
 
