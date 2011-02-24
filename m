@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab1BXUoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 15:44:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50977 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122Ab1BXUoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 15:44:03 -0500
-Date: Thu, 24 Feb 2011 21:43:52 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Chris Ball <cjb@laptop.org>
-Cc: Philip Rakity <prakity@marvell.com>,
-        "Dong, Chuanxiao" <chuanxiao.dong@intel.com>,
-        Jae hoon Chung <jh80.chung@gmail.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
- cmd
-Message-ID: <20110224204352.GB9841@pengutronix.de>
-References: <20110224111935.GB7169@intel.com>
- <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com>
- <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com>
- <79DD18D4-C79A-4B08-B9E6-050D7EF2FC3D@marvell.com>
- <20110224201504.GA12913@void.printf.net>
+	id S1753033Ab1BXUrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 15:47:53 -0500
+Received: from www.tglx.de ([62.245.132.106]:51248 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751884Ab1BXUrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 15:47:51 -0500
+Date: Thu, 24 Feb 2011 21:47:23 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-hotplug@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
+In-Reply-To: <1298579452.5226.834.camel@laptop>
+Message-ID: <alpine.LFD.2.00.1102242130360.2701@localhost6.localdomain6>
+References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>  <1298573197.2428.457.camel@twins>  <20110224201124.138311ba@lxorguk.ukuu.org.uk>  <alpine.LFD.2.00.1102242115011.2701@localhost6.localdomain6>  <alpine.LFD.2.00.1102241522130.31831@xanadu.home>
+ <1298579452.5226.834.camel@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hHWLQfXTYDoKhP50"
-Content-Disposition: inline
-In-Reply-To: <20110224201504.GA12913@void.printf.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 24 Feb 2011, Peter Zijlstra wrote:
 
---hHWLQfXTYDoKhP50
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thu, 2011-02-24 at 15:24 -0500, Nicolas Pitre wrote:
+> 
+> > Most SMP ARM processors are going to use it soon.  Powering down idle 
+> > cores provides substantial power saving.
+> 
+> And why can't regular idle paths be used? CPU hotplug is a massively
+> expensive operation.
 
-On Thu, Feb 24, 2011 at 08:15:04PM +0000, Chris Ball wrote:
-> On Thu, Feb 24, 2011 at 10:32:30AM -0800, Philip Rakity wrote:
-> > proposed this a while ago and strongly support just removing the quirk =
-for broken timeout and setting the timeout value to maximum of 0xE.
-> >=20
-> > This also handles the case of the sd device having a timeout value too =
-low.  In my testing I have come across SD cards that do not provide the cor=
-rect value.
-> > We force our pxa168, pxa910, and mmp2 controllers to have 0xE. =20
->=20
-> Yeah, OLPC's CaFe controller -- which might be the same hardware as yours,
-> actually -- has the same problem.
->=20
-> Does anyone know of a reason (beyond strict spec-compliance, I suppose)
-> for honoring the timeout value rather than using 0xE everywhere?  If not,
-> I'm willing to try out Philip's suggestion.
+To achieve the same result from idle, you need to exclude the core
+from any unwanted wakeup. At the moment cpu unplug is the only way to
+achieve that.
 
-+1. A full cycle in linux-next might an idea to be on the safe side? That w=
-ould
-be 2.6.40-material then. Or too slow?
+If you want to do the same from idle, then we need the isolation
+features Frederic is working on for RT/HPC.
 
-   Wolfram
+They allow us to isolate cores completely for totaly different
+reasons, but it could be resused to provide full isolation of a core
+in a very deep power state.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+That would solve the problem w/o going through kstompmachine
 
---hHWLQfXTYDoKhP50
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk1mwwgACgkQD27XaX1/VRuEKgCgrfoFiyOxpTEwbTEo2pJusgdU
-XxsAoLE1ytg7M0xyoyn2vwrin3y48eAd
-=ZExM
------END PGP SIGNATURE-----
-
---hHWLQfXTYDoKhP50--
+	tglx
