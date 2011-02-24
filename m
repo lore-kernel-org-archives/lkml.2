@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1BXVXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 16:23:50 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:20106 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab1BXVXp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 16:23:45 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+AFOojbeu8wOWEa/jiGx98
-Date: Thu, 24 Feb 2011 13:23:39 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	id S1756575Ab1BXVYm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 16:24:42 -0500
+Received: from void.printf.net ([89.145.121.20]:43208 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932085Ab1BXVYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 16:24:38 -0500
+Date: Thu, 24 Feb 2011 21:24:30 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Philip Rakity <prakity@marvell.com>,
+        "Dong, Chuanxiao" <chuanxiao.dong@intel.com>,
+        Jae hoon Chung <jh80.chung@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Guruswamy, Senthilvadivu" <svadivu@ti.com>
-Subject: Re: linux-next: manual merge of the omap_dss2 tree with the omap
- tree
-Message-ID: <20110224212339.GM20560@atomide.com>
-References: <20110221141650.71b433b7.sfr@canb.auug.org.au>
- <1298278062.4931.19.camel@deskari>
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
+	cmd
+Message-ID: <20110224212429.GB12913@void.printf.net>
+References: <20110224111935.GB7169@intel.com> <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com> <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com> <79DD18D4-C79A-4B08-B9E6-050D7EF2FC3D@marvell.com> <20110224201504.GA12913@void.printf.net> <20110224204352.GB9841@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298278062.4931.19.camel@deskari>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110224204352.GB9841@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-* Tomi Valkeinen <tomi.valkeinen@ti.com> [110221 00:46]:
-> 
-> Tony, do you have such a semi-stable branch I could use as a base? Or
-> any other ideas?
+On Thu, Feb 24, 2011 at 09:43:52PM +0100, Wolfram Sang wrote:
+> +1. A full cycle in linux-next might an idea to be on the safe side? That
+> would be 2.6.40-material then. Or too slow?
 
-I guess you already figured this out.. The omap-for-linus branch should
-have immutable commits. So you can merge with the earliest commit that
-does the job for you from there.
+I think it could be okay to merge for .39, but that's mainly because I
+don't think we start getting testing with a lot of cards until patches
+appear in an -rc1 -- so for something that requires broad testing, I'd
+rather merge it for -rc1 with a plan to revert it if we find anything
+unexpected.
 
-Regards,
+But I don't have a strong opinion, so if anyone thinks there's a reason
+to wait (for example, an existence-proof of a card that misbehaves when
+configured with a max timeout value) then I'm happy to do so.
 
-Tony
+Thanks,
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
