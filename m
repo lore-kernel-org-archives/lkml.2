@@ -1,262 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1BXIyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 03:54:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab1BXIyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 03:54:11 -0500
-Date: Thu, 24 Feb 2011 09:53:38 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Kyungmin Park <kmpark@infradead.org>
-cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Subject: Re: [PATCH v2] fat: Batched discard support for fat
-In-Reply-To: <20110224051046.GA30130@july>
-Message-ID: <alpine.LFD.2.00.1102240934360.3190@dhcp-27-109.brq.redhat.com>
-References: <20110224051046.GA30130@july>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755080Ab1BXI4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 03:56:39 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40547 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab1BXI4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 03:56:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=d5JRP7m6TDPYDDb+7BzH+1IZvLjMHVY92V+bx/x1s1wy71GT2CThyXqXUKPEQmP6ks
+         LW/YUtO2505JSeyRcpNJxKeOavBcXs6En/ne0kg97o54TMz+vziQ3uC/xFEBwdJfYgll
+         wts2e/ASLBgVo6ugXqhm2g8Z06lRxX3KU1UnY=
+Date: Thu, 24 Feb 2011 09:56:32 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        "Hawrylewicz Czarnowski, Przemyslaw" 
+	<przemyslaw.hawrylewicz.czarnowski@intel.com>
+Subject: [PATCH 2.6.38-rc6] block: bd_link_disk_holder() should hold on to
+ holder_dir
+Message-ID: <20110224085632.GC7840@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011, Kyungmin Park wrote:
+The new implementation of bd_link_disk_holder() added by 49731baa41d
+(block: restore multiple bd_link_disk_holder() support) didn't get an
+extra reference for the holder_dir kobject of the slave bdev; however,
+bdev kills holder_dir on removal, not release, so if the slave bdev is
+removed while there are holder links, the holder_dir will be destroyed
+while there still are holder links, which leads to oops later when
+bd_unlink_disk_order() tries to remove those links.
 
-> From: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> FAT supports batched discard as ext4.
-> 
-> Cited from Lukas words.
-> "The current solution is not ideal because of its bad performance impact.
-> So basic idea to improve things is to avoid discarding every time some
-> blocks are freed. and instead batching is together into bigger trims,
-> which tends to be more effective."
-> 
-> You can find an information in detail at following URLs.
-> http://lwn.net/Articles/397538/
-> http://lwn.net/Articles/383933/
-> 
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Make bd_link_disk_holder() grab an extra reference for the slave's
+holder_dir and put it in bd_unlink_disk_holder().
 
-Hi Kyungmin,
-thanks to second version. How did you test it ? You can try xtestest
-251 for simple verification.
-I can not really comment on FAT specific code, however I have couple of
-comments bellow.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: "Hawrylewicz Czarnowski, Przemyslaw" <przemyslaw.hawrylewicz.czarnowski@intel.com>
+Tested-by: "Hawrylewicz Czarnowski, Przemyslaw" <przemyslaw.hawrylewicz.czarnowski@intel.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+---
+Jens, Linus, it's pretty late in the release cycle and I'm not sure
+Jens is back yet so I'm writing to you both.  It's an isolated and
+relatively safe fix.  I think how it gets routed doesn't matter too
+much.
 
-Thanks!
--Lukas
+Thank you.
 
-> ---
-> Changelog V2:
-> 	Use the given start and len as Lukas comments
-> 	Check the queue supports discard feature
-> ---
-> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-> index f504089..08b53e1 100644
-> --- a/fs/fat/fat.h
-> +++ b/fs/fat/fat.h
-> @@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
->  			      int nr_cluster);
->  extern int fat_free_clusters(struct inode *inode, int cluster);
->  extern int fat_count_free_clusters(struct super_block *sb);
-> +extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
->  
->  /* fat/file.c */
->  extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
-> diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-> index b47d2c9..ea31ee4 100644
-> --- a/fs/fat/fatent.c
-> +++ b/fs/fat/fatent.c
-> @@ -1,6 +1,8 @@
->  /*
->   * Copyright (C) 2004, OGAWA Hirofumi
->   * Released under GPL v2.
-> + *
-> + * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
->   */
->  
->  #include <linux/module.h>
-> @@ -541,6 +543,16 @@ out:
->  	return err;
->  }
->  
-> +static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
-> +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-> +	sector_t block, nr_blocks;
-> +
-> +        block = fat_clus_to_blknr(sbi, cluster);
-> +        nr_blocks = nr_clus * sbi->sec_per_clus;
-> +        return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
-   ^^^^^^^^
-This patch does not pass checkpatch.pl script. Use tabs for indention.
+ fs/block_dev.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> +}
-> +
->  int fat_free_clusters(struct inode *inode, int cluster)
->  {
->  	struct super_block *sb = inode->i_sb;
-> @@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
->  			if (cluster != fatent.entry + 1) {
->  				int nr_clus = fatent.entry - first_cl + 1;
->  
-> -				sb_issue_discard(sb,
-> -					fat_clus_to_blknr(sbi, first_cl),
-> -					nr_clus * sbi->sec_per_clus,
-> -					GFP_NOFS, 0);
-> -
-> +				fat_issue_discard(sb, first_cl, nr_clus);
->  				first_cl = cluster;
->  			}
->  		}
-> @@ -683,3 +691,88 @@ out:
->  	unlock_fat(sbi);
->  	return err;
->  }
-> +
-> +int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
-> +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-> +	struct fatent_operations *ops = sbi->fatent_ops;
-> +	struct fat_entry fatent;
-> +	unsigned long reada_blocks, reada_mask, cur_block;
-> +	int err = 0, free, count, entry;
-> +	int start, len, minlen, trimmed;
-> +
-> +	start = range->start >> sb->s_blocksize_bits;
-> +	start = start / sbi->sec_per_clus;
-> +	len = range->len >> sb->s_blocksize_bits;
-> +	len = len / sbi->sec_per_clus;
-> +	minlen = range->minlen >> sb->s_blocksize_bits;
-> +	minlen = minlen / sbi->sec_per_clus;
-
-I should have mention that earlier, but you can also adjust mineln
-according to the discard_granularity, because extents smaller than that
-would not be discarded anyway.
-
-> +	trimmed = 0;
-> +	count = 0;
-> +
-> +	lock_fat(sbi);
-> +	if (sbi->free_clusters != -1 && sbi->free_clus_valid)
-> +		goto out;
-> +
-> +	reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
-> +	reada_mask = reada_blocks - 1;
-> +	cur_block = 0;
-> +
-> +	entry = 0;
-> +	free = 0;
-> +	fatent_init(&fatent);
-> +
-> +	if (start < FAT_START_ENT)
-> +		start = FAT_START_ENT;
-
-You're not using start anywhere.
-
-> +
-> +	fatent_set_entry(&fatent, FAT_START_ENT);
-> +
-> +	while (count < sbi->max_cluster) {
-> +		if (fatent.entry >= sbi->max_cluster)
-> +			fatent.entry = FAT_START_ENT;
-> +		/* readahead of fat blocks */
-> +		if ((cur_block & reada_mask) == 0) {
-> +			unsigned long rest = sbi->fat_length - cur_block;
-> +			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
-> +		}
-> +		cur_block++;
-> +
-> +		err = fat_ent_read_block(sb, &fatent);
-> +		if (err)
-> +			goto out;
-> +
-> +		do {
-> +			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
-> +				free++;
-> +				if (!entry)
-> +					entry = fatent.entry;
-> +				if (free >= (len - trimmed) && free >= minlen) {
-
-It seems to me that you are using len as number of bytes to trim. This
-is not right and I am sorry for not explaining it correctly. "len" is
-supposed to be a number of bytes you want to "investigate" from the start.
-So it means that you will trim every single free extent bigger than minlen
-between "start" byte and "start + len" byte of the underlying device, or
-partition.
-
-> +					fat_issue_discard(sb, entry, free);
-> +					trimmed += free;
-> +				}
-> +				if (trimmed >= len)
-> +					goto done;
-> +			} else if (entry) {
-> +				if (free >= minlen) {
-> +					fat_issue_discard(sb, entry, free);
-> +					trimmed += free;
-> +				}
-> +				if (trimmed >= len)
-> +					goto done;
-> +				free = 0;
-> +				entry = 0;
-> +			}
-> +			count++;
-> +		} while (fat_ent_next(sbi, &fatent));
-> +	}
-> +	if (free >= minlen) {
-> +		fat_issue_discard(sb, entry, free);
-> +		trimmed += free;
-> +	}
-> +done:
-> +	range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
-> +	fatent_brelse(&fatent);
-> +out:
-> +	unlock_fat(sbi);
-> +	return err;
-> +}
-> diff --git a/fs/fat/file.c b/fs/fat/file.c
-> index 7257752..05e6545 100644
-> --- a/fs/fat/file.c
-> +++ b/fs/fat/file.c
-> @@ -125,6 +125,34 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  		return fat_ioctl_get_attributes(inode, user_attr);
->  	case FAT_IOCTL_SET_ATTRIBUTES:
->  		return fat_ioctl_set_attributes(filp, user_attr);
-> +	case FITRIM:
-> +	{
-> +		struct super_block *sb = inode->i_sb;
-> +		struct request_queue *q = bdev_get_queue(sb->s_bdev);
-> +		struct fstrim_range range;
-> +		int ret = 0;
-> +
-> +		if (!capable(CAP_SYS_ADMIN))
-> +			return -EPERM;
-> +
-> +		if (!blk_queue_discard(q))
-> +			return -EOPNOTSUPP;
-> +
-> +		if (copy_from_user(&range, (struct fstrim_range *)arg,
-> +					sizeof(range)))
-> +			return -EFAULT;
-> +
-> +		ret = fat_trim_fs(sb, &range);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		if (copy_to_user((struct fstrim_range *)arg, &range,
-> +					sizeof(range)))
-> +			return -EFAULT;
-> +
-> +		return 0;
-> +	}
-> +
->  	default:
->  		return -ENOTTY;	/* Inappropriate ioctl for device */
->  	}
-> 
-
--- 
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 4fb8a34..94d41db 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -873,6 +873,11 @@ int bd_link_disk_holder(struct block_device *bdev, struct gendisk *disk)
+ 	ret = add_symlink(bdev->bd_part->holder_dir, &disk_to_dev(disk)->kobj);
+ 	if (ret)
+ 		goto out_del;
++	/*
++	 * bdev could be deleted beneath us which would implicitly destroy
++	 * the holder directory.  Hold on to it.
++	 */
++	kobject_get(bdev->bd_part->holder_dir);
+ 
+ 	list_add(&holder->list, &bdev->bd_holder_disks);
+ 	goto out_unlock;
+@@ -909,6 +914,7 @@ void bd_unlink_disk_holder(struct block_device *bdev, struct gendisk *disk)
+ 		del_symlink(disk->slave_dir, &part_to_dev(bdev->bd_part)->kobj);
+ 		del_symlink(bdev->bd_part->holder_dir,
+ 			    &disk_to_dev(disk)->kobj);
++		kobject_put(bdev->bd_part->holder_dir);
+ 		list_del_init(&holder->list);
+ 		kfree(holder);
+ 	}
