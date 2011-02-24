@@ -1,48 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab1BXMva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 07:51:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab1BXMv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 07:51:27 -0500
-Message-ID: <4D665449.4050908@redhat.com>
-Date: Thu, 24 Feb 2011 14:51:21 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1755468Ab1BXMxS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 07:53:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:50101 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab1BXMxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 07:53:14 -0500
+Message-ID: <4D6654B2.1080707@infradead.org>
+Date: Thu, 24 Feb 2011 09:53:06 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-CC: Nikola Ciprich <extmaillist@linuxbox.cz>, KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-References: <20110223234258.GA29548@nik-comp.lan> <4D663044.3080000@redhat.com> <20110224104800.GA29840@pcnci.linuxbox.cz> <4D663886.6080803@redhat.com> <20110224112742.GB29840@pcnci.linuxbox.cz> <4D664E85.8070808@redhat.com> <20110224124151.GK25673@pcnci.linuxbox.cz>
-In-Reply-To: <20110224124151.GK25673@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Jiri Slaby <jslaby@suse.cz>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Patrick Boettcher <pboettcher@kernellabs.com>
+Subject: Re: [PATCH 1/1] DVB-USB: dib0700, fix oops with non-dib7000pc devices
+References: <1296930047-22689-1-git-send-email-jslaby@suse.cz> <4D664DE5.7020002@gmail.com>
+In-Reply-To: <4D664DE5.7020002@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2011 02:41 PM, Nikola Ciprich wrote:
-> >  Yes.  If you have udis86 and udis86-devel installed when building it,
-> >  it's even better.
-> yes, now I remember! I've done some tracing for You already..
->
-> >  You don't have to execute qemu-kvm under it, if you have a running
-> >  instance you can run trace-cmd in parallel and it will record whatever's
-> >  happening.
-> I've uploaded the report for You here:
-> nelide.cz/downloads/nik/report.txt.xz
->
+Em 24-02-2011 09:24, Jiri Slaby escreveu:
+> Hmm, could anybody pick it up?
+> 
+> On 02/05/2011 07:20 PM, Jiri Slaby wrote:
+>> These devices use different internal structures (dib7000m) and
+>> dib7000p pid ctrl accesses invalid members causing kernel to die.
+>>
+>> Introduce pid control functions for dib7000m which operate on the
+>> correct structure.
 
-The only activity I can see is the timer interrupt, so I'm afraid a 
-bisect is needed.
+Patrick (DibCom drivers maintainer) has proposed an alternate patch for it [1]
+that properly address the issues:
 
-If you let git bisect just kvm, it'll be a bit faster:
+http://git.linuxtv.org/pb/media_tree.git?a=commitdiff;h=80a5f1fdc6beb496347cbb297f9c1458c8cb9f50
 
-$ git bisect $BAD $GOOD virt/kvm arch/x86/kvm
+[1] http://www.spinics.net/lists/linux-media/msg27890.html
 
--- 
-error compiling committee.c: too many arguments to function
+Could you please test it?
+
+
+>>
+>> The oops it fixes:
+>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000012
+>> IP: [<ffffffff813658a7>] i2c_transfer+0x17/0x140
+>> PGD 13dcbb067 PUD 13e3c9067 PMD 0
+>> Oops: 0000 [#1] PREEMPT SMP
+>> ...
+>> Modules linked in: ...
+>> Pid: 3511, comm: kaffeine Tainted: G   M       2.6.34.8-0.1-desktop #1 NITU1/20023
+>> RIP: 0010:[<ffffffff813658a7>]  [<ffffffff813658a7>] i2c_transfer+0x17/0x140
+>> RSP: 0018:ffff88011ce59bc8  EFLAGS: 00010292
+>> RAX: ffff88011ce59c38 RBX: 0000000000000002 RCX: 0000000000001cda
+>> RDX: 0000000000000002 RSI: ffff88011ce59c18 RDI: 0000000000000002
+>> ...
+>> CR2: 0000000000000012 CR3: 000000011ce53000 CR4: 00000000000406e0
+>> Process kaffeine (pid: 3511, threadinfo ffff88011ce58000, task ffff88009a40c700)
+>> Stack:
+>> ...
+>> Call Trace:
+>>  [<ffffffffa067a07f>] dib7000p_read_word+0x6f/0xd0 [dib7000p]
+>>  [<ffffffffa067bfa2>] dib7000p_pid_filter_ctrl+0x42/0xb0 [dib7000p]
+>>  [<ffffffffa0654221>] dvb_usb_ctrl_feed+0x151/0x170 [dvb_usb]
+>>  [<ffffffffa062270b>] dmx_ts_feed_start_filtering+0x5b/0xe0 [dvb_core]
+>> ...
+>> Code: a6 f9 ff 48 83 c4 18 c3 66 66 66 2e 0f 1f 84 00 00 00 00 00 41 57 41 56 41 89 d6 41 55 49 89 f5 41 54 55 53 48 89 fb 48 83 ec 18 <48> 8b 47 10 48 83 38 00 0f 84 c8 00 00 00 65 48 8b 04 25 40 b5
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> ---
+>>  drivers/media/dvb/dvb-usb/dib0700_devices.c |   18 +++++++++++++++++-
+>>  drivers/media/dvb/frontends/dib7000m.c      |   19 +++++++++++++++++++
+>>  drivers/media/dvb/frontends/dib7000m.h      |   16 ++++++++++++++++
+>>  3 files changed, 52 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/media/dvb/dvb-usb/dib0700_devices.c b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+>> index c6022af..23fe0c3 100644
+>> --- a/drivers/media/dvb/dvb-usb/dib0700_devices.c
+>> +++ b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+>> @@ -80,6 +80,9 @@ static struct dib3000mc_config bristol_dib3000mc_config[2] = {
+>>  	}
+>>  };
+>>  
+>> +static int stk70x0m_pid_filter(struct dvb_usb_adapter *adapter, int index, u16 pid, int onoff);
+>> +static int stk70x0m_pid_filter_ctrl(struct dvb_usb_adapter *adapter, int onoff);
+>> +
+>>  static int bristol_frontend_attach(struct dvb_usb_adapter *adap)
+>>  {
+>>  	struct dib0700_state *st = adap->dev->priv;
+>> @@ -686,8 +689,11 @@ static int stk7700p_frontend_attach(struct dvb_usb_adapter *adap)
+>>  	if (dib7000pc_detection(&adap->dev->i2c_adap)) {
+>>  		adap->fe = dvb_attach(dib7000p_attach, &adap->dev->i2c_adap, 18, &stk7700p_dib7000p_config);
+>>  		st->is_dib7000pc = 1;
+>> -	} else
+>> +	} else {
+>>  		adap->fe = dvb_attach(dib7000m_attach, &adap->dev->i2c_adap, 18, &stk7700p_dib7000m_config);
+>> +		adap->props.pid_filter = stk70x0m_pid_filter;
+>> +		adap->props.pid_filter_ctrl = stk70x0m_pid_filter_ctrl;
+>> +	}
+>>  
+>>  	return adap->fe == NULL ? -ENODEV : 0;
+>>  }
+>> @@ -882,6 +888,16 @@ static int stk70x0p_pid_filter_ctrl(struct dvb_usb_adapter *adapter, int onoff)
+>>      return dib7000p_pid_filter_ctrl(adapter->fe, onoff);
+>>  }
+>>  
+>> +static int stk70x0m_pid_filter(struct dvb_usb_adapter *adapter, int index, u16 pid, int onoff)
+>> +{
+>> +	return dib7000m_pid_filter(adapter->fe, index, pid, onoff);
+>> +}
+>> +
+>> +static int stk70x0m_pid_filter_ctrl(struct dvb_usb_adapter *adapter, int onoff)
+>> +{
+>> +	return dib7000m_pid_filter_ctrl(adapter->fe, onoff);
+>> +}
+>> +
+>>  static struct dibx000_bandwidth_config dib7070_bw_config_12_mhz = {
+>>  	60000, 15000,
+>>  	1, 20, 3, 1, 0,
+>> diff --git a/drivers/media/dvb/frontends/dib7000m.c b/drivers/media/dvb/frontends/dib7000m.c
+>> index c7f5ccf..90d9411 100644
+>> --- a/drivers/media/dvb/frontends/dib7000m.c
+>> +++ b/drivers/media/dvb/frontends/dib7000m.c
+>> @@ -1372,6 +1372,25 @@ error:
+>>  }
+>>  EXPORT_SYMBOL(dib7000m_attach);
+>>  
+>> +int dib7000m_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
+>> +{
+>> +	struct dib7000m_state *state = fe->demodulator_priv;
+>> +	u16 val = dib7000m_read_word(state, 235) & 0xffef;
+>> +	val |= (onoff & 0x1) << 4;
+>> +	dprintk("PID filter enabled %d", onoff);
+>> +	return dib7000m_write_word(state, 235, val);
+>> +}
+>> +EXPORT_SYMBOL(dib7000m_pid_filter_ctrl);
+>> +
+>> +int dib7000m_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid, u8 onoff)
+>> +{
+>> +	struct dib7000m_state *state = fe->demodulator_priv;
+>> +	dprintk("PID filter: index %x, PID %d, OnOff %d", id, pid, onoff);
+>> +	return dib7000m_write_word(state, 241 + id,
+>> +			onoff ? (1 << 13) | pid : 0);
+>> +}
+>> +EXPORT_SYMBOL(dib7000m_pid_filter);
+>> +
+>>  static struct dvb_frontend_ops dib7000m_ops = {
+>>  	.info = {
+>>  		.name = "DiBcom 7000MA/MB/PA/PB/MC",
+>> diff --git a/drivers/media/dvb/frontends/dib7000m.h b/drivers/media/dvb/frontends/dib7000m.h
+>> index 113819c..3353f5a 100644
+>> --- a/drivers/media/dvb/frontends/dib7000m.h
+>> +++ b/drivers/media/dvb/frontends/dib7000m.h
+>> @@ -46,6 +46,8 @@ extern struct dvb_frontend *dib7000m_attach(struct i2c_adapter *i2c_adap,
+>>  extern struct i2c_adapter *dib7000m_get_i2c_master(struct dvb_frontend *,
+>>  						   enum dibx000_i2c_interface,
+>>  						   int);
+>> +extern int dib7000m_pid_filter(struct dvb_frontend *, u8 id, u16 pid, u8 onoff);
+>> +extern int dib7000m_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff);
+>>  #else
+>>  static inline
+>>  struct dvb_frontend *dib7000m_attach(struct i2c_adapter *i2c_adap,
+>> @@ -63,6 +65,20 @@ struct i2c_adapter *dib7000m_get_i2c_master(struct dvb_frontend *demod,
+>>  	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
+>>  	return NULL;
+>>  }
+>> +
+>> +static inline int dib7000m_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid,
+>> +		u8 onoff)
+>> +{
+>> +	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
+>> +	return -ENODEV;
+>> +}
+>> +
+>> +static inline int dib7000m_pid_filter_ctrl(struct dvb_frontend *fe,
+>> +		uint8_t onoff)
+>> +{
+>> +	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
+>> +	return -ENODEV;
+>> +}
+>>  #endif
+>>  
+>>  /* TODO
+> 
+> 
 
