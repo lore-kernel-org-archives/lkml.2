@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab1BXVME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 16:12:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:61833 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab1BXVMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 16:12:02 -0500
-From: Stefan Weil <weil@mail.berlios.de>
-To: greg@kroah.com
-Cc: Stefan Weil <weil@mail.berlios.de>, Brett Rudley <brudley@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: brcm80211: Fix memory leak after kmalloc failure
-Date: Thu, 24 Feb 2011 22:11:48 +0100
-Message-Id: <1298581908-16274-1-git-send-email-weil@mail.berlios.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <4D66C912.8090205@mail.berlios.de>
-References: <4D66C912.8090205@mail.berlios.de>
-X-Provags-ID: V02:K0:+anVnlN+6Lq47FeF7EiRXFnVyXKlveu7wT4/RD0K7wf
- vaTmqVWbS09qnu5OuGBWOR6I1A3IotB7n9Or/CLS8WZrxY/4K4
- CvLeJW4nUv//eq8UlOaAeVp57eRVImh6mcULHQ+OiuGsaNhluN
- AQPEF4MJWbHWeJd3qFm+qZx4FIahNNv6G3z2E/2F3lu780ibUc
- 1ZGcePNmBgGmi4N40ZzH9qH8psdgzzuiPoPq/AnWHK55zkPPMZ
- fol0uKIDbrO37
+	id S1756316Ab1BXVMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 16:12:24 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52221 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755744Ab1BXVMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 16:12:20 -0500
+Subject: Re: PowerPC BUG: using smp_processor_id() in preemptible code
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <alpine.LSU.2.00.1102241216420.1708@sister.anvils>
+References: <alpine.LSU.2.00.1012291413360.22939@sister.anvils>
+	 <1293705910.17779.60.camel@pasglop>
+	 <alpine.LSU.2.00.1102241216420.1708@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Feb 2011 08:12:02 +1100
+Message-ID: <1298581922.8833.486.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This error was spotted by cppcheck:
+On Thu, 2011-02-24 at 12:47 -0800, Hugh Dickins wrote:
 
-drivers/staging/brcm80211/phy/wlc_phy_lcn.c:4053: error: Memory leak: ptr
+> Reading back, I see Jeremy suggested moving vb_free()'s call to
+> vunmap_page_range() back inside vb->lock: it certainly was his moving
+> the call out from under that lock that brought the issue to my notice;
+> but it looked as if there were other paths which would give preemptible
+> PowerPC the same issue, just paths I happen not to go down myself. I'm
+> not sure, I didn't take the time to follow it up properly, expecting
+> further insight to arrive shortly from Ben!
 
-v2:
-Rebased patch on linux-next (file was moved to a new directory).
+Yeah, sorry, I've been too over extended lately...
 
-Cc: Brett Rudley <brudley@broadcom.com>
-Cc: Henry Ptasinski <henryp@broadcom.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-wireless@vger.kernel.org
-Cc: devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Stefan Weil <weil@mail.berlios.de>
----
- .../staging/brcm80211/brcmsmac/phy/wlc_phy_lcn.c   |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> And, as threatened, Jeremy has further vmalloc changes queued up in
+> mmotm, which certainly make the patch below inadequate, and I imagine
+> the vunmap_page_range() movement too.  I'm currently (well, I think most
+> recent mmotm doesn't even boot on my ppc) having to disable preemption
+> in the kernel case of apply_to_pte_range().
+> 
+> What would be better for 2.6.38 and 2.6.37-stable?  Moving that call to
+> vunmap_page_range back under vb->lock, or the partial-Peter-patch below?
+> And then what should be done for 2.6.39?
 
-diff --git a/drivers/staging/brcm80211/brcmsmac/phy/wlc_phy_lcn.c b/drivers/staging/brcm80211/brcmsmac/phy/wlc_phy_lcn.c
-index 3fbbbb4..f027d50 100644
---- a/drivers/staging/brcm80211/brcmsmac/phy/wlc_phy_lcn.c
-+++ b/drivers/staging/brcm80211/brcmsmac/phy/wlc_phy_lcn.c
-@@ -4051,6 +4051,7 @@ wlc_lcnphy_a1(phy_info_t *pi, int cal_type, int num_levels, int step_size_lg2)
- 
- 	phy_c32 = kmalloc(sizeof(u16) * 20, GFP_ATOMIC);
- 	if (NULL == phy_c32) {
-+		kfree(ptr);
- 		return;
- 	}
- 	phy_c26 = read_phy_reg(pi, 0x6da);
--- 
-1.7.2.3
+Patch is fine. I should send it to Linus. It's not like we have a batch
+on the vmalloc space anyways since it doesnt do the arch_lazy_mmu stuff,
+so it's really about protecting the per-cpu variable.
+
+Cheers,
+Ben.
+
+> --- 2.6.38-rc5/arch/powerpc/mm/tlb_hash64.c	2010-02-24 10:52:17.000000000 -0800
+> +++ linux/arch/powerpc/mm/tlb_hash64.c	2011-02-15 23:27:21.000000000 -0800
+> @@ -38,13 +38,11 @@ DEFINE_PER_CPU(struct ppc64_tlb_batch, p
+>   * neesd to be flushed. This function will either perform the flush
+>   * immediately or will batch it up if the current CPU has an active
+>   * batch on it.
+> - *
+> - * Must be called from within some kind of spinlock/non-preempt region...
+>   */
+>  void hpte_need_flush(struct mm_struct *mm, unsigned long addr,
+>  		     pte_t *ptep, unsigned long pte, int huge)
+>  {
+> -	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
+> +	struct ppc64_tlb_batch *batch = &get_cpu_var(ppc64_tlb_batch);
+>  	unsigned long vsid, vaddr;
+>  	unsigned int psize;
+>  	int ssize;
+> @@ -99,6 +97,7 @@ void hpte_need_flush(struct mm_struct *m
+>  	 */
+>  	if (!batch->active) {
+>  		flush_hash_page(vaddr, rpte, psize, ssize, 0);
+> +		put_cpu_var(ppc64_tlb_batch);
+>  		return;
+>  	}
+>  
+> @@ -127,6 +126,7 @@ void hpte_need_flush(struct mm_struct *m
+>  	batch->index = ++i;
+>  	if (i >= PPC64_TLB_BATCH_NR)
+>  		__flush_tlb_pending(batch);
+> +	put_cpu_var(ppc64_tlb_batch);
+>  }
+>  
+>  /*
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
