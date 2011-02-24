@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab1BXTjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 14:39:54 -0500
-Received: from kroah.org ([198.145.64.141]:45096 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755899Ab1BXTjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 14:39:52 -0500
-Date: Thu, 24 Feb 2011 11:39:47 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: linux-next: manual merge of the tty tree with Linus' tree
-Message-ID: <20110224193947.GA15044@kroah.com>
-References: <20110224163439.05352f9b.sfr@canb.auug.org.au>
+	id S1755782Ab1BXTkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 14:40:06 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45746 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab1BXTkC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 14:40:02 -0500
+Message-ID: <4D66B3A5.1050706@kernel.org>
+Date: Thu, 24 Feb 2011 11:38:13 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224163439.05352f9b.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>
+CC: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [PATCH 2/3 tip:x86/mm] x86-64, NUMA: Move NUMA emulation into
+ numa_emulation.c
+References: <20110218135836.GG21209@htj.dyndns.org> <20110218135939.GH21209@htj.dyndns.org> <4D5EB35D.3000305@kernel.org> <alpine.DEB.2.00.1102201357110.26991@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1102201357110.26991@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D66B3F8.0037,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 04:34:39PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
+On 02/20/2011 01:58 PM, David Rientjes wrote:
+> On Fri, 18 Feb 2011, Yinghai Lu wrote:
 > 
-> Today's linux-next merge of the tty tree got a conflict in
-> drivers/char/Makefile between commit
-> 51df0acc3d76cf41d5496ef044cc5717ab5c7f71 ("virtio: console: Move file
-> back to drivers/char/") from Linus' tree and commit
-> a6afd9f3e819de4795fcd356e5bfad446e4323f2 ("tty: move a number of tty
-> drivers from drivers/char/ to drivers/tty/") (and later ones) from the tty
-> tree.
+>> David, can you please check tip/x86/mm ?
+>>
 > 
-> I fixed it up (see below) and can carry the fix as necessary.
+> Yeah, I'm in the process of doing so without this set yet.  I'm getting 
+> boot failures for numa=fake=128M right now, so I'll need to investigate 
+> and diagnose that issue before adding more patches.
 
-Thanks, I've merge 2.6.38-rc6 into tty-next so this, and another merge
-issue, should now be resolved.
 
-greg k-h
+any info about the boot failures?
+
+Thanks
+
+Yinghai
