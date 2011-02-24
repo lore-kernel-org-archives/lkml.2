@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1BXVzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 16:55:23 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40028 "EHLO
+	id S1755767Ab1BXWLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 17:11:11 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53988 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751056Ab1BXVzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 16:55:22 -0500
-Date: Thu, 24 Feb 2011 13:55:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Update obsolete email addresses for Lennert Buytenhek.
-Message-Id: <20110224135521.990c3f35.akpm@linux-foundation.org>
-In-Reply-To: <20110222144826.GH2189@mail.wantstofly.org>
-References: <20110222144826.GH2189@mail.wantstofly.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	by vger.kernel.org with ESMTP id S1755267Ab1BXWLH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 17:11:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <4D66CDD4.7080103@codeaurora.org>
+References: <1298419415-3973-1-git-send-email-davidb@codeaurora.org>
+ <1298420395.17118.6.camel@m0nster> <AANLkTikuaOL7mdARoNtx2ZJGJm6FBrqizrit6_uSaUte@mail.gmail.com>
+ <4D657B69.4000107@codeaurora.org> <1298512932.17118.16.camel@m0nster> <4D66CDD4.7080103@codeaurora.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 Feb 2011 14:10:46 -0800
+Message-ID: <AANLkTin8kQbCODofWv15P=UiFkh2RGAAAqMiF0MuHc9c@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Update MSM maintainers
+To: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>, David Brown <davidb@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Feb 2011 15:48:27 +0100
-Lennert Buytenhek <buytenh@wantstofly.org> wrote:
+On Thu, Feb 24, 2011 at 1:29 PM, Bryan Huntsman <bryanh@codeaurora.org> wrote:
+>
+>         Please let the MSM developers take full
+> responsibility for the MSM architecture.  That is, after all, what the
+> community typically asks from SOC vendors.
 
-> Signed-off-by: Lennert Buytenhek <buytenh@wantstofly.org>
-> 
-> diff --git a/arch/arm/mach-kirkwood/mv88f6281gtw_ge-setup.c b/arch/arm/mach-kirkwood/mv88f6281gtw_ge-setup.c
-> index 1e5266f..116ff8f 100644
-> --- a/arch/arm/mach-kirkwood/mv88f6281gtw_ge-setup.c
-> +++ b/arch/arm/mach-kirkwood/mv88f6281gtw_ge-setup.c
-> @@ -162,7 +162,7 @@ static int __init mv88f6281gtw_ge_pci_init(void)
->  subsys_initcall(mv88f6281gtw_ge_pci_init);
->  
->  MACHINE_START(MV88F6281GTW_GE, "Marvell 88F6281 GTW GE Board")
-> -	/* Maintainer: Lennert Buytenhek <buytenh@marvell.com> */
-> +	/* Maintainer: Lennert Buytenhek <buytenh@wantstofly.org> */
+Actually, "the community" (not that there really is any such cohesive
+thing) generally asks that vendors be "involved". Not that vendors be
+"exclusively in control". There's a big difference.
 
- 36 files changed, 36 insertions(+), 36 deletions(-)
+So what I personally find distasteful is how there's apparently some
+entity that argues that _others_ should be removed from the
+maintainership. Why would that be the case? This kind of exclusivity
+argument is bad. Maintainers can step down, but having others remove
+maintainership seems dubious at best.
 
-Could I suggest that you just remove all the email addresses from those
-files?  use plain old "Lennert Buytenhek".  People can then use that as
-a search key in MAINTAINERS, so there is then only one email address
-which needs to be maintained.
+So get your politics sorted out, guys.
 
+                               Linus
