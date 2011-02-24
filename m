@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab1BXK0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 05:26:19 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47864 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab1BXK0R (ORCPT
+	id S1754639Ab1BXK3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 05:29:50 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45471 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab1BXK3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 05:26:17 -0500
-Message-ID: <B078763F059B415E9DD8D61AA14F9D5C@subhasishg>
+	Thu, 24 Feb 2011 05:29:48 -0500
+Message-ID: <E56D2F3DE46B46C1B03302394F463B19@subhasishg>
 From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
 Cc: <linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>, <sachi@mistralsolutions.com>,
-        "Kevin Hilman" <khilman@deeprootsystems.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Chemparathy, Cyril" <cyril@ti.com>,
-        "Juha Kuikka" <juha.kuikka@elektrobit.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-References: <1297433905-27925-1-git-send-email-subhasish@mistralsolutions.com> <B85A65D85D7EB246BE421B3FB0FBB593024BE4916D@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BE4916D@dbde02.ent.ti.com>
-Subject: Re: [PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS.
-Date: Thu, 24 Feb 2011 15:57:35 +0530
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>, <sachi@mistralsolutions.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <201102181951.32631.arnd@arndb.de> <DADE3366197E4479A57F3B967A881C33@subhasishg> <201102221734.15582.arnd@arndb.de>
+In-Reply-To: <201102221734.15582.arnd@arndb.de>
+Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
+Date: Thu, 24 Feb 2011 16:01:06 +0530
 Organization: Mistral Solutions
 MIME-Version: 1.0
 Content-Type: text/plain;
@@ -38,71 +36,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Subhasish,
->
-> Please add a "davinci: " prefix to the subject line of
-> mach-davinci patches. The patch is not really specific
-> to DA830.
+Hello,
 
-SG -- OK, Will do
-
->
-> On Fri, Feb 11, 2011 at 19:48:25, Subhasish Ghosh wrote:
->> The PRUSS was named as DMAX on da830 platform.
->> This patch resolves the naming conflict by replacing the macro
->> DA8XX_LPSC0_DMAX with DA8XX_LPSC0_PRUSS.
->
-> This description is inaccurate. Firstly, there is no naming
-> conflict. DMAX is an internal name for the module which is
-> known as PRUSS in TI public documentation. This patch just
-> gets the code in sync with TI documentation.
->
-> Can you please update the subject and re-spin this patch?
-
-SG - OK, Will do.
+Ok, have implemented the test_and_clear_bit.
 
 
+> On Tuesday 22 February 2011, Subhasish Ghosh wrote:
 >
-> Thanks,
-> Sekhar
+>> @@ -122,13 +122,10 @@ static void omapl_pru_tx_chars(struct 
+>> omapl_pru_suart
+>> *soft_uart, u32 uart_no)
+>>         if (!(suart_get_duplex(soft_uart, uart_no) & ePRU_SUART_HALF_TX))
+>>                 return;
+>>
+>> -       if (down_trylock(&soft_uart->port_sem[uart_no]))
+>> -               return;
+>> -
+>>         if (uart_circ_empty(xmit) ||
+>>                         uart_tx_stopped(&soft_uart->port[uart_no])) {
+>>                 pruss_suart_stop_tx(&soft_uart->port[uart_no]);
+>> -               up(&soft_uart->port_sem[uart_no]);
+>> +               soft_uart->tx_empty[uart_no] = true;
+>>                 return;
+>>         }
+>>
+>> @@ -259,7 +256,6 @@ static irqreturn_t pruss_suart_interrupt(s32 irq, 
+>> void
+>> *dev_id)
+>>                         pru_intr_clr_isrstatus(dev, uart_num, 
+>> PRU_TX_INTR);
+>>                         pru_softuart_clr_tx_status(dev, 
+>> &soft_uart->suart_hdl
+>>                                                  [port->line]);
+>> -                       up(&soft_uart->port_sem[port->line]);
+>>                         omapl_pru_tx_chars(soft_uart, port->line);
+>>                 }
+>>         } while (txrx_flag & (PRU_RX_INTR | PRU_TX_INTR));
+>> @@ -294,7 +290,10 @@ static void pruss_suart_start_tx(struct uart_port
+>> *port)
+>>
+>>         suart_intr_setmask(dev, 
+>> soft_uart->suart_hdl[port->line].uart_num,
+>>                            PRU_TX_INTR, CHN_TXRX_IE_MASK_CMPLT);
+>> -       omapl_pru_tx_chars(soft_uart, port->line);
+>> +       if (soft_uart->tx_empty[port->line] == true) {
+>> +               soft_uart->tx_empty[port->line] = false;
+>> +               omapl_pru_tx_chars(soft_uart, port->line);
+>> +       }
+>>  }
 >
->>
->> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
->> ---
->>  arch/arm/mach-davinci/da830.c            |    2 +-
->>  arch/arm/mach-davinci/include/mach/psc.h |    2 +-
->>  2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-davinci/da830.c 
->> b/arch/arm/mach-davinci/da830.c
->> index ec23ab4..0577a5d 100644
->> --- a/arch/arm/mach-davinci/da830.c
->> +++ b/arch/arm/mach-davinci/da830.c
->> @@ -148,7 +148,7 @@ static struct clk scr2_ss_clk = {
->>  static struct clk dmax_clk = {
->>  .name = "dmax",
->>  .parent = &pll0_sysclk2,
->> - .lpsc = DA8XX_LPSC0_DMAX,
->> + .lpsc = DA8XX_LPSC0_PRUSS,
->>  .flags = ALWAYS_ENABLED,
->>  };
->>
->> diff --git a/arch/arm/mach-davinci/include/mach/psc.h 
->> b/arch/arm/mach-davinci/include/mach/psc.h
->> index 62b0858..a47e6f2 100644
->> --- a/arch/arm/mach-davinci/include/mach/psc.h
->> +++ b/arch/arm/mach-davinci/include/mach/psc.h
->> @@ -150,7 +150,7 @@
->>  #define DA8XX_LPSC0_SCR0_SS 10
->>  #define DA8XX_LPSC0_SCR1_SS 11
->>  #define DA8XX_LPSC0_SCR2_SS 12
->> -#define DA8XX_LPSC0_DMAX 13
->> +#define DA8XX_LPSC0_PRUSS 13
->>  #define DA8XX_LPSC0_ARM 14
->>  #define DA8XX_LPSC0_GEM 15
->>
->> -- 
->> 1.7.2.3
->>
->>
-> 
+> This looks racy, and I think you at least need to take the spinlock in
+> pruss_suart_start_tx(), but I don't fully understand the intention of the
+> code.
+>
+> I guess you could also use a bitmask for tx_empty and use 
+> test_and_clear_bit()
+> on that to guarantee atomicity.
+>
+> Arnd 
+
