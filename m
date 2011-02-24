@@ -1,60 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab1BYIO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 03:14:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:61925 "EHLO
+	id S1754445Ab1BYIOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 03:14:36 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:58235 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab1BYIO0 (ORCPT
+	with ESMTP id S1752774Ab1BYIOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 03:14:26 -0500
+	Fri, 25 Feb 2011 03:14:33 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC PATCH] ipmi: convert OF driver to platform driver
-Date: Thu, 24 Feb 2011 15:34:50 +0100
+To: Peppe CAVALLARO <peppe.cavallaro@st.com>
+Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
+Date: Thu, 24 Feb 2011 18:20:55 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        Christian Krafft <parabelboi@bopserverein.de>
-References: <1298497079-20546-1-git-send-email-robherring2@gmail.com> <20110224031528.GB12139@angua.secretlab.ca>
-In-Reply-To: <20110224031528.GB12139@angua.secretlab.ca>
+Cc: "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com> <1298369864-24429-2-git-send-email-peppe.cavallaro@st.com>
+In-Reply-To: <1298369864-24429-2-git-send-email-peppe.cavallaro@st.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102241534.50886.arnd@arndb.de>
-X-Provags-ID: V02:K0:LdchCuDgXYaHD/bSm51ia2cyMOh+y5F0nfhfj9EMUUN
- CmOQRpUia4qzNYblbXATEqfHre5UE4pLv2fHicOrXZ/RZ7TkZM
- pKe5Kbn1vU67dyCgXwakGShHZ8cuOphyzDNUANhB5ASM3f9MID
- ICZyMzzKz2BmMwVSnV25jDeqMRwibqrJMm0+l56JCkcNUU9F1D
- VKdRgWaWR1eMJdK3F/y/w==
+Message-Id: <201102241820.55873.arnd@arndb.de>
+X-Provags-ID: V02:K0:an6r35MH/EtBvKSsUfCSNtS3mPsLEYMq89+0CTWktw5
+ MfP/WmqGHtOa4hv+zbD41Ao84r2NnVPQLiAmTpmkjRpUALCPeV
+ LlOY9SmGM7/AI/QodtAvOix7Lk7MX5xHCj1pIyO0HJ8zwJWodS
+ i67pQ6Jv70KBvlJK67v02psV5B89dkJRdE34K9RxDYsJX3B87g
+ 7BdmDm2XgyUTlJmJhPr4Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 February 2011, Grant Likely wrote:
-> On Wed, Feb 23, 2011 at 03:37:59PM -0600, Rob Herring wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > of_bus is deprecated in favor of the plain platform bus. This patch
-> > merges the ipmi OF driver with the existing platform driver.
-> > 
-> > CONFIG_PPC_OF occurrances are removed or replaced with CONFIG_OF.
-> > 
-> > Compile tested with and without CONFIG_OF. Tested OF probe and
-> > default probe cases.
-> > 
-> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+On Tuesday 22 February 2011, Peppe CAVALLARO wrote:
+> From: Stuart Menefy <stuart.menefy@st.com>
 > 
-> Wow.  That driver does some weird things with the driver model that
-> really should be cleaned up.  That said, this change looks correct.
-> I'll add it to my tree and see how it goes.
+> Many devices targeted at the embedded market provide a number of
+> generic timers which are capable of generating interrupts at a
+> requested rate. These can then be used in the implementation of drivers
+> for other peripherals which require a timer interrupt, without having
+> to provide an additional timer as part of that peripheral.
+> 
+> A code provides a simple abstraction layer which allows a timer to be
+> registered, and for a driver to request a timer.
+> 
+> Currently this doesn't provide any of the additional information, such
+> as precision or position in clock framework which might be required
+> for a fully featured driver.
 
-Please keep me in the look when you want to do further into cleaning
-this up. The OF code was initially done for the QS21 running SLOF, and
-predates the flattened device tree specs.
+This code should probably be discussed on a more broader
+platform than the netdev and linux-sh mailing lists,
+as the scope is neither sh nor network specific.
 
-I don't know if Christian still remembers the code, but it might
-be worthwhile having him on Cc as well.
+You should at least add linux-kernel@vger.kernel.org, possibly
+also linux-arch@vger.kernel.org.
+
+Further, John and Thomas are responsible for the timekeeping
+infrastructure, and they are probably interested in this
+as well.
+
+Why is this code useful to you? In the scenarios I've seen, the
+board can always assign a timer to a specific device in a fixed
+way that can be describe in a board file or device tree.
+
+Also, what is the difference between this and clkdev?
+
+> Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
+> Hacked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> ---
+>  drivers/clocksource/Makefile       |    1 +
+>  drivers/clocksource/generictimer.c |   60 ++++++++++++++++++++++++++++++++++++
+>  include/linux/generictimer.h       |   41 ++++++++++++++++++++++++
+>  3 files changed, 102 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/clocksource/generictimer.c
+>  create mode 100644 include/linux/generictimer.h
+
+I don't think it fits that well into the drivers/clocksource directory,
+because you don't actually register a struct clock_event_device or
+struct clocksource.
+
+I don't know if this could also be merged with the clocksource infrastructure,
+but your code currently doesn't do that.
+
+> +struct generic_timer *generic_timer_claim(void (*handler) (void *), void *data)
+> +{
+> +	struct generic_timer *gt = NULL;
+> +
+> +	if (!handler) {
+> +		pr_err("%s: invalid handler\n", __func__);
+> +		return NULL;
+> +	}
+> +
+> +	mutex_lock(&gt_mutex);
+> +	if (!list_empty(&gt_list)) {
+> +		struct list_head *list = gt_list.next;
+> +		list_del(list);
+> +		gt = container_of(list, struct generic_timer, list);
+> +	}
+> +	mutex_unlock(&gt_mutex);
+> +
+> +	if (!gt)
+> +		return NULL;
+> +
+> +	/* Prepare the new handler */
+> +	gt->priv_handler = handler;
+> +	gt->data = data;
+> +
+> +	return gt;
+> +}
+
+This does not seem very generic. You put timers into the list and take
+them out again, but don't have any way to deal with timers that match
+specific purposes. It obviously works for your specific use case where
+you register exactly one timer, and use that in exactly one driver.
+
+If more drivers were converted to generic_timer, which is obviously
+the intention, then you might have a situation with very different
+timers (fixed/variable tick, high/low frequencies, accurate/inaccurate),
+or you might have fewer timers than users.
+
+> +static inline void generic_timer_set_rate(struct generic_timer *gt,
+> +		unsigned long rate)
+> +{
+> +	gt->set_rate(gt, rate);
+> +}
+> +
+> +#endif /* __STM_GENERIC_TIMER_H */
+
+Shouldn't this one allow a return code?
 
 	Arnd
-
