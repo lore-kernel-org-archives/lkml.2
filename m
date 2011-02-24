@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab1BXFiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 00:38:20 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62344 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab1BXFiT (ORCPT
+	id S1752045Ab1BXFjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 00:39:52 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:31594 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab1BXFjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 00:38:19 -0500
-Date: Wed, 23 Feb 2011 22:38:14 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name'
- brokenness (v2)
-Message-ID: <20110224053814.GA6046@angua.secretlab.ca>
-References: <20110223150357.5a40793d@queued.net>
- <20110223232815.GC5404@angua.secretlab.ca>
- <20110223161630.3ae470bf@queued.net>
- <20110224040638.GB22111@angua.secretlab.ca>
- <20110223203649.4fcbe1db@queued.net>
+	Thu, 24 Feb 2011 00:39:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=KPo51OptEL7ipbDeOik7dRFp8/6WufVMGTeOTp8lzm9wnnkZWZrNpfHM3RFQJxnDzB
+         ANsOJysVqWD4syVrbMBg==
+Date: Wed, 23 Feb 2011 21:39:49 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Robert Swiecki <robert@swiecki.net>,
+        Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] mm: fix possible cause of a page_mapped BUG
+Message-ID: <alpine.LSU.2.00.1102232136020.2239@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110223203649.4fcbe1db@queued.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 08:36:49PM -0800, Andres Salomon wrote:
-> On Wed, 23 Feb 2011 21:06:38 -0700
-> Grant Likely <grant.likely@secretlab.ca> wrote:
-> 
-> > > If the pkg2path hook isn't set and we're not sparc, we fall back to
-> > > dp->name.  That sucks, but I don't know of a better way to do
-> > > things.
-> > 
-> > More that sucks, it is just plain *wrong*.  :-)
-> > 
-> > so, to sum up, of_pdt_build_tree goes through the following process:
-> > 
-> > 1) dp = of_pdt_create_node
-> >   - dp->name = of_pdt_get_one_property(node, "name"); /* name w/o
-> > addr */
-> > 
-> > 2) (SPARC) dp->path_component_name = build_path_component(dp);
-> >   - format <node name>@<address>
-> >   - uses dp->name value
-> >   - not on OLPC
-> 
-> Also:
->   - returns only the node name, not the full path
->   - implemented differently depending upon bus type (see
->     pci_path_component/sbus_path_component/ebus_path_component/ambapp_path_component)
->   - sparc32 implemented differently versus sparc64
-> 
-> > 
-> > 3) dp->full_name = of_pdt_build_full_name(dp)
-> >   - (SPARC) use dp->path_component_name
-> >   - (OLPC) depend on value from of_pdt_try_pkg2path(node);
-> >   - (others) fake it with an incorrect value?
-> > 
-> > Am I correct?
-> 
-> No.
-> 
-> (others) use of_pdt_try_pkg2path
+Robert Swiecki reported a BUG_ON(page_mapped) from a fuzzer, punching
+a hole with madvise(,, MADV_REMOVE).  That path is under mutex, and
+cannot be explained by lack of serialization in unmap_mapping_range().
 
-Regardless, in all cases the semantics are absolutely clear; all
-platforms *must* have a reliable way of obtaining the full path and
-the path_component_name.  It it doesn't then it is fundamentally
-broken.
+Reviewing the code, I found one place where vm_truncate_count handling
+should have been updated, when I switched at the last minute from one
+way of managing the restart_addr to another: mremap move changes the
+virtual addresses, so it ought to adjust the restart_addr.
 
-> The reason why we fall back to dp->name is because I don't know what
-> other architectures out there might not have package-to-path.  I'm
-> perfectly fine with falling back to a WARN or BUG.
+But rather than exporting the notion of restart_addr from memory.c, or
+converting to restart_pgoff throughout, simply reset vm_truncate_count
+to 0 to force a rescan if mremap move races with preempted truncation.
 
-Respin to fallback on WARN() and bail out.  I'd be okay with merging a
-patch that does that.  Falling back to dp->name is absolutely incorrect.
+We have no confirmation that this fixes Robert's BUG,
+but it is a fix that's worth making anyway.
 
-I agree that API refinements can be deferred to 2.6.39.
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
 
-g.
+ mm/mremap.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
+--- 2.6.38-rc6/mm/mremap.c	2011-01-18 22:04:56.000000000 -0800
++++ linux/mm/mremap.c	2011-02-23 15:29:52.000000000 -0800
+@@ -94,9 +94,7 @@ static void move_ptes(struct vm_area_str
+ 		 */
+ 		mapping = vma->vm_file->f_mapping;
+ 		spin_lock(&mapping->i_mmap_lock);
+-		if (new_vma->vm_truncate_count &&
+-		    new_vma->vm_truncate_count != vma->vm_truncate_count)
+-			new_vma->vm_truncate_count = 0;
++		new_vma->vm_truncate_count = 0;
+ 	}
+ 
+ 	/*
