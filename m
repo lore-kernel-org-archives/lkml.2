@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab1BXI5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 03:57:49 -0500
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:47802 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753699Ab1BXI5r (ORCPT
+	id S1755824Ab1BXJN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 04:13:27 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36583 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755666Ab1BXJNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 03:57:47 -0500
-Date: Thu, 24 Feb 2011 10:57:39 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, Alexander Holler <holler@ahsoftware.de>,
-        Michael Jones <michael.jones@matrix-vision.de>,
-        Greg KH <gregkh@suse.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org
-Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
-Message-ID: <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <4D64C81B.5060807@ahsoftware.de>
- <Pine.LNX.4.44L0.1102231021210.2233-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="H1spWtNR+x+ondvy"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1102231021210.2233-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Feb 2011 04:13:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tCcwxz1gWwdcJRBc1zxuDLEpR0pAdizGuUeqc/fDyPhL5WYdIAVqhI6Xh/cbRVFJpN
+         t5yfxtG+bhPTkkxOcDOW6Tmkd3+8Kj853NvWxWc/2o0eliqOJ0arsbF2/Jba6TDckObL
+         AriUSK6vX+o3U4tHe9ZDmjBBF+Gp9/nNMRQ7s=
+Subject: Re: [PATCH] regulator, mc13xxx: Remove pointless test for unsigned
+ less than zero
+From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Yong Shen <yong.shen@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+In-Reply-To: <alpine.LNX.2.00.1102232341030.28678@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102232341030.28678@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 10:13:07 +0100
+Message-ID: <1298538787.2454.24.camel@realization>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-02-23 at 23:45 +0100, Jesper Juhl wrote:
+> The variable 'val' is a 'unsigned int', so it can never be less than zero. 
+> This fact makes the "val < 0" part of the test done in BUG_ON() in 
+> mc13xxx_regulator_get_voltage() rather pointles since it can never have 
+> any effect.
+> This patch removes the pointless test.
 
---H1spWtNR+x+ondvy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-Hi,
+Ok for me, but the next time give also the revision of the kernel
+your patch is based on (Linus one, Liam one ..) that is the 
+linus-2.6.38-rc6
 
-On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
-> In both cases, it appears that the problem is caused by the fact that 
-> the musb host-controller driver doesn't set the hcd->has_tt flag.
+Acked-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+
 > 
-> Felipe, you should know where it belongs.  It should be easy enough to 
-> add.
-
-Sure Alan, it's attached to this mail. Compile tested only though.
-Michael, would you care to give your tested-by ?
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  mc13xxx-regulator-core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
+> index f53d31b..2bb5de1 100644
+> --- a/drivers/regulator/mc13xxx-regulator-core.c
+> +++ b/drivers/regulator/mc13xxx-regulator-core.c
+> @@ -174,7 +174,7 @@ static int mc13xxx_regulator_get_voltage(struct regulator_dev *rdev)
+>  
+>  	dev_dbg(rdev_get_dev(rdev), "%s id: %d val: %d\n", __func__, id, val);
+>  
+> -	BUG_ON(val < 0 || val > mc13xxx_regulators[id].desc.n_voltages);
+> +	BUG_ON(val > mc13xxx_regulators[id].desc.n_voltages);
+>  
+>  	return mc13xxx_regulators[id].voltages[val];
+>  }
+> 
+> 
 
 -- 
-balbi
+Alberto!
 
---H1spWtNR+x+ondvy
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-usb-musb-core-set-has_tt-flag.diff"
+        Be Persistent!
+                - Greg Kroah-Hartman (FOSDEM 2010)
 
->From 65315c60a17f83e69d01888babe4445097c8ead0 Mon Sep 17 00:00:00 2001
-From: Felipe Balbi <balbi@ti.com>
-Date: Thu, 24 Feb 2011 10:36:53 +0200
-Subject: [PATCH] usb: musb: core: set has_tt flag
-Organization: Texas Instruments\n
-
-MUSB is a non-standard host implementation which
-can handle all speeds with the same core. We need
-to set has_tt flag after commit
-d199c96d41d80a567493e12b8e96ea056a1350c1 (USB: prevent
-buggy hubs from crashing the USB stack) in order for
-MUSB HCD to continue working.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/musb/musb_core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 54a8bd1..c292d5c 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1864,6 +1864,7 @@ allocate_instance(struct device *dev,
- 	INIT_LIST_HEAD(&musb->out_bulk);
- 
- 	hcd->uses_new_polling = 1;
-+	hcd->has_tt = 1;
- 
- 	musb->vbuserr_retry = VBUSERR_RETRY_COUNT;
- 	musb->a_wait_bcon = OTG_TIME_A_WAIT_BCON;
--- 
-1.7.4.rc2
-
-
---H1spWtNR+x+ondvy--
