@@ -1,80 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab1BXSgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:36:05 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42182 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755441Ab1BXSgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:36:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Vkpn06HHFqatYYmIMZ4P+/qJLIKraqO+6rSRaQaW2JXUPlvHMVJJQJ0rZHd4BZLD/2
-         Ej/O2YWQF7jeTRNuR94G/04RUitOl3JuzkUZfLK6CGYQZY3KXcDndraxEgzDnPHvyOML
-         jagQ/gighWUAiHPJI/Pt7WlEZkcPJAjZXyZv0=
-Date: Thu, 24 Feb 2011 10:35:55 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/3] xhci: Fix cycle bit calculation during stall handling.
-Message-ID: <20110224183555.GA2283@core.coreip.homeip.net>
-References: <cover.1298514502.git.sarah.a.sharp@linux.intel.com>
- <e1b54e2b29b06b62174de33a74fa7469173abc92.1298514502.git.sarah.a.sharp@linux.intel.com>
- <4D663E80.8050906@ru.mvista.com>
- <20110224153855.GA25590@xanatos>
- <20110224170410.GB7841@kroah.com>
+	id S1756020Ab1BXSkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:40:52 -0500
+Received: from www.tglx.de ([62.245.132.106]:58497 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755484Ab1BXSks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 13:40:48 -0500
+Date: Thu, 24 Feb 2011 19:40:23 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
+In-Reply-To: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1102241900540.2701@localhost6.localdomain6>
+References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224170410.GB7841@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 09:04:10AM -0800, Greg KH wrote:
-> On Thu, Feb 24, 2011 at 07:38:55AM -0800, Sarah Sharp wrote:
-> > On Thu, Feb 24, 2011 at 02:18:24PM +0300, Sergei Shtylyov wrote:
-> > > Hello.
-> > > 
-> > > On 24-02-2011 5:31, Sarah Sharp wrote:
-> > > 
-> > > >+	if (ep_ring->first_seg == ep_ring->first_seg->next&&
-> > > >+			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
-> > > >+			state->new_cycle_state ^= 0x1;
-> > > 
-> > >    The last line seems overindented.
-> > 
-> > Hi Sergei,
-> > 
-> > checkpatch.pl doesn't complain about it.  It is not a good use of my
-> > time to respin this patch for one stylistic change that is not a
-> > violation of the Kernel community norms.
-> > 
-> > I really feel strongly that you are wasting the community's time by
-> > commenting on style when it is only a violation of your personal style,
-> > without providing any useful feedback on the code itself.
-> > 
-> > I feel so strongly that I'm seriously considering setting up a feedback
-> > bot for you.  It would run any patch you reply to through checkpatch.pl,
-> > and send you a small reminder when the patch passes, but you complained
-> > about style.  I think it would allow you to have a sense of how
-> > frustrating it is to receive these unnecessary stylistic comments.
+On Thu, 24 Feb 2011, Vincent Guittot wrote:
+
+Please send full patch series not a single V5 2/2 which lacks any
+references to 0/2 1/2.
+
+> Please find below a new proposal for adding trace events for cpu hotplug:
+
+Either it's a patch or a proposal. Darn, why think people that
+proposal is such a important word? It's just useless. You don't have
+to sell anything to your manager. You provide a patch which is judged
+on it's technical merits and correctness. Nothing else.
+
+> -the lock/unlock of cpu_add_remove_lock mutex is now outside the trace
 > 
-> I totally agree, and almost always just filter Sergei's comments away as
-> the large majority of them are pointless and distract from the technical
-> content being discussed.
+> The goal is to measure the latency of each part (kernel, architecture)
+> and also to trace the cpu hotplug activity with other power events. I
+> have tested these traces events on an arm platform.
+
+This belongs into a cover mail [0/2] not into the patch itself
+ 
+> Subject: [PATCH 2/2] add hotplug tracepoint
+
+While your mail subject is correct, this is not.
+
+If you would have sent a [0/2] cover mail with all the above blurb in
+it then this extra subject line would be not needed at all.
+
+> this patch adds new events for cpu hotplug tracing
+
+Sentences start with an upper case letter. 
+
+Also we already know that this is a patch. Where is the value of this
+changelog? It does not tell more than the subject line.
+
+>  * plug/unplug sequence
+
+How surprising.
+
+>  * core and architecture latency measurements
+
+No it does not. It does not add latency measurements. It merily adds
+tracepoints which allow you to compute the time spent in the various
+steps of the hotplug state machine and the overall time.
+
+>  #ifdef CONFIG_SMP
+>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+>  static DEFINE_MUTEX(cpu_add_remove_lock);
+> @@ -197,10 +200,13 @@ struct take_cpu_down_param {
+>  static int __ref take_cpu_down(void *_param)
+>  {
+>  	struct take_cpu_down_param *param = _param;
+> +	unsigned int cpu = (unsigned int)(param->hcpu);
+>  	int err;
 > 
+>  	/* Ensure this CPU doesn't handle any more interrupts. */
+> +	trace_cpu_hotplug_disable_start(cpu);
+>  	err = __cpu_disable();
+> +	trace_cpu_hotplug_disable_end(cpu);
 
-I am sorry, but in this case the 'if' body does run together with the
-conditional. No need to repost the patch for this, of course, but might
-be worth fixing locally before pushing into a public branch.
+How useful. What about recording the return code of __cpu_disable()?
 
-Thanks.
+>  	if (err < 0)
+>  		return err;
 
--- 
-Dmitry
+> +	trace_cpu_hotplug_down_start(cpu);
+> +
+
+What's the point of this tracepoint _BEFORE_ the cpu_hotplug_disabled
+check without recording cpu_hotplug_disabled ?
+
+>  	if (cpu_hotplug_disabled) {
+>  		err = -EBUSY;
+>  		goto out;
+> @@ -284,6 +294,8 @@ int __ref cpu_down(unsigned int cpu)
+>  	err = _cpu_down(cpu, 0);
+> 
+>  out:
+> +	trace_cpu_hotplug_down_end(cpu);
+
+And this one is misplaced as well. It wants to be only called when we
+actually called _cpu_down() and it wants to record the return code as
+well.
+
+> +
+>  	cpu_maps_update_done();
+>  	return err;
+>  }
+> @@ -310,7 +322,9 @@ static int __cpuinit _cpu_up(unsigned int cpu, int
+> tasks_frozen)
+>  	}
+> 
+>  	/* Arch-specific enabling code. */
+> +	trace_cpu_hotplug_arch_up_start(cpu);
+>  	ret = __cpu_up(cpu);
+> +	trace_cpu_hotplug_arch_up_end(cpu);
+
+See above.
+
+>  	if (ret != 0)
+>  		goto out_notify;
+>  	BUG_ON(!cpu_online(cpu));
+> @@ -369,6 +383,8 @@ int __cpuinit cpu_up(unsigned int cpu)
+> 
+>  	cpu_maps_update_begin();
+> 
+> +	trace_cpu_hotplug_up_start(cpu);
+> +
+
+Ditto
+
+>  	if (cpu_hotplug_disabled) {
+>  		err = -EBUSY;
+>  		goto out;
+> @@ -377,6 +393,8 @@ int __cpuinit cpu_up(unsigned int cpu)
+>  	err = _cpu_up(cpu, 0);
+> 
+>  out:
+> +	trace_cpu_hotplug_up_end(cpu);
+> +
+
+Sigh.
+
+>  	cpu_maps_update_done();
+>  	return err;
+
+Thanks,
+
+	tglx
