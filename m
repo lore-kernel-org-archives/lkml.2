@@ -1,72 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab1BXR5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:57:24 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:44332 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754723Ab1BXR5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:57:21 -0500
-Date: Thu, 24 Feb 2011 12:57:20 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Greg KH <gregkh@suse.de>, Alexander Holler <holler@ahsoftware.de>,
-        Michael Jones <michael.jones@matrix-vision.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <stable@kernel.org>, <stable-review@kernel.org>,
-        <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
-In-Reply-To: <20110224172327.GF3528@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.44L0.1102241255100.2084-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755130Ab1BXSHL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:07:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:59766 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754557Ab1BXSHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 13:07:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,219,1297065600"; 
+   d="scan'208";a="890936971"
+From: james_p_freyensee@linux.intel.com
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        james_p_freyensee@linux.intel.com, christophe.guerard@intel.com
+Subject: [PATCH 02/10] Kernel documentation for the PTI feature.
+Date: Thu, 24 Feb 2011 10:06:56 -0800
+Message-Id: <1298570824-26085-3-git-send-email-james_p_freyensee@linux.intel.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <james_p_freyensee@linux.intel.com>
+References: <james_p_freyensee@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011, Felipe Balbi wrote:
+From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-> On Thu, Feb 24, 2011 at 09:18:14AM -0800, Greg KH wrote:
-> > On Thu, Feb 24, 2011 at 11:16:38AM +0200, Felipe Balbi wrote:
-> > > Hi,
-> > > 
-> > > On Thu, Feb 24, 2011 at 10:15:23AM +0100, Alexander Holler wrote:
-> > > > >On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
-> > > > >>In both cases, it appears that the problem is caused by the fact that
-> > > > >>the musb host-controller driver doesn't set the hcd->has_tt flag.
-> > > > >>
-> > > > >>Felipe, you should know where it belongs.  It should be easy enough to
-> > > > >>add.
-> > > > >
-> > > > >Sure Alan, it's attached to this mail. Compile tested only though.
-> > > > >Michael, would you care to give your tested-by ?
-> > > > 
-> > > > I can do, I'm using exactly the same patch since yesterday. ;)
-> > > > 
-> > > > Tested-by: Alexander Holler <holler@ahsoftware.de>
-> > > 
-> > > Thanks a lot Alex, Greg, can you still take this to -rc ? Do you need a
-> > > pull request or you can take this one patch ?
-> > 
-> > Wait, where does this need to go?  For the final 2.6.38 release and then
-> > also for .37-stable?
-> > 
-> > Or just .37-stable?
-> > 
-> > confused.
-> > 
-> > And no, I don't need a pull request, I can handle one patch through
-> > email :)
-> 
-> final .38 and .37-stable :-) Thanks Greg :-)
+This provides Kernel documentation for the PTI
+feature for Linux mobile solutions.
 
-It's important that this patch appear in .37-stable at the same time as
-the $SUBJECT patch.  If that means delaying $SUBJECT for one release, 
-so be it -- it was not a very important change.
+Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+---
+ Documentation/pti/pti_intel_mid.txt |   96 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 96 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/pti/pti_intel_mid.txt
 
-Alan Stern
+diff --git a/Documentation/pti/pti_intel_mid.txt b/Documentation/pti/pti_intel_mid.txt
+new file mode 100644
+index 0000000..8e9837d
+--- /dev/null
++++ b/Documentation/pti/pti_intel_mid.txt
+@@ -0,0 +1,96 @@
++The Intel MID PTI project is HW implemented in Intel Atom
++system-on-a-chip designs based on the Parallel Trace
++Interface for MIPI P1149.7 cJTAG standard.  The kernel solution
++for this platform involves the following files:
++
++./include/linux/pti.h
++./drivers/.../n_tracesink.h
++./drivers/.../n_tracerouter.c
++./drivers/.../n_tracesink.c
++./drivers/.../pti.c
++
++pti.c is the driver that enables various debugging features
++popular on certain mobile manufacturers.  n_tracerouter.c
++and n_tracesink.c allow extra system information to be
++collected and routed to the pti driver, such as trace
++debugging data from a modem.  Although n_tracerouter
++and n_tracesink are a part of the complete PTI solution,
++these two line disciplines can work separately from
++pti.c and route any data stream from one /dev/tty node
++to another /dev/tty node via kernel-space.  This provides
++a stable, reliable connection that will not break unless
++the user-space application shuts down (plus avoids
++kernel->user->kernel context switch overheads of routing
++data).
++
++An example debugging usage for this driver system:
++   *Hook /dev/ttyPTI0 to syslogd.  Opening this port will also start
++    a console device to further capture debugging messages to PTI.
++   *Hook /dev/ttyPTI1 to modem debugging data to write to PTI HW.
++    This is where n_tracerouter and n_tracesink are used.
++   *Hook /dev/pti to a user-level debugging application for writing
++    to PTI HW.
++   *Use mipi_* Kernel Driver API in other device drivers for
++    debugging to PTI by first requesting a PTI write address via
++    mipi_request_masterchannel(1).
++
++Below is example pseudo-code on how a 'privileged' application
++can hook up n_tracerouter and n_tracesink to any tty on
++a system.  'Privileged' means the application has enough
++privileges to successfully manipulate the ldisc drivers
++but is not just blindly executing as 'root'.
++
++Note that n_tracerouter depends on n_tracesink.
++
++/////////// To hook up n_tracerouter and n_tracesink /////////
++
++#include <errno.h>
++#define ONE_TTY "/dev/ttyOne"
++#define TWO_TTY "/dev/ttyTwo"
++
++// needed global to hand onto ldisc connection
++static int g_fd_source = -1;
++static int g_fd_sink  = -1;
++
++// these two vars used to grab LDISC values from loaded ldisc drivers
++// in OS.  Look at /proc/tty/ldiscs to get the right numbers from
++// the ldiscs loaded in the system.
++int source_ldisc_num, sink_ldisc_num = -1;
++int retval;
++
++g_fd_source = open(ONE_TTY, O_RDWR); // must be R/W
++g_fd_sink   = open(TWO_TTY, O_RDWR); // must be R/W
++
++if (g_fd_source <= 0) || (g_fd_sink <= 0) {
++   // doubt you'll want to use these exact error lines of code
++   printf("Error on open(). errno: %d\n",errno);
++   return errno;
++}
++
++retval = ioctl(g_fd_sink, TIOCSETD, &sink_ldisc_num);
++if (retval < 0) {
++   printf("Error on ioctl().  errno: %d\n", errno);
++   return errno;
++}
++
++retval = ioctl(g_fd_source, TIOCSETD, &source_ldisc_num);
++if (retval < 0) {
++   printf("Error on ioctl().  errno: %d\n", errno);
++   return errno;
++}
++
++/////////// To disconnect n_tracerouter and n_tracesink ////////
++
++// First make sure data through the ldiscs has stopped.
++
++// Second, disconnect ldiscs.  This provides a
++// little cleaner shutdown on tty stack.
++sink_ldisc_num = 0;
++source_ldisc_num = 0;
++ioctl(g_fd_uart, TIOCSETD, &sink_ldisc_num);
++ioctl(g_fd_gadget, TIOCSETD, &source_ldisc_num);
++
++// Three, program closes connection, and cleanup:
++close(g_fd_uart);
++close(g_fd_gadget);
++g_fd_uart = g_fd_gadget = NULL;
+-- 
+1.7.2.3
 
