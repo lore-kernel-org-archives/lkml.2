@@ -1,254 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab1BXWqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 17:46:51 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:59014 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab1BXWqq (ORCPT
+	id S1756505Ab1BXXFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 18:05:18 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46275 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755658Ab1BXXFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 17:46:46 -0500
-Date: Thu, 24 Feb 2011 16:46:41 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Thieu Le <thieule@chromium.org>
-Cc: kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ecryptfs: modify write path to encrypt page in writepage
-Message-ID: <20110224224640.GD8237@boyd.l.tihix.com>
-References: <20110216211102.GB16672@boyd.l.tihix.com>
- <1298582271-19588-1-git-send-email-thieule@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298582271-19588-1-git-send-email-thieule@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Feb 2011 18:05:17 -0500
+Date: Thu, 24 Feb 2011 15:04:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        mtosatti@redhat.com, xiaoguangrong@cn.fujitsu.com
+Subject: Re: [RFC PATCH 1/3] Weight-balanced tree
+Message-Id: <20110224150430.6daa9e52.akpm@linux-foundation.org>
+In-Reply-To: <20110222185456.22026.28200.stgit@s20.home>
+References: <20110222183822.22026.62832.stgit@s20.home>
+	<20110222185456.22026.28200.stgit@s20.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu Feb 24, 2011 at 01:17:51PM -0800, Thieu Le <thieule@chromium.org> wrote:
-> Hi Tyler,
-> 
-> Sorry for the delay, got sidetracked with some other work.  I've addressed the
-> dd hang and the low memory condition as discussed in IRC.
-> 
-> PTAL.
-> 
-> Thanks,
-> Thieu
+On Tue, 22 Feb 2011 11:55:05 -0700
+Alex Williamson <alex.williamson@redhat.com> wrote:
 
-Hey Thieu - Not a problem.
-
-I'll need a proper commit message and signed-off-by line before I can
-commit this.
-
-> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 > ---
->  fs/ecryptfs/ecryptfs_kernel.h |    1 -
->  fs/ecryptfs/file.c            |    9 +++++++-
->  fs/ecryptfs/main.c            |    2 -
->  fs/ecryptfs/mmap.c            |   46 ++++++++++++++++++++++++++++------------
->  fs/ecryptfs/read_write.c      |   12 +---------
->  fs/ecryptfs/super.c           |    1 -
->  6 files changed, 42 insertions(+), 29 deletions(-)
 > 
-> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-> index dbc84ed..13517ac 100644
-> --- a/fs/ecryptfs/ecryptfs_kernel.h
-> +++ b/fs/ecryptfs/ecryptfs_kernel.h
-> @@ -297,7 +297,6 @@ struct ecryptfs_inode_info {
->  	struct inode vfs_inode;
->  	struct inode *wii_inode;
->  	struct file *lower_file;
-> -	struct mutex lower_file_mutex;
->  	struct ecryptfs_crypt_stat crypt_stat;
->  };
+>  include/linux/wbtree.h |   55 ++++++++++++++++
+>  lib/Makefile           |    3 +
+>  lib/wbtree.c           |  170 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 227 insertions(+), 1 deletions(-)
+>  create mode 100644 include/linux/wbtree.h
+>  create mode 100644 lib/wbtree.c
 > 
-> diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-> index 81e10e6..9f7ce63 100644
-> --- a/fs/ecryptfs/file.c
-> +++ b/fs/ecryptfs/file.c
-> @@ -273,7 +273,14 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
->  static int
->  ecryptfs_fsync(struct file *file, int datasync)
->  {
-> -	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
-> +	int rc = 0;
+> diff --git a/include/linux/wbtree.h b/include/linux/wbtree.h
+> new file mode 100644
+> index 0000000..ef70f6f
+> --- /dev/null
+> +++ b/include/linux/wbtree.h
+> @@ -0,0 +1,55 @@
+> +/*
+> + * Weight-balanced binary tree
+> + *
+> + * The balance of this tree is based on search probability.  The
+> + * heaviest weighted nodes (the ones we're most likely to hit), are
+> + * at the top of each subtree.
+> + *
+> + * Copywrite (C) 2011 Red Hat, Inc.
+> + *
+> + * Authors:
+> + *   Alex Williamson <alex.williamson@redhat.com>
+> + *
+> + * This work is licensed under the terms of the GNU GPL, version 2.  See
+> + * the COPYING file in the top-level directory.
+> + */
+> +#ifndef _LINUX_WBTREE_H
+> +#define _LINUX_WBTREE_H
 > +
-> +	rc = generic_file_fsync(file, datasync);
-> +	if (rc)
-> +		goto out;
-> +	rc = vfs_fsync(ecryptfs_file_to_lower(file), datasync);
-> +out:
-> +	return rc;
->  }
-> 
->  static int ecryptfs_fasync(int fd, struct file *file, int flag)
-> diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-> index 758323a..63e412c 100644
-> --- a/fs/ecryptfs/main.c
-> +++ b/fs/ecryptfs/main.c
-> @@ -122,7 +122,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
->  		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
->  	int rc = 0;
-> 
-> -	mutex_lock(&inode_info->lower_file_mutex);
->  	if (!inode_info->lower_file) {
->  		struct dentry *lower_dentry;
->  		struct vfsmount *lower_mnt =
-> @@ -138,7 +137,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
->  			inode_info->lower_file = NULL;
->  		}
->  	}
-> -	mutex_unlock(&inode_info->lower_file_mutex);
->  	return rc;
->  }
-> 
-> diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-> index cc64fca..d375210 100644
-> --- a/fs/ecryptfs/mmap.c
-> +++ b/fs/ecryptfs/mmap.c
-> @@ -62,6 +62,23 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
->  {
->  	int rc;
-> 
-> +	/*
-> +	 * Refuse to write the page out if we are called from reclaim context.
-> +	 *
-> +	 * This avoids stack overflows when called from deeply used stacks in
-> +	 * random callers for direct reclaim or memcg reclaim.  We explicitly
-> +	 * allow reclaim from kswapd as the stack usage there is relatively low.
-
-Stack size is a problem with eCryptfs, but we also have the issue of
-potential memory allocations in our writepage() path due to calling
-vfs_write() on the lower file. I don't think we can allow reclaim from
-kswapd.
-
-> +	 *
-> +	 * This should really be done by the core VM, but until that happens
-> +	 * filesystems like XFS, btrfs and ext4 have to take care of this
-> +	 * by themselves.
-> +	 */
-
-Please make this entire comment block specific to eCryptfs instead of
-something copied from XFS.
-
-> +	if ((current->flags & (PF_MEMALLOC|PF_KSWAPD)) == PF_MEMALLOC) {
-> +		redirty_page_for_writepage(wbc, page);
-> +		rc = 0;
-> +		goto out;
-> +	}
+> +#include <linux/kernel.h>
+> +#include <linux/stddef.h>
 > +
->  	rc = ecryptfs_encrypt_page(page);
->  	if (rc) {
->  		ecryptfs_printk(KERN_WARNING, "Error encrypting "
-> @@ -70,8 +87,8 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
->  		goto out;
->  	}
->  	SetPageUptodate(page);
-> -	unlock_page(page);
->  out:
-> +	unlock_page(page);
->  	return rc;
->  }
-> 
-> @@ -486,6 +503,7 @@ static int ecryptfs_write_end(struct file *file,
->  	struct ecryptfs_crypt_stat *crypt_stat =
->  		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
->  	int rc;
-> +	int need_unlock_page = 1;
-> 
->  	if (crypt_stat->flags & ECRYPTFS_NEW_FILE) {
->  		ecryptfs_printk(KERN_DEBUG, "ECRYPTFS_NEW_FILE flag set in "
-> @@ -512,26 +530,26 @@ static int ecryptfs_write_end(struct file *file,
->  			"zeros in page with index = [0x%.16lx]\n", index);
->  		goto out;
->  	}
-> -	rc = ecryptfs_encrypt_page(page);
-> -	if (rc) {
-> -		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
-> -				"index [0x%.16lx])\n", index);
-> -		goto out;
-> -	}
-> +	set_page_dirty(page);
-> +	unlock_page(page);
-> +	need_unlock_page = 0;
->  	if (pos + copied > i_size_read(ecryptfs_inode)) {
->  		i_size_write(ecryptfs_inode, pos + copied);
->  		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
->  			"[0x%.16llx]\n",
->  			(unsigned long long)i_size_read(ecryptfs_inode));
-> +		balance_dirty_pages_ratelimited(mapping);
-> +		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
-> +		if (rc) {
-> +			printk(KERN_ERR "Error writing inode size to metadata; "
-> +			       "rc = [%d]\n", rc);
-> +			goto out;
-> +		}
->  	}
-> -	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
-> -	if (rc)
-> -		printk(KERN_ERR "Error writing inode size to metadata; "
-> -		       "rc = [%d]\n", rc);
-> -	else
-> -		rc = copied;
-> +	rc = copied;
->  out:
-> -	unlock_page(page);
-> +	if (need_unlock_page)
-> +		unlock_page(page);
->  	page_cache_release(page);
->  	return rc;
->  }
-> diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
-> index db184ef..85d4309 100644
-> --- a/fs/ecryptfs/read_write.c
-> +++ b/fs/ecryptfs/read_write.c
-> @@ -44,15 +44,11 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
->  	ssize_t rc;
-> 
->  	inode_info = ecryptfs_inode_to_private(ecryptfs_inode);
-> -	mutex_lock(&inode_info->lower_file_mutex);
->  	BUG_ON(!inode_info->lower_file);
-> -	inode_info->lower_file->f_pos = offset;
->  	fs_save = get_fs();
->  	set_fs(get_ds());
-> -	rc = vfs_write(inode_info->lower_file, data, size,
-> -		       &inode_info->lower_file->f_pos);
-> +	rc = vfs_write(inode_info->lower_file, data, size, &offset);
->  	set_fs(fs_save);
-> -	mutex_unlock(&inode_info->lower_file_mutex);
->  	mark_inode_dirty_sync(ecryptfs_inode);
->  	return rc;
->  }
-> @@ -234,15 +230,11 @@ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
->  	mm_segment_t fs_save;
->  	ssize_t rc;
-> 
-> -	mutex_lock(&inode_info->lower_file_mutex);
->  	BUG_ON(!inode_info->lower_file);
-> -	inode_info->lower_file->f_pos = offset;
->  	fs_save = get_fs();
->  	set_fs(get_ds());
-> -	rc = vfs_read(inode_info->lower_file, data, size,
-> -		      &inode_info->lower_file->f_pos);
-> +	rc = vfs_read(inode_info->lower_file, data, size, &offset);
->  	set_fs(fs_save);
-> -	mutex_unlock(&inode_info->lower_file_mutex);
->  	return rc;
->  }
-> 
-> diff --git a/fs/ecryptfs/super.c b/fs/ecryptfs/super.c
-> index 3042fe1..15c969e 100644
-> --- a/fs/ecryptfs/super.c
-> +++ b/fs/ecryptfs/super.c
-> @@ -55,7 +55,6 @@ static struct inode *ecryptfs_alloc_inode(struct super_block *sb)
->  	if (unlikely(!inode_info))
->  		goto out;
->  	ecryptfs_init_crypt_stat(&inode_info->crypt_stat);
-> -	mutex_init(&inode_info->lower_file_mutex);
->  	inode_info->lower_file = NULL;
->  	inode = &inode_info->vfs_inode;
->  out:
-> -- 
-> 1.7.3.1
-> 
+> +struct wb_node {
+> +	struct wb_node *wb_parent;
+> +	struct wb_node *wb_left;
+> +	struct wb_node *wb_right;
+> +	unsigned long wb_weight;
+> +};
+> +
+> +struct wb_root {
+> +	struct wb_node *wb_node;
+> +};
+> +
+> +#define WB_ROOT (struct wb_root) { NULL, }
+> +#define wb_entry(ptr, type, member) container_of(ptr, type, member)
+
+Please implement this as a C function.  That way we get typechecking
+which container_of() is unable to provide.
+
+Otherwise the code looks OK to me, apart from the total lack of
+documentation.  Please document at least all the exported interfaces. 
+The documentation should be designed to tell people how to maintain
+this code, and how to use this code reliably and well from other subsystems.
+Don't fall into the trap of just dumbly filling out templates.
+
+The documentation should also carefully explain the locking
+requirements which these functions place upon callers.  (rwlocks used
+how?  rcu?)
+
+Once that is all squared away, please merge the code via the KVM tree.
+
