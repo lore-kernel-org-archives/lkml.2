@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab1BXWnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 17:43:16 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39784 "EHLO e8.ny.us.ibm.com"
+	id S1756543Ab1BXWnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 17:43:49 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:38247 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755523Ab1BXWnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 17:43:14 -0500
-Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        aarcange@redhat.com
-In-Reply-To: <1298425922-23630-9-git-send-email-andi@firstfloor.org>
-References: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
-	 <1298425922-23630-9-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 24 Feb 2011 14:43:04 -0800
-Message-ID: <1298587384.9138.23.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754813Ab1BXWns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 17:43:48 -0500
+Date: Thu, 24 Feb 2011 22:43:19 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes (intel only)
+Message-ID: <alpine.DEB.2.00.1102242241280.5315@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 17:52 -0800, Andi Kleen wrote:
-> @@ -2286,6 +2290,9 @@ void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
->  		spin_unlock(&mm->page_table_lock);
->  		return;
->  	}
-> +
-> +	count_vm_event(THP_SPLIT);
-> +
->  	page = pmd_page(*pmd);
->  	VM_BUG_ON(!page_count(page));
->  	get_page(page);
 
-Hey Andi,
+Hi Linus,
 
-Your split counter tracks the split_huge_page_pmd() calls, but misses
-plain split_huge_page() calls.  Did you do this on purpose?  Could we
-move the counter in to the low-level split function like below?
+Since Chris missed my last pull I've got a seprate set of fixes for 
+Intel, should fix an eDP issue, a couple of 855 problems (tiling and 
+buffer coherency),
 
----
+Dave.
 
- linux-2.6.git-dave/mm/huge_memory.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The following changes since commit ef3242859fae47e728b50b7ce3d17b201a71779a:
 
-diff -puN mm/huge_memory.c~move-THP_SPLIT mm/huge_memory.c
---- linux-2.6.git/mm/huge_memory.c~move-THP_SPLIT	2011-02-24 14:37:32.825288409 -0800
-+++ linux-2.6.git-dave/mm/huge_memory.c	2011-02-24 14:39:01.767939971 -0800
-@@ -1342,6 +1342,8 @@ static void __split_huge_page(struct pag
- 	BUG_ON(!PageHead(page));
- 	BUG_ON(PageTail(page));
- 
-+	count_vm_event(THP_SPLIT);
-+
- 	mapcount = 0;
- 	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
- 		struct vm_area_struct *vma = avc->vma;
-@@ -2293,8 +2295,6 @@ void __split_huge_page_pmd(struct mm_str
- 		return;
- 	}
- 
--	count_vm_event(THP_SPLIT);
--
- 	page = pmd_page(*pmd);
- 	VM_BUG_ON(!page_count(page));
- 	get_page(page);
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2011-02-23 16:02:00 -0800)
 
--- Dave
+are available in the git repository at:
 
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Chris Wilson (3):
+      drm/i915: Ignore a hung GPU when flushing the framebuffer prior to a switch
+      agp/intel: Experiment with a 855GM GWB bit
+      drm/i915: Fix unintended recursion in ironlake_disable_rc6
+
+Daniel Vetter (1):
+      drm/i915: fix corruptions on i8xx due to relaxed fencing
+
+Dave Airlie (2):
+      Merge branch 'drm-intel-fixes' of git://git.kernel.org/.../ickle/drm-intel into drm-fixes
+      Merge branch 'drm-intel-fixes' of git://git.kernel.org/.../ickle/drm-intel into drm-fixes
+
+Jesse Barnes (2):
+      drm/i915: don't enable FDI & transcoder interrupts after all
+      drm/i915: skip FDI & PCH enabling for DP_A
+
+ drivers/char/agp/intel-agp.h           |    1 +
+ drivers/char/agp/intel-gtt.c           |   56 +++++++------------
+ drivers/gpu/drm/i915/i915_gem_tiling.c |   16 +++++-
+ drivers/gpu/drm/i915/i915_irq.c        |    6 +-
+ drivers/gpu/drm/i915/intel_display.c   |   95 +++++++++++++++++++++++++++++---
+ 5 files changed, 127 insertions(+), 47 deletions(-)
