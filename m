@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1BXRTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:19:17 -0500
-Received: from cantor.suse.de ([195.135.220.2]:54426 "EHLO mx1.suse.de"
+	id S1752935Ab1BXRUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:20:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57430 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab1BXRTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:19:14 -0500
-Date: Thu, 24 Feb 2011 09:18:14 -0800
-From: Greg KH <gregkh@suse.de>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Alexander Holler <holler@ahsoftware.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Michael Jones <michael.jones@matrix-vision.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org
-Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
-Message-ID: <20110224171814.GA8376@suse.de>
-References: <4D64C81B.5060807@ahsoftware.de>
- <Pine.LNX.4.44L0.1102231021210.2233-100000@iolanthe.rowland.org>
- <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
- <4D6621AB.10205@ahsoftware.de>
- <20110224091638.GH3528@legolas.emea.dhcp.ti.com>
+	id S1752125Ab1BXRUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 12:20:38 -0500
+Message-ID: <4D66935F.8000904@redhat.com>
+Date: Thu, 24 Feb 2011 19:20:31 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224091638.GH3528@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [GIT PULL] KVM fix for 2.6.38-rc6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 11:16:38AM +0200, Felipe Balbi wrote:
-> Hi,
-> 
-> On Thu, Feb 24, 2011 at 10:15:23AM +0100, Alexander Holler wrote:
-> > >On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
-> > >>In both cases, it appears that the problem is caused by the fact that
-> > >>the musb host-controller driver doesn't set the hcd->has_tt flag.
-> > >>
-> > >>Felipe, you should know where it belongs.  It should be easy enough to
-> > >>add.
-> > >
-> > >Sure Alan, it's attached to this mail. Compile tested only though.
-> > >Michael, would you care to give your tested-by ?
-> > 
-> > I can do, I'm using exactly the same patch since yesterday. ;)
-> > 
-> > Tested-by: Alexander Holler <holler@ahsoftware.de>
-> 
-> Thanks a lot Alex, Greg, can you still take this to -rc ? Do you need a
-> pull request or you can take this one patch ?
+Linus, please pull from
 
-Wait, where does this need to go?  For the final 2.6.38 release and then
-also for .37-stable?
+   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.38
 
-Or just .37-stable?
+to receive a fix which restores a hunk which was inadvertently left off 
+its original patch.  It fixes MOV DR instruction emulation on AMD 
+Bulldozers.
 
-confused.
+Joerg Roedel (1):
+       KVM: SVM: Advance instruction pointer in dr_intercept
 
-And no, I don't need a pull request, I can handle one patch through
-email :)
+  arch/x86/kvm/svm.c |    2 ++
+  1 files changed, 2 insertions(+), 0 deletions(-)
 
-thanks,
+-- 
+error compiling committee.c: too many arguments to function
 
-greg k-h
