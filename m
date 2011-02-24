@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab1BXSmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:42:39 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48462
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754106Ab1BXSmh (ORCPT
+	id S1755952Ab1BXSow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:44:52 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31138 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab1BXSos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:42:37 -0500
-Date: Thu, 24 Feb 2011 10:43:13 -0800 (PST)
-Message-Id: <20110224.104313.68122155.davem@davemloft.net>
-To: ratbert.chuang@gmail.com
-Cc: mirqus@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
-        dilinger@queued.net, ratbert@faraday-tech.com
-Subject: Re: [PATCH v4] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikE_OU_qiBUdiDP39js8jQzGqqo1FYW2uHmw3He@mail.gmail.com>
-References: <AANLkTimorcNAEbSpuE_dUXKuOBZDcDcGSJ2cGefniThc@mail.gmail.com>
-	<20110223.235129.02262510.davem@davemloft.net>
-	<AANLkTikE_OU_qiBUdiDP39js8jQzGqqo1FYW2uHmw3He@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Feb 2011 13:44:48 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76263874"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/4] msm: scm: Mark inline asm as volatile
+Date: Thu, 24 Feb 2011 10:44:42 -0800
+Message-Id: <1298573085-23217-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.1.55.gdca3d
+In-Reply-To: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>
+References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Thu, 24 Feb 2011 16:07:48 +0800
+We don't want the compiler to remove these asm statements or
+reorder them in any way. Mark them as volatile to be sure.
 
-> On Thu, Feb 24, 2011 at 3:51 PM, David Miller <davem@davemloft.net> wrote:
->> Just emit garbage bytes into the sub-word alignment padding if the chip
->> wants to word align it's DMA writes.
-> 
-> Not sure what do you mean. The problem is that HW does not accept a
-> base address of RX buffer which is not 8 bytes aligned.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/scm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-I am saying this is what hardware should do if it has such a
-restriction.
+diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
+index f4b9bc9..ba57b5a 100644
+--- a/arch/arm/mach-msm/scm.c
++++ b/arch/arm/mach-msm/scm.c
+@@ -174,7 +174,7 @@ static u32 smc(u32 cmd_addr)
+ 	register u32 r0 asm("r0") = 1;
+ 	register u32 r1 asm("r1") = (u32)&context_id;
+ 	register u32 r2 asm("r2") = cmd_addr;
+-	asm(
++	asm volatile(
+ 		__asmeq("%0", "r0")
+ 		__asmeq("%1", "r0")
+ 		__asmeq("%2", "r1")
+@@ -271,7 +271,7 @@ u32 scm_get_version(void)
+ 		return version;
+ 
+ 	mutex_lock(&scm_lock);
+-	asm(
++	asm volatile(
+ 		__asmeq("%0", "r1")
+ 		__asmeq("%1", "r0")
+ 		__asmeq("%2", "r1")
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
