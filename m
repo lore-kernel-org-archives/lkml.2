@@ -1,74 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1BXOz6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 09:55:58 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65148 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab1BXOzJ (ORCPT
+	id S1756066Ab1BXO5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 09:57:07 -0500
+Received: from mga11.intel.com ([192.55.52.93]:13169 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab1BXO5C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 09:55:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CiQui8kqgB0ozru7BSwRG8oWCiPIHxq+Vo9QJa8iE/2q/3y/EU2FvCeTSxZ2bQjUWz
-         1z+XI1ERv8QCUOeIXVFvMsFgqWOT8q7hjFRV0bRLUZkqHVpsstb+G6gnC5iU+f+xY+7A
-         mWQOCgGt1/59w3BuyzRUjDJA5ghIT7J5MDRW0=
-Date: Thu, 24 Feb 2011 15:54:38 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        kovariadam@gmail.com, florian@mickler.org, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: fix refcounting in BLKBSZSET
-Message-ID: <20110224145438.GO7840@htj.dyndns.org>
-References: <E1PscUb-0004a3-Qi@pomaz-ex.szeredi.hu>
+	Thu, 24 Feb 2011 09:57:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,218,1297065600"; 
+   d="scan'208";a="661081079"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Jae hoon Chung <jh80.chung@gmail.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Date: Thu, 24 Feb 2011 22:54:56 +0800
+Subject: RE: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
+ cmd
+Thread-Topic: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
+ cmd
+Thread-Index: AcvULbKT+EVuuouFSY6mlXPpfm2OdQABIj5w
+Message-ID: <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com>
+References: <20110224111935.GB7169@intel.com>
+ <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com>
+In-Reply-To: <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1PscUb-0004a3-Qi@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 03:48:33PM +0100, Miklos Szeredi wrote:
-> [and lkml cc-d too]
-> 
-> This fixes bug 29202 in the 2.6.38 regression list.
-> 
-> Please apply.
-> 
-> Thanks,
-> Miklos
-> 
-> ----
-> Subject: block: fix refcounting in BLKBSZSET
-> 
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Adam Kovari and others reported that disconnecting an USB drive with
-> an ntfs-3g filesystem would cause "kernel BUG at fs/inode.c:1421!" to
-> be triggered.
-> 
-> The BUG could be traced back to ioctl(BLKBSZSET), which would
-> erroneously decrement the refcount on the bdev.  This is because
-> blkdev_get() expects the refcount to be already incremented and either
-> returns success or decrements the refcount and returns an error.
-> 
-> The bug was introduced by e525fd89 (block: make blkdev_get/put()
-> handle exclusive access), which didn't take into account this behavior
-> of blkdev_get().
-> 
-> Reported-by: Adam Kovari <kovariadam@gmail.com>
-> CC: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Great. Maybe we wouldn't need to add this quirk since give a maximum timeout value is safe for all host controller I think. We would better save the quirk for other really critical silicon bugs.
 
-Ah, it was me after all.  Sorry about that.
-
-Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
--- 
-tejun
+> -----Original Message-----
+> From: Jae hoon Chung [mailto:jh80.chung@gmail.com]
+> Sent: Thursday, February 24, 2011 10:18 PM
+> To: Dong, Chuanxiao
+> Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; linux-kernel@vger.kernel.org;
+> arnd@arndb.de; Kyungmin Park
+> Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy cmd
+> 
+> Hi
+> 
+> This patch looks like this. I sent to the RFC patch..
+> 
+> http://marc.info/?l=linux-mmc&m=129109794815028&w=3
+> 
+> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+>  Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> ---
+>  drivers/mmc/host/sdhci.c  |    6 +++++-
+>  include/linux/mmc/sdhci.h |    3 ++-
+>  2 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 782c0ee..3b93d97 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -655,8 +655,12 @@ static void sdhci_prepare_data(struct sdhci_host
+> *host, struct mmc_data *data)
+> 
+>        WARN_ON(host->data);
+> 
+> -       if (data == NULL)
+> +       if (data == NULL) {
+> +               if ((host->quirks & SDHCI_QUIRK_SET_DATA_TIMEOUT_VAL)
+> &&
+> +                               (host->cmd->flags & MMC_RSP_BUSY))
+> +                       sdhci_writel(host, 0xE, SDHCI_TIMEOUT_CONTROL);
+>                return;
+> +       }
+> 
+>        /* Sanity checks */
+>        BUG_ON(data->blksz * data->blocks > 524288);
+> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+> index 1fdc673..315ff49 100644
+> --- a/include/linux/mmc/sdhci.h
+> +++ b/include/linux/mmc/sdhci.h
+> @@ -83,7 +83,8 @@ struct sdhci_host {
+>  #define SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12             (1<<28)
+>  /* Controller doesn't have HISPD bit field in HI-SPEED SD card */
+>  #define SDHCI_QUIRK_NO_HISPD_BIT                       (1<<29)
+> -
+> +/* Controller need set data timeout value when card is busy */
+> +#define SDHCI_QUIRK_SET_DATA_TIMEOUT_VAL               (1<<30)
+>        int irq;                /* Device IRQ */
+>        void __iomem *ioaddr;   /* Mapped address */
+> 
+> --
+> 1.6.0.4
+> 
+> 2011/2/24 Chuanxiao Dong <chuanxiao.dong@intel.com>:
+> > Set the timeout control register for SDHCI host when it needs to send some
+> > commands which need busy signal. Use the maximum timeout value will be safe.
+> >
+> > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+> > ---
+> >  drivers/mmc/host/sdhci.c |   14 ++++++++++----
+> >  1 files changed, 10 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> > index 9e15f41..32b7475 100644
+> > --- a/drivers/mmc/host/sdhci.c
+> > +++ b/drivers/mmc/host/sdhci.c
+> > @@ -40,7 +40,6 @@
+> >
+> >  static unsigned int debug_quirks = 0;
+> >
+> > -static void sdhci_prepare_data(struct sdhci_host *, struct mmc_data *);
+> >  static void sdhci_finish_data(struct sdhci_host *);
+> >
+> >  static void sdhci_send_command(struct sdhci_host *, struct mmc_command
+> *);
+> > @@ -651,16 +650,23 @@ static void sdhci_set_transfer_irqs(struct sdhci_host
+> *host)
+> >                sdhci_clear_set_irqs(host, dma_irqs, pio_irqs);
+> >  }
+> >
+> > -static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_data *data)
+> > +static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_command
+> *cmd)
+> >  {
+> >        u8 count;
+> >        u8 ctrl;
+> > +       struct mmc_data *data = cmd->data;
+> >        int ret;
+> >
+> >        WARN_ON(host->data);
+> >
+> > -       if (data == NULL)
+> > +       if (data == NULL) {
+> > +               /*
+> > +                * set timeout to be maximum value for command with busy
+> signal.
+> > +                */
+> > +               if (cmd->flags & MMC_RSP_BUSY)
+> > +                       sdhci_writeb(host, 0xE,
+> SDHCI_TIMEOUT_CONTROL);
+> >                return;
+> > +       }
+> >
+> >        /* Sanity checks */
+> >        BUG_ON(data->blksz * data->blocks > 524288);
+> > @@ -920,7 +926,7 @@ static void sdhci_send_command(struct sdhci_host *host,
+> struct mmc_command *cmd)
+> >
+> >        host->cmd = cmd;
+> >
+> > -       sdhci_prepare_data(host, cmd->data);
+> > +       sdhci_prepare_data(host, cmd);
+> >
+> >        sdhci_writel(host, cmd->arg, SDHCI_ARGUMENT);
+> >
+> > --
+> > 1.6.6.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
