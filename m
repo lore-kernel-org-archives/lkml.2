@@ -1,172 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1BXO5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 09:57:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:13169 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab1BXO5C convert rfc822-to-8bit (ORCPT
+	id S1753582Ab1BXO76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 09:59:58 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53653 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab1BXO75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 09:57:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,218,1297065600"; 
-   d="scan'208";a="661081079"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Jae hoon Chung <jh80.chung@gmail.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Thu, 24 Feb 2011 22:54:56 +0800
-Subject: RE: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
- cmd
-Thread-Topic: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
- cmd
-Thread-Index: AcvULbKT+EVuuouFSY6mlXPpfm2OdQABIj5w
-Message-ID: <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com>
-References: <20110224111935.GB7169@intel.com>
- <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com>
-In-Reply-To: <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Feb 2011 09:59:57 -0500
+Date: Thu, 24 Feb 2011 14:59:47 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ian Kent <raven@themaw.net>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, npiggin@gmail.com
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+Message-ID: <20110224145947.GA22723@ZenIV.linux.org.uk>
+References: <1295420817.3076.24.camel@perseus>
+ <1297779902.13007.86.camel@perseus>
+ <20110224015817.GQ22723@ZenIV.linux.org.uk>
+ <1298516618.2916.20.camel@perseus>
+ <20110224031439.GR22723@ZenIV.linux.org.uk>
+ <1298518137.2916.35.camel@perseus>
+ <20110224035836.GS22723@ZenIV.linux.org.uk>
+ <1298529260.2916.91.camel@perseus>
+ <20110224070724.GW22723@ZenIV.linux.org.uk>
+ <1298542053.3058.56.camel@perseus>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298542053.3058.56.camel@perseus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Great. Maybe we wouldn't need to add this quirk since give a maximum timeout value is safe for all host controller I think. We would better save the quirk for other really critical silicon bugs.
+On Thu, Feb 24, 2011 at 06:07:33PM +0800, Ian Kent wrote:
+> > I really don't like the look of autofs4_tree_busy(), BTW - you don't need
+> > RCU to get races here; just a plain chdir("../../.."); done by a process
+> > that sits deep enough in subtree you are checking can very well race with
+> > your check, so that your iterator gets through the new cwd before chdir()
+> > and through the old one after it...
+> 
+> Yes, that's a problem.
+> 
+> Previously the dcache_lock would have blocked on the dput() ... mmm, I'd
+> missed that so far, although Nick didn't talk with me about his changes
+> very much at all and I didn't pay enough attention to his patch series
+> along the way, oops!
 
-> -----Original Message-----
-> From: Jae hoon Chung [mailto:jh80.chung@gmail.com]
-> Sent: Thursday, February 24, 2011 10:18 PM
-> To: Dong, Chuanxiao
-> Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; linux-kernel@vger.kernel.org;
-> arnd@arndb.de; Kyungmin Park
-> Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy cmd
-> 
-> Hi
-> 
-> This patch looks like this. I sent to the RFC patch..
-> 
-> http://marc.info/?l=linux-mmc&m=129109794815028&w=3
-> 
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->  Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> ---
->  drivers/mmc/host/sdhci.c  |    6 +++++-
->  include/linux/mmc/sdhci.h |    3 ++-
->  2 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 782c0ee..3b93d97 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -655,8 +655,12 @@ static void sdhci_prepare_data(struct sdhci_host
-> *host, struct mmc_data *data)
-> 
->        WARN_ON(host->data);
-> 
-> -       if (data == NULL)
-> +       if (data == NULL) {
-> +               if ((host->quirks & SDHCI_QUIRK_SET_DATA_TIMEOUT_VAL)
-> &&
-> +                               (host->cmd->flags & MMC_RSP_BUSY))
-> +                       sdhci_writel(host, 0xE, SDHCI_TIMEOUT_CONTROL);
->                return;
-> +       }
-> 
->        /* Sanity checks */
->        BUG_ON(data->blksz * data->blocks > 524288);
-> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-> index 1fdc673..315ff49 100644
-> --- a/include/linux/mmc/sdhci.h
-> +++ b/include/linux/mmc/sdhci.h
-> @@ -83,7 +83,8 @@ struct sdhci_host {
->  #define SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12             (1<<28)
->  /* Controller doesn't have HISPD bit field in HI-SPEED SD card */
->  #define SDHCI_QUIRK_NO_HISPD_BIT                       (1<<29)
-> -
-> +/* Controller need set data timeout value when card is busy */
-> +#define SDHCI_QUIRK_SET_DATA_TIMEOUT_VAL               (1<<30)
->        int irq;                /* Device IRQ */
->        void __iomem *ioaddr;   /* Mapped address */
-> 
-> --
-> 1.6.0.4
-> 
-> 2011/2/24 Chuanxiao Dong <chuanxiao.dong@intel.com>:
-> > Set the timeout control register for SDHCI host when it needs to send some
-> > commands which need busy signal. Use the maximum timeout value will be safe.
-> >
-> > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> > ---
-> >  drivers/mmc/host/sdhci.c |   14 ++++++++++----
-> >  1 files changed, 10 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> > index 9e15f41..32b7475 100644
-> > --- a/drivers/mmc/host/sdhci.c
-> > +++ b/drivers/mmc/host/sdhci.c
-> > @@ -40,7 +40,6 @@
-> >
-> >  static unsigned int debug_quirks = 0;
-> >
-> > -static void sdhci_prepare_data(struct sdhci_host *, struct mmc_data *);
-> >  static void sdhci_finish_data(struct sdhci_host *);
-> >
-> >  static void sdhci_send_command(struct sdhci_host *, struct mmc_command
-> *);
-> > @@ -651,16 +650,23 @@ static void sdhci_set_transfer_irqs(struct sdhci_host
-> *host)
-> >                sdhci_clear_set_irqs(host, dma_irqs, pio_irqs);
-> >  }
-> >
-> > -static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_data *data)
-> > +static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_command
-> *cmd)
-> >  {
-> >        u8 count;
-> >        u8 ctrl;
-> > +       struct mmc_data *data = cmd->data;
-> >        int ret;
-> >
-> >        WARN_ON(host->data);
-> >
-> > -       if (data == NULL)
-> > +       if (data == NULL) {
-> > +               /*
-> > +                * set timeout to be maximum value for command with busy
-> signal.
-> > +                */
-> > +               if (cmd->flags & MMC_RSP_BUSY)
-> > +                       sdhci_writeb(host, 0xE,
-> SDHCI_TIMEOUT_CONTROL);
-> >                return;
-> > +       }
-> >
-> >        /* Sanity checks */
-> >        BUG_ON(data->blksz * data->blocks > 524288);
-> > @@ -920,7 +926,7 @@ static void sdhci_send_command(struct sdhci_host *host,
-> struct mmc_command *cmd)
-> >
-> >        host->cmd = cmd;
-> >
-> > -       sdhci_prepare_data(host, cmd->data);
-> > +       sdhci_prepare_data(host, cmd);
-> >
-> >        sdhci_writel(host, cmd->arg, SDHCI_ARGUMENT);
-> >
-> > --
-> > 1.6.6.1
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+Well...  In principle, you could mark all mountpoints in a tree as managed,
+have an "expiry search in progress" flag to stop everything in there while
+the expiry happens, then wait out all RCU walks in progress, then go ahead
+with your expiry checks.  Would that work for you?
