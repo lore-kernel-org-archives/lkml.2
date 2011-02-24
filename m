@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab1BXJQr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 04:16:47 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:35092 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755504Ab1BXJQo (ORCPT
+	id S1755910Ab1BXJTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 04:19:07 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:59426 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab1BXJTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 04:16:44 -0500
-Date: Thu, 24 Feb 2011 11:16:38 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: balbi@ti.com, Alan Stern <stern@rowland.harvard.edu>,
-        Michael Jones <michael.jones@matrix-vision.de>,
-        Greg KH <gregkh@suse.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org
-Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
-Message-ID: <20110224091638.GH3528@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <4D64C81B.5060807@ahsoftware.de>
- <Pine.LNX.4.44L0.1102231021210.2233-100000@iolanthe.rowland.org>
- <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
- <4D6621AB.10205@ahsoftware.de>
+	Thu, 24 Feb 2011 04:19:04 -0500
+Message-ID: <b5f94200cffe31ff8cbe38d2bd2e35a7.squirrel@webmail.greenhost.nl>
+In-Reply-To: <AANLkTi=DXg=ighnPi4FYA29=qegE=c_PtCVWzOymYtmQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
+    <AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
+    <0d30dc$l7ehaa@orsmga001.jf.intel.com>
+    <AANLkTi=DXg=ighnPi4FYA29=qegE=c_PtCVWzOymYtmQ@mail.gmail.com>
+Date: Thu, 24 Feb 2011 10:18:44 +0100 (CET)
+Subject: Re: [git pull] drm fixes
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Alex Riesen" <raa.lkml@gmail.com>
+Cc: "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Dave Airlie" <airlied@linux.ie>,
+        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, "Daniel Vetter" <daniel@ffwll.ch>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6621AB.10205@ahsoftware.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 938925967a2432a0d8c7279c30be63be
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, February 24, 2011 09:27, Alex Riesen wrote:
+> On Thu, Feb 24, 2011 at 01:13, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> On Wed, 23 Feb 2011 15:58:02 -0800, Linus Torvalds <torvalds@linux-foundation.org>
+>> wrote:
+>>> >
+>>> > See bug https://bugzilla.kernel.org/show_bug.cgi?id=27572
+>>>
+>>> Any update on that one?
+>>
+>> No, reverting that will cause just another bug elsewhere. I need to
+>> work out how the gpu is not being flushed with a non-pipelined fence
+>> change.
+>>
+>>> There's that whole "return -EINVAL for
+>>> I915_PARAM_HAS_RELAXED_FENCING" patch thing?
+>>
+>> As it turns out this is a bug in the userspace components of the stack for
+>> gen2 hardware, with lax kernel side enforcement. Daniel has a fix for both.
+>
+> Chris, could you point us at the patch? I ask because Daniel left a
+> comment in bug discussion that we should ignore some patch from him,
+> and there was no mention of anything else.
+>
+> I'll gladly test a better fix.
 
-On Thu, Feb 24, 2011 at 10:15:23AM +0100, Alexander Holler wrote:
-> >On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
-> >>In both cases, it appears that the problem is caused by the fact that
-> >>the musb host-controller driver doesn't set the hcd->has_tt flag.
-> >>
-> >>Felipe, you should know where it belongs.  It should be easy enough to
-> >>add.
-> >
-> >Sure Alan, it's attached to this mail. Compile tested only though.
-> >Michael, would you care to give your tested-by ?
-> 
-> I can do, I'm using exactly the same patch since yesterday. ;)
-> 
-> Tested-by: Alexander Holler <holler@ahsoftware.de>
+See:
 
-Thanks a lot Alex, Greg, can you still take this to -rc ? Do you need a
-pull request or you can take this one patch ?
+http://lists.freedesktop.org/archives/dri-devel/2011-February/008658.html
+https://lkml.org/lkml/2011/2/23/34
 
--- 
-balbi
+
