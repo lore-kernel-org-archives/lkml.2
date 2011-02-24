@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab1BXBSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 20:18:39 -0500
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:2679 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752830Ab1BXBSi (ORCPT
+	id S932091Ab1BXBZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 20:25:37 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48882 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab1BXBZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 20:18:38 -0500
-Message-ID: <4D65B1EA.4060801@draigBrady.com>
-Date: Thu, 24 Feb 2011 01:18:34 +0000
-From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: "Linda A. Walsh" <lkml@tlinx.org>
-CC: LKML <linux-kernel@vger.kernel.org>, xfs-oss <xfs@oss.sgi.com>
-Subject: Re: write 'O_DIRECT' file w/odd amount of data: desirable result?
-References: <4D648D7D.7040500@tlinx.org> <4D64E2BB.7010000@draigBrady.com> <4D654C2E.2000703@tlinx.org>
-In-Reply-To: <4D654C2E.2000703@tlinx.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 23 Feb 2011 20:25:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Z6hBLtjHZMLhKegr7+yF0Pgo9UU6msLnQKYzknUSflEIyYqNot3jZAgyatM/B5JhL3
+         pr4o2/U/mdSfx0NK8iPhs0ACUbixvDt0tOe9RmA5JFcUP10L4uZSTuknHtsEe5VsC3kt
+         guawV92krVLK8vuafQM06E2My/matd1pMHhOA=
+Subject: [PATCH] rtc: rtc-ds1390/rtc-ds3234/rtc-m41t94: eliminate compile
+	warning
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Jackson <mpfj@mimc.co.uk>, Dennis Aberilla <denzzzhome@yahoo.com>,
+        "Kim B. Heino" <Kim.Heino@bluegiga.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>, rtc-linux@googlegroups.com
+Content-Type: text/plain
+Date: Thu, 24 Feb 2011 09:28:50 +0800
+Message-Id: <1298510930.19027.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/02/11 18:04, Linda A. Walsh wrote:
-> I tried using the 'iflag=fullblock' as you recommend and it made the
-> problem
-> 'consistent' with the output of 'mbuffer', i.e. it transfered less data
-> and the truncation was consistent with a 512M divisor, indicating it was
-> 'cat' default record output size that was causing the difference.
+Eliminate the following compile warning:
+drivers/rtc/rtc-ds1390.c: In function 'ds1390_remove':
+drivers/rtc/rtc-ds1390.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
+drivers/rtc/rtc-ds3234.c: In function 'ds3234_remove':
+drivers/rtc/rtc-ds3234.c:161: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
+drivers/rtc/rtc-m41t94.c: In function 'm41t94_remove':
+drivers/rtc/rtc-m41t94.c:139: warning: passing argument 1 of 'platform_get_drvdata' from incompatible pointer type
 
-Right. That's expected as with 'fullblock', both mbuffer and dd
-will read/write 512M at a time. Both will fail in the same
-way when they try to write the odd sized chunk at the end.
-This was only changed for dd in version coreutils 7.5
-(where it reverts to a standard write for the last chunk)
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Mark Jackson <mpfj@mimc.co.uk>
+Cc: Dennis Aberilla <denzzzhome@yahoo.com>
+Cc: Kim B. Heino <Kim.Heino@bluegiga.com>
+---
+ drivers/rtc/rtc-ds1390.c |    2 +-
+ drivers/rtc/rtc-ds3234.c |    2 +-
+ drivers/rtc/rtc-m41t94.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-> I've tried significantly shorter files and NOT had this problem
-> (record size=64k, and 2 files oneat 64+57k). Both copied
-> fine.
-> Something to do with large file buffers.
+diff --git a/drivers/rtc/rtc-ds1390.c b/drivers/rtc/rtc-ds1390.c
+index 26a86d2..4832248 100644
+--- a/drivers/rtc/rtc-ds1390.c
++++ b/drivers/rtc/rtc-ds1390.c
+@@ -158,7 +158,7 @@ static int __devinit ds1390_probe(struct spi_device *spi)
+ 
+ static int __devexit ds1390_remove(struct spi_device *spi)
+ {
+-	struct ds1390 *chip = platform_get_drvdata(spi);
++	struct ds1390 *chip = dev_get_drvdata(&spi->dev);
+ 
+ 	rtc_device_unregister(chip->rtc);
+ 	kfree(chip);
+diff --git a/drivers/rtc/rtc-ds3234.c b/drivers/rtc/rtc-ds3234.c
+index a774ca3..07a558e 100644
+--- a/drivers/rtc/rtc-ds3234.c
++++ b/drivers/rtc/rtc-ds3234.c
+@@ -158,7 +158,7 @@ static int __devinit ds3234_probe(struct spi_device *spi)
+ 
+ static int __devexit ds3234_remove(struct spi_device *spi)
+ {
+-	struct rtc_device *rtc = platform_get_drvdata(spi);
++	struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
+ 
+ 	rtc_device_unregister(rtc);
+ 	return 0;
+diff --git a/drivers/rtc/rtc-m41t94.c b/drivers/rtc/rtc-m41t94.c
+index c8c97a4..21e6091 100644
+--- a/drivers/rtc/rtc-m41t94.c
++++ b/drivers/rtc/rtc-m41t94.c
+@@ -136,7 +136,7 @@ static int __devinit m41t94_probe(struct spi_device *spi)
+ 
+ static int __devexit m41t94_remove(struct spi_device *spi)
+ {
+-	struct rtc_device *rtc = platform_get_drvdata(spi);
++	struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
+ 
+ 	if (rtc)
+ 		rtc_device_unregister(rtc);
+-- 
+1.7.2
 
-Small blocks cause an issue on ext[34] at least.
-I modified dd here to behave like yours and got:
-$ truncate -s513 small
-$ dd oflag=direct if=small of=small.out
-./dd: writing `small.out': Invalid argument
 
-> Of *SIGNIFICANT* note.  In trying to create an empty file of the size
-> used, from scratch, using 'xfs_mkfile', I got an error:
-> 
->>  xfs_mkfile 5776419696 testfile
-> pwrite64: Invalid argument
 
-Looks like that uses the same O_DIRECT write
-method with the same issues?
-You could try fallocate(1) which is newly available
-in util-linux and might be supported by your xfs.
-
-cheers,
-Pádraig.
-
-p.s. dd would if written today default to using fullblock.
-For backwards and POSIX compat though we must keep
-the current default behavior
-
-p.p.s. There are situations were fullblock is required,
-and I'll patch dd soon to auto apply that option when appropriate.
-[io]flag=direct is one of those cases I think.
-
-p.p.p.s coreutils 8.11 should have the oflag=nocache option
-which will write to disk without using up your page cache,
-and also avoiding O_DIRECT constraints.
