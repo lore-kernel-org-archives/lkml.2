@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab1BXQTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:19:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754775Ab1BXQTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:19:49 -0500
-Date: Thu, 24 Feb 2011 11:18:44 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] blk-throttle: writeback and swap IO control
-Message-ID: <20110224161844.GD18494@redhat.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
- <20110222193403.GG28269@redhat.com>
- <20110222224141.GA23723@linux.develer.com>
- <20110223000358.GM28269@redhat.com>
- <20110223083206.GA2174@linux.develer.com>
- <20110223152354.GA2526@redhat.com>
- <20110223231410.GB1744@linux.develer.com>
- <20110224001033.GF2526@redhat.com>
- <20110224094039.89c07bea.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756293Ab1BXQWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:22:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46553 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab1BXQWO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 11:22:14 -0500
+Date: Thu, 24 Feb 2011 09:22:10 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
+        linux-i2c@vger.kernel.org, Albert Herranz <albert_herranz@yahoo.es>
+Subject: Re: [PATCH v6] i2c-gpio: add devicetree support
+Message-ID: <20110224162210.GC17735@angua.secretlab.ca>
+References: <20110223011232.GC15795@trinity.fluff.org>
+ <1298520013-3630-1-git-send-email-thomas@wytron.com.tw>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110224094039.89c07bea.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1298520013-3630-1-git-send-email-thomas@wytron.com.tw>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 09:40:39AM +0900, KAMEZAWA Hiroyuki wrote:
-
-[..]
-> > > If we don't consider the swap IO, any other IO
-> > > operation from our point of view will happen directly from process
-> > > context (writes in memory + sync reads from the block device).
-> > 
-> > Why do we need to account for swap IO? Application never asked for swap
-> > IO. It is kernel's decision to move soem pages to swap to free up some
-> > memory. What's the point in charging those pages to application group
-> > and throttle accordingly?
-> > 
+On Thu, Feb 24, 2011 at 12:00:13PM +0800, Thomas Chou wrote:
+> From: Albert Herranz <albert_herranz@yahoo.es>
 > 
-> I think swap I/O should be controlled by memcg's dirty_ratio.
-> But, IIRC, NEC guy had a requirement for this...
+> This patch adds devicetree support to i2c-gpio driver. The allocation
+> of local data is integrated to a private structure, and use devm_*
+> helper for easy cleanup.
 > 
-> I think some enterprise cusotmer may want to throttle the whole speed of
-> swapout I/O (not swapin)...so, they may be glad if they can limit throttle
-> the I/O against a disk partition or all I/O tagged as 'swapio' rather than
-> some cgroup name.
-
-If swap is on a separate disk, then one can control put write throttling rules
-on systemwide swapout. Though I still don't understand how that can help.
-
+> It is base on an earlier patch for gc-linux from
+> Albert Herranz <albert_herranz@yahoo.es>.
 > 
-> But I'm afraid slow swapout may consume much dirty_ratio and make things
-> worse ;)
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> CC: Albert Herranz <albert_herranz@yahoo.es>
+> Acked-by: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-gpio.txt b/Documentation/devicetree/bindings/i2c/i2c-gpio.txt
+> new file mode 100644
+> index 0000000..38ef4f2
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-gpio.txt
+> @@ -0,0 +1,40 @@
+> +GPIO-based I2C
+> +
+> +Required properties:
+> +- compatible : should be "i2c-gpio".
+> +- gpios : should specify GPIOs used for SDA and SCL lines, in that order.
+> +Optional properties:
+> +- sda-is-open-drain : present if SDA gpio is open-drain.
+> +- scl-is-open-drain : present if SCL gpio is open-drain.
+> +- scl-is-output-only : present if the output driver for SCL cannot be
+> +	turned off. this will prevent clock stretching from working.
+> +- speed-hz : SCL frequency.
 
-Exactly. So I think focus should be controlling things earlier and stop
-applications early before they can either write too much data in page
-cache etc.
+Hi Thomas,
 
-Thanks
-Vivek
+One nitpick; I just looked, and other i2c controllers are already
+using 'clock-frequency' instead of 'speed-hz' for the speed of the
+bus.  I'd like to see this patch use the same terminology.
+
+Otherwise this looks good to me.
+
+Thanks,
+g.
