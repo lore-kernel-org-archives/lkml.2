@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab1BXB2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 20:28:30 -0500
-Received: from kroah.org ([198.145.64.141]:46408 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932217Ab1BXB23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 20:28:29 -0500
-Date: Wed, 23 Feb 2011 17:29:24 -0800
-From: Greg KH <greg@kroah.com>
-To: Joe Perches <joe@perches.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug -
- using pr_err now
-Message-ID: <20110224012924.GA16496@kroah.com>
-References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
- <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
- <20110223191533.GB1030@kroah.com>
- <8AFC7968D54FB448A30D8F38F259C56233FADA94@TK5EX14MBXC118.redmond.corp.microsoft.com>
- <20110223215658.GB16908@kroah.com>
- <8AFC7968D54FB448A30D8F38F259C56233FAE0E8@TK5EX14MBXC118.redmond.corp.microsoft.com>
- <1298509049.32283.21.camel@Joe-Laptop>
+	id S1755740Ab1BXBge (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 20:36:34 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55091 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab1BXBgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 20:36:32 -0500
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-omap@vger.kernel.org,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 9/9 (originally 8)] ARM: etm: Power down etm(s) when tracing is not enabled
+Date: Wed, 23 Feb 2011 17:36:09 -0800
+Message-Id: <1298511369-20257-1-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1296701663-12168-1-git-send-email-arve@android.com>
+References: <1296701663-12168-1-git-send-email-arve@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298509049.32283.21.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 04:57:29PM -0800, Joe Perches wrote:
-> On Wed, 2011-02-23 at 23:17 +0000, Hank Janssen wrote:
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:greg@kroah.com]
-> > > Sent: Wednesday, February 23, 2011 1:57 PM
-> > > They where compile and run tested. And syslog was not a mess. What did
-> > > > I mess up here? The amount of printouts now are a fraction of what
-> > > > they where before.
-> > > You forgot to put '\n' at the end of all of your pr_XXX lines, so they will be
-> > > merged with the next one, messing up your syslog.  Joe also pointed this
-> > > problem out.
-> > > Take a look at your syslog to see what I am talking about...
-> 
-> Greg, there probably isn't any problem with his syslog.
-> 
-> Running together of messages without terminating newlines
-> did used to happen though until commit
-> 5fd29d6ccbc98884569d6f3105aeca70858b3e0f
-> ("printk: clean up handling of log-levels and newlines")
-> changed behavior so that newlines are emitted if necessary
-> before every "<.>" loglevel but "<c>".
-> 
-> That means that adding trailing newlines to pr_<level>
-> calls aren't _really_ necessary unless the pr_<level>
-> is followed by a bare printk without KERN_<LEVEL>.
+Without this change a saw an 18% increase in idle power consumption
+on one deivce when trace support is compiled into the kernel. Now
+I see the same increase only when tracing.
 
-Ah, I didn't realize that this had changed, my mistake, nevermind :)
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+---
+ arch/arm/kernel/etm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> I still think it's better from a style perspective to keep
-> adding terminating newlines until most all of the printks
-> are converted to pr_<level>.
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+index 48de5a4..f2bc95e 100644
+--- a/arch/arm/kernel/etm.c
++++ b/arch/arm/kernel/etm.c
+@@ -199,7 +199,7 @@ static int trace_stop_etm(struct tracectx *t, int id)
+ 
+ 	etm_unlock(t, id);
+ 
+-	etm_writel(t, id, 0x440, ETMR_CTRL);
++	etm_writel(t, id, 0x441, ETMR_CTRL);
+ 	while (!(etm_readl(t, id, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
+ 		;
+ 	if (!timeout) {
+@@ -738,7 +738,7 @@ static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
+ 	(void)etm_readl(&tracer, t->etm_regs_count, ETMMR_OSSRR);
+ 
+ 	t->ncmppairs = etm_readl(t, t->etm_regs_count, ETMR_CONFCODE) & 0xf;
+-	etm_writel(t, t->etm_regs_count, 0x440, ETMR_CTRL);
++	etm_writel(t, t->etm_regs_count, 0x441, ETMR_CTRL);
+ 	etm_writel(t, t->etm_regs_count, new_count, ETMR_TRACEIDR);
+ 	etm_lock(t, t->etm_regs_count);
+ 
+-- 
+1.7.3.1
 
-Yes, that would be good to have done.
-
-thanks,
-
-greg k-h
