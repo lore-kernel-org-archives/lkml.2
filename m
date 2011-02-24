@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab1BXKXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 05:23:40 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:51183 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab1BXKXi (ORCPT
+	id S1755504Ab1BXK0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 05:26:19 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47864 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab1BXK0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 05:23:38 -0500
-Message-ID: <886E26C48DE446C3937D89ECF86030B2@subhasishg>
+	Thu, 24 Feb 2011 05:26:17 -0500
+Message-ID: <B078763F059B415E9DD8D61AA14F9D5C@subhasishg>
 From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
 To: "Nori, Sekhar" <nsekhar@ti.com>,
         <davinci-linux-open-source@linux.davincidsp.com>
@@ -15,14 +15,13 @@ Cc: <linux-arm-kernel@lists.infradead.org>,
         "Watkins, Melissa" <m-watkins@ti.com>, <sachi@mistralsolutions.com>,
         "Kevin Hilman" <khilman@deeprootsystems.com>,
         "Russell King" <linux@arm.linux.org.uk>,
-        "Michael Williamson" <michael.williamson@criticallink.com>,
         "Chemparathy, Cyril" <cyril@ti.com>,
-        "Sergei Shtylyov" <sshtylyov@ru.mvista.com>,
+        "Juha Kuikka" <juha.kuikka@elektrobit.com>,
         "open list" <linux-kernel@vger.kernel.org>
-References: <1297434088-27995-1-git-send-email-subhasish@mistralsolutions.com> <B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com>
-Subject: Re: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
-Date: Thu, 24 Feb 2011 15:54:56 +0530
+References: <1297433905-27925-1-git-send-email-subhasish@mistralsolutions.com> <B85A65D85D7EB246BE421B3FB0FBB593024BE4916D@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BE4916D@dbde02.ent.ti.com>
+Subject: Re: [PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS.
+Date: Thu, 24 Feb 2011 15:57:35 +0530
 Organization: Mistral Solutions
 MIME-Version: 1.0
 Content-Type: text/plain;
@@ -39,86 +38,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------------------------------------------
-From: "Nori, Sekhar" <nsekhar@ti.com>
-Sent: Wednesday, February 23, 2011 9:00 PM
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>; 
-<davinci-linux-open-source@linux.davincidsp.com>
-Cc: <linux-arm-kernel@lists.infradead.org>; "Watkins, Melissa" 
-<m-watkins@ti.com>; <sachi@mistralsolutions.com>; "Kevin Hilman" 
-<khilman@deeprootsystems.com>; "Russell King" <linux@arm.linux.org.uk>; 
-"Michael Williamson" <michael.williamson@criticallink.com>; "Chemparathy, 
-Cyril" <cyril@ti.com>; "Sergei Shtylyov" <sshtylyov@ru.mvista.com>; "open 
-list" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
-
 > Hi Subhasish,
 >
-> On Fri, Feb 11, 2011 at 19:51:28, Subhasish Ghosh wrote:
->> This patch modifies the sram allocator to allocate memory
->> from the DA8XX shared RAM.
->
-> It will be nice to know if you tried suspend-to-RAM
-> after this change and found it to be working.
->
+> Please add a "davinci: " prefix to the subject line of
+> mach-davinci patches. The patch is not really specific
+> to DA830.
 
-SG -- My file system is currently mounted from MMC.
-          Suspend to RAM seems to have bug with MMC.
-           (http://processors.wiki.ti.com/index.php/OMAP-L1_Linux_Drivers_Usage#Suspend-to-RAM)
-          I had tried NFS earlier, but I think there is some problem with 
-NFS boot and udev with this kernel.
-           So, currently I will not be able to do it, but will try if I get 
-a chance.
+SG -- OK, Will do
 
+>
+> On Fri, Feb 11, 2011 at 19:48:25, Subhasish Ghosh wrote:
+>> The PRUSS was named as DMAX on da830 platform.
+>> This patch resolves the naming conflict by replacing the macro
+>> DA8XX_LPSC0_DMAX with DA8XX_LPSC0_PRUSS.
+>
+> This description is inaccurate. Firstly, there is no naming
+> conflict. DMAX is an internal name for the module which is
+> known as PRUSS in TI public documentation. This patch just
+> gets the code in sync with TI documentation.
+>
+> Can you please update the subject and re-spin this patch?
+
+SG - OK, Will do.
+
+
+>
 > Thanks,
 > Sekhar
 >
 >>
 >> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
 >> ---
->>  arch/arm/mach-davinci/da850.c              |    6 +++---
->>  arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
->>  2 files changed, 4 insertions(+), 3 deletions(-)
+>>  arch/arm/mach-davinci/da830.c            |    2 +-
+>>  arch/arm/mach-davinci/include/mach/psc.h |    2 +-
+>>  2 files changed, 2 insertions(+), 2 deletions(-)
 >>
->> diff --git a/arch/arm/mach-davinci/da850.c 
->> b/arch/arm/mach-davinci/da850.c
->> index 3443d97..8a4de97 100644
->> --- a/arch/arm/mach-davinci/da850.c
->> +++ b/arch/arm/mach-davinci/da850.c
->> @@ -711,7 +711,7 @@ static struct map_desc da850_io_desc[] = {
->>  },
->>  {
->>  .virtual = SRAM_VIRT,
->> - .pfn = __phys_to_pfn(DA8XX_ARM_RAM_BASE),
->> + .pfn = __phys_to_pfn(DA8XX_SHARED_RAM_BASE),
->>  .length = SZ_8K,
->>  .type = MT_DEVICE
->>  },
->> @@ -1083,8 +1083,8 @@ static struct davinci_soc_info 
->> davinci_soc_info_da850 = {
->>  .gpio_irq = IRQ_DA8XX_GPIO0,
->>  .serial_dev = &da8xx_serial_device,
->>  .emac_pdata = &da8xx_emac_pdata,
->> - .sram_dma = DA8XX_ARM_RAM_BASE,
->> - .sram_len = SZ_8K,
->> + .sram_dma = DA8XX_SHARED_RAM_BASE,
->> + .sram_len = SZ_128K,
->>  .reset_device = &da8xx_wdt_device,
+>> diff --git a/arch/arm/mach-davinci/da830.c 
+>> b/arch/arm/mach-davinci/da830.c
+>> index ec23ab4..0577a5d 100644
+>> --- a/arch/arm/mach-davinci/da830.c
+>> +++ b/arch/arm/mach-davinci/da830.c
+>> @@ -148,7 +148,7 @@ static struct clk scr2_ss_clk = {
+>>  static struct clk dmax_clk = {
+>>  .name = "dmax",
+>>  .parent = &pll0_sysclk2,
+>> - .lpsc = DA8XX_LPSC0_DMAX,
+>> + .lpsc = DA8XX_LPSC0_PRUSS,
+>>  .flags = ALWAYS_ENABLED,
 >>  };
 >>
->> diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h 
->> b/arch/arm/mach-davinci/include/mach/da8xx.h
->> index cfcb223..c3c3339 100644
->> --- a/arch/arm/mach-davinci/include/mach/da8xx.h
->> +++ b/arch/arm/mach-davinci/include/mach/da8xx.h
->> @@ -70,6 +70,7 @@ extern unsigned int da850_max_speed;
->>  #define DA8XX_AEMIF_CTL_BASE 0x68000000
->>  #define DA8XX_DDR2_CTL_BASE 0xb0000000
->>  #define DA8XX_ARM_RAM_BASE 0xffff0000
->> +#define DA8XX_SHARED_RAM_BASE 0x80000000
+>> diff --git a/arch/arm/mach-davinci/include/mach/psc.h 
+>> b/arch/arm/mach-davinci/include/mach/psc.h
+>> index 62b0858..a47e6f2 100644
+>> --- a/arch/arm/mach-davinci/include/mach/psc.h
+>> +++ b/arch/arm/mach-davinci/include/mach/psc.h
+>> @@ -150,7 +150,7 @@
+>>  #define DA8XX_LPSC0_SCR0_SS 10
+>>  #define DA8XX_LPSC0_SCR1_SS 11
+>>  #define DA8XX_LPSC0_SCR2_SS 12
+>> -#define DA8XX_LPSC0_DMAX 13
+>> +#define DA8XX_LPSC0_PRUSS 13
+>>  #define DA8XX_LPSC0_ARM 14
+>>  #define DA8XX_LPSC0_GEM 15
 >>
->>  void __init da830_init(void);
->>  void __init da850_init(void);
 >> -- 
 >> 1.7.2.3
 >>
