@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab1BXJ7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 04:59:44 -0500
-Received: from mail1.matrix-vision.com ([78.47.19.71]:48503 "EHLO
-	mail1.matrix-vision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172Ab1BXJ7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 04:59:43 -0500
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Feb 2011 04:59:43 EST
-Message-ID: <4D662A9E.90007@matrix-vision.de>
-Date: Thu, 24 Feb 2011 10:53:34 +0100
-From: Michael Jones <michael.jones@matrix-vision.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101029 Lightning/1.0b2 Thunderbird/3.1.6
+	id S932391Ab1BXKEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 05:04:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932299Ab1BXKEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 05:04:43 -0500
+Message-ID: <4D662D34.7040104@redhat.com>
+Date: Thu, 24 Feb 2011 12:04:36 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Alexander Holler <holler@ahsoftware.de>, Greg KH <gregkh@suse.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org
-Subject: Re: [024/115] USB: prevent buggy hubs from crashing the USB stack
-References: <4D64C81B.5060807@ahsoftware.de> <Pine.LNX.4.44L0.1102231021210.2233-100000@iolanthe.rowland.org> <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110224085735.GD3528@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com
+Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable memory
+ slots using wbtree
+References: <1298386481.5764.60.camel@x201>	 <20110222183822.22026.62832.stgit@s20.home>  <4D6507C9.1000906@redhat.com> <1298484395.18387.28.camel@x201>
+In-Reply-To: <1298484395.18387.28.camel@x201>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-MV-Disclaimer: true (erinome)
-X-AV-Checked: ClamAV using ClamSMTP (erinome)
-X-AV-Checked: ClamAV using ClamSMTP (mail1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2011 09:57 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Wed, Feb 23, 2011 at 10:26:20AM -0500, Alan Stern wrote:
->> In both cases, it appears that the problem is caused by the fact that 
->> the musb host-controller driver doesn't set the hcd->has_tt flag.
->>
->> Felipe, you should know where it belongs.  It should be easy enough to 
->> add.
-> 
-> Sure Alan, it's attached to this mail. Compile tested only though.
-> Michael, would you care to give your tested-by ?
-> 
+On 02/23/2011 08:06 PM, Alex Williamson wrote:
+> On Wed, 2011-02-23 at 15:12 +0200, Avi Kivity wrote:
+> >  On 02/22/2011 08:54 PM, Alex Williamson wrote:
+> >  >  This series introduces a new weight-balanced binary tree (wbtree) for
+> >  >  general use.  It's largely leveraged from the rbtree, copying it's
+> >  >  rotate functions, while introducing different rebalance and erase
+> >  >  functions.  This tree is particularly useful for managing memory
+> >  >  ranges, where it's desirable to have the most likely targets (the
+> >  >  largest ranges) at the top of each subtree.
+> >  >
+> >  >  Patches 2&   3 go on to convert the KVM memory slots to a growable
+> >  >  array and make use of wbtree for efficient managment.  Trying to
+> >  >  exercise the worst case for this data structure, I ran netperf
+> >  >  TCP_RR on an emulated rtl8139 NIC connected directly to the host
+> >  >  via a tap.  Both qemu-kvm and the netserver on the host were
+> >  >  pinned to optimal CPUs with taskset.  This series resulted in
+> >  >  a 3% improvement for this test.
+> >  >
+> >
+> >  In this case, I think most of the faults (at least after the guest was
+> >  warmed up) missed the tree completely.
+>
+> Except for the mmio faults for the NIC, which will traverse the entire
+> depth of that branch of the tree for every access.
 
-Alexander already did, but I can do now, too.  Thanks for the fix.
+That is exactly what I meant: most of the faults cause the search to 
+fail.  What we want here is to cache the success/fail result of the 
+search so we don't do it in the first place.
 
-Tested-by: Michael Jones <michael.jones@matrix-vision.de>
+> >  In this case a weight balanced
+> >  tree is hardly optimal (it is optimized for hits), so I think you'll see
+> >  a bigger gain from the mmio fault optimization.  You'll probably see
+> >  most of the gain running mmu intensive tests with ept=0.
+>
+> Right, the gain expected by this test is that we're only traversing 6-7
+> tree nodes until we don't find a match, versus the full 32 entries of
+> the original memslot array.  So it's effectively comparing worst case
+> scenarios for both data structures.
 
-MATRIX VISION GmbH, Talstrasse 16, DE-71570 Oppenweiler
-Registergericht: Amtsgericht Stuttgart, HRB 271090
-Geschaeftsfuehrer: Gerhard Thullner, Werner Armingeon, Uwe Furtner
+If we optimized the linear list we'd sort it by size, descending, and 
+limit it by the number of instantiated slots, which I think would beat 
+the tree.
+
+-- 
+error compiling committee.c: too many arguments to function
+
