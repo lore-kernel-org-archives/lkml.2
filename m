@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab1BXUJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 15:09:45 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48746 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754262Ab1BXUJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 15:09:43 -0500
-Date: Thu, 24 Feb 2011 20:11:24 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-hotplug@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
-Message-ID: <20110224201124.138311ba@lxorguk.ukuu.org.uk>
-In-Reply-To: <1298573197.2428.457.camel@twins>
-References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
-	<1298573197.2428.457.camel@twins>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756319Ab1BXUPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 15:15:14 -0500
+Received: from void.printf.net ([89.145.121.20]:45580 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754598Ab1BXUPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 15:15:12 -0500
+Date: Thu, 24 Feb 2011 20:15:04 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Philip Rakity <prakity@marvell.com>
+Cc: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>,
+        Jae hoon Chung <jh80.chung@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
+	cmd
+Message-ID: <20110224201504.GA12913@void.printf.net>
+References: <20110224111935.GB7169@intel.com> <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com> <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com> <79DD18D4-C79A-4B08-B9E6-050D7EF2FC3D@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <79DD18D4-C79A-4B08-B9E6-050D7EF2FC3D@marvell.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Anybody who is interested in the latency of cpu hotplug is deluding
-> himself, also cpu hotplug is _NOT_ a power management feature, so the
-> rest of your justification just disappeared as well.
+On Thu, Feb 24, 2011 at 10:32:30AM -0800, Philip Rakity wrote:
+> proposed this a while ago and strongly support just removing the quirk for broken timeout and setting the timeout value to maximum of 0xE.
+> 
+> This also handles the case of the sd device having a timeout value too low.  In my testing I have come across SD cards that do not provide the correct value.
+> We force our pxa168, pxa910, and mmp2 controllers to have 0xE.  
 
-Actually CPU hotplug is a power management feature on some devices where
-you need to shutdown one of the cores to enter low power modes.
-Remember we use it as part of the suspend paths and various processors
-nowdays drop into a suspend to RAM type state on CPU idling.
+Yeah, OLPC's CaFe controller -- which might be the same hardware as yours,
+actually -- has the same problem.
 
-Alan
+Does anyone know of a reason (beyond strict spec-compliance, I suppose)
+for honoring the timeout value rather than using 0xE everywhere?  If not,
+I'm willing to try out Philip's suggestion.
+
+Thanks,
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
