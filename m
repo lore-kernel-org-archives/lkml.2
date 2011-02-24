@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab1BXPJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 10:09:41 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60111 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab1BXPJi convert rfc822-to-8bit (ORCPT
+	id S1754667Ab1BXPMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 10:12:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33290 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab1BXPMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 10:09:38 -0500
+	Thu, 24 Feb 2011 10:12:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=NiRmG1WlBcYsQw7+502SkMVJJhWUMp6KRM0OvNkL9pOOtQUs49k3sflzx4FSfd/7NG
-         rzkhNY5Hk3tz+53lAFvNaqBb+EBpDAoYyB2o1BAqf0XbJWaXah27+HZHlxxH19H9sXLx
-         lLcskncFKFV5602cqd6Wwoc064h/SxTd621Gk=
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=ImO9p6NChzTWP0tMOVhqX41pU8u5FVekZgSBHxNv+mi3+vWT0n4O+IW16fQaD6V9+u
+         dCTdv+N15L933zIbizrWMTC0JpUD/wE2vwENopAsZUGmjRevwqgZbu4rH3OLgXUgEhK1
+         rY7cM88Ddu0dSEVcvKHQ4OqBljZRG+1vngI2I=
+Date: Thu, 24 Feb 2011 18:12:38 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Kees Cook <kees.cook@canonical.com>,
+        Eugene Teo <eugene@redhat.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: module loading with CAP_NET_ADMIN
+Message-ID: <20110224151238.GA16916@albatros>
 MIME-Version: 1.0
-In-Reply-To: <E1PscUb-0004a3-Qi@pomaz-ex.szeredi.hu>
-References: <E1PscUb-0004a3-Qi@pomaz-ex.szeredi.hu>
-From: Mike Snitzer <snitzer@redhat.com>
-Date: Thu, 24 Feb 2011 10:06:57 -0500
-X-Google-Sender-Auth: hKk4-pwEz898CyPdWPYUjFzd8CM
-Message-ID: <AANLkTikhhuUZSryKsrb0LGuyux=zvGf+ncsNZXdj5Xeh@mail.gmail.com>
-Subject: Re: [PATCH] block: fix refcounting in BLKBSZSET
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        kovariadam@gmail.com, florian@mickler.org, rjw@sisk.pl, tj@kernel.org,
-        linux-kernel@vger.kernel.org, Alasdair G Kergon <agk@redhat.com>,
-        psusi@cfl.rr.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 9:48 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> [and lkml cc-d too]
->
-> This fixes bug 29202 in the 2.6.38 regression list.
+Hi netdev folks,
 
-It looks like this may fix bug 29792 too.
+I'd like to discuss the ability to load any modules from /lib/modules/
+by a process with CAP_NET_ADMIN.  Since Linux 2.6.32 [1] there is such
+possibility:
 
-Mike
+root@albatros:~# grep Cap /proc/$$/status
+CapInh: 0000000000000000
+CapPrm: fffffffc00001000
+CapEff: fffffffc00001000
+CapBnd: fffffffc00001000
+root@albatros:~# lsmod | grep xfs
+root@albatros:~# ifconfig xfs
+xfs: error fetching interface information: Device not found
+root@albatros:~# lsmod | grep xfs
+xfs                   767011  0 
+exportfs                4226  2 xfs,nfsd
 
-> Please apply.
->
-> Thanks,
-> Miklos
->
-> ----
-> Subject: block: fix refcounting in BLKBSZSET
->
-> From: Miklos Szeredi <mszeredi@suse.cz>
->
-> Adam Kovari and others reported that disconnecting an USB drive with
-> an ntfs-3g filesystem would cause "kernel BUG at fs/inode.c:1421!" to
-> be triggered.
->
-> The BUG could be traced back to ioctl(BLKBSZSET), which would
-> erroneously decrement the refcount on the bdev.  This is because
-> blkdev_get() expects the refcount to be already incremented and either
-> returns success or decrements the refcount and returns an error.
->
-> The bug was introduced by e525fd89 (block: make blkdev_get/put()
-> handle exclusive access), which didn't take into account this behavior
-> of blkdev_get().
->
-> Reported-by: Adam Kovari <kovariadam@gmail.com>
-> CC: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  block/ioctl.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
-> Index: linux.git/block/ioctl.c
-> ===================================================================
-> --- linux.git.orig/block/ioctl.c        2011-01-18 09:02:44.000000000 +0100
-> +++ linux.git/block/ioctl.c     2011-02-24 14:23:56.000000000 +0100
-> @@ -294,9 +294,11 @@ int blkdev_ioctl(struct block_device *bd
->                        return -EINVAL;
->                if (get_user(n, (int __user *) arg))
->                        return -EFAULT;
-> -               if (!(mode & FMODE_EXCL) &&
-> -                   blkdev_get(bdev, mode | FMODE_EXCL, &bdev) < 0)
-> -                       return -EBUSY;
-> +               if (!(mode & FMODE_EXCL)) {
-> +                       bdgrab(bdev);
-> +                       if (blkdev_get(bdev, mode | FMODE_EXCL, &bdev) < 0)
-> +                               return -EBUSY;
-> +               }
->                ret = set_blocksize(bdev, n);
->                if (!(mode & FMODE_EXCL))
->                        blkdev_put(bdev, mode | FMODE_EXCL);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Ability of CAP_NET_ADMIN to load the driver to work with a particular
+network device is rational;  however, one may load any module not even
+related to network this way.  Hopefully, this is not equal to
+CAP_SYS_MODULE since the module set is restricted to /lib/modules
+(additionally may be disabled with /proc/sys/kernel/modules_disabled),
+but the idea of non-netdev module loading is weird.
+
+My proposal is changing request_module("%s", name) to something like
+request_module("netdev-%s", name) inside of dev_load() and adding
+aliases to related drivers.  This would allow to load only netdev
+modules via these ioctls.  I'm not sure what modules should be patches -
+at least real physical netdevices have names different from drivers'
+names, so they don't need patching.  I suppose the list is not big.
+
+Any comments are welcome.
+
+
+[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
