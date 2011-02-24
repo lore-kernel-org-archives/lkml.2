@@ -1,48 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab1BXUQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 15:16:27 -0500
-Received: from www.tglx.de ([62.245.132.106]:50782 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754646Ab1BXUQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 15:16:25 -0500
-Date: Thu, 24 Feb 2011 21:16:01 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
-In-Reply-To: <20110224201124.138311ba@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LFD.2.00.1102242115011.2701@localhost6.localdomain6>
-References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com> <1298573197.2428.457.camel@twins> <20110224201124.138311ba@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756506Ab1BXUSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 15:18:36 -0500
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:58972 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755364Ab1BXUSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 15:18:35 -0500
+Message-ID: <4D66BD18.2030207@akamai.com>
+Date: Thu, 24 Feb 2011 12:18:32 -0800
+From: Josh Hunt <johunt@akamai.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jan Kara <jack@suse.cz>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "sandeen@redhat.com" <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] ext2: Resolve i_nlink race in ext2_rename
+References: <1298528501-32176-1-git-send-email-johunt@akamai.com> <20110224063749.GV22723@ZenIV.linux.org.uk> <20110224112010.GB23042@quack.suse.cz>
+In-Reply-To: <20110224112010.GB23042@quack.suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/mixed;
+ boundary="------------080601080000090204030400"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011, Alan Cox wrote:
+This is a multi-part message in MIME format.
+--------------080601080000090204030400
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-> > Anybody who is interested in the latency of cpu hotplug is deluding
-> > himself, also cpu hotplug is _NOT_ a power management feature, so the
-> > rest of your justification just disappeared as well.
+On 02/24/2011 03:20 AM, Jan Kara wrote:
+> On Thu 24-02-11 06:37:49, Al Viro wrote:
+>> On Wed, Feb 23, 2011 at 10:21:41PM -0800, Josh Hunt wrote:
+>>> [resending: left Jan off the original mail by accident]
+>>>
+>>> We have a multi-threaded workload which is currently "losing" files in the form
+>>> of unattached inodes. The workload is link, rename, unlink intensive. This is
+>>> happening on an ext2 filesystem and have reproduced the issue in kernel
+>>> 2.6.37.  Here's a sample strace:
+>>>
+>>>     open("/a/tmp/tmpfile.1296184058", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE, 0666) = 9
+>>>     link("/a/tmp/tmpfile.1296184058", "/a/tmp/tmpfile.28117.1296184059") = 0
+>>>     rename("/a/tmp/tmpfile.28117.1296184059", "/a/tmp/tmpfile") = 0
+>>>     stat64("/a/tmp/tmpfile", {st_mode=S_IFREG|0644, st_size=24248267, ...}) = 0
+>>>     link("/a/tmp/tmpfile", "/a/tmp/submit/tmpfile")        = 0
+>>>     open("/a/tmp/tmpfile.1296184058", O_RDONLY) = 13
+>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDWR|O_CREAT|O_EXCL, 0600) = 824
+>>>     rename("/a/tmp/submit/tmpfile", "/a/tmp/submit/tmpfile.send.q9SNoL")                = 0
+>>>     unlink("/a/tmp/tmpfile.1296184058") = 0
+>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 827
+>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 828
+>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 829
+>>>     unlink("/a/tmp/submit/tmpfile.send.q9SNoL") = 0
+>>>
+>>> The application behavior shown above repeats indefinitely with most filenames
+>>> changing during each iteration except for 'tmpfile'. Looking into this issue I
+>>> see that vfs_rename_other() only takes i_mutex for the new inode and the new
+>>> inode's directory as well as the old directory's mutex. This works for
+>>> modifying the dir entry and appears to be fine for most filesystems, but
+>>> ext2 and a few others (exofs, minix, nilfs2, omfs, sysv, ufs) modify i_nlink
+>>> inside of their respective rename functions without grabbing the i_mutex. The
+>>> modifications are done through calls to inode_inc_link_count(old_inode) and
+>>> inode_dec_link_count(old_inode), etc.
+>>>
+>>> Taking the mutex for the old inode appears to resolve the issue of the
+>>> lost files/unattached inodes that I am seeing with this workload. I've attached
+>>> a patch below doing what I've described above. If this is an accepted solution
+>>> I believe other filesystems may also be affected by this and I could provide
+>>> a patch for those as well.
+>>
+>> I don't know...  The thing is, we mostly do that to make life easier for
+>> fsck in case of crash.  Other than that, there's no reason to play with
+>> link count of that sucker at all.  The question is, do we really want
+>> such rename() interrupted by dirty shutdown to result in what looks like two
+>> legitimate links to that inode without any indications of what had happened?
+>> Note that fsck (at least on ext2) will correct link counts anyway and if
+>> nothing else, we probably want some noise pointing to the inode in question...
+>   Yeah, I agree that playing with the link count is not worth it. It is
+> even more disputable because it would have some reasonable effect only if
+> we happened to write out the moved inode after it is linked to the new
+> directory and before it is unlinked from the old one. Moreover we'd need
+> to writeout the new directory and not the old directory before crash
+> happens. All this is highly unlikely and even if that happens, it is
+> questionable whether the result is worth it. So I'll just do away with
+> those games with link count...
+>   The patch is attached. Josh, can you test it as well? Thanks.
 > 
-> Actually CPU hotplug is a power management feature on some devices where
-> you need to shutdown one of the cores to enter low power modes.
+> 								Honza
+Jan
 
-Right.
+I'm not seeing the problem with your patch as was expected since we're
+not messing with i_nlink anymore. Al suggested marking the inode as
+dirty where we were previously doing the old_inode dec. I believe this
+is needed as well since we are updating it's ctime. I've attached a
+version marking the inode dirty and it also fixes the comment making
+reference to calling inode_dec_link_count().
 
-> Remember we use it as part of the suspend paths and various processors
-> nowdays drop into a suspend to RAM type state on CPU idling.
+I'm not completely clear on the historical reasons for messing with the
+link count of old_inode in the first place. It was just to simulate the
+linking and unlinking of the old_inode?
 
-The suspend path is using it, but the cpu idle one is hardly using the
-hotplug muck.
+Thanks
+Josh
 
-Thanks,
+--------------080601080000090204030400
+Content-Type: text/x-patch;
+ name="0001-ext2-Resolve-i_nlink-count-corruption-with-heavy-unl.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ext2-Resolve-i_nlink-count-corruption-with-heavy-unl.pa";
+ filename*1="tch"
 
-	tglx
+>From cb347219bc21622dee06491b689c711e452005ce Mon Sep 17 00:00:00 2001
+From: Josh Hunt <johunt@akamai.com>
+Date: Thu, 24 Feb 2011 11:56:43 -0800
+Subject: [PATCH] ext2: Resolve i_nlink count corruption with heavy unlink and rename
+
+old_inode's i_nlink count can become corrupt in ext2_rename() because we do not
+grab it's i_mutex in vfs_rename_other(). Looking into this further it has been
+determined there is no good reason for changing old_inode's link counts at all.
+Instead we just mark the inode as dirty when we are done.
+
+CC: Al Viro  <viro@ZenIV.linux.org.uk>
+CC: Jan Kara <jack@suse.cz>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+---
+ fs/ext2/namei.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 2e1d834..adb9185 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -344,7 +344,6 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 		new_de = ext2_find_entry (new_dir, &new_dentry->d_name, &new_page);
+ 		if (!new_de)
+ 			goto out_dir;
+-		inode_inc_link_count(old_inode);
+ 		ext2_set_link(new_dir, new_de, new_page, old_inode, 1);
+ 		new_inode->i_ctime = CURRENT_TIME_SEC;
+ 		if (dir_de)
+@@ -356,12 +355,9 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 			if (new_dir->i_nlink >= EXT2_LINK_MAX)
+ 				goto out_dir;
+ 		}
+-		inode_inc_link_count(old_inode);
+ 		err = ext2_add_link(new_dentry, old_inode);
+-		if (err) {
+-			inode_dec_link_count(old_inode);
++		if (err)
+ 			goto out_dir;
+-		}
+ 		if (dir_de)
+ 			inode_inc_link_count(new_dir);
+ 	}
+@@ -369,12 +365,11 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	/*
+ 	 * Like most other Unix systems, set the ctime for inodes on a
+  	 * rename.
+-	 * inode_dec_link_count() will mark the inode dirty.
+ 	 */
+ 	old_inode->i_ctime = CURRENT_TIME_SEC;
++	mark_inode_dirty(old_inode);
+
+ 	ext2_delete_entry (old_de, old_page);
+-	inode_dec_link_count(old_inode);
+
+ 	if (dir_de) {
+ 		if (old_dir != new_dir)
+--
+1.7.0.4
+
+
+--------------080601080000090204030400--
