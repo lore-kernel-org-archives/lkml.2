@@ -1,110 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1BXMWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 07:22:40 -0500
-Received: from webbox4.loswebos.de ([213.187.93.205]:35121 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab1BXMWi (ORCPT
+	id S1754253Ab1BXMYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 07:24:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53933 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab1BXMYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 07:22:38 -0500
-Date: Thu, 24 Feb 2011 13:22:35 +0100
-From: Marc Koschewski <marc@osknowledge.org>
-To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "adrian.hunter@nokia.com" <adrian.hunter@nokia.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase
- time
-Message-ID: <20110224122235.GC7260@marc.osknowledge.org>
-References: <20110224111801.GA7169@intel.com>
- <20110224113756.GB7260@marc.osknowledge.org>
- <5D8008F58939784290FAB48F5497519835CE59FE52@shsmsx502.ccr.corp.intel.com>
+	Thu, 24 Feb 2011 07:24:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=GusS/ux9+qR+tBkm5Ow6Tnn7HaWWdLjX+cAK4oZJ8TYB4EydqGtJlP4qZx9kt8+LVH
+         aVodPzPR3yoUBuGnT1BuX6S01QjrNZ0mx4ho6Lr28x65biJ565+AeKRY1rF4Tuaarp4c
+         6pURtHCmiHJJWQKm3RlYZBkrxMjjQPDG7xw9U=
+Message-ID: <4D664DE5.7020002@gmail.com>
+Date: Thu, 24 Feb 2011 13:24:05 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5D8008F58939784290FAB48F5497519835CE59FE52@shsmsx502.ccr.corp.intel.com>
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://www.kosik.org/pubkey.asc
-X-Blog: http://www.kosik.org/blog/
-X-Operating-System: Linux marc 2.6.37-ck2-dezzy
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jslaby@suse.cz>
+CC: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] DVB-USB: dib0700, fix oops with non-dib7000pc devices
+References: <1296930047-22689-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1296930047-22689-1-git-send-email-jslaby@suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dong, Chuanxiao <chuanxiao.dong@intel.com> [2011-02-24 20:09:59 +0800]:
+Hmm, could anybody pick it up?
 
+On 02/05/2011 07:20 PM, Jiri Slaby wrote:
+> These devices use different internal structures (dib7000m) and
+> dib7000p pid ctrl accesses invalid members causing kernel to die.
 > 
+> Introduce pid control functions for dib7000m which operate on the
+> correct structure.
 > 
-> > -----Original Message-----
-> > From: Marc Koschewski [mailto:marc@osknowledge.org]
-> > Sent: Thursday, February 24, 2011 7:38 PM
-> > To: Dong, Chuanxiao
-> > Cc: linux-mmc@vger.kernel.org; cjb@laptop.org; adrian.hunter@nokia.com;
-> > linus.walleij@linaro.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 1/1]mmc: fix division by zero when calculate mmc erase time
-> > 
-> > Hi,
-> > 
-> > * Chuanxiao Dong <chuanxiao.dong@intel.com> [2011-02-24 19:18:01 +0800]:
-> > 
-> > > Since if clock gating feature is enabled, the clock frequency may be zero when
-> > > host clock is gated. In such scenario, mmc_set_mmc_erase_timeout() may have a
-> > > division by zero bug.
-> > >
-> > > So this patch used mmc_host_clk_rate() to fix this.
-> > >
-> > > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> > > ---
-> > >  drivers/mmc/core/core.c |   10 ++++++++--
-> > >  1 files changed, 8 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> > > index 34a7e8c..12d0eb8 100644
-> > > --- a/drivers/mmc/core/core.c
-> > > +++ b/drivers/mmc/core/core.c
-> > > @@ -1201,8 +1201,14 @@ static void mmc_set_mmc_erase_timeout(struct
-> > mmc_card *card,
-> > >  		 * less but not that much less, so fudge it by multiplying by 2.
-> > >  		 */
-> > >  		timeout_clks <<= 1;
-> > > -		timeout_us += (timeout_clks * 1000) /
-> > > -			      (card->host->ios.clock / 1000);
-> > > +
-> > > +		/*
-> > > +		 * at this moment, host controller maybe clock gated, so make
-> > > +		 * sure we can get a correct host clock freq.
-> > > +		 */
-> > > +		if (mmc_host_clk_rate(card->host))
-> > > +			timeout_us += (timeout_clks * 1000) /
-> > > +				      (mmc_host_clk_rate(card->host) / 1000);
-> > 
-> > Why don't you just reuse mmc_host_clk_rate()'s result instead of calling it twice?
-> This is a incline function and just return host->ios.clock. Reuse mmc_host_clk_rate()'s result need to add a new variable to save the value.
-
-It's not inline on trunk and it spinlocks.
-
-drivers/mmc/core/host.c:195
-
-    194  */
-    195 unsigned int mmc_host_clk_rate(struct mmc_host *host)
-    196 {
-
-Cheers,
-Marc
-
+> The oops it fixes:
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000012
+> IP: [<ffffffff813658a7>] i2c_transfer+0x17/0x140
+> PGD 13dcbb067 PUD 13e3c9067 PMD 0
+> Oops: 0000 [#1] PREEMPT SMP
+> ...
+> Modules linked in: ...
+> Pid: 3511, comm: kaffeine Tainted: G   M       2.6.34.8-0.1-desktop #1 NITU1/20023
+> RIP: 0010:[<ffffffff813658a7>]  [<ffffffff813658a7>] i2c_transfer+0x17/0x140
+> RSP: 0018:ffff88011ce59bc8  EFLAGS: 00010292
+> RAX: ffff88011ce59c38 RBX: 0000000000000002 RCX: 0000000000001cda
+> RDX: 0000000000000002 RSI: ffff88011ce59c18 RDI: 0000000000000002
+> ...
+> CR2: 0000000000000012 CR3: 000000011ce53000 CR4: 00000000000406e0
+> Process kaffeine (pid: 3511, threadinfo ffff88011ce58000, task ffff88009a40c700)
+> Stack:
+> ...
+> Call Trace:
+>  [<ffffffffa067a07f>] dib7000p_read_word+0x6f/0xd0 [dib7000p]
+>  [<ffffffffa067bfa2>] dib7000p_pid_filter_ctrl+0x42/0xb0 [dib7000p]
+>  [<ffffffffa0654221>] dvb_usb_ctrl_feed+0x151/0x170 [dvb_usb]
+>  [<ffffffffa062270b>] dmx_ts_feed_start_filtering+0x5b/0xe0 [dvb_core]
+> ...
+> Code: a6 f9 ff 48 83 c4 18 c3 66 66 66 2e 0f 1f 84 00 00 00 00 00 41 57 41 56 41 89 d6 41 55 49 89 f5 41 54 55 53 48 89 fb 48 83 ec 18 <48> 8b 47 10 48 83 38 00 0f 84 c8 00 00 00 65 48 8b 04 25 40 b5
 > 
-> Thanks
-> Chuanxiao
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  drivers/media/dvb/dvb-usb/dib0700_devices.c |   18 +++++++++++++++++-
+>  drivers/media/dvb/frontends/dib7000m.c      |   19 +++++++++++++++++++
+>  drivers/media/dvb/frontends/dib7000m.h      |   16 ++++++++++++++++
+>  3 files changed, 52 insertions(+), 1 deletions(-)
 > 
-> 
+> diff --git a/drivers/media/dvb/dvb-usb/dib0700_devices.c b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+> index c6022af..23fe0c3 100644
+> --- a/drivers/media/dvb/dvb-usb/dib0700_devices.c
+> +++ b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+> @@ -80,6 +80,9 @@ static struct dib3000mc_config bristol_dib3000mc_config[2] = {
+>  	}
+>  };
+>  
+> +static int stk70x0m_pid_filter(struct dvb_usb_adapter *adapter, int index, u16 pid, int onoff);
+> +static int stk70x0m_pid_filter_ctrl(struct dvb_usb_adapter *adapter, int onoff);
+> +
+>  static int bristol_frontend_attach(struct dvb_usb_adapter *adap)
+>  {
+>  	struct dib0700_state *st = adap->dev->priv;
+> @@ -686,8 +689,11 @@ static int stk7700p_frontend_attach(struct dvb_usb_adapter *adap)
+>  	if (dib7000pc_detection(&adap->dev->i2c_adap)) {
+>  		adap->fe = dvb_attach(dib7000p_attach, &adap->dev->i2c_adap, 18, &stk7700p_dib7000p_config);
+>  		st->is_dib7000pc = 1;
+> -	} else
+> +	} else {
+>  		adap->fe = dvb_attach(dib7000m_attach, &adap->dev->i2c_adap, 18, &stk7700p_dib7000m_config);
+> +		adap->props.pid_filter = stk70x0m_pid_filter;
+> +		adap->props.pid_filter_ctrl = stk70x0m_pid_filter_ctrl;
+> +	}
+>  
+>  	return adap->fe == NULL ? -ENODEV : 0;
+>  }
+> @@ -882,6 +888,16 @@ static int stk70x0p_pid_filter_ctrl(struct dvb_usb_adapter *adapter, int onoff)
+>      return dib7000p_pid_filter_ctrl(adapter->fe, onoff);
+>  }
+>  
+> +static int stk70x0m_pid_filter(struct dvb_usb_adapter *adapter, int index, u16 pid, int onoff)
+> +{
+> +	return dib7000m_pid_filter(adapter->fe, index, pid, onoff);
+> +}
+> +
+> +static int stk70x0m_pid_filter_ctrl(struct dvb_usb_adapter *adapter, int onoff)
+> +{
+> +	return dib7000m_pid_filter_ctrl(adapter->fe, onoff);
+> +}
+> +
+>  static struct dibx000_bandwidth_config dib7070_bw_config_12_mhz = {
+>  	60000, 15000,
+>  	1, 20, 3, 1, 0,
+> diff --git a/drivers/media/dvb/frontends/dib7000m.c b/drivers/media/dvb/frontends/dib7000m.c
+> index c7f5ccf..90d9411 100644
+> --- a/drivers/media/dvb/frontends/dib7000m.c
+> +++ b/drivers/media/dvb/frontends/dib7000m.c
+> @@ -1372,6 +1372,25 @@ error:
+>  }
+>  EXPORT_SYMBOL(dib7000m_attach);
+>  
+> +int dib7000m_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
+> +{
+> +	struct dib7000m_state *state = fe->demodulator_priv;
+> +	u16 val = dib7000m_read_word(state, 235) & 0xffef;
+> +	val |= (onoff & 0x1) << 4;
+> +	dprintk("PID filter enabled %d", onoff);
+> +	return dib7000m_write_word(state, 235, val);
+> +}
+> +EXPORT_SYMBOL(dib7000m_pid_filter_ctrl);
+> +
+> +int dib7000m_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid, u8 onoff)
+> +{
+> +	struct dib7000m_state *state = fe->demodulator_priv;
+> +	dprintk("PID filter: index %x, PID %d, OnOff %d", id, pid, onoff);
+> +	return dib7000m_write_word(state, 241 + id,
+> +			onoff ? (1 << 13) | pid : 0);
+> +}
+> +EXPORT_SYMBOL(dib7000m_pid_filter);
+> +
+>  static struct dvb_frontend_ops dib7000m_ops = {
+>  	.info = {
+>  		.name = "DiBcom 7000MA/MB/PA/PB/MC",
+> diff --git a/drivers/media/dvb/frontends/dib7000m.h b/drivers/media/dvb/frontends/dib7000m.h
+> index 113819c..3353f5a 100644
+> --- a/drivers/media/dvb/frontends/dib7000m.h
+> +++ b/drivers/media/dvb/frontends/dib7000m.h
+> @@ -46,6 +46,8 @@ extern struct dvb_frontend *dib7000m_attach(struct i2c_adapter *i2c_adap,
+>  extern struct i2c_adapter *dib7000m_get_i2c_master(struct dvb_frontend *,
+>  						   enum dibx000_i2c_interface,
+>  						   int);
+> +extern int dib7000m_pid_filter(struct dvb_frontend *, u8 id, u16 pid, u8 onoff);
+> +extern int dib7000m_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff);
+>  #else
+>  static inline
+>  struct dvb_frontend *dib7000m_attach(struct i2c_adapter *i2c_adap,
+> @@ -63,6 +65,20 @@ struct i2c_adapter *dib7000m_get_i2c_master(struct dvb_frontend *demod,
+>  	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
+>  	return NULL;
+>  }
+> +
+> +static inline int dib7000m_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid,
+> +		u8 onoff)
+> +{
+> +	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
+> +	return -ENODEV;
+> +}
+> +
+> +static inline int dib7000m_pid_filter_ctrl(struct dvb_frontend *fe,
+> +		uint8_t onoff)
+> +{
+> +	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
+> +	return -ENODEV;
+> +}
+>  #endif
+>  
+>  /* TODO
+
 
 -- 
-Marc Koschewski
+js
