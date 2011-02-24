@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab1BXQiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:38:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52117 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab1BXQis (ORCPT
+	id S1756419Ab1BXQjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:39:43 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:57815 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756290Ab1BXQjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:38:48 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=mN7ZcCAKFbIA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=4XXrQqqHCXNTUQO3fVIA:9 a=olrQjJ-KNaLQMzUOaHIA:7 a=3ODR_NZB3-bt-v4t1-gmwlBpLFEA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Thu, 24 Feb 2011 11:38:44 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Dan Carpenter <error27@gmail.com>, Greg KH <gregkh@suse.de>,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110224163844.GC888@home.goodmis.org>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
- <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
- <20110222181613.GU4000@outflux.net>
- <20110222191333.GA9991@suse.de>
- <20110222192248.GX4000@outflux.net>
- <20110222193314.GA11033@suse.de>
- <20110222202915.GC1966@bicker>
- <20110222205847.GA1867@khazad-dum.debian.net>
+	Thu, 24 Feb 2011 11:39:41 -0500
+Date: Thu, 24 Feb 2011 22:09:50 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
+Subject: Re: [CFS Bandwidth Control v4 3/7] sched: throttle cfs_rq entities
+ which exceed their local quota
+Message-ID: <20110224163950.GB3000@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <20110216031831.571628191@google.com>
+ <20110216031841.068673650@google.com>
+ <1298467933.2217.765.camel@twins>
+ <20110224052101.GA2755@in.ibm.com>
+ <1298545501.2428.18.camel@twins>
+ <20110224154547.GA3000@in.ibm.com>
+ <1298562773.2428.230.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110222205847.GA1867@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1298562773.2428.230.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 05:58:47PM -0300, Henrique de Moraes Holschuh wrote:
+On Thu, Feb 24, 2011 at 04:52:53PM +0100, Peter Zijlstra wrote:
+> On Thu, 2011-02-24 at 21:15 +0530, Bharata B Rao wrote:
+> > While I admit that our load balancing semantics wrt thorttled entities are
+> > not consistent (we don't allow pulling of tasks directly from throttled
+> > cfs_rqs, while allow pulling of tasks from a throttled hierarchy as in the
+> > above case), I am beginning to think if it works out to be advantageous.
+> > Is there a chance that the task gets to run on other CPU where the hierarchy
+> > isn't throttled since runtime is still available ? 
 > 
-> I do wish this went in.  debugfs is a hazard, both security-wise and
-> kernel-quality wise.  Anything that has to end up enabled in a distro
-> kernel really does not belong in debugfs.  In fact, if you would object
-> to a kernel taint if a feature is used, IMO it certainly don't belong on
-> debugfs.
+> Possible yes, but the load-balancer doesn't know about that, not should
+> it (its complicated, and broken, enough, no need to add more cruft to
+> it).
 > 
+> I'm starting to think you all should just toss all this and start over,
+> its just too smelly.
 
-As I am one of the culprits of adding tool interfaces into debugfs, I'll
-give my opinion too.
+Hmm... You have brought up 3 concerns:
 
-When I first started using debugfs, it was because it was so much easier
-to add files to than /sys, and I remember /proc is something we do not
-want to add more functionality to.
+1. Hierarchy semantics
 
-It was also because we had no idea how ftrace was going to be used and
-what the final ABI was going to be. I was hoping that we can experiment
-with the interface and after some time we could move it out of debugfs
-with a stable ABI. But this, for various reasons, never materialized.
+If you look at the heirarchy semantics we currently have while ignoring the
+load balancer interactions for a moment, I guess what we have is a reasonable
+one.
 
-Currently things are still in a large flux, and I do not know how this
-will play out. Although the changes in /debugfs/tracing has toned down a
-lot, there's also the work going in on how to merge perf and ftrace.
-This may start changes as well, and perhaps deprecate interfaces. I
-don't know.
+- Only group entities are throttled
+- Throttled entities are taken off the runqueue and hence they never
+  get picked up for scheduling.
+- New or child entites are queued up to the throttled entities and not
+  further up. As I said in another thread, having the tree intact and correct
+  underneath the throttled entity allows us to rebuild the hierarchy during
+  unthrottling with least amount of effort.
+- Group entities in a hierarchy are throttled independent of each other based
+  on their bandwidth specification.
 
-Having debugfs as the main interface was not the goal of all this, but
-we seemed to have just gotten stuck with it.
+2. Handling of throttled entities by load balancer
 
--- Steve
+This definetely needs to improve and be more consistent. We can work on this.
 
+3. per-cgroup vs global period specification
+
+I thought per-cgroup specification would be most flexible and hence started
+out with that. This would allow groups/workloads/VMs to define their
+own bandwidth rate.
+
+Let us know if you have other design concerns besides these.
+
+Regards,
+Bharata.
