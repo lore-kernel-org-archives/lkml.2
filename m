@@ -1,94 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1BXSHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 13:07:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6491 "EHLO mga02.intel.com"
+	id S1755096Ab1BXSI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 13:08:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33965 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab1BXSHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 13:07:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,219,1297065600"; 
-   d="scan'208";a="606213962"
-From: james_p_freyensee@linux.intel.com
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        james_p_freyensee@linux.intel.com, christophe.guerard@intel.com
-Subject: [PATCH 10/10] n_tracerouter and n_tracesink compile configurations.
-Date: Thu, 24 Feb 2011 10:07:04 -0800
-Message-Id: <1298570824-26085-11-git-send-email-james_p_freyensee@linux.intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <james_p_freyensee@linux.intel.com>
-References: <james_p_freyensee@linux.intel.com>
+	id S1752855Ab1BXSIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 13:08:22 -0500
+Subject: Re: [RFC PATCH 2/3] kvm: Allow memory slot array to grow on demand
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com
+In-Reply-To: <4D663552.7070105@redhat.com>
+References: <20110222183822.22026.62832.stgit@s20.home>
+	 <20110222185512.22026.88579.stgit@s20.home>  <4D663552.7070105@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 11:08:16 -0700
+Message-ID: <1298570896.6140.35.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J Freyensee <james_p_freyensee@linux.intel.com>
+On Thu, 2011-02-24 at 12:39 +0200, Avi Kivity wrote:
+> On 02/22/2011 08:55 PM, Alex Williamson wrote:
+> > Remove fixed KVM_MEMORY_SLOTS limit, allowing the slot array
+> > to grow on demand.  Private slots are now allocated at the
+> > front instead of the end.  Only x86 seems to use private slots,
+> > so this is now zero for all other archs.  The memslots pointer
+> > is already updated using rcu, so changing the size off the
+> > array when it's replaces is straight forward.  x86 also keeps
+> > a bitmap of slots used by a kvm_mmu_page, which requires a
+> > shadow tlb flush whenever we increase the number of slots.
+> > This forces the pages to be rebuilt with the new bitmap size.
+> >
+> >
+> >
+> >   #define KVM_PIO_PAGE_OFFSET 1
+> >   #define KVM_COALESCED_MMIO_PAGE_OFFSET 2
+> > @@ -207,7 +206,7 @@ struct kvm_mmu_page {
+> >   	 * One bit set per slot which has memory
+> >   	 * in this shadow page.
+> >   	 */
+> > -	DECLARE_BITMAP(slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
+> > +	unsigned long *slot_bitmap;
+> 
+> What about
+> 
+>      union {
+>            DECLARE_BITMAP(direct_slot_bitmap, BITS_PER_LONG);
+>            unsigned long *indirect_slot_bitmap;
+>      };
+> 
+> to make the hackery below more explicit?
 
-This patch allows n_tracerouter and n_tracesink to be compiled and
-configured in the Linux kernel.
+Yeah, it need something to make the hackery go down easier.  I was
+actually thinking about:
 
-Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
----
- drivers/char/Kconfig |   32 ++++++++++++++++++++++++++++++++
- drivers/tty/Makefile |    2 ++
- 2 files changed, 34 insertions(+), 0 deletions(-)
+	unsigned long *slot_bitmap;
+	DECLARE_BITMAP(direct_slot_bitmap, BITS_PER_LONG);
 
-diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 43d3395..02b9be2 100644
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -289,6 +289,38 @@ config N_GSM
- 	  This line discipline provides support for the GSM MUX protocol and
- 	  presents the mux as a set of 61 individual tty devices.
+Where we'd then just set:
+
+	slot_bitmap = &direct_slot_bitmap;
+
+It wastes 8 bytes, and pushes the cache a little harder, but still helps
+the locality and makes the usage more consistent.
+
+> 
+> >
+> >   static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+> >   {
+> > +	struct kvm_memslots *slots = kvm_memslots(kvm);
+> > +
+> >   	ASSERT(is_empty_shadow_page(sp->spt));
+> >   	hlist_del(&sp->hash_link);
+> >   	list_del(&sp->link);
+> > +	if (unlikely(slots->nmemslots>  sizeof(sp->slot_bitmap) * 8))
+> > +		kfree(sp->slot_bitmap);
+> >   	__free_page(virt_to_page(sp->spt));
+> >   	if (!sp->role.direct)
+> >   		__free_page(virt_to_page(sp->gfns));
+> > @@ -1048,6 +1052,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+> >   					       u64 *parent_pte, int direct)
+> >   {
+> >   	struct kvm_mmu_page *sp;
+> > +	struct kvm_memslots *slots = kvm_memslots(vcpu->kvm);
+> >
+> >   	sp = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_header_cache, sizeof *sp);
+> >   	sp->spt = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache, PAGE_SIZE);
+> > @@ -1056,7 +1061,16 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+> >   						  PAGE_SIZE);
+> >   	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
+> >   	list_add(&sp->link,&vcpu->kvm->arch.active_mmu_pages);
+> > -	bitmap_zero(sp->slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
+> > +
+> > +	if (unlikely(slots->nmemslots>  sizeof(sp->slot_bitmap) * 8)) {
+> > +		sp->slot_bitmap = kzalloc(sizeof(long) *
+> > +					  BITS_TO_LONGS(slots->nmemslots),
+> > +					  GFP_KERNEL);
+> > +		if (!sp->slot_bitmap)
+> > +			return NULL;
+> 
+> We don't support failing kvm_mmu_get_page().  See 
+> mmu_memory_cache_alloc() and mmu_topup_memory_caches().
+
+Hmm, apparently my search stopped at __direct_map() calling
+kvm_mmu_get_page() and handling an error.
+
+> > +	} else
+> > +		bitmap_zero((void *)&sp->slot_bitmap, slots->nmemslots);
+> > +
+> >
+> 
+> 
+> 
+> >
+> >   static void mmu_convert_notrap(struct kvm_mmu_page *sp)
+> > @@ -3530,13 +3548,19 @@ int kvm_mmu_setup(struct kvm_vcpu *vcpu)
+> >   void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+> >   {
+> >   	struct kvm_mmu_page *sp;
+> > +	struct kvm_memslots *slots = kvm_memslots(kvm);
+> >
+> >   	list_for_each_entry(sp,&kvm->arch.active_mmu_pages, link) {
+> >   		int i;
+> >   		u64 *pt;
+> >
+> > -		if (!test_bit(slot, sp->slot_bitmap))
+> > -			continue;
+> > +		if (likely(slots->nmemslots<= sizeof(sp->slot_bitmap) * 8)) {
+> > +			if (!test_bit(slot, (void *)&sp->slot_bitmap))
+> > +				continue;
+> > +		} else {
+> > +			if (!test_bit(slot, sp->slot_bitmap))
+> > +				continue;
+> > +		}
+> 
+> That likely() would fail 100% for certain guests.
+> 
+> Neater to write
+> 
+>      slot_bitmap = sp_slot_bitmap(sp);
+>      if (!test_bit(slot, sp_slot_bitmap))
+>          continue;
+
+OK
+
+> > +
+> > +/*
+> > + * Protect from malicious userspace by putting an upper bound on the number
+> > + * of memory slots.  This is an arbitrarily large number that still allows
+> > + * us to make pseudo-guarantees about supporting 64 assigned devices with
+> > + * plenty of slots left over.
+> > + */
+> > +#ifndef KVM_MAX_MEM_SLOTS
+> > + #define KVM_MAX_MEM_SLOTS 512
+> > +#endif
+> 
+> The increase should be in a separate patch (after we optimize the 
+> search-fail case).
+
+Ok, I'll make this be 32 + PRIVATE_SLOTS for now
+
+> >
+> >   	if (!npages) {
+> >   		r = -ENOMEM;
+> > -		slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
+> > +
+> > +		nmemslots = (mem->slot>= kvm->memslots->nmemslots) ?
+> > +			    mem->slot + 1 : kvm->memslots->nmemslots;
+> > +
+> > +		slots = kzalloc(sizeof(struct kvm_memslots) +
+> > +				nmemslots * sizeof(struct kvm_memory_slot),
+> > +				GFP_KERNEL);
+> >   		if (!slots)
+> >   			goto out_free;
+> > -		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+> > -		if (mem->slot>= slots->nmemslots)
+> > -			slots->nmemslots = mem->slot + 1;
+> > +		memcpy(slots, kvm->memslots,
+> > +		       sizeof(struct kvm_memslots) + kvm->memslots->nmemslots *
+> > +		       sizeof(struct kvm_memory_slot));
+> > +		slots->nmemslots = nmemslots;
+> >   		slots->generation++;
+> >   		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
+> >
+> > @@ -787,12 +797,21 @@ skip_lpage:
+> >   	}
+> >
+> >   	r = -ENOMEM;
+> > -	slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
+> > +
+> > +	if (mem->slot>= kvm->memslots->nmemslots) {
+> > +		nmemslots = mem->slot + 1;
+> > +		flush = true;
+> 
+> Isn't flush here a little too agressive?  Shouldn't we flush only if we 
+> cross the BITS_PER_LONG threshold?
+
+Perhaps, but is that overly exploiting our knowledge about the bitmap
+implementation?  I figured better to error too aggressively than too
+lazy since this is a rare event already.
+
+> > +	} else
+> > +		nmemslots = kvm->memslots->nmemslots;
+> > +
+> > +	slots = kzalloc(sizeof(struct kvm_memslots) +
+> > +			nmemslots * sizeof(struct kvm_memory_slot),
+> > +			GFP_KERNEL);
+> 
+> Code duplication -> helper.
+> 
+> >   	if (!slots)
+> >   		goto out_free;
+> > -	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+> > -	if (mem->slot>= slots->nmemslots)
+> > -		slots->nmemslots = mem->slot + 1;
+> > +	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots) +
+> > +	       kvm->memslots->nmemslots * sizeof(struct kvm_memory_slot));
+> > +	slots->nmemslots = nmemslots;
+> >   	slots->generation++;
+> >
+> >   	/* actual memory is freed via old in kvm_free_physmem_slot below */
+> > @@ -808,6 +827,9 @@ skip_lpage:
+> >   	rcu_assign_pointer(kvm->memslots, slots);
+> >   	synchronize_srcu_expedited(&kvm->srcu);
+> >
+> > +	if (flush)
+> > +		kvm_arch_flush_shadow(kvm);
+> > +
+> 
+> Need to flush before rcu_assign_pointer() so kvm_mmu_free_page() sees 
+> the old slot count.
+> 
+> But even that is insufficient since we'll create direct and indirect 
+> slot bitmaps concurrently.  Need to store whether the bitmap is direct 
+> or not in kvm_mmu_page.
+
+Ick.  Ok, I'll investigate.
+
+> > @@ -1832,6 +1854,8 @@ static long kvm_vm_ioctl(struct file *filp,
+> >   						sizeof kvm_userspace_mem))
+> >   			goto out;
+> >
+> > +		kvm_userspace_mem.slot += KVM_PRIVATE_MEM_SLOTS;
+> > +
+> 
+> Slightly uneasy about this, but no real objection.
+
+If you have better ideas, let me know.  This reminds me to ask about
+this chunk:
+
+@@ -671,7 +674,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
  
-+config TRACE_ROUTER
-+        tristate "Trace data router for MIPI P1149.7 cJTAG standard"
-+                depends on TRACE_SINK
-+                default Y
-+        ---help---
-+          The trace router uses the Linux tty line discipline framework to
-+          route trace data coming from a tty port (say UART for example) to
-+           the trace sink line discipline driver and to another tty port(say USB).
-+           This is part of a solution for the MIPI P1149.7, compact JTAG,
-+           standard, which is for debugging mobile devices. The PTI driver in
-+           drivers/misc/pti.c defines the majority of this MIPI solution.
-+
-+          You should select this driver if the target kernel is meant for
-+          a mobile device containing a modem.  Then you will need to select
-+          "Trace data sink for MIPI P1149.7 cJTAG standard" line discipline
-+          driver.
-+
-+config TRACE_SINK
-+        tristate "Trace data sink for MIPI P1149.7 cJTAG standard"
-+                default Y
-+        ---help---
-+          The trace sink uses the Linux line discipline framework to receive
-+          trace data coming from the trace router line discipline driver
-+          to a user-defined tty port target, like USB.
-+          This is to provide a way to extract modem trace data on
-+          devices that do not have a PTI HW module, or just need modem
-+          trace data to come out of a different HW output port.
-+          This is part of a solution for the P1149.7, compact JTAG, standard.
-+
-+          If you select this option, you need to select
-+          "Trace data router for MIPI P1149.7 cJTAG standard".
-+
- config RISCOM8
- 	tristate "SDL RISCom/8 card support"
- 	depends on SERIAL_NONSTANDARD
-diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
-index c43ef48..8c56ffd 100644
---- a/drivers/tty/Makefile
-+++ b/drivers/tty/Makefile
-@@ -7,5 +7,7 @@ obj-$(CONFIG_MAGIC_SYSRQ)	+= sysrq.o
- obj-$(CONFIG_N_HDLC)		+= n_hdlc.o
- obj-$(CONFIG_N_GSM)		+= n_gsm.o
- obj-$(CONFIG_R3964)		+= n_r3964.o
-+obj-$(CONFIG_TRACE_ROUTER)      += n_tracerouter.o
-+obj-$(CONFIG_TRACE_SINK)        += n_tracesink.o
+        /* Check for overlaps */
+        r = -EEXIST;
+-       for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
++       for (i = KVM_PRIVATE_MEM_SLOTS; i < kvm->memslots->nmemslots; ++i) {
+                struct kvm_memory_slot *s = &kvm->memslots->memslots[i];
  
- obj-y				+= vt/
--- 
-1.7.2.3
+                if (s == memslot || !s->npages)
+
+I kept the same behavior as previous, but it highlights that we're not
+checking for overlaps between private slots and anything else.  Existing
+bug?  Thanks,
+
+Alex
 
