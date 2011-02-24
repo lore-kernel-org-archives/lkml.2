@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab1BXU3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 15:29:34 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:36634 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756484Ab1BXU3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 15:29:32 -0500
-Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-hotplug@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <alpine.LFD.2.00.1102241522130.31831@xanadu.home>
-References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
-	 <1298573197.2428.457.camel@twins>
-	 <20110224201124.138311ba@lxorguk.ukuu.org.uk>
-	 <alpine.LFD.2.00.1102242115011.2701@localhost6.localdomain6>
-	 <alpine.LFD.2.00.1102241522130.31831@xanadu.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Feb 2011 21:30:52 +0100
-Message-ID: <1298579452.5226.834.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756555Ab1BXUdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 15:33:51 -0500
+Received: from cantor.suse.de ([195.135.220.2]:59701 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756166Ab1BXUdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 15:33:49 -0500
+Message-ID: <4D66C094.4050800@suse.com>
+Date: Thu, 24 Feb 2011 15:33:24 -0500
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: linux-ia64@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH] tioca: Fix assignment from incompatible pointer warnings
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 15:24 -0500, Nicolas Pitre wrote:
+ The prototype for sn_pci_provider->{dma_map,dma_map_consistent} expects
+ an unsigned long instead of a u64.
 
-> Most SMP ARM processors are going to use it soon.  Powering down idle 
-> cores provides substantial power saving.
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
+ arch/ia64/sn/pci/tioca_provider.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-And why can't regular idle paths be used? CPU hotplug is a massively
-expensive operation.
-
+--- a/arch/ia64/sn/pci/tioca_provider.c
++++ b/arch/ia64/sn/pci/tioca_provider.c
+@@ -509,7 +509,7 @@ tioca_dma_unmap(struct pci_dev *pdev, dm
+  * use the GART mapped mode.
+  */
+ static u64
+-tioca_dma_map(struct pci_dev *pdev, u64 paddr, size_t byte_count, int dma_flags)
++tioca_dma_map(struct pci_dev *pdev, unsigned long paddr, size_t byte_count, int dma_flags)
+ {
+ 	u64 mapaddr;
+ 
+-- 
+Jeff Mahoney
+SUSE Labs
