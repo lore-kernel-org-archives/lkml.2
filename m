@@ -1,92 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1BXAsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 19:48:07 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:37614
+	id S1755237Ab1BXAst (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 19:48:49 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:36101
 	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751834Ab1BXAsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 19:48:05 -0500
-Date: Thu, 24 Feb 2011 00:48:18 +0000
+	id S1751659Ab1BXAss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 19:48:48 -0500
+Date: Thu, 24 Feb 2011 00:49:01 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>,
         containers@lists.linux-foundation.org,
         kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
         dhowells@redhat.com
-Subject: Re: [PATCH 4/9] allow killing tasks in your own or child userns
-Message-ID: <20110224004818.GA11822@mail.hallyn.com>
+Subject: [PATCH] userns: ptrace: incorporate feedback from Eric
+Message-ID: <20110224004901.GB11822@mail.hallyn.com>
 References: <20110217150224.GA26334@mail.hallyn.com>
- <20110217150325.GD26395@mail.hallyn.com>
- <20110218155921.440f1137.akpm@linux-foundation.org>
+ <20110217150333.GE26395@mail.hallyn.com>
+ <m1aahu9hea.fsf@fess.ebiederm.org>
+ <20110218043601.GB9584@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110218155921.440f1137.akpm@linux-foundation.org>
+In-Reply-To: <20110218043601.GB9584@mail.hallyn.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew Morton (akpm@linux-foundation.org):
-> On Thu, 17 Feb 2011 15:03:25 +0000
-> "Serge E. Hallyn" <serge@hallyn.com> wrote:
-> 
-> >  /*
-> > + * called with RCU read lock from check_kill_permission()
-> > + */
-> > +static inline int kill_ok_by_cred(struct task_struct *t)
-> > +{
-> > +	const struct cred *cred = current_cred();
-> > +	const struct cred *tcred = __task_cred(t);
-> > +
-> > +	if (cred->user->user_ns == tcred->user->user_ns &&
-> > +	    (cred->euid == tcred->suid ||
-> > +	     cred->euid == tcred->uid ||
-> > +	     cred->uid  == tcred->suid ||
-> > +	     cred->uid  == tcred->uid))
-> > +		return 1;
-> > +
-> > +	if (ns_capable(tcred->user->user_ns, CAP_KILL))
-> > +		return 1;
-> > +
-> > +	return 0;
-> > +}
-> 
-> The compiler will inline this for us.
-
-Is that simply true with everything (worth inlining) nowadays, or is
-there a particular implicit hint to the compiler that'll make that
-happen?
-
-Not that I guess it's even particularly important in this case.
-
-From: Serge E. Hallyn <serge.hallyn@canonical.com>
-Date: Thu, 24 Feb 2011 00:26:02 +0000
-Subject: [PATCH 1/2] userns: let compiler inline kill_ok_by_cred (per akpm)
+same_or_ancestore_user_ns() was not an appropriate check to
+constrain cap_issubset.  Rather, cap_issubset() only is
+meaningful when both capsets are in the same user_ns.
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 ---
- kernel/signal.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/user_namespace.h |    9 ---------
+ kernel/user_namespace.c        |   16 ----------------
+ security/commoncap.c           |   28 ++++++++++------------------
+ 3 files changed, 10 insertions(+), 43 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index ffe4bdf..12702b4 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -638,7 +638,7 @@ static inline bool si_fromuser(const struct siginfo *info)
- /*
-  * called with RCU read lock from check_kill_permission()
-  */
--static inline int kill_ok_by_cred(struct task_struct *t)
-+static int kill_ok_by_cred(struct task_struct *t)
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index 862fc59..faf4679 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -39,9 +39,6 @@ static inline void put_user_ns(struct user_namespace *ns)
+ uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t uid);
+ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t gid);
+ 
+-int same_or_ancestor_user_ns(struct task_struct *task,
+-	struct task_struct *victim);
+-
+ #else
+ 
+ static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+@@ -69,12 +66,6 @@ static inline gid_t user_ns_map_gid(struct user_namespace *to,
+ 	return gid;
+ }
+ 
+-static inline int same_or_ancestor_user_ns(struct task_struct *task,
+-	struct task_struct *victim)
+-{
+-	return 1;
+-}
+-
+ #endif
+ 
+ #endif /* _LINUX_USER_H */
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 0ef2258..9da289c 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -129,22 +129,6 @@ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t
+ 	return overflowgid;
+ }
+ 
+-int same_or_ancestor_user_ns(struct task_struct *task,
+-	struct task_struct *victim)
+-{
+-	struct user_namespace *u1 = task_cred_xxx(task, user)->user_ns;
+-	struct user_namespace *u2 = task_cred_xxx(victim, user)->user_ns;
+-	for (;;) {
+-		if (u1 == u2)
+-			return 1;
+-		if (u1 == &init_user_ns)
+-			return 0;
+-		u1 = u1->creator->user_ns;
+-	}
+-	/* We never get here */
+-	return 0;
+-}
+-
+ static __init int user_namespaces_init(void)
  {
- 	const struct cred *cred = current_cred();
- 	const struct cred *tcred = __task_cred(t);
+ 	user_ns_cachep = KMEM_CACHE(user_namespace, SLAB_PANIC);
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 12ff65c..526106f 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -142,19 +142,15 @@ int cap_settime(struct timespec *ts, struct timezone *tz)
+ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
+ {
+ 	int ret = 0;
+-	const struct cred *cred, *tcred;
++	const struct cred *cred, *child_cred;
+ 
+ 	rcu_read_lock();
+ 	cred = current_cred();
+-	tcred = __task_cred(child);
+-	/*
+-	 * The ancestor user_ns check may be gratuitous, as I think
+-	 * we've already guaranteed that in kernel/ptrace.c.
+-	 */
+-	if (same_or_ancestor_user_ns(current, child) &&
+-	    cap_issubset(tcred->cap_permitted, cred->cap_permitted))
++	child_cred = __task_cred(child);
++	if (cred->user->user_ns == child_cred->user->user_ns &&
++	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
+ 		goto out;
+-	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
++	if (ns_capable(child_cred->user->user_ns, CAP_SYS_PTRACE))
+ 		goto out;
+ 	ret = -EPERM;
+ out:
+@@ -178,19 +174,15 @@ out:
+ int cap_ptrace_traceme(struct task_struct *parent)
+ {
+ 	int ret = 0;
+-	const struct cred *cred, *tcred;
++	const struct cred *cred, *child_cred;
+ 
+ 	rcu_read_lock();
+ 	cred = __task_cred(parent);
+-	tcred = current_cred();
+-	/*
+-	 * The ancestor user_ns check may be gratuitous, as I think
+-	 * we've already guaranteed that in kernel/ptrace.c.
+-	 */
+-	if (same_or_ancestor_user_ns(parent, current) &&
+-	    cap_issubset(tcred->cap_permitted, cred->cap_permitted))
++	child_cred = current_cred();
++	if (cred->user->user_ns == child_cred->user->user_ns &&
++	    cap_issubset(child_cred->cap_permitted, cred->cap_permitted))
+ 		goto out;
+-	if (has_ns_capability(parent, tcred->user->user_ns, CAP_SYS_PTRACE))
++	if (has_ns_capability(parent, child_cred->user->user_ns, CAP_SYS_PTRACE))
+ 		goto out;
+ 	ret = -EPERM;
+ out:
 -- 
 1.7.0.4
 
