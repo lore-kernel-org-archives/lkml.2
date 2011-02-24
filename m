@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab1BXJjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 04:39:42 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36857 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751987Ab1BXJjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 04:39:41 -0500
-Date: Thu, 24 Feb 2011 09:39:39 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Yong Shen <yong.shen@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH] regulator, mc13xxx: Remove pointless test for unsigned
- less than zero
-Message-ID: <20110224093939.GH8226@opensource.wolfsonmicro.com>
-References: <alpine.LNX.2.00.1102232341030.28678@swampdragon.chaosbits.net>
- <1298538787.2454.24.camel@realization>
+	id S1756092Ab1BXJmT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 04:42:19 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:35750 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756047Ab1BXJmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 04:42:18 -0500
+Date: Thu, 24 Feb 2011 01:41:20 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 2/2] hwmon: adt7411: add MODULE_DEVICE_TABLE
+Message-ID: <20110224094120.GA5976@ericsson.com>
+References: <1298514037.19027.3.camel@mola>
+ <1298514121.19027.5.camel@mola>
+ <20110224033310.GB4596@ericsson.com>
+ <20110224084554.GB4901@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1298538787.2454.24.camel@realization>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <20110224084554.GB4901@pengutronix.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 10:13:07AM +0100, Alberto Panizzo wrote:
+On Thu, Feb 24, 2011 at 03:45:54AM -0500, Wolfram Sang wrote:
+> On Wed, Feb 23, 2011 at 07:33:10PM -0800, Guenter Roeck wrote:
+> > On Wed, Feb 23, 2011 at 09:22:01PM -0500, Axel Lin wrote:
+> > > The device table is required to load modules based on modaliases.
+> > > 
+> > > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > 
+> > Applied.
+> 
+> That was fast :)
+> 
+> FWIW
+> 
+> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+> 
+Thanks!
 
-> Ok for me, but the next time give also the revision of the kernel
-> your patch is based on (Linus one, Liam one ..) that is the 
-> linus-2.6.38-rc6
+Guenter
 
-There is no need to do this for normal kernel submissions, it should be
-obvious where the patch is going (either Linus' tree for urgent enough
-fixes or whatever's in -next for the most part).
