@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1BXQfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 11:35:03 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:42605 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332Ab1BXQfA convert rfc822-to-8bit (ORCPT
+	id S1756370Ab1BXQio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 11:38:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41625 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756301Ab1BXQim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 11:35:00 -0500
-Subject: Re: [PATCH 06/17] arm: mmu_gather rework
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, "Luck,Tony" <tony.luck@intel.com>,
-        PaulMundt <lethal@linux-sh.org>
-In-Reply-To: <20110217163235.106239192@chello.nl>
-References: <20110217162327.434629380@chello.nl>
-	 <20110217163235.106239192@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 24 Feb 2011 17:34:13 +0100
-Message-ID: <1298565253.2428.288.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 24 Feb 2011 11:38:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
+References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
+ <20110222140349.GA20708@kryptos.osrc.amd.com> <AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
+ <AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
+ <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
+ <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
+ <AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com> <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 Feb 2011 08:37:11 -0800
+Message-ID: <AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com>
+Subject: Re: Linux 2.6.38-rc6
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>, linux-fbdev@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
+        Borislav Petkov <bp@amd64.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=000325575896e6facf049d09d67d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 17:23 +0100, Peter Zijlstra wrote:
-> plain text document attachment
-> (peter_zijlstra-arm-preemptible_mmu_gather.patch)
-> Fix up the arm mmu_gather code to conform to the new API.
+--000325575896e6facf049d09d67d
+Content-Type: text/plain; charset=ISO-8859-1
 
-So akpm noted that this one doesn't apply anymore because of:
+On Thu, Feb 24, 2011 at 5:20 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+>>
+>> Every boot?
+>
+> Yes.
+>
+>> And just out of interest, what happens if you don't have the vesafb
+>> driver at all?
+>
+> I used 'e' option from grub, removed the 'set gfxpayload = $linux_gfx_mode'
+> and it works.
+>
+> dmesg: http://pastebin.com/JAZsk4vD
 
-commit 06824ba824b3e9f2fedb38bee79af0643198ed7f
-Author: Russell King <rmk+kernel@arm.linux.org.uk>
-Date:   Sun Feb 20 12:16:45 2011 +0000
+Hmm. So it definitely seems to be the hand-over.
 
-    ARM: tlb: delay page freeing for SMP and ARMv7 CPUs
-    
-    We need to delay freeing any mapped page on SMP and ARMv7 systems to
-    ensure that the data is not accessed by other CPUs, or is used for
-    speculative prefetch with ARMv7.  This includes not only mapped pages
-    but also pages used for the page tables themselves.
-    
-    This avoids races with the MMU/other CPUs accessing pages after they've
-    been freed but before we've invalidated the TLB.
-    
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Does this patch make any difference? When we unregister the old
+framebuffer, we still leave it in the registered_fb[] array, which
+looks wrong. But it would also be interesting to hear if setting
+CONFIG_SLUB_DEBUG_ON or CONFIG_DEBUG_PAGEALLOC makes any difference
+(they'd help detect accesses to free'd data structures).
 
+                          Linus
 
-Which raises a nice point about shift_arg_pages() which calls
-free_pgd_range(), the other architectures that look similar to arm in
-this respect are ia64 and sh, do they suffer the same problem?
+--000325575896e6facf049d09d67d
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gkjwbfnb0
 
-It doesn't look hard to fold the requirements for this into the generic
-tlb range support (patch 14 in this series).
+IGRyaXZlcnMvdmlkZW8vZmJtZW0uYyB8ICAgIDEgKwogMSBmaWxlcyBjaGFuZ2VkLCAxIGluc2Vy
+dGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy92aWRlby9mYm1l
+bS5jIGIvZHJpdmVycy92aWRlby9mYm1lbS5jCmluZGV4IGUyYmY5NTMuLmU4Zjg5MjUgMTAwNjQ0
+Ci0tLSBhL2RyaXZlcnMvdmlkZW8vZmJtZW0uYworKysgYi9kcml2ZXJzL3ZpZGVvL2ZibWVtLmMK
+QEAgLTE1MTEsNiArMTUxMSw3IEBAIHZvaWQgcmVtb3ZlX2NvbmZsaWN0aW5nX2ZyYW1lYnVmZmVy
+cyhzdHJ1Y3QgYXBlcnR1cmVzX3N0cnVjdCAqYSwKIAkJCSAgICAgICAiJXMgdnMgJXMgLSByZW1v
+dmluZyBnZW5lcmljIGRyaXZlclxuIiwKIAkJCSAgICAgICBuYW1lLCByZWdpc3RlcmVkX2ZiW2ld
+LT5maXguaWQpOwogCQkJdW5yZWdpc3Rlcl9mcmFtZWJ1ZmZlcihyZWdpc3RlcmVkX2ZiW2ldKTsK
+KwkJCXJlZ2lzdGVyZWRfZmJbaV0gPSBOVUxMOwogCQl9CiAJfQogfQo=
+--000325575896e6facf049d09d67d--
