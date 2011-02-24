@@ -1,41 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1BXRvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:51:20 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36373 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753544Ab1BXRvS (ORCPT
+	id S1754521Ab1BXRwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:52:42 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35593 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1BXRwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:51:18 -0500
-Date: Thu, 24 Feb 2011 17:53:04 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
- slave_data
-Message-ID: <20110224175304.669c56d5@lxorguk.ukuu.org.uk>
-In-Reply-To: <201102231128.51910.bzolnier@gmail.com>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<AANLkTi=jp+q9VYNJvko8P4ju_z86Rw5AxWY9O_reFDai@mail.gmail.com>
-	<20110223091437.0fb888a2@lxorguk.ukuu.org.uk>
-	<201102231128.51910.bzolnier@gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Thu, 24 Feb 2011 12:52:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=KKtSgt0ol2FrBR/9QsN/FekClkcOKg0o1QQtZsBMLFC1r5OOszvDPQ9oAKyHQ6PVqM
+         z8uXKt5l9FlzPMWrzfVbkJvRMHbKGNpTAFIRJ0VFWD9+iEM5DRdnOGLUGgn1zBNnkHrX
+         DJ3OJfiD/evBY2oHI5dCBY0qW7+CS4InwH33Q=
+Subject: Re: [PATCH ref0] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, joe@perches.com, dilinger@queued.net,
+        mirqus@gmail.com, davem@davemloft.net,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+In-Reply-To: <1298569179.2814.11.camel@edumazet-laptop>
+References: <1298535761.2814.1.camel@edumazet-laptop>
+	 <1298539762-2242-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1298569179.2814.11.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 18:48:05 +0100
+Message-ID: <1298569685.2814.16.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	/* RDC is ICH like */
-> +	{ 0x17F3, 0x1011, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
-> +	{ 0x17F3, 0x1012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
-> +
+Le jeudi 24 février 2011 à 18:39 +0100, Eric Dumazet a écrit :
+> Le jeudi 24 février 2011 à 17:29 +0800, Po-Yu Chuang a écrit :
+> > From: Po-Yu Chuang <ratbert@faraday-tech.com>
+> > 
+> 
+> 
+> > +
+> > +static bool ftmac100_rx_packet(struct ftmac100 *priv, int *processed)
+> > +{
+> > +	struct net_device *netdev = priv->netdev;
+> > +	struct ftmac100_rxdes *rxdes;
+> > +	struct sk_buff *skb;
+> > +	struct page *page;
+> > +	dma_addr_t map;
+> > +	int length;
+> > +
+> > +	rxdes = ftmac100_rx_locate_first_segment(priv);
+> > +	if (!rxdes)
+> > +		return false;
+> > +
+> > +	if (unlikely(ftmac100_rx_packet_error(priv, rxdes))) {
+> > +		ftmac100_rx_drop_packet(priv);
+> > +		return true;
+> > +	}
+> > +
+> > +	/*
+> > +	 * It is impossible to get multi-segment packets
+> > +	 * because we always provide big enough receive buffers.
+> > +	 */
+> > +	if (unlikely(!ftmac100_rxdes_last_segment(rxdes)))
+> > +		BUG();
+> > +
+> > +	/* start processing */
+> > +	skb = netdev_alloc_skb_ip_align(netdev, ETH_HLEN);
+> 
+> Oh I see... You should allocate a bigger head (say... 128 bytes)
+> 
+> And copy in it up to 128 bytes of first part... this to avoid upper
+> stack to reallocate skb head (because IP/TCP processing need to get
+> their headers in skb head)
 
-Cable detect is now a bit iffy - probably should add the device vendor to
-the table for each if you do this.
+Take a look at drivers/net/niu.c :
 
-Other than that it this specific one could be pretty sensible - but it
-does makes the drivers bigger especially on an embedded RDC device.
+#define RX_SKB_ALLOC_SIZE   128 + NET_IP_ALIGN
+
+static int niu_process_rx_pkt(...)
+{
+	...
+	skb = netdev_alloc_skb(np->dev, RX_SKB_ALLOC_SIZE);
+	...
+	while (1) {
+	 	...
+		niu_rx_skb_append(skb, page, off, append_size);
+	}
+}
+
+
+
