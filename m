@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab1BXRqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 12:46:01 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:51804 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab1BXRp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 12:45:58 -0500
-Date: Thu, 24 Feb 2011 09:45:56 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: "Anoop P.A" <anoop.pa@gmail.com>
-Cc: davem@davemloft.net, khilman@deeprootsystems.com, cyril@ti.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH] Network driver for PMC-Sierra MSP71xx TSMAC.
-Message-ID: <20110224094556.6c371c38@nehalam>
-In-Reply-To: <1298548660-10546-1-git-send-email-anoop.pa@gmail.com>
-References: <1298548660-10546-1-git-send-email-anoop.pa@gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	id S1754425Ab1BXRvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 12:51:20 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36373 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753544Ab1BXRvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 12:51:18 -0500
+Date: Thu, 24 Feb 2011 17:53:04 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
+ slave_data
+Message-ID: <20110224175304.669c56d5@lxorguk.ukuu.org.uk>
+In-Reply-To: <201102231128.51910.bzolnier@gmail.com>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<AANLkTi=jp+q9VYNJvko8P4ju_z86Rw5AxWY9O_reFDai@mail.gmail.com>
+	<20110223091437.0fb888a2@lxorguk.ukuu.org.uk>
+	<201102231128.51910.bzolnier@gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,36 +29,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 17:27:40 +0530
-"Anoop P.A" <anoop.pa@gmail.com> wrote:
-
-> +#if PMC_MSP_TSMAC
-> +
-> +config DESC_ALL_DSPRAM
-> +	bool "TX/RX Descriptors in DSPRAM"
-> +	depends on DMA_TO_SPRAM
-> +	default n
-> +	help
-> +	  Turning this on puts TX/RX descriptors in DSPRAM. Otherwise they are in
-> +	  DRAM.
-> +
-> +config TSMAC_LINELOOPBACK_FEATURE
-> +	bool "lineLoopBack command"
-> +	default n
-> +	help
-> +	  Turning this on includes the lineLoopBack command in the driver's proc
-> +	  interface.  Echoing 1 into the lineLoopBack results in all rx packets
-> +	  being transmitted out the same port.
-> +
-> +config TSMAC_TEST_CMDS
-> +	bool "test commands"
-> +	default n
-> +	help
-> +	  Turning this on includes the testing commands in the driver's proc
-> +	  interface.  These are used internally by PMC.
+> +	/* RDC is ICH like */
+> +	{ 0x17F3, 0x1011, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
+> +	{ 0x17F3, 0x1012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich_pata_100 },
 > +
 
-Too many config options. Usually no config options is best, or at
-most one debug option.
+Cable detect is now a bit iffy - probably should add the device vendor to
+the table for each if you do this.
 
-The proc interface for testing should be replaced with debugfs
+Other than that it this specific one could be pretty sensible - but it
+does makes the drivers bigger especially on an embedded RDC device.
