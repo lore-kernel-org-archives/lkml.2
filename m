@@ -1,66 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab1BXCv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Feb 2011 21:51:58 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:53301 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753183Ab1BXCv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Feb 2011 21:51:57 -0500
-Date: Wed, 23 Feb 2011 18:51:52 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH] of/pdt: allow DT device matching by fixing 'name'
- brokenness (v3)
-Message-ID: <20110223185152.7e3c29a9@queued.net>
-In-Reply-To: <20110224024708.GA12139@angua.secretlab.ca>
-References: <20110223150357.5a40793d@queued.net>
-	<20110223232815.GC5404@angua.secretlab.ca>
-	<20110223163442.2974bd66@queued.net>
-	<20110224024708.GA12139@angua.secretlab.ca>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S932213Ab1BXDDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Feb 2011 22:03:48 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:34669 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932071Ab1BXDDr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Feb 2011 22:03:47 -0500
+X-Sasl-enc: qTfJ+lClVwdq4RW/NOTaoyu3GYAUYIp7kEPhGaGYB3ti 1298516624
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+From: Ian Kent <raven@themaw.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Nick Piggin <npiggin@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+In-Reply-To: <20110224015817.GQ22723@ZenIV.linux.org.uk>
+References: <20110118040449.23109.33071.stgit@localhost6.localdomain6>
+	 <1295420817.3076.24.camel@perseus> <1297779902.13007.86.camel@perseus>
+	 <20110224015817.GQ22723@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Feb 2011 11:03:38 +0800
+Message-ID: <1298516618.2916.20.camel@perseus>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Feb 2011 19:47:08 -0700
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Wed, Feb 23, 2011 at 04:34:42PM -0800, Andres Salomon wrote:
-> > 
-> > Commit e2f2a93b changed dp->name from using the 'name' property to
-> > using package-to-path.  This fixed /proc/device-tree creation by
-> > eliminating conflicts between names (the 'name' property provides
-> > names like 'battery', whereas package-to-path provides names like
-> > '/foo/bar/battery@0', which we stripped to 'battery@0').  However,
-> > it also breaks of_device_id table matching.
-> > 
-> > The fix that we _really_ wanted was to keep dp->name based upon
-> > the name property ('battery'), but based dp->full_name upon
-> > package-to-path ('battery@0').  This patch does just that.
-> > 
-> > This also changes OLPC behavior to use the full result from
-> > package-to-path for full_name, rather than stripping the directory
-> > out.  In practice, the strings end up being exactly the same; this
-> > change saves time, code, and memory.
-> > 
-> > v2: combine two patches and revert of_pdt_node_name to original
-> > version v3: use dp->phandle instead of passing around node
-> > 
-> > Signed-off-by: Andres Salomon <dilinger@queued.net>
+On Thu, 2011-02-24 at 01:58 +0000, Al Viro wrote: 
+> On Tue, Feb 15, 2011 at 10:25:02PM +0800, Ian Kent wrote:
 > 
-> This addresses one of my comments on v2; but it doesn't address the
-> comment that the broken implementation of of_pdt_node_name for
-> non-sparc still remains, or am I missing something?
+> > I'm seeing a reference being gained, or perhaps not being released
+> > quickly enough after a close(2) on a file handle open on a mount point
+> > being umounted seen in the backtrace [1] below. I can't say if there is
+> > more than one like this because the BUG() stops the umounting. I'm
+> > thinking of modifying the code to try and continue to see what else I
+> > can find out.
+> > 
+> > I get this quite reliably running the test described above.
+> > 
+> > I've looked long and hard at the vfs-scale path walking code (and the
+> > vfs-automount code) and I can't yet see how this could be possible.
+> > 
+> > Here are some observations I've made so far.
+> > 
+> > In this segement of code in autofs4:
+>  
+> > int autofs4_d_manage(struct dentry *dentry, bool mounting_here, bool rcu_walk)
+> > {
+> >         struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
+> > 
+> >         DPRINTK("dentry=%p %.*s",
+> >                 dentry, dentry->d_name.len, dentry->d_name.name);
+> > 
+> >         /* The daemon never waits. */
+> >         if (autofs4_oz_mode(sbi) || mounting_here) {
+> >                 if (!d_mountpoint(dentry))
+> >                         return -EISDIR;
+> >                 return 0;
+> >         }
+> > 
+> >         /* We need to sleep, so we need pathwalk to be in ref-mode */
+> >         if (rcu_walk)
+> >                 return -ECHILD;
 > 
-> g.
+> [snip]
 > 
+> > If I move the
+> > 
+> >         /* We need to sleep, so we need pathwalk to be in ref-mode */
+> >         if (rcu_walk)
+> >                 return -ECHILD;
+> > 
+> > above the
+> > 
+> >         /* The daemon never waits. */
+> >         if (autofs4_oz_mode(sbi) || mounting_here) {
+> >                 if (!d_mountpoint(dentry))
+> >                         return -EISDIR;
+> >                 return 0;
+> >         }
+> > 
+> > I almost never see the problem in the first stage of the test, that
+> > being the nobrowse configuration, but almost always see it in the second
+> > stage, the so called browse configuration. Which amounts to saying that
+> > the problem appears to happen more often when mount point directories in
+> > the automount headachy exist before being mounted on and are not removed
+> > when they are expired. Unfortunately it isn't as simple as that either
+> > since the automount map itself is fairly complex. Still, I thought it
+> > worth mentioning.
+> 
+> Curious...  The only caller affected by that transposition is
+> __follow_mount_rcu() and it would have to
+> 	* be called from do_lookup()
+> 	* have path->dentry pointing to a mountpoint
+> 	* being called by the daemon.
+> So basically you are forcing the daemon to try and drop out of RCU mode
+> when it reaches a mountpoint on autofs.
 
+At this point I'm partly clueless as to what's happening.
+Even the statements above turn out to be inaccurate although that is
+what I observed for quite a while initially.
 
-I responded to that -
-http://www.spinics.net/lists/sparclinux/msg08058.html
+One thing I've found is that it's possible for __follow_mount_rcu() to
+be called on a non-mountpoint autofs dentry that needs to block transit.
+
+Another is an out of order call bug with the active list usage. It was
+removing the dentry from the list before hashing it which can cause
+multiple dentrys to be created for the same lookup. At this point I
+don't think just changing the function call order is sufficient to fix
+it. I tried to remove the active list code during the vfs-automount
+development but found I couldn't always drop dentrys when I needed to
+for error cases. I didn't pursue that because I had something else that
+was working fine and seemed to play well with the VFS.
+
+There is also the expire. It uses reference counts to establish
+busyness, which is mostly fine, except that's also used to avoid
+attempting to expire a tree that has a process walking somewhere within
+it. Which more or less says that I need to drop out of rcu-walk for any
+dentry that is not already being expired (or checked).
+
+I also have a sick feeling that dentrys may become negative at any point
+after __d_lookup_rcu() .....
+
+> 
+> > The most recent curious thing is that if I change the test a bit to use
+> > bind mounts on local paths instead of NFS mounts I don't get this BUG()
+> > at all. Don't get me wrong, I'm not saying this is necessarily an NFS
+> > problem, it may be that the reduced latency of bind mounts changes the
+> > test behavior and hides the bug. So I'd appreciate some help from NFS
+> > folks in case it is something that needs to be changed in NFS, since I
+> > can't see anything that might cause it in the NFS code myself.
+> 
+> It might be "kicks the thing out of RCU mode as soon as we reach into a
+> directory on NFS"...  Try binds down into sysfs; ->d_revalidate() will
+> act there as well.
+> 
+> > If anyone would like to try and run the test themselves I'll work on
+> > decoupling it from the RHTS infrastructure within which it is currently
+> > implemented. 
+> 
+> Ho-hum...  I can reach RHTS, but I'd rather do that at home boxen, if
+> possible...  Has it been reproduced on UP boxen with SMP kernels, BTW?
+
+Nope, I'd need to build a kernel specifically for that. I'm not sure how
+useful that would be though since the test is specifically meant to
+expose problems with multiple concurrent processes accessing an
+automount tree. I don't see any problem running the Connectathon tests
+which is essentially one automount and one client process.
+
+Ian
+
