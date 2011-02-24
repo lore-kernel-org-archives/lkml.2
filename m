@@ -1,70 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab1BXGYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 01:24:21 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:51711 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677Ab1BXGYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 01:24:19 -0500
-Date: Thu, 24 Feb 2011 17:24:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: linux-next: build failure after merge of the final tree (wireless
- tree related)
-Message-Id: <20110224172408.3cbecb03.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754111Ab1BXG1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 01:27:51 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:59067 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab1BXG1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 01:27:50 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next IPv4 connect() call to dest routed over ppp broken
+From: Valdis.Kletnieks@vt.edu
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__24_Feb_2011_17_24_08_+1100_wWyJ.l7oZ9UROPEL"
+Content-Type: multipart/signed; boundary="==_Exmh_1298528865_6002P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 24 Feb 2011 01:27:45 -0500
+Message-ID: <18288.1298528865@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4D65FA63.00C1,ss=1,fgs=0,
+	ip=71.197.1.74,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Feb_2011_17_24_08_+1100_wWyJ.l7oZ9UROPEL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--==_Exmh_1298528865_6002P
+Content-Type: text/plain; charset=us-ascii
 
-Hi all,
+l2.6.38-rc5-next-20110222 is giving me trouble with network - specifically IPv4
+routed over a PPP link.  IPv6 seems to be OK, as does IPv4 not over PPP.
+Problem entered sometime after -rc2-mmotm0125 (I didn't try -rc3 or -rc4 due to
+time constraints that kept me from chasing down a different problem I had).
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+I'm at home, so I bring up a PPP link to our VPN endpoint, and route 2 /16s
+via the PPP connection.  So ifconfig and routing look like this:
 
-drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c:701: error: __ksymtab__r=
-tl92c_phy_txpwr_idx_to_dbm causes a section type conflict
-drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c:701: error: __ksymtab__r=
-tl92c_phy_txpwr_idx_to_dbm causes a section type conflict
-drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c:677: error: __ksymtab__r=
-tl92c_phy_dbm_to_txpwr_Idx causes a section type conflict
-drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c:677: error: __ksymtab__r=
-tl92c_phy_dbm_to_txpwr_Idx causes a section type conflict
+ppp0      Link encap:Point-to-Point Protocol  
+          inet addr:128.173.34.98  P-t-P:128.173.32.21  Mask:255.255.255.255
+          inet6 addr: 2001:468:c80:3b05:9559:2833:c9c6:4910/64 Scope:Global
+          inet6 addr: fe80::9559:2833:c9c6:4910/10 Scope:Link
+          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:1460  Metric:1
+          RX packets:19709 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:14189 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:3 
+          RX bytes:20541163 (19.5 MiB)  TX bytes:1294777 (1.2 MiB)
 
-Caused by applying EXPORT_SYMBOL to static symbols in commit
-1472d3a87586eb7529d1d85f7c888055650b7208 ("rtlwifi: rtl8192ce: rtl8192cu:
-Fix multiple def errors for allyesconfig build").
+wlan0     Link encap:Ethernet  HWaddr 00:24:D6:53:C5:BA  
+          inet addr:192.168.2.2  Bcast:192.168.2.255  Mask:255.255.255.0
+          inet6 addr: fe80::224:d6ff:fe53:c5ba/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:209585 errors:0 dropped:3 overruns:0 frame:0
+          TX packets:205993 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:169153434 (161.3 MiB)  TX bytes:105289986 (100.4 MiB)
 
-I have just left it for today (assuming it will be fixed soon).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+% ip route show
+default via 192.168.2.1 dev wlan0  metric 2 
+128.173.0.0/16 dev ppp0  scope link 
+128.173.32.21 via 192.168.2.1 dev wlan0  src 192.168.2.2 
+128.173.32.21 dev ppp0  proto kernel  scope link  src 128.173.34.98 
+192.168.2.0/24 dev wlan0  proto kernel  scope link  src 192.168.2.2 
+198.82.0.0/16 dev ppp0  scope link 
 
---Signature=_Thu__24_Feb_2011_17_24_08_+1100_wWyJ.l7oZ9UROPEL
+strace ntpdate -q 198.82.1.201 (an NTP server of ours, UDP over ppp0):
+....
+socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 3
+connect(3, {sa_family=AF_INET, sin_port=htons(123), sin_addr=inet_addr("198.82.1.201")}, 16) = -1 EINVAL (Invalid argument)
+.. and we're dead.
+
+strace ping 198.82.1.201 (ICMP this time, over ppp0):
+...
+socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
+connect(4, {sa_family=AF_INET, sin_port=htons(1025), sin_addr=inet_addr("198.82.1.201")}, 16) = -1 EINVAL (Invalid argument)
+and things fall over from there...
+
+strace telnet telnet 198.82.161.192 25   (does TCP work?  SMTP to a mail host of ours)
+...
+socket(PF_INET, SOCK_STREAM, IPPROTO_TCP) = 3
+setsockopt(3, SOL_IP, IP_TOS, [16], 4)  = 0
+connect(3, {sa_family=AF_INET, sin_port=htons(25), sin_addr=inet_addr("198.82.161.192")}, 16) = -1 EINVAL (Invalid argument)
+
+Not looking good for the home team, but going to hosts not routed via the PPP interface
+works just fine:
+
+strace ping www.google.com (goes out via wlan0 directly)
+....
+socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
+connect(4, {sa_family=AF_INET, sin_port=htons(1025), sin_addr=inet_addr("72.14.204.99")}, 16) = 0
+getsockname(4, {sa_family=AF_INET, sin_port=htons(60231), sin_addr=inet_addr("192.168.2.2")}, [16]) = 0
+
+If I take down the ppp link, my routing table looks like:
+
+% ip route show
+default via 192.168.2.1 dev wlan0  metric 2 
+128.173.32.21 via 192.168.2.1 dev wlan0  src 192.168.2.2 
+192.168.2.0/24 dev wlan0  proto kernel  scope link  src 192.168.2.2 
+
+and IPv4 to the problem addresses starts working:
+
+strace ping 198.82.1.201  (via wlan0 directly):
+...
+socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
+connect(4, {sa_family=AF_INET, sin_port=htons(1025), sin_addr=inet_addr("198.82.1.201")}, 16) = 0
+getsockname(4, {sa_family=AF_INET, sin_port=htons(60404), sin_addr=inet_addr("192.168.2.2")}, [16]) = 0
+
+Any ideas? I'll probably not have a chance to bisect this for several days...
+
+--==_Exmh_1298528865_6002P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-iQEcBAEBAgAGBQJNZfmIAAoJEDMEi1NhKgbscfoIAIbHnSWLUWsG8sMKKMyrA91l
-n00RntCb4HHS688mkzbY8Rx9gYCQXbxANRZl3tfjWTfVN8SS+eFt68EBKgE9ZM3K
-6DGx17xuiWWX8MAdcghxNUqLeTK0VAtkYuGA0JS8vYmfaBiVAqb9p94bjLYeOOql
-vvAm1bfnnsZ2znuDB9JQ5xAlPdSpXxlp6qRU8Pd9iDOf5z/aMAuA7HzsXrbnWAli
-/3EcG2qVfQ0wU/Ds89GIBacyGYXRJnSejMo2TQC4V+HRxRaNZFFQFHNJjqLXu8LL
-W/zIll9dGL5Q+DGdUAvIycoIHxdLFrr5X6Ex/6XrCHU4mGmv3NUDhl6jU0zrhxg=
-=Huxf
+iD8DBQFNZfphcC3lWbTT17ARAtmjAKCiLq5ro6FynN2xcnQG0r+HySUlyACeMnhw
+jfv0OxL8abRzdJyroKwRnyU=
+=8nAf
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__24_Feb_2011_17_24_08_+1100_wWyJ.l7oZ9UROPEL--
+--==_Exmh_1298528865_6002P--
+
