@@ -1,387 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab1BYCBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 21:01:33 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6408 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932351Ab1BYCAw (ORCPT
+	id S932367Ab1BYCFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 21:05:08 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:35815 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326Ab1BYCFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 21:00:52 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76555714"
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-To: davidb@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 2/4] msm: iommu: Rework clock logic and add IOMMU bus clock control
-Date: Thu, 24 Feb 2011 18:00:40 -0800
-Message-Id: <1298599242-21971-2-git-send-email-stepanm@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org>
-References: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org>
+	Thu, 24 Feb 2011 21:05:07 -0500
+Message-ID: <4D670E4B.6000407@wytron.com.tw>
+Date: Fri, 25 Feb 2011 10:04:59 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
+        linux-i2c@vger.kernel.org, Albert Herranz <albert_herranz@yahoo.es>
+Subject: Re: [PATCH v6] i2c-gpio: add devicetree support
+References: <20110223011232.GC15795@trinity.fluff.org> <1298520013-3630-1-git-send-email-thomas@wytron.com.tw> <20110224162210.GC17735@angua.secretlab.ca>
+In-Reply-To: <20110224162210.GC17735@angua.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up the clock control code in the probe calls, and add
-support for controlling the clock for the IOMMU bus
-interconnect. With the (proper) clock driver in place, the
-clock control logic in the probe function can be made much
-cleaner since it does not have to deal with the placeholder
-driver anymore.
+Hi Grant,
 
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
- arch/arm/mach-msm/devices-iommu.c      |    5 -
- arch/arm/mach-msm/include/mach/iommu.h |    5 -
- arch/arm/mach-msm/iommu_dev.c          |  206 +++++++++++++++++++-------------
- 3 files changed, 121 insertions(+), 95 deletions(-)
+On 02/25/2011 12:22 AM, Grant Likely wrote:
+>> +Required properties:
+>> +- compatible : should be "i2c-gpio".
+>> +- gpios : should specify GPIOs used for SDA and SCL lines, in that order.
+>> +Optional properties:
+>> +- sda-is-open-drain : present if SDA gpio is open-drain.
+>> +- scl-is-open-drain : present if SCL gpio is open-drain.
+>> +- scl-is-output-only : present if the output driver for SCL cannot be
+>> +	turned off. this will prevent clock stretching from working.
+>> +- speed-hz : SCL frequency.
+>
+> Hi Thomas,
+>
+> One nitpick; I just looked, and other i2c controllers are already
+> using 'clock-frequency' instead of 'speed-hz' for the speed of the
+> bus.  I'd like to see this patch use the same terminology.
 
-diff --git a/arch/arm/mach-msm/devices-iommu.c b/arch/arm/mach-msm/devices-iommu.c
-index c0206b7..af97afe 100644
---- a/arch/arm/mach-msm/devices-iommu.c
-+++ b/arch/arm/mach-msm/devices-iommu.c
-@@ -280,7 +280,6 @@ static struct platform_device msm_root_iommu_dev = {
+I studied 'clock-frequency' usage of existing i2c drivers before working 
+on this patch.
 
- static struct msm_iommu_dev jpegd_iommu = {
- 	.name = "jpegd",
--	.clk_rate = -1
- };
+i2c-ibm_iic.c, i2c-mpc.c, i2c-ocores.c : use as bus clock frequency 
+input to the core.
 
- static struct msm_iommu_dev vpe_iommu = {
-@@ -305,7 +304,6 @@ static struct msm_iommu_dev ijpeg_iommu = {
+i2c-cpm.c : use as i2c SCL output frequency.
 
- static struct msm_iommu_dev vfe_iommu = {
- 	.name = "vfe",
--	.clk_rate = -1
- };
+Most other non-i2c drivers use clock-frequency as bus clock frequency 
+input, too.
 
- static struct msm_iommu_dev vcodec_a_iommu = {
-@@ -318,17 +316,14 @@ static struct msm_iommu_dev vcodec_b_iommu = {
+I think the SCL freq usage in i2c-cpm.c is confusing. So I would suggest 
+we borrow 'speed-hz' from spi subsystem, which means the clock freq 
+output on the peripheral bus.
 
- static struct msm_iommu_dev gfx3d_iommu = {
- 	.name = "gfx3d",
--	.clk_rate = 27000000
- };
-
- static struct msm_iommu_dev gfx2d0_iommu = {
- 	.name = "gfx2d0",
--	.clk_rate = 27000000
- };
-
- static struct msm_iommu_dev gfx2d1_iommu = {
- 	.name = "gfx2d1",
--	.clk_rate = 27000000
- };
-
- static struct platform_device msm_device_iommu_jpegd = {
-diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
-index 8738a44..4dfe7ef 100644
---- a/arch/arm/mach-msm/include/mach/iommu.h
-+++ b/arch/arm/mach-msm/include/mach/iommu.h
-@@ -45,14 +45,9 @@
- /**
-  * struct msm_iommu_dev - a single IOMMU hardware instance
-  * name		Human-readable name given to this IOMMU HW instance
-- * clk_rate	Rate to set for this IOMMU's clock, if applicable to this
-- *		particular IOMMU. 0 means don't set a rate.
-- *		-1 means it is an AXI clock with no valid rate
-- *
-  */
- struct msm_iommu_dev {
- 	const char *name;
--	int clk_rate;
- };
-
- /**
-diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
-index b83c73b..69acd1e 100644
---- a/arch/arm/mach-msm/iommu_dev.c
-+++ b/arch/arm/mach-msm/iommu_dev.c
-@@ -1,4 +1,4 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 and
-@@ -29,6 +29,7 @@
-
- #include <mach/iommu_hw-8xxx.h>
- #include <mach/iommu.h>
-+#include <mach/clk.h>
-
- struct iommu_ctx_iter_data {
- 	/* input */
-@@ -130,117 +131,134 @@ static int msm_iommu_probe(struct platform_device *pdev)
- {
- 	struct resource *r, *r2;
- 	struct clk *iommu_clk;
-+	struct clk *iommu_pclk;
- 	struct msm_iommu_drvdata *drvdata;
- 	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
- 	void __iomem *regs_base;
- 	resource_size_t	len;
--	int ret = 0, ncb, nm2v, irq;
-+	int ret, ncb, nm2v, irq;
-
--	if (pdev->id != -1) {
--		drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
-+	if (pdev->id == -1) {
-+		msm_iommu_root_dev = pdev;
-+		return 0;
-+	}
-
--		if (!drvdata) {
--			ret = -ENOMEM;
--			goto fail;
--		}
-+	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
-
--		if (!iommu_dev) {
--			ret = -ENODEV;
--			goto fail;
--		}
-+	if (!drvdata) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
-+
-+	if (!iommu_dev) {
-+		ret = -ENODEV;
-+		goto fail;
-+	}
-
--		if (iommu_dev->clk_rate != 0) {
--			iommu_clk = clk_get(&pdev->dev, "iommu_clk");
--
--			if (IS_ERR(iommu_clk)) {
--				ret = -ENODEV;
--				goto fail;
--			}
--
--			if (iommu_dev->clk_rate > 0) {
--				ret = clk_set_rate(iommu_clk,
--							iommu_dev->clk_rate);
--				if (ret) {
--					clk_put(iommu_clk);
--					goto fail;
--				}
--			}
--
--			ret = clk_enable(iommu_clk);
--			if (ret) {
--				clk_put(iommu_clk);
--				goto fail;
--			}
-+	iommu_pclk = clk_get(NULL, "smmu_pclk");
-+	if (IS_ERR(iommu_pclk)) {
-+		ret = -ENODEV;
-+		goto fail;
-+	}
-+
-+	ret = clk_enable(iommu_pclk);
-+	if (ret)
-+		goto fail_enable;
-+
-+	iommu_clk = clk_get(&pdev->dev, "iommu_clk");
-+
-+	if (!IS_ERR(iommu_clk))	{
-+		if (clk_get_rate(iommu_clk) == 0)
-+			clk_set_min_rate(iommu_clk, 1);
-+
-+		ret = clk_enable(iommu_clk);
-+		if (ret) {
- 			clk_put(iommu_clk);
-+			goto fail_pclk;
- 		}
-+	} else
-+		iommu_clk = NULL;
-
--		r = platform_get_resource_byname(pdev, IORESOURCE_MEM,
--						 "physbase");
--		if (!r) {
--			ret = -ENODEV;
--			goto fail;
--		}
-+	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "physbase");
-
--		len = r->end - r->start + 1;
-+	if (!r) {
-+		ret = -ENODEV;
-+		goto fail_clk;
-+	}
-
--		r2 = request_mem_region(r->start, len, r->name);
--		if (!r2) {
--			pr_err("Could not request memory region: "
--			"start=%p, len=%d\n", (void *) r->start, len);
--			ret = -EBUSY;
--			goto fail;
--		}
-+	len = r->end - r->start + 1;
-
--		regs_base = ioremap(r2->start, len);
-+	r2 = request_mem_region(r->start, len, r->name);
-+	if (!r2) {
-+		pr_err("Could not request memory region: start=%p, len=%d\n",
-+							(void *) r->start, len);
-+		ret = -EBUSY;
-+		goto fail_clk;
-+	}
-
--		if (!regs_base) {
--			pr_err("Could not ioremap: start=%p, len=%d\n",
--				 (void *) r2->start, len);
--			ret = -EBUSY;
--			goto fail_mem;
--		}
-+	regs_base = ioremap(r2->start, len);
-
--		irq = platform_get_irq_byname(pdev, "secure_irq");
--		if (irq < 0) {
--			ret = -ENODEV;
--			goto fail_io;
--		}
-+	if (!regs_base) {
-+		pr_err("Could not ioremap: start=%p, len=%d\n",
-+			 (void *) r2->start, len);
-+		ret = -EBUSY;
-+		goto fail_mem;
-+	}
-+
-+	irq = platform_get_irq_byname(pdev, "secure_irq");
-+	if (irq < 0) {
-+		ret = -ENODEV;
-+		goto fail_io;
-+	}
-
--		mb();
-+	mb();
-
--		if (GET_IDR(regs_base) == 0) {
--			pr_err("Invalid IDR value detected\n");
--			ret = -ENODEV;
--			goto fail_io;
--		}
-+	if (GET_IDR(regs_base) == 0) {
-+		pr_err("Invalid IDR value detected\n");
-+		ret = -ENODEV;
-+		goto fail_io;
-+	}
-
--		ret = request_irq(irq, msm_iommu_fault_handler, 0,
--				"msm_iommu_secure_irpt_handler", drvdata);
--		if (ret) {
--			pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
--			goto fail_io;
--		}
-+	ret = request_irq(irq, msm_iommu_fault_handler, 0,
-+			"msm_iommu_secure_irpt_handler", drvdata);
-+	if (ret) {
-+		pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
-+		goto fail_io;
-+	}
-
--		msm_iommu_reset(regs_base);
--		drvdata->base = regs_base;
--		drvdata->irq = irq;
-+	msm_iommu_reset(regs_base);
-+	drvdata->pclk = iommu_pclk;
-+	drvdata->clk = iommu_clk;
-+	drvdata->base = regs_base;
-+	drvdata->irq = irq;
-
--		nm2v = GET_NM2VCBMT((unsigned long) regs_base);
--		ncb = GET_NCB((unsigned long) regs_base);
-+	nm2v = GET_NM2VCBMT((unsigned long) regs_base);
-+	ncb = GET_NCB((unsigned long) regs_base);
-
--		pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
-+	pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
- 			iommu_dev->name, regs_base, irq, ncb+1);
-
--		platform_set_drvdata(pdev, drvdata);
--	} else
--		msm_iommu_root_dev = pdev;
-+	platform_set_drvdata(pdev, drvdata);
-
--	return 0;
-+	if (iommu_clk)
-+		clk_disable(iommu_clk);
-+
-+	clk_disable(iommu_pclk);
-
-+	return 0;
- fail_io:
- 	iounmap(regs_base);
- fail_mem:
- 	release_mem_region(r->start, len);
-+fail_clk:
-+	if (iommu_clk) {
-+		clk_disable(iommu_clk);
-+		clk_put(iommu_clk);
-+	}
-+fail_pclk:
-+	clk_disable(iommu_pclk);
-+fail_enable:
-+	clk_put(iommu_pclk);
- fail:
- 	kfree(drvdata);
- 	return ret;
-@@ -252,7 +270,10 @@ static int msm_iommu_remove(struct platform_device *pdev)
-
- 	drv = platform_get_drvdata(pdev);
- 	if (drv) {
--		memset(drv, 0, sizeof(struct msm_iommu_drvdata));
-+		if (drv->clk)
-+			clk_put(drv->clk);
-+		clk_put(drv->pclk);
-+		memset(drv, 0, sizeof(*drv));
- 		kfree(drv);
- 		platform_set_drvdata(pdev, NULL);
- 	}
-@@ -264,7 +285,7 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 	struct msm_iommu_ctx_dev *c = pdev->dev.platform_data;
- 	struct msm_iommu_drvdata *drvdata;
- 	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
--	int i, ret = 0;
-+	int i, ret;
- 	if (!c || !pdev->dev.parent) {
- 		ret = -EINVAL;
- 		goto fail;
-@@ -288,6 +309,18 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&ctx_drvdata->attached_elm);
- 	platform_set_drvdata(pdev, ctx_drvdata);
-
-+	ret = clk_enable(drvdata->pclk);
-+	if (ret)
-+		goto fail;
-+
-+	if (drvdata->clk) {
-+		ret = clk_enable(drvdata->clk);
-+		if (ret) {
-+			clk_disable(drvdata->pclk);
-+			goto fail;
-+		}
-+	}
-+
- 	/* Program the M2V tables for this context */
- 	for (i = 0; i < MAX_NUM_MIDS; i++) {
- 		int mid = c->mids[i];
-@@ -310,8 +343,11 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 		SET_NSCFG(drvdata->base, mid, 3);
- 	}
-
--	pr_info("context device %s with bank index %d\n", c->name, c->num);
-+	if (drvdata->clk)
-+		clk_disable(drvdata->clk);
-+	clk_disable(drvdata->pclk);
-
-+	dev_info(&pdev->dev, "context %s using bank %d\n", c->name, c->num);
- 	return 0;
- fail:
- 	kfree(ctx_drvdata);
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Best regards,
+Thomas
 
