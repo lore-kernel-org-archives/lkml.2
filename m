@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1BYN0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 08:26:25 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36065 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636Ab1BYN0Y (ORCPT
+	id S1756070Ab1BYNbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 08:31:46 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35378 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab1BYNbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 08:26:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qufl05jdaSXrD6WhRYR6XRKjBb/eG5ZWtNMGp4S2SvioixtmhnZwdIzltQK2jrbGFs
-         l/iTPalEhsPVnhYp1y4RqIttv64yCvatL+Dolt8ReEHmDI25RXVRVidMUh9rmY5lc7TC
-         YTRdRHIHOexUmpLQrTZLcRjagMrQxttapx1Z8=
-Date: Fri, 25 Feb 2011 14:19:49 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
- this_cpu_cmpxchg_double
-Message-ID: <20110225131949.GJ24828@htj.dyndns.org>
-References: <4D393636.4040607@cs.helsinki.fi>
- <20110121092649.GA2832@htj.dyndns.org>
- <4D39A6EB.70705@zytor.com>
- <20110121154831.GE2832@htj.dyndns.org>
- <20110121165425.GB11687@Krystal>
- <20110121170847.GH2832@htj.dyndns.org>
- <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
- <20110121171914.GJ2832@htj.dyndns.org>
- <4D3D15AF.30508@zytor.com>
- <4D67AA06.5090200@cs.helsinki.fi>
+	Fri, 25 Feb 2011 08:31:45 -0500
+Message-ID: <4D67AEEE.30000@ru.mvista.com>
+Date: Fri, 25 Feb 2011 16:30:22 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D67AA06.5090200@cs.helsinki.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 6/7] arm/dt: Basic tegra devicetree support
+References: <20110223021524.18318.71902.stgit@localhost6.localdomain6> <20110223022234.18318.90592.stgit@localhost6.localdomain6> <4D657880.50405@ru.mvista.com> <20110223213601.GA5404@angua.secretlab.ca>
+In-Reply-To: <20110223213601.GA5404@angua.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 03:09:26PM +0200, Pekka Enberg wrote:
-> On Fri, Jan 21, 2011 at 09:13:41AM -0800, H. Peter Anvin wrote:
-> >>>We could do cmpxchg with a structure... the problem with a lon int
-> >>>type is that Cristoph ran into bugs with __int128 on 64 bits.
-> 
-> On 01/21/2011 09:19 AM, Tejun Heo wrote:
-> >>But, IIRC, the problem with int128 was with passing it as parameter
-> >>and return value. We don't have to do that. We'll be just using it
-> >>as a data storage / container type. Or even that is broken?
-> 
-> On 1/24/11 8:01 AM, H. Peter Anvin wrote:
-> >Well, part of the point was to pass in registers.
-> >
-> >No idea on the data storage type.
-> 
-> Ping? The current situation is that we're unable to merge a
-> perfectly good SLUB performance optimization because we can't seem
-> to agree on the this_cpu_cmpxchg_double() API.
+Hello.
 
-I thought cl was preparing new version of the patchset.  Christoph?
+On 24-02-2011 0:36, Grant Likely wrote:
 
--- 
-tejun
+>>> This patch adds adds very basic support for booting tegra with a
+>>> device tree.  It simply allows the existing machine_descs to match
+>>> against the tegra compatible values so that the kernel can boot.
+>>> Kernel parameters and the initrd pointer is read out of the tree
+>>> instead of atags.
+
+>>> This is not complete device tree support.  This change will be
+>>> reverted when a new machine_desc is added that can populate the
+>>> device registrations directly from data in the tree instead of using
+>>> hard coded data.  That change will be made in a future patch.
+
+>>> v2: Fixed cut-and-paste error in commit text
+
+>>     Shouldn't this sentence follow the --- tearline?
+
+> Nope!  It is actually quite useful for the version information to show
+> up in the commit text.  That way you know *exactly* which version got
+> merged.  dwmw2 pointed that out to me a few months back.
+
+    Well, I think that depends on the patch. If you have say 9 revisions with 
+significant changes (that's what I actually had) and the revision history far 
+exceeds the original patch description, then this will just become too ugly I 
+think...
+
+WBR, Sergei
