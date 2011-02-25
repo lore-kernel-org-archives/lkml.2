@@ -1,66 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab1BYRIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 12:08:18 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51701 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab1BYRIR convert rfc822-to-8bit (ORCPT
+	id S932623Ab1BYRK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 12:10:56 -0500
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:60274 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411Ab1BYRKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 12:08:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=SAeDEx0uq+DpEcAgqp8QbmY5cc4YDZjdathVqhGLTtB/Yze93U9OV/jJYqYho+iFXX
-         TILS29fLbfk7sZfRcH5AmOFSj9yJJ0nh8NYsTZGx3yPmKfBlFG2wJywxLtVs9lgZ7vsU
-         KNyNhnSNGK/nIMr88DTJ+DeaqQ5LPli0yvoJU=
+	Fri, 25 Feb 2011 12:10:55 -0500
+Message-ID: <4D67E286.8010907@dcl.info.waseda.ac.jp>
+Date: Sat, 26 Feb 2011 02:10:30 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b10pre) Gecko/20110114 Thunderbird/3.3a2
 MIME-Version: 1.0
-In-Reply-To: <AFCDDB4A3EA003429EEF1E7B211FDBBA334C0FB0E2@EXDCVYMBSTM005.EQ1STM.local>
-References: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-	<201101061946.04790.arnd@arndb.de>
-	<AANLkTikJMx2QxYwXS_TrKK5hcnD3G0MNvEiDO+xAZrpo@mail.gmail.com>
-	<201101091955.05174.arnd@arndb.de>
-	<AFCDDB4A3EA003429EEF1E7B211FDBBA334C0FB0E2@EXDCVYMBSTM005.EQ1STM.local>
-Date: Fri, 25 Feb 2011 18:08:16 +0100
-X-Google-Sender-Auth: LacOkGoqEm-33rwyJdf8vRKl6CM
-Message-ID: <AANLkTi=HvRTfo84L_VwOVtVq5hfb1g+9ueH6SX8FWF2b@mail.gmail.com>
-Subject: Re: [PATCH 00/11] mfd and bluetooth: Add CG2900 suppor
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Pavan Savoy <pavan_savoy@sify.com>,
-        Vitaly Wool <vitalywool@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf lock: clean the options for perf record
+References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <4D63D685.2010401@dcl.info.waseda.ac.jp> <1298389415.2217.243.camel@twins> <20110222182206.GB1799@nowhere> <4D648A65.2040107@dcl.info.waseda.ac.jp> <4D667D60.5010903@dcl.info.waseda.ac.jp> <20110224165014.GB1840@nowhere>
+In-Reply-To: <20110224165014.GB1840@nowhere>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/2/24 Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>:
+On 2011年02月25日 01:50, Frederic Weisbecker wrote:
+> On Fri, Feb 25, 2011 at 12:46:40AM +0900, Hitoshi Mitake wrote:
+>> On 2011年02月23日 13:17, Hitoshi Mitake wrote:
+>>> On 2011年02月23日 03:22, Frederic Weisbecker wrote:
+>>>> On Tue, Feb 22, 2011 at 04:43:35PM +0100, Peter Zijlstra wrote:
+>>>>> On Wed, 2011-02-23 at 00:30 +0900, Hitoshi Mitake wrote:
+>>>>>> How do you think about it?
+>>>>>
+>>>>> Most of the lock code (esp the spinlock stuff) is already way over the
+>>>>> threshold of sanity, adding to that for some dubious reasons doesn't
+>>>>> seem like a good idea.
+>>>>>
+>>>>> I'm still not at all sure why people want all this lock tracing.
+>>>>
+>>>> Right, well I can imagine many usecases that could make lock
+>>>> tracing bring more value than what lockstat already provides,
+>>>> through a tool like perf lock if we enhance it.
+>>>>
+>>>> We should probably first focus on developing the tooling side
+>>>> and make it useful enough that optimizations in the kernel
+>>>> side become desirable.
+>>>>
+>>>
+>>> Yes, lockstat only provides the lock usage statistics of
+>>> entire of the system. perf lock will be able to provide the partial
+>>> information of specified term, or the degree of dependency
+>>> between locks.
+>>>
+>>
+>> For trial, I created new tracepoint for rwsem and tested.
+>> Names of events are rwsem_{acquire, contended, acquired, release},
+>> their meanings are similar to lock_{...}.
+>>
+>> I traced perf bench sched messaging and result was,
+>>
+>> mitake@x201i:~/linux/.../tools/perf% ./perf bench sched messaging
+>> # Running sched/messaging benchmark...
+>> # 20 sender and receiver processes per group
+>> # 10 groups == 400 processes run
+>>
+>>       Total time: 1.252 [sec]
+>> mitake@x201i:~/linux/.../tools/perf% sudo ./perf record -R -m 1024
+>> -c 1 -e rwsem:rwsem_acquire -e
+>> rwsem:rwsem_release,rwsem:rwsem_contended,rwsem:rwsem_acquired
+>> ./perf bench sched messaging
+>> # Running sched/messaging benchmark...
+>> # 20 sender and receiver processes per group
+>> # 10 groups == 400 processes run
+>>
+>>       Total time: 1.332 [sec]
+>> [ perf record: Woken up 4 times to write data ]
+>> [ perf record: Captured and wrote 13.495 MB perf.data (~589597 samples) ]
+>>
+>> raw execution of sched messaging was 1.252 sec, and traced version
+>> was 1.332 sec. This overhead is far smaller than the overhead of
+>> current lock tracepoints.
+>
+> Probably because rwsem are only a small bunch of locks among all others.
+> If you were to trace only spinlocks, I bet you'd find a significant
+> overhead pretty close to a wide lock tracing.
+>
 
-> I sent the mail below one month ago, but have still not received any answers or further comments.
-> Has anyone of you who made comments on the CG2900 patches earlier, any more comments or questions?
+Yes, spinlocks and rwlocks must dominate the big part of the overhead
+of lock tracing.
 
-I think I have provided
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-(or the earlier ST-Ericsson address, which is equal) for these patches.
-Else I do so now.
+>> I think that it is possible to write some meaningful tools
+>> like reader/writer ratio measuring. If something can be written,
+>> I'll post it.
+>
+> Consider the situation from another angle: do you think that a lock
+> profiling on top of lock types is a kind of workflow that will be
+> used?
+>
+> The primary kind of workflow I have in mind for lock tracing is:
+>
+> 1) Let's look at the big picture, trace all locks and find those
+> that seem to be an issue (too much waiting time, too much
+> acquire time, etc...).
+>
+> 2) Pick one we are interested in and dig into details
+>
+> But I can't figure out any common worklow that would be based
+> on mutex only tracing, or rwsem only tracing.
+> Or actually I can imagine such worklow. Every kind of lock
+> type have their own scale of latencies so it's interesting
+> to group the analysis per family. But I rather see
+> that as a secondary worklow. Once we'll have more finegrained
+> analysis on the tools for example, like comparison between
+> read and write latencies on some rwsems and so.
+>
+> So once we have some such finegrained and useful features in the
+> tooling side, then justifying such change in the kernel is going
+> to be much more uncontroversial.
+>
 
-FWIW: I think those who want another architectural solution
-can propose a refactoring patch any day they like, and if it's
-recieved like "ah, that's better" ACK from P�r-Gunnar et al, then
-it's no big deal.
+It seems that I was too preprocessed with the method and
+forgot the purpose...
 
-This makes the hardware work with 2.6.39 which is really most
-important IMO, Sam can you merge this as it stands?
-
-Yours,
-Linus Walleij
+Maybe the things like simple lockstat visualizer or
+special diff between two lockstat snapshots are
+useful for the first looking at big picture.
+I feel that they have worth to write and test.
