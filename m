@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab1BYTaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:30:22 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:6371 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab1BYTaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 14:30:21 -0500
-Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
- modules
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
-        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
-        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org
-In-Reply-To: <20110225.111606.115927805.davem@davemloft.net>
-References: <20110225190205.GA4541@albatros>
-	 <20110225.110529.39178636.davem@davemloft.net>
-	 <1298660879.2554.23.camel@bwh-desktop>
-	 <20110225.111606.115927805.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Fri, 25 Feb 2011 19:30:16 +0000
-Message-ID: <1298662216.2554.33.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Feb 2011 19:30:21.0398 (UTC) FILETIME=[7123FF60:01CBD522]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17976.005
-X-TM-AS-Result: No--27.737800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S932775Ab1BYTd6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:33:58 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16821 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932754Ab1BYTd5 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 25 Feb 2011 14:33:57 -0500
+Date: Fri, 25 Feb 2011 14:32:30 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH v2 0/6] Xen PV on HVM fixes and improvements
+Message-ID: <20110225193230.GA17090@dumpdata.com>
+References: <alpine.DEB.2.00.1102251651570.19277@kaball-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1102251651570.19277@kaball-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D68041D.001B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 11:16 -0800, David Miller wrote:
-> From: Ben Hutchings <bhutchings@solarflare.com>
-> Date: Fri, 25 Feb 2011 19:07:59 +0000
+On Fri, Feb 25, 2011 at 05:11:33PM +0000, Stefano Stabellini wrote:
+> Hi all,
+> this patch series is a collection of fixes and improvements for Linux
+> running as Xen PV on HVM guest.
+> Changes to the previous version:
+
+Looks good to me. I am surprised that it was that easy to get the balloon
+code to work under HVM..
+
 > 
-> > You realise that module loading doesn't actually run in the context of
-> > request_module(), right?
+> - patch 5 and 6 have been squashed together;
 > 
-> Why is that a barrier?  We could simply pass a capability mask into
-> request_module if necessary.
+> - xen_hvm_spinlock_init has been merged into xen_hvm_smp_prepare_cpus.
 > 
-> It's an implementation detail, and not a deterrant to my suggested
-> scheme.
-
-It's not an implementation detail.  modprobe currently runs with full
-capabilities; your proposal requires its capabilities to be limited to
-those of the capabilities of the process that triggered the
-request_module() (plus, presumably, CAP_SYS_MODULE).
-
-Now modprobe doesn't have CAP_DAC_OVERRIDE and can't read modprobe
-configuration files that belong to users other than root.
-
-It doesn't have CAP_SYS_MKNOD so it can't run hooks that call mknod.
-
-etc.
-
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+> 
+> The list of patches with diffstat follows:
+> 
+> Stefano Stabellini (6):
+>       xen: no need to delay xen_setup_shutdown_event for hvm guests anymore
+>       xen: do not use xen_info on HVM, set pv_info name to "Xen HVM"
+>       xen-blkfront: handle Xen major numbers other than XENVBD
+>       xen: make the ballon driver work for hvm domains
+>       xen: PV on HVM: support PV spinlocks and IPIs
+>       xen: fix compile issue if XEN is enabled but XEN_PVHVM is disabled
+> 
+>  arch/x86/xen/enlighten.c         |    6 ++-
+>  arch/x86/xen/smp.c               |   38 ++++++++++++++++++
+>  arch/x86/xen/suspend.c           |    2 +
+>  arch/x86/xen/xen-ops.h           |    2 +
+>  drivers/block/xen-blkfront.c     |   79 +++++++++++++++++++++++++++++++++++--
+>  drivers/xen/balloon.c            |   14 ++++--
+>  drivers/xen/manage.c             |   17 ++------
+>  drivers/xen/platform-pci.c       |    3 -
+>  include/xen/interface/io/blkif.h |   21 ++++++++++
+>  9 files changed, 154 insertions(+), 28 deletions(-)
+> 
+> A branch with these patches on 2.6.38-rc6 is available here:
+> 
+> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.38-rc6-pvhvm
+> 
+> Cheers,
+> 
+> Stefano
