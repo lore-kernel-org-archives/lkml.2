@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436Ab1BYRmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 12:42:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753389Ab1BYRmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 12:42:47 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
+	id S932528Ab1BYRnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 12:43:09 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:43444 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753076Ab1BYRl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 12:41:56 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: D1jXf48VM1meyMHp_9a.VPDc6Lopob_IVoTRKVvbJ3rqsCS
+ VdSzvasUpTz0YjF.FLvlezfN5Gz5sjso37CEXx.7sAUnHSyovCYJv_u3COC8
+ Z9C9JA3fO_ZcdM9fHfh6QhLCjujZhuN.Js8GKp2QQhJnhIadtM4JQ6Ss4Uop
+ 7d4smPp9N_qeFbvhZLBOc6jIw5rOPXNooFqfDQDuRy6GY0uCx_9EotkGD7or
+ x8ZnQX0lEQySa7WvIEd82UW3T34At7LraRwZQrodM2A5auokEgSXw
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20110225174154.641323942@linux.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 25 Feb 2011 11:38:51 -0600
+From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-X-Fcc: ~/Mail/linus
-Cc: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <vda.linux@googlemail.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
- PTRACE_ATTACH
-In-Reply-To: Tejun Heo's message of  Friday, 25 February 2011 16:45:55 +0100 <20110225154555.GP24828@htj.dyndns.org>
-References: <20110209141803.GH3770@htj.dyndns.org>
-	<201102132325.55353.vda.linux@googlemail.com>
-	<20110214151340.GP18742@htj.dyndns.org>
-	<AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
-	<20110214173012.GA18742@htj.dyndns.org>
-	<AANLkTinntVGcOdZSS3gWz39eq3EDiMxXgYfc6+M1Z0iE@mail.gmail.com>
-	<20110221151619.GM31267@htj.dyndns.org>
-	<20110221152855.GA20769@redhat.com>
-	<20110222162454.GB31267@htj.dyndns.org>
-	<20110224210819.GB12258@redhat.com>
-	<20110225154555.GP24828@htj.dyndns.org>
-X-Windows: the defacto substandard.
-Message-Id: <20110225174205.D0C711806E0@magilla.sf.frob.com>
-Date: Fri, 25 Feb 2011 09:42:05 -0800 (PST)
+Cc: akpm@linux-foundation.org
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: linux-kernel@vger.kernel.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [cpuops cmpxchg double V3 1/5] slub: min_partial needs to be in first cacheline
+References: <20110225173850.486326452@linux.com>
+Content-Disposition: inline; filename=slub_min_partial_first_cacheline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Yes, we are discussing these requests on archer,
-> 
-> Can we please do that on LKML?  It's a kernel change after all.
+It is used in unfreeze_slab() which is a performance critical
+function.
 
-What's being discussed on the debugger list is batting around ideas of
-what kinds of potential new features could be useful to the debugger.
-No decisions about kernel issues are being made, and of course when it
-comes to proposing specific kernel features, that would be discussed
-here.  But the debugger community is who needs to discuss what they
-would actually want and would actually make use of.  There is no point
-in discussing the details of new ptrace features for the benefit of
-the debugger on a kernel list before the debugger community has come
-to some consensus about what they would really make use of.  It would
-be counterproductive to start proposing and implementing random new
-half-baked ideas in the kernel without first being sure that they are
-things the debugger actually needs and the debugger developers will
-actually do the work to exploit.  We've had enough of that already,
-leading to the current morass of ill-specified features that don't
-help the debugger people very much.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
+---
+ include/linux/slub_def.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Roland
+Index: linux-2.6/include/linux/slub_def.h
+===================================================================
+--- linux-2.6.orig/include/linux/slub_def.h	2011-01-28 11:57:29.000000000 -0600
++++ linux-2.6/include/linux/slub_def.h	2011-01-28 11:57:52.000000000 -0600
+@@ -70,6 +70,7 @@ struct kmem_cache {
+ 	struct kmem_cache_cpu __percpu *cpu_slab;
+ 	/* Used for retriving partial slabs etc */
+ 	unsigned long flags;
++	unsigned long min_partial;
+ 	int size;		/* The size of an object including meta data */
+ 	int objsize;		/* The size of an object without meta data */
+ 	int offset;		/* Free pointer offset. */
+@@ -83,7 +84,6 @@ struct kmem_cache {
+ 	void (*ctor)(void *);
+ 	int inuse;		/* Offset to metadata */
+ 	int align;		/* Alignment */
+-	unsigned long min_partial;
+ 	const char *name;	/* Name (only for display!) */
+ 	struct list_head list;	/* List of slab caches */
+ #ifdef CONFIG_SYSFS
+
