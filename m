@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab1BYAyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 19:54:33 -0500
-Received: from trinity.develer.com ([83.149.158.210]:59151 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536Ab1BYAyb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 19:54:31 -0500
-Date: Fri, 25 Feb 2011 01:54:28 +0100
-From: Andrea Righi <arighi@develer.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] blk-throttle: writeback and swap IO control
-Message-ID: <20110225005427.GB3044@linux.develer.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
- <20110222193403.GG28269@redhat.com>
- <20110222224141.GA23723@linux.develer.com>
- <20110223000358.GM28269@redhat.com>
- <20110223083206.GA2174@linux.develer.com>
- <20110223152354.GA2526@redhat.com>
- <20110223231410.GB1744@linux.develer.com>
- <20110224001033.GF2526@redhat.com>
+	id S1756220Ab1BYAzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 19:55:40 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38269 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755669Ab1BYAzi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 19:55:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224001033.GF2526@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=wbtcAOmYE8UF7ynPZ_nR3ZXxVRBcuMVGNK4u0@mail.gmail.com>
+References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
+ <20110222140349.GA20708@kryptos.osrc.amd.com> <AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
+ <AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
+ <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
+ <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
+ <AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com>
+ <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
+ <AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com> <AANLkTi=wbtcAOmYE8UF7ynPZ_nR3ZXxVRBcuMVGNK4u0@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 Feb 2011 16:54:44 -0800
+Message-ID: <AANLkTin7+AHAqKz5T-1_=N6tqPytyT4ooqyJuhHC6ET=@mail.gmail.com>
+Subject: Re: Linux 2.6.38-rc6
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>, linux-fbdev@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
+        Borislav Petkov <bp@amd64.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 23, 2011 at 07:10:33PM -0500, Vivek Goyal wrote:
-> On Thu, Feb 24, 2011 at 12:14:11AM +0100, Andrea Righi wrote:
-> > On Wed, Feb 23, 2011 at 10:23:54AM -0500, Vivek Goyal wrote:
-> > > > > Agreed. Granularity of per inode level might be accetable in many 
-> > > > > cases. Again, I am worried faster group getting stuck behind slower
-> > > > > group.
-> > > > > 
-> > > > > I am wondering if we are trying to solve the problem of ASYNC write throttling
-> > > > > at wrong layer. Should ASYNC IO be throttled before we allow task to write to
-> > > > > page cache. The way we throttle the process based on dirty ratio, can we
-> > > > > just check for throttle limits also there or something like that.(I think
-> > > > > that's what you had done in your initial throttling controller implementation?)
-> > > > 
-> > > > Right. This is exactly the same approach I've used in my old throttling
-> > > > controller: throttle sync READs and WRITEs at the block layer and async
-> > > > WRITEs when the task is dirtying memory pages.
-> > > > 
-> > > > This is probably the simplest way to resolve the problem of faster group
-> > > > getting blocked by slower group, but the controller will be a little bit
-> > > > more leaky, because the writeback IO will be never throttled and we'll
-> > > > see some limited IO spikes during the writeback.
-> > > 
-> > > Yes writeback will not be throttled. Not sure how big a problem that is.
-> > > 
-> > > - We have controlled the input rate. So that should help a bit.
-> > > - May be one can put some high limit on root cgroup to in blkio throttle
-> > >   controller to limit overall WRITE rate of the system.
-> > > - For SATA disks, try to use CFQ which can try to minimize the impact of
-> > >   WRITE.
-> > > 
-> > > It will atleast provide consistent bandwindth experience to application.
-> > 
-> > Right.
-> > 
-> > > 
-> > > >However, this is always
-> > > > a better solution IMHO respect to the current implementation that is
-> > > > affected by that kind of priority inversion problem.
-> > > > 
-> > > > I can try to add this logic to the current blk-throttle controller if
-> > > > you think it is worth to test it.
-> > > 
-> > > At this point of time I have few concerns with this approach.
-> > > 
-> > > - Configuration issues. Asking user to plan for SYNC ans ASYNC IO
-> > >   separately is inconvenient. One has to know the nature of workload.
-> > > 
-> > > - Most likely we will come up with global limits (atleast to begin with),
-> > >   and not per device limit. That can lead to contention on one single
-> > >   lock and scalability issues on big systems.
-> > > 
-> > > Having said that, this approach should reduce the kernel complexity a lot.
-> > > So if we can do some intelligent locking to limit the overhead then it
-> > > will boil down to reduced complexity in kernel vs ease of use to user. I 
-> > > guess at this point of time I am inclined towards keeping it simple in
-> > > kernel.
-> > > 
-> > 
-> > BTW, with this approach probably we can even get rid of the page
-> > tracking stuff for now.
-> 
-> Agreed.
-> 
-> > If we don't consider the swap IO, any other IO
-> > operation from our point of view will happen directly from process
-> > context (writes in memory + sync reads from the block device).
-> 
-> Why do we need to account for swap IO? Application never asked for swap
-> IO. It is kernel's decision to move soem pages to swap to free up some
-> memory. What's the point in charging those pages to application group
-> and throttle accordingly?
+On Thu, Feb 24, 2011 at 4:48 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+>
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index e2bf953..e8f8925 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1511,6 +1511,7 @@ void remove_conflicting_framebuffers(struct
+> apertures_struct *a,
+>                               "%s vs %s - removing generic driver\n",
+>                               name, registered_fb[i]->fix.id);
+>                        unregister_framebuffer(registered_fb[i]);
+> +                       registered_fb[i] = NULL;
+>
+> Tested the patch, and now I get this:
+> dmesg: http://pastebin.com/ieMNrA7C
+>
+> [   12.252328] BUG: unable to handle kernel NULL pointer dereference
+> at 00000000000003b8
+> [   12.252342] IP: [<ffffffff81311178>] fb_mmap+0x58/0x1d0
 
-OK, I think swap io control it's not a very important feature for now.
+Ok, goodie.
 
-However without swap io control an application could always been able to
-blow away any QoS provided by the blkio controller simply allocating a
-lot of memory and waiting for the kernel to swap those memory pages.
-Probably in that case it would be better to slow down the swap io and
-wait for the oom-killer to kill the application, instead of aggressively
-swap out pages.
+Or not so goodie, but it does make it clear that yeah, the fb code
+seems to be using stale pointers from that registered_fb[] array, and
+the whole unregistration process is just racing with people using it.
 
-> 
-> > 
-> > However, I'm sure we'll need the page tracking also for the blkio
-> > controller soon or later. This is an important information and also the
-> > proportional bandwidth controller can take advantage of it.
-> 
-> Yes page tracking will be needed for CFQ proportional bandwidth ASYNC
-> write support. But until and unless we implement memory cgroup dirty
-> ratio and figure a way out to make writeback logic cgroup aware, till
-> then I think page tracking stuff is not really useful.
+Herton had that much bigger patch, can you test it?
 
-OK.
-
--Andrea
+                         Linus
