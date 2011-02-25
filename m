@@ -1,48 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab1BYUoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:44:18 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:38179 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753434Ab1BYUoR (ORCPT
+	id S932710Ab1BYUpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:45:20 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:49612 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222Ab1BYUpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:44:17 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ewj1HGQVM1m2lBFCIeJ4yCdB5QCgxnH3Z3zg74rZaYVkvv_
- 1wsBOgZ0hwy.lIdMvgE4JNhTmkpSp1S0JuNhzzpMPv7DelHu0d9aXv8m4lBN
- ZXImrYcizhOkrVdu24s_oqCQ5t9PUurIW6mt6vZNCxEp7hDVqA9gH.eCT6MY
- EnmFDTs1a2h7ztGSI7K3qrRHuY7vFGcMG.OaRJaQ3RrEBgCpz_NW.HX5C5M.
- Dv7yN9Jjhg9TrZ9bIN1ZnKdSQwyjJnfrjoHIsJJevyQrhveIEC5NXo0OiTtM
- zBioVRHYJ0xv3G2yEgopEUT_bGQF3STf3PQKsKwJsVglyzA--
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 25 Feb 2011 14:44:12 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg double V3 3/5] Generic support for
- this_cpu_cmpxchg_double
-In-Reply-To: <20110225202837.GC23161@home.goodmis.org>
-Message-ID: <alpine.DEB.2.00.1102251443500.7359@router.home>
-References: <20110225173850.486326452@linux.com> <20110225174155.786331687@linux.com> <20110225202837.GC23161@home.goodmis.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 25 Feb 2011 15:45:18 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D6814F6.5060308@cam.ac.uk>
+Date: Fri, 25 Feb 2011 20:45:42 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
+        lm-sensors@lm-sensors.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 5/5] hwmon: pmbus driver documentation
+References: <1297969217-9564-1-git-send-email-guenter.roeck@ericsson.com> <1297969217-9564-6-git-send-email-guenter.roeck@ericsson.com>
+In-Reply-To: <1297969217-9564-6-git-send-email-guenter.roeck@ericsson.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Feb 2011, Steven Rostedt wrote:
+Looks fine to me. Do you want to mention the fan stuff somewhere?
 
-> > +	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));		\
-> > +	VM_BUG_ON((unsigned long)(&pcp2) != (unsigned long)(&pcp1) + sizeof(pcp1));\
-> > +	VM_BUG_ON(sizeof(pcp1) != sizeof(pcp2));			\
->
-> Since this is a macro, and it looks like all these are constants (sizeof
-> and addresses), couldn't you just do a BUILD_BUG_ON() instead?
 
-The addresses are not constant.
+On 02/17/11 19:00, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  Documentation/hwmon/pmbus |  213 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 213 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/hwmon/pmbus
+> 
+> diff --git a/Documentation/hwmon/pmbus b/Documentation/hwmon/pmbus
+> new file mode 100644
+> index 0000000..00ed7d4
+> --- /dev/null
+> +++ b/Documentation/hwmon/pmbus
+> @@ -0,0 +1,213 @@
+> +Kernel driver pmbus
+> +====================
+> +
+> +Supported chips:
+> +  * Ericsson BMR45X series
+> +    DC/DC Converter
+> +    Prefixes: 'bmr450', 'bmr451', 'bmr453', 'bmr454'
+> +    Addresses scanned: -
+> +    Datasheet:
+> + http://archive.ericsson.net/service/internet/picov/get?DocNo=28701-EN/LZT146395
+> +  * Linear Technology LTC2978
+> +    Octal PMBus Power Supply Monitor and Controller
+> +    Prefix: 'ltc2978'
+> +    Addresses scanned: -
+> +    Datasheet: http://cds.linear.com/docs/Datasheet/2978fa.pdf
+> +  * Maxim MAX16064
+> +    Quad Power-Supply Controller
+> +    Prefix: 'max16064'
+> +    Addresses scanned: -
+> +    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX16064.pdf
+> +  * Maxim MAX34440
+> +    PMBus 6-Channel Power-Supply Manager
+> +    Prefixes: 'max34440'
+> +    Addresses scanned: -
+> +    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX34440.pdf
+> +  * Maxim MAX34441
+> +    PMBus 5-Channel Power-Supply Manager and Intelligent Fan Controller
+> +    Prefixes: 'max34441'
+> +    Addresses scanned: -
+> +    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX34441.pdf
+> +  * Maxim MAX8688
+> +    Digital Power-Supply Controller/Monitor
+> +    Prefix: 'max8688'
+> +    Addresses scanned: -
+> +    Datasheet: http://datasheets.maxim-ic.com/en/ds/MAX8688.pdf
+> +  * Generic PMBus devices
+> +    Prefix: 'pmbus'
+> +    Addresses scanned: -
+> +    Datasheet: n.a.
+> +
+> +Author: Guenter Roeck <guenter.roeck@ericsson.com>
+> +
+> +
+> +Description
+> +-----------
+> +
+> +This driver supports hardware montoring for various PMBus compliant devices.
+> +It supports voltage, current, power, and temperature sensors as supported
+> +by the device.
+Mention fan stuff?
+> +
+> +Each monitored channel has its own high and low limits, plus a critical
+> +limit.
+> +
+> +
+> +Usage Notes
+> +-----------
+> +
+> +This driver does not probe for PMBus devices, since there is no register
+> +which can be safely used to identify the chip (The MFG_ID register is not
+> +supported by all chips), and since there is no well defined address range for
+> +PMBus devices. You will have to instantiate the devices explicitly.
+> +
+> +Example: the following will load the driver for an LTC2978 at address 0x60
+> +on I2C bus #1:
+> +$ modprobe pmbus
+> +$ echo ltc2978 0x60 > /sys/bus/i2c/devices/i2c-1/new_device
+> +
+> +
+> +Platform data support
+> +---------------------
+> +
+> +Support for additional PMBus chips can be added by defining chip parameters in
+> +a new chip specific driver file. For example, (untested) code to add support for
+> +Emerson DS1200 power modules might look as follows.
+> +
+> +static struct pmbus_driver_info ds1200_info = {
+> +	.pages = 1,
+> +	/* Note: All other sensors are in linear mode */
+> +	.direct[PSC_VOLTAGE_OUT] = true,
+> +	.direct[PSC_TEMPERATURE] = true,
+> +	.direct[PSC_CURRENT_OUT] = true,
+> +	.m[PSC_VOLTAGE_IN] = 1,
+> +	.b[PSC_VOLTAGE_IN] = 0,
+> +	.R[PSC_VOLTAGE_IN] = 3,
+> +	.m[PSC_VOLTAGE_OUT] = 1,
+> +	.b[PSC_VOLTAGE_OUT] = 0,
+> +	.R[PSC_VOLTAGE_OUT] = 3,
+> +	.m[PSC_TEMPERATURE] = 1,
+> +	.b[PSC_TEMPERATURE] = 0,
+> +	.R[PSC_TEMPERATURE] = 3,
+> +	.func[0] = PMBUS_HAVE_VIN | PMBUS_HAVE_IIN | PMBUS_HAVE_STATUS_INPUT
+> +		   | PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
+> +		   | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT
+> +		   | PMBUS_HAVE_PIN | PMBUS_HAVE_POUT
+> +		   | PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP
+> +		   | PMBUS_HAVE_FAN12 | PMBUS_HAVE_STATUS_FAN12,
+> +};
+> +
+> +static int ds1200_probe(struct i2c_client *client,
+> +			const struct i2c_device_id *id)
+> +{
+> +	return pmbus_do_probe(client, id, &ds1200_info);
+> +}
+> +
+> +static int ds1200_remove(struct i2c_client *client)
+> +{
+> +	return pmbus_do_remove(client);
+> +}
+> +
+> +static const struct i2c_device_id ds1200_id[] = {
+> +	{"ds1200", 0},
+> +	{}
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, ds1200_id);
+> +
+> +/* This is the driver that will be inserted */
+> +static struct i2c_driver ds1200_driver = {
+> +	.driver = {
+> +		   .name = "ds1200",
+> +		   },
+> +	.probe = ds1200_probe,
+> +	.remove = ds1200_remove,
+> +	.id_table = ds1200_id,
+> +};
+> +
+> +static int __init ds1200_init(void)
+> +{
+> +	return i2c_add_driver(&ds1200_driver);
+> +}
+> +
+> +static void __exit ds1200_exit(void)
+> +{
+> +	i2c_del_driver(&ds1200_driver);
+> +}
+> +
+> +
+> +Sysfs entries
+> +-------------
+> +
+> +When probing the chip, the driver identifies which PMBus registers are
+> +supported, and determines available sensors from this information.
+> +Attribute files only exist if respective sensors are suported by the chip.
+> +Labels are provided to inform the user about the sensor associated with
+> +a given sysfs entry.
+> +
+> +The following attributes are supported. Limits are read-write; all other
+> +attributes are read-only.
+> +
+> +inX_input		Measured voltage. From READ_VIN or READ_VOUT register.
+> +inX_min			Minumum Voltage.
+> +			From VIN_UV_WARN_LIMIT or VOUT_UV_WARN_LIMIT register.
+> +inX_max			Maximum voltage.
+> +			From VIN_OV_WARN_LIMIT or VOUT_OV_WARN_LIMIT register.
+> +inX_lcrit		Critical minumum Voltage.
+> +			From VIN_UV_FAULT_LIMIT or VOUT_UV_FAULT_LIMIT register.
+> +inX_crit		Critical maximum voltage.
+> +			From VIN_OV_FAULT_LIMIT or VOUT_OV_FAULT_LIMIT register.
+> +inX_min_alarm		Voltage low alarm. From VOLTAGE_UV_WARNING status.
+> +inX_max_alarm		Voltage high alarm. From VOLTAGE_OV_WARNING status.
+> +inX_lcrit_alarm		Voltage critical low alarm.
+> +			From VOLTAGE_UV_FAULT status.
+> +inX_crit_alarm		Voltage critical high alarm.
+> +			From VOLTAGE_OV_FAULT status.
+> +inX_label		"vin", "vcap", or "voutY"
+> +
+> +currX_input		Measured current. From READ_IIN or READ_IOUT register.
+> +currX_max		Maximum current.
+> +			From IIN_OC_WARN_LIMIT or IOUT_OC_WARN_LIMIT register.
+> +currX_lcrit		Critical minumum output current.
+> +			From IOUT_UC_FAULT_LIMIT register.
+> +currX_crit		Critical maximum current.
+> +			From IIN_OC_FAULT_LIMIT or IOUT_OC_FAULT_LIMIT register.
+> +currX_alarm		Current high alarm.
+> +			From IIN_OC_WARNING or IOUT_OC_WARNING status.
+> +currX_lcrit_alarm	Output current critical low alarm.
+> +			From IOUT_UC_FAULT status.
+> +currX_crit_alarm	Current critical high alarm.
+> +			From IIN_OC_FAULT or IOUT_OC_FAULT status.
+> +currX_label		"iin" or "vinY"
+> +
+> +powerX_input		Measured power. From READ_PIN or READ_POUT register.
+> +powerX_cap		Output power cap. From POUT_MAX register.
+> +powerX_max		Power limit. From PIN_OP_WARN_LIMIT or
+> +			POUT_OP_WARN_LIMIT register.
+> +powerX_crit		Critical output power limit.
+> +			From POUT_OP_FAULT_LIMIT register.
+> +powerX_alarm		Power high alarm.
+> +			From PIN_OP_WARNING or POUT_OP_WARNING status.
+> +powerX_crit_alarm	Output power critical high alarm.
+> +			From POUT_OP_FAULT status.
+> +powerX_label		"pin" or "poutY"
+> +
+> +tempX_input		Measured tempererature.
+> +			From READ_TEMPERATURE_X register.
+> +tempX_min		Mimimum tempererature. From UT_WARN_LIMIT register.
+> +tempX_max		Maximum tempererature. From OT_WARN_LIMIT register.
+> +tempX_lcrit		Critical low tempererature.
+> +			From UT_FAULT_LIMIT register.
+> +tempX_crit		Critical high tempererature.
+> +			From OT_FAULT_LIMIT register.
+> +tempX_min_alarm		Chip temperature low alarm. Set by comparing
+> +			READ_TEMPERATURE_X with UT_WARN_LIMIT if
+> +			TEMP_UT_WARNING status is set.
+> +tempX_max_alarm		Chip temperature high alarm. Set by comparing
+> +			READ_TEMPERATURE_X with OT_WARN_LIMIT if
+> +			TEMP_OT_WARNING status is set.
+> +tempX_lcrit_alarm	Chip temperature critical low alarm. Set by comparing
+> +			READ_TEMPERATURE_X with UT_FAULT_LIMIT if
+> +			TEMP_UT_FAULT status is set.
+> +tempX_crit_alarm	Chip temperature critical high alarm. Set by comparing
+> +			READ_TEMPERATURE_X with OT_FAULT_LIMIT if
+> +			TEMP_OT_FAULT status is set.
+
