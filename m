@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab1BYI6w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 03:58:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50661 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753978Ab1BYI6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 03:58:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,224,1297065600"; 
-   d="scan'208";a="891175792"
-Subject: Re: [PATCH -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimP8h_rvJ6ejMy9Ys-3e8M3cbNGY6c3yRCgrGL+@mail.gmail.com>
-References: <1298555968.2220.15.camel@localhost>
-	 <1298556237.2220.19.camel@localhost>	<20110224165705.GA15498@elte.hu>
-	 <1298624119.2835.87.camel@minggr.sh.intel.com>
-	 <AANLkTimP8h_rvJ6ejMy9Ys-3e8M3cbNGY6c3yRCgrGL+@mail.gmail.com>
+	id S932335Ab1BYJA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 04:00:28 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55485 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174Ab1BYJA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 04:00:27 -0500
+Subject: Re: [PATCH] regulator: If we fail when setting up a supply say
+ which supply
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1298569149-9169-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1298569149-9169-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 16:59:06 +0800
-Message-ID: <1298624346.2835.88.camel@minggr.sh.intel.com>
+Date: Fri, 25 Feb 2011 09:00:22 +0000
+Message-ID: <1298624422.3363.1.camel@odin>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 16:56 +0800, Stephane Eranian wrote:
-> Lin,
+On Thu, 2011-02-24 at 17:39 +0000, Mark Brown wrote:
+> Makes it a bit easier to identify if it's a problem with the supplies,
+> the usual error would be omitting the supply name entirely.
 > 
-> I have a patch almost ready that updates the PEBS constraints for all CPUs.
-> I'll add the SNB constraints as well.
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/regulator/core.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 
-Nice.
+Applied.
 
-Thanks.
+Thanks
 
-> 
-> On Fri, Feb 25, 2011 at 9:55 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > On Fri, 2011-02-25 at 00:57 +0800, Ingo Molnar wrote:
-> >> * Lin Ming <ming.m.lin@intel.com> wrote:
-> >>
-> >> > Adds SandyBridge support to perf.
-> >>
-> >> Wondering, have you tested things like PEBS? You can do it via:
-> >>
-> >>       perf record -e instructions:p -a sleep 10
-> >>       perf top -e instructions:p
-> >>
-> >> ('p' stands for 'precise')
-> >
-> > Let me do more PEBS tests...
-> >
-> >>
-> >> Also, please list known limitations in the changelog.
-> >
-> > OK.
-> >
-> >>
-> >> Thanks,
-> >>
-> >>       Ingo
-> >
-> >
-> >
-
+Liam
 
