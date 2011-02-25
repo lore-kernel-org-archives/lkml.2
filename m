@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab1BYTPb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:15:31 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43496
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932605Ab1BYTPa (ORCPT
+	id S932762Ab1BYTU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:20:29 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57913 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756369Ab1BYTU2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 14:15:30 -0500
-Date: Fri, 25 Feb 2011 11:16:06 -0800 (PST)
-Message-Id: <20110225.111606.115927805.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
-        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
-        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
- modules
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1298660879.2554.23.camel@bwh-desktop>
-References: <20110225190205.GA4541@albatros>
-	<20110225.110529.39178636.davem@davemloft.net>
-	<1298660879.2554.23.camel@bwh-desktop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Feb 2011 14:20:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110225184428.GA2280@suse.de>
+References: <20110223025233.25131.47193.stgit@localhost6.localdomain6>
+ <AANLkTikauP8+PgFyicdSQzJ19ZvqpV=3ZnRTjSvY78qc@mail.gmail.com>
+ <20110225163547.GC8523@suse.de> <AANLkTik1fzJw11mKSVu4B2yrGZAju59uNmHjjGSgVcGY@mail.gmail.com>
+ <20110225184428.GA2280@suse.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 25 Feb 2011 12:20:05 -0700
+X-Google-Sender-Auth: 77ZR6RM3ELTqWCfc-V9x4WsVi7k
+Message-ID: <AANLkTikThHs_htQU8wxeAQm_FRVV=1R25OTsjyboFDNt@mail.gmail.com>
+Subject: Re: [PATCH] dt: add a match table pointer to struct device
+To: Greg KH <gregkh@suse.de>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Fri, 25 Feb 2011 19:07:59 +0000
+On Fri, Feb 25, 2011 at 11:44 AM, Greg KH <gregkh@suse.de> wrote:
+> On Fri, Feb 25, 2011 at 10:34:05AM -0700, Grant Likely wrote:
+>> On Fri, Feb 25, 2011 at 9:35 AM, Greg KH <gregkh@suse.de> wrote:
+>> > On Fri, Feb 25, 2011 at 08:46:52AM -0700, Grant Likely wrote:
+>> >> Greg, any thoughts on this change?  I'd like to take it via my tree so
+>> >> I can finally dump the last vestiges of of_platform_bus_type.
+>> >
+>> > Sorry, I didn't realize you just wanted my review, and not me to take it
+>> > directly.
+>>
+>> Heh, I wasn't very clear about that.  Oops,
+>>
+>> > If you want to take it, that's great, no objection from me, feel free to
+>> > add:
+>> >        Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+>> > to it.
+>>
+>> Thanks.  Yes I definitely want to take it because I've got a pile of
+>> patches that depend on it.
+>>
+>> > What about the other patch you sent me, do you want me to take that, or
+>> > will you?
+>>
+>> Which one is that?  The relaxation of .name checking on of_serial?
+>> Yes, you can take that one, but hold off for the moment.  Looking at
+>> it now I realize that I forgot to cc some folks that should ack it, so
+>> I'm going to repost.
+>
+> Oops, I just took it :(
 
-> You realise that module loading doesn't actually run in the context of
-> request_module(), right?
 
-Why is that a barrier?  We could simply pass a capability mask into
-request_module if necessary.
+Hahaha!  No worries, just hold onto it.  I'll ping the appropriate
+folks and if anyone objects then I'll ask you to drop it.
 
-It's an implementation detail, and not a deterrant to my suggested
-scheme.
+g.
