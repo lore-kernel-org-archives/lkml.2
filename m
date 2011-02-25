@@ -1,97 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab1BYOtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 09:49:39 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:47097 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287Ab1BYOth (ORCPT
+	id S932549Ab1BYOxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 09:53:01 -0500
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:34957 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932287Ab1BYOw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 09:49:37 -0500
-Date: Fri, 25 Feb 2011 11:49:21 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fbdev@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>,
-        dri-devel@lists.freedesktop.org, Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: Re: Linux 2.6.38-rc6
-Message-ID: <20110225144920.GA2337@herton-IdeaPad-Y430>
-References: <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
- <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
- <AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com>
- <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
- <AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com>
- <AANLkTi=wbtcAOmYE8UF7ynPZ_nR3ZXxVRBcuMVGNK4u0@mail.gmail.com>
- <AANLkTin7+AHAqKz5T-1_=N6tqPytyT4ooqyJuhHC6ET=@mail.gmail.com>
- <1298596499.10585.27.camel@clockmaker-el6>
- <AANLkTikQOBGfe8dGv05M8YD=CK+ToUQ4J8s_n9FncfPA@mail.gmail.com>
- <AANLkTinq_gyAFKb_i_4j6qzkAmoSuAS+k_eCRFKFy5wL@mail.gmail.com>
+	Fri, 25 Feb 2011 09:52:59 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEACtQZ03CTtAn/2dsb2JhbACmOnS9KoVgBIwd
+Date: Fri, 25 Feb 2011 15:52:53 +0100
+From: Philippe De Muyter <phdm@macqel.be>
+To: linux-kernel@vger.kernel.org
+Subject: unrecoverable disk errors when listening to USB GPS receiver
+Message-ID: <20110225145253.GA19741@frolo.macqel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinq_gyAFKb_i_4j6qzkAmoSuAS+k_eCRFKFy5wL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 03:56:20AM +0200, Anca Emanuel wrote:
-> On Fri, Feb 25, 2011 at 3:47 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> > On Fri, Feb 25, 2011 at 3:14 AM, Dave Airlie <airlied@redhat.com> wrote:
-> >> On Thu, 2011-02-24 at 16:54 -0800, Linus Torvalds wrote:
-> >>> On Thu, Feb 24, 2011 at 4:48 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> >>> >
-> >>> > diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-> >>> > index e2bf953..e8f8925 100644
-> >>> > --- a/drivers/video/fbmem.c
-> >>> > +++ b/drivers/video/fbmem.c
-> >>> > @@ -1511,6 +1511,7 @@ void remove_conflicting_framebuffers(struct
-> >>> > apertures_struct *a,
-> >>> >                               "%s vs %s - removing generic driver\n",
-> >>> >                               name, registered_fb[i]->fix.id);
-> >>> >                        unregister_framebuffer(registered_fb[i]);
-> >>> > +                       registered_fb[i] = NULL;
-> >>> >
-> >>> > Tested the patch, and now I get this:
-> >>> > dmesg: http://pastebin.com/ieMNrA7C
-> >>> >
-> >>> > [   12.252328] BUG: unable to handle kernel NULL pointer dereference
-> >>> > at 00000000000003b8
-> >>> > [   12.252342] IP: [<ffffffff81311178>] fb_mmap+0x58/0x1d0
-> >>>
-> >>> Ok, goodie.
-> >>>
-> >>> Or not so goodie, but it does make it clear that yeah, the fb code
-> >>> seems to be using stale pointers from that registered_fb[] array, and
-> >>> the whole unregistration process is just racing with people using it.
-> >>>
-> >>> Herton had that much bigger patch, can you test it?
-> >>
-> >> I think Andy's patch worked, not sure why it fell between the cracks,
-> >> either didn't appear on lkml or in my inbox at all.
-> >>
-> >> if we can get Herton to repost it properly + a tested by I'm happy for
-> >> it to go in.
-> >>
-> >> Dave.
-> >>
-> >>
-> >
-> > Tested Andy's patch and it works !
-> > http://kernel.ubuntu.com/git?p=ubuntu/ubuntu-natty.git;a=commit;h=c5a742b5f78e161d6a13853a7e3e6e1dfa429e69
-> >
-> > Tested-by: Anca Emanuel <anca.emanuel@gmail.com>
-> >
-> 
-> link to patch: http://is.gd/otIfGc
+Hello,
 
-Adding Andy on CC (btw he is away for today, may get some time to answer).
+this is a big problem I have encountered when using newer hardware here,
+so I have decided to try a newer kernel, namely 2.6.37-20-desktop
+(opensuse 11.4 rc1), but the problem remains.
 
-Andy, can you repost the patch?
+I have a perfectly running linux kernel and applications, but when I
+start listening to a USB GPS receiver, access to my sata disk stops working :(
+until a reboot.
 
---
-[]'s
-Herton
+Is that a known (an fixed) problem ?
+
+Here is a console log excerpt, recorded using netconsole :
+
+ ata1: lost interrupt (Status 0x50)
+ ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
+ ata1.00: failed command: READ DMA
+ ata1.00: cmd c8/00:08:88:40:01/00:00:00:00:00/e2 tag 0 dma 4096 in
+	  res 40/00:00:01:4f:c2/00:00:00:00:00/00 Emask 0x4 (timeout)
+ ata1.00: status: { DRDY }
+ ata1: hard resetting link
+ ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+ ata1.00: qc timeout (cmd 0x27)
+ ata1.00: failed to read native max address (err_mask=0x4)
+ ata1.00: revalidation failed (errno=-5)
+ ata1: hard resetting link
+ ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+ ata1.00: qc timeout (cmd 0x27)
+ ata1.00: failed to read native max address (err_mask=0x4)
+ ata1.00: revalidation failed (errno=-5)
+ ata1: limiting SATA link speed to 1.5 Gbps
+ ata1: hard resetting link
+ ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ ata1.00: qc timeout (cmd 0x27)
+ ata1.00: failed to read native max address (err_mask=0x4)
+ ata1.00: revalidation failed (errno=-5)
+ ata1.00: disabled
+ ata1: hard resetting link
+ ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ ata1: EH complete
+ sd 0:0:0:0: [sda] Unhandled error code
+ sd 0:0:0:0: [sda]  10.1.40.199 : Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+ sd 0:0:0:0: [sda] CDB: 10.1.40.199 : Read(10)10.1.40.199 : :10.1.40.199 :  2810.1.40.199 :  0010.1.40.199 :  0210.1.40.199 :  0110.1.40.199 :  4010.1.40.199 :  8810.1.40.199 :  0010.1.40.199 :  0010.1.40.199 :  0810.1.40.199 :  0010.1.40.199 :
+ end_request: I/O error, dev sda, sector 33636488
+ sd 0:0:0:0: [sda] Unhandled error code
+ sd 0:0:0:0: [sda]  10.1.40.199 : Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+ sd 0:0:0:0: [sda] CDB: 10.1.40.199 : Write(10)10.1.40.199 : :10.1.40.199 :  2a10.1.40.199 :  0010.1.40.199 :  0010.1.40.199 :  4110.1.40.199 :  6710.1.40.199 :  d810.1.40.199 :  0010.1.40.199 :  0010.1.40.199 :  0810.1.40.199 :  0010.1.40.199 :
+ end_request: I/O error, dev sda, sector 4286424
+ quiet_error: 45 callbacks suppressed
+ Buffer I/O error on device sda2, logical block 9723
+ lost page write due to I/O error on sda2
+ sd 0:0:0:0: [sda] Unhandled error code
+ sd 0:0:0:0: [sda]  10.1.40.199 : Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+ sd 0:0:0:0: [sda] CDB: 10.1.40.199 : Write(10)10.1.40.199 : :10.1.40.199 :  2a10.1.40.199 :  0010.1.40.199 :  0110.1.40.199 :  8410.1.40.199 :  5e10.1.40.199 :  3010.1.40.199 :  0010.1.40.199 :  0410.1.40.199 :  0010.1.40.199 :  0010.1.40.199 :
+ end_request: I/O error, dev sda, sector 25452080
+ Buffer I/O error on device sda2, logical block 2655430
+ lost page write due to I/O error on sda2
+ sd 0:0:0:0: [sda] Unhandled error code
+ sd 0:0:0:0: [sda]  10.1.40.199 : Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+ sd 0:0:0:0: [sda] CDB: 10.1.40.199 : Write(10)10.1.40.199 : :10.1.40.199 :  2a10.1.40.199 :  0010.1.40.199 :  0110.1.40.199 :  8410.1.40.199 :  6210.1.40.199 :  3010.1.40.199 :  0010.1.40.199 :  0010.1.40.199 :  c810.1.40.199 :  0010.1.40.199 :
+ end_request: I/O error, dev sda, sector 25453104
+ JBD2: Detected IO errors while flushing file data on sda2-8
+ Aborting journal on device sda2-8.
+ EXT4-fs (sda2): 10.1.40.199 : delayed block allocation failed for inode 793538 at logical offset 0 with max blocks 1 with error -3010.1.40.199 :
+ EXT4-fs (sda2): 10.1.40.199 : This should not happen!! Data will be lost
+ 10.1.40.199 : [  150.577419]
+ EXT4-fs error (device sda2) in ext4_da_writepages:3074: Journal has aborted
+
+and here are some hardware info's :
+
+ tmp199:~ # lspci
+ 00:00.0 Host bridge: Intel Corporation Mobile 4 Series Chipset Memory Controller Hub (rev 07)
+ 00:01.0 PCI bridge: Intel Corporation Mobile 4 Series Chipset PCI Express Graphics Port (rev 07)
+ 00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
+ 00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
+ 00:19.0 Ethernet controller: Intel Corporation 82567LM Gigabit Network Connection (rev 03)
+ 00:1a.0 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #4 (rev 03)
+ 00:1a.1 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #5 (rev 03)
+ 00:1a.2 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #6 (rev 03)
+ 00:1a.7 USB Controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI Controller #2 (rev 03)
+ 00:1b.0 Audio device: Intel Corporation 82801I (ICH9 Family) HD Audio Controller (rev 03)
+ 00:1c.0 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 1 (rev 03)
+ 00:1c.1 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 2 (rev 03)
+ 00:1c.2 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 3 (rev 03)
+ 00:1c.3 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 4 (rev 03)
+ 00:1d.0 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #1 (rev 03)
+ 00:1d.1 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #2 (rev 03)
+ 00:1d.2 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #3 (rev 03)
+ 00:1d.7 USB Controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI Controller #1 (rev 03)
+ 00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev 93)
+ 00:1f.0 ISA bridge: Intel Corporation ICH9M LPC Interface Controller (rev 03)
+ 00:1f.2 IDE interface: Intel Corporation ICH9M/M-E 2 port SATA IDE Controller (rev 03)
+ 00:1f.3 SMBus: Intel Corporation 82801I (ICH9 Family) SMBus Controller (rev 03)
+ 00:1f.5 IDE interface: Intel Corporation ICH9M/M-E 2 port SATA IDE Controller (rev 03)
+ 02:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+ 06:09.0 FireWire (IEEE 1394): VIA Technologies, Inc. VT6306/7/8 [Fire II(M)] IEEE 1394 OHCI Controller (rev 46)
+ tmp199:~ #
+
+Ask for more info if needed.
+
+Thanks in advance
+
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
