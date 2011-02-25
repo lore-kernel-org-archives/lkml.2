@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734Ab1BYTFc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:05:32 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:16690 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab1BYTFb (ORCPT
+	id S932738Ab1BYTIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:08:07 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:4492 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932436Ab1BYTIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 14:05:31 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6268"; a="76728161"
-Message-ID: <4D67FD79.3070004@codeaurora.org>
-Date: Fri, 25 Feb 2011 11:05:29 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] msm: scm: Mark inline asm as volatile
-References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>	 <1298573085-23217-2-git-send-email-sboyd@codeaurora.org> <1298635017.958.0.camel@e102144-lin.cambridge.arm.com>
-In-Reply-To: <1298635017.958.0.camel@e102144-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Feb 2011 14:08:05 -0500
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
+ modules
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
+        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+In-Reply-To: <20110225.110529.39178636.davem@davemloft.net>
+References: <20110225151414.GA5211@albatros>
+	 <20110225.104720.71110261.davem@davemloft.net>
+	 <20110225190205.GA4541@albatros>
+	 <20110225.110529.39178636.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Fri, 25 Feb 2011 19:07:59 +0000
+Message-ID: <1298660879.2554.23.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Feb 2011 19:08:04.0684 (UTC) FILETIME=[5465A0C0:01CBD51F]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17976.005
+X-TM-AS-Result: No--33.537200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2011 03:56 AM, Will Deacon wrote:
-> Hi Stephen,
->
-> On Thu, 2011-02-24 at 18:44 +0000, Stephen Boyd wrote:
->> We don't want the compiler to remove these asm statements or
->> reorder them in any way. Mark them as volatile to be sure.
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  arch/arm/mach-msm/scm.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
->> index f4b9bc9..ba57b5a 100644
->> --- a/arch/arm/mach-msm/scm.c
->> +++ b/arch/arm/mach-msm/scm.c
->> @@ -174,7 +174,7 @@ static u32 smc(u32 cmd_addr)
->>         register u32 r0 asm("r0") = 1;
->>         register u32 r1 asm("r1") = (u32)&context_id;
->>         register u32 r2 asm("r2") = cmd_addr;
->> -       asm(
->> +       asm volatile(
->>                 __asmeq("%0", "r0")
->>                 __asmeq("%1", "r0")
->>                 __asmeq("%2", "r1")
->> @@ -271,7 +271,7 @@ u32 scm_get_version(void)
->>                 return version;
->>
->>         mutex_lock(&scm_lock);
->> -       asm(
->> +       asm volatile(
->>                 __asmeq("%0", "r1")
->>                 __asmeq("%1", "r0")
->>                 __asmeq("%2", "r1")
->
->
-> These asm blocks all have sensible looking output constraints. Why
-> do they need to be marked volatile?
+On Fri, 2011-02-25 at 11:05 -0800, David Miller wrote:
+> From: Vasiliy Kulikov <segoon@openwall.com>
+> Date: Fri, 25 Feb 2011 22:02:05 +0300
+> 
+> > On Fri, Feb 25, 2011 at 10:47 -0800, David Miller wrote:
+> >> From: Vasiliy Kulikov <segoon@openwall.com>
+> >> Date: Fri, 25 Feb 2011 18:14:14 +0300
+> >> 
+> >> > Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
+> >> > CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
+> >> > that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are limited
+> >> > to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't allow
+> >> > anybody load any module not related to networking.
+> >> 
+> >> Why go through this naming change, which does break things, instead of
+> >> simply adding a capability mask tag or similar to modules somehow.  You
+> >> could stick it into a special elf section or similar.
+> >>
+> >> Doesn't that make tons more sense than this?
+> > 
+> > This is not "simply", adding special section for a single workaround
+> > seems like an overkill for me - this touches the core (modules'
+> > internals), which is not related to the initial CAP_* problem at all.
+> > 
+> > I'd be happy with not breaking anything, but I don't see any acceptable
+> > solution.
+> 
+> I think it's warranted given that it allows us to avoid breaking things.
+> 
+> I don't understand there is resistence in response to the first idea
+> I've seen proprosed that actually allows to fix the problem and not
+> break anything at the same time.
+> 
+> That seems silly.
 
-I'm not seeing any different code with or without this so I saw little
-harm in marking them as volatile. I really don't want the compiler
-moving them or deleting them so it seemed safer to just mark it volatile
-to make sure nothing happens to the smc instructions.
+You realise that module loading doesn't actually run in the context of
+request_module(), right?
+
+Ben.
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
