@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859Ab1BYVmr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:42:47 -0500
-Received: from kroah.org ([198.145.64.141]:59316 "EHLO coco.kroah.org"
+	id S932829Ab1BYVnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:43:50 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:40457 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932101Ab1BYVmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:42:45 -0500
-Date: Fri, 25 Feb 2011 13:03:34 -0800
-From: Greg KH <greg@kroah.com>
-To: Nikolai Kondrashov <spbnick@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110225210334.GB16860@kroah.com>
-References: <20110209224006.GA11202@kroah.com>
- <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com>
+	id S932101Ab1BYVnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 16:43:49 -0500
+Subject: Re: [PATCH v4 3/5] hwmon: (pmbus) Add support for Maxim MAX16064
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D681091.4030008@cam.ac.uk>
+References: <1297969217-9564-1-git-send-email-guenter.roeck@ericsson.com>
+	 <1297969217-9564-4-git-send-email-guenter.roeck@ericsson.com>
+	 <4D681091.4030008@cam.ac.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Fri, 25 Feb 2011 13:42:44 -0800
+Message-ID: <1298670164.1735.108.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 01:06:00PM +0300, Nikolai Kondrashov wrote:
-> Hi Greg,
+Hi Jonathan,
+
+On Fri, 2011-02-25 at 15:26 -0500, Jonathan Cameron wrote:
+> Again, straight forward use of pmbus_core.  Is it actually worth having
+> separate modules for each of these special cases?  Could just do the
+> old big table of fixed chip info structures in a single driver...
 > 
-> On 02/10/2011 01:40 AM, Greg KH wrote:
-> > This adds the samsung-laptop driver to the kernel.  It now supports
-> > all known Samsung laptops.
-> Thank you for this patch :)!
-> 
-> I've tried it with both 2.6.37 and 2.6.32 on my NP-N210-JA02RU and it fails
-> the insertion with ENODEV without "force" and with "This computer does not
-> support SABI" with "force".
-> 
-> I'm ready to provide any diagnostics information you may need and test the
-> patches.
-> 
-> Please find the dmidecode output attached.
+This is actually what I had originally. My reasoning to split it up was
+that this makes it easier to add support for additional chips without
+having to modify the core driver. Also, I can keep chip specific code
+(specifically the _identify and _get_status functions) out of the core
+driver.
 
-This should work, as we support the N150/N210/N220 versions.
+Thanks,
+Guenter
 
-Can you provide the output of:
-	grep . /sys/class/dmi/id/*
 
-so I can verify this?
-
-thanks,
-
-greg k-h
