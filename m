@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab1BYPDs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 10:03:48 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48904 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932480Ab1BYPDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 10:03:47 -0500
-Date: Fri, 25 Feb 2011 16:03:39 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jack Steiner <steiner@sgi.com>, Tejun Heo <tj@kernel.org>
-Cc: yinghai@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Fix calculation of size of numa_distance
-Message-ID: <20110225150339.GA29895@elte.hu>
+	id S932605Ab1BYPGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 10:06:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54208 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932287Ab1BYPGP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 10:06:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=UXuGyG6CV69r2ES2V64RJ1phJbctkR38535yOG4ORs2z8qRDxtfmfmX0rEHFTIlDZg
+         ciuYotJcTHDvsYBk6yrWIpk5WcD6q9tVzi9X53vEycTc9ns3zL1BedEmBQC4WDm58PUd
+         hxc5PZODpa79GITT0MWqLhvGtTjckT9vZXruU=
+Date: Fri, 25 Feb 2011 16:06:07 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jack Steiner <steiner@sgi.com>, yinghai@kernel.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL tip:x86/mm] fix incorrect NUMA distance table size
+ calculation
+Message-ID: <20110225150607.GN24828@htj.dyndns.org>
 References: <20110225145759.GA1606@sgi.com>
+ <20110225150339.GA29895@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110225145759.GA1606@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110225150339.GA29895@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please pull from the following branch to receive NUMA distance table
+size fix.
 
-* Jack Steiner <steiner@sgi.com> wrote:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
 
-> Fix the calculation of the size of numa_distance array. It is 2-dimemsional
-> array. This fixes early panics seen on large numa systems.
-> 
-> Signed-off-by: Jack Steiner <steiner@sgi.com>
-> 
-> Index: linux/arch/x86/mm/numa_64.c
-> ===================================================================
-> --- linux.orig/arch/x86/mm/numa_64.c	2011-02-23 17:46:38.000000000 -0600
-> +++ linux/arch/x86/mm/numa_64.c	2011-02-25 08:53:45.781921592 -0600
-> @@ -414,7 +414,8 @@ static int __init numa_alloc_distance(vo
->  
->  	for_each_node_mask(i, nodes_parsed)
->  		cnt = i;
-> -	size = ++cnt * sizeof(numa_distance[0]);
-> +	cnt++;
-> +	size = cnt * cnt * sizeof(numa_distance[0]);
->  
->  	phys = memblock_find_in_range(0, (u64)max_pfn_mapped << PAGE_SHIFT,
->  				      size, PAGE_SIZE);
+David Rientjes (1):
+      x86-64, NUMA: Fix size of numa_distance array
 
-Tejun has queued up a fix for this already. Tejun, mind sending the fix to me ASAP?
+ arch/x86/mm/numa_64.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Thanks,
+Thanks.
 
-	Ingo
+-- 
+tejun
