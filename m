@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab1BYUXX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:23:23 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64141 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932855Ab1BYUXT (ORCPT
+	id S932962Ab1BYUYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:24:12 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:60959 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932855Ab1BYUYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:23:19 -0500
-Message-ID: <4D680F77.5060107@kernel.org>
-Date: Fri, 25 Feb 2011 12:22:15 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Fri, 25 Feb 2011 15:24:10 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D681004.1060301@cam.ac.uk>
+Date: Fri, 25 Feb 2011 20:24:36 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for init_memory_mapping_high()
-References: <20110223171945.GI26065@htj.dyndns.org> <4D656D1A.7030006@kernel.org> <20110223204656.GA27738@atj.dyndns.org> <4D657359.5060901@kernel.org> <20110223210326.GB27738@atj.dyndns.org> <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com> <20110224091557.GD7840@htj.dyndns.org> <4D674A33.8000809@kernel.org> <20110225100336.GA26608@elte.hu>
-In-Reply-To: <20110225100336.GA26608@elte.hu>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
+        lm-sensors@lm-sensors.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/5] hwmon: (pmbus) Add support for Maxim MAX8688
+References: <1297969217-9564-1-git-send-email-guenter.roeck@ericsson.com> <1297969217-9564-3-git-send-email-guenter.roeck@ericsson.com>
+In-Reply-To: <1297969217-9564-3-git-send-email-guenter.roeck@ericsson.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D680F9E.0145,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2011 02:03 AM, Ingo Molnar wrote:
-> 
-> * Yinghai Lu <yinghai@kernel.org> wrote:
-> 
->>  init_memory_mapping_active_regions(unsigned long start, unsigned long end)
->>  {
->>  	struct mapping_work_data data;
->> +	int use_gbpages;
->> +
->> +	/* see init_memory_mapping() for the setting */
->> +#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
->> +	use_gbpages = 0;
->> +#else
->> +	use_gbpages = direct_gbpages;
->> +#endif
-> 
-> Sigh. You should *never* ever even think about writing such code. It only results in 
-> crap, and in crap duplicated elsewhere as well:
-> 
-> if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
->         /*
->          * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
->          * This will simplify cpa(), which otherwise needs to support splitting
->          * large pages into small in interrupt context, etc.
->          */
->         use_pse = use_gbpages = 0;
-> #else
->         use_pse = cpu_has_pse;
->         use_gbpages = direct_gbpages;
-> #endif
 
-sorry, actually i copied from there.
+Straight forward use of your core driver. I've not checked this against
+a datasheet, so ack assumes all the numbers are correct!
 
-or i could add max_map_unit_size variable?
-
-Thanks
-
-Yinghai
-
+On 02/17/11 19:00, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 
