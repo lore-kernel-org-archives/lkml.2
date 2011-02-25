@@ -1,117 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074Ab1BYXJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 18:09:33 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36167 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab1BYXJc (ORCPT
+	id S933063Ab1BYXLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 18:11:53 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:39696 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932977Ab1BYXLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 18:09:32 -0500
-Date: Fri, 25 Feb 2011 17:22:10 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, bloat-devel@lists.bufferbloat.net
-Subject: ANNOUNCE: debloat-testing kernel git tree
-Message-ID: <20110225222210.GA3618@tuxdriver.com>
+	Fri, 25 Feb 2011 18:11:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=L2NvSWGAc9uBYvlThxp2IGq1uXoG2ALCrnZix4F02QGDG65x/5+iy/Nbf7GO5blVhr
+         rstNT4BCtQPIp+vB8k0A==
+Message-ID: <4D6835F1.2050304@google.com>
+Date: Fri, 25 Feb 2011 15:06:25 -0800
+From: Mike Waychison <mikew@google.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Robert Lippert <rlippert@google.com>
+CC: Jon Mayer <jonmayer@google.com>, Tony Luck <tony.luck@intel.com>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
+        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
+Subject: [PATCH v2 6/5] Fix unaligned memory accesses in dmi-sysfs
+References: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
+In-Reply-To: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Announcement
+DMI entries are arranged in memory back to back with no alignment
+guarantees. This means that the struct dmi_header passed to callbacks
+from dmi_walk() itself isn't byte aligned.  This causes problems on
+architectures that expect aligned data, such as IA64.
 
-The bufferbloat project [1] is pleased to announce the availability
-of the debloat-testing Linux kernel git tree:
+The dmi-sysfs patchset introduced structure member accesses through
+this passed in dmi_header.  Fix this by memcpy()ing the structures to
+temporary locations on stack when inspecting/copying them.
 
-	git://git.infradead.org/debloat-testing.git
+Signed-off-by: Mike Waychison <mikew@google.com>
+Tested-by: Tony Luck <tony.luck@intel.com>
+---
+  dmi-sysfs.c |   28 +++++++++++++---------------
+  1 file changed, 13 insertions(+), 15 deletions(-)
 
-The purpose of this tree is to provide a reasonably stable base for
-the development and testing of new algorithms, miscellaneous fixes,
-and maybe a few hacks intended to advance the cause of eliminating
-or at least mitigating bufferbloat in the Linux world.
+diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+index a5afd80..eb26d62 100644
+--- a/drivers/firmware/dmi-sysfs.c
++++ b/drivers/firmware/dmi-sysfs.c
+@@ -263,20 +263,16 @@ struct dmi_system_event_log {
+  	u8	supported_log_type_descriptos[0];
+  } __packed;
 
-Introduction
+-static const struct dmi_system_event_log *to_sel(const struct 
+dmi_header *dh)
+-{
+-	return (const struct dmi_system_event_log *)dh;
+-}
+-
+  #define DMI_SYSFS_SEL_FIELD(_field) \
+  static ssize_t dmi_sysfs_sel_##_field(struct dmi_sysfs_entry *entry, \
+  				      const struct dmi_header *dh, \
+  				      char *buf) \
+  { \
+-	const struct dmi_system_event_log *sel = to_sel(dh); \
+-	if (sizeof(*sel) > dmi_entry_length(dh)) \
++	struct dmi_system_event_log sel; \
++	if (sizeof(sel) > dmi_entry_length(dh)) \
+  		return -EIO; \
+-	return sprintf(buf, "%u\n", sel->_field); \
++	memcpy(&sel, dh, sizeof(sel)); \
++	return sprintf(buf, "%u\n", sel._field); \
+  } \
+  static DMI_SYSFS_MAPPED_ATTR(sel, _field)
 
-Bufferbloat is a term coined by Jim Gettys to describe the increasing
-prevalence of large and (particularly) unmanaged network buffers along
-the network links that comprise the Internet [2].  If you are not aware
-of the problems with network latency under load that the Internet is
-already encountering, we encourage you to visit Jim Gettys' blog [3].
-There Jim has begun to fit together enough puzzle pieces to at least
-frame the issue.
+@@ -403,26 +399,28 @@ static ssize_t dmi_sel_raw_read_helper(struct 
+dmi_sysfs_entry *entry,
+  				       void *_state)
+  {
+  	struct dmi_read_state *state = _state;
+-	const struct dmi_system_event_log *sel = to_sel(dh);
++	struct dmi_system_event_log sel;
 
-Jim has also made available slides and an audio recording (edited
-for time) from a presentation on this topic:
+-	if (sizeof(*sel) > dmi_entry_length(dh))
++	if (sizeof(sel) > dmi_entry_length(dh))
+  		return -EIO;
 
-	http://mirrors.bufferbloat.net/Talks/BellLabs01192011/
+-	switch (sel->access_method) {
++	memcpy(&sel, dh, sizeof(sel));
++
++	switch (sel.access_method) {
+  	case DMI_SEL_ACCESS_METHOD_IO8:
+  	case DMI_SEL_ACCESS_METHOD_IO2x8:
+  	case DMI_SEL_ACCESS_METHOD_IO16:
+-		return dmi_sel_raw_read_io(entry, sel, state->buf,
++		return dmi_sel_raw_read_io(entry, &sel, state->buf,
+  					   state->pos, state->count);
+  	case DMI_SEL_ACCESS_METHOD_PHYS32:
+-		return dmi_sel_raw_read_phys32(entry, sel, state->buf,
++		return dmi_sel_raw_read_phys32(entry, &sel, state->buf,
+  					       state->pos, state->count);
+  	case DMI_SEL_ACCESS_METHOD_GPNV:
+  		pr_info("dmi-sysfs: GPNV support missing.\n");
+  		return -EIO;
+  	default:
+  		pr_info("dmi-sysfs: Unknown access method %02x\n",
+-			sel->access_method);
++			sel.access_method);
+  		return -EIO;
+  	}
+  }
+@@ -595,7 +593,7 @@ static void __init dmi_sysfs_register_handle(const 
+struct dmi_header *dh,
+  	}
 
-Kernel Bits
+  	/* Set the key */
+-	entry->dh = *dh;
++	memcpy(&entry->dh, dh, sizeof(*dh));
+  	entry->instance = instance_counts[dh->type]++;
+  	entry->position = position_count++;
 
-The debloat-testing tree is intended to track full and -rc releases
-from linux-2.6, with interesting patches cherry-picked from net-next
-and various experimental bits added on top.  The current stable of
-such patches includes the following:
-
-Eric Dumazet (based on original work by Juliusz Chroboczek):
-      net_sched: SFB flow scheduler
-
-stephen hemminger:
-      sched: CHOKe flow scheduler
-
-John Fastabend:
-      net: implement mechanism for HW based QOS
-      net_sched: implement a root container qdisc sch_mqprio
-
-John W. Linville:
-      mac80211: implement eBDP algorithm to fight bufferbloat
-
-Nathaniel J. Smith:
-      iwlwifi: Simplify tx queue management
-      iwlwifi: Convert the tx queue high_mark to an atomic_t
-      iwlwifi: Invert the sense of the queue high_mark
-      iwlwifi: auto-tune tx queue size to minimize latency
-      iwlwifi: make current tx queue sizes visible in debugfs
-
-Dave Taht:
-      Bufferbloat reduction for the e1000 driver that started it all
-      Reduce bufferbloated default for e1000e, increase dynamic range
-      Smash bufferbloat in the ath9k driver
-
-Userland Bits
-
-Patches for the userspace tc utility incorporating support for both the
-CHOKe AQM and the Stochastic Fair Blue scheduler (SFB) are available:
-
-	https://github.com/dtaht/iproute2bufferbloat
-
-Contributions
-
-Please send any experimental or research-oriented patches related to
-bufferbloat to the bloat-devel@lists.bufferbloat.net list.  Reminders
-of more mainstream patches that may be relevant and/or interesting
-for cherry-picking into debloat-testing are welcome there as well.
-
-Obviously, patches that are ready for normal merge consideration
-should continue to be sent to netdev, linux-wireless, linux-kernel,
-or whatever other existing list is appropriate for them.
-
-Thanks
-
-Finally, we want to offer a huge thanks to the 130+ new members of
-the bloat mailing list [4] for leaping into the fray, and to David
-Woodhouse for hosting the debloat-testing tree at infradead.
-
-Please help us beat the bloat.  Good luck, and happy debloating!
-
-Notes
-
-[1] http://bufferbloat.net
-[2] http://gettys.wordpress.com/what-is-bufferbloat-anyway/
-[3] http://en.wordpress.com/tag/bufferbloat/
-[4] https://lists.bufferbloat.net
---
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
