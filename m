@@ -1,113 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab1BYLQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 06:16:13 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39255 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab1BYLQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 06:16:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=m34Xxinzj1Pj28iYEhwddK2uqoOs0++S7dSwmKrRE4QtdYBJ50lAJi0Pcoyoqf0AMi
-         cD8M+odQdqsd8uUr33EjjXqmDguzLd1JS6gCKx1f/OEC9m+33vHJnCjg99RQ45MyRUgA
-         RguwtW1l3XGo0JkRb4y16njYHEwbdR4LEspJI=
-Date: Fri, 25 Feb 2011 12:16:06 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for
- init_memory_mapping_high()
-Message-ID: <20110225111606.GG24828@htj.dyndns.org>
-References: <20110223171945.GI26065@htj.dyndns.org>
- <4D656D1A.7030006@kernel.org>
- <20110223204656.GA27738@atj.dyndns.org>
- <4D657359.5060901@kernel.org>
- <20110223210326.GB27738@atj.dyndns.org>
- <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com>
- <20110224091557.GD7840@htj.dyndns.org>
- <4D674A33.8000809@kernel.org>
+	id S1753066Ab1BYLRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 06:17:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222Ab1BYLRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 06:17:49 -0500
+Date: Fri, 25 Feb 2011 12:17:12 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Kyungmin Park <kmpark@infradead.org>
+cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Subject: Re: [PATCH v3] fat: Batched discard support for fat
+In-Reply-To: <20110225010346.GA9019@july>
+Message-ID: <alpine.LFD.2.00.1102251114580.3316@dhcp-27-109.brq.redhat.com>
+References: <20110225010346.GA9019@july>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D674A33.8000809@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 10:20:35PM -0800, Yinghai Lu wrote:
-> tj pointed out:
-> 	when node does not have 1G aligned boundary, like 128M.
-> init_memory_mapping_high() could render smaller mapping by 128M on one node,
-> and 896M on next node with 2M pages instead of 1g page. that could increase
-> TLB presure.
+On Fri, 25 Feb 2011, Kyungmin Park wrote:
+
+> From: Kyungmin Park <kyungmin.park@samsung.com>
 > 
-> So if gb page is used, try to align the boundary to 1G before calling
-> init_memory_mapping_ext(), to make sure only use one 1g entry for that cross
-> node 1G.
-> Need to init_meory_mapping_ext() to table tbl_end, to make sure pgtable is on
-> previous node instead of next node.
+> FAT supports batched discard as ext4.
+> 
+> Cited from Lukas words.
+> "The current solution is not ideal because of its bad performance impact.
+> So basic idea to improve things is to avoid discarding every time some
+> blocks are freed. and instead batching is together into bigger trims,
+> which tends to be more effective."
+> 
+> You can find an information in detail at following URLs.
+> http://lwn.net/Articles/397538/
+> http://lwn.net/Articles/383933/
+> 
+> Clearify the meaning of "len" (Cited form Lukas mail)
+> 
+> Let the "O" be free (bytes, blocks, whatever), and "=" be used.
+> Now, we have a filesystem like this.
+> 
+>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>   ^                                      ^
+>   0                                      40
+> 
+> This is how it supposed to wotk if you have called FITIRM with parameters:
+> 
+> start = 0
+> minlen = 2
+> len = 20
+> 
+> So you will go through (blocks, bytes...) 0 -> 20
+> 
+>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>   ^                   ^
+>   0                   20
+> 
+> So, you will call discard on extents:
+> 
+> 0-3
+> You'll skip 6 because is smaller than minlen
+> 10-11
+> 15-19
+> 
+> instead of 
+> 
+> 0-3
+> 10-11
+> 15-19
+> 30-36
 
-I don't know, Yinghai.  The whole code seems overly complicated to me.
-Just ignore e820 map when building linear mapping.  It doesn't matter.
-Why not just do something like the following?  Also, can you please
-add some comments explaining how the NUMA affine allocation actually
-works for page tables?  Or better, can you please make that explicit?
-It currently depends on memories being registered in ascending address
-order, right?  The memblock code already is NUMA aware, I think it
-would be far better to make the node affine part explicit.
+Hi thanks for the next version. And again I have to ask: Did you test it
+? and how ? Did you tried xfstest No. 251 ? Couple of comments bellow.
 
-Thanks.
+Thanks!
+-Lukas
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 46e684f..4fd0b59 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -966,6 +966,11 @@ void __init setup_arch(char **cmdline_p)
- 	memblock.current_limit = get_max_mapped();
- 
- 	/*
-+	 * Add whole lot of comment explaining what's going on and WHY
-+	 * because as it currently stands, it's frigging cryptic.
-+	 */
-+
-+	/*
- 	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
- 	 */
- 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 7757d22..50ec03c 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -536,8 +536,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
--	init_memory_mapping_high();
--
- 	/* Finally register nodes. */
- 	for_each_node_mask(nid, node_possible_map) {
- 		u64 start = (u64)max_pfn << PAGE_SHIFT;
-@@ -550,8 +548,12 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 			end = max(mi->blk[i].end, end);
- 		}
- 
--		if (start < end)
-+		if (start < end) {
-+			init_memory_mapping(
-+			  ALIGN_DOWN_TO_MAX_MAP_SIZE_AND_CONVERT_TO_PFN(start),
-+			  ALIGN_UP_SIMILARY_BUT_DONT_GO_OVER_MAX_PFN(end));
- 			setup_node_bootmem(nid, start, end);
-+		}
- 	}
- 
- 	return 0;
+> 
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> Changelog v3:
+> 	Adjust the minlen from queue discard_granularity
+> 	Use the corrent len usage
+> Changelog v2:
+> 	Use the given start and len as Lukas comments
+> 	Check the queue supports discard feature
+> ---
+> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+> index f504089..08b53e1 100644
+> --- a/fs/fat/fat.h
+> +++ b/fs/fat/fat.h
+> @@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
+>  			      int nr_cluster);
+>  extern int fat_free_clusters(struct inode *inode, int cluster);
+>  extern int fat_count_free_clusters(struct super_block *sb);
+> +extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
+>  
+>  /* fat/file.c */
+>  extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
+> diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+> index b47d2c9..a8e3837 100644
+> --- a/fs/fat/fatent.c
+> +++ b/fs/fat/fatent.c
+> @@ -1,6 +1,8 @@
+>  /*
+>   * Copyright (C) 2004, OGAWA Hirofumi
+>   * Released under GPL v2.
+> + *
+> + * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
+>   */
+>  
+>  #include <linux/module.h>
+> @@ -541,6 +543,16 @@ out:
+>  	return err;
+>  }
+>  
+> +static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
+> +{
+> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> +	sector_t block, nr_blocks;
+> +
+> +	block = fat_clus_to_blknr(sbi, cluster);
+> +	nr_blocks = nr_clus * sbi->sec_per_clus;
+> +	return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
+> +}
+> +
+>  int fat_free_clusters(struct inode *inode, int cluster)
+>  {
+>  	struct super_block *sb = inode->i_sb;
+> @@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
+>  			if (cluster != fatent.entry + 1) {
+>  				int nr_clus = fatent.entry - first_cl + 1;
+>  
+> -				sb_issue_discard(sb,
+> -					fat_clus_to_blknr(sbi, first_cl),
+> -					nr_clus * sbi->sec_per_clus,
+> -					GFP_NOFS, 0);
+> -
+> +				fat_issue_discard(sb, first_cl, nr_clus);
+>  				first_cl = cluster;
+>  			}
+>  		}
+> @@ -683,3 +691,88 @@ out:
+>  	unlock_fat(sbi);
+>  	return err;
+>  }
+> +
+> +int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
+> +{
+> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> +	struct fatent_operations *ops = sbi->fatent_ops;
+> +	struct fat_entry fatent;
+> +	unsigned long reada_blocks, reada_mask, cur_block;
+> +	int err = 0, free, count, entry;
+> +	int start, len, minlen, trimmed;
+> +
+> +	start = range->start >> sb->s_blocksize_bits;
+> +	start = start / sbi->sec_per_clus;
+> +	len = range->len >> sb->s_blocksize_bits;
+> +	len = len / sbi->sec_per_clus;
+> +	minlen = range->minlen >> sb->s_blocksize_bits;
+> +	minlen = minlen / sbi->sec_per_clus;
+> +	trimmed = 0;
+> +	count = 0;
+> +
+> +	lock_fat(sbi);
+> +	if (sbi->free_clusters != -1 && sbi->free_clus_valid)
+> +		goto out;
+> +
+> +	reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
+> +	reada_mask = reada_blocks - 1;
+> +	cur_block = 0;
+> +
+> +	entry = 0;
+> +	free = 0;
+> +	fatent_init(&fatent);
+> +
+> +	if (start < FAT_START_ENT)
+> +		start = FAT_START_ENT;
+> +
+> +	fatent_set_entry(&fatent, start);
+> +
+> +	while (count < sbi->max_cluster) {
+> +		if (fatent.entry >= sbi->max_cluster)
+> +			fatent.entry = FAT_START_ENT;
+> +		/* readahead of fat blocks */
+> +		if ((cur_block & reada_mask) == 0) {
+> +			unsigned long rest = sbi->fat_length - cur_block;
+> +			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
 
+You really do not need new variable "rest" just for passing it into one
+function. Get rid of it.
+
+> +		}
+> +		cur_block++;
+> +
+> +		err = fat_ent_read_block(sb, &fatent);
+> +		if (err)
+> +			goto out;
+> +
+> +		do {
+> +			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
+> +				free++;
+> +				if (!entry)
+> +					entry = fatent.entry;
+> +				if (count >= len && free >= minlen) {
+> +					fat_issue_discard(sb, entry, free);
+> +					trimmed += free;
+I really do not understand FAT code very much, but is this right ?
+Should not you be setting free = 0 ? What will happen if you'll end up
+in the same branch in next iteration ? -- free will be still set to
+previous value+1, bu you'll be discarding next entry. I am sorry but
+this whole thing is not very readable.
+
+> +				}
+> +				if (count >= len)
+> +					goto done;
+> +			} else if (entry) {
+> +				if (free >= minlen) {
+> +					fat_issue_discard(sb, entry, free);
+> +					trimmed += free;
+> +				}
+> +				if (count >= len)
+> +					goto done;
+> +				free = 0;
+> +				entry = 0;
+> +			}
+
+I don't not see why you are testing count all the time since it has not been
+changed since the "if" condition started. how about doing one test
+before the "if" condition ?
+
+> +			count++;
+> +		} while (fat_ent_next(sbi, &fatent));
+> +	}
+> +	if (free >= minlen) {
+> +		fat_issue_discard(sb, entry, free);
+> +		trimmed += free;
+> +	}
+> +done:
+> +	range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
+> +	fatent_brelse(&fatent);
+> +out:
+> +	unlock_fat(sbi);
+> +	return err;
+> +}
+> diff --git a/fs/fat/file.c b/fs/fat/file.c
+> index 7257752..9910aba 100644
+> --- a/fs/fat/file.c
+> +++ b/fs/fat/file.c
+> @@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  		return fat_ioctl_get_attributes(inode, user_attr);
+>  	case FAT_IOCTL_SET_ATTRIBUTES:
+>  		return fat_ioctl_set_attributes(filp, user_attr);
+> +	case FITRIM:
+> +	{
+> +		struct super_block *sb = inode->i_sb;
+> +		struct request_queue *q = bdev_get_queue(sb->s_bdev);
+> +		struct fstrim_range range;
+> +		int ret = 0;
+> +
+> +		if (!capable(CAP_SYS_ADMIN))
+> +			return -EPERM;
+> +
+> +		if (!blk_queue_discard(q))
+> +			return -EOPNOTSUPP;
+> +
+> +		if (copy_from_user(&range, (struct fstrim_range *)arg,
+> +					sizeof(range)))
+> +			return -EFAULT;
+> +
+> +		range.minlen = max((unsigned int)range.minlen,
+> +					q->limits.discard_granularity);
+> +		ret = fat_trim_fs(sb, &range);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		if (copy_to_user((struct fstrim_range *)arg, &range,
+> +					sizeof(range)))
+> +			return -EFAULT;
+> +
+> +		return 0;
+> +	}
+> +
+>  	default:
+>  		return -ENOTTY;	/* Inappropriate ioctl for device */
+>  	}
+> 
 
 -- 
-tejun
