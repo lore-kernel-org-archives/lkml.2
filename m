@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab1BYSzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:55:24 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44500 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932502Ab1BYSzQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:55:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110225175202.GA19059@redhat.com>
-References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com>
- <20101201182747.GB6143@redhat.com> <20110225175202.GA19059@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 25 Feb 2011 10:54:24 -0800
-Message-ID: <AANLkTimv6=QuK2+ye=OFCdRN_285GsNc4CnWEQf8OY26@mail.gmail.com>
-Subject: Re: [PATCH 0/4 RESEND] exec: unify compat/non-compat code
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932515Ab1BYSzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:55:51 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41821 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756465Ab1BYSxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:53:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=iXjosMAQC4eZJ7cJnsEECT+VcZUlTYbQUufxjLLpJjNdWiviOYKdSO2l5ZI0jgG0qi
+         BPaCJPCK4aLEO/tLxTnYUnC7dyse0adpP9AYVnUFQz/tXP2V6OpyZA00w/qO1CzOOrvl
+         niULeGqYE5X84rgxx/kXkRPn1I4KlVX7puwoU=
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Octavian Purdila <tavi@cs.pub.ro>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Subject: [PATCH 2/9] sysctl: use ctl_header_cookie in proc_handler
+Date: Fri, 25 Feb 2011 20:52:34 +0200
+Message-Id: <1298659961-23863-3-git-send-email-lucian.grijincu@gmail.com>
+X-Mailer: git-send-email 1.7.4.rc1.7.g2cf08.dirty
+In-Reply-To: <1298659961-23863-1-git-send-email-lucian.grijincu@gmail.com>
+References: <1298659961-23863-1-git-send-email-lucian.grijincu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 12/01, Milton Miller wrote:
->> >
->> > > +#ifdef CONFIG_COMPAT
->> > > +int compat_do_execve(char * filename,
->> > > + compat_uptr_t __user *argv,
->> > > + compat_uptr_t __user *envp,
->> > > + struct pt_regs * regs)
->> > > +{
->> > > + return do_execve_common(filename,
->> > > +                         (void __user*)argv, (void __user*)envp,
->> >
->> > Shouldn't these be compat_ptr(argv)?  (makes a difference on s390)
+TODO: if this patch series gets a positive feedback this patch will be
+extended with a kernel-wide change of each proc_handler to add a
+'cookie' argument.
 
-Indeed. The "compat_uptr_t __user *argv" is wrong, and it should be just
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+---
+ fs/proc/proc_sysctl.c  |   11 ++++++++++-
+ include/linux/sysctl.h |    3 +++
+ 2 files changed, 13 insertions(+), 1 deletions(-)
 
-    compat_uptr_t argv;
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index 09a1f92..85b6b75 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -135,6 +135,7 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
+ 	struct ctl_table_header *head = grab_header(inode);
+ 	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
++	proc_handler_cookie *phc = (proc_handler_cookie *) table->proc_handler;
+ 	ssize_t error;
+ 	size_t res;
+ 
+@@ -156,7 +157,15 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
+ 
+ 	/* careful: calling conventions are nasty here */
+ 	res = count;
+-	error = table->proc_handler(table, write, buf, &res, ppos);
++	/*XXX Most handlers only use the first 5 arguments (without
++	 *XXX @cookie). Changing all handlers is too much of work,
++	 *XXX as this is only a RFC patch at the moment.
++	 *XXX
++	 *XXX This is just a HACK for now, I did this this way to not
++	 *XXX waste time changing all the handlers, in the final version
++	 *XXX I'll change all the handlers if there's not other solution.
++	 */
++	error = phc(table, write, buf, &res, ppos, head->ctl_header_cookie);
+ 	if (!error)
+ 		error = res;
+ out:
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 43fed29..3d21832 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -963,6 +963,9 @@ typedef struct ctl_table ctl_table;
+ 
+ typedef int proc_handler (struct ctl_table *ctl, int write,
+ 			  void __user *buffer, size_t *lenp, loff_t *ppos);
++typedef int proc_handler_cookie(struct ctl_table *ctl, int write,
++				void __user *buffer, size_t *lenp,
++				loff_t *ppos, void *ctl_header_cookie);
+ 
+ extern int proc_dostring(struct ctl_table *, int,
+ 			 void __user *, size_t *, loff_t *);
+-- 
+1.7.4.rc1.7.g2cf08.dirty
 
-and then every time you turn it into a pointer, it should use
-"compat_ptr(argv)".
-
-Then, since it's a pointer to an array of pointers, when you do that,
-you should turn it into a pointer to "compat_uptr_t", so you actually
-have this:
-
- - user passes "compat_uptr_t"
-
- - the kernel can turn that into "compat_uptr_t __user *" by doing
-
-       compat_uptr_t __user *pptr;
-       pptr = compat_ptr(argv);
-
- - the kernel needs to fetch the individual entries with
-
-       compat_uptr_t cuptr = get_user(pptr);
-
- - the kernel can then turn _those_ into the actual pointers to the string with
-
-       const char __user *str = compat_ptr(cuptr);
-
-so you need two levels of compat_ptr() conversion.
-
-> So, once again, this should not (and can not) be compat_ptr(argv) afaics.
-
-It can be, and probably should. But the low-level s390 wrapper
-function may have done one of the levels already. It probably
-shouldn't, and we _should_ do the "compat_ptr()" thing a the generic C
-level. That's what we do with all the other pointers, after all.
-
-                          Linus
