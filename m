@@ -1,139 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab1BYBNY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 20:13:24 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:38897 "EHLO smtp.outflux.net"
+	id S1756378Ab1BYBPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 20:15:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16592 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755863Ab1BYBNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 20:13:23 -0500
-Date: Thu, 24 Feb 2011 17:12:42 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110225011242.GY4212@outflux.net>
-References: <20110222191454.GB9991@suse.de>
- <20110222192532.GY4000@outflux.net>
- <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
- <20110222195018.GA4000@outflux.net>
- <20110222201610.GA29787@suse.de>
- <20110222202856.GE4000@outflux.net>
- <20110222203704.GA7224@suse.de>
- <20110222205413.GH4000@outflux.net>
- <20110225002214.GW4212@outflux.net>
- <20110225003508.GB27272@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110225003508.GB27272@suse.de>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1756072Ab1BYBPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 20:15:38 -0500
+Subject: Re: Linux 2.6.38-rc6
+From: Dave Airlie <airlied@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>, linux-fbdev@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
+        Borislav Petkov <bp@amd64.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTin7+AHAqKz5T-1_=N6tqPytyT4ooqyJuhHC6ET=@mail.gmail.com>
+References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
+	 <20110222140349.GA20708@kryptos.osrc.amd.com>
+	 <AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
+	 <AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
+	 <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
+	 <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
+	 <AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com>
+	 <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
+	 <AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com>
+	 <AANLkTi=wbtcAOmYE8UF7ynPZ_nR3ZXxVRBcuMVGNK4u0@mail.gmail.com>
+	 <AANLkTin7+AHAqKz5T-1_=N6tqPytyT4ooqyJuhHC6ET=@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Feb 2011 11:14:59 +1000
+Message-ID: <1298596499.10585.27.camel@clockmaker-el6>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 04:35:08PM -0800, Greg KH wrote:
-> On Thu, Feb 24, 2011 at 04:22:14PM -0800, Kees Cook wrote:
-> > On Tue, Feb 22, 2011 at 12:54:13PM -0800, Kees Cook wrote:
-> > > On Tue, Feb 22, 2011 at 12:37:04PM -0800, Greg KH wrote:
-> > > > On Tue, Feb 22, 2011 at 12:28:56PM -0800, Kees Cook wrote:
-> > > > > On Tue, Feb 22, 2011 at 12:16:10PM -0800, Greg KH wrote:
-> > > > > > On Tue, Feb 22, 2011 at 11:50:18AM -0800, Kees Cook wrote:
-> > > > > > > On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
-> > > > > > > > > What system do you proposed to keep these "stupid mistakes" from
-> > > > > > > > > continuing to happen? If debugfs had already been mode 0700, we could have
-> > > > > > > > > avoided all of these CVEs, including the full-blown local root escalation.
-> > > > > > > > 
-> > > > > > > > And all sorts of features would have put themselves in sysfs instead and
-> > > > > > > > broken no doubt.
-> > > > > > > > 
-> > > > > > > > > The "no rules" approach to debugfs is not a good idea, IMO.
-> > > > > > > > 
-> > > > > > > > It's a debugging fs, it needs to be "no rules" other than the obvious
-> > > > > > > > "don't mount it on production systems"
-> > > > > > > 
-> > > > > > > Okay, so the debugfs is not supposed to be mounted on a production system.
-> > > > > > 
-> > > > > > No, not true at all, the "enterprise" distros all mount debugfs for good
-> > > > > > reason on their systems.
-> > > > > 
-> > > > > What reasons are those? Or better yet, why do you and Alan Cox disagree on
-> > > > > this point?
-> > > > 
-> > > > These distros have made the decision to support the perf interface,
-> > > > which lives in debugfs, for their customers.  I'm not saying that I
-> > > > disagree with Alan about this, just pointing out the reality of the
-> > > > situation here.
-> > > 
-> > > A tool used only by the root user, so the proposed mount mode of 0700
-> > > wouldn't break anything.
-> > 
-> > The summary is this:
-> >  - debugfs has been demonstrably dangerous to have available
+On Thu, 2011-02-24 at 16:54 -0800, Linus Torvalds wrote:
+> On Thu, Feb 24, 2011 at 4:48 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> >
+> > diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> > index e2bf953..e8f8925 100644
+> > --- a/drivers/video/fbmem.c
+> > +++ b/drivers/video/fbmem.c
+> > @@ -1511,6 +1511,7 @@ void remove_conflicting_framebuffers(struct
+> > apertures_struct *a,
+> >                               "%s vs %s - removing generic driver\n",
+> >                               name, registered_fb[i]->fix.id);
+> >                        unregister_framebuffer(registered_fb[i]);
+> > +                       registered_fb[i] = NULL;
+> >
+> > Tested the patch, and now I get this:
+> > dmesg: http://pastebin.com/ieMNrA7C
+> >
+> > [   12.252328] BUG: unable to handle kernel NULL pointer dereference
+> > at 00000000000003b8
+> > [   12.252342] IP: [<ffffffff81311178>] fb_mmap+0x58/0x1d0
 > 
-> Wait, I do not believe this statement at all.
+> Ok, goodie.
 > 
-> It's like saying "sysfs and proc are demonstrably dangerous to have
-> available" because there were some bugs with some implementations of
-> sysfs and proc files in the past.
-
-Since sysfs and proc have "rules", it discourages bad code more than
-debugfs does.
-
-> >  - Alan Cox says that debugfs should not be used on production systems
-> >  - Greg KH does not disagree
+> Or not so goodie, but it does make it clear that yeah, the fb code
+> seems to be using stale pointers from that registered_fb[] array, and
+> the whole unregistration process is just racing with people using it.
 > 
-> I also don't agree, as my day-job entails supporting a wide range of
-> production systems with this filesystem mounted and enabled.
+> Herton had that much bigger patch, can you test it?
 
-I was careful in reproducing your earlier statement about not disagreeing.
-:)
+I think Andy's patch worked, not sure why it fell between the cracks,
+either didn't appear on lkml or in my inbox at all.
 
-> >  - however, pref needs it, and this is used by some root users
-> >  - perf will likely move out of debugfs as some point
-> > 
-> > What is the objection, then, to making the root of debugfs mode 0600? All
-> > the tools I reviewed that need it run as root (e.g. powertop). I've
-> > already written, tested, and sent the patches -- they would not break
-> > the requirements above.
-> 
-> There are a wide range of other files that can be safely read as a
-> normal user in debugfs.  For example, the usb debugging files which we
-> use to help debug hardware controller issues.  Now yes, we could ask the
-> user to become root first, but is that really necessary?
+if we can get Herton to repost it properly + a tested by I'm happy for
+it to go in.
 
-If production systems should not have debugfs mounted, and the file is
-universally useful to non-root users, it should move like the perf
-interfaces, right?
+Dave.
 
-> Again, I feel these were just a few bugs that do not reflect the much
-> larger and benificial use of this filesystem.  We now have a set of
-> checks in place to prevent this type of error from occuring again, why
-> not rely on that instead of just removing the whole filesystem from
-> normal users entirely?
-
-I don't feel that a test in checkpatch is sufficient to prevent future
-problems. What about Dan Carpenter's patch?
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
