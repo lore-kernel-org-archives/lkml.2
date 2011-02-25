@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab1BYTW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:22:59 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34089 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab1BYTW5 convert rfc822-to-8bit (ORCPT
+	id S1756532Ab1BYTaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:30:22 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:6371 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab1BYTaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 14:22:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110223021221.17638.42707.stgit@localhost6.localdomain6>
-References: <20110223021221.17638.42707.stgit@localhost6.localdomain6>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 25 Feb 2011 12:22:37 -0700
-X-Google-Sender-Auth: g1zHof1eWBnLoHprpadbV-VUJng
-Message-ID: <AANLkTinx2YxOs3Y-XDHaWe44Bw8HqiMyanouV5Bo3KuX@mail.gmail.com>
-Subject: Re: [PATCH] tty/serial: Relax the device_type restriction from of_serial
-To: devicetree-discuss@lists.ozlabs.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 Feb 2011 14:30:21 -0500
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
+ modules
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
+        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+In-Reply-To: <20110225.111606.115927805.davem@davemloft.net>
+References: <20110225190205.GA4541@albatros>
+	 <20110225.110529.39178636.davem@davemloft.net>
+	 <1298660879.2554.23.camel@bwh-desktop>
+	 <20110225.111606.115927805.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Fri, 25 Feb 2011 19:30:16 +0000
+Message-ID: <1298662216.2554.33.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Feb 2011 19:30:21.0398 (UTC) FILETIME=[7123FF60:01CBD522]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17976.005
+X-TM-AS-Result: No--27.737800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd and Ben,
+On Fri, 2011-02-25 at 11:16 -0800, David Miller wrote:
+> From: Ben Hutchings <bhutchings@solarflare.com>
+> Date: Fri, 25 Feb 2011 19:07:59 +0000
+> 
+> > You realise that module loading doesn't actually run in the context of
+> > request_module(), right?
+> 
+> Why is that a barrier?  We could simply pass a capability mask into
+> request_module if necessary.
+> 
+> It's an implementation detail, and not a deterrant to my suggested
+> scheme.
 
-I forgot to cc you guys on this patch.  Greg has it in his tree, but I
-wanted to make sure you noticed it.  If you have any objections, let
-me know and I'll ask Greg to drop it.
+It's not an implementation detail.  modprobe currently runs with full
+capabilities; your proposal requires its capabilities to be limited to
+those of the capabilities of the process that triggered the
+request_module() (plus, presumably, CAP_SYS_MODULE).
 
-Thanks,
-g.
+Now modprobe doesn't have CAP_DAC_OVERRIDE and can't read modprobe
+configuration files that belong to users other than root.
 
+It doesn't have CAP_SYS_MKNOD so it can't run hooks that call mknod.
 
-On Tue, Feb 22, 2011 at 7:12 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> There is no need to test for a device_type property in ns8250
-> compatible serial ports.  device_type is an OpenFirmware property that
-> is not required when using the flattened tree representation.
->
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  drivers/tty/serial/of_serial.c |   18 +++++++++---------
->  1 files changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-> index 5c7abe4..6a18ca6 100644
-> --- a/drivers/tty/serial/of_serial.c
-> +++ b/drivers/tty/serial/of_serial.c
-> @@ -160,17 +160,17 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
->  * A few common types, add more as needed.
->  */
->  static struct of_device_id __devinitdata of_platform_serial_table[] = {
-> -       { .type = "serial", .compatible = "ns8250",   .data = (void *)PORT_8250, },
-> -       { .type = "serial", .compatible = "ns16450",  .data = (void *)PORT_16450, },
-> -       { .type = "serial", .compatible = "ns16550a", .data = (void *)PORT_16550A, },
-> -       { .type = "serial", .compatible = "ns16550",  .data = (void *)PORT_16550, },
-> -       { .type = "serial", .compatible = "ns16750",  .data = (void *)PORT_16750, },
-> -       { .type = "serial", .compatible = "ns16850",  .data = (void *)PORT_16850, },
-> +       { .compatible = "ns8250",   .data = (void *)PORT_8250, },
-> +       { .compatible = "ns16450",  .data = (void *)PORT_16450, },
-> +       { .compatible = "ns16550a", .data = (void *)PORT_16550A, },
-> +       { .compatible = "ns16550",  .data = (void *)PORT_16550, },
-> +       { .compatible = "ns16750",  .data = (void *)PORT_16750, },
-> +       { .compatible = "ns16850",  .data = (void *)PORT_16850, },
->  #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
-> -       { .type = "serial", .compatible = "ibm,qpace-nwp-serial",
-> -                                       .data = (void *)PORT_NWPSERIAL, },
-> +       { .compatible = "ibm,qpace-nwp-serial",
-> +               .data = (void *)PORT_NWPSERIAL, },
->  #endif
-> -       { .type = "serial",                           .data = (void *)PORT_UNKNOWN, },
-> +       { .type = "serial",         .data = (void *)PORT_UNKNOWN, },
->        { /* end of list */ },
->  };
->
->
->
+etc.
 
-
+Ben.
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
