@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab1BYIyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 03:54:09 -0500
-Received: from gate.crashing.org ([63.228.1.57]:37636 "EHLO gate.crashing.org"
+	id S932359Ab1BYIzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 03:55:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:5812 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932294Ab1BYIyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 03:54:07 -0500
-Subject: Re: [RFC PATCH 01/15] dt/powerpc: move of_bus_type infrastructure
- to ibmebus
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>, sfr@canb.auug.org.au,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <201102241546.48790.arnd@arndb.de>
-References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
-	 <20110223043340.20795.84024.stgit@localhost6.localdomain6>
-	 <201102241546.48790.arnd@arndb.de>
+	id S932342Ab1BYIzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 03:55:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,224,1297065600"; 
+   d="scan'208";a="661377213"
+Subject: Re: [PATCH -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110224165705.GA15498@elte.hu>
+References: <1298555968.2220.15.camel@localhost>
+	 <1298556237.2220.19.camel@localhost>  <20110224165705.GA15498@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 19:53:39 +1100
-Message-ID: <1298624019.8833.607.camel@pasglop>
+Date: Fri, 25 Feb 2011 16:55:19 +0800
+Message-ID: <1298624119.2835.87.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 15:46 +0100, Arnd Bergmann wrote:
-> On Wednesday 23 February 2011, Grant Likely wrote:
-> > arch/powerpc/kernel/ibmebus.c is the only remaining user of the
-> > of_bus_type support code for initializing the bus and registering
-> > drivers.  All others have either been switched to the vanilla platform
-> > bus or already have their own infrastructure.
-> > 
-> > This patch moves the functionality that ibmebus is using out of
-> > drivers/of/{platform,device}.c and into ibmebus.c where it is actually
-> > used.  Also renames the moved symbols from of_platform_* to
-> > ibmebus_bus_* to reflect the actual usage.
-> > 
-> > This patch is part of moving all of the of_platform_bus_type users
-> > over to the platform_bus_type.
-> > 
-> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+On Fri, 2011-02-25 at 00:57 +0800, Ingo Molnar wrote:
+> * Lin Ming <ming.m.lin@intel.com> wrote:
 > 
-> The ibmebus is essentially the platform bus of the IBM Power Systems (a.k.a.
-> pSeries a.k.a. System p), I think it would make a lot of sense to convert
-> the two drivers (ehca and ehea) on this bus into platform drivers as well.
+> > Adds SandyBridge support to perf.
 > 
-> The original reason for this bus was to provide a different IOMMU for them
-> than what is used on the PCI devices. This should now be possible in simpler
-> ways.
-
-Well, it's really the IBM "GX" bus but yeah, it could be converted I
-suppose. The "special" iommu functions mostly derive from the fact that
-the two adapters we are interested in have their own translation
-mechanism built-in. The GX bus sits "above" the TCEs used as an iommu on
-these systems.
-
-> > +static void ibmebus_bus_device_shutdown(struct device *dev)
-> > +{
-> > +	struct platform_device *of_dev = to_platform_device(dev);
-> > +	struct of_platform_driver *drv = to_of_platform_driver(dev->driver);
-> > +
-> > +	if (dev->driver && drv->shutdown)
-> > +		drv->shutdown(of_dev);
-> > +}
+> Wondering, have you tested things like PEBS? You can do it via:
 > 
-> neither of the drivers provides a shutdown function.
+> 	perf record -e instructions:p -a sleep 10
+> 	perf top -e instructions:p
+> 
+> ('p' stands for 'precise')
 
-Right but they might grow one ... and people will wonder why it doesn't
-work if you remove the above :-)
+Let me do more PEBS tests...
 
- .../...
+> 
+> Also, please list known limitations in the changelog.
 
-> These are also unused in the drivers.
+OK. 
 
-Same reasoning, however it becomes moot if we convert them to platform.
-
-Cheers,
-Ben.
+> 
+> Thanks,
+> 
+> 	Ingo
 
 
