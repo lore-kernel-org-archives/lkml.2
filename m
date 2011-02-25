@@ -1,102 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab1BYKEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 05:04:38 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:47667 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab1BYKEg (ORCPT
+	id S932536Ab1BYKS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 05:18:27 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:37828 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932404Ab1BYKSZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 05:04:36 -0500
+	Fri, 25 Feb 2011 05:18:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=YQHeL3pFb5W8fRuNQjd7P+SfFgP10XF45sNNQnumQds6HxlTXa7Aa+FVL7Iqi/Bd7b
-         fUzkL0F7eZyDgSIwI9KA==
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZLasPNEYzxkgaUaA5McDyRGD8bH0KvAeBeG+9GQekZgQV6Tp1vmd9UP6/2lquaHjZ0
+         McpDwkPJ/RQjgvfPFTgqnDqyV2nGBhi5ZBHHQ6O4I1Q9CgIbxgtbtnXjEilMSRnGslMO
+         iMwAhbm0+CblM/ADvbsPvGVQw/c4ex8Vwz8xU=
 MIME-Version: 1.0
-In-Reply-To: <20110224161111.7d83a884@jacob-laptop>
-References: <20110216031831.571628191@google.com> <20110224161111.7d83a884@jacob-laptop>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 25 Feb 2011 02:03:54 -0800
-Message-ID: <AANLkTi=i-fgng0Pa2JDSy8RgqRs2mo2vc2CKbx12-=Ri@mail.gmail.com>
-Subject: Re: [CFS Bandwidth Control v4 0/7] Introduction
-To: jacob pan <jacob.jun.pan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Matt Helsley <matthltc@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+In-Reply-To: <1cced1eb38110129d097e1c8b6857d81.squirrel@webmail.greenhost.nl>
+References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
+	<AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
+	<0d30dc$l7ehaa@orsmga001.jf.intel.com>
+	<AANLkTi=DXg=ighnPi4FYA29=qegE=c_PtCVWzOymYtmQ@mail.gmail.com>
+	<b5f94200cffe31ff8cbe38d2bd2e35a7.squirrel@webmail.greenhost.nl>
+	<AANLkTimLb4=04vOU7_SrtKpWQvFmDfibHGGsC+CFxwCW@mail.gmail.com>
+	<1cced1eb38110129d097e1c8b6857d81.squirrel@webmail.greenhost.nl>
+Date: Fri, 25 Feb 2011 11:18:24 +0100
+Message-ID: <AANLkTi=9hq9JPUHRNWaxRe2txdguWw61mrJHjanNPG94@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 4:11 PM, jacob pan
-<jacob.jun.pan@linux.intel.com> wrote:
-> On Tue, 15 Feb 2011 19:18:31 -0800
-> Paul Turner <pjt@google.com> wrote:
->
->> Hi all,
+On Fri, Feb 25, 2011 at 00:29, Indan Zupancic <indan@nul.nu> wrote:
+>>> https://lkml.org/lkml/2011/2/23/34
 >>
->> Please find attached v4 of CFS bandwidth control; while this rebase
->> against some of the latest SCHED_NORMAL code is new, the features and
->> methodology are fairly mature at this point and have proved both
->> effective and stable for several workloads.
+>> This is just the discussion about the problem described in the ticket.
+>> It does not even mention the patch from the previous link, BTW.
+>> It does have the patch which returns -EINVAL for I915_PARAM_HAS_RELAXED_FENCING,
+>> though.
 >>
->> As always, all comments/feedback welcome.
+>> So, AFAICS, at the moment there is no better patch than this:
 >>
+>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+>> index 17bd766..8f8a6a3 100644
+>> --- a/drivers/gpu/drm/i915/i915_dma.c
+>> +++ b/drivers/gpu/drm/i915/i915_dma.c
+>> @@ -764,7 +764,7 @@ static int i915_getparam(struct drm_device *dev, void *data,
+>>               break;
+>>       case I915_PARAM_HAS_RELAXED_FENCING:
+>>               value = 1;
+>> -             break;
+>> +             return -EINVAL;
+>>       case I915_PARAM_HAS_COHERENT_RINGS:
+>>               value = 1;
+>>               break;
 >
-> Hi Paul,
->
-> Your patches provide a very useful but slightly different feature for
-> what we need to manage idle time in order to save power. What we
-> need is kind of a quota/period in terms of idle time. I have been
-> playing with your patches and noticed that when the cgroup cpu usage
-> exceeds the quota the effect of throttling is similar to what I have
-> been trying to do with freezer subsystem. i.e. freeze and thaw at given
-> period and percentage runtime.
-> https://lkml.org/lkml/2011/2/15/314
->
-> Have you thought about adding such feature (please see detailed
-> description in the link above) to your patches?
->
+> Read those above links again! Daniel's patch fixes that one corruption, the
+> above snippet has the same effect and works around the same bug, but neither
+> do fix that other corruption mentioned in the ticket.
 
-So reading the description it seems like rooting everything in a
-'freezer' container and then setting up a quota of
+Do you have any idea which patch fixes what? It's just I slowly begin to
+doubt that you do. So far I found only two patches (and three changes):
 
-(1 - frozen_percentage)  * nr_cpus * frozen_period * sec_to_usec
+This is the first:
 
-on a period of
+Corruption caused by portions of the screen stopped updating (the Bug 27572).
+Certainly worked around by returning -EINVAL for ..RELAXED_FENCING.
 
-frozen_period * sec_to_usec
+The second:
 
-Would provide the same functionality.  Is there other unduplicated
-functionality beyond this?
+Corruption in small pixmaps, which has no bug number, and commented on by
+Daniel in the Bug 27572 as being not the case there.
+Fixed by his patch posted to dri-devel "fix corruptions on i8xx due to
+relaxed fencing". It may be related to the Bug 27572, but it certainly
+does not fix the problem.
 
-One thing that does seem undesirable about your approach is (as it
-seems to be described) threads will not be able to take advantage of
-naturally occurring idle cycles and will incur a potential performance
-penalty even at use << frozen_percentage.
+There is also this change from the first Daniel's patch which I don't
+know what to think about:
 
-e.g. From your post
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index cf4f74c..2e6b532 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1404,6 +1404,8 @@ i915_gem_get_unfenced_gtt_alignment(struct
+drm_i915_gem_object *obj)
+ 	struct drm_device *dev = obj->base.dev;
+ 	int tile_height;
 
-       |  |<-- 90% frozen -     ->|  |                               |  |
-____|  |________________x_|  |__________________|  |_____
++	return i915_gem_get_gtt_alignment(obj);
++
+ 	/*
+ 	 * Minimum alignment is 4k (GTT page size) for sane hw.
+ 	 */diff --git a/drivers/gpu/drm/i915/i915_dma.c
+b/drivers/gpu/drm/i915/i915_dma.c
 
-        |<---- 5 seconds     ---->|
-
-
-Suppose no threads active until the wake up at x, suppose there is an
-accompanying 1 second of work for that thread to do.  That execution
-time will be dilated to ~1.5 seconds (as it will span the 0.5 seconds
-the freezer will stall for).  But the true usage for this period is
-~20% <<< 90%
-
-> Thanks,
->
-> Jacob
->
+Now, may I ask you , Indan, to shut up for while and let the developers
+speak? Because the matter is becoming a little bit confusing, and not without
+your help.
