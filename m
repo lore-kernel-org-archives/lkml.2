@@ -1,289 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab1BYB4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 20:56:23 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:37405 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932314Ab1BYB4V (ORCPT
+	id S932404Ab1BYCAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 21:00:55 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:53149 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932340Ab1BYCAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 20:56:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=W3zCbucztB0n+4LaoHLRedBlCRbKWesO4vIwlcfUixLJHVgmyytKB4rM7fc3yuzc4Y
-         cMjcPy3xnVjVg73nw2/f7Sc2FHgWDSjbqt7onsVCrey9ZWhEzUOu0Y8SiMx37jOwH+ev
-         z7/7I2XgBxrwynK25j3YPz2p6Zu8hpu37ND44=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikQOBGfe8dGv05M8YD=CK+ToUQ4J8s_n9FncfPA@mail.gmail.com>
-References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
-	<20110222140349.GA20708@kryptos.osrc.amd.com>
-	<AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
-	<AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
-	<AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
-	<AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
-	<AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com>
-	<AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
-	<AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com>
-	<AANLkTi=wbtcAOmYE8UF7ynPZ_nR3ZXxVRBcuMVGNK4u0@mail.gmail.com>
-	<AANLkTin7+AHAqKz5T-1_=N6tqPytyT4ooqyJuhHC6ET=@mail.gmail.com>
-	<1298596499.10585.27.camel@clockmaker-el6>
-	<AANLkTikQOBGfe8dGv05M8YD=CK+ToUQ4J8s_n9FncfPA@mail.gmail.com>
-Date: Fri, 25 Feb 2011 03:56:20 +0200
-Message-ID: <AANLkTinq_gyAFKb_i_4j6qzkAmoSuAS+k_eCRFKFy5wL@mail.gmail.com>
-Subject: Re: Linux 2.6.38-rc6
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fbdev@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>,
-        dri-devel@lists.freedesktop.org, Borislav Petkov <bp@amd64.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0016e68e7f68f09057049d11a2d7
+	Thu, 24 Feb 2011 21:00:51 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76352304"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: davidb@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH 1/4] msm: iommu: Clock control for the IOMMU driver
+Date: Thu, 24 Feb 2011 18:00:39 -0800
+Message-Id: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e68e7f68f09057049d11a2d7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Add clock control to the IOMMU driver. The IOMMU bus clock
+(and potentially an AXI clock) need to be on to gain access
+to IOMMU registers. Actively control these clocks when
+needed instead of leaving them on.
 
-On Fri, Feb 25, 2011 at 3:47 AM, Anca Emanuel <anca.emanuel@gmail.com> wrot=
-e:
-> On Fri, Feb 25, 2011 at 3:14 AM, Dave Airlie <airlied@redhat.com> wrote:
->> On Thu, 2011-02-24 at 16:54 -0800, Linus Torvalds wrote:
->>> On Thu, Feb 24, 2011 at 4:48 PM, Anca Emanuel <anca.emanuel@gmail.com> =
-wrote:
->>> >
->>> > diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
->>> > index e2bf953..e8f8925 100644
->>> > --- a/drivers/video/fbmem.c
->>> > +++ b/drivers/video/fbmem.c
->>> > @@ -1511,6 +1511,7 @@ void remove_conflicting_framebuffers(struct
->>> > apertures_struct *a,
->>> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 "%s vs %s=
- - removing generic driver\n",
->>> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 name, reg=
-istered_fb[i]->fix.id);
->>> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0unregister_framebuffer=
-(registered_fb[i]);
->>> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 registered_fb[i] =3D NU=
-LL;
->>> >
->>> > Tested the patch, and now I get this:
->>> > dmesg: http://pastebin.com/ieMNrA7C
->>> >
->>> > [ =A0 12.252328] BUG: unable to handle kernel NULL pointer dereferenc=
-e
->>> > at 00000000000003b8
->>> > [ =A0 12.252342] IP: [<ffffffff81311178>] fb_mmap+0x58/0x1d0
->>>
->>> Ok, goodie.
->>>
->>> Or not so goodie, but it does make it clear that yeah, the fb code
->>> seems to be using stale pointers from that registered_fb[] array, and
->>> the whole unregistration process is just racing with people using it.
->>>
->>> Herton had that much bigger patch, can you test it?
->>
->> I think Andy's patch worked, not sure why it fell between the cracks,
->> either didn't appear on lkml or in my inbox at all.
->>
->> if we can get Herton to repost it properly + a tested by I'm happy for
->> it to go in.
->>
->> Dave.
->>
->>
->
-> Tested Andy's patch and it works !
-> http://kernel.ubuntu.com/git?p=3Dubuntu/ubuntu-natty.git;a=3Dcommit;h=3Dc=
-5a742b5f78e161d6a13853a7e3e6e1dfa429e69
->
-> Tested-by: Anca Emanuel <anca.emanuel@gmail.com>
->
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+ arch/arm/mach-msm/include/mach/iommu.h |    9 ++++-
+ arch/arm/mach-msm/iommu.c              |   58 ++++++++++++++++++++++++++++++--
+ 2 files changed, 62 insertions(+), 5 deletions(-)
 
-link to patch: http://is.gd/otIfGc
+diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
+index 296c0f1..8738a44 100644
+--- a/arch/arm/mach-msm/include/mach/iommu.h
++++ b/arch/arm/mach-msm/include/mach/iommu.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -19,6 +19,7 @@
+ #define MSM_IOMMU_H
 
---0016e68e7f68f09057049d11a2d7
-Content-Type: application/octet-stream; name=patch
-Content-Disposition: attachment; filename=patch
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gkkgajhf0
+ #include <linux/interrupt.h>
++#include <linux/clk.h>
 
-RnJvbSBjNWE3NDJiNWY3OGUxNjFkNmExMzg1M2E3ZTNlNmUxZGZhNDI5ZTY5IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmR5IFdoaXRjcm9mdCA8YXB3QGNhbm9uaWNhbC5jb20+CkRh
-dGU6IFRodSwgMjkgSnVsIDIwMTAgMTY6NDg6MjAgKzAxMDAKU3ViamVjdDogW1BBVENIIDEvMV0g
-VUJVTlRVOiBTQVVDRTogZmJjb24gLS0gZml4IHJhY2UgYmV0d2VlbiBvcGVuIGFuZCByZW1vdmFs
-IG9mIGZyYW1lYnVmZmVycwoKQ3VycmVudGx5IHRoZXJlIGlzIG5vIGxvY2tpbmcgZm9yIHVwZGF0
-ZXMgdG8gdGhlIHJlZ2lzdGVyZWRfZmIgbGlzdC4KVGhpcyBhbGxvd3MgYW4gb3BlbiB0aHJvdWdo
-IC9kZXYvZmJOIHRvIHBpY2sgdXAgYSByZWdpc3RlcmVkIGZyYW1lYnVmZmVyCnBvaW50ZXIgaW4g
-cGFyYWxsZWwgd2l0aCBpdCBiZWluZyByZWxlYXNlZCwgYXMgaGFwcGVucyB3aGVuIGEgY29uZmxp
-Y3RpbmcKZnJhbWVidWZmZXIgaXMgZWplY3RlZCBvciBvbiBtb2R1bGUgdW5sb2FkLiAgVGhlcmUg
-aXMgYWxzbyBubyByZWZlcmVuY2UKY291bnRpbmcgb24gdGhlIGZyYW1lYnVmZmVyIGRlc2NyaXB0
-b3Igd2hpY2ggaXMgcmVmZXJlbmNlZCBmcm9tIGFsbCBvcGVuCmZpbGVzLCBsZWFkaW5nIHRvIHJl
-ZmVyZW5jZXMgdG8gcmVsZWFzZWQgb3IgcmV1c2VkIG1lbW9yeSB0byBwZXJzaXN0IG9uCnRoZXNl
-IG9wZW4gZmlsZXMuCgpUaGlzIHBhdGNoIGFkZHMgYSByZWZlcmVuY2UgY291bnQgdG8gdGhlIGZy
-YW1lYnVmZmVyIGRlc2NyaXB0b3IgdG8gcHJldmVudAppdCBmcm9tIGJlaW5nIHJlbGVhc2VkIHVu
-dGlsIGFmdGVyIGFsbCBwZW5kaW5nIG9wZW5zIGFyZSBjbG9zZWQuICBUaGlzCmFsbG93cyB0aGUg
-cGVuZGluZyBvcGVucyB0byBkZXRlY3QgdGhlIGNsb3NlZCBzdGF0dXMgYW5kIHVubWFwIHRoZW1z
-ZWx2ZXMuCkl0IGFsc28gYWRkcyBsb2NraW5nIHRvIHRoZSBmcmFtZWJ1ZmZlciBsb29rdXAgcGF0
-aCwgbG9ja2luZyBpdCBhZ2FpbnN0CnRoZSByZW1vdmFsIHBhdGggc3VjaCB0aGF0IGl0IGlzIHBv
-c3NpYmxlIHRvIGF0b21pY2FsbHkgbG9va3VwIGFuZCB0YWtlIGEKcmVmZXJlbmNlIHRvIHRoZSBk
-ZXNjcmlwdG9yLiAgSXQgYWxzbyBhZGRzIGxvY2tpbmcgdG8gdGhlIHJlYWQgYW5kIHdyaXRlCnBh
-dGhzIHdoaWNoIGN1cnJlbnRseSBjb3VsZCBhY2Nlc3MgdGhlIGZyYW1lYnVmZmVyIGRlc2NyaXB0
-b3IgYWZ0ZXIgaXQKaGFzIGJlZW4gZnJlZWQuICBGaW5hbGx5IGl0IG1vdmVzIHRoZSBkZXZpY2Ug
-dG8gRkJJTkZPX1NUQVRFX1JFTU9WRUQgdG8KaW5kaWNhdGUgdGhhdCBhbGwgYWNjZXNzIHNob3Vs
-ZCBiZSBlcnJvcmVkIGZvciB0aGlzIGRldmljZS4KClNpZ25lZC1vZmYtYnk6IEFuZHkgV2hpdGNy
-b2Z0IDxhcHdAY2Fub25pY2FsLmNvbT4KQWNrZWQtYnk6IFN0ZWZhbiBCYWRlciA8c3RlZmFuLmJh
-ZGVyQGNhbm9uaWNhbC5jb20+ClNpZ25lZC1vZmYtYnk6IExlYW5uIE9nYXNhd2FyYSA8bGVhbm4u
-b2dhc2F3YXJhQGNhbm9uaWNhbC5jb20+Ci0tLQogZHJpdmVycy92aWRlby9mYm1lbS5jIHwgIDEz
-MiArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tCiBpbmNs
-dWRlL2xpbnV4L2ZiLmggICAgfCAgICAyICsKIDIgZmlsZXMgY2hhbmdlZCwgMTA1IGluc2VydGlv
-bnMoKyksIDI5IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvdmlkZW8vZmJtZW0u
-YyBiL2RyaXZlcnMvdmlkZW8vZmJtZW0uYwppbmRleCBlMmJmOTUzLi44NzcyMDBiIDEwMDY0NAot
-LS0gYS9kcml2ZXJzL3ZpZGVvL2ZibWVtLmMKKysrIGIvZHJpdmVycy92aWRlby9mYm1lbS5jCkBA
-IC00Miw2ICs0Miw4IEBACiAKICNkZWZpbmUgRkJQSVhNQVBTSVpFCSgxMDI0ICogOCkKIAorLyog
-UHJvdGVjdHMgdGhlIHJlZ2lzdGVyZWQgZnJhbWVidWZmZXIgbGlzdCBhbmQgY291bnQuICovCitz
-dGF0aWMgREVGSU5FX1NQSU5MT0NLKHJlZ2lzdGVyZWRfbG9jayk7CiBzdHJ1Y3QgZmJfaW5mbyAq
-cmVnaXN0ZXJlZF9mYltGQl9NQVhdIF9fcmVhZF9tb3N0bHk7CiBpbnQgbnVtX3JlZ2lzdGVyZWRf
-ZmIgX19yZWFkX21vc3RseTsKIApAQCAtNjk0LDkgKzY5Niw3IEBAIHN0YXRpYyBzc2l6ZV90CiBm
-Yl9yZWFkKHN0cnVjdCBmaWxlICpmaWxlLCBjaGFyIF9fdXNlciAqYnVmLCBzaXplX3QgY291bnQs
-IGxvZmZfdCAqcHBvcykKIHsKIAl1bnNpZ25lZCBsb25nIHAgPSAqcHBvczsKLQlzdHJ1Y3QgaW5v
-ZGUgKmlub2RlID0gZmlsZS0+Zl9wYXRoLmRlbnRyeS0+ZF9pbm9kZTsKLQlpbnQgZmJpZHggPSBp
-bWlub3IoaW5vZGUpOwotCXN0cnVjdCBmYl9pbmZvICppbmZvID0gcmVnaXN0ZXJlZF9mYltmYmlk
-eF07CisJc3RydWN0IGZiX2luZm8gKmluZm8gPSBmaWxlLT5wcml2YXRlX2RhdGE7CiAJdTggKmJ1
-ZmZlciwgKmRzdDsKIAl1OCBfX2lvbWVtICpzcmM7CiAJaW50IGMsIGNudCA9IDAsIGVyciA9IDA7
-CkBAIC03MDUsMTkgKzcwNSwyOCBAQCBmYl9yZWFkKHN0cnVjdCBmaWxlICpmaWxlLCBjaGFyIF9f
-dXNlciAqYnVmLCBzaXplX3QgY291bnQsIGxvZmZfdCAqcHBvcykKIAlpZiAoIWluZm8gfHwgISBp
-bmZvLT5zY3JlZW5fYmFzZSkKIAkJcmV0dXJuIC1FTk9ERVY7CiAKLQlpZiAoaW5mby0+c3RhdGUg
-IT0gRkJJTkZPX1NUQVRFX1JVTk5JTkcpCi0JCXJldHVybiAtRVBFUk07CisJaWYgKCFsb2NrX2Zi
-X2luZm8oaW5mbykpCisJCXJldHVybiAtRU5PREVWOworCisJaWYgKGluZm8tPnN0YXRlICE9IEZC
-SU5GT19TVEFURV9SVU5OSU5HKSB7CisJCWVyciA9IC1FUEVSTTsKKwkJZ290byBvdXRfZmJfaW5m
-bzsKKwl9CiAKLQlpZiAoaW5mby0+ZmJvcHMtPmZiX3JlYWQpCi0JCXJldHVybiBpbmZvLT5mYm9w
-cy0+ZmJfcmVhZChpbmZvLCBidWYsIGNvdW50LCBwcG9zKTsKKwlpZiAoaW5mby0+ZmJvcHMtPmZi
-X3JlYWQpIHsKKwkJZXJyID0gaW5mby0+ZmJvcHMtPmZiX3JlYWQoaW5mbywgYnVmLCBjb3VudCwg
-cHBvcyk7CisJCWdvdG8gb3V0X2ZiX2luZm87CisJfQogCQogCXRvdGFsX3NpemUgPSBpbmZvLT5z
-Y3JlZW5fc2l6ZTsKIAogCWlmICh0b3RhbF9zaXplID09IDApCiAJCXRvdGFsX3NpemUgPSBpbmZv
-LT5maXguc21lbV9sZW47CiAKLQlpZiAocCA+PSB0b3RhbF9zaXplKQotCQlyZXR1cm4gMDsKKwlp
-ZiAocCA+PSB0b3RhbF9zaXplKSB7CisJCWVyciA9IDA7CisJCWdvdG8gb3V0X2ZiX2luZm87CisJ
-fQogCiAJaWYgKGNvdW50ID49IHRvdGFsX3NpemUpCiAJCWNvdW50ID0gdG90YWxfc2l6ZTsKQEAg
-LTcyNyw4ICs3MzYsMTAgQEAgZmJfcmVhZChzdHJ1Y3QgZmlsZSAqZmlsZSwgY2hhciBfX3VzZXIg
-KmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCiAKIAlidWZmZXIgPSBrbWFsbG9jKChj
-b3VudCA+IFBBR0VfU0laRSkgPyBQQUdFX1NJWkUgOiBjb3VudCwKIAkJCSBHRlBfS0VSTkVMKTsK
-LQlpZiAoIWJ1ZmZlcikKLQkJcmV0dXJuIC1FTk9NRU07CisJaWYgKCFidWZmZXIpIHsKKwkJZXJy
-ID0gLUVOT01FTTsKKwkJZ290byBvdXRfZmJfaW5mbzsKKwl9CiAKIAlzcmMgPSAodTggX19pb21l
-bSAqKSAoaW5mby0+c2NyZWVuX2Jhc2UgKyBwKTsKIApAQCAtNzUxLDE5ICs3NjIsMjEgQEAgZmJf
-cmVhZChzdHJ1Y3QgZmlsZSAqZmlsZSwgY2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNvdW50LCBs
-b2ZmX3QgKnBwb3MpCiAJCWNudCArPSBjOwogCQljb3VudCAtPSBjOwogCX0KKwlpZiAoIWVycikK
-KwkJZXJyID0gY250OwogCiAJa2ZyZWUoYnVmZmVyKTsKK291dF9mYl9pbmZvOgorCXVubG9ja19m
-Yl9pbmZvKGluZm8pOwogCi0JcmV0dXJuIChlcnIpID8gZXJyIDogY250OworCXJldHVybiBlcnI7
-CiB9CiAKIHN0YXRpYyBzc2l6ZV90CiBmYl93cml0ZShzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3Qg
-Y2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCiB7CiAJdW5zaWdu
-ZWQgbG9uZyBwID0gKnBwb3M7Ci0Jc3RydWN0IGlub2RlICppbm9kZSA9IGZpbGUtPmZfcGF0aC5k
-ZW50cnktPmRfaW5vZGU7Ci0JaW50IGZiaWR4ID0gaW1pbm9yKGlub2RlKTsKLQlzdHJ1Y3QgZmJf
-aW5mbyAqaW5mbyA9IHJlZ2lzdGVyZWRfZmJbZmJpZHhdOworCXN0cnVjdCBmYl9pbmZvICppbmZv
-ID0gZmlsZS0+cHJpdmF0ZV9kYXRhOwogCXU4ICpidWZmZXIsICpzcmM7CiAJdTggX19pb21lbSAq
-ZHN0OwogCWludCBjLCBjbnQgPSAwLCBlcnIgPSAwOwpAQCAtNzcyLDggKzc4NSwxMyBAQCBmYl93
-cml0ZShzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3QgY2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNv
-dW50LCBsb2ZmX3QgKnBwb3MpCiAJaWYgKCFpbmZvIHx8ICFpbmZvLT5zY3JlZW5fYmFzZSkKIAkJ
-cmV0dXJuIC1FTk9ERVY7CiAKLQlpZiAoaW5mby0+c3RhdGUgIT0gRkJJTkZPX1NUQVRFX1JVTk5J
-TkcpCi0JCXJldHVybiAtRVBFUk07CisJaWYgKCFsb2NrX2ZiX2luZm8oaW5mbykpCisJCXJldHVy
-biAtRU5PREVWOworCisJaWYgKGluZm8tPnN0YXRlICE9IEZCSU5GT19TVEFURV9SVU5OSU5HKSB7
-CisJCWVyciA9IC1FUEVSTTsKKwkJZ290byBvdXRfZmJfaW5mbzsKKwl9CiAKIAlpZiAoaW5mby0+
-ZmJvcHMtPmZiX3dyaXRlKQogCQlyZXR1cm4gaW5mby0+ZmJvcHMtPmZiX3dyaXRlKGluZm8sIGJ1
-ZiwgY291bnQsIHBwb3MpOwpAQCAtNzgzLDggKzgwMSwxMCBAQCBmYl93cml0ZShzdHJ1Y3QgZmls
-ZSAqZmlsZSwgY29uc3QgY2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBw
-b3MpCiAJaWYgKHRvdGFsX3NpemUgPT0gMCkKIAkJdG90YWxfc2l6ZSA9IGluZm8tPmZpeC5zbWVt
-X2xlbjsKIAotCWlmIChwID4gdG90YWxfc2l6ZSkKLQkJcmV0dXJuIC1FRkJJRzsKKwlpZiAocCA+
-IHRvdGFsX3NpemUpIHsKKwkJZXJyID0gLUVGQklHOworCQlnb3RvIG91dF9mYl9pbmZvOworCX0K
-IAogCWlmIChjb3VudCA+IHRvdGFsX3NpemUpIHsKIAkJZXJyID0gLUVGQklHOwpAQCAtODAwLDgg
-KzgyMCwxMCBAQCBmYl93cml0ZShzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3QgY2hhciBfX3VzZXIg
-KmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCiAKIAlidWZmZXIgPSBrbWFsbG9jKChj
-b3VudCA+IFBBR0VfU0laRSkgPyBQQUdFX1NJWkUgOiBjb3VudCwKIAkJCSBHRlBfS0VSTkVMKTsK
-LQlpZiAoIWJ1ZmZlcikKLQkJcmV0dXJuIC1FTk9NRU07CisJaWYgKCFidWZmZXIpIHsKKwkJZXJy
-ID0gLUVOT01FTTsKKwkJZ290byBvdXRfZmJfaW5mbzsKKwl9CiAKIAlkc3QgPSAodTggX19pb21l
-bSAqKSAoaW5mby0+c2NyZWVuX2Jhc2UgKyBwKTsKIApAQCAtODI1LDEwICs4NDcsMTQgQEAgZmJf
-d3JpdGUoc3RydWN0IGZpbGUgKmZpbGUsIGNvbnN0IGNoYXIgX191c2VyICpidWYsIHNpemVfdCBj
-b3VudCwgbG9mZl90ICpwcG9zKQogCQljbnQgKz0gYzsKIAkJY291bnQgLT0gYzsKIAl9CisJaWYg
-KGNudCkKKwkJZXJyID0gY250OwogCiAJa2ZyZWUoYnVmZmVyKTsKK291dF9mYl9pbmZvOgorCXVu
-bG9ja19mYl9pbmZvKGluZm8pOwogCi0JcmV0dXJuIChjbnQpID8gY250IDogZXJyOworCXJldHVy
-biBlcnI7CiB9CiAKIGludApAQCAtMTMwMyw4ICsxMzI5LDcgQEAgc3RhdGljIGxvbmcgZmJfY29t
-cGF0X2lvY3RsKHN0cnVjdCBmaWxlICpmaWxlLCB1bnNpZ25lZCBpbnQgY21kLAogc3RhdGljIGlu
-dAogZmJfbW1hcChzdHJ1Y3QgZmlsZSAqZmlsZSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICogdm1h
-KQogewotCWludCBmYmlkeCA9IGltaW5vcihmaWxlLT5mX3BhdGguZGVudHJ5LT5kX2lub2RlKTsK
-LQlzdHJ1Y3QgZmJfaW5mbyAqaW5mbyA9IHJlZ2lzdGVyZWRfZmJbZmJpZHhdOworCXN0cnVjdCBm
-Yl9pbmZvICogY29uc3QgaW5mbyA9IGZpbGUtPnByaXZhdGVfZGF0YTsKIAlzdHJ1Y3QgZmJfb3Bz
-ICpmYiA9IGluZm8tPmZib3BzOwogCXVuc2lnbmVkIGxvbmcgb2ZmOwogCXVuc2lnbmVkIGxvbmcg
-c3RhcnQ7CkBAIC0xMzE2LDYgKzEzNDEsMTEgQEAgZmJfbW1hcChzdHJ1Y3QgZmlsZSAqZmlsZSwg
-c3RydWN0IHZtX2FyZWFfc3RydWN0ICogdm1hKQogCWlmICghZmIpCiAJCXJldHVybiAtRU5PREVW
-OwogCW11dGV4X2xvY2soJmluZm8tPm1tX2xvY2spOworCWlmIChpbmZvLT5zdGF0ZSA9PSBGQklO
-Rk9fU1RBVEVfUkVNT1ZFRCkgeworCQltdXRleF91bmxvY2soJmluZm8tPm1tX2xvY2spOworCQly
-ZXR1cm4gLUVOT0RFVjsKKwl9CisKIAlpZiAoZmItPmZiX21tYXApIHsKIAkJaW50IHJlczsKIAkJ
-cmVzID0gZmItPmZiX21tYXAoaW5mbywgdm1hKTsKQEAgLTEzNTIsNiArMTM4MiwzNCBAQCBmYl9t
-bWFwKHN0cnVjdCBmaWxlICpmaWxlLCBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKiB2bWEpCiAJcmV0
-dXJuIDA7CiB9CiAKK3N0YXRpYyBzdHJ1Y3QgZmJfaW5mbyAqZ2V0X2ZyYW1lYnVmZmVyX2luZm8o
-aW50IGlkeCkKK19fYWNxdWlyZXMoJnJlZ2lzdGVyZWRfbG9jaykKK19fcmVsZWFzZXMoJnJlZ2lz
-dGVyZWRfbG9jaykKK3sKKwlzdHJ1Y3QgZmJfaW5mbyAqZmJfaW5mbzsKKworCXNwaW5fbG9jaygm
-cmVnaXN0ZXJlZF9sb2NrKTsKKwlmYl9pbmZvID0gcmVnaXN0ZXJlZF9mYltpZHhdOworCWZiX2lu
-Zm8tPnJlZl9jb3VudCsrOworCXNwaW5fdW5sb2NrKCZyZWdpc3RlcmVkX2xvY2spOworCisJcmV0
-dXJuIGZiX2luZm87Cit9CisKK3N0YXRpYyB2b2lkIHB1dF9mcmFtZWJ1ZmZlcl9pbmZvKHN0cnVj
-dCBmYl9pbmZvICpmYl9pbmZvKQorX19hY3F1aXJlcygmcmVnaXN0ZXJlZF9sb2NrKQorX19yZWxl
-YXNlcygmcmVnaXN0ZXJlZF9sb2NrKQoreworCWludCBrZWVwOworCisJc3Bpbl9sb2NrKCZyZWdp
-c3RlcmVkX2xvY2spOworCWtlZXAgPSAtLWZiX2luZm8tPnJlZl9jb3VudDsKKwlzcGluX3VubG9j
-aygmcmVnaXN0ZXJlZF9sb2NrKTsKKwkKKwlpZiAoIWtlZXAgJiYgZmJfaW5mby0+ZmJvcHMtPmZi
-X2Rlc3Ryb3kpCisJCWZiX2luZm8tPmZib3BzLT5mYl9kZXN0cm95KGZiX2luZm8pOworfQorCiBz
-dGF0aWMgaW50CiBmYl9vcGVuKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHN0cnVjdCBmaWxlICpmaWxl
-KQogX19hY3F1aXJlcygmaW5mby0+bG9jaykKQEAgLTEzNjMsMTMgKzE0MjEsMTcgQEAgX19yZWxl
-YXNlcygmaW5mby0+bG9jaykKIAogCWlmIChmYmlkeCA+PSBGQl9NQVgpCiAJCXJldHVybiAtRU5P
-REVWOwotCWluZm8gPSByZWdpc3RlcmVkX2ZiW2ZiaWR4XTsKKwlpbmZvID0gZ2V0X2ZyYW1lYnVm
-ZmVyX2luZm8oZmJpZHgpOwogCWlmICghaW5mbykKIAkJcmVxdWVzdF9tb2R1bGUoImZiJWQiLCBm
-YmlkeCk7Ci0JaW5mbyA9IHJlZ2lzdGVyZWRfZmJbZmJpZHhdOworCWluZm8gPSBnZXRfZnJhbWVi
-dWZmZXJfaW5mbyhmYmlkeCk7CiAJaWYgKCFpbmZvKQogCQlyZXR1cm4gLUVOT0RFVjsKIAltdXRl
-eF9sb2NrKCZpbmZvLT5sb2NrKTsKKwlpZiAoaW5mby0+c3RhdGUgPT0gRkJJTkZPX1NUQVRFX1JF
-TU9WRUQpIHsKKwkJcmVzID0gLUVOT0RFVjsKKwkJZ290byBvdXQ7CisJfQogCWlmICghdHJ5X21v
-ZHVsZV9nZXQoaW5mby0+ZmJvcHMtPm93bmVyKSkgewogCQlyZXMgPSAtRU5PREVWOwogCQlnb3Rv
-IG91dDsKQEAgLTEzODYsNiArMTQ0OCw4IEBAIF9fcmVsZWFzZXMoJmluZm8tPmxvY2spCiAjZW5k
-aWYKIG91dDoKIAltdXRleF91bmxvY2soJmluZm8tPmxvY2spOworCWlmIChyZXMpCisJCXB1dF9m
-cmFtZWJ1ZmZlcl9pbmZvKGluZm8pOwogCXJldHVybiByZXM7CiB9CiAKQEAgLTE0MDEsNiArMTQ2
-NSw3IEBAIF9fcmVsZWFzZXMoJmluZm8tPmxvY2spCiAJCWluZm8tPmZib3BzLT5mYl9yZWxlYXNl
-KGluZm8sMSk7CiAJbW9kdWxlX3B1dChpbmZvLT5mYm9wcy0+b3duZXIpOwogCW11dGV4X3VubG9j
-aygmaW5mby0+bG9jayk7CisJcHV0X2ZyYW1lYnVmZmVyX2luZm8oaW5mbyk7CiAJcmV0dXJuIDA7
-CiB9CiAKQEAgLTE1NDksNiArMTYxNCw3IEBAIHJlZ2lzdGVyX2ZyYW1lYnVmZmVyKHN0cnVjdCBm
-Yl9pbmZvICpmYl9pbmZvKQogCWZiX2luZm8tPm5vZGUgPSBpOwogCW11dGV4X2luaXQoJmZiX2lu
-Zm8tPmxvY2spOwogCW11dGV4X2luaXQoJmZiX2luZm8tPm1tX2xvY2spOworCWZiX2luZm8tPnJl
-Zl9jb3VudCA9IDE7CiAKIAlmYl9pbmZvLT5kZXYgPSBkZXZpY2VfY3JlYXRlKGZiX2NsYXNzLCBm
-Yl9pbmZvLT5kZXZpY2UsCiAJCQkJICAgICBNS0RFVihGQl9NQUpPUiwgaSksIE5VTEwsICJmYiVk
-IiwgaSk7CkBAIC0xNTkyLDcgKzE2NTgsNiBAQCByZWdpc3Rlcl9mcmFtZWJ1ZmZlcihzdHJ1Y3Qg
-ZmJfaW5mbyAqZmJfaW5mbykKIAlyZXR1cm4gMDsKIH0KIAotCiAvKioKICAqCXVucmVnaXN0ZXJf
-ZnJhbWVidWZmZXIgLSByZWxlYXNlcyBhIGZyYW1lIGJ1ZmZlciBkZXZpY2UKICAqCUBmYl9pbmZv
-OiBmcmFtZSBidWZmZXIgaW5mbyBzdHJ1Y3R1cmUKQEAgLTE2MjcsNiArMTY5MiwxNiBAQCB1bnJl
-Z2lzdGVyX2ZyYW1lYnVmZmVyKHN0cnVjdCBmYl9pbmZvICpmYl9pbmZvKQogCQlyZXR1cm4gLUVO
-T0RFVjsKIAlldmVudC5pbmZvID0gZmJfaW5mbzsKIAlyZXQgPSBmYl9ub3RpZmllcl9jYWxsX2No
-YWluKEZCX0VWRU5UX0ZCX1VOQklORCwgJmV2ZW50KTsKKwlpZiAoIXJldCkgeworCQltdXRleF9s
-b2NrKCZmYl9pbmZvLT5tbV9sb2NrKTsKKwkJLyoKKwkJICogV2UgbXVzdCBwcmV2ZW50IGFueSBv
-cGVyYXRpb25zIGZvciB0aGlzIHRyYW5zaXRpb24sIHdlCisJCSAqIGFscmVhZHkgaGF2ZSBpbmZv
-LT5sb2NrIHNvIGdyYWIgdGhlIGluZm8tPm1tX2xvY2sgdG8gaG9sZAorCQkgKiB0aGUgcmVtYWlu
-ZGVyLgorCQkgKi8KKwkJZmJfaW5mby0+c3RhdGUgPSBGQklORk9fU1RBVEVfUkVNT1ZFRDsKKwkJ
-bXV0ZXhfdW5sb2NrKCZmYl9pbmZvLT5tbV9sb2NrKTsKKwl9CiAJdW5sb2NrX2ZiX2luZm8oZmJf
-aW5mbyk7CiAKIAlpZiAocmV0KSB7CkBAIC0xNjQ2LDggKzE3MjEsNyBAQCB1bnJlZ2lzdGVyX2Zy
-YW1lYnVmZmVyKHN0cnVjdCBmYl9pbmZvICpmYl9pbmZvKQogCWZiX25vdGlmaWVyX2NhbGxfY2hh
-aW4oRkJfRVZFTlRfRkJfVU5SRUdJU1RFUkVELCAmZXZlbnQpOwogCiAJLyogdGhpcyBtYXkgZnJl
-ZSBmYiBpbmZvICovCi0JaWYgKGZiX2luZm8tPmZib3BzLT5mYl9kZXN0cm95KQotCQlmYl9pbmZv
-LT5mYm9wcy0+ZmJfZGVzdHJveShmYl9pbmZvKTsKKwlwdXRfZnJhbWVidWZmZXJfaW5mbyhmYl9p
-bmZvKTsKIGRvbmU6CiAJcmV0dXJuIHJldDsKIH0KZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgv
-ZmIuaCBiL2luY2x1ZGUvbGludXgvZmIuaAppbmRleCA2OGJhODVhLi4xZThiNzg1IDEwMDY0NAot
-LS0gYS9pbmNsdWRlL2xpbnV4L2ZiLmgKKysrIGIvaW5jbHVkZS9saW51eC9mYi5oCkBAIC04MzIs
-NiArODMyLDcgQEAgc3RydWN0IGZiX3RpbGVfb3BzIHsKIHN0cnVjdCBmYl9pbmZvIHsKIAlpbnQg
-bm9kZTsKIAlpbnQgZmxhZ3M7CisJaW50IHJlZl9jb3VudDsKIAlzdHJ1Y3QgbXV0ZXggbG9jazsJ
-CS8qIExvY2sgZm9yIG9wZW4vcmVsZWFzZS9pb2N0bCBmdW5jcyAqLwogCXN0cnVjdCBtdXRleCBt
-bV9sb2NrOwkJLyogTG9jayBmb3IgZmJfbW1hcCBhbmQgc21lbV8qIGZpZWxkcyAqLwogCXN0cnVj
-dCBmYl92YXJfc2NyZWVuaW5mbyB2YXI7CS8qIEN1cnJlbnQgdmFyICovCkBAIC04NzEsNiArODcy
-LDcgQEAgc3RydWN0IGZiX2luZm8gewogCXZvaWQgKnBzZXVkb19wYWxldHRlOwkJLyogRmFrZSBw
-YWxldHRlIG9mIDE2IGNvbG9ycyAqLyAKICNkZWZpbmUgRkJJTkZPX1NUQVRFX1JVTk5JTkcJMAog
-I2RlZmluZSBGQklORk9fU1RBVEVfU1VTUEVOREVECTEKKyNkZWZpbmUgRkJJTkZPX1NUQVRFX1JF
-TU9WRUQJMgogCXUzMiBzdGF0ZTsJCQkvKiBIYXJkd2FyZSBzdGF0ZSBpLmUgc3VzcGVuZCAqLwog
-CXZvaWQgKmZiY29uX3BhcjsgICAgICAgICAgICAgICAgLyogZmJjb24gdXNlLW9ubHkgcHJpdmF0
-ZSBhcmVhICovCiAJLyogRnJvbSBoZXJlIG9uIGV2ZXJ5dGhpbmcgaXMgZGV2aWNlIGRlcGVuZGVu
-dCAqLwotLSAKMS43LjAuNAo=
---0016e68e7f68f09057049d11a2d7--
+ /* Sharability attributes of MSM IOMMU mappings */
+ #define MSM_IOMMU_ATTR_NON_SH		0x0
+@@ -74,13 +75,17 @@ struct msm_iommu_ctx_dev {
+  * struct msm_iommu_drvdata - A single IOMMU hardware instance
+  * @base:	IOMMU config port base address (VA)
+  * @irq:	Interrupt number
+-  *
++ * @clk:	The bus clock for this IOMMU hardware instance
++ * @pclk:	The clock for the IOMMU bus interconnect
++ *
+  * A msm_iommu_drvdata holds the global driver data about a single piece
+  * of an IOMMU hardware instance.
+  */
+ struct msm_iommu_drvdata {
+ 	void __iomem *base;
+ 	int irq;
++	struct clk *clk;
++	struct clk *pclk;
+ };
+
+ /**
+diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
+index e2d58e4..cde3cd0 100644
+--- a/arch/arm/mach-msm/iommu.c
++++ b/arch/arm/mach-msm/iommu.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -26,6 +26,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+ #include <linux/iommu.h>
++#include <linux/clk.h>
+
+ #include <asm/cacheflush.h>
+ #include <asm/sizes.h>
+@@ -50,6 +51,30 @@ struct msm_priv {
+ 	struct list_head list_attached;
+ };
+
++static int __enable_clocks(struct msm_iommu_drvdata *drvdata)
++{
++	int ret;
++
++	ret = clk_enable(drvdata->pclk);
++	if (ret)
++		goto fail;
++
++	if (drvdata->clk) {
++		ret = clk_enable(drvdata->clk);
++		if (ret)
++			clk_disable(drvdata->pclk);
++	}
++fail:
++	return ret;
++}
++
++static void __disable_clocks(struct msm_iommu_drvdata *drvdata)
++{
++	if (drvdata->clk)
++		clk_disable(drvdata->clk);
++	clk_disable(drvdata->pclk);
++}
++
+ static int __flush_iotlb(struct iommu_domain *domain)
+ {
+ 	struct msm_priv *priv = domain->priv;
+@@ -77,9 +102,16 @@ static int __flush_iotlb(struct iommu_domain *domain)
+ 			BUG();
+
+ 		iommu_drvdata = dev_get_drvdata(ctx_drvdata->pdev->dev.parent);
++		BUG_ON(!iommu_drvdata);
++
++		ret = __enable_clocks(iommu_drvdata);
++		if (ret)
++			goto fail;
++
+ 		SET_CTX_TLBIALL(iommu_drvdata->base, ctx_drvdata->num, 0);
++		__disable_clocks(iommu_drvdata);
+ 	}
+-
++fail:
+ 	return ret;
+ }
+
+@@ -265,9 +297,14 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
+ 			goto fail;
+ 		}
+
++	ret = __enable_clocks(iommu_drvdata);
++	if (ret)
++		goto fail;
++
+ 	__program_context(iommu_drvdata->base, ctx_dev->num,
+ 			  __pa(priv->pgtable));
+
++	__disable_clocks(iommu_drvdata);
+ 	list_add(&(ctx_drvdata->attached_elm), &priv->list_attached);
+ 	ret = __flush_iotlb(domain);
+
+@@ -303,7 +340,12 @@ static void msm_iommu_detach_dev(struct iommu_domain *domain,
+ 	if (ret)
+ 		goto fail;
+
++	ret = __enable_clocks(iommu_drvdata);
++	if (ret)
++		goto fail;
++
+ 	__reset_context(iommu_drvdata->base, ctx_dev->num);
++	__disable_clocks(iommu_drvdata);
+ 	list_del_init(&ctx_drvdata->attached_elm);
+
+ fail:
+@@ -532,6 +574,10 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	base = iommu_drvdata->base;
+ 	ctx = ctx_drvdata->num;
+
++	ret = __enable_clocks(iommu_drvdata);
++	if (ret)
++		goto fail;
++
+ 	/* Invalidate context TLB */
+ 	SET_CTX_TLBIALL(base, ctx, 0);
+ 	SET_V2PPR_VA(base, ctx, va >> V2Pxx_VA_SHIFT);
+@@ -547,6 +593,7 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	if (GET_FAULT(base, ctx))
+ 		ret = 0;
+
++	__disable_clocks(iommu_drvdata);
+ fail:
+ 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+ 	return ret;
+@@ -590,7 +637,7 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
+ 	struct msm_iommu_drvdata *drvdata = dev_id;
+ 	void __iomem *base;
+ 	unsigned int fsr;
+-	int ncb, i;
++	int ncb, i, ret;
+
+ 	spin_lock(&msm_iommu_lock);
+
+@@ -604,6 +651,10 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
+ 	pr_err("Unexpected IOMMU page fault!\n");
+ 	pr_err("base = %08x\n", (unsigned int) base);
+
++	ret = __enable_clocks(drvdata);
++	if (ret)
++		goto fail;
++
+ 	ncb = GET_NCB(base)+1;
+ 	for (i = 0; i < ncb; i++) {
+ 		fsr = GET_FSR(base, i);
+@@ -614,6 +665,7 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
+ 			SET_FSR(base, i, 0x4000000F);
+ 		}
+ 	}
++	__disable_clocks(drvdata);
+ fail:
+ 	spin_unlock(&msm_iommu_lock);
+ 	return 0;
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
