@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750894Ab1BYFBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 00:01:06 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:50627 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab1BYFBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 00:01:05 -0500
-Message-ID: <4D67378C.30506@msgid.tls.msk.ru>
-Date: Fri, 25 Feb 2011 08:01:00 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	id S1751200Ab1BYFJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 00:09:14 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:43680
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750753Ab1BYFJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 00:09:12 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h65h)
+X-Spam-TCS-SCL: 4:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
+From: Jason Liu <r64343@freescale.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <David.Woodhouse@intel.com>, <dedekind1@gmail.com>
+Subject: [PATCH] mtd: nand: fix one typo in the comments
+Date: Fri, 25 Feb 2011 13:06:18 +0800
+Message-ID: <1298610378-3105-1-git-send-email-r64343@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Jeff Mahoney <jeffm@suse.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] firmware: Allow release-specific firmware dir
-References: <4D671667.4000602@suse.com>
-In-Reply-To: <4D671667.4000602@suse.com>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-25.02.2011 05:39, Jeff Mahoney wrote:
->  Every kernel package trying to provide files under /lib/firmware runs
->  into problems really quickly with multiple kernels installed.
+In the function nand_do_write_oob, the comments
+has one typo, this patch fix it.
 
-Which problems?
+- /* Do not allow reads past end of device */
++ /* Do not allow write past end of device */
+if (unlikely(to >= mtd->size ||
+	     ops->ooboffs + ops->ooblen >
+		((mtd->size >> chip->page_shift) -
+		 (to >> chip->page_shift)) * len)) {
+	DEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt write beyond "
+			"end of device\n", __func__);
+	return -EINVAL;
+}
 
->  This patch moves them to /lib/firmware/$KERNELRELEASE. udev v127's
->  firmware.sh looks there first before falling back to /lib/firmware.
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ drivers/mtd/nand/nand_base.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This was the way it worked before, -- all fw in kernel-specific dir.
-Nowadays it moved to a common place, /lib/firmware, since the blobs
-there are not kernel-specific but hardware-specific.  And now you
-propose to move it back.  Why?
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index a9c6ce7..da76040 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2377,7 +2377,7 @@ static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
+ 		return -EINVAL;
+ 	}
+ 
+-	/* Do not allow reads past end of device */
++	/* Do not allow write past end of device */
+ 	if (unlikely(to >= mtd->size ||
+ 		     ops->ooboffs + ops->ooblen >
+ 			((mtd->size >> chip->page_shift) -
+-- 
+1.7.0.4
 
-/mjt
+
