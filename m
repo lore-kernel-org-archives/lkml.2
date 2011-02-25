@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab1BYSxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:53:12 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36182 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756430Ab1BYSxI (ORCPT
+	id S1756590Ab1BYSxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:53:22 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41821 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab1BYSxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:53:08 -0500
+	Fri, 25 Feb 2011 13:53:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=IRB/LJKCKQ+yN2Rz8cchQIupV2hH5heNaP0NWAmairRUHTAhyKlceTR/0KHTMqLPLF
-         dRDIk5bJHSWPTV+QfnP4jHNe8A9ibPgwsRuYoeyBDJue5pUn8KSiaQ2aNm5YoS5GliBO
-         rMYCza2T6dsK9/tyKpcve8R+M3BLVMRxBnX/8=
+        b=AFVzyE5Ak62fMwsXdNOdH1oEiiTM+79io7Y64rhz3TgkwQ0lnKKNYM/v0w2JFhB/q4
+         9uDruJ6RwNXWEfhFYlJAbEQJUNhii3vMb45A6LRYhZWeEVTc7CrPd/YGWX8RbZOsQJkW
+         lm2mKTWFomc5gOofE3MvgbiA4R7h+iuIvBeRc=
 From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Alexey Dobriyan <adobriyan@gmail.com>,
@@ -20,9 +20,9 @@ To: "David S. Miller" <davem@davemloft.net>,
         Octavian Purdila <tavi@cs.pub.ro>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 1/9] sysctl: add ctl_header_cookie
-Date: Fri, 25 Feb 2011 20:52:33 +0200
-Message-Id: <1298659961-23863-2-git-send-email-lucian.grijincu@gmail.com>
+Subject: [PATCH 5/9] sysctl: net: share netns_core_table between nets
+Date: Fri, 25 Feb 2011 20:52:37 +0200
+Message-Id: <1298659961-23863-6-git-send-email-lucian.grijincu@gmail.com>
 X-Mailer: git-send-email 1.7.4.rc1.7.g2cf08.dirty
 In-Reply-To: <1298659961-23863-1-git-send-email-lucian.grijincu@gmail.com>
 References: <1298659961-23863-1-git-send-email-lucian.grijincu@gmail.com>
@@ -32,109 +32,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- include/linux/sysctl.h |    5 ++++-
- kernel/sysctl.c        |   12 ++++++++----
- net/sysctl_net.c       |    6 +++---
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ net/core/sysctl_net_core.c |   28 +++-------------------------
+ 1 files changed, 3 insertions(+), 25 deletions(-)
 
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 7bb5cb6..43fed29 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -1048,6 +1048,9 @@ struct ctl_table_header
- 	struct ctl_table *attached_by;
- 	struct ctl_table *attached_to;
- 	struct ctl_table_header *parent;
-+	/* Pointer to data that outlives this ctl_table_header.
-+	 * Caller responsible to free the cookie. */
-+	void *ctl_header_cookie;
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index 385b609..e5a1544 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -182,7 +182,7 @@ static struct ctl_table netns_core_table[] = {
+ 		.data		= &init_net.core.sysctl_somaxconn,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= (proc_handler *) netns_proc_dointvec
+ 	},
+ 	{ }
  };
+@@ -195,41 +195,19 @@ __net_initdata struct ctl_path net_core_path[] = {
  
- /* struct ctl_path describes where in the hierarchy a table is added */
-@@ -1058,7 +1061,7 @@ struct ctl_path {
- void register_sysctl_root(struct ctl_table_root *root);
- struct ctl_table_header *__register_sysctl_paths(
- 	struct ctl_table_root *root, struct nsproxy *namespaces,
--	const struct ctl_path *path, struct ctl_table *table);
-+	const struct ctl_path *path, struct ctl_table *table, void *cookie);
- struct ctl_table_header *register_sysctl_table(struct ctl_table * table);
- struct ctl_table_header *register_sysctl_paths(const struct ctl_path *path,
- 						struct ctl_table *table);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 0f1bd83..31fd587 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -199,6 +199,7 @@ static struct ctl_table_header root_table_header = {
- 	.ctl_entry = LIST_HEAD_INIT(sysctl_table_root.default_set.list),
- 	.root = &sysctl_table_root,
- 	.set = &sysctl_table_root.default_set,
-+	.ctl_header_cookie = NULL,
- };
- static struct ctl_table_root sysctl_table_root = {
- 	.root_list = LIST_HEAD_INIT(sysctl_table_root.root_list),
-@@ -1774,6 +1775,9 @@ static void try_attach(struct ctl_table_header *p, struct ctl_table_header *q)
-  * @namespaces: Data to compute which lists of sysctl entries are visible
-  * @path: The path to the directory the sysctl table is in.
-  * @table: the top-level table structure
-+ * @cookie: Pointer to user provided data that must be accessible
-+ *  until unregister_sysctl_table. This cookie will be passed to the
-+ *  proc_handler.
-  *
-  * Register a sysctl table hierarchy. @table should be a filled in ctl_table
-  * array. A completely 0 filled entry terminates the table.
-@@ -1822,9 +1826,8 @@ static void try_attach(struct ctl_table_header *p, struct ctl_table_header *q)
-  * to the table header on success.
-  */
- struct ctl_table_header *__register_sysctl_paths(
--	struct ctl_table_root *root,
--	struct nsproxy *namespaces,
--	const struct ctl_path *path, struct ctl_table *table)
-+	struct ctl_table_root *root, struct nsproxy *namespaces,
-+	const struct ctl_path *path, struct ctl_table *table, void *cookie)
+ static __net_init int sysctl_core_net_init(struct net *net)
  {
- 	struct ctl_table_header *header;
- 	struct ctl_table *new, **prevp;
-@@ -1871,6 +1874,7 @@ struct ctl_table_header *__register_sysctl_paths(
- 	header->root = root;
- 	sysctl_set_parent(NULL, header->ctl_table);
- 	header->count = 1;
-+	header->ctl_header_cookie = cookie;
- #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
- 	if (sysctl_check_table(namespaces, header->ctl_table)) {
- 		kfree(header);
-@@ -1911,7 +1915,7 @@ struct ctl_table_header *register_sysctl_paths(const struct ctl_path *path,
- 						struct ctl_table *table)
- {
- 	return __register_sysctl_paths(&sysctl_table_root, current->nsproxy,
--					path, table);
-+				       path, table, NULL);
+-	struct ctl_table *tbl;
+-
+ 	net->core.sysctl_somaxconn = SOMAXCONN;
+ 
+-	tbl = netns_core_table;
+-	if (!net_eq(net, &init_net)) {
+-		tbl = kmemdup(tbl, sizeof(netns_core_table), GFP_KERNEL);
+-		if (tbl == NULL)
+-			goto err_dup;
+-
+-		tbl[0].data = &net->core.sysctl_somaxconn;
+-	}
+-
+ 	net->core.sysctl_hdr = register_net_sysctl_table(net,
+-			net_core_path, tbl);
++			net_core_path, netns_core_table);
+ 	if (net->core.sysctl_hdr == NULL)
+-		goto err_reg;
++		return -ENOMEM;
+ 
+ 	return 0;
+-
+-err_reg:
+-	if (tbl != netns_core_table)
+-		kfree(tbl);
+-err_dup:
+-	return -ENOMEM;
  }
  
- /**
-diff --git a/net/sysctl_net.c b/net/sysctl_net.c
-index ca84212..9dadd17 100644
---- a/net/sysctl_net.c
-+++ b/net/sysctl_net.c
-@@ -109,8 +109,8 @@ struct ctl_table_header *register_net_sysctl_table(struct net *net,
- 	struct nsproxy namespaces;
- 	namespaces = *current->nsproxy;
- 	namespaces.net_ns = net;
--	return __register_sysctl_paths(&net_sysctl_root,
--					&namespaces, path, table);
-+	return __register_sysctl_paths(&net_sysctl_root, &namespaces, path,
-+				       table, NULL);
- }
- EXPORT_SYMBOL_GPL(register_net_sysctl_table);
- 
-@@ -118,7 +118,7 @@ struct ctl_table_header *register_net_sysctl_rotable(const
- 		struct ctl_path *path, struct ctl_table *table)
+ static __net_exit void sysctl_core_net_exit(struct net *net)
  {
- 	return __register_sysctl_paths(&net_sysctl_ro_root,
--			&init_nsproxy, path, table);
-+				       &init_nsproxy, path, table, NULL);
+-	struct ctl_table *tbl;
+-
+-	tbl = net->core.sysctl_hdr->ctl_table_arg;
+ 	unregister_net_sysctl_table(net->core.sysctl_hdr);
+-	BUG_ON(tbl == netns_core_table);
+-	kfree(tbl);
  }
- EXPORT_SYMBOL_GPL(register_net_sysctl_rotable);
  
+ static __net_initdata struct pernet_operations sysctl_core_ops = {
 -- 
 1.7.4.rc1.7.g2cf08.dirty
 
