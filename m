@@ -1,221 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab1BYBz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 20:55:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62194 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932314Ab1BYBzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 20:55:54 -0500
-Message-ID: <4D670C14.9040504@cn.fujitsu.com>
-Date: Fri, 25 Feb 2011 09:55:32 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S932361Ab1BYB4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 20:56:23 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:37405 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932314Ab1BYB4V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 20:56:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=W3zCbucztB0n+4LaoHLRedBlCRbKWesO4vIwlcfUixLJHVgmyytKB4rM7fc3yuzc4Y
+         cMjcPy3xnVjVg73nw2/f7Sc2FHgWDSjbqt7onsVCrey9ZWhEzUOu0Y8SiMx37jOwH+ev
+         z7/7I2XgBxrwynK25j3YPz2p6Zu8hpu37ND44=
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Justin TerAvest <teravest@google.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        Chad Talbott <ctalbott@google.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6 v5.1] cfq-iosched: Introduce CFQ group hierarchical
- scheduling and "use_hierarchy" interface
-References: <4D61FE91.60705@cn.fujitsu.com> <4D6201A3.70301@cn.fujitsu.com> <4D64788F.6040408@cn.fujitsu.com> <20110224181140.GE18494@redhat.com>
-In-Reply-To: <20110224181140.GE18494@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-25 09:54:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-25 09:54:48,
-	Serialize complete at 2011-02-25 09:54:48
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTikQOBGfe8dGv05M8YD=CK+ToUQ4J8s_n9FncfPA@mail.gmail.com>
+References: <AANLkTi=TTZ57d1wUz1uH3R6igN8O77iDvSLMW=t86g9V@mail.gmail.com>
+	<20110222140349.GA20708@kryptos.osrc.amd.com>
+	<AANLkTikESHHfjBqoLFOno6qQz-NXEAo-wBY5JEeAW61N@mail.gmail.com>
+	<AANLkTinh4pF7iaUGMcv_9gPy+VBD5POsTHbF_2zPJ17r@mail.gmail.com>
+	<AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
+	<AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
+	<AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com>
+	<AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
+	<AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com>
+	<AANLkTi=wbtcAOmYE8UF7ynPZ_nR3ZXxVRBcuMVGNK4u0@mail.gmail.com>
+	<AANLkTin7+AHAqKz5T-1_=N6tqPytyT4ooqyJuhHC6ET=@mail.gmail.com>
+	<1298596499.10585.27.camel@clockmaker-el6>
+	<AANLkTikQOBGfe8dGv05M8YD=CK+ToUQ4J8s_n9FncfPA@mail.gmail.com>
+Date: Fri, 25 Feb 2011 03:56:20 +0200
+Message-ID: <AANLkTinq_gyAFKb_i_4j6qzkAmoSuAS+k_eCRFKFy5wL@mail.gmail.com>
+Subject: Re: Linux 2.6.38-rc6
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fbdev@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel@lists.freedesktop.org, Borislav Petkov <bp@amd64.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0016e68e7f68f09057049d11a2d7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Wed, Feb 23, 2011 at 11:01:35AM +0800, Gui Jianfeng wrote:
->> Hi
->>
->> I rebase this series on top of *for-next* branch, it will make merging life easier.
->>
->> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
->> in the way that it puts all CFQ queues in a hidden group and schedules with other 
->> CFQ group under their parent. The patchset is available here,
->> http://lkml.org/lkml/2010/8/30/30
-> 
-> Gui,
-> 
-> I was running some tests (iostest) with these patches and my system crashed
-> after a while.
-> 
-> To be precise I was running "brrmmap" test of iostest.
+--0016e68e7f68f09057049d11a2d7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Vivek,
+On Fri, Feb 25, 2011 at 3:47 AM, Anca Emanuel <anca.emanuel@gmail.com> wrot=
+e:
+> On Fri, Feb 25, 2011 at 3:14 AM, Dave Airlie <airlied@redhat.com> wrote:
+>> On Thu, 2011-02-24 at 16:54 -0800, Linus Torvalds wrote:
+>>> On Thu, Feb 24, 2011 at 4:48 PM, Anca Emanuel <anca.emanuel@gmail.com> =
+wrote:
+>>> >
+>>> > diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+>>> > index e2bf953..e8f8925 100644
+>>> > --- a/drivers/video/fbmem.c
+>>> > +++ b/drivers/video/fbmem.c
+>>> > @@ -1511,6 +1511,7 @@ void remove_conflicting_framebuffers(struct
+>>> > apertures_struct *a,
+>>> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 "%s vs %s=
+ - removing generic driver\n",
+>>> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 name, reg=
+istered_fb[i]->fix.id);
+>>> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0unregister_framebuffer=
+(registered_fb[i]);
+>>> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 registered_fb[i] =3D NU=
+LL;
+>>> >
+>>> > Tested the patch, and now I get this:
+>>> > dmesg: http://pastebin.com/ieMNrA7C
+>>> >
+>>> > [ =A0 12.252328] BUG: unable to handle kernel NULL pointer dereferenc=
+e
+>>> > at 00000000000003b8
+>>> > [ =A0 12.252342] IP: [<ffffffff81311178>] fb_mmap+0x58/0x1d0
+>>>
+>>> Ok, goodie.
+>>>
+>>> Or not so goodie, but it does make it clear that yeah, the fb code
+>>> seems to be using stale pointers from that registered_fb[] array, and
+>>> the whole unregistration process is just racing with people using it.
+>>>
+>>> Herton had that much bigger patch, can you test it?
+>>
+>> I think Andy's patch worked, not sure why it fell between the cracks,
+>> either didn't appear on lkml or in my inbox at all.
+>>
+>> if we can get Herton to repost it properly + a tested by I'm happy for
+>> it to go in.
+>>
+>> Dave.
+>>
+>>
+>
+> Tested Andy's patch and it works !
+> http://kernel.ubuntu.com/git?p=3Dubuntu/ubuntu-natty.git;a=3Dcommit;h=3Dc=
+5a742b5f78e161d6a13853a7e3e6e1dfa429e69
+>
+> Tested-by: Anca Emanuel <anca.emanuel@gmail.com>
+>
 
-I simply run iostest with brrmmap mode, I can't reproduce this bug.
-Would you give more details.
-Can you tell me the iostest command line options?
-Did you enable use_hierarchy in root group?
+link to patch: http://is.gd/otIfGc
 
-Thanks,
-Gui
+--0016e68e7f68f09057049d11a2d7
+Content-Type: application/octet-stream; name=patch
+Content-Disposition: attachment; filename=patch
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gkkgajhf0
 
-> 
-> train.lab.bos.redhat.com login: [72194.404201] EXT4-fs (dm-1): mounted
-> filesystem with ordered data mode. Opts: (null)
-> [72642.818976] EXT4-fs (dm-1): mounted filesystem with ordered data mode.
-> Opts: (null)
-> [72931.409460] BUG: unable to handle kernel NULL pointer dereference at
-> 0000000000000010
-> [72931.410216] IP: [<ffffffff812265ff>] __rb_rotate_left+0xb/0x64
-> [72931.410216] PGD 134d80067 PUD 12f524067 PMD 0 
-> [72931.410216] Oops: 0000 [#1] SMP 
-> [72931.410216] last sysfs file:
-> /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size
-> [72931.410216] CPU 3 
-> [72931.410216] Modules linked in: kvm_intel kvm qla2xxx scsi_transport_fc
-> [last unloaded: scsi_wait_scan]
-> [72931.410216] 
-> [72931.410216] Pid: 18675, comm: sh Not tainted 2.6.38-rc4+ #3 0A98h/HP
-> xw8600 Workstation
-> [72931.410216] RIP: 0010:[<ffffffff812265ff>]  [<ffffffff812265ff>]
-> __rb_rotate_left+0xb/0x64
-> [72931.410216] RSP: 0000:ffff88012f461480  EFLAGS: 00010086
-> [72931.410216] RAX: 0000000000000000 RBX: ffff880135f40c00 RCX:
-> ffffffffffffdcc8
-> [72931.410216] RDX: ffff880135f43800 RSI: ffff880135f43000 RDI:
-> ffff880135f42c00
-> [72931.410216] RBP: ffff88012f461480 R08: ffff880135f40c00 R09:
-> ffff880135f43018
-> [72931.410216] R10: 0000000000000000 R11: 0000001000000000 R12:
-> ffff880135f42c00
-> [72931.410216] R13: ffff880135f41808 R14: ffff880135f43000 R15:
-> ffff880135f40c00
-> [72931.410216] FS:  0000000000000000(0000) GS:ffff8800bfcc0000(0000)
-> knlGS:0000000000000000
-> [72931.410216] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [72931.410216] CR2: 0000000000000010 CR3: 000000013774f000 CR4:
-> 00000000000006e0
-> [72931.410216] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [72931.410216] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000400
-> [72931.410216] Process sh (pid: 18675, threadinfo ffff88012f460000, task
-> ffff8801376e6f90)
-> [72931.410216] Stack:
-> [72931.410216]  ffff88012f4614b8 ffffffff81226778 ffff880135f43000
-> ffff880135f43000
-> [72931.410216]  ffff88011c5bed00 0000000000000000 0000000000000001
-> ffff88012f4614d8
-> [72931.410216]  ffffffff8121c521 0000001000000000 ffff880135f41800
-> ffff88012f461528
-> [72931.410216] Call Trace:
-> [72931.410216]  [<ffffffff81226778>] rb_insert_color+0xbc/0xe5
-> [72931.410216]  [<ffffffff8121c521>]
-> __cfq_entity_service_tree_add+0x76/0xa5
-> [72931.410216]  [<ffffffff8121cb28>] cfq_service_tree_add+0x383/0x3eb
-> [72931.410216]  [<ffffffff8121cbaa>] cfq_resort_rr_list+0x1a/0x2a
-> [72931.410216]  [<ffffffff8121eb06>] cfq_add_rq_rb+0xbd/0xff
-> [72931.410216]  [<ffffffff8121ec0a>] cfq_insert_request+0xc2/0x556
-> [72931.410216]  [<ffffffff8120a44c>] elv_insert+0x118/0x188
-> [72931.410216]  [<ffffffff8120a52a>] __elv_add_request+0x6e/0x75
-> [72931.410216]  [<ffffffff812102d0>] __make_request+0x3ac/0x42f
-> [72931.410216]  [<ffffffff8120e9ca>] generic_make_request+0x2ec/0x356
-> [72931.410216]  [<ffffffff8120eb05>] submit_bio+0xd1/0xdc
-> [72931.410216]  [<ffffffff8110bea3>] submit_bh+0xe6/0x108
-> [72931.410216]  [<ffffffff8110eb9d>] __bread+0x4c/0x6f
-> [72931.410216]  [<ffffffff811453ab>] ext3_get_branch+0x64/0xdf
-> [72931.410216]  [<ffffffff81146f5c>] ext3_get_blocks_handle+0x9b/0x90b
-> [72931.410216]  [<ffffffff81147882>] ext3_get_block+0xb6/0xf6
-> [72931.410216]  [<ffffffff81113520>] do_mpage_readpage+0x198/0x4bd
-> [72931.410216]  [<ffffffff810c01b2>] ? __inc_zone_page_state+0x29/0x2b
-> [72931.410216]  [<ffffffff810ab6e4>] ? add_to_page_cache_locked+0xb6/0x10d
-> [72931.410216]  [<ffffffff81113980>] mpage_readpages+0xd6/0x123
-> [72931.410216]  [<ffffffff811477cc>] ? ext3_get_block+0x0/0xf6
-> [72931.410216]  [<ffffffff811477cc>] ? ext3_get_block+0x0/0xf6
-> [72931.410216]  [<ffffffff810da750>] ? alloc_pages_current+0xa2/0xc5
-> [72931.410216]  [<ffffffff81145a6a>] ext3_readpages+0x18/0x1a
-> [72931.410216]  [<ffffffff810b31fc>] __do_page_cache_readahead+0x111/0x1a7
-> [72931.410216]  [<ffffffff810b32ae>] ra_submit+0x1c/0x20
-> [72931.410216]  [<ffffffff810acb1b>] filemap_fault+0x165/0x35b
-> [72931.410216]  [<ffffffff810c6ce1>] __do_fault+0x50/0x3e2
-> [72931.410216]  [<ffffffff810c7cf8>] handle_pte_fault+0x2ff/0x779
-> [72931.410216]  [<ffffffff810b05c9>] ? __free_pages+0x1b/0x24
-> [72931.410216]  [<ffffffff810c82d1>] handle_mm_fault+0x15f/0x173
-> [72931.410216]  [<ffffffff815b0963>] do_page_fault+0x348/0x36a
-> [72931.410216]  [<ffffffff810f21c5>] ? path_put+0x1d/0x21
-> [72931.410216]  [<ffffffff810f21c5>] ? path_put+0x1d/0x21
-> [72931.410216]  [<ffffffff815adf1f>] page_fault+0x1f/0x30
-> [72931.410216] Code: 48 83 c4 18 44 89 e8 5b 41 5c 41 5d c9 c3 48 83 7b 18
-> 00 0f 84 71 ff ff ff e9 77 ff ff ff 90 90 48 8b 47 08 55 48 8b 17 48 89 e5
-> <48> 8b 48 10 48 83 e2 fc 48 85 c9 48 89 4f 08 74 10 4c 8b 40 10 
-> [72931.410216] RIP  [<ffffffff812265ff>] __rb_rotate_left+0xb/0x64
-> [72931.410216]  RSP <ffff88012f461480>
-> [72931.410216] CR2: 0000000000000010
-> [72931.410216] ---[ end trace cddc7a4456407f6a ]---
-> 
-> Thanks
-> Vivek
-> 
->> Vivek think this approach isn't so instinct that we should treat CFQ queues
->> and groups at the same level. Here is the new approach for hierarchical 
->> scheduling based on Vivek's suggestion. The most big change of CFQ is that
->> it gets rid of cfq_slice_offset logic, and makes use of vdisktime for CFQ
->> queue scheduling just like CFQ group does. But I still give cfqq some jump 
->> in vdisktime based on ioprio, thanks for Vivek to point out this. Now CFQ 
->> queue and CFQ group use the same scheduling algorithm. 
->>
->> "use_hierarchy" interface is now added to switch between hierarchical mode
->> and flat mode. It works as memcg.
->>
->> V4 -> V5 Changes:
->> - Change boosting base to a smaller value.
->> - Rename repostion_time to position_time
->> - Replace duplicated code by calling cfq_scale_slice()
->> - Remove redundant use_hierarchy in cfqd
->> - Fix grp_service_tree comment
->> - Rename init_cfqe() to init_group_cfqe()
->>
->> --
->> V3 -> V4 Changes:
->> - Take io class into account when calculating the boost value.
->> - Refine the vtime boosting logic as Vivek's Suggestion.
->> - Make the calculation of group slice cross all service trees under a group.
->> - Modify Documentation in terms of Vivek's comments.
->>
->> --
->> V2 -> V3 Changes:
->> - Starting from cfqd->grp_service_tree for both hierarchical mode and flat mode
->> - Avoid recursion when allocating cfqg and force dispatch logic
->> - Fix a bug when boosting vdisktime
->> - Adjusting total_weight accordingly when changing weight
->> - Change group slice calculation into a hierarchical way
->> - Keep flat mode rather than deleting it first then adding it later
->> - kfree the parent cfqg if there nobody references to it
->> - Simplify select_queue logic by using some wrap function
->> - Make "use_hierarchy" interface work as memcg
->> - Make use of time_before() for vdisktime compare
->> - Update Document
->> - Fix some code style problems
->>
->> --
->> V1 -> V2 Changes:
->> - Raname "struct io_sched_entity" to "struct cfq_entity" and don't differentiate
->>   queue_entity and group_entity, just use cfqe instead.
->> - Give newly added cfqq a small vdisktime jump accord to its ioprio.
->> - Make flat mode as default CFQ group scheduling mode.
->> - Introduce "use_hierarchy" interface.
->> - Update blkio cgroup documents
->>
->>  Documentation/cgroups/blkio-controller.txt |   81 +-
->>  block/blk-cgroup.c                         |   61 +
->>  block/blk-cgroup.h                         |    3
->>  block/cfq-iosched.c                        |  959 ++++++++++++++++++++---------
->>  4 files changed, 815 insertions(+), 289 deletions(-)
->>
->> Thanks,
->> Gui
-> 
-
--- 
-Regards
-Gui Jianfeng
+RnJvbSBjNWE3NDJiNWY3OGUxNjFkNmExMzg1M2E3ZTNlNmUxZGZhNDI5ZTY5IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmR5IFdoaXRjcm9mdCA8YXB3QGNhbm9uaWNhbC5jb20+CkRh
+dGU6IFRodSwgMjkgSnVsIDIwMTAgMTY6NDg6MjAgKzAxMDAKU3ViamVjdDogW1BBVENIIDEvMV0g
+VUJVTlRVOiBTQVVDRTogZmJjb24gLS0gZml4IHJhY2UgYmV0d2VlbiBvcGVuIGFuZCByZW1vdmFs
+IG9mIGZyYW1lYnVmZmVycwoKQ3VycmVudGx5IHRoZXJlIGlzIG5vIGxvY2tpbmcgZm9yIHVwZGF0
+ZXMgdG8gdGhlIHJlZ2lzdGVyZWRfZmIgbGlzdC4KVGhpcyBhbGxvd3MgYW4gb3BlbiB0aHJvdWdo
+IC9kZXYvZmJOIHRvIHBpY2sgdXAgYSByZWdpc3RlcmVkIGZyYW1lYnVmZmVyCnBvaW50ZXIgaW4g
+cGFyYWxsZWwgd2l0aCBpdCBiZWluZyByZWxlYXNlZCwgYXMgaGFwcGVucyB3aGVuIGEgY29uZmxp
+Y3RpbmcKZnJhbWVidWZmZXIgaXMgZWplY3RlZCBvciBvbiBtb2R1bGUgdW5sb2FkLiAgVGhlcmUg
+aXMgYWxzbyBubyByZWZlcmVuY2UKY291bnRpbmcgb24gdGhlIGZyYW1lYnVmZmVyIGRlc2NyaXB0
+b3Igd2hpY2ggaXMgcmVmZXJlbmNlZCBmcm9tIGFsbCBvcGVuCmZpbGVzLCBsZWFkaW5nIHRvIHJl
+ZmVyZW5jZXMgdG8gcmVsZWFzZWQgb3IgcmV1c2VkIG1lbW9yeSB0byBwZXJzaXN0IG9uCnRoZXNl
+IG9wZW4gZmlsZXMuCgpUaGlzIHBhdGNoIGFkZHMgYSByZWZlcmVuY2UgY291bnQgdG8gdGhlIGZy
+YW1lYnVmZmVyIGRlc2NyaXB0b3IgdG8gcHJldmVudAppdCBmcm9tIGJlaW5nIHJlbGVhc2VkIHVu
+dGlsIGFmdGVyIGFsbCBwZW5kaW5nIG9wZW5zIGFyZSBjbG9zZWQuICBUaGlzCmFsbG93cyB0aGUg
+cGVuZGluZyBvcGVucyB0byBkZXRlY3QgdGhlIGNsb3NlZCBzdGF0dXMgYW5kIHVubWFwIHRoZW1z
+ZWx2ZXMuCkl0IGFsc28gYWRkcyBsb2NraW5nIHRvIHRoZSBmcmFtZWJ1ZmZlciBsb29rdXAgcGF0
+aCwgbG9ja2luZyBpdCBhZ2FpbnN0CnRoZSByZW1vdmFsIHBhdGggc3VjaCB0aGF0IGl0IGlzIHBv
+c3NpYmxlIHRvIGF0b21pY2FsbHkgbG9va3VwIGFuZCB0YWtlIGEKcmVmZXJlbmNlIHRvIHRoZSBk
+ZXNjcmlwdG9yLiAgSXQgYWxzbyBhZGRzIGxvY2tpbmcgdG8gdGhlIHJlYWQgYW5kIHdyaXRlCnBh
+dGhzIHdoaWNoIGN1cnJlbnRseSBjb3VsZCBhY2Nlc3MgdGhlIGZyYW1lYnVmZmVyIGRlc2NyaXB0
+b3IgYWZ0ZXIgaXQKaGFzIGJlZW4gZnJlZWQuICBGaW5hbGx5IGl0IG1vdmVzIHRoZSBkZXZpY2Ug
+dG8gRkJJTkZPX1NUQVRFX1JFTU9WRUQgdG8KaW5kaWNhdGUgdGhhdCBhbGwgYWNjZXNzIHNob3Vs
+ZCBiZSBlcnJvcmVkIGZvciB0aGlzIGRldmljZS4KClNpZ25lZC1vZmYtYnk6IEFuZHkgV2hpdGNy
+b2Z0IDxhcHdAY2Fub25pY2FsLmNvbT4KQWNrZWQtYnk6IFN0ZWZhbiBCYWRlciA8c3RlZmFuLmJh
+ZGVyQGNhbm9uaWNhbC5jb20+ClNpZ25lZC1vZmYtYnk6IExlYW5uIE9nYXNhd2FyYSA8bGVhbm4u
+b2dhc2F3YXJhQGNhbm9uaWNhbC5jb20+Ci0tLQogZHJpdmVycy92aWRlby9mYm1lbS5jIHwgIDEz
+MiArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tCiBpbmNs
+dWRlL2xpbnV4L2ZiLmggICAgfCAgICAyICsKIDIgZmlsZXMgY2hhbmdlZCwgMTA1IGluc2VydGlv
+bnMoKyksIDI5IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvdmlkZW8vZmJtZW0u
+YyBiL2RyaXZlcnMvdmlkZW8vZmJtZW0uYwppbmRleCBlMmJmOTUzLi44NzcyMDBiIDEwMDY0NAot
+LS0gYS9kcml2ZXJzL3ZpZGVvL2ZibWVtLmMKKysrIGIvZHJpdmVycy92aWRlby9mYm1lbS5jCkBA
+IC00Miw2ICs0Miw4IEBACiAKICNkZWZpbmUgRkJQSVhNQVBTSVpFCSgxMDI0ICogOCkKIAorLyog
+UHJvdGVjdHMgdGhlIHJlZ2lzdGVyZWQgZnJhbWVidWZmZXIgbGlzdCBhbmQgY291bnQuICovCitz
+dGF0aWMgREVGSU5FX1NQSU5MT0NLKHJlZ2lzdGVyZWRfbG9jayk7CiBzdHJ1Y3QgZmJfaW5mbyAq
+cmVnaXN0ZXJlZF9mYltGQl9NQVhdIF9fcmVhZF9tb3N0bHk7CiBpbnQgbnVtX3JlZ2lzdGVyZWRf
+ZmIgX19yZWFkX21vc3RseTsKIApAQCAtNjk0LDkgKzY5Niw3IEBAIHN0YXRpYyBzc2l6ZV90CiBm
+Yl9yZWFkKHN0cnVjdCBmaWxlICpmaWxlLCBjaGFyIF9fdXNlciAqYnVmLCBzaXplX3QgY291bnQs
+IGxvZmZfdCAqcHBvcykKIHsKIAl1bnNpZ25lZCBsb25nIHAgPSAqcHBvczsKLQlzdHJ1Y3QgaW5v
+ZGUgKmlub2RlID0gZmlsZS0+Zl9wYXRoLmRlbnRyeS0+ZF9pbm9kZTsKLQlpbnQgZmJpZHggPSBp
+bWlub3IoaW5vZGUpOwotCXN0cnVjdCBmYl9pbmZvICppbmZvID0gcmVnaXN0ZXJlZF9mYltmYmlk
+eF07CisJc3RydWN0IGZiX2luZm8gKmluZm8gPSBmaWxlLT5wcml2YXRlX2RhdGE7CiAJdTggKmJ1
+ZmZlciwgKmRzdDsKIAl1OCBfX2lvbWVtICpzcmM7CiAJaW50IGMsIGNudCA9IDAsIGVyciA9IDA7
+CkBAIC03MDUsMTkgKzcwNSwyOCBAQCBmYl9yZWFkKHN0cnVjdCBmaWxlICpmaWxlLCBjaGFyIF9f
+dXNlciAqYnVmLCBzaXplX3QgY291bnQsIGxvZmZfdCAqcHBvcykKIAlpZiAoIWluZm8gfHwgISBp
+bmZvLT5zY3JlZW5fYmFzZSkKIAkJcmV0dXJuIC1FTk9ERVY7CiAKLQlpZiAoaW5mby0+c3RhdGUg
+IT0gRkJJTkZPX1NUQVRFX1JVTk5JTkcpCi0JCXJldHVybiAtRVBFUk07CisJaWYgKCFsb2NrX2Zi
+X2luZm8oaW5mbykpCisJCXJldHVybiAtRU5PREVWOworCisJaWYgKGluZm8tPnN0YXRlICE9IEZC
+SU5GT19TVEFURV9SVU5OSU5HKSB7CisJCWVyciA9IC1FUEVSTTsKKwkJZ290byBvdXRfZmJfaW5m
+bzsKKwl9CiAKLQlpZiAoaW5mby0+ZmJvcHMtPmZiX3JlYWQpCi0JCXJldHVybiBpbmZvLT5mYm9w
+cy0+ZmJfcmVhZChpbmZvLCBidWYsIGNvdW50LCBwcG9zKTsKKwlpZiAoaW5mby0+ZmJvcHMtPmZi
+X3JlYWQpIHsKKwkJZXJyID0gaW5mby0+ZmJvcHMtPmZiX3JlYWQoaW5mbywgYnVmLCBjb3VudCwg
+cHBvcyk7CisJCWdvdG8gb3V0X2ZiX2luZm87CisJfQogCQogCXRvdGFsX3NpemUgPSBpbmZvLT5z
+Y3JlZW5fc2l6ZTsKIAogCWlmICh0b3RhbF9zaXplID09IDApCiAJCXRvdGFsX3NpemUgPSBpbmZv
+LT5maXguc21lbV9sZW47CiAKLQlpZiAocCA+PSB0b3RhbF9zaXplKQotCQlyZXR1cm4gMDsKKwlp
+ZiAocCA+PSB0b3RhbF9zaXplKSB7CisJCWVyciA9IDA7CisJCWdvdG8gb3V0X2ZiX2luZm87CisJ
+fQogCiAJaWYgKGNvdW50ID49IHRvdGFsX3NpemUpCiAJCWNvdW50ID0gdG90YWxfc2l6ZTsKQEAg
+LTcyNyw4ICs3MzYsMTAgQEAgZmJfcmVhZChzdHJ1Y3QgZmlsZSAqZmlsZSwgY2hhciBfX3VzZXIg
+KmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCiAKIAlidWZmZXIgPSBrbWFsbG9jKChj
+b3VudCA+IFBBR0VfU0laRSkgPyBQQUdFX1NJWkUgOiBjb3VudCwKIAkJCSBHRlBfS0VSTkVMKTsK
+LQlpZiAoIWJ1ZmZlcikKLQkJcmV0dXJuIC1FTk9NRU07CisJaWYgKCFidWZmZXIpIHsKKwkJZXJy
+ID0gLUVOT01FTTsKKwkJZ290byBvdXRfZmJfaW5mbzsKKwl9CiAKIAlzcmMgPSAodTggX19pb21l
+bSAqKSAoaW5mby0+c2NyZWVuX2Jhc2UgKyBwKTsKIApAQCAtNzUxLDE5ICs3NjIsMjEgQEAgZmJf
+cmVhZChzdHJ1Y3QgZmlsZSAqZmlsZSwgY2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNvdW50LCBs
+b2ZmX3QgKnBwb3MpCiAJCWNudCArPSBjOwogCQljb3VudCAtPSBjOwogCX0KKwlpZiAoIWVycikK
+KwkJZXJyID0gY250OwogCiAJa2ZyZWUoYnVmZmVyKTsKK291dF9mYl9pbmZvOgorCXVubG9ja19m
+Yl9pbmZvKGluZm8pOwogCi0JcmV0dXJuIChlcnIpID8gZXJyIDogY250OworCXJldHVybiBlcnI7
+CiB9CiAKIHN0YXRpYyBzc2l6ZV90CiBmYl93cml0ZShzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3Qg
+Y2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCiB7CiAJdW5zaWdu
+ZWQgbG9uZyBwID0gKnBwb3M7Ci0Jc3RydWN0IGlub2RlICppbm9kZSA9IGZpbGUtPmZfcGF0aC5k
+ZW50cnktPmRfaW5vZGU7Ci0JaW50IGZiaWR4ID0gaW1pbm9yKGlub2RlKTsKLQlzdHJ1Y3QgZmJf
+aW5mbyAqaW5mbyA9IHJlZ2lzdGVyZWRfZmJbZmJpZHhdOworCXN0cnVjdCBmYl9pbmZvICppbmZv
+ID0gZmlsZS0+cHJpdmF0ZV9kYXRhOwogCXU4ICpidWZmZXIsICpzcmM7CiAJdTggX19pb21lbSAq
+ZHN0OwogCWludCBjLCBjbnQgPSAwLCBlcnIgPSAwOwpAQCAtNzcyLDggKzc4NSwxMyBAQCBmYl93
+cml0ZShzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3QgY2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNv
+dW50LCBsb2ZmX3QgKnBwb3MpCiAJaWYgKCFpbmZvIHx8ICFpbmZvLT5zY3JlZW5fYmFzZSkKIAkJ
+cmV0dXJuIC1FTk9ERVY7CiAKLQlpZiAoaW5mby0+c3RhdGUgIT0gRkJJTkZPX1NUQVRFX1JVTk5J
+TkcpCi0JCXJldHVybiAtRVBFUk07CisJaWYgKCFsb2NrX2ZiX2luZm8oaW5mbykpCisJCXJldHVy
+biAtRU5PREVWOworCisJaWYgKGluZm8tPnN0YXRlICE9IEZCSU5GT19TVEFURV9SVU5OSU5HKSB7
+CisJCWVyciA9IC1FUEVSTTsKKwkJZ290byBvdXRfZmJfaW5mbzsKKwl9CiAKIAlpZiAoaW5mby0+
+ZmJvcHMtPmZiX3dyaXRlKQogCQlyZXR1cm4gaW5mby0+ZmJvcHMtPmZiX3dyaXRlKGluZm8sIGJ1
+ZiwgY291bnQsIHBwb3MpOwpAQCAtNzgzLDggKzgwMSwxMCBAQCBmYl93cml0ZShzdHJ1Y3QgZmls
+ZSAqZmlsZSwgY29uc3QgY2hhciBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBw
+b3MpCiAJaWYgKHRvdGFsX3NpemUgPT0gMCkKIAkJdG90YWxfc2l6ZSA9IGluZm8tPmZpeC5zbWVt
+X2xlbjsKIAotCWlmIChwID4gdG90YWxfc2l6ZSkKLQkJcmV0dXJuIC1FRkJJRzsKKwlpZiAocCA+
+IHRvdGFsX3NpemUpIHsKKwkJZXJyID0gLUVGQklHOworCQlnb3RvIG91dF9mYl9pbmZvOworCX0K
+IAogCWlmIChjb3VudCA+IHRvdGFsX3NpemUpIHsKIAkJZXJyID0gLUVGQklHOwpAQCAtODAwLDgg
+KzgyMCwxMCBAQCBmYl93cml0ZShzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3QgY2hhciBfX3VzZXIg
+KmJ1Ziwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCiAKIAlidWZmZXIgPSBrbWFsbG9jKChj
+b3VudCA+IFBBR0VfU0laRSkgPyBQQUdFX1NJWkUgOiBjb3VudCwKIAkJCSBHRlBfS0VSTkVMKTsK
+LQlpZiAoIWJ1ZmZlcikKLQkJcmV0dXJuIC1FTk9NRU07CisJaWYgKCFidWZmZXIpIHsKKwkJZXJy
+ID0gLUVOT01FTTsKKwkJZ290byBvdXRfZmJfaW5mbzsKKwl9CiAKIAlkc3QgPSAodTggX19pb21l
+bSAqKSAoaW5mby0+c2NyZWVuX2Jhc2UgKyBwKTsKIApAQCAtODI1LDEwICs4NDcsMTQgQEAgZmJf
+d3JpdGUoc3RydWN0IGZpbGUgKmZpbGUsIGNvbnN0IGNoYXIgX191c2VyICpidWYsIHNpemVfdCBj
+b3VudCwgbG9mZl90ICpwcG9zKQogCQljbnQgKz0gYzsKIAkJY291bnQgLT0gYzsKIAl9CisJaWYg
+KGNudCkKKwkJZXJyID0gY250OwogCiAJa2ZyZWUoYnVmZmVyKTsKK291dF9mYl9pbmZvOgorCXVu
+bG9ja19mYl9pbmZvKGluZm8pOwogCi0JcmV0dXJuIChjbnQpID8gY250IDogZXJyOworCXJldHVy
+biBlcnI7CiB9CiAKIGludApAQCAtMTMwMyw4ICsxMzI5LDcgQEAgc3RhdGljIGxvbmcgZmJfY29t
+cGF0X2lvY3RsKHN0cnVjdCBmaWxlICpmaWxlLCB1bnNpZ25lZCBpbnQgY21kLAogc3RhdGljIGlu
+dAogZmJfbW1hcChzdHJ1Y3QgZmlsZSAqZmlsZSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICogdm1h
+KQogewotCWludCBmYmlkeCA9IGltaW5vcihmaWxlLT5mX3BhdGguZGVudHJ5LT5kX2lub2RlKTsK
+LQlzdHJ1Y3QgZmJfaW5mbyAqaW5mbyA9IHJlZ2lzdGVyZWRfZmJbZmJpZHhdOworCXN0cnVjdCBm
+Yl9pbmZvICogY29uc3QgaW5mbyA9IGZpbGUtPnByaXZhdGVfZGF0YTsKIAlzdHJ1Y3QgZmJfb3Bz
+ICpmYiA9IGluZm8tPmZib3BzOwogCXVuc2lnbmVkIGxvbmcgb2ZmOwogCXVuc2lnbmVkIGxvbmcg
+c3RhcnQ7CkBAIC0xMzE2LDYgKzEzNDEsMTEgQEAgZmJfbW1hcChzdHJ1Y3QgZmlsZSAqZmlsZSwg
+c3RydWN0IHZtX2FyZWFfc3RydWN0ICogdm1hKQogCWlmICghZmIpCiAJCXJldHVybiAtRU5PREVW
+OwogCW11dGV4X2xvY2soJmluZm8tPm1tX2xvY2spOworCWlmIChpbmZvLT5zdGF0ZSA9PSBGQklO
+Rk9fU1RBVEVfUkVNT1ZFRCkgeworCQltdXRleF91bmxvY2soJmluZm8tPm1tX2xvY2spOworCQly
+ZXR1cm4gLUVOT0RFVjsKKwl9CisKIAlpZiAoZmItPmZiX21tYXApIHsKIAkJaW50IHJlczsKIAkJ
+cmVzID0gZmItPmZiX21tYXAoaW5mbywgdm1hKTsKQEAgLTEzNTIsNiArMTM4MiwzNCBAQCBmYl9t
+bWFwKHN0cnVjdCBmaWxlICpmaWxlLCBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKiB2bWEpCiAJcmV0
+dXJuIDA7CiB9CiAKK3N0YXRpYyBzdHJ1Y3QgZmJfaW5mbyAqZ2V0X2ZyYW1lYnVmZmVyX2luZm8o
+aW50IGlkeCkKK19fYWNxdWlyZXMoJnJlZ2lzdGVyZWRfbG9jaykKK19fcmVsZWFzZXMoJnJlZ2lz
+dGVyZWRfbG9jaykKK3sKKwlzdHJ1Y3QgZmJfaW5mbyAqZmJfaW5mbzsKKworCXNwaW5fbG9jaygm
+cmVnaXN0ZXJlZF9sb2NrKTsKKwlmYl9pbmZvID0gcmVnaXN0ZXJlZF9mYltpZHhdOworCWZiX2lu
+Zm8tPnJlZl9jb3VudCsrOworCXNwaW5fdW5sb2NrKCZyZWdpc3RlcmVkX2xvY2spOworCisJcmV0
+dXJuIGZiX2luZm87Cit9CisKK3N0YXRpYyB2b2lkIHB1dF9mcmFtZWJ1ZmZlcl9pbmZvKHN0cnVj
+dCBmYl9pbmZvICpmYl9pbmZvKQorX19hY3F1aXJlcygmcmVnaXN0ZXJlZF9sb2NrKQorX19yZWxl
+YXNlcygmcmVnaXN0ZXJlZF9sb2NrKQoreworCWludCBrZWVwOworCisJc3Bpbl9sb2NrKCZyZWdp
+c3RlcmVkX2xvY2spOworCWtlZXAgPSAtLWZiX2luZm8tPnJlZl9jb3VudDsKKwlzcGluX3VubG9j
+aygmcmVnaXN0ZXJlZF9sb2NrKTsKKwkKKwlpZiAoIWtlZXAgJiYgZmJfaW5mby0+ZmJvcHMtPmZi
+X2Rlc3Ryb3kpCisJCWZiX2luZm8tPmZib3BzLT5mYl9kZXN0cm95KGZiX2luZm8pOworfQorCiBz
+dGF0aWMgaW50CiBmYl9vcGVuKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHN0cnVjdCBmaWxlICpmaWxl
+KQogX19hY3F1aXJlcygmaW5mby0+bG9jaykKQEAgLTEzNjMsMTMgKzE0MjEsMTcgQEAgX19yZWxl
+YXNlcygmaW5mby0+bG9jaykKIAogCWlmIChmYmlkeCA+PSBGQl9NQVgpCiAJCXJldHVybiAtRU5P
+REVWOwotCWluZm8gPSByZWdpc3RlcmVkX2ZiW2ZiaWR4XTsKKwlpbmZvID0gZ2V0X2ZyYW1lYnVm
+ZmVyX2luZm8oZmJpZHgpOwogCWlmICghaW5mbykKIAkJcmVxdWVzdF9tb2R1bGUoImZiJWQiLCBm
+YmlkeCk7Ci0JaW5mbyA9IHJlZ2lzdGVyZWRfZmJbZmJpZHhdOworCWluZm8gPSBnZXRfZnJhbWVi
+dWZmZXJfaW5mbyhmYmlkeCk7CiAJaWYgKCFpbmZvKQogCQlyZXR1cm4gLUVOT0RFVjsKIAltdXRl
+eF9sb2NrKCZpbmZvLT5sb2NrKTsKKwlpZiAoaW5mby0+c3RhdGUgPT0gRkJJTkZPX1NUQVRFX1JF
+TU9WRUQpIHsKKwkJcmVzID0gLUVOT0RFVjsKKwkJZ290byBvdXQ7CisJfQogCWlmICghdHJ5X21v
+ZHVsZV9nZXQoaW5mby0+ZmJvcHMtPm93bmVyKSkgewogCQlyZXMgPSAtRU5PREVWOwogCQlnb3Rv
+IG91dDsKQEAgLTEzODYsNiArMTQ0OCw4IEBAIF9fcmVsZWFzZXMoJmluZm8tPmxvY2spCiAjZW5k
+aWYKIG91dDoKIAltdXRleF91bmxvY2soJmluZm8tPmxvY2spOworCWlmIChyZXMpCisJCXB1dF9m
+cmFtZWJ1ZmZlcl9pbmZvKGluZm8pOwogCXJldHVybiByZXM7CiB9CiAKQEAgLTE0MDEsNiArMTQ2
+NSw3IEBAIF9fcmVsZWFzZXMoJmluZm8tPmxvY2spCiAJCWluZm8tPmZib3BzLT5mYl9yZWxlYXNl
+KGluZm8sMSk7CiAJbW9kdWxlX3B1dChpbmZvLT5mYm9wcy0+b3duZXIpOwogCW11dGV4X3VubG9j
+aygmaW5mby0+bG9jayk7CisJcHV0X2ZyYW1lYnVmZmVyX2luZm8oaW5mbyk7CiAJcmV0dXJuIDA7
+CiB9CiAKQEAgLTE1NDksNiArMTYxNCw3IEBAIHJlZ2lzdGVyX2ZyYW1lYnVmZmVyKHN0cnVjdCBm
+Yl9pbmZvICpmYl9pbmZvKQogCWZiX2luZm8tPm5vZGUgPSBpOwogCW11dGV4X2luaXQoJmZiX2lu
+Zm8tPmxvY2spOwogCW11dGV4X2luaXQoJmZiX2luZm8tPm1tX2xvY2spOworCWZiX2luZm8tPnJl
+Zl9jb3VudCA9IDE7CiAKIAlmYl9pbmZvLT5kZXYgPSBkZXZpY2VfY3JlYXRlKGZiX2NsYXNzLCBm
+Yl9pbmZvLT5kZXZpY2UsCiAJCQkJICAgICBNS0RFVihGQl9NQUpPUiwgaSksIE5VTEwsICJmYiVk
+IiwgaSk7CkBAIC0xNTkyLDcgKzE2NTgsNiBAQCByZWdpc3Rlcl9mcmFtZWJ1ZmZlcihzdHJ1Y3Qg
+ZmJfaW5mbyAqZmJfaW5mbykKIAlyZXR1cm4gMDsKIH0KIAotCiAvKioKICAqCXVucmVnaXN0ZXJf
+ZnJhbWVidWZmZXIgLSByZWxlYXNlcyBhIGZyYW1lIGJ1ZmZlciBkZXZpY2UKICAqCUBmYl9pbmZv
+OiBmcmFtZSBidWZmZXIgaW5mbyBzdHJ1Y3R1cmUKQEAgLTE2MjcsNiArMTY5MiwxNiBAQCB1bnJl
+Z2lzdGVyX2ZyYW1lYnVmZmVyKHN0cnVjdCBmYl9pbmZvICpmYl9pbmZvKQogCQlyZXR1cm4gLUVO
+T0RFVjsKIAlldmVudC5pbmZvID0gZmJfaW5mbzsKIAlyZXQgPSBmYl9ub3RpZmllcl9jYWxsX2No
+YWluKEZCX0VWRU5UX0ZCX1VOQklORCwgJmV2ZW50KTsKKwlpZiAoIXJldCkgeworCQltdXRleF9s
+b2NrKCZmYl9pbmZvLT5tbV9sb2NrKTsKKwkJLyoKKwkJICogV2UgbXVzdCBwcmV2ZW50IGFueSBv
+cGVyYXRpb25zIGZvciB0aGlzIHRyYW5zaXRpb24sIHdlCisJCSAqIGFscmVhZHkgaGF2ZSBpbmZv
+LT5sb2NrIHNvIGdyYWIgdGhlIGluZm8tPm1tX2xvY2sgdG8gaG9sZAorCQkgKiB0aGUgcmVtYWlu
+ZGVyLgorCQkgKi8KKwkJZmJfaW5mby0+c3RhdGUgPSBGQklORk9fU1RBVEVfUkVNT1ZFRDsKKwkJ
+bXV0ZXhfdW5sb2NrKCZmYl9pbmZvLT5tbV9sb2NrKTsKKwl9CiAJdW5sb2NrX2ZiX2luZm8oZmJf
+aW5mbyk7CiAKIAlpZiAocmV0KSB7CkBAIC0xNjQ2LDggKzE3MjEsNyBAQCB1bnJlZ2lzdGVyX2Zy
+YW1lYnVmZmVyKHN0cnVjdCBmYl9pbmZvICpmYl9pbmZvKQogCWZiX25vdGlmaWVyX2NhbGxfY2hh
+aW4oRkJfRVZFTlRfRkJfVU5SRUdJU1RFUkVELCAmZXZlbnQpOwogCiAJLyogdGhpcyBtYXkgZnJl
+ZSBmYiBpbmZvICovCi0JaWYgKGZiX2luZm8tPmZib3BzLT5mYl9kZXN0cm95KQotCQlmYl9pbmZv
+LT5mYm9wcy0+ZmJfZGVzdHJveShmYl9pbmZvKTsKKwlwdXRfZnJhbWVidWZmZXJfaW5mbyhmYl9p
+bmZvKTsKIGRvbmU6CiAJcmV0dXJuIHJldDsKIH0KZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgv
+ZmIuaCBiL2luY2x1ZGUvbGludXgvZmIuaAppbmRleCA2OGJhODVhLi4xZThiNzg1IDEwMDY0NAot
+LS0gYS9pbmNsdWRlL2xpbnV4L2ZiLmgKKysrIGIvaW5jbHVkZS9saW51eC9mYi5oCkBAIC04MzIs
+NiArODMyLDcgQEAgc3RydWN0IGZiX3RpbGVfb3BzIHsKIHN0cnVjdCBmYl9pbmZvIHsKIAlpbnQg
+bm9kZTsKIAlpbnQgZmxhZ3M7CisJaW50IHJlZl9jb3VudDsKIAlzdHJ1Y3QgbXV0ZXggbG9jazsJ
+CS8qIExvY2sgZm9yIG9wZW4vcmVsZWFzZS9pb2N0bCBmdW5jcyAqLwogCXN0cnVjdCBtdXRleCBt
+bV9sb2NrOwkJLyogTG9jayBmb3IgZmJfbW1hcCBhbmQgc21lbV8qIGZpZWxkcyAqLwogCXN0cnVj
+dCBmYl92YXJfc2NyZWVuaW5mbyB2YXI7CS8qIEN1cnJlbnQgdmFyICovCkBAIC04NzEsNiArODcy
+LDcgQEAgc3RydWN0IGZiX2luZm8gewogCXZvaWQgKnBzZXVkb19wYWxldHRlOwkJLyogRmFrZSBw
+YWxldHRlIG9mIDE2IGNvbG9ycyAqLyAKICNkZWZpbmUgRkJJTkZPX1NUQVRFX1JVTk5JTkcJMAog
+I2RlZmluZSBGQklORk9fU1RBVEVfU1VTUEVOREVECTEKKyNkZWZpbmUgRkJJTkZPX1NUQVRFX1JF
+TU9WRUQJMgogCXUzMiBzdGF0ZTsJCQkvKiBIYXJkd2FyZSBzdGF0ZSBpLmUgc3VzcGVuZCAqLwog
+CXZvaWQgKmZiY29uX3BhcjsgICAgICAgICAgICAgICAgLyogZmJjb24gdXNlLW9ubHkgcHJpdmF0
+ZSBhcmVhICovCiAJLyogRnJvbSBoZXJlIG9uIGV2ZXJ5dGhpbmcgaXMgZGV2aWNlIGRlcGVuZGVu
+dCAqLwotLSAKMS43LjAuNAo=
+--0016e68e7f68f09057049d11a2d7--
