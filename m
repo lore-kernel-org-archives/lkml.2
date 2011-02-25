@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab1BYUXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:23:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22932 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932873Ab1BYUW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:22:58 -0500
-Message-Id: <b9dded$i2gkhr@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,227,1297065600"; 
-   d="scan'208";a="606622267"
-Date: Fri, 25 Feb 2011 20:22:53 +0000
-To: Jan Niehusmann <jan@gondor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel-gtt: fix memory corruption with GM965 and >4GB RAM
-Cc: intel-gfx@lists.freedesktop.org
-References: <20110223233022.GA3439@x61s.reliablesolutions.de> <20110225123056.GA3759@x61s.reliablesolutions.de>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <20110225123056.GA3759@x61s.reliablesolutions.de>
+	id S932978Ab1BYUXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:23:23 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64141 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932855Ab1BYUXT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 15:23:19 -0500
+Message-ID: <4D680F77.5060107@kernel.org>
+Date: Fri, 25 Feb 2011 12:22:15 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for init_memory_mapping_high()
+References: <20110223171945.GI26065@htj.dyndns.org> <4D656D1A.7030006@kernel.org> <20110223204656.GA27738@atj.dyndns.org> <4D657359.5060901@kernel.org> <20110223210326.GB27738@atj.dyndns.org> <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com> <20110224091557.GD7840@htj.dyndns.org> <4D674A33.8000809@kernel.org> <20110225100336.GA26608@elte.hu>
+In-Reply-To: <20110225100336.GA26608@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D680F9E.0145,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Feb 2011 13:30:56 +0100, Jan Niehusmann <jan@gondor.com> wrote:
-> On Thu, Feb 24, 2011 at 12:30:22AM +0100, Jan Niehusmann wrote to
-> linux-kernel@vger.kernel.org:
-> > On a Thinkpad x61s, I noticed some memory corruption when
-> > plugging/unplugging the external VGA connection.
-> > 
-> > Symptoms:
-> > ---------
-> > 
-> > 4 bytes at the beginning of a page get overwritten by zeroes. 
-> > The address of the corruption varies when rebooting the machine, but
-> > stays constant while it's running (so it's possible to repeatedly write
-> > some data and then corrupt it again by plugging the cable).
+On 02/25/2011 02:03 AM, Ingo Molnar wrote:
 > 
-> Further investigation revealed that the corrupted address is
-> (dev_priv->status_page_dmah->busaddr & 0xffffffff), ie. the beginning of
-> the hardware status page of the i965 graphics card, cut to 32 bits.
+> * Yinghai Lu <yinghai@kernel.org> wrote:
+> 
+>>  init_memory_mapping_active_regions(unsigned long start, unsigned long end)
+>>  {
+>>  	struct mapping_work_data data;
+>> +	int use_gbpages;
+>> +
+>> +	/* see init_memory_mapping() for the setting */
+>> +#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
+>> +	use_gbpages = 0;
+>> +#else
+>> +	use_gbpages = direct_gbpages;
+>> +#endif
+> 
+> Sigh. You should *never* ever even think about writing such code. It only results in 
+> crap, and in crap duplicated elsewhere as well:
+> 
+> if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
+>         /*
+>          * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
+>          * This will simplify cpa(), which otherwise needs to support splitting
+>          * large pages into small in interrupt context, etc.
+>          */
+>         use_pse = use_gbpages = 0;
+> #else
+>         use_pse = cpu_has_pse;
+>         use_gbpages = direct_gbpages;
+> #endif
 
-965GM explicitly supports 36bits of addressing in the PTE. The only
-exception is that general state (part of the 3D engine) must be located in
-the lower 4GiB.
+sorry, actually i copied from there.
 
-Simply ignoring the upper 4bits is the wrong approach and means that the
-PTE then point to random pages, and completely irrelevant to the physical
-address used in the hardware status page address register.
+or i could add max_map_unit_size variable?
 
-I have been considering:
+Thanks
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c
-b/drivers/gpu/drm/i915/i915_dma.c
-index ffa2196..268e448 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1896,6 +1896,8 @@ int i915_driver_load(struct drm_device *dev,
-unsigned long
-        /* overlay on gen2 is broken and can't address above 1G */
-        if (IS_GEN2(dev))
-                dma_set_coherent_mask(&dev->pdev->dev, DMA_BIT_MASK(30));
-+       if (IS_BRROADWATER(dev) || IS_CRESTLINE(dev))
-+               dma_set_coherent_mask(&dev->pdev->dev, DMA_BIT_MASK(32));
- 
-        mmio_bar = IS_GEN2(dev) ? 1 : 0;
-        dev_priv->regs = pci_iomap(dev->pdev, mmio_bar, 0);
+Yinghai
 
-to prevent hitting the erratum.
 
-However your bug looks to be:
-
-diff --git a/drivers/gpu/drm/i915/i915_dma.c
-b/drivers/gpu/drm/i915/i915_dma.c
-index ffa2196..3b80507 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -66,9 +66,9 @@ static int i915_init_phys_hws(struct drm_device *dev)
- 
-        memset_io(ring->status_page.page_addr, 0, PAGE_SIZE);
- 
--       if (INTEL_INFO(dev)->gen >= 4)
--               dev_priv->dma_status_page |= (dev_priv->dma_status_page >> 28) &
--                                            0xf0;
-+       if (INTEL_INFO(dev)->gen >= 4) /* 36-bit addressing */
-+               dev_priv->dma_status_page |=
-+                       (dev_priv->status_page_dmah->busaddr >> 28) & 0xf0;
- 
-        I915_WRITE(HWS_PGA, dev_priv->dma_status_page);
-        DRM_DEBUG_DRIVER("Enabled hardware status page\n");
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
