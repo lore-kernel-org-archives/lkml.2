@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab1BYXs7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 18:48:59 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55342 "EHLO e6.ny.us.ibm.com"
+	id S1756530Ab1BYX5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 18:57:40 -0500
+Received: from mail.perches.com ([173.55.12.10]:3937 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756392Ab1BYXs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 18:48:58 -0500
-Subject: [PATCH] tpm: Fix display of data in pubek sysfs entry
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        "debora@linux.vnet.ibm.com" <debora@linux.vnet.ibm.com>
+	id S1755065Ab1BYX5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 18:57:39 -0500
+Subject: [PATCH] platform: Constify samsung-laptop.c
+From: Joe Perches <joe@perches.com>
+To: Greg KH <greg@kroah.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+In-Reply-To: <20110225224705.GA5706@kroah.com>
+References: <20110225224705.GA5706@kroah.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 18:48:56 -0500
-Message-ID: <1298677736.15320.8.camel@d941e-10>
+Date: Fri, 25 Feb 2011 15:57:36 -0800
+Message-ID: <1298678256.4002.6.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below patch fixes the TPM's pubek sysfs entry that is accessible as long
-as the TPM doesn't have an owner. I shifted the access to the data
-by -10 -- the first byte immediately follows the 10 byte header. The
-line
+Change sabi_config to const.
+Reduces data, increases text ~200 bytes.
 
- 	data = tpm_cmd.params.readpubek_out_buffer;
+$ size drivers/platform/x86/samsung-laptop.o*
+   text	   data	    bss	    dec	    hex	filename
+   6933	   5084	   1560	  13577	   3509	drivers/platform/x86/samsung-laptop.o.new
+   6765	   5252	   1560	  13577	   3509	drivers/platform/x86/samsung-laptop.o.old
 
-sets it at the offset '10' in the packet, so we can read the data array
-starting at offset '0'.
-
-
-Before:
-
-Algorithm: 00 0C 00 00
-Encscheme: 08 00
-Sigscheme: 00 00
-Parameters: 00 00 00 00 01 00 AC E2 5E 3C A0 78
-Modulus length: -563306801
-Modulus: 
-28 21 08 0F 82 CD F2 B1 E7 49 F7 74 70 BE 59 8C 
-43 78 B1 24 EA 52 E2 FE 52 5C 3A 12 3B DC 61 71 
-[...]
-
-After:
-
-Algorithm: 00 00 00 01
-Encscheme: 00 03
-Sigscheme: 00 01
-Parameters: 00 00 08 00 00 00 00 02 00 00 00 00
-Modulus length: 256
-Modulus: 
-AC E2 5E 3C A0 78 DE 6C 9E CF 28 21 08 0F 82 CD 
-F2 B1 E7 49 F7 74 70 BE 59 8C 43 78 B1 24 EA 52 
-[...]
-
-Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/char/tpm/tpm.c |   27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/drivers/char/tpm/tpm.c
-===================================================================
---- linux-2.6.orig/drivers/char/tpm/tpm.c
-+++ linux-2.6/drivers/char/tpm/tpm.c
-@@ -872,18 +872,25 @@ ssize_t tpm_show_pubek(struct device *de
- 	data = tpm_cmd.params.readpubek_out_buffer;
- 	str +=
- 	    sprintf(str,
--		    "Algorithm: %02X %02X %02X %02X\nEncscheme: %02X %02X\n"
--		    "Sigscheme: %02X %02X\nParameters: %02X %02X %02X %02X"
--		    " %02X %02X %02X %02X %02X %02X %02X %02X\n"
--		    "Modulus length: %d\nModulus: \n",
--		    data[10], data[11], data[12], data[13], data[14],
--		    data[15], data[16], data[17], data[22], data[23],
--		    data[24], data[25], data[26], data[27], data[28],
--		    data[29], data[30], data[31], data[32], data[33],
--		    be32_to_cpu(*((__be32 *) (data + 34))));
-+		    "Algorithm: %02X %02X %02X %02X\n"
-+		    "Encscheme: %02X %02X\n"
-+		    "Sigscheme: %02X %02X\n"
-+		    "Parameters: %02X %02X %02X %02X "
-+		    		"%02X %02X %02X %02X "
-+		    		"%02X %02X %02X %02X\n"
-+		    "Modulus length: %d\n"
-+		    "Modulus: \n",
-+		    data[ 0], data[ 1], data[ 2], data[ 3],
-+		    data[ 4], data[ 5],
-+		    data[ 6], data[ 7],
-+		    data[12], data[13], data[14], data[15],
-+		    data[16], data[17], data[18], data[19],
-+		    data[20], data[21], data[22], data[23],
-+		    be32_to_cpu(*((__be32 *) (data + 24))));
-+
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+index a8e82b8..720c9eb 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -108,12 +108,12 @@ struct sabi_performance_level {
+ struct sabi_config {
+ 	const char *test_string;
+ 	u16 main_function;
+-	struct sabi_header_offsets header_offsets;
+-	struct sabi_commands commands;
+-	struct sabi_performance_level performance_levels[4];
++	const struct sabi_header_offsets header_offsets;
++	const struct sabi_commands commands;
++	const struct sabi_performance_level performance_levels[4];
+ };
  
- 	for (i = 0; i < 256; i++) {
--		str += sprintf(str, "%02X ", data[i + 38]);
-+		str += sprintf(str, "%02X ", data[i + 28]);
- 		if ((i + 1) % 16 == 0)
- 			str += sprintf(str, "\n");
- 	}
+-static struct sabi_config sabi_configs[] = {
++static const struct sabi_config sabi_configs[] = {
+ 	{
+ 		.test_string = "SECLINUX",
+ 
+@@ -211,7 +211,7 @@ static struct sabi_config sabi_configs[] = {
+ 	{ },
+ };
+ 
+-static struct sabi_config *sabi_config;
++static const struct sabi_config *sabi_config;
+ 
+ static void __iomem *sabi;
+ static void __iomem *sabi_iface;
+@@ -467,7 +467,7 @@ static ssize_t set_performance_level(struct device *dev,
+ 	if (count >= 1) {
+ 		int i;
+ 		for (i = 0; sabi_config->performance_levels[i].name; ++i) {
+-			struct sabi_performance_level *level =
++			const struct sabi_performance_level *level =
+ 				&sabi_config->performance_levels[i];
+ 			if (!strncasecmp(level->name, buf, strlen(level->name))) {
+ 				sabi_set_command(sabi_config->commands.set_performance_level,
+-- 
+1.7.4.2.g597a6.dirty
+
+
 
