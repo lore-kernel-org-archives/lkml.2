@@ -1,204 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab1BYJuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 04:50:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:58431 "EHLO mga11.intel.com"
+	id S932446Ab1BYJyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 04:54:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41385 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932371Ab1BYJuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 04:50:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,224,1297065600"; 
-   d="scan'208";a="891188573"
-Subject: Re: [RFC PATCH] x86: Moving probe_roms_32 to probe_roms
-From: Dan Williams <dan.j.williams@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Jiang, Dave" <dave.jiang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        David Milburn <dmilburn@redhat.com>
-In-Reply-To: <4D670B07.90005@zytor.com>
-References: <20110222201538.15443.81915.stgit@localhost6.localdomain6>
-	 <AANLkTikimHCsFmavDoXn3Pka8WWMePqk+hNUK8h=DqSQ@mail.gmail.com>
-	 <4D670B07.90005@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 02:13:42 -0800
-Message-ID: <1298628822.11506.21.camel@dwillia2-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S932375Ab1BYJyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 04:54:04 -0500
+Date: Fri, 25 Feb 2011 10:53:57 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] page_cgroup: Reduce allocation overhead for
+ page_cgroup array for CONFIG_SPARSEMEM v3
+Message-ID: <20110225095357.GA23241@tiehlicka.suse.cz>
+References: <20110223151047.GA7275@tiehlicka.suse.cz>
+ <1298485162.7236.4.camel@nimitz>
+ <20110224134045.GA22122@tiehlicka.suse.cz>
+ <20110225122522.8c4f1057.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110225122522.8c4f1057.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 17:51 -0800, H. Peter Anvin wrote: 
-> On 02/24/2011 05:27 PM, Dan Williams wrote:
-> > On Tue, Feb 22, 2011 at 12:16 PM, Dan Williams <dan.j.williams@intel.com> wrote:
-> >> From: Dave Jiang <dave.jiang@intel.com>
-> >>
-> >> Moving the probe_roms_32 code to probe_roms and make available for all x86. The
-> >> end result adapter roms data structure is made available read-only to drivers.
-> >> The Intel isci SAS driver needs to scan the OROM memory in order to pull OEM
-> >> parameters from the OROM.
-> >>
-> >> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-> >> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-> >> ---
-> >>
-> >> We could just export adapter_rom_resources directly and be done with it, but
-> >> it seemed reasonable to have a compile time catch for drivers that try to
-> >> modify the resources, and that drivers should not assume the number of
-> >> available adapter roms.
-> >>
-> > 
-> > Ping?  The "RFC" was probably not needed, just wanted clarification if
-> > the interface for modules to retrieve the adapter rom data was in good
-> > taste.
-> > 
+On Fri 25-02-11 12:25:22, KAMEZAWA Hiroyuki wrote:
+> On Thu, 24 Feb 2011 14:40:45 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> Rather than exporting the array -- which is functionally what you're
-> doing -- I would prefer if the actual probing code can be generalized
-> and put into probe_roms.c.  Extra bonus if it can be unified with the
-> existing probing code.
+> > Here is the second version of the patch. I have used alloc_pages_exact
+> > instead of the complex double array approach.
+> > 
+> > I still fallback to kmalloc/vmalloc because hotplug can happen quite
+> > some time after boot and we can end up not having enough continuous
+> > pages at that time. 
+> > 
+> > I am also thinking whether it would make sense to introduce
+> > alloc_pages_exact_node function which would allocate pages from the
+> > given node.
+> > 
+> > Any thoughts?
+> 
+> The patch itself is fine but please update the description.
 
-Ok, we will still end up searching for a magic string at a random
-location in the rom image, but how about the following generic interface
-for at least getting us to our correct option-rom.  pci_map_biosrom()
-returns the option-rom that matches the given pci device or matches any
-device id that the device's driver supports.
+I have updated the description but kept those parts which describe how
+the memory is wasted for different configurations. Do you have any tips
+how it can be improved?
 
-diff --git a/arch/x86/include/asm/probe_roms.h b/arch/x86/include/asm/probe_roms.h
-index 3e9ea6d..f113ad2 100644
---- a/arch/x86/include/asm/probe_roms.h
-+++ b/arch/x86/include/asm/probe_roms.h
-@@ -1,7 +1,10 @@
- #ifndef _PROBE_ROMS_H_
- #define _PROBE_ROMS_H_
- 
--extern const struct resource *x86_adapter_rom_resources(void);
--extern int x86_num_adapter_roms(void);
-+struct pci_dev;
-+
-+extern void __iomem *pci_map_biosrom(struct pci_dev *pdev);
-+extern void pci_unmap_biosrom(void __iomem *rom);
-+extern size_t pci_biosrom_size(struct pci_dev *pdev); 
- 
- #endif
-diff --git a/arch/x86/kernel/probe_roms.c b/arch/x86/kernel/probe_roms.c
-index 5dcf53f..9a2fdf2 100644
---- a/arch/x86/kernel/probe_roms.c
-+++ b/arch/x86/kernel/probe_roms.c
-@@ -73,18 +73,106 @@ static struct resource video_rom_resource = {
- 	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
- };
- 
--/* grant modules read only access to the adapter rom table */
--const struct resource *x86_adapter_rom_resources(void)
-+/* does this oprom support the given pci device, or any of the devices
-+ * that the driver supports?
-+ */
-+static bool match_id(struct pci_dev *pdev, unsigned short vendor, unsigned short device)
- {
--	return adapter_rom_resources;
-+	struct pci_driver *drv = pdev->driver;
-+	const struct pci_device_id *id;
-+
-+	if (pdev->vendor == vendor && pdev->device == device)
-+		return true;
-+
-+	for (id = drv ? drv->id_table : NULL; id && id->vendor; id++)
-+		if (id->vendor == vendor && id->device == device)
-+			break;
-+
-+	return id && id->vendor;
-+}
-+
-+static bool probe_list(struct pci_dev *pdev, unsigned short vendor,
-+		       const unsigned char *rom_list)
-+{
-+	unsigned short device;
-+
-+	do {
-+		if (probe_kernel_address(rom_list, device) != 0)
-+			device = 0;
-+
-+		if (device && match_id(pdev, vendor, device))
-+			break;
-+
-+		rom_list += 2;
-+	} while (device);
-+
-+	return !!device;
+> 
+> But have some comments, below.
+[...]
+> > -/* __alloc_bootmem...() is protected by !slab_available() */
+> > +static void *__init_refok alloc_mcg_table(size_t size, int nid)
+> > +{
+> > +	void *addr = NULL;
+> > +	if((addr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN)))
+> > +		return addr;
+> > +
+> > +	if (node_state(nid, N_HIGH_MEMORY)) {
+> > +		addr = kmalloc_node(size, GFP_KERNEL | __GFP_NOWARN, nid);
+> > +		if (!addr)
+> > +			addr = vmalloc_node(size, nid);
+> > +	} else {
+> > +		addr = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
+> > +		if (!addr)
+> > +			addr = vmalloc(size);
+> > +	}
+> > +
+> > +	return addr;
+> > +}
+> 
+> What is the case we need to call kmalloc_node() even when alloc_pages_exact() fails ?
+> vmalloc() may need to be called when the size of chunk is larger than
+> MAX_ORDER or there is fragmentation.....
+
+I kept the original kmalloc with fallback to vmalloc because vmalloc is
+more scarce resource (especially on i386 where we can have memory
+hotplug configured as well).
+
+> 
+> And the function name, alloc_mcg_table(), I don't like it because this is an
+> allocation for page_cgroup.
+> 
+> How about alloc_page_cgroup() simply ?
+
+OK, I have no preferences for the name. alloc_page_cgroup sounds good as
+well.
+
+I have also added VM_BUG_ON(!slab_is_available()) back to the allocation
+path.
+
+Thanks for the review. The updated patch is bellow:
+
+Changes since v2
+- rename alloc_mcg_table to alloc_page_cgroup
+- free__mcg_table renamed to free_page_cgroup
+- get VM_BUG_ON(!slab_is_available()) back into the allocation path
+--- 
+>From 9b34baf57f410a628bf45f2b35b23fdf38feae79 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 24 Feb 2011 11:25:44 +0100
+Subject: [PATCH] page_cgroup: Reduce allocation overhead for page_cgroup array for CONFIG_SPARSEMEM
+
+Currently we are allocating a single page_cgroup array per memory
+section (stored in mem_section->base) when CONFIG_SPARSEMEM is selected.
+This is correct but memory inefficient solution because the allocated
+memory (unless we fall back to vmalloc) is not kmalloc friendly:
+        - 32b - 16384 entries (20B per entry) fit into 327680B so the
+          524288B slab cache is used
+        - 32b with PAE - 131072 entries with 2621440B fit into 4194304B
+        - 64b - 32768 entries (40B per entry) fit into 2097152 cache
+
+This is ~37% wasted space per memory section and it sumps up for the
+whole memory. On a x86_64 machine it is something like 6MB per 1GB of
+RAM.
+
+We can reduce the internal fragmentation either by imeplementing 2
+dimensional array and allocate kmalloc aligned sizes for each entry (as
+suggested in https://lkml.org/lkml/2011/2/23/232) or allocate directly
+from the buddy allocator (use alloc_pages_exact) as suggested by Dave
+Hansen.
+
+The later solution is much simpler and the internal fragmentation is
+comparable (~1 page per section). The initialization is done during the
+boot (unless we are doing memory hotplug) so we shouldn't have any
+issues from memory fragmentation and alloc_pages_exact should succeed.
+
+We still need a fallback to kmalloc/vmalloc because we have no
+guarantees that we will have a continuous memory of that size (order-10)
+later on during the hotplug events.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/page_cgroup.c |   62 ++++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 40 insertions(+), 22 deletions(-)
+
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 5bffada..ae322dc 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -106,6 +106,42 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
  }
--EXPORT_SYMBOL(x86_adapter_rom_resources);
  
--int x86_num_adapter_roms(void)
-+static struct resource *find_oprom(struct pci_dev *pdev)
- {
--	return ARRAY_SIZE(adapter_rom_resources);
-+	struct resource *oprom = NULL;
-+	int i;
+ /* __alloc_bootmem...() is protected by !slab_available() */
++static void *__init_refok alloc_page_cgroup(size_t size, int nid)
++{
++	void *addr = NULL;
++	if((addr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN)))
++		return addr;
 +
-+	for (i = 0; i < ARRAY_SIZE(adapter_rom_resources); i++) {
-+		struct resource *res = &adapter_rom_resources[i];
-+		unsigned short offset, vendor, device, list, rev;
-+		const unsigned char *rom;
-+
-+		if (res->end == 0)
-+			break;
-+
-+		rom = isa_bus_to_virt(res->start);
-+		if (probe_kernel_address(rom + 0x18, offset) != 0)
-+			continue;
-+
-+		if (probe_kernel_address(rom + offset + 0x4, vendor) != 0)
-+			continue;
-+
-+		if (probe_kernel_address(rom + offset + 0x6, device) != 0)
-+			continue;
-+
-+		if (match_id(pdev, vendor, device)) {
-+			oprom = res;
-+			break;
-+		}
-+
-+		if (probe_kernel_address(rom + offset + 0x8, list) != 0 &&
-+		    probe_kernel_address(rom + offset + 0xc, rev) != 0 &&
-+		    rev >= 3 && list &&
-+		    probe_list(pdev, vendor, rom + offset + list)) {
-+			oprom = res;
-+			break;
-+		}
++	VM_BUG_ON(!slab_is_available());
++	if (node_state(nid, N_HIGH_MEMORY)) {
++		addr = kmalloc_node(size, GFP_KERNEL | __GFP_NOWARN, nid);
++		if (!addr)
++			addr = vmalloc_node(size, nid);
++	} else {
++		addr = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
++		if (!addr)
++			addr = vmalloc(size);
 +	}
 +
-+	return oprom;
++	return addr;
 +}
 +
-+void *pci_map_biosrom(struct pci_dev *pdev)
++static void *free_page_cgroup(void *addr)
 +{
-+	struct resource *oprom = find_oprom(pdev);
-+
-+	if (!oprom)
-+		return NULL;
-+
-+	return ioremap(oprom->start, resource_size(oprom));
++	if (is_vmalloc_addr(addr)) {
++		vfree(addr);
++	} else {
++		struct page *page = virt_to_page(addr);
++		if (!PageReserved(page)) { /* Is bootmem ? */
++			if (!PageSlab(page)) {
++				size_t table_size = sizeof(struct page_cgroup) * PAGES_PER_SECTION;
++				free_pages_exact(addr, table_size);
++			} else
++				kfree(addr);
++		}
++	}
 +}
-+EXPORT_SYMBOL(pci_map_biosrom);
 +
-+void pci_unmap_biosrom(void __iomem *image)
-+{
-+	iounmap(image);
-+}
-+EXPORT_SYMBOL(pci_unmap_biosrom);
-+
-+size_t pci_biosrom_size(struct pci_dev *pdev)
-+{
-+	struct resource *oprom = find_oprom(pdev);
-+
-+	return oprom ? resource_size(oprom) : 0;
+ static int __init_refok init_section_page_cgroup(unsigned long pfn)
+ {
+ 	struct mem_section *section = __pfn_to_section(pfn);
+@@ -114,19 +150,9 @@ static int __init_refok init_section_page_cgroup(unsigned long pfn)
+ 	int nid, index;
+ 
+ 	if (!section->page_cgroup) {
+-		nid = page_to_nid(pfn_to_page(pfn));
+ 		table_size = sizeof(struct page_cgroup) * PAGES_PER_SECTION;
+-		VM_BUG_ON(!slab_is_available());
+-		if (node_state(nid, N_HIGH_MEMORY)) {
+-			base = kmalloc_node(table_size,
+-				GFP_KERNEL | __GFP_NOWARN, nid);
+-			if (!base)
+-				base = vmalloc_node(table_size, nid);
+-		} else {
+-			base = kmalloc(table_size, GFP_KERNEL | __GFP_NOWARN);
+-			if (!base)
+-				base = vmalloc(table_size);
+-		}
++		nid = page_to_nid(pfn_to_page(pfn));
++		base = alloc_page_cgroup(table_size, nid);
+ 		/*
+ 		 * The value stored in section->page_cgroup is (base - pfn)
+ 		 * and it does not point to the memory block allocated above,
+@@ -170,16 +196,8 @@ void __free_page_cgroup(unsigned long pfn)
+ 	if (!ms || !ms->page_cgroup)
+ 		return;
+ 	base = ms->page_cgroup + pfn;
+-	if (is_vmalloc_addr(base)) {
+-		vfree(base);
+-		ms->page_cgroup = NULL;
+-	} else {
+-		struct page *page = virt_to_page(base);
+-		if (!PageReserved(page)) { /* Is bootmem ? */
+-			kfree(base);
+-			ms->page_cgroup = NULL;
+-		}
+-	}
++	free_page_cgroup(base);
++	ms->page_cgroup = NULL;
  }
--EXPORT_SYMBOL(x86_num_adapter_roms);
-+EXPORT_SYMBOL(pci_biosrom_size);
  
- #define ROMSIGNATURE 0xaa55
- 
+ int __meminit online_page_cgroup(unsigned long start_pfn,
+-- 
+1.7.2.3
 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
