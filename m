@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab1BYHdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 02:33:18 -0500
-Received: from mga14.intel.com ([143.182.124.37]:12664 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754361Ab1BYHdR convert rfc822-to-8bit (ORCPT
+	id S1756033Ab1BYHiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 02:38:17 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54742 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404Ab1BYHiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 02:33:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,224,1297065600"; 
-   d="scan'208";a="393927512"
-From: "Tardy, Pierre" <pierre.tardy@intel.com>
-To: Chris Ball <cjb@laptop.org>, Pierre Tardy <tardyp@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gao, Yunpeng" <yunpeng.gao@intel.com>
-Date: Fri, 25 Feb 2011 07:33:12 +0000
-Subject: RE: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
-Thread-Topic: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
-Thread-Index: AcvSCF4BSMn11bkmRduy+bVWx73VaQCtSuFQ
-Message-ID: <8250E4885F9967469CAC3FB5CBA2CE69935212DEA0@irsmsx501.ger.corp.intel.com>
-References: <cover.1297014479.git.pierre.tardy@intel.com>
- <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
- <20110210043718.GA7585@void.printf.net>
- <AANLkTi=iZ3dzAoRuRdpvQ=uBp4u8O8LtMuu2XdSWeZwr@mail.gmail.com>
- <20110221204523.GA28419@void.printf.net>
-In-Reply-To: <20110221204523.GA28419@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 25 Feb 2011 02:38:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=W1KPa3citNNtTYVv+mVrxcQkCav4699qjA7pIja49oPq1KdUjoO/jmZcZi17YFgWLE
+         czvsjytZsbNK2Qe7jD0JgIibKN19CfcHChqe09CLr4PIogwSD/5bDhrCfksq1b3HrqVh
+         NjfHeIeDTgJpGfsg3YXKF/FRSFAkMfNT7TjzQ=
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4D66BD18.2030207@akamai.com>
+References: <1298528501-32176-1-git-send-email-johunt@akamai.com>
+	<20110224063749.GV22723@ZenIV.linux.org.uk>
+	<20110224112010.GB23042@quack.suse.cz>
+	<4D66BD18.2030207@akamai.com>
+Date: Fri, 25 Feb 2011 08:38:15 +0100
+Message-ID: <AANLkTikmgaoBsf5neCxM9jYCJGkdAS1QC2k0zKUTW2=8@mail.gmail.com>
+Subject: Re: [RFC][PATCH] ext2: Resolve i_nlink race in ext2_rename
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Josh Hunt <johunt@akamai.com>
+Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "sandeen@redhat.com" <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael, 
-Any comments here?
+Hi,
 
-> It's getting enabled by drivers/pci/pci-driver.c:local_pci_probe(),
-> before the sdhci-pci probe function runs.  local_pci_probe() does:
-> 
->         /* Unbound PCI devices are always set to disabled and suspended.
->          * During probe, the device is set to enabled and active and the
->          * usage count is incremented.  If the driver supports runtime PM,
->          * it should call pm_runtime_put_noidle() in its probe routine and
->          * pm_runtime_get_noresume() in its remove routine.
->          */
->         pm_runtime_get_noresume(dev);
->         pm_runtime_set_active(dev);
->         pm_runtime_enable(dev);
+2011/2/24 Josh Hunt <johunt@akamai.com>:
+> Jan
+>
+> I'm not seeing the problem with your patch as was expected since we're
+> not messing with i_nlink anymore. Al suggested marking the inode as
+> dirty where we were previously doing the old_inode dec. I believe this
+> is needed as well since we are updating it's ctime. I've attached a
+> version marking the inode dirty and it also fixes the comment making
+> reference to calling inode_dec_link_count().
+>
+> I'm not completely clear on the historical reasons for messing with the
+> link count of old_inode in the first place. It was just to simulate the
+> linking and unlinking of the old_inode?
+>
+> Thanks
+> Josh
+>
 
-OK. Sounds like it is a change post 2.6.37.
-So we need to replace the current sdhci runtime_pm initialization by what is in this comments.
+can we share your test/benchmark? I'd like to add it to my test suite
+as no-regression test.
 
-> > Maybe Rafael can advice on this.
-> 
-> The controller advertises the ability to generate PME wakeups from D3
-> in its PCI capabilities; perhaps we just aren't programming it properly.
-> I don't see anything in your patch that would set SDHCI wakeup bits or
-> unmask card insertion/removal IRQs -- maybe that could be it?
-My understanding is the pci driver is not supposed to do any set_power_state/pci_save_state/wake_enable.
-Everything is supposed to be generically handle by pci frameworks's runtime_pm impl.
-Need confirmation from Rafael.
-
-Regards,
-Pierre
----------------------------------------------------------------------
-Intel Corporation SAS (French simplified joint stock company)
-Registered headquarters: "Les Montalets"- 2, rue de Paris, 
-92196 Meudon Cedex, France
-Registration Number:  302 456 199 R.C.S. NANTERRE
-Capital: 4,572,000 Euros
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+Marco
