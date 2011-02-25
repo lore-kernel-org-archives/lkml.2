@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab1BYU1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:27:54 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:37587 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab1BYU1w (ORCPT
+	id S932989Ab1BYU2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:28:40 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58884 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139Ab1BYU2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:27:52 -0500
-Date: Fri, 25 Feb 2011 14:27:48 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Performance/resume issues on Toshiba NB305
-Message-ID: <20110225202748.GB24686@thinkpad-t410>
-Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-References: <20110225164239.GA24686@thinkpad-t410>
- <20110225201747.GB23161@home.goodmis.org>
+	Fri, 25 Feb 2011 15:28:39 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=9ezeExTAcuIA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VEHg06Ss6gfFTxLn4dMA:9 a=UDBuzWyQ-3EmFpOaIlvRFSh_h8wA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Fri, 25 Feb 2011 15:28:37 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg double V3 3/5] Generic support for
+ this_cpu_cmpxchg_double
+Message-ID: <20110225202837.GC23161@home.goodmis.org>
+References: <20110225173850.486326452@linux.com>
+ <20110225174155.786331687@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110225201747.GB23161@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110225174155.786331687@linux.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 03:17:47PM -0500, Steven Rostedt wrote:
-> Would be helpful to Cc the people that may help you.
-> 
-> 
-> On Fri, Feb 25, 2011 at 10:42:39AM -0600, Seth Forshee wrote:
-> > I've been looking into a couple of problems with this machine that have
-> > me a bit stumped at the moment. The two problems may or may not be
-> > related, so I'm including details about both issues below. If anyone has
-> > any ideas, I'd love to hear them. Note that these are not recent
-> > regressions; they've been around since at least 2.6.32.
-> > 
-> > The CPU in this machine is an Atom N450.
-> > 
-> > When booted normally the performance on this machine is very poor, but
-> > when booted with any of nohz=off, nolapic, or nohpet it improves
-> > significantly. The performance also improves if I use the patch below to
-> > force the hpet to remain in periodic mode (with hpet=periodic on the
-> > command line).
-> > 
-> > One other thing I noticed when I had added some logging related to hpet
-> > rearming is 3-5 second periods of no log activity occurring fairly
-> > frequently, whereas such inactive periods are infrequent when
-> > performance is good and are also infrequent on another machine with very
-> > similar hardware and no performance issues.
-> > 
-> > The machine also hangs for 5 minutes during resume, unless booted with
-> > both nohz=off and highres=off, or with hpet=periodic using the patch
-> > below. I've traced this down to hanging in an SMI handler during the
-> > ACPI _WAK method execution. The 5 minutes corresponds to how long it
-> > takes for the low 32 bits of the hpet to wrap in this machine, and since
-> > the options that eliminate the hang result in the hpet being in periodic
-> > mode during _WAK method execution I suspect that the SMI handler is
-> > hanging until a timer interrupt happens.
-> > 
-> > One possible explanation here is that the performance problems are also
-> > related to hangs in SMI handlers until there's a timer interrupt,
-> > although I don't know how that explains why some of the command line
-> > options eliminate the performance issues.
-> 
-> Sounds like a buggy BIOS to me. Is there upgrades available for this
-> box?
+On Fri, Feb 25, 2011 at 11:38:53AM -0600, Christoph Lameter wrote:
+>  
+> +/*
+> + * Special handling for cmpxchg_double. cmpxchg_double is passed two
+> + * percpu variables. The first has to be aligned to a double word
+> + * boundary and the second has to follow directly thereafter.
+> + */
+> +#define __pcpu_double_call_return_int(stem, pcp1, pcp2, ...)		\
+> +({									\
+> +	int ret__;							\
+> +	__verify_pcpu_ptr(&pcp1);					\
+> +	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));		\
+> +	VM_BUG_ON((unsigned long)(&pcp2) != (unsigned long)(&pcp1) + sizeof(pcp1));\
+> +	VM_BUG_ON(sizeof(pcp1) != sizeof(pcp2));			\
 
-It does sound like a buggy BIOS. I've already flashed the latest BIOS
-though, so no luck there.
+Since this is a macro, and it looks like all these are constants (sizeof
+and addresses), couldn't you just do a BUILD_BUG_ON() instead?
+
+-- Steve
+
+
+> +	switch(sizeof(pcp1)) {						\
+> +	case 1: ret__ = stem##1(pcp1, pcp2, __VA_ARGS__);break;		\
+> +	case 2: ret__ = stem##2(pcp1, pcp2, __VA_ARGS__);break;		\
+> +	case 4: ret__ = stem##4(pcp1, pcp2, __VA_ARGS__);break;		\
+> +	case 8: ret__ = stem##8(pcp1, pcp2, __VA_ARGS__);break;		\
+> +	default:							\
+> +		__bad_size_call_parameter();break;			\
+> +	}								\
+> +	ret__;								\
+> +})
+> +
