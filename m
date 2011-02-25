@@ -1,43 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1BYRzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 12:55:52 -0500
-Received: from kroah.org ([198.145.64.141]:56505 "EHLO coco.kroah.org"
+	id S932263Ab1BYSBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:01:06 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:56231 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753434Ab1BYRzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 12:55:51 -0500
-Date: Fri, 25 Feb 2011 09:54:42 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20110225175442.GB13406@kroah.com>
-References: <20110224164048.4d884c1d.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224164048.4d884c1d.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756058Ab1BYSBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:01:02 -0500
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled while isolating pages for migration
+Date: Fri, 25 Feb 2011 18:00:56 +0000
+Message-Id: <1298656856-6074-3-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1298656856-6074-1-git-send-email-mel@csn.ul.ie>
+References: <1298656856-6074-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 04:40:48PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the tty tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> scripts/Makefile.modbuiltin:25: drivers/char/pcmcia/ipwireless/Makefile: No such file or directory
-> make[5]: *** No rule to make target `drivers/char/pcmcia/ipwireless/Makefile'.  Stop.
-> 
-> Caused by commit 282361a046edd9d58a134f358a3f65a7cb8655d9 ("tty: move
-> ipwireless driver from drivers/char/pcmcia/ to drivers/tty/") which
-> neglected to remove mention of ipwireless from
-> drivers/char/pcmcia/Makefile.
-> 
-> I have used the tty tree from next-20110223 for today.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Now fixed, thanks.
+compaction_alloc() isolates pages for migration in isolate_migratepages. While
+it's scanning, IRQs are disabled on the mistaken assumption the scanning
+should be short. Tests show this to be true for the most part but
+contention times on the LRU lock can be increased. Before this patch,
+the IRQ disabled times for a simple test looked like
 
-greg k-h
+Total sampled time IRQs off (not real total time): 5493
+Event shrink_inactive_list..shrink_zone                  1596 us count 1
+Event shrink_inactive_list..shrink_zone                  1530 us count 1
+Event shrink_inactive_list..shrink_zone                   956 us count 1
+Event shrink_inactive_list..shrink_zone                   541 us count 1
+Event shrink_inactive_list..shrink_zone                   531 us count 1
+Event split_huge_page..add_to_swap                        232 us count 1
+Event save_args..call_softirq                              36 us count 1
+Event save_args..call_softirq                              35 us count 2
+Event __wake_up..__wake_up                                  1 us count 1
+
+This patch reduces the worst-case IRQs-disabled latencies by releasing the
+lock every SWAP_CLUSTER_MAX pages that are scanned and releasing the CPU if
+necessary. The cost of this is that the processing performing compaction will
+be slower but IRQs being disabled for too long a time has worse consequences
+as the following report shows;
+
+Total sampled time IRQs off (not real total time): 4367
+Event shrink_inactive_list..shrink_zone                   881 us count 1
+Event shrink_inactive_list..shrink_zone                   875 us count 1
+Event shrink_inactive_list..shrink_zone                   868 us count 1
+Event shrink_inactive_list..shrink_zone                   555 us count 1
+Event split_huge_page..add_to_swap                        495 us count 1
+Event compact_zone..compact_zone_order                    269 us count 1
+Event split_huge_page..add_to_swap                        266 us count 1
+Event shrink_inactive_list..shrink_zone                    85 us count 1
+Event save_args..call_softirq                              36 us count 2
+Event __wake_up..__wake_up                                  1 us count 1
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ mm/compaction.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index f47de94..5babbbb 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -278,9 +278,27 @@ static unsigned long isolate_migratepages(struct zone *zone,
+ 	}
+ 
+ 	/* Time to isolate some pages for migration */
++	cond_resched();
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		struct page *page;
++		bool unlocked = false;
++
++		/* give a chance to irqs before checking need_resched() */
++		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
++			spin_unlock_irq(&zone->lru_lock);
++			unlocked = true;
++		}
++		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
++			if (!unlocked)
++				spin_unlock_irq(&zone->lru_lock);
++			cond_resched();
++			spin_lock_irq(&zone->lru_lock);
++			if (fatal_signal_pending(current))
++				break;
++		} else if (unlocked)
++			spin_lock_irq(&zone->lru_lock);
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
+-- 
+1.7.2.3
+
