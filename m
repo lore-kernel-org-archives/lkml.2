@@ -1,155 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab1BYDbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 22:31:08 -0500
-Received: from cantor.suse.de ([195.135.220.2]:40879 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932147Ab1BYDbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 22:31:06 -0500
-Date: Thu, 24 Feb 2011 19:31:46 -0800
-From: Greg KH <gregkh@suse.de>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110225033146.GA8526@suse.de>
-References: <20110222192532.GY4000@outflux.net>
- <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
- <20110222195018.GA4000@outflux.net>
- <20110222201610.GA29787@suse.de>
- <20110222202856.GE4000@outflux.net>
- <20110222203704.GA7224@suse.de>
- <20110222205413.GH4000@outflux.net>
- <20110225002214.GW4212@outflux.net>
- <20110225003508.GB27272@suse.de>
- <20110225011242.GY4212@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110225011242.GY4212@outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932184Ab1BYDcD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 22:32:03 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40138 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab1BYDcC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 22:32:02 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 25 Feb 2011 12:25:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] page_cgroup: Reduce allocation overhead for
+ page_cgroup array for CONFIG_SPARSEMEM v2
+Message-Id: <20110225122522.8c4f1057.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110224134045.GA22122@tiehlicka.suse.cz>
+References: <20110223151047.GA7275@tiehlicka.suse.cz>
+	<1298485162.7236.4.camel@nimitz>
+	<20110224134045.GA22122@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 05:12:42PM -0800, Kees Cook wrote:
-> On Thu, Feb 24, 2011 at 04:35:08PM -0800, Greg KH wrote:
-> > On Thu, Feb 24, 2011 at 04:22:14PM -0800, Kees Cook wrote:
-> > > On Tue, Feb 22, 2011 at 12:54:13PM -0800, Kees Cook wrote:
-> > > > On Tue, Feb 22, 2011 at 12:37:04PM -0800, Greg KH wrote:
-> > > > > On Tue, Feb 22, 2011 at 12:28:56PM -0800, Kees Cook wrote:
-> > > > > > On Tue, Feb 22, 2011 at 12:16:10PM -0800, Greg KH wrote:
-> > > > > > > On Tue, Feb 22, 2011 at 11:50:18AM -0800, Kees Cook wrote:
-> > > > > > > > On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
-> > > > > > > > > > What system do you proposed to keep these "stupid mistakes" from
-> > > > > > > > > > continuing to happen? If debugfs had already been mode 0700, we could have
-> > > > > > > > > > avoided all of these CVEs, including the full-blown local root escalation.
-> > > > > > > > > 
-> > > > > > > > > And all sorts of features would have put themselves in sysfs instead and
-> > > > > > > > > broken no doubt.
-> > > > > > > > > 
-> > > > > > > > > > The "no rules" approach to debugfs is not a good idea, IMO.
-> > > > > > > > > 
-> > > > > > > > > It's a debugging fs, it needs to be "no rules" other than the obvious
-> > > > > > > > > "don't mount it on production systems"
-> > > > > > > > 
-> > > > > > > > Okay, so the debugfs is not supposed to be mounted on a production system.
-> > > > > > > 
-> > > > > > > No, not true at all, the "enterprise" distros all mount debugfs for good
-> > > > > > > reason on their systems.
-> > > > > > 
-> > > > > > What reasons are those? Or better yet, why do you and Alan Cox disagree on
-> > > > > > this point?
-> > > > > 
-> > > > > These distros have made the decision to support the perf interface,
-> > > > > which lives in debugfs, for their customers.  I'm not saying that I
-> > > > > disagree with Alan about this, just pointing out the reality of the
-> > > > > situation here.
-> > > > 
-> > > > A tool used only by the root user, so the proposed mount mode of 0700
-> > > > wouldn't break anything.
-> > > 
-> > > The summary is this:
-> > >  - debugfs has been demonstrably dangerous to have available
-> > 
-> > Wait, I do not believe this statement at all.
-> > 
-> > It's like saying "sysfs and proc are demonstrably dangerous to have
-> > available" because there were some bugs with some implementations of
-> > sysfs and proc files in the past.
+On Thu, 24 Feb 2011 14:40:45 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> Here is the second version of the patch. I have used alloc_pages_exact
+> instead of the complex double array approach.
 > 
-> Since sysfs and proc have "rules", it discourages bad code more than
-> debugfs does.
-
-Oh yeah?  You should see the crap in proc :)
-
-And I activly fight to keep the sysfs code sane, no reason why we can't
-pay attention to debugfs as well, I just haven't been.
-
-> > >  - Alan Cox says that debugfs should not be used on production systems
-> > >  - Greg KH does not disagree
-> > 
-> > I also don't agree, as my day-job entails supporting a wide range of
-> > production systems with this filesystem mounted and enabled.
+> I still fallback to kmalloc/vmalloc because hotplug can happen quite
+> some time after boot and we can end up not having enough continuous
+> pages at that time. 
 > 
-> I was careful in reproducing your earlier statement about not disagreeing.
-> :)
+> I am also thinking whether it would make sense to introduce
+> alloc_pages_exact_node function which would allocate pages from the
+> given node.
 > 
-> > >  - however, pref needs it, and this is used by some root users
-> > >  - perf will likely move out of debugfs as some point
-> > > 
-> > > What is the objection, then, to making the root of debugfs mode 0600? All
-> > > the tools I reviewed that need it run as root (e.g. powertop). I've
-> > > already written, tested, and sent the patches -- they would not break
-> > > the requirements above.
-> > 
-> > There are a wide range of other files that can be safely read as a
-> > normal user in debugfs.  For example, the usb debugging files which we
-> > use to help debug hardware controller issues.  Now yes, we could ask the
-> > user to become root first, but is that really necessary?
+> Any thoughts?
+
+The patch itself is fine but please update the description.
+
+But have some comments, below.
+
+> ---
+> From e8909bbd1d759de274a6ed7812530e576ad8bc44 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 24 Feb 2011 11:25:44 +0100
+> Subject: [PATCH] page_cgroup: Reduce allocation overhead for page_cgroup array for CONFIG_SPARSEMEM
 > 
-> If production systems should not have debugfs mounted, and the file is
-> universally useful to non-root users, it should move like the perf
-> interfaces, right?
-
-No, the usb files have nothing to do with perf.
-
-I do strongly feel that the perf files need to move out of debugfs and
-have proposed perffs and tracefs numerous times in the past, patches
-included, but it's up to the maintainers and developers of that code to
-make that change, not me.
-
-And if you do that, I see no reason to mount debugfs on any "enterprise"
-system, which would be a great thing.
-
-> > Again, I feel these were just a few bugs that do not reflect the much
-> > larger and benificial use of this filesystem.  We now have a set of
-> > checks in place to prevent this type of error from occuring again, why
-> > not rely on that instead of just removing the whole filesystem from
-> > normal users entirely?
+> Currently we are allocating a single page_cgroup array per memory
+> section (stored in mem_section->base) when CONFIG_SPARSEMEM is selected.
+> This is correct but memory inefficient solution because the allocated
+> memory (unless we fall back to vmalloc) is not kmalloc friendly:
+>         - 32b - 16384 entries (20B per entry) fit into 327680B so the
+>           524288B slab cache is used
+>         - 32b with PAE - 131072 entries with 2621440B fit into 4194304B
+>         - 64b - 32768 entries (40B per entry) fit into 2097152 cache
 > 
-> I don't feel that a test in checkpatch is sufficient to prevent future
-> problems. What about Dan Carpenter's patch?
+> This is ~37% wasted space per memory section and it sumps up for the
+> whole memory. On a x86_64 machine it is something like 6MB per 1GB of
+> RAM.
+> 
+> We can reduce the internal fragmentation either by imeplementing 2
+> dimensional array and allocate kmalloc aligned sizes for each entry (as
+> suggested in https://lkml.org/lkml/2011/2/23/232) or we can get rid of
+> kmalloc altogether and allocate directly from the buddy allocator (use
+> alloc_pages_exact) as suggested by Dave Hansen.
+> 
+> The later solution is much simpler and the internal fragmentation is
+> comparable (~1 page per section).
+> 
+> We still need a fallback to kmalloc/vmalloc because we have no
+> guarantees that we will have a continuous memory of that size (order-10)
+> later on the hotplug events.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/page_cgroup.c |   62 ++++++++++++++++++++++++++++++++++--------------------
+>  1 files changed, 39 insertions(+), 23 deletions(-)
+> 
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index 5bffada..eaae7de 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -105,7 +105,41 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
+>  	return section->page_cgroup + pfn;
+>  }
+>  
+> -/* __alloc_bootmem...() is protected by !slab_available() */
+> +static void *__init_refok alloc_mcg_table(size_t size, int nid)
+> +{
+> +	void *addr = NULL;
+> +	if((addr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN)))
+> +		return addr;
+> +
+> +	if (node_state(nid, N_HIGH_MEMORY)) {
+> +		addr = kmalloc_node(size, GFP_KERNEL | __GFP_NOWARN, nid);
+> +		if (!addr)
+> +			addr = vmalloc_node(size, nid);
+> +	} else {
+> +		addr = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
+> +		if (!addr)
+> +			addr = vmalloc(size);
+> +	}
+> +
+> +	return addr;
+> +}
 
-I have no objection to Dan's patch, it's in my "to-apply" queue and I
-should get to it in a day or so.
+What is the case we need to call kmalloc_node() even when alloc_pages_exact() fails ?
+vmalloc() may need to be called when the size of chunk is larger than
+MAX_ORDER or there is fragmentation.....
 
-thanks,
+And the function name, alloc_mcg_table(), I don't like it because this is an
+allocation for page_cgroup.
 
-greg k-h
+How about alloc_page_cgroup() simply ?
+
+
+Thanks,
+-Kame
+
