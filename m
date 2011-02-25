@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1BYRsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 12:48:22 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:56062 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab1BYRsT (ORCPT
+	id S1755194Ab1BYRyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 12:54:23 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:51678 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab1BYRyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 12:48:19 -0500
-Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
- modules
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Tom Herbert <therbert@google.com>, Changli Gao <xiaosuo@gmail.com>,
-        Jesse Gross <jesse@nicira.com>
-In-Reply-To: <135187.1298654740@localhost>
-References: <20110224151238.GA16916@albatros>
-	 <1298565265.2613.16.camel@bwh-desktop> <20110225123023.GA8776@albatros>
-	 <20110225151414.GA5211@albatros>  <135187.1298654740@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Fri, 25 Feb 2011 17:48:14 +0000
-Message-ID: <1298656094.2554.22.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Feb 2011 17:48:19.0249 (UTC) FILETIME=[300E3210:01CBD514]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17976.005
-X-TM-AS-Result: No--26.556600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Fri, 25 Feb 2011 12:54:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=kPl6dWjEqxgeLDmDu8WRs/IkJcjdKOTdAjtXONPnLONOJIlTGn6eKDvlyrtFTRR/Bo
+         lsW/Ti95MjXK33IKOahg==
+MIME-Version: 1.0
+In-Reply-To: <20110224154525.1b463723@jacob-laptop>
+References: <1297807750-28844-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1297807750-28844-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <201102160100.15487.rjw@sisk.pl> <20110215163812.7fa020b5@putvin>
+ <20110216032321.GA14893@count0.beaverton.ibm.com> <20110224154525.1b463723@jacob-laptop>
+From: Paul Menage <menage@google.com>
+Date: Fri, 25 Feb 2011 09:53:59 -0800
+Message-ID: <AANLkTinyhp29X8-atA=0DaHFuthTjVMJgBOitP52gwEX@mail.gmail.com>
+Subject: Re: [PATCH 1/1, v9] cgroup/freezer: add per freezer duty ratio control
+To: jacob pan <jacob.jun.pan@linux.intel.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, akpm@linux-foundation.org,
+        rdunlap@xenotime.net, Cedric Le Goater <clg@vnet.ibm.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 12:25 -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Fri, 25 Feb 2011 18:14:14 +0300, Vasiliy Kulikov said:
-> > Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
-> > CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
-> > that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are limited
-> > to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't allow
-> > anybody load any module not related to networking.
-> > 
-> > This patch restricts an ability of autoloading modules to netdev modules
-> > with explicit aliases.  Currently there are only three users of the
-> > feature: ipip, ip_gre and sit.
-> 
-> And you stop an attacker from simply recompiling the module with a suitable
-> MODULE_ALIAS line added, how, exactly?  This patch may make sense down the
-> road, but not while it's still trivial for a malicious root user to drop stuff
-> into /lib/modules.
+On Thu, Feb 24, 2011 at 3:45 PM, jacob pan
+<jacob.jun.pan@linux.intel.com> wrote:
+> I played with v3 and v4 of the CFS bandwidth patch. When the cpu
+> cgroup exceeds its cfs_quota, it does have the same effect as this
+> patch in terms of freeze/thaw at given period and allowed runtime. But
+> when the cgroup cpu usage is below cfs_quota, it is not throttled.
+> Therefore, it cannot reduce wakeups.
 
-A process running as root normally has CAP_NET_ADMIN, but not every
-process with CAP_NET_ADMIN will be running as root.
+How about a userspace daemon that periodically flips the CPU quota for
+the cgroup between zero and the group's runnable level? Wouldn't that
+achieve what you need pretty easily without having to introduce
+additional complexity and threads into the kernel?
 
-> And if you're going the route "but SELinux/SMACK/Tomoyo will prevent a malicious
-> root user from doing that", then the obvious reply is "this should be part of those
-> subsystems rather than something done one-off like this (especially as it has a chance
-> of breaking legitimate setups that use the current scheme).
-
-The notional attacker has CAP_NET_ADMIN, perhaps through a vulnerable
-service or a vulnerable set-capability executable.  They do not yet have
-full root access and so cannot install a module, even in the absence of
-an LSM.
-
-So long as the attacker is able to load arbitrary modules, however, they
-could exploit a vulnerability in any installed (not loaded) module.
-Again, LSMs are irrelevant to this as they do not protect against kernel
-bugs.
-
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Paul
