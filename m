@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab1BYSrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:47:17 -0500
-Received: from kroah.org ([198.145.64.141]:40045 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753102Ab1BYSrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:47:14 -0500
-Date: Fri, 25 Feb 2011 10:45:38 -0800
-From: Greg KH <greg@kroah.com>
-To: J Freyensee <james_p_freyensee@linux.intel.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-Subject: Re: [PATCH 10/10] n_tracerouter and n_tracesink compile
- configurations.
-Message-ID: <20110225184538.GA2372@kroah.com>
-References: <james_p_freyensee@linux.intel.com>
- <1298570824-26085-11-git-send-email-james_p_freyensee@linux.intel.com>
- <20110225180031.GB17072@kroah.com>
- <1298659152.3156.8.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298659152.3156.8.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932654Ab1BYSry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:47:54 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54511 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755997Ab1BYSrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:47:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=o52iyCo+R4BGDu6E5Sw+8frkqKDLRqNvGnWaZeJeUycVA+L/gYTNRuVqgQL1pHaOTR
+         pgUqrIw16mXVTGuf2jGQ5FDGSgnPCvvhTz95Wu6R2WL9c6cgvMowgWc6uhcI62DEzX8g
+         8lyExQGOgJF3eoRnVSdesHLzTNmAu4tEzE+c8=
+Subject: Re: [PATCH ref0] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: ratbert.chuang@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhutchings@solarflare.com,
+        joe@perches.com, dilinger@queued.net, mirqus@gmail.com,
+        ratbert@faraday-tech.com, Ajit Khaparde <ajit.khaparde@emulex.com>
+In-Reply-To: <1298659538.2659.103.camel@edumazet-laptop>
+References: <AANLkTikXUyQy+fjFSwagB3Uud2JPodsR2yFtt+jiZPSk@mail.gmail.com>
+	 <AANLkTikmqQfT1s2Z6J+KYmqi0CuCc4+2k67eeb4ydtCM@mail.gmail.com>
+	 <1298631127.2659.22.camel@edumazet-laptop>
+	 <20110225.103456.226779149.davem@davemloft.net>
+	 <1298659538.2659.103.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Feb 2011 19:47:43 +0100
+Message-ID: <1298659663.2659.104.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 10:39:12AM -0800, J Freyensee wrote:
-> On Fri, 2011-02-25 at 10:00 -0800, Greg KH wrote:
-> > On Thu, Feb 24, 2011 at 10:07:04AM -0800, james_p_freyensee@linux.intel.com wrote:
-> > > From: J Freyensee <james_p_freyensee@linux.intel.com>
+Le vendredi 25 février 2011 à 19:45 +0100, Eric Dumazet a écrit :
+> Le vendredi 25 février 2011 à 10:34 -0800, David Miller a écrit :
+> > From: Eric Dumazet <eric.dumazet@gmail.com>
+> > Date: Fri, 25 Feb 2011 11:52:07 +0100
+> > 
+> > > Le vendredi 25 février 2011 à 17:45 +0800, Po-Yu Chuang a écrit :
 > > > 
-> > > This patch allows n_tracerouter and n_tracesink to be compiled and
-> > > configured in the Linux kernel.
+> > >> It's a little faster than v5 now. Thanks.
+> > >> I will submit the current version later.
+> > >> 
+> > >> One more question just curious, why 128 bytes?
 > > > 
-> > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > ---
-> > >  drivers/char/Kconfig |   32 ++++++++++++++++++++++++++++++++
+> > > Probably its best for NIU hardware specs
+> > > 
+> > > You could try 64, as it should be enough for most IP/TCP/UDP processing.
 > > 
-> > Why drivers/char/Kconfig?  This should be in drivers/tty/Kconfig, right?
-> > 
-> > Yes, this is a recent change, see the linux-next tree for the addition
-> > of this file :)
-> > 
+> > IPV6.
 > 
-> That is what I was going to ask because I did base this patch off of the
-> 2.6.37 stable tree and did not see a drivers/tty/Kconfig :-O.  I figured
-> the stable branch was the better choice since you own it and I need to
-> go through you for my work.
-
-You should always submit against linux-next as that's pretty close to
-the tree that we would be able to apply your patches to.  We can't go
-back in time and add them to 2.6.37 :)
-
-> So I should pull from linux-next I guess to fix the changes mentioned
-> this round?:
+> drivers/net/benet/be.h:70:#define BE_HDR_LEN            64
 > 
-> -Thomas's comments on Patch 9.
-> -These issues in this patch
+> Maybe we should have a comment somewhere.
+> 
+> CC Ajit Khaparde <ajit.khaparde@emulex.com>
+> 
 
-Yes.
 
-thanks,
+A compromise would be to use 128 for the allocation, but only copy 64
+bytes.
 
-greg k-h
+
+
