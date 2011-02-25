@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab1BYVB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:01:58 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34409 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab1BYVB5 (ORCPT
+	id S1755261Ab1BYVGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:06:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33516 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab1BYVGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:01:57 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=9ezeExTAcuIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=n3e5NRa0ccN8VjfIpEQA:9 a=2D6_Pn014pOOv6-x6ing-gfxD7oA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [cpuops cmpxchg double V3 3/5] Generic support for
- this_cpu_cmpxchg_double
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <alpine.DEB.2.00.1102251457160.7359@router.home>
-References: <20110225173850.486326452@linux.com>
-	 <20110225174155.786331687@linux.com>
-	 <20110225202837.GC23161@home.goodmis.org>
-	 <alpine.DEB.2.00.1102251443500.7359@router.home>
-	 <1298667222.6376.23.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1102251457160.7359@router.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 25 Feb 2011 16:01:54 -0500
-Message-ID: <1298667714.6376.25.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Feb 2011 16:06:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
+         :mime-version:content-type:content-transfer-encoding;
+        b=o5zxEoLcyhDoEP3p8v5fxdFZmfDli+PNpKcwNzb0HUCCmcx60ju0gTL9BXq7zmH9t6
+         dlIwqTKr+6n5CWSitI7ziNAiyql/YkJmT2Jb/sNjc5xgioIN2djsUqGZQHwORrQKKbF1
+         A0uOPInSSG7ainVm9puSStI5CivEzZNFfn1WY=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/2] perf: Fix missing strndup declaration
+Date: Fri, 25 Feb 2011 22:05:56 +0100
+Message-Id: <1298667956-20675-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1298667956-20675-1-git-send-email-fweisbec@gmail.com>
+References: <1298667956-20675-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 14:58 -0600, Christoph Lameter wrote:
-> On Fri, 25 Feb 2011, Steven Rostedt wrote:
-> 
-> > I was thinking that if these are per_cpu then they would be global and
-> > thus constant. But those are done at link time, which is too late.
-> 
-> Well per_cpu data can also be dynamically allocated via alloc_percpu.
-> Which is the use case here.
+<ctype.h> is included first without _GNU_SOURCE, so it ends up
+including <string.h> without declaring strndup(). And further
+<string.h> declarations, even with _GNU_SOURCE defined, are
+of course without effect.
 
-Good point, I forgot about that. Oh well, looks like runtime checking is
-all we can do.
+Therefore:
 
--- Steve
+	util/strfilter.c: Dans la fonction «strfilter_node__new» :
+	util/strfilter.c:134: attention : déclaration implicite de la fonction « «strndup» »
+	util/strfilter.c:134: attention : incompatible implicit declaration of built-in function «strndup»
+	make: *** [util/strfilter.o] Erreur 1
 
+Just don't include ctype.h as it doesn't appear to be necessary
+anyway.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/strfilter.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/strfilter.c b/tools/perf/util/strfilter.c
+index 4064b7d..834c8eb 100644
+--- a/tools/perf/util/strfilter.c
++++ b/tools/perf/util/strfilter.c
+@@ -1,4 +1,3 @@
+-#include <ctype.h>
+ #include "util.h"
+ #include "string.h"
+ #include "strfilter.h"
+-- 
+1.7.3.2
 
