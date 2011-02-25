@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab1BYCFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 21:05:08 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:35815 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab1BYCFH (ORCPT
+	id S1756537Ab1BYCFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 21:05:48 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22028 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756280Ab1BYCFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 21:05:07 -0500
-Message-ID: <4D670E4B.6000407@wytron.com.tw>
-Date: Fri, 25 Feb 2011 10:04:59 +0800
-From: Thomas Chou <thomas@wytron.com.tw>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
-        linux-i2c@vger.kernel.org, Albert Herranz <albert_herranz@yahoo.es>
-Subject: Re: [PATCH v6] i2c-gpio: add devicetree support
-References: <20110223011232.GC15795@trinity.fluff.org> <1298520013-3630-1-git-send-email-thomas@wytron.com.tw> <20110224162210.GC17735@angua.secretlab.ca>
-In-Reply-To: <20110224162210.GC17735@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	Thu, 24 Feb 2011 21:05:47 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76353193"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH] arm: Footbridge: Fix I/O mappings for NOMMU mode
+Date: Thu, 24 Feb 2011 18:05:18 -0800
+Message-Id: <1298599518-24333-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Use the correct I/O address definitions for Footbridge
+peripherals when the kernel is compiled without MMU
+support.
 
-On 02/25/2011 12:22 AM, Grant Likely wrote:
->> +Required properties:
->> +- compatible : should be "i2c-gpio".
->> +- gpios : should specify GPIOs used for SDA and SCL lines, in that order.
->> +Optional properties:
->> +- sda-is-open-drain : present if SDA gpio is open-drain.
->> +- scl-is-open-drain : present if SCL gpio is open-drain.
->> +- scl-is-output-only : present if the output driver for SCL cannot be
->> +	turned off. this will prevent clock stretching from working.
->> +- speed-hz : SCL frequency.
->
-> Hi Thomas,
->
-> One nitpick; I just looked, and other i2c controllers are already
-> using 'clock-frequency' instead of 'speed-hz' for the speed of the
-> bus.  I'd like to see this patch use the same terminology.
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+ arch/arm/mach-footbridge/include/mach/hardware.h |   21 ++++++++++++++-------
+ arch/arm/mach-footbridge/include/mach/io.h       |   10 ++++++++--
+ 2 files changed, 22 insertions(+), 9 deletions(-)
 
-I studied 'clock-frequency' usage of existing i2c drivers before working 
-on this patch.
+diff --git a/arch/arm/mach-footbridge/include/mach/hardware.h b/arch/arm/mach-footbridge/include/mach/hardware.h
+index 51dd902..b6fdf23 100644
+--- a/arch/arm/mach-footbridge/include/mach/hardware.h
++++ b/arch/arm/mach-footbridge/include/mach/hardware.h
+@@ -23,26 +23,33 @@
+  * 0xf9000000	0x50000000	1MB	Cache flush
+  * 0xf0000000	0x80000000	16MB	ISA memory
+  */
++
++#ifdef CONFIG_MMU
++#define MMU_IO(a, b)	(a)
++#else
++#define MMU_IO(a, b)	(b)
++#endif
++
+ #define XBUS_SIZE		0x00100000
+-#define XBUS_BASE		0xff800000
++#define XBUS_BASE		MMU_IO(0xff800000, 0x40000000)
 
-i2c-ibm_iic.c, i2c-mpc.c, i2c-ocores.c : use as bus clock frequency 
-input to the core.
+ #define ARMCSR_SIZE		0x00100000
+-#define ARMCSR_BASE		0xfe000000
++#define ARMCSR_BASE		MMU_IO(0xfe000000, 0x42000000)
 
-i2c-cpm.c : use as i2c SCL output frequency.
+ #define WFLUSH_SIZE		0x00100000
+-#define WFLUSH_BASE		0xfd000000
++#define WFLUSH_BASE		MMU_IO(0xfd000000, 0x78000000)
 
-Most other non-i2c drivers use clock-frequency as bus clock frequency 
-input, too.
+ #define PCIIACK_SIZE		0x00100000
+-#define PCIIACK_BASE		0xfc000000
++#define PCIIACK_BASE		MMU_IO(0xfc000000, 0x79000000)
 
-I think the SCL freq usage in i2c-cpm.c is confusing. So I would suggest 
-we borrow 'speed-hz' from spi subsystem, which means the clock freq 
-output on the peripheral bus.
+ #define PCICFG1_SIZE		0x01000000
+-#define PCICFG1_BASE		0xfb000000
++#define PCICFG1_BASE		MMU_IO(0xfb000000, 0x7a000000)
 
-Best regards,
-Thomas
+ #define PCICFG0_SIZE		0x01000000
+-#define PCICFG0_BASE		0xfa000000
++#define PCICFG0_BASE		MMU_IO(0xfa000000, 0x7b000000)
+
+ #define PCIMEM_SIZE		0x01000000
+-#define PCIMEM_BASE		0xf0000000
++#define PCIMEM_BASE		MMU_IO(0xf0000000, 0x80000000)
+
+ #define XBUS_LEDS		((volatile unsigned char *)(XBUS_BASE + 0x12000))
+ #define XBUS_LED_AMBER		(1 << 0)
+diff --git a/arch/arm/mach-footbridge/include/mach/io.h b/arch/arm/mach-footbridge/include/mach/io.h
+index 101a4fe..32e4cc3 100644
+--- a/arch/arm/mach-footbridge/include/mach/io.h
++++ b/arch/arm/mach-footbridge/include/mach/io.h
+@@ -14,8 +14,14 @@
+ #ifndef __ASM_ARM_ARCH_IO_H
+ #define __ASM_ARM_ARCH_IO_H
+
+-#define PCIO_SIZE		0x00100000
+-#define PCIO_BASE		0xff000000
++#ifdef CONFIG_MMU
++#define MMU_IO(a, b)	(a)
++#else
++#define MMU_IO(a, b)	(b)
++#endif
++
++#define PCIO_SIZE       0x00100000
++#define PCIO_BASE       MMU_IO(0xff000000, 0x7c000000)
+
+ #define IO_SPACE_LIMIT 0xffff
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
