@@ -1,82 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab1BYVeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:34:24 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:46181 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab1BYVeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:34:23 -0500
-Subject: Re: [PATCH v4 4/5] hwmon: (pmbus) Add support for Maxim
- MAX34440/MAX34441
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D681425.3010503@cam.ac.uk>
-References: <1297969217-9564-1-git-send-email-guenter.roeck@ericsson.com>
-	 <1297969217-9564-5-git-send-email-guenter.roeck@ericsson.com>
-	 <4D681425.3010503@cam.ac.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Fri, 25 Feb 2011 13:32:57 -0800
-Message-ID: <1298669577.1735.99.camel@groeck-laptop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932526Ab1BYViJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:38:09 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:49872 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722Ab1BYViG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 16:38:06 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=ayV5M9AWrrvZ67XDUk7Or/n19YmMgM14jRonJSj0xvo5tTufI8jEZAg3vPj7u48dF
+	xkllzPyIHYCBBX6OuOHBQ==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: [PATCH v5 0/9] memcg: per cgroup dirty page accounting
+Date: Fri, 25 Feb 2011 13:35:51 -0800
+Message-Id: <1298669760-26344-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
+Changes since v4:
+- Moved documentation changes to start of series to provide a better
+  introduction to the series.
+- Added support for hierarchical dirty limits.
+- Incorporated bug fixes previously found in v4.
+- Include a new patch "writeback: convert variables to unsigned" to provide a
+  clearer transition to the the new dirty_info structure (patch "writeback:
+  create dirty_info structure").
+- Within the new dirty_info structure, replaced nr_reclaimable with
+  nr_file_dirty and nr_unstable_nfs to give callers finer grain dirty usage
+  information also added dirty_info_reclaimable().
+- Rebased the series to mmotm-2011-02-10-16-26 with two pending mmotm patches:
+  memcg: break out event counters from other stats
+    https://lkml.org/lkml/2011/2/17/415
+  memcg: use native word page statistics counters
+    https://lkml.org/lkml/2011/2/17/413
 
-On Fri, 2011-02-25 at 15:42 -0500, Jonathan Cameron wrote:
-> One trivial formatting nitpick.
-> Dug out datasheet for this one..
-> I'm a little unclear how value from there map to those stored in here...
-[ ... ]
+Changes since v3:
+- Refactored balance_dirty_pages() dirtying checking to use new struct
+  dirty_info, which is used to compare both system and memcg dirty limits
+  against usage.
+- Disabled memcg dirty limits when memory.use_hierarchy=1.  An enhancement is
+  needed to check the chain of parents to ensure that no dirty limit is
+  exceeded.
+- Ported to mmotm-2010-10-22-16-36.
 
-> > +static struct pmbus_driver_info max34440_info[] = {
-> > +	[max34440] = {
-> > +		.pages = 14,
-> > +		.direct[PSC_VOLTAGE_IN] = true,
-> > +		.direct[PSC_VOLTAGE_OUT] = true,
-> > +		.direct[PSC_TEMPERATURE] = true,
-> > +		.direct[PSC_CURRENT_OUT] = true,
-> > +		.m[PSC_VOLTAGE_IN] = 1,
-> > +		.b[PSC_VOLTAGE_IN] = 0,
-> > +		.R[PSC_VOLTAGE_IN] = 3,
-> > +		.m[PSC_VOLTAGE_OUT] = 1,
-> > +		.b[PSC_VOLTAGE_OUT] = 0,
-> > +		.R[PSC_VOLTAGE_OUT] = 3,
-> > +		.m[PSC_CURRENT_OUT] = 1,
-> > +		.b[PSC_CURRENT_OUT] = 0,
-> > +		.R[PSC_CURRENT_OUT] = 3,
-> Table 3 of datasheet says R for current is 0... I may be missing
-> something though!  
+Changes since v2:
+- Rather than disabling softirq in lock_page_cgroup(), introduce a separate lock
+  to synchronize between memcg page accounting and migration.  This only affects
+  patch 4 of the series.  Patch 4 used to disable softirq, now it introduces the
+  new lock.
 
-At least this one has a relatively simple reason ;).
+Changes since v1:
+- Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+  memory.stat to match /proc/meminfo.
+- Avoid lockdep warnings by using rcu_read_[un]lock() in
+  mem_cgroup_has_dirty_limit().
+- Fixed lockdep issue in mem_cgroup_read_stat() which is exposed by these
+  patches.
+- Remove redundant comments.
+- Rename (for clarity):
+  - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
+  - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
+- Renamed newly created proc files:
+  - memory.dirty_bytes -> memory.dirty_limit_in_bytes
+  - memory.dirty_background_bytes -> memory.dirty_background_limit_in_bytes
+- Removed unnecessary get_ prefix from get_xxx() functions.
+- Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
+- Disable softirq rather than hardirq in lock_page_cgroup()
+- Made mem_cgroup_move_account_page_stat() inline.
+- Ported patches to mmotm-2010-10-13-17-13.
 
-The base unit (to which R is applied to) in the datasheet is mV and mA.
-The base unit used by max8688 and max16064 is V and A. Chips in linear
-mode also use V and A. I had the choice of either adjusting the code to
-expect mV and mA for all chips, or to expect V and A for all chips. I
-decided to use the latter for consistency, and to adjust R in the core
-driver to the units expected to be reported in the sysfs attributes. For
-max34440/max34441, the adjustment ends up being 0 either way (3 + (-3)
-in one direction and (-3) + 3 in the other).
+This patch set provides the ability for each cgroup to have independent dirty
+page limits.
 
-Another option would be to not do any sysfs related adjustments in the
-core driver, but to do all adjustments via platform data instead. I
-decided against that because the code to handle linear mode (which
-expects V and A) would no longer match the code to handle direct mode,
-which might cause even more confusion.
+Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+not be able to consume more than their designated share of dirty pages and will
+be throttled if they cross that limit.
 
-Thanks,
-Guenter
+Example use case:
+  #!/bin/bash
+  #
+  # Here is a test script that shows a situation where memcg dirty limits are
+  # beneficial.
+  #
+  # The script runs two programs:
+  # 1) a dirty page background antagonist (dd)
+  # 2) an interactive foreground process (tar).
+  #
+  # If the script's argument is false, then both processes are limited by the
+  # classic global dirty limits.  If the script is given a true argument, then a
+  # per-cgroup dirty limit is used to contain dd dirty page consumption.  The
+  # cgroup isolates the dd dirty memory consumption from the rest of the system
+  # processes (tar in this case).
+  #
+  # The time used by the tar process is printed (lower is better).
+  #
+  # When dd is run within a dirty limiting cgroup, the tar process had faster
+  # and more predictable performance.  memcg dirty ratios might be useful to
+  # serve different task classes (interactive vs batch).  A past discussion
+  # touched on this: http://lkml.org/lkml/2010/5/20/136
+  #
+  # When called with 'false' (using memcg without dirty isolation):
+  #   tar finished in 7.0s
+  #   dd reports 92 MB/s  
+  #
+  # When called with 'true' (using memcg for dirty isolation):
+  #   tar finished in 2.5s
+  #   dd reports 82 MB/s
 
+  echo memcg_dirty_limits: $1
+  
+  # set system dirty limits.
+  echo $((1<<30)) > /proc/sys/vm/dirty_bytes
+  echo $((1<<29)) > /proc/sys/vm/dirty_background_bytes
+  
+  mkdir /dev/cgroup/memory/A
+  
+  if $1; then    # if using cgroup to contain 'dd'...
+    echo 100M > /dev/cgroup/memory/A/memory.dirty_limit_in_bytes
+  fi
+  
+  # run antagonist (dd) in cgroup A
+  (echo $BASHPID > /dev/cgroup/memory/A/tasks; \
+   dd if=/dev/zero of=/disk1/big.file count=10k bs=1M) &
+  
+  # let antagonist (dd) get warmed up
+  sleep 10
+  
+  # time interactive job
+  time tar -C /disk2 -xzf linux.tar.gz
+  
+  wait
+  sleep 10
+  rmdir /dev/cgroup/memory/A
+
+The patches are based on a series proposed by Andrea Righi in Mar 2010.
+
+Overview:
+- Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+  unstable.
+
+- Extend mem_cgroup to record the total number of pages in each of the 
+  interesting dirty states (dirty, writeback, unstable_nfs).  
+
+- Add dirty parameters similar to the system-wide /proc/sys/vm/dirty_* limits to
+  mem_cgroup.  The mem_cgroup dirty parameters are accessible via cgroupfs
+  control files.
+
+- Consider both system and per-memcg dirty limits in page writeback when
+  deciding to queue background writeback or throttle dirty memory production.
+
+Known shortcomings (see the patch 1 update to Documentation/cgroups/memory.txt
+for more details):
+- When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+  writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+  just inodes contributing dirty pages to the cgroup exceeding its limit.  
+
+- A cgroup may exceed its dirty limit if the memory is dirtied by a process in a
+  different memcg.
+
+Performance data:
+- A page fault microbenchmark workload was used to measure performance, which
+  can be called in read or write mode:
+        f = open(foo. $cpu)
+        truncate(f, 4096)
+        alarm(60)
+        while (1) {
+                p = mmap(f, 4096)
+                if (write)
+			*p = 1
+		else
+			x = *p
+                munmap(p)
+        }
+
+- The workload was called for several points in the patch series in different
+  modes:
+  - s_read is a single threaded reader
+  - s_write is a single threaded writer
+  - p_read is a 16 thread reader, each operating on a different file
+  - p_write is a 16 thread writer, each operating on a different file
+
+- Measurements were collected on a 16 core non-numa system using "perf stat
+  --repeat 3".
+
+- All numbers are page fault rate (M/sec).  Higher is better.
+
+- To compare the performance of a kernel without memcg compare the first and
+  last rows - neither has memcg configured.  The first row does not include any
+  of these memcg dirty limit patches.
+
+- To compare the performance of using memcg dirty limits, compare the memcg
+  baseline (2nd row titled "mmotm w/ memcg") with the 3rd row (memcg enabled
+  with all patches).
+
+                          root_cgroup                     child_cgroup
+                 s_read s_write p_read p_write   s_read s_write p_read p_write
+mmotm w/o memcg   0.359  0.312   0.357  0.312
+mmotm w/ memcg    0.366  0.316   0.342  0.301     0.368  0.309   0.347  0.301
+all patches       0.347  0.322   0.327  0.303     0.342  0.323   0.327  0.305
+all patches       0.358  0.322   0.357  0.316
+  w/o memcg
+
+Greg Thelen (9):
+  memcg: document cgroup dirty memory interfaces
+  memcg: add page_cgroup flags for dirty page tracking
+  writeback: convert variables to unsigned
+  writeback: create dirty_info structure
+  memcg: add dirty page accounting infrastructure
+  memcg: add kernel calls for memcg dirty page stats
+  memcg: add dirty limits to mem_cgroup
+  memcg: add cgroupfs interface to memcg dirty limits
+  memcg: check memcg dirty limits in page writeback
+
+ Documentation/cgroups/memory.txt |   80 +++++++
+ fs/fs-writeback.c                |    7 +-
+ fs/nfs/write.c                   |    4 +
+ include/linux/memcontrol.h       |   33 +++-
+ include/linux/page_cgroup.h      |   23 ++
+ include/linux/writeback.h        |   18 ++-
+ mm/backing-dev.c                 |   18 +-
+ mm/filemap.c                     |    1 +
+ mm/memcontrol.c                  |  470 +++++++++++++++++++++++++++++++++++++-
+ mm/page-writeback.c              |  150 +++++++++----
+ mm/truncate.c                    |    1 +
+ mm/vmscan.c                      |    2 +-
+ mm/vmstat.c                      |    6 +-
+ 13 files changed, 742 insertions(+), 71 deletions(-)
+
+-- 
+1.7.3.1
 
