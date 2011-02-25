@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab1BYTIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:08:07 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:4492 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932436Ab1BYTIF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 14:08:05 -0500
-Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
- modules
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
-        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
-        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org
-In-Reply-To: <20110225.110529.39178636.davem@davemloft.net>
-References: <20110225151414.GA5211@albatros>
-	 <20110225.104720.71110261.davem@davemloft.net>
-	 <20110225190205.GA4541@albatros>
-	 <20110225.110529.39178636.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Fri, 25 Feb 2011 19:07:59 +0000
-Message-ID: <1298660879.2554.23.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Feb 2011 19:08:04.0684 (UTC) FILETIME=[5465A0C0:01CBD51F]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17976.005
-X-TM-AS-Result: No--33.537200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S932746Ab1BYTLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:11:38 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44090 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932502Ab1BYTLh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 14:11:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110225175314.GD19059@redhat.com>
+References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com>
+ <20101201182747.GB6143@redhat.com> <20110225175202.GA19059@redhat.com> <20110225175314.GD19059@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 25 Feb 2011 11:10:46 -0800
+Message-ID: <AANLkTik8epq5cx8n=k6ocMUfbg9kkUAZ8KL7ZiG4UuoU@mail.gmail.com>
+Subject: Re: [PATCH 3/5] exec: unify compat_do_execve() code
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 11:05 -0800, David Miller wrote:
-> From: Vasiliy Kulikov <segoon@openwall.com>
-> Date: Fri, 25 Feb 2011 22:02:05 +0300
-> 
-> > On Fri, Feb 25, 2011 at 10:47 -0800, David Miller wrote:
-> >> From: Vasiliy Kulikov <segoon@openwall.com>
-> >> Date: Fri, 25 Feb 2011 18:14:14 +0300
-> >> 
-> >> > Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
-> >> > CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
-> >> > that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are limited
-> >> > to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't allow
-> >> > anybody load any module not related to networking.
-> >> 
-> >> Why go through this naming change, which does break things, instead of
-> >> simply adding a capability mask tag or similar to modules somehow.  You
-> >> could stick it into a special elf section or similar.
-> >>
-> >> Doesn't that make tons more sense than this?
-> > 
-> > This is not "simply", adding special section for a single workaround
-> > seems like an overkill for me - this touches the core (modules'
-> > internals), which is not related to the initial CAP_* problem at all.
-> > 
-> > I'd be happy with not breaking anything, but I don't see any acceptable
-> > solution.
-> 
-> I think it's warranted given that it allows us to avoid breaking things.
-> 
-> I don't understand there is resistence in response to the first idea
-> I've seen proprosed that actually allows to fix the problem and not
-> break anything at the same time.
-> 
-> That seems silly.
+On Fri, Feb 25, 2011 at 9:53 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Teach get_arg_ptr() to handle compat = T case correctly.
 
-You realise that module loading doesn't actually run in the context of
-request_module(), right?
+Does it?
 
-Ben.
+> +#ifdef CONFIG_COMPAT
+> +int compat_do_execve(char *filename,
+> +       compat_uptr_t __user *argv,
+> +       compat_uptr_t __user *envp,
+> +       struct pt_regs *regs)
+> +{
+> +       return do_execve_common(filename,
+> +                               (void __user *)argv, (void __user*)envp,
+> +                               regs, true);
+> +}
+> +#endif
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+I really suspect this should be something like
 
+  typedef union {
+     compat_uptr_t compat;
+     const char __user *native;
+   } conditional_user_ptr_t;
+
+  ...
+
+  int compat_do_execve(char *filename,
+                  compat_uptr_t argv,
+                  compat_uptr_t envp,
+                  struct pt_regs *regs)
+   {
+             return do_execve_common(filename,
+                      compat_ptr(argv), compat_ptr(envp), regs);
+
+where that 'do_execve_common()' takes it's arguments as
+
+    union conditional_user_ptr_t __user *argv,
+    union conditional_user_ptr_t __user *envp
+
+and then in get_arg_ptr() we do the proper union member dereference
+depending on the "compat" flag.
+
+THAT would actually have the type system help us track what is
+actually going on, and would clarify the rules. It would also make it
+clear that "do_execve_common()" does *not* take some kind of random
+pointer to user space (much less a "const char __user *const char
+__user *"). It really does take a pointer to user space, but what that
+pointer contains in turn depends on the "compat" flag.
+
+IOW, it really acts as a pointer to a user-space union, and I think
+we'd be better off having the type show that.
+
+                  Linus
