@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab1BYIUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 03:20:25 -0500
-Received: from cantor.suse.de ([195.135.220.2]:46901 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab1BYIUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 03:20:24 -0500
-Date: Fri, 25 Feb 2011 09:20:21 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Julian Calaby <julian.calaby@gmail.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>, johannes@sipsolutions.net,
-        davem@davemloft.net, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/21]include:net:mac80211.h remove one to many l's in
- the word.
-In-Reply-To: <AANLkTi=FuD0FCTv6f0sPKkg14O9R_giKi9uvA0Xsgy1q@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1102250919190.2160@pobox.suse.cz>
-References: <1298614522-4153-1-git-send-email-justinmattock@gmail.com> <AANLkTi=FuD0FCTv6f0sPKkg14O9R_giKi9uvA0Xsgy1q@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754734Ab1BYI3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 03:29:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61254 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754179Ab1BYI3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 03:29:41 -0500
+Message-ID: <4D67687A.6010906@cn.fujitsu.com>
+Date: Fri, 25 Feb 2011 16:29:46 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
+Subject: Re: [PATCH RFC tip/core/rcu 01/11] rcu: call __rcu_read_unlock()
+ in exit_rcu for tiny RCU
+References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1298425183-21265-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-25 16:27:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-25 16:28:35,
+	Serialize complete at 2011-02-25 16:28:35
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Feb 2011, Julian Calaby wrote:
-
-> <justinmattock@gmail.com> wrote:
-> > The patch below removes an extra "l" in the word.
+On 02/23/2011 09:39 AM, Paul E. McKenney wrote:
 > 
-> Random thought:
-> 
-> Not that I'm complaining about your work here, and not that commits
-> are a finite resource, but would it be possible for you to collect
-> your spelling changes into slightly bigger commits before sending them
-> off?
+> diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+> index 015abae..3cb8e36 100644
+> --- a/kernel/rcutiny_plugin.h
+> +++ b/kernel/rcutiny_plugin.h
 
-Which is what I usually do with Justin's patches anyway when applying them 
--- I fold them all into one patch. It'd be nicer if I get them in such 
-form already, yes.
+My original patch was just for tree RCU. It is not merged.
+I forgot the tiny RCU case then, this change is needed for tree & tiny RCU.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Thanks,
+Lai
