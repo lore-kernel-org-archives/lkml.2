@@ -1,148 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab1BYLHZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 06:07:25 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:42561 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab1BYLHY (ORCPT
+	id S1754575Ab1BYLQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 06:16:13 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39255 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab1BYLQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 06:07:24 -0500
-Message-ID: <33d9e1abc0d731efa7ba1461b0883c9f.squirrel@webmail.greenhost.nl>
-In-Reply-To: <AANLkTi=9hq9JPUHRNWaxRe2txdguWw61mrJHjanNPG94@mail.gmail.com>
-References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
-    <AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
-    <0d30dc$l7ehaa@orsmga001.jf.intel.com>
-    <AANLkTi=DXg=ighnPi4FYA29=qegE=c_PtCVWzOymYtmQ@mail.gmail.com>
-    <b5f94200cffe31ff8cbe38d2bd2e35a7.squirrel@webmail.greenhost.nl>
-    <AANLkTimLb4=04vOU7_SrtKpWQvFmDfibHGGsC+CFxwCW@mail.gmail.com>
-    <1cced1eb38110129d097e1c8b6857d81.squirrel@webmail.greenhost.nl>
-    <AANLkTi=9hq9JPUHRNWaxRe2txdguWw61mrJHjanNPG94@mail.gmail.com>
-Date: Fri, 25 Feb 2011 12:07:04 +0100 (CET)
-Subject: Re: [git pull] drm fixes
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Alex Riesen" <raa.lkml@gmail.com>
-Cc: "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Dave Airlie" <airlied@linux.ie>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org, "Daniel Vetter" <daniel@ffwll.ch>
-User-Agent: SquirrelMail/1.4.17
+	Fri, 25 Feb 2011 06:16:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=m34Xxinzj1Pj28iYEhwddK2uqoOs0++S7dSwmKrRE4QtdYBJ50lAJi0Pcoyoqf0AMi
+         cD8M+odQdqsd8uUr33EjjXqmDguzLd1JS6gCKx1f/OEC9m+33vHJnCjg99RQ45MyRUgA
+         RguwtW1l3XGo0JkRb4y16njYHEwbdR4LEspJI=
+Date: Fri, 25 Feb 2011 12:16:06 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for
+ init_memory_mapping_high()
+Message-ID: <20110225111606.GG24828@htj.dyndns.org>
+References: <20110223171945.GI26065@htj.dyndns.org>
+ <4D656D1A.7030006@kernel.org>
+ <20110223204656.GA27738@atj.dyndns.org>
+ <4D657359.5060901@kernel.org>
+ <20110223210326.GB27738@atj.dyndns.org>
+ <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com>
+ <20110224091557.GD7840@htj.dyndns.org>
+ <4D674A33.8000809@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 9426f5d1bab314603f7b21e0d362b3bd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D674A33.8000809@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, February 25, 2011 11:18, Alex Riesen wrote:
-> On Fri, Feb 25, 2011 at 00:29, Indan Zupancic <indan@nul.nu> wrote:
->>>> https://lkml.org/lkml/2011/2/23/34
->>>
->>> This is just the discussion about the problem described in the ticket.
->>> It does not even mention the patch from the previous link, BTW.
->>> It does have the patch which returns -EINVAL for I915_PARAM_HAS_RELAXED_FENCING,
->>> though.
->>>
->>> So, AFAICS, at the moment there is no better patch than this:
->>>
->>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
->>> index 17bd766..8f8a6a3 100644
->>> --- a/drivers/gpu/drm/i915/i915_dma.c
->>> +++ b/drivers/gpu/drm/i915/i915_dma.c
->>> @@ -764,7 +764,7 @@ static int i915_getparam(struct drm_device *dev, void *data,
->>>               break;
->>>       case I915_PARAM_HAS_RELAXED_FENCING:
->>>               value = 1;
->>> -             break;
->>> +             return -EINVAL;
->>>       case I915_PARAM_HAS_COHERENT_RINGS:
->>>               value = 1;
->>>               break;
->>
->> Read those above links again! Daniel's patch fixes that one corruption, the
->> above snippet has the same effect and works around the same bug, but neither
->> do fix that other corruption mentioned in the ticket.
->
-> Do you have any idea which patch fixes what? It's just I slowly begin to
-> doubt that you do.
+On Thu, Feb 24, 2011 at 10:20:35PM -0800, Yinghai Lu wrote:
+> tj pointed out:
+> 	when node does not have 1G aligned boundary, like 128M.
+> init_memory_mapping_high() could render smaller mapping by 128M on one node,
+> and 896M on next node with 2M pages instead of 1g page. that could increase
+> TLB presure.
+> 
+> So if gb page is used, try to align the boundary to 1G before calling
+> init_memory_mapping_ext(), to make sure only use one 1g entry for that cross
+> node 1G.
+> Need to init_meory_mapping_ext() to table tbl_end, to make sure pgtable is on
+> previous node instead of next node.
 
-There is none yet. Reverting "drm/i915: Completely disable fence pipelining."
-fixes it, but causes other problems, quoting Chris:
+I don't know, Yinghai.  The whole code seems overly complicated to me.
+Just ignore e820 map when building linear mapping.  It doesn't matter.
+Why not just do something like the following?  Also, can you please
+add some comments explaining how the NUMA affine allocation actually
+works for page tables?  Or better, can you please make that explicit?
+It currently depends on memories being registered in ascending address
+order, right?  The memblock code already is NUMA aware, I think it
+would be far better to make the node affine part explicit.
 
-  "No, reverting that will cause just another bug elsewhere. I need to
-  work out how the gpu is not being flushed with a non-pipelined fence
-  change."
+Thanks.
 
-> So far I found only two patches (and three changes):
->
-> This is the first:
->
-> Corruption caused by portions of the screen stopped updating (the Bug 27572).
-> Certainly worked around by returning -EINVAL for ..RELAXED_FENCING.
-
-This is fixed in a better way by Daniel's latest patch.
-
-> The second:
->
-> Corruption in small pixmaps, which has no bug number, and commented on by
-> Daniel in the Bug 27572 as being not the case there.
-
-This is the above mentioned issue Chris is talking about in the quoted part.
-
-> Fixed by his patch posted to dri-devel "fix corruptions on i8xx due to
-> relaxed fencing".
-> It may be related to the Bug 27572, but it certainly
-> does not fix the problem.
-
-No, that didn't fix that corruption. It's confusing because Tomas
-first said it did fix it and later said it didn't. I muddles that
-bug report with the corruption I saw, I thought maybe it had the
-same source.
-
-> There is also this change from the first Daniel's patch which I don't
-> know what to think about:
->
-> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-> index cf4f74c..2e6b532 100644
-> --- a/drivers/gpu/drm/i915/i915_gem.c
-> +++ b/drivers/gpu/drm/i915/i915_gem.c
-> @@ -1404,6 +1404,8 @@ i915_gem_get_unfenced_gtt_alignment(struct
-> drm_i915_gem_object *obj)
->  	struct drm_device *dev = obj->base.dev;
->  	int tile_height;
->
-> +	return i915_gem_get_gtt_alignment(obj);
-> +
->  	/*
->  	 * Minimum alignment is 4k (GTT page size) for sane hw.
->  	 */diff --git a/drivers/gpu/drm/i915/i915_dma.c
-> b/drivers/gpu/drm/i915/i915_dma.c
-
-That was just a patch to try out for me to pinpoint the source of the bug.
-It's irrelevant now, as that bug is fixed by Daniel's patch. And I tested
-it and it didn't help anyway, so just ignore it.
-
-> Now, may I ask you , Indan, to shut up for while and let the developers
-> speak? Because the matter is becoming a little bit confusing, and not without
-> your help.
-
-That's because you're getting frustrated and not reading properly what
-everyone writes. Just relax.
-
-Chris seems to be working on it. When he has progress or patches for us to
-try I'm sure he'll speak up.
-
-My corruption problems are gone, except for the ones I have without xcompmgr,
-but as I get those with old kernels too I think it's a userspace bug. Only
-reason I reply to you is so others don't have to. I'm trying to clarify things,
-but apparently I'm doing a bad job of it.
-
-Good luck,
-
-Indan
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 46e684f..4fd0b59 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -966,6 +966,11 @@ void __init setup_arch(char **cmdline_p)
+ 	memblock.current_limit = get_max_mapped();
+ 
+ 	/*
++	 * Add whole lot of comment explaining what's going on and WHY
++	 * because as it currently stands, it's frigging cryptic.
++	 */
++
++	/*
+ 	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
+ 	 */
+ 
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 7757d22..50ec03c 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -536,8 +536,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (!numa_meminfo_cover_memory(mi))
+ 		return -EINVAL;
+ 
+-	init_memory_mapping_high();
+-
+ 	/* Finally register nodes. */
+ 	for_each_node_mask(nid, node_possible_map) {
+ 		u64 start = (u64)max_pfn << PAGE_SHIFT;
+@@ -550,8 +548,12 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 			end = max(mi->blk[i].end, end);
+ 		}
+ 
+-		if (start < end)
++		if (start < end) {
++			init_memory_mapping(
++			  ALIGN_DOWN_TO_MAX_MAP_SIZE_AND_CONVERT_TO_PFN(start),
++			  ALIGN_UP_SIMILARY_BUT_DONT_GO_OVER_MAX_PFN(end));
+ 			setup_node_bootmem(nid, start, end);
++		}
+ 	}
+ 
+ 	return 0;
 
 
+-- 
+tejun
