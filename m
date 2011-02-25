@@ -1,132 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab1BYSxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:53:19 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41821 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533Ab1BYSxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:53:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Zj9fLRTtzc7VA5lnjiG0nI4XXE29YvnRm+66r1L9XAiLfAdDGxZqjciAbZUdV0PgMh
-         Yrhb0UOymDBh8VoAhfgIcbPYhzozh+rKY1bJHmjLf0Ip6/PWvPgI3UVHfXxmmhO7gUoO
-         fAliUij1vLMgyixajyn4rN8jrY/Lg6IXnOWcs=
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Octavian Purdila <tavi@cs.pub.ro>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 4/9] sysctl: ipv4: ipfrag: share ip4_frags_ns_ctl_table between nets
-Date: Fri, 25 Feb 2011 20:52:36 +0200
-Message-Id: <1298659961-23863-5-git-send-email-lucian.grijincu@gmail.com>
-X-Mailer: git-send-email 1.7.4.rc1.7.g2cf08.dirty
-In-Reply-To: <1298659961-23863-1-git-send-email-lucian.grijincu@gmail.com>
-References: <1298659961-23863-1-git-send-email-lucian.grijincu@gmail.com>
+	id S932686Ab1BYSzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:55:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44500 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932502Ab1BYSzQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:55:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110225175202.GA19059@redhat.com>
+References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com>
+ <20101201182747.GB6143@redhat.com> <20110225175202.GA19059@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 25 Feb 2011 10:54:24 -0800
+Message-ID: <AANLkTimv6=QuK2+ye=OFCdRN_285GsNc4CnWEQf8OY26@mail.gmail.com>
+Subject: Re: [PATCH 0/4 RESEND] exec: unify compat/non-compat code
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only reason we were creating a copy of this table was to set
-->data to point to data from within the newly created net. The
-netns_proc_* handlers do this dynamically.
+On Fri, Feb 25, 2011 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 12/01, Milton Miller wrote:
+>> >
+>> > > +#ifdef CONFIG_COMPAT
+>> > > +int compat_do_execve(char * filename,
+>> > > + compat_uptr_t __user *argv,
+>> > > + compat_uptr_t __user *envp,
+>> > > + struct pt_regs * regs)
+>> > > +{
+>> > > + return do_execve_common(filename,
+>> > > +                         (void __user*)argv, (void __user*)envp,
+>> >
+>> > Shouldn't these be compat_ptr(argv)?  (makes a difference on s390)
 
-Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
----
- net/ipv4/ip_fragment.c |   34 ++++++----------------------------
- net/sysctl_net.c       |    2 +-
- 2 files changed, 7 insertions(+), 29 deletions(-)
+Indeed. The "compat_uptr_t __user *argv" is wrong, and it should be just
 
-diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
-index a1151b8..ffca3cc 100644
---- a/net/ipv4/ip_fragment.c
-+++ b/net/ipv4/ip_fragment.c
-@@ -677,21 +677,21 @@ static struct ctl_table ip4_frags_ns_ctl_table[] = {
- 		.data		= &init_net.ipv4.frags.high_thresh,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.proc_handler	= (proc_handler *) netns_proc_dointvec
- 	},
- 	{
- 		.procname	= "ipfrag_low_thresh",
- 		.data		= &init_net.ipv4.frags.low_thresh,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.proc_handler	= (proc_handler *) netns_proc_dointvec
- 	},
- 	{
- 		.procname	= "ipfrag_time",
- 		.data		= &init_net.ipv4.frags.timeout,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec_jiffies,
-+		.proc_handler	= (proc_handler *) netns_proc_dointvec_jiffies,
- 	},
- 	{ }
- };
-@@ -717,41 +717,19 @@ static struct ctl_table ip4_frags_ctl_table[] = {
- 
- static int __net_init ip4_frags_ns_ctl_register(struct net *net)
- {
--	struct ctl_table *table;
- 	struct ctl_table_header *hdr;
--
--	table = ip4_frags_ns_ctl_table;
--	if (!net_eq(net, &init_net)) {
--		table = kmemdup(table, sizeof(ip4_frags_ns_ctl_table), GFP_KERNEL);
--		if (table == NULL)
--			goto err_alloc;
--
--		table[0].data = &net->ipv4.frags.high_thresh;
--		table[1].data = &net->ipv4.frags.low_thresh;
--		table[2].data = &net->ipv4.frags.timeout;
--	}
--
--	hdr = register_net_sysctl_table(net, net_ipv4_ctl_path, table);
-+	hdr = register_net_sysctl_table(net, net_ipv4_ctl_path,
-+					ip4_frags_ns_ctl_table);
- 	if (hdr == NULL)
--		goto err_reg;
-+		return -ENOMEM;
- 
- 	net->ipv4.frags_hdr = hdr;
- 	return 0;
--
--err_reg:
--	if (!net_eq(net, &init_net))
--		kfree(table);
--err_alloc:
--	return -ENOMEM;
- }
- 
- static void __net_exit ip4_frags_ns_ctl_unregister(struct net *net)
- {
--	struct ctl_table *table;
--
--	table = net->ipv4.frags_hdr->ctl_table_arg;
- 	unregister_net_sysctl_table(net->ipv4.frags_hdr);
--	kfree(table);
- }
- 
- static void ip4_frags_ctl_register(void)
-diff --git a/net/sysctl_net.c b/net/sysctl_net.c
-index 60b36ad..d80e9c4 100644
---- a/net/sysctl_net.c
-+++ b/net/sysctl_net.c
-@@ -110,7 +110,7 @@ struct ctl_table_header *register_net_sysctl_table(struct net *net,
- 	namespaces = *current->nsproxy;
- 	namespaces.net_ns = net;
- 	return __register_sysctl_paths(&net_sysctl_root, &namespaces, path,
--				       table, NULL);
-+				       table, net);
- }
- EXPORT_SYMBOL_GPL(register_net_sysctl_table);
- 
--- 
-1.7.4.rc1.7.g2cf08.dirty
+    compat_uptr_t argv;
 
+and then every time you turn it into a pointer, it should use
+"compat_ptr(argv)".
+
+Then, since it's a pointer to an array of pointers, when you do that,
+you should turn it into a pointer to "compat_uptr_t", so you actually
+have this:
+
+ - user passes "compat_uptr_t"
+
+ - the kernel can turn that into "compat_uptr_t __user *" by doing
+
+       compat_uptr_t __user *pptr;
+       pptr = compat_ptr(argv);
+
+ - the kernel needs to fetch the individual entries with
+
+       compat_uptr_t cuptr = get_user(pptr);
+
+ - the kernel can then turn _those_ into the actual pointers to the string with
+
+       const char __user *str = compat_ptr(cuptr);
+
+so you need two levels of compat_ptr() conversion.
+
+> So, once again, this should not (and can not) be compat_ptr(argv) afaics.
+
+It can be, and probably should. But the low-level s390 wrapper
+function may have done one of the levels already. It probably
+shouldn't, and we _should_ do the "compat_ptr()" thing a the generic C
+level. That's what we do with all the other pointers, after all.
+
+                          Linus
