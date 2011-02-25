@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab1BYTWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:22:21 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5862 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab1BYTWU (ORCPT
+	id S1756524Ab1BYTW7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:22:59 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34089 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab1BYTW5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 14:22:20 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6268"; a="76529070"
-Message-ID: <4D68015B.1050409@codeaurora.org>
-Date: Fri, 25 Feb 2011 11:22:03 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Fri, 25 Feb 2011 14:22:57 -0500
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/4] msm: scm: Fix improper register assignment
-References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>	 <1298573085-23217-3-git-send-email-sboyd@codeaurora.org> <1298640219.958.74.camel@e102144-lin.cambridge.arm.com>
-In-Reply-To: <1298640219.958.74.camel@e102144-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110223021221.17638.42707.stgit@localhost6.localdomain6>
+References: <20110223021221.17638.42707.stgit@localhost6.localdomain6>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 25 Feb 2011 12:22:37 -0700
+X-Google-Sender-Auth: g1zHof1eWBnLoHprpadbV-VUJng
+Message-ID: <AANLkTinx2YxOs3Y-XDHaWe44Bw8HqiMyanouV5Bo3KuX@mail.gmail.com>
+Subject: Re: [PATCH] tty/serial: Relax the device_type restriction from of_serial
+To: devicetree-discuss@lists.ozlabs.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2011 05:23 AM, Will Deacon wrote:
-> On Thu, 2011-02-24 at 18:44 +0000, Stephen Boyd wrote:
->> Assign the registers used in the inline assembly immediately
->> before the inline assembly block. This ensures the compiler
->> doesn't optimize away dead register assignments when it
->> shouldn't.
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  arch/arm/mach-msm/scm.c |    7 +++++--
->>  1 files changed, 5 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
->> index ba57b5a..5eddf54 100644
->> --- a/arch/arm/mach-msm/scm.c
->> +++ b/arch/arm/mach-msm/scm.c
->> @@ -264,13 +264,16 @@ u32 scm_get_version(void)
->>  {
->>         int context_id;
->>         static u32 version = -1;
->> -       register u32 r0 asm("r0") = 0x1 << 8;
->> -       register u32 r1 asm("r1") = (u32)&context_id;
->> +       register u32 r0 asm("r0");
->> +       register u32 r1 asm("r1");
->>
->>         if (version != -1)
->>                 return version;
->>
->>         mutex_lock(&scm_lock);
->> +
->> +       r0 = 0x1 << 8;
->> +       r1 = (u32)&context_id;
->>         asm volatile(
->>                 __asmeq("%0", "r1")
->>                 __asmeq("%1", "r0")
+Hi Arnd and Ben,
+
+I forgot to cc you guys on this patch.  Greg has it in his tree, but I
+wanted to make sure you noticed it.  If you have any objections, let
+me know and I'll ask Greg to drop it.
+
+Thanks,
+g.
+
+
+On Tue, Feb 22, 2011 at 7:12 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> There is no need to test for a device_type property in ns8250
+> compatible serial ports.  device_type is an OpenFirmware property that
+> is not required when using the flattened tree representation.
+>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  drivers/tty/serial/of_serial.c |   18 +++++++++---------
+>  1 files changed, 9 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+> index 5c7abe4..6a18ca6 100644
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -160,17 +160,17 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
+>  * A few common types, add more as needed.
+>  */
+>  static struct of_device_id __devinitdata of_platform_serial_table[] = {
+> -       { .type = "serial", .compatible = "ns8250",   .data = (void *)PORT_8250, },
+> -       { .type = "serial", .compatible = "ns16450",  .data = (void *)PORT_16450, },
+> -       { .type = "serial", .compatible = "ns16550a", .data = (void *)PORT_16550A, },
+> -       { .type = "serial", .compatible = "ns16550",  .data = (void *)PORT_16550, },
+> -       { .type = "serial", .compatible = "ns16750",  .data = (void *)PORT_16750, },
+> -       { .type = "serial", .compatible = "ns16850",  .data = (void *)PORT_16850, },
+> +       { .compatible = "ns8250",   .data = (void *)PORT_8250, },
+> +       { .compatible = "ns16450",  .data = (void *)PORT_16450, },
+> +       { .compatible = "ns16550a", .data = (void *)PORT_16550A, },
+> +       { .compatible = "ns16550",  .data = (void *)PORT_16550, },
+> +       { .compatible = "ns16750",  .data = (void *)PORT_16750, },
+> +       { .compatible = "ns16850",  .data = (void *)PORT_16850, },
+>  #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
+> -       { .type = "serial", .compatible = "ibm,qpace-nwp-serial",
+> -                                       .data = (void *)PORT_NWPSERIAL, },
+> +       { .compatible = "ibm,qpace-nwp-serial",
+> +               .data = (void *)PORT_NWPSERIAL, },
+>  #endif
+> -       { .type = "serial",                           .data = (void *)PORT_UNKNOWN, },
+> +       { .type = "serial",         .data = (void *)PORT_UNKNOWN, },
+>        { /* end of list */ },
+>  };
 >
 >
-> Whoa, have you seen the compiler `optimise' the original assignments
-> away? Since there is a use in the asm block, the definition shouldn't
-> be omitted. What toolchain are you using
+>
 
-Yes I've seen the r0 and r1 assignments get optimized away. I'm
-suspecting it's because the mutex_lock() is between the assignments and
-usage. I'm guessing the assignment to r0 and r1 are actually generated,
-but then they're optimized away because the mutex_lock() isn't inlined
-and thus r0 and r1 assigned to something that isn't &scm_lock can be
-"safely" removed (dead register assignments). I can't confirm any of
-this since I don't know what gcc is doing internally or even how to
-probe what it's doing (yeah I know I could go read gcc sources).
-Suggestions?
 
-I've seen it with two different compilers so far:
-
-gcc (Sourcery G++ Lite 2010.09-50) 4.5.1
-arm-eabi-gcc (GCC) 4.4.0
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
