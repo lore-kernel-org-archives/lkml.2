@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932628Ab1BYRTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 12:19:52 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:47367 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932411Ab1BYRTu (ORCPT
+	id S932645Ab1BYR2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 12:28:36 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:50642 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab1BYR2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 12:19:50 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 25 Feb 2011 18:19:11 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        =?iso-8859-1?Q?St=E9phane?= Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: Do not create input devices for feature reports
-Message-ID: <20110225171911.GA22592@polaris.bitmath.org>
-References: <1298572259-18173-1-git-send-email-rydberg@euromail.se>
- <AANLkTi=VfSbbV5xwpacC+8yDUfjR3-S8OW47YPvtZwFX@mail.gmail.com>
- <20110224204300.GA2423@polaris.bitmath.org>
- <AANLkTi=YBYrgf66Md_G2Cas7t__BDD2nozvidYDj0p9W@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=YBYrgf66Md_G2Cas7t__BDD2nozvidYDj0p9W@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1Pt1IB-0001rd-At.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Pt1IB-0001rd-At 317d586da58aa2c32caf6b1ed10f48b9
+	Fri, 25 Feb 2011 12:28:34 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>, Changli Gao <xiaosuo@gmail.com>,
+        Jesse Gross <jesse@nicira.com>
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel modules
+In-Reply-To: Your message of "Fri, 25 Feb 2011 18:14:14 +0300."
+             <20110225151414.GA5211@albatros>
+From: Valdis.Kletnieks@vt.edu
+References: <20110224151238.GA16916@albatros> <1298565265.2613.16.camel@bwh-desktop> <20110225123023.GA8776@albatros>
+            <20110225151414.GA5211@albatros>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1298654740_47234P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 25 Feb 2011 12:25:40 -0500
+Message-ID: <135187.1298654740@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4D67E619.00F6,ss=1,fgs=0,
+	ip=71.197.1.74,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+--==_Exmh_1298654740_47234P
+Content-Type: text/plain; charset=us-ascii
 
-> after some quick tests, I can deal with our two options (changing
-> feature_mapping signature or not, and so calling feature_mapping
-> before or after input_mapping).
+On Fri, 25 Feb 2011 18:14:14 +0300, Vasiliy Kulikov said:
+> Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
+> CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
+> that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are limited
+> to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't allow
+> anybody load any module not related to networking.
+> 
+> This patch restricts an ability of autoloading modules to netdev modules
+> with explicit aliases.  Currently there are only three users of the
+> feature: ipip, ip_gre and sit.
 
-Good, good.
+And you stop an attacker from simply recompiling the module with a suitable
+MODULE_ALIAS line added, how, exactly?  This patch may make sense down the
+road, but not while it's still trivial for a malicious root user to drop stuff
+into /lib/modules.
 
-> So, my questions are:
-> - do we really need to change feature_mapping signature?
-> - is feature_mapping tied to an input or to a device?
+And if you're going the route "but SELinux/SMACK/Tomoyo will prevent a malicious
+root user from doing that", then the obvious reply is "this should be part of those
+subsystems rather than something done one-off like this (especially as it has a chance
+of breaking legitimate setups that use the current scheme).
 
-The input, output and feature reports are all found on the same level
-in the HID protocol, so it makes sense to associate all reports with
-the device itself, without any assumed association between different
-reports. From a practical point of view, we may assign different input
-nodes (input devices) to different input reports, so it is clear that
-the mapping between hid device and input device is not 1-to-1.
+--==_Exmh_1298654740_47234P
+Content-Type: application/pgp-signature
 
-For output devices, the only supported case is EV_LED, which passes
-events to the input device. It is probably assumed that
-HID_QUIRK_MULTI_INPUT is false for those devices. Jiri?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-For feature reports, the lack of 1-1 correspondence suggests the input
-device is ill-defined, and should therefore be left out of the
-argument list of the callback. However, I will leave that to Jiri or
-anyone more experienced with the HID layer.
+iD8DBQFNZ+YUcC3lWbTT17ARAqtAAJ0diVCzG6c6fL4tKdbjkHbnAnDZuwCeLuwB
+T7FgP2EiU7jfWM0LUNcn4oU=
+=c8EY
+-----END PGP SIGNATURE-----
 
-Thanks,
-Henrik
+--==_Exmh_1298654740_47234P--
+
