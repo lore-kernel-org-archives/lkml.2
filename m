@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab1BYGL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 01:11:56 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:38755 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab1BYGLz (ORCPT
+	id S1754989Ab1BYGMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 01:12:16 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49465 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab1BYGMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 01:11:55 -0500
+	Fri, 25 Feb 2011 01:12:14 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mEe9tlipwIC+5WGKIkYVq8JMjgLoF0O2vsHaYK6bGCTwMFOtZVUcR00GzfAOZBPG6b
-         DYsCHzrxB0ybmcj4tt2LG0VDwkLZJOAEpnNAN8aqGkl4iJU+vT5+m7JP1V9JvOjrrMES
-         IqUHfcMMEQSHh0PTk/9C/jwWZNhWcO3Q7dDrw=
+        b=fAqutP4XXurrb7olGhHebP/AsGF6yOEkinF/bJRlZ7CEJUyNzrNgE9WSiKHrG0wXkK
+         X996LmoTPkaACMBpIOO35yTydt2JM1sVpqO8YsJaOjXrSA6ndMt6lW+wDgmMW0e8CAja
+         3pdXXaCsB5XpD+xGiTyA3Uhn4mrWv3YrC2lzc=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
-Cc: mchehab@infradead.org, dheitmueller@hauppauge.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 07/21]drivers:media:cx231xx.h remove one to many l's in the word.
-Date: Thu, 24 Feb 2011 22:11:36 -0800
-Message-Id: <1298614296-3689-1-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 08/21]drivers:usb:wusbhc.h remove one to many l's in the word.
+Date: Thu, 24 Feb 2011 22:11:55 -0800
+Message-Id: <1298614315-3727-1-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,22 +30,22 @@ The patch below removes an extra "l" in the word.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/media/video/cx231xx/cx231xx.h |    2 +-
+ drivers/usb/wusbcore/wusbhc.h |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/cx231xx/cx231xx.h b/drivers/media/video/cx231xx/cx231xx.h
-index 72bbea2..82a810a 100644
---- a/drivers/media/video/cx231xx/cx231xx.h
-+++ b/drivers/media/video/cx231xx/cx231xx.h
-@@ -464,7 +464,7 @@ struct cx231xx_fh {
- #define I2C_STOP                0x0
- /* 1-- do not transmit STOP at end of transaction */
- #define I2C_NOSTOP              0x1
--/* 1--alllow slave to insert clock wait states */
-+/* 1--allow slave to insert clock wait states */
- #define I2C_SYNC                0x1
+diff --git a/drivers/usb/wusbcore/wusbhc.h b/drivers/usb/wusbcore/wusbhc.h
+index 3d94c42..6bd426b 100644
+--- a/drivers/usb/wusbcore/wusbhc.h
++++ b/drivers/usb/wusbcore/wusbhc.h
+@@ -132,7 +132,7 @@ static inline void wusb_dev_put(struct wusb_dev *wusb_dev)
+ }
  
- struct cx231xx_i2c {
+ /**
+- * Wireless USB Host Controlller root hub "fake" ports
++ * Wireless USB Host Controller root hub "fake" ports
+  * (state and device information)
+  *
+  * Wireless USB is wireless, so there are no ports; but we
 -- 
 1.7.4.1
 
