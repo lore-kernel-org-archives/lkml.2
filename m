@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850Ab1BYVtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:49:23 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34408 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab1BYVtV (ORCPT
+	id S932705Ab1BYVxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:53:37 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51250 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932105Ab1BYVxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:49:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type;
-        b=SMwOStGM5RzNhMh5DHsK8dkDVfNkqQYVXGtOoPru/CT0T07G9ywSeX+S7k+t1k2PUx
-         oCR80vYDpaQB+V1/WthUzXgQTRQfVYbiFEKlaS4pwIRPScz1l1fZ3iZGH8ad4dbb5neC
-         9sjPvrsP97rZ6gj6p+hyqzzkDSyg5v1v13M1A=
-Message-ID: <4D6823DD.6040809@gmail.com>
-Date: Sat, 26 Feb 2011 00:49:17 +0300
-From: Nikolai Kondrashov <spbnick@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	Fri, 25 Feb 2011 16:53:36 -0500
+Date: Fri, 25 Feb 2011 21:51:24 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 06/17] arm: mmu_gather rework
+Message-ID: <20110225215123.GA10026@flint.arm.linux.org.uk>
+Mail-Followup-To: Peter Zijlstra <peterz@infradead.org>,
+	Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+	akpm@linux-foundation.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+	linux-mm@kvack.org,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	David Miller <davem@davemloft.net>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+	Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+	Paul McKenney <paulmck@linux.vnet.ibm.com>,
+	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+	"Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>
+References: <20110217162327.434629380@chello.nl> <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins> <1298657083.2428.2483.camel@twins>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-References: <20110209224006.GA11202@kroah.com> <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com> <20110225210334.GB16860@kroah.com>
-In-Reply-To: <20110225210334.GB16860@kroah.com>
-Content-Type: multipart/mixed;
- boundary="------------080609060204050004020501"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298657083.2428.2483.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080609060204050004020501
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, Feb 25, 2011 at 07:04:43PM +0100, Peter Zijlstra wrote:
+> I'm not quite sure why you chose to add range tracking on
+> pte_free_tlb(), the only affected code path seems to be unmap_region()
+> where you'll use a flush_tlb_range(), but its buggy, the pte_free_tlb()
+> range is much larger than 1 page, and if you do it there you also need
+> it for all the other p??_free_tlb() functions.
 
-On 02/26/2011 12:03 AM, Greg KH wrote:
-> This should work, as we support the N150/N210/N220 versions.
->
-> Can you provide the output of:
-> 	grep ./sys/class/dmi/id/*
->
-> so I can verify this?
-Sure. Please find it attached. It is taken on a stock Debian kernel, without
-your patch.
+My reasoning is to do with the way the LPAE stuff works.  For the
+explaination below, I'm going to assume a 2 level page table system
+for simplicity.
 
-Could I have configured the kernel incorrectly?
+The first thing to realise is that if we have L2 entries, then we'll
+have unmapped them first using the usual tlb shootdown interfaces.
 
-Thanks :)
+However, when we're freeing the page tables themselves, we should
+already have removed the L2 entries, so all we have are the L1 entries.
+In most 'normal' processors, these aren't cached in any way.
 
-Sincerely,
-Nick
+Howver, with LPAE, these are cached.  I'm told that any TLB flush for an
+address which is covered by the L1 entry will cause that cached entry to
+be invalidated.
 
---------------080609060204050004020501
-Content-Type: text/plain;
- name="dmi_id_grep.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="dmi_id_grep.txt"
+So really this is about getting rid of cached L1 entries, and not the
+usual TLB lookaside entries that you'd come to expect.
 
-/sys/class/dmi/id/bios_date:01/29/2010
-/sys/class/dmi/id/bios_vendor:Phoenix Technologies Ltd.
-/sys/class/dmi/id/bios_version:06JI.M053.20100129.JIP
-/sys/class/dmi/id/board_asset_tag:SAMSUNG
-/sys/class/dmi/id/board_name:N150/N210/N220             
-/sys/class/dmi/id/board_serial:123490EN400015
-/sys/class/dmi/id/board_vendor:SAMSUNG ELECTRONICS CO., LTD.
-/sys/class/dmi/id/board_version:Not Applicable
-/sys/class/dmi/id/chassis_asset_tag:No Asset Tag
-/sys/class/dmi/id/chassis_serial:None        
-/sys/class/dmi/id/chassis_type:10
-/sys/class/dmi/id/chassis_vendor:SAMSUNG ELECTRONICS CO., LTD.
-/sys/class/dmi/id/chassis_version:N/A         
-/sys/class/dmi/id/modalias:dmi:bvnPhoenixTechnologiesLtd.:bvr06JI.M053.20100129.JIP:bd01/29/2010:svnSAMSUNGELECTRONICSCO.,LTD.:pnN150/N210/N220:pvrNotApplicable:rvnSAMSUNGELECTRONICSCO.,LTD.:rnN150/N210/N220:rvrNotApplicable:cvnSAMSUNGELECTRONICSCO.,LTD.:ct10:cvrN/A:
-/sys/class/dmi/id/product_name:N150/N210/N220             
-/sys/class/dmi/id/product_serial:ZO1193HZ200860
-/sys/class/dmi/id/product_uuid:40B5E830-E81D-B211-8000-E54EB00EA058
-/sys/class/dmi/id/product_version:Not Applicable
-/sys/class/dmi/id/sys_vendor:SAMSUNG ELECTRONICS CO., LTD.
-/sys/class/dmi/id/uevent:MODALIAS=dmi:bvnPhoenixTechnologiesLtd.:bvr06JI.M053.20100129.JIP:bd01/29/2010:svnSAMSUNGELECTRONICSCO.,LTD.:pnN150/N210/N220:pvrNotApplicable:rvnSAMSUNGELECTRONICSCO.,LTD.:rnN150/N210/N220:rvrNotApplicable:cvnSAMSUNGELECTRONICSCO.,LTD.:ct10:cvrN/A:
-
---------------080609060204050004020501--
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
