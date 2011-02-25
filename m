@@ -1,106 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab1BYOWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 09:22:53 -0500
-Received: from smtpq4.tb.mail.iss.as9143.net ([212.54.42.167]:44898 "EHLO
-	smtpq4.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755669Ab1BYOWw (ORCPT
+	id S1756224Ab1BYO2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 09:28:22 -0500
+Received: from fep32.mx.upcmail.net ([62.179.121.50]:64979 "EHLO
+	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890Ab1BYO2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 09:22:52 -0500
-X-Greylist: delayed 2206 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Feb 2011 09:22:52 EST
-Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
-From: Hans Nieser <hnsr@xs4all.nl>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1298485893.31256.40.camel@krikkit>
-References: <1298396007.23906.27.camel@krikkit>
-	 <20110223095538.GA12662@electric-eye.fr.zoreil.com>
-	 <1298463704.31256.29.camel@krikkit>  <1298485893.31256.40.camel@krikkit>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 14:45:42 +0100
-Message-ID: <1298641542.18103.48.camel@krikkit>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
-X-ZiggoSMTP-MailScanner-ID: 1PsxzL-0001jK-3D
-X-ZiggoSMTP-MailScanner: Found to be clean
-X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
-	score=-2.218, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
-	BAYES_50 0.80, PROLO_TRUST_RDNS -3.00, RDNS_DYNAMIC 0.98)
-X-ZiggoSMTP-MailScanner-From: hnsr@xs4all.nl
+	Fri, 25 Feb 2011 09:28:21 -0500
+X-SourceIP: 78.102.42.209
+Date: Fri, 25 Feb 2011 15:27:29 +0100
+From: Petr Uzel <petr.uzel@suse.cz>
+To: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@lst.de>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] block: kill loop_mutex
+Message-ID: <20110225142729.GA4029@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Cloudmark-Analysis: v=1.1 cv=kR4HTYXl3FXdRAFjS5RpcnDbDNViz/VYMWXR75RtSM0= c=1 sm=0 a=AyT_rQ6v2KAA:10 a=kj9zAlcOel0A:10 a=YgUFFZ79AAAA:8 a=1nSz6Ew-AAAA:8 a=VwQbUJbxAAAA:8 a=RzDwf6Uq8B1ls9frvZkA:9 a=tPwOqrpweMIfdP0nBq0A:7 a=qVc4xEfQzbJ2yAaiAfTzZIqYogEA:4 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-23 at 19:31 +0100, Hans Nieser wrote:
-> On Wed, 2011-02-23 at 13:21 +0100, Hans Nieser wrote:
+Following steps lead to deadlock in kernel:
 
-> > On Wed, 2011-02-23 at 10:55 +0100, Francois Romieu wrote:
-> > You may enable PCIEASPM_DEBUG, force 'pcie_aspm=off' and switch from
-> > SLUB to SLAB but it's a bit cargo-cultish.
+dd if=/dev/zero of=img bs=512 count=1000
+losetup -f img
+mkfs.ext2 /dev/loop0
+mount -t ext2 -o loop /dev/loop0 mnt
+umount mnt/
 
-This seemed to have no effect sadly
+Stacktrace:
+[<c102ec04>] irq_exit+0x36/0x59
+[<c101502c>] smp_apic_timer_interrupt+0x6b/0x75
+[<c127f639>] apic_timer_interrupt+0x31/0x38
+[<c101df88>] mutex_spin_on_owner+0x54/0x5b
+[<fe2250e9>] lo_release+0x12/0x67 [loop]
+[<c10c4eae>] __blkdev_put+0x7c/0x10c
+[<c10a4da5>] fput+0xd5/0x1aa
+[<fe2250cf>] loop_clr_fd+0x1a9/0x1b1 [loop]
+[<fe225110>] lo_release+0x39/0x67 [loop]
+[<c10c4eae>] __blkdev_put+0x7c/0x10c
+[<c10a59d9>] deactivate_locked_super+0x17/0x36
+[<c10b6f37>] sys_umount+0x27e/0x2a5
+[<c10b6f69>] sys_oldumount+0xb/0xe
+[<c1002897>] sysenter_do_call+0x12/0x26
+[<ffffffff>] 0xffffffff
 
-> Ok, I just tried 2.6.34, and after over 5 hours of running my script,
-> the system is still up and running, with only 24 'link up' messages on
-> dmesg, and having transferred 2.1TiB of data (1428042421 rx_packets, 45
-> rx_missed). So I'm going to assume the problem isn't present with this
-> kernel and try a bisect between it and 2.6.35
+Regression since 2a48fc0ab24241755dc9, which introduced the private
+loop_mutex as part of the BKL removal process.
 
-After spending the entire day yesterday and this morning bisecting this,
-I haven't gotten anywhere :/ I ended up at an unrelated commit as being
-the first known bad commit (84d4db0e22965334ae8272f324d31fb4657465aa), I
-think I may have marked a bad commit as good.. To properly bisect this
-issue I probably need to test each commit for a several hours across
-multiple reboots, but that is going to be too much time. I've at least
-been able to establish that following v2.6.34, the following commits are
-bad:
+As per [1], the mutex can be safely removed.
 
-c222fb2efaf1a421f5bf74403df40a9384ccf516
-4a973f2495fba8775d1c408b3ee7f2c19b19f13f
-84d4db0e22965334ae8272f324d31fb4657465aa
+[1] http://www.gossamer-threads.com/lists/linux/kernel/1341930
 
-After that I've been trying other various things (on 2.6.38-rc6+) and
-made some interesting and confusing discoveries;
+Addresses: https://bugzilla.novell.com/show_bug.cgi?id=669394
+Addresses: https://bugzilla.kernel.org/show_bug.cgi?id=29172
 
-- Setting pci=nomsi causes instant reboot when I start my test script
+Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
+---
+ drivers/block/loop.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-- Enabling only one CPU core in the BIOS seems to solve the whole lock
-  up problem, I have not been able to reproduce it after a few hours of
-  testing (nor on 2.6.35). (Normally on 2.6.38-rc6 it would crash in
-  just a few seconds.)
-
-  Additionally, when I force wget to use IPv4 with only one core
-  enabled, I'm suddenly getting a solid 112MB/s instead of the lousy
-  9-12MB/s I have been getting since 2.6.36 - but only when using one
-  core. With all 4 cores enabled, performance is bad again even when
-  forcing wget to use IPv4..
-
-  Using only one CPU core also reduces the 'link up' messages a lot, I
-  only got a couple instead of hundreds/thousands.
-
-- Enabling Tickless System (NO_HZ) kernel option seems to make lock up
-  occur less frequently (but it still happens), also much less 'link up'
-  messages, but also causes an occasional "NOHZ: local_softirq_pending
-  08" to appear on dmesg.
-
-- Enabling HyperThreading (I disable it by default due to an issue with
-  VirtualBox) in BIOS causes performance to get even worse, just 2-3MB/s
-  instead of 9-12MB/s
-
-
-I've also attempted to bisect the issue I have been having with slow
-transfer speed (I don't know if its related to the hang, but I figure if
-the hang ever gets fixed, this will have to be fixed as well to make
-r8169 usable for me), which started somewhere between v2.6.35 (good) and
-v2.6.36 (bad), unfortunately this too ended up at a seemingly unrelated
-commit:
-
-af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867 - clockevents: Remove the per
-cpu tick skew
-
-Just for kicks I attempted to revert this change on 2.6.38-rc6+, which
-seemed to reduce the frequency of 'link up' messages, but no other real
-change noticed.
-
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 49e6a54..dbf31ec 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -78,7 +78,6 @@
+ 
+ #include <asm/uaccess.h>
+ 
+-static DEFINE_MUTEX(loop_mutex);
+ static LIST_HEAD(loop_devices);
+ static DEFINE_MUTEX(loop_devices_mutex);
+ 
+@@ -1501,11 +1500,9 @@ static int lo_open(struct block_device *bdev, fmode_t mode)
+ {
+ 	struct loop_device *lo = bdev->bd_disk->private_data;
+ 
+-	mutex_lock(&loop_mutex);
+ 	mutex_lock(&lo->lo_ctl_mutex);
+ 	lo->lo_refcnt++;
+ 	mutex_unlock(&lo->lo_ctl_mutex);
+-	mutex_unlock(&loop_mutex);
+ 
+ 	return 0;
+ }
+@@ -1515,7 +1512,6 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
+ 	struct loop_device *lo = disk->private_data;
+ 	int err;
+ 
+-	mutex_lock(&loop_mutex);
+ 	mutex_lock(&lo->lo_ctl_mutex);
+ 
+ 	if (--lo->lo_refcnt)
+@@ -1540,7 +1536,6 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
+ out:
+ 	mutex_unlock(&lo->lo_ctl_mutex);
+ out_unlocked:
+-	mutex_unlock(&loop_mutex);
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.3
