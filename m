@@ -1,128 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab1BYXLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 18:11:53 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:39696 "EHLO
+	id S932988Ab1BYXNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 18:13:46 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:40839 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932977Ab1BYXLv (ORCPT
+	with ESMTP id S1753033Ab1BYXNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 18:11:51 -0500
+	Fri, 25 Feb 2011 18:13:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=L2NvSWGAc9uBYvlThxp2IGq1uXoG2ALCrnZix4F02QGDG65x/5+iy/Nbf7GO5blVhr
-         rstNT4BCtQPIp+vB8k0A==
-Message-ID: <4D6835F1.2050304@google.com>
-Date: Fri, 25 Feb 2011 15:06:25 -0800
-From: Mike Waychison <mikew@google.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>
-CC: Jon Mayer <jonmayer@google.com>, Tony Luck <tony.luck@intel.com>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
-        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
-Subject: [PATCH v2 6/5] Fix unaligned memory accesses in dmi-sysfs
-References: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=YSi1f5LwPRfhtnw789v16NsB2V2RpVZ1CAMb6engNWujXpjZ+bb3rI0mc1HDeRQqeY
+         j62veGgL1r5zavopO0Cg==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        heiko.carstens@de.ibm.com, a.p.zijlstra@chello.nl, hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] sched: Minor IRQ_TIME_ACCOUNTING code layout change
+Date: Fri, 25 Feb 2011 15:13:16 -0800
+Message-Id: <1298675596-10992-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <AANLkTi=7Z7QoMLEMdwC=4mo3j_i-Bv5WxfjwONDG=wL8@mail.gmail.com>
+References: <AANLkTi=7Z7QoMLEMdwC=4mo3j_i-Bv5WxfjwONDG=wL8@mail.gmail.com>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMI entries are arranged in memory back to back with no alignment
-guarantees. This means that the struct dmi_header passed to callbacks
-from dmi_walk() itself isn't byte aligned.  This causes problems on
-architectures that expect aligned data, such as IA64.
+There was a warning reported here
+lkml.org/lkml/2011/1/30/124
 
-The dmi-sysfs patchset introduced structure member accesses through
-this passed in dmi_header.  Fix this by memcpy()ing the structures to
-temporary locations on stack when inspecting/copying them.
+kernel/sched.c:3719: warning: 'irqtime_account_idle_ticks' defined but not used
+kernel/sched.c:3720: warning: 'irqtime_account_process_tick' defined but not used
 
-Signed-off-by: Mike Waychison <mikew@google.com>
-Tested-by: Tony Luck <tony.luck@intel.com>
+The patch on that thread here
+https://lkml.org/lkml/2011/1/31/363
+
+Added the needed ifdef and also moved the code around a bit to make
+it easy to follow. Here is the refresh of that patch on latest tip.
+
+This patch will not have any functional impact. Just the code layout change.
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
-  dmi-sysfs.c |   28 +++++++++++++---------------
-  1 file changed, 13 insertions(+), 15 deletions(-)
+ kernel/sched.c |   64 +++++++++++++++++++++++++++----------------------------
+ 1 files changed, 31 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
-index a5afd80..eb26d62 100644
---- a/drivers/firmware/dmi-sysfs.c
-+++ b/drivers/firmware/dmi-sysfs.c
-@@ -263,20 +263,16 @@ struct dmi_system_event_log {
-  	u8	supported_log_type_descriptos[0];
-  } __packed;
-
--static const struct dmi_system_event_log *to_sel(const struct 
-dmi_header *dh)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 36e936d..5fb5aa2 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3666,7 +3666,36 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 	__account_system_time(p, cputime, cputime_scaled, target_cputime64);
+ }
+ 
++/*
++ * Account for involuntary wait time.
++ * @cputime: the cpu time spent in involuntary wait
++ */
++void account_steal_time(cputime_t cputime)
++{
++	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
++	cputime64_t cputime64 = cputime_to_cputime64(cputime);
++
++	cpustat->steal = cputime64_add(cpustat->steal, cputime64);
++}
++
++/*
++ * Account for idle time.
++ * @cputime: the cpu time spent in idle wait
++ */
++void account_idle_time(cputime_t cputime)
++{
++	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
++	cputime64_t cputime64 = cputime_to_cputime64(cputime);
++	struct rq *rq = this_rq();
++
++	if (atomic_read(&rq->nr_iowait) > 0)
++		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
++	else
++		cpustat->idle = cputime64_add(cpustat->idle, cputime64);
++}
++
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
++
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ /*
+  * Account a tick to a process and cpustat
+@@ -3728,42 +3757,11 @@ static void irqtime_account_idle_ticks(int ticks)
+ 	for (i = 0; i < ticks; i++)
+ 		irqtime_account_process_tick(current, 0, rq);
+ }
+-#else
++#else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ static void irqtime_account_idle_ticks(int ticks) {}
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ 						struct rq *rq) {}
+-#endif
+-#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
+-
+-/*
+- * Account for involuntary wait time.
+- * @steal: the cpu time spent in involuntary wait
+- */
+-void account_steal_time(cputime_t cputime)
 -{
--	return (const struct dmi_system_event_log *)dh;
+-	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+-	cputime64_t cputime64 = cputime_to_cputime64(cputime);
+-
+-	cpustat->steal = cputime64_add(cpustat->steal, cputime64);
 -}
 -
-  #define DMI_SYSFS_SEL_FIELD(_field) \
-  static ssize_t dmi_sysfs_sel_##_field(struct dmi_sysfs_entry *entry, \
-  				      const struct dmi_header *dh, \
-  				      char *buf) \
-  { \
--	const struct dmi_system_event_log *sel = to_sel(dh); \
--	if (sizeof(*sel) > dmi_entry_length(dh)) \
-+	struct dmi_system_event_log sel; \
-+	if (sizeof(sel) > dmi_entry_length(dh)) \
-  		return -EIO; \
--	return sprintf(buf, "%u\n", sel->_field); \
-+	memcpy(&sel, dh, sizeof(sel)); \
-+	return sprintf(buf, "%u\n", sel._field); \
-  } \
-  static DMI_SYSFS_MAPPED_ATTR(sel, _field)
-
-@@ -403,26 +399,28 @@ static ssize_t dmi_sel_raw_read_helper(struct 
-dmi_sysfs_entry *entry,
-  				       void *_state)
-  {
-  	struct dmi_read_state *state = _state;
--	const struct dmi_system_event_log *sel = to_sel(dh);
-+	struct dmi_system_event_log sel;
-
--	if (sizeof(*sel) > dmi_entry_length(dh))
-+	if (sizeof(sel) > dmi_entry_length(dh))
-  		return -EIO;
-
--	switch (sel->access_method) {
-+	memcpy(&sel, dh, sizeof(sel));
-+
-+	switch (sel.access_method) {
-  	case DMI_SEL_ACCESS_METHOD_IO8:
-  	case DMI_SEL_ACCESS_METHOD_IO2x8:
-  	case DMI_SEL_ACCESS_METHOD_IO16:
--		return dmi_sel_raw_read_io(entry, sel, state->buf,
-+		return dmi_sel_raw_read_io(entry, &sel, state->buf,
-  					   state->pos, state->count);
-  	case DMI_SEL_ACCESS_METHOD_PHYS32:
--		return dmi_sel_raw_read_phys32(entry, sel, state->buf,
-+		return dmi_sel_raw_read_phys32(entry, &sel, state->buf,
-  					       state->pos, state->count);
-  	case DMI_SEL_ACCESS_METHOD_GPNV:
-  		pr_info("dmi-sysfs: GPNV support missing.\n");
-  		return -EIO;
-  	default:
-  		pr_info("dmi-sysfs: Unknown access method %02x\n",
--			sel->access_method);
-+			sel.access_method);
-  		return -EIO;
-  	}
-  }
-@@ -595,7 +593,7 @@ static void __init dmi_sysfs_register_handle(const 
-struct dmi_header *dh,
-  	}
-
-  	/* Set the key */
--	entry->dh = *dh;
-+	memcpy(&entry->dh, dh, sizeof(*dh));
-  	entry->instance = instance_counts[dh->type]++;
-  	entry->position = position_count++;
+-/*
+- * Account for idle time.
+- * @cputime: the cpu time spent in idle wait
+- */
+-void account_idle_time(cputime_t cputime)
+-{
+-	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+-	cputime64_t cputime64 = cputime_to_cputime64(cputime);
+-	struct rq *rq = this_rq();
+-
+-	if (atomic_read(&rq->nr_iowait) > 0)
+-		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
+-	else
+-		cpustat->idle = cputime64_add(cpustat->idle, cputime64);
+-}
+-
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+ /*
+  * Account a single tick of cpu time.
+-- 
+1.7.3.1
 
