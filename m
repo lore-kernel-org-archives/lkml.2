@@ -1,67 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab1BYBZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 20:25:40 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:36987 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756096Ab1BYBZj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 20:25:39 -0500
-From: Philip Rakity <prakity@marvell.com>
-To: Chris Ball <cjb@laptop.org>
-CC: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>,
-        Jae hoon Chung <jh80.chung@gmail.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Thu, 24 Feb 2011 17:25:26 -0800
-Subject: Re: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
-	cmd
-Thread-Topic: [PATCH 1/1]mmc: set timeout for SDHCI host before sending busy
-	cmd
-Thread-Index: AcvUiuJNACx/gxETSDC0n2ivBD15QA==
-Message-ID: <8C92BC0B-B9F7-4D48-AD24-6096F92D6998@marvell.com>
-References: <20110224111935.GB7169@intel.com>
- <AANLkTinJEXc_x36Rht=XfYEtjShAYKWRDcsjGFtd=5Tj@mail.gmail.com>
- <5D8008F58939784290FAB48F5497519835CE59FE81@shsmsx502.ccr.corp.intel.com>
- <79DD18D4-C79A-4B08-B9E6-050D7EF2FC3D@marvell.com>
- <20110224201504.GA12913@void.printf.net>
-In-Reply-To: <20110224201504.GA12913@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932263Ab1BYBe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 20:34:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21714 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932233Ab1BYBe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 20:34:57 -0500
+Date: Fri, 25 Feb 2011 02:34:13 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
+Message-ID: <20110225013413.GI23252@random.random>
+References: <1298425922-23630-1-git-send-email-andi@firstfloor.org>
+ <1298425922-23630-9-git-send-email-andi@firstfloor.org>
+ <20110225005155.GH23252@random.random>
+ <20110225011205.GK5818@one.firstfloor.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110225011205.GK5818@one.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Feb 24, 2011, at 12:15 PM, Chris Ball wrote:
-
-> On Thu, Feb 24, 2011 at 10:32:30AM -0800, Philip Rakity wrote:
->> proposed this a while ago and strongly support just removing the quirk for broken timeout and setting the timeout value to maximum of 0xE.
->> 
->> This also handles the case of the sd device having a timeout value too low.  In my testing I have come across SD cards that do not provide the correct value.
->> We force our pxa168, pxa910, and mmp2 controllers to have 0xE.  
+On Fri, Feb 25, 2011 at 02:12:05AM +0100, Andi Kleen wrote:
+> On Fri, Feb 25, 2011 at 01:51:55AM +0100, Andrea Arcangeli wrote:
+> > On Tue, Feb 22, 2011 at 05:52:02PM -0800, Andi Kleen wrote:
+> > > +	"thp_direct_alloc",
+> > > +	"thp_daemon_alloc",
+> > > +	"thp_direct_fallback",
+> > > +	"thp_daemon_alloc_failed",
+> > 
+> > I've been wondering if we should do s/daemon/khugepaged/ or
 > 
-> Yeah, OLPC's CaFe controller -- which might be the same hardware as yours,
-> actually -- has the same problem.
-
-different controller not same as on mmp2, pxa168, pxa910
-
+> Fine by me.
 > 
-> Does anyone know of a reason (beyond strict spec-compliance, I suppose)
-> for honoring the timeout value rather than using 0xE everywhere?  If not,
-> I'm willing to try out Philip's suggestion.
+> > s/daemon/collapse/.
+> > 
+> > And s/direct/fault/.
 > 
-> Thanks,
-> 
-> -- 
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
+> Fine for me too.
 
+So this would be it. (incremental with previous patch I sent that
+adjusts the location of THP_SPLIT)
+
+===
+Subject: thp: make vmstat more accurate
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+s/direct/fault/g s/daemon/collapse/g
+
+It's better to account even if memcg fails if the allocation succeeded so
+it gives a bit more accurate ratios on the effectiveness of the VM in
+creating hugepages. This adds coverage to the not NUMA case and it actually
+uses THP_COLLAPSE_ALLOC. The thp_collapse_alloc is closely related to the
+/sys/kernel/mm/transparent_hugepage/khugepaged/pages_collapsed but just like
+for memcg this also accounts when the strict _allocation_ succeed but the
+collapse can't go through after releasing the mmap_sem for a little
+(pages_collapsed only accounts when the collapse really went through in
+addition to the strict THP allocation).
+
+Output under heavy swap load with khugepaged scan_sleep_millisecs=0
+(and new kswapd compaction logic) follows.
+
+$ vmstat 1
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 5 10 3390416 147772   2108   8476    0 42196     0 42196 6908  610  0  1 88 11
+ 1 12 3493968 153624   2104   8968    0 103552     0 103552 2664  901  0  6 41 52
+ 1 13 3598636 158336   2104   8404    0 104668     0 104668  778  431  0  5 60 34
+ 1 12 3377120 130148   2104   7576  184 42120   184 42120  998  399  0  5 38 57
+ 0 11 2419352 149360   2104   8844  232 19936   232 19936 9028  718  3  4 83 11
+ 0 13 2488964 139476   2104   8036    0 76184     0 76184 3340 1133  0  1 89 11
+$ grep thp /proc/vmstat 
+thp_fault_alloc 44725
+thp_fault_fallback 364
+thp_collapse_alloc 59
+thp_collapse_alloc_failed 3
+thp_split 14223
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/vmstat.h |    8 ++++----
+ mm/huge_memory.c       |   27 +++++++++++++++++++--------
+ mm/vmstat.c            |    8 ++++----
+ 3 files changed, 27 insertions(+), 16 deletions(-)
+
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -59,10 +59,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
+ 		UNEVICTABLE_PGSTRANDED,	/* unable to isolate on unlock */
+ 		UNEVICTABLE_MLOCKFREED,
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-	        THP_DIRECT_ALLOC,
+-		THP_DAEMON_ALLOC,
+-		THP_DIRECT_FALLBACK,
+-		THP_DAEMON_ALLOC_FAILED,
++	        THP_FAULT_ALLOC,
++		THP_FAULT_FALLBACK,
++		THP_COLLAPSE_ALLOC,
++		THP_COLLAPSE_ALLOC_FAILED,
+ 		THP_SPLIT,
+ #endif
+ 		NR_VM_EVENT_ITEMS
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -681,14 +681,14 @@ int do_huge_pmd_anonymous_page(struct mm
+ 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+ 					  vma, haddr, numa_node_id(), 0);
+ 		if (unlikely(!page)) {
+-			count_vm_event(THP_DIRECT_FALLBACK);
++			count_vm_event(THP_FAULT_FALLBACK);
+ 			goto out;
+ 		}
++		count_vm_event(THP_FAULT_ALLOC);
+ 		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+ 			put_page(page);
+ 			goto out;
+ 		}
+-		count_vm_event(THP_DIRECT_ALLOC);
+ 		return __do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page);
+ 	}
+ out:
+@@ -911,12 +911,13 @@ int do_huge_pmd_wp_page(struct mm_struct
+ 		new_page = NULL;
+ 
+ 	if (unlikely(!new_page)) {
+-		count_vm_event(THP_DIRECT_FALLBACK);
++		count_vm_event(THP_FAULT_FALLBACK);
+ 		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
+ 						   pmd, orig_pmd, page, haddr);
+ 		put_page(page);
+ 		goto out;
+ 	}
++	count_vm_event(THP_FAULT_ALLOC);
+ 
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+ 		put_page(new_page);
+@@ -924,7 +925,7 @@ int do_huge_pmd_wp_page(struct mm_struct
+ 		ret |= VM_FAULT_OOM;
+ 		goto out;
+ 	}
+-	count_vm_event(THP_DIRECT_ALLOC);
++
+ 	copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
+ 	__SetPageUptodate(new_page);
+ 
+@@ -1784,10 +1785,11 @@ static void collapse_huge_page(struct mm
+ 				      node, __GFP_OTHER_NODE);
+ 	if (unlikely(!new_page)) {
+ 		up_read(&mm->mmap_sem);
+-		count_vm_event(THP_DAEMON_ALLOC_FAILED);
++		count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 		*hpage = ERR_PTR(-ENOMEM);
+ 		return;
+ 	}
++	count_vm_event(THP_COLLAPSE_ALLOC);
+ #endif
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
+ 		up_read(&mm->mmap_sem);
+@@ -2152,8 +2154,11 @@ static void khugepaged_do_scan(struct pa
+ #ifndef CONFIG_NUMA
+ 		if (!*hpage) {
+ 			*hpage = alloc_hugepage(khugepaged_defrag());
+-			if (unlikely(!*hpage))
++			if (unlikely(!*hpage)) {
++				count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 				break;
++			}
++			count_vm_event(THP_COLLAPSE_ALLOC);
+ 		}
+ #else
+ 		if (IS_ERR(*hpage))
+@@ -2193,8 +2198,11 @@ static struct page *khugepaged_alloc_hug
+ 
+ 	do {
+ 		hpage = alloc_hugepage(khugepaged_defrag());
+-		if (!hpage)
++		if (!hpage) {
++			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 			khugepaged_alloc_sleep();
++		} else
++			count_vm_event(THP_COLLAPSE_ALLOC);
+ 	} while (unlikely(!hpage) &&
+ 		 likely(khugepaged_enabled()));
+ 	return hpage;
+@@ -2211,8 +2219,11 @@ static void khugepaged_loop(void)
+ 	while (likely(khugepaged_enabled())) {
+ #ifndef CONFIG_NUMA
+ 		hpage = khugepaged_alloc_hugepage();
+-		if (unlikely(!hpage))
++		if (unlikely(!hpage)) {
++			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 			break;
++		}
++		count_vm_event(THP_COLLAPSE_ALLOC);
+ #else
+ 		if (IS_ERR(hpage)) {
+ 			khugepaged_alloc_sleep();
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -948,10 +948,10 @@ static const char * const vmstat_text[] 
+ #endif
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-	"thp_direct_alloc",
+-	"thp_daemon_alloc",
+-	"thp_direct_fallback",
+-	"thp_daemon_alloc_failed",
++	"thp_fault_alloc",
++	"thp_fault_fallback",
++	"thp_collapse_alloc",
++	"thp_collapse_alloc_failure",
+ 	"thp_split",
+ #endif
+ };
