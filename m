@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1BYVQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:16:50 -0500
-Received: from vs1.gondor.com ([78.47.100.202]:54051 "EHLO
-	mail.moria.gondor.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752525Ab1BYVQs (ORCPT
+	id S932270Ab1BYVVt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:21:49 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:57863 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab1BYVVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:16:48 -0500
-Date: Fri, 25 Feb 2011 22:16:46 +0100
-From: Jan Niehusmann <jan@gondor.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: [PATCH] intel-gtt: fix memory corruption with GM965 and >4GB
- RAM
-Message-ID: <20110225211646.GA6837@x61s.reliablesolutions.de>
-References: <20110223233022.GA3439@x61s.reliablesolutions.de>
- <20110225123056.GA3759@x61s.reliablesolutions.de>
- <b9dded$i2gkhr@orsmga002.jf.intel.com>
+	Fri, 25 Feb 2011 16:21:47 -0500
+Date: Fri, 25 Feb 2011 15:21:42 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>, Len Brown <lenb@kernel.org>
+Subject: Re: Performance/resume issues on Toshiba NB305
+Message-ID: <20110225212142.GC24686@thinkpad-t410>
+Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Arjan van de Ven <arjan@infradead.org>,
+	Venkatesh Pallipadi <venki@google.com>, Len Brown <lenb@kernel.org>
+References: <20110225164239.GA24686@thinkpad-t410>
+ <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <b9dded$i2gkhr@orsmga002.jf.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-
-On Fri, Feb 25, 2011 at 08:22:53PM +0000, Chris Wilson wrote:
-> On Fri, 25 Feb 2011 13:30:56 +0100, Jan Niehusmann <jan@gondor.com> wrote:
-> > Further investigation revealed that the corrupted address is
-> > (dev_priv->status_page_dmah->busaddr & 0xffffffff), ie. the beginning of
-> > the hardware status page of the i965 graphics card, cut to 32 bits.
+On Fri, Feb 25, 2011 at 09:37:39PM +0100, Thomas Gleixner wrote:
+> On Fri, 25 Feb 2011, Seth Forshee wrote:
 > 
-> 965GM explicitly supports 36bits of addressing in the PTE. The only
-> exception is that general state (part of the 3D engine) must be located in
-> the lower 4GiB.
+> Please always Cc the relevant maintainers. I just got notified by
+> someone who accidentaly stumbled over that.
 
-I'm not claiming that 965GM doesn't do 36 bits. In fact I actually see
-activity in /sys/kernel/debug/dri/64/i915_gem_hws, and everything seems
-to be working well, when the status page is above 4GB - if one ignores
-the tiny detail that the wrong memory location gets overwritten,
-sometimes...
+I'll be sure to remember that in the future.
 
-> Simply ignoring the upper 4bits is the wrong approach and means that the
-> PTE then point to random pages, and completely irrelevant to the physical
-> address used in the hardware status page address register.
+> > I've been looking into a couple of problems with this machine that have
+> > me a bit stumped at the moment. The two problems may or may not be
+> > related, so I'm including details about both issues below. If anyone has
+> > any ideas, I'd love to hear them. Note that these are not recent
+> > regressions; they've been around since at least 2.6.32.
+> > 
+> > The CPU in this machine is an Atom N450.
+> > 
+> > When booted normally the performance on this machine is very poor, but
+> > when booted with any of nohz=off, nolapic, or nohpet it improves
+> > significantly. The performance also improves if I use the patch below to
+> > force the hpet to remain in periodic mode (with hpet=periodic on the
+> > command line).
+> > 
+> > One other thing I noticed when I had added some logging related to hpet
+> > rearming is 3-5 second periods of no log activity occurring fairly
+> > frequently, whereas such inactive periods are infrequent when
+> > performance is good and are also infrequent on another machine with very
+> > similar hardware and no performance issues.
+> 
+> That seems to be related to low power states. When the machine goes
+> idle we switch into lower power states and that requires to use the
+> hpet instead of the local apic timer as that one stops.
+> 
+> You could verify that theory by booting with processor.max_cstate=1
 
-Doesn't setting DMA_BIT_MASK(32) only change the region DMA memory is
-allocated from? I made that change just to make sure one gets addresses
-which are safe even if the chipset sometimes ignores address bit 32. The
-only negative impact I could think of is the allocation may fail if no
-appropriate memory is available. Am I wrong?
+This fixes the performance in combination with intel_idle.max_cstate=0.
+Alternately, intel_idle.max_cstate=1 works. But the resume still hangs.
 
-> I have been considering:
+> > The machine also hangs for 5 minutes during resume, unless booted with
+> > both nohz=off and highres=off, or with hpet=periodic using the patch
+> > below. I've traced this down to hanging in an SMI handler during the
+> > ACPI _WAK method execution. The 5 minutes corresponds to how long it
+> > takes for the low 32 bits of the hpet to wrap in this machine, and since
+> > the options that eliminate the hang result in the hpet being in periodic
+> > mode during _WAK method execution I suspect that the SMI handler is
+> > hanging until a timer interrupt happens.
+> > 
+> > One possible explanation here is that the performance problems are also
+> > related to hangs in SMI handlers until there's a timer interrupt,
+> > although I don't know how that explains why some of the command line
+> > options eliminate the performance issues.
+> 
+> Well, that's simple. If you disable NOHZ then we never go into deep
+> idle because the next timer interrupt will arrive in a very short time
+> span. nohpet makes it use the PIT which has a very short (25ms)
+> maximum oneshot time. nolapic disables a lot of the functionality as
+> well.
 
-> +       if (IS_BRROADWATER(dev) || IS_CRESTLINE(dev))
-> +               dma_set_coherent_mask(&dev->pdev->dev, DMA_BIT_MASK(32));
+Makes sense.
 
-> to prevent hitting the erratum.
+Is the answer to quirk the machine to avoid deep C-states, or is there
+some better way I can fix this?
 
-So is there a known erratum about these chips? I didn't find errata
-documents online, but I only did a short google search and may have
-missed them.
+> > --- a/kernel/time/tick-broadcast.c
+> > +++ b/kernel/time/tick-broadcast.c
+> > @@ -565,10 +565,15 @@ void tick_broadcast_switch_to_oneshot(void)
+> >  
+> >  	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+> >  
+> > -	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+> >  	bc = tick_broadcast_device.evtdev;
+> > +	if (bc && !(bc->features & CLOCK_EVT_FEAT_ONESHOT))
+> > +		goto unlock;
+> > +
+> > +	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
+> >  	if (bc)
+> >  		tick_broadcast_setup_oneshot(bc);
+> > +
+> > +unlock:
+> >  	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+> >  }
+> 
+> Why would you need that? We should not call that when the broadcast
+> device does not have TICKDEV_MODE_ONESHOT. If we do the bug is
+> somewhere else.
 
-> However your bug looks to be:
-
-> -       if (INTEL_INFO(dev)->gen >= 4)
-> -               dev_priv->dma_status_page |= (dev_priv->dma_status_page >> 28) &
-> -                                            0xf0;
-> +       if (INTEL_INFO(dev)->gen >= 4) /* 36-bit addressing */
-> +               dev_priv->dma_status_page |=
-> +                       (dev_priv->status_page_dmah->busaddr >> 28) & 0xf0;
-
-Don't think so. dev_priv->dma_status_page gets initialized to
-dev_priv->status_page_dmah->busaddr a few lines above, and it's 64 bit,
-so that diff doesn't change the result of the computation.
-
-Jan
+Then there must be a bug. When I cleared CLOCK_EVT_FEAT_ONESHOT for the
+HPET without this change the HPET got put into oneshot mode. The local
+tick device is checked before switching to nohz, but not the broadcast
+device. This change was just a quick hack to get around that and test my
+theory.
 
