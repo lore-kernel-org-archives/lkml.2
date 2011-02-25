@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1BYPfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 10:35:12 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46825 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab1BYPfK convert rfc822-to-8bit (ORCPT
+	id S1756159Ab1BYPiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 10:38:00 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:41107 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1BYPiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 10:35:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=SgPFteAR8rtn+HFBhLAdy+fuGhK9zPUjb1nW+e++Jzrc1znm1kUVctmn4cgXeoNtO/
-         dPkKFQjVW0tYkRk5i9oWLQgS72afdeS9z+UZiumw4tUgv8HEKdhTS+XQwPfXgyb7e152
-         Wfu1fdTkBj/QGQNBeaxFOmmRGwx8Um0eJ2raw=
+	Fri, 25 Feb 2011 10:38:00 -0500
+X-IronPort-AV: E=Sophos;i="4.62,225,1297036800"; 
+   d="scan'208";a="4510677"
+Date: Fri, 25 Feb 2011 15:38:35 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH 3/7] xen-blkfront: handle Xen major numbers other than
+ XENVBD
+In-Reply-To: <20110222191948.GA17866@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1102251528480.2156@kaball-desktop>
+References: <alpine.DEB.2.00.1102161739370.2826@kaball-desktop> <1297878787-378-3-git-send-email-stefano.stabellini@eu.citrix.com> <20110222191948.GA17866@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Fri, 25 Feb 2011 15:35:08 +0000
-X-Google-Sender-Auth: 2aSzNzy-Jpnq-H346VUtGRr3bTA
-Message-ID: <AANLkTin-2FH-c_5DVpW29zvARW827Ebun31=z2b+jB00@mail.gmail.com>
-Subject: OF IOAPIC bindings compile error
-From: Daniel Drake <dsd@laptop.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Andres Salomon <dilinger@queued.net>, tglx@linutronix.de
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 22 Feb 2011, Konrad Rzeszutek Wilk wrote:
+> > @@ -120,6 +120,10 @@ static DEFINE_SPINLOCK(minor_lock);
+> >  #define EXTENDED (1<<EXT_SHIFT)
+> >  #define VDEV_IS_EXTENDED(dev) ((dev)&(EXTENDED))
+> >  #define BLKIF_MINOR_EXT(dev) ((dev)&(~EXTENDED))
+> > +#define EMULATED_HD_DISK_MINOR_OFFSET (0)
+> > +#define EMULATED_HD_DISK_NAME_OFFSET (EMULATED_HD_DISK_MINOR_OFFSET / 256)
+> 
+> 0 / 256 ? Why not just 0?
 
-Testing linux-2.6-x86.git, I encountered a compile error which seems
-to caused by the following commit with X86_IO_APIC=n:
+Because if we set EMULATED_HD_DISK_MINOR_OFFSET to something different
+from 0, then the divison by 256 would matter.
+If you look at the code below you'll see that:
 
-commit bcc7c1244fcfd852b9f4590935491057e1cab9dd
-Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date:   Tue Feb 22 21:07:44 2011 +0100
+offset = minor / nr_parts;
 
-    x86: ioapic: Add OF bindings for IO_APIC
-
-Error is:
-arch/x86/kernel/devicetree.c: In function ‘x86_dtb_find_config’:
-arch/x86/kernel/devicetree.c:288:3: error: lvalue required as left
-operand of assignment
-
-It can be fixed by inserting #ifdef CONFIG_X86_IO_APIC inside
-x86_dtb_find_config, but I'm not sure if this is the correct approach.
-
-.config file in question:
-http://dev.laptop.org/~dsd/20110225/ioioapic-problem-config.txt
-
-Daniel
+where nr_parts is 256 and offset is the the device name offset.
+EMULATED_HD_DISK_MINOR_OFFSET is the offset of the variable "minor" and
+EMULATED_HD_DISK_NAME_OFFSET is the offset of the variable "offset".
