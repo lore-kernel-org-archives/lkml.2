@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab1BYU6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:58:09 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:40999 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751227Ab1BYU6H (ORCPT
+	id S1754516Ab1BYU7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:59:53 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54762 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab1BYU7v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:58:07 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: VkvYKZoVM1l5cIjZehq6bD6_ebvXfCaTbjCyF.hk6RZOTTP
- Cbqooe.nKXibXRjJEQAoHCQvwwH3NTNKKZg_ffbCqG5GqWNud2HwAKzEK9K0
- QKcsAPRBwx6eeIQjnUl0UVUkYKgyHT.OSQBrAm8z8biPUsi.uFRH7Rn.W5bc
- ITkRflXv4C2ULvaK9S4W2YF2RE2rkU9Z0zHuDB8AD22FaKk5ns4uwBh5FcWz
- tDClmk239O5sosUGi4SHZ6PoXugzjPq45nwWJ9RiQmBMtfieoSs0Pxp8RGfE
- Ft3yKeomSxFyWMAdyZUxWxFNZGHq7hK5PKWpWPZJncB6CT.4-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 25 Feb 2011 14:58:02 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg double V3 3/5] Generic support for
- this_cpu_cmpxchg_double
-In-Reply-To: <1298667222.6376.23.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.DEB.2.00.1102251457160.7359@router.home>
-References: <20110225173850.486326452@linux.com>  <20110225174155.786331687@linux.com>  <20110225202837.GC23161@home.goodmis.org>  <alpine.DEB.2.00.1102251443500.7359@router.home> <1298667222.6376.23.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 25 Feb 2011 15:59:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uCZulXYOAFseqo6rmndMTdyfx2+sHf2eUK1HPsCjaZw5Qeto0CDL6GOx1qOlgLbdkT
+         c0DDMrxIsrORoTE8C1iB2Kycur5cTN7/ZozcwtR59/sTMpVBizF1eQlCEhA3ctcDskQB
+         SpK2KcaaJot2KrabzmzozB5Jsst0Z5VWOsIxA=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1298666310.2554.47.camel@bwh-desktop>
+References: <1298660879.2554.23.camel@bwh-desktop>
+	<20110225.111606.115927805.davem@davemloft.net>
+	<1298662216.2554.33.camel@bwh-desktop>
+	<20110225.114351.28809001.davem@davemloft.net>
+	<1298663585.2554.39.camel@bwh-desktop>
+	<1298666310.2554.47.camel@bwh-desktop>
+Date: Fri, 25 Feb 2011 21:59:50 +0100
+Message-ID: <AANLkTikmtKksP6o1hecf0=ZnRv0j4+_Q326UEG8ss16k@mail.gmail.com>
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel modules
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: David Miller <davem@davemloft.net>, segoon@openwall.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
+        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Feb 2011, Steven Rostedt wrote:
+2011/2/25 Ben Hutchings <bhutchings@solarflare.com>:
+> I bet something like this (plus Vasiliy's changes to static module
+> aliases) would cover 99.9% of legitimate uses of this feature:
+>
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 54aaca6..0d09baa 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -1120,8 +1120,20 @@ void dev_load(struct net *net, const char *name)
+>        dev = dev_get_by_name_rcu(net, name);
+>        rcu_read_unlock();
+>
+> -       if (!dev && capable(CAP_NET_ADMIN))
+> -               request_module("%s", name);
+> +       if (!dev && capable(CAP_NET_ADMIN)) {
+> +               /* Check whether the name looks like one that a net
+> +                * driver will generate initially.  If not, require a
+> +                * module alias with a suitable prefix, so that this
+> +                * can't be used to load arbitrary modules.
+> +                */
+> +               if ((strncmp(name, "eth", 3) == 0 &&
+> +                    isdigit((unsigned char)name[3])) ||
+> +                   (strncmp(name, "wlan", 4) == 0 &&
+> +                    isdigit((unsigned char)name[4])))
+> +                       request_module("%s", name);
+> +               else
+> +                       request_module("netdev-%s", name);
+> +       }
+>  }
+>  EXPORT_SYMBOL(dev_load);
+>
 
-> I was thinking that if these are per_cpu then they would be global and
-> thus constant. But those are done at link time, which is too late.
+This might be better as:
 
-Well per_cpu data can also be dynamically allocated via alloc_percpu.
-Which is the use case here.
+if (request_module("netdev-%s", name))
+    ... fallback
 
+Then after some years the fallback could be removed if announced properly.
+
+Best Regards,
+Micha³ Miros³aw
