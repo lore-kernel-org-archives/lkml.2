@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab1BYOTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 09:19:36 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38832 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab1BYOTf convert rfc822-to-8bit (ORCPT
+	id S932463Ab1BYOWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 09:22:53 -0500
+Received: from smtpq4.tb.mail.iss.as9143.net ([212.54.42.167]:44898 "EHLO
+	smtpq4.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755669Ab1BYOWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 09:19:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=kzJynKYbgXsPbyw/kBuMLYbxn3Ra/ErsOs5QLAk6ZYsWN8xem0TuUbpTQNtZFjATkB
-         cEz1sxnMDHzfM1yGdxQoNm3qyygA2P08W6qX1s8JFBQcSjzSQ5ihxDMPc//3z5XjIM5n
-         p2VQzZj9ljgWIXvkPcESIoSkz5Rdiplgtqs70=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=29myerzgH6WRCSOPKpaDnGgEtQacVHvxRoQT_@mail.gmail.com>
-References: <20110219150644.681D59D401D@zog.reactivated.net>
-	<AANLkTi=29myerzgH6WRCSOPKpaDnGgEtQacVHvxRoQT_@mail.gmail.com>
-Date: Fri, 25 Feb 2011 14:19:33 +0000
-X-Google-Sender-Auth: JnPfTUfRmdSM4fcgmr4qVxO0Tk0
-Message-ID: <AANLkTi=2a=9=k+ZG46yqKOaHd9tCkJVm4QRxGmgbRzsv@mail.gmail.com>
-Subject: Re: [PATCH] olpc_battery: bind to device tree
-From: Daniel Drake <dsd@laptop.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        linux-kernel@vger.kernel.org, dilinger@queued.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 Feb 2011 09:22:52 -0500
+X-Greylist: delayed 2206 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Feb 2011 09:22:52 EST
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+From: Hans Nieser <hnsr@xs4all.nl>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1298485893.31256.40.camel@krikkit>
+References: <1298396007.23906.27.camel@krikkit>
+	 <20110223095538.GA12662@electric-eye.fr.zoreil.com>
+	 <1298463704.31256.29.camel@krikkit>  <1298485893.31256.40.camel@krikkit>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Feb 2011 14:45:42 +0100
+Message-ID: <1298641542.18103.48.camel@krikkit>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
+X-ZiggoSMTP-MailScanner-ID: 1PsxzL-0001jK-3D
+X-ZiggoSMTP-MailScanner: Found to be clean
+X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
+	score=-2.218, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_50 0.80, PROLO_TRUST_RDNS -3.00, RDNS_DYNAMIC 0.98)
+X-ZiggoSMTP-MailScanner-From: hnsr@xs4all.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 February 2011 20:34, Grant Likely <grant.likely@secretlab.ca> wrote:
-> As mentioned in the other thread, matching by name is strongly
-> discouraged.  It isn't very accurate and compatible is the preferred
-> method for binding devices.  'battery' in particular is highly
-> non-specific.
->
-> I do understand that you don't have a compatible property in the
-> current firmware, and to a certain extent we have to live with what
-> we're given by the kernel.  However, I think it would be better in the
-> OLPC case to find the battery node and add a compatible property
-> before registering a platform_device for it.  (or use a bus notifier
-> to tell you when it is registered, and add 'compatible' at that
-> point.)  That way we the uncertainty is taken care of in the board
-> support code without polluting the driver matching namespace.
+On Wed, 2011-02-23 at 19:31 +0100, Hans Nieser wrote:
+> On Wed, 2011-02-23 at 13:21 +0100, Hans Nieser wrote:
 
-Thanks for the review. This and the rest of your feedback makes sense.
+> > On Wed, 2011-02-23 at 10:55 +0100, Francois Romieu wrote:
+> > You may enable PCIEASPM_DEBUG, force 'pcie_aspm=off' and switch from
+> > SLUB to SLAB but it's a bit cargo-cultish.
 
-Would you mind commenting on exactly how this should look?
+This seemed to have no effect sadly
 
-Here are the changes i'm planning to make, both to the firmware and
-with kernel code as you suggest to fixup device trees for systems with
-old firmware:
+> Ok, I just tried 2.6.34, and after over 5 hours of running my script,
+> the system is still up and running, with only 24 'link up' messages on
+> dmesg, and having transferred 2.1TiB of data (1428042421 rx_packets, 45
+> rx_missed). So I'm going to assume the problem isn't present with this
+> kernel and try a bisect between it and 2.6.35
 
-/battery@0/compatible property added with value "olpc-battery" (XO-1 and XO-1.5)
-/pci/isa@f/rtc@i70/compatible property prepended with "olpc-xo1-rtc,"
-(XO-1 only)
-/pci/display@1,1/dcon device added, name=dcon compatible=olpc-dcon
-(XO-1 and XO-1.5)
+After spending the entire day yesterday and this morning bisecting this,
+I haven't gotten anywhere :/ I ended up at an unrelated commit as being
+the first known bad commit (84d4db0e22965334ae8272f324d31fb4657465aa), I
+think I may have marked a bad commit as good.. To properly bisect this
+issue I probably need to test each commit for a several hours across
+multiple reboots, but that is going to be too much time. I've at least
+been able to establish that following v2.6.34, the following commits are
+bad:
 
-In addition to the battery patch you reviewed, we plan to make the
-olpc-rtc and DCON drivers bind to device tree nodes, which is the
-reason behind the other changes.
+c222fb2efaf1a421f5bf74403df40a9384ccf516
+4a973f2495fba8775d1c408b3ee7f2c19b19f13f
+84d4db0e22965334ae8272f324d31fb4657465aa
 
-Daniel
+After that I've been trying other various things (on 2.6.38-rc6+) and
+made some interesting and confusing discoveries;
+
+- Setting pci=nomsi causes instant reboot when I start my test script
+
+- Enabling only one CPU core in the BIOS seems to solve the whole lock
+  up problem, I have not been able to reproduce it after a few hours of
+  testing (nor on 2.6.35). (Normally on 2.6.38-rc6 it would crash in
+  just a few seconds.)
+
+  Additionally, when I force wget to use IPv4 with only one core
+  enabled, I'm suddenly getting a solid 112MB/s instead of the lousy
+  9-12MB/s I have been getting since 2.6.36 - but only when using one
+  core. With all 4 cores enabled, performance is bad again even when
+  forcing wget to use IPv4..
+
+  Using only one CPU core also reduces the 'link up' messages a lot, I
+  only got a couple instead of hundreds/thousands.
+
+- Enabling Tickless System (NO_HZ) kernel option seems to make lock up
+  occur less frequently (but it still happens), also much less 'link up'
+  messages, but also causes an occasional "NOHZ: local_softirq_pending
+  08" to appear on dmesg.
+
+- Enabling HyperThreading (I disable it by default due to an issue with
+  VirtualBox) in BIOS causes performance to get even worse, just 2-3MB/s
+  instead of 9-12MB/s
+
+
+I've also attempted to bisect the issue I have been having with slow
+transfer speed (I don't know if its related to the hang, but I figure if
+the hang ever gets fixed, this will have to be fixed as well to make
+r8169 usable for me), which started somewhere between v2.6.35 (good) and
+v2.6.36 (bad), unfortunately this too ended up at a seemingly unrelated
+commit:
+
+af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867 - clockevents: Remove the per
+cpu tick skew
+
+Just for kicks I attempted to revert this change on 2.6.38-rc6+, which
+seemed to reduce the frequency of 'link up' messages, but no other real
+change noticed.
+
