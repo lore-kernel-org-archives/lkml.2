@@ -1,167 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917Ab1BYUD6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:03:58 -0500
-Received: from diomedes.noc.ntua.gr ([147.102.222.220]:58560 "EHLO
-	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932880Ab1BYUDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:03:46 -0500
-From: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
-To: linux-kernel@vger.kernel.org
-Cc: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
-Subject: [PATCH RESEND 1/1] Cleanup of asm-offsets.c(PAGE_SIZE_asm, PAGE_SHIFT_asm, THREAD_SIZE_asm)
-Date: Fri, 25 Feb 2011 22:03:40 +0200
-Message-Id: <1298664220-21548-2-git-send-email-psomas@cslab.ece.ntua.gr>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1298664220-21548-1-git-send-email-psomas@cslab.ece.ntua.gr>
-References: <1298472122-4967-1-git-send-email-psomas@cslab.ece.ntua.gr>
- <1298664220-21548-1-git-send-email-psomas@cslab.ece.ntua.gr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (diomedes.noc.ntua.gr [147.102.222.220]); Fri, 25 Feb 2011 22:03:44 +0200 (EET)
+	id S932960Ab1BYUFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:05:09 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:44338 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932928Ab1BYUFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 15:05:06 -0500
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled while isolating pages for migration
+Date: Fri, 25 Feb 2011 20:04:59 +0000
+Message-Id: <1298664299-10270-3-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
+References: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup of asm-offsets.c.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-PAGE_SIZE_asm, PAGE_SHIFT_asm, THREAD_SIZE_asm can be safely removed from 
-asm-offsets.c, and be replaced by their non-'_asm' counterparts in the code 
-that uses them, since the _AC macro defined in include/linux/const.h makes
-PAGE_SIZE/PAGE_SHIFT/THREAD_SIZE work with as.
+compaction_alloc() isolates pages for migration in isolate_migratepages. While
+it's scanning, IRQs are disabled on the mistaken assumption the scanning
+should be short. Tests show this to be true for the most part but
+contention times on the LRU lock can be increased. Before this patch,
+the IRQ disabled times for a simple test looked like
 
-Signed-off-by: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+Total sampled time IRQs off (not real total time): 5493
+Event shrink_inactive_list..shrink_zone                  1596 us count 1
+Event shrink_inactive_list..shrink_zone                  1530 us count 1
+Event shrink_inactive_list..shrink_zone                   956 us count 1
+Event shrink_inactive_list..shrink_zone                   541 us count 1
+Event shrink_inactive_list..shrink_zone                   531 us count 1
+Event split_huge_page..add_to_swap                        232 us count 1
+Event save_args..call_softirq                              36 us count 1
+Event save_args..call_softirq                              35 us count 2
+Event __wake_up..__wake_up                                  1 us count 1
+
+This patch reduces the worst-case IRQs-disabled latencies by releasing the
+lock every SWAP_CLUSTER_MAX pages that are scanned and releasing the CPU if
+necessary. The cost of this is that the processing performing compaction will
+be slower but IRQs being disabled for too long a time has worse consequences
+as the following report shows;
+
+Total sampled time IRQs off (not real total time): 4367
+Event shrink_inactive_list..shrink_zone                   881 us count 1
+Event shrink_inactive_list..shrink_zone                   875 us count 1
+Event shrink_inactive_list..shrink_zone                   868 us count 1
+Event shrink_inactive_list..shrink_zone                   555 us count 1
+Event split_huge_page..add_to_swap                        495 us count 1
+Event compact_zone..compact_zone_order                    269 us count 1
+Event split_huge_page..add_to_swap                        266 us count 1
+Event shrink_inactive_list..shrink_zone                    85 us count 1
+Event save_args..call_softirq                              36 us count 2
+Event __wake_up..__wake_up                                  1 us count 1
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- arch/mn10300/kernel/asm-offsets.c      |    2 --
- arch/mn10300/kernel/gdb-io-ttysm-low.S |    2 +-
- arch/x86/kernel/asm-offsets_32.c       |    4 ----
- arch/x86/kernel/asm-offsets_64.c       |    1 -
- arch/x86/kernel/entry_32.S             |    2 +-
- arch/x86/kernel/head_32.S              |    8 ++++----
- arch/x86/xen/xen-head.S                |    4 ++--
- 7 files changed, 8 insertions(+), 15 deletions(-)
+ mm/compaction.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/arch/mn10300/kernel/asm-offsets.c b/arch/mn10300/kernel/asm-offsets.c
-index 96f24fa..698eb60 100644
---- a/arch/mn10300/kernel/asm-offsets.c
-+++ b/arch/mn10300/kernel/asm-offsets.c
-@@ -89,8 +89,6 @@ void foo(void)
- 	OFFSET(EXEC_DOMAIN_handler,	exec_domain, handler);
- 	OFFSET(RT_SIGFRAME_sigcontext,	rt_sigframe, uc.uc_mcontext);
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 11d88a2..ec9eb0f 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -279,9 +279,27 @@ static unsigned long isolate_migratepages(struct zone *zone,
+ 	}
  
--	DEFINE(PAGE_SIZE_asm,		PAGE_SIZE);
--
- 	OFFSET(__rx_buffer,		mn10300_serial_port, rx_buffer);
- 	OFFSET(__rx_inp,		mn10300_serial_port, rx_inp);
- 	OFFSET(__rx_outp,		mn10300_serial_port, rx_outp);
-diff --git a/arch/mn10300/kernel/gdb-io-ttysm-low.S b/arch/mn10300/kernel/gdb-io-ttysm-low.S
-index 060b7cc..7b2d665 100644
---- a/arch/mn10300/kernel/gdb-io-ttysm-low.S
-+++ b/arch/mn10300/kernel/gdb-io-ttysm-low.S
-@@ -38,7 +38,7 @@ gdbstub_io_rx_handler:
- gdbstub_io_rx_more:
- 	mov	a3,a2
- 	add	2,a3
--	and	PAGE_SIZE_asm-1,a3
-+	and	PAGE_SIZE-1,a3
- 	mov	(gdbstub_rx_outp),d3
- 	cmp	a3,d3
- 	beq	gdbstub_io_rx_overflow
-diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
-index 1a4088d..e1e5009 100644
---- a/arch/x86/kernel/asm-offsets_32.c
-+++ b/arch/x86/kernel/asm-offsets_32.c
-@@ -97,10 +97,6 @@ void foo(void)
- 	DEFINE(TSS_sysenter_sp0, offsetof(struct tss_struct, x86_tss.sp0) -
- 		 sizeof(struct tss_struct));
- 
--	DEFINE(PAGE_SIZE_asm, PAGE_SIZE);
--	DEFINE(PAGE_SHIFT_asm, PAGE_SHIFT);
--	DEFINE(THREAD_SIZE_asm, THREAD_SIZE);
--
- 	OFFSET(crypto_tfm_ctx_offset, crypto_tfm, __crt_ctx);
- 
- #ifdef CONFIG_PARAVIRT
-diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
-index 4a6aeed..aab9bdb 100644
---- a/arch/x86/kernel/asm-offsets_64.c
-+++ b/arch/x86/kernel/asm-offsets_64.c
-@@ -129,7 +129,6 @@ int main(void)
- 	OFFSET(BP_kernel_alignment, boot_params, hdr.kernel_alignment);
- 
- 	BLANK();
--	DEFINE(PAGE_SIZE_asm, PAGE_SIZE);
- #ifdef CONFIG_XEN
- 	BLANK();
- 	OFFSET(XEN_vcpu_info_mask, vcpu_info, evtchn_upcall_mask);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..49bdedd 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -395,7 +395,7 @@ sysenter_past_esp:
- 	 * A tiny bit of offset fixup is necessary - 4*4 means the 4 words
- 	 * pushed above; +8 corresponds to copy_thread's esp0 setting.
- 	 */
--	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE_asm+8+4*4)(%esp)
-+	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE+8+4*4)(%esp)
- 	CFI_REL_OFFSET eip, 0
- 
- 	pushl_cfi %eax
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 767d6c4..187aa63 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -73,7 +73,7 @@ MAPPING_BEYOND_END = PAGE_TABLE_SIZE(LOWMEM_PAGES) << PAGE_SHIFT
-  */
- KERNEL_PAGES = LOWMEM_PAGES
- 
--INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE_asm
-+INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE
- RESERVE_BRK(pagetables, INIT_MAP_SIZE)
- 
- /*
-@@ -623,7 +623,7 @@ ENTRY(initial_code)
-  * BSS section
-  */
- __PAGE_ALIGNED_BSS
--	.align PAGE_SIZE_asm
-+	.align PAGE_SIZE
- #ifdef CONFIG_X86_PAE
- initial_pg_pmd:
- 	.fill 1024*KPMDS,4,0
-@@ -644,7 +644,7 @@ ENTRY(swapper_pg_dir)
- #ifdef CONFIG_X86_PAE
- __PAGE_ALIGNED_DATA
- 	/* Page-aligned for the benefit of paravirt? */
--	.align PAGE_SIZE_asm
-+	.align PAGE_SIZE
- ENTRY(initial_page_table)
- 	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
- # if KPMDS == 3
-@@ -662,7 +662,7 @@ ENTRY(initial_page_table)
- # else
- #  error "Kernel PMDs should be 1, 2 or 3"
- # endif
--	.align PAGE_SIZE_asm		/* needs to be page-sized too */
-+	.align PAGE_SIZE		/* needs to be page-sized too */
- #endif
- 
- .data
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 1a5ff24..aaa7291 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -28,9 +28,9 @@ ENTRY(startup_xen)
- 	__FINIT
- 
- .pushsection .text
--	.align PAGE_SIZE_asm
-+	.align PAGE_SIZE
- ENTRY(hypercall_page)
--	.skip PAGE_SIZE_asm
-+	.skip PAGE_SIZE
- .popsection
- 
- 	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz "linux")
+ 	/* Time to isolate some pages for migration */
++	cond_resched();
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		struct page *page;
++		bool unlocked = false;
++
++		/* give a chance to irqs before checking need_resched() */
++		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
++			spin_unlock_irq(&zone->lru_lock);
++			unlocked = true;
++		}
++		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
++			if (!unlocked)
++				spin_unlock_irq(&zone->lru_lock);
++			cond_resched();
++			spin_lock_irq(&zone->lru_lock);
++			if (fatal_signal_pending(current))
++				break;
++		} else if (unlocked)
++			spin_lock_irq(&zone->lru_lock);
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
 -- 
-1.7.4.1
+1.7.2.3
 
