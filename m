@@ -1,121 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1BYCkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 21:40:22 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:35168 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab1BYCkV (ORCPT
+	id S1754335Ab1BYCls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 21:41:48 -0500
+Received: from web38004.mail.mud.yahoo.com ([209.191.124.115]:36269 "HELO
+	web38004.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753025Ab1BYClr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 21:40:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=M03A/L22/Jinf/l49ISybB0q2Q/bZvZmlh0PYpmIlwlR/vUUt64Av0YRdj9aw8qa3n
-         cB667r9aJdfEErRH7LDcZAITJduwZibaCCuWZNdAiX5UcqqvIt/B82d8syoaYllvlZPY
-         +b0WZ8DkS3OutCgJAFE56i3A2IBc8GjtGll90=
-Date: Thu, 24 Feb 2011 23:40:14 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@elte.hu
-Subject: Re: [RFC] Performance Events 'Samples' report
-Message-ID: <20110225024014.GA16138@ghostprotocols.net>
-References: <E1PslLC-0000rj-EF@eag09.americas.sgi.com>
+	Thu, 24 Feb 2011 21:41:47 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Feb 2011 21:41:47 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
+  b=0zUK/xOJ47j7a2bq9+EH6mvxwV2UOpurphqnpup3yTKXeqtsLAnQ+6kj7DDKGGyKB0Du174dlgymAnW4Iju65i/GHwutAnAJmJ1pEy6IM+ffVr22+lrBcmjj+939rF4aSFdgcHFgVyHoobNwgZQhSb4nlJ63A2m6b6KfaYsBSMA=;
+Message-ID: <518456.82543.qm@web38004.mail.mud.yahoo.com>
+X-YMail-OSG: lABlIqUVM1k0YxV6sYe5XzCTb3v4HzNVZbwioMGhIVB3Eo7
+ AkjLkf2pNmeQie4vSBIPIYv.RNKIir0jM99PtAd8FPTtZX9T.IICDqOPHP0y
+ bcfEF1Q88XG7nog1xIDRwHODnGHdgszlRuoLETahem_0qk71MBiZr81AhkTY
+ NFylQksh6Q6hFax7dpQ2PsIuklxkKoXOQGpCVreKle..6OUZXD2Tc1tuRNyR
+ bgqj2UT25obFibDeAYH4HMKigmWyFfrMfAQizojKuyKNl8MBs6.kTAkVWexQ
+ TxvgHq4ewlsXxIj_JKYPS8dIq81No2mKFTcpJm_xfPIlMDps_AIlOp7ovLB0
+ w6NCfNQo-
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.292656
+Date: Thu, 24 Feb 2011 18:35:05 -0800 (PST)
+From: stuart h <stuart_hayes@yahoo.com>
+Subject: [PATCH v2] dcdbas: force SMI to happen when expected
+To: linux-kernel@vger.kernel.org, douglas_warzecha@dell.com
+Cc: shyam_iyer@dell.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1PslLC-0000rj-EF@eag09.americas.sgi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 24, 2011 at 06:15:26PM -0600, Cliff Wickman escreveu:
-> From: Cliff Wickman <cpw@sgi.com>
-> 
-> The perf command's report prints clock periods under the heading of 'Samples'.
-> Our applications people have been confused by this "Samples" heading.
-> 
-> perf report -n
-> 
-> # Overhead  Samples            Command         Shared Object                            Symbol
-> # ........ ..........  ...............  ....................  ................................
-> #
->     99.41%1522136216246         pthreads  pthreads              [.] work_function
->      0.33% 4980298302             perf  [kernel.kallsyms]     [k] clear_page_c
->      ....
-> 
-> It would be more compact to print the number of samples.  And that would
-> be consistent with the heading.
-> 
-> Below is the code that displays the periods.  I don't see that the number
-> of samples is available here, but probably easily could be.
-> I presume that clock periods are derived from #samples * sample period.
-> 
-> perf/util/hist.c
-> 
->  640 
->  641         if (symbol_conf.show_nr_samples) {
->  642                 if (sep)
->  643                         ret += snprintf(s + ret, size - ret, "%c%" PRIu64,      *sep, period);
->  644                 else
->  645                         ret += snprintf(s + ret, size - ret, "%11" PRIu64,      period);
->  646         }
->  647 
 
-Wasn't this fixed by:
+This is a reworked version of a very similar patch I sent about three weeks ago... a flaw was pointed out with the original.  That patch didn't make it into the kernel, though, so I'm just sending this one as a new patch.
 
-commit fec9cbd15b9e99bab9bc50f1ed7e20a1087d7c6d
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Thu Feb 17 10:37:23 2011 -0200
+The dcdbas driver can do an I/O write to cause a SMI to occur.  The SMI handler looks at certain registers and memory locations, so the SMI needs to happen immediately.  On some systems I/O writes are posted, though, causing the SMI to happen well after the "outb" occurred, which causes random failures.  Following the "outb" with an "inb" forces the write to go through even if it is posted.
 
-    perf hists: Print number of samples, not the period sum
-    
-    So that we match the header where we state the number of events with the
-    "Samples" column when using 'perf report -n/--show-nr-samples':
-    
-     [root@emilia ~]# perf record -a sleep 1
-     [ perf record: Woken up 1 times to write data ]
-     [ perf record: Captured and wrote 0.111 MB perf.data (~4860 samples) ]
-     [root@emilia ~]# perf report --stdio --show-nr-samples
-     # Events: 11  cycles
-     #
-     # Overhead  Samples        Command       Shared Object                        Symbol
-     # ........ ..........  ...........  ..................  ............................
-     #
-         16.65%          1        sleep  [kernel.kallsyms]   [k] unmap_vmas
-         16.10%          1         perf  libpthread-2.12.so  [.] __pthread_cleanup_push_defer
-         15.79%          2         perf  [kernel.kallsyms]   [k] format_decode
-         12.88%          1  kworker/1:2  [kernel.kallsyms]   [k] cache_reap
-         10.69%          1      swapper  [kernel.kallsyms]   [k] _raw_spin_lock
-          7.55%          1        sleep  [kernel.kallsyms]   [k] prepare_exec_creds
-          6.00%          1         perf  [jbd2]              [k] start_this_handle
-          5.29%          1         perf  [kernel.kallsyms]   [k] seq_read
-          4.75%          1         perf  [kernel.kallsyms]   [k] get_pid_task
-          4.30%          1         perf  [kernel.kallsyms]   [k] _raw_spin_unlock_irqrestore
-    
-     #
-     # (For a higher level overview, try: perf report --sort comm,dso)
-     #
-     [root@emilia ~]#
-    
-    Reported-by: Stephane Eranian <eranian@google.com>
-    Acked-by: Stephane Eranian <eranian@google.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Cc: Mike Galbraith <efault@gmx.de>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Stephane Eranian <eranian@google.com>
-    Cc: Tom Zanussi <tzanussi@gmail.com>
-    LKML-Reference: <new-submission>
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+This patch is against the 2.6.37.1 kernel.
 
-?
+Signed-off-by: Stuart Hayes <stuart_hayes@yahoo.com>
+---
 
-Please try using tip/perf/core.
+--- linux-2.6.37/drivers/firmware/dcdbas.c	2011-01-18 10:44:44.869882461 -0500
++++ linux-2.6.37_test/drivers/firmware/dcdbas.c	2011-02-24 13:23:58.663771596 -0500
+@@ -268,8 +268,10 @@ int dcdbas_smi_request(struct smi_cmd *s
+ 	}
+ 
+ 	/* generate SMI */
++	/* inb to force posted write through and make SMI happen now */
+ 	asm volatile (
+-		"outb %b0,%w1"
++		"outb %b0,%w1\n"
++		"inb %w1"
+ 		: /* no output args */
+ 		: "a" (smi_cmd->command_code),
+ 		  "d" (smi_cmd->command_address),
 
-- Arnaldo
 
+
+      
