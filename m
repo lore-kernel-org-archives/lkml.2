@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab1BYVxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:53:37 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51250 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105Ab1BYVxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:53:36 -0500
-Date: Fri, 25 Feb 2011 21:51:24 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 06/17] arm: mmu_gather rework
-Message-ID: <20110225215123.GA10026@flint.arm.linux.org.uk>
-Mail-Followup-To: Peter Zijlstra <peterz@infradead.org>,
-	Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-	akpm@linux-foundation.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-	linux-mm@kvack.org,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	David Miller <davem@davemloft.net>,
-	Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-	Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-	Paul McKenney <paulmck@linux.vnet.ibm.com>,
-	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-	"Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>
-References: <20110217162327.434629380@chello.nl> <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins> <1298657083.2428.2483.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298657083.2428.2483.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932816Ab1BYV4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:56:13 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55642 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932105Ab1BYV4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 16:56:12 -0500
+Subject: Re: [RFC PATCH 02/10] MIPS: Octeon: Add device tree source files.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+In-Reply-To: <AANLkTi=Oh0iu-d4n3rMLvXFH-DjS1mT3GgpoJyywjM=5@mail.gmail.com>
+References: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
+	 <1298408274-20856-3-git-send-email-ddaney@caviumnetworks.com>
+	 <20110223000759.GA26300@yookeroo> <4D653CF1.30009@caviumnetworks.com>
+	 <20110224231923.GB18233@yookeroo>
+	 <AANLkTi=Oh0iu-d4n3rMLvXFH-DjS1mT3GgpoJyywjM=5@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Feb 2011 08:46:22 +1100
+Message-ID: <1298670382.8833.693.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 07:04:43PM +0100, Peter Zijlstra wrote:
-> I'm not quite sure why you chose to add range tracking on
-> pte_free_tlb(), the only affected code path seems to be unmap_region()
-> where you'll use a flush_tlb_range(), but its buggy, the pte_free_tlb()
-> range is much larger than 1 page, and if you do it there you also need
-> it for all the other p??_free_tlb() functions.
+On Fri, 2011-02-25 at 08:22 -0700, Grant Likely wrote:
+> 
+> Generally I've applied the argument that it's a good idea to populate
+> the /cpus node as an anchor for future things that might require it.
+> For example, a theoretical hypervisor which doesn't allow the guest
+> access to all the CPUs would use cpu nodes to tell the OS 'hands off'.
+>  Or possibly more likely, and AMP scenario where Linux would certainly
+> detect all the CPUs, but is supposed to leave some of them alone.  It
+> would also be an anchor for anything NUMA-like which is also
+> theoretical, but may become more likely in some of the larger ARM
+> designs that I've been hearing about.
 
-My reasoning is to do with the way the LPAE stuff works.  For the
-explaination below, I'm going to assume a 2 level page table system
-for simplicity.
+It also allows to bring other informations in there such as clock
+frequencies etc... In some kind, binding to a reset GPIO used to soft
+reset secondaries (ie on Macs we have something like that)...
 
-The first thing to realise is that if we have L2 entries, then we'll
-have unmapped them first using the usual tlb shootdown interfaces.
+> Given that we've been very explicit that the device tree is for
+> describing things that aren't probable, the argument that it is not
+> necessary to populate the cpus node probably holds some water.  If
+> there are no special considerations (ie. disabled CPUs or NUMA) and
+> nothing holds a phandle to a specific cpu node, then it is probably
+> okay to omit.  In that case the lack of /cpus node would mean simply,
+> "detect the cpus", and /cpus could be populated to override the
+> detected behaviour.
 
-However, when we're freeing the page tables themselves, we should
-already have removed the L2 entries, so all we have are the L1 entries.
-In most 'normal' processors, these aren't cached in any way.
+Well... I tend to recommend putting things that are soldered on the mobo
+in the device-tree, simply because that allows to pass all sort of
+additional informations that can be useful. For example, if you have a
+PCI2PCI bridge on the mobo, it allows you to provide proper slot names
+for the slots below it, or if devices have oddly routed interrupts (not
+the standard INTA...D with swizzling), which happens on embedded a lot,
+the device-tree can convey that more easily.
 
-Howver, with LPAE, these are cached.  I'm told that any TLB flush for an
-address which is covered by the L1 entry will cause that cached entry to
-be invalidated.
+Other things like clock frequencies or in general clock relationships,
+or even location codes, MAC addresses, etc... 
 
-So really this is about getting rid of cached L1 entries, and not the
-usual TLB lookaside entries that you'd come to expect.
+But you don't -have- to. It's just a recommendation.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+> Picking up on something David Daney said...
+> >> The number and type of CPUs can be (and is) probed.  There is an
+> >> existing mechanism for the bootloader to communicate which CPUs
+> >> should be used.
+>
+> I do get a little nervous about this (the bootloader communication
+> bit).  For ARM, I had an argument with Nicolas Pitre about preserving
+> the existing ATAGs mechanism and adding DT on top vs. replacing ATAGs
+> entirely with DT.  I wanted to keep ATAGs, but Nicolas was concerned
+> about how to handle ambiguity about which data to use when the ATAGs
+> and DT disagree.  In hindsight Nicolas was 100% right and I'm glad he
+> pushed back.  The ARM DT support now detects if ATAGs or a .dtb were
+> passed at boot (one or the other), and it is *so* much cleaner.  All
+> configuration data lives in the same place and is manipulated in the
+> same way.  Plus it means that the dt usage model is the same for
+> multiple architectures, arm, powerpc and microblaze. 
+
+I think doing a "blend" of existing bootloader channels + device-tree is
+bad. The device-tree should convey all of the informations that were
+previously passed using a different mechanism, or hell will freeze over
+in the long run.
+
+Cheers,
+Ben.
+
+
