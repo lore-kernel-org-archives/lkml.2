@@ -1,63 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab1BYDUs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 22:20:48 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31277 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab1BYDUq (ORCPT
+	id S1755673Ab1BYDZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 22:25:36 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:12958 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527Ab1BYDZf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 22:20:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76567141"
-X-Hashcash: 1:20:110225:gregkh@suse.de::3DA56qPmqx1BoYo2:0003Lfs
-From: David Brown <davidb@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: Dima Zavin <dima@android.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Kenneth Heitke <kheitke@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        tsoni@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        swetland@google.com
-Subject: Re: [PATCH v2 2/2] msm: add single-wire serial bus interface (SSBI) driver
-References: <1298585954-22422-1-git-send-email-kheitke@codeaurora.org>
-	<1298585954-22422-3-git-send-email-kheitke@codeaurora.org>
-	<1298600621.17118.27.camel@m0nster>
-	<8yad3mgdeut.fsf@huya.qualcomm.com>
-	<1298601346.17118.29.camel@m0nster>
-	<AANLkTikD1Ued=rit1QbMWwe3NGFz2iQ-KO7B=-N6Ok-2@mail.gmail.com>
-X-Hashcash: 1:20:110225:linux-arm-msm@vger.kernel.org::Y5vQEQVfVVJtDHeZ:0000000000000000000000000000000005zm
-X-Hashcash: 1:20:110225:dima@android.com::B+t5YT+NPS8CnbBZ:00ZX9
-X-Hashcash: 1:20:110225:kheitke@codeaurora.org::i1tD4YdGJ5b3zT7c:0000000000000000000000000000000000000003tpA
-X-Hashcash: 1:20:110225:swetland@google.com::QuyB6FAoiA1tbxhH:00000000000000000000000000000000000000000080Ye
-X-Hashcash: 1:20:110225:linux-kernel@vger.kernel.org::GaJOY3IE74cdkIBE:0000000000000000000000000000000005zL1
-X-Hashcash: 1:20:110225:linux-arm-kernel@lists.infradead.org::8+HyL71DAfciJSOU:00000000000000000000000008hfB
-X-Hashcash: 1:20:110225:dwalker@fifo99.com::FAfJe/FzwuduNzT/:00000000000000000000000000000000000000000006qKt
-X-Hashcash: 1:20:110225:tsoni@codeaurora.org::C0IHUaNozvPvg8tN:00000000000000000000000000000000000000000AtpU
-Date: Thu, 24 Feb 2011 19:20:45 -0800
-In-Reply-To: <AANLkTikD1Ued=rit1QbMWwe3NGFz2iQ-KO7B=-N6Ok-2@mail.gmail.com>
-	(Dima Zavin's message of "Thu, 24 Feb 2011 18:39:48 -0800")
-Message-ID: <8ya8vx4dcky.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 24 Feb 2011 22:25:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=dzJcrnTx6DLw9/L4VB2CnCIgyz1evTLLqDd06Ol0A0kFMLtlRd5HXxY7l88agPOyfx
+         2TamhdzPDqLm4AlpYCGg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1298467931.2217.762.camel@twins>
+References: <20110216031831.571628191@google.com> <20110216031841.352204682@google.com>
+ <1298467931.2217.762.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 24 Feb 2011 19:25:01 -0800
+Message-ID: <AANLkTi=qE-tFox+qGyASmqCwZuvbq0wPH0v0Ai4NJf+O@mail.gmail.com>
+Subject: Re: [CFS Bandwidth Control v4 6/7] sched: hierarchical task
+ accounting for SCHED_OTHER
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24 2011, Dima Zavin wrote:
+On Wed, Feb 23, 2011 at 5:32 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-02-15 at 19:18 -0800, Paul Turner wrote:
+>
+>> @@ -1846,6 +1846,11 @@ static const struct sched_class rt_sched
+>>
+>>  #include "sched_stats.h"
+>>
+>> +static void mod_nr_running(struct rq *rq, long delta)
+>> +{
+>> +     rq->nr_running += delta;
+>> +}
+>
+> I personally don't see much use in such trivial wrappers.. if you're
+> going to rework all the nr_running stuff you might as well remove all of
+> that.
 
-> On that note, should we have a "drivers/arm/msm" instead of just
-> "drivers/msm"? Other non-msm arm sub-arches probably have the same
-> problem and polluting drivers/ top-level for every arm-subarch maybe
-> undesirable.
+I'm ok with that,  I was trying to preserve some of the existing
+encapsulation but there isn't a need for it.
 
-I'm moving linux-kernel to the 'to' field, and adding Greg KH to CC.
+Will do.
 
-This is about a new driver (ssbi) for the MSM chips, and where the
-driver for this should go.  The driver is specific to MSM chips (as far
-as I know, the bus is only supported there).  There are likely to be
-future msm-specific drivers, so the suggestion was to put this under
-drivers/msm, or possibly drivers/arm/msm.
+>
+>> Index: tip/kernel/sched_fair.c
+>> ===================================================================
+>> --- tip.orig/kernel/sched_fair.c
+>> +++ tip/kernel/sched_fair.c
+>> @@ -81,6 +81,8 @@ unsigned int normalized_sysctl_sched_wak
+>>
+>>  const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
+>>
+>> +static void account_hier_tasks(struct sched_entity *se, int delta);
+>> +
+>>  /*
+>>   * The exponential sliding  window over which load is averaged for shares
+>>   * distribution.
+>> @@ -933,6 +935,40 @@ static inline void update_entity_shares_
+>>  }
+>>  #endif /* CONFIG_FAIR_GROUP_SCHED */
+>>
+>> +#ifdef CONFIG_CFS_BANDWIDTH
+>> +/* maintain hierarchal task counts on group entities */
+>> +static void account_hier_tasks(struct sched_entity *se, int delta)
+>> +{
+>> +     struct rq *rq = rq_of(cfs_rq_of(se));
+>> +     struct cfs_rq *cfs_rq;
+>> +
+>> +     for_each_sched_entity(se) {
+>> +             /* a throttled entity cannot affect its parent hierarchy */
+>> +             if (group_cfs_rq(se) && cfs_rq_throttled(group_cfs_rq(se)))
+>> +                     break;
+>> +
+>> +             /* we affect our queuing entity */
+>> +             cfs_rq = cfs_rq_of(se);
+>> +             cfs_rq->h_nr_tasks += delta;
+>> +     }
+>> +
+>> +     /* account for global nr_running delta to hierarchy change */
+>> +     if (!se)
+>> +             mod_nr_running(rq, delta);
+>> +}
+>> +#else
+>> +/*
+>> + * In the absence of group throttling, all operations are guaranteed to be
+>> + * globally visible at the root rq level.
+>> + */
+>> +static void account_hier_tasks(struct sched_entity *se, int delta)
+>> +{
+>> +     struct rq *rq = rq_of(cfs_rq_of(se));
+>> +
+>> +     mod_nr_running(rq, delta);
+>> +}
+>> +#endif
+>
+> While Balbir suggested expanding the _hier_ thing, I'd suggest to simply
+> drop it altogether, way too much typing ;-), but that is if you cannot
+> get rid of the extra hierarchy iteration, see below.
+>
+>> +
+>>  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+>>  {
+>>  #ifdef CONFIG_SCHEDSTATS
+>> @@ -1428,6 +1464,7 @@ enqueue_task_fair(struct rq *rq, struct
+>>               update_cfs_shares(cfs_rq);
+>>       }
+>>
+>> +     account_hier_tasks(&p->se, 1);
+>>       hrtick_update(rq);
+>>  }
+>>
+>> @@ -1461,6 +1498,7 @@ static void dequeue_task_fair(struct rq
+>>               update_cfs_shares(cfs_rq);
+>>       }
+>>
+>> +     account_hier_tasks(&p->se, -1);
+>>       hrtick_update(rq);
+>>  }
+>>
+>> @@ -1488,6 +1526,8 @@ static u64 tg_request_cfs_quota(struct t
+>>       return delta;
+>>  }
+>>
+>> +static void account_hier_tasks(struct sched_entity *se, int delta);
+>> +
+>>  static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+>>  {
+>>       struct sched_entity *se;
+>> @@ -1507,6 +1547,7 @@ static void throttle_cfs_rq(struct cfs_r
+>>       if (!se->on_rq)
+>>               goto out_throttled;
+>>
+>> +     account_hier_tasks(se, -cfs_rq->h_nr_tasks);
+>>       for_each_sched_entity(se) {
+>>               struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>>
+>> @@ -1541,6 +1582,7 @@ static void unthrottle_cfs_rq(struct cfs
+>>       cfs_rq->load_stamp = cfs_rq->load_last = rq->clock_task;
+>>
+>>       cfs_rq->throttled = 0;
+>> +     account_hier_tasks(se, cfs_rq->h_nr_tasks);
+>>       for_each_sched_entity(se) {
+>>               if (se->on_rq)
+>>                       break;
+>
+> All call-sites are right next to a for_each_sched_entity() iteration, is
+> there really no way to fold those loops?
+>
 
-Anyone other suggestions, or preferences for the location?
+I was trying to avoid some duplication since many of those for_each
+iterations are partial and I didn't want to dump the same loop for the
+remnants everywhere.
 
-Thanks,
-David Brown
+However, thinking about it I think this can be cleaned up and refined
+to by having account_hier iterate from wherever they finish and
+avoiding that nastiness.
+
+
+>> Index: tip/kernel/sched_rt.c
+>> ===================================================================
+>> --- tip.orig/kernel/sched_rt.c
+>> +++ tip/kernel/sched_rt.c
+>> @@ -906,6 +906,8 @@ enqueue_task_rt(struct rq *rq, struct ta
+>>
+>>       if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
+>>               enqueue_pushable_task(rq, p);
+>> +
+>> +     inc_nr_running(rq);
+>>  }
+>>
+>>  static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+>> @@ -916,6 +918,8 @@ static void dequeue_task_rt(struct rq *r
+>>       dequeue_rt_entity(rt_se);
+>>
+>>       dequeue_pushable_task(rq, p);
+>> +
+>> +     dec_nr_running(rq);
+>>  }
+>>
+>>  /*
+>> @@ -1783,4 +1787,3 @@ static void print_rt_stats(struct seq_fi
+>>       rcu_read_unlock();
+>>  }
+>>  #endif /* CONFIG_SCHED_DEBUG */
+>
+>
+> You mentioned something about -rt having the same problem, yet you don't
+> fix it.. tskkk :-)
+>
+
+Yeah I agree :) -- I was planning on fixing this in a follow-up
+[honest!] as it's not as important since it doesn't affect idle
+balancing to the same magnitude.  I wanted to first air the notion of
+hierarchal task accounting in one of the schedulers then mirror the
+support across the other schedulers with consensus reached.
+
+I can make that part of this series if you'd prefer.
+
+
+
+>
