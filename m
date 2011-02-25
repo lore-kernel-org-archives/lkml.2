@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab1BYQhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 11:37:47 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53102 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932586Ab1BYQhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 11:37:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rj87qTcr0Hk3+V33vtqL13ZZrc6J1BBCqlQYr8PUrRrQD8Af5K/WOHkIIP6Jhs7+NB
-         glCsusk2PPFlc33zit9lC4G33SiWKwyef+a/4TWfwxSNKwZmpAAG6vo+Ve3IPylHrPxD
-         +YP8AmVYmkchj8UH3nFeg1DB+DDWS7zbJH7Kg=
-Date: Fri, 25 Feb 2011 17:37:40 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
- this_cpu_cmpxchg_double
-Message-ID: <20110225163740.GS24828@htj.dyndns.org>
-References: <4D39A6EB.70705@zytor.com>
- <20110121154831.GE2832@htj.dyndns.org>
- <20110121165425.GB11687@Krystal>
- <20110121170847.GH2832@htj.dyndns.org>
- <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
- <20110121171914.GJ2832@htj.dyndns.org>
- <4D3D15AF.30508@zytor.com>
- <4D67AA06.5090200@cs.helsinki.fi>
- <20110225131949.GJ24828@htj.dyndns.org>
- <alpine.DEB.2.00.1102251025250.4996@router.home>
+	id S932636Ab1BYQid (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 11:38:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:27280 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932463Ab1BYQic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 11:38:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,226,1297065600"; 
+   d="scan'208";a="606554030"
+Message-ID: <4D67DAF2.8090501@intel.com>
+Date: Fri, 25 Feb 2011 08:38:10 -0800
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1102251025250.4996@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "Jiang, Dave" <dave.jiang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        David Milburn <dmilburn@redhat.com>
+Subject: Re: [RFC PATCH] x86: Moving probe_roms_32 to probe_roms
+References: <20110222201538.15443.81915.stgit@localhost6.localdomain6>	 <AANLkTikimHCsFmavDoXn3Pka8WWMePqk+hNUK8h=DqSQ@mail.gmail.com>	 <4D670B07.90005@zytor.com> <1298628822.11506.21.camel@dwillia2-linux>
+In-Reply-To: <1298628822.11506.21.camel@dwillia2-linux>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 10:26:43AM -0600, Christoph Lameter wrote:
-> On Fri, 25 Feb 2011, Tejun Heo wrote:
-> 
-> > > Ping? The current situation is that we're unable to merge a
-> > > perfectly good SLUB performance optimization because we can't seem
-> > > to agree on the this_cpu_cmpxchg_double() API.
-> >
-> > I thought cl was preparing new version of the patchset.  Christoph?
-> 
-> In order to do that I would have to see a way to improve the
-> patches. None of the suggestions so far seem to be realizable.
+On 02/25/2011 02:13 AM, Williams, Dan J wrote:
+[..]
+> +		if (probe_kernel_address(rom + offset + 0x8, list) != 0 &&
+> +		    probe_kernel_address(rom + offset + 0xc, rev) != 0 &&
 
-I see.  For some reason, I thought you and hpa agreed on something and
-you were writing up the patches.  I'll read the thread again.  Let's
-just pick one.  It's not like this is an API which will be used
-througout the tree.
+These should be "== 0", but you get the idea...
 
-Thanks.
 
--- 
-tejun
+> +		    rev>= 3&&  list&&
+> +		    probe_list(pdev, vendor, rom + offset + list)) {
+> +			oprom = res;
+> +			break;
+> +		}
+> +	}
+
+--
+Dan
