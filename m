@@ -1,92 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830Ab1BYVlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:41:23 -0500
-Received: from gate.crashing.org ([63.228.1.57]:43957 "EHLO gate.crashing.org"
+	id S932790Ab1BYVmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:42:45 -0500
+Received: from kroah.org ([198.145.64.141]:59311 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932737Ab1BYVlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:41:22 -0500
-Subject: Re: [PATCH] tty/serial: Relax the device_type restriction from
- of_serial
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <AANLkTinx2YxOs3Y-XDHaWe44Bw8HqiMyanouV5Bo3KuX@mail.gmail.com>
-References: <20110223021221.17638.42707.stgit@localhost6.localdomain6>
-	 <AANLkTinx2YxOs3Y-XDHaWe44Bw8HqiMyanouV5Bo3KuX@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 Feb 2011 08:40:50 +1100
-Message-ID: <1298670050.8833.688.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932101Ab1BYVmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 16:42:44 -0500
+Date: Fri, 25 Feb 2011 13:01:11 -0800
+From: Greg KH <greg@kroah.com>
+To: Richard =?iso-8859-1?Q?Sch=FCtz?= <r.schtz@t-online.de>
+Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110225210111.GA16860@kroah.com>
+References: <20110209224006.GA11202@kroah.com>
+ <4D551F76.1070303@t-online.de>
+ <20110211152231.GB13487@kroah.com>
+ <4D556367.5000202@t-online.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D556367.5000202@t-online.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 12:22 -0700, Grant Likely wrote:
-> Hi Arnd and Ben,
+On Fri, Feb 11, 2011 at 05:27:19PM +0100, Richard Schütz wrote:
+> Add DMI data for Samsung N145P/N250P/N260P
 > 
-> I forgot to cc you guys on this patch.  Greg has it in his tree, but I
-> wanted to make sure you noticed it.  If you have any objections, let
-> me know and I'll ask Greg to drop it.
+> Signed-off-by: Richard Schütz <r.schtz@t-online.de>
+> ---
+> 
+> >Yes I can, but do you want to send it to me in a format that I can apply
+> >so you can get the proper authorship credit?
+> 
+> Of course, here it is.
 
-No objection. Device-types are a thing of the past :-)
+Thanks, applied.
 
-Cheers,
-Ben.
-
-> Thanks,
-> g.
-> 
-> 
-> On Tue, Feb 22, 2011 at 7:12 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > There is no need to test for a device_type property in ns8250
-> > compatible serial ports.  device_type is an OpenFirmware property that
-> > is not required when using the flattened tree representation.
-> >
-> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> > ---
-> >  drivers/tty/serial/of_serial.c |   18 +++++++++---------
-> >  1 files changed, 9 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-> > index 5c7abe4..6a18ca6 100644
-> > --- a/drivers/tty/serial/of_serial.c
-> > +++ b/drivers/tty/serial/of_serial.c
-> > @@ -160,17 +160,17 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
-> >  * A few common types, add more as needed.
-> >  */
-> >  static struct of_device_id __devinitdata of_platform_serial_table[] = {
-> > -       { .type = "serial", .compatible = "ns8250",   .data = (void *)PORT_8250, },
-> > -       { .type = "serial", .compatible = "ns16450",  .data = (void *)PORT_16450, },
-> > -       { .type = "serial", .compatible = "ns16550a", .data = (void *)PORT_16550A, },
-> > -       { .type = "serial", .compatible = "ns16550",  .data = (void *)PORT_16550, },
-> > -       { .type = "serial", .compatible = "ns16750",  .data = (void *)PORT_16750, },
-> > -       { .type = "serial", .compatible = "ns16850",  .data = (void *)PORT_16850, },
-> > +       { .compatible = "ns8250",   .data = (void *)PORT_8250, },
-> > +       { .compatible = "ns16450",  .data = (void *)PORT_16450, },
-> > +       { .compatible = "ns16550a", .data = (void *)PORT_16550A, },
-> > +       { .compatible = "ns16550",  .data = (void *)PORT_16550, },
-> > +       { .compatible = "ns16750",  .data = (void *)PORT_16750, },
-> > +       { .compatible = "ns16850",  .data = (void *)PORT_16850, },
-> >  #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
-> > -       { .type = "serial", .compatible = "ibm,qpace-nwp-serial",
-> > -                                       .data = (void *)PORT_NWPSERIAL, },
-> > +       { .compatible = "ibm,qpace-nwp-serial",
-> > +               .data = (void *)PORT_NWPSERIAL, },
-> >  #endif
-> > -       { .type = "serial",                           .data = (void *)PORT_UNKNOWN, },
-> > +       { .type = "serial",         .data = (void *)PORT_UNKNOWN, },
-> >        { /* end of list */ },
-> >  };
-> >
-> >
-> >
-> 
-> 
-> 
-
-
+greg k-h
