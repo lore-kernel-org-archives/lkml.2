@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200Ab1BYFJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 00:09:14 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:43680
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750753Ab1BYFJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 00:09:12 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
-From: Jason Liu <r64343@freescale.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <David.Woodhouse@intel.com>, <dedekind1@gmail.com>
-Subject: [PATCH] mtd: nand: fix one typo in the comments
-Date: Fri, 25 Feb 2011 13:06:18 +0800
-Message-ID: <1298610378-3105-1-git-send-email-r64343@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	id S1751325Ab1BYFLc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 00:11:32 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:51433 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753Ab1BYFLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 00:11:30 -0500
+Date: Fri, 25 Feb 2011 16:11:24 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>
+Subject: Re: linux-next: manual merge of the tty tree with Linus' tree
+Message-Id: <20110225161124.665ac4e9.sfr@canb.auug.org.au>
+In-Reply-To: <20110224193947.GA15044@kroah.com>
+References: <20110224163439.05352f9b.sfr@canb.auug.org.au>
+	<20110224193947.GA15044@kroah.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__25_Feb_2011_16_11_24_+1100_D2xPZJcQWjRKnH8C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the function nand_do_write_oob, the comments
-has one typo, this patch fix it.
+--Signature=_Fri__25_Feb_2011_16_11_24_+1100_D2xPZJcQWjRKnH8C
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-- /* Do not allow reads past end of device */
-+ /* Do not allow write past end of device */
-if (unlikely(to >= mtd->size ||
-	     ops->ooboffs + ops->ooblen >
-		((mtd->size >> chip->page_shift) -
-		 (to >> chip->page_shift)) * len)) {
-	DEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt write beyond "
-			"end of device\n", __func__);
-	return -EINVAL;
-}
+Hi Greg,
 
-Signed-off-by: Jason Liu <r64343@freescale.com>
----
- drivers/mtd/nand/nand_base.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, 24 Feb 2011 11:39:47 -0800 Greg KH <greg@kroah.com> wrote:
+>
+> Thanks, I've merge 2.6.38-rc6 into tty-next so this, and another merge
+> issue, should now be resolved.
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index a9c6ce7..da76040 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2377,7 +2377,7 @@ static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
- 		return -EINVAL;
- 	}
- 
--	/* Do not allow reads past end of device */
-+	/* Do not allow write past end of device */
- 	if (unlikely(to >= mtd->size ||
- 		     ops->ooboffs + ops->ooblen >
- 			((mtd->size >> chip->page_shift) -
--- 
-1.7.0.4
+Thanks.  The tree still has its build failure, though.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__25_Feb_2011_16_11_24_+1100_D2xPZJcQWjRKnH8C
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNZzn8AAoJEDMEi1NhKgbsqTQH/2XcNfkUp7uXzThREWqDJ7SU
+NLrlXKxRNRNR0B7AET/WGb3iryS+uKJWHZK/ZioeXP3RTF+VLQFykDINcd+8tw9E
+mNPZrBHsYpo78LmM/kBKyMCcCFwKPxMmqRhbKTyA9VmdPj7sZxZIbAuajN3WhuK9
+LYvq+rflAP7W0SpPPH+vlm3qLA4wCB41c7+8Ut0KT67Vn0vbqkR005T5x8n00bIt
+mCRmBsp4dj70tPEmKSnLzJcLjyvU7dgORCog7+BC9jufrXd5PkdLXNC+QiYqKYl6
+8fpI2AsuJjy7U3dIHpFp3lZyVzDcsOP2CznlpdfvoTfQIsyAt57+ChYXW80ailo=
+=47pV
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__25_Feb_2011_16_11_24_+1100_D2xPZJcQWjRKnH8C--
