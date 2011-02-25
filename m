@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab1BYNJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 08:09:29 -0500
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:59104 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab1BYNJ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 08:09:28 -0500
-Message-ID: <4D67AA06.5090200@cs.helsinki.fi>
-Date: Fri, 25 Feb 2011 15:09:26 +0200
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Tejun Heo <tj@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for this_cpu_cmpxchg_double
-References: <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org> <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com> <20110121171914.GJ2832@htj.dyndns.org> <4D3D15AF.30508@zytor.com>
-In-Reply-To: <4D3D15AF.30508@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755858Ab1BYNLe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 08:11:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52339 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753665Ab1BYNLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 08:11:33 -0500
+Subject: Re: [PATCH] expose kvmclock upper msr set.
+From: Glauber Costa <glommer@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com
+In-Reply-To: <1298591652.6376.8.camel@gandalf.stny.rr.com>
+References: <1298483054-1665-1-git-send-email-glommer@redhat.com>
+	 <20110224232456.GG888@home.goodmis.org>
+	 <1298591320.15736.310.camel@mothafucka.localdomain>
+	 <1298591652.6376.8.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 25 Feb 2011 10:11:28 -0300
+Message-ID: <1298639488.15736.313.camel@mothafucka.localdomain>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 09:13:41AM -0800, H. Peter Anvin wrote:
->>> We could do cmpxchg with a structure... the problem with a lon int
->>> type is that Cristoph ran into bugs with __int128 on 64 bits.
+On Thu, 2011-02-24 at 18:54 -0500, Steven Rostedt wrote:
+> On Thu, 2011-02-24 at 20:48 -0300, Glauber Costa wrote:
+> > On Thu, 2011-02-24 at 18:24 -0500, Steven Rostedt wrote:
+> > > On Wed, Feb 23, 2011 at 12:44:14PM -0500, Glauber Costa wrote:
+> > > > We've been supporting kvmclock MSRs in the 0x4b564d00-0x4b564dff range
+> > > > for a while now, but we're not exposing it yet, meaning nobody is using it.
+> > > > This simple patch takes care of that.
+> > > 
+> > > Is nobody using it because it was never exposed? Or because nobody ever
+> > > needed it, and we don't care (thus don't bother supporting it).
+> > > 
+> > The former. Our guest kernels will only rely on features that are
+> > exposed, meaning that if they are not, the guest kernel will never know
+> > it is available. 
+> > 
+> 
+> Might want to rephrase your change log, as to me it sounds like nobody
+> is using it because it is not needed. Adding the "Our guest..." from
+> your response to the change log will clear that up.
+> 
+> Thanks,
+I can do that, sure.
 
-On 01/21/2011 09:19 AM, Tejun Heo wrote:
->> But, IIRC, the problem with int128 was with passing it as parameter
->> and return value. We don't have to do that. We'll be just using it
->> as a data storage / container type. Or even that is broken?
+OTOH, I know avi changed changelogs for clarity a couple of times
+before, so if there is no code change needed, maybe he think it is
+easier to rephrase it before picking it up.
 
-On 1/24/11 8:01 AM, H. Peter Anvin wrote:
-> Well, part of the point was to pass in registers.
->
-> No idea on the data storage type.
+Avi?
 
-Ping? The current situation is that we're unable to merge a perfectly 
-good SLUB performance optimization because we can't seem to agree on the 
-this_cpu_cmpxchg_double() API.
 
-			Pekka
+
