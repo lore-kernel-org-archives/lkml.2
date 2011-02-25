@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab1BYHxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 02:53:46 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51349 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932181Ab1BYHxo (ORCPT
+	id S932273Ab1BYHzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 02:55:48 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:62038 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755633Ab1BYHzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 02:53:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Dnl8Ye5K/oKaesiQyg2frvnMXp79hkQnklJWRqc15B0+0mXzlhN2Vxejz9/ZeoHDtx
-         NuDn+NWC4UYj/KfuvflWivw3yId2YZp6JvOFJoCp0w4LuxPko6UVmFLVa79H4OGuGy1u
-         avNxnliyGBsanqgMmtiEdKW6HQCZ7bTWDAOU4=
-Date: Fri, 25 Feb 2011 08:53:20 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
-        linux-api@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Paul Mackerras <paulus@samba.org>,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rodolfo Giometti <giometti@linux.it>, Christoph Lameter <cl@linux.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH V11 2/4] ptp: Added a clock that uses the eTSEC found
- on the MPC85xx.
-Message-ID: <20110225075320.GA4032@riccoc20.at.omicron.at>
-References: <cover.1298447722.git.richard.cochran@omicron.at>
- <be1f5e801e8cd0145dd23aadae7c2055bb3c1d47.1298447722.git.richard.cochran@omicron.at>
- <20110223165058.GE14597@angua.secretlab.ca>
- <20110223112612.30071995@schlenkerla>
- <20110223175459.GH14597@angua.secretlab.ca>
- <20110223132444.65dfdda4@schlenkerla>
- <20110224165004.GB15234@riccoc20.at.omicron.at>
- <20110224112731.2d9bf080@schlenkerla>
+	Fri, 25 Feb 2011 02:55:47 -0500
+Message-ID: <4D676067.8050200@ce.jp.nec.com>
+Date: Fri, 25 Feb 2011 16:55:19 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110224112731.2d9bf080@schlenkerla>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH] Fix mapping->writeback_index to point to the last written
+ page
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 11:27:31AM -0600, Scott Wood wrote:
+Hi,
 
-> My vote, if it goes in a separate node at all, is "fsl,etsec-ptp",
+For range-cyclic writeback (e.g. kupdate), the writeback code sets
+a continuation point of the next writeback to mapping->writeback_index.
 
-So, that is what the patch does.
+Current code sets the page next to the last written page.
+I think it's intended for sequential writer.
+However, in many cases, sequential writer is writing in the middle of the page
+and it just redirties the last written page by continuing from that.
 
-> and let the driver use SVR.
+So the next writeback should try to continue from the last written page,
+not the next one.
+(If it's clean because the writer was on the page boundary,
+ pagevec_lookup_tag just skips it. So no problem.)
 
-What is SVR?
+Otherwise, the last written page was left dirty until the writeback
+wraps around.
 
-Thanks,
-Richard
+I.e. if the sequential dirtier has written on pagecache as '*'s below:
+
+   |*******|*******|****---|-------|-------|     ( |---| is a page )
+
+then, writeback happens:
+
+   |-------|-------|-------|-------|-------|
+
+and the dirtier continues:
+
+   |-------|-------|----***|*******|*****--|
+                   A       B
+
+Next writeback should start from page A, not B.
+
+As an exceptional case, when I/O error happens, set done_index to
+the next page as the comment in the code suggests.
+
+
+    Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 2cb01f6..beae3ed 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -927,7 +927,7 @@ retry:
+ 				break;
+ 			}
+ 
+-			done_index = page->index + 1;
++			done_index = page->index;
+ 
+ 			lock_page(page);
+ 
+@@ -977,6 +977,7 @@ continue_unlock:
+ 					 * not be suitable for data integrity
+ 					 * writeout).
+ 					 */
++					done_index = page->index + 1;
+ 					done = 1;
+ 					break;
+ 				}
