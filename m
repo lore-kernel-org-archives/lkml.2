@@ -1,295 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab1BYLRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 06:17:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38946 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab1BYLRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 06:17:49 -0500
-Date: Fri, 25 Feb 2011 12:17:12 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Kyungmin Park <kmpark@infradead.org>
-cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Subject: Re: [PATCH v3] fat: Batched discard support for fat
-In-Reply-To: <20110225010346.GA9019@july>
-Message-ID: <alpine.LFD.2.00.1102251114580.3316@dhcp-27-109.brq.redhat.com>
-References: <20110225010346.GA9019@july>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753692Ab1BYLSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 06:18:08 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:54792 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753736Ab1BYLSE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 06:18:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=UAabRFNlDI4NqI/0I4ZpSE9F/FH+es/DeIbCbRWeTm/RzJ5WtXSCfNvxWJWrdYeQLy
+         GdIuSoL6y1V1m/qYJrFYKvOd86qGclcSAnT1C4PLFykhEfQZ7MpdkKsHsnQAc9jn/DwS
+         jnuhXipoyULjCh9xO3lzqOLseN3BWyS+lxKd8=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110224204300.GA2423@polaris.bitmath.org>
+References: <1298572259-18173-1-git-send-email-rydberg@euromail.se>
+	<AANLkTi=VfSbbV5xwpacC+8yDUfjR3-S8OW47YPvtZwFX@mail.gmail.com>
+	<20110224204300.GA2423@polaris.bitmath.org>
+Date: Fri, 25 Feb 2011 12:18:00 +0100
+X-Google-Sender-Auth: 73sehwuvBpkucUzaqXRj9xj58-Y
+Message-ID: <AANLkTi=YBYrgf66Md_G2Cas7t__BDD2nozvidYDj0p9W@mail.gmail.com>
+Subject: Re: [PATCH] hid: Do not create input devices for feature reports
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Feb 2011, Kyungmin Park wrote:
+Hi Henrik,
 
-> From: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> FAT supports batched discard as ext4.
-> 
-> Cited from Lukas words.
-> "The current solution is not ideal because of its bad performance impact.
-> So basic idea to improve things is to avoid discarding every time some
-> blocks are freed. and instead batching is together into bigger trims,
-> which tends to be more effective."
-> 
-> You can find an information in detail at following URLs.
-> http://lwn.net/Articles/397538/
-> http://lwn.net/Articles/383933/
-> 
-> Clearify the meaning of "len" (Cited form Lukas mail)
-> 
-> Let the "O" be free (bytes, blocks, whatever), and "=" be used.
-> Now, we have a filesystem like this.
-> 
->   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
->   ^                                      ^
->   0                                      40
-> 
-> This is how it supposed to wotk if you have called FITIRM with parameters:
-> 
-> start = 0
-> minlen = 2
-> len = 20
-> 
-> So you will go through (blocks, bytes...) 0 -> 20
-> 
->   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
->   ^                   ^
->   0                   20
-> 
-> So, you will call discard on extents:
-> 
-> 0-3
-> You'll skip 6 because is smaller than minlen
-> 10-11
-> 15-19
-> 
-> instead of 
-> 
-> 0-3
-> 10-11
-> 15-19
-> 30-36
+after some quick tests, I can deal with our two options (changing
+feature_mapping signature or not, and so calling feature_mapping
+before or after input_mapping).
 
-Hi thanks for the next version. And again I have to ask: Did you test it
-? and how ? Did you tried xfstest No. 251 ? Couple of comments bellow.
+So, my questions are:
+- do we really need to change feature_mapping signature?
+- is feature_mapping tied to an input or to a device?
 
-Thanks!
--Lukas
+Cheers,
+Benjamin
 
-> 
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> Changelog v3:
-> 	Adjust the minlen from queue discard_granularity
-> 	Use the corrent len usage
-> Changelog v2:
-> 	Use the given start and len as Lukas comments
-> 	Check the queue supports discard feature
-> ---
-> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-> index f504089..08b53e1 100644
-> --- a/fs/fat/fat.h
-> +++ b/fs/fat/fat.h
-> @@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
->  			      int nr_cluster);
->  extern int fat_free_clusters(struct inode *inode, int cluster);
->  extern int fat_count_free_clusters(struct super_block *sb);
-> +extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
->  
->  /* fat/file.c */
->  extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
-> diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-> index b47d2c9..a8e3837 100644
-> --- a/fs/fat/fatent.c
-> +++ b/fs/fat/fatent.c
-> @@ -1,6 +1,8 @@
->  /*
->   * Copyright (C) 2004, OGAWA Hirofumi
->   * Released under GPL v2.
-> + *
-> + * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
->   */
->  
->  #include <linux/module.h>
-> @@ -541,6 +543,16 @@ out:
->  	return err;
->  }
->  
-> +static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
-> +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-> +	sector_t block, nr_blocks;
-> +
-> +	block = fat_clus_to_blknr(sbi, cluster);
-> +	nr_blocks = nr_clus * sbi->sec_per_clus;
-> +	return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
-> +}
-> +
->  int fat_free_clusters(struct inode *inode, int cluster)
->  {
->  	struct super_block *sb = inode->i_sb;
-> @@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
->  			if (cluster != fatent.entry + 1) {
->  				int nr_clus = fatent.entry - first_cl + 1;
->  
-> -				sb_issue_discard(sb,
-> -					fat_clus_to_blknr(sbi, first_cl),
-> -					nr_clus * sbi->sec_per_clus,
-> -					GFP_NOFS, 0);
-> -
-> +				fat_issue_discard(sb, first_cl, nr_clus);
->  				first_cl = cluster;
->  			}
->  		}
-> @@ -683,3 +691,88 @@ out:
->  	unlock_fat(sbi);
->  	return err;
->  }
-> +
-> +int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
-> +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-> +	struct fatent_operations *ops = sbi->fatent_ops;
-> +	struct fat_entry fatent;
-> +	unsigned long reada_blocks, reada_mask, cur_block;
-> +	int err = 0, free, count, entry;
-> +	int start, len, minlen, trimmed;
-> +
-> +	start = range->start >> sb->s_blocksize_bits;
-> +	start = start / sbi->sec_per_clus;
-> +	len = range->len >> sb->s_blocksize_bits;
-> +	len = len / sbi->sec_per_clus;
-> +	minlen = range->minlen >> sb->s_blocksize_bits;
-> +	minlen = minlen / sbi->sec_per_clus;
-> +	trimmed = 0;
-> +	count = 0;
-> +
-> +	lock_fat(sbi);
-> +	if (sbi->free_clusters != -1 && sbi->free_clus_valid)
-> +		goto out;
-> +
-> +	reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
-> +	reada_mask = reada_blocks - 1;
-> +	cur_block = 0;
-> +
-> +	entry = 0;
-> +	free = 0;
-> +	fatent_init(&fatent);
-> +
-> +	if (start < FAT_START_ENT)
-> +		start = FAT_START_ENT;
-> +
-> +	fatent_set_entry(&fatent, start);
-> +
-> +	while (count < sbi->max_cluster) {
-> +		if (fatent.entry >= sbi->max_cluster)
-> +			fatent.entry = FAT_START_ENT;
-> +		/* readahead of fat blocks */
-> +		if ((cur_block & reada_mask) == 0) {
-> +			unsigned long rest = sbi->fat_length - cur_block;
-> +			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
-
-You really do not need new variable "rest" just for passing it into one
-function. Get rid of it.
-
-> +		}
-> +		cur_block++;
-> +
-> +		err = fat_ent_read_block(sb, &fatent);
-> +		if (err)
-> +			goto out;
-> +
-> +		do {
-> +			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
-> +				free++;
-> +				if (!entry)
-> +					entry = fatent.entry;
-> +				if (count >= len && free >= minlen) {
-> +					fat_issue_discard(sb, entry, free);
-> +					trimmed += free;
-I really do not understand FAT code very much, but is this right ?
-Should not you be setting free = 0 ? What will happen if you'll end up
-in the same branch in next iteration ? -- free will be still set to
-previous value+1, bu you'll be discarding next entry. I am sorry but
-this whole thing is not very readable.
-
-> +				}
-> +				if (count >= len)
-> +					goto done;
-> +			} else if (entry) {
-> +				if (free >= minlen) {
-> +					fat_issue_discard(sb, entry, free);
-> +					trimmed += free;
-> +				}
-> +				if (count >= len)
-> +					goto done;
-> +				free = 0;
-> +				entry = 0;
-> +			}
-
-I don't not see why you are testing count all the time since it has not been
-changed since the "if" condition started. how about doing one test
-before the "if" condition ?
-
-> +			count++;
-> +		} while (fat_ent_next(sbi, &fatent));
-> +	}
-> +	if (free >= minlen) {
-> +		fat_issue_discard(sb, entry, free);
-> +		trimmed += free;
-> +	}
-> +done:
-> +	range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
-> +	fatent_brelse(&fatent);
-> +out:
-> +	unlock_fat(sbi);
-> +	return err;
-> +}
-> diff --git a/fs/fat/file.c b/fs/fat/file.c
-> index 7257752..9910aba 100644
-> --- a/fs/fat/file.c
-> +++ b/fs/fat/file.c
-> @@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  		return fat_ioctl_get_attributes(inode, user_attr);
->  	case FAT_IOCTL_SET_ATTRIBUTES:
->  		return fat_ioctl_set_attributes(filp, user_attr);
-> +	case FITRIM:
-> +	{
-> +		struct super_block *sb = inode->i_sb;
-> +		struct request_queue *q = bdev_get_queue(sb->s_bdev);
-> +		struct fstrim_range range;
-> +		int ret = 0;
-> +
-> +		if (!capable(CAP_SYS_ADMIN))
-> +			return -EPERM;
-> +
-> +		if (!blk_queue_discard(q))
-> +			return -EOPNOTSUPP;
-> +
-> +		if (copy_from_user(&range, (struct fstrim_range *)arg,
-> +					sizeof(range)))
-> +			return -EFAULT;
-> +
-> +		range.minlen = max((unsigned int)range.minlen,
-> +					q->limits.discard_granularity);
-> +		ret = fat_trim_fs(sb, &range);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		if (copy_to_user((struct fstrim_range *)arg, &range,
-> +					sizeof(range)))
-> +			return -EFAULT;
-> +
-> +		return 0;
-> +	}
-> +
->  	default:
->  		return -ENOTTY;	/* Inappropriate ioctl for device */
->  	}
-> 
-
--- 
+On Thu, Feb 24, 2011 at 21:43, Henrik Rydberg <rydberg@euromail.se> wrote:
+> On Thu, Feb 24, 2011 at 08:50:55PM +0100, Benjamin Tissoires wrote:
+>> Hi Henrik,
+>>
+>> Thanks for spotting this. BTW, I'm not happy with your solution.
+>>
+>> You are sending the feature report before creating the struct
+>> hid_input. To be consistent with the rest, we have to keep the same
+>> signature. Today, the code does not make any use of it. But I use it
+>> in my devel branch to auto-detect the maximum contact count of the
+>> device. This was the safest place to call input_mt_init_slots.
+>
+> Well, the whole point is "which input device". It would only be
+> well-defined when the hid device has a single input device. The
+> feature callback could be called last, however, if that helps.
+>
+>> How about adding hidinput as an argument to report_features
+>>
+>> and calling it after the " for (k = HID_INPUT_REPORT; k <=
+>> HID_OUTPUT_REPORT; k++) {" loop with
+>>
+>> list_for_each_entry_safe(hidinput, next, &hid->inputs, list)
+>>     report_features(hid, hidinput);
+>>
+>> I did not even try to compile it right now (I don't have any
+>> multitouch device right now) but I'll be able to make further tests
+>> tomorrow.
+>
+> Thanks,
+> Henrik
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
