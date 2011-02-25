@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab1BYAqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 19:46:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59141 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754995Ab1BYAqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 19:46:11 -0500
-Date: Thu, 24 Feb 2011 16:43:42 -0800
-From: Greg KH <gregkh@suse.de>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: alan@linux.intel.com, devel@driverdev.osuosl.org,
+	id S932200Ab1BYAsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 19:48:12 -0500
+Received: from trinity.develer.com ([83.149.158.210]:40613 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab1BYAsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 19:48:09 -0500
+Date: Fri, 25 Feb 2011 01:48:05 +0100
+From: Andrea Righi <arighi@develer.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: gma500: Fix compilation error.
-Message-ID: <20110225004342.GA27647@suse.de>
-References: <1298539998-6422-1-git-send-email-marek.belisko@open-nandra.com>
- <20110224171209.GE7925@suse.de>
- <AANLkTimTePRqSZ5=oJPrEM1cdu0zNPmWGfm_AbN3OdiJ@mail.gmail.com>
+Subject: Re: [PATCH 3/5] page_cgroup: make page tracking available for blkio
+Message-ID: <20110225004805.GA3044@linux.develer.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <1298394776-9957-4-git-send-email-arighi@develer.com>
+ <20110222130145.37cb151e@bike.lwn.net>
+ <20110222230146.GB23723@linux.develer.com>
+ <20110222230630.GL28269@redhat.com>
+ <20110222233718.GF23723@linux.develer.com>
+ <20110223134910.abbdc931.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110223085911.GC2174@linux.develer.com>
+ <20110224085805.14766e93.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimTePRqSZ5=oJPrEM1cdu0zNPmWGfm_AbN3OdiJ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110224085805.14766e93.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 24, 2011 at 08:58:52PM +0100, Belisko Marek wrote:
-> Hi Greg,
+On Thu, Feb 24, 2011 at 08:58:05AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 23 Feb 2011 09:59:11 +0100
+> Andrea Righi <arighi@develer.com> wrote:
 > 
-> On Thu, Feb 24, 2011 at 6:12 PM, Greg KH <gregkh@suse.de> wrote:
-> > On Thu, Feb 24, 2011 at 10:33:18AM +0100, Marek Belisko wrote:
-> >> This patch will fix following compilation error:
-> >> drivers/staging/gma500/psb_drv.c:1635: error: unknown field ‘pci_driver’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1636: error: unknown field ‘name’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1636: warning: initialization from incompatible pointer type
-> >> drivers/staging/gma500/psb_drv.c:1637: error: unknown field ‘id_table’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1637: warning: excess elements in union initializer
-> >> drivers/staging/gma500/psb_drv.c:1637: warning: (near initialization for ‘driver.kdriver’)
-> >> drivers/staging/gma500/psb_drv.c:1638: error: unknown field ‘resume’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1638: warning: excess elements in union initializer
-> >> drivers/staging/gma500/psb_drv.c:1638: warning: (near initialization for ‘driver.kdriver’)
-> >> drivers/staging/gma500/psb_drv.c:1639: error: unknown field ‘suspend’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1639: warning: excess elements in union initializer
-> >> drivers/staging/gma500/psb_drv.c:1639: warning: (near initialization for ‘driver.kdriver’)
-> >> drivers/staging/gma500/psb_drv.c:1640: error: unknown field ‘probe’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1640: warning: excess elements in union initializer
-> >> drivers/staging/gma500/psb_drv.c:1640: warning: (near initialization for ‘driver.kdriver’)
-> >> drivers/staging/gma500/psb_drv.c:1641: error: unknown field ‘remove’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1641: warning: excess elements in union initializer
-> >> drivers/staging/gma500/psb_drv.c:1641: warning: (near initialization for ‘driver.kdriver’)
-> >> drivers/staging/gma500/psb_drv.c:1643: error: unknown field ‘driver’ specified in initializer
-> >> drivers/staging/gma500/psb_drv.c:1643: warning: excess elements in union initializer
-> >> drivers/staging/gma500/psb_drv.c:1643: warning: (near initialization for ‘driver.kdriver’)
-> >> drivers/staging/gma500/psb_drv.c: In function ‘psb_init’:
-> >> drivers/staging/gma500/psb_drv.c:1664: error: implicit declaration of function ‘drm_init’
-> >> drivers/staging/gma500/psb_drv.c: In function ‘psb_exit’:
-> >> drivers/staging/gma500/psb_drv.c:1669: error: implicit declaration of function ‘drm_exit’
-> >>
-> >> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> >
-> > Odd, how come I'm not hitting these in the staging-next tree?  Is it
-> > because an api changed in the DRM layer in the linux-next tree?
-> Yes DRM api was changed:
-> commit 8410ea3b95d105a5be5db501656f44bbb91197c1
-> Author: Dave Airlie <airlied@gmail.com>
-> Date:   Wed Dec 15 03:16:38 2010 +1000
+> > > 
+> > > I wonder I can make pc->mem_cgroup to be pc->memid(16bit), then, 
+> > > ==
+> > > static inline struct mem_cgroup *get_memcg_from_pc(struct page_cgroup *pc)
+> > > {
+> > >     struct cgroup_subsys_state *css = css_lookup(&mem_cgroup_subsys, pc->memid);
+> > >     return container_of(css, struct mem_cgroup, css);
+> > > }
+> > > ==
+> > > Overhead will be seen at updating file statistics and LRU management.
+> > > 
+> > > But, hmm, can't you do that tracking without page_cgroup ?
+> > > Because the number of dirty/writeback pages are far smaller than total pages,
+> > > chasing I/O with dynamic structure is not very bad..
+> > > 
+> > > prepareing [pfn -> blkio] record table and move that information to struct bio
+> > > in dynamic way is very difficult ?
+> > 
+> > This would be ok for dirty pages, but consider that we're also tracking
+> > anonymous pages. So, if we want to control the swap IO we actually need
+> > to save this information for a lot of pages and at the end I think we'll
+> > basically duplicate the page_cgroup code.
+> > 
 > 
->     drm: rework PCI/platform driver interface.
-> 
-> Introduce union kdriver which encapsulate pci_driver struct.
-> That's cause of error in gma500.
+> swap io is always started with bio and the task/mm_struct.
+> So, if we can record information in bio, no page tracking is required.
+> You can record information to bio just by reading mm->owner.
 
-Ok, this is going to get messy then, this patch should be held by
-Stephen in linux-next until we merge stuff with Linus, and then I'll be
-able to apply it to my tree.  So I'll just save it in my queue until
-that time happens, thanks.
+OK, you're right. And BTW probably swap io control is not a feature that
+we need immediately. Moreover, as also said in the previous email with
+Vivek, it seems we can even get rid of the page tracking stuff for now
+and try to implement async write control at the time pages are written
+in memory. I'm going forward to add this logic to the blk-throttle
+controller.
 
-greg k-h
+Thanks,
+-Andrea
