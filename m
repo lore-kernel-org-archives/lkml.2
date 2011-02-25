@@ -1,85 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab1BYTxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:53:13 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:8561 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932638Ab1BYTxK (ORCPT
+	id S932845Ab1BYTxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:53:11 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54588 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab1BYTxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Feb 2011 14:53:10 -0500
-Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
- modules
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
-        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
-        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org
-In-Reply-To: <20110225.114351.28809001.davem@davemloft.net>
-References: <1298660879.2554.23.camel@bwh-desktop>
-	 <20110225.111606.115927805.davem@davemloft.net>
-	 <1298662216.2554.33.camel@bwh-desktop>
-	 <20110225.114351.28809001.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Fri, 25 Feb 2011 19:53:05 +0000
-Message-ID: <1298663585.2554.39.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Feb 2011 19:53:11.0049 (UTC) FILETIME=[A1842790:01CBD525]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17976.005
-X-TM-AS-Result: No--27.550900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=gkLDreHdBTAA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=Qwv9gRP5RxJNI3ml-1oA:9 a=iazzvTmQJHTtRuGflVjXHlmEVBgA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Fri, 25 Feb 2011 14:53:08 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dominik Klein <dk@in-telegence.net>
+Cc: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        libvir-list@redhat.com
+Subject: Re: Is it a workqueue related issue in 2.6.37 (Was: Re: [libvirt]
+ blkio cgroup [solved])
+Message-ID: <20110225195307.GA23161@home.goodmis.org>
+References: <4D63BA3B.7070809@in-telegence.net>
+ <20110222152426.GD28269@redhat.com>
+ <20110222190953.GF28269@redhat.com>
+ <4D650D7E.4050908@in-telegence.net>
+ <4D662248.6040405@in-telegence.net>
+ <20110224142303.GA18494@redhat.com>
+ <20110224143105.GL7840@htj.dyndns.org>
+ <4D66720E.70102@in-telegence.net>
+ <20110224151701.GQ7840@htj.dyndns.org>
+ <4D67591F.10105@in-telegence.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D67591F.10105@in-telegence.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 11:43 -0800, David Miller wrote:
-> From: Ben Hutchings <bhutchings@solarflare.com>
-> Date: Fri, 25 Feb 2011 19:30:16 +0000
-> 
-> > On Fri, 2011-02-25 at 11:16 -0800, David Miller wrote:
-> >> From: Ben Hutchings <bhutchings@solarflare.com>
-> >> Date: Fri, 25 Feb 2011 19:07:59 +0000
-> >> 
-> >> > You realise that module loading doesn't actually run in the context of
-> >> > request_module(), right?
-> >> 
-> >> Why is that a barrier?  We could simply pass a capability mask into
-> >> request_module if necessary.
-> >> 
-> >> It's an implementation detail, and not a deterrant to my suggested
-> >> scheme.
+On Fri, Feb 25, 2011 at 08:24:15AM +0100, Dominik Klein wrote:
+> > Maybe watching what the workqueue is doing using the following trace
+> > events could be helpful.
 > > 
-> > It's not an implementation detail.  modprobe currently runs with full
-> > capabilities; your proposal requires its capabilities to be limited to
-> > those of the capabilities of the process that triggered the
-> > request_module() (plus, presumably, CAP_SYS_MODULE).
+> > # grep workqueue /sys/kernel/debug/tracing/available_events
+> > workqueue:workqueue_insertion
+> > workqueue:workqueue_execution
+> > workqueue:workqueue_creation
+> > workqueue:workqueue_destruction
 > 
-> The idea was that the kernel will be the entity that will inspect the
-> elf sections and validate the capability bits, not the userspace
-> module loader.
+> Since I've never done this before, I will tell you how I captured the
+> trace so you know what I did and can see whether I did something wrong
+> and can correct me if necessary.
+> 
+> echo blk > /sys/kernel/debug/tracing/current_tracer
+> echo 1 > /sys/block/sdb/trace/enable
+> echo workqueue_queue_work >> /sys/kernel/debug/tracing/set_event
+> echo workqueue_activate_work >> /sys/kernel/debug/tracing/set_event
+> echo workqueue_execute_start >> /sys/kernel/debug/tracing/set_event
+> echo workqueue_execute_end >> /sys/kernel/debug/tracing/set_event
+> cat /sys/kernel/debug/tracing/trace_pipe
 
-Yes, I understand that.
+Just an FYI,
 
-> Surely we if we can pass an arbitrary string out to the loading
-> process as part of the module loading context, we can pass along
-> capability bits as well.
+If you download trace-cmd from:
 
-If you want insert_module() to be able to deny loading some modules
-based on the capabilities of the process calling request_module() then
-you either have to *reduce* the capabilities given to modprobe or create
-some extra process state, separate from the usual capability state,
-specifically for this purpose.
+git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
 
-Ben.
+You could do the following:
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+# trace-cmd record -p blk -e workqueue_queue_work -e workqueue_activate_work -e workqueue_execute_start -e workqueue_execute_end <cmd>
+
+Where <cmd> could be 
+sh -c "echo 1 > /sys/block/sdb/trace/enable; sleep 10"
+
+This will create a trace.dat file that you can read with 
+trace-cmd report
+
+Another way, if you want to do more than just that echo is to use:
+
+# trace-cmd start -p blk -e workqueue_queue_work -e workqueue_activate_work -e workqueue_execute_start -e workqueue_execute_end
+# echo 1 > /sys/block/sdb/trace/enable
+# <do anyting you want>
+# trace-cmd stop
+# trace-cmd extract
+
+The start just enable ftrace (like you did with the echos).
+The extract will create the trace.dat file from the ftrace ring buffers.
+You could alse just cat trace_pipe, which would do the same, or you
+could do the echos, and then the trace-cmd stop and extract to get the
+file. It's your choice ;)
+
+You can then gzip the trace.dat file and send it to others that can read
+it as well, as all the information needed to read the trace is recorded
+in the file.
+
+You could even send the data over the network instead of writing the
+trace.dat locally.
+
+On another box:
+
+$ trace-cmd listen -p 12345
+
+Then on the target:
+
+# trace-cmd record -N host:12345 ...
+
+This will send the data to the listening host and the file will be
+created on the host side.
+
+One added benefit of having the trace.dat file. kernelshark can read it.
+
+-- Steve
+
+
+
+> 
+> And that output i gzip'd.
+> 
+> This was taken with 2.6.37 plus the patch you mentioned on a Dell R815
+> with 2 12 core AMD Opteron 6174 CPUs. If you need any more information,
+> please let me know.
+> 
+
 
