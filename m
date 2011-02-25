@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab1BYPeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 10:34:06 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50420 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598Ab1BYPeE convert rfc822-to-8bit (ORCPT
+	id S1756190Ab1BYPfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 10:35:12 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46825 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab1BYPfK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 10:34:04 -0500
+	Fri, 25 Feb 2011 10:35:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=SgPFteAR8rtn+HFBhLAdy+fuGhK9zPUjb1nW+e++Jzrc1znm1kUVctmn4cgXeoNtO/
+         dPkKFQjVW0tYkRk5i9oWLQgS72afdeS9z+UZiumw4tUgv8HEKdhTS+XQwPfXgyb7e152
+         Wfu1fdTkBj/QGQNBeaxFOmmRGwx8Um0eJ2raw=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=2a=9=k+ZG46yqKOaHd9tCkJVm4QRxGmgbRzsv@mail.gmail.com>
-References: <20110219150644.681D59D401D@zog.reactivated.net>
- <AANLkTi=29myerzgH6WRCSOPKpaDnGgEtQacVHvxRoQT_@mail.gmail.com> <AANLkTi=2a=9=k+ZG46yqKOaHd9tCkJVm4QRxGmgbRzsv@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 25 Feb 2011 08:33:44 -0700
-X-Google-Sender-Auth: HNGBCqq-H_wTIWeYFVemwok7VWg
-Message-ID: <AANLkTimpWxEvQ1wgQzZ2RRA=0s_hEmKFAyz1bVr8nKai@mail.gmail.com>
-Subject: Re: [PATCH] olpc_battery: bind to device tree
-To: Daniel Drake <dsd@laptop.org>
-Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        linux-kernel@vger.kernel.org, dilinger@queued.net
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Fri, 25 Feb 2011 15:35:08 +0000
+X-Google-Sender-Auth: 2aSzNzy-Jpnq-H346VUtGRr3bTA
+Message-ID: <AANLkTin-2FH-c_5DVpW29zvARW827Ebun31=z2b+jB00@mail.gmail.com>
+Subject: OF IOAPIC bindings compile error
+From: Daniel Drake <dsd@laptop.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Andres Salomon <dilinger@queued.net>, tglx@linutronix.de
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 7:19 AM, Daniel Drake <dsd@laptop.org> wrote:
-> On 23 February 2011 20:34, Grant Likely <grant.likely@secretlab.ca> wrote:
->> As mentioned in the other thread, matching by name is strongly
->> discouraged.  It isn't very accurate and compatible is the preferred
->> method for binding devices.  'battery' in particular is highly
->> non-specific.
->>
->> I do understand that you don't have a compatible property in the
->> current firmware, and to a certain extent we have to live with what
->> we're given by the kernel.  However, I think it would be better in the
->> OLPC case to find the battery node and add a compatible property
->> before registering a platform_device for it.  (or use a bus notifier
->> to tell you when it is registered, and add 'compatible' at that
->> point.)  That way we the uncertainty is taken care of in the board
->> support code without polluting the driver matching namespace.
->
-> Thanks for the review. This and the rest of your feedback makes sense.
->
-> Would you mind commenting on exactly how this should look?
+Hi,
 
-Before calling of_platform_bus_probe(), search the device tree for the
-battery node and use prom_add_property() to add a compatible prop.
+Testing linux-2.6-x86.git, I encountered a compile error which seems
+to caused by the following commit with X86_IO_APIC=n:
 
->
-> Here are the changes i'm planning to make, both to the firmware and
-> with kernel code as you suggest to fixup device trees for systems with
-> old firmware:
->
-> /battery@0/compatible property added with value "olpc-battery" (XO-1 and XO-1.5)
-> /pci/isa@f/rtc@i70/compatible property prepended with "olpc-xo1-rtc,"
-> (XO-1 only)
-> /pci/display@1,1/dcon device added, name=dcon compatible=olpc-dcon
-> (XO-1 and XO-1.5)
+commit bcc7c1244fcfd852b9f4590935491057e1cab9dd
+Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date:   Tue Feb 22 21:07:44 2011 +0100
 
-Compatible properties should generally be in the form:
-"<vendor>,<part>".  So these should probably be:
+    x86: ioapic: Add OF bindings for IO_APIC
 
-battery:  compatible = "olpc,xo1-battery";
-rtc: compatible = "olpc,xo1-rtc";
-dcon: compatible = "olpc,xo1-dcon";
+Error is:
+arch/x86/kernel/devicetree.c: In function ‘x86_dtb_find_config’:
+arch/x86/kernel/devicetree.c:288:3: error: lvalue required as left
+operand of assignment
 
-I would explicitly specify the "xo1-" part in all three to protect
-against the eventuality of a new xo revision that has does something
-incompatible.  ie. "olpc-battery" doesn't help if, say, XO-1.75 has a
-different battery.  Newer configurations can claim compatibility with
-the old if they are truly compatible.
+It can be fixed by inserting #ifdef CONFIG_X86_IO_APIC inside
+x86_dtb_find_config, but I'm not sure if this is the correct approach.
 
->
-> In addition to the battery patch you reviewed, we plan to make the
-> olpc-rtc and DCON drivers bind to device tree nodes, which is the
-> reason behind the other changes.
+.config file in question:
+http://dev.laptop.org/~dsd/20110225/ioioapic-problem-config.txt
 
-okay.
-
-g.
+Daniel
