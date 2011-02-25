@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851Ab1BYVjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:39:51 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:50635 "EHLO
+	id S932887Ab1BYVjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:39:54 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:55032 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932661Ab1BYVjs (ORCPT
+	with ESMTP id S932661Ab1BYVjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:39:48 -0500
+	Fri, 25 Feb 2011 16:39:52 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=tRv72nKqSocuBpep5x5uq1vImMnAK64PI6cIe6Yof2ZJkWGiX1dlNE+eitgUprDyX
-	WlJEMyjaycHC9KVWgf1xg==
+	b=jZEtrSD+1Ih/18fQH23It2CNDaAoUa0yAMQU55WGhFD7fyPkyX2GMa1ye5rt5wo0f
+	3ww75PbqZBR/fq4ECbd+A==
 From: Greg Thelen <gthelen@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -25,9 +25,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Chad Talbott <ctalbott@google.com>,
         Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>,
         Greg Thelen <gthelen@google.com>
-Subject: [PATCH v5 6/9] memcg: add kernel calls for memcg dirty page stats
-Date: Fri, 25 Feb 2011 13:35:57 -0800
-Message-Id: <1298669760-26344-7-git-send-email-gthelen@google.com>
+Subject: [PATCH v5 9/9] memcg: check memcg dirty limits in page writeback
+Date: Fri, 25 Feb 2011 13:36:00 -0800
+Message-Id: <1298669760-26344-10-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1298669760-26344-1-git-send-email-gthelen@google.com>
 References: <1298669760-26344-1-git-send-email-gthelen@google.com>
@@ -35,111 +35,287 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add calls into memcg dirty page accounting.  Notify memcg when pages
-transition between clean, file dirty, writeback, and unstable nfs.
-This allows the memory controller to maintain an accurate view of
-the amount of its memory that is dirty.
+If the current process is in a non-root memcg, then
+balance_dirty_pages() will consider the memcg dirty limits as well as
+the system-wide limits.  This allows different cgroups to have distinct
+dirty limits which trigger direct and background writeback at different
+levels.
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
+If called with a mem_cgroup, then throttle_vm_writeout() should query
+the given cgroup for its dirty memory usage limits.
+
 Signed-off-by: Andrea Righi <arighi@develer.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/nfs/write.c      |    4 ++++
- mm/filemap.c        |    1 +
- mm/page-writeback.c |    4 ++++
- mm/truncate.c       |    1 +
- 4 files changed, 10 insertions(+), 0 deletions(-)
+Changelog since v4:
+- Added missing 'struct mem_cgroup' forward declaration in writeback.h.
+- Made throttle_vm_writeout() memcg aware.
+- Removed previously added dirty_writeback_pages() which is no longer needed.
+- Added logic to balance_dirty_pages() to throttle if over foreground memcg
+  limit.
 
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index c8278f4..118935b 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -451,6 +451,7 @@ nfs_mark_request_commit(struct nfs_page *req)
- 			NFS_PAGE_TAG_COMMIT);
- 	nfsi->ncommit++;
- 	spin_unlock(&inode->i_lock);
-+	mem_cgroup_inc_page_stat(req->wb_page, MEMCG_NR_FILE_UNSTABLE_NFS);
- 	inc_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
- 	inc_bdi_stat(req->wb_page->mapping->backing_dev_info, BDI_RECLAIMABLE);
- 	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
-@@ -462,6 +463,7 @@ nfs_clear_request_commit(struct nfs_page *req)
- 	struct page *page = req->wb_page;
+Changelog since v3:
+- Leave determine_dirtyable_memory() static.  v3 made is non-static.
+- balance_dirty_pages() now considers both system and memcg dirty limits and
+  usage data.  This data is retrieved with global_dirty_info() and
+  memcg_dirty_info().  
+
+ include/linux/writeback.h |    3 +-
+ mm/page-writeback.c       |  112 +++++++++++++++++++++++++++++++++------------
+ mm/vmscan.c               |    2 +-
+ 3 files changed, 86 insertions(+), 31 deletions(-)
+
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index a06fb38..e4688d6 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -8,6 +8,7 @@
+ #include <linux/fs.h>
  
- 	if (test_and_clear_bit(PG_CLEAN, &(req)->wb_flags)) {
-+		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_UNSTABLE_NFS);
- 		dec_zone_page_state(page, NR_UNSTABLE_NFS);
- 		dec_bdi_stat(page->mapping->backing_dev_info, BDI_RECLAIMABLE);
- 		return 1;
-@@ -1317,6 +1319,8 @@ nfs_commit_list(struct inode *inode, struct list_head *head, int how)
- 		req = nfs_list_entry(head->next);
- 		nfs_list_remove_request(req);
- 		nfs_mark_request_commit(req);
-+		mem_cgroup_dec_page_stat(req->wb_page,
-+					 MEMCG_NR_FILE_UNSTABLE_NFS);
- 		dec_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
- 		dec_bdi_stat(req->wb_page->mapping->backing_dev_info,
- 				BDI_RECLAIMABLE);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 7b137b4..e234b8d 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -143,6 +143,7 @@ void __delete_from_page_cache(struct page *page)
- 	 * having removed the page entirely.
- 	 */
- 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
-+		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_DIRTY);
- 		dec_zone_page_state(page, NR_FILE_DIRTY);
- 		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
- 	}
+ struct backing_dev_info;
++struct mem_cgroup;
+ 
+ extern spinlock_t inode_lock;
+ 
+@@ -105,7 +106,7 @@ void laptop_mode_timer_fn(unsigned long data);
+ #else
+ static inline void laptop_sync_completion(void) { }
+ #endif
+-void throttle_vm_writeout(gfp_t gfp_mask);
++void throttle_vm_writeout(gfp_t gfp_mask, struct mem_cgroup *mem_cgroup);
+ 
+ /* These are exported to sysctl. */
+ extern int dirty_background_ratio;
 diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 00424b9..8d61cfa 100644
+index 8d61cfa..5557e0c 100644
 --- a/mm/page-writeback.c
 +++ b/mm/page-writeback.c
-@@ -1119,6 +1119,7 @@ int __set_page_dirty_no_writeback(struct page *page)
- void account_page_dirtied(struct page *page, struct address_space *mapping)
+@@ -398,47 +398,72 @@ unsigned long determine_dirtyable_memory(void)
+ }
+ 
+ /*
++ * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
++ * real-time tasks.
++ */
++static inline void adjust_dirty_info(struct dirty_info *info)
++{
++	struct task_struct *tsk;
++
++	if (info->background_thresh >= info->dirty_thresh)
++		info->background_thresh = info->dirty_thresh / 2;
++	tsk = current;
++	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
++		info->background_thresh += info->background_thresh / 4;
++		info->dirty_thresh += info->dirty_thresh / 4;
++	}
++}
++
++/*
+  * global_dirty_info - return dirty thresholds and usage metrics
+  *
+  * Calculate the dirty thresholds based on sysctl parameters
+  * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
+  * - vm.dirty_ratio             or  vm.dirty_bytes
+- * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
+- * real-time tasks.
+  */
+ void global_dirty_info(struct dirty_info *info)
  {
- 	if (mapping_cap_account_dirty(mapping)) {
-+		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_DIRTY);
- 		__inc_zone_page_state(page, NR_FILE_DIRTY);
- 		__inc_zone_page_state(page, NR_DIRTIED);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-@@ -1308,6 +1309,7 @@ int clear_page_dirty_for_io(struct page *page)
- 		 * for more comments.
+-	unsigned long background;
+-	unsigned long dirty;
+ 	unsigned long uninitialized_var(available_memory);
+-	struct task_struct *tsk;
+ 
+ 	if (!vm_dirty_bytes || !dirty_background_bytes)
+ 		available_memory = determine_dirtyable_memory();
+ 
+ 	if (vm_dirty_bytes)
+-		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
++		info->dirty_thresh = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+ 	else
+-		dirty = (vm_dirty_ratio * available_memory) / 100;
++		info->dirty_thresh = (vm_dirty_ratio * available_memory) / 100;
+ 
+ 	if (dirty_background_bytes)
+-		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
++		info->background_thresh =
++			DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+ 	else
+-		background = (dirty_background_ratio * available_memory) / 100;
++		info->background_thresh =
++			(dirty_background_ratio * available_memory) / 100;
+ 
+ 	info->nr_file_dirty = global_page_state(NR_FILE_DIRTY);
+ 	info->nr_writeback = global_page_state(NR_WRITEBACK);
+ 	info->nr_unstable_nfs = global_page_state(NR_UNSTABLE_NFS);
+ 
+-	if (background >= dirty)
+-		background = dirty / 2;
+-	tsk = current;
+-	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+-		background += background / 4;
+-		dirty += dirty / 4;
+-	}
+-	info->background_thresh = background;
+-	info->dirty_thresh = dirty;
++	adjust_dirty_info(info);
++}
++
++/*
++ * Calculate the background-writeback and dirty-throttling thresholds and dirty
++ * usage metrics from the current task's memcg dirty limit parameters.  Returns
++ * false if no memcg limits exist.
++ *
++ * @memcg may be NULL if the current task's memcg should be used.
++ * @info is the location where the dirty information is written.
++ */
++static bool memcg_dirty_info(struct mem_cgroup *memcg, struct dirty_info *info)
++{
++	unsigned long available_memory = determine_dirtyable_memory();
++
++	if (!mem_cgroup_hierarchical_dirty_info(available_memory, memcg, info))
++		return false;
++
++	adjust_dirty_info(info);
++	return true;
+ }
+ 
+ /*
+@@ -477,12 +502,14 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+  * data.  It looks at the number of dirty pages in the machine and will force
+  * the caller to perform writeback if the system is over `vm_dirty_ratio'.
+  * If we're over `background_thresh' then the writeback threads are woken to
+- * perform some writeout.
++ * perform some writeout.  The current task may have per-memcg dirty
++ * limits, which are also checked.
+  */
+ static void balance_dirty_pages(struct address_space *mapping,
+ 				unsigned long write_chunk)
+ {
+ 	struct dirty_info sys_info;
++	struct dirty_info memcg_info;
+ 	long bdi_nr_reclaimable;
+ 	long bdi_nr_writeback;
+ 	unsigned long bdi_thresh;
+@@ -500,18 +527,27 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 		};
+ 
+ 		global_dirty_info(&sys_info);
++		if (!memcg_dirty_info(NULL, &memcg_info))
++			memcg_info = sys_info;
+ 
+ 		/*
+ 		 * Throttle it only when the background writeback cannot
+ 		 * catch-up. This avoids (excessively) small writeouts
+ 		 * when the bdi limits are ramping up.
  		 */
- 		if (TestClearPageDirty(page)) {
-+			mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_DIRTY);
- 			dec_zone_page_state(page, NR_FILE_DIRTY);
- 			dec_bdi_stat(mapping->backing_dev_info,
- 					BDI_RECLAIMABLE);
-@@ -1338,6 +1340,7 @@ int test_clear_page_writeback(struct page *page)
- 				__dec_bdi_stat(bdi, BDI_WRITEBACK);
- 				__bdi_writeout_inc(bdi);
- 			}
-+			mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_WRITEBACK);
- 		}
- 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 	} else {
-@@ -1365,6 +1368,7 @@ int test_set_page_writeback(struct page *page)
- 						PAGECACHE_TAG_WRITEBACK);
- 			if (bdi_cap_account_writeback(bdi))
- 				__inc_bdi_stat(bdi, BDI_WRITEBACK);
-+			mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_WRITEBACK);
- 		}
- 		if (!PageDirty(page))
- 			radix_tree_tag_clear(&mapping->page_tree,
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 94be6c0..75ad82a 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -76,6 +76,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
- 	if (TestClearPageDirty(page)) {
- 		struct address_space *mapping = page->mapping;
- 		if (mapping && mapping_cap_account_dirty(mapping)) {
-+			mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_DIRTY);
- 			dec_zone_page_state(page, NR_FILE_DIRTY);
- 			dec_bdi_stat(mapping->backing_dev_info,
- 					BDI_RECLAIMABLE);
+-		if (dirty_info_reclaimable(&sys_info) + sys_info.nr_writeback <=
++		if ((dirty_info_reclaimable(&sys_info) +
++		     sys_info.nr_writeback <=
+ 				(sys_info.background_thresh +
+-				 sys_info.dirty_thresh) / 2)
++				 sys_info.dirty_thresh) / 2) &&
++		    (dirty_info_reclaimable(&memcg_info) +
++		     memcg_info.nr_writeback <=
++				(memcg_info.background_thresh +
++				 memcg_info.dirty_thresh) / 2))
+ 			break;
+ 
+-		bdi_thresh = bdi_dirty_limit(bdi, sys_info.dirty_thresh);
++		bdi_thresh = bdi_dirty_limit(bdi,
++				min(sys_info.dirty_thresh,
++				    memcg_info.dirty_thresh));
+ 		bdi_thresh = task_dirty_limit(current, bdi_thresh);
+ 
+ 		/*
+@@ -541,7 +577,9 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 		dirty_exceeded =
+ 			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
+ 			|| (dirty_info_reclaimable(&sys_info) +
+-			     sys_info.nr_writeback > sys_info.dirty_thresh);
++			    sys_info.nr_writeback > sys_info.dirty_thresh)
++			|| (dirty_info_reclaimable(&memcg_info) +
++			    memcg_info.nr_writeback > memcg_info.dirty_thresh);
+ 
+ 		if (!dirty_exceeded)
+ 			break;
+@@ -559,7 +597,9 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 		 * up.
+ 		 */
+ 		trace_wbc_balance_dirty_start(&wbc, bdi);
+-		if (bdi_nr_reclaimable > bdi_thresh) {
++		if ((bdi_nr_reclaimable > bdi_thresh) ||
++		    (dirty_info_reclaimable(&memcg_info) >
++		     memcg_info.dirty_thresh)) {
+ 			writeback_inodes_wb(&bdi->wb, &wbc);
+ 			pages_written += write_chunk - wbc.nr_to_write;
+ 			trace_wbc_balance_dirty_written(&wbc, bdi);
+@@ -594,8 +634,10 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 	 * background_thresh, to keep the amount of dirty memory low.
+ 	 */
+ 	if ((laptop_mode && pages_written) ||
+-	    (!laptop_mode && (dirty_info_reclaimable(&sys_info) >
+-			      sys_info.background_thresh)))
++	    (!laptop_mode && ((dirty_info_reclaimable(&sys_info) >
++			       sys_info.background_thresh) ||
++			      (dirty_info_reclaimable(&memcg_info) >
++			       memcg_info.background_thresh))))
+ 		bdi_start_background_writeback(bdi);
+ }
+ 
+@@ -653,12 +695,20 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
+ 
+-void throttle_vm_writeout(gfp_t gfp_mask)
++/*
++ * Throttle the current task if it is near dirty memory usage limits.
++ * If @mem_cgroup is NULL or the root_cgroup, then use global dirty memory
++ * information; otherwise use the per-memcg dirty limits.
++ */
++void throttle_vm_writeout(gfp_t gfp_mask, struct mem_cgroup *mem_cgroup)
+ {
+ 	struct dirty_info sys_info;
++	struct dirty_info memcg_info;
+ 
+         for ( ; ; ) {
+ 		global_dirty_info(&sys_info);
++		if (!memcg_dirty_info(mem_cgroup, &memcg_info))
++			memcg_info = sys_info;
+ 
+                 /*
+                  * Boost the allowable dirty threshold a bit for page
+@@ -666,9 +716,13 @@ void throttle_vm_writeout(gfp_t gfp_mask)
+                  */
+ 		sys_info.dirty_thresh +=
+ 			sys_info.dirty_thresh / 10;      /* wheeee... */
++		memcg_info.dirty_thresh +=
++			memcg_info.dirty_thresh / 10;    /* wheeee... */
+ 
+-		if (sys_info.nr_unstable_nfs +
+-		    sys_info.nr_writeback <= sys_info.dirty_thresh)
++		if ((sys_info.nr_unstable_nfs +
++		     sys_info.nr_writeback <= sys_info.dirty_thresh) &&
++		    (memcg_info.nr_unstable_nfs +
++		     memcg_info.nr_writeback <= memcg_info.dirty_thresh))
+ 			break;
+                 congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index ba11e28..f723242 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1927,7 +1927,7 @@ restart:
+ 					sc->nr_scanned - nr_scanned, sc))
+ 		goto restart;
+ 
+-	throttle_vm_writeout(sc->gfp_mask);
++	throttle_vm_writeout(sc->gfp_mask, sc->mem_cgroup);
+ }
+ 
+ /*
 -- 
 1.7.3.1
 
