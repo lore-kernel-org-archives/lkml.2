@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab1BYSFw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:05:52 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59805 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755858Ab1BYSFt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:05:49 -0500
-Subject: Re: [PATCH 06/17] arm: mmu_gather rework
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, "Luck,Tony" <tony.luck@intel.com>,
-        PaulMundt <lethal@linux-sh.org>
-In-Reply-To: <1298565253.2428.288.camel@twins>
-References: <20110217162327.434629380@chello.nl>
-	 <20110217163235.106239192@chello.nl>  <1298565253.2428.288.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 25 Feb 2011 19:04:43 +0100
-Message-ID: <1298657083.2428.2483.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932665Ab1BYSGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:06:41 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:42327 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756237Ab1BYSGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:06:38 -0500
+Message-Id: <20110225180633.857892225@gulag1.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Fri, 25 Feb 2011 12:06:33 -0600
+From: Mike Travis <travis@sgi.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Rientjes <rientjes@google.com>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] init: Shrink early messages to prevent overflowing the kernel log buffer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 17:34 +0100, Peter Zijlstra wrote:
-> On Thu, 2011-02-17 at 17:23 +0100, Peter Zijlstra wrote:
-> > plain text document attachment
-> > (peter_zijlstra-arm-preemptible_mmu_gather.patch)
-> > Fix up the arm mmu_gather code to conform to the new API.
-> 
-> So akpm noted that this one doesn't apply anymore because of:
-> 
-> commit 06824ba824b3e9f2fedb38bee79af0643198ed7f
-> Author: Russell King <rmk+kernel@arm.linux.org.uk>
-> Date:   Sun Feb 20 12:16:45 2011 +0000
-> 
->     ARM: tlb: delay page freeing for SMP and ARMv7 CPUs
->     
->     We need to delay freeing any mapped page on SMP and ARMv7 systems to
->     ensure that the data is not accessed by other CPUs, or is used for
->     speculative prefetch with ARMv7.  This includes not only mapped pages
->     but also pages used for the page tables themselves.
->     
->     This avoids races with the MMU/other CPUs accessing pages after they've
->     been freed but before we've invalidated the TLB.
->     
->     Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> 
-> 
-> Which raises a nice point about shift_arg_pages() which calls
-> free_pgd_range(), the other architectures that look similar to arm in
-> this respect are ia64 and sh, do they suffer the same problem?
-> 
-> It doesn't look hard to fold the requirements for this into the generic
-> tlb range support (patch 14 in this series).
 
-It looks like both ia64 and sh do indeed suffer there.
+On larger systems, information in the kernel log is lost because
+there is so much early text printed, that it overflows the static
+log buffer before the log_buf_len kernel parameter can be processed,
+and a bigger log buffer allocated.
 
-I've pulled my generic range tracking to the head of the series so that
-I can convert ARM, IA64 and SH to generic tlb solving it for those.
+Distros are relunctant to increase memory usage by increasing the
+size of the static log buffer, so minimize the problem by allocating
+the new log buffer as early as possible.  Unfortunately allocating
+early does not recover all the early messages, so we also need to
+reduce the amount of characters those early messages generate.
 
-Russell, generic tlb doesn't look to need the extra logic you added for
-the fs/exec.c case, but please double check the patches when I post
-them.
+Here are the stats testing on a system with 248 nodes, 606 EFI
+mem ranges, 1984 cores
 
-In short, tlb_end_vma() will call flush_tlb_range() on the tracked range
-and clear ->need_flush, so things like zap_page_range() will not then
-also call tlb_flush().
+after get_log_buff_early:  (17% overflow)
 
-In case of shift_arg_pages() and unmap_region() however we first call
-free_pgtables() which might end up calling p??_free_tlb() which will
-then set ->need_flush, and tlb_finish_mmu() will then end up calling
-tlb_flush().
+	[    0.000000] early log_buf free: -45723/262183(-17%)
+	[    0.000000] first line: : mem339: type=7, attr=0xf, range=[0x00000e6000000000-0x00000e6fff000000) (6552
 
-I'm not quite sure why you chose to add range tracking on
-pte_free_tlb(), the only affected code path seems to be unmap_region()
-where you'll use a flush_tlb_range(), but its buggy, the pte_free_tlb()
-range is much larger than 1 page, and if you do it there you also need
-it for all the other p??_free_tlb() functions.
+Here I enabled some cores that were disabled so now the system
+has 248 nodes, 606 EFI mem ranges, 2368 cores.
 
-The tlb flush after freeing page-tables is needed for things like
-gup_fast() which needs to sync against them being freed.
+after minimize-time-zero-msgs:  (5% overflow)
 
-So the stuff I have now will try its best to track ranges on zap_* while
-clearing the page mapping, will use flush_cache_range() and
-flush_tlb_range(). But when it comes to tearing down the page-tables
-themselves we'll punt and use a full mm flush, which seems a waste of
-all that careful range tracking by zap_*.
+[0] early log_buf free: -15184/262172(-5%)
+[0] first line: [0x000000007226e000-0x0000000072271000) (0MB) <6>[0] EFI: mem67: type=3, attr=0
 
-One possibility would be to add tlb_start/end_vma() in
-unmap_page_range(), except we don't need to flush the cache again, also,
-it would be nice to not have to flush on tlb_end_vma() but delay it all
-to tlb_finish_mmu() where possible.
+after minimize-srat-msgs.v2: (28% free)
 
-OK, let me try and hack up proper range tracking for free_*, that way I
-can move the flush_tlb_range() from tlb_end_vma() and into
-tlb_flush_mmu().
+[0] early log_buf free: 73556/188616(28%)
+[0] first line: <6>[0] Initializing cgroup subsys cpuset <6>[0] Initializing cgroup subsys cpu
+
+Some previous stats from testing these changes on our current lab
+UV systems.  (Both of these systems lost all of the e820 and EFI
+memmap ranges before the changes.)
+
+System X:
+	8,793,945,145,344 bytes of system memory
+	256 nodes
+	599 EFI Mem ranges
+	4096 cpu_ids
+	43% of static log buffer unused
+
+System Y:
+	11,779,115,188,224 bytes of system memory
+	492 Nodes
+	976 EFI Mem ranges
+	1968 cpu_ids
+	17% of static log buffer unused
+
+The last stat is how close the static log buffer came
+to overflowing.  While these resources are fairly close
+to today's max limits, there is not a lot of head room
+for growth.
+
+An alternative for the future might be to create a larger
+static log buffer in the __initdata section, and then
+always allocate a dynamically sized log buffer to replace
+it.  This would also allow shrinking the log buffer for
+memory tight situations.  But it would add complexity to
+the code.
+
+-- 
