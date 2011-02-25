@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab1BYIzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 03:55:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5812 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932342Ab1BYIzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 03:55:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,224,1297065600"; 
-   d="scan'208";a="661377213"
-Subject: Re: [PATCH -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110224165705.GA15498@elte.hu>
-References: <1298555968.2220.15.camel@localhost>
-	 <1298556237.2220.19.camel@localhost>  <20110224165705.GA15498@elte.hu>
+	id S932379Ab1BYIzN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 03:55:13 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39631 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335Ab1BYIzJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 03:55:09 -0500
+Subject: Re: [CFS Bandwidth Control v4 5/7] sched: add exports tracking cfs
+ bandwidth control statistics
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
+In-Reply-To: <AANLkTinqp_gfhoLGe0_ShbahzHBLeMZoho46_aMAe17k@mail.gmail.com>
+References: <20110216031831.571628191@google.com>
+	 <20110216031841.258879435@google.com> <1298467932.2217.763.camel@twins>
+	 <AANLkTinqp_gfhoLGe0_ShbahzHBLeMZoho46_aMAe17k@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 16:55:19 +0800
-Message-ID: <1298624119.2835.87.camel@minggr.sh.intel.com>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 25 Feb 2011 09:54:24 +0100
+Message-ID: <1298624064.2428.1311.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 00:57 +0800, Ingo Molnar wrote:
-> * Lin Ming <ming.m.lin@intel.com> wrote:
+On Thu, 2011-02-24 at 19:26 -0800, Paul Turner wrote:
+> On Wed, Feb 23, 2011 at 5:32 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Tue, 2011-02-15 at 19:18 -0800, Paul Turner wrote:
+> >> +       raw_spin_lock(&cfs_b->lock);
+> >> +       cfs_b->throttled_time += (rq->clock - cfs_rq->throttled_timestamp);
+> >> +       raw_spin_unlock(&cfs_b->lock);
+> >
+> > That seems to put the cost of things on the wrong side. Read is rare,
+> > update is frequent, and you made the frequent thing the most expensive
+> > one.
 > 
-> > Adds SandyBridge support to perf.
+> Hum.. the trade-off here is non-trivial I think
 > 
-> Wondering, have you tested things like PEBS? You can do it via:
-> 
-> 	perf record -e instructions:p -a sleep 10
-> 	perf top -e instructions:p
-> 
-> ('p' stands for 'precise')
+> - This update is only once per-quota period (*if* we throttled within
+> that period).  This places the frequency in the 10s-100s of ms range.
+> - Sampling would probably occur on an order of once a second (assuming
+> some enterprise management system that cares about these statistics).
 
-Let me do more PEBS tests...
-
-> 
-> Also, please list known limitations in the changelog.
-
-OK. 
-
-> 
-> Thanks,
-> 
-> 	Ingo
-
-
+Ugh,. people are really polling state like that? If the event is rare
+pushing state is much saner.
