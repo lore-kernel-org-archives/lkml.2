@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab1BYV1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:27:35 -0500
-Received: from xes-mad.com ([216.165.139.218]:59399 "EHLO xes-mad.com"
+	id S932133Ab1BYV1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:27:34 -0500
+Received: from xes-mad.com ([216.165.139.218]:6704 "EHLO xes-mad.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899Ab1BYV1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753434Ab1BYV1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Feb 2011 16:27:33 -0500
 From: Peter Tyser <ptyser@xes-inc.com>
 To: linux-kernel@vger.kernel.org
@@ -16,9 +16,9 @@ Cc: Peter Tyser <ptyser@xes-inc.com>, Alek Du <alek.du@intel.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v4 2/4] gpiolib: Add ability to get GPIO direction
-Date: Fri, 25 Feb 2011 15:26:19 -0600
-Message-Id: <1298669181-9589-2-git-send-email-ptyser@xes-inc.com>
+Subject: [PATCH v4 3/4] gpio: pca953x: Implement get_direction() hook
+Date: Fri, 25 Feb 2011 15:26:20 -0600
+Message-Id: <1298669181-9589-3-git-send-email-ptyser@xes-inc.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1298669181-9589-1-git-send-email-ptyser@xes-inc.com>
 References: <1298669181-9589-1-git-send-email-ptyser@xes-inc.com>
@@ -26,13 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new get_direction() function to the gpio_chip structure.  This is
-useful so that the direction of a GPIO can be determined when its
-initially exported.  Previously, the direction defaulted to "unknown"
-regardless of the actual configuration of the GPIO.
-
-If a GPIO driver implements get_direction(), it is called in
-gpio_request() to set the initial direction of the GPIO accurately.
+Adding the get_direction() function allows the accurate GPIO pin
+direction data to be shown in sysfs.  Previously, the direction was
+was always initialized to 'unknown'.
 
 Cc: Alek Du <alek.du@intel.com>
 Cc: Samuel Ortiz <sameo@linux.intel.com>
@@ -46,87 +42,45 @@ Cc: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
 ---
 Changes since v1:
-- Add support for "unknown" direction
+- None
 
 Changes since v2:
-  Based on Wolfram's feedback:
-- Use GPIOF_DIR_* flags as returns from get_direction()
-- Call spin_lock_irqsave() to before setting flags
+- Use GPIOF_DIR_* defines
 
 Changes since v3:
-- Removed "pin" references from the commit message
-- Added might_sleep() call
-- Made the direction always be set in gpio_request()
+- None
 
- drivers/gpio/gpiolib.c     |   25 +++++++++++++++++++++++++
- include/asm-generic/gpio.h |    4 ++++
- 2 files changed, 29 insertions(+), 0 deletions(-)
+ drivers/gpio/pca953x.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index eb74311..106164f 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1174,6 +1174,7 @@ int gpio_request(unsigned gpio, const char *label)
- 	struct gpio_desc	*desc;
- 	struct gpio_chip	*chip;
- 	int			status = -EINVAL;
-+	int			dir = -1; /* Default to unknown direction */
- 	unsigned long		flags;
+diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
+index b473429..b93611f 100644
+--- a/drivers/gpio/pca953x.c
++++ b/drivers/gpio/pca953x.c
+@@ -168,6 +168,15 @@ exit:
+ 	return ret;
+ }
  
- 	spin_lock_irqsave(&gpio_lock, flags);
-@@ -1214,6 +1215,30 @@ int gpio_request(unsigned gpio, const char *label)
- 		}
- 	}
++static int pca953x_gpio_get_direction(struct gpio_chip *gc, unsigned off)
++{
++	struct pca953x_chip *chip;
++
++	chip = container_of(gc, struct pca953x_chip, gpio_chip);
++
++	return chip->reg_direction & (1u << off) ? GPIOF_DIR_IN : GPIOF_DIR_OUT;
++}
++
+ static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
+ {
+ 	struct pca953x_chip *chip;
+@@ -221,6 +230,7 @@ static void pca953x_setup_gpio(struct pca953x_chip *chip, int gpios)
  
-+	if (chip->get_direction) {
-+		/* chip->get_direction may sleep */
-+		spin_unlock_irqrestore(&gpio_lock, flags);
-+		might_sleep_if(chip->can_sleep);
-+		dir = chip->get_direction(chip, gpio - chip->base);
-+		spin_lock_irqsave(&gpio_lock, flags);
-+	}
-+
-+	switch (dir) {
-+	case GPIOF_DIR_OUT:
-+		set_bit(FLAG_DIR_OUT, &desc->flags);
-+		clear_bit(FLAG_DIR_IN, &desc->flags);
-+		break;
-+	case GPIOF_DIR_IN:
-+		set_bit(FLAG_DIR_IN, &desc->flags);
-+		clear_bit(FLAG_DIR_OUT, &desc->flags);
-+		break;
-+	default:
-+		/* Direction isn't known */
-+		clear_bit(FLAG_DIR_OUT, &desc->flags);
-+		clear_bit(FLAG_DIR_IN, &desc->flags);
-+		break;
-+	}
-+
- done:
- 	if (status)
- 		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index ff5c660..6af5a3e 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -57,6 +57,8 @@ struct device_node;
-  * @direction_input: configures signal "offset" as input, or returns error
-  * @get: returns value for signal "offset"; for output signals this
-  *	returns either the value actually sensed, or zero
-+ * @get_direction: optional hook to determine if a GPIO signal is configured
-+ *	as an input, output, or unknown
-  * @direction_output: configures signal "offset" as output, or returns error
-  * @set: assigns output value for signal "offset"
-  * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
-@@ -101,6 +103,8 @@ struct gpio_chip {
- 						unsigned offset);
- 	int			(*get)(struct gpio_chip *chip,
- 						unsigned offset);
-+	int			(*get_direction)(struct gpio_chip *chip,
-+						unsigned offset);
- 	int			(*direction_output)(struct gpio_chip *chip,
- 						unsigned offset, int value);
- 	int			(*set_debounce)(struct gpio_chip *chip,
+ 	gc->direction_input  = pca953x_gpio_direction_input;
+ 	gc->direction_output = pca953x_gpio_direction_output;
++	gc->get_direction = pca953x_gpio_get_direction;
+ 	gc->get = pca953x_gpio_get_value;
+ 	gc->set = pca953x_gpio_set_value;
+ 	gc->can_sleep = 1;
 -- 
 1.7.0.4
 
