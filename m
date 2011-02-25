@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab1BYAOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 19:14:43 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:33198 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756632Ab1BYAOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 19:14:42 -0500
-To: linux-kernel@vger.kernel.org
-Subject: [RFC] Performance Events 'Samples' report
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net
-Message-Id: <E1PslLC-0000rj-EF@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Thu, 24 Feb 2011 18:15:26 -0600
+	id S1756687Ab1BYAVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 19:21:40 -0500
+Received: from kroah.org ([198.145.64.141]:51774 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756664Ab1BYAVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Feb 2011 19:21:39 -0500
+Date: Thu, 24 Feb 2011 16:13:15 -0800
+From: Greg KH <greg@kroah.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Roland Vossen <rvossen@broadcom.com>, Greg KH <gregkh@suse.de>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        Brett Rudley <brudley@broadcom.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [stable] [Stable-review] [28/70] staging: brcm80211: bugfix for
+ softmac crash on multi cpu configurations
+Message-ID: <20110225001315.GC24813@kroah.com>
+References: <20110222221839.853712243@clark.kroah.org>
+ <1298427787.2211.498.camel@localhost>
+ <op.vrciafbg3ri7v4@arend-laptop>
+ <20110223180627.GB30106@suse.de>
+ <op.vrdhl9qk3ri7v4@arend-laptop>
+ <4D6658D7.1010501@broadcom.com>
+ <20110224182133.GA18081@suse.de>
+ <op.vrfddzvf3ri7v4@arend-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <op.vrfddzvf3ri7v4@arend-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cliff Wickman <cpw@sgi.com>
+On Thu, Feb 24, 2011 at 09:47:49PM +0100, Arend van Spriel wrote:
+> On Thu, 24 Feb 2011 19:21:33 +0100, Greg KH <gregkh@suse.de> wrote:
+> 
+> >
+> >Ok, I'm going to drop this patch now.
+> >
+> >Can someone create the needed patches for the .37-stable tree that
+> >should be included and send them to me and cc: stable@kernel.org so I
+> >can queue them up for the next .37-stable release after this?
+> >
+> 
+> Hi Greg,
+> 
+> I sent both patches to you.
 
-The perf command's report prints clock periods under the heading of 'Samples'.
-Our applications people have been confused by this "Samples" heading.
+Thanks, I got them, I'll queue them up for the next .37-stable release.
 
-perf report -n
-
-# Overhead  Samples            Command         Shared Object                            Symbol
-# ........ ..........  ...............  ....................  ................................
-#
-    99.41%1522136216246         pthreads  pthreads              [.] work_function
-     0.33% 4980298302             perf  [kernel.kallsyms]     [k] clear_page_c
-     ....
-
-It would be more compact to print the number of samples.  And that would
-be consistent with the heading.
-
-Below is the code that displays the periods.  I don't see that the number
-of samples is available here, but probably easily could be.
-I presume that clock periods are derived from #samples * sample period.
-
-perf/util/hist.c
-
- 640 
- 641         if (symbol_conf.show_nr_samples) {
- 642                 if (sep)
- 643                         ret += snprintf(s + ret, size - ret, "%c%" PRIu64,      *sep, period);
- 644                 else
- 645                         ret += snprintf(s + ret, size - ret, "%11" PRIu64,      period);
- 646         }
- 647 
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-
+greg k-h
