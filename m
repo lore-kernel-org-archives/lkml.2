@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab1BYMoa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 07:44:30 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:58623 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090Ab1BYMo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 07:44:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=lYPLD3kPLXIFPGQ2aqlC0uMumpbGShIq/OCjx6cQqYrYPsHPKxNwfs9vRVYG/BRbLr
-         DALE8j+pACWNpE7CHsHM3vkqJ0mc1RtchS0Ahl9CEwWOoQDrU/+e9REsGAnRdmtYmBkv
-         btu/i5CPAoz2IKpJPRbXP+FEgFoOGzBEBxHKk=
-Subject: Re: [PATCH] mtd: nand: fix one typo in the comments
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jason Liu <r64343@freescale.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, David.Woodhouse@intel.com
-In-Reply-To: <1298610378-3105-1-git-send-email-r64343@freescale.com>
-References: <1298610378-3105-1-git-send-email-r64343@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 14:43:05 +0200
-Message-ID: <1298637785.2798.106.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1755517Ab1BYNCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 08:02:51 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:60063 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755062Ab1BYNCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 08:02:50 -0500
+Date: Fri, 25 Feb 2011 14:02:41 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Pratheesh Gangadhar <pratheesh@ti.com>,
+        davinci-linux-open-source@linux.davincidsp.com, hjk@hansjkoch.de,
+        gregkh@suse.de, tglx@linutronix.de, arnd@arndb.de,
+        amit.chatterjee@ti.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources
+ used by PRUSS UIO driver
+Message-ID: <20110225130241.GA2791@local>
+References: <1298556402-26456-1-git-send-email-pratheesh@ti.com>
+ <1298556402-26456-2-git-send-email-pratheesh@ti.com>
+ <1298556402-26456-3-git-send-email-pratheesh@ti.com>
+ <4D6796D6.5050008@mvista.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6796D6.5050008@mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 13:06 +0800, Jason Liu wrote:
-> In the function nand_do_write_oob, the comments
-> has one typo, this patch fix it.
+On Fri, Feb 25, 2011 at 02:47:34PM +0300, Sergei Shtylyov wrote:
+> On 24-02-2011 17:06, Pratheesh Gangadhar wrote:
 > 
-> - /* Do not allow reads past end of device */
-> + /* Do not allow write past end of device */
-> if (unlikely(to >= mtd->size ||
-> 	     ops->ooboffs + ops->ooblen >
-> 		((mtd->size >> chip->page_shift) -
-> 		 (to >> chip->page_shift)) * len)) {
-> 	DEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt write beyond "
-> 			"end of device\n", __func__);
-> 	return -EINVAL;
-> }
+> >This patch defines PRUSS, ECAP clocks, memory and IRQ resources
+> >used by PRUSS UIO driver in DA850/AM18xx/OMAPL1-38 devices. UIO
 > 
-> Signed-off-by: Jason Liu <r64343@freescale.com>
+>    It's OMAP-L138.
 
-Oh, please, do not copy the patch into the commit message! It is enough
-to say that you fix a typo in a commentary.
+>From the TI wiki: "The PRU subsystem is supported on
+OMAP-L1x8/C674m/AM18xx devices (where m is an even number)."
 
-But I've amended the commit message and pushed the patch to my
-l2-mtd-2.6.git tree, thanks!
+http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Thanks,
+Hans
 
