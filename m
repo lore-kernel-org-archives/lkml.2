@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab1BYKDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 05:03:51 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53404 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754794Ab1BYKDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 05:03:50 -0500
-Date: Fri, 25 Feb 2011 11:03:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for
- init_memory_mapping_high()
-Message-ID: <20110225100336.GA26608@elte.hu>
-References: <20110223171945.GI26065@htj.dyndns.org>
- <4D656D1A.7030006@kernel.org>
- <20110223204656.GA27738@atj.dyndns.org>
- <4D657359.5060901@kernel.org>
- <20110223210326.GB27738@atj.dyndns.org>
- <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com>
- <20110224091557.GD7840@htj.dyndns.org>
- <4D674A33.8000809@kernel.org>
+	id S932488Ab1BYKEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 05:04:38 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:47667 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab1BYKEg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 05:04:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=YQHeL3pFb5W8fRuNQjd7P+SfFgP10XF45sNNQnumQds6HxlTXa7Aa+FVL7Iqi/Bd7b
+         fUzkL0F7eZyDgSIwI9KA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D674A33.8000809@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110224161111.7d83a884@jacob-laptop>
+References: <20110216031831.571628191@google.com> <20110224161111.7d83a884@jacob-laptop>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 25 Feb 2011 02:03:54 -0800
+Message-ID: <AANLkTi=i-fgng0Pa2JDSy8RgqRs2mo2vc2CKbx12-=Ri@mail.gmail.com>
+Subject: Re: [CFS Bandwidth Control v4 0/7] Introduction
+To: jacob pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Matt Helsley <matthltc@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 24, 2011 at 4:11 PM, jacob pan
+<jacob.jun.pan@linux.intel.com> wrote:
+> On Tue, 15 Feb 2011 19:18:31 -0800
+> Paul Turner <pjt@google.com> wrote:
+>
+>> Hi all,
+>>
+>> Please find attached v4 of CFS bandwidth control; while this rebase
+>> against some of the latest SCHED_NORMAL code is new, the features and
+>> methodology are fairly mature at this point and have proved both
+>> effective and stable for several workloads.
+>>
+>> As always, all comments/feedback welcome.
+>>
+>
+> Hi Paul,
+>
+> Your patches provide a very useful but slightly different feature for
+> what we need to manage idle time in order to save power. What we
+> need is kind of a quota/period in terms of idle time. I have been
+> playing with your patches and noticed that when the cgroup cpu usage
+> exceeds the quota the effect of throttling is similar to what I have
+> been trying to do with freezer subsystem. i.e. freeze and thaw at given
+> period and percentage runtime.
+> https://lkml.org/lkml/2011/2/15/314
+>
+> Have you thought about adding such feature (please see detailed
+> description in the link above) to your patches?
+>
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+So reading the description it seems like rooting everything in a
+'freezer' container and then setting up a quota of
 
->  init_memory_mapping_active_regions(unsigned long start, unsigned long end)
->  {
->  	struct mapping_work_data data;
-> +	int use_gbpages;
-> +
-> +	/* see init_memory_mapping() for the setting */
-> +#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
-> +	use_gbpages = 0;
-> +#else
-> +	use_gbpages = direct_gbpages;
-> +#endif
+(1 - frozen_percentage)  * nr_cpus * frozen_period * sec_to_usec
 
-Sigh. You should *never* ever even think about writing such code. It only results in 
-crap, and in crap duplicated elsewhere as well:
+on a period of
 
-if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
-        /*
-         * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
-         * This will simplify cpa(), which otherwise needs to support splitting
-         * large pages into small in interrupt context, etc.
-         */
-        use_pse = use_gbpages = 0;
-#else
-        use_pse = cpu_has_pse;
-        use_gbpages = direct_gbpages;
-#endif
+frozen_period * sec_to_usec
 
-Thanks,
+Would provide the same functionality.  Is there other unduplicated
+functionality beyond this?
 
-	Ingo
+One thing that does seem undesirable about your approach is (as it
+seems to be described) threads will not be able to take advantage of
+naturally occurring idle cycles and will incur a potential performance
+penalty even at use << frozen_percentage.
+
+e.g. From your post
+
+       |  |<-- 90% frozen -     ->|  |                               |  |
+____|  |________________x_|  |__________________|  |_____
+
+        |<---- 5 seconds     ---->|
+
+
+Suppose no threads active until the wake up at x, suppose there is an
+accompanying 1 second of work for that thread to do.  That execution
+time will be dilated to ~1.5 seconds (as it will span the 0.5 seconds
+the freezer will stall for).  But the true usage for this period is
+~20% <<< 90%
+
+> Thanks,
+>
+> Jacob
+>
