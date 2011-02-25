@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab1BYUfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:35:45 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65364 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755925Ab1BYUfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:35:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,227,1297065600"; 
-   d="scan'208";a="713377918"
-Subject: Re: linux-next: build failure after merge of the final tree
- (wireless tree related)
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>
-In-Reply-To: <20110225171625.60e967f8.sfr@canb.auug.org.au>
-References: <20110225171625.60e967f8.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 12:33:43 -0800
-Message-ID: <1298666023.2603.15.camel@wwguy-ubuntu>
+	id S932999Ab1BYUhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:37:13 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43519
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932744Ab1BYUhL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 15:37:11 -0500
+Date: Fri, 25 Feb 2011 12:37:46 -0800 (PST)
+Message-Id: <20110225.123746.102555939.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
+        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
+ modules
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1298663585.2554.39.camel@bwh-desktop>
+References: <1298662216.2554.33.camel@bwh-desktop>
+	<20110225.114351.28809001.davem@davemloft.net>
+	<1298663585.2554.39.camel@bwh-desktop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Fri, 25 Feb 2011 19:53:05 +0000
 
-On Thu, 2011-02-24 at 22:16 -0800, Stephen Rothwell wrote:
-> Hi all,
+> On Fri, 2011-02-25 at 11:43 -0800, David Miller wrote:
+>> Surely we if we can pass an arbitrary string out to the loading
+>> process as part of the module loading context, we can pass along
+>> capability bits as well.
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/net/wireless/iwlegacy/built-in.o:(.rodata+0x29f0): multiple definition of `iwl_rates'
-> drivers/net/wireless/iwlwifi/built-in.o:(.rodata+0xa68): first defined here
-> powerpc64-linux-ld: Warning: size of symbol `iwl_rates' changed from 143 in drivers/net/wireless/iwlwifi/built-in.o to 130 in drivers/net/wireless/iwlegacy/built-in.o
-> drivers/net/wireless/iwlegacy/built-in.o:(.data+0x0): multiple definition of `bt_coex_active'
-> drivers/net/wireless/iwlwifi/built-in.o:(.data+0x668): first defined here
-> drivers/net/wireless/iwlegacy/built-in.o:(.rodata+0x750): multiple definition of `iwl_eeprom_band_1'
-> drivers/net/wireless/iwlwifi/built-in.o:(.rodata+0x27d0): first defined here
-> drivers/net/wireless/iwlegacy/built-in.o:(.rodata+0x3f0): multiple definition of `iwl_bcast_addr'
-> drivers/net/wireless/iwlwifi/built-in.o:(.rodata+0x24f8): first defined here
-> drivers/net/wireless/iwlegacy/built-in.o:(.bss+0x3d48): multiple definition of `iwl_debug_level'
-> drivers/net/wireless/iwlwifi/built-in.o:(.bss+0x21950): first defined here
-> 
-> Presumably caused by commit be663ab67077fac8e23eb8e231a8c1c94cb32e54
-> ("iwlwifi: split the drivers for agn and legacy devices 3945/4965").
-> 
-> I have just left this one as it will only break strange configs (like
-> allyesconfig) but it needs to be fixed soon.
+> If you want insert_module() to be able to deny loading some modules
+> based on the capabilities of the process calling request_module() then
+> you either have to *reduce* the capabilities given to modprobe or create
+> some extra process state, separate from the usual capability state,
+> specifically for this purpose.
 
-Thanks for let us know, we will submit separated patch to fix it asap
+How is this any different from the patch posted which ties
+capabilities to the prefix of name of the module to be loaded?
 
-Wey
+There is simply no difference, except that in my proposal existing
+things do not break since the module name will not change.
 
-
+I don't see where the complexity is, if the only place we can pass the
+capability bits is in the execv args, then in the worst case we could
+take a peek at those in the module load system call.
