@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829Ab1BYVnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:43:50 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:40457 "EHLO imr4.ericy.com"
+	id S932753Ab1BYVpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:45:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8688 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932101Ab1BYVnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:43:49 -0500
-Subject: Re: [PATCH v4 3/5] hwmon: (pmbus) Add support for Maxim MAX16064
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D681091.4030008@cam.ac.uk>
-References: <1297969217-9564-1-git-send-email-guenter.roeck@ericsson.com>
-	 <1297969217-9564-4-git-send-email-guenter.roeck@ericsson.com>
-	 <4D681091.4030008@cam.ac.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Fri, 25 Feb 2011 13:42:44 -0800
-Message-ID: <1298670164.1735.108.camel@groeck-laptop>
+	id S1754248Ab1BYVpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 16:45:31 -0500
+Date: Fri, 25 Feb 2011 16:45:12 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        gorcunov@gmail.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] x86, NMI: Allow NMI reason io port (0x61) to be
+ processed on any CPU
+Message-ID: <20110225214512.GA25823@redhat.com>
+References: <1294348732-15030-1-git-send-email-dzickus@redhat.com>
+ <1294348732-15030-6-git-send-email-dzickus@redhat.com>
+ <alpine.LFD.2.00.1102230227010.31425@eddie.linux-mips.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1102230227010.31425@eddie.linux-mips.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
-
-On Fri, 2011-02-25 at 15:26 -0500, Jonathan Cameron wrote:
-> Again, straight forward use of pmbus_core.  Is it actually worth having
-> separate modules for each of these special cases?  Could just do the
-> old big table of fixed chip info structures in a single driver...
+On Wed, Feb 23, 2011 at 02:39:58AM +0000, Maciej W. Rozycki wrote:
+>  [Catching up with old e-mail...]
 > 
-This is actually what I had originally. My reasoning to split it up was
-that this makes it easier to add support for additional chips without
-having to modify the core driver. Also, I can keep chip specific code
-(specifically the _identify and _get_status functions) out of the core
-driver.
+>  In line with the comment above that you're removing -- have you (or 
+> anyone else) adjusted code elsewhere so that external NMIs are actually 
+> delivered to processors other than the BSP?  I can't see such code in this 
+> series nor an explanation as to why it wouldn't be needed.
+> 
+>  For the record -- the piece of code above reflects our setup where the 
+> LINT1 input is enabled and configured for the NMI delivery mode on the BSP 
+> only and all the other processors have this line disabled in their local 
+> APIC units.  If system NMIs are to be handled after the removal of the 
+> BSP, then another processor has to be selected and configured for NMI 
+> reception.  Alternatively, all local units could have their LINT1 input 
+> enabled and arbitrate handling, although it would be quite disruptive as 
+> all the processors would take the interrupt if it happened.  OTOH it would 
+> be more fault-tolerant in the case of a CPU failure.  On a typical x86 box 
+> the system NMI cannot be routed to an I/O APIC input.
 
-Thanks,
-Guenter
+Intel requested this.  From my understanding they are working on
+technology to allow removal of the BSP and still having the system work
+correctly.  This patch is probably just the first step of many.  But I
+don't really know what they are working on nor what else they need.
 
-
+Cheers,
+Don
