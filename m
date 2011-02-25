@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab1BYCyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 21:54:37 -0500
-Received: from dpusmtpgw.dpu.edu.tr ([194.27.43.31]:64827 "EHLO
-	dpusmtpgw.dumlupinar.edu.tr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754597Ab1BYCye (ORCPT
+	id S1754921Ab1BYDH4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 22:07:56 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:33210 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751909Ab1BYDHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 21:54:34 -0500
-Reply-To: <iandavies822@yahoo.no>
-From: "Ian Davies" <iandavies198@gmail.com>
-Subject: Please i wait to hear from you urgently, it very important
-Date: Thu, 24 Feb 2011 11:14:15 -0800
-MIME-Version: 1.0
-Content-Type: text/plain;charset="Windows-1251"
+	Thu, 24 Feb 2011 22:07:55 -0500
+X-Sasl-enc: /Qn3rsnd4Gsuto1XJo3e8xiM0cd3PsoxDBObLfn8S7tP 1298603273
+Subject: Re: [PATCH 0/3] Fixes for vfs-scale and vfs-automount
+From: Ian Kent <raven@themaw.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, npiggin@gmail.com
+In-Reply-To: <20110224145947.GA22723@ZenIV.linux.org.uk>
+References: <1295420817.3076.24.camel@perseus>
+	 <1297779902.13007.86.camel@perseus>
+	 <20110224015817.GQ22723@ZenIV.linux.org.uk>
+	 <1298516618.2916.20.camel@perseus>
+	 <20110224031439.GR22723@ZenIV.linux.org.uk>
+	 <1298518137.2916.35.camel@perseus>
+	 <20110224035836.GS22723@ZenIV.linux.org.uk>
+	 <1298529260.2916.91.camel@perseus>
+	 <20110224070724.GW22723@ZenIV.linux.org.uk>
+	 <1298542053.3058.56.camel@perseus>
+	 <20110224145947.GA22723@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Feb 2011 11:07:46 +0800
+Message-ID: <1298603266.3439.44.camel@perseus>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110224200930.B5F185E000D@mail.dumlupinar.edu.tr>
-To: undisclosed-recipients:;
-X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
-X-SurGATE-Result: Clean (Content eval: 37.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Ian Davies ;an accredited vendor of Alliot Groups, a subsidiary firm of Emirates International Holding (EIH); A private equity funds holding company that focuses on hedge funds.
+On Thu, 2011-02-24 at 14:59 +0000, Al Viro wrote:
+> On Thu, Feb 24, 2011 at 06:07:33PM +0800, Ian Kent wrote:
+> > > I really don't like the look of autofs4_tree_busy(), BTW - you don't need
+> > > RCU to get races here; just a plain chdir("../../.."); done by a process
+> > > that sits deep enough in subtree you are checking can very well race with
+> > > your check, so that your iterator gets through the new cwd before chdir()
+> > > and through the old one after it...
+> > 
+> > Yes, that's a problem.
+> > 
+> > Previously the dcache_lock would have blocked on the dput() ... mmm, I'd
+> > missed that so far, although Nick didn't talk with me about his changes
+> > very much at all and I didn't pay enough attention to his patch series
+> > along the way, oops!
+> 
+> Well...  In principle, you could mark all mountpoints in a tree as managed,
+> have an "expiry search in progress" flag to stop everything in there while
+> the expiry happens, then wait out all RCU walks in progress, then go ahead
+> with your expiry checks.  Would that work for you?
 
-I have contacted you in the hope that you can be my associate by accepting to stand as the legal recipient to a Fixed-Income deposit, valued at 25MUSD by provind an International Offshore account to clear the funds.
+That approach would solve the problem.
 
-Once I file your details as the new recipient to the funds, the fundswill be approved through the AUTOMATED CLEARING HOUSE (ACH) - A facility used by financial institutions to distribute electronic debit and credit entries to bank accounts and therefore settles such entries. Under the automated clearing house system. 
+It was deliberate to not make all dentrys as managed to avoid function
+calls to ->manage() where possible but that might not be possible.
 
+The priority right now though is the BUG() I'm getting due to the
+elevated reference.
 
-upon approval of your details  as the new recipient; a Credit advice will be issued in your favor and the funds will clear in your account within three banking days. I am willing to give you 40% which is 10MUSD as your commission out of the 25MUSD for your assistance in providing an International Offshore account to clear the funds.
+It turns out that the missing dput() you spotted won't trigger unless
+user space does something stupid and that's why it didn't show up in
+testing before.
 
+Anyway, recent printk output is pointing me at do_filp_open() so I'm
+probably going to need to look closely at it. I'm still gathering printk
+evidence but I think that pain is coming.
 
-I am confident you will be honest enough to adhere to our agreed commissions in spite of the 25MUSD coming through your account. I will need you to forward me your legal names address and phone to file your details on the fund as the new recipient in this first Quater of the financial fiscal year 2011.
-
-Looking forward to working with you.
-Ian Davies
-Accredited vendor
-Alliot Groups PS
+Ian
 
