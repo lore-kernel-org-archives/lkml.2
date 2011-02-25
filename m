@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab1BYPL0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 10:11:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300Ab1BYPLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 10:11:25 -0500
-Date: Fri, 25 Feb 2011 10:11:13 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dominik Klein <dk@in-telegence.net>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        libvir-list@redhat.com
-Subject: Re: Is it a workqueue related issue in 2.6.37 (Was: Re: [libvirt]
- blkio cgroup [solved])
-Message-ID: <20110225151113.GD2994@redhat.com>
-References: <20110224142303.GA18494@redhat.com>
- <20110224143105.GL7840@htj.dyndns.org>
- <4D66720E.70102@in-telegence.net>
- <20110224151701.GQ7840@htj.dyndns.org>
- <4D67591F.10105@in-telegence.net>
- <20110225112936.GH24828@htj.dyndns.org>
- <4D679688.7020503@in-telegence.net>
- <20110225131850.GI24828@htj.dyndns.org>
- <20110225145708.GB2994@redhat.com>
- <20110225150329.GM24828@htj.dyndns.org>
+	id S932506Ab1BYPOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 10:14:09 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:36712 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab1BYPOH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 10:14:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110225150329.GM24828@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110225071827.GA14053@core.coreip.homeip.net>
+References: <1298611140-21573-1-git-send-email-keng-yu.lin@canonical.com>
+	<AANLkTim_JKQU9J3OJ0FRQ_ZVPktAPbnzr2t8SvhL2Uzj@mail.gmail.com>
+	<20110225071827.GA14053@core.coreip.homeip.net>
+Date: Fri, 25 Feb 2011 09:14:06 -0600
+Message-ID: <AANLkTinV+bnSBe+5CSuYYCU4gCq9Z2c9ELdy-LFAvdf0@mail.gmail.com>
+Subject: Re: [PATCH] eeepc-wmi: set the touchpad toggle key code to F21
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Keng-Yu Lin <keng-yu.lin@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tyson.chen@canonical.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 04:03:29PM +0100, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Feb 25, 2011 at 09:57:08AM -0500, Vivek Goyal wrote:
-> > blk_throtl_work() calls generic_make_request() to dispatch some bios and I
-> > guess blk_throtl_work() has been put to sleep because threre are no request
-> > descriptors available and CFQ is frozen so no requests descriptors get freed
-> > hence blk_throtl_work() never finishes.
-> > 
-> > Following caught my eye.
-> > 
-> >      ksoftirqd/0-3     [000]  1640.983585:   8,16   m   N cfq4810 slice
-> > expired t=0
-> >      ksoftirqd/0-3     [000]  1640.983588:   8,16   m   N cfq4810
-> > sl_used=2 disp=6 charge=2 iops=0 sect=2080
-> >      ksoftirqd/0-3     [000]  1640.983589:   8,16   m   N cfq4810
-> > del_from_rr
-> >      ksoftirqd/0-3     [000]  1640.983591:   8,16   m   N cfq schedule
-> > dispatch
-> >             sshd-3125  [004]  1640.983597: workqueue_queue_work: work
-> > struct=ffff88102c3a3110 function=flush_to_ldisc workqueue=ffff88182c834a00
-> > req_cpu=4 cpu=4
-> >             sshd-3125  [004]  1640.983598: workqueue_activate_work: work
-> > struct ffff88102c3a3110
-> > 
-> > CFQ tries to schedule a work and but there is no associated
-> > "workqueue_queue_work" trace. So it looks like that work never got queued.
-> > 
-> > CFQ calls following.
-> > 
-> > cfq_log(cfqd, "schedule dispatch");
-> > kblockd_schedule_work(cfqd->queue, &cfqd->unplug_work);
-> > 
-> > We do see "schedule dispatch" message and kblockd_schedule_work() calls
-> > queue_work(). So what happended here? This is strange. I will put one
-> > more trace after kblockd_schedule_work() to trace that function returned.
-> 
-> It could be that the unplug work was already queued and in pending
-> state.  The second queueing request will be ignored then.  So, I think
-> the problem is that blk_throtl_work() occupies kblockd but requires
-> another work item (unplug_work) to make forward progress.  In such
-> cases, forward progress cannot be guaranteed.  Either
-> blk_throtl_work() or cfq unplug work should use a separate workqueue.
+On Fri, Feb 25, 2011 at 1:18 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Fri, Feb 25, 2011 at 07:52:11AM +0100, Corentin Chary wrote:
+>> On Fri, Feb 25, 2011 at 6:19 AM, Keng-Yu Lin <keng-yu.lin@canonical.com> wrote:
+>> > Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
+>> > ---
+>> >  drivers/platform/x86/eeepc-wmi.c |    2 +-
+>> >  1 files changed, 1 insertions(+), 1 deletions(-)
+>> >
+>> > https://bugs.freedesktop.org/show_bug.cgi?id=31333
+>> >
+>> > diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
+>> > index d399775..da00cbc 100644
+>> > --- a/drivers/platform/x86/eeepc-wmi.c
+>> > +++ b/drivers/platform/x86/eeepc-wmi.c
+>> > @@ -113,7 +113,7 @@ static const struct key_entry eeepc_wmi_keymap[] = {
+>> >        { KE_KEY, 0x32, { KEY_MUTE } },
+>> >        { KE_KEY, 0x5c, { KEY_F15 } }, /* Power Gear key */
+>> >        { KE_KEY, 0x5d, { KEY_WLAN } },
+>> > -       { KE_KEY, 0x6b, { KEY_F13 } }, /* Disable Touchpad */
+>> > +       { KE_KEY, 0x6b, { KEY_F21 } }, /* Disable Touchpad */
+>> >        { KE_KEY, 0x82, { KEY_CAMERA } },
+>> >        { KE_KEY, 0x83, { KEY_CAMERA_ZOOMIN } },
+>> >        { KE_KEY, 0x88, { KEY_WLAN } },
+>>
+>> Hum, I'm not very comfortable with this patch now that we got
+>> KEY_TOUCHPAD_TOGGLE.
+>> I know, it doesn't work with current Xorg, but if we continue to
+>> workaround that, it'll never be fixed.
+>>
+>> Dmitry, Matthew, any advice ?
+>
+> I believe that the kernel should use KEY_TOUCHPAD_TOGGLE and userspace
+> should use udev's key re-mapping facilities while X is unable to process
+> keycodes above 255 to adjust to the keycode du jour. If all kernel
+> drivers were to use KEY_TOUCHPAD_TOGGLE then remapping would be much
+> easier (the utility would simply check capabilities for
+> KEY_TOUCHPAD_TOGGLE and do the remap).
 
-Ok, that would make sense. So blk_throtl_work() can not finish as CFQ
-is not making progress and no request descriptors are being freed and
-unplug_work() is not being called because blk_throtl_work() has not finished.
-So that's cyclic dependency and I should use a separate work queue for
-queueing throttle related work. I will write a patch.
+I submitted last month a patch to udev to do the scancode-to-F21
+mapping.  So that part should be covered for near term.
 
-Thanks
-Vivek
+I also agree if we are going to change kernel side, we should change
+to KEY_TOUCHPAD_TOGGLE in both eeepc-laptop and eeepc-wmi.
+
+http://git.kernel.org/?p=linux/hotplug/udev.git;a=commit;h=0d8b6be5f5238360d2d8e220d6da280f842c5358
+
+Chris
