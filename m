@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932628Ab1BYSrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:47:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56435 "EHLO mx2.suse.de"
+	id S1756378Ab1BYSrR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:47:17 -0500
+Received: from kroah.org ([198.145.64.141]:40045 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932436Ab1BYSrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:47:10 -0500
-Date: Fri, 25 Feb 2011 10:44:28 -0800
-From: Greg KH <gregkh@suse.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dt: add a match table pointer to struct device
-Message-ID: <20110225184428.GA2280@suse.de>
-References: <20110223025233.25131.47193.stgit@localhost6.localdomain6>
- <AANLkTikauP8+PgFyicdSQzJ19ZvqpV=3ZnRTjSvY78qc@mail.gmail.com>
- <20110225163547.GC8523@suse.de>
- <AANLkTik1fzJw11mKSVu4B2yrGZAju59uNmHjjGSgVcGY@mail.gmail.com>
+	id S1753102Ab1BYSrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:47:14 -0500
+Date: Fri, 25 Feb 2011 10:45:38 -0800
+From: Greg KH <greg@kroah.com>
+To: J Freyensee <james_p_freyensee@linux.intel.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+Subject: Re: [PATCH 10/10] n_tracerouter and n_tracesink compile
+ configurations.
+Message-ID: <20110225184538.GA2372@kroah.com>
+References: <james_p_freyensee@linux.intel.com>
+ <1298570824-26085-11-git-send-email-james_p_freyensee@linux.intel.com>
+ <20110225180031.GB17072@kroah.com>
+ <1298659152.3156.8.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik1fzJw11mKSVu4B2yrGZAju59uNmHjjGSgVcGY@mail.gmail.com>
+In-Reply-To: <1298659152.3156.8.camel@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 10:34:05AM -0700, Grant Likely wrote:
-> On Fri, Feb 25, 2011 at 9:35 AM, Greg KH <gregkh@suse.de> wrote:
-> > On Fri, Feb 25, 2011 at 08:46:52AM -0700, Grant Likely wrote:
-> >> Greg, any thoughts on this change?  I'd like to take it via my tree so
-> >> I can finally dump the last vestiges of of_platform_bus_type.
-> >
-> > Sorry, I didn't realize you just wanted my review, and not me to take it
-> > directly.
+On Fri, Feb 25, 2011 at 10:39:12AM -0800, J Freyensee wrote:
+> On Fri, 2011-02-25 at 10:00 -0800, Greg KH wrote:
+> > On Thu, Feb 24, 2011 at 10:07:04AM -0800, james_p_freyensee@linux.intel.com wrote:
+> > > From: J Freyensee <james_p_freyensee@linux.intel.com>
+> > > 
+> > > This patch allows n_tracerouter and n_tracesink to be compiled and
+> > > configured in the Linux kernel.
+> > > 
+> > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+> > > ---
+> > >  drivers/char/Kconfig |   32 ++++++++++++++++++++++++++++++++
+> > 
+> > Why drivers/char/Kconfig?  This should be in drivers/tty/Kconfig, right?
+> > 
+> > Yes, this is a recent change, see the linux-next tree for the addition
+> > of this file :)
+> > 
 > 
-> Heh, I wasn't very clear about that.  Oops,
-> 
-> > If you want to take it, that's great, no objection from me, feel free to
-> > add:
-> >        Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > to it.
-> 
-> Thanks.  Yes I definitely want to take it because I've got a pile of
-> patches that depend on it.
-> 
-> > What about the other patch you sent me, do you want me to take that, or
-> > will you?
-> 
-> Which one is that?  The relaxation of .name checking on of_serial?
-> Yes, you can take that one, but hold off for the moment.  Looking at
-> it now I realize that I forgot to cc some folks that should ack it, so
-> I'm going to repost.
+> That is what I was going to ask because I did base this patch off of the
+> 2.6.37 stable tree and did not see a drivers/tty/Kconfig :-O.  I figured
+> the stable branch was the better choice since you own it and I need to
+> go through you for my work.
 
-Oops, I just took it :(
+You should always submit against linux-next as that's pretty close to
+the tree that we would be able to apply your patches to.  We can't go
+back in time and add them to 2.6.37 :)
+
+> So I should pull from linux-next I guess to fix the changes mentioned
+> this round?:
+> 
+> -Thomas's comments on Patch 9.
+> -These issues in this patch
+
+Yes.
 
 thanks,
 
