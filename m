@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab1BYXmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 18:42:15 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:53753 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932869Ab1BYXmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 18:42:13 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=eI5nLn5DGb/klrZtk1ZJkgbMDDOzrbzuIZ4ifdiX7ReOJYEMq2abOJIW2ZDhUsu65
-	3P8f+1eA2R270ZtwaqfiQ==
-Subject: [resend PATCH v2 6/5] Fix unaligned memory accesses in dmi-sysfs
-To: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>
-From: Mike Waychison <mikew@google.com>
-Cc: Jon Mayer <jonmayer@google.com>, Tony Luck <tony.luck@intel.com>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
-        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
-Date: Fri, 25 Feb 2011 15:41:49 -0800
-Message-ID: <20110225234149.21809.65320.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
-References: <20110223015307.13068.14063.stgit@mike.mtv.corp.google.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1756451Ab1BYXs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 18:48:59 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:55342 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756392Ab1BYXs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 18:48:58 -0500
+Subject: [PATCH] tpm: Fix display of data in pubek sysfs entry
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        "debora@linux.vnet.ibm.com" <debora@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Feb 2011 18:48:56 -0500
+Message-ID: <1298677736.15320.8.camel@d941e-10>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMI entries are arranged in memory back to back with no alignment
-guarantees. This means that the struct dmi_header passed to callbacks
-from dmi_walk() itself isn't byte aligned.  This causes problems on
-architectures that expect aligned data, such as IA64.
+Below patch fixes the TPM's pubek sysfs entry that is accessible as long
+as the TPM doesn't have an owner. I shifted the access to the data
+by -10 -- the first byte immediately follows the 10 byte header. The
+line
 
-The dmi-sysfs patchset introduced structure member accesses through this
-passed in dmi_header.  Fix this by memcpy()ing the structures to
-temporary locations on stack when inspecting/copying them.
+ 	data = tpm_cmd.params.readpubek_out_buffer;
 
-Signed-off-by: Mike Waychison <mikew@google.com>
-Tested-by: Tony Luck <tony.luck@intel.com>
+sets it at the offset '10' in the packet, so we can read the data array
+starting at offset '0'.
+
+
+Before:
+
+Algorithm: 00 0C 00 00
+Encscheme: 08 00
+Sigscheme: 00 00
+Parameters: 00 00 00 00 01 00 AC E2 5E 3C A0 78
+Modulus length: -563306801
+Modulus: 
+28 21 08 0F 82 CD F2 B1 E7 49 F7 74 70 BE 59 8C 
+43 78 B1 24 EA 52 E2 FE 52 5C 3A 12 3B DC 61 71 
+[...]
+
+After:
+
+Algorithm: 00 00 00 01
+Encscheme: 00 03
+Sigscheme: 00 01
+Parameters: 00 00 08 00 00 00 00 02 00 00 00 00
+Modulus length: 256
+Modulus: 
+AC E2 5E 3C A0 78 DE 6C 9E CF 28 21 08 0F 82 CD 
+F2 B1 E7 49 F7 74 70 BE 59 8C 43 78 B1 24 EA 52 
+[...]
+
+Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+
 ---
- drivers/firmware/dmi-sysfs.c |   28 +++++++++++++---------------
- 1 files changed, 13 insertions(+), 15 deletions(-)
+ drivers/char/tpm/tpm.c |   27 +++++++++++++++++----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
-index a5afd80..eb26d62 100644
---- a/drivers/firmware/dmi-sysfs.c
-+++ b/drivers/firmware/dmi-sysfs.c
-@@ -263,20 +263,16 @@ struct dmi_system_event_log {
- 	u8	supported_log_type_descriptos[0];
- } __packed;
- 
--static const struct dmi_system_event_log *to_sel(const struct dmi_header *dh)
--{
--	return (const struct dmi_system_event_log *)dh;
--}
--
- #define DMI_SYSFS_SEL_FIELD(_field) \
- static ssize_t dmi_sysfs_sel_##_field(struct dmi_sysfs_entry *entry, \
- 				      const struct dmi_header *dh, \
- 				      char *buf) \
- { \
--	const struct dmi_system_event_log *sel = to_sel(dh); \
--	if (sizeof(*sel) > dmi_entry_length(dh)) \
-+	struct dmi_system_event_log sel; \
-+	if (sizeof(sel) > dmi_entry_length(dh)) \
- 		return -EIO; \
--	return sprintf(buf, "%u\n", sel->_field); \
-+	memcpy(&sel, dh, sizeof(sel)); \
-+	return sprintf(buf, "%u\n", sel._field); \
- } \
- static DMI_SYSFS_MAPPED_ATTR(sel, _field)
- 
-@@ -403,26 +399,28 @@ static ssize_t dmi_sel_raw_read_helper(struct dmi_sysfs_entry *entry,
- 				       void *_state)
- {
- 	struct dmi_read_state *state = _state;
--	const struct dmi_system_event_log *sel = to_sel(dh);
-+	struct dmi_system_event_log sel;
- 
--	if (sizeof(*sel) > dmi_entry_length(dh))
-+	if (sizeof(sel) > dmi_entry_length(dh))
- 		return -EIO;
- 
--	switch (sel->access_method) {
-+	memcpy(&sel, dh, sizeof(sel));
+Index: linux-2.6/drivers/char/tpm/tpm.c
+===================================================================
+--- linux-2.6.orig/drivers/char/tpm/tpm.c
++++ linux-2.6/drivers/char/tpm/tpm.c
+@@ -872,18 +872,25 @@ ssize_t tpm_show_pubek(struct device *de
+ 	data = tpm_cmd.params.readpubek_out_buffer;
+ 	str +=
+ 	    sprintf(str,
+-		    "Algorithm: %02X %02X %02X %02X\nEncscheme: %02X %02X\n"
+-		    "Sigscheme: %02X %02X\nParameters: %02X %02X %02X %02X"
+-		    " %02X %02X %02X %02X %02X %02X %02X %02X\n"
+-		    "Modulus length: %d\nModulus: \n",
+-		    data[10], data[11], data[12], data[13], data[14],
+-		    data[15], data[16], data[17], data[22], data[23],
+-		    data[24], data[25], data[26], data[27], data[28],
+-		    data[29], data[30], data[31], data[32], data[33],
+-		    be32_to_cpu(*((__be32 *) (data + 34))));
++		    "Algorithm: %02X %02X %02X %02X\n"
++		    "Encscheme: %02X %02X\n"
++		    "Sigscheme: %02X %02X\n"
++		    "Parameters: %02X %02X %02X %02X "
++		    		"%02X %02X %02X %02X "
++		    		"%02X %02X %02X %02X\n"
++		    "Modulus length: %d\n"
++		    "Modulus: \n",
++		    data[ 0], data[ 1], data[ 2], data[ 3],
++		    data[ 4], data[ 5],
++		    data[ 6], data[ 7],
++		    data[12], data[13], data[14], data[15],
++		    data[16], data[17], data[18], data[19],
++		    data[20], data[21], data[22], data[23],
++		    be32_to_cpu(*((__be32 *) (data + 24))));
 +
-+	switch (sel.access_method) {
- 	case DMI_SEL_ACCESS_METHOD_IO8:
- 	case DMI_SEL_ACCESS_METHOD_IO2x8:
- 	case DMI_SEL_ACCESS_METHOD_IO16:
--		return dmi_sel_raw_read_io(entry, sel, state->buf,
-+		return dmi_sel_raw_read_io(entry, &sel, state->buf,
- 					   state->pos, state->count);
- 	case DMI_SEL_ACCESS_METHOD_PHYS32:
--		return dmi_sel_raw_read_phys32(entry, sel, state->buf,
-+		return dmi_sel_raw_read_phys32(entry, &sel, state->buf,
- 					       state->pos, state->count);
- 	case DMI_SEL_ACCESS_METHOD_GPNV:
- 		pr_info("dmi-sysfs: GPNV support missing.\n");
- 		return -EIO;
- 	default:
- 		pr_info("dmi-sysfs: Unknown access method %02x\n",
--			sel->access_method);
-+			sel.access_method);
- 		return -EIO;
- 	}
- }
-@@ -595,7 +593,7 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
- 	}
  
- 	/* Set the key */
--	entry->dh = *dh;
-+	memcpy(&entry->dh, dh, sizeof(*dh));
- 	entry->instance = instance_counts[dh->type]++;
- 	entry->position = position_count++;
- 
+ 	for (i = 0; i < 256; i++) {
+-		str += sprintf(str, "%02X ", data[i + 38]);
++		str += sprintf(str, "%02X ", data[i + 28]);
+ 		if ((i + 1) % 16 == 0)
+ 			str += sprintf(str, "\n");
+ 	}
 
