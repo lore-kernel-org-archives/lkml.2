@@ -1,125 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab1BYVVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:21:49 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:57863 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab1BYVVr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:21:47 -0500
-Date: Fri, 25 Feb 2011 15:21:42 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Len Brown <lenb@kernel.org>
-Subject: Re: Performance/resume issues on Toshiba NB305
-Message-ID: <20110225212142.GC24686@thinkpad-t410>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Venkatesh Pallipadi <venki@google.com>, Len Brown <lenb@kernel.org>
-References: <20110225164239.GA24686@thinkpad-t410>
- <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932407Ab1BYV1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:27:35 -0500
+Received: from xes-mad.com ([216.165.139.218]:59399 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab1BYV1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 16:27:33 -0500
+From: Peter Tyser <ptyser@xes-inc.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Tyser <ptyser@xes-inc.com>, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH v4 2/4] gpiolib: Add ability to get GPIO direction
+Date: Fri, 25 Feb 2011 15:26:19 -0600
+Message-Id: <1298669181-9589-2-git-send-email-ptyser@xes-inc.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1298669181-9589-1-git-send-email-ptyser@xes-inc.com>
+References: <1298669181-9589-1-git-send-email-ptyser@xes-inc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 09:37:39PM +0100, Thomas Gleixner wrote:
-> On Fri, 25 Feb 2011, Seth Forshee wrote:
-> 
-> Please always Cc the relevant maintainers. I just got notified by
-> someone who accidentaly stumbled over that.
+Add a new get_direction() function to the gpio_chip structure.  This is
+useful so that the direction of a GPIO can be determined when its
+initially exported.  Previously, the direction defaulted to "unknown"
+regardless of the actual configuration of the GPIO.
 
-I'll be sure to remember that in the future.
+If a GPIO driver implements get_direction(), it is called in
+gpio_request() to set the initial direction of the GPIO accurately.
 
-> > I've been looking into a couple of problems with this machine that have
-> > me a bit stumped at the moment. The two problems may or may not be
-> > related, so I'm including details about both issues below. If anyone has
-> > any ideas, I'd love to hear them. Note that these are not recent
-> > regressions; they've been around since at least 2.6.32.
-> > 
-> > The CPU in this machine is an Atom N450.
-> > 
-> > When booted normally the performance on this machine is very poor, but
-> > when booted with any of nohz=off, nolapic, or nohpet it improves
-> > significantly. The performance also improves if I use the patch below to
-> > force the hpet to remain in periodic mode (with hpet=periodic on the
-> > command line).
-> > 
-> > One other thing I noticed when I had added some logging related to hpet
-> > rearming is 3-5 second periods of no log activity occurring fairly
-> > frequently, whereas such inactive periods are infrequent when
-> > performance is good and are also infrequent on another machine with very
-> > similar hardware and no performance issues.
-> 
-> That seems to be related to low power states. When the machine goes
-> idle we switch into lower power states and that requires to use the
-> hpet instead of the local apic timer as that one stops.
-> 
-> You could verify that theory by booting with processor.max_cstate=1
+Cc: Alek Du <alek.du@intel.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+---
+Changes since v1:
+- Add support for "unknown" direction
 
-This fixes the performance in combination with intel_idle.max_cstate=0.
-Alternately, intel_idle.max_cstate=1 works. But the resume still hangs.
+Changes since v2:
+  Based on Wolfram's feedback:
+- Use GPIOF_DIR_* flags as returns from get_direction()
+- Call spin_lock_irqsave() to before setting flags
 
-> > The machine also hangs for 5 minutes during resume, unless booted with
-> > both nohz=off and highres=off, or with hpet=periodic using the patch
-> > below. I've traced this down to hanging in an SMI handler during the
-> > ACPI _WAK method execution. The 5 minutes corresponds to how long it
-> > takes for the low 32 bits of the hpet to wrap in this machine, and since
-> > the options that eliminate the hang result in the hpet being in periodic
-> > mode during _WAK method execution I suspect that the SMI handler is
-> > hanging until a timer interrupt happens.
-> > 
-> > One possible explanation here is that the performance problems are also
-> > related to hangs in SMI handlers until there's a timer interrupt,
-> > although I don't know how that explains why some of the command line
-> > options eliminate the performance issues.
-> 
-> Well, that's simple. If you disable NOHZ then we never go into deep
-> idle because the next timer interrupt will arrive in a very short time
-> span. nohpet makes it use the PIT which has a very short (25ms)
-> maximum oneshot time. nolapic disables a lot of the functionality as
-> well.
+Changes since v3:
+- Removed "pin" references from the commit message
+- Added might_sleep() call
+- Made the direction always be set in gpio_request()
 
-Makes sense.
+ drivers/gpio/gpiolib.c     |   25 +++++++++++++++++++++++++
+ include/asm-generic/gpio.h |    4 ++++
+ 2 files changed, 29 insertions(+), 0 deletions(-)
 
-Is the answer to quirk the machine to avoid deep C-states, or is there
-some better way I can fix this?
-
-> > --- a/kernel/time/tick-broadcast.c
-> > +++ b/kernel/time/tick-broadcast.c
-> > @@ -565,10 +565,15 @@ void tick_broadcast_switch_to_oneshot(void)
-> >  
-> >  	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
-> >  
-> > -	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
-> >  	bc = tick_broadcast_device.evtdev;
-> > +	if (bc && !(bc->features & CLOCK_EVT_FEAT_ONESHOT))
-> > +		goto unlock;
-> > +
-> > +	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
-> >  	if (bc)
-> >  		tick_broadcast_setup_oneshot(bc);
-> > +
-> > +unlock:
-> >  	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
-> >  }
-> 
-> Why would you need that? We should not call that when the broadcast
-> device does not have TICKDEV_MODE_ONESHOT. If we do the bug is
-> somewhere else.
-
-Then there must be a bug. When I cleared CLOCK_EVT_FEAT_ONESHOT for the
-HPET without this change the HPET got put into oneshot mode. The local
-tick device is checked before switching to nohz, but not the broadcast
-device. This change was just a quick hack to get around that and test my
-theory.
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index eb74311..106164f 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1174,6 +1174,7 @@ int gpio_request(unsigned gpio, const char *label)
+ 	struct gpio_desc	*desc;
+ 	struct gpio_chip	*chip;
+ 	int			status = -EINVAL;
++	int			dir = -1; /* Default to unknown direction */
+ 	unsigned long		flags;
+ 
+ 	spin_lock_irqsave(&gpio_lock, flags);
+@@ -1214,6 +1215,30 @@ int gpio_request(unsigned gpio, const char *label)
+ 		}
+ 	}
+ 
++	if (chip->get_direction) {
++		/* chip->get_direction may sleep */
++		spin_unlock_irqrestore(&gpio_lock, flags);
++		might_sleep_if(chip->can_sleep);
++		dir = chip->get_direction(chip, gpio - chip->base);
++		spin_lock_irqsave(&gpio_lock, flags);
++	}
++
++	switch (dir) {
++	case GPIOF_DIR_OUT:
++		set_bit(FLAG_DIR_OUT, &desc->flags);
++		clear_bit(FLAG_DIR_IN, &desc->flags);
++		break;
++	case GPIOF_DIR_IN:
++		set_bit(FLAG_DIR_IN, &desc->flags);
++		clear_bit(FLAG_DIR_OUT, &desc->flags);
++		break;
++	default:
++		/* Direction isn't known */
++		clear_bit(FLAG_DIR_OUT, &desc->flags);
++		clear_bit(FLAG_DIR_IN, &desc->flags);
++		break;
++	}
++
+ done:
+ 	if (status)
+ 		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index ff5c660..6af5a3e 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -57,6 +57,8 @@ struct device_node;
+  * @direction_input: configures signal "offset" as input, or returns error
+  * @get: returns value for signal "offset"; for output signals this
+  *	returns either the value actually sensed, or zero
++ * @get_direction: optional hook to determine if a GPIO signal is configured
++ *	as an input, output, or unknown
+  * @direction_output: configures signal "offset" as output, or returns error
+  * @set: assigns output value for signal "offset"
+  * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
+@@ -101,6 +103,8 @@ struct gpio_chip {
+ 						unsigned offset);
+ 	int			(*get)(struct gpio_chip *chip,
+ 						unsigned offset);
++	int			(*get_direction)(struct gpio_chip *chip,
++						unsigned offset);
+ 	int			(*direction_output)(struct gpio_chip *chip,
+ 						unsigned offset, int value);
+ 	int			(*set_debounce)(struct gpio_chip *chip,
+-- 
+1.7.0.4
 
