@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab1BYWrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 17:47:15 -0500
-Received: from kroah.org ([198.145.64.141]:56554 "EHLO coco.kroah.org"
+	id S932898Ab1BYWvZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 17:51:25 -0500
+Received: from kroah.org ([198.145.64.141]:56562 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754447Ab1BYWrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 17:47:13 -0500
-Date: Fri, 25 Feb 2011 14:47:05 -0800
+	id S1754523Ab1BYWvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 17:51:23 -0500
+Date: Fri, 25 Feb 2011 14:50:55 -0800
 From: Greg KH <greg@kroah.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110225224705.GA5706@kroah.com>
+To: Nikolai Kondrashov <spbnick@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110225225055.GA5931@kroah.com>
+References: <20110209224006.GA11202@kroah.com>
+ <AANLkTikrr6Gu_qoq73ASC95E0HQC1p6KzDPLxo=J_rva@mail.gmail.com>
+ <20110225210334.GB16860@kroah.com>
+ <4D6823DD.6040809@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4D6823DD.6040809@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+On Sat, Feb 26, 2011 at 12:49:17AM +0300, Nikolai Kondrashov wrote:
+> On 02/26/2011 12:03 AM, Greg KH wrote:
+> >This should work, as we support the N150/N210/N220 versions.
+> >
+> >Can you provide the output of:
+> >	grep ./sys/class/dmi/id/*
+> >
+> >so I can verify this?
+> Sure. Please find it attached. It is taken on a stock Debian kernel, without
+> your patch.
+> 
+> Could I have configured the kernel incorrectly?
 
-This adds the samsung-laptop driver to the kernel.  It now supports
-all known Samsung laptops that use the SABI interface.
+Maybe, that's odd.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
+Care to try the version of the patch below to see if that works better
+for you or not?
 
- Documentation/ABI/testing/sysfs-driver-samsung-laptop |   19 
- drivers/platform/x86/Kconfig                          |   13 
- drivers/platform/x86/Makefile                         |    1 
- drivers/platform/x86/samsung-laptop.c                 |  805 ++++++++++++++++++
- 4 files changed, 838 insertions(+)
+thanks,
 
-Matthew, this is a copy of the latest version in the linux-next tree of the
-driver.  Once it has been accepted into your tree, I'll delete the
-staging driver.  Or, if you want to give your ACK, I can just move the
-driver from staging into this directory in my tree, which will properly
-preserve the history of the code.
+greg k-h
 
-I have also addressed all of the review comments you gave me previously,
-and fixed a bug in the previous version that broke the driver on the
-N128 laptop, as well as added support for a wide range of other laptops
-thanks to many testers who sent in patches.
 
 --- /dev/null
 +++ b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
