@@ -1,79 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab1BYHSj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 02:18:39 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40630 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab1BYHSi (ORCPT
+	id S932150Ab1BYH3P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 02:29:15 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:16075 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab1BYH3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 02:18:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=QksZQYHfsjOlkA9lPcfIp10ovm5fOm010zkQOma3Sp8cDTDX5g0aK2p+qSQXfqGXhv
-         lNTMIidJPQG/QzoGDBBdsvfXYNSz+B2rTkD+DSUWj7gfkvR1rnOU8dUl02eLUSzUJ0L+
-         QaQz4UVjO7nyR7g6KJ4At5kh7vSyQUDoRtUYc=
-Date: Thu, 24 Feb 2011 23:18:28 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tyson.chen@canonical.com
-Subject: Re: [PATCH] eeepc-wmi: set the touchpad toggle key code to F21
-Message-ID: <20110225071827.GA14053@core.coreip.homeip.net>
-References: <1298611140-21573-1-git-send-email-keng-yu.lin@canonical.com>
- <AANLkTim_JKQU9J3OJ0FRQ_ZVPktAPbnzr2t8SvhL2Uzj@mail.gmail.com>
+	Fri, 25 Feb 2011 02:29:14 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76390675"
+Message-ID: <4D675A42.9090803@codeaurora.org>
+Date: Fri, 25 Feb 2011 12:59:06 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim_JKQU9J3OJ0FRQ_ZVPktAPbnzr2t8SvhL2Uzj@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+CC: davidb@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] msm: iommu: Rework clock logic and add IOMMU bus
+ clock control
+References: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org> <1298599242-21971-2-git-send-email-stepanm@codeaurora.org>
+In-Reply-To: <1298599242-21971-2-git-send-email-stepanm@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 07:52:11AM +0100, Corentin Chary wrote:
-> On Fri, Feb 25, 2011 at 6:19 AM, Keng-Yu Lin <keng-yu.lin@canonical.com> wrote:
-> > Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
-> > ---
-> >  drivers/platform/x86/eeepc-wmi.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > https://bugs.freedesktop.org/show_bug.cgi?id=31333
-> >
-> > diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
-> > index d399775..da00cbc 100644
-> > --- a/drivers/platform/x86/eeepc-wmi.c
-> > +++ b/drivers/platform/x86/eeepc-wmi.c
-> > @@ -113,7 +113,7 @@ static const struct key_entry eeepc_wmi_keymap[] = {
-> >        { KE_KEY, 0x32, { KEY_MUTE } },
-> >        { KE_KEY, 0x5c, { KEY_F15 } }, /* Power Gear key */
-> >        { KE_KEY, 0x5d, { KEY_WLAN } },
-> > -       { KE_KEY, 0x6b, { KEY_F13 } }, /* Disable Touchpad */
-> > +       { KE_KEY, 0x6b, { KEY_F21 } }, /* Disable Touchpad */
-> >        { KE_KEY, 0x82, { KEY_CAMERA } },
-> >        { KE_KEY, 0x83, { KEY_CAMERA_ZOOMIN } },
-> >        { KE_KEY, 0x88, { KEY_WLAN } },
-> 
-> Hum, I'm not very comfortable with this patch now that we got
-> KEY_TOUCHPAD_TOGGLE.
-> I know, it doesn't work with current Xorg, but if we continue to
-> workaround that, it'll never be fixed.
-> 
-> Dmitry, Matthew, any advice ?
+Hi Steve,
 
-I believe that the kernel should use KEY_TOUCHPAD_TOGGLE and userspace
-should use udev's key re-mapping facilities while X is unable to process
-keycodes above 255 to adjust to the keycode du jour. If all kernel
-drivers were to use KEY_TOUCHPAD_TOGGLE then remapping would be much
-easier (the utility would simply check capabilities for
-KEY_TOUCHPAD_TOGGLE and do the remap).
+> 
+>  /**
+> diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
+> index b83c73b..69acd1e 100644
+> --- a/arch/arm/mach-msm/iommu_dev.c
+> +++ b/arch/arm/mach-msm/iommu_dev.c
+> @@ -1,4 +1,4 @@
+> -/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+> +/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 and
+> @@ -29,6 +29,7 @@
+> 
+>  #include <mach/iommu_hw-8xxx.h>
+>  #include <mach/iommu.h>
+> +#include <mach/clk.h>
+> 
+>  struct iommu_ctx_iter_data {
+>  	/* input */
+> @@ -130,117 +131,134 @@ static int msm_iommu_probe(struct platform_device *pdev)
+>  {
+>  	struct resource *r, *r2;
+>  	struct clk *iommu_clk;
+> +	struct clk *iommu_pclk;
+>  	struct msm_iommu_drvdata *drvdata;
+>  	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
 
-Thanks.
+const please.
+
+> +	iommu_pclk = clk_get(NULL, "smmu_pclk");
+> +	if (IS_ERR(iommu_pclk)) {
+> +		ret = -ENODEV;
+> +		goto fail;
+> +	}
+
+I am not a big fan of this when you have the "device" around. You should just do
+
+iommu_pclk = clk_get(&pdev->dev, NULL);
+
+...error logic...
+
+iommu_clk = clk_get(&pdev->dev, "iommu_clk");
+
+...error logic...
+
+
+> +
+> +	ret = clk_enable(iommu_pclk);
+> +	if (ret)
+> +		goto fail_enable;
+> +
+> +	iommu_clk = clk_get(&pdev->dev, "iommu_clk");
+> +
+> +	if (!IS_ERR(iommu_clk))	{
+> +		if (clk_get_rate(iommu_clk) == 0)
+> +			clk_set_min_rate(iommu_clk, 1);
+> +
+> +		ret = clk_enable(iommu_clk);
+> +		if (ret) {
+>  			clk_put(iommu_clk);
+> +			goto fail_pclk;
+>  		}
+> +	} else
+> +		iommu_clk = NULL;
+> 
+> -		r = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+> -						 "physbase");
+> -		if (!r) {
+> -			ret = -ENODEV;
+> -			goto fail;
+> -		}
+> +	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "physbase");
+> 
+> -		len = r->end - r->start + 1;
+> +	if (!r) {
+> +		ret = -ENODEV;
+> +		goto fail_clk;
+> +	}
+> 
+> -		r2 = request_mem_region(r->start, len, r->name);
+> -		if (!r2) {
+> -			pr_err("Could not request memory region: "
+> -			"start=%p, len=%d\n", (void *) r->start, len);
+> -			ret = -EBUSY;
+> -			goto fail;
+> -		}
+> +	len = r->end - r->start + 1;
+
+
+resource_size please.
+
+
+---Trilok Soni
+
 
 -- 
-Dmitry
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
