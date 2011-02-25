@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab1BYGRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 01:17:42 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60502 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1BYGRk (ORCPT
+	id S1752774Ab1BYGUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 01:20:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47102 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab1BYGUa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 01:17:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=qTP/EvYQjJ4Cxwsi7Ad5eLU/4UBFK6e6RIezgJk3gvqvNO0OacaKYrOZ1kQnFFbmpB
-         jljwc26wOsnEZdtWmP3+UmmUBgZlT/rjR2ZckPHNCqCvKOM9GzgytE93yoYmewuYp3hl
-         zSy6y4ZNrNldixI+y+Wzc+D0ubBv4Ins7Guxs=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: gregkh@suse.de, abbotti@mev.co.uk, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 13/21]drivers:staging:comedi:pcl816.c remove one to many l's in the word.
-Date: Thu, 24 Feb 2011 22:13:46 -0800
-Message-Id: <1298614426-3957-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 25 Feb 2011 01:20:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110224200631.0007833e@queued.net>
+References: <20110224200631.0007833e@queued.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 24 Feb 2011 23:20:10 -0700
+X-Google-Sender-Auth: IBiVg03bi1_AIPFoQ-nx4buZvZw
+Message-ID: <AANLkTi=PpPKoHr1sOAwZZaFhVX9HOOqT7AYgY2QaX92O@mail.gmail.com>
+Subject: Re: [PATCH] x86: OLPC: have prom_early_alloc BUG rather than return NULL
+To: Andres Salomon <dilinger@queued.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below removes an extra "l" in the word.
+On Thu, Feb 24, 2011 at 9:06 PM, Andres Salomon <dilinger@queued.net> wrote:
+>
+> ..similar to what sparc's prom_early_alloc does.
+>
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+What the hey, I've picked this up since it makes the other patch
+simpler.  I'll push the two patches to linux-next tomorrow and ask
+Linus to pull in a few days.
 
----
- drivers/staging/comedi/drivers/pcl816.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+g.
 
-diff --git a/drivers/staging/comedi/drivers/pcl816.c b/drivers/staging/comedi/drivers/pcl816.c
-index 3d0f018..ef3cc4f 100644
---- a/drivers/staging/comedi/drivers/pcl816.c
-+++ b/drivers/staging/comedi/drivers/pcl816.c
-@@ -108,7 +108,7 @@ struct pcl816_board {
- 	const char *name;	/*  board name */
- 	int n_ranges;		/*  len of range list */
- 	int n_aichan;		/*  num of A/D chans in diferencial mode */
--	unsigned int ai_ns_min;	/*  minimal alllowed delay between samples (in ns) */
-+	unsigned int ai_ns_min;	/*  minimal allowed delay between samples (in ns) */
- 	int n_aochan;		/*  num of D/A chans */
- 	int n_dichan;		/*  num of DI chans */
- 	int n_dochan;		/*  num of DO chans */
+> ---
+>  arch/x86/platform/olpc/olpc_dt.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
+> index dab8746..044bda5 100644
+> --- a/arch/x86/platform/olpc/olpc_dt.c
+> +++ b/arch/x86/platform/olpc/olpc_dt.c
+> @@ -140,8 +140,7 @@ void * __init prom_early_alloc(unsigned long size)
+>                 * wasted bootmem) and hand off chunks of it to callers.
+>                 */
+>                res = alloc_bootmem(chunk_size);
+> -               if (!res)
+> -                       return NULL;
+> +               BUG_ON(!res);
+>                prom_early_allocated += chunk_size;
+>                memset(res, 0, chunk_size);
+>                free_mem = chunk_size;
+> --
+> 1.7.2.3
+>
+>
+
+
+
 -- 
-1.7.4.1
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
