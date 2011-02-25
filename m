@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab1BYSps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:45:48 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54917 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab1BYSpq (ORCPT
+	id S1756315Ab1BYSqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:46:46 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45846
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756184Ab1BYSqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:45:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=d4ssx9Bq4lB5QsplfYnBr5+66YR5tEAHhAFvNH+Vd3V74gg1HiqGQ9TKTLntFIEm0w
-         4bu7RNHn1WT1Ur88NsHBmyAd4M4aJgwL/ULhDKqiPQ6RkQ4qL5xZBaysnv9BtQvjDT7F
-         42LobatROShRwzK0EwfdUCUcEkVddHsFxea+A=
-Subject: Re: [PATCH ref0] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: ratbert.chuang@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhutchings@solarflare.com,
-        joe@perches.com, dilinger@queued.net, mirqus@gmail.com,
-        ratbert@faraday-tech.com, Ajit Khaparde <ajit.khaparde@emulex.com>
-In-Reply-To: <20110225.103456.226779149.davem@davemloft.net>
-References: <AANLkTikXUyQy+fjFSwagB3Uud2JPodsR2yFtt+jiZPSk@mail.gmail.com>
-	 <AANLkTikmqQfT1s2Z6J+KYmqi0CuCc4+2k67eeb4ydtCM@mail.gmail.com>
-	 <1298631127.2659.22.camel@edumazet-laptop>
-	 <20110225.103456.226779149.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 19:45:38 +0100
-Message-ID: <1298659538.2659.103.camel@edumazet-laptop>
+	Fri, 25 Feb 2011 13:46:44 -0500
+Date: Fri, 25 Feb 2011 10:47:20 -0800 (PST)
+Message-Id: <20110225.104720.71110261.davem@davemloft.net>
+To: segoon@openwall.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
+        xiaosuo@gmail.com, jesse@nicira.com
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
+ modules
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110225151414.GA5211@albatros>
+References: <1298565265.2613.16.camel@bwh-desktop>
+	<20110225123023.GA8776@albatros>
+	<20110225151414.GA5211@albatros>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 25 février 2011 à 10:34 -0800, David Miller a écrit :
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Fri, 25 Feb 2011 11:52:07 +0100
-> 
-> > Le vendredi 25 février 2011 à 17:45 +0800, Po-Yu Chuang a écrit :
-> > 
-> >> It's a little faster than v5 now. Thanks.
-> >> I will submit the current version later.
-> >> 
-> >> One more question just curious, why 128 bytes?
-> > 
-> > Probably its best for NIU hardware specs
-> > 
-> > You could try 64, as it should be enough for most IP/TCP/UDP processing.
-> 
-> IPV6.
+From: Vasiliy Kulikov <segoon@openwall.com>
+Date: Fri, 25 Feb 2011 18:14:14 +0300
 
-drivers/net/benet/be.h:70:#define BE_HDR_LEN            64
+> Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
+> CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
+> that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are limited
+> to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't allow
+> anybody load any module not related to networking.
 
-Maybe we should have a comment somewhere.
+Why go through this naming change, which does break things, instead of
+simply adding a capability mask tag or similar to modules somehow.  You
+could stick it into a special elf section or similar.
 
-CC Ajit Khaparde <ajit.khaparde@emulex.com>
-
-
+Doesn't that make tons more sense than this?
