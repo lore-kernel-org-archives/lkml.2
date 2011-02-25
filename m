@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932787Ab1BYTeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 14:34:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63466 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932754Ab1BYTeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 14:34:06 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=B6-kwD8izM94doaw5-AA:9 a=nLKbQ-GPzw8VnfJsC8rgzxwj9pMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Ftracing in linux kernel
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Erlon Cruz <sombrafam@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimG7QacpnfC24QH9-QzQVTLT+xEU8Vhk1x6vq2Q@mail.gmail.com>
-References: <AANLkTinDf2odDs2a9Wc0d4T8hxV6sj5GmgOs_p_3VHQP@mail.gmail.com>
-	 <AANLkTimG7QacpnfC24QH9-QzQVTLT+xEU8Vhk1x6vq2Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 25 Feb 2011 14:34:03 -0500
-Message-ID: <1298662443.6376.20.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756436Ab1BYTkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 14:40:15 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:48045 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756303Ab1BYTkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 14:40:13 -0500
+Date: Fri, 25 Feb 2011 11:40:07 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
+Subject: Re: [PATCH RFC tip/core/rcu 01/11] rcu: call __rcu_read_unlock()
+ in exit_rcu for tiny RCU
+Message-ID: <20110225194007.GC2269@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <4D67687A.6010906@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D67687A.6010906@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-21 at 11:21 -0300, Erlon Cruz wrote:
-> Hi folks,
+On Fri, Feb 25, 2011 at 04:29:46PM +0800, Lai Jiangshan wrote:
+> On 02/23/2011 09:39 AM, Paul E. McKenney wrote:
+> > 
+> > diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+> > index 015abae..3cb8e36 100644
+> > --- a/kernel/rcutiny_plugin.h
+> > +++ b/kernel/rcutiny_plugin.h
 > 
->    I've configured my kernel(2.6.35) to support ftrace*. Everything
-> seems to be ok. After I mounted the debugfs folder I can find all
-> tracing stuffs there. The problem is not of all functions on my module
-> seems to be listed in the funtions supported for tracing. In the file
-> available_filter_functions that suppose to list all functions traced,
-> only show 4 or 5 functions of my module. Does anyone knows why some
-> functions are not listed?
+> My original patch was just for tree RCU. It is not merged.
+> I forgot the tiny RCU case then, this change is needed for tree & tiny RCU.
 
-Are those functions inlined? If gcc inlines a function (regardless if
-you say to or not) it will not be traced. If you want to trace them just
-force them to not inline with "noinline".
+Good catch, I have applied the TREE_RCU patch.  I intend to submit
+both for the next merge window.
 
--- Steve
+Thank you for checking!
 
-
+							Thanx, Paul
