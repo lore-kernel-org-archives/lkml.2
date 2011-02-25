@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999Ab1BYUhN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:37:13 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43519
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932744Ab1BYUhL (ORCPT
+	id S933007Ab1BYUih (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:38:37 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:11454 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932790Ab1BYUig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:37:11 -0500
-Date: Fri, 25 Feb 2011 12:37:46 -0800 (PST)
-Message-Id: <20110225.123746.102555939.davem@davemloft.net>
-To: bhutchings@solarflare.com
+	Fri, 25 Feb 2011 15:38:36 -0500
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
+ modules
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
 Cc: segoon@openwall.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
         yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
         therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
         kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
         akpm@linux-foundation.org
-Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
- modules
-From: David Miller <davem@davemloft.net>
 In-Reply-To: <1298663585.2554.39.camel@bwh-desktop>
-References: <1298662216.2554.33.camel@bwh-desktop>
-	<20110225.114351.28809001.davem@davemloft.net>
-	<1298663585.2554.39.camel@bwh-desktop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+References: <1298660879.2554.23.camel@bwh-desktop>
+	 <20110225.111606.115927805.davem@davemloft.net>
+	 <1298662216.2554.33.camel@bwh-desktop>
+	 <20110225.114351.28809001.davem@davemloft.net>
+	 <1298663585.2554.39.camel@bwh-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Fri, 25 Feb 2011 20:38:30 +0000
+Message-ID: <1298666310.2554.47.camel@bwh-desktop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Feb 2011 20:38:36.0086 (UTC) FILETIME=[F9C3CD60:01CBD52B]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17976.005
+X-TM-AS-Result: No--21.081300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Fri, 25 Feb 2011 19:53:05 +0000
-
+On Fri, 2011-02-25 at 19:53 +0000, Ben Hutchings wrote:
 > On Fri, 2011-02-25 at 11:43 -0800, David Miller wrote:
->> Surely we if we can pass an arbitrary string out to the loading
->> process as part of the module loading context, we can pass along
->> capability bits as well.
+> > From: Ben Hutchings <bhutchings@solarflare.com>
+> > Date: Fri, 25 Feb 2011 19:30:16 +0000
+> > 
+> > > On Fri, 2011-02-25 at 11:16 -0800, David Miller wrote:
+> > >> From: Ben Hutchings <bhutchings@solarflare.com>
+> > >> Date: Fri, 25 Feb 2011 19:07:59 +0000
+> > >> 
+> > >> > You realise that module loading doesn't actually run in the context of
+> > >> > request_module(), right?
+> > >> 
+> > >> Why is that a barrier?  We could simply pass a capability mask into
+> > >> request_module if necessary.
+> > >> 
+> > >> It's an implementation detail, and not a deterrant to my suggested
+> > >> scheme.
+> > > 
+> > > It's not an implementation detail.  modprobe currently runs with full
+> > > capabilities; your proposal requires its capabilities to be limited to
+> > > those of the capabilities of the process that triggered the
+> > > request_module() (plus, presumably, CAP_SYS_MODULE).
+> > 
+> > The idea was that the kernel will be the entity that will inspect the
+> > elf sections and validate the capability bits, not the userspace
+> > module loader.
+> 
+> Yes, I understand that.
+> 
+> > Surely we if we can pass an arbitrary string out to the loading
+> > process as part of the module loading context, we can pass along
+> > capability bits as well.
 > 
 > If you want insert_module() to be able to deny loading some modules
 > based on the capabilities of the process calling request_module() then
@@ -45,12 +78,46 @@ Date: Fri, 25 Feb 2011 19:53:05 +0000
 > some extra process state, separate from the usual capability state,
 > specifically for this purpose.
 
-How is this any different from the patch posted which ties
-capabilities to the prefix of name of the module to be loaded?
+I bet something like this (plus Vasiliy's changes to static module
+aliases) would cover 99.9% of legitimate uses of this feature:
 
-There is simply no difference, except that in my proposal existing
-things do not break since the module name will not change.
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 54aaca6..0d09baa 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1120,8 +1120,20 @@ void dev_load(struct net *net, const char *name)
+ 	dev = dev_get_by_name_rcu(net, name);
+ 	rcu_read_unlock();
+ 
+-	if (!dev && capable(CAP_NET_ADMIN))
+-		request_module("%s", name);
++	if (!dev && capable(CAP_NET_ADMIN)) {
++		/* Check whether the name looks like one that a net
++		 * driver will generate initially.  If not, require a
++		 * module alias with a suitable prefix, so that this
++		 * can't be used to load arbitrary modules.
++		 */
++		if ((strncmp(name, "eth", 3) == 0 &&
++		     isdigit((unsigned char)name[3])) ||
++		    (strncmp(name, "wlan", 4) == 0 &&
++		     isdigit((unsigned char)name[4])))
++			request_module("%s", name);
++		else
++			request_module("netdev-%s", name);
++	}
+ }
+ EXPORT_SYMBOL(dev_load);
+ 
+---
 
-I don't see where the complexity is, if the only place we can pass the
-capability bits is in the execv args, then in the worst case we could
-take a peek at those in the module load system call.
+Note that we don't have to care about interfaces that get renamed from
+eth%d or wlan%d, since renaming is triggered asynchronously and
+therefore can't be used in conjunction with the auto-loading feature.
+
+Ben.
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
