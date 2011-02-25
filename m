@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab1BYGPm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 01:15:42 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57587 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab1BYGPk (ORCPT
+	id S1754664Ab1BYGQE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 01:16:04 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:65202 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab1BYGQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 01:15:40 -0500
+	Fri, 25 Feb 2011 01:16:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=D7Lx0D0glRmC2VRGEMwZTbc2yuDWgTf5TYBvxtWy+3QV5UzLjlQKMjjlWE2i/ez/2w
-         1hZLXiObWy3cflpJ9QepnWrQZZehcS4d6yYTWDGeR2urLkyCkUF9IzDKx4Y9A1chjP3s
-         s7MY3XJcKB3yvb+l1v8O2DV2I1rmtRg1HK5JU=
+        b=fiffUrIWL70dxujphtGC6WvD0gqZAYX+rcSQsUq1UP1ZiDpftqvLhmJBVvm1FHBlmF
+         0badQ89z87JObgnWsAPAxyhf6VQxgi9s3YL3R9gJ44uvbJ53YHj5mnLPsaKV7PA7hUBB
+         ei2tkKtU9hMOe75pwwTrdADwJBLs/fzl2VgEk=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
-Cc: johannes@sipsolutions.net, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 18/21]include:net:mac80211.h remove one to many l's in the word.
-Date: Thu, 24 Feb 2011 22:15:22 -0800
-Message-Id: <1298614522-4153-1-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 19/21]sound:pci:emu10k1:emu10k1_main.c remove one to many l's in the word.
+Date: Thu, 24 Feb 2011 22:15:42 -0800
+Message-Id: <1298614542-4192-1-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,22 +31,22 @@ The patch below removes an extra "l" in the word.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- include/net/mac80211.h |    2 +-
+ sound/pci/emu10k1/emu10k1_main.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/net/mac80211.h b/include/net/mac80211.h
-index 62c0ce2..04c3fe5 100644
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -1349,7 +1349,7 @@ ieee80211_get_alt_retry_rate(const struct ieee80211_hw *hw,
-  * DOC: Beacon filter support
-  *
-  * Some hardware have beacon filter support to reduce host cpu wakeups
-- * which will reduce system power consumption. It usuallly works so that
-+ * which will reduce system power consumption. It usually works so that
-  * the firmware creates a checksum of the beacon but omits all constantly
-  * changing elements (TSF, TIM etc). Whenever the checksum changes the
-  * beacon is forwarded to the host, otherwise it will be just dropped. That
+diff --git a/sound/pci/emu10k1/emu10k1_main.c b/sound/pci/emu10k1/emu10k1_main.c
+index 66c7fb3..5e619a8 100644
+--- a/sound/pci/emu10k1/emu10k1_main.c
++++ b/sound/pci/emu10k1/emu10k1_main.c
+@@ -926,7 +926,7 @@ static int snd_emu10k1_emu1010_init(struct snd_emu10k1 *emu)
+ 	snd_emu1010_fpga_write(emu, EMU_HANA_MIDI_IN, 0x19);
+ 	/* Unknown. */
+ 	snd_emu1010_fpga_write(emu, EMU_HANA_MIDI_OUT, 0x0c);
+-	/* IRQ Enable: Alll on */
++	/* IRQ Enable: All on */
+ 	/* snd_emu1010_fpga_write(emu, 0x09, 0x0f ); */
+ 	/* IRQ Enable: All off */
+ 	snd_emu1010_fpga_write(emu, EMU_HANA_IRQ_ENABLE, 0x00);
 -- 
 1.7.4.1
 
