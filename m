@@ -1,118 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab1BYUSq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 15:18:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932783Ab1BYUSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 15:18:44 -0500
-Date: Fri, 25 Feb 2011 15:18:30 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dominik Klein <dk@in-telegence.net>, Tejun Heo <tj@kernel.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        libvir-list@redhat.com
-Subject: Re: Is it a workqueue related issue in 2.6.37 (Was: Re: [libvirt]
- blkio cgroup [solved])
-Message-ID: <20110225201830.GK2994@redhat.com>
-References: <20110222152426.GD28269@redhat.com>
- <20110222190953.GF28269@redhat.com>
- <4D650D7E.4050908@in-telegence.net>
- <4D662248.6040405@in-telegence.net>
- <20110224142303.GA18494@redhat.com>
- <20110224143105.GL7840@htj.dyndns.org>
- <4D66720E.70102@in-telegence.net>
- <20110224151701.GQ7840@htj.dyndns.org>
- <4D67591F.10105@in-telegence.net>
- <20110225195307.GA23161@home.goodmis.org>
+	id S932886Ab1BYUTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 15:19:22 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27415 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755468Ab1BYUTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 15:19:21 -0500
+Message-ID: <4D680EA4.6050402@kernel.org>
+Date: Fri, 25 Feb 2011 12:18:44 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110225195307.GA23161@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for init_memory_mapping_high()
+References: <20110223171945.GI26065@htj.dyndns.org> <4D656D1A.7030006@kernel.org> <20110223204656.GA27738@atj.dyndns.org> <4D657359.5060901@kernel.org> <20110223210326.GB27738@atj.dyndns.org> <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com> <20110224091557.GD7840@htj.dyndns.org> <4D674A33.8000809@kernel.org> <20110225111606.GG24828@htj.dyndns.org>
+In-Reply-To: <20110225111606.GG24828@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D680EB4.009B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 02:53:08PM -0500, Steven Rostedt wrote:
-> On Fri, Feb 25, 2011 at 08:24:15AM +0100, Dominik Klein wrote:
-> > > Maybe watching what the workqueue is doing using the following trace
-> > > events could be helpful.
-> > > 
-> > > # grep workqueue /sys/kernel/debug/tracing/available_events
-> > > workqueue:workqueue_insertion
-> > > workqueue:workqueue_execution
-> > > workqueue:workqueue_creation
-> > > workqueue:workqueue_destruction
-> > 
-> > Since I've never done this before, I will tell you how I captured the
-> > trace so you know what I did and can see whether I did something wrong
-> > and can correct me if necessary.
-> > 
-> > echo blk > /sys/kernel/debug/tracing/current_tracer
-> > echo 1 > /sys/block/sdb/trace/enable
-> > echo workqueue_queue_work >> /sys/kernel/debug/tracing/set_event
-> > echo workqueue_activate_work >> /sys/kernel/debug/tracing/set_event
-> > echo workqueue_execute_start >> /sys/kernel/debug/tracing/set_event
-> > echo workqueue_execute_end >> /sys/kernel/debug/tracing/set_event
-> > cat /sys/kernel/debug/tracing/trace_pipe
+On 02/25/2011 03:16 AM, Tejun Heo wrote:
+> On Thu, Feb 24, 2011 at 10:20:35PM -0800, Yinghai Lu wrote:
+>> tj pointed out:
+>> 	when node does not have 1G aligned boundary, like 128M.
+>> init_memory_mapping_high() could render smaller mapping by 128M on one node,
+>> and 896M on next node with 2M pages instead of 1g page. that could increase
+>> TLB presure.
+>>
+>> So if gb page is used, try to align the boundary to 1G before calling
+>> init_memory_mapping_ext(), to make sure only use one 1g entry for that cross
+>> node 1G.
+>> Need to init_meory_mapping_ext() to table tbl_end, to make sure pgtable is on
+>> previous node instead of next node.
 > 
-> Just an FYI,
-> 
-> If you download trace-cmd from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
-> 
-> You could do the following:
-> 
-> # trace-cmd record -p blk -e workqueue_queue_work -e workqueue_activate_work -e workqueue_execute_start -e workqueue_execute_end <cmd>
-> 
-> Where <cmd> could be 
-> sh -c "echo 1 > /sys/block/sdb/trace/enable; sleep 10"
-> 
-> This will create a trace.dat file that you can read with 
-> trace-cmd report
-> 
-> Another way, if you want to do more than just that echo is to use:
-> 
-> # trace-cmd start -p blk -e workqueue_queue_work -e workqueue_activate_work -e workqueue_execute_start -e workqueue_execute_end
-> # echo 1 > /sys/block/sdb/trace/enable
-> # <do anyting you want>
-> # trace-cmd stop
-> # trace-cmd extract
-> 
-> The start just enable ftrace (like you did with the echos).
-> The extract will create the trace.dat file from the ftrace ring buffers.
-> You could alse just cat trace_pipe, which would do the same, or you
-> could do the echos, and then the trace-cmd stop and extract to get the
-> file. It's your choice ;)
-> 
-> You can then gzip the trace.dat file and send it to others that can read
-> it as well, as all the information needed to read the trace is recorded
-> in the file.
-> 
-> You could even send the data over the network instead of writing the
-> trace.dat locally.
-> 
-> On another box:
-> 
-> $ trace-cmd listen -p 12345
-> 
-> Then on the target:
-> 
-> # trace-cmd record -N host:12345 ...
-> 
-> This will send the data to the listening host and the file will be
-> created on the host side.
+> I don't know, Yinghai.  The whole code seems overly complicated to me.
+> Just ignore e820 map when building linear mapping.  It doesn't matter.
+> Why not just do something like the following?  Also, can you please
+> add some comments explaining how the NUMA affine allocation actually
+> works for page tables?
+yes, that could be done in separated patch.
 
-Thanks Steve. In this case this feature of sending trace data over
-network would have helped. We were running into issues where IO scheduler
-was freezing so we could not read anything from disk(including saved traces).
-Hence we were directing everything to console and then doing copy paste.
+>  Or better, can you please make that explicit?
+> It currently depends on memories being registered in ascending address
+> order, right?  The memblock code already is NUMA aware, I think it
+> would be far better to make the node affine part explicit.
 
-So sending it over network would have probably worked even in this case.
+yes, memblock is numa aware after memblock_x86_register_active_regions().
+and it rely on early_node_map[].
 
-Will give trace-cmd a try next time.
+do you mean let init_memory_mapping to take node id like setup_node_bootmem?
+so find_early_table_space could take nodeid instead of tbl_end? 
+
+> 
+> Thanks.
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 46e684f..4fd0b59 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -966,6 +966,11 @@ void __init setup_arch(char **cmdline_p)
+>  	memblock.current_limit = get_max_mapped();
+>  
+>  	/*
+> +	 * Add whole lot of comment explaining what's going on and WHY
+> +	 * because as it currently stands, it's frigging cryptic.
+> +	 */
+> +
+> +	/*
+>  	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
+>  	 */
+>  
+> diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+> index 7757d22..50ec03c 100644
+> --- a/arch/x86/mm/numa_64.c
+> +++ b/arch/x86/mm/numa_64.c
+> @@ -536,8 +536,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+>  	if (!numa_meminfo_cover_memory(mi))
+>  		return -EINVAL;
+>  
+> -	init_memory_mapping_high();
+> -
+>  	/* Finally register nodes. */
+>  	for_each_node_mask(nid, node_possible_map) {
+>  		u64 start = (u64)max_pfn << PAGE_SHIFT;
+> @@ -550,8 +548,12 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+>  			end = max(mi->blk[i].end, end);
+>  		}
+>  
+> -		if (start < end)
+> +		if (start < end) {
+> +			init_memory_mapping(
+> +			  ALIGN_DOWN_TO_MAX_MAP_SIZE_AND_CONVERT_TO_PFN(start),
+> +			  ALIGN_UP_SIMILARY_BUT_DONT_GO_OVER_MAX_PFN(end));
+>  			setup_node_bootmem(nid, start, end);
+> +		}
+will have problem with cross node conf. like 0-4g, 8-12g on node0, 4g-8g, 12g-16g on node1.
+
+>  	}
+>  
+>  	return 0;
+> 
+> 
 
 Thanks
-Vivek
+
+Yinghai Lu
