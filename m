@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab1BYSX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:23:56 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:41418 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932436Ab1BYSXz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:23:55 -0500
-Date: Fri, 25 Feb 2011 13:23:53 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [cpuops cmpxchg double V3 2/5] slub: Get rid of
-	slab_free_hook_irq()
-Message-ID: <20110225182353.GB24193@Krystal>
-References: <20110225173850.486326452@linux.com> <20110225174155.212499723@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110225174155.212499723@linux.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:22:21 up 93 days, 23:25,  4 users,  load average: 0.10, 0.03,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932696Ab1BYSZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:25:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:28350 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932097Ab1BYSZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:25:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,226,1297065600"; 
+   d="scan'208";a="713331895"
+Date: Fri, 25 Feb 2011 10:23:19 -0800
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Paul Menage <menage@google.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, akpm@linux-foundation.org,
+        rdunlap@xenotime.net, Cedric Le Goater <clg@vnet.ibm.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH 1/1, v9] cgroup/freezer: add per freezer duty ratio
+ control
+Message-ID: <20110225102319.6c776838@putvin>
+In-Reply-To: <AANLkTinyhp29X8-atA=0DaHFuthTjVMJgBOitP52gwEX@mail.gmail.com>
+References: <1297807750-28844-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1297807750-28844-2-git-send-email-jacob.jun.pan@linux.intel.com>
+	<201102160100.15487.rjw@sisk.pl>
+	<20110215163812.7fa020b5@putvin>
+	<20110216032321.GA14893@count0.beaverton.ibm.com>
+	<20110224154525.1b463723@jacob-laptop>
+	<AANLkTinyhp29X8-atA=0DaHFuthTjVMJgBOitP52gwEX@mail.gmail.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Lameter (cl@linux.com) wrote:
-> The following patch will make the fastpaths lockless and will no longer
-> require interrupts to be disabled. Calling the free hook with irq disabled
-> will no longer be possible.
-> 
-> Move the slab_free_hook_irq() logic into slab_free_hook. Only disable
-> interrupts if the features are selected that require callbacks with
-> interrupts off and reenable after calls have been made.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  mm/slub.c |   29 +++++++++++++++++------------
->  1 file changed, 17 insertions(+), 12 deletions(-)
-> 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2011-01-10 12:06:58.000000000 -0600
-> +++ linux-2.6/mm/slub.c	2011-01-10 12:07:11.000000000 -0600
-> @@ -807,14 +807,24 @@ static inline void slab_post_alloc_hook(
->  static inline void slab_free_hook(struct kmem_cache *s, void *x)
->  {
->  	kmemleak_free_recursive(x, s->flags);
-> -}
->  
-> -static inline void slab_free_hook_irq(struct kmem_cache *s, void *object)
-> -{
-> -	kmemcheck_slab_free(s, object, s->objsize);
-> -	debug_check_no_locks_freed(object, s->objsize);
-> -	if (!(s->flags & SLAB_DEBUG_OBJECTS))
-> -		debug_check_no_obj_freed(object, s->objsize);
-> +	/*
-> +	 * Trouble is that we may no longer disable interupts in the fast path
+On Fri, 25 Feb 2011 09:53:59 -0800
+Paul Menage <menage@google.com> wrote:
 
-interrupts
-
-/nitpick ;)
-
-Mathieu
-
-> +	 * So in order to make the debug calls that expect irqs to be
-> +	 * disabled we need to disable interrupts temporarily.
-> +	 */
-> +#if defined(CONFIG_KMEMCHECK) || defined(CONFIG_LOCKDEP)
-> +	{
-> +		unsigned long flags;
-> +
-> +		local_irq_save(flags);
-> +		kmemcheck_slab_free(s, x, s->objsize);
-> +		debug_check_no_locks_freed(x, s->objsize);
-> +		if (!(s->flags & SLAB_DEBUG_OBJECTS))
-> +			debug_check_no_obj_freed(x, s->objsize);
-> +		local_irq_restore(flags);
-> +	}
-> +#endif
->  }
->  
->  /*
-> @@ -1101,9 +1111,6 @@ static inline void slab_post_alloc_hook(
->  
->  static inline void slab_free_hook(struct kmem_cache *s, void *x) {}
->  
-> -static inline void slab_free_hook_irq(struct kmem_cache *s,
-> -		void *object) {}
-> -
->  #endif /* CONFIG_SLUB_DEBUG */
->  
->  /*
-> @@ -1909,8 +1916,6 @@ static __always_inline void slab_free(st
->  	local_irq_save(flags);
->  	c = __this_cpu_ptr(s->cpu_slab);
->  
-> -	slab_free_hook_irq(s, x);
-> -
->  	if (likely(page == c->page && c->node != NUMA_NO_NODE)) {
->  		set_freepointer(s, object, c->freelist);
->  		c->freelist = object;
+> On Thu, Feb 24, 2011 at 3:45 PM, jacob pan
+> <jacob.jun.pan@linux.intel.com> wrote:
+> > I played with v3 and v4 of the CFS bandwidth patch. When the cpu
+> > cgroup exceeds its cfs_quota, it does have the same effect as this
+> > patch in terms of freeze/thaw at given period and allowed runtime.
+> > But when the cgroup cpu usage is below cfs_quota, it is not
+> > throttled. Therefore, it cannot reduce wakeups.
 > 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> How about a userspace daemon that periodically flips the CPU quota for
+> the cgroup between zero and the group's runnable level? Wouldn't that
+> achieve what you need pretty easily without having to introduce
+> additional complexity and threads into the kernel?
+I think it should work but with little bit more overhead than
+doing the same in the kernel. It will also need one periodic timer per
+cgroup. Two extra timer wake ups for each time slice to run.
+Thanks for the great suggestion. I will do some experiment with it.
