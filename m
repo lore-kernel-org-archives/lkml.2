@@ -1,119 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab1BYPjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 10:39:44 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:46042 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab1BYPjn (ORCPT
+	id S1755873Ab1BYPqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 10:46:03 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42783 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab1BYPqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 10:39:43 -0500
-X-IronPort-AV: E=Sophos;i="4.62,225,1297036800"; 
-   d="scan'208";a="4510722"
-Date: Fri, 25 Feb 2011 15:40:18 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH 6/7] xen: enable event channels to send and receive IPIs
- for PV on HVM guests
-In-Reply-To: <20110222193052.GB17866@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1102251539500.2156@kaball-desktop>
-References: <alpine.DEB.2.00.1102161739370.2826@kaball-desktop> <1297878787-378-6-git-send-email-stefano.stabellini@eu.citrix.com> <20110222193052.GB17866@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 25 Feb 2011 10:46:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uvSrSuawqozAV3p3mFF8xVoP3pl2U/Ri1ehQu/hnr3QNeUPr8ET7tancLYooRwEqU3
+         rbTchuszF0iPEDfaiRMkoWp4UtUTR7vfYXUJrJeDMBrIKwj2YcNz1T4H7EvkemENYOE3
+         u/8HTyx9CxrXhxFGY+w+pLxr2zlpK+PfWh4oE=
+Date: Fri, 25 Feb 2011 16:45:55 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110225154555.GP24828@htj.dyndns.org>
+References: <20110209141803.GH3770@htj.dyndns.org>
+ <201102132325.55353.vda.linux@googlemail.com>
+ <20110214151340.GP18742@htj.dyndns.org>
+ <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+ <20110214173012.GA18742@htj.dyndns.org>
+ <AANLkTinntVGcOdZSS3gWz39eq3EDiMxXgYfc6+M1Z0iE@mail.gmail.com>
+ <20110221151619.GM31267@htj.dyndns.org>
+ <20110221152855.GA20769@redhat.com>
+ <20110222162454.GB31267@htj.dyndns.org>
+ <20110224210819.GB12258@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110224210819.GB12258@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Feb 2011, Konrad Rzeszutek Wilk wrote:
-> On Wed, Feb 16, 2011 at 05:53:06PM +0000, stefano.stabellini@eu.citrix.com wrote:
-> > From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > Enable the usage of event channels to send and receive IPIs when
-> > running as a PV on HVM guest.
+Hello,
+
+On Thu, Feb 24, 2011 at 10:08:19PM +0100, Oleg Nesterov wrote:
+> On 02/22, Tejun Heo wrote:
+> > > What is important, I think ptrace should respect SIGNAL_STOP_STOPPED.
+> > > IOW, when the tracee is group-stopped (TASK_STOPPED or TASK_TRACED,
+> > > doesn't matter), ptrace_resume() should not wake it up, but merely
+> > > do set_task_state(TASK_STATE) and make it resumeable by SIGCONT.
+> >
+> > I don't think that's gonna fly.  It first is a very user-visible
+> > change to how ptrace_resume() works
 > 
-> Why not squash this with the other patch? After this, the only thing
-> that the other patch had done was to add in the 'xen_hvm_cpu_notify' function
-> a call to setup the spinlocks..
+> Yes. But can't resist, this is a bit unfair ;) It was you who convinced
+> me we should cleanup this horror somehow, even if we break some corner
+> cases.
 
-Yeah, I'll do that.
+Okay, but I don't think I have changed my position.  Things like the
+weird race windows visible from some other thread fall in weird corner
+cases but the basic stop/resume behavior is much more fundamental than
+that and I don't think it would be wise to change that when there are
+other ways to solve the problems.  I was referring more to the subtle
+implementation details which prevent the problems from being solved
+than changing the model itself.
 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/x86/xen/enlighten.c |   16 +---------------
-> >  arch/x86/xen/smp.c       |   42 ++++++++++++++++++++++++++++++++++++++++++
-> >  arch/x86/xen/xen-ops.h   |    2 ++
-> >  3 files changed, 45 insertions(+), 15 deletions(-)
-> > 
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index 9c1628b..fe02574 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1343,20 +1343,6 @@ static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
-> >  	.notifier_call	= xen_hvm_cpu_notify,
-> >  };
-> >  
-> > -static void xen_hvm_spinlock_init(void)
-> > -{
-> > -	if (!xen_have_vector_callback)
-> > -		return;
-> > -	xen_init_lock_cpu(0);
-> > -	xen_init_spinlocks();
-> > -}
-> > -
-> > -static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
-> > -{
-> > -	native_smp_prepare_cpus(max_cpus);
-> > -	xen_hvm_spinlock_init();
-> > -}
-> > -
-> >  static void __init xen_hvm_guest_init(void)
-> >  {
-> >  	int r;
-> > @@ -1370,13 +1356,13 @@ static void __init xen_hvm_guest_init(void)
-> >  
-> >  	if (xen_feature(XENFEAT_hvm_callback_vector))
-> >  		xen_have_vector_callback = 1;
-> > +	xen_hvm_smp_init();
-> >  	register_cpu_notifier(&xen_hvm_cpu_notifier);
-> >  	xen_unplug_emulated_devices();
-> >  	have_vcpu_info_placement = 0;
-> >  	x86_init.irqs.intr_init = xen_init_IRQ;
-> >  	xen_hvm_init_time_ops();
-> >  	xen_hvm_init_mmu_ops();
-> > -	smp_ops.smp_prepare_cpus = xen_hvm_smp_prepare_cpus;
-> >  }
-> >  
-> >  static bool __init xen_hvm_platform(void)
-> > diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> > index 72a4c79..2300d4b 100644
-> > --- a/arch/x86/xen/smp.c
-> > +++ b/arch/x86/xen/smp.c
-> > @@ -509,3 +509,45 @@ void __init xen_smp_init(void)
-> >  	xen_fill_possible_map();
-> >  	xen_init_spinlocks();
-> >  }
-> > +
-> > +static void xen_hvm_spinlock_init(void)
-> > +{
-> > +	if (!xen_have_vector_callback)
-> > +		return;
-> > +	xen_init_lock_cpu(0);
-> > +	xen_init_spinlocks();
-> > +}
-> > +
-> > +static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
-> > +{
-> > +	native_smp_prepare_cpus(max_cpus);
-> > +	WARN_ON(xen_smp_intr_init(0));
-> > +	xen_hvm_spinlock_init();
+> However, again, I can't argue. Perhaps this change is too radical.
+
+Or maybe I'm just throwing out different arguments as I see fit.  :-P
+
+Anyways, I'm opposed to changing the principles of the current
+behavior for two reasons.
+
+1. Changing those would be too visible and can be avoided by taking a
+   different approach.
+
+2. I think, in principle, the current per-task behavior is better than
+   the proposed behavior of making jctl and ptrace intertwined.
+
+> > As Jan's examples showed, there are things which the
+> > debugger does behind group stop's back and some of them are quite
+> > legitimate and useful things to do like running some code
 > 
-> Why not merge 'xen_hvm_spinlock_init' in here?
+> Yes. This can surprise a user which runs the unmodified debugger.
+
+Yeap, it would.
+
+> > If you mix ptrace trap and group stop and then fix group stop
+> > notification, not only multithreaded debugging becomes quite
+> > cumbersome (suddenly ptracing becomes per-process thing instead of
+> > per-thread),
 > 
+> It should be, imho. Like SIGKILL, SIGSTOP/SIGCONT are not per-thread.
+> This is per-process thing.
 
-sure
+jctl should be and will stay to be per-process, but that doesn't mean
+ptrace needs to interact with them at process level.  ptrace can still
+be per-task and operate beneath jctl, which is what I'm proposing to
+do.
 
+Requiring ptrace to follow jctl's rules might be conceptually
+appealing (not to me) but it changes the current behavior a lot and
+affects multithread debugging capability significantly.  I really
+can't see much upside of such change.
+
+> > it becomes almost impossible to debug jctl behaviors.
+> > Jctl becomes completely intertwined with ptracing and the real parent
+> > would get numerous notifications during the course of debugging.
+> 
+> Again, I think this is a win. The real parent should know that, say,
+> its child becomes running after it was stopped. It does not matter
+> why it was CLD_CONTINUED, it was resumed and that is all.
+
+I see and we do disagree.  :-)
+
+> > I think they belong to different layers and they should stack instead
+> > of mix.  I'll try to write up a summary for how I think it can be done
+> > later
+> 
+> OK. You know, we already spent sooooooooooooooooooooooooooooooooooooooo
+> much time discussing this, I have the strong desire to agree in advance
+> with anything new ;)
+
+Yeah!!  I'll try to write it up tomorrow.
+
+> > but in short I think we just need two more PTRACE calls (one for
+> > combined SIGSTOPless attach + INTERRUPT
+> 
+> Yes, we are discussing these requests on archer,
+
+Can we please do that on LKML?  It's a kernel change after all.
+
+> > and the other for jctl monitoring)
+> 
+> Of course, we can add the new requests to help gdb/strace/whatever
+> to handle jctl. In fact I think we should in any case.
+> 
+> But this is "easy". In the context of this discussion, my only concern
+> is the current behaviour.
+
+IMHO, as long as we don't break the current users in any significant
+way, it should be okay, but I don't think we can or should make
+fundamental changes to the existing behaviors.  My position is, I
+guess, to change the things which prevent us from implementing the new
+things.
+
+Thank you.
+
+-- 
+tejun
