@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab1BYS3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:29:06 -0500
-Received: from mail.fuw.edu.pl ([193.0.80.14]:42757 "EHLO mail.fuw.edu.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932436Ab1BYS3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:29:05 -0500
-From: "R. J. Wysocki" <Rafal.Wysocki@fuw.edu.pl>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
-Date: Fri, 25 Feb 2011 19:28:22 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: "Tardy, Pierre" <pierre.tardy@intel.com>, Chris Ball <cjb@laptop.org>,
-        Pierre Tardy <tardyp@gmail.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Gao, Yunpeng" <yunpeng.gao@intel.com>
-References: <cover.1297014479.git.pierre.tardy@intel.com> <8250E4885F9967469CAC3FB5CBA2CE69935212DEA0@irsmsx501.ger.corp.intel.com> <20110225145440.GA31620@srcf.ucam.org>
-In-Reply-To: <20110225145440.GA31620@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102251928.22328.rwys@fuw.edu.pl>
+	id S932427Ab1BYSeV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:34:21 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43336
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753474Ab1BYSeU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:34:20 -0500
+Date: Fri, 25 Feb 2011 10:34:56 -0800 (PST)
+Message-Id: <20110225.103456.226779149.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: ratbert.chuang@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhutchings@solarflare.com,
+        joe@perches.com, dilinger@queued.net, mirqus@gmail.com,
+        ratbert@faraday-tech.com
+Subject: Re: [PATCH ref0] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1298631127.2659.22.camel@edumazet-laptop>
+References: <AANLkTikXUyQy+fjFSwagB3Uud2JPodsR2yFtt+jiZPSk@mail.gmail.com>
+	<AANLkTikmqQfT1s2Z6J+KYmqi0CuCc4+2k67eeb4ydtCM@mail.gmail.com>
+	<1298631127.2659.22.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 25, 2011, Matthew Garrett wrote:
-> On Fri, Feb 25, 2011 at 07:33:12AM +0000, Tardy, Pierre wrote:
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 25 Feb 2011 11:52:07 +0100
+
+> Le vendredi 25 février 2011 à 17:45 +0800, Po-Yu Chuang a écrit :
 > 
-> > My understanding is the pci driver is not supposed to do any set_power_state/pci_save_state/wake_enable.
-> > Everything is supposed to be generically handle by pci frameworks's runtime_pm impl.
-> > Need confirmation from Rafael.
+>> It's a little faster than v5 now. Thanks.
+>> I will submit the current version later.
+>> 
+>> One more question just curious, why 128 bytes?
 > 
-> The core can only enable PME generation, it can't configure what 
-> generates PMEs. There's a register in sdhci that needs to be programmed 
-> to enable wakeups on card insert/removal/interrupt. If you don't then 
-> you won't get a PME no matter what the core does.
+> Probably its best for NIU hardware specs
+> 
+> You could try 64, as it should be enough for most IP/TCP/UDP processing.
 
-That's correct.  The driver shoulnd't touch the generic-PCI part of wakeup
-preparation, but it _should_ configure the device-specific part of it.
-
-It's quite similar to network adapters where you have to configure the adapter
-to react to magic packets, for example, in addition to the PCI PME setup done
-by the core.
-
-Thanks,
-Rafael
+IPV6.
