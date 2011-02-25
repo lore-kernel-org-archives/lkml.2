@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab1BYVit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 16:38:49 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:54283 "EHLO
+	id S932722Ab1BYViy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 16:38:54 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:50267 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab1BYVir (ORCPT
+	with ESMTP id S932545Ab1BYVix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 16:38:47 -0500
+	Fri, 25 Feb 2011 16:38:53 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=uLInal8Wnw7nsLb3kojm49vPA+ys3Jtaflvpr/I1OKlKrakaeBBoMCuCT2Vgz+cix
-	Kti7v6y6NLbkxA55W1j7w==
+	b=G6OC5kwKFkBQdVibdG1+UoXsT77FdMm5+2Y8NJtdhISMB7XSZ1G5O/U3JnKSytCH1
+	XNLEYfWyFdNF/qotkx0Zg==
 From: Greg Thelen <gthelen@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -25,9 +25,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Chad Talbott <ctalbott@google.com>,
         Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>,
         Greg Thelen <gthelen@google.com>
-Subject: [PATCH v5 3/9] writeback: convert variables to unsigned
-Date: Fri, 25 Feb 2011 13:35:54 -0800
-Message-Id: <1298669760-26344-4-git-send-email-gthelen@google.com>
+Subject: [PATCH v5 2/9] memcg: add page_cgroup flags for dirty page tracking
+Date: Fri, 25 Feb 2011 13:35:53 -0800
+Message-Id: <1298669760-26344-3-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1298669760-26344-1-git-send-email-gthelen@google.com>
 References: <1298669760-26344-1-git-send-email-gthelen@google.com>
@@ -35,39 +35,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert two balance_dirty_pages() page counter variables (nr_reclaimable
-and nr_writeback) from 'long' to 'unsigned long'.
+Add additional flags to page_cgroup to track dirty pages
+within a mem_cgroup.
 
-These two variables are used to store results from global_page_state().
-global_page_state() returns unsigned long and carefully sums per-cpu
-counters explicitly avoiding returning a negative value.
-
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrea Righi <arighi@develer.com>
 Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 ---
-Changelog since v4:
-- Created this patch for clarity.  Previously this patch was integrated within
-  the "writeback: create dirty_info structure" patch.
+ include/linux/page_cgroup.h |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
- mm/page-writeback.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 2cb01f6..4408e54 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -478,8 +478,10 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
- static void balance_dirty_pages(struct address_space *mapping,
- 				unsigned long write_chunk)
- {
--	long nr_reclaimable, bdi_nr_reclaimable;
--	long nr_writeback, bdi_nr_writeback;
-+	unsigned long nr_reclaimable;
-+	long bdi_nr_reclaimable;
-+	unsigned long nr_writeback;
-+	long bdi_nr_writeback;
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index f5de21d..a002ba8 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -10,6 +10,9 @@ enum {
+ 	/* flags for mem_cgroup and file and I/O status */
+ 	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
+ 	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
++	PCG_FILE_DIRTY, /* page is dirty */
++	PCG_FILE_WRITEBACK, /* page is under writeback */
++	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
+ 	/* No lock in page_cgroup */
+ 	PCG_ACCT_LRU, /* page has been accounted for (under lru_lock) */
+ 	__NR_PCG_FLAGS,
+@@ -67,6 +70,10 @@ static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
+ static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+ 	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+ 
++#define TESTSETPCGFLAG(uname, lname)			\
++static inline int TestSetPageCgroup##uname(struct page_cgroup *pc)	\
++	{ return test_and_set_bit(PCG_##lname, &pc->flags);  }
++
+ /* Cache flag is set only once (at allocation) */
+ TESTPCGFLAG(Cache, CACHE)
+ CLEARPCGFLAG(Cache, CACHE)
+@@ -86,6 +93,22 @@ SETPCGFLAG(FileMapped, FILE_MAPPED)
+ CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+ TESTPCGFLAG(FileMapped, FILE_MAPPED)
+ 
++SETPCGFLAG(FileDirty, FILE_DIRTY)
++CLEARPCGFLAG(FileDirty, FILE_DIRTY)
++TESTPCGFLAG(FileDirty, FILE_DIRTY)
++TESTCLEARPCGFLAG(FileDirty, FILE_DIRTY)
++TESTSETPCGFLAG(FileDirty, FILE_DIRTY)
++
++SETPCGFLAG(FileWriteback, FILE_WRITEBACK)
++CLEARPCGFLAG(FileWriteback, FILE_WRITEBACK)
++TESTPCGFLAG(FileWriteback, FILE_WRITEBACK)
++
++SETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++CLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTCLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTSETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++
+ SETPCGFLAG(Migration, MIGRATION)
+ CLEARPCGFLAG(Migration, MIGRATION)
+ TESTPCGFLAG(Migration, MIGRATION)
 -- 
 1.7.3.1
 
