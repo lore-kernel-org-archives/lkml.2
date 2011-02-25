@@ -1,45 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab1BYSeV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:34:21 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43336
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753474Ab1BYSeU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:34:20 -0500
-Date: Fri, 25 Feb 2011 10:34:56 -0800 (PST)
-Message-Id: <20110225.103456.226779149.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: ratbert.chuang@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhutchings@solarflare.com,
-        joe@perches.com, dilinger@queued.net, mirqus@gmail.com,
-        ratbert@faraday-tech.com
-Subject: Re: [PATCH ref0] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1298631127.2659.22.camel@edumazet-laptop>
-References: <AANLkTikXUyQy+fjFSwagB3Uud2JPodsR2yFtt+jiZPSk@mail.gmail.com>
-	<AANLkTikmqQfT1s2Z6J+KYmqi0CuCc4+2k67eeb4ydtCM@mail.gmail.com>
-	<1298631127.2659.22.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1756210Ab1BYSg5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:36:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753434Ab1BYSg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:36:56 -0500
+Subject: Re: [PATCH 1/5] fsnotify: grab inode ref in add_inode_mark()
+ instead of add_mark()
+From: Eric Paris <eparis@redhat.com>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Date: Fri, 25 Feb 2011 13:36:35 -0500
+In-Reply-To: <1298309609-19218-2-git-send-email-LinoSanfilippo@gmx.de>
+References: <1298309609-19218-1-git-send-email-LinoSanfilippo@gmx.de>
+	 <1298309609-19218-2-git-send-email-LinoSanfilippo@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1298658996.23085.5.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Fri, 25 Feb 2011 11:52:07 +0100
+On Mon, 2011-02-21 at 18:33 +0100, Lino Sanfilippo wrote:
+> Currently the type of a mark is checked in fsnotify_add_mark() and if its an
+> inode mark a ref is grabbed. Since this part is only needed for inode marks it
+> is shiftet to add_inode_mark().
+> Beside this the fsobject is assigned to the mark outside of the fsobject lock.
+> 
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-> Le vendredi 25 février 2011 à 17:45 +0800, Po-Yu Chuang a écrit :
-> 
->> It's a little faster than v5 now. Thanks.
->> I will submit the current version later.
->> 
->> One more question just curious, why 128 bytes?
-> 
-> Probably its best for NIU hardware specs
-> 
-> You could try 64, as it should be enough for most IP/TCP/UDP processing.
+I think your patch series is making a noticeable change which I don't
+think I'm comfortable with.  The current code does not pin inodes in
+core if they only have ignored masks.  Under memory pressure those
+inodes can get eviced and the mark will get cleaned up.  My glance at
+this code leads me to believe that all inodes with any mark is going to
+be pinned in core.  I don't think that's a good idea for AV vendor use
+where they might want to watch everything on the system with mount point
+marks and put ignored marks on everything that comes along to cache
+allows.
 
-IPV6.
+The fact that inodes might not be pinned in core is the reason for some
+of the stupid difficulty.  There is probably some way to work it out but
+I think it's something I'm going to need to think about.
+
+Am I miss-reading your changes?  I think they will work, just maybe not
+quite how I originally intended.  I probably should write an fanotify
+stress tester that stresses both marks with real masks and with only
+ignored_masks...
+
+-Eric
+
+> ---
+>  fs/notify/inode_mark.c    |   12 +++++++++---
+>  fs/notify/mark.c          |    2 --
+>  fs/notify/vfsmount_mark.c |    9 ++++++---
+>  3 files changed, 15 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+> index d438f11..168a242 100644
+> --- a/fs/notify/inode_mark.c
+> +++ b/fs/notify/inode_mark.c
+> @@ -188,13 +188,12 @@ int fsnotify_add_inode_mark(struct fsnotify_mark *mark,
+>  	int ret = 0;
+>  
+>  	mark->flags |= FSNOTIFY_MARK_FLAG_INODE;
+> +	mark->i.inode = igrab(inode);
+> +	mark->flags |= FSNOTIFY_MARK_FLAG_OBJECT_PINNED;
+>  
+>  	assert_spin_locked(&mark->lock);
+>  
+>  	spin_lock(&inode->i_lock);
+> -
+> -	mark->i.inode = inode;
+> -
+>  	/* is mark the first mark? */
+>  	if (hlist_empty(&inode->i_fsnotify_marks)) {
+>  		hlist_add_head_rcu(&mark->i.i_list, &inode->i_fsnotify_marks);
+> @@ -228,6 +227,13 @@ out:
+>  	fsnotify_recalc_inode_mask_locked(inode);
+>  	spin_unlock(&inode->i_lock);
+>  
+> +	if (ret) {
+> +		mark->flags &= ~FSNOTIFY_MARK_FLAG_OBJECT_PINNED;
+> +		iput(mark->i.inode);
+> +		mark->i.inode = NULL;
+> +		mark->flags &= ~FSNOTIFY_MARK_FLAG_INODE;
+> +	}
+> +
+>  	return ret;
+>  }
+>  
+> diff --git a/fs/notify/mark.c b/fs/notify/mark.c
+> index 11cfedc..422de6e 100644
+> --- a/fs/notify/mark.c
+> +++ b/fs/notify/mark.c
+> @@ -219,8 +219,6 @@ int fsnotify_add_mark_locked(struct fsnotify_mark *mark,
+>  		BUG();
+>  	if (ret)
+>  		goto err;
+> -	/* this will pin the object if appropriate */
+> -	fsnotify_set_mark_mask_locked(mark, mark->mask);
+>  
+>  	spin_unlock(&mark->lock);
+>  
+> diff --git a/fs/notify/vfsmount_mark.c b/fs/notify/vfsmount_mark.c
+> index 04f5929..c43c310 100644
+> --- a/fs/notify/vfsmount_mark.c
+> +++ b/fs/notify/vfsmount_mark.c
+> @@ -145,13 +145,11 @@ int fsnotify_add_vfsmount_mark(struct fsnotify_mark *mark,
+>  	int ret = 0;
+>  
+>  	mark->flags |= FSNOTIFY_MARK_FLAG_VFSMOUNT;
+> +	mark->m.mnt = mnt;
+>  
+>  	assert_spin_locked(&mark->lock);
+>  
+>  	spin_lock(&mnt->mnt_root->d_lock);
+> -
+> -	mark->m.mnt = mnt;
+> -
+>  	/* is mark the first mark? */
+>  	if (hlist_empty(&mnt->mnt_fsnotify_marks)) {
+>  		hlist_add_head_rcu(&mark->m.m_list, &mnt->mnt_fsnotify_marks);
+> @@ -185,5 +183,10 @@ out:
+>  	fsnotify_recalc_vfsmount_mask_locked(mnt);
+>  	spin_unlock(&mnt->mnt_root->d_lock);
+>  
+> +	if (ret) {
+> +		mark->m.mnt = NULL;
+> +		mark->flags &= ~FSNOTIFY_MARK_FLAG_VFSMOUNT;
+> +	}
+> +
+>  	return ret;
+>  }
+
+
