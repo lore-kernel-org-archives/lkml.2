@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab1BYSBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 13:01:06 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:56231 "EHLO gir.skynet.ie"
+	id S1756325Ab1BYSBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 13:01:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12657 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756058Ab1BYSBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 13:01:02 -0500
-From: Mel Gorman <mel@csn.ul.ie>
+	id S1756304Ab1BYSBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 13:01:20 -0500
+Date: Fri, 25 Feb 2011 18:52:02 +0100
+From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
-        Clemens Ladisch <cladisch@googlemail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled while isolating pages for migration
-Date: Fri, 25 Feb 2011 18:00:56 +0000
-Message-Id: <1298656856-6074-3-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1298656856-6074-1-git-send-email-mel@csn.ul.ie>
-References: <1298656856-6074-1-git-send-email-mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+Subject: [PATCH 0/4 RESEND] exec: unify compat/non-compat code
+Message-ID: <20110225175202.GA19059@redhat.com>
+References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com> <20101201182747.GB6143@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101201182747.GB6143@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+On 12/01, Oleg Nesterov wrote:
+>
+> On 12/01, Milton Miller wrote:
+> >
+> > > +#ifdef CONFIG_COMPAT
+> > > +int compat_do_execve(char * filename,
+> > > +	compat_uptr_t __user *argv,
+> > > +	compat_uptr_t __user *envp,
+> > > +	struct pt_regs * regs)
+> > > +{
+> > > +	return do_execve_common(filename,
+> > > +				(void __user*)argv, (void __user*)envp,
+> >
+> > Shouldn't these be compat_ptr(argv)?  (makes a difference on s390)
+>
+> I'll recheck, but I don't think so. Please note that compat_ptr()
+> accepts "compat_uptr_t", not "compat_uptr_t *".
+>
+> argv should be correct as a pointer to user-space, otherwise the
+> current code is buggy. For example, compat_do_execve() passes
+> argv to compat_count() which does get_user(argv) without any
+> conversion.
 
-compaction_alloc() isolates pages for migration in isolate_migratepages. While
-it's scanning, IRQs are disabled on the mistaken assumption the scanning
-should be short. Tests show this to be true for the most part but
-contention times on the LRU lock can be increased. Before this patch,
-the IRQ disabled times for a simple test looked like
+So, once again, this should not (and can not) be compat_ptr(argv) afaics.
 
-Total sampled time IRQs off (not real total time): 5493
-Event shrink_inactive_list..shrink_zone                  1596 us count 1
-Event shrink_inactive_list..shrink_zone                  1530 us count 1
-Event shrink_inactive_list..shrink_zone                   956 us count 1
-Event shrink_inactive_list..shrink_zone                   541 us count 1
-Event shrink_inactive_list..shrink_zone                   531 us count 1
-Event split_huge_page..add_to_swap                        232 us count 1
-Event save_args..call_softirq                              36 us count 1
-Event save_args..call_softirq                              35 us count 2
-Event __wake_up..__wake_up                                  1 us count 1
+I don't understand the s390 asm, but compat_wrapper.S:sys32_execve_wrapper
+looks correct. If not, the current code is already buggy and s390 should
+be fixed. argv/envp are not compat ptrs, they just point to compat_ data,
+we should not do any conversion.
 
-This patch reduces the worst-case IRQs-disabled latencies by releasing the
-lock every SWAP_CLUSTER_MAX pages that are scanned and releasing the CPU if
-necessary. The cost of this is that the processing performing compaction will
-be slower but IRQs being disabled for too long a time has worse consequences
-as the following report shows;
+I am resending this series unchanged, plus the trivial 5/5 to document
+acct_arg_size().
 
-Total sampled time IRQs off (not real total time): 4367
-Event shrink_inactive_list..shrink_zone                   881 us count 1
-Event shrink_inactive_list..shrink_zone                   875 us count 1
-Event shrink_inactive_list..shrink_zone                   868 us count 1
-Event shrink_inactive_list..shrink_zone                   555 us count 1
-Event split_huge_page..add_to_swap                        495 us count 1
-Event compact_zone..compact_zone_order                    269 us count 1
-Event split_huge_page..add_to_swap                        266 us count 1
-Event shrink_inactive_list..shrink_zone                    85 us count 1
-Event save_args..call_softirq                              36 us count 2
-Event __wake_up..__wake_up                                  1 us count 1
+----------------------------------------------------------------------
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/compaction.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+execve code in fs/compat.c must die. It is very hard to maintain this
+copy-and-paste horror. And the only reason for this duplication is that
+argv/envp point to char* or compat_uptr_t depending on compat. We can
+add the trivial helper which hides the difference and unify the code.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index f47de94..5babbbb 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -278,9 +278,27 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 	}
- 
- 	/* Time to isolate some pages for migration */
-+	cond_resched();
- 	spin_lock_irq(&zone->lru_lock);
- 	for (; low_pfn < end_pfn; low_pfn++) {
- 		struct page *page;
-+		bool unlocked = false;
-+
-+		/* give a chance to irqs before checking need_resched() */
-+		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			unlocked = true;
-+		}
-+		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
-+			if (!unlocked)
-+				spin_unlock_irq(&zone->lru_lock);
-+			cond_resched();
-+			spin_lock_irq(&zone->lru_lock);
-+			if (fatal_signal_pending(current))
-+				break;
-+		} else if (unlocked)
-+			spin_lock_irq(&zone->lru_lock);
-+
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
- 		nr_scanned++;
--- 
-1.7.2.3
+Oleg.
 
