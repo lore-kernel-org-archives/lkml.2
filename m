@@ -1,216 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab1BYCAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 21:00:55 -0500
+	id S932371Ab1BYCAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 21:00:53 -0500
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:53149 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932340Ab1BYCAv (ORCPT
+	with ESMTP id S932326Ab1BYCAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Feb 2011 21:00:51 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76352304"
+X-IronPort-AV: E=McAfee;i="5400,1158,6267"; a="76352303"
 From: Stepan Moskovchenko <stepanm@codeaurora.org>
 To: davidb@codeaurora.org
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 1/4] msm: iommu: Clock control for the IOMMU driver
-Date: Thu, 24 Feb 2011 18:00:39 -0800
-Message-Id: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org>
+Subject: [PATCH 3/4] msm: iommu: Use ASID tagging instead of VMID tagging
+Date: Thu, 24 Feb 2011 18:00:41 -0800
+Message-Id: <1298599242-21971-3-git-send-email-stepanm@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org>
+References: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clock control to the IOMMU driver. The IOMMU bus clock
-(and potentially an AXI clock) need to be on to gain access
-to IOMMU registers. Actively control these clocks when
-needed instead of leaving them on.
+Use ASID tags in the TLB instead of VMID tags in
+preparation for changes to the secure environment.
 
 Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/iommu.h |    9 ++++-
- arch/arm/mach-msm/iommu.c              |   58 ++++++++++++++++++++++++++++++--
- 2 files changed, 62 insertions(+), 5 deletions(-)
+ arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h |    4 +++-
+ arch/arm/mach-msm/iommu.c                      |    9 ++++-----
+ arch/arm/mach-msm/iommu_dev.c                  |   11 +++++++----
+ 3 files changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
-index 296c0f1..8738a44 100644
---- a/arch/arm/mach-msm/include/mach/iommu.h
-+++ b/arch/arm/mach-msm/include/mach/iommu.h
+diff --git a/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h b/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
+index c2c3da9..bbd397c 100644
+--- a/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
++++ b/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
 @@ -1,4 +1,4 @@
 -/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 +/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License version 2 and
-@@ -19,6 +19,7 @@
- #define MSM_IOMMU_H
+@@ -68,6 +68,7 @@ do { \
+ #define FL_CACHEABLE		(1 << 3)
+ #define FL_TEX0			(1 << 12)
+ #define FL_OFFSET(va)		(((va) & 0xFFF00000) >> 20)
++#define FL_NG			(1 << 17)
 
- #include <linux/interrupt.h>
-+#include <linux/clk.h>
+ /* Second-level page table bits */
+ #define SL_BASE_MASK_LARGE	0xFFFF0000
+@@ -81,6 +82,7 @@ do { \
+ #define SL_CACHEABLE		(1 << 3)
+ #define SL_TEX0			(1 << 6)
+ #define SL_OFFSET(va)		(((va) & 0xFF000) >> 12)
++#define SL_NG			(1 << 11)
 
- /* Sharability attributes of MSM IOMMU mappings */
- #define MSM_IOMMU_ATTR_NON_SH		0x0
-@@ -74,13 +75,17 @@ struct msm_iommu_ctx_dev {
-  * struct msm_iommu_drvdata - A single IOMMU hardware instance
-  * @base:	IOMMU config port base address (VA)
-  * @irq:	Interrupt number
--  *
-+ * @clk:	The bus clock for this IOMMU hardware instance
-+ * @pclk:	The clock for the IOMMU bus interconnect
-+ *
-  * A msm_iommu_drvdata holds the global driver data about a single piece
-  * of an IOMMU hardware instance.
-  */
- struct msm_iommu_drvdata {
- 	void __iomem *base;
- 	int irq;
-+	struct clk *clk;
-+	struct clk *pclk;
- };
-
- /**
+ /* Memory type and cache policy attributes */
+ #define MT_SO			0
 diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
-index e2d58e4..cde3cd0 100644
+index cde3cd0..9c08740 100644
 --- a/arch/arm/mach-msm/iommu.c
 +++ b/arch/arm/mach-msm/iommu.c
-@@ -1,4 +1,4 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 and
-@@ -26,6 +26,7 @@
- #include <linux/spinlock.h>
- #include <linux/slab.h>
- #include <linux/iommu.h>
-+#include <linux/clk.h>
-
- #include <asm/cacheflush.h>
- #include <asm/sizes.h>
-@@ -50,6 +51,30 @@ struct msm_priv {
- 	struct list_head list_attached;
- };
-
-+static int __enable_clocks(struct msm_iommu_drvdata *drvdata)
-+{
-+	int ret;
-+
-+	ret = clk_enable(drvdata->pclk);
-+	if (ret)
-+		goto fail;
-+
-+	if (drvdata->clk) {
-+		ret = clk_enable(drvdata->clk);
-+		if (ret)
-+			clk_disable(drvdata->pclk);
-+	}
-+fail:
-+	return ret;
-+}
-+
-+static void __disable_clocks(struct msm_iommu_drvdata *drvdata)
-+{
-+	if (drvdata->clk)
-+		clk_disable(drvdata->clk);
-+	clk_disable(drvdata->pclk);
-+}
-+
- static int __flush_iotlb(struct iommu_domain *domain)
- {
- 	struct msm_priv *priv = domain->priv;
-@@ -77,9 +102,16 @@ static int __flush_iotlb(struct iommu_domain *domain)
- 			BUG();
-
- 		iommu_drvdata = dev_get_drvdata(ctx_drvdata->pdev->dev.parent);
-+		BUG_ON(!iommu_drvdata);
-+
-+		ret = __enable_clocks(iommu_drvdata);
-+		if (ret)
-+			goto fail;
-+
- 		SET_CTX_TLBIALL(iommu_drvdata->base, ctx_drvdata->num, 0);
-+		__disable_clocks(iommu_drvdata);
- 	}
--
-+fail:
- 	return ret;
+@@ -137,7 +137,6 @@ static void __reset_context(void __iomem *base, int ctx)
+ 	SET_TLBLKCR(base, ctx, 0);
+ 	SET_PRRR(base, ctx, 0);
+ 	SET_NMRR(base, ctx, 0);
+-	SET_CONTEXTIDR(base, ctx, 0);
  }
 
-@@ -265,9 +297,14 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
- 			goto fail;
- 		}
-
-+	ret = __enable_clocks(iommu_drvdata);
-+	if (ret)
-+		goto fail;
-+
- 	__program_context(iommu_drvdata->base, ctx_dev->num,
- 			  __pa(priv->pgtable));
-
-+	__disable_clocks(iommu_drvdata);
- 	list_add(&(ctx_drvdata->attached_elm), &priv->list_attached);
- 	ret = __flush_iotlb(domain);
-
-@@ -303,7 +340,12 @@ static void msm_iommu_detach_dev(struct iommu_domain *domain,
- 	if (ret)
- 		goto fail;
-
-+	ret = __enable_clocks(iommu_drvdata);
-+	if (ret)
-+		goto fail;
-+
- 	__reset_context(iommu_drvdata->base, ctx_dev->num);
-+	__disable_clocks(iommu_drvdata);
- 	list_del_init(&ctx_drvdata->attached_elm);
-
- fail:
-@@ -532,6 +574,10 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
- 	base = iommu_drvdata->base;
- 	ctx = ctx_drvdata->num;
-
-+	ret = __enable_clocks(iommu_drvdata);
-+	if (ret)
-+		goto fail;
-+
- 	/* Invalidate context TLB */
- 	SET_CTX_TLBIALL(base, ctx, 0);
- 	SET_V2PPR_VA(base, ctx, va >> V2Pxx_VA_SHIFT);
-@@ -547,6 +593,7 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
- 	if (GET_FAULT(base, ctx))
- 		ret = 0;
-
-+	__disable_clocks(iommu_drvdata);
- fail:
- 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
- 	return ret;
-@@ -590,7 +637,7 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
- 	struct msm_iommu_drvdata *drvdata = dev_id;
- 	void __iomem *base;
- 	unsigned int fsr;
--	int ncb, i;
-+	int ncb, i, ret;
-
- 	spin_lock(&msm_iommu_lock);
-
-@@ -604,6 +651,10 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
- 	pr_err("Unexpected IOMMU page fault!\n");
- 	pr_err("base = %08x\n", (unsigned int) base);
-
-+	ret = __enable_clocks(drvdata);
-+	if (ret)
-+		goto fail;
-+
- 	ncb = GET_NCB(base)+1;
- 	for (i = 0; i < ncb; i++) {
- 		fsr = GET_FSR(base, i);
-@@ -614,6 +665,7 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
- 			SET_FSR(base, i, 0x4000000F);
- 		}
+ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+@@ -418,11 +417,11 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 		for (i = 0; i < 16; i++)
+ 			*(fl_pte+i) = (pa & 0xFF000000) | FL_SUPERSECTION |
+ 				  FL_AP_READ | FL_AP_WRITE | FL_TYPE_SECT |
+-				  FL_SHARED | pgprot;
++				  FL_SHARED | FL_NG | pgprot;
  	}
-+	__disable_clocks(drvdata);
- fail:
- 	spin_unlock(&msm_iommu_lock);
- 	return 0;
+
+ 	if (len == SZ_1M)
+-		*fl_pte = (pa & 0xFFF00000) | FL_AP_READ | FL_AP_WRITE |
++		*fl_pte = (pa & 0xFFF00000) | FL_AP_READ | FL_AP_WRITE | FL_NG |
+ 					    FL_TYPE_SECT | FL_SHARED | pgprot;
+
+ 	/* Need a 2nd level table */
+@@ -447,7 +446,7 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+
+
+ 	if (len == SZ_4K)
+-		*sl_pte = (pa & SL_BASE_MASK_SMALL) | SL_AP0 | SL_AP1 |
++		*sl_pte = (pa & SL_BASE_MASK_SMALL) | SL_AP0 | SL_AP1 | SL_NG |
+ 					  SL_SHARED | SL_TYPE_SMALL | pgprot;
+
+ 	if (len == SZ_64K) {
+@@ -455,7 +454,7 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+
+ 		for (i = 0; i < 16; i++)
+ 			*(sl_pte+i) = (pa & SL_BASE_MASK_LARGE) | SL_AP0 |
+-				SL_AP1 | SL_SHARED | SL_TYPE_LARGE | pgprot;
++			    SL_NG | SL_AP1 | SL_SHARED | SL_TYPE_LARGE | pgprot;
+ 	}
+
+ 	ret = __flush_iotlb(domain);
+diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
+index 69acd1e..c1722eb 100644
+--- a/arch/arm/mach-msm/iommu_dev.c
++++ b/arch/arm/mach-msm/iommu_dev.c
+@@ -330,14 +330,17 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
+ 		SET_M2VCBR_N(drvdata->base, mid, 0);
+ 		SET_CBACR_N(drvdata->base, c->num, 0);
+
+-		/* Set VMID = MID */
+-		SET_VMID(drvdata->base, mid, mid);
++		/* Set VMID = 0 */
++		SET_VMID(drvdata->base, mid, 0);
+
+ 		/* Set the context number for that MID to this context */
+ 		SET_CBNDX(drvdata->base, mid, c->num);
+
+-		/* Set MID associated with this context bank */
+-		SET_CBVMID(drvdata->base, c->num, mid);
++		/* Set MID associated with this context bank to 0*/
++		SET_CBVMID(drvdata->base, c->num, 0);
++
++		/* Set the ASID for TLB tagging for this context */
++		SET_CONTEXTIDR_ASID(drvdata->base, c->num, c->num);
+
+ 		/* Set security bit override to be Non-secure */
+ 		SET_NSCFG(drvdata->base, mid, 3);
 --
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
