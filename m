@@ -1,139 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab1BYOpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 09:45:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58801 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754361Ab1BYOpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 09:45:16 -0500
-Message-ID: <4D67C077.6060108@redhat.com>
-Date: Fri, 25 Feb 2011 09:45:11 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S932583Ab1BYOtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 09:49:39 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:47097 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932287Ab1BYOth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 09:49:37 -0500
+Date: Fri, 25 Feb 2011 11:49:21 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fbdev@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel@lists.freedesktop.org, Borislav Petkov <bp@amd64.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: Re: Linux 2.6.38-rc6
+Message-ID: <20110225144920.GA2337@herton-IdeaPad-Y430>
+References: <AANLkTi=Ys4mb4pc28cH4NMdtMgb2KewJbkXEGJmEP4J0@mail.gmail.com>
+ <AANLkTinxHVDwSCouTaZEvR3yTJnSPAas9z6JauGDdS7=@mail.gmail.com>
+ <AANLkTinD2cC9dGg2eBtZQhWvhSsuH2BcWDj8byLhWWso@mail.gmail.com>
+ <AANLkTin8+F003-jFoQ0pd9OjN1oT2iqyNjd58SDJZuMK@mail.gmail.com>
+ <AANLkTinzse1ZfEvAuWfuZ_8VDypcnD5poU6GwOdYTgWh@mail.gmail.com>
+ <AANLkTi=wbtcAOmYE8UF7ynPZ_nR3ZXxVRBcuMVGNK4u0@mail.gmail.com>
+ <AANLkTin7+AHAqKz5T-1_=N6tqPytyT4ooqyJuhHC6ET=@mail.gmail.com>
+ <1298596499.10585.27.camel@clockmaker-el6>
+ <AANLkTikQOBGfe8dGv05M8YD=CK+ToUQ4J8s_n9FncfPA@mail.gmail.com>
+ <AANLkTinq_gyAFKb_i_4j6qzkAmoSuAS+k_eCRFKFy5wL@mail.gmail.com>
 MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-References: <20110223234258.GA29548@nik-comp.lan> <4D663044.3080000@redhat.com> <20110224104800.GA29840@pcnci.linuxbox.cz> <4D663886.6080803@redhat.com> <20110224112742.GB29840@pcnci.linuxbox.cz> <4D664E85.8070808@redhat.com> <20110224124151.GK25673@pcnci.linuxbox.cz> <4D665449.4050908@redhat.com> <20110224125702.GC29840@pcnci.linuxbox.cz> <20110225104823.GD29840@pcnci.linuxbox.cz>
-In-Reply-To: <20110225104823.GD29840@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinq_gyAFKb_i_4j6qzkAmoSuAS+k_eCRFKFy5wL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2011 05:48 AM, Nikola Ciprich wrote:
-> (CC: Zachary)
->
-> Hello,
-> Zachary, in case You haven't noticed the thread, we're trying
-> to find out the reason why 32bit SMP guests stopped working
-> in 2.6.37.
-> bisect shows this as the culprit:
->    
+On Fri, Feb 25, 2011 at 03:56:20AM +0200, Anca Emanuel wrote:
+> On Fri, Feb 25, 2011 at 3:47 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> > On Fri, Feb 25, 2011 at 3:14 AM, Dave Airlie <airlied@redhat.com> wrote:
+> >> On Thu, 2011-02-24 at 16:54 -0800, Linus Torvalds wrote:
+> >>> On Thu, Feb 24, 2011 at 4:48 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> >>> >
+> >>> > diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> >>> > index e2bf953..e8f8925 100644
+> >>> > --- a/drivers/video/fbmem.c
+> >>> > +++ b/drivers/video/fbmem.c
+> >>> > @@ -1511,6 +1511,7 @@ void remove_conflicting_framebuffers(struct
+> >>> > apertures_struct *a,
+> >>> >                               "%s vs %s - removing generic driver\n",
+> >>> >                               name, registered_fb[i]->fix.id);
+> >>> >                        unregister_framebuffer(registered_fb[i]);
+> >>> > +                       registered_fb[i] = NULL;
+> >>> >
+> >>> > Tested the patch, and now I get this:
+> >>> > dmesg: http://pastebin.com/ieMNrA7C
+> >>> >
+> >>> > [   12.252328] BUG: unable to handle kernel NULL pointer dereference
+> >>> > at 00000000000003b8
+> >>> > [   12.252342] IP: [<ffffffff81311178>] fb_mmap+0x58/0x1d0
+> >>>
+> >>> Ok, goodie.
+> >>>
+> >>> Or not so goodie, but it does make it clear that yeah, the fb code
+> >>> seems to be using stale pointers from that registered_fb[] array, and
+> >>> the whole unregistration process is just racing with people using it.
+> >>>
+> >>> Herton had that much bigger patch, can you test it?
+> >>
+> >> I think Andy's patch worked, not sure why it fell between the cracks,
+> >> either didn't appear on lkml or in my inbox at all.
+> >>
+> >> if we can get Herton to repost it properly + a tested by I'm happy for
+> >> it to go in.
+> >>
+> >> Dave.
+> >>
+> >>
+> >
+> > Tested Andy's patch and it works !
+> > http://kernel.ubuntu.com/git?p=ubuntu/ubuntu-natty.git;a=commit;h=c5a742b5f78e161d6a13853a7e3e6e1dfa429e69
+> >
+> > Tested-by: Anca Emanuel <anca.emanuel@gmail.com>
+> >
+> 
+> link to patch: http://is.gd/otIfGc
 
-I was not aware of the thread.  Please cc me directly, or add a keyword 
-I track - timekeeping, TSC..
+Adding Andy on CC (btw he is away for today, may get some time to answer).
 
-> e48672fa25e879f7ae21785c7efd187738139593 is first bad commit
-> commit e48672fa25e879f7ae21785c7efd187738139593
-> Author: Zachary Amsden<zamsden@redhat.com>
-> Date:   Thu Aug 19 22:07:23 2010 -1000
->
->      KVM: x86: Unify TSC logic
->
->      Move the TSC control logic from the vendor backends into x86.c
->      by adding adjust_tsc_offset to x86 ops.  Now all TSC decisions
->      can be done in one place.
->
->      Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->      Signed-off-by: Marcelo Tosatti<mtosatti@redhat.com>
->    
+Andy, can you repost the patch?
 
-That change alone may not bisect well; without further fixes on top of 
-it, you may end up with a hang or stall, which is likely to manifest in 
-a vendor-specific way.
-
-Basically there were a few differences in the platform code about how 
-TSC was dealt with on systems which did not have stable clocks, this 
-brought the logic into one location, but there was a slight change to 
-the logic here.
-
-Note very carefully, the logic on SVM is gated by a condition before 
-this change:
-
-         if (unlikely(cpu != vcpu->cpu)) {
--               u64 delta;
--
--               if (check_tsc_unstable()) {
--                       /*
--                        * Make sure that the guest sees a monotonically
--                        * increasing TSC.
--                        */
--                       delta = vcpu->arch.host_tsc - native_read_tsc();
--                       svm->vmcb->control.tsc_offset += delta;
--                       if (is_nested(svm))
--                               svm->nested.hsave->control.tsc_offset += 
-delta;
--               }
--               vcpu->cpu = cpu;
--               kvm_migrate_timers(vcpu);
-
-
-So this only happens with a system which reports TSC as unstable.  After 
-the change, KVM itself may report the TSC as unstable:
-
-+       if (unlikely(vcpu->cpu != cpu)) {
-+               /* Make sure TSC doesn't go backwards */
-+               s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
-+                               native_read_tsc() - 
-vcpu->arch.last_host_tsc;
-+               if (tsc_delta < 0)
-+                       mark_tsc_unstable("KVM discovered backwards TSC");
-+               if (check_tsc_unstable())
-+                       kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
-+               kvm_migrate_timers(vcpu);
-+               vcpu->cpu = cpu;
-+       }
-
-If the platform has very small TSC deltas across CPUs, but indicates the 
-TSC is stable, this could result in KVM marking the TSC unstable.  If 
-that is the case, this compensation logic will kick in to avoid 
-backwards TSCs.
-
-Note however, that the logic is not perfect; time which passes while not 
-running on any CPU will be erased, as the delta compensation removes not 
-just backwards, but any elapsed time from the TSC.  In extreme cases, 
-this could result in time appearing to stand still.... with guests 
-failing to boot.
-
-This was addressed with a later change, which catches up the missing time:
-
-commit c285545f813d7b0ce989fd34e42ad1fe785dc65d
-Author: Zachary Amsden <zamsden@redhat.com>
-Date:   Sat Sep 18 14:38:15 2010 -1000
-
-     KVM: x86: TSC catchup mode
-
-     Negate the effects of AN TYM spell while kvm thread is preempted by 
-tracking
-     conversion factor to the highest TSC rate and catching the TSC up 
-when it has
-     fallen behind the kernel view of time.  Note that once triggered, 
-we don't
-     turn off catchup mode.
-
-     A slightly more clever version of this is possible, which only does 
-catchup
-     when TSC rate drops, and which specifically targets only CPUs with 
-broken
-     TSC, but since these all are considered unstable_tsc(), this patch 
-covers
-     all necessary cases.
-
-     Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-     Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-
+--
+[]'s
+Herton
