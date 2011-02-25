@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab1BYCjz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Feb 2011 21:39:55 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:56772 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab1BYCjx convert rfc822-to-8bit (ORCPT
+	id S1754113Ab1BYCkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Feb 2011 21:40:22 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:35168 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab1BYCkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Feb 2011 21:39:53 -0500
+	Thu, 24 Feb 2011 21:40:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=rd3PSxKZy481eZVLLD3mTQalMiporBXqyprW3mz9cN5dfh4CKf4XaULpZYrp87VD30
-         LHN5OxI6bvfxzt3tnR+A==
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=M03A/L22/Jinf/l49ISybB0q2Q/bZvZmlh0PYpmIlwlR/vUUt64Av0YRdj9aw8qa3n
+         cB667r9aJdfEErRH7LDcZAITJduwZibaCCuWZNdAiX5UcqqvIt/B82d8syoaYllvlZPY
+         +b0WZ8DkS3OutCgJAFE56i3A2IBc8GjtGll90=
+Date: Thu, 24 Feb 2011 23:40:14 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@elte.hu
+Subject: Re: [RFC] Performance Events 'Samples' report
+Message-ID: <20110225024014.GA16138@ghostprotocols.net>
+References: <E1PslLC-0000rj-EF@eag09.americas.sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <1298601346.17118.29.camel@m0nster>
-References: <1298585954-22422-1-git-send-email-kheitke@codeaurora.org>
-	<1298585954-22422-3-git-send-email-kheitke@codeaurora.org>
-	<1298600621.17118.27.camel@m0nster>
-	<8yad3mgdeut.fsf@huya.qualcomm.com>
-	<1298601346.17118.29.camel@m0nster>
-Date: Thu, 24 Feb 2011 18:39:48 -0800
-X-Google-Sender-Auth: E2mzbswOjDvaQ6FnNYiWcrB-Hy8
-Message-ID: <AANLkTikD1Ued=rit1QbMWwe3NGFz2iQ-KO7B=-N6Ok-2@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] msm: add single-wire serial bus interface (SSBI) driver
-From: Dima Zavin <dima@android.com>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: David Brown <davidb@codeaurora.org>,
-        Kenneth Heitke <kheitke@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        tsoni@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        swetland@google.com, open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1PslLC-0000rj-EF@eag09.americas.sgi.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On that note, should we have a "drivers/arm/msm" instead of just
-"drivers/msm"? Other non-msm arm sub-arches probably have the same
-problem and polluting drivers/ top-level for every arm-subarch maybe
-undesirable.
+Em Thu, Feb 24, 2011 at 06:15:26PM -0600, Cliff Wickman escreveu:
+> From: Cliff Wickman <cpw@sgi.com>
+> 
+> The perf command's report prints clock periods under the heading of 'Samples'.
+> Our applications people have been confused by this "Samples" heading.
+> 
+> perf report -n
+> 
+> # Overhead  Samples            Command         Shared Object                            Symbol
+> # ........ ..........  ...............  ....................  ................................
+> #
+>     99.41%1522136216246         pthreads  pthreads              [.] work_function
+>      0.33% 4980298302             perf  [kernel.kallsyms]     [k] clear_page_c
+>      ....
+> 
+> It would be more compact to print the number of samples.  And that would
+> be consistent with the heading.
+> 
+> Below is the code that displays the periods.  I don't see that the number
+> of samples is available here, but probably easily could be.
+> I presume that clock periods are derived from #samples * sample period.
+> 
+> perf/util/hist.c
+> 
+>  640 
+>  641         if (symbol_conf.show_nr_samples) {
+>  642                 if (sep)
+>  643                         ret += snprintf(s + ret, size - ret, "%c%" PRIu64,      *sep, period);
+>  644                 else
+>  645                         ret += snprintf(s + ret, size - ret, "%11" PRIu64,      period);
+>  646         }
+>  647 
 
---Dima
+Wasn't this fixed by:
 
+commit fec9cbd15b9e99bab9bc50f1ed7e20a1087d7c6d
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Thu Feb 17 10:37:23 2011 -0200
 
-On Thu, Feb 24, 2011 at 6:35 PM, Daniel Walker <dwalker@fifo99.com> wrote:
-> On Thu, 2011-02-24 at 18:31 -0800, David Brown wrote:
->> On Thu, Feb 24 2011, Daniel Walker wrote:
->>
->> > You have some submission problems. one is that the subject should be
->> > "drivers: msm: ..." , this patch also shouldn't go to David.
->>
->> Subject needs to be fixed.  Patch to add drivers/msm to the maintainers
->> file has been Acked, so this should be sent to the MSM maintainers.
->
-> It was only acked by Nico, he's just the one who suggested it. I think
-> Greg needs to be involved at some level ..
->
-> Daniel
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+    perf hists: Print number of samples, not the period sum
+    
+    So that we match the header where we state the number of events with the
+    "Samples" column when using 'perf report -n/--show-nr-samples':
+    
+     [root@emilia ~]# perf record -a sleep 1
+     [ perf record: Woken up 1 times to write data ]
+     [ perf record: Captured and wrote 0.111 MB perf.data (~4860 samples) ]
+     [root@emilia ~]# perf report --stdio --show-nr-samples
+     # Events: 11  cycles
+     #
+     # Overhead  Samples        Command       Shared Object                        Symbol
+     # ........ ..........  ...........  ..................  ............................
+     #
+         16.65%          1        sleep  [kernel.kallsyms]   [k] unmap_vmas
+         16.10%          1         perf  libpthread-2.12.so  [.] __pthread_cleanup_push_defer
+         15.79%          2         perf  [kernel.kallsyms]   [k] format_decode
+         12.88%          1  kworker/1:2  [kernel.kallsyms]   [k] cache_reap
+         10.69%          1      swapper  [kernel.kallsyms]   [k] _raw_spin_lock
+          7.55%          1        sleep  [kernel.kallsyms]   [k] prepare_exec_creds
+          6.00%          1         perf  [jbd2]              [k] start_this_handle
+          5.29%          1         perf  [kernel.kallsyms]   [k] seq_read
+          4.75%          1         perf  [kernel.kallsyms]   [k] get_pid_task
+          4.30%          1         perf  [kernel.kallsyms]   [k] _raw_spin_unlock_irqrestore
+    
+     #
+     # (For a higher level overview, try: perf report --sort comm,dso)
+     #
+     [root@emilia ~]#
+    
+    Reported-by: Stephane Eranian <eranian@google.com>
+    Acked-by: Stephane Eranian <eranian@google.com>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: Mike Galbraith <efault@gmx.de>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Stephane Eranian <eranian@google.com>
+    Cc: Tom Zanussi <tzanussi@gmail.com>
+    LKML-Reference: <new-submission>
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+?
+
+Please try using tip/perf/core.
+
+- Arnaldo
+
