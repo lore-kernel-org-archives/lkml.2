@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab1BYRl7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 12:41:59 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:25371 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754734Ab1BYRl6 (ORCPT
+	id S932263Ab1BYRmH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 12:42:07 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:28463 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755640Ab1BYRl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 12:41:58 -0500
+	Fri, 25 Feb 2011 12:41:59 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: YAYf6VkVM1nt.tIcQpsCx.q1EezBfmsu8R.Ak_tE_QtvweJ
- .mwUxtrvIeDZUMxz7kXYbMiiunBXBrwcYKnAoK4kGqenq6__2Ufp6U24d3FY
- rmkuy8_fn5CqOWZQaLNi6SvBXknnEYsszdmxejziDU8oBPxJNDWI7PNmebPz
- R1UVdART8S6TGqJSfCmKVhf.WM60owMX7zMRX_Pg22MUq990fE95Dbc5twzB
- ZdtCQ_IGLPQDdWcL_DllxMp8iCmeygUOD2Uf0zJuiOB6OJQrSPe.FGwtE3n_
- XeRdJfuS804pSYyG7xXytKw1wNmcZNFSyoOSXgBjbXAxBMm0-
+X-YMail-OSG: 5aZGJkEVM1k47m5EOl.BNI4w3lZyKPYGBMR7ilvGUVYUU.J
+ b0J7mgPcP6IazPSlSbX82CrjIT7oUW40n62.Ue1N.Jps_xNs3HgQDjaX0bvR
+ LrLGjato8sGoDitl6jw.y2_I96DGMw4YKj.HoQuUcB1bvXMS6lHOFCgORTJ9
+ 4wGUnPBSfMIy665fWaEeitmnLGpY5wOaKimPL0rfgpblYA.t.Z3rMX2R5oaf
+ 1HuR3tMhwq61GqXTK4k_mHrOtLQDlPdmwQMGyukwLpBms14tcIhWsCxhgVG7
+ s_ZqxseyLwCrlOzefOA--
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110225174155.786331687@linux.com>
+Message-Id: <20110225174156.967578131@linux.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 25 Feb 2011 11:38:53 -0600
+Date: Fri, 25 Feb 2011 11:38:55 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linux-foundation.org
@@ -26,183 +26,164 @@ Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [cpuops cmpxchg double V3 3/5] Generic support for this_cpu_cmpxchg_double
+Subject: [cpuops cmpxchg double V3 5/5] x86: this_cpu_cmpxchg_double() support
 References: <20110225173850.486326452@linux.com>
-Content-Disposition: inline; filename=cpuops_double_generic
+Content-Disposition: inline; filename=cpuops_double_x86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce this_cpu_cmpxchg_double. this_cpu_cmpxchg_double() allows the
-comparision between two consecutive words and replaces them if there is
-a match.
-
-	bool this_cpu_cmpxchg_double(pcp1, pcp2,
-		old_word1, old_word2, new_word1, new_word2)
-
-this_cpu_cmpxchg_double does not return the old value (difficult since
-there are two words) but a boolean indicating if the operation was
-successful.
-
-The first percpu variable must be double word aligned!
+Support this_cpu_cmpxchg_double using the cmpxchg16b and cmpxchg8b instructions.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- include/linux/percpu.h |  130 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 130 insertions(+)
+ arch/x86/include/asm/percpu.h |   48 ++++++++++++++++++++++++++++++++
+ arch/x86/lib/Makefile         |    1 
+ arch/x86/lib/cmpxchg16b_emu.S |   62 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 111 insertions(+)
 
-Index: linux-2.6/include/linux/percpu.h
+Index: linux-2.6/arch/x86/include/asm/percpu.h
 ===================================================================
---- linux-2.6.orig/include/linux/percpu.h	2011-01-10 10:22:35.000000000 -0600
-+++ linux-2.6/include/linux/percpu.h	2011-01-10 10:26:43.000000000 -0600
-@@ -255,6 +255,29 @@ extern void __bad_size_call_parameter(vo
- 	pscr2_ret__;							\
- })
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2011-02-25 10:45:46.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/percpu.h	2011-02-25 10:46:25.000000000 -0600
+@@ -451,6 +451,26 @@ do {									\
+ #define irqsafe_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
+ #endif /* !CONFIG_M386 */
  
-+/*
-+ * Special handling for cmpxchg_double. cmpxchg_double is passed two
-+ * percpu variables. The first has to be aligned to a double word
-+ * boundary and the second has to follow directly thereafter.
-+ */
-+#define __pcpu_double_call_return_int(stem, pcp1, pcp2, ...)		\
++#ifdef CONFIG_X86_CMPXCHG64
++#define percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)			\
 +({									\
-+	int ret__;							\
-+	__verify_pcpu_ptr(&pcp1);					\
-+	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));		\
-+	VM_BUG_ON((unsigned long)(&pcp2) != (unsigned long)(&pcp1) + sizeof(pcp1));\
-+	VM_BUG_ON(sizeof(pcp1) != sizeof(pcp2));			\
-+	switch(sizeof(pcp1)) {						\
-+	case 1: ret__ = stem##1(pcp1, pcp2, __VA_ARGS__);break;		\
-+	case 2: ret__ = stem##2(pcp1, pcp2, __VA_ARGS__);break;		\
-+	case 4: ret__ = stem##4(pcp1, pcp2, __VA_ARGS__);break;		\
-+	case 8: ret__ = stem##8(pcp1, pcp2, __VA_ARGS__);break;		\
-+	default:							\
-+		__bad_size_call_parameter();break;			\
-+	}								\
-+	ret__;								\
++	char __ret;							\
++	typeof(o1) __o1 = o1;						\
++	typeof(o1) __n1 = n1;						\
++	typeof(o2) __o2 = o2;						\
++	typeof(o2) __n2 = n2;						\
++	typeof(o2) __dummy = n2;					\
++	asm volatile("cmpxchg8b "__percpu_arg(1)"\n\tsetz %0\n\t"		\
++		    : "=a"(__ret), "=m" (pcp1), "=d"(__dummy)		\
++		    :  "b"(__n1), "c"(__n2), "a"(__o1), "d"(__o2));	\
++	__ret;								\
 +})
 +
- #define __pcpu_size_call(stem, variable, ...)				\
- do {									\
- 	__verify_pcpu_ptr(&(variable));					\
-@@ -318,6 +341,80 @@ do {									\
- # define this_cpu_read(pcp)	__pcpu_size_call_return(this_cpu_read_, (pcp))
++#define __this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2) percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
++#define this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
++#define irqsafe_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
++#endif /* CONFIG_X86_CMPXCHG64 */
++
+ /*
+  * Per cpu atomic 64 bit operations are only available under 64 bit.
+  * 32 bit must fall back to generic operations.
+@@ -480,6 +500,34 @@ do {									\
+ #define irqsafe_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define irqsafe_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
+ #define irqsafe_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++
++/*
++ * Pretty complex macro to generate cmpxchg16 instruction. The instruction
++ * is not supported on early AMD64 processors so we must be able to emulate
++ * it in software. The address used in the cmpxchg16 instruction must be
++ * aligned to a 16 byte boundary.
++ */
++#define percpu_cmpxchg16b(pcp1, o1, o2, n1, n2)				\
++({									\
++	char __ret;							\
++	typeof(o1) __o1 = o1;						\
++	typeof(o1) __n1 = n1;						\
++	typeof(o2) __o2 = o2;						\
++	typeof(o2) __n2 = n2;						\
++	typeof(o2) __dummy;						\
++	alternative_io("call this_cpu_cmpxchg16b_emu\n\t" P6_NOP4,	\
++			"cmpxchg16b %%gs:(%%rsi)\n\tsetz %0\n\t",	\
++			X86_FEATURE_CX16,				\
++		    	ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),	\
++		        "S" (&pcp1), "b"(__n1), "c"(__n2),		\
++			 "a"(__o1), "d"(__o2));				\
++	__ret;								\
++})
++
++#define __this_cpu_cmpxchg_double_8(pcp1, pcp2, o1, o2, n1, n2) percpu_cmpxchg16b(pcp1, o1, o2, n1, n2)
++#define this_cpu_cmpxchg_double_8(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg16b(pcp1, o1, o2, n1, n2)
++#define irqsafe_cpu_cmpxchg_double_8(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg16b(pcp1, o1, o2, n1, n2)
++
  #endif
  
+ /* This is not atomic against other CPUs -- CPU preemption needs to be off */
+Index: linux-2.6/arch/x86/lib/Makefile
+===================================================================
+--- linux-2.6.orig/arch/x86/lib/Makefile	2011-02-22 16:13:42.000000000 -0600
++++ linux-2.6/arch/x86/lib/Makefile	2011-02-25 10:46:25.000000000 -0600
+@@ -42,4 +42,5 @@ else
+         lib-y += memmove_64.o memset_64.o
+         lib-y += copy_user_64.o rwlock_64.o copy_user_nocache_64.o
+ 	lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem_64.o
++	lib-y += cmpxchg16b_emu.o
+ endif
+Index: linux-2.6/arch/x86/lib/cmpxchg16b_emu.S
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-2.6/arch/x86/lib/cmpxchg16b_emu.S	2011-02-25 10:46:25.000000000 -0600
+@@ -0,0 +1,62 @@
 +/*
-+ * cmpxchg_double replaces two adjacent scalars at once. The first two
-+ * parameters are per cpu variables which have to be of the same size.
-+ * A truth value is returned to indicate success or
-+ * failure (since a double register result is difficult to handle).
-+ * There is very limited hardware support for these operations. So only certain
-+ * sizes may work.
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	as published by the Free Software Foundation; version 2
++ *	of the License.
++ *
 + */
-+#define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+({									\
-+	int __ret = 0;							\
-+	if (__this_cpu_read(pcp1) == (oval1) &&				\
-+			 __this_cpu_read(pcp2)  == (oval2)) {		\
-+		__this_cpu_write(pcp1, (nval1));			\
-+		__this_cpu_write(pcp2, (nval2));			\
-+		__ret = 1;						\
-+	}								\
-+	(__ret);							\
-+})
 +
-+#ifndef __this_cpu_cmpxchg_double
-+# ifndef __this_cpu_cmpxchg_double_1
-+#  define __this_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_2
-+#  define __this_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_4
-+#  define __this_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_8
-+#  define __this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# define __this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_int(__this_cpu_cmpxchg_double_, (pcp1), (pcp2)	\
-+					 oval1, oval2, nval1, nval2)
-+#endif
++#include <linux/linkage.h>
++#include <asm/alternative-asm.h>
++#include <asm/frame.h>
++#include <asm/dwarf2.h>
 +
-+#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+({									\
-+	int ret__;							\
-+	preempt_disable();						\
-+	ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
-+			oval1, oval2, nval1, nval2);			\
-+	preempt_enable();						\
-+	ret__;								\
-+})
 +
-+#ifndef this_cpu_cmpxchg_double
-+# ifndef this_cpu_cmpxchg_double_1
-+#  define this_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_2
-+#  define this_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_4
-+#  define this_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_8
-+#  define this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# define this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_int(this_cpu_cmpxchg_double_, (pcp1), (pcp2),	\
-+		oval1, oval2, nval1, nval2)
-+#endif
++.text
 +
- #define _this_cpu_generic_to_op(pcp, val, op)				\
- do {									\
- 	preempt_disable();						\
-@@ -823,4 +920,37 @@ do {									\
- 	__pcpu_size_call_return2(irqsafe_cpu_cmpxchg_, (pcp), oval, nval)
- #endif
- 
-+#define irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+({									\
-+	int ret__;							\
-+	unsigned long flags;						\
-+	local_irq_save(flags);						\
-+	ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
-+			oval1, oval2, nval1, nval2);			\
-+	local_irq_restore(flags);					\
-+	ret__;								\
-+})
++/*
++ * Inputs:
++ * %rsi : memory location to compare
++ * %rax : low 64 bits of old value
++ * %rdx : high 64 bits of old value
++ * %rbx : low 64 bits of new value
++ * %rcx : high 64 bits of new value
++ * %al  : Operation successful
++ */
++ENTRY(this_cpu_cmpxchg16b_emu)
++CFI_STARTPROC
 +
-+#ifndef irqsafe_cpu_cmpxchg_double
-+# ifndef irqsafe_cpu_cmpxchg_double_1
-+#  define irqsafe_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cpu_cmpxchg_double_2
-+#  define irqsafe_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cpu_cmpxchg_double_4
-+#  define irqsafe_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cpu_cmpxchg_double_8
-+#  define irqsafe_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# define irqsafe_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_int(irqsafe_cpu_cmpxchg_double_, (pcp1), (pcp2),	\
-+		oval1, oval2, nval1, nval2)
-+#endif
++#
++# Emulate 'cmpxchg16b %gs:(%rsi)' except we return the result in
++# al not via the ZF. Caller will access al to get result.
++#
++# Note that this is only useful for a cpuops operation. Meaning that we
++# do *not* have a fully atomic operation but just an operation that is
++# *atomic* on a single cpu (as provided by the this_cpu_xx class of macros)
++#
++this_cpu_cmpxchg16b_emu:
++	pushf
++	cli
 +
- #endif /* __LINUX_PERCPU_H */
++	cmpq  %gs:(%rsi), %rax
++	jne not_same
++	cmpq %gs:8(%rsi), %rdx
++	jne not_same
++
++	movq %rbx,  %gs:(%rsi)
++	movq %rcx, %gs:8(%rsi)
++
++	popf
++	mov $1, %al
++	ret
++
++ not_same:
++	popf
++	xor  %al,%al
++	ret
++
++CFI_ENDPROC
++
++ENDPROC(this_cpu_cmpxchg16b_emu)
++
++
 
