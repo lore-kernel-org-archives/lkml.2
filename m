@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab1BYJdl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 04:33:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59025 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab1BYJdj (ORCPT
+	id S932437Ab1BYJqE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 04:46:04 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40083 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932371Ab1BYJqB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 04:33:39 -0500
+	Fri, 25 Feb 2011 04:46:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=oOqGmljc9t+BuoIIW9sdNsYxOZOIQGMlstn4K1mJNqWaS59afIQKsVo5p1KMW4w2NO
-         6p1sN3GP+9xZpaXgwN6u9HIKgx9mxEznsFVKQjB1jrk38BAb9ga3Sk8Qh/d7Y1JDPRFn
-         NCHDbZNamV3AWxr3GFkJumfXYsH1Ubw6UH1iU=
-Date: Fri, 25 Feb 2011 01:33:32 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: =?iso-8859-1?Q?Keng-Y=FC?= Lin <keng-yu.lin@canonical.com>
-Cc: Martin Pitt <martin.pitt@canonical.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tyson.chen@canonical.com
-Subject: Re: [PATCH] eeepc-wmi: set the touchpad toggle key code to F21
-Message-ID: <20110225093332.GC14053@core.coreip.homeip.net>
-References: <1298611140-21573-1-git-send-email-keng-yu.lin@canonical.com>
- <AANLkTim_JKQU9J3OJ0FRQ_ZVPktAPbnzr2t8SvhL2Uzj@mail.gmail.com>
- <20110225071827.GA14053@core.coreip.homeip.net>
- <AANLkTim6pxadoTSsNqYV_gmRGOwyFRvfErSvcwRtaavy@mail.gmail.com>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=l3/C1w7/QMo9LyvGUrVulEJ56K4lDABg5pyctiGoCrEGXU8JoI5m/vxEdTvbKdLqiX
+         F5e+9PV3SWnM5sdEGJngN+1LmB3ZMNHx5nsFWtg5DnxcLJqLYI1ZWz1HhHGvCNr/IQ7Y
+         uH1zzk5pcZPEyHDPL80Z1u3LuH6X9ry6Eowj4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim6pxadoTSsNqYV_gmRGOwyFRvfErSvcwRtaavy@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTikXUyQy+fjFSwagB3Uud2JPodsR2yFtt+jiZPSk@mail.gmail.com>
+References: <1298535761.2814.1.camel@edumazet-laptop> <1298539762-2242-1-git-send-email-ratbert.chuang@gmail.com>
+ <1298569179.2814.11.camel@edumazet-laptop> <1298569685.2814.16.camel@edumazet-laptop>
+ <AANLkTikXUyQy+fjFSwagB3Uud2JPodsR2yFtt+jiZPSk@mail.gmail.com>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Fri, 25 Feb 2011 17:45:40 +0800
+Message-ID: <AANLkTikmqQfT1s2Z6J+KYmqi0CuCc4+2k67eeb4ydtCM@mail.gmail.com>
+Subject: Re: [PATCH ref0] net: add Faraday FTMAC100 10/100 Ethernet driver
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, joe@perches.com, dilinger@queued.net,
+        mirqus@gmail.com, davem@davemloft.net,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 05:22:43PM +0800, Keng-Y� Lin wrote:
-> On Fri, Feb 25, 2011 at 3:18 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > I believe that the kernel should use KEY_TOUCHPAD_TOGGLE and userspace
-> > should use udev's key re-mapping facilities while X is unable to process
-> > keycodes above 255 to adjust to the keycode du jour. If all kernel
-> > drivers were to use KEY_TOUCHPAD_TOGGLE then remapping would be much
-> > easier (the utility would simply check capabilities for
-> > KEY_TOUCHPAD_TOGGLE and do the remap).
-> 
-> Can udev re-map a key code to another?
+Hi Eric,
 
-Not directly.
+On Fri, Feb 25, 2011 at 10:32 AM, Po-Yu Chuang <ratbert.chuang@gmail.com> wrote:
+> On Fri, Feb 25, 2011 at 1:48 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> Le jeudi 24 février 2011 à 18:39 +0100, Eric Dumazet a écrit :
+>>> Le jeudi 24 février 2011 à 17:29 +0800, Po-Yu Chuang a écrit :
+>>> > From: Po-Yu Chuang <ratbert@faraday-tech.com>
+>>> > +
+>>> > +static bool ftmac100_rx_packet(struct ftmac100 *priv, int *processed)
+>>> > +{
+>>> > +   struct net_device *netdev = priv->netdev;
+>>> > +   struct ftmac100_rxdes *rxdes;
+>>> > +   struct sk_buff *skb;
+>>> > +   struct page *page;
+>>> > +   dma_addr_t map;
+>>> > +   int length;
+>>> > +
+>>> > +   rxdes = ftmac100_rx_locate_first_segment(priv);
+>>> > +   if (!rxdes)
+>>> > +           return false;
+>>> > +
+>>> > +   if (unlikely(ftmac100_rx_packet_error(priv, rxdes))) {
+>>> > +           ftmac100_rx_drop_packet(priv);
+>>> > +           return true;
+>>> > +   }
+>>> > +
+>>> > +   /*
+>>> > +    * It is impossible to get multi-segment packets
+>>> > +    * because we always provide big enough receive buffers.
+>>> > +    */
+>>> > +   if (unlikely(!ftmac100_rxdes_last_segment(rxdes)))
+>>> > +           BUG();
+>>> > +
+>>> > +   /* start processing */
+>>> > +   skb = netdev_alloc_skb_ip_align(netdev, ETH_HLEN);
+>>>
+>>> Oh I see... You should allocate a bigger head (say... 128 bytes)
+>>>
+>>> And copy in it up to 128 bytes of first part... this to avoid upper
+>>> stack to reallocate skb head (because IP/TCP processing need to get
+>>> their headers in skb head)
+>>
+>> Take a look at drivers/net/niu.c :
+>>
+>> #define RX_SKB_ALLOC_SIZE   128 + NET_IP_ALIGN
+>>
+>> static int niu_process_rx_pkt(...)
+>> {
+>>        ...
+>>        skb = netdev_alloc_skb(np->dev, RX_SKB_ALLOC_SIZE);
+>>        ...
+>>        while (1) {
+>>                ...
+>>                niu_rx_skb_append(skb, page, off, append_size);
+>>        }
+>> }
+>
+> Oh I got it.
+>
+> I will try this and redo the benchmarking.
 
-> 
-> Am I correct that udev can only re-map a scan code to a specified key code.
+It's a little faster than v5 now. Thanks.
+I will submit the current version later.
 
-Right, so once you determined via capabilities that device emits
-KEY_TOUCHPAD_TOGGLE you query the keymap (using EVIOCGKEYCODE2; by
-index) and replace all entries that are mapped to KEY_TOUCHPAD_TOGGLE to
-whatever you want.
+One more question just curious, why 128 bytes?
 
-Thanks.
-
--- 
-Dmitry
+best regards,
+Po-Yu Chuang
