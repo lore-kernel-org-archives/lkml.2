@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1BZAQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 19:16:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756078Ab1BZAQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 19:16:52 -0500
-Date: Sat, 26 Feb 2011 01:16:11 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Arthur Marsh <arthur.marsh@internode.on.net>,
-        Clemens Ladisch <cladisch@googlemail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are
- disabled while isolating pages for migration
-Message-ID: <20110226001611.GA19630@random.random>
-References: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
- <1298664299-10270-3-git-send-email-mel@csn.ul.ie>
- <20110225223204.GW25382@cmpxchg.org>
+	id S1756583Ab1BZATM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 19:19:12 -0500
+Received: from vs1.gondor.com ([78.47.100.202]:43621 "EHLO
+	mail.moria.gondor.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756553Ab1BZATK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 19:19:10 -0500
+Date: Sat, 26 Feb 2011 01:19:08 +0100
+From: Jan Niehusmann <jan@gondor.com>
+To: Jesse Gross <jesse@nicira.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: TX VLAN acceleration on bridges broken in 2.6.37?
+Message-ID: <20110226001908.GA10777@x61s.reliablesolutions.de>
+References: <20110221232902.GA3440@x61s.reliablesolutions.de>
+ <AANLkTinoJqWA6ffnUx2KW_83srNbo+k6r24hnNpPTGvW@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110225223204.GW25382@cmpxchg.org>
+In-Reply-To: <AANLkTinoJqWA6ffnUx2KW_83srNbo+k6r24hnNpPTGvW@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 11:32:04PM +0100, Johannes Weiner wrote:
-> I don't understand why this conditional is broken up like this.
-> cond_resched() will have the right checks anyway.  Okay, you would
-> save fatal_signal_pending() in the 'did one cluster' case.  Is it that
-> expensive?  Couldn't this be simpler like
-> 
-> 		did_cluster = ((low_pfn + 1) % SWAP_CLUSTER_MAX) == 0
-> 		lock_contended = spin_is_contended(&zone->lru_lock);
-> 		if (did_cluster || lock_contended || need_resched()) {
-> 			spin_unlock_irq(&zone->lru_lock);
-> 			cond_resched();
-> 			spin_lock_irq(&zone->lru_lock);
-> 			if (fatal_signal_pending(current))
-> 				break;
-> 		}
-> 
-> instead?
+On Fri, Feb 25, 2011 at 02:53:21PM -0800, Jesse Gross wrote:
+> is specific to the e1000e driver.  I know that some other Intel NICs
+> require vlan stripping on receive to be enabled for vlan insertion on
+> transmit to work.  Since this driver has not been converted over to
+> use the new vlan model yet, it only enables these things if a vlan is
+> directly configured on it.  To confirm this can you try a few things:
 
-If we don't release irqs first, how can need_resched get set in the
-first place if the local apic irq can't run? I guess that's why
-there's no cond_resched_lock_irq. BTW, I never liked too much clearing
-interrupts for locks that can't ever be taken from irq (it's a
-scalability boost to reduce contention but it makes things like above
-confusing and it increases irq latency a bit.
+My observations confirm your theory:
+
+> * Directly configure the vlan on the device instead of going through the bridge.
+
+- does work, but only if eth0 is not part of bridge (expected behaviour,
+  afaik)
+
+> * Use the bridge but also configure an unused vlan device on the
+> physical interface.
+
+- does work
+
+> * Double check that tcpdump with the settings that you are using shows
+> vlan tags in other situations.  In some cases you need to use the 'e'
+> flag with tcpdump in order for it show vlan tags.  If it is the
+> driver/NIC that is dropping the tags, tcpdump should still show them.
+
+- indeed, -e is necessary to show the vlan tags. So my prior observation
+  regarding tag visibility in tcpdump was wrong. The packets are still
+  have a vlan tag in the non-working case. 
+
+  (What actually is affected by the txvlan flag is the ability to filter
+  for vlan tags with tcpdump.  so 'tcpdump -e -i eth0' shows the packets,
+  'tcpdump -e -i eth0 vlan' only shows them with txvlan off. However,
+  filtering for the vlan tag also doesn't work with the vlan interface
+  on eth0.1, while the tagging actually works, as verified above.)
+
+
+Jan
+
