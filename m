@@ -1,578 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751258Ab1BZB7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 20:59:11 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:50120
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751087Ab1BZB7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 20:59:10 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 6/6] Staging: hv: Cleanup hyperv_driver variable names
-Date: Fri, 25 Feb 2011 18:07:58 -0800
-Message-Id: <1298686078-30945-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1751293Ab1BZCPG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 21:15:06 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31590 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab1BZCPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 21:15:04 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6268"; a="76605070"
+Message-ID: <4D686226.1090804@codeaurora.org>
+Date: Fri, 25 Feb 2011 18:15:02 -0800
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Dima Zavin <dima@android.com>
+CC: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, dwalker@fifo99.com,
+        linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] msm: gpiomux: Remove GPIOMUX_VALID and merge config enums
+References: <4D680EEE.1070706@codeaurora.org> <AANLkTinZCtbQnAk_OX92jqbW_GjH5wpxvbeoMkHV1inn@mail.gmail.com>
+In-Reply-To: <AANLkTinZCtbQnAk_OX92jqbW_GjH5wpxvbeoMkHV1inn@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The title says it all.
+On 2/25/2011 5:20 PM, Dima Zavin wrote:
+> On Fri, Feb 25, 2011 at 12:19 PM, Rohit Vaswani<rvaswani@codeaurora.org>  wrote:
+>> Remove GPIOMUX_VALID, simplify the API, and absorb the complexity
+>> of determining which gpiomux configs are used and which are
+>> not back into the gpiomux implementation where it belongs.
+>> Allow NULL settings to be represented appropriately.
+>> The configuration enumerations represent a single abstraction
+>> and were needlessly split. As such, collapse the conflicting
+>> abstractions into a consistent one and move the implementation
+>> complexity down into the implementation (where it belongs) and
+>> away from the interface (where it doesn't belong).
+>>
+>> Signed-off-by: Rohit Vaswani<rvaswani@codeaurora.org>
+>> ---
+>>   arch/arm/mach-msm/board-msm7x30.c |   23 +++++++--
+>>   arch/arm/mach-msm/board-qsd8x50.c |   17 +++++--
+>>   arch/arm/mach-msm/gpiomux-v1.c    |    9 ++-
+>>   arch/arm/mach-msm/gpiomux-v1.h    |   59 ----------------------
+>>   arch/arm/mach-msm/gpiomux-v2.c    |    8 ++-
+>>   arch/arm/mach-msm/gpiomux-v2.h    |   59 ----------------------
+>>   arch/arm/mach-msm/gpiomux.c       |   77 +++++++++++++++++-------------
+>>   arch/arm/mach-msm/gpiomux.h       |   96
+>> +++++++++++++++++++++++-------------
+>>   8 files changed, 145 insertions(+), 203 deletions(-)
+>>   delete mode 100644 arch/arm/mach-msm/gpiomux-v1.h
+>>   delete mode 100644 arch/arm/mach-msm/gpiomux-v2.h
+>>
+>> diff --git a/arch/arm/mach-msm/board-msm7x30.c
+>> b/arch/arm/mach-msm/board-msm7x30.c
+>> index 59b91de..4223329 100644
+>> --- a/arch/arm/mach-msm/board-msm7x30.c
+>> +++ b/arch/arm/mach-msm/board-msm7x30.c
+>> @@ -39,8 +39,11 @@
+>>   #include "gpiomux.h"
+>>   #include "proc_comm.h"
+>>
+>> -#define UART2_SUSPENDED (GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |\
+>> -            GPIOMUX_FUNC_2 | GPIOMUX_VALID)
+>> +static struct gpiomux_setting uart2_suspended = {
+>> +    .func = GPIOMUX_FUNC_2,
+>> +    .drv = GPIOMUX_DRV_2MA,
+>> +    .pull = GPIOMUX_PULL_DOWN,
+>> +};
+>>
+>>   extern struct sys_timer msm_timer;
+>>
+>> @@ -59,19 +62,27 @@ static struct msm_otg_platform_data msm_otg_pdata = {
+>>   struct msm_gpiomux_config msm7x30_uart2_configs[] __initdata = {
+>>      {
+>>          .gpio = 49, /* UART2 RFR */
+>> -        .suspended = UART2_SUSPENDED,
+>> +        .settings = {
+>> +            [GPIOMUX_SUSPENDED] =&uart2_suspended,
+>> +        },
+>>      },
+>>      {
+>>          .gpio = 50, /* UART2 CTS */
+>> -        .suspended = UART2_SUSPENDED,
+>> +        .settings = {
+>> +            [GPIOMUX_SUSPENDED] =&uart2_suspended,
+>> +        },
+>>      },
+>>      {
+>>          .gpio = 51, /* UART2 RX */
+>> -        .suspended = UART2_SUSPENDED,
+>> +        .settings = {
+>> +            [GPIOMUX_SUSPENDED] =&uart2_suspended,
+>> +        },
+>>      },
+>>      {
+>>          .gpio = 52, /* UART2 TX */
+>> -        .suspended = UART2_SUSPENDED,
+>> +        .settings = {
+>> +            [GPIOMUX_SUSPENDED] =&uart2_suspended,
+>> +        },
+>>      },
+>>   };
+>>
+>> diff --git a/arch/arm/mach-msm/board-qsd8x50.c
+>> b/arch/arm/mach-msm/board-qsd8x50.c
+>> index 33ab1fe..d665b0e 100644
+>> --- a/arch/arm/mach-msm/board-qsd8x50.c
+>> +++ b/arch/arm/mach-msm/board-qsd8x50.c
+>> @@ -38,19 +38,26 @@
+>>   #include "devices.h"
+>>   #include "gpiomux.h"
+>>
+>> -#define UART3_SUSPENDED (GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |\
+>> -            GPIOMUX_FUNC_1 | GPIOMUX_VALID)
+>> +static struct gpiomux_setting uart3_suspended = {
+>> +    .drv = GPIOMUX_DRV_2MA,
+>> +    .pull = GPIOMUX_PULL_DOWN,
+>> +    .func = GPIOMUX_FUNC_1,
+>> +};
+>>
+>>   extern struct sys_timer msm_timer;
+>>
+>> -struct msm_gpiomux_config qsd8x50_uart3_configs[] __initdata = {
+>> +struct msm_gpiomux_config qsd8x50_uart3_configs[] = {
+>>      {
+>>          .gpio = 86, /* UART3 RX */
+>> -        .suspended = UART3_SUSPENDED,
+>> +        .settings = {
+>> +            [GPIOMUX_SUSPENDED] =&uart3_suspended,
+>> +        },
+>>      },
+>>      {
+>>          .gpio = 87, /* UART3 TX */
+>> -        .suspended = UART3_SUSPENDED,
+>> +        .settings = {
+>> +            [GPIOMUX_SUSPENDED] =&uart3_suspended,
+>> +        },
+>>      },
+>>   };
+> I think this new interface is way too verbose and will quickly get
+> unwieldy for configurations that have more than a few pins. For
+> instance, imagine what the above would look like when muxing a 24bit
+> LCD pin list...
+>
+> How about adding a "bool valid" to gpiomux_setting, and convert the
+> "sets" array to an array of settings and not pointers to settings.
+> This will allow us to do (in gpiomux.h):
+>
+> struct msm_gpiomux_rec {
+>      struct gpiomux_setting sets[GPIOMUX_NSETTINGS];
+>      int ref;
+> };
+>
+> struct gpiomux_setting {
+>      enum gpiomux_func func;
+>      enum gpiomux_drv  drv;
+>      enum gpiomux_pull pull;
+>      bool valid;
+> };
+>
+> This way, I can do something like (very rough):
+>
+> #define GPIOMUX_SET(func,drv,pull) { \
+>      .func = GPIOMUX_##func, \
+>      .drv = GPIOMUX_##drv, \
+>      .pull = GPIOMUX_##pull, \
+>      .valid = true, \
+>    }
+>
+> #define GPIOMUX_SET_NONE { .valid = false, }
+>
+> #define GPIOMUX_CFG(g, active, suspended) { \
+>       .gpio = g, \
+>       .sets = { \
+>           [GPIOMUX_ACTIVE] = active, \
+>           [GPIOMUX_SUSPENDED] = suspended, \
+>        }, \
+>   }
+>
+> This will then allow me to define the uart3 pinmuxing in my board file
+> as follows:
+>
+> struct msm_gpiomux_rec uart3_mux_cfg[] = {
+>      GPIOMUX_CFG(86, GPIOMUX_SET_NONE,
+>                             GPIOMUX_SET(FUNC_1, DRV_2MA, PULL_DOWN)),
+>      GPIOMUX_CFG(87, GPIOMUX_SET_NONE,
+>                             GPIOMUX_SET(FUNC_1, DRV_2MA, PULL_DOWN)),
+> };
+>
+> Thoughts?
+>
+> --Dima
+>
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Thanks for you feedback Dima. I agree that the above change makes the 
+pin configurations verbose - but its neither too verbose to so as to 
+become cumbersome to use nor typically unmanageable. We did think about 
+adding a valid/invalid bool to the configurations - but the fact was 
+that they it simply did not belong there. The gpiomux configurations are 
+never "invalid" as such. Another important part to this decision was 
+that - with adding another variable as a part of the gpiomux 
+configurations meant that we were transferring responsibility of 
+maintaining something that belongs to the "gpiomux internals" to the 
+user. We felt that having the user to append a valid/invalid flag with 
+every configuration to was not a step in the right direction.
+On the contrary, the explicit structures improved readability and kept 
+things pretty simple. Thinking about it more - it doesn't even make it 
+verbose - but it just may seem that way because we expand it into a 
+structure instead of hiding behind a macro.
+Also, we currently use this same design for a number of GPIOs far 
+greater than 24 and my/our experience has never been bothersome.
+Hope that answers your query.
 
----
- drivers/staging/hv/blkvsc_drv.c  |   46 +++++++++++++++---------------
- drivers/staging/hv/netvsc_drv.c  |   44 +++++++++++++++---------------
- drivers/staging/hv/storvsc_drv.c |   36 ++++++++++++------------
- drivers/staging/hv/vmbus.h       |    4 +-
- drivers/staging/hv/vmbus_drv.c   |   56 +++++++++++++++++++-------------------
- 5 files changed, 93 insertions(+), 93 deletions(-)
+  Thanks,
+Rohit Vaswani
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index ceba20c..c924920 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -119,7 +119,7 @@ struct block_device_context {
- struct blkvsc_hyperv_driver {
- 	/* !! These must be the first 2 fields !! */
- 	/* FIXME this is a bug! */
--	struct hyperv_driver drv_ctx;
-+	struct hyperv_driver drv;
- 	struct storvsc_driver_object drv_obj;
- };
- 
-@@ -174,7 +174,7 @@ static const struct block_device_operations block_ops = {
- static int blkvsc_drv_init(int (*drv_init)(struct hyperv_driver *drv))
- {
- 	struct storvsc_driver_object *storvsc_drv_obj = &g_blkvsc_drv.drv_obj;
--	struct hyperv_driver *drv_ctx = &g_blkvsc_drv.drv_ctx;
-+	struct hyperv_driver *drv = &g_blkvsc_drv.drv;
- 	int ret;
- 
- 	storvsc_drv_obj->ring_buffer_size = blkvsc_ringbuffer_size;
-@@ -182,16 +182,16 @@ static int blkvsc_drv_init(int (*drv_init)(struct hyperv_driver *drv))
- 	/* Callback to client driver to complete the initialization */
- 	drv_init(&storvsc_drv_obj->base);
- 
--	drv_ctx->driver.name = storvsc_drv_obj->base.name;
--	memcpy(&drv_ctx->class_id, &storvsc_drv_obj->base.class_id,
-+	drv->driver.name = storvsc_drv_obj->base.name;
-+	memcpy(&drv->class_id, &storvsc_drv_obj->base.class_id,
- 	       sizeof(struct hv_guid));
- 
--	drv_ctx->probe = blkvsc_probe;
--	drv_ctx->remove = blkvsc_remove;
--	drv_ctx->shutdown = blkvsc_shutdown;
-+	drv->probe = blkvsc_probe;
-+	drv->remove = blkvsc_remove;
-+	drv->shutdown = blkvsc_shutdown;
- 
- 	/* The driver belongs to vmbus */
--	ret = vmbus_child_driver_register(drv_ctx);
-+	ret = vmbus_child_driver_register(drv);
- 
- 	return ret;
- }
-@@ -206,7 +206,7 @@ static int blkvsc_drv_exit_cb(struct device *dev, void *data)
- static void blkvsc_drv_exit(void)
- {
- 	struct storvsc_driver_object *storvsc_drv_obj = &g_blkvsc_drv.drv_obj;
--	struct hyperv_driver *drv_ctx = &g_blkvsc_drv.drv_ctx;
-+	struct hyperv_driver *drv = &g_blkvsc_drv.drv;
- 	struct device *current_dev;
- 	int ret;
- 
-@@ -214,7 +214,7 @@ static void blkvsc_drv_exit(void)
- 		current_dev = NULL;
- 
- 		/* Get the device */
--		ret = driver_for_each_device(&drv_ctx->driver, NULL,
-+		ret = driver_for_each_device(&drv->driver, NULL,
- 					     (void *) &current_dev,
- 					     blkvsc_drv_exit_cb);
- 
-@@ -233,7 +233,7 @@ static void blkvsc_drv_exit(void)
- 	if (storvsc_drv_obj->base.cleanup)
- 		storvsc_drv_obj->base.cleanup(&storvsc_drv_obj->base);
- 
--	vmbus_child_driver_unregister(drv_ctx);
-+	vmbus_child_driver_unregister(drv);
- 
- 	return;
- }
-@@ -243,12 +243,12 @@ static void blkvsc_drv_exit(void)
-  */
- static int blkvsc_probe(struct device *device)
- {
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 				driver_to_hyperv_driver(device->driver);
--	struct blkvsc_hyperv_driver *blkvsc_drv_ctx =
--				(struct blkvsc_hyperv_driver *)driver_ctx;
-+	struct blkvsc_hyperv_driver *blkvsc_drv =
-+				(struct blkvsc_hyperv_driver *)drv;
- 	struct storvsc_driver_object *storvsc_drv_obj =
--				&blkvsc_drv_ctx->drv_obj;
-+				&blkvsc_drv->drv_obj;
- 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 
- 	struct block_device_context *blkdev = NULL;
-@@ -727,12 +727,12 @@ static int blkvsc_do_read_capacity16(struct block_device_context *blkdev)
-  */
- static int blkvsc_remove(struct device *device)
- {
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 				driver_to_hyperv_driver(device->driver);
--	struct blkvsc_hyperv_driver *blkvsc_drv_ctx =
--				(struct blkvsc_hyperv_driver *)driver_ctx;
-+	struct blkvsc_hyperv_driver *blkvsc_drv =
-+				(struct blkvsc_hyperv_driver *)drv;
- 	struct storvsc_driver_object *storvsc_drv_obj =
--				&blkvsc_drv_ctx->drv_obj;
-+				&blkvsc_drv->drv_obj;
- 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 	struct block_device_context *blkdev = dev_get_drvdata(device);
- 	unsigned long flags;
-@@ -849,12 +849,12 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
- {
- 	struct block_device_context *blkdev = blkvsc_req->dev;
- 	struct hyperv_device *device_obj = blkdev->device_obj;
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 			driver_to_hyperv_driver(device_obj->device.driver);
--	struct blkvsc_hyperv_driver *blkvsc_drv_ctx =
--			(struct blkvsc_hyperv_driver *)driver_ctx;
-+	struct blkvsc_hyperv_driver *blkvsc_drv =
-+			(struct blkvsc_hyperv_driver *)drv;
- 	struct storvsc_driver_object *storvsc_drv_obj =
--			&blkvsc_drv_ctx->drv_obj;
-+			&blkvsc_drv->drv_obj;
- 	struct hv_storvsc_request *storvsc_req;
- 	int ret;
- 
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 359d596..af1f9eb 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -51,7 +51,7 @@ struct net_device_context {
- struct netvsc_hyperv_driver {
- 	/* !! These must be the first 2 fields !! */
- 	/* Which is a bug FIXME! */
--	struct hyperv_driver drv_ctx;
-+	struct hyperv_driver drv;
- 	struct netvsc_driver drv_obj;
- };
- 
-@@ -135,11 +135,11 @@ static void netvsc_xmit_completion(void *context)
- static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- {
- 	struct net_device_context *net_device_obj = netdev_priv(net);
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 	    driver_to_hyperv_driver(net_device_obj->device_obj->device.driver);
--	struct netvsc_hyperv_driver *net_drv_ctx =
--		(struct netvsc_hyperv_driver *)driver_ctx;
--	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
-+	struct netvsc_hyperv_driver *net_drv =
-+		(struct netvsc_hyperv_driver *)drv;
-+	struct netvsc_driver *net_drv_obj = &net_drv->drv_obj;
- 	struct hv_netvsc_packet *packet;
- 	int ret;
- 	unsigned int i, num_pages;
-@@ -338,11 +338,11 @@ static const struct net_device_ops device_ops = {
- 
- static int netvsc_probe(struct device *device)
- {
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 		driver_to_hyperv_driver(device->driver);
--	struct netvsc_hyperv_driver *net_drv_ctx =
--		(struct netvsc_hyperv_driver *)driver_ctx;
--	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
-+	struct netvsc_hyperv_driver *net_drv =
-+		(struct netvsc_hyperv_driver *)drv;
-+	struct netvsc_driver *net_drv_obj = &net_drv->drv_obj;
- 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 	struct net_device *net = NULL;
- 	struct net_device_context *net_device_obj;
-@@ -409,11 +409,11 @@ static int netvsc_probe(struct device *device)
- 
- static int netvsc_remove(struct device *device)
- {
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 		driver_to_hyperv_driver(device->driver);
--	struct netvsc_hyperv_driver *net_drv_ctx =
--		(struct netvsc_hyperv_driver *)driver_ctx;
--	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
-+	struct netvsc_hyperv_driver *net_drv =
-+		(struct netvsc_hyperv_driver *)drv;
-+	struct netvsc_driver *net_drv_obj = &net_drv->drv_obj;
- 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 	struct net_device *net = dev_get_drvdata(&device_obj->device);
- 	int ret;
-@@ -458,7 +458,7 @@ static int netvsc_drv_exit_cb(struct device *dev, void *data)
- static void netvsc_drv_exit(void)
- {
- 	struct netvsc_driver *netvsc_drv_obj = &g_netvsc_drv.drv_obj;
--	struct hyperv_driver *drv_ctx = &g_netvsc_drv.drv_ctx;
-+	struct hyperv_driver *drv = &g_netvsc_drv.drv;
- 	struct device *current_dev;
- 	int ret;
- 
-@@ -466,7 +466,7 @@ static void netvsc_drv_exit(void)
- 		current_dev = NULL;
- 
- 		/* Get the device */
--		ret = driver_for_each_device(&drv_ctx->driver, NULL,
-+		ret = driver_for_each_device(&drv->driver, NULL,
- 					     &current_dev, netvsc_drv_exit_cb);
- 		if (ret)
- 			DPRINT_WARN(NETVSC_DRV,
-@@ -485,7 +485,7 @@ static void netvsc_drv_exit(void)
- 	if (netvsc_drv_obj->base.cleanup)
- 		netvsc_drv_obj->base.cleanup(&netvsc_drv_obj->base);
- 
--	vmbus_child_driver_unregister(drv_ctx);
-+	vmbus_child_driver_unregister(drv);
- 
- 	return;
- }
-@@ -493,7 +493,7 @@ static void netvsc_drv_exit(void)
- static int netvsc_drv_init(int (*drv_init)(struct hyperv_driver *drv))
- {
- 	struct netvsc_driver *net_drv_obj = &g_netvsc_drv.drv_obj;
--	struct hyperv_driver *drv_ctx = &g_netvsc_drv.drv_ctx;
-+	struct hyperv_driver *drv = &g_netvsc_drv.drv;
- 	int ret;
- 
- 	net_drv_obj->ring_buf_size = ring_size * PAGE_SIZE;
-@@ -503,15 +503,15 @@ static int netvsc_drv_init(int (*drv_init)(struct hyperv_driver *drv))
- 	/* Callback to client driver to complete the initialization */
- 	drv_init(&net_drv_obj->base);
- 
--	drv_ctx->driver.name = net_drv_obj->base.name;
--	memcpy(&drv_ctx->class_id, &net_drv_obj->base.class_id,
-+	drv->driver.name = net_drv_obj->base.name;
-+	memcpy(&drv->class_id, &net_drv_obj->base.class_id,
- 	       sizeof(struct hv_guid));
- 
--	drv_ctx->probe = netvsc_probe;
--	drv_ctx->remove = netvsc_remove;
-+	drv->probe = netvsc_probe;
-+	drv->remove = netvsc_remove;
- 
- 	/* The driver belongs to vmbus */
--	ret = vmbus_child_driver_register(drv_ctx);
-+	ret = vmbus_child_driver_register(drv);
- 
- 	return ret;
- }
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 659d385..28f6568 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -67,7 +67,7 @@ struct storvsc_cmd_request {
- struct storvsc_hyperv_driver {
- 	/* !! These must be the first 2 fields !! */
- 	/* FIXME this is a bug... */
--	struct hyperv_driver drv_ctx;
-+	struct hyperv_driver drv;
- 	struct storvsc_driver_object drv_obj;
- };
- 
-@@ -139,7 +139,7 @@ static int storvsc_drv_init(int (*drv_init)(struct hyperv_driver *drv))
- {
- 	int ret;
- 	struct storvsc_driver_object *storvsc_drv_obj = &g_storvsc_drv.drv_obj;
--	struct hyperv_driver *drv_ctx = &g_storvsc_drv.drv_ctx;
-+	struct hyperv_driver *drv = &g_storvsc_drv.drv;
- 
- 	storvsc_drv_obj->ring_buffer_size = storvsc_ringbuffer_size;
- 
-@@ -161,15 +161,15 @@ static int storvsc_drv_init(int (*drv_init)(struct hyperv_driver *drv))
- 		return -1;
- 	}
- 
--	drv_ctx->driver.name = storvsc_drv_obj->base.name;
--	memcpy(&drv_ctx->class_id, &storvsc_drv_obj->base.class_id,
-+	drv->driver.name = storvsc_drv_obj->base.name;
-+	memcpy(&drv->class_id, &storvsc_drv_obj->base.class_id,
- 	       sizeof(struct hv_guid));
- 
--	drv_ctx->probe = storvsc_probe;
--	drv_ctx->remove = storvsc_remove;
-+	drv->probe = storvsc_probe;
-+	drv->remove = storvsc_remove;
- 
- 	/* The driver belongs to vmbus */
--	ret = vmbus_child_driver_register(drv_ctx);
-+	ret = vmbus_child_driver_register(drv);
- 
- 	return ret;
- }
-@@ -184,7 +184,7 @@ static int storvsc_drv_exit_cb(struct device *dev, void *data)
- static void storvsc_drv_exit(void)
- {
- 	struct storvsc_driver_object *storvsc_drv_obj = &g_storvsc_drv.drv_obj;
--	struct hyperv_driver *drv_ctx = &g_storvsc_drv.drv_ctx;
-+	struct hyperv_driver *drv = &g_storvsc_drv.drv;
- 	struct device *current_dev = NULL;
- 	int ret;
- 
-@@ -192,7 +192,7 @@ static void storvsc_drv_exit(void)
- 		current_dev = NULL;
- 
- 		/* Get the device */
--		ret = driver_for_each_device(&drv_ctx->driver, NULL,
-+		ret = driver_for_each_device(&drv->driver, NULL,
- 					     (void *) &current_dev,
- 					     storvsc_drv_exit_cb);
- 
-@@ -210,7 +210,7 @@ static void storvsc_drv_exit(void)
- 	if (storvsc_drv_obj->base.cleanup)
- 		storvsc_drv_obj->base.cleanup(&storvsc_drv_obj->base);
- 
--	vmbus_child_driver_unregister(drv_ctx);
-+	vmbus_child_driver_unregister(drv);
- 	return;
- }
- 
-@@ -220,12 +220,12 @@ static void storvsc_drv_exit(void)
- static int storvsc_probe(struct device *device)
- {
- 	int ret;
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 				driver_to_hyperv_driver(device->driver);
--	struct storvsc_hyperv_driver *storvsc_drv_ctx =
--				(struct storvsc_hyperv_driver *)driver_ctx;
-+	struct storvsc_hyperv_driver *storvsc_drv =
-+				(struct storvsc_hyperv_driver *)drv;
- 	struct storvsc_driver_object *storvsc_drv_obj =
--				&storvsc_drv_ctx->drv_obj;
-+				&storvsc_drv->drv_obj;
- 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 	struct Scsi_Host *host;
- 	struct host_device_context *host_device_ctx;
-@@ -304,10 +304,10 @@ static int storvsc_probe(struct device *device)
- static int storvsc_remove(struct device *device)
- {
- 	int ret;
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 			driver_to_hyperv_driver(device->driver);
- 	struct storvsc_hyperv_driver *storvsc_drv_ctx =
--			(struct storvsc_hyperv_driver *)driver_ctx;
-+			(struct storvsc_hyperv_driver *)drv;
- 	struct storvsc_driver_object *storvsc_drv_obj =
- 			&storvsc_drv_ctx->drv_obj;
- 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
-@@ -601,10 +601,10 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 	struct host_device_context *host_device_obj =
- 		(struct host_device_context *)scmnd->device->host->hostdata;
- 	struct hyperv_device *device_obj = host_device_obj->device_obj;
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 		driver_to_hyperv_driver(device_obj->device.driver);
- 	struct storvsc_hyperv_driver *storvsc_drv_ctx =
--		(struct storvsc_hyperv_driver *)driver_ctx;
-+		(struct storvsc_hyperv_driver *)drv;
- 	struct storvsc_driver_object *storvsc_drv_obj =
- 		&storvsc_drv_ctx->drv_obj;
- 	struct hv_storvsc_request *request;
-diff --git a/drivers/staging/hv/vmbus.h b/drivers/staging/hv/vmbus.h
-index 617c3ed..65efb49 100644
---- a/drivers/staging/hv/vmbus.h
-+++ b/drivers/staging/hv/vmbus.h
-@@ -77,8 +77,8 @@ driver_to_hyperv_driver(struct device_driver *d)
- 
- 
- /* Vmbus interface */
--int vmbus_child_driver_register(struct hyperv_driver *driver_ctx);
--void vmbus_child_driver_unregister(struct hyperv_driver *driver_ctx);
-+int vmbus_child_driver_register(struct hyperv_driver *drv);
-+void vmbus_child_driver_unregister(struct hyperv_driver *drv);
- 
- extern struct completion hv_channel_ready;
- 
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index c7e8a36..40c641f 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -46,7 +46,7 @@ struct vmbus_hyperv_driver {
- 	/* FIXME, this is a bug */
- 	/* The driver field is not used in here. Instead, the bus field is */
- 	/* used to represent the driver */
--	struct hyperv_driver drv_ctx;
-+	struct hyperv_driver dummy;
- 	struct hyperv_driver drv_obj;
- 
- 	struct bus_type bus;
-@@ -613,9 +613,9 @@ static void vmbus_bus_exit(void)
- 
- /**
-  * vmbus_child_driver_register() - Register a vmbus's child driver
-- * @driver_ctx:        Pointer to driver structure you want to register
-+ * @drv:        Pointer to driver structure you want to register
-  *
-- * @driver_ctx is of type &struct hyperv_driver
-+ * @drv is of type &struct hyperv_driver
-  *
-  * Registers the given driver with Linux through the 'driver_register()' call
-  * And sets up the hyper-v vmbus handling for this driver.
-@@ -623,17 +623,17 @@ static void vmbus_bus_exit(void)
-  *
-  * Mainly used by Hyper-V drivers.
-  */
--int vmbus_child_driver_register(struct hyperv_driver *driver_ctx)
-+int vmbus_child_driver_register(struct hyperv_driver *drv)
- {
- 	int ret;
- 
- 	DPRINT_INFO(VMBUS_DRV, "child driver (%p) registering - name %s",
--		    driver_ctx, driver_ctx->driver.name);
-+		    drv, drv->driver.name);
- 
- 	/* The child driver on this vmbus */
--	driver_ctx->driver.bus = &vmbus_drv.bus;
-+	drv->driver.bus = &vmbus_drv.bus;
- 
--	ret = driver_register(&driver_ctx->driver);
-+	ret = driver_register(&drv->driver);
- 
- 	vmbus_request_offers();
- 
-@@ -643,23 +643,23 @@ EXPORT_SYMBOL(vmbus_child_driver_register);
- 
- /**
-  * vmbus_child_driver_unregister() - Unregister a vmbus's child driver
-- * @driver_ctx:        Pointer to driver structure you want to un-register
-+ * @drv:        Pointer to driver structure you want to un-register
-  *
-- * @driver_ctx is of type &struct hyperv_driver
-+ * @drv is of type &struct hyperv_driver
-  *
-  * Un-register the given driver with Linux through the 'driver_unregister()'
-  * call. And ungegisters the driver from the Hyper-V vmbus handler.
-  *
-  * Mainly used by Hyper-V drivers.
-  */
--void vmbus_child_driver_unregister(struct hyperv_driver *driver_ctx)
-+void vmbus_child_driver_unregister(struct hyperv_driver *drv)
- {
- 	DPRINT_INFO(VMBUS_DRV, "child driver (%p) unregistering - name %s",
--		    driver_ctx, driver_ctx->driver.name);
-+		    drv, drv->driver.name);
- 
--	driver_unregister(&driver_ctx->driver);
-+	driver_unregister(&drv->driver);
- 
--	driver_ctx->driver.bus = NULL;
-+	drv->driver.bus = NULL;
- }
- EXPORT_SYMBOL(vmbus_child_driver_unregister);
- 
-@@ -849,18 +849,18 @@ static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
- static int vmbus_match(struct device *device, struct device_driver *driver)
- {
- 	int match = 0;
--	struct hyperv_driver *driver_ctx = driver_to_hyperv_driver(driver);
-+	struct hyperv_driver *drv = driver_to_hyperv_driver(driver);
- 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 
- 	/* We found our driver ? */
--	if (memcmp(&device_obj->class_id, &driver_ctx->class_id,
-+	if (memcmp(&device_obj->class_id, &drv->class_id,
- 		   sizeof(struct hv_guid)) == 0) {
- 		/*
--		 * !! NOTE: The driver_ctx is not a vmbus_drv_ctx. We typecast
-+		 * !! NOTE: The drv is not a vmbus_drv_ctx. We typecast
- 		 * it here to access the struct hyperv_driver field
- 		 */
- 		struct vmbus_hyperv_driver *vmbus_drv_ctx =
--			(struct vmbus_hyperv_driver *)driver_ctx;
-+			(struct vmbus_hyperv_driver *)drv;
- 
- 		device_obj->drv = &vmbus_drv_ctx->drv_obj;
- 		DPRINT_INFO(VMBUS_DRV,
-@@ -899,14 +899,14 @@ static void vmbus_probe_failed_cb(struct work_struct *context)
- static int vmbus_probe(struct device *child_device)
- {
- 	int ret = 0;
--	struct hyperv_driver *driver_ctx =
-+	struct hyperv_driver *drv =
- 			driver_to_hyperv_driver(child_device->driver);
- 	struct hyperv_device *device_obj =
- 			device_to_hyperv_device(child_device);
- 
- 	/* Let the specific open-source driver handles the probe if it can */
--	if (driver_ctx->probe) {
--		ret = device_obj->probe_error = driver_ctx->probe(child_device);
-+	if (drv->probe) {
-+		ret = device_obj->probe_error = drv->probe(child_device);
- 		if (ret != 0) {
- 			DPRINT_ERR(VMBUS_DRV, "probe() failed for device %s "
- 				   "(%p) on driver %s (%d)...",
-@@ -931,7 +931,7 @@ static int vmbus_probe(struct device *child_device)
- static int vmbus_remove(struct device *child_device)
- {
- 	int ret;
--	struct hyperv_driver *driver_ctx;
-+	struct hyperv_driver *drv;
- 
- 	/* Special case root bus device */
- 	if (child_device->parent == NULL) {
-@@ -943,14 +943,14 @@ static int vmbus_remove(struct device *child_device)
- 	}
- 
- 	if (child_device->driver) {
--		driver_ctx = driver_to_hyperv_driver(child_device->driver);
-+		drv = driver_to_hyperv_driver(child_device->driver);
- 
- 		/*
- 		 * Let the specific open-source driver handles the removal if
- 		 * it can
- 		 */
--		if (driver_ctx->remove) {
--			ret = driver_ctx->remove(child_device);
-+		if (drv->remove) {
-+			ret = drv->remove(child_device);
- 		} else {
- 			DPRINT_ERR(VMBUS_DRV,
- 				   "remove() method not set for driver - %s",
-@@ -967,7 +967,7 @@ static int vmbus_remove(struct device *child_device)
-  */
- static void vmbus_shutdown(struct device *child_device)
- {
--	struct hyperv_driver *driver_ctx;
-+	struct hyperv_driver *drv;
- 
- 	/* Special case root bus device */
- 	if (child_device->parent == NULL) {
-@@ -982,11 +982,11 @@ static void vmbus_shutdown(struct device *child_device)
- 	if (!child_device->driver)
- 		return;
- 
--	driver_ctx = driver_to_hyperv_driver(child_device->driver);
-+	drv = driver_to_hyperv_driver(child_device->driver);
- 
- 	/* Let the specific open-source driver handles the removal if it can */
--	if (driver_ctx->shutdown)
--		driver_ctx->shutdown(child_device);
-+	if (drv->shutdown)
-+		drv->shutdown(child_device);
- 
- 	return;
- }
 -- 
-1.5.5.6
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
