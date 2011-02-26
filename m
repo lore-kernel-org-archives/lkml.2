@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab1BZKz0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 05:55:26 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49314 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab1BZKzY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 05:55:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AH8IE1LtW4yJC5koVeMKzv3+CJ4gyQYrOeaZODQpssfiOb7KveJ6nmIRIiQ7Ue1z23
-         WRqPIPTC91uHC9HeMhkNkXvoUa9hOIhHIWAA3Cpkir0Y+MXZCvF1NOtzamb0FRF3gqdU
-         F7DBREjErvoSR3QM8ob6UKE6BYuBiIRPYZeJs=
-Date: Sat, 26 Feb 2011 11:55:20 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] x86,mm,64bit: Round up memory boundary for
- init_memory_mapping_high()
-Message-ID: <20110226105520.GA9700@htj.dyndns.org>
-References: <4D656D1A.7030006@kernel.org>
- <20110223204656.GA27738@atj.dyndns.org>
- <4D657359.5060901@kernel.org>
- <20110223210326.GB27738@atj.dyndns.org>
- <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com>
- <20110224091557.GD7840@htj.dyndns.org>
- <4D674A33.8000809@kernel.org>
- <20110225100336.GA26608@elte.hu>
- <4D686EB8.4080507@kernel.org>
- <20110226103616.GA8701@htj.dyndns.org>
+	id S1751964Ab1BZK6v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 05:58:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45583 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab1BZK6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 05:58:49 -0500
+Date: Sat, 26 Feb 2011 11:58:47 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Rafi Rubin <rafi@seas.upenn.edu>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        micki@n-trig.com, rydberg@euromail.se, chatty@enac.fr,
+        peter.hutterer@who-t.net
+Subject: Re: [PATCH 1/2] HID: ntrig don't dereference unclaimed hidinput
+In-Reply-To: <1298610932-21957-1-git-send-email-rafi@seas.upenn.edu>
+Message-ID: <alpine.LNX.2.00.1102261156480.2160@pobox.suse.cz>
+References: <1298610932-21957-1-git-send-email-rafi@seas.upenn.edu>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110226103616.GA8701@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 26, 2011 at 11:36:16AM +0100, Tejun Heo wrote:
-> On Fri, Feb 25, 2011 at 07:08:40PM -0800, Yinghai Lu wrote:
-> > +	end_pfn = round_up(end_pfn, data->align>>PAGE_SHIFT);
+On Fri, 25 Feb 2011, Rafi Rubin wrote:
+
+> Moved the claimed input check before dereferencing field->hidinput to
+> fix a reported invalid deference bug.
 > 
-> And now you're mapping beyond max_pfn without even noting the behavior
-> change _anywhere_.  What the hell?  It's not like this point hasn't
-> been brought up before.  It has been mentioned _twice_ in this very
-> thread.  Come on.
+> Switched to a goto instead of an extra indent for most of the function.
+> 
+> Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+> ---
+> Peter Hutterer reported seeing ntrig_event called when field->hidinput
+> is NULL.
+> 
+> Seems like a reasonable opportunity to adjust the whitespace a bit.
 
-Reading the code again, the range is capped by
-mapping_work_data->start/end, so it won't go over max_pfn.  I
-apologize for the unwarranted rant about this part, but unfortunately
-the rest of the complaints still stand.
+Hi Rafi,
 
-Thanks.
+thanks for the fix. Even though it's obvious in this case what the actual 
+fix is, I'd prefer to have it separate from the other cleanup changes ...
+
+> ---
+>  drivers/hid/hid-ntrig.c |  466 ++++++++++++++++++++++++-----------------------
+>  1 files changed, 236 insertions(+), 230 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+> index beb4034..616f091 100644
+> --- a/drivers/hid/hid-ntrig.c
+> +++ b/drivers/hid/hid-ntrig.c
+> @@ -539,277 +539,283 @@ static int ntrig_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>  static int ntrig_event (struct hid_device *hid, struct hid_field *field,
+>  			struct hid_usage *usage, __s32 value)
+>  {
+> -	struct input_dev *input = field->hidinput->input;
+>  	struct ntrig_data *nd = hid_get_drvdata(hid);
+> +	struct input_dev *input;
+> +
+> +	/* Skip processing if not a claimed input */
+> +	if (!(hid->claimed & HID_CLAIMED_INPUT))
+> +		goto not_claimed_input;
+
+Makes me wonder why ntrig would be the only driver needing this ... 
+perhaps pushing it up the stack would make more sense?
 
 -- 
-tejun
+Jiri Kosina
+SUSE Labs, Novell Inc.
