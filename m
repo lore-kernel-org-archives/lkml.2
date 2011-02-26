@@ -1,109 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab1BZAY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 19:24:57 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:57729 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933037Ab1BZAXe (ORCPT
+	id S933080Ab1BZAnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 19:43:22 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:18782 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933024Ab1BZAnV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 19:23:34 -0500
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, leoli@freescale.com,
-        dan.j.williams@intel.com, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH 3/8] fsldma: improve link descriptor debugging
-Date: Fri, 25 Feb 2011 16:23:20 -0800
-Message-Id: <1298679805-14108-4-git-send-email-iws@ovro.caltech.edu>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
-References: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Fri, 25 Feb 2011 16:23:34 -0800 (PST)
+	Fri, 25 Feb 2011 19:43:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=glcZUpxKzsNtUehN9j2KGF36TGjr6llHHFewmqWKdcXMh/KLp6MWXHq4TcrekRXRld
+         ONrTga8qjKlryWoulf9g==
+MIME-Version: 1.0
+In-Reply-To: <tip-d95f412200652694e63e64bfd49f0ae274a54479@git.kernel.org>
+References: <20110201095051.4ddb7738@annuminas.surriel.com>
+	<tip-d95f412200652694e63e64bfd49f0ae274a54479@git.kernel.org>
+Date: Fri, 25 Feb 2011 16:43:17 -0800
+Message-ID: <AANLkTi=b-tyXEUfBKJH1RbENsqq8a-NRF54dSS6E3WGf@mail.gmail.com>
+Subject: Re: [tip:sched/core] sched: Add yield_to(task, preempt) functionality
+From: Venkatesh Pallipadi <venki@google.com>
+To: riel@redhat.com, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        mtosatti@redhat.com, efault@gmx.de, tglx@linutronix.de, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds better tracking to link descriptor allocations, callbacks, and
-frees. This makes it much easier to track errors with link descriptors.
+On Thu, Feb 3, 2011 at 6:12 AM, tip-bot for Mike Galbraith
+<efault@gmx.de> wrote:
+> Commit-ID:  d95f412200652694e63e64bfd49f0ae274a54479
+> Gitweb:     http://git.kernel.org/tip/d95f412200652694e63e64bfd49f0ae274a54479
+> Author:     Mike Galbraith <efault@gmx.de>
+> AuthorDate: Tue, 1 Feb 2011 09:50:51 -0500
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Thu, 3 Feb 2011 14:20:33 +0100
+>
+> sched: Add yield_to(task, preempt) functionality
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
- drivers/dma/fsldma.c |   21 +++++++++++++++------
- 1 files changed, 15 insertions(+), 6 deletions(-)
+I was looking at this patch, while trying to figure out how best to
+use next buddy to solve another unrelated to this cgroup context
+switching problem. While going through this change I see something
+that I don't really understand (inlined below). Not sure whether what
+I am looking at is a bug or I am missing something very obvious.
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 6e3d3d7..851993c 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -416,6 +416,10 @@ static struct fsl_desc_sw *fsl_dma_alloc_descriptor(
- 	desc->async_tx.tx_submit = fsl_dma_tx_submit;
- 	desc->async_tx.phys = pdesc;
- 
-+#ifdef FSL_DMA_LD_DEBUG
-+	dev_dbg(chan->dev, "%s: LD %p allocated\n", chan->name, desc);
-+#endif
-+
- 	return desc;
- }
- 
-@@ -467,6 +471,9 @@ static void fsldma_free_desc_list(struct fsldma_chan *chan,
- 
- 	list_for_each_entry_safe(desc, _desc, list, node) {
- 		list_del(&desc->node);
-+#ifdef FSL_DMA_LD_DEBUG
-+		dev_dbg(chan->dev, "%s: LD %p free\n", chan->name, desc);
-+#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
- 	}
- }
-@@ -478,6 +485,9 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
- 
- 	list_for_each_entry_safe_reverse(desc, _desc, list, node) {
- 		list_del(&desc->node);
-+#ifdef FSL_DMA_LD_DEBUG
-+		dev_dbg(chan->dev, "%s: LD %p free\n", chan->name, desc);
-+#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
- 	}
- }
-@@ -554,9 +564,6 @@ static struct dma_async_tx_descriptor *fsl_dma_prep_memcpy(
- 			dev_err(chan->dev, "%s: %s\n", chan->name, msg_ld_oom);
- 			goto fail;
- 		}
--#ifdef FSL_DMA_LD_DEBUG
--		dev_dbg(chan->dev, "%s: new link desc alloc %p\n", chan->name, new);
--#endif
- 
- 		copy = min(len, (size_t)FSL_DMA_BCR_MAX_CNT);
- 
-@@ -642,9 +649,6 @@ static struct dma_async_tx_descriptor *fsl_dma_prep_sg(struct dma_chan *dchan,
- 			dev_err(chan->dev, "%s: %s\n", chan->name, msg_ld_oom);
- 			goto fail;
- 		}
--#ifdef FSL_DMA_LD_DEBUG
--		dev_dbg(chan->dev, "%s: new link desc alloc %p\n", chan->name, new);
--#endif
- 
- 		set_desc_cnt(chan, &new->hw, len);
- 		set_desc_src(chan, &new->hw, src);
-@@ -881,13 +885,18 @@ static void fsl_chan_ld_cleanup(struct fsldma_chan *chan)
- 		callback_param = desc->async_tx.callback_param;
- 		if (callback) {
- 			spin_unlock_irqrestore(&chan->desc_lock, flags);
-+#ifdef FSL_DMA_LD_DEBUG
- 			dev_dbg(chan->dev, "%s: LD %p callback\n", name, desc);
-+#endif
- 			callback(callback_param);
- 			spin_lock_irqsave(&chan->desc_lock, flags);
- 		}
- 
- 		/* Run any dependencies, then free the descriptor */
- 		dma_run_dependencies(&desc->async_tx);
-+#ifdef FSL_DMA_LD_DEBUG
-+		dev_dbg(chan->dev, "%s: LD %p free\n", name, desc);
-+#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
- 	}
- 
--- 
-1.7.3.4
+Thanks in advance for clarification.
 
+>
+> Currently only implemented for fair class tasks.
+>
+> Add a yield_to_task method() to the fair scheduling class. allowing the
+> caller of yield_to() to accelerate another thread in it's thread group,
+> task group.
+>
+
+<snip>
+
+>
+>  static void calc_load_account_idle(struct rq *this_rq);
+> @@ -5448,6 +5481,58 @@ void __sched yield(void)
+>  }
+>  EXPORT_SYMBOL(yield);
+>
+> +/**
+> + * yield_to - yield the current processor to another thread in
+> + * your thread group, or accelerate that thread toward the
+> + * processor it's on.
+> + *
+> + * It's the caller's job to ensure that the target task struct
+> + * can't go away on us before we can do any checks.
+> + *
+> + * Returns true if we indeed boosted the target task.
+> + */
+> +bool __sched yield_to(struct task_struct *p, bool preempt)
+> +{
+> +       struct task_struct *curr = current;
+> +       struct rq *rq, *p_rq;
+> +       unsigned long flags;
+> +       bool yielded = 0;
+> +
+> +       local_irq_save(flags);
+> +       rq = this_rq();
+> +
+> +again:
+> +       p_rq = task_rq(p);
+> +       double_rq_lock(rq, p_rq);
+> +       while (task_rq(p) != p_rq) {
+> +               double_rq_unlock(rq, p_rq);
+> +               goto again;
+> +       }
+> +
+> +       if (!curr->sched_class->yield_to_task)
+> +               goto out;
+> +
+> +       if (curr->sched_class != p->sched_class)
+> +               goto out;
+> +
+> +       if (task_running(p_rq, p) || p->state)
+> +               goto out;
+> +
+> +       yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+> +       if (yielded)
+> +               schedstat_inc(rq, yld_count);
+> +
+> +out:
+> +       double_rq_unlock(rq, p_rq);
+> +       local_irq_restore(flags);
+> +
+> +       if (yielded)
+> +               schedule();
+> +
+> +       return yielded;
+> +}
+> +EXPORT_SYMBOL_GPL(yield_to);
+> +
+>  /*
+>  * This task is about to go to sleep on IO. Increment rq->nr_iowait so
+>  * that process accounting knows that this is a task in IO wait state.
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index c0fbeb9..0270246 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1975,6 +1975,25 @@ static void yield_task_fair(struct rq *rq)
+>        set_skip_buddy(se);
+>  }
+>
+> +static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preempt)
+> +{
+> +       struct sched_entity *se = &p->se;
+> +
+> +       if (!se->on_rq)
+> +               return false;
+> +
+> +       /* Tell the scheduler that we'd really like pse to run next. */
+> +       set_next_buddy(se);
+
+The below comment says about rescheduling p's CPU. But the rq variable
+we have here is the curr_rq and not p_rq. So, should this be done in
+yield_to() with p_rq. I did try to see the discussion on other
+versions of this patch. v3 and before had -
+"resched_task(task_of(p_cfs_rq->curr));" which seems to be correct...
+
+Also, we already have a test of (task_running(p_rq, p) || p->state) in
+yield_to. Wondering why we need the additional (!se->on_rq) above?
+
+> +
+> +       /* Make p's CPU reschedule; pick_next_entity takes care of fairness. */
+> +       if (preempt)
+> +               resched_task(rq->curr);
+> +
+> +       yield_task_fair(rq);
+> +
+> +       return true;
+> +}
+
+Thanks,
+Venki
+
+> +
+>  #ifdef CONFIG_SMP
+>  /**************************************************
+>  * Fair scheduling class load-balancing methods:
+> @@ -4243,6 +4262,7 @@ static const struct sched_class fair_sched_class = {
+>        .enqueue_task           = enqueue_task_fair,
+>        .dequeue_task           = dequeue_task_fair,
+>        .yield_task             = yield_task_fair,
+> +       .yield_to_task          = yield_to_task_fair,
+>
+>        .check_preempt_curr     = check_preempt_wakeup,
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
