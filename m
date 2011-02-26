@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab1BZKnX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 05:43:23 -0500
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:51966 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab1BZKnW (ORCPT
+	id S1751944Ab1BZKz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 05:55:26 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49314 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab1BZKzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 05:43:22 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D68D965.7040307@cam.ac.uk>
-Date: Sat, 26 Feb 2011 10:43:49 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
+	Sat, 26 Feb 2011 05:55:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AH8IE1LtW4yJC5koVeMKzv3+CJ4gyQYrOeaZODQpssfiOb7KveJ6nmIRIiQ7Ue1z23
+         WRqPIPTC91uHC9HeMhkNkXvoUa9hOIhHIWAA3Cpkir0Y+MXZCvF1NOtzamb0FRF3gqdU
+         F7DBREjErvoSR3QM8ob6UKE6BYuBiIRPYZeJs=
+Date: Sat, 26 Feb 2011 11:55:20 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] x86,mm,64bit: Round up memory boundary for
+ init_memory_mapping_high()
+Message-ID: <20110226105520.GA9700@htj.dyndns.org>
+References: <4D656D1A.7030006@kernel.org>
+ <20110223204656.GA27738@atj.dyndns.org>
+ <4D657359.5060901@kernel.org>
+ <20110223210326.GB27738@atj.dyndns.org>
+ <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com>
+ <20110224091557.GD7840@htj.dyndns.org>
+ <4D674A33.8000809@kernel.org>
+ <20110225100336.GA26608@elte.hu>
+ <4D686EB8.4080507@kernel.org>
+ <20110226103616.GA8701@htj.dyndns.org>
 MIME-Version: 1.0
-To: guenter.roeck@ericsson.com
-CC: Jean Delvare <khali@linux-fr.org>,
-        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 4/5] hwmon: (pmbus) Add support for Maxim MAX34440/MAX34441
-References: <1297969217-9564-1-git-send-email-guenter.roeck@ericsson.com>	 <1297969217-9564-5-git-send-email-guenter.roeck@ericsson.com>	 <4D681425.3010503@cam.ac.uk> <1298669577.1735.99.camel@groeck-laptop>
-In-Reply-To: <1298669577.1735.99.camel@groeck-laptop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110226103616.GA8701@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/11 21:32, Guenter Roeck wrote:
-> Hi Jonathan,
+On Sat, Feb 26, 2011 at 11:36:16AM +0100, Tejun Heo wrote:
+> On Fri, Feb 25, 2011 at 07:08:40PM -0800, Yinghai Lu wrote:
+> > +	end_pfn = round_up(end_pfn, data->align>>PAGE_SHIFT);
 > 
-> On Fri, 2011-02-25 at 15:42 -0500, Jonathan Cameron wrote:
->> One trivial formatting nitpick.
->> Dug out datasheet for this one..
->> I'm a little unclear how value from there map to those stored in here...
-> [ ... ]
-> 
->>> +static struct pmbus_driver_info max34440_info[] = {
->>> +	[max34440] = {
->>> +		.pages = 14,
->>> +		.direct[PSC_VOLTAGE_IN] = true,
->>> +		.direct[PSC_VOLTAGE_OUT] = true,
->>> +		.direct[PSC_TEMPERATURE] = true,
->>> +		.direct[PSC_CURRENT_OUT] = true,
->>> +		.m[PSC_VOLTAGE_IN] = 1,
->>> +		.b[PSC_VOLTAGE_IN] = 0,
->>> +		.R[PSC_VOLTAGE_IN] = 3,
->>> +		.m[PSC_VOLTAGE_OUT] = 1,
->>> +		.b[PSC_VOLTAGE_OUT] = 0,
->>> +		.R[PSC_VOLTAGE_OUT] = 3,
->>> +		.m[PSC_CURRENT_OUT] = 1,
->>> +		.b[PSC_CURRENT_OUT] = 0,
->>> +		.R[PSC_CURRENT_OUT] = 3,
->> Table 3 of datasheet says R for current is 0... I may be missing
->> something though!  
-> 
-> At least this one has a relatively simple reason ;).
-> 
-> The base unit (to which R is applied to) in the datasheet is mV and mA.
-> The base unit used by max8688 and max16064 is V and A. Chips in linear
-> mode also use V and A. I had the choice of either adjusting the code to
-> expect mV and mA for all chips, or to expect V and A for all chips. I
-> decided to use the latter for consistency, and to adjust R in the core
-> driver to the units expected to be reported in the sysfs attributes. For
-> max34440/max34441, the adjustment ends up being 0 either way (3 + (-3)
-> in one direction and (-3) + 3 in the other).
-This reason actually occurred to me whilst cycling home but thanks for
-clarifying this.
-> 
-> Another option would be to not do any sysfs related adjustments in the
-> core driver, but to do all adjustments via platform data instead. I
-> decided against that because the code to handle linear mode (which
-> expects V and A) would no longer match the code to handle direct mode,
-> which might cause even more confusion.
-What you have works fine for me though you'll have to keep a close eye
-on any drivers submitted by others as this will be easy to get wrong
-as people will blindly fill tables in from datasheets.
+> And now you're mapping beyond max_pfn without even noting the behavior
+> change _anywhere_.  What the hell?  It's not like this point hasn't
+> been brought up before.  It has been mentioned _twice_ in this very
+> thread.  Come on.
 
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> 
-> Thanks,
-> Guenter
-> 
-> 
-> 
+Reading the code again, the range is capped by
+mapping_work_data->start/end, so it won't go over max_pfn.  I
+apologize for the unwarranted rant about this part, but unfortunately
+the rest of the complaints still stand.
 
+Thanks.
+
+-- 
+tejun
