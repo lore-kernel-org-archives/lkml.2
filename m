@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab1BZIuV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 03:50:21 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50730 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586Ab1BZIuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 03:50:19 -0500
-Date: Sat, 26 Feb 2011 08:49:23 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, seth.forshee@canonical.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, seth.forshee@canonical.com
-In-Reply-To: <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] clockevents: Prevent oneshot mode when broadcast device is periodic
-Message-ID: <tip-3a142a0672b48a853f00af61f184c7341ac9c99d@git.kernel.org>
-Git-Commit-ID: 3a142a0672b48a853f00af61f184c7341ac9c99d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751717Ab1BZI5o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 03:57:44 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54223 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab1BZI5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 03:57:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=X0ERcVSYKtuqj4plHfPHIR35mnreHvs6Wqpil95cDcaH6O4tmLPkRCwzm5I+h0Vz4W
+         YvheJ30zwrGve6dRNKZIZIvJCu4GElTZbPPZMyEb12Gtcn0+VD5iam1BlMGKghUENBr2
+         CHYUHTE83fcnD6XUfzPKL64It7OxLUQKLaCac=
+Date: Sat, 26 Feb 2011 09:57:37 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for
+ init_memory_mapping_high()
+Message-ID: <20110226085737.GT24828@htj.dyndns.org>
+References: <20110223171945.GI26065@htj.dyndns.org>
+ <4D656D1A.7030006@kernel.org>
+ <20110223204656.GA27738@atj.dyndns.org>
+ <4D657359.5060901@kernel.org>
+ <20110223210326.GB27738@atj.dyndns.org>
+ <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com>
+ <20110224091557.GD7840@htj.dyndns.org>
+ <4D674A33.8000809@kernel.org>
+ <20110225111606.GG24828@htj.dyndns.org>
+ <4D680EA4.6050402@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 26 Feb 2011 08:49:24 +0000 (UTC)
+In-Reply-To: <4D680EA4.6050402@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3a142a0672b48a853f00af61f184c7341ac9c99d
-Gitweb:     http://git.kernel.org/tip/3a142a0672b48a853f00af61f184c7341ac9c99d
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 25 Feb 2011 22:34:23 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 26 Feb 2011 09:45:28 +0100
+On Fri, Feb 25, 2011 at 12:18:44PM -0800, Yinghai Lu wrote:
+> >  Or better, can you please make that explicit?
+> > It currently depends on memories being registered in ascending address
+> > order, right?  The memblock code already is NUMA aware, I think it
+> > would be far better to make the node affine part explicit.
+> 
+> yes, memblock is numa aware after memblock_x86_register_active_regions().
+> and it rely on early_node_map[].
+> 
+> do you mean let init_memory_mapping to take node id like setup_node_bootmem?
+> so find_early_table_space could take nodeid instead of tbl_end? 
 
-clockevents: Prevent oneshot mode when broadcast device is periodic
+Yeap.
 
-When the per cpu timer is marked CLOCK_EVT_FEAT_C3STOP, then we only
-can switch into oneshot mode, when the backup broadcast device
-supports oneshot mode as well. Otherwise we would try to switch the
-broadcast device into an unsupported mode unconditionally. This went
-unnoticed so far as the current available broadcast devices support
-oneshot mode. Seth unearthed this problem while debugging and working
-around an hpet related BIOS wreckage.
+> > @@ -550,8 +548,12 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+> >  			end = max(mi->blk[i].end, end);
+> >  		}
+> >  
+> > -		if (start < end)
+> > +		if (start < end) {
+> > +			init_memory_mapping(
+> > +			  ALIGN_DOWN_TO_MAX_MAP_SIZE_AND_CONVERT_TO_PFN(start),
+> > +			  ALIGN_UP_SIMILARY_BUT_DONT_GO_OVER_MAX_PFN(end));
+> >  			setup_node_bootmem(nid, start, end);
+> > +		}
+> will have problem with cross node conf. like 0-4g, 8-12g on node0, 4g-8g, 12g-16g on node1.
 
-Add the necessary check to tick_is_oneshot_available().
+And how common are they?  This whole cruft is basically meaningless if
+1GiB mapping is supported, IOW, basically on all AMD 64s and all
+post-nehalem intels.  Why not just cite the limitation in the comment
+and stick to something simple?
 
-Reported-and-tested-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
-Cc: stable@kernel.org # .21 ->
----
- kernel/time/tick-broadcast.c |   10 ++++++++++
- kernel/time/tick-common.c    |    6 +++++-
- kernel/time/tick-internal.h  |    3 +++
- 3 files changed, 18 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 48b2761..a3b5aff 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -600,4 +600,14 @@ int tick_broadcast_oneshot_active(void)
- 	return tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT;
- }
- 
-+/*
-+ * Check whether the broadcast device supports oneshot.
-+ */
-+bool tick_broadcast_oneshot_available(void)
-+{
-+	struct clock_event_device *bc = tick_broadcast_device.evtdev;
-+
-+	return bc ? bc->features & CLOCK_EVT_FEAT_ONESHOT : false;
-+}
-+
- #endif
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 051bc80..ed228ef 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -51,7 +51,11 @@ int tick_is_oneshot_available(void)
- {
- 	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
- 
--	return dev && (dev->features & CLOCK_EVT_FEAT_ONESHOT);
-+	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
-+		return 0;
-+	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return 1;
-+	return tick_broadcast_oneshot_available();
- }
- 
- /*
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index 290eefb..f65d3a7 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -36,6 +36,7 @@ extern void tick_shutdown_broadcast_oneshot(unsigned int *cpup);
- extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
- extern int tick_broadcast_oneshot_active(void);
- extern void tick_check_oneshot_broadcast(int cpu);
-+bool tick_broadcast_oneshot_available(void);
- # else /* BROADCAST */
- static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- {
-@@ -46,6 +47,7 @@ static inline void tick_broadcast_switch_to_oneshot(void) { }
- static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
- static inline int tick_broadcast_oneshot_active(void) { return 0; }
- static inline void tick_check_oneshot_broadcast(int cpu) { }
-+static inline bool tick_broadcast_oneshot_available(void) { return true; }
- # endif /* !BROADCAST */
- 
- #else /* !ONESHOT */
-@@ -76,6 +78,7 @@ static inline int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
- 	return 0;
- }
- static inline int tick_broadcast_oneshot_active(void) { return 0; }
-+static inline bool tick_broadcast_oneshot_available(void) { return false; }
- #endif /* !TICK_ONESHOT */
- 
- /*
+-- 
+tejun
