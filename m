@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab1BZAov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 19:44:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35534 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933088Ab1BZAom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 19:44:42 -0500
-Message-ID: <4D684CF6.30002@suse.com>
-Date: Fri, 25 Feb 2011 19:44:38 -0500
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org
-Subject: [PATCH 2/2] kconfig: Use /proc/config.gz as a configuration source
-References: <4D671556.80607@suse.com> <20110225060706.GA12723@merkur.ravnborg.org>
-In-Reply-To: <20110225060706.GA12723@merkur.ravnborg.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933110Ab1BZAyu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 19:54:50 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:54674 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932105Ab1BZAyt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 19:54:49 -0500
+Subject: Re: [PATCH 06/21]drivers:media:cx23418.h remove one to many l's in
+ the word.
+From: Andy Walls <awalls@md.metrocast.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, mchehab@infradead.org, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1298614277-3649-1-git-send-email-justinmattock@gmail.com>
+References: <1298614277-3649-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 Feb 2011 19:51:18 -0500
+Message-ID: <1298681478.2709.24.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-02-25_08:2011-02-25,2011-02-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1012030000 definitions=main-1102250167
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- This patch uses the type handlers to add /proc/config.gz as a configuration
- source when 'make oldconfig' is used with a missing .config
+On Thu, 2011-02-24 at 22:11 -0800, Justin P. Mattock wrote:
+> The patch below removes an extra "l" in the word.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/media/video/cx18/cx23418.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/cx18/cx23418.h b/drivers/media/video/cx18/cx23418.h
+> index 7e40035..935f557 100644
+> --- a/drivers/media/video/cx18/cx23418.h
+> +++ b/drivers/media/video/cx18/cx23418.h
+> @@ -477,7 +477,7 @@
+>  /* The are no buffers ready. Try again soon! */
+>  #define CXERR_NODATA_AGAIN      0x00001E
+>  
+> -/* The stream is stopping. Function not alllowed now! */
+> +/* The stream is stopping. Function not allowed now! */
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
+If the spelling mistake is worthy of a fix, why isn't the egregious
+grammar mistake also worth fixing?
 
- init/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Also, those aren't the only spelling and grammar mistakes in comments in
+that file.
 
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -26,6 +26,7 @@ config DEFCONFIG_LIST
- 	depends on !UML
- 	option defconfig_list
- 	default "/lib/modules/$UNAME_RELEASE/.config"
-+	default "/proc/config.gz"
- 	default "/etc/kernel-config"
- 	default "/boot/config-$UNAME_RELEASE"
- 	default "$ARCH_DEFCONFIG"
+-Andy
 
--- 
-Jeff Mahoney
-SUSE Labs
+>  #define CXERR_STOPPING_STATUS   0x00001F
+>  
+>  /* Trying to access hardware when the power is turned OFF */
+
+
