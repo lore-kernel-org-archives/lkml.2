@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab1BZSvP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 13:51:15 -0500
-Received: from mailq1.tnnet.fi ([217.112.240.127]:52849 "EHLO mailq1.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752315Ab1BZSvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 13:51:14 -0500
-X-Greylist: delayed 628 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Feb 2011 13:51:14 EST
-Message-ID: <4D69492B.CB694458@users.sourceforge.net>
-Date: Sat, 26 Feb 2011 20:40:43 +0200
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
-To: linux-crypto@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Announce loop-AES-v3.6b file/swap crypto package
-Content-Type: text/plain; charset=us-ascii
+	id S1752571Ab1BZSzE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 13:55:04 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32750 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445Ab1BZSzC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 13:55:02 -0500
+Date: Sat, 26 Feb 2011 10:54:00 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] fs/block_dev.c: fix new kernel-doc warning
+Message-Id: <20110226105400.c70faa11.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D694C82.0053:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop-AES changes since previous release:
-- Fixed a bug that can cause "NULL pointer dereference" at /dev/md* backing
-  device, and possibly other backing devices that call __bio_clone(). This
-  bug is present in loop-AES-v3.6a (and loop-AES-v3.5 versions with
-  linux-2.6.37 or later kernels).
-- Fixed a bug that can cause slow operation or even deadlock. This bug is
-  present only in loop-AES-v3.6a version. Older versions are not affected.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
+Fix new kernel-doc warning in fs/block_dev.c:
 
-bzip2 compressed tarball is here:
+Warning(fs/block_dev.c:937): No description found for parameter 'kill_dirty'
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6b.tar.bz2
-    md5sum 247e5a909877577bdcd246f8caada689
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ fs/block_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6b.tar.bz2.sign
-
--- 
-Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
+--- linux-2.6.38-rc6-git6.orig/fs/block_dev.c
++++ linux-2.6.38-rc6-git6/fs/block_dev.c
+@@ -928,6 +928,7 @@ EXPORT_SYMBOL_GPL(bd_unlink_disk_holder)
+  * flush_disk - invalidates all buffer-cache entries on a disk
+  *
+  * @bdev:      struct block device to be flushed
++ * @kill_dirty: flag to guide handling of dirty inodes
+  *
+  * Invalidates all buffer-cache entries on a disk. It should be called
+  * when a disk has been changed -- either by a media change or online
