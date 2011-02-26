@@ -1,259 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349Ab1BZERR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 23:17:17 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:42284 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab1BZERP (ORCPT
+	id S1751338Ab1BZFJN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 00:09:13 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:28991 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1BZFJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 23:17:15 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=LFjzArOND4v0b9aFl2M/oIVZePBrkepAr42PRk+6KLN5vQdLcz/dH/dZ9L5LXH9zZ
-	qp4KXYIqUm3va4R6wVZEg==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v5 0/9] memcg: per cgroup dirty page accounting
-References: <1298669760-26344-1-git-send-email-gthelen@google.com>
-Date: Fri, 25 Feb 2011 20:16:34 -0800
-In-Reply-To: <1298669760-26344-1-git-send-email-gthelen@google.com> (Greg
-	Thelen's message of "Fri, 25 Feb 2011 13:35:51 -0800")
-Message-ID: <xr93ipw7qvkt.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Sat, 26 Feb 2011 00:09:11 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6268"; a="76617649"
+Message-ID: <4D688AF1.1090607@codeaurora.org>
+Date: Fri, 25 Feb 2011 21:09:05 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Will Deacon <will.deacon@arm.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/4] msm: scm: Fix improper register assignment
+References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>	<1298573085-23217-3-git-send-email-sboyd@codeaurora.org> <1298640219.958.74.camel@e102144-lin.cambridge.arm.com>
+In-Reply-To: <1298640219.958.74.camel@e102144-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Thelen <gthelen@google.com> writes:
+On 02/25/2011 05:23 AM, Will Deacon wrote:
+> On Thu, 2011-02-24 at 18:44 +0000, Stephen Boyd wrote:
+>> Assign the registers used in the inline assembly immediately
+>> before the inline assembly block. This ensures the compiler
+>> doesn't optimize away dead register assignments when it
+>> shouldn't.
+>>
+>> Signed-off-by: Stephen Boyd<sboyd@codeaurora.org>
+>> ---
+>>   arch/arm/mach-msm/scm.c |    7 +++++--
+>>   1 files changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
+>> index ba57b5a..5eddf54 100644
+>> --- a/arch/arm/mach-msm/scm.c
+>> +++ b/arch/arm/mach-msm/scm.c
+>> @@ -264,13 +264,16 @@ u32 scm_get_version(void)
+>>   {
+>>          int context_id;
+>>          static u32 version = -1;
+>> -       register u32 r0 asm("r0") = 0x1<<  8;
+>> -       register u32 r1 asm("r1") = (u32)&context_id;
+>> +       register u32 r0 asm("r0");
+>> +       register u32 r1 asm("r1");
+>>
+>>          if (version != -1)
+>>                  return version;
+>>
+>>          mutex_lock(&scm_lock);
+>> +
+>> +       r0 = 0x1<<  8;
+>> +       r1 = (u32)&context_id;
+>>          asm volatile(
+>>                  __asmeq("%0", "r1")
+>>                  __asmeq("%1", "r0")
+>
+>
+> Whoa, have you seen the compiler `optimise' the original assignments
+> away? Since there is a use in the asm block, the definition shouldn't
+> be omitted. What toolchain are you using?
+>
 
-> Changes since v4:
-> - Moved documentation changes to start of series to provide a better
->   introduction to the series.
-> - Added support for hierarchical dirty limits.
-> - Incorporated bug fixes previously found in v4.
-> - Include a new patch "writeback: convert variables to unsigned" to provide a
->   clearer transition to the the new dirty_info structure (patch "writeback:
->   create dirty_info structure").
-> - Within the new dirty_info structure, replaced nr_reclaimable with
->   nr_file_dirty and nr_unstable_nfs to give callers finer grain dirty usage
->   information also added dirty_info_reclaimable().
-> - Rebased the series to mmotm-2011-02-10-16-26 with two pending mmotm patches:
->   memcg: break out event counters from other stats
->     https://lkml.org/lkml/2011/2/17/415
->   memcg: use native word page statistics counters
->     https://lkml.org/lkml/2011/2/17/413
+Yeah, Stephen and I spent quite a bit of time discussing this and 
+experimenting to figure out what the heck GCC was doing. But it kept 
+optimizing the fake code we put in trying to force GCC to use a specific 
+register.
 
-For those who prefer a monolithic patch, which applies to
-mmotm-2011-02-10-16-26:
-  http://www.kernel.org/pub/linux/kernel/people/gthelen/memcg/memcg-dirty-limits-v5-on-mmotm-2011-02-10-16-26.patch
+My hypothesis at this point is that the "register xx asm("rx")" 
+declarations are just for giving a symbolic name to refer to the 
+specific register in C code. I doesn't tell GCC to reserve away the 
+register and make sure the value is preserved. And the assignments to 
+these said variables seem to translate to a pure "mov rx, 5" kinda 
+instruction with no further preservation of rx either.
 
-The monolithic patch includes this -v4 series and the two above
-mentioned memcg prerequisite patches.
+That's the only hypothesis I/we could come up with as to how this got 
+optimized away.
 
-> Changes since v3:
-> - Refactored balance_dirty_pages() dirtying checking to use new struct
->   dirty_info, which is used to compare both system and memcg dirty limits
->   against usage.
-> - Disabled memcg dirty limits when memory.use_hierarchy=1.  An enhancement is
->   needed to check the chain of parents to ensure that no dirty limit is
->   exceeded.
-> - Ported to mmotm-2010-10-22-16-36.
->
-> Changes since v2:
-> - Rather than disabling softirq in lock_page_cgroup(), introduce a separate lock
->   to synchronize between memcg page accounting and migration.  This only affects
->   patch 4 of the series.  Patch 4 used to disable softirq, now it introduces the
->   new lock.
->
-> Changes since v1:
-> - Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
->   memory.stat to match /proc/meminfo.
-> - Avoid lockdep warnings by using rcu_read_[un]lock() in
->   mem_cgroup_has_dirty_limit().
-> - Fixed lockdep issue in mem_cgroup_read_stat() which is exposed by these
->   patches.
-> - Remove redundant comments.
-> - Rename (for clarity):
->   - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
->   - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
-> - Renamed newly created proc files:
->   - memory.dirty_bytes -> memory.dirty_limit_in_bytes
->   - memory.dirty_background_bytes -> memory.dirty_background_limit_in_bytes
-> - Removed unnecessary get_ prefix from get_xxx() functions.
-> - Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
-> - Disable softirq rather than hardirq in lock_page_cgroup()
-> - Made mem_cgroup_move_account_page_stat() inline.
-> - Ported patches to mmotm-2010-10-13-17-13.
->
-> This patch set provides the ability for each cgroup to have independent dirty
-> page limits.
->
-> Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
-> page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
-> not be able to consume more than their designated share of dirty pages and will
-> be throttled if they cross that limit.
->
-> Example use case:
->   #!/bin/bash
->   #
->   # Here is a test script that shows a situation where memcg dirty limits are
->   # beneficial.
->   #
->   # The script runs two programs:
->   # 1) a dirty page background antagonist (dd)
->   # 2) an interactive foreground process (tar).
->   #
->   # If the script's argument is false, then both processes are limited by the
->   # classic global dirty limits.  If the script is given a true argument, then a
->   # per-cgroup dirty limit is used to contain dd dirty page consumption.  The
->   # cgroup isolates the dd dirty memory consumption from the rest of the system
->   # processes (tar in this case).
->   #
->   # The time used by the tar process is printed (lower is better).
->   #
->   # When dd is run within a dirty limiting cgroup, the tar process had faster
->   # and more predictable performance.  memcg dirty ratios might be useful to
->   # serve different task classes (interactive vs batch).  A past discussion
->   # touched on this: http://lkml.org/lkml/2010/5/20/136
->   #
->   # When called with 'false' (using memcg without dirty isolation):
->   #   tar finished in 7.0s
->   #   dd reports 92 MB/s  
->   #
->   # When called with 'true' (using memcg for dirty isolation):
->   #   tar finished in 2.5s
->   #   dd reports 82 MB/s
->
->   echo memcg_dirty_limits: $1
->   
->   # set system dirty limits.
->   echo $((1<<30)) > /proc/sys/vm/dirty_bytes
->   echo $((1<<29)) > /proc/sys/vm/dirty_background_bytes
->   
->   mkdir /dev/cgroup/memory/A
->   
->   if $1; then    # if using cgroup to contain 'dd'...
->     echo 100M > /dev/cgroup/memory/A/memory.dirty_limit_in_bytes
->   fi
->   
->   # run antagonist (dd) in cgroup A
->   (echo $BASHPID > /dev/cgroup/memory/A/tasks; \
->    dd if=/dev/zero of=/disk1/big.file count=10k bs=1M) &
->   
->   # let antagonist (dd) get warmed up
->   sleep 10
->   
->   # time interactive job
->   time tar -C /disk2 -xzf linux.tar.gz
->   
->   wait
->   sleep 10
->   rmdir /dev/cgroup/memory/A
->
-> The patches are based on a series proposed by Andrea Righi in Mar 2010.
->
-> Overview:
-> - Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
->   unstable.
->
-> - Extend mem_cgroup to record the total number of pages in each of the 
->   interesting dirty states (dirty, writeback, unstable_nfs).  
->
-> - Add dirty parameters similar to the system-wide /proc/sys/vm/dirty_* limits to
->   mem_cgroup.  The mem_cgroup dirty parameters are accessible via cgroupfs
->   control files.
->
-> - Consider both system and per-memcg dirty limits in page writeback when
->   deciding to queue background writeback or throttle dirty memory production.
->
-> Known shortcomings (see the patch 1 update to Documentation/cgroups/memory.txt
-> for more details):
-> - When a cgroup dirty limit is exceeded, then bdi writeback is employed to
->   writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
->   just inodes contributing dirty pages to the cgroup exceeding its limit.  
->
-> - A cgroup may exceed its dirty limit if the memory is dirtied by a process in a
->   different memcg.
->
-> Performance data:
-> - A page fault microbenchmark workload was used to measure performance, which
->   can be called in read or write mode:
->         f = open(foo. $cpu)
->         truncate(f, 4096)
->         alarm(60)
->         while (1) {
->                 p = mmap(f, 4096)
->                 if (write)
-> 			*p = 1
-> 		else
-> 			x = *p
->                 munmap(p)
->         }
->
-> - The workload was called for several points in the patch series in different
->   modes:
->   - s_read is a single threaded reader
->   - s_write is a single threaded writer
->   - p_read is a 16 thread reader, each operating on a different file
->   - p_write is a 16 thread writer, each operating on a different file
->
-> - Measurements were collected on a 16 core non-numa system using "perf stat
->   --repeat 3".
->
-> - All numbers are page fault rate (M/sec).  Higher is better.
->
-> - To compare the performance of a kernel without memcg compare the first and
->   last rows - neither has memcg configured.  The first row does not include any
->   of these memcg dirty limit patches.
->
-> - To compare the performance of using memcg dirty limits, compare the memcg
->   baseline (2nd row titled "mmotm w/ memcg") with the 3rd row (memcg enabled
->   with all patches).
->
->                           root_cgroup                     child_cgroup
->                  s_read s_write p_read p_write   s_read s_write p_read p_write
-> mmotm w/o memcg   0.359  0.312   0.357  0.312
-> mmotm w/ memcg    0.366  0.316   0.342  0.301     0.368  0.309   0.347  0.301
-> all patches       0.347  0.322   0.327  0.303     0.342  0.323   0.327  0.305
-> all patches       0.358  0.322   0.357  0.316
->   w/o memcg
->
-> Greg Thelen (9):
->   memcg: document cgroup dirty memory interfaces
->   memcg: add page_cgroup flags for dirty page tracking
->   writeback: convert variables to unsigned
->   writeback: create dirty_info structure
->   memcg: add dirty page accounting infrastructure
->   memcg: add kernel calls for memcg dirty page stats
->   memcg: add dirty limits to mem_cgroup
->   memcg: add cgroupfs interface to memcg dirty limits
->   memcg: check memcg dirty limits in page writeback
->
->  Documentation/cgroups/memory.txt |   80 +++++++
->  fs/fs-writeback.c                |    7 +-
->  fs/nfs/write.c                   |    4 +
->  include/linux/memcontrol.h       |   33 +++-
->  include/linux/page_cgroup.h      |   23 ++
->  include/linux/writeback.h        |   18 ++-
->  mm/backing-dev.c                 |   18 +-
->  mm/filemap.c                     |    1 +
->  mm/memcontrol.c                  |  470 +++++++++++++++++++++++++++++++++++++-
->  mm/page-writeback.c              |  150 +++++++++----
->  mm/truncate.c                    |    1 +
->  mm/vmscan.c                      |    2 +-
->  mm/vmstat.c                      |    6 +-
->  13 files changed, 742 insertions(+), 71 deletions(-)
+I would be great if someone explains the exact meaning of these 
+"register asm" declarations and the assignments in C code.
+
+-Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
