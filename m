@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab1BZHun (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 02:50:43 -0500
-Received: from fox.seas.upenn.edu ([158.130.68.12]:41525 "EHLO
-	fox.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab1BZHul (ORCPT
+	id S1751573Ab1BZICi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 03:02:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61314 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1BZICh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 02:50:41 -0500
-Message-ID: <4D68B0AE.2090000@seas.upenn.edu>
-Date: Sat, 26 Feb 2011 02:50:06 -0500
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Sat, 26 Feb 2011 03:02:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=wjYLIlHECWhExq8KMIp4tk9WJsbUcksDzMDTPcbeUqhA5FShoJFT/SYPcbdNUYPKdR
+         Favn5fjyJ9ritp3R3lBm7RtFreHtS4hu11Tp6DWEKUJ+LOQX+dHkBcbUkGNmy3QgLrxm
+         3ayLdNQhFZFHXYy6le+9VsN5IsH+b8MuGtVtY=
+Message-ID: <4D68B397.6040809@gmail.com>
+Date: Sat, 26 Feb 2011 11:02:31 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        micki@n-trig.com, chatty@enac.fr, trivial@kernel.org,
-        peter.hutterer@who-t.net
-Subject: Re: [PATCH 1/2] HID: ntrig don't dereference unclaimed hidinput
-References: <1298610932-21957-1-git-send-email-rafi@seas.upenn.edu> <20110226073633.GA1753@polaris.bitmath.org>
-In-Reply-To: <20110226073633.GA1753@polaris.bitmath.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+CC: Don Zickus <dzickus@redhat.com>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] x86, NMI: Allow NMI reason io port (0x61) to be processed
+ on any CPU
+References: <1294348732-15030-1-git-send-email-dzickus@redhat.com> <1294348732-15030-6-git-send-email-dzickus@redhat.com> <alpine.LFD.2.00.1102230227010.31425@eddie.linux-mips.org>
+In-Reply-To: <alpine.LFD.2.00.1102230227010.31425@eddie.linux-mips.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2011-02-26_03:2011-02-25,2011-02-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1012030000 definitions=main-1102250246
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 02/23/2011 05:39 AM, Maciej W. Rozycki wrote:
+...
+>
+>   [Catching up with old e-mail...]
+>
+>   In line with the comment above that you're removing -- have you (or
+> anyone else) adjusted code elsewhere so that external NMIs are actually
+> delivered to processors other than the BSP?  I can't see such code in this
+> series nor an explanation as to why it wouldn't be needed.
+>
+>   For the record -- the piece of code above reflects our setup where the
+> LINT1 input is enabled and configured for the NMI delivery mode on the BSP
+> only and all the other processors have this line disabled in their local
+> APIC units.  If system NMIs are to be handled after the removal of the
+> BSP, then another processor has to be selected and configured for NMI
+> reception.  Alternatively, all local units could have their LINT1 input
+> enabled and arbitrate handling, although it would be quite disruptive as
+> all the processors would take the interrupt if it happened.  OTOH it would
+> be more fault-tolerant in the case of a CPU failure.  On a typical x86 box
+> the system NMI cannot be routed to an I/O APIC input.
+>
+>    Maciej
 
-On 02/26/11 02:36, Henrik Rydberg wrote:
-> Hi Rafi,
-> 
-> On Fri, Feb 25, 2011 at 12:15:31AM -0500, Rafi Rubin wrote:
->> Moved the claimed input check before dereferencing field->hidinput to
->> fix a reported invalid deference bug.
-> 
-> How long has this problem been seen? If it is recent, it should
-> perhaps be fixed in the hid core instead. If it turns out to be an old
-> problem, please add stable to the Cc.
+   Hi Maciej, good catch! The code doesn't reconfig LVT. As just Don pointed
+it might be Intel is working on something, dunno. Probably we better should
+drop this patch for now (at least until LVT reconfig would not be implemented).
 
-I have no idea.  Peter discovered it with a preproduction unit.  He sent me a
-proposed fix which seemed quite sensible.  I have not seen the bug in action nor
-records of the traffic.
-
->> Switched to a goto instead of an extra indent for most of the function.
-> 
-> If you put these janitory changes into a separate patch, it will be
-> much easier to apply the bugfix to stable versions.
-> 
-> Thanks,
-> Henrik
-
-It might be a few days, but I'll split that into two patches when I get a chance.
-
-Rafi
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJNaLCrAAoJEPILXytRLnK2pQsP/3OgaO2YILN9YYuZZxJ+JVa0
-cgiFAZxV7BbznMo0sg05RbsF0r1H3rEAzf2JN1NadndC720E6DhDthjvkSZqkdkv
-v2gV+NHLyW9qaCsvgGMf7yy72880sA9fL0dzUde+W6rdgH7jgNiAp8ceiDpNIWQH
-yj1rOemNuJbXwaC9EiBb0kswxwrshA4nwaDtWxb1/e61nwRrletkrfOX6EX8uNdW
-6ogywsVARb1w5A3xZstF2SKPBz9Su/kSlGMgE/j2LizwVoFEZY7Or6JUwpBnHchr
-w7a9eKJ4GjW8phU6YQppkNS61tMO4FuToGEYkcDLKbJaGogWO+QeqNA9bqcSjPA/
-0F4Zf5CExQjnjmLK4yl0HUPzBtvmJQ/HjpMw6gPFwkqv0QwHUex8QA0Vw3t2LR24
-oliI6r6qnuGjHxJidpAdXnhaZn7rB5TCxmHejoAW9MYHKp52xY9IM4ys9lIRSDH+
-CbNN6sNL4/VLZrd5hBSnkZxXvPjUq3OQ/uzRPbrXPj0lz7hCt3YLZB1Me1N862uL
-81e4T6AqD79dMh/TcwT93PNFD3Sv2mAhgNYBo3j9lz2HjeQR3EvhLXOfHxFwoDgh
-k7QYeyKNzYRrTh96EA3zcBIR6yVk3Mq7ASAI/km35nqoEL/iFBAxELS0yKDuuR5z
-rtGDDwfYxJDxwsVV93Hx
-=AygA
------END PGP SIGNATURE-----
+-- 
+     Cyrill
