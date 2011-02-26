@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab1BZRvx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 12:51:53 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:44690 "EHLO imr4.ericy.com"
+	id S1752524Ab1BZRv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 12:51:56 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:58018 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752451Ab1BZRvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 12:51:50 -0500
+	id S1752317Ab1BZRvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 12:51:55 -0500
 From: Guenter Roeck <guenter.roeck@ericsson.com>
 To: Jean Delvare <khali@linux-fr.org>
 CC: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
@@ -13,157 +13,64 @@ CC: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
         <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>,
         Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH v5 3/5] hwmon: (pmbus) Add support for Maxim MAX16064
-Date: Sat, 26 Feb 2011 09:50:48 -0800
-Message-ID: <1298742650-9789-4-git-send-email-guenter.roeck@ericsson.com>
+Subject: [PATCH v5 0/5] hwmon: PMBus device driver
+Date: Sat, 26 Feb 2011 09:50:45 -0800
+Message-ID: <1298742650-9789-1-git-send-email-guenter.roeck@ericsson.com>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1298742650-9789-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1298742650-9789-1-git-send-email-guenter.roeck@ericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+This patchset adds support for hardware monitoring features of PMBus devices.
+
 ---
- drivers/hwmon/Kconfig    |   10 +++++
- drivers/hwmon/Makefile   |    1 +
- drivers/hwmon/max16064.c |   91 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 102 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/max16064.c
+Post-commit: Check if pmbus_find_attributes() can be rewritten to use tables.
+[ I looked into it, but concluded it would be too risky to do that now. So I'll
+  try that later and submit as cleanup patch if it works out. ]
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index cac65d7..60f5d39 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -758,6 +758,16 @@ config SENSORS_PMBUS
- 	  This driver can also be built as a module. If so, the module will
- 	  be called pmbus.
- 
-+config SENSORS_MAX16064
-+	tristate "Maxim MAX16064"
-+	default n
-+	help
-+	  If you say yes here you get hardware monitoring support for Maxim
-+	  MAX16064.
-+
-+	  This driver can also be built as a module. If so, the module will
-+	  be called max16064.
-+
- config SENSORS_MAX8688
- 	tristate "Maxim MAX8688"
- 	default n
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 00c2e77..9c83d0d 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -115,6 +115,7 @@ obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
- # PMBus drivers
- obj-$(CONFIG_PMBUS)		+= pmbus_core.o
- obj-$(CONFIG_SENSORS_PMBUS)	+= pmbus.o
-+obj-$(CONFIG_SENSORS_MAX16064)	+= max16064.o
- obj-$(CONFIG_SENSORS_MAX8688)	+= max8688.o
- 
- ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
-diff --git a/drivers/hwmon/max16064.c b/drivers/hwmon/max16064.c
-new file mode 100644
-index 0000000..1d6d717
---- /dev/null
-+++ b/drivers/hwmon/max16064.c
-@@ -0,0 +1,91 @@
-+/*
-+ * Hardware monitoring driver for Maxim MAX16064
-+ *
-+ * Copyright (c) 2011 Ericsson AB.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/i2c.h>
-+#include "pmbus.h"
-+
-+static struct pmbus_driver_info max16064_info = {
-+	.pages = 4,
-+	.direct[PSC_VOLTAGE_IN] = true,
-+	.direct[PSC_VOLTAGE_OUT] = true,
-+	.direct[PSC_TEMPERATURE] = true,
-+	.m[PSC_VOLTAGE_IN] = 19995,
-+	.b[PSC_VOLTAGE_IN] = 0,
-+	.R[PSC_VOLTAGE_IN] = -1,
-+	.m[PSC_VOLTAGE_OUT] = 19995,
-+	.b[PSC_VOLTAGE_OUT] = 0,
-+	.R[PSC_VOLTAGE_OUT] = -1,
-+	.m[PSC_TEMPERATURE] = -7612,
-+	.b[PSC_TEMPERATURE] = 335,
-+	.R[PSC_TEMPERATURE] = -3,
-+	.func[0] = PMBUS_HAVE_VOUT | PMBUS_HAVE_TEMP
-+		| PMBUS_HAVE_STATUS_VOUT | PMBUS_HAVE_STATUS_TEMP,
-+	.func[1] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT,
-+	.func[2] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT,
-+	.func[3] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT,
-+};
-+
-+static int max16064_probe(struct i2c_client *client,
-+			  const struct i2c_device_id *id)
-+{
-+	return pmbus_do_probe(client, id, &max16064_info);
-+}
-+
-+static int max16064_remove(struct i2c_client *client)
-+{
-+	return pmbus_do_remove(client);
-+}
-+
-+static const struct i2c_device_id max16064_id[] = {
-+	{"max16064", 0},
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, max16064_id);
-+
-+/* This is the driver that will be inserted */
-+static struct i2c_driver max16064_driver = {
-+	.driver = {
-+		   .name = "max16064",
-+		   },
-+	.probe = max16064_probe,
-+	.remove = max16064_remove,
-+	.id_table = max16064_id,
-+};
-+
-+static int __init max16064_init(void)
-+{
-+	return i2c_add_driver(&max16064_driver);
-+}
-+
-+static void __exit max16064_exit(void)
-+{
-+	i2c_del_driver(&max16064_driver);
-+}
-+
-+MODULE_AUTHOR("Guenter Roeck");
-+MODULE_DESCRIPTION("PMBus driver for Maxim MAX16064");
-+MODULE_LICENSE("GPL");
-+module_init(max16064_init);
-+module_exit(max16064_exit);
--- 
-1.7.3.1
+v5 changes:
+- Added a note to driver documentation stating that fan support will be added
+  later.
+- max34440: Added comment describing why R=3 instead of 0. Formatting fix.
+- Core driver:
+  - Added function to check status register
+  - Reduced number of times clear status function is called.
+  - Added explanation describing when get_status and identify functions are
+    needed.
+  - Describe pmbus_get_boolean() functionality in more detail.
+  - Declared some static arrays as const.
+  - No longer export pmbus_read_byte_data(), since it is not used outside
+    the core driver.
+- Generic pmbus driver:
+  - Removed pmbus_entry list. Replaced with API in core driver to retrieve
+    pointer to struct pmbus_driver_info from client data.
 
+v4 changes:
+- Fixed PMBUS entry in Kconfig
+
+v3 changes:
+  Tested with real hardware (bmr453, bmr454, ltc2978, max8688, max16064,
+  max34441).
+  Changes are too numerous to count. Lots of bug fixes. Code was completely
+  rearranged to permit addition of chips without having to modify the core
+  pmbus driver. Split main driver into pmbus_core.c for core support and
+  pmbus.c as front-end driver to support generic PMBus chips.
+  Support for additional chips can now be added by writing small front-end
+  drivers which basically describe chip capabilities.
+
+v2 changes:
+- Calculate maximum number of attributes / sensors / booleans / labels instead
+  of using defines
+- Increased maximum number of supported pages to the PMBus maximum of 32.
+- Replaced most fixed size arrays with dynamically allocated arrays/structures.
+- Added comments and clarifications
+- Renamed local defines to start with PB_ or PMBUS_ prefix
+- Removed pages module parameter. Replaced with code to auto-detect the number
+  of supported pages.
+- Split probe code into several functions to make it better readable
+- Replaced _fault attributes with _lcrit_alarm and _crit_alarm attributes
+- Several other minor changes to address review feedback
+- PMBus emulator: Fixed fault status detection code. Also use more reasonable
+  power limits (eg 200W instead of 2kW).
