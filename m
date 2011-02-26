@@ -1,1016 +1,717 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183Ab1BZB5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 20:57:20 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:53820
+	id S1751213Ab1BZB5q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 20:57:46 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:53991
 	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751087Ab1BZB5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 20:57:19 -0500
+	id S1750945Ab1BZB5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 20:57:44 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 2/6] Staging: hv: Rename vm_device to hyperv_device
-Date: Fri, 25 Feb 2011 18:06:03 -0800
-Message-Id: <1298685963-30831-1-git-send-email-kys@microsoft.com>
+Subject: [PATCH 3/6] Staging: hv: Cleanup hyperv_device variable names
+Date: Fri, 25 Feb 2011 18:06:32 -0800
+Message-Id: <1298685992-30864-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the vm_device abstraction as hyperv_device.
+Cleanup the names of variables that refer to the
+hyperv_device abstraction.
 
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
 ---
- drivers/staging/hv/blkvsc.c        |    4 +-
- drivers/staging/hv/blkvsc_drv.c    |    8 ++--
- drivers/staging/hv/channel_mgmt.h  |    2 +-
- drivers/staging/hv/netvsc.c        |   56 +++++++++++++++++++----------------
- drivers/staging/hv/netvsc.h        |    2 +-
- drivers/staging/hv/netvsc_api.h    |   12 ++++----
- drivers/staging/hv/netvsc_drv.c    |   14 ++++----
- drivers/staging/hv/rndis_filter.c  |   18 ++++++------
- drivers/staging/hv/storvsc.c       |   36 ++++++++++++-----------
- drivers/staging/hv/storvsc_api.h   |    4 +-
- drivers/staging/hv/storvsc_drv.c   |   10 +++---
- drivers/staging/hv/vmbus.h         |    6 ++--
- drivers/staging/hv/vmbus_api.h     |    8 ++--
- drivers/staging/hv/vmbus_drv.c     |   50 ++++++++++++++++----------------
- drivers/staging/hv/vmbus_private.h |   12 ++++----
- 15 files changed, 124 insertions(+), 118 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c  |   12 ++--
+ drivers/staging/hv/netvsc.c      |    4 +-
+ drivers/staging/hv/netvsc_drv.c  |   36 ++++----
+ drivers/staging/hv/storvsc_drv.c |   44 +++++-----
+ drivers/staging/hv/vmbus_drv.c   |  164 +++++++++++++++++++-------------------
+ 5 files changed, 130 insertions(+), 130 deletions(-)
 
-diff --git a/drivers/staging/hv/blkvsc.c b/drivers/staging/hv/blkvsc.c
-index ecface3..47ccec2 100644
---- a/drivers/staging/hv/blkvsc.c
-+++ b/drivers/staging/hv/blkvsc.c
-@@ -35,8 +35,8 @@ static const struct hv_guid g_blk_device_type = {
- 	}
- };
- 
--static int blk_vsc_on_device_add(struct vm_device *device,
--				void *additional_info)
-+static int
-+blk_vsc_on_device_add(struct hyperv_device *device, void *additional_info)
- {
- 	struct storvsc_device_info *device_info;
- 	int ret = 0;
 diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 6d1a783..58ab0e8 100644
+index 58ab0e8..305a665 100644
 --- a/drivers/staging/hv/blkvsc_drv.c
 +++ b/drivers/staging/hv/blkvsc_drv.c
 @@ -95,7 +95,7 @@ struct blkvsc_request {
  /* Per device structure */
  struct block_device_context {
  	/* point back to our device context */
--	struct vm_device *device_ctx;
-+	struct hyperv_device *device_ctx;
+-	struct hyperv_device *device_ctx;
++	struct hyperv_device *device_obj;
  	struct kmem_cache *request_pool;
  	spinlock_t lock;
  	struct gendisk *gd;
-@@ -249,7 +249,7 @@ static int blkvsc_probe(struct device *device)
- 				(struct blkvsc_driver_context *)driver_ctx;
- 	struct storvsc_driver_object *storvsc_drv_obj =
- 				&blkvsc_drv_ctx->drv_obj;
--	struct vm_device *device_obj = device_to_vm_device(device);
-+	struct hyperv_device *device_obj = device_to_hyperv_device(device);
+@@ -298,7 +298,7 @@ static int blkvsc_probe(struct device *device)
+ 		goto Cleanup;
+ 	}
  
- 	struct block_device_context *blkdev = NULL;
- 	struct storvsc_device_info device_info;
-@@ -733,7 +733,7 @@ static int blkvsc_remove(struct device *device)
- 				(struct blkvsc_driver_context *)driver_ctx;
- 	struct storvsc_driver_object *storvsc_drv_obj =
- 				&blkvsc_drv_ctx->drv_obj;
--	struct vm_device *device_obj = device_to_vm_device(device);
-+	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 	struct block_device_context *blkdev = dev_get_drvdata(device);
- 	unsigned long flags;
- 	int ret;
-@@ -848,7 +848,7 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
+-	blkdev->device_ctx = device_obj;
++	blkdev->device_obj = device_obj;
+ 	/* this identified the device 0 or 1 */
+ 	blkdev->target = device_info.target_id;
+ 	/* this identified the ide ctrl 0 or 1 */
+@@ -367,7 +367,7 @@ static int blkvsc_probe(struct device *device)
+ 		blkdev->gd->first_minor = 0;
+ 	blkdev->gd->fops = &block_ops;
+ 	blkdev->gd->private_data = blkdev;
+-	blkdev->gd->driverfs_dev = &(blkdev->device_ctx->device);
++	blkdev->gd->driverfs_dev = &(blkdev->device_obj->device);
+ 	sprintf(blkdev->gd->disk_name, "hd%c", 'a' + devnum);
+ 
+ 	blkvsc_do_inquiry(blkdev);
+@@ -848,9 +848,9 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
  			void (*request_completion)(struct hv_storvsc_request *))
  {
  	struct block_device_context *blkdev = blkvsc_req->dev;
--	struct vm_device *device_ctx = blkdev->device_ctx;
-+	struct hyperv_device *device_ctx = blkdev->device_ctx;
+-	struct hyperv_device *device_ctx = blkdev->device_ctx;
++	struct hyperv_device *device_obj = blkdev->device_obj;
  	struct driver_context *driver_ctx =
- 			driver_to_driver_context(device_ctx->device.driver);
+-			driver_to_driver_context(device_ctx->device.driver);
++			driver_to_driver_context(device_obj->device.driver);
  	struct blkvsc_driver_context *blkvsc_drv_ctx =
-diff --git a/drivers/staging/hv/channel_mgmt.h b/drivers/staging/hv/channel_mgmt.h
-index b3a9214..7b42883 100644
---- a/drivers/staging/hv/channel_mgmt.h
-+++ b/drivers/staging/hv/channel_mgmt.h
-@@ -228,7 +228,7 @@ enum vmbus_channel_state {
- struct vmbus_channel {
- 	struct list_head listentry;
+ 			(struct blkvsc_driver_context *)driver_ctx;
+ 	struct storvsc_driver_object *storvsc_drv_obj =
+@@ -895,7 +895,7 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
+ 	storvsc_req->sense_buffer = blkvsc_req->sense_buffer;
+ 	storvsc_req->sense_buffer_size = SCSI_SENSE_BUFFERSIZE;
  
--	struct vm_device *device_obj;
-+	struct hyperv_device *device_obj;
- 
- 	struct timer_list poll_timer; /* SA-111 workaround */
- 	struct work_struct work;
+-	ret = storvsc_drv_obj->on_io_request(blkdev->device_ctx,
++	ret = storvsc_drv_obj->on_io_request(blkdev->device_obj,
+ 					   &blkvsc_req->request);
+ 	if (ret == 0)
+ 		blkdev->num_outstanding_reqs++;
 diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index ff8e5be..7841cae 100644
+index 7841cae..7cf6999 100644
 --- a/drivers/staging/hv/netvsc.c
 +++ b/drivers/staging/hv/netvsc.c
-@@ -44,40 +44,41 @@ static const struct hv_guid netvsc_device_type = {
+@@ -44,8 +44,8 @@ static const struct hv_guid netvsc_device_type = {
  	}
  };
  
--static int netvsc_device_add(struct vm_device *device, void *additional_info);
-+static int netvsc_device_add(struct hyperv_device *device,
-+			void *additional_info);
- 
--static int netvsc_device_remove(struct vm_device *device);
-+static int netvsc_device_remove(struct hyperv_device *device);
- 
- static void netvsc_cleanup(struct hv_driver *driver);
- 
- static void netvsc_channel_cb(void *context);
- 
--static int netvsc_init_send_buf(struct vm_device *device);
-+static int netvsc_init_send_buf(struct hyperv_device *device);
- 
--static int netvsc_init_recv_buf(struct vm_device *device);
-+static int netvsc_init_recv_buf(struct hyperv_device *device);
- 
- static int netvsc_destroy_send_buf(struct netvsc_device *net_device);
- 
- static int netvsc_destroy_recv_buf(struct netvsc_device *net_device);
- 
--static int netvsc_connect_vsp(struct vm_device *device);
-+static int netvsc_connect_vsp(struct hyperv_device *device);
- 
--static void netvsc_send_completion(struct vm_device *device,
-+static void netvsc_send_completion(struct hyperv_device *device,
- 				   struct vmpacket_descriptor *packet);
- 
--static int netvsc_send(struct vm_device *device,
-+static int netvsc_send(struct hyperv_device *device,
- 			struct hv_netvsc_packet *packet);
- 
--static void netvsc_receive(struct vm_device *device,
-+static void netvsc_receive(struct hyperv_device *device,
- 			    struct vmpacket_descriptor *packet);
- 
- static void netvsc_receive_completion(void *context);
- 
--static void netvsc_send_recv_completion(struct vm_device *device,
-+static void netvsc_send_recv_completion(struct hyperv_device *device,
- 					u64 transaction_id);
- 
- 
--static struct netvsc_device *alloc_net_device(struct vm_device *device)
-+static struct netvsc_device *alloc_net_device(struct hyperv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
-@@ -103,7 +104,8 @@ static void free_net_device(struct netvsc_device *device)
- 
- 
- /* Get the net device object iff exists and its refcount > 1 */
--static struct netvsc_device *get_outbound_net_device(struct vm_device *device)
-+static struct netvsc_device *
-+get_outbound_net_device(struct hyperv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
-@@ -117,7 +119,8 @@ static struct netvsc_device *get_outbound_net_device(struct vm_device *device)
- }
- 
- /* Get the net device object iff exists and its refcount > 0 */
--static struct netvsc_device *get_inbound_net_device(struct vm_device *device)
-+static struct netvsc_device *
-+get_inbound_net_device(struct hyperv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
-@@ -130,7 +133,7 @@ static struct netvsc_device *get_inbound_net_device(struct vm_device *device)
- 	return net_device;
- }
- 
--static void put_net_device(struct vm_device *device)
-+static void put_net_device(struct hyperv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
-@@ -140,7 +143,7 @@ static void put_net_device(struct vm_device *device)
- }
- 
- static struct netvsc_device *release_outbound_net_device(
--		struct vm_device *device)
-+		struct hyperv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
-@@ -156,7 +159,7 @@ static struct netvsc_device *release_outbound_net_device(
- }
- 
- static struct netvsc_device *release_inbound_net_device(
--		struct vm_device *device)
-+		struct hyperv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
-@@ -200,7 +203,7 @@ int netvsc_initialize(struct hv_driver *drv)
- 	return 0;
- }
- 
--static int netvsc_init_recv_buf(struct vm_device *device)
-+static int netvsc_init_recv_buf(struct hyperv_device *device)
- {
- 	int ret = 0;
- 	struct netvsc_device *net_device;
-@@ -330,7 +333,7 @@ exit:
- 	return ret;
- }
- 
--static int netvsc_init_send_buf(struct vm_device *device)
-+static int netvsc_init_send_buf(struct hyperv_device *device)
- {
- 	int ret = 0;
- 	struct netvsc_device *net_device;
-@@ -572,7 +575,7 @@ static int netvsc_destroy_send_buf(struct netvsc_device *net_device)
- }
- 
- 
--static int netvsc_connect_vsp(struct vm_device *device)
-+static int netvsc_connect_vsp(struct hyperv_device *device)
- {
- 	int ret;
- 	struct netvsc_device *net_device;
-@@ -688,7 +691,8 @@ static void NetVscDisconnectFromVsp(struct netvsc_device *net_device)
-  * netvsc_device_add - Callback when the device belonging to this
-  * driver is added
-  */
--static int netvsc_device_add(struct vm_device *device, void *additional_info)
+-static int netvsc_device_add(struct hyperv_device *device,
+-			void *additional_info);
 +static int
-+netvsc_device_add(struct hyperv_device *device, void *additional_info)
- {
- 	int ret = 0;
- 	int i;
-@@ -781,7 +785,7 @@ cleanup:
- /*
-  * netvsc_device_remove - Callback when the root bus device is removed
-  */
--static int netvsc_device_remove(struct vm_device *device)
-+static int netvsc_device_remove(struct hyperv_device *device)
- {
- 	struct netvsc_device *net_device;
- 	struct hv_netvsc_packet *netvsc_packet, *pos;
-@@ -837,7 +841,7 @@ static void netvsc_cleanup(struct hv_driver *drv)
- {
- }
++netvsc_device_add(struct hyperv_device *device, void *additional_info);
  
--static void netvsc_send_completion(struct vm_device *device,
-+static void netvsc_send_completion(struct hyperv_device *device,
- 				   struct vmpacket_descriptor *packet)
- {
- 	struct netvsc_device *net_device;
-@@ -886,7 +890,7 @@ static void netvsc_send_completion(struct vm_device *device,
- 	put_net_device(device);
- }
+ static int netvsc_device_remove(struct hyperv_device *device);
  
--static int netvsc_send(struct vm_device *device,
-+static int netvsc_send(struct hyperv_device *device,
- 			struct hv_netvsc_packet *packet)
- {
- 	struct netvsc_device *net_device;
-@@ -940,7 +944,7 @@ static int netvsc_send(struct vm_device *device,
- 	return ret;
- }
- 
--static void netvsc_receive(struct vm_device *device,
-+static void netvsc_receive(struct hyperv_device *device,
- 			    struct vmpacket_descriptor *packet)
- {
- 	struct netvsc_device *net_device;
-@@ -1137,7 +1141,7 @@ static void netvsc_receive(struct vm_device *device,
- 	put_net_device(device);
- }
- 
--static void netvsc_send_recv_completion(struct vm_device *device,
-+static void netvsc_send_recv_completion(struct hyperv_device *device,
- 					u64 transaction_id)
- {
- 	struct nvsp_message recvcompMessage;
-@@ -1186,7 +1190,7 @@ retry_send_cmplt:
- static void netvsc_receive_completion(void *context)
- {
- 	struct hv_netvsc_packet *packet = context;
--	struct vm_device *device = (struct vm_device *)packet->device;
-+	struct hyperv_device *device = (struct hyperv_device *)packet->device;
- 	struct netvsc_device *net_device;
- 	u64 transaction_id = 0;
- 	bool fsend_receive_comp = false;
-@@ -1235,7 +1239,7 @@ static void netvsc_receive_completion(void *context)
- static void netvsc_channel_cb(void *context)
- {
- 	int ret;
--	struct vm_device *device = context;
-+	struct hyperv_device *device = context;
- 	struct netvsc_device *net_device;
- 	u32 bytes_recvd;
- 	u64 request_id;
-diff --git a/drivers/staging/hv/netvsc.h b/drivers/staging/hv/netvsc.h
-index b2709eb..ea3a05f 100644
---- a/drivers/staging/hv/netvsc.h
-+++ b/drivers/staging/hv/netvsc.h
-@@ -293,7 +293,7 @@ struct nvsp_message {
- 
- /* Per netvsc channel-specific */
- struct netvsc_device {
--	struct vm_device *dev;
-+	struct hyperv_device *dev;
- 
- 	atomic_t refcnt;
- 	atomic_t num_outstanding_sends;
-diff --git a/drivers/staging/hv/netvsc_api.h b/drivers/staging/hv/netvsc_api.h
-index a9cfeff..e43ff7b 100644
---- a/drivers/staging/hv/netvsc_api.h
-+++ b/drivers/staging/hv/netvsc_api.h
-@@ -49,7 +49,7 @@ struct hv_netvsc_packet {
- 	/* Bookkeeping stuff */
- 	struct list_head list_ent;
- 
--	struct vm_device *device;
-+	struct hyperv_device *device;
- 	bool is_data_pkt;
- 
- 	/*
-@@ -93,12 +93,12 @@ struct netvsc_driver {
- 	 * This is set by the caller to allow us to callback when we
- 	 * receive a packet from the "wire"
- 	 */
--	int (*recv_cb)(struct vm_device *dev,
-+	int (*recv_cb)(struct hyperv_device *dev,
- 				 struct hv_netvsc_packet *packet);
--	void (*link_status_change)(struct vm_device *dev, u32 status);
-+	void (*link_status_change)(struct hyperv_device *dev, u32 status);
- 
- 	/* Specific to this driver */
--	int (*send)(struct vm_device *dev, struct hv_netvsc_packet *packet);
-+	int (*send)(struct hyperv_device *dev, struct hv_netvsc_packet *packet);
- 
- 	void *ctx;
- };
-@@ -110,7 +110,7 @@ struct netvsc_device_info {
- 
- /* Interface */
- int netvsc_initialize(struct hv_driver *drv);
--int rndis_filter_open(struct vm_device *dev);
--int rndis_filter_close(struct vm_device *dev);
-+int rndis_filter_open(struct hyperv_device *dev);
-+int rndis_filter_close(struct hyperv_device *dev);
- 
- #endif /* _NETVSC_API_H_ */
 diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 055986f..31cbbab 100644
+index 31cbbab..fc4eb9b 100644
 --- a/drivers/staging/hv/netvsc_drv.c
 +++ b/drivers/staging/hv/netvsc_drv.c
 @@ -44,7 +44,7 @@
  
  struct net_device_context {
  	/* point back to our device context */
--	struct vm_device *device_ctx;
-+	struct hyperv_device *device_ctx;
+-	struct hyperv_device *device_ctx;
++	struct hyperv_device *device_obj;
  	unsigned long avail;
  };
  
-@@ -76,7 +76,7 @@ static void netvsc_set_multicast_list(struct net_device *net)
+@@ -75,8 +75,8 @@ static void netvsc_set_multicast_list(struct net_device *net)
+ 
  static int netvsc_open(struct net_device *net)
  {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
--	struct vm_device *device_obj = net_device_ctx->device_ctx;
-+	struct hyperv_device *device_obj = net_device_ctx->device_ctx;
+-	struct net_device_context *net_device_ctx = netdev_priv(net);
+-	struct hyperv_device *device_obj = net_device_ctx->device_ctx;
++	struct net_device_context *net_device_obj = netdev_priv(net);
++	struct hyperv_device *device_obj = net_device_obj->device_obj;
  	int ret = 0;
  
  	if (netif_carrier_ok(net)) {
-@@ -99,7 +99,7 @@ static int netvsc_open(struct net_device *net)
+@@ -98,8 +98,8 @@ static int netvsc_open(struct net_device *net)
+ 
  static int netvsc_close(struct net_device *net)
  {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
--	struct vm_device *device_obj = net_device_ctx->device_ctx;
-+	struct hyperv_device *device_obj = net_device_ctx->device_ctx;
+-	struct net_device_context *net_device_ctx = netdev_priv(net);
+-	struct hyperv_device *device_obj = net_device_ctx->device_ctx;
++	struct net_device_context *net_device_obj = netdev_priv(net);
++	struct hyperv_device *device_obj = net_device_obj->device_obj;
  	int ret;
  
  	netif_stop_queue(net);
-@@ -223,7 +223,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- /*
-  * netvsc_linkstatus_callback - Link up/down notification
-  */
--static void netvsc_linkstatus_callback(struct vm_device *device_obj,
-+static void netvsc_linkstatus_callback(struct hyperv_device *device_obj,
- 				       unsigned int status)
+@@ -121,22 +121,22 @@ static void netvsc_xmit_completion(void *context)
+ 
+ 	if (skb) {
+ 		struct net_device *net = skb->dev;
+-		struct net_device_context *net_device_ctx = netdev_priv(net);
++		struct net_device_context *net_device_obj = netdev_priv(net);
+ 		unsigned int num_pages = skb_shinfo(skb)->nr_frags + 2;
+ 
+ 		dev_kfree_skb_any(skb);
+ 
+-		net_device_ctx->avail += num_pages;
+-		if (net_device_ctx->avail >= PACKET_PAGES_HIWATER)
++		net_device_obj->avail += num_pages;
++		if (net_device_obj->avail >= PACKET_PAGES_HIWATER)
+  			netif_wake_queue(net);
+ 	}
+ }
+ 
+ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
  {
- 	struct net_device *net = dev_get_drvdata(&device_obj->device);
-@@ -248,7 +248,7 @@ static void netvsc_linkstatus_callback(struct vm_device *device_obj,
-  * netvsc_recv_callback -  Callback when we receive a packet from the
-  * "wire" on the specified device.
-  */
--static int netvsc_recv_callback(struct vm_device *device_obj,
-+static int netvsc_recv_callback(struct hyperv_device *device_obj,
- 				struct hv_netvsc_packet *packet)
- {
- 	struct net_device *net = dev_get_drvdata(&device_obj->device);
-@@ -343,7 +343,7 @@ static int netvsc_probe(struct device *device)
+-	struct net_device_context *net_device_ctx = netdev_priv(net);
++	struct net_device_context *net_device_obj = netdev_priv(net);
+ 	struct driver_context *driver_ctx =
+-	    driver_to_driver_context(net_device_ctx->device_ctx->device.driver);
++	    driver_to_driver_context(net_device_obj->device_obj->device.driver);
  	struct netvsc_driver_context *net_drv_ctx =
  		(struct netvsc_driver_context *)driver_ctx;
  	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
--	struct vm_device *device_obj = device_to_vm_device(device);
-+	struct hyperv_device *device_obj = device_to_hyperv_device(device);
+@@ -149,7 +149,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 
+ 	/* Add 1 for skb->data and additional one for RNDIS */
+ 	num_pages = skb_shinfo(skb)->nr_frags + 1 + 1;
+-	if (num_pages > net_device_ctx->avail)
++	if (num_pages > net_device_obj->avail)
+ 		return NETDEV_TX_BUSY;
+ 
+ 	/* Allocate a netvsc packet based on # of frags. */
+@@ -198,7 +198,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 	packet->completion.send.send_completion_ctx = packet;
+ 	packet->completion.send.send_completion_tid = (unsigned long)skb;
+ 
+-	ret = net_drv_obj->send(net_device_ctx->device_ctx,
++	ret = net_drv_obj->send(net_device_obj->device_obj,
+ 				  packet);
+ 	if (ret == 0) {
+ 		net->stats.tx_bytes += skb->len;
+@@ -208,8 +208,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 			   net->stats.tx_packets,
+ 			   net->stats.tx_bytes);
+ 
+-		net_device_ctx->avail -= num_pages;
+-		if (net_device_ctx->avail < PACKET_PAGES_LOWATER)
++		net_device_obj->avail -= num_pages;
++		if (net_device_obj->avail < PACKET_PAGES_LOWATER)
+ 			netif_stop_queue(net);
+ 	} else {
+ 		/* we are shutting down or bus overloaded, just drop packet */
+@@ -345,7 +345,7 @@ static int netvsc_probe(struct device *device)
+ 	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
+ 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
  	struct net_device *net = NULL;
- 	struct net_device_context *net_device_ctx;
+-	struct net_device_context *net_device_ctx;
++	struct net_device_context *net_device_obj;
  	struct netvsc_device_info device_info;
-@@ -414,7 +414,7 @@ static int netvsc_remove(struct device *device)
- 	struct netvsc_driver_context *net_drv_ctx =
- 		(struct netvsc_driver_context *)driver_ctx;
- 	struct netvsc_driver *net_drv_obj = &net_drv_ctx->drv_obj;
--	struct vm_device *device_obj = device_to_vm_device(device);
-+	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 	struct net_device *net = dev_get_drvdata(&device_obj->device);
  	int ret;
  
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index e0b1b44..b718fa9 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -85,14 +85,14 @@ struct rndis_filter_packet {
- };
+@@ -359,9 +359,9 @@ static int netvsc_probe(struct device *device)
+ 	/* Set initial state */
+ 	netif_carrier_off(net);
  
+-	net_device_ctx = netdev_priv(net);
+-	net_device_ctx->device_ctx = device_obj;
+-	net_device_ctx->avail = ring_size;
++	net_device_obj = netdev_priv(net);
++	net_device_obj->device_obj = device_obj;
++	net_device_obj->avail = ring_size;
+ 	dev_set_drvdata(device, net);
  
--static int rndis_filte_device_add(struct vm_device *dev,
-+static int rndis_filte_device_add(struct hyperv_device *dev,
- 				  void *additional_info);
- 
--static int rndis_filter_device_remove(struct vm_device *dev);
-+static int rndis_filter_device_remove(struct hyperv_device *dev);
- 
- static void rndis_filter_cleanup(struct hv_driver *drv);
- 
--static int rndis_filter_send(struct vm_device *dev,
-+static int rndis_filter_send(struct hyperv_device *dev,
- 			     struct hv_netvsc_packet *pkt);
- 
- static void rndis_filter_send_completion(void *ctx);
-@@ -376,7 +376,7 @@ static void rndis_filter_receive_data(struct rndis_device *dev,
- 						   pkt);
- }
- 
--static int rndis_filter_receive(struct vm_device *dev,
-+static int rndis_filter_receive(struct hyperv_device *dev,
- 				struct hv_netvsc_packet	*pkt)
- {
- 	struct netvsc_device *net_dev = dev->ext;
-@@ -754,7 +754,7 @@ static int rndis_filter_close_device(struct rndis_device *dev)
- 	return ret;
- }
- 
--static int rndis_filte_device_add(struct vm_device *dev,
-+static int rndis_filte_device_add(struct hyperv_device *dev,
- 				  void *additional_info)
- {
- 	int ret;
-@@ -817,7 +817,7 @@ static int rndis_filte_device_add(struct vm_device *dev,
- 	return ret;
- }
- 
--static int rndis_filter_device_remove(struct vm_device *dev)
-+static int rndis_filter_device_remove(struct hyperv_device *dev)
- {
- 	struct netvsc_device *net_dev = dev->ext;
- 	struct rndis_device *rndis_dev = net_dev->extension;
-@@ -838,7 +838,7 @@ static void rndis_filter_cleanup(struct hv_driver *drv)
- {
- }
- 
--int rndis_filter_open(struct vm_device *dev)
-+int rndis_filter_open(struct hyperv_device *dev)
- {
- 	struct netvsc_device *netDevice = dev->ext;
- 
-@@ -848,7 +848,7 @@ int rndis_filter_open(struct vm_device *dev)
- 	return rndis_filter_open_device(netDevice->extension);
- }
- 
--int rndis_filter_close(struct vm_device *dev)
-+int rndis_filter_close(struct hyperv_device *dev)
- {
- 	struct netvsc_device *netDevice = dev->ext;
- 
-@@ -858,7 +858,7 @@ int rndis_filter_close(struct vm_device *dev)
- 	return rndis_filter_close_device(netDevice->extension);
- }
- 
--static int rndis_filter_send(struct vm_device *dev,
-+static int rndis_filter_send(struct hyperv_device *dev,
- 			     struct hv_netvsc_packet *pkt)
- {
- 	int ret;
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 7b75ab5..6000b0d 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -38,7 +38,7 @@ struct storvsc_request_extension {
- 	/* LIST_ENTRY ListEntry; */
- 
- 	struct hv_storvsc_request *request;
--	struct vm_device *device;
-+	struct hyperv_device *device;
- 
- 	/* Synchronize the request/response if needed */
- 	int wait_condition;
-@@ -49,7 +49,7 @@ struct storvsc_request_extension {
- 
- /* A storvsc device is a device object that contains a vmbus channel */
- struct storvsc_device {
--	struct vm_device *device;
-+	struct hyperv_device *device;
- 
- 	/* 0 indicates the device is being destroyed */
- 	atomic_t ref_count;
-@@ -85,7 +85,8 @@ static const struct hv_guid gStorVscDeviceType = {
- };
- 
- 
--static inline struct storvsc_device *alloc_stor_device(struct vm_device *device)
-+static inline struct storvsc_device *
-+alloc_stor_device(struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
-@@ -110,7 +111,8 @@ static inline void free_stor_device(struct storvsc_device *device)
- }
- 
- /* Get the stordevice object iff exists and its refcount > 1 */
--static inline struct storvsc_device *get_stor_device(struct vm_device *device)
-+static inline struct storvsc_device *
-+get_stor_device(struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
-@@ -125,7 +127,7 @@ static inline struct storvsc_device *get_stor_device(struct vm_device *device)
- 
- /* Get the stordevice object iff exists and its refcount > 0 */
- static inline struct storvsc_device *must_get_stor_device(
--					struct vm_device *device)
-+					struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
-@@ -138,7 +140,7 @@ static inline struct storvsc_device *must_get_stor_device(
- 	return stor_device;
- }
- 
--static inline void put_stor_device(struct vm_device *device)
-+static inline void put_stor_device(struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
-@@ -151,7 +153,7 @@ static inline void put_stor_device(struct vm_device *device)
- 
- /* Drop ref count to 1 to effectively disable get_stor_device() */
- static inline struct storvsc_device *release_stor_device(
--					struct vm_device *device)
-+					struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
-@@ -167,7 +169,7 @@ static inline struct storvsc_device *release_stor_device(
- 
- /* Drop ref count to 0. No one can use stor_device object. */
- static inline struct storvsc_device *final_release_stor_device(
--			struct vm_device *device)
-+			struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
-@@ -182,7 +184,7 @@ static inline struct storvsc_device *final_release_stor_device(
- 	return stor_device;
- }
- 
--static int stor_vsc_channel_init(struct vm_device *device)
-+static int stor_vsc_channel_init(struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 	struct storvsc_request_extension *request;
-@@ -363,7 +365,7 @@ cleanup:
- 	return ret;
- }
- 
--static void stor_vsc_on_io_completion(struct vm_device *device,
-+static void stor_vsc_on_io_completion(struct hyperv_device *device,
- 				  struct vstor_packet *vstor_packet,
- 				  struct storvsc_request_extension *request_ext)
- {
-@@ -427,7 +429,7 @@ static void stor_vsc_on_io_completion(struct vm_device *device,
- 	put_stor_device(device);
- }
- 
--static void stor_vsc_on_receive(struct vm_device *device,
-+static void stor_vsc_on_receive(struct hyperv_device *device,
- 			     struct vstor_packet *vstor_packet,
- 			     struct storvsc_request_extension *request_ext)
- {
-@@ -450,7 +452,7 @@ static void stor_vsc_on_receive(struct vm_device *device,
- 
- static void stor_vsc_on_channel_callback(void *context)
- {
--	struct vm_device *device = (struct vm_device *)context;
-+	struct hyperv_device *device = (struct hyperv_device *)context;
- 	struct storvsc_device *stor_device;
- 	u32 bytes_recvd;
- 	u64 request_id;
-@@ -510,7 +512,7 @@ static void stor_vsc_on_channel_callback(void *context)
- 	return;
- }
- 
--static int stor_vsc_connect_to_vsp(struct vm_device *device)
-+static int stor_vsc_connect_to_vsp(struct hyperv_device *device)
- {
- 	struct vmstorage_channel_properties props;
- 	struct storvsc_driver_object *stor_driver;
-@@ -544,7 +546,7 @@ static int stor_vsc_connect_to_vsp(struct vm_device *device)
-  * stor_vsc_on_device_add - Callback when the device belonging to this driver
-  * is added
-  */
--static int stor_vsc_on_device_add(struct vm_device *device,
-+static int stor_vsc_on_device_add(struct hyperv_device *device,
- 					void *additional_info)
- {
- 	struct storvsc_device *stor_device;
-@@ -593,7 +595,7 @@ cleanup:
- /*
-  * stor_vsc_on_device_remove - Callback when the our device is being removed
-  */
--static int stor_vsc_on_device_remove(struct vm_device *device)
-+static int stor_vsc_on_device_remove(struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
-@@ -627,7 +629,7 @@ static int stor_vsc_on_device_remove(struct vm_device *device)
- 	return 0;
- }
- 
--int stor_vsc_on_host_reset(struct vm_device *device)
-+int stor_vsc_on_host_reset(struct hyperv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 	struct storvsc_request_extension *request;
-@@ -686,7 +688,7 @@ cleanup:
- /*
-  * stor_vsc_on_io_request - Callback to initiate an I/O request
-  */
--static int stor_vsc_on_io_request(struct vm_device *device,
-+static int stor_vsc_on_io_request(struct hyperv_device *device,
- 			      struct hv_storvsc_request *request)
- {
- 	struct storvsc_device *stor_device;
-diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
-index 8bed6f5..c2915b4 100644
---- a/drivers/staging/hv/storvsc_api.h
-+++ b/drivers/staging/hv/storvsc_api.h
-@@ -92,7 +92,7 @@ struct storvsc_driver_object {
- 	u32 max_outstanding_req_per_channel;
- 
- 	/* Specific to this driver */
--	int (*on_io_request)(struct vm_device *device,
-+	int (*on_io_request)(struct hyperv_device *device,
- 			   struct hv_storvsc_request *request);
- };
- 
-@@ -104,7 +104,7 @@ struct storvsc_device_info {
- 
- /* Interface */
- int stor_vsc_initialize(struct hv_driver *driver);
--int stor_vsc_on_host_reset(struct vm_device *device);
-+int stor_vsc_on_host_reset(struct hyperv_device *device);
- int blk_vsc_initialize(struct hv_driver *driver);
- 
- #endif /* _STORVSC_API_H_ */
+ 	/* Notify the netvsc driver of the new device */
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 216d8ff..2b9a097 100644
+index 2b9a097..c094578 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
 @@ -43,7 +43,7 @@ struct host_device_context {
  	/* must be 1st field
  	 * FIXME this is a bug */
  	/* point back to our device context */
--	struct vm_device *device_ctx;
-+	struct hyperv_device *device_ctx;
+-	struct hyperv_device *device_ctx;
++	struct hyperv_device *device_obj;
  	struct kmem_cache *request_pool;
  	unsigned int port;
  	unsigned char path;
-@@ -226,7 +226,7 @@ static int storvsc_probe(struct device *device)
- 				(struct storvsc_driver_context *)driver_ctx;
- 	struct storvsc_driver_object *storvsc_drv_obj =
- 				&storvsc_drv_ctx->drv_obj;
--	struct vm_device *device_obj = device_to_vm_device(device);
-+	struct hyperv_device *device_obj = device_to_hyperv_device(device);
- 	struct Scsi_Host *host;
- 	struct host_device_context *host_device_ctx;
- 	struct storvsc_device_info device_info;
-@@ -310,7 +310,7 @@ static int storvsc_remove(struct device *device)
- 			(struct storvsc_driver_context *)driver_ctx;
- 	struct storvsc_driver_object *storvsc_drv_obj =
+@@ -247,7 +247,7 @@ static int storvsc_probe(struct device *device)
+ 	memset(host_device_ctx, 0, sizeof(struct host_device_context));
+ 
+ 	host_device_ctx->port = host->host_no;
+-	host_device_ctx->device_ctx = device_obj;
++	host_device_ctx->device_obj = device_obj;
+ 
+ 	host_device_ctx->request_pool =
+ 				kmem_cache_create(dev_name(&device_obj->device),
+@@ -271,7 +271,7 @@ static int storvsc_probe(struct device *device)
+ 		return -1;
+ 	}
+ 
+-	/* host_device_ctx->port = device_info.PortNumber; */
++	/* host_hyperv_dev->port = device_info.PortNumber; */
+ 	host_device_ctx->path = device_info.path_id;
+ 	host_device_ctx->target = device_info.target_id;
+ 
+@@ -312,7 +312,7 @@ static int storvsc_remove(struct device *device)
  			&storvsc_drv_ctx->drv_obj;
--	struct vm_device *device_obj = device_to_vm_device(device);
-+	struct hyperv_device *device_obj = device_to_hyperv_device(device);
+ 	struct hyperv_device *device_obj = device_to_hyperv_device(device);
  	struct Scsi_Host *host = dev_get_drvdata(device);
- 	struct host_device_context *host_device_ctx =
+-	struct host_device_context *host_device_ctx =
++	struct host_device_context *host_device_obj =
  			(struct host_device_context *)host->hostdata;
-@@ -600,7 +600,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 	int ret;
- 	struct host_device_context *host_device_ctx =
+ 
+ 
+@@ -330,9 +330,9 @@ static int storvsc_remove(struct device *device)
+ 			   ret);
+ 	}
+ 
+-	if (host_device_ctx->request_pool) {
+-		kmem_cache_destroy(host_device_ctx->request_pool);
+-		host_device_ctx->request_pool = NULL;
++	if (host_device_obj->request_pool) {
++		kmem_cache_destroy(host_device_obj->request_pool);
++		host_device_obj->request_pool = NULL;
+ 	}
+ 
+ 	DPRINT_INFO(STORVSC, "removing host adapter (%p)...", host);
+@@ -351,7 +351,7 @@ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
+ 	struct storvsc_cmd_request *cmd_request =
+ 		(struct storvsc_cmd_request *)request->context;
+ 	struct scsi_cmnd *scmnd = cmd_request->cmd;
+-	struct host_device_context *host_device_ctx =
++	struct host_device_context *host_device_obj =
  		(struct host_device_context *)scmnd->device->host->hostdata;
--	struct vm_device *device_ctx = host_device_ctx->device_ctx;
-+	struct hyperv_device *device_ctx = host_device_ctx->device_ctx;
- 	struct driver_context *driver_ctx =
- 		driver_to_driver_context(device_ctx->device.driver);
- 	struct storvsc_driver_context *storvsc_drv_ctx =
-@@ -838,7 +838,7 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
- 	int ret;
- 	struct host_device_context *host_device_ctx =
- 		(struct host_device_context *)scmnd->device->host->hostdata;
--	struct vm_device *device_ctx = host_device_ctx->device_ctx;
-+	struct hyperv_device *device_ctx = host_device_ctx->device_ctx;
+ 	void (*scsi_done_fn)(struct scsi_cmnd *);
+ 	struct scsi_sense_hdr sense_hdr;
+@@ -394,7 +394,7 @@ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
+ 	/* !!DO NOT MODIFY the scmnd after this call */
+ 	scsi_done_fn(scmnd);
  
- 	DPRINT_INFO(STORVSC_DRV, "sdev (%p) dev obj (%p) - host resetting...",
- 		    scmnd->device, device_ctx);
-diff --git a/drivers/staging/hv/vmbus.h b/drivers/staging/hv/vmbus.h
-index e56e61a..1ac7e56 100644
---- a/drivers/staging/hv/vmbus.h
-+++ b/drivers/staging/hv/vmbus.h
-@@ -43,7 +43,7 @@ struct driver_context {
- 	void (*shutdown)(struct device *);
- };
- 
--struct vm_device {
-+struct hyperv_device {
- 	char name[64];
- 	struct work_struct probe_failed_work_item;
- 	struct hv_guid class_id; /* device type id */
-@@ -56,9 +56,9 @@ struct vm_device {
- };
- 
- 
--static inline struct vm_device *device_to_vm_device(struct device *d)
-+static inline struct hyperv_device *device_to_hyperv_device(struct device *d)
- {
--	return container_of(d, struct vm_device, device);
-+	return container_of(d, struct hyperv_device, device);
+-	kmem_cache_free(host_device_ctx->request_pool, cmd_request);
++	kmem_cache_free(host_device_obj->request_pool, cmd_request);
  }
  
- static inline struct driver_context *driver_to_driver_context(struct device_driver *d)
-diff --git a/drivers/staging/hv/vmbus_api.h b/drivers/staging/hv/vmbus_api.h
-index bf84fb0..260086f 100644
---- a/drivers/staging/hv/vmbus_api.h
-+++ b/drivers/staging/hv/vmbus_api.h
-@@ -56,7 +56,7 @@ struct hv_multipage_buffer {
- #pragma pack(pop)
+ static int do_bounce_buffer(struct scatterlist *sgl, unsigned int sg_count)
+@@ -598,11 +598,11 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 				void (*done)(struct scsi_cmnd *))
+ {
+ 	int ret;
+-	struct host_device_context *host_device_ctx =
++	struct host_device_context *host_device_obj =
+ 		(struct host_device_context *)scmnd->device->host->hostdata;
+-	struct hyperv_device *device_ctx = host_device_ctx->device_ctx;
++	struct hyperv_device *device_obj = host_device_obj->device_obj;
+ 	struct driver_context *driver_ctx =
+-		driver_to_driver_context(device_ctx->device.driver);
++		driver_to_driver_context(device_obj->device.driver);
+ 	struct storvsc_driver_context *storvsc_drv_ctx =
+ 		(struct storvsc_driver_context *)driver_ctx;
+ 	struct storvsc_driver_object *storvsc_drv_obj =
+@@ -639,7 +639,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
  
- struct hv_driver;
--struct vm_device;
-+struct hyperv_device;
+ 	request_size = sizeof(struct storvsc_cmd_request);
  
- struct hv_dev_port_info {
- 	u32 int_mask;
-@@ -66,7 +66,7 @@ struct hv_dev_port_info {
- 	u32 bytes_avail_towrite;
- };
+-	cmd_request = kmem_cache_alloc(host_device_ctx->request_pool,
++	cmd_request = kmem_cache_alloc(host_device_obj->request_pool,
+ 				       GFP_ATOMIC);
+ 	if (!cmd_request) {
+ 		DPRINT_ERR(STORVSC_DRV, "scmnd (%p) - unable to allocate "
+@@ -679,7 +679,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 	request->context = cmd_request;/* scmnd; */
  
--struct vm_device_info {
-+struct hyperv_device_info {
- 	u32 chn_id;
- 	u32 chn_state;
- 	struct hv_guid chn_type;
-@@ -91,8 +91,8 @@ struct hv_driver {
- 	/* the device type supported by this driver */
- 	struct hv_guid class_id;
+ 	/* request->PortId = scmnd->device->channel; */
+-	request->host = host_device_ctx->port;
++	request->host = host_device_obj->port;
+ 	request->bus = scmnd->device->channel;
+ 	request->target_id = scmnd->device->id;
+ 	request->lun_id = scmnd->device->lun;
+@@ -712,7 +712,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
  
--	int (*dev_add)(struct vm_device *device, void *data);
--	int (*dev_rm)(struct vm_device *device);
-+	int (*dev_add)(struct hyperv_device *device, void *data);
-+	int (*dev_rm)(struct hyperv_device *device);
- 	void (*cleanup)(struct hv_driver *driver);
- };
+ 				scmnd->scsi_done = NULL;
+ 				scmnd->host_scribble = NULL;
+-				kmem_cache_free(host_device_ctx->request_pool,
++				kmem_cache_free(host_device_obj->request_pool,
+ 						cmd_request);
  
+ 				return SCSI_MLQUEUE_HOST_BUSY;
+@@ -751,7 +751,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 
+ retry_request:
+ 	/* Invokes the vsc to start an IO */
+-	ret = storvsc_drv_obj->on_io_request(device_ctx,
++	ret = storvsc_drv_obj->on_io_request(device_obj,
+ 					   &cmd_request->request);
+ 	if (ret == -1) {
+ 		/* no more space */
+@@ -771,7 +771,7 @@ retry_request:
+ 					      cmd_request->bounce_sgl_count);
+ 		}
+ 
+-		kmem_cache_free(host_device_ctx->request_pool, cmd_request);
++		kmem_cache_free(host_device_obj->request_pool, cmd_request);
+ 
+ 		scmnd->scsi_done = NULL;
+ 		scmnd->host_scribble = NULL;
+@@ -836,20 +836,20 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
+ {
+ 	int ret;
+-	struct host_device_context *host_device_ctx =
++	struct host_device_context *host_device_obj =
+ 		(struct host_device_context *)scmnd->device->host->hostdata;
+-	struct hyperv_device *device_ctx = host_device_ctx->device_ctx;
++	struct hyperv_device *device_obj = host_device_obj->device_obj;
+ 
+ 	DPRINT_INFO(STORVSC_DRV, "sdev (%p) dev obj (%p) - host resetting...",
+-		    scmnd->device, device_ctx);
++		    scmnd->device, device_obj);
+ 
+ 	/* Invokes the vsc to reset the host/bus */
+-	ret = stor_vsc_on_host_reset(device_ctx);
++	ret = stor_vsc_on_host_reset(device_obj);
+ 	if (ret != 0)
+ 		return ret;
+ 
+ 	DPRINT_INFO(STORVSC_DRV, "sdev (%p) dev obj (%p) - host reseted",
+-		    scmnd->device, device_ctx);
++		    scmnd->device, device_obj);
+ 
+ 	return ret;
+ }
 diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 531b68d..38152df 100644
+index 38152df..a385bd2 100644
 --- a/drivers/staging/hv/vmbus_drv.c
 +++ b/drivers/staging/hv/vmbus_drv.c
 @@ -54,7 +54,7 @@ struct vmbus_driver_context {
  	struct tasklet_struct event_dpc;
  
  	/* The bus root device */
--	struct vm_device device_ctx;
-+	struct hyperv_device device_ctx;
+-	struct hyperv_device device_ctx;
++	struct hyperv_device device_obj;
  };
  
  static int vmbus_match(struct device *device, struct device_driver *driver);
-@@ -145,12 +145,12 @@ static const struct hv_guid device_id = {
- 	}
- };
- 
--static struct vm_device *vmbus_device; /* vmbus root device */
-+static struct hyperv_device *vmbus_device; /* vmbus root device */
- 
- /*
-  * vmbus_child_dev_add - Registers the child device with the vmbus
-  */
--int vmbus_child_dev_add(struct vm_device *child_dev)
-+int vmbus_child_dev_add(struct hyperv_device *child_dev)
- {
- 	return vmbus_child_device_register(vmbus_device, child_dev);
- }
-@@ -158,7 +158,7 @@ int vmbus_child_dev_add(struct vm_device *child_dev)
- /*
-  * vmbus_dev_add - Callback when the root bus device is added
-  */
--static int vmbus_dev_add(struct vm_device *dev, void *info)
-+static int vmbus_dev_add(struct hyperv_device *dev, void *info)
- {
- 	u32 *irqvector = info;
- 	int ret;
-@@ -183,7 +183,7 @@ static int vmbus_dev_add(struct vm_device *dev, void *info)
- /*
-  * vmbus_dev_rm - Callback when the root bus device is removed
-  */
--static int vmbus_dev_rm(struct vm_device *dev)
-+static int vmbus_dev_rm(struct hyperv_device *dev)
- {
- 	int ret = 0;
- 
-@@ -299,8 +299,8 @@ static int vmbus_on_isr(struct hv_driver *drv)
- 	return ret;
- }
- 
--static void get_channel_info(struct vm_device *device,
--			     struct vm_device_info *info)
-+static void get_channel_info(struct hyperv_device *device,
-+			     struct hyperv_device_info *info)
- {
- 	struct vmbus_channel_debug_info debug_info;
- 
-@@ -354,10 +354,10 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
+@@ -354,12 +354,12 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
  				      struct device_attribute *dev_attr,
  				      char *buf)
  {
--	struct vm_device *device_ctx = device_to_vm_device(dev);
--	struct vm_device_info device_info;
-+	struct hyperv_device *device_ctx = device_to_hyperv_device(dev);
-+	struct hyperv_device_info device_info;
+-	struct hyperv_device *device_ctx = device_to_hyperv_device(dev);
++	struct hyperv_device *device_obj = device_to_hyperv_device(dev);
+ 	struct hyperv_device_info device_info;
  
--	memset(&device_info, 0, sizeof(struct vm_device_info));
-+	memset(&device_info, 0, sizeof(struct hyperv_device_info));
+ 	memset(&device_info, 0, sizeof(struct hyperv_device_info));
  
- 	get_channel_info(device_ctx, &device_info);
+-	get_channel_info(device_ctx, &device_info);
++	get_channel_info(device_obj, &device_info);
  
+ 	if (!strcmp(dev_attr->attr.name, "class_id")) {
+ 		return sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
 @@ -464,7 +464,7 @@ static int vmbus_bus_init(void)
  {
  	struct vmbus_driver_context *vmbus_drv_ctx = &vmbus_drv;
  	struct hv_driver *driver = &vmbus_drv.drv_obj;
--	struct vm_device *dev_ctx = &vmbus_drv.device_ctx;
-+	struct hyperv_device *dev_ctx = &vmbus_drv.device_ctx;
+-	struct hyperv_device *dev_ctx = &vmbus_drv.device_ctx;
++	struct hyperv_device *dev = &vmbus_drv.device_obj;
  	int ret;
  	unsigned int vector;
  
-@@ -535,7 +535,7 @@ static int vmbus_bus_init(void)
+@@ -535,9 +535,9 @@ static int vmbus_bus_init(void)
  	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", vmbus_irq, vector);
  
  	/* Call to bus driver to add the root device */
--	memset(dev_ctx, 0, sizeof(struct vm_device));
-+	memset(dev_ctx, 0, sizeof(struct hyperv_device));
+-	memset(dev_ctx, 0, sizeof(struct hyperv_device));
++	memset(dev, 0, sizeof(struct hyperv_device));
  
- 	ret = driver->dev_add(dev_ctx, &vector);
+-	ret = driver->dev_add(dev_ctx, &vector);
++	ret = driver->dev_add(dev, &vector);
  	if (ret != 0) {
-@@ -590,7 +590,7 @@ static void vmbus_bus_exit(void)
+ 		DPRINT_ERR(VMBUS_DRV,
+ 			   "ERROR - Unable to add vmbus root device");
+@@ -549,19 +549,19 @@ static int vmbus_bus_init(void)
+ 		ret = -1;
+ 		goto cleanup;
+ 	}
+-	/* strcpy(dev_ctx->device.bus_id, dev_ctx->device_obj.name); */
+-	dev_set_name(&dev_ctx->device, "vmbus_0_0");
++	/* strcpy(dev->device.bus_id, dev->device_obj.name); */
++	dev_set_name(&dev->device, "vmbus_0_0");
+ 
+ 	/* No need to bind a driver to the root device. */
+-	dev_ctx->device.parent = NULL;
++	dev->device.parent = NULL;
+ 	/* NULL; vmbus_remove() does not get invoked */
+-	dev_ctx->device.bus = &vmbus_drv_ctx->bus;
++	dev->device.bus = &vmbus_drv_ctx->bus;
+ 
+ 	/* Setup the device dispatch table */
+-	dev_ctx->device.release = vmbus_bus_release;
++	dev->device.release = vmbus_bus_release;
+ 
+ 	/* Setup the bus as root device */
+-	ret = device_register(&dev_ctx->device);
++	ret = device_register(&dev->device);
+ 	if (ret) {
+ 		DPRINT_ERR(VMBUS_DRV,
+ 			   "ERROR - Unable to register vmbus root device");
+@@ -590,17 +590,17 @@ static void vmbus_bus_exit(void)
  	struct hv_driver *driver = &vmbus_drv.drv_obj;
  	struct vmbus_driver_context *vmbus_drv_ctx = &vmbus_drv;
  
--	struct vm_device *dev_ctx = &vmbus_drv.device_ctx;
-+	struct hyperv_device *dev_ctx = &vmbus_drv.device_ctx;
+-	struct hyperv_device *dev_ctx = &vmbus_drv.device_ctx;
++	struct hyperv_device *dev = &vmbus_drv.device_obj;
  
  	/* Remove the root device */
  	if (driver->dev_rm)
-@@ -667,14 +667,14 @@ EXPORT_SYMBOL(vmbus_child_driver_unregister);
-  * vmbus_child_device_create - Creates and registers a new child device
-  * on the vmbus.
-  */
--struct vm_device *vmbus_child_device_create(struct hv_guid *type,
-+struct hyperv_device *vmbus_child_device_create(struct hv_guid *type,
+-		driver->dev_rm(dev_ctx);
++		driver->dev_rm(dev);
+ 
+ 	if (driver->cleanup)
+ 		driver->cleanup(driver);
+ 
+ 	/* Unregister the root bus device */
+-	device_unregister(&dev_ctx->device);
++	device_unregister(&dev->device);
+ 
+ 	bus_unregister(&vmbus_drv_ctx->bus);
+ 
+@@ -671,11 +671,11 @@ struct hyperv_device *vmbus_child_device_create(struct hv_guid *type,
  					    struct hv_guid *instance,
  					    struct vmbus_channel *channel)
  {
--	struct vm_device *child_device_ctx;
-+	struct hyperv_device *child_device_ctx;
+-	struct hyperv_device *child_device_ctx;
++	struct hyperv_device *child_device_obj;
  
  	/* Allocate the new child device */
--	child_device_ctx = kzalloc(sizeof(struct vm_device), GFP_KERNEL);
-+	child_device_ctx = kzalloc(sizeof(struct hyperv_device), GFP_KERNEL);
- 	if (!child_device_ctx) {
+-	child_device_ctx = kzalloc(sizeof(struct hyperv_device), GFP_KERNEL);
+-	if (!child_device_ctx) {
++	child_device_obj = kzalloc(sizeof(struct hyperv_device), GFP_KERNEL);
++	if (!child_device_obj) {
  		DPRINT_ERR(VMBUS_DRV,
  			"unable to allocate device_context for child device");
-@@ -711,8 +711,8 @@ struct vm_device *vmbus_child_device_create(struct hv_guid *type,
- /*
-  * vmbus_child_device_register - Register the child device on the specified bus
-  */
--int vmbus_child_device_register(struct vm_device *root_device_obj,
--				struct vm_device *child_device_obj)
-+int vmbus_child_device_register(struct hyperv_device *root_device_obj,
-+				struct hyperv_device *child_device_obj)
- {
- 	int ret = 0;
- 	static atomic_t device_num = ATOMIC_INIT(0);
-@@ -752,7 +752,7 @@ int vmbus_child_device_register(struct vm_device *root_device_obj,
-  * vmbus_child_device_unregister - Remove the specified child device
-  * from the vmbus.
-  */
--void vmbus_child_device_unregister(struct vm_device *device_obj)
-+void vmbus_child_device_unregister(struct hyperv_device *device_obj)
- {
+ 		return NULL;
+@@ -686,7 +686,7 @@ struct hyperv_device *vmbus_child_device_create(struct hv_guid *type,
+ 		"%02x%02x%02x%02x%02x%02x%02x%02x},"
+ 		"id {%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+ 		"%02x%02x%02x%02x%02x%02x%02x%02x}",
+-		&child_device_ctx->device,
++		&child_device_obj->device,
+ 		type->data[3], type->data[2], type->data[1], type->data[0],
+ 		type->data[5], type->data[4], type->data[7], type->data[6],
+ 		type->data[8], type->data[9], type->data[10], type->data[11],
+@@ -700,12 +700,12 @@ struct hyperv_device *vmbus_child_device_create(struct hv_guid *type,
+ 		instance->data[12], instance->data[13],
+ 		instance->data[14], instance->data[15]);
  
- 	DPRINT_INFO(VMBUS_DRV, "unregistering child device (%p)",
-@@ -777,7 +777,7 @@ void vmbus_child_device_unregister(struct vm_device *device_obj)
+-	child_device_ctx->channel = channel;
++	child_device_obj->channel = channel;
+ 
+-	memcpy(&child_device_ctx->class_id, type, sizeof(struct hv_guid));
+-	memcpy(&child_device_ctx->device_id, instance, sizeof(struct hv_guid));
++	memcpy(&child_device_obj->class_id, type, sizeof(struct hv_guid));
++	memcpy(&child_device_obj->device_id, instance, sizeof(struct hv_guid));
+ 
+-	return child_device_ctx;
++	return child_device_obj;
+ }
+ 
+ /*
+@@ -777,43 +777,43 @@ void vmbus_child_device_unregister(struct hyperv_device *device_obj)
   */
  static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
  {
--	struct vm_device *device_ctx = device_to_vm_device(device);
-+	struct hyperv_device *device_ctx = device_to_hyperv_device(device);
+-	struct hyperv_device *device_ctx = device_to_hyperv_device(device);
++	struct hyperv_device *device_obj = device_to_hyperv_device(device);
  	int ret;
  
  	DPRINT_INFO(VMBUS_DRV, "generating uevent - VMBUS_DEVICE_CLASS_GUID={"
-@@ -850,7 +850,7 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
+ 		    "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+ 		    "%02x%02x%02x%02x%02x%02x%02x%02x}",
+-		    device_ctx->class_id.data[3], device_ctx->class_id.data[2],
+-		    device_ctx->class_id.data[1], device_ctx->class_id.data[0],
+-		    device_ctx->class_id.data[5], device_ctx->class_id.data[4],
+-		    device_ctx->class_id.data[7], device_ctx->class_id.data[6],
+-		    device_ctx->class_id.data[8], device_ctx->class_id.data[9],
+-		    device_ctx->class_id.data[10],
+-		    device_ctx->class_id.data[11],
+-		    device_ctx->class_id.data[12],
+-		    device_ctx->class_id.data[13],
+-		    device_ctx->class_id.data[14],
+-		    device_ctx->class_id.data[15]);
++		    device_obj->class_id.data[3], device_obj->class_id.data[2],
++		    device_obj->class_id.data[1], device_obj->class_id.data[0],
++		    device_obj->class_id.data[5], device_obj->class_id.data[4],
++		    device_obj->class_id.data[7], device_obj->class_id.data[6],
++		    device_obj->class_id.data[8], device_obj->class_id.data[9],
++		    device_obj->class_id.data[10],
++		    device_obj->class_id.data[11],
++		    device_obj->class_id.data[12],
++		    device_obj->class_id.data[13],
++		    device_obj->class_id.data[14],
++		    device_obj->class_id.data[15]);
+ 
+ 	ret = add_uevent_var(env, "VMBUS_DEVICE_CLASS_GUID={"
+ 			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+ 			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+-			     device_ctx->class_id.data[3],
+-			     device_ctx->class_id.data[2],
+-			     device_ctx->class_id.data[1],
+-			     device_ctx->class_id.data[0],
+-			     device_ctx->class_id.data[5],
+-			     device_ctx->class_id.data[4],
+-			     device_ctx->class_id.data[7],
+-			     device_ctx->class_id.data[6],
+-			     device_ctx->class_id.data[8],
+-			     device_ctx->class_id.data[9],
+-			     device_ctx->class_id.data[10],
+-			     device_ctx->class_id.data[11],
+-			     device_ctx->class_id.data[12],
+-			     device_ctx->class_id.data[13],
+-			     device_ctx->class_id.data[14],
+-			     device_ctx->class_id.data[15]);
++			     device_obj->class_id.data[3],
++			     device_obj->class_id.data[2],
++			     device_obj->class_id.data[1],
++			     device_obj->class_id.data[0],
++			     device_obj->class_id.data[5],
++			     device_obj->class_id.data[4],
++			     device_obj->class_id.data[7],
++			     device_obj->class_id.data[6],
++			     device_obj->class_id.data[8],
++			     device_obj->class_id.data[9],
++			     device_obj->class_id.data[10],
++			     device_obj->class_id.data[11],
++			     device_obj->class_id.data[12],
++			     device_obj->class_id.data[13],
++			     device_obj->class_id.data[14],
++			     device_obj->class_id.data[15]);
+ 
+ 	if (ret)
+ 		return ret;
+@@ -821,22 +821,22 @@ static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
+ 	ret = add_uevent_var(env, "VMBUS_DEVICE_DEVICE_GUID={"
+ 			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+ 			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+-			     device_ctx->device_id.data[3],
+-			     device_ctx->device_id.data[2],
+-			     device_ctx->device_id.data[1],
+-			     device_ctx->device_id.data[0],
+-			     device_ctx->device_id.data[5],
+-			     device_ctx->device_id.data[4],
+-			     device_ctx->device_id.data[7],
+-			     device_ctx->device_id.data[6],
+-			     device_ctx->device_id.data[8],
+-			     device_ctx->device_id.data[9],
+-			     device_ctx->device_id.data[10],
+-			     device_ctx->device_id.data[11],
+-			     device_ctx->device_id.data[12],
+-			     device_ctx->device_id.data[13],
+-			     device_ctx->device_id.data[14],
+-			     device_ctx->device_id.data[15]);
++			     device_obj->device_id.data[3],
++			     device_obj->device_id.data[2],
++			     device_obj->device_id.data[1],
++			     device_obj->device_id.data[0],
++			     device_obj->device_id.data[5],
++			     device_obj->device_id.data[4],
++			     device_obj->device_id.data[7],
++			     device_obj->device_id.data[6],
++			     device_obj->device_id.data[8],
++			     device_obj->device_id.data[9],
++			     device_obj->device_id.data[10],
++			     device_obj->device_id.data[11],
++			     device_obj->device_id.data[12],
++			     device_obj->device_id.data[13],
++			     device_obj->device_id.data[14],
++			     device_obj->device_id.data[15]);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -850,10 +850,10 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
  {
  	int match = 0;
  	struct driver_context *driver_ctx = driver_to_driver_context(driver);
--	struct vm_device *device_ctx = device_to_vm_device(device);
-+	struct hyperv_device *device_ctx = device_to_hyperv_device(device);
+-	struct hyperv_device *device_ctx = device_to_hyperv_device(device);
++	struct hyperv_device *device_obj = device_to_hyperv_device(device);
  
  	/* We found our driver ? */
- 	if (memcmp(&device_ctx->class_id, &driver_ctx->class_id,
-@@ -882,7 +882,7 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
+-	if (memcmp(&device_ctx->class_id, &driver_ctx->class_id,
++	if (memcmp(&device_obj->class_id, &driver_ctx->class_id,
+ 		   sizeof(struct hv_guid)) == 0) {
+ 		/*
+ 		 * !! NOTE: The driver_ctx is not a vmbus_drv_ctx. We typecast
+@@ -862,11 +862,11 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
+ 		struct vmbus_driver_context *vmbus_drv_ctx =
+ 			(struct vmbus_driver_context *)driver_ctx;
+ 
+-		device_ctx->drv = &vmbus_drv_ctx->drv_obj;
++		device_obj->drv = &vmbus_drv_ctx->drv_obj;
+ 		DPRINT_INFO(VMBUS_DRV,
+ 			    "device object (%p) set to driver object (%p)",
+-			    &device_ctx,
+-			    device_ctx->drv);
++			    &device_obj,
++			    device_obj->drv);
+ 
+ 		match = 1;
+ 	}
+@@ -882,15 +882,15 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
   */
  static void vmbus_probe_failed_cb(struct work_struct *context)
  {
--	struct vm_device *device_ctx = (struct vm_device *)context;
-+	struct hyperv_device *device_ctx = (struct hyperv_device *)context;
+-	struct hyperv_device *device_ctx = (struct hyperv_device *)context;
++	struct hyperv_device *device_obj = (struct hyperv_device *)context;
  
  	/*
  	 * Kick off the process of unregistering the device.
-@@ -901,8 +901,8 @@ static int vmbus_probe(struct device *child_device)
+ 	 * This will call vmbus_remove() and eventually vmbus_device_release()
+ 	 */
+-	device_unregister(&device_ctx->device);
++	device_unregister(&device_obj->device);
+ 
+-	/* put_device(&device_ctx->device); */
++	/* put_device(&device_obj->device); */
+ }
+ 
+ /*
+@@ -901,21 +901,21 @@ static int vmbus_probe(struct device *child_device)
  	int ret = 0;
  	struct driver_context *driver_ctx =
  			driver_to_driver_context(child_device->driver);
--	struct vm_device *device_ctx =
--			device_to_vm_device(child_device);
-+	struct hyperv_device *device_ctx =
-+			device_to_hyperv_device(child_device);
+-	struct hyperv_device *device_ctx =
++	struct hyperv_device *device_obj =
+ 			device_to_hyperv_device(child_device);
  
  	/* Let the specific open-source driver handles the probe if it can */
  	if (driver_ctx->probe) {
-@@ -1008,7 +1008,7 @@ static void vmbus_bus_release(struct device *device)
+-		ret = device_ctx->probe_error = driver_ctx->probe(child_device);
++		ret = device_obj->probe_error = driver_ctx->probe(child_device);
+ 		if (ret != 0) {
+ 			DPRINT_ERR(VMBUS_DRV, "probe() failed for device %s "
+ 				   "(%p) on driver %s (%d)...",
+ 				   dev_name(child_device), child_device,
+ 				   child_device->driver->name, ret);
+ 
+-			INIT_WORK(&device_ctx->probe_failed_work_item,
++			INIT_WORK(&device_obj->probe_failed_work_item,
+ 				  vmbus_probe_failed_cb);
+-			schedule_work(&device_ctx->probe_failed_work_item);
++			schedule_work(&device_obj->probe_failed_work_item);
+ 		}
+ 	} else {
+ 		DPRINT_ERR(VMBUS_DRV, "probe() method not set for driver - %s",
+@@ -1008,11 +1008,11 @@ static void vmbus_bus_release(struct device *device)
   */
  static void vmbus_device_release(struct device *device)
  {
--	struct vm_device *device_ctx = device_to_vm_device(device);
-+	struct hyperv_device *device_ctx = device_to_hyperv_device(device);
+-	struct hyperv_device *device_ctx = device_to_hyperv_device(device);
++	struct hyperv_device *device_obj = device_to_hyperv_device(device);
  
- 	kfree(device_ctx);
+-	kfree(device_ctx);
++	kfree(device_obj);
  
-diff --git a/drivers/staging/hv/vmbus_private.h b/drivers/staging/hv/vmbus_private.h
-index 206218c..4a8f2e8 100644
---- a/drivers/staging/hv/vmbus_private.h
-+++ b/drivers/staging/hv/vmbus_private.h
-@@ -103,18 +103,18 @@ extern struct vmbus_connection vmbus_connection;
+-	/* !!DO NOT REFERENCE device_ctx anymore at this point!! */
++	/* !!DO NOT REFERENCE device_obj anymore at this point!! */
+ }
  
- /* General vmbus interface */
- 
--struct vm_device *vmbus_child_device_create(struct hv_guid *type,
-+struct hyperv_device *vmbus_child_device_create(struct hv_guid *type,
- 					 struct hv_guid *instance,
- 					 struct vmbus_channel *channel);
- 
--int vmbus_child_dev_add(struct vm_device *device);
--int vmbus_child_device_register(struct vm_device *root_device_obj,
--				struct vm_device *child_device_obj);
--void vmbus_child_device_unregister(struct vm_device *device_obj);
-+int vmbus_child_dev_add(struct hyperv_device *device);
-+int vmbus_child_device_register(struct hyperv_device *root_device_obj,
-+				struct hyperv_device *child_device_obj);
-+void vmbus_child_device_unregister(struct hyperv_device *device_obj);
- 
- /* static void */
- /* VmbusChildDeviceDestroy( */
--/* struct vm_device *); */
-+/* struct hyperv_device *); */
- 
- struct vmbus_channel *relid2channel(u32 relid);
- 
+ /*
 -- 
 1.5.5.6
 
