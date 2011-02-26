@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab1BZQeu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 11:34:50 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:34975 "EHLO mgw2.diku.dk"
+	id S1752259Ab1BZQet (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 11:34:49 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:34970 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab1BZQes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 11:34:48 -0500
+	id S1751408Ab1BZQer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 11:34:47 -0500
 From: Julia Lawall <julia@diku.dk>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: kernel-janitors@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers/watchdog: Convert release_resource to release_region/release_mem_region
-Date: Sat, 26 Feb 2011 17:34:39 +0100
-Message-Id: <1298738079-28893-2-git-send-email-julia@diku.dk>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: kernel-janitors@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] drivers/watchdog/s3c2410_wdt.c: Convert release_resource to release_region/release_mem_region
+Date: Sat, 26 Feb 2011 17:34:38 +0100
+Message-Id: <1298738079-28893-1-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,9 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Request_mem_region should be used with release_mem_region, not
 release_resource.
 
-In pnx4008_wdt.c, a missing clk_put is added as well.
-
-The semantic match that finds the first problem is as follows:
+The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
 
 // <smpl>
@@ -39,117 +38,51 @@ expression x,E;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/watchdog/davinci_wdt.c |   22 ++++++++++------------
- drivers/watchdog/max63xx_wdt.c |   20 ++++++++------------
- drivers/watchdog/pnx4008_wdt.c |   28 +++++++++++++---------------
- 3 files changed, 31 insertions(+), 39 deletions(-)
+ drivers/watchdog/s3c2410_wdt.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index 596ba60..51b5551 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -202,7 +202,6 @@ static struct miscdevice davinci_wdt_miscdev = {
- static int __devinit davinci_wdt_probe(struct platform_device *pdev)
+diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+index 25b39bf..95ae53d 100644
+--- a/drivers/watchdog/s3c2410_wdt.c
++++ b/drivers/watchdog/s3c2410_wdt.c
+@@ -402,7 +402,6 @@ static inline void s3c2410wdt_cpufreq_deregister(void)
+ 
+ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
  {
- 	int ret = 0, size;
 -	struct resource *res;
- 	struct device *dev = &pdev->dev;
+ 	struct device *dev;
+ 	unsigned int wtcon;
+ 	int started = 0;
+@@ -416,20 +415,19 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
  
- 	wdt_clk = clk_get(dev, NULL);
-@@ -216,31 +215,31 @@ static int __devinit davinci_wdt_probe(struct platform_device *pdev)
- 
- 	dev_info(dev, "heartbeat %d sec\n", heartbeat);
+ 	/* get the memory region for the watchdog timer */
  
 -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (res == NULL) {
 +	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 +	if (wdt_mem == NULL) {
- 		dev_err(dev, "failed to get memory region resource\n");
+ 		dev_err(dev, "no memory resource specified\n");
  		return -ENOENT;
  	}
  
 -	size = resource_size(res);
 -	wdt_mem = request_mem_region(res->start, size, pdev->name);
--
 -	if (wdt_mem == NULL) {
 +	size = resource_size(wdt_mem);
 +	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
  		dev_err(dev, "failed to get memory region\n");
- 		return -ENOENT;
+ 		return -EBUSY;
  	}
  
 -	wdt_base = ioremap(res->start, size);
 +	wdt_base = ioremap(wdt_mem->start, size);
- 	if (!wdt_base) {
- 		dev_err(dev, "failed to map memory region\n");
-+		release_mem_region(wdt_mem->start, size);
-+		wdt_mem = NULL;
- 		return -ENOMEM;
- 	}
- 
- 	ret = misc_register(&davinci_wdt_miscdev);
- 	if (ret < 0) {
- 		dev_err(dev, "cannot register misc device\n");
--		release_resource(wdt_mem);
--		kfree(wdt_mem);
-+		release_mem_region(wdt_mem->start, size);
-+		wdt_mem = NULL;
- 	} else {
- 		set_bit(WDT_DEVICE_INITED, &wdt_status);
- 	}
-@@ -253,8 +252,7 @@ static int __devexit davinci_wdt_remove(struct platform_device *pdev)
- {
- 	misc_deregister(&davinci_wdt_miscdev);
- 	if (wdt_mem) {
--		release_resource(wdt_mem);
--		kfree(wdt_mem);
-+		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
- 		wdt_mem = NULL;
- 	}
- 
-diff --git a/drivers/watchdog/max63xx_wdt.c b/drivers/watchdog/max63xx_wdt.c
-index 7a82ce5..73ba2fd 100644
---- a/drivers/watchdog/max63xx_wdt.c
-+++ b/drivers/watchdog/max63xx_wdt.c
-@@ -270,7 +270,6 @@ static int __devinit max63xx_wdt_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
- 	int size;
--	struct resource *res;
- 	struct device *dev = &pdev->dev;
- 	struct max63xx_timeout *table;
- 
-@@ -294,21 +293,19 @@ static int __devinit max63xx_wdt_probe(struct platform_device *pdev)
- 
- 	max63xx_pdev = pdev;
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
-+	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (wdt_mem == NULL) {
- 		dev_err(dev, "failed to get memory region resource\n");
- 		return -ENOENT;
- 	}
- 
--	size = resource_size(res);
--	wdt_mem = request_mem_region(res->start, size, pdev->name);
--
--	if (wdt_mem == NULL) {
-+	size = resource_size(wdt_mem);
-+	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
- 		dev_err(dev, "failed to get memory region\n");
- 		return -ENOENT;
- 	}
- 
--	wdt_base = ioremap(res->start, size);
-+	wdt_base = ioremap(wdt_mem->start, size);
- 	if (!wdt_base) {
- 		dev_err(dev, "failed to map memory region\n");
- 		ret = -ENOMEM;
-@@ -326,8 +323,8 @@ static int __devinit max63xx_wdt_probe(struct platform_device *pdev)
- out_unmap:
+ 	if (wdt_base == NULL) {
+ 		dev_err(dev, "failed to ioremap() region\n");
+ 		ret = -EINVAL;
+@@ -524,8 +522,8 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
  	iounmap(wdt_base);
- out_request:
+ 
+  err_req:
 -	release_resource(wdt_mem);
 -	kfree(wdt_mem);
 +	release_mem_region(wdt_mem->start, size);
@@ -157,91 +90,14 @@ index 7a82ce5..73ba2fd 100644
  
  	return ret;
  }
-@@ -336,8 +333,7 @@ static int __devexit max63xx_wdt_remove(struct platform_device *pdev)
- {
- 	misc_deregister(&max63xx_wdt_miscdev);
- 	if (wdt_mem) {
--		release_resource(wdt_mem);
--		kfree(wdt_mem);
-+		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
- 		wdt_mem = NULL;
- 	}
+@@ -545,8 +543,7 @@ static int __devexit s3c2410wdt_remove(struct platform_device *dev)
  
-diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
-index c7cf4cb..6149332 100644
---- a/drivers/watchdog/pnx4008_wdt.c
-+++ b/drivers/watchdog/pnx4008_wdt.c
-@@ -254,7 +254,6 @@ static struct miscdevice pnx4008_wdt_miscdev = {
- static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
- {
- 	int ret = 0, size;
--	struct resource *res;
+ 	iounmap(wdt_base);
  
- 	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
- 		heartbeat = DEFAULT_HEARTBEAT;
-@@ -262,42 +261,42 @@ static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
- 	printk(KERN_INFO MODULE_NAME
- 		"PNX4008 Watchdog Timer: heartbeat %d sec\n", heartbeat);
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
-+	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (wdt_mem == NULL) {
- 		printk(KERN_INFO MODULE_NAME
- 			"failed to get memory region resouce\n");
- 		return -ENOENT;
- 	}
- 
--	size = resource_size(res);
--	wdt_mem = request_mem_region(res->start, size, pdev->name);
-+	size = resource_size(wdt_mem);
- 
--	if (wdt_mem == NULL) {
-+	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
- 		printk(KERN_INFO MODULE_NAME "failed to get memory region\n");
- 		return -ENOENT;
- 	}
--	wdt_base = (void __iomem *)IO_ADDRESS(res->start);
-+	wdt_base = (void __iomem *)IO_ADDRESS(wdt_mem->start);
- 
- 	wdt_clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(wdt_clk)) {
- 		ret = PTR_ERR(wdt_clk);
--		release_resource(wdt_mem);
--		kfree(wdt_mem);
-+		release_mem_region(wdt_mem->start, size);
-+		wdt_mem = NULL;
- 		goto out;
- 	}
- 
- 	ret = clk_enable(wdt_clk);
- 	if (ret) {
--		release_resource(wdt_mem);
--		kfree(wdt_mem);
-+		release_mem_region(wdt_mem->start, size);
-+		wdt_mem = NULL;
-+		clk_put(wdt_clk);
- 		goto out;
- 	}
- 
- 	ret = misc_register(&pnx4008_wdt_miscdev);
- 	if (ret < 0) {
- 		printk(KERN_ERR MODULE_NAME "cannot register misc device\n");
--		release_resource(wdt_mem);
--		kfree(wdt_mem);
-+		release_mem_region(wdt_mem->start, size);
-+		wdt_mem = NULL;
- 		clk_disable(wdt_clk);
- 		clk_put(wdt_clk);
- 	} else {
-@@ -320,8 +319,7 @@ static int __devexit pnx4008_wdt_remove(struct platform_device *pdev)
- 	clk_put(wdt_clk);
- 
- 	if (wdt_mem) {
--		release_resource(wdt_mem);
--		kfree(wdt_mem);
-+		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
- 		wdt_mem = NULL;
- 	}
+-	release_resource(wdt_mem);
+-	kfree(wdt_mem);
++	release_mem_region(wdt_mem->start, resource_size(wdt_mem));
+ 	wdt_mem = NULL;
  	return 0;
+ }
 
