@@ -1,78 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab1BZLvV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 06:51:21 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:63871 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab1BZLvU (ORCPT
+	id S1752135Ab1BZML0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 07:11:26 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41919 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab1BZMLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 06:51:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging interfaces
-Date: Sat, 26 Feb 2011 12:50:33 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Dan Carpenter <error27@gmail.com>, Greg KH <gregkh@suse.de>,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com> <20110222205847.GA1867@khazad-dum.debian.net> <20110224163844.GC888@home.goodmis.org>
-In-Reply-To: <20110224163844.GC888@home.goodmis.org>
+	Sat, 26 Feb 2011 07:11:24 -0500
+Message-ID: <25DBF349769A4CF7B883D6D7FF01AD70@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Cc: <linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>, <sachi@mistralsolutions.com>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Michael Williamson" <michael.williamson@criticallink.com>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        "Sergei Shtylyov" <sshtylyov@ru.mvista.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+References: <1297434088-27995-1-git-send-email-subhasish@mistralsolutions.com> <B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com> <886E26C48DE446C3937D89ECF86030B2@subhasishg> <B85A65D85D7EB246BE421B3FB0FBB593024BE49711@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BE49711@dbde02.ent.ti.com>
+Subject: Re: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+Date: Sat, 26 Feb 2011 17:42:39 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102261250.33914.arnd@arndb.de>
-X-Provags-ID: V02:K0:/gZRZ3Vq4eZYxl5H9f6Z1WfoglNoQcwfrW8EGceXhJv
- 8POAp9EN/qGtZDen7WuXxIdhWdm/sVLA5Db7++K/RUj+n+7c43
- L7YVyotZeLbo7x0gAUtHLXnFbUU9zGD6uuWfLismt8Nc8uKP1Q
- UfZzaXsa+BbHRVk0+J8OcKAcIG0c9Nimp0eJ/5gBAlr2RFuH6L
- Vfg1NX3eh6O7F8j2aUZtw==
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 February 2011, Steven Rostedt wrote:
-> Currently things are still in a large flux, and I do not know how this
-> will play out. Although the changes in /debugfs/tracing has toned down a
-> lot, there's also the work going in on how to merge perf and ftrace.
-> This may start changes as well, and perhaps deprecate interfaces. I
-> don't know.
+Hi Sekhar,
+
+I tried this using MMC and Kelvin's suggestions, but it never came back. 
+Here is a log:
+
+root@arago:~# rtcwake -d /dev/rtc0 -s 20 -m mem
+wakeup from "mem" at Tue Apr 21 14:31:13 2009
+PM: Syncing filesystems ... done.
+Freezing user space processes ... (elapsed 0.01 seconds) done.
+Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+Suspending console(s) (use no_console_suspend to debug)
+
+>From the Kconfig I had enabled RTC_DRV_OMAP, CONFIG_PM, CONFIG_SUSPEND.
+
+--------------------------------------------------
+From: "Nori, Sekhar" <nsekhar@ti.com>
+Sent: Thursday, February 24, 2011 4:57 PM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>; 
+<davinci-linux-open-source@linux.davincidsp.com>
+Cc: <linux-arm-kernel@lists.infradead.org>; "Watkins, Melissa" 
+<m-watkins@ti.com>; <sachi@mistralsolutions.com>; "Kevin Hilman" 
+<khilman@deeprootsystems.com>; "Russell King" <linux@arm.linux.org.uk>; 
+"Michael Williamson" <michael.williamson@criticallink.com>; "Chemparathy, 
+Cyril" <cyril@ti.com>; "Sergei Shtylyov" <sshtylyov@ru.mvista.com>; "open 
+list" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+
+> Hi Subhasish,
+>
+> On Thu, Feb 24, 2011 at 15:54:56, Subhasish Ghosh wrote:
+>> --------------------------------------------------
+>> From: "Nori, Sekhar" <nsekhar@ti.com>
+>> Sent: Wednesday, February 23, 2011 9:00 PM
+>> To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>;
+>> <davinci-linux-open-source@linux.davincidsp.com>
+>> Cc: <linux-arm-kernel@lists.infradead.org>; "Watkins, Melissa"
+>> <m-watkins@ti.com>; <sachi@mistralsolutions.com>; "Kevin Hilman"
+>> <khilman@deeprootsystems.com>; "Russell King" <linux@arm.linux.org.uk>;
+>> "Michael Williamson" <michael.williamson@criticallink.com>; "Chemparathy,
+>> Cyril" <cyril@ti.com>; "Sergei Shtylyov" <sshtylyov@ru.mvista.com>; "open
+>> list" <linux-kernel@vger.kernel.org>
+>> Subject: RE: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+>>
+>> > Hi Subhasish,
+>> >
+>> > On Fri, Feb 11, 2011 at 19:51:28, Subhasish Ghosh wrote:
+>> >> This patch modifies the sram allocator to allocate memory
+>> >> from the DA8XX shared RAM.
+>> >
+>> > It will be nice to know if you tried suspend-to-RAM
+>> > after this change and found it to be working.
+>> >
+>>
+>> SG -- My file system is currently mounted from MMC.
+>>           Suspend to RAM seems to have bug with MMC.
+>> 
+>> (http://processors.wiki.ti.com/index.php/OMAP-L1_Linux_Drivers_Usage#Suspend-to-RAM)
+>
+> You can try Kevin's suggestion here:
+>
+> http://linux.davincidsp.com/pipermail/davinci-linux-open-source/2011-January/021807.html
+>
+>>           I had tried NFS earlier, but I think there is some problem with
+>> NFS boot and udev with this kernel.
+>
+> Anyway there are some problems reported with Ethernet
+> driver and suspend on the latest kernel. Folks inside
+> TI are working on it.
+>
+>>            So, currently I will not be able to do it, but will try if I 
+>> get
+>> a chance.
+>
+> How about using ramdisk?
+>
+> Thanks,
+> Sekhar
+>
+>> > Thanks,
+>> > Sekhar
+>> >
+>> >>
+>> >> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+>> >> ---
+>> >>  arch/arm/mach-davinci/da850.c              |    6 +++---
+>> >>  arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
+>> >>  2 files changed, 4 insertions(+), 3 deletions(-)
+>> >>
+>> >> diff --git a/arch/arm/mach-davinci/da850.c
+>> >> b/arch/arm/mach-davinci/da850.c
+>> >> index 3443d97..8a4de97 100644
+>> >> --- a/arch/arm/mach-davinci/da850.c
+>> >> +++ b/arch/arm/mach-davinci/da850.c
+>> >> @@ -711,7 +711,7 @@ static struct map_desc da850_io_desc[] = {
+>> >>  },
+>> >>  {
+>> >>  .virtual = SRAM_VIRT,
+>> >> - .pfn = __phys_to_pfn(DA8XX_ARM_RAM_BASE),
+>> >> + .pfn = __phys_to_pfn(DA8XX_SHARED_RAM_BASE),
+>> >>  .length = SZ_8K,
+>> >>  .type = MT_DEVICE
+>> >>  },
+>> >> @@ -1083,8 +1083,8 @@ static struct davinci_soc_info
+>> >> davinci_soc_info_da850 = {
+>> >>  .gpio_irq = IRQ_DA8XX_GPIO0,
+>> >>  .serial_dev = &da8xx_serial_device,
+>> >>  .emac_pdata = &da8xx_emac_pdata,
+>> >> - .sram_dma = DA8XX_ARM_RAM_BASE,
+>> >> - .sram_len = SZ_8K,
+>> >> + .sram_dma = DA8XX_SHARED_RAM_BASE,
+>> >> + .sram_len = SZ_128K,
+>> >>  .reset_device = &da8xx_wdt_device,
+>> >>  };
+>> >>
+>> >> diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h
+>> >> b/arch/arm/mach-davinci/include/mach/da8xx.h
+>> >> index cfcb223..c3c3339 100644
+>> >> --- a/arch/arm/mach-davinci/include/mach/da8xx.h
+>> >> +++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+>> >> @@ -70,6 +70,7 @@ extern unsigned int da850_max_speed;
+>> >>  #define DA8XX_AEMIF_CTL_BASE 0x68000000
+>> >>  #define DA8XX_DDR2_CTL_BASE 0xb0000000
+>> >>  #define DA8XX_ARM_RAM_BASE 0xffff0000
+>> >> +#define DA8XX_SHARED_RAM_BASE 0x80000000
+>> >>
+>> >>  void __init da830_init(void);
+>> >>  void __init da850_init(void);
+>> >> -- 
+>> >> 1.7.2.3
+>> >>
+>> >>
+>> >
+>>
 > 
-> Having debugfs as the main interface was not the goal of all this, but
-> we seemed to have just gotten stuck with it.
-
-Some time ago, I started a patch set to make it possible to unify a
-lot of the pseudo file systems like debugfs, configfs and others, and
-to also make it possible to trivially create another file_system_type,
-basically creating a new root inode in the same way that you'd create a new
-debugfs directory.
-
-The patch set is probably quite outdated now, and I currently don't have
-time to finish it, but I'd be happy to help someone else refresh it
-to get it upstream.
-
-Once that is done, you could move the tracing files and any other
-parts of debugfs that have evolved into a proper API into their own
-file systems without changing much code.
-
-This would in particular make it possible to mount the main debugfs
-root-only while you can have other rules for parts of it that have
-become real interfaces.
-
-	Arnd
-
