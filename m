@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab1BZPAj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 10:00:39 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:37941 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab1BZPAh (ORCPT
+	id S1751698Ab1BZPDs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 10:03:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55684 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab1BZPDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 10:00:37 -0500
-Date: Sat, 26 Feb 2011 09:00:32 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Burt Triplett <burt@pbjtriplett.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Len Brown <lenb@kernel.org>
-Subject: Re: Performance/resume issues on Toshiba NB305
-Message-ID: <20110226150032.GA2053@thinkpad-t410>
-Mail-Followup-To: Burt Triplett <burt@pbjtriplett.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Venkatesh Pallipadi <venki@google.com>, Len Brown <lenb@kernel.org>
-References: <20110225164239.GA24686@thinkpad-t410>
- <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6>
- <20110225212142.GC24686@thinkpad-t410>
- <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
- <20110225222900.GD24686@thinkpad-t410>
- <alpine.LFD.2.00.1102252330290.2701@localhost6.localdomain6>
- <4D689681.1030301@pbjtriplett.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D689681.1030301@pbjtriplett.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 26 Feb 2011 10:03:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=SIkH28i/X4CrVrQrzQ3tnaXQOOMOI1tlfvkl5EmnYhsMrv8StcG94EJqWOX4qXgiNV
+         0ZlyPkC9fSeNIk9puASnjyrrz0yC+ElPwr9978fyjsSqN9htPcSPPRMo8GFtErD9p8Ay
+         lb7tjplIIJ+3cCRL6LZrpnaCFqP/ZFD4lVMeQ=
+Subject: [PATCH] platform-driver-x86: intel_mid_thermal: fix unterminated
+ platform_device_id table
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Durgadoss R <durgadoss.r@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Feb 2011 23:03:34 +0800
+Message-ID: <1298732614.2762.6.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 09:58:25PM -0800, Burt Triplett wrote:
-> Looks like the Toshiba NB305 has an Intel Atom processor in it.
-> bits-327, released today, now detects Intel Atom processors, and no
-> longer shows them as unknown.  We don't have any processor-specific
-> tests for Atom yet, though we may add some in the future.  All of
-> the general tests should work, however.
+The platform_device_id table is supposed to be zero-terminated.
 
-The new release detects the Atom processor okay, but in bits-327 the
-system resets during the SMI frequency/latency test, whereas it didn't
-with bits-316.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/intel_mid_thermal.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> Can you provide more details on which MSRs show up as inconsistent
-> on your system?  They might represent actual bugs in your BIOS, but
-> we might just need to add a few more entries to the Atom
-> CPU-specific MSR blacklist as expected inconsistencies.
+diff --git a/drivers/platform/x86/intel_mid_thermal.c b/drivers/platform/x86/intel_mid_thermal.c
+index 1215c30..6c12db5 100644
+--- a/drivers/platform/x86/intel_mid_thermal.c
++++ b/drivers/platform/x86/intel_mid_thermal.c
+@@ -543,6 +543,7 @@ static int mid_thermal_remove(struct platform_device *pdev)
+ 
+ static const struct platform_device_id therm_id_table[] = {
+        { DRIVER_NAME, 1 },
++       { }
+ };
+ 
+ static struct platform_driver mid_thermal_driver = {
+-- 
+1.7.1
 
-Here's what it says:
 
-  (MSR 0x39 consistent): FAIL
-  (MSR 0x199 consistent): FAIL
-  (MSR 0x1a0 consistent): FAIL
-  Summary: 7917 passed, 3 failed
-
-I have 3 systems with this same processor, and they all report the same
-thing here. 
-
-Seth
 
