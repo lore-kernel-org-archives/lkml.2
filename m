@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab1BZMs4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 07:48:56 -0500
-Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:48395 "EHLO
-	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752140Ab1BZMsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 07:48:55 -0500
-X-Greylist: delayed 1389 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Feb 2011 07:48:55 EST
+	id S1752263Ab1BZNG1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 08:06:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7497 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab1BZNG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 08:06:26 -0500
+Date: Sat, 26 Feb 2011 13:57:31 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+Subject: Re: [PATCH 3/5] exec: unify compat_do_execve() code
+Message-ID: <20110226125731.GA5315@redhat.com>
+References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com> <20101201182747.GB6143@redhat.com> <20110225175202.GA19059@redhat.com> <20110225175314.GD19059@redhat.com> <AANLkTik8epq5cx8n=k6ocMUfbg9kkUAZ8KL7ZiG4UuoU@mail.gmail.com> <20110226123731.GC4416@redhat.com>
 MIME-Version: 1.0
-From: Alvaro Aguilera <alvaro.aguilera@mailbox.tu-dresden.de>
-Date: Sat, 26 Feb 2011 13:25:24 +0100
-Message-ID: <AANLkTimtj=8ikdzgUiaT+y1MsjfGNU3LcyaUMPU0wMEh@mail.gmail.com>
-Subject: Question about the vmlinuz file
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110226123731.GC4416@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 02/26, Oleg Nesterov wrote:
+>
+> Once again, to me "void __user*" looks better (just simpler). In this
+> case get_arg_ptr() becomes (without const/__user for the clarity)
+>
+> 	void *get_arg_ptr(void **argv, int argc, bool compat)
+> 	{
+> 		char *ptr;
+>
+> 	#ifdef CONFIG_COMPAT
+> 		if (unlikely(compat)) {
+> 			compat_uptr_t *a = argv;
+> 			compat_uptr_t p;
+>
+> 			if (get_user(p, a + argc))
+> 				return ERR_PTR(-EFAULT);
+>
+> 			return compat_ptr(p);
+> 		}
+> 	#endif
+>
+> 		if (get_user(ptr, argv + argc))
+> 			return ERR_PTR(-EFAULT);
+>
+> 		return ptr;
+> 	}
+>
+> Otherwise, get_arg_ptr() should return conditional_user_ptr_t as well,
 
-perhaps someone here has a couple of minutes to explain me the
-difference between these two vmlinuz files from different
-distributions:
+No, this is not true, I am stupid.
 
-$file /boot/vmlinuz
-/boot/vmlinuz-2.6.37-40-desktop: Linux/x86 Kernel, Setup Version
-0x20a, bzImage, Version 2.6.37, Version 2.6.37-40, RO-rootFS, root_dev
-0x301, swap_dev 0x4, Normal VGA
+Still,
 
-$file /boot/vmlinuz
-vmlinuz: ELF 64-bit LSB shared object, AMD x86-64, version 1, stripped
+> this looks like the unnecessary complication to me, but of course this
+> is subjective.
+>
+> So, what do you think?
 
-the second file seems to be in ELF format and I cannot use it with my
-cluster management software.
+Yes, please.
 
-Is there a parameter I can use to compile the kernel image in one
-format or the other? or a tool to convert them?
+Oleg.
 
-I couldn't find any hint on Google, nor I really know what exactly to look for.
-
-Thanks for any help.
-Alvaro.
