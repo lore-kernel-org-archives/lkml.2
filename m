@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab1BZAXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 19:23:52 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:57747 "EHLO
+	id S933085Ab1BZAXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 19:23:51 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:57748 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046Ab1BZAXf (ORCPT
+	with ESMTP id S933047Ab1BZAXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Feb 2011 19:23:35 -0500
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, leoli@freescale.com,
         dan.j.williams@intel.com, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH 8/8] fsldma: reduce locking during descriptor cleanup
-Date: Fri, 25 Feb 2011 16:23:25 -0800
-Message-Id: <1298679805-14108-9-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH 7/8] dmatest: fix automatic buffer unmap type
+Date: Fri, 25 Feb 2011 16:23:24 -0800
+Message-Id: <1298679805-14108-8-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
 References: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
@@ -22,194 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This merges the fsl_chan_ld_cleanup() function into the dma_do_tasklet()
-function to reduce locking overhead. In the best case, we will be able
-to keep the DMA controller busy while we are freeing used descriptors.
-In all cases, the spinlock is grabbed two times fewer than before on
-each transaction.
+The dmatest code relies on the DMAEngine API to automatically call
+dma_unmap_single() on src buffers. The flags it passes are incorrect,
+fix them.
 
 Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- drivers/dma/fsldma.c |  114 +++++++++++++++++++++----------------------------
- 1 files changed, 49 insertions(+), 65 deletions(-)
+ drivers/dma/dmatest.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 4014790..3dc27a9 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -872,67 +872,16 @@ static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
- }
+diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+index 5589358..7e1b0aa 100644
+--- a/drivers/dma/dmatest.c
++++ b/drivers/dma/dmatest.c
+@@ -285,7 +285,12 @@ static int dmatest_func(void *data)
  
- /**
-- * fsl_chan_ld_cleanup - Clean up link descriptors
-- * @chan : Freescale DMA channel
-- *
-- * This function is run after the queue of running descriptors has been
-- * executed by the DMA engine. It will run any callbacks, and then free
-- * the descriptors.
-- *
-- * HARDWARE STATE: idle
-- */
--static void fsl_chan_ld_cleanup(struct fsldma_chan *chan)
--{
--	struct fsl_desc_sw *desc, *_desc;
--	const char *name = chan->name;
--	LIST_HEAD(ld_cleanup);
--	unsigned long flags;
--
--	spin_lock_irqsave(&chan->desc_lock, flags);
--
--	/* update the cookie if we have some descriptors to cleanup */
--	if (!list_empty(&chan->ld_running)) {
--		dma_cookie_t cookie;
--
--		desc = to_fsl_desc(chan->ld_running.prev);
--		cookie = desc->async_tx.cookie;
--
--		chan->completed_cookie = cookie;
--		dev_dbg(chan->dev, "%s: completed_cookie=%d\n", name, cookie);
--	}
--
--	/*
--	 * move the descriptors to a temporary list so we can drop the lock
--	 * during the entire cleanup operation
--	 */
--	list_splice_tail_init(&chan->ld_running, &ld_cleanup);
--
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
--
--	/* Run the callback for each descriptor, in order */
--	list_for_each_entry_safe(desc, _desc, &ld_cleanup, node) {
--
--		/* Remove from the list of transactions */
--		list_del(&desc->node);
--
--		/* Run all cleanup for this descriptor */
--		fsldma_cleanup_descriptor(chan, desc);
--	}
--}
--
--/**
-  * fsl_chan_xfer_ld_queue - transfer any pending transactions
-  * @chan : Freescale DMA channel
-  *
-  * HARDWARE STATE: idle
-+ * LOCKING: must hold chan->desc_lock
-  */
- static void fsl_chan_xfer_ld_queue(struct fsldma_chan *chan)
- {
- 	const char *name = chan->name;
- 	struct fsl_desc_sw *desc;
--	unsigned long flags;
--
--	spin_lock_irqsave(&chan->desc_lock, flags);
+ 	set_user_nice(current, 10);
  
- 	/*
- 	 * If the list of pending descriptors is empty, then we
-@@ -940,7 +889,7 @@ static void fsl_chan_xfer_ld_queue(struct fsldma_chan *chan)
- 	 */
- 	if (list_empty(&chan->ld_pending)) {
- 		dev_dbg(chan->dev, "%s: no pending LDs\n", name);
--		goto out_unlock;
-+		return;
- 	}
- 
- 	/*
-@@ -950,7 +899,7 @@ static void fsl_chan_xfer_ld_queue(struct fsldma_chan *chan)
- 	 */
- 	if (!chan->idle) {
- 		dev_dbg(chan->dev, "%s: DMA controller still busy\n", name);
--		goto out_unlock;
-+		return;
- 	}
- 
- 	/*
-@@ -975,9 +924,6 @@ static void fsl_chan_xfer_ld_queue(struct fsldma_chan *chan)
- 
- 	dma_start(chan);
- 	chan->idle = false;
--
--out_unlock:
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
- }
- 
- /**
-@@ -987,7 +933,11 @@ out_unlock:
- static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
- {
- 	struct fsldma_chan *chan = to_fsl_chan(dchan);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&chan->desc_lock, flags);
- 	fsl_chan_xfer_ld_queue(chan);
-+	spin_unlock_irqrestore(&chan->desc_lock, flags);
- }
- 
- /**
-@@ -1089,21 +1039,55 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
- static void dma_do_tasklet(unsigned long data)
- {
- 	struct fsldma_chan *chan = (struct fsldma_chan *)data;
-+	struct fsl_desc_sw *desc, *_desc;
-+	const char *name = chan->name;
-+	LIST_HEAD(ld_cleanup);
- 	unsigned long flags;
- 
--	dev_dbg(chan->dev, "%s: tasklet entry\n", chan->name);
-+	dev_dbg(chan->dev, "%s: tasklet entry\n", name);
- 
--	/* run all callbacks, free all used descriptors */
--	fsl_chan_ld_cleanup(chan);
--
--	/* the channel is now idle */
- 	spin_lock_irqsave(&chan->desc_lock, flags);
-+
-+	/* update the cookie if we have some descriptors to cleanup */
-+	if (!list_empty(&chan->ld_running)) {
-+		dma_cookie_t cookie;
-+
-+		desc = to_fsl_desc(chan->ld_running.prev);
-+		cookie = desc->async_tx.cookie;
-+
-+		chan->completed_cookie = cookie;
-+		dev_dbg(chan->dev, "%s: completed_cookie=%d\n", name, cookie);
-+	}
-+
+-	flags = DMA_CTRL_ACK | DMA_COMPL_SKIP_DEST_UNMAP | DMA_PREP_INTERRUPT;
 +	/*
-+	 * move the descriptors to a temporary list so we can drop the lock
-+	 * during the entire cleanup operation
++	 * src buffers are freed by the DMAEngine code with dma_unmap_single()
++	 * dst buffers are freed by ourselves below
 +	 */
-+	list_splice_tail_init(&chan->ld_running, &ld_cleanup);
-+
-+	/* the hardware is now idle and ready for more */
- 	chan->idle = true;
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
++	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT
++	      | DMA_COMPL_SKIP_DEST_UNMAP | DMA_COMPL_SRC_UNMAP_SINGLE;
  
--	/* start any pending transactions automatically */
-+	/*
-+	 * Start any pending transactions automatically
-+	 *
-+	 * In the ideal case, we keep the DMA controller busy while we go
-+	 * ahead and free the descriptors below.
-+	 */
- 	fsl_chan_xfer_ld_queue(chan);
--	dev_dbg(chan->dev, "%s: tasklet exit\n", chan->name);
-+	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+
-+	/* Run the callback for each descriptor, in order */
-+	list_for_each_entry_safe(desc, _desc, &ld_cleanup, node) {
-+
-+		/* Remove from the list of transactions */
-+		list_del(&desc->node);
-+
-+		/* Run all cleanup for this descriptor */
-+		fsldma_cleanup_descriptor(chan, desc);
-+	}
-+
-+	dev_dbg(chan->dev, "%s: tasklet exit\n", name);
- }
- 
- static irqreturn_t fsldma_ctrl_irq(int irq, void *data)
+ 	while (!kthread_should_stop()
+ 	       && !(iterations && total_tests >= iterations)) {
 -- 
 1.7.3.4
 
