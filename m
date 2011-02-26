@@ -1,158 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab1BZFkE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 00:40:04 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:22395 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab1BZFkC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 00:40:02 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6268"; a="76619318"
-Message-ID: <4D689230.7020704@codeaurora.org>
-Date: Fri, 25 Feb 2011 21:40:00 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1751381Ab1BZFpB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 00:45:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54527 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143Ab1BZFpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 00:45:00 -0500
+Message-ID: <4D689346.1090002@redhat.com>
+Date: Sat, 26 Feb 2011 00:44:38 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Dima Zavin <dima@android.com>
-CC: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bryan Huntsman <bryanh@codeaurora.org>, dwalker@fifo99.com,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] msm: gpiomux: Remove GPIOMUX_VALID and merge config enums
-References: <4D680EEE.1070706@codeaurora.org> <AANLkTinZCtbQnAk_OX92jqbW_GjH5wpxvbeoMkHV1inn@mail.gmail.com>
-In-Reply-To: <AANLkTinZCtbQnAk_OX92jqbW_GjH5wpxvbeoMkHV1inn@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Venkatesh Pallipadi <venki@google.com>
+CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, mtosatti@redhat.com, efault@gmx.de,
+        tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [tip:sched/core] sched: Add yield_to(task, preempt) functionality
+References: <20110201095051.4ddb7738@annuminas.surriel.com>	<tip-d95f412200652694e63e64bfd49f0ae274a54479@git.kernel.org> <AANLkTi=b-tyXEUfBKJH1RbENsqq8a-NRF54dSS6E3WGf@mail.gmail.com>
+In-Reply-To: <AANLkTi=b-tyXEUfBKJH1RbENsqq8a-NRF54dSS6E3WGf@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2011 05:20 PM, Dima Zavin wrote:
-> On Fri, Feb 25, 2011 at 12:19 PM, Rohit Vaswani<rvaswani@codeaurora.org>  wrote:
->> diff --git a/arch/arm/mach-msm/board-qsd8x50.c
->> b/arch/arm/mach-msm/board-qsd8x50.c
->> index 33ab1fe..d665b0e 100644
->> --- a/arch/arm/mach-msm/board-qsd8x50.c
->> +++ b/arch/arm/mach-msm/board-qsd8x50.c
->> @@ -38,19 +38,26 @@
->>   #include "devices.h"
->>   #include "gpiomux.h"
+On 02/25/2011 07:43 PM, Venkatesh Pallipadi wrote:
+> On Thu, Feb 3, 2011 at 6:12 AM, tip-bot for Mike Galbraith
+> <efault@gmx.de>  wrote:
+>> Commit-ID:  d95f412200652694e63e64bfd49f0ae274a54479
+>> Gitweb:     http://git.kernel.org/tip/d95f412200652694e63e64bfd49f0ae274a54479
+>> Author:     Mike Galbraith<efault@gmx.de>
+>> AuthorDate: Tue, 1 Feb 2011 09:50:51 -0500
+>> Committer:  Ingo Molnar<mingo@elte.hu>
+>> CommitDate: Thu, 3 Feb 2011 14:20:33 +0100
 >>
->> -#define UART3_SUSPENDED (GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |\
->> -            GPIOMUX_FUNC_1 | GPIOMUX_VALID)
->> +static struct gpiomux_setting uart3_suspended = {
->> +    .drv = GPIOMUX_DRV_2MA,
->> +    .pull = GPIOMUX_PULL_DOWN,
->> +    .func = GPIOMUX_FUNC_1,
->> +};
+>> sched: Add yield_to(task, preempt) functionality
+>
+> I was looking at this patch, while trying to figure out how best to
+> use next buddy to solve another unrelated to this cgroup context
+> switching problem. While going through this change I see something
+> that I don't really understand (inlined below). Not sure whether what
+> I am looking at is a bug or I am missing something very obvious.
+>
+> Thanks in advance for clarification.
+>
 >>
->>   extern struct sys_timer msm_timer;
+>> Currently only implemented for fair class tasks.
 >>
->> -struct msm_gpiomux_config qsd8x50_uart3_configs[] __initdata = {
->> +struct msm_gpiomux_config qsd8x50_uart3_configs[] = {
->>      {
->>          .gpio = 86, /* UART3 RX */
->> -        .suspended = UART3_SUSPENDED,
->> +        .settings = {
->> +            [GPIOMUX_SUSPENDED] =&uart3_suspended,
->> +        },
->>      },
->>      {
->>          .gpio = 87, /* UART3 TX */
->> -        .suspended = UART3_SUSPENDED,
->> +        .settings = {
->> +            [GPIOMUX_SUSPENDED] =&uart3_suspended,
->> +        },
->>      },
->>   };
+>> Add a yield_to_task method() to the fair scheduling class. allowing the
+>> caller of yield_to() to accelerate another thread in it's thread group,
+>> task group.
+>>
 >
-> I think this new interface is way too verbose and will quickly get
-> unwieldy for configurations that have more than a few pins. For
-> instance, imagine what the above would look like when muxing a 24bit
-> LCD pin list...
+> <snip>
 >
-> How about adding a "bool valid" to gpiomux_setting, and convert the
-> "sets" array to an array of settings and not pointers to settings.
-> This will allow us to do (in gpiomux.h):
+>>
+>>   static void calc_load_account_idle(struct rq *this_rq);
+>> @@ -5448,6 +5481,58 @@ void __sched yield(void)
+>>   }
+>>   EXPORT_SYMBOL(yield);
+>>
+>> +/**
+>> + * yield_to - yield the current processor to another thread in
+>> + * your thread group, or accelerate that thread toward the
+>> + * processor it's on.
+>> + *
+>> + * It's the caller's job to ensure that the target task struct
+>> + * can't go away on us before we can do any checks.
+>> + *
+>> + * Returns true if we indeed boosted the target task.
+>> + */
+>> +bool __sched yield_to(struct task_struct *p, bool preempt)
+>> +{
+>> +       struct task_struct *curr = current;
+>> +       struct rq *rq, *p_rq;
+>> +       unsigned long flags;
+>> +       bool yielded = 0;
+>> +
+>> +       local_irq_save(flags);
+>> +       rq = this_rq();
+>> +
+>> +again:
+>> +       p_rq = task_rq(p);
+>> +       double_rq_lock(rq, p_rq);
+>> +       while (task_rq(p) != p_rq) {
+>> +               double_rq_unlock(rq, p_rq);
+>> +               goto again;
+>> +       }
+>> +
+>> +       if (!curr->sched_class->yield_to_task)
+>> +               goto out;
+>> +
+>> +       if (curr->sched_class != p->sched_class)
+>> +               goto out;
+>> +
+>> +       if (task_running(p_rq, p) || p->state)
+>> +               goto out;
+>> +
+>> +       yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+>> +       if (yielded)
+>> +               schedstat_inc(rq, yld_count);
+>> +
+>> +out:
+>> +       double_rq_unlock(rq, p_rq);
+>> +       local_irq_restore(flags);
+>> +
+>> +       if (yielded)
+>> +               schedule();
+>> +
+>> +       return yielded;
+>> +}
+>> +EXPORT_SYMBOL_GPL(yield_to);
+>> +
+>>   /*
+>>   * This task is about to go to sleep on IO. Increment rq->nr_iowait so
+>>   * that process accounting knows that this is a task in IO wait state.
+>> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+>> index c0fbeb9..0270246 100644
+>> --- a/kernel/sched_fair.c
+>> +++ b/kernel/sched_fair.c
+>> @@ -1975,6 +1975,25 @@ static void yield_task_fair(struct rq *rq)
+>>         set_skip_buddy(se);
+>>   }
+>>
+>> +static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preempt)
+>> +{
+>> +       struct sched_entity *se =&p->se;
+>> +
+>> +       if (!se->on_rq)
+>> +               return false;
+>> +
+>> +       /* Tell the scheduler that we'd really like pse to run next. */
+>> +       set_next_buddy(se);
 >
-> struct msm_gpiomux_rec {
->      struct gpiomux_setting sets[GPIOMUX_NSETTINGS];
->      int ref;
-> };
->
-> struct gpiomux_setting {
->      enum gpiomux_func func;
->      enum gpiomux_drv  drv;
->      enum gpiomux_pull pull;
->      bool valid;
-> };
->
-> This way, I can do something like (very rough):
->
-> #define GPIOMUX_SET(func,drv,pull) { \
->      .func = GPIOMUX_##func, \
->      .drv = GPIOMUX_##drv, \
->      .pull = GPIOMUX_##pull, \
->      .valid = true, \
->    }
->
-> #define GPIOMUX_SET_NONE { .valid = false, }
->
-> #define GPIOMUX_CFG(g, active, suspended) { \
->       .gpio = g, \
->       .sets = { \
->           [GPIOMUX_ACTIVE] = active, \
->           [GPIOMUX_SUSPENDED] = suspended, \
->        }, \
->   }
->
-> This will then allow me to define the uart3 pinmuxing in my board file
-> as follows:
->
-> struct msm_gpiomux_rec uart3_mux_cfg[] = {
->      GPIOMUX_CFG(86, GPIOMUX_SET_NONE,
->                             GPIOMUX_SET(FUNC_1, DRV_2MA, PULL_DOWN)),
->      GPIOMUX_CFG(87, GPIOMUX_SET_NONE,
->                             GPIOMUX_SET(FUNC_1, DRV_2MA, PULL_DOWN)),
-> };
->
-> Thoughts?
->
+> The below comment says about rescheduling p's CPU. But the rq variable
+> we have here is the curr_rq and not p_rq. So, should this be done in
+> yield_to() with p_rq. I did try to see the discussion on other
+> versions of this patch. v3 and before had -
+> "resched_task(task_of(p_cfs_rq->curr));" which seems to be correct...
 
-I haven't read this GPIO code thoroughly, but by looking just at the 
-diff, I think you can still have these type of macros with the structure 
-definition Rohit chose. I have no opinion one which struct definition is 
-better (not enough context). Just trying to help with writing helper macros.
+You are correct.  We are calling resched_task on the wrong task,
+we should call it on p's runqueue's current task...
 
-The trick is to use pointers to anonymous struct. A very rough macro:
+>> +
+>> +       /* Make p's CPU reschedule; pick_next_entity takes care of fairness. */
+>> +       if (preempt)
+>> +               resched_task(rq->curr);
 
-#define GPIOMUX_SET(f, d, p) \
-&(struct gpiomux_setting) {
-	.func = f,
-	.drv = d,
-	.pull = p,
-}
 
-#define GPIOMUX_CFG(g, active, suspended) { \
-	.gpio = g,
-	.settings = {
-		[ACTIVE] = active,
-		[SUSPENDED] = suspended,
-	}
-}
-
-struct msm_gpiomux_config foo_bar[] = {
-	GPIOMUX_CFG(10, GPIOMUX_SET(FUNC, 2MA, PULL_UP), NULL),
-	GPIOMUX_CFG(11, GPIOMUX_SET(FUNC, 2MA, PULL_UP), NULL),
-};
-
-I'm certain the pointer to anonymous struct stuff works. You might have 
-to tweak the macros a bit though. Hope this help.
-
--Saravana
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+All rights reversed
