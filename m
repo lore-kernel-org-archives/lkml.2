@@ -1,129 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751162Ab1B1GEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 01:04:10 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:34224 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab1B1GEJ (ORCPT
+	id S1751387Ab1B1GLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 01:11:10 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:33271 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750817Ab1B1GLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 01:04:09 -0500
-Date: Mon, 28 Feb 2011 15:04:02 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 09/09] ARM: s3c2440: gta02: Add touchscreen support
-In-reply-to: <1297043521-21903-9-git-send-email-lars@metafoo.de>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-id: <000201cbd70d$4f67f1f0$ee37d5d0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvGalvZY158vNTMSyCJXP2Ymz3WXgQoI/Fw
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
- <1297043521-21903-9-git-send-email-lars@metafoo.de>
+	Mon, 28 Feb 2011 01:11:07 -0500
+Date: Sat, 26 Feb 2011 04:58:06 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: matthieu castet <castet.matthieu@free.fr>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
+        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
+Message-ID: <20110226035805.GA1656@ucw.cz>
+References: <4D473FD5.1090903@free.fr>
+ <20110201080223.GB20372@elte.hu>
+ <1296566732.4d4809cc1f963@imp.free.fr>
+ <20110202062632.GA12256@elte.hu>
+ <4D4CA3FD.6000901@zytor.com>
+ <1296924395.4d4d7eeb6f1fe@imp.free.fr>
+ <4D4F31BC.3000709@zytor.com>
+ <1297108754.4d504f1281802@imp.free.fr>
+ <4D50505D.2070402@zytor.com>
+ <4D56B0E6.5040600@free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D56B0E6.5040600@free.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars-Peter Clausen wrote:
-> 
-> This patch registers the s3c touchscreen and adc devices to add
-touchscreen
-> support for the gta02.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  arch/arm/mach-s3c2440/mach-gta02.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c
-b/arch/arm/mach-s3c2440/mach-
-> gta02.c
-> index 94456fa..2300ec5 100644
-> --- a/arch/arm/mach-s3c2440/mach-gta02.c
-> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
-> @@ -79,6 +79,8 @@
->  #include <mach/regs-mem.h>
->  #include <mach/hardware.h>
-> 
-> +#include <plat/ts.h>
-> +
+On Sat 2011-02-12 17:10:14, matthieu castet wrote:
+> H. Peter Anvin a écrit :
+> >On 02/07/2011 11:59 AM, castet.matthieu@free.fr wrote:
+> >>For .39 I hope we could remove most of the RWX rights after init (This means
+> >>make low memory trampoline NX or !RW).
+> >>This should be possible on :
+> >>- 32 bit if wakeup use trampoline_32 [1] that doesn't enable paging in low
+> >>memory (can be NX)
+> >>- trampoline_64 need fix to support NX on data section. It tries to read data
+> >>section before enabling NX. A possible fix is to use its own page table [2]. And
+> >>the kernel one can be NX.
+> >
+> >No, you're really barking down the wrong path on this.  The trampoline
+> >code is tiny; I don't think it is really worth trying to NX-ify it.  The
+> Even if the trampoline is tiny, a hole is a hole.
 
-Please group same/similar inclusion together like following.
-<linux/...> <asm/...> then <mach/...> or <plat/...>
+What kind of hole are you talking about?
 
-In other words, please add your <plat/ts.h> inclusion after other <plat/...>
+If evil code is running in ring0, you already lost.
 
->  #include <mach/gta02.h>
-> 
->  #include <plat/regs-serial.h>
-> @@ -480,6 +482,13 @@ static struct s3c2410_hcd_info gta02_usb_info
-__initdata
-> = {
->  	},
->  };
-> 
-> +/* Touchscreen */
-> +static struct s3c2410_ts_mach_info gta02_ts_info = {
-> +	.delay = 10000,
-> +	.presc = 0xff, /* slow as we can go */
-> +	.oversampling_shift = 2,
-> +};
-
-How about to use tab between member and = like following?
-
-static struct s3c2410_ts_mach_info gta02_ts_info = {
-	.delay			= 10000,
-	.presc			= 0xff, /* slow as we can go */
-	.oversampling_shift	= 2,
-};
-
-> +
->  /* Buttons */
->  static struct gpio_keys_button gta02_buttons[] = {
->  	{
-> @@ -533,6 +542,8 @@ static struct platform_device *gta02_devices[]
-__initdata
-> = {
->  	&samsung_asoc_dma,
->  	&s3c_device_i2c0,
->  	&gta02_buttons_device,
-> +	&s3c_device_adc,
-
-No need to build plat-samsung/dev-adc.c for this?
-If you want to add '&s3c_deivce_adc', should add 'select SAMSUNG_DEV_ADC'
-into "config MACH_NEO1973_GTA02".
-
-> +	&s3c_device_ts,
-
-'select SAMSUNG_DEV_TS'
-
->  };
-> 
->  /* These guys DO need to be children of PMU. */
-> @@ -597,6 +608,7 @@ static void __init gta02_machine_init(void)
->  #endif
-> 
->  	s3c24xx_udc_set_platdata(&gta02_udc_cfg);
-> +	s3c24xx_ts_set_platdata(&gta02_ts_info);
-
-Same as above. 'select SAMSUNG_DEV_TS' should be added for
-plat-samsung/dev-ts.c.
-
->  	s3c_ohci_set_platdata(&gta02_usb_info);
->  	s3c_nand_set_platdata(&gta02_nand_info);
->  	s3c_i2c0_set_platdata(NULL);
-> --
-> 1.7.2.3
-
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+I doubt you can remove all the trampolines, and I do not think you
+should uglify the kernel trying to do that.
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
