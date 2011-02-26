@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab1BZUEs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 15:04:48 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:18203 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab1BZUEq (ORCPT
+	id S1751629Ab1BZUvG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 15:51:06 -0500
+Received: from mail.cedeconet.com.ar ([190.138.211.4]:48021 "EHLO
+	mail.cedeconet.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab1BZUvE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 15:04:46 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Sat, 26 Feb 2011 15:04:45 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: David Brown <davidb@codeaurora.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Will Deacon <will.deacon@arm.com>, linux-arm-msm@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/4] msm: scm: Fix improper register assignment
-In-reply-to: <8yazkpi3cfa.fsf@huya.qualcomm.com>
-Message-id: <alpine.LFD.2.00.1102261452340.22034@xanadu.home>
-References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>
- <1298573085-23217-3-git-send-email-sboyd@codeaurora.org>
- <1298640219.958.74.camel@e102144-lin.cambridge.arm.com>
- <4D688AF1.1090607@codeaurora.org>
- <20110226084736.GB3640@n2100.arm.linux.org.uk>
- <8yazkpi3cfa.fsf@huya.qualcomm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sat, 26 Feb 2011 15:51:04 -0500
+Message-ID: <20110226155034.w30tywq9wgg4so4k@webmail.cedeconet.com.ar>
+Date: Sat, 26 Feb 2011 15:50:34 -0200
+From: Western Union Money Transfer <info@mail.com>
+Reply-to: w_unionoutlet@w.cn
+To: undisclosed-recipients:;
+Subject: 
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Feb 2011, David Brown wrote:
+We write to inform you that we have sent you $5000.00dollars.
+we called to give you the information through
+phone as internet hackers were many but i
+cannot reach you yesterday even this
+morning. So we decided to email you the
+MTCN and sender name so that you can pick
+up this $5000.00 on daily bases from a total sum of
+$100,000.00usd which you can cash $5000 daily with the same
+MTCN and sender's name which will be valid for
+20 days until you cash the full $100,000.00usd
+as it automatically activates for use for 20 days
+after the first reactivation.
 
-> On Sat, Feb 26 2011, Russell King - ARM Linux wrote:
-> 
-> > On Fri, Feb 25, 2011 at 09:09:05PM -0800, Saravana Kannan wrote:
-> > One way to look at it is that if you specify a value for r0, assign it,
-> > and then call a function, how do you expect the r0 value to be preserved?
-> > r0 will be corrupted by the called function as its used to pass arg0 and
-> > the return value.
-> 
-> > I'm surprised the compiler didn't spit out an error.
+The money is available for pick up which was deposited
+for transfer to you by one Mr Bernard Harry from
+BLACK BERRY MOBILE PROMOTION , the money is available
+for pick up by receiver(you) but you cannot pick it
+up when you go to western union office due to the fact that it has been
+deactivated from our head office in UK for security reason
+because it has stayed too long in the air as we have been trying
+to reach you on the phone for some days now but it was not reachable,
+so it was blocked. therefore you can not cash it out
+in any western union office due to its restriction
+from our head office in UK,which was a security measure
+because the money has been in the air for three days
+now and maybe in danger, hence the mtcn has to be
+reactivated to enable you cash out the money
+in any western union office in your area, the
+reactivation of the MTCN will cost you a  token of $150,
+once this is paid, our head office will release the fund on
+hold to enable you cash it.To be sure of this please
+log on to www.westernunion.com   and click on track to
+and enter the sender's infor and MTCN below.
 
-Me too.  The compiler should have moved the content of r0 somewhere else 
-before the function call, and restore it back into r0 if necessary 
-before the point where the corresponding variable is used again.  Or at 
-least issue a warning if it can't do that.
+Sender's Fist name: Perry
+Sender's Last Name: Poston
+MTCN: 0341153617
+Question: Who Is Great
+Answer: God
+Amount: $5000.00USD
 
-> The gcc docs say:
-> 
->    * Local register variables in specific registers do not reserve the
->      registers, except at the point where they are used as input or
->      output operands in an `asm' statement and the `asm' statement
->      itself is not deleted.  The compiler's data flow analysis is
->      capable of determining where the specified registers contain live
->      values, and where they are available for other uses.  Stores into
->      local register variables may be deleted when they appear to be
->      dead according to dataflow analysis.  References to local register
->      variables may be deleted or moved or simplified.
-> 
-> which would suggest that it should at least detect that it can't keep
-> the value in r0.  What it seems to do is detect that the value can't be
-> in the register, so it never bothers putting it there in the first
-> place.
+Please required to confirm the following details.
 
-Right.  A minimal test case may look like this if someone feels like 
-filling a gcc bug report:
+Phone No:................
+This information will help us better to forward your funds of $100.000usd
+to you in good condition.
 
-extern int foo(int x);
+      With due respect please get back to me urgently after
+tracking the money online so i can instruct you on how
+to send the $150 to us for the reactivation of the MTCN.
 
-int bar(int x)
-{
-	register int a asm("r0") = 1;
-	x = foo(x);
-	asm ("add %0, %1, %2" : "=r" (x) : "r" (a), "r" (x));
-	return x;
-}
+Thanks
+Best Regards
+Mr.James Ferguson.
+western union Office,
+NIGERIA OFFICE.
+Western Union® Money Transfer
 
-And the produced code is:
-
-bar:
-        stmfd   sp!, {r3, lr}
-        bl      foo
-#APP
-        add r0, r0, r0
-        ldmfd   sp!, {r3, pc}
-
-So this is clearly bogus.
-
-> In any case, fortunately it works with the fix.
-
-Please add a comment in your patch to explain the issue.
-
-
-Nicolas
