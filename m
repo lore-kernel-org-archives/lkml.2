@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab1BZJXL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 04:23:11 -0500
-Received: from slow3-v.mail.gandi.net ([217.70.178.89]:52373 "EHLO
+	id S1751910Ab1BZJXE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 04:23:04 -0500
+Received: from slow3-v.mail.gandi.net ([217.70.178.89]:43674 "EHLO
 	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab1BZJXI (ORCPT
+	with ESMTP id S1751887Ab1BZJXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 04:23:08 -0500
+	Sat, 26 Feb 2011 04:23:00 -0500
 X-WhiteListed: mail was accepted with no delay
 X-WhiteListed: mail was accepted with no delay
 X-WhiteListed: mail was accepted with no delay
 X-WhiteListed: mail was accepted with no delay
-X-Originating-IP: 217.70.178.45
+X-Originating-IP: 217.70.178.41
 X-Originating-IP: 82.241.209.44
 From: Corentin Chary <corentincj@iksaif.net>
 To: Matthew Garrett <mjg@redhat.com>
@@ -20,9 +20,9 @@ Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         acpi4asus-user@lists.sourceforge.net (open list:ASUS NOTEBOOKS AN...),
         platform-driver-x86@vger.kernel.org (open list:ASUS NOTEBOOKS AN...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 09/14] asus-wmi: add calls to INIT, SPEC and SFUN on init
-Date: Sat, 26 Feb 2011 10:20:38 +0100
-Message-Id: <1298712045-17671-10-git-send-email-corentincj@iksaif.net>
+Subject: [PATCH 08/14] asus-wmi: fix and clean backlight code
+Date: Sat, 26 Feb 2011 10:20:37 +0100
+Message-Id: <1298712045-17671-9-git-send-email-corentincj@iksaif.net>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1298712045-17671-1-git-send-email-corentincj@iksaif.net>
 References: <1298712045-17671-1-git-send-email-corentincj@iksaif.net>
@@ -30,72 +30,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-INIT() call is needed to enable hotkeys on G73
-SPEC() and SFUN() allow us to know more about
-available features.
-
 Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 ---
- drivers/platform/x86/asus-wmi.c |   28 ++++++++++++++++++++++++++++
- 1 files changed, 28 insertions(+), 0 deletions(-)
+ drivers/platform/x86/asus-wmi.c |   44 +++++++++++++++++++++++++-------------
+ 1 files changed, 29 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index adf7b05..88596ea 100644
+index fd5b08ee..adf7b05 100644
 --- a/drivers/platform/x86/asus-wmi.c
 +++ b/drivers/platform/x86/asus-wmi.c
-@@ -66,10 +66,13 @@ MODULE_LICENSE("GPL");
- #define NOTIFY_BRNDOWN_MAX		0x2e
+@@ -765,9 +765,8 @@ static int read_backlight_power(struct asus_wmi *asus)
+ 	return ret ? FB_BLANK_UNBLANK : FB_BLANK_POWERDOWN;
+ }
  
- /* WMI Methods */
-+#define ASUS_WMI_METHODID_SPEC	        0x43455053
-+#define ASUS_WMI_METHODID_SFUN		0x4E554653
- #define ASUS_WMI_METHODID_DSTS		0x53544344
- #define ASUS_WMI_METHODID_DSTS2		0x53545344
- #define ASUS_WMI_METHODID_DEVS		0x53564544
- #define ASUS_WMI_METHODID_CFVS		0x53564643
-+#define ASUS_WMI_METHODID_INIT		0x54494E49
- 
- #define ASUS_WMI_UNSUPPORTED_METHOD	0xFFFFFFFE
- 
-@@ -126,6 +129,8 @@ struct asus_rfkill {
- 
- struct asus_wmi {
- 	int dsts_id;
-+	int spec;
-+	int sfun;
- 
- 	struct input_dev *inputdev;
- 	struct backlight_device *backlight_device;
-@@ -1065,6 +1070,29 @@ static int asus_wmi_sysfs_init(struct platform_device *device)
-  */
- static int __init asus_wmi_platform_init(struct asus_wmi *asus)
+-static int read_brightness(struct backlight_device *bd)
++static int read_brightness_max(struct asus_wmi *asus)
  {
-+	int rv;
+-	struct asus_wmi *asus = bl_get_data(bd);
+ 	u32 retval;
+ 	int err;
+ 
+@@ -776,6 +775,25 @@ static int read_brightness(struct backlight_device *bd)
+ 	if (err < 0)
+ 		return err;
+ 
++	retval = retval & ASUS_WMI_DSTS_MAX_BRIGTH_MASK;
++	retval >>= 8;
 +
-+	/* INIT enable hotkeys on some models */
-+	if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_INIT, 0, 0, &rv))
-+		pr_info("Initialization: %#x", rv);
++	if (!retval)
++		return -ENODEV;
 +
-+	/* We don't know yet what to do with this version... */
-+	if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_SPEC, 0, 0x9, &rv)) {
-+		pr_info("BIOS WMI version: %d.%d", rv >> 8, rv & 0xFF);
-+		asus->spec = rv;
-+	}
++	return retval;
++}
 +
-+	/*
-+	 * The SFUN method probably allows the original driver to get the list
-+	 * of features supported by a given model. For now, 0x0100 or 0x0800
-+	 * bit signifies that the laptop is equipped with a Wi-Fi MiniPCI card.
-+	 * The significance of others is yet to be found.
-+	 */
-+	if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_SFUN, 0, 0, &rv)) {
-+		pr_info("SFUN value: %#x", rv);
-+		asus->sfun = rv;
-+	}
++static int read_brightness(struct backlight_device *bd)
++{
++	struct asus_wmi *asus = bl_get_data(bd);
++	u32 retval, err;
 +
- 	/*
- 	 * Eee PC and Notebooks seems to have different method_id for DSTS,
- 	 * but it may also be related to the BIOS's SPEC.
++	err = asus_wmi_get_devstate(asus, ASUS_WMI_DEVID_BRIGHTNESS, &retval);
++
++	if (err < 0)
++		return err;
++
+ 	return retval & ASUS_WMI_DSTS_BRIGHTNESS_MASK;
+ }
+ 
+@@ -799,7 +817,7 @@ static int update_bl_status(struct backlight_device *bd)
+ 		err = asus_wmi_set_devstate(ASUS_WMI_DEVID_BACKLIGHT,
+ 					    ctrl_param, NULL);
+ 	}
+-	return 0;
++	return err;
+ }
+ 
+ static const struct backlight_ops asus_wmi_bl_ops = {
+@@ -832,23 +850,19 @@ static int asus_wmi_backlight_init(struct asus_wmi *asus)
+ 	int max;
+ 	int power;
+ 
+-	max = asus_wmi_get_devstate_bits(asus, ASUS_WMI_DEVID_BRIGHTNESS,
+-					 ASUS_WMI_DSTS_MAX_BRIGTH_MASK);
+-	power = read_backlight_power(asus);
++	max = read_brightness_max(asus);
+ 
+-	if (max < 0 && power < 0) {
+-		/* Try to keep the original error */
+-		if (max == -ENODEV && power == -ENODEV)
+-			return -ENODEV;
+-		if (max != -ENODEV)
+-			return max;
+-		else
+-			return power;
+-	}
+ 	if (max == -ENODEV)
+ 		max = 0;
++	else if (max < 0)
++		return max;
++
++	power = read_backlight_power(asus);
++
+ 	if (power == -ENODEV)
+ 		power = FB_BLANK_UNBLANK;
++	else if (power < 0)
++		return power;
+ 
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+ 	props.max_brightness = max;
 -- 
 1.7.4
 
