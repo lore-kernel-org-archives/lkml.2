@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab1BZRNn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 12:13:43 -0500
-Received: from mail3.microsoft.com ([131.107.115.214]:57212 "EHLO
+	id S1752482Ab1BZRNp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 12:13:45 -0500
+Received: from mailc.microsoft.com ([131.107.115.214]:57243 "EHLO
 	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab1BZRN1 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752425Ab1BZRNb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 12:13:27 -0500
+	Sat, 26 Feb 2011 12:13:31 -0500
 From: KY Srinivasan <kys@microsoft.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        "r@home.goodmis.org" <r@rostedt.homelinux.com>
+To: Dan Carpenter <error27@gmail.com>
 CC: "gregkh@suse.de" <gregkh@suse.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
-Thread-Topic: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
-Thread-Index: AQHL1VhrHb+LNqEePk278h0j8A42rZQTo+YAgAAwP+A=
-Date: Sat, 26 Feb 2011 17:13:27 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E04801577A@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1298685930-30806-1-git-send-email-kys@microsoft.com>
- <20110226032122.GA25737@home.goodmis.org>
-In-Reply-To: <20110226032122.GA25737@home.goodmis.org>
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 3/6] Staging: hv: Cleanup hyperv_device variable names
+Thread-Topic: [PATCH 3/6] Staging: hv: Cleanup hyperv_device variable names
+Thread-Index: AQHL1ViS3KVTojE7hESxh/U9QG1BvZQTp0KAgAAtipA=
+Date: Sat, 26 Feb 2011 17:13:31 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048015780@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1298685992-30864-1-git-send-email-kys@microsoft.com>
+ <20110226033323.GD18043@bicker>
+In-Reply-To: <20110226033323.GD18043@bicker>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -39,26 +36,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 > -----Original Message-----
-> From: Steven Rostedt [mailto:rostedt@goodmis.org]
-> Sent: Friday, February 25, 2011 10:21 PM
-> To: KY Srinivasan; r@home.goodmis.org
+> From: Dan Carpenter [mailto:error27@gmail.com]
+> Sent: Friday, February 25, 2011 10:33 PM
+> To: KY Srinivasan
 > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
-> Janssen
-> Subject: Re: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 3/6] Staging: hv: Cleanup hyperv_device variable names
 > 
-> Hi!
+> On Fri, Feb 25, 2011 at 06:06:32PM -0800, K. Y. Srinivasan wrote:
+> > Cleanup the names of variables that refer to the
+> > hyperv_device abstraction.
+> >
 > 
-> Just an FYI,
+> I have a script I run on rename patches.  For this patch the
+> command would be:
 > 
-> When sending out patch series, could you send out a [PATCH 0/6] first,
-> and have all other patches a reply to that patch. Both git and quilt
-> have ways to do this.
+> rename_rev.pl -nc -e 's/device_ctx/device_obj/g' -e 's/\bdev_ctx/dev/g'
+> 
+> It show one variable was missed in storvsc_probe().
+> 
+> >  	memset(host_device_ctx, 0, sizeof(struct host_device_context));
+> >
+> >  	host_device_ctx->port = host->host_no;
+> > -	host_device_ctx->device_ctx = device_obj;
+> > +	host_device_ctx->device_obj = device_obj;
+> >
+> >  	host_device_ctx->request_pool =
+> >  				kmem_cache_create(dev_name(&device_obj-
+> >device),
+> > @@ -271,7 +271,7 @@ static int storvsc_probe(struct device *device)
+> >  		return -1;
+> >  	}
+> >
+> > -	/* host_device_ctx->port = device_info.PortNumber; */
+> > +	/* host_hyperv_dev->port = device_info.PortNumber; */
+> >  	host_device_ctx->path = device_info.path_id;
+> >  	host_device_ctx->target = device_info.target_id;
+> >
+> 
+> All the other host_device_ctx variables were renamed to host_device_obj.
 
-My mistake; I numbered them 1 through 6 instead of 0 through 5.
-Sorry for the confusion.
+host_device_ctx is a scsi abstraction built on top of the hyperv_device
+abstraction. My goal was not to change the names of higher level scsi
+abstractions.
 
 Regards,
 
 K. Y
+> 
+> regards,
+> dan carpenter
 
