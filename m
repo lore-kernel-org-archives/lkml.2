@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1BZScP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 13:32:15 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:34244 "EHLO imr4.ericy.com"
+	id S1752538Ab1BZSvP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 13:51:15 -0500
+Received: from mailq1.tnnet.fi ([217.112.240.127]:52849 "EHLO mailq1.tnnet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab1BZScO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 13:32:14 -0500
-Date: Sat, 26 Feb 2011 10:31:16 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 1/5] hwmon: PMBus device driver
-Message-ID: <20110226183115.GA16920@ericsson.com>
-References: <1298742650-9789-1-git-send-email-guenter.roeck@ericsson.com>
- <1298742650-9789-2-git-send-email-guenter.roeck@ericsson.com>
- <4D6945A1.1030807@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4D6945A1.1030807@cam.ac.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752315Ab1BZSvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 13:51:14 -0500
+X-Greylist: delayed 628 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Feb 2011 13:51:14 EST
+Message-ID: <4D69492B.CB694458@users.sourceforge.net>
+Date: Sat, 26 Feb 2011 20:40:43 +0200
+From: Jari Ruusu <jariruusu@users.sourceforge.net>
+To: linux-crypto@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Announce loop-AES-v3.6b file/swap crypto package
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 26, 2011 at 01:25:37PM -0500, Jonathan Cameron wrote:
-> On 02/26/11 17:50, Guenter Roeck wrote:
-> > This driver adds support for hardware monitoring features of various PMBus
-> > devices.
-> > 
-> I'm happy with changes/responses to comments so ready to merge as far as
-> I am concerned.
-> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+loop-AES changes since previous release:
+- Fixed a bug that can cause "NULL pointer dereference" at /dev/md* backing
+  device, and possibly other backing devices that call __bio_clone(). This
+  bug is present in loop-AES-v3.6a (and loop-AES-v3.5 versions with
+  linux-2.6.37 or later kernels).
+- Fixed a bug that can cause slow operation or even deadlock. This bug is
+  present only in loop-AES-v3.6a version. Older versions are not affected.
 
-Hi Jonathan,
 
-Thanks a lot for your help!
+bzip2 compressed tarball is here:
 
-Guenter
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6b.tar.bz2
+    md5sum 247e5a909877577bdcd246f8caada689
+
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6b.tar.bz2.sign
+
+-- 
+Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
