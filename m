@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab1BZLqY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 06:46:24 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60846 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab1BZLqX (ORCPT
+	id S1752111Ab1BZLvV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 06:51:21 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63871 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab1BZLvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 06:46:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=KMkNOmz4/ysXr1A5l9wlPceZV1PFGUtKPXq7J9DEZrZ8uo6s41T/eJPfCAMGxNQ3rY
-         INjsl0uoLLrkNZGDGjOg9NNk5UJgZ0hsMXQE1IoaPXea2ptV/uWBhMcZEW0QPCkhDJwa
-         kawTBngtNTcPI9sDhV/LF7yYJ0LgljPdDNe5I=
-Message-ID: <4D68E80B.90001@gmail.com>
-Date: Sat, 26 Feb 2011 12:46:19 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	Sat, 26 Feb 2011 06:51:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging interfaces
+Date: Sat, 26 Feb 2011 12:50:33 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Dan Carpenter <error27@gmail.com>, Greg KH <gregkh@suse.de>,
+        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com> <20110222205847.GA1867@khazad-dum.debian.net> <20110224163844.GC888@home.goodmis.org>
+In-Reply-To: <20110224163844.GC888@home.goodmis.org>
 MIME-Version: 1.0
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-CC: preining@logic.at,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        "debora@linux.vnet.ibm.com" <debora@linux.vnet.ibm.com>
-Subject: Re: [PATCH] tpm_tis: Re-enable interrupts upon resume
-References: <1298404199.25819.15.camel@d941e-10>
-In-Reply-To: <1298404199.25819.15.camel@d941e-10>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102261250.33914.arnd@arndb.de>
+X-Provags-ID: V02:K0:/gZRZ3Vq4eZYxl5H9f6Z1WfoglNoQcwfrW8EGceXhJv
+ 8POAp9EN/qGtZDen7WuXxIdhWdm/sVLA5Db7++K/RUj+n+7c43
+ L7YVyotZeLbo7x0gAUtHLXnFbUU9zGD6uuWfLismt8Nc8uKP1Q
+ UfZzaXsa+BbHRVk0+J8OcKAcIG0c9Nimp0eJ/5gBAlr2RFuH6L
+ Vfg1NX3eh6O7F8j2aUZtw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 08:49 PM, Stefan Berger wrote:
-> Below patch applies to the tip of the git tree.
+On Thursday 24 February 2011, Steven Rostedt wrote:
+> Currently things are still in a large flux, and I do not know how this
+> will play out. Although the changes in /debugfs/tracing has toned down a
+> lot, there's also the work going in on how to merge perf and ftrace.
+> This may start changes as well, and perhaps deprecate interfaces. I
+> don't know.
 > 
-> This patch makes sure that if the TPM TIS interface is run in interrupt
-> mode (rather than polling mode) that the interrupts are enabled in the
-> TPM's interrupt enable register which may either have been cleared by
-> the TPM's TIS loosing its state during device sleep in ACPI S3 (suspend)
-> or by the BIOS, which upon resume sends a TPM_Startup() command to the
-> TPM, and may run the TPM in polling mode and leave the TIS interrupts
-> disabled once it transfers control to the OS again.
-> 
-> Problem is, I don't currently have a machine running the TPM in
-> interrupt mode. I found this through a self-built TPM device model for
-> Qemu and SeaBIOS patches, where this does resolve a problem upon resume.
-> 
-> You may want to check if your TPM runs with interrupts by doing
-> 
-> cat /proc/interrupts | grep -i tpm
+> Having debugfs as the main interface was not the goal of all this, but
+> we seemed to have just gotten stuck with it.
 
-No, this is empty output.
+Some time ago, I started a patch set to make it possible to unify a
+lot of the pseudo file systems like debugfs, configfs and others, and
+to also make it possible to trivially create another file_system_type,
+basically creating a new root inode in the same way that you'd create a new
+debugfs directory.
 
-regards,
--- 
-js
+The patch set is probably quite outdated now, and I currently don't have
+time to finish it, but I'd be happy to help someone else refresh it
+to get it upstream.
+
+Once that is done, you could move the tracing files and any other
+parts of debugfs that have evolved into a proper API into their own
+file systems without changing much code.
+
+This would in particular make it possible to mount the main debugfs
+root-only while you can have other rules for parts of it that have
+become real interfaces.
+
+	Arnd
+
