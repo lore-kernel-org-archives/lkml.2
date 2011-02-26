@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367Ab1BZBBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 20:01:47 -0500
-Received: from mail.perches.com ([173.55.12.10]:3945 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab1BZBBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 20:01:46 -0500
-Subject: Re: [PATCH v4 4/4] gpio: Add support for Intel
- ICHx/3100/Series[56] GPIO
-From: Joe Perches <joe@perches.com>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vincent Palatin <vpalatin@chromium.org>
-In-Reply-To: <1298669181-9589-4-git-send-email-ptyser@xes-inc.com>
-References: <1298669181-9589-1-git-send-email-ptyser@xes-inc.com>
-	 <1298669181-9589-4-git-send-email-ptyser@xes-inc.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 17:01:43 -0800
-Message-ID: <1298682103.4002.24.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1750836Ab1BZBQi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 20:16:38 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54229 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab1BZBQg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 20:16:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110226001908.GA10777@x61s.reliablesolutions.de>
+References: <20110221232902.GA3440@x61s.reliablesolutions.de>
+	<AANLkTinoJqWA6ffnUx2KW_83srNbo+k6r24hnNpPTGvW@mail.gmail.com>
+	<20110226001908.GA10777@x61s.reliablesolutions.de>
+Date: Fri, 25 Feb 2011 17:16:35 -0800
+Message-ID: <AANLkTikVvjsaG94-gtauvTLjH_RW5fmva8+N7Lk-ryQ0@mail.gmail.com>
+Subject: Re: TX VLAN acceleration on bridges broken in 2.6.37?
+From: Jesse Gross <jesse@nicira.com>
+To: Jan Niehusmann <jan@gondor.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 15:26 -0600, Peter Tyser wrote:
-> This driver works on many Intel chipsets, including the ICH6, ICH7,
-> ICH8, ICH9, ICH10, 3100, Series 5/3400 (Ibex Peak), Series 6/C200
-> (Cougar Point).
+On Fri, Feb 25, 2011 at 4:19 PM, Jan Niehusmann <jan@gondor.com> wrote:
+> On Fri, Feb 25, 2011 at 02:53:21PM -0800, Jesse Gross wrote:
+>> is specific to the e1000e driver.  I know that some other Intel NICs
+>> require vlan stripping on receive to be enabled for vlan insertion on
+>> transmit to work.  Since this driver has not been converted over to
+>> use the new vlan model yet, it only enables these things if a vlan is
+>> directly configured on it.  To confirm this can you try a few things:
+>
+> My observations confirm your theory:
 
-Hi Peter.
+OK, thanks for confirming.  The right solution is convert the driver
+over to the new vlan model.  I don't know how soon I might get to
+this, maybe it's something that the Intel guys can take a look at?
 
-just trivia...
+> - indeed, -e is necessary to show the vlan tags. So my prior observation
+>  regarding tag visibility in tcpdump was wrong. The packets are still
+>  have a vlan tag in the non-working case.
+>
+>  (What actually is affected by the txvlan flag is the ability to filter
+>  for vlan tags with tcpdump.  so 'tcpdump -e -i eth0' shows the packets,
+>  'tcpdump -e -i eth0 vlan' only shows them with txvlan off. However,
+>  filtering for the vlan tag also doesn't work with the vlan interface
+>  on eth0.1, while the tagging actually works, as verified above.)
 
-> diff --git a/drivers/gpio/ichx_gpio.c b/drivers/gpio/ichx_gpio.c
-[]
-> @@ -0,0 +1,551 @@
-> +/*
-> + * Intel ICH6-10, Series 5 and 6 GPIO driver
-[]
-> + */
-> +
-
-You could use
-
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
-before any #include
-
-so that the uses of
-	printk(KERN_<level> "%s: foo...\n", DRV_NAME, bar...);
-can be
-	pr_<level>("foo...\n", bar...);
-
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <linux/gpio.h>
-> +#include <linux/platform_device.h>
-
-[]
-
-> +static int modparam_gpiobase = -1 /* dynamic */;
-
-Pretty unusual commenting style and too easy to lose sight
-of the terminating semicolon.
-
-It's more usually written as:
-
-static int modparam_gpiobase = -1;	/* dynamic */
-
-> +static int __devinit ichx_gpio_init(struct pci_dev *pdev,
-> +				const struct pci_device_id *ent,
-> +				struct platform_device *dev)
-> +{
-[]
-> +	if (!ichx_priv.gpio_base) {
-> +		printk(KERN_ERR "%s: GPIO BAR not enumerated\n", DRV_NAME);
-
-print->pr_<level> like:
-		pr_err("GPIO BAR not enumerated\n");
-
-> +	if (ichx_priv.desc->gpe0_sts_ofs) {
-> +		pci_read_config_dword(pdev, PCI_ICHX_ACPI_BAR,
-> +				      (u32 *)&ichx_priv.pm_base);
-> +		ichx_priv.pm_base &= PCI_BASE_ADDRESS_IO_MASK;
-> +		if (!ichx_priv.pm_base)
-> +			printk(KERN_WARNING "%s: ACPI BAR not enumerated, "
-> +			       "GPI 0 - 15 unusable\n", DRV_NAME);
-
-			pr_warn("ACPI BAR not enumerated, GPI 0 - 15 unusable\n");
-
-and so forth for all the printks.
-
-One other typo:
-
-> +static int ich6_gpio_request(struct gpio_chip *chip, unsigned nr)
-> +{
-> +	/*
-> +	 * Fixups for bits 16 and 17 are necessary on the Intel ICH6/3100
-> +	 * brdige as they are controlled by USE register bits 0 and 1.  See
-> 
-
-	bridge
-
-
+Good to know, though that's a separate issue.
