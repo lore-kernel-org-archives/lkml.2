@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab1BZMg3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 07:36:29 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:47962 "EHLO mprc.pku.edu.cn"
+	id S1752209Ab1BZMoY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 07:44:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52100 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab1BZMg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 07:36:28 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <dmitry.torokhov@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>, "'Greg KH'" <greg@kroah.com>
-References: <015701cbcdae$7d5f43f0$781dcbd0$@mprc.pku.edu.cn> <201102181133.26675.arnd@arndb.de> <019001cbd29c$7cee6340$76cb29c0$@mprc.pku.edu.cn> <201102221811.58441.arnd@arndb.de>
-In-Reply-To: <201102221811.58441.arnd@arndb.de>
-Subject: RE: [PATCH 11/12] unicore32 machine related files: ps2 driver
-Date: Sat, 26 Feb 2011 20:36:16 +0800
-Message-ID: <011101cbd5b1$c34f6880$49ee3980$@mprc.pku.edu.cn>
+	id S1751971Ab1BZMoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 07:44:23 -0500
+Date: Sat, 26 Feb 2011 13:35:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+Subject: Re: [PATCH 0/4 RESEND] exec: unify compat/non-compat code
+Message-ID: <20110226123522.GA4416@redhat.com>
+References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com> <20101201182747.GB6143@redhat.com> <20110225175202.GA19059@redhat.com> <AANLkTimv6=QuK2+ye=OFCdRN_285GsNc4CnWEQf8OY26@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQHwh2GX42xqIG1pSB6ZyMOWdcE4LgISqVFxAqYTC1YCfeub8JOQnp4g
-Content-Language: zh-cn
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimv6=QuK2+ye=OFCdRN_285GsNc4CnWEQf8OY26@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/25, Linus Torvalds wrote:
+>
+> On Fri, Feb 25, 2011 at 9:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> On 12/01, Milton Miller wrote:
+> >> >
+> >> > > +#ifdef CONFIG_COMPAT
+> >> > > +int compat_do_execve(char * filename,
+> >> > > + compat_uptr_t __user *argv,
+> >> > > + compat_uptr_t __user *envp,
+> >> > > + struct pt_regs * regs)
+> >> > > +{
+> >> > > + return do_execve_common(filename,
+> >> > > +                         (void __user*)argv, (void __user*)envp,
+> >> >
+> >> > Shouldn't these be compat_ptr(argv)?  (makes a difference on s390)
+>
+> Indeed. The "compat_uptr_t __user *argv" is wrong, and it should be just
+>
+>     compat_uptr_t argv;
+>
+> and then every time you turn it into a pointer, it should use
+> "compat_ptr(argv)".
 
+Oh, perhaps, and I was thinking about this too. But this is another
+issue, no? Or I misunderstood.
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Wednesday, February 23, 2011 1:12 AM
-> To: Guan Xuetao
-> Cc: dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
-> Subject: Re: [PATCH 11/12] unicore32 machine related files: ps2 driver
-> 
-> On Tuesday 22 February 2011, Guan Xuetao wrote:
-> > diff --git a/drivers/input/serio/i8042-unicore32io.h b/drivers/input/serio/i8042-unicore32io.h
-> > index 2cdd872..9350843 100644
-> > --- a/drivers/input/serio/i8042-unicore32io.h
-> > +++ b/drivers/input/serio/i8042-unicore32io.h
-> > @@ -29,11 +29,11 @@
-> >  /*
-> >   * Register numbers.
-> >   */
-> > -#define I8042_COMMAND_REG      ((volatile void __iomem *)&PS2_COMMAND)
-> > -#define I8042_STATUS_REG       ((volatile void __iomem *)&PS2_STATUS)
-> > -#define I8042_DATA_REG         ((volatile void __iomem *)&PS2_DATA)
-> > +#define I8042_COMMAND_REG      PS2_COMMAND
-> > +#define I8042_STATUS_REG       PS2_STATUS
-> > +#define I8042_DATA_REG         PS2_DATA
-> 
-> I wouldn't bother defining two sets of macros then. Either use PS2_COMMAND
-> in the driver, or define I8042_COMMAND_REG in the place where you currently
-> define PS2_COMMAND.
-All I8042_*_REGs are explicitly defined in i8042-*io.h files.
-And I want to reserve the original register names in unicore32 namespace.
-> 
-> Aside from this, it looks good.
-> 
-> 	Arnd
-Thanks & Regards.
-Guan Xuetao
+First of all, I agree that perhaps it makes sense to change the
+signature of compat_do_execve()
+
+	-	compat_do_execve(compat_uptr_t __user *argv)
+	+	compat_do_execve(compat_uptr_t argv)
+
+but this has nothing to do with this series. We can do this before
+or after ("after" seems simpler").
+
+>  - user passes "compat_uptr_t"
+
+Yes,
+
+>  - the kernel can turn that into "compat_uptr_t __user *" by doing
+>
+>        compat_uptr_t __user *pptr;
+>        pptr = compat_ptr(argv);
+
+Yes! and the kernel already does this before it calls compat_do_execve(),
+iow compat_do_execve() gets the result of compat_ptr(compat_ptr_from_user).
+
+>  - the kernel needs to fetch the individual entries with
+>
+>        compat_uptr_t cuptr = get_user(pptr);
+>
+>  - the kernel can then turn _those_ into the actual pointers to the string with
+>
+>        const char __user *str = compat_ptr(cuptr);
+
+Yes, and this is exactly what get_arg_ptr(compat => true) does.
+
+> > So, once again, this should not (and can not) be compat_ptr(argv) afaics.
+>
+> It can be, and probably should.
+
+Only if we change the signature of compat_do_execve(). With the current
+code yet another compat_ptr() is not needed and it is simply wrong, this
+is what I meant when I replied to Milton.
+
+> But the low-level s390 wrapper
+> function may have done one of the levels already. It probably
+> shouldn't, and we _should_ do the "compat_ptr()" thing a the generic C
+> level.
+
+Agreed, but currently this compat_ptr() thing belongs to the caller.
+
+IOW. Lets look at the current code. arch/ calls
+compat_do_execve(compat_uptr_t __user *argv)->compat_count(argv) which
+does get_user(argv) without any conversion, because argv was already
+converted or arch/ is buggy.
+
+Both do_execve() and compat_do_execve() accept the valid pointer
+which does not need any conversion. But this pointer points to different
+things, either to "char*" of "compat_uptr_t".
+
+However, please see my reply to 2-3/5, I agree that this is confusing
+and can be cleanuped.
+
+Or do you think I missed something else?
+
+Oleg.
 
