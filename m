@@ -1,73 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933059Ab1BZAXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 19:23:36 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:57713 "EHLO
+	id S933118Ab1BZAXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 19:23:55 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:57738 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933008Ab1BZAXe (ORCPT
+	with ESMTP id S933040Ab1BZAXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 19:23:34 -0500
+	Fri, 25 Feb 2011 19:23:35 -0500
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, leoli@freescale.com,
         dan.j.williams@intel.com, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH 0/8] fsldma: lockup fixes
-Date: Fri, 25 Feb 2011 16:23:17 -0800
-Message-Id: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH 6/8] fsldma: support async_tx dependencies and automatic unmapping
+Date: Fri, 25 Feb 2011 16:23:23 -0800
+Message-Id: <1298679805-14108-7-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
+References: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
 X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Fri, 25 Feb 2011 16:23:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+Previous to this patch, the dma_run_dependencies() function has been
+called while holding desc_lock. This function can call tx_submit() for
+other descriptors, which may try to re-grab the lock. Avoid this by
+moving the descriptors to be cleaned up to a temporary list, and
+dropping the lock before cleanup.
 
-I've been chasing random infrequent controller lockups in the fsldma driver
-for a long time. I finally managed to find the problem and fix it. I'm not
-quite sure about the exact sequence of events which causes the race
-condition, but it is related to using the hardware registers to track the
-controller state. See the patch changelogs for more detail.
+At the same time, add support for automatic unmapping of src and dst
+buffers, as offered by the DMAEngine API.
 
-The problems were quickly found by turning on DMAPOOL_DEBUG inside
-mm/dmapool.c. This poisons memory allocated with the dmapool API.
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+---
+ drivers/dma/fsldma.c |  132 ++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 95 insertions(+), 37 deletions(-)
 
-With dmapool poisoning turned on, the dmatest driver would start producing
-failures within a few seconds. After this patchset has been applied, I have
-run several iterations of the 10 threads per channel, 100000 iterations per
-thread test without any problems.
-
-I have made some changes which effect the 85xx/86xx part. I believe that
-the changes only effect features which have been unused since the rewrite
-in Jan 2010. It would be very good to get a test report from an 85xx/86xx
-user.
-
-While making the previous changes, I noticed that the fsldma driver does
-not respect the automatic DMA unmapping of src and dst buffers. I have
-added support for this feature. This also required a fix to dmatest, which
-was sending incorrect flags.
-
-The "support async_tx dependencies" patch could be split apart from the
-automatic unmapping patch if it is desirable. They both touch the same
-piece of code, so I thought it was ok to combine them. Let me know.
-
-I would really like to see this go into 2.6.39. I think we can get it
-reviewed before then. :)
-
-Ira W. Snyder (8):
-  fsldma: move related helper functions near each other
-  fsldma: use channel name in printk output
-  fsldma: improve link descriptor debugging
-  fsldma: minor codingstyle and consistency fixes
-  fsldma: fix controller lockups
-  fsldma: support async_tx dependencies and automatic unmapping
-  dmatest: fix automatic buffer unmap type
-  fsldma: reduce locking during descriptor cleanup
-
- drivers/dma/dmatest.c |    7 +-
- drivers/dma/fsldma.c  |  485 +++++++++++++++++++++++++-----------------------
- drivers/dma/fsldma.h  |    6 +-
- 3 files changed, 263 insertions(+), 235 deletions(-)
-
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index d3c5100..4014790 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -78,6 +78,11 @@ static void set_desc_cnt(struct fsldma_chan *chan,
+ 	hw->count = CPU_TO_DMA(chan, count, 32);
+ }
+ 
++static u32 get_desc_cnt(struct fsldma_chan *chan, struct fsl_desc_sw *desc)
++{
++	return DMA_TO_CPU(chan, desc->hw.count, 32);
++}
++
+ static void set_desc_src(struct fsldma_chan *chan,
+ 			 struct fsl_dma_ld_hw *hw, dma_addr_t src)
+ {
+@@ -88,6 +93,16 @@ static void set_desc_src(struct fsldma_chan *chan,
+ 	hw->src_addr = CPU_TO_DMA(chan, snoop_bits | src, 64);
+ }
+ 
++static dma_addr_t get_desc_src(struct fsldma_chan *chan,
++			       struct fsl_desc_sw *desc)
++{
++	u64 snoop_bits;
++
++	snoop_bits = ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_85XX)
++		? ((u64)FSL_DMA_SATR_SREADTYPE_SNOOP_READ << 32) : 0;
++	return DMA_TO_CPU(chan, desc->hw.src_addr, 64) & ~snoop_bits;
++}
++
+ static void set_desc_dst(struct fsldma_chan *chan,
+ 			 struct fsl_dma_ld_hw *hw, dma_addr_t dst)
+ {
+@@ -98,6 +113,16 @@ static void set_desc_dst(struct fsldma_chan *chan,
+ 	hw->dst_addr = CPU_TO_DMA(chan, snoop_bits | dst, 64);
+ }
+ 
++static dma_addr_t get_desc_dst(struct fsldma_chan *chan,
++			       struct fsl_desc_sw *desc)
++{
++	u64 snoop_bits;
++
++	snoop_bits = ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_85XX)
++		? ((u64)FSL_DMA_DATR_DWRITETYPE_SNOOP_WRITE << 32) : 0;
++	return DMA_TO_CPU(chan, desc->hw.dst_addr, 64) & ~snoop_bits;
++}
++
+ static void set_desc_next(struct fsldma_chan *chan,
+ 			  struct fsl_dma_ld_hw *hw, dma_addr_t next)
+ {
+@@ -796,6 +821,57 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+ }
+ 
+ /**
++ * fsldma_cleanup_descriptor - cleanup and free a single link descriptor
++ * @chan: Freescale DMA channel
++ * @desc: descriptor to cleanup and free
++ *
++ * This function is used on a descriptor which has been executed by the DMA
++ * controller. It will run any callbacks, submit any dependencies, and then
++ * free the descriptor.
++ */
++static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
++				      struct fsl_desc_sw *desc)
++{
++	struct dma_async_tx_descriptor *txd = &desc->async_tx;
++	struct device *dev = chan->common.device->dev;
++	dma_addr_t src = get_desc_src(chan, desc);
++	dma_addr_t dst = get_desc_dst(chan, desc);
++	u32 len = get_desc_cnt(chan, desc);
++
++	/* Run the link descriptor callback function */
++	if (txd->callback) {
++#ifdef FSL_DMA_LD_DEBUG
++		dev_dbg(chan->dev, "%s: LD %p callback\n", chan->name, desc);
++#endif
++		txd->callback(txd->callback_param);
++	}
++
++	/* Run any dependencies */
++	dma_run_dependencies(txd);
++
++	/* Unmap the dst buffer, if requested */
++	if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
++		if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
++			dma_unmap_single(dev, dst, len, DMA_FROM_DEVICE);
++		else
++			dma_unmap_page(dev, dst, len, DMA_FROM_DEVICE);
++	}
++
++	/* Unmap the src buffer, if requested */
++	if (!(txd->flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
++		if (txd->flags & DMA_COMPL_SRC_UNMAP_SINGLE)
++			dma_unmap_single(dev, src, len, DMA_TO_DEVICE);
++		else
++			dma_unmap_page(dev, src, len, DMA_TO_DEVICE);
++	}
++
++#ifdef FSL_DMA_LD_DEBUG
++	dev_dbg(chan->dev, "%s: LD %p free\n", chan->name, desc);
++#endif
++	dma_pool_free(chan->desc_pool, desc, txd->phys);
++}
++
++/**
+  * fsl_chan_ld_cleanup - Clean up link descriptors
+  * @chan : Freescale DMA channel
+  *
+@@ -809,57 +885,39 @@ static void fsl_chan_ld_cleanup(struct fsldma_chan *chan)
+ {
+ 	struct fsl_desc_sw *desc, *_desc;
+ 	const char *name = chan->name;
++	LIST_HEAD(ld_cleanup);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chan->desc_lock, flags);
+ 
+-	/* if the ld_running list is empty, there is nothing to do */
+-	if (list_empty(&chan->ld_running)) {
+-		dev_dbg(chan->dev, "%s: no descriptors to cleanup\n", name);
+-		goto out_unlock;
++	/* update the cookie if we have some descriptors to cleanup */
++	if (!list_empty(&chan->ld_running)) {
++		dma_cookie_t cookie;
++
++		desc = to_fsl_desc(chan->ld_running.prev);
++		cookie = desc->async_tx.cookie;
++
++		chan->completed_cookie = cookie;
++		dev_dbg(chan->dev, "%s: completed_cookie=%d\n", name, cookie);
+ 	}
+ 
+ 	/*
+-	 * Get the last descriptor, update the cookie to it
+-	 *
+-	 * This is done before callbacks run so that clients can check the
+-	 * status of their DMA transfer inside the callback.
++	 * move the descriptors to a temporary list so we can drop the lock
++	 * during the entire cleanup operation
+ 	 */
+-	desc = to_fsl_desc(chan->ld_running.prev);
+-	chan->completed_cookie = desc->async_tx.cookie;
+-	dev_dbg(chan->dev, "%s: completed_cookie = %d\n",
+-			   name, chan->completed_cookie);
++	list_splice_tail_init(&chan->ld_running, &ld_cleanup);
++
++	spin_unlock_irqrestore(&chan->desc_lock, flags);
+ 
+ 	/* Run the callback for each descriptor, in order */
+-	list_for_each_entry_safe(desc, _desc, &chan->ld_running, node) {
+-		dma_async_tx_callback callback;
+-		void *callback_param;
++	list_for_each_entry_safe(desc, _desc, &ld_cleanup, node) {
+ 
+-		/* Remove from the list of running transactions */
++		/* Remove from the list of transactions */
+ 		list_del(&desc->node);
+ 
+-		/* Run the link descriptor callback function */
+-		callback = desc->async_tx.callback;
+-		callback_param = desc->async_tx.callback_param;
+-		if (callback) {
+-			spin_unlock_irqrestore(&chan->desc_lock, flags);
+-#ifdef FSL_DMA_LD_DEBUG
+-			dev_dbg(chan->dev, "%s: LD %p callback\n", name, desc);
+-#endif
+-			callback(callback_param);
+-			spin_lock_irqsave(&chan->desc_lock, flags);
+-		}
+-
+-		/* Run any dependencies, then free the descriptor */
+-		dma_run_dependencies(&desc->async_tx);
+-#ifdef FSL_DMA_LD_DEBUG
+-		dev_dbg(chan->dev, "%s: LD %p free\n", name, desc);
+-#endif
+-		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
++		/* Run all cleanup for this descriptor */
++		fsldma_cleanup_descriptor(chan, desc);
+ 	}
+-
+-out_unlock:
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
+ }
+ 
+ /**
 -- 
 1.7.3.4
 
