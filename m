@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab1BZAyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 19:54:50 -0500
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:54674 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932105Ab1BZAyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 19:54:49 -0500
-Subject: Re: [PATCH 06/21]drivers:media:cx23418.h remove one to many l's in
- the word.
-From: Andy Walls <awalls@md.metrocast.net>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, mchehab@infradead.org, ivtv-devel@ivtvdriver.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1298614277-3649-1-git-send-email-justinmattock@gmail.com>
-References: <1298614277-3649-1-git-send-email-justinmattock@gmail.com>
+	id S1751367Ab1BZBBr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 20:01:47 -0500
+Received: from mail.perches.com ([173.55.12.10]:3945 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab1BZBBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Feb 2011 20:01:46 -0500
+Subject: Re: [PATCH v4 4/4] gpio: Add support for Intel
+ ICHx/3100/Series[56] GPIO
+From: Joe Perches <joe@perches.com>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vincent Palatin <vpalatin@chromium.org>
+In-Reply-To: <1298669181-9589-4-git-send-email-ptyser@xes-inc.com>
+References: <1298669181-9589-1-git-send-email-ptyser@xes-inc.com>
+	 <1298669181-9589-4-git-send-email-ptyser@xes-inc.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 Feb 2011 19:51:18 -0500
-Message-ID: <1298681478.2709.24.camel@localhost>
+Date: Fri, 25 Feb 2011 17:01:43 -0800
+Message-ID: <1298682103.4002.24.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2011-02-25_08:2011-02-25,2011-02-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1012030000 definitions=main-1102250167
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-24 at 22:11 -0800, Justin P. Mattock wrote:
-> The patch below removes an extra "l" in the word.
+On Fri, 2011-02-25 at 15:26 -0600, Peter Tyser wrote:
+> This driver works on many Intel chipsets, including the ICH6, ICH7,
+> ICH8, ICH9, ICH10, 3100, Series 5/3400 (Ibex Peak), Series 6/C200
+> (Cougar Point).
+
+Hi Peter.
+
+just trivia...
+
+> diff --git a/drivers/gpio/ichx_gpio.c b/drivers/gpio/ichx_gpio.c
+[]
+> @@ -0,0 +1,551 @@
+> +/*
+> + * Intel ICH6-10, Series 5 and 6 GPIO driver
+[]
+> + */
+> +
+
+You could use
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+before any #include
+
+so that the uses of
+	printk(KERN_<level> "%s: foo...\n", DRV_NAME, bar...);
+can be
+	pr_<level>("foo...\n", bar...);
+
+> +#include <linux/module.h>
+> +#include <linux/pci.h>
+> +#include <linux/gpio.h>
+> +#include <linux/platform_device.h>
+
+[]
+
+> +static int modparam_gpiobase = -1 /* dynamic */;
+
+Pretty unusual commenting style and too easy to lose sight
+of the terminating semicolon.
+
+It's more usually written as:
+
+static int modparam_gpiobase = -1;	/* dynamic */
+
+> +static int __devinit ichx_gpio_init(struct pci_dev *pdev,
+> +				const struct pci_device_id *ent,
+> +				struct platform_device *dev)
+> +{
+[]
+> +	if (!ichx_priv.gpio_base) {
+> +		printk(KERN_ERR "%s: GPIO BAR not enumerated\n", DRV_NAME);
+
+print->pr_<level> like:
+		pr_err("GPIO BAR not enumerated\n");
+
+> +	if (ichx_priv.desc->gpe0_sts_ofs) {
+> +		pci_read_config_dword(pdev, PCI_ICHX_ACPI_BAR,
+> +				      (u32 *)&ichx_priv.pm_base);
+> +		ichx_priv.pm_base &= PCI_BASE_ADDRESS_IO_MASK;
+> +		if (!ichx_priv.pm_base)
+> +			printk(KERN_WARNING "%s: ACPI BAR not enumerated, "
+> +			       "GPI 0 - 15 unusable\n", DRV_NAME);
+
+			pr_warn("ACPI BAR not enumerated, GPI 0 - 15 unusable\n");
+
+and so forth for all the printks.
+
+One other typo:
+
+> +static int ich6_gpio_request(struct gpio_chip *chip, unsigned nr)
+> +{
+> +	/*
+> +	 * Fixups for bits 16 and 17 are necessary on the Intel ICH6/3100
+> +	 * brdige as they are controlled by USE register bits 0 and 1.  See
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  drivers/media/video/cx18/cx23418.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/media/video/cx18/cx23418.h b/drivers/media/video/cx18/cx23418.h
-> index 7e40035..935f557 100644
-> --- a/drivers/media/video/cx18/cx23418.h
-> +++ b/drivers/media/video/cx18/cx23418.h
-> @@ -477,7 +477,7 @@
->  /* The are no buffers ready. Try again soon! */
->  #define CXERR_NODATA_AGAIN      0x00001E
->  
-> -/* The stream is stopping. Function not alllowed now! */
-> +/* The stream is stopping. Function not allowed now! */
 
-If the spelling mistake is worthy of a fix, why isn't the egregious
-grammar mistake also worth fixing?
-
-Also, those aren't the only spelling and grammar mistakes in comments in
-that file.
-
--Andy
-
->  #define CXERR_STOPPING_STATUS   0x00001F
->  
->  /* Trying to access hardware when the power is turned OFF */
+	bridge
 
 
