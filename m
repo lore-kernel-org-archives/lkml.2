@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab1BZTrF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 14:47:05 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53119 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab1BZTrC convert rfc822-to-8bit (ORCPT
+	id S1752642Ab1BZTuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 14:50:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52184 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab1BZTuH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 14:47:02 -0500
+	Sat, 26 Feb 2011 14:50:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=oLo3bD4u5Wf+ngB6j4jT0sflH+IpPTI/EI9zdR88m4+CXfKHNSj3sWNh4UxUAUNtQx
-         /b1wg/AEvDmu2ulO3qYSYOGHZGrGuk3qk2AzRbUhdas6XQNZhOa8jlRpabiY2VkUs6Hw
-         jn+Dz5OfQqaosbUXT7Z2VwZzvO+e0YSlVOY9o=
+        b=ia/ZFC5N7QlGqGt48xYPG6Wvt7NAsiTKjypSHjIIIWwnnBZbbfZrF0Z1M+VSbwkgGu
+         2RZfY3CR0r8og1mGE0vHUe70skZxu0BPuZqSmtGsysZS/QCl8YBFqtvbQUTG9gDjelAL
+         IlUYDjVDGHTO3j9nbIidlGMD99ITHvqD4ThTQ=
 MIME-Version: 1.0
-In-Reply-To: <20110225060706.GA12723@merkur.ravnborg.org>
+In-Reply-To: <4D671556.80607@suse.com>
 References: <4D671556.80607@suse.com>
-	<20110225060706.GA12723@merkur.ravnborg.org>
-Date: Sat, 26 Feb 2011 14:47:01 -0500
-Message-ID: <AANLkTimFd+KFKgiOF8iVoM8Pk77Zy+5CsFs5BCYqCw=L@mail.gmail.com>
+Date: Sat, 26 Feb 2011 14:50:06 -0500
+Message-ID: <AANLkTimt1y_QwtRpAj1F9Nvh3j2VSJGw7MvtQSzW_oG9@mail.gmail.com>
 Subject: Re: [PATCH] Add ``cloneconfig'' target
 From: Arnaud Lacombe <lacombar@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Jeff Mahoney <jeffm@suse.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
@@ -34,42 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Fri, Feb 25, 2011 at 1:07 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> We already have something remotely similar in kconfig.
-> We use the following list:
-> config DEFCONFIG_LIST
->        string
->        depends on !UML
->        option defconfig_list
->        default "/lib/modules/$UNAME_RELEASE/.config"
->        default "/etc/kernel-config"
->        default "/boot/config-$UNAME_RELEASE"
->        default "$ARCH_DEFCONFIG"
->        default "arch/$ARCH/defconfig"
+On Thu, Feb 24, 2011 at 9:35 PM, Jeff Mahoney <jeffm@suse.com> wrote:
+> Cloneconfig takes the first configuration it finds which appears
+> to belong to the running kernel, and configures the kernel sources
+> to match this configuration as closely as possible.
 >
-I may argue that anything within the Linux tree which point
-_by_default_ to something outside the tree itself is broken. Say I try
-to build a Linux kernel on a system with has its own non-kconfig
-`/etc/kernel-config', I guess this would make the configuration fail.
-
-> It would be better to teach kconfig to read /proc/config.gz
-> and then add it to the list above.
+> Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> ---
+>  scripts/kconfig/Makefile |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
 >
-Why ? Thing should be kept simple. kconfig's job is not to know about
-the trillion file format which exist in the world, even more if the
-implementation is made by building a command[0], executing it in a
-separate process and reading the output. This is the shell's job. What
-may be useful in the contrary would be to eventually teach kconfig to
-read from <stdin>.
-
- - Arnaud
-
-[0]: which is built depending on an extension, which is even more awful ...
-
-> This list is used if you just type "make enuconfig" without
-> any configuration.
+> --- a/scripts/kconfig/Makefile
+> +++ b/scripts/kconfig/Makefile
+> @@ -99,6 +99,23 @@ PHONY += allnoconfig allyesconfig allmod
 >
->        Sam
+>  allnoconfig allyesconfig allmodconfig alldefconfig randconfig: $(obj)/conf
+>        $< --$@ $(Kconfig)
+> +
+> +UNAME_RELEASE := $(shell uname -r)
+> +CLONECONFIG := $(firstword $(wildcard /proc/config.gz \
+> +                                     /lib/modules/$(UNAME_RELEASE)/.config \
+> +                                     /etc/kernel-config \
+> +                                     /boot/config-$(UNAME_RELEASE)))
+> +cloneconfig: $(obj)/conf
+> +       $(Q)case "$(CLONECONFIG)" in                            \
+> +       '')     echo -e "The configuration of the running"      \
+> +                       "kernel could not be determined\n";     \
+You do not need the '\n', nor the '-e', echo(1) appends a newline by default.
+
+> +               false ;;                                        \
+> +       *.gz)   gzip -cd $(CLONECONFIG) > .config.running ;;    \
+> +       *)      cat $(CLONECONFIG) > .config.running ;;         \
+> +       esac &&                                                 \
+> +       echo -e "Cloning configuration file $(CLONECONFIG)\n"
+see above.
+
+> +       $(Q)$< -D .config.running arch/$(SRCARCH)/Kconfig
+> +
+>
+>  PHONY += listnewconfig oldnoconfig savedefconfig defconfig
+>
+> --
+> Jeff Mahoney
+> SUSE Labs
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
 > the body of a message to majordomo@vger.kernel.org
