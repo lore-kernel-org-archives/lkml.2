@@ -1,63 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab1BZATM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Feb 2011 19:19:12 -0500
-Received: from vs1.gondor.com ([78.47.100.202]:43621 "EHLO
-	mail.moria.gondor.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756553Ab1BZATK (ORCPT
+	id S933072Ab1BZAXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Feb 2011 19:23:37 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:57716 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933023Ab1BZAXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Feb 2011 19:19:10 -0500
-Date: Sat, 26 Feb 2011 01:19:08 +0100
-From: Jan Niehusmann <jan@gondor.com>
-To: Jesse Gross <jesse@nicira.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: TX VLAN acceleration on bridges broken in 2.6.37?
-Message-ID: <20110226001908.GA10777@x61s.reliablesolutions.de>
-References: <20110221232902.GA3440@x61s.reliablesolutions.de>
- <AANLkTinoJqWA6ffnUx2KW_83srNbo+k6r24hnNpPTGvW@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinoJqWA6ffnUx2KW_83srNbo+k6r24hnNpPTGvW@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 25 Feb 2011 19:23:34 -0500
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, leoli@freescale.com,
+        dan.j.williams@intel.com, "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: [PATCH 1/8] fsldma: move related helper functions near each other
+Date: Fri, 25 Feb 2011 16:23:18 -0800
+Message-Id: <1298679805-14108-2-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
+References: <1298679805-14108-1-git-send-email-iws@ovro.caltech.edu>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Fri, 25 Feb 2011 16:23:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 02:53:21PM -0800, Jesse Gross wrote:
-> is specific to the e1000e driver.  I know that some other Intel NICs
-> require vlan stripping on receive to be enabled for vlan insertion on
-> transmit to work.  Since this driver has not been converted over to
-> use the new vlan model yet, it only enables these things if a vlan is
-> directly configured on it.  To confirm this can you try a few things:
+This is a purely cosmetic cleanup. It is nice to have related functions
+right next to each other in the code.
 
-My observations confirm your theory:
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+---
+ drivers/dma/fsldma.c |  116 +++++++++++++++++++++++++++----------------------
+ 1 files changed, 64 insertions(+), 52 deletions(-)
 
-> * Directly configure the vlan on the device instead of going through the bridge.
-
-- does work, but only if eth0 is not part of bridge (expected behaviour,
-  afaik)
-
-> * Use the bridge but also configure an unused vlan device on the
-> physical interface.
-
-- does work
-
-> * Double check that tcpdump with the settings that you are using shows
-> vlan tags in other situations.  In some cases you need to use the 'e'
-> flag with tcpdump in order for it show vlan tags.  If it is the
-> driver/NIC that is dropping the tags, tcpdump should still show them.
-
-- indeed, -e is necessary to show the vlan tags. So my prior observation
-  regarding tag visibility in tcpdump was wrong. The packets are still
-  have a vlan tag in the non-working case. 
-
-  (What actually is affected by the txvlan flag is the ability to filter
-  for vlan tags with tcpdump.  so 'tcpdump -e -i eth0' shows the packets,
-  'tcpdump -e -i eth0 vlan' only shows them with txvlan off. However,
-  filtering for the vlan tag also doesn't work with the vlan interface
-  on eth0.1, while the tagging actually works, as verified above.)
-
-
-Jan
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 4de947a..2e1af45 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -39,33 +39,9 @@
+ 
+ static const char msg_ld_oom[] = "No free memory for link descriptor\n";
+ 
+-static void dma_init(struct fsldma_chan *chan)
+-{
+-	/* Reset the channel */
+-	DMA_OUT(chan, &chan->regs->mr, 0, 32);
+-
+-	switch (chan->feature & FSL_DMA_IP_MASK) {
+-	case FSL_DMA_IP_85XX:
+-		/* Set the channel to below modes:
+-		 * EIE - Error interrupt enable
+-		 * EOSIE - End of segments interrupt enable (basic mode)
+-		 * EOLNIE - End of links interrupt enable
+-		 * BWC - Bandwidth sharing among channels
+-		 */
+-		DMA_OUT(chan, &chan->regs->mr, FSL_DMA_MR_BWC
+-				| FSL_DMA_MR_EIE | FSL_DMA_MR_EOLNIE
+-				| FSL_DMA_MR_EOSIE, 32);
+-		break;
+-	case FSL_DMA_IP_83XX:
+-		/* Set the channel to below modes:
+-		 * EOTIE - End-of-transfer interrupt enable
+-		 * PRC_RM - PCI read multiple
+-		 */
+-		DMA_OUT(chan, &chan->regs->mr, FSL_DMA_MR_EOTIE
+-				| FSL_DMA_MR_PRC_RM, 32);
+-		break;
+-	}
+-}
++/*
++ * Register Helpers
++ */
+ 
+ static void set_sr(struct fsldma_chan *chan, u32 val)
+ {
+@@ -77,6 +53,30 @@ static u32 get_sr(struct fsldma_chan *chan)
+ 	return DMA_IN(chan, &chan->regs->sr, 32);
+ }
+ 
++static void set_cdar(struct fsldma_chan *chan, dma_addr_t addr)
++{
++	DMA_OUT(chan, &chan->regs->cdar, addr | FSL_DMA_SNEN, 64);
++}
++
++static dma_addr_t get_cdar(struct fsldma_chan *chan)
++{
++	return DMA_IN(chan, &chan->regs->cdar, 64) & ~FSL_DMA_SNEN;
++}
++
++static dma_addr_t get_ndar(struct fsldma_chan *chan)
++{
++	return DMA_IN(chan, &chan->regs->ndar, 64);
++}
++
++static u32 get_bcr(struct fsldma_chan *chan)
++{
++	return DMA_IN(chan, &chan->regs->bcr, 32);
++}
++
++/*
++ * Descriptor Helpers
++ */
++
+ static void set_desc_cnt(struct fsldma_chan *chan,
+ 				struct fsl_dma_ld_hw *hw, u32 count)
+ {
+@@ -113,24 +113,49 @@ static void set_desc_next(struct fsldma_chan *chan,
+ 	hw->next_ln_addr = CPU_TO_DMA(chan, snoop_bits | next, 64);
+ }
+ 
+-static void set_cdar(struct fsldma_chan *chan, dma_addr_t addr)
++static void set_ld_eol(struct fsldma_chan *chan,
++			struct fsl_desc_sw *desc)
+ {
+-	DMA_OUT(chan, &chan->regs->cdar, addr | FSL_DMA_SNEN, 64);
+-}
++	u64 snoop_bits;
+ 
+-static dma_addr_t get_cdar(struct fsldma_chan *chan)
+-{
+-	return DMA_IN(chan, &chan->regs->cdar, 64) & ~FSL_DMA_SNEN;
+-}
++	snoop_bits = ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_83XX)
++		? FSL_DMA_SNEN : 0;
+ 
+-static dma_addr_t get_ndar(struct fsldma_chan *chan)
+-{
+-	return DMA_IN(chan, &chan->regs->ndar, 64);
++	desc->hw.next_ln_addr = CPU_TO_DMA(chan,
++		DMA_TO_CPU(chan, desc->hw.next_ln_addr, 64) | FSL_DMA_EOL
++			| snoop_bits, 64);
+ }
+ 
+-static u32 get_bcr(struct fsldma_chan *chan)
++/*
++ * DMA Engine Hardware Control Helpers
++ */
++
++static void dma_init(struct fsldma_chan *chan)
+ {
+-	return DMA_IN(chan, &chan->regs->bcr, 32);
++	/* Reset the channel */
++	DMA_OUT(chan, &chan->regs->mr, 0, 32);
++
++	switch (chan->feature & FSL_DMA_IP_MASK) {
++	case FSL_DMA_IP_85XX:
++		/* Set the channel to below modes:
++		 * EIE - Error interrupt enable
++		 * EOSIE - End of segments interrupt enable (basic mode)
++		 * EOLNIE - End of links interrupt enable
++		 * BWC - Bandwidth sharing among channels
++		 */
++		DMA_OUT(chan, &chan->regs->mr, FSL_DMA_MR_BWC
++				| FSL_DMA_MR_EIE | FSL_DMA_MR_EOLNIE
++				| FSL_DMA_MR_EOSIE, 32);
++		break;
++	case FSL_DMA_IP_83XX:
++		/* Set the channel to below modes:
++		 * EOTIE - End-of-transfer interrupt enable
++		 * PRC_RM - PCI read multiple
++		 */
++		DMA_OUT(chan, &chan->regs->mr, FSL_DMA_MR_EOTIE
++				| FSL_DMA_MR_PRC_RM, 32);
++		break;
++	}
+ }
+ 
+ static int dma_is_idle(struct fsldma_chan *chan)
+@@ -185,19 +210,6 @@ static void dma_halt(struct fsldma_chan *chan)
+ 		dev_err(chan->dev, "DMA halt timeout!\n");
+ }
+ 
+-static void set_ld_eol(struct fsldma_chan *chan,
+-			struct fsl_desc_sw *desc)
+-{
+-	u64 snoop_bits;
+-
+-	snoop_bits = ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_83XX)
+-		? FSL_DMA_SNEN : 0;
+-
+-	desc->hw.next_ln_addr = CPU_TO_DMA(chan,
+-		DMA_TO_CPU(chan, desc->hw.next_ln_addr, 64) | FSL_DMA_EOL
+-			| snoop_bits, 64);
+-}
+-
+ /**
+  * fsl_chan_set_src_loop_size - Set source address hold transfer size
+  * @chan : Freescale DMA channel
+-- 
+1.7.3.4
 
