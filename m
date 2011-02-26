@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab1BZPLm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 10:11:42 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34986 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab1BZPLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 10:11:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
-         :mime-version:content-type:content-transfer-encoding;
-        b=VYDGZbYYH+9jAbfjEEsQu/HeQ5HGfrlrq79Sc0BYhBI9SF7srSXOrvizj3QCCyLAiz
-         38sooONOaJSxmTvIb5gGIvwCtAj2ZQcXLfPPch53kCbsCnWwmbbnIIGhAU8rFsCopRqE
-         gbuV93WzWXoqnaLZVYOxiWgSPUbRbBDDeHSYw=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v2] perf: Fix undefined PyVarObject_HEAD_INIT in python 2.5
-Date: Sat, 26 Feb 2011 16:11:33 +0100
-Message-Id: <1298733093-3928-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110226070208.GB28222@elte.hu>
-References: <20110226070208.GB28222@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1751889Ab1BZPTp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 10:19:45 -0500
+Received: from mga01.intel.com ([192.55.52.88]:10169 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518Ab1BZPTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 10:19:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,232,1297065600"; 
+   d="scan'208";a="891537143"
+Subject: Re: [PATCH 2/2] pch_dma: set the number of array correctly
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
+        "Clark, Joel" <joel.clark@intel.com>
+In-Reply-To: <BD1B47087D5E7D44AE5A1EFDFBF0023B086D6C222B@bgsmsx502.gar.corp.intel.com>
+References: <BD1B47087D5E7D44AE5A1EFDFBF0023B086D6C222B@bgsmsx502.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 26 Feb 2011 20:23:49 +0530
+Message-ID: <1298732029.6974.13.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PyVarObject_HEAD_INIT is undefined in python 2.5, resulting
-in a build crash:
+On Fri, 2011-02-18 at 22:44 +0530, Koul, Vinod wrote:
+> > On Fri, 2011-02-18 at 10:01 +0530, Tomoya MORINAGA wrote:
+> > set the number of array correctly.
+> > 
+> > Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> > ---
+> >  drivers/dma/pch_dma.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+> > index bf2ddd6..b1dfba7 100644
+> > --- a/drivers/dma/pch_dma.c
+> > +++ b/drivers/dma/pch_dma.c
+> > @@ -82,7 +82,7 @@ struct pch_dma_regs {
+> >  	u32	dma_sts1;
+> >  	u32	reserved2;
+> >  	u32	reserved3;
+> > -	struct pch_dma_desc_regs desc[0];
+> > +	struct pch_dma_desc_regs desc[MAX_CHAN_NR];
+> >  };
+> >  
+> >  struct pch_dma_desc {
+> > @@ -124,7 +124,7 @@ struct pch_dma {
+> >  	struct pci_pool		*pool;
+> >  	struct pch_dma_regs	regs;
+> >  	struct pch_dma_desc_regs ch_regs[MAX_CHAN_NR];
+> > -	struct pch_dma_chan	channels[0];
+> > +	struct pch_dma_chan	channels[MAX_CHAN_NR];
+> >  };
+> >  
+> >  #define PCH_DMA_CTL0	0x00
+> 
+> Both
+> Acked-by: Vinod Koul <vinod.koul@intel.com>
+Applied both @git://git.infradead.org/users/vkoul/slave-dma.git
 
-	util/python.c:81: attention : déclaration implicite de la fonction « «PyVarObject_HEAD_INIT» »
-	util/python.c:82: erreur: request for member «tp_name» in something not a structure or union
-	util/python.c:117: erreur: request for member «tp_name» in something not a structure or union
-	util/python.c:146: erreur: request for member «tp_name» in something not a structure or union
-	util/python.c:177: erreur: request for member «tp_name» in something not a structure or union
-	util/python.c:290: erreur: request for member «tp_name» in something not a structure or union
-	util/python.c:359: erreur: request for member «tp_name» in something not a structure or union
-	util/python.c:532: erreur: request for member «tp_name» in something not a structure or union
-	util/python.c:761: erreur: request for member «tp_name» in something not a structure or union
-	error: command 'gcc' failed with exit status 1
-	make: *** [python/perf.so] Erreur 1
+Fixed one minor style error in 2nd patch but from next time please
+ensure you run checkpatch before sending
 
-We can fix that by defining PyVarObject_HEAD_INIT as a wrapper on
-PyObject_HEAD_INIT, thanks to a trick found on biopython:
-https://github.com/biopython/biopython/commit/d4eaf57946c7b4c32eca8d18821edf32f83e300d
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/python.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 5317ef2..a9f2d7e 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -8,6 +8,11 @@
- #include "cpumap.h"
- #include "thread_map.h"
- 
-+/* Define PyVarObject_HEAD_INIT for python 2.5 */
-+#ifndef PyVarObject_HEAD_INIT
-+# define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-+#endif
-+
- struct throttle_event {
- 	struct perf_event_header header;
- 	u64			 time;
 -- 
-1.7.3.2
+~Vinod
 
