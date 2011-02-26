@@ -1,150 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab1BZR16 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Feb 2011 12:27:58 -0500
-Received: from cantor.suse.de ([195.135.220.2]:34609 "EHLO mx1.suse.de"
+	id S1752333Ab1BZRv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Feb 2011 12:51:28 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:44644 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511Ab1BZR14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Feb 2011 12:27:56 -0500
-Message-ID: <4D693817.8000100@suse.com>
-Date: Sat, 26 Feb 2011 12:27:51 -0500
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1752172Ab1BZRv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Feb 2011 12:51:27 -0500
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
+        <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH v5 4/5] hwmon: (pmbus) Add support for Maxim MAX34440/MAX34441
+Date: Sat, 26 Feb 2011 09:50:49 -0800
+Message-ID: <1298742650-9789-5-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1298742650-9789-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1298742650-9789-1-git-send-email-guenter.roeck@ericsson.com>
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 1/2] kconfig: add support for type handlers
-References: <4D671556.80607@suse.com>	<20110225060706.GA12723@merkur.ravnborg.org>	<4D684CF5.2060206@suse.com> <AANLkTikD2EiTbqMTCK7GUCTkTig3C5H2fMHbgodMfA4w@mail.gmail.com>
-In-Reply-To: <AANLkTikD2EiTbqMTCK7GUCTkTig3C5H2fMHbgodMfA4w@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ drivers/hwmon/Kconfig    |   10 +++
+ drivers/hwmon/Makefile   |    1 +
+ drivers/hwmon/max34440.c |  199 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 210 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/max34440.c
 
-On 02/25/2011 08:28 PM, Arnaud Lacombe wrote:
-> Hi,
-> 
-> On Fri, Feb 25, 2011 at 7:44 PM, Jeff Mahoney <jeffm@suse.com> wrote:
->>  This patch adds type handlers for compressed config files. Initial
->>  support provides callouts for gzip and bzip2, but there's no reason
->>  others could be added if demand is there.
->>
->>  This is intended to allow /proc/config.gz be a configuration source
->>  for 'make oldconfig' when .config is absent.
->>
-> this can be trivially scripted, any reason it _has_ to be done within kconfig ?
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 60f5d39..f885f08 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -768,6 +768,16 @@ config SENSORS_MAX16064
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called max16064.
+ 
++config SENSORS_MAX34440
++	tristate "Maxim MAX34440/MAX34441"
++	default n
++	help
++	  If you say yes here you get hardware monitoring support for Maxim
++	  MAX34440 and MAX34441.
++
++	  This driver can also be built as a module. If so, the module will
++	  be called max34440.
++
+ config SENSORS_MAX8688
+ 	tristate "Maxim MAX8688"
+ 	default n
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 9c83d0d..905a1f6 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -116,6 +116,7 @@ obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
+ obj-$(CONFIG_PMBUS)		+= pmbus_core.o
+ obj-$(CONFIG_SENSORS_PMBUS)	+= pmbus.o
+ obj-$(CONFIG_SENSORS_MAX16064)	+= max16064.o
++obj-$(CONFIG_SENSORS_MAX34440)	+= max34440.o
+ obj-$(CONFIG_SENSORS_MAX8688)	+= max8688.o
+ 
+ ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
+diff --git a/drivers/hwmon/max34440.c b/drivers/hwmon/max34440.c
+new file mode 100644
+index 0000000..992b701
+--- /dev/null
++++ b/drivers/hwmon/max34440.c
+@@ -0,0 +1,199 @@
++/*
++ * Hardware monitoring driver for Maxim MAX34440/MAX34441
++ *
++ * Copyright (c) 2011 Ericsson AB.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include "pmbus.h"
++
++enum chips { max34440, max34441 };
++
++#define MAX34440_STATUS_OC_WARN		(1 << 0)
++#define MAX34440_STATUS_OC_FAULT	(1 << 1)
++#define MAX34440_STATUS_OT_FAULT	(1 << 5)
++#define MAX34440_STATUS_OT_WARN		(1 << 6)
++
++static int max34440_get_status(struct i2c_client *client, int page, int reg)
++{
++	int ret;
++	int mfg_status;
++
++	ret = pmbus_set_page(client, page);
++	if (ret < 0)
++		return ret;
++
++	switch (reg) {
++	case PMBUS_STATUS_IOUT:
++		mfg_status = pmbus_read_word_data(client, 0,
++						  PMBUS_STATUS_MFR_SPECIFIC);
++		if (mfg_status < 0)
++			return mfg_status;
++		if (mfg_status & MAX34440_STATUS_OC_WARN)
++			ret |= PB_IOUT_OC_WARNING;
++		if (mfg_status & MAX34440_STATUS_OC_FAULT)
++			ret |= PB_IOUT_OC_FAULT;
++		break;
++	case PMBUS_STATUS_TEMPERATURE:
++		mfg_status = pmbus_read_word_data(client, 0,
++						  PMBUS_STATUS_MFR_SPECIFIC);
++		if (mfg_status < 0)
++			return mfg_status;
++		if (mfg_status & MAX34440_STATUS_OT_WARN)
++			ret |= PB_TEMP_OT_WARNING;
++		if (mfg_status & MAX34440_STATUS_OT_FAULT)
++			ret |= PB_TEMP_OT_FAULT;
++		break;
++	default:
++		ret = -ENODATA;
++		break;
++	}
++	return ret;
++}
++
++static struct pmbus_driver_info max34440_info[] = {
++	[max34440] = {
++		.pages = 14,
++		.direct[PSC_VOLTAGE_IN] = true,
++		.direct[PSC_VOLTAGE_OUT] = true,
++		.direct[PSC_TEMPERATURE] = true,
++		.direct[PSC_CURRENT_OUT] = true,
++		.m[PSC_VOLTAGE_IN] = 1,
++		.b[PSC_VOLTAGE_IN] = 0,
++		.R[PSC_VOLTAGE_IN] = 3,	    /* R = 0 in datasheet reflects mV */
++		.m[PSC_VOLTAGE_OUT] = 1,
++		.b[PSC_VOLTAGE_OUT] = 0,
++		.R[PSC_VOLTAGE_OUT] = 3,    /* R = 0 in datasheet reflects mV */
++		.m[PSC_CURRENT_OUT] = 1,
++		.b[PSC_CURRENT_OUT] = 0,
++		.R[PSC_CURRENT_OUT] = 3,    /* R = 0 in datasheet reflects mA */
++		.m[PSC_TEMPERATURE] = 1,
++		.b[PSC_TEMPERATURE] = 0,
++		.R[PSC_TEMPERATURE] = 2,
++		.func[0] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[1] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[2] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[3] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[4] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[5] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[6] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[7] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[8] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[9] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[10] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[11] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[12] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[13] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.get_status = max34440_get_status,
++	},
++	[max34441] = {
++		.pages = 12,
++		.direct[PSC_VOLTAGE_IN] = true,
++		.direct[PSC_VOLTAGE_OUT] = true,
++		.direct[PSC_TEMPERATURE] = true,
++		.direct[PSC_CURRENT_OUT] = true,
++		.direct[PSC_FAN] = true,
++		.m[PSC_VOLTAGE_IN] = 1,
++		.b[PSC_VOLTAGE_IN] = 0,
++		.R[PSC_VOLTAGE_IN] = 3,
++		.m[PSC_VOLTAGE_OUT] = 1,
++		.b[PSC_VOLTAGE_OUT] = 0,
++		.R[PSC_VOLTAGE_OUT] = 3,
++		.m[PSC_CURRENT_OUT] = 1,
++		.b[PSC_CURRENT_OUT] = 0,
++		.R[PSC_CURRENT_OUT] = 3,
++		.m[PSC_TEMPERATURE] = 1,
++		.b[PSC_TEMPERATURE] = 0,
++		.R[PSC_TEMPERATURE] = 2,
++		.m[PSC_FAN] = 1,
++		.b[PSC_FAN] = 0,
++		.R[PSC_FAN] = 0,
++		.func[0] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[1] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[2] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[3] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[4] = PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
++		  | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT,
++		.func[5] = PMBUS_HAVE_FAN12 | PMBUS_HAVE_STATUS_FAN12,
++		.func[6] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[7] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[8] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[9] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[10] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.func[11] = PMBUS_HAVE_TEMP | PMBUS_HAVE_STATUS_TEMP,
++		.get_status = max34440_get_status,
++	},
++};
++
++static int max34440_probe(struct i2c_client *client,
++			  const struct i2c_device_id *id)
++{
++	return pmbus_do_probe(client, id, &max34440_info[id->driver_data]);
++}
++
++static int max34440_remove(struct i2c_client *client)
++{
++	return pmbus_do_remove(client);
++}
++
++static const struct i2c_device_id max34440_id[] = {
++	{"max34440", max34440},
++	{"max34441", max34441},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, max34440_id);
++
++/* This is the driver that will be inserted */
++static struct i2c_driver max34440_driver = {
++	.driver = {
++		   .name = "max34440",
++		   },
++	.probe = max34440_probe,
++	.remove = max34440_remove,
++	.id_table = max34440_id,
++};
++
++static int __init max34440_init(void)
++{
++	return i2c_add_driver(&max34440_driver);
++}
++
++static void __exit max34440_exit(void)
++{
++	i2c_del_driver(&max34440_driver);
++}
++
++MODULE_AUTHOR("Guenter Roeck");
++MODULE_DESCRIPTION("PMBus driver for Maxim MAX34440/MAX34441");
++MODULE_LICENSE("GPL");
++module_init(max34440_init);
++module_exit(max34440_exit);
+-- 
+1.7.3.1
 
-This is what the original patch I posted did, and I was asked to teach
-kconfig how to do it itself.
-
-- -Jeff
-
-
->> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
->> ---
->>
->>  scripts/kconfig/zconf.l |   50 ++++++++++++++++++++++++++++++++++++++++++++++--
->>  1 file changed, 48 insertions(+), 2 deletions(-)
->>
->> --- a/scripts/kconfig/zconf.l
->> +++ b/scripts/kconfig/zconf.l
->> @@ -256,6 +256,44 @@ static void zconf_endhelp(void)
->>        BEGIN(INITIAL);
->>  }
->>
->> +static const struct type_handler {
->> +       const char *suffix;
->> +       const char *command;
->> +} type_handlers[] = {
->> +       {
->> +               .suffix = ".gz",
->> +               .command = "zcat",
->> +       },
->> +       {
->> +               .suffix = ".bz2",
->> +               .command = "bzcat",
->> +       },
->> +       /* Whatever other algorithms you like */
->> +       {}
->> +};
->> +
->> +static const struct type_handler *get_type_handler(const char *name)
->> +{
->> +       char *p = rindex(name, '.');
->> +       if (p) {
->> +               const struct type_handler *ops = type_handlers;
->> +               for (ops = type_handlers; ops->suffix; ops++) {
->> +                       if (!strcasecmp(ops->suffix, p))
->> +                               break;
->> +               }
->> +               if (!ops->suffix)
->> +                       return NULL;
->> +               return ops;
->> +       }
->> +       return NULL;
->> +}
->> +
->> +static FILE *zconf_popen(const char *command, const char *name)
->> +{
->> +       char cmdbuf[PATH_MAX + strlen(command) + 2];
->> +       snprintf(cmdbuf, sizeof(cmdbuf), "%s %s", command, name);
->> +       return popen(cmdbuf, "r");
->> +}
->>
->>  /*
->>  * Try to open specified file with following names:
->> @@ -267,15 +305,23 @@ static void zconf_endhelp(void)
->>  */
->>  FILE *zconf_fopen(const char *name)
->>  {
->> +       const struct type_handler *handler = get_type_handler(name);
->>        char *env, fullname[PATH_MAX+1];
->>        FILE *f;
->>
->> -       f = fopen(name, "r");
->> +       if (handler)
->> +               f = zconf_popen(handler->command, name);
->> +       else
->> +               f = fopen(name, "r");
->> +
->>        if (!f && name != NULL && name[0] != '/') {
->>                env = getenv(SRCTREE);
->>                if (env) {
->>                        sprintf(fullname, "%s/%s", env, name);
->> -                       f = fopen(fullname, "r");
->> +                       if (handler)
->> +                               f = zconf_popen(handler->command, fullname);
->> +                       else
->> +                               f = fopen(fullname, "r");
->>                }
->>        }
->>        return f;
->>
->> --
->> Jeff Mahoney
->> SUSE Labs
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-
-
-- -- 
-Jeff Mahoney
-SUSE Labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk1pOBcACgkQLPWxlyuTD7JlJACfVPh3NV+X5cz7l8BYgxkf1E2j
-mGsAoIpMp0AMjIjl5mm3OaR2H3N65PpP
-=Sd++
------END PGP SIGNATURE-----
