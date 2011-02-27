@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab1B0KqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 05:46:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925Ab1B0KqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 05:46:23 -0500
-Date: Sun, 27 Feb 2011 11:46:21 +0100
-From: Jiri Pirko <jpirko@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] list: add list_last_entry macros
-Message-ID: <20110227104620.GA2814@psychotron.redhat.com>
+	id S1752071Ab1B0K5X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 05:57:23 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:62514 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab1B0K5W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 05:57:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=t+RJbi10Aq34GijzM7mXx2JO5SWjkjDDhLX0hkUCNTW7eJIT60GTrRBjEEMQK3es6D
+         K6+UmVpsMNP7KvxAhYOXH1Lj1hCiAQhVrs95sPKm3nPVEjiDLZl8SUM5YjWoti0sUhTv
+         H4jn6wc+2TZrB4JDzto8xJHvGJ3WC3qJ/woLw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTimm=bnOUvipL1czJCpP9Oe9QzDQMkXDk0bPUaP9@mail.gmail.com>
+References: <alpine.DEB.2.00.1102232316030.5315@skynet.skynet.ie>
+	<AANLkTikc5KeAepsUUE_LfkDKSbgkYYqrz0QVy6ctWALy@mail.gmail.com>
+	<0d30dc$l7ehaa@orsmga001.jf.intel.com>
+	<AANLkTi=DXg=ighnPi4FYA29=qegE=c_PtCVWzOymYtmQ@mail.gmail.com>
+	<b5f94200cffe31ff8cbe38d2bd2e35a7.squirrel@webmail.greenhost.nl>
+	<AANLkTimLb4=04vOU7_SrtKpWQvFmDfibHGGsC+CFxwCW@mail.gmail.com>
+	<1cced1eb38110129d097e1c8b6857d81.squirrel@webmail.greenhost.nl>
+	<AANLkTi=9hq9JPUHRNWaxRe2txdguWw61mrJHjanNPG94@mail.gmail.com>
+	<33d9e1abc0d731efa7ba1461b0883c9f.squirrel@webmail.greenhost.nl>
+	<AANLkTimm=bnOUvipL1czJCpP9Oe9QzDQMkXDk0bPUaP9@mail.gmail.com>
+Date: Sun, 27 Feb 2011 11:57:21 +0100
+Message-ID: <AANLkTi=dN_F5HjwZKy=v1+Y-jbBASLvMJES-3GFNuE77@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handy to get last item in a list. Also corrected parameter name for
-list_first_entry.
+On Fri, Feb 25, 2011 at 12:35, Alex Riesen <raa.lkml@gmail.com> wrote:
+> On Fri, Feb 25, 2011 at 12:07, Indan Zupancic <indan@nul.nu> wrote:
+>> On Fri, February 25, 2011 11:18, Alex Riesen wrote:
+>>> So far I found only two patches (and three changes):
+>>>
+>>> This is the first:
+>>>
+>>> Corruption caused by portions of the screen stopped updating (the Bug 27572).
+>>> Certainly worked around by returning -EINVAL for ..RELAXED_FENCING.
+>>
+>> This is fixed in a better way by Daniel's latest patch.
+>>
+>
+> Precisely which is it? Just copy the text of the patch you have
+> in mind here. Because I don't fscking understand what are talking
+> about, man!
+>
 
-Signed-off-by: Jiri Pirko <jpirko@redhat.com>
-
-diff --git a/include/linux/list.h b/include/linux/list.h
-index 3a54266..e10862e 100644
---- a/include/linux/list.h
-+++ b/include/linux/list.h
-@@ -352,14 +352,25 @@ static inline void list_splice_tail_init(struct list_head *list,
- 
- /**
-  * list_first_entry - get the first element from a list
-- * @ptr:	the list head to take the element from.
-+ * @head:	the list head to take the element from.
-  * @type:	the type of the struct this is embedded in.
-  * @member:	the name of the list_struct within the struct.
-  *
-  * Note, that list is expected to be not empty.
-  */
--#define list_first_entry(ptr, type, member) \
--	list_entry((ptr)->next, type, member)
-+#define list_first_entry(head, type, member) \
-+	list_entry((head)->next, type, member)
-+
-+/**
-+ * list_last_entry - get the last element from a list
-+ * @head:	the list head to take the element from.
-+ * @type:	the type of the struct this is embedded in.
-+ * @member:	the name of the list_struct within the struct.
-+ *
-+ * Note, that list is expected to be not empty.
-+ */
-+#define list_last_entry(head, type, member) \
-+	list_entry((head)->prev, type, member)
- 
- /**
-  * list_for_each	-	iterate over a list
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 2dea94f..2cfa99f 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -229,7 +229,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
- 
- /**
-  * list_first_entry_rcu - get the first element from a list
-- * @ptr:        the list head to take the element from.
-+ * @head:       the list head to take the element from.
-  * @type:       the type of the struct this is embedded in.
-  * @member:     the name of the list_struct within the struct.
-  *
-@@ -238,8 +238,23 @@ static inline void list_splice_init_rcu(struct list_head *list,
-  * This primitive may safely run concurrently with the _rcu list-mutation
-  * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
-  */
--#define list_first_entry_rcu(ptr, type, member) \
--	list_entry_rcu((ptr)->next, type, member)
-+#define list_first_entry_rcu(head, type, member) \
-+	list_entry_rcu((head)->next, type, member)
-+
-+/**
-+ * list_last_entry_rcu - get the last element from a list
-+ * @head:       the list head to take the element from.
-+ * @type:       the type of the struct this is embedded in.
-+ * @member:     the name of the list_struct within the struct.
-+ *
-+ * Note, that list is expected to be not empty.
-+ *
-+ * This primitive may safely run concurrently with the _rcu list-mutation
-+ * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
-+ */
-+
-+#define list_last_entry_rcu(head, type, member) \
-+	list_entry_rcu((head)->prev, type, member)
- 
- /**
-  * list_for_each_entry_rcu	-	iterate over rcu list of given type
+Whatever is now in the master has fixed this corruption for me.
