@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab1B0JFM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 04:05:12 -0500
-Received: from cantor.suse.de ([195.135.220.2]:52103 "EHLO mx1.suse.de"
+	id S1751914Ab1B0JGx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 04:06:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42644 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab1B0JFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 04:05:01 -0500
-Date: Sun, 27 Feb 2011 10:04:55 +0100
-Message-ID: <s5hhbbphmq0.wl%tiwai@suse.de>
+	id S1751367Ab1B0JGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 04:06:45 -0500
+Date: Sun, 27 Feb 2011 10:06:44 +0100
+Message-ID: <s5hfwr9hmmz.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel8x0m: schedule timeout before warm reset check
-In-Reply-To: <1298766242.1828.20.camel@t41.thuisdomein>
-References: <1298766242.1828.20.camel@t41.thuisdomein>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 17/17]sound:core:seq:seq_ports.c Remove one to many n's in a word.
+In-Reply-To: <1298781250-2718-18-git-send-email-justinmattock@gmail.com>
+References: <1298781250-2718-1-git-send-email-justinmattock@gmail.com>
+	<1298781250-2718-18-git-send-email-justinmattock@gmail.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,76 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 27 Feb 2011 01:23:58 +0100,
-Paul Bolle wrote:
+At Sat, 26 Feb 2011 20:34:10 -0800,
+Justin P. Mattock wrote:
 > 
-> At every resume a laptop I use prints this message (at KERN_ERR level):
->     ALSA sound/pci/intel8x0m.c:904: AC'97 warm reset still in progress?
-> [0x2]
+> The Patch below removes one to many "n's" in a word..
 > 
-> The thing to note here is that 0x2 corresponds to ICH_AC97COLD. Ie, what
-> seems to be happening is that the register involved indicated a warm
-> reset for some time (as the ICH_AC97WARM bit was set) but by the time
-> the warning is printed, and that same register is checked again, that
-> bit is already cleared and only the ICH_AC97COLD bit is still set.
-> 
-> It turns out a warm reset needs some time to settle, but it is currently
-> checked right away. The test therefore fails the first time it is done
-> and schedule_timeout_uninterruptible() will be called. Once we return
-> from that jiffies is already (far) past end_time on this laptop, so we
-> exit the loop, print a warning, and exit the function while the warm
-> reset actually succeeded.
-> 
-> One way to fix this is to call schedule_timeout_uninterruptible() at the
-> start of the loop. (This might punish the "finish cold reset" case, but
-> on this laptop such a cold reset apparently never happens, so I can't
-> say for sure.)
-> 
-> While we're at it drop the extra single tick from end_time, as it looks
-> rather silly.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> The question I asked in the previous message ("snd_intel8x0m: error
-> message because return value is unused?") made little sense. I probably
-> got quite confused by my own efforts to debug this.
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> CC: Jaroslav Kysela <perex@perex.cz>
+> CC: Takashi Iwai <tiwai@suse.de>
+> CC: alsa-devel@alsa-project.org
 
-It'd be better to put a more proper delay time than tick,
-e.g. usleep_range() or whatever.  schedule_timeout(1) can be a
-different length depending on HZ.
+Thanks, applied to sound git tree now.
 
-Could you figure out?
-
-
-thanks,
 
 Takashi
 
+> ---
+>  sound/core/seq/seq_ports.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
->  sound/pci/intel8x0m.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/sound/pci/intel8x0m.c b/sound/pci/intel8x0m.c
-> index 13cec1e..9abff7b 100644
-> --- a/sound/pci/intel8x0m.c
-> +++ b/sound/pci/intel8x0m.c
-> @@ -894,11 +894,11 @@ static int snd_intel8x0m_ich_chip_init(struct intel8x0m *chip, int probing)
->         /* finish cold or do warm reset */
->         cnt |= (cnt & ICH_AC97COLD) == 0 ? ICH_AC97COLD : ICH_AC97WARM;
->         iputdword(chip, ICHREG(GLOB_CNT), cnt);
-> -       end_time = (jiffies + (HZ / 4)) + 1;
-> +       end_time = jiffies + HZ / 4;
->         do {
-> +               schedule_timeout_uninterruptible(1);
->                 if ((igetdword(chip, ICHREG(GLOB_CNT)) & ICH_AC97WARM) == 0)
->                         goto __ok;
-> -               schedule_timeout_uninterruptible(1);
->         } while (time_after_eq(end_time, jiffies));
->         snd_printk(KERN_ERR "AC'97 warm reset still in progress? [0x%x]\n",
->                    igetdword(chip, ICHREG(GLOB_CNT)));
+> diff --git a/sound/core/seq/seq_ports.c b/sound/core/seq/seq_ports.c
+> index 3bf7d73..e12bcd9 100644
+> --- a/sound/core/seq/seq_ports.c
+> +++ b/sound/core/seq/seq_ports.c
+> @@ -412,7 +412,7 @@ int snd_seq_get_port_info(struct snd_seq_client_port * port,
+>   * initialization or termination of devices (see seq_midi.c).
+>   *
+>   * If callback_all option is set, the callback function is invoked
+> - * at each connnection/disconnection. 
+> + * at each connection/disconnection. 
+>   */
+>  
+>  static int subscribe_port(struct snd_seq_client *client,
 > -- 
 > 1.7.4.1
-> 
-> 
-> 
 > 
