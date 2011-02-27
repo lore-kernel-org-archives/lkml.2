@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1B0Vhm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 16:37:42 -0500
-Received: from cantor.suse.de ([195.135.220.2]:42202 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897Ab1B0Vgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 16:36:50 -0500
-From: Thomas Renninger <trenn@suse.de>
-Cc: trenn@suse.de, lenb@kernel.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: [PATCH] perf: timechart: fix black idle boxes in the title.
-Date: Sun, 27 Feb 2011 22:36:45 +0100
-Message-Id: <1298842606-55712-5-git-send-email-trenn@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1298842606-55712-1-git-send-email-trenn@suse.de>
-References: <1298842606-55712-1-git-send-email-trenn@suse.de>
-To: unlisted-recipients:; (no To-header on input)
+	id S1751913Ab1B0V6O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 16:58:14 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64084 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab1B0V6K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 16:58:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=jToBzzzwq/kpv127KFaguzc0G9lZRkL0/ngwqZeLmeJgV9U5GYJcWtHaXIkfVKxFch
+         2it486uZE7ux9QzGe3tgtiwbpo5e1JQywv/AKmJT+i6f+LMKYt6hq9OfkBfpJS+JWDtU
+         v0sGubEciMlE6UbHBDN8T+IAe0hvz0MC6Nb+U=
+Message-ID: <4D6AC8EC.1040104@lwfinger.net>
+Date: Sun, 27 Feb 2011 15:58:04 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Alessio Igor Bogani <abogani@kernel.org>
+CC: Chaoming Li <chaoming_li@realsil.com.cn>, linux-wireless@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>
+Subject: Re: [PATCH] rtlwifi: make gcc happy
+References: <1298841390-1194-1-git-send-email-abogani@kernel.org>
+In-Reply-To: <1298841390-1194-1-git-send-email-abogani@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fix is needed for eye of gnome and firefox svg viewers.
-Only Inkscape can handle the broken case.
+On 02/27/2011 03:16 PM, Alessio Igor Bogani wrote:
+> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c: In function ‘rtl92ce_rx_query_desc’:
+> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:255:5: warning: ‘rf_rx_num’ may be used uninitialized in this function
+> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:257:12: warning: ‘total_rssi’ may be used uninitialized in this function
+> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:466:6: warning: ‘weighting’ may be used uninitialized in this function
+>
+> Signed-off-by: Alessio Igor Bogani<abogani@kernel.org>
+> ---
+>   drivers/net/wireless/rtlwifi/rtl8192ce/trx.c |    6 +++---
+>   1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
+> index bf5852f..593eb8e 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
+> @@ -252,9 +252,9 @@ static void _rtl92ce_query_rxphystatus(struct ieee80211_hw *hw,
+>   	struct rtl_priv *rtlpriv = rtl_priv(hw);
+>   	struct phy_sts_cck_8192s_t *cck_buf;
+>   	s8 rx_pwr_all, rx_pwr[4];
+> -	u8 rf_rx_num, evm, pwdb_all;
+> +	u8 evm, pwdb_all, rf_rx_num = 0;
+>   	u8 i, max_spatial_stream;
+> -	u32 rssi, total_rssi;
+> +	u32 rssi, total_rssi = 0;
+>   	bool is_cck_rate;
+>
+>   	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
+> @@ -463,7 +463,7 @@ static void _rtl92ce_update_rxsignalstatistics(struct ieee80211_hw *hw,
+>   					       struct rtl_stats *pstats)
+>   {
+>   	struct rtl_priv *rtlpriv = rtl_priv(hw);
+> -	int weighting;
+> +	int weighting = 0;
+>
+>   	if (rtlpriv->stats.recv_signal_power == 0)
+>   		rtlpriv->stats.recv_signal_power = pstats->recvsignalpower;
 
-Compare with the other svg_legenda_box declarations, looks
-like a typo slipped in at this place.
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: mingo@elte.hu
----
- tools/perf/util/svghelper.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ACK. What architecture and compiler version are you using? On x86_64, gcc 4.5.1 
+does not show these warnings.
 
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index fb737fe..96c8660 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -456,9 +456,9 @@ void svg_legenda(void)
- 		return;
- 
- 	svg_legenda_box(0,	"Running", "sample");
--	svg_legenda_box(100,	"Idle","rect.c1");
--	svg_legenda_box(200,	"Deeper Idle", "rect.c3");
--	svg_legenda_box(350,	"Deepest Idle", "rect.c6");
-+	svg_legenda_box(100,	"Idle","c1");
-+	svg_legenda_box(200,	"Deeper Idle", "c3");
-+	svg_legenda_box(350,	"Deepest Idle", "c6");
- 	svg_legenda_box(550,	"Sleeping", "process2");
- 	svg_legenda_box(650,	"Waiting for cpu", "waiting");
- 	svg_legenda_box(800,	"Blocked on IO", "blocked");
--- 
-1.7.3.4
+Larry
 
