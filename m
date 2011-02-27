@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1B0XSi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 18:18:38 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49233
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751852Ab1B0XSg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 18:18:36 -0500
-Date: Sun, 27 Feb 2011 15:19:12 -0800 (PST)
-Message-Id: <20110227.151912.28823451.davem@davemloft.net>
-To: segoon@openwall.com
-Cc: bhutchings@solarflare.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        eric.dumazet@gmail.com, therbert@google.com, xiaosuo@gmail.com,
-        jesse@nicira.com, kees.cook@canonical.com, eugene@redhat.com,
-        dan.j.rosenberg@gmail.com, akpm@linux-foundation.org
-Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
- modules
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110227114438.GA4317@albatros>
-References: <1298660879.2554.23.camel@bwh-desktop>
-	<20110225.111606.115927805.davem@davemloft.net>
-	<20110227114438.GA4317@albatros>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752026Ab1B0Xdr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 18:33:47 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:45430 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901Ab1B0Xdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 18:33:37 -0500
+Date: Sun, 27 Feb 2011 17:38:27 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 12/17]fs:jbd Remove one to many n's in a word.
+Message-ID: <20110227223826.GK2924@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org,
+	linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+	linux-ext4@vger.kernel.org
+References: <1298781250-2718-1-git-send-email-justinmattock@gmail.com>
+ <1298781250-2718-13-git-send-email-justinmattock@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298781250-2718-13-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segoon@openwall.com>
-Date: Sun, 27 Feb 2011 14:44:38 +0300
+On Sat, Feb 26, 2011 at 08:34:05PM -0800, Justin P. Mattock wrote:
+> The Patch below removes one to many "n's" in a word.. 
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org> 
+> CC: Jan Kara <jack@suse.cz> 
+> CC: linux-ext4@vger.kernel.org
 
-> Then the things are still broken - a user has to update modprobe
-> together with the kernel, otherwise the updated kernel would call
-> "modprobe" with unsupported argument and even "sit0" wouldn't work.
+Acked-by: "Theodore Ts'o" <tytso@mit.edu>
 
-The capability bits get passed on the modprobe command line.
-
-The module loading system call in the kernel inspects the command
-line looking for the argument, and uses it to validate the module
-load by comparing the mask with the special ELF section.
+						- Ted
