@@ -1,133 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab1B0TPL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 14:15:11 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48999 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab1B0TPJ convert rfc822-to-8bit (ORCPT
+	id S1751819Ab1B0UIC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 15:08:02 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37556 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab1B0UH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 14:15:09 -0500
-Date: Sun, 27 Feb 2011 16:15:45 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Liang Bao <tim.bao@gmail.com>
-Cc: David Fries <david@fries.net>, Andrei Warkentin <andreiw@motorola.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] work around for l2cap NULL dereference in
- l2cap_conn_start
-Message-ID: <20110227191545.GB2166@joana>
-Mail-Followup-To: Liang Bao <tim.bao@gmail.com>,
-	David Fries <david@fries.net>,
-	Andrei Warkentin <andreiw@motorola.com>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20110211035309.GA22204@spacedout.fries.net>
- <20110214145649.GE2597@joana>
- <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
- <20110221043601.GB22204@spacedout.fries.net>
- <AANLkTi=b5UCdyc3ZtUFCx23uYygM7eRyGu-y_wdJ5JXi@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <AANLkTi=b5UCdyc3ZtUFCx23uYygM7eRyGu-y_wdJ5JXi@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 27 Feb 2011 15:07:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=bPhWY8k4kpk6wPf5FdCIL+/a2kSwRW1yPevP+CtdkEpK19WU3/a9UtmeErmqFabC3M
+         S9NBm7k8XxnU3zQBbze0SKSMF6D8jER7QdAEX4t2ReOPqp76XU89rIdv1+fOKdoAQzKV
+         hO/qpg3E1fDq/wUJyca68Q+xjGn+YYM/oMlUY=
+Subject: Re: txqueuelen has wrong units; should be time
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: Albert Cahalan <acahalan@gmail.com>, Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+In-Reply-To: <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+	 <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+	 <1298793252.8726.45.camel@edumazet-laptop>
+	 <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+	 <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 27 Feb 2011 21:07:53 +0100
+Message-ID: <1298837273.8726.128.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David and Liang,
-
-* Liang Bao <tim.bao@gmail.com> [2011-02-21 14:41:29 +0800]:
-
-> Hi, David, Andrew et al.
+Le dimanche 27 fÃ©vrier 2011 Ã  12:55 +0200, Jussi Kivilinna a Ã©crit :
+> Quoting Albert Cahalan <acahalan@gmail.com>:
 > 
-> 2011/2/21 David Fries <david@fries.net>:
-> > bt_sk(sk)->parent can be NULL in l2cap_conn_start in state BT_CONNECT2
-> > at least when a headset device pairs and the play button was pressed
-> > right before pairing.
+> > On Sun, Feb 27, 2011 at 2:54 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >> Le dimanche 27 fÃ©vrier 2011 Ã  08:02 +0100, Mikael Abrahamsson a Ã©crit :
+> >>> On Sun, 27 Feb 2011, Albert Cahalan wrote:
+> >>>
+> >>> > Nanoseconds seems fine; it's unlikely you'd ever want
+> >>> > more than 4.2 seconds (32-bit unsigned) of queue.
+> > ...
+> >> Problem is some machines have slow High Resolution timing services.
+> >>
+> >> _If_ we have a time limit, it will probably use the low resolution (aka
+> >> jiffies), unless high resolution services are cheap.
 > >
-> > Signed-off-by: David Fries <david@fries.net>
-> > ---
-> > I removed the printk, can this be merged to the bluetooth next tree?
+> > As long as that is totally internal to the kernel and never
+> > getting exposed by some API for setting the amount, sure.
 > >
-> > On Mon, Feb 14, 2011 at 03:40:46PM -0600, Andrei Warkentin wrote:
-> >> FWIW still need it in 2.6.36.
+> >> I was thinking not having an absolute hard limit, but an EWMA based one.
 > >
-> > Andrei, I'm curious, what's your hardware hardware and bluetooth
-> > device that's trigginer the crash?
-> I  once submitted an issue observed with Android+Motorola S305 stereo
-> headset. It's still open in launchpad:
-> https://bugs.launchpad.net/ubuntu/+source/bluez/+bug/513642. Hope this
-> helps. Thanks.
-> >
-> >> On Mon, Feb 14, 2011 at 8:56 AM, Gustavo F. Padovan
-> >> <padovan@profusion.mobi> wrote:
-> >> > Hi David,
-> >> >
-> >> > * David Fries <david@fries.net> [2011-02-10 21:53:09 -0600]:
-> >> >
-> >> >> Here's a patch to avoid a very repeatable crash in the N900.  If I
-> >> >> take a Motorola S305 bluetooth headset that was previously paried with
-> >> >> the N900, turn it on, and press the play button before the headphones
-> >> >> automatically pair with the cell phone, the N900 will crash (and
-> >> >> reboot) in pairing.  If I wait until after they have paired there
-> >> >> isn't any problem.  The patch is against the kernel-power
-> >> >> 2.6.28-maemo46 by Thomas Tanner, the stock Nokia PR1.2 oops looked
-> >> >> the same, I just haven't gone back to that kernel.
-> >> >
-> >> > This is a very old kernel. You need to check this issue against
-> >> > bluetooth-next-2.6.
-> >
-> >  net/bluetooth/l2cap.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-> > index ed83c1f..a7aa4d9 100644
-> > --- a/net/bluetooth/l2cap.c
-> > +++ b/net/bluetooth/l2cap.c
-> > @@ -408,7 +408,8 @@ static void l2cap_conn_start(struct l2cap_conn *conn)
-> >                                        struct sock *parent = bt_sk(sk)->parent;
-> >                                        rsp.result = cpu_to_le16(L2CAP_CR_PEND);
-> >                                        rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
-> > -                                       parent->sk_data_ready(parent, 0);
-> > +                                       if(parent)
-> > +                                               parent->sk_data_ready(parent,0);
-> >
-> >                                } else {
-> >                                        sk->sk_state = BT_CONFIG;
-
-I pushed the following patch to bluetooth-2.6 tree. It should fix the problem
-by avoiding connections to be accepted before a L2CAP info response comes:
-
-commit 743400e01a33779f93b79c84a1b0d1a2d27338c8
-Author: Gustavo F. Padovan <padovan@profusion.mobi>
-Date:   Sun Feb 27 16:05:07 2011 -0300
-
-    Bluetooth: Don't accept l2cap connection before info_rsp
-    
-    When using defer_setup accepting a connection before receive the L2CAP
-    Info Response for the connection lead us to a crash in l2cap_conn_start(.
-    
-    Reported-by: David Fries <david@fries.net>
-    Reported-by: Liang Bao <tim.bao@gmail.com>
-    Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-
-diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-index c4cf3f5..a8ca42b 100644
---- a/net/bluetooth/af_bluetooth.c
-+++ b/net/bluetooth/af_bluetooth.c
-@@ -211,8 +211,8 @@ struct sock *bt_accept_dequeue(struct sock *parent, struct socket *newsock)
-                        continue;
-                }
- 
--               if (sk->sk_state == BT_CONNECTED || !newsock ||
--                                               bt_sk(parent)->defer_setup) {
-+               if ((bt_sk(parent)->defer_setup && sk->sk_state == BT_CONNECT2)
-+                               || sk->sk_state == BT_CONNECTED || !newsock) {
-                        bt_accept_unlink(sk);
-                        if (newsock)
-                                sock_graft(sk, newsock);
+> > The whole point is to prevent stale packets, especially to prevent
+> > them from messing with TCP, so I really don't think so. I suppose
+> > you do get this to some extent via early drop.
+> 
+> I made simple hack on sch_fifo with per packet time limits  
+> (attachment) this weekend and have been doing limited testing on  
+> wireless link. I think hardlimit is fine, it's simple and does  
+> somewhat same as what packet(-hard)limited buffer does, drops packets  
+> when buffer is 'full'. My hack checks for timed out packets on  
+> enqueue, might be wrong approach (on other hand might allow some more  
+> burstiness).
+> 
 
 
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+Qdisc should return to caller a good indication packet is queued or
+dropped at enqueue() time... not later (aka : never)
+
+Accepting a packet at t0, and dropping it later at t0+limit without
+giving any indication to caller is a problem.
+
+This is why I suggested using an EWMA plus a probabilist drop or
+congestion indication (NET_XMIT_CN) to caller at enqueue() time.
+
+The absolute time limit you are trying to implement should be checked at
+dequeue time, to cope with enqueue bursts or pauses on wire.
+
+
+
