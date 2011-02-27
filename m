@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab1B0QHd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 11:07:33 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35549 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab1B0QHb (ORCPT
+	id S1752339Ab1B0QR5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 11:17:57 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62985 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1B0QR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 11:07:31 -0500
+	Sun, 27 Feb 2011 11:17:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GVMhxZGXQWBUeK0+Y0QKs0tnkUT230+06SuKYEV0R1bmRLOnmYNdeBWoa3qk6VWNuj
-         FayeMymD6dzxam+jOeKJRuIUSm7p4ackbe9fgCMXTqog/7JLd8wTeov/mFXuAgXR2FvP
-         WpKviOwoUTKc8uq3FZa9AbWDzAiLWRiCT1QS8=
-Date: Mon, 28 Feb 2011 01:07:21 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v5 3/9] writeback: convert variables to unsigned
-Message-ID: <20110227160721.GB3226@barrios-desktop>
-References: <1298669760-26344-1-git-send-email-gthelen@google.com>
- <1298669760-26344-4-git-send-email-gthelen@google.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=om12qeVvw6pj2qykW3Vkxd5nfkIe9i/wkUauDzvtIAHQ+0feXAEA/ZsXCOkyVX9q3u
+         zflXt59LfbzdSIu06tAg6UDIRgyWElvqK2Jad7OhO7wB8y1x6iKJxOcc84VAuvD6ohPL
+         gwk5WR3hnI7UF8Q5vLmzc+kwyVvxYCiO9H8RQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298669760-26344-4-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.02.1102160119430.843@x980>
+References: <alpine.LFD.2.02.1101182150400.14668@x980>
+	<alpine.LFD.2.02.1101190035200.14668@x980>
+	<alpine.LFD.2.02.1102160119430.843@x980>
+Date: Sun, 27 Feb 2011 17:17:53 +0100
+Message-ID: <AANLkTinVCvUkmX3pnSy_Ah3fOm6hV-jAPrQXAQ971xnS@mail.gmail.com>
+Subject: Re: [PATCH] intel_idle: disable NHM/WSM HW C-state auto-demotion (v3)
+From: Pierre Tardy <tardyp@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@lists.linux-foundation.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 01:35:54PM -0800, Greg Thelen wrote:
-> Convert two balance_dirty_pages() page counter variables (nr_reclaimable
-> and nr_writeback) from 'long' to 'unsigned long'.
-> 
-> These two variables are used to store results from global_page_state().
-> global_page_state() returns unsigned long and carefully sums per-cpu
-> counters explicitly avoiding returning a negative value.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Wed, Feb 16, 2011 at 7:22 AM, Len Brown <lenb@kernel.org> wrote:
+> From: Len Brown <len.brown@intel.com>
+>
+> Hardware C-state auto-demotion is a mechanism where the HW overrides
+> the OS C-state request, instead demoting to a shallower state,
+> which is less expensive, but saves less power.
+I'm interrested, for pytimechart, to have trace information of what
+actual c-state got reached after each idle request.
+Do you have any info on how to get that?
 
-> ---
-> Changelog since v4:
-> - Created this patch for clarity.  Previously this patch was integrated within
->   the "writeback: create dirty_info structure" patch.
-> 
->  mm/page-writeback.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 2cb01f6..4408e54 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -478,8 +478,10 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
->  static void balance_dirty_pages(struct address_space *mapping,
->  				unsigned long write_chunk)
->  {
-> -	long nr_reclaimable, bdi_nr_reclaimable;
-> -	long nr_writeback, bdi_nr_writeback;
-> +	unsigned long nr_reclaimable;
-> +	long bdi_nr_reclaimable;
-> +	unsigned long nr_writeback;
-> +	long bdi_nr_writeback;
->  	unsigned long background_thresh;
->  	unsigned long dirty_thresh;
->  	unsigned long bdi_thresh;
-> -- 
-> 1.7.3.1
-> 
-bdi_nr_[reclaimable|writeback] can return negative value?
-When I just look through bdi_stat_sum, it uses *percpu_counter_sum_positive*.
-So I guess it always returns positive value. 
-If it is right, could you change it, too?
-
--- 
-Kind regards,
-Minchan Kim
+Regards
+Pierre
