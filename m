@@ -1,422 +1,515 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab1B0QDY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 11:03:24 -0500
-Received: from hera.kernel.org ([140.211.167.34]:58599 "EHLO hera.kernel.org"
+	id S1752554Ab1B0QBo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 11:01:44 -0500
+Received: from hera.kernel.org ([140.211.167.34]:58500 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab1B0QCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 11:02:08 -0500
+	id S1752463Ab1B0QBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 11:01:34 -0500
 From: Guan Xuetao <epip@hera.kernel.org>
 To: arnd@arndb.de
 Cc: GuanXuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, greg@kroah.com
-Subject: [PATCH 14/17] unicore32 machine related files: add i2c bus drivers for pkunity-v3 soc
-Date: Sun, 27 Feb 2011 15:59:42 +0000
-Message-Id: <af52fefef7d120cd6bcdd10c115f276c445c45bf.1298821856.git.epip@hera.kernel.org>
+Subject: [PATCH 03/17] unicore32 machine related files: pci bus handling
+Date: Sun, 27 Feb 2011 15:59:31 +0000
+Message-Id: <b8e75df1489c367505e85d5724e747e0c43f91c0.1298821856.git.epip@hera.kernel.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1298821856.git.epip@hera.kernel.org>
 References: <cover.1298821856.git.epip@hera.kernel.org>
 In-Reply-To: <cover.1298821856.git.epip@hera.kernel.org>
 References: <cover.1298821856.git.epip@hera.kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Feb 2011 16:01:46 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Feb 2011 16:01:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: GuanXuetao <gxt@mprc.pku.edu.cn>
 
-change from original version -- by advice of Jean Delvare
-1. remove global variable i2c_reg, replaced by local variables
-2. replace ENXIO with ENODEV when no platform resources
-3. add adapter->nr assignment before i2c_add_numbered_adapter() call
-4. add judgement for i2c_del_adapter() return value
-5. release adapter when driver removed
-6. add __devexit for puv3_i2c_remove() function
-7. modify several names to more appropriated ones
+This patch implements arch-specific pci bus driver.
 
 Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- MAINTAINERS                            |    1 +
- arch/unicore32/configs/debug_defconfig |    4 +
- drivers/i2c/busses/Kconfig             |   11 ++
- drivers/i2c/busses/Makefile            |    1 +
- drivers/i2c/busses/i2c-puv3.c          |  306 ++++++++++++++++++++++++++++++++
- 5 files changed, 323 insertions(+), 0 deletions(-)
- create mode 100644 drivers/i2c/busses/i2c-puv3.c
+ arch/unicore32/include/asm/pci.h |   46 +++++
+ arch/unicore32/kernel/pci.c      |  404 ++++++++++++++++++++++++++++++++++++++
+ drivers/pci/Makefile             |    1 +
+ 3 files changed, 451 insertions(+), 0 deletions(-)
+ create mode 100644 arch/unicore32/include/asm/pci.h
+ create mode 100644 arch/unicore32/kernel/pci.c
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a175ec4..1058d59 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4888,6 +4888,7 @@ W:	http://mprc.pku.edu.cn/~guanxuetao/linux
- S:	Maintained
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
- F:	drivers/input/serio/i8042-unicore32io.h
-+F:	drivers/i2c/busses/i2c-puv3.c
- 
- PMC SIERRA MaxRAID DRIVER
- M:	Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
-diff --git a/arch/unicore32/configs/debug_defconfig b/arch/unicore32/configs/debug_defconfig
-index 3647f68..bf42abd 100644
---- a/arch/unicore32/configs/debug_defconfig
-+++ b/arch/unicore32/configs/debug_defconfig
-@@ -114,6 +114,10 @@ CONFIG_INPUT_EVDEV=m
- #	Keyboards
- CONFIG_KEYBOARD_GPIO=m
- 
-+#	I2C support
-+CONFIG_I2C=y
-+CONFIG_I2C_PUV3=y
-+
- #	Hardware Monitoring support
- #CONFIG_SENSORS_LM75=m
- #	Generic Thermal sysfs driver
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 113505a..cbfcf6f 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -523,6 +523,17 @@ config I2C_PNX
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-pnx.
- 
-+config I2C_PUV3
-+	tristate "PKUnity v3 I2C bus support"
-+	depends on UNICORE32 && ARCH_PUV3
-+	select I2C_ALGOBIT
-+	help
-+	  This driver supports the I2C IP inside the PKUnity-v3 SoC.
-+	  This I2C bus controller is under AMBA/AXI bus.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called i2c-puv3.
-+
- config I2C_PXA
- 	tristate "Intel PXA2XX I2C adapter"
- 	depends on ARCH_PXA || ARCH_MMP
-diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 9d2d0ec..a83966a 100644
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -51,6 +51,7 @@ obj-$(CONFIG_I2C_PASEMI)	+= i2c-pasemi.o
- obj-$(CONFIG_I2C_PCA_PLATFORM)	+= i2c-pca-platform.o
- obj-$(CONFIG_I2C_PMCMSP)	+= i2c-pmcmsp.o
- obj-$(CONFIG_I2C_PNX)		+= i2c-pnx.o
-+obj-$(CONFIG_I2C_PUV3)		+= i2c-puv3.o
- obj-$(CONFIG_I2C_PXA)		+= i2c-pxa.o
- obj-$(CONFIG_I2C_S3C2410)	+= i2c-s3c2410.o
- obj-$(CONFIG_I2C_S6000)		+= i2c-s6000.o
-diff --git a/drivers/i2c/busses/i2c-puv3.c b/drivers/i2c/busses/i2c-puv3.c
+diff --git a/arch/unicore32/include/asm/pci.h b/arch/unicore32/include/asm/pci.h
 new file mode 100644
-index 0000000..fac6739
+index 0000000..c5b28b4
 --- /dev/null
-+++ b/drivers/i2c/busses/i2c-puv3.c
-@@ -0,0 +1,306 @@
++++ b/arch/unicore32/include/asm/pci.h
+@@ -0,0 +1,46 @@
 +/*
-+ * I2C driver for PKUnity-v3 SoC
++ * linux/arch/unicore32/include/asm/pci.h
++ *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
-+ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
-+ *	Copyright (C) 2001-2010 Guan Xuetao
++ * Copyright (C) 2001-2010 GUAN Xue-tao
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
++#ifndef __UNICORE_PCI_H__
++#define __UNICORE_PCI_H__
 +
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+#include <linux/delay.h>
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/clk.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <mach/hardware.h>
++#ifdef __KERNEL__
++#include <asm-generic/pci-dma-compat.h>
++#include <asm-generic/pci.h>
++#include <mach/hardware.h> /* for PCIBIOS_MIN_* */
 +
-+/*
-+ * Poll the i2c status register until the specified bit is set.
-+ * Returns 0 if timed out (100 msec).
-+ */
-+static short poll_status(unsigned long bit)
++static inline void pcibios_set_master(struct pci_dev *dev)
 +{
-+	int loop_cntr = 1000;
-+
-+	if (bit & I2C_STATUS_TFNF) {
-+		do {
-+			udelay(10);
-+		} while (!(readl(I2C_STATUS) & bit) && (--loop_cntr > 0));
-+	} else {
-+		/* RXRDY handler */
-+		do {
-+			if (readl(I2C_TAR) == I2C_TAR_EEPROM)
-+				msleep(20);
-+			else
-+				udelay(10);
-+		} while (!(readl(I2C_RXFLR) & 0xf) && (--loop_cntr > 0));
-+	}
-+
-+	return (loop_cntr > 0);
++	/* No special bus mastering setup handling */
 +}
 +
-+static int xfer_read(struct i2c_adapter *adap, unsigned char *buf, int length)
++static inline void pcibios_penalize_isa_irq(int irq, int active)
 +{
-+	int i2c_reg = *buf;
-+
-+	/* Read data */
-+	while (length--) {
-+		if (!poll_status(I2C_STATUS_TFNF)) {
-+			dev_dbg(&adap->dev, "Tx FIFO Not Full timeout\n");
-+			return -ETIMEDOUT;
-+		}
-+
-+		/* send addr */
-+		writel(i2c_reg | I2C_DATACMD_WRITE, I2C_DATACMD);
-+
-+		/* get ready to next write */
-+		i2c_reg++;
-+
-+		/* send read CMD */
-+		writel(I2C_DATACMD_READ, I2C_DATACMD);
-+
-+		/* wait until the Rx FIFO have available */
-+		if (!poll_status(I2C_STATUS_RFNE)) {
-+			dev_dbg(&adap->dev, "RXRDY timeout\n");
-+			return -ETIMEDOUT;
-+		}
-+
-+		/* read the data to buf */
-+		*buf = (readl(I2C_DATACMD) & I2C_DATACMD_DAT_MASK);
-+		buf++;
-+	}
-+
-+	return 0;
++	/* We don't do dynamic PCI IRQ allocation */
 +}
 +
-+static int xfer_write(struct i2c_adapter *adap, unsigned char *buf, int length)
++#ifdef CONFIG_PCI
++static inline void pci_dma_burst_advice(struct pci_dev *pdev,
++					enum pci_dma_burst_strategy *strat,
++					unsigned long *strategy_parameter)
 +{
-+	int i2c_reg = *buf;
-+
-+	/* Do nothing but storing the reg_num to a static variable */
-+	if (i2c_reg == -1) {
-+		printk(KERN_WARNING "Error i2c reg\n");
-+		return -ETIMEDOUT;
-+	}
-+
-+	if (length == 1)
-+		return 0;
-+
-+	buf++;
-+	length--;
-+	while (length--) {
-+		/* send addr */
-+		writel(i2c_reg | I2C_DATACMD_WRITE, I2C_DATACMD);
-+
-+		/* send write CMD */
-+		writel(*buf | I2C_DATACMD_WRITE, I2C_DATACMD);
-+
-+		/* wait until the Rx FIFO have available */
-+		msleep(20);
-+
-+		/* read the data to buf */
-+		i2c_reg++;
-+		buf++;
-+	}
-+
-+	return 0;
++	*strat = PCI_DMA_BURST_INFINITY;
++	*strategy_parameter = ~0UL;
 +}
-+
-+/*
-+ * Generic i2c master transfer entrypoint.
-+ *
-+ */
-+static int puv3_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *pmsg,
-+		int num)
-+{
-+	int i, ret;
-+	unsigned char swap;
-+
-+	/* Disable i2c */
-+	writel(I2C_ENABLE_DISABLE, I2C_ENABLE);
-+
-+	/* Set the work mode and speed*/
-+	writel(I2C_CON_MASTER | I2C_CON_SPEED_STD | I2C_CON_SLAVEDISABLE, I2C_CON);
-+
-+	writel(pmsg->addr, I2C_TAR);
-+
-+	/* Enable i2c */
-+	writel(I2C_ENABLE_ENABLE, I2C_ENABLE);
-+
-+	dev_dbg(&adap->dev, "puv3_i2c_xfer: processing %d messages:\n", num);
-+
-+	for (i = 0; i < num; i++) {
-+		dev_dbg(&adap->dev, " #%d: %sing %d byte%s %s 0x%02x\n", i,
-+			pmsg->flags & I2C_M_RD ? "read" : "writ",
-+			pmsg->len, pmsg->len > 1 ? "s" : "",
-+			pmsg->flags & I2C_M_RD ? "from" : "to",	pmsg->addr);
-+
-+		if (pmsg->len && pmsg->buf) {	/* sanity check */
-+			if (pmsg->flags & I2C_M_RD)
-+				ret = xfer_read(adap, pmsg->buf, pmsg->len);
-+			else
-+				ret = xfer_write(adap, pmsg->buf, pmsg->len);
-+
-+			if (ret)
-+				return ret;
-+
-+		}
-+		dev_dbg(&adap->dev, "transfer complete\n");
-+		pmsg++;		/* next message */
-+	}
-+
-+	/* XXX: fixup be16_to_cpu in bq27x00_battery.c */
-+	if (pmsg->addr == I2C_TAR_PWIC) {
-+		swap = pmsg->buf[0];
-+		pmsg->buf[0] = pmsg->buf[1];
-+		pmsg->buf[1] = swap;
-+	}
-+
-+	return i;
-+}
-+
-+/*
-+ * Return list of supported functionality.
-+ */
-+static u32 puv3_i2c_func(struct i2c_adapter *adapter)
-+{
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+}
-+
-+static struct i2c_algorithm puv3_i2c_algorithm = {
-+	.master_xfer	= puv3_i2c_xfer,
-+	.functionality	= puv3_i2c_func,
-+};
-+
-+/*
-+ * Main initialization routine.
-+ */
-+static int __devinit puv3_i2c_probe(struct platform_device *pdev)
-+{
-+	struct i2c_adapter *adapter;
-+	struct resource *mem;
-+	int rc;
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem)
-+		return -ENODEV;
-+
-+	if (!request_mem_region(mem->start, resource_size(mem), "puv3_i2c"))
-+		return -EBUSY;
-+
-+	adapter = kzalloc(sizeof(struct i2c_adapter), GFP_KERNEL);
-+	if (adapter == NULL) {
-+		dev_err(&pdev->dev, "can't allocate inteface!\n");
-+		rc = -ENOMEM;
-+		goto fail_nomem;
-+	}
-+	snprintf(adapter->name, sizeof(adapter->name), "PUV3-I2C at 0x%08x",
-+			mem->start);
-+	adapter->algo = &puv3_i2c_algorithm;
-+	adapter->class = I2C_CLASS_HWMON;
-+	adapter->dev.parent = &pdev->dev;
-+
-+	platform_set_drvdata(pdev, adapter);
-+
-+	adapter->nr = pdev->id;
-+	rc = i2c_add_numbered_adapter(adapter);
-+	if (rc) {
-+		dev_err(&pdev->dev, "Adapter '%s' registration failed\n",
-+				adapter->name);
-+		goto fail_add_adapter;
-+	}
-+
-+	dev_info(&pdev->dev, "PKUnity v3 i2c bus adapter.\n");
-+	return 0;
-+
-+fail_add_adapter:
-+	platform_set_drvdata(pdev, NULL);
-+	kfree(adapter);
-+fail_nomem:
-+	release_mem_region(mem->start, resource_size(mem));
-+
-+	return rc;
-+}
-+
-+static int __devexit puv3_i2c_remove(struct platform_device *pdev)
-+{
-+	struct i2c_adapter *adapter = platform_get_drvdata(pdev);
-+	struct resource *mem;
-+	int rc;
-+
-+	rc = i2c_del_adapter(adapter);
-+	if (rc) {
-+		dev_err(&pdev->dev, "Adapter '%s' delete fail\n",
-+				adapter->name);
-+		return rc;
-+	}
-+
-+	put_device(&pdev->dev);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	release_mem_region(mem->start, resource_size(mem));
-+
-+	return rc;
-+}
-+
-+#ifdef CONFIG_PM
-+static int puv3_i2c_suspend(struct platform_device *dev, pm_message_t state)
-+{
-+	int poll_count;
-+	/* Disable the IIC */
-+	writel(I2C_ENABLE_DISABLE, I2C_ENABLE);
-+	for (poll_count = 0; poll_count < 50; poll_count++) {
-+		if (readl(I2C_ENSTATUS) & I2C_ENSTATUS_ENABLE)
-+			udelay(25);
-+	}
-+
-+	return 0;
-+}
-+
-+static int puv3_i2c_resume(struct platform_device *dev)
-+{
-+	return 0 ;
-+}
-+#else
-+#define puv3_i2c_suspend NULL
-+#define puv3_i2c_resume NULL
 +#endif
 +
-+MODULE_ALIAS("platform:puv3_i2c");
++#define HAVE_PCI_MMAP
++extern int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
++	enum pci_mmap_state mmap_state, int write_combine);
 +
-+static struct platform_driver puv3_i2c_driver = {
-+	.probe		= puv3_i2c_probe,
-+	.remove		= __devexit_p(puv3_i2c_remove),
-+	.suspend	= puv3_i2c_suspend,
-+	.resume		= puv3_i2c_resume,
-+	.driver		= {
-+		.name	= "PKUnity-v3-I2C",
-+		.owner	= THIS_MODULE,
++#endif /* __KERNEL__ */
++
++#endif
+diff --git a/arch/unicore32/kernel/pci.c b/arch/unicore32/kernel/pci.c
+new file mode 100644
+index 0000000..d4e55e2
+--- /dev/null
++++ b/arch/unicore32/kernel/pci.c
+@@ -0,0 +1,404 @@
++/*
++ * linux/arch/unicore32/kernel/pci.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ *  PCI bios-type initialisation for PCI machines
++ *
++ */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/pci.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/io.h>
++
++static int debug_pci;
++static int use_firmware;
++
++#define CONFIG_CMD(bus, devfn, where)	\
++	(0x80000000 | (bus->number << 16) | (devfn << 8) | (where & ~3))
++
++static int
++puv3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
++			int size, u32 *value)
++{
++	PCICFG_ADDR = CONFIG_CMD(bus, devfn, where);
++	switch (size) {
++	case 1:
++		*value = (PCICFG_DATA >> ((where & 3) * 8)) & 0xFF;
++		break;
++	case 2:
++		*value = (PCICFG_DATA >> ((where & 2) * 8)) & 0xFFFF;
++		break;
++	case 4:
++		*value = PCICFG_DATA;
++		break;
 +	}
++	return PCIBIOS_SUCCESSFUL;
++}
++
++static int
++puv3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
++			int size, u32 value)
++{
++	PCICFG_ADDR = CONFIG_CMD(bus, devfn, where);
++	switch (size) {
++	case 1:
++		PCICFG_DATA = (PCICFG_DATA & ~FMASK(8, (where&3)*8))
++			| FIELD(value, 8, (where&3)*8);
++		break;
++	case 2:
++		PCICFG_DATA = (PCICFG_DATA & ~FMASK(16, (where&2)*8))
++			| FIELD(value, 16, (where&2)*8);
++		break;
++	case 4:
++		PCICFG_DATA = value;
++		break;
++	}
++	return PCIBIOS_SUCCESSFUL;
++}
++
++struct pci_ops pci_puv3_ops = {
++	.read  = puv3_read_config,
++	.write = puv3_write_config,
 +};
 +
-+static int __init puv3_i2c_init(void)
++void pci_puv3_preinit(void)
 +{
-+	return platform_driver_register(&puv3_i2c_driver);
++	printk(KERN_DEBUG "PCI: PKUnity PCI Controller Initializing ...\n");
++	/* config PCI bridge base */
++	PCICFG_BRIBASE = PKUNITY_PCIBRI_BASE;
++
++	PCIBRI_AHBCTL0 = 0;
++	PCIBRI_AHBBAR0 = PKUNITY_PCIBRI_BASE | PCIBRI_BARx_MEM;
++	PCIBRI_AHBAMR0 = 0xFFFF0000;
++	PCIBRI_AHBTAR0 = 0;
++
++	PCIBRI_AHBCTL1 = PCIBRI_CTLx_AT;
++	PCIBRI_AHBBAR1 = PKUNITY_PCILIO_BASE | PCIBRI_BARx_IO;
++	PCIBRI_AHBAMR1 = 0xFFFF0000;
++	PCIBRI_AHBTAR1 = 0x00000000;
++
++	PCIBRI_AHBCTL2 = PCIBRI_CTLx_PREF;
++	PCIBRI_AHBBAR2 = PKUNITY_PCIMEM_BASE | PCIBRI_BARx_MEM;
++	PCIBRI_AHBAMR2 = 0xF8000000;
++	PCIBRI_AHBTAR2 = 0;
++
++	PCIBRI_BAR1 = PKUNITY_PCIAHB_BASE | PCIBRI_BARx_MEM;
++
++	PCIBRI_PCICTL0 = PCIBRI_CTLx_AT | PCIBRI_CTLx_PREF;
++	PCIBRI_PCIBAR0 = PKUNITY_PCIAHB_BASE | PCIBRI_BARx_MEM;
++	PCIBRI_PCIAMR0 = 0xF8000000;
++	PCIBRI_PCITAR0 = PKUNITY_SDRAM_BASE;
++
++	PCIBRI_CMD = PCIBRI_CMD | PCIBRI_CMD_IO | PCIBRI_CMD_MEM;
 +}
 +
-+static void __exit puv3_i2c_exit(void)
++static int __init pci_puv3_map_irq(struct pci_dev *dev, u8 slot, u8 pin)
 +{
-+	platform_driver_unregister(&puv3_i2c_driver);
++	if (dev->bus->number == 0) {
++#ifdef CONFIG_ARCH_FPGA /* 4 pci slots */
++		if      (dev->devfn == 0x00)
++			return IRQ_PCIINTA;
++		else if (dev->devfn == 0x08)
++			return IRQ_PCIINTB;
++		else if (dev->devfn == 0x10)
++			return IRQ_PCIINTC;
++		else if (dev->devfn == 0x18)
++			return IRQ_PCIINTD;
++#endif
++#ifdef CONFIG_PUV3_DB0913 /* 3 pci slots */
++		if      (dev->devfn == 0x30)
++			return IRQ_PCIINTB;
++		else if (dev->devfn == 0x60)
++			return IRQ_PCIINTC;
++		else if (dev->devfn == 0x58)
++			return IRQ_PCIINTD;
++#endif
++#if	defined(CONFIG_PUV3_NB0916) || defined(CONFIG_PUV3_SMW0919)
++		/* only support 2 pci devices */
++		if      (dev->devfn == 0x00)
++			return IRQ_PCIINTC; /* sata */
++#endif
++	}
++	return -1;
 +}
 +
-+module_init(puv3_i2c_init);
-+module_exit(puv3_i2c_exit);
++/*
++ * Only first 128MB of memory can be accessed via PCI.
++ * We use GFP_DMA to allocate safe buffers to do map/unmap.
++ * This is really ugly and we need a better way of specifying
++ * DMA-capable regions of memory.
++ */
++void __init puv3_pci_adjust_zones(unsigned long *zone_size,
++	unsigned long *zhole_size)
++{
++	unsigned int sz = SZ_128M >> PAGE_SHIFT;
 +
-+MODULE_DESCRIPTION("PKUnity v3 I2C driver");
-+MODULE_LICENSE("GPL v2");
++	/*
++	 * Only adjust if > 128M on current system
++	 */
++	if (zone_size[0] <= sz)
++		return;
++
++	zone_size[1] = zone_size[0] - sz;
++	zone_size[0] = sz;
++	zhole_size[1] = zhole_size[0];
++	zhole_size[0] = 0;
++}
++
++void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
++{
++	if (debug_pci)
++		printk(KERN_DEBUG "PCI: Assigning IRQ %02d to %s\n",
++				irq, pci_name(dev));
++	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
++}
++
++/*
++ * If the bus contains any of these devices, then we must not turn on
++ * parity checking of any kind.
++ */
++static inline int pdev_bad_for_parity(struct pci_dev *dev)
++{
++	return 0;
++}
++
++/*
++ * pcibios_fixup_bus - Called after each bus is probed,
++ * but before its children are examined.
++ */
++void __devinit pcibios_fixup_bus(struct pci_bus *bus)
++{
++	struct pci_dev *dev;
++	u16 features = PCI_COMMAND_SERR
++		| PCI_COMMAND_PARITY
++		| PCI_COMMAND_FAST_BACK;
++
++	bus->resource[0] = &ioport_resource;
++	bus->resource[1] = &iomem_resource;
++
++	/*
++	 * Walk the devices on this bus, working out what we can
++	 * and can't support.
++	 */
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		u16 status;
++
++		pci_read_config_word(dev, PCI_STATUS, &status);
++
++		/*
++		 * If any device on this bus does not support fast back
++		 * to back transfers, then the bus as a whole is not able
++		 * to support them.  Having fast back to back transfers
++		 * on saves us one PCI cycle per transaction.
++		 */
++		if (!(status & PCI_STATUS_FAST_BACK))
++			features &= ~PCI_COMMAND_FAST_BACK;
++
++		if (pdev_bad_for_parity(dev))
++			features &= ~(PCI_COMMAND_SERR
++					| PCI_COMMAND_PARITY);
++
++		switch (dev->class >> 8) {
++		case PCI_CLASS_BRIDGE_PCI:
++			pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &status);
++			status |= PCI_BRIDGE_CTL_PARITY
++				| PCI_BRIDGE_CTL_MASTER_ABORT;
++			status &= ~(PCI_BRIDGE_CTL_BUS_RESET
++				| PCI_BRIDGE_CTL_FAST_BACK);
++			pci_write_config_word(dev, PCI_BRIDGE_CONTROL, status);
++			break;
++
++		case PCI_CLASS_BRIDGE_CARDBUS:
++			pci_read_config_word(dev, PCI_CB_BRIDGE_CONTROL,
++					&status);
++			status |= PCI_CB_BRIDGE_CTL_PARITY
++				| PCI_CB_BRIDGE_CTL_MASTER_ABORT;
++			pci_write_config_word(dev, PCI_CB_BRIDGE_CONTROL,
++					status);
++			break;
++		}
++	}
++
++	/*
++	 * Now walk the devices again, this time setting them up.
++	 */
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		u16 cmd;
++
++		pci_read_config_word(dev, PCI_COMMAND, &cmd);
++		cmd |= features;
++		pci_write_config_word(dev, PCI_COMMAND, cmd);
++
++		pci_write_config_byte(dev, PCI_CACHE_LINE_SIZE,
++				      L1_CACHE_BYTES >> 2);
++	}
++
++	/*
++	 * Propagate the flags to the PCI bridge.
++	 */
++	if (bus->self && bus->self->hdr_type == PCI_HEADER_TYPE_BRIDGE) {
++		if (features & PCI_COMMAND_FAST_BACK)
++			bus->bridge_ctl |= PCI_BRIDGE_CTL_FAST_BACK;
++		if (features & PCI_COMMAND_PARITY)
++			bus->bridge_ctl |= PCI_BRIDGE_CTL_PARITY;
++	}
++
++	/*
++	 * Report what we did for this bus
++	 */
++	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
++		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
++}
++#ifdef CONFIG_HOTPLUG
++EXPORT_SYMBOL(pcibios_fixup_bus);
++#endif
++
++static int __init pci_common_init(void)
++{
++	struct pci_bus *puv3_bus;
++
++	pci_puv3_preinit();
++
++	puv3_bus = pci_scan_bus(0, &pci_puv3_ops, NULL);
++
++	if (!puv3_bus)
++		panic("PCI: unable to scan bus!");
++
++	pci_fixup_irqs(pci_common_swizzle, pci_puv3_map_irq);
++
++	if (!use_firmware) {
++		/*
++		 * Size the bridge windows.
++		 */
++		pci_bus_size_bridges(puv3_bus);
++
++		/*
++		 * Assign resources.
++		 */
++		pci_bus_assign_resources(puv3_bus);
++	}
++
++	/*
++	 * Tell drivers about devices found.
++	 */
++	pci_bus_add_devices(puv3_bus);
++
++	return 0;
++}
++subsys_initcall(pci_common_init);
++
++char * __devinit pcibios_setup(char *str)
++{
++	if (!strcmp(str, "debug")) {
++		debug_pci = 1;
++		return NULL;
++	} else if (!strcmp(str, "firmware")) {
++		use_firmware = 1;
++		return NULL;
++	}
++	return str;
++}
++
++/*
++ * From arch/i386/kernel/pci-i386.c:
++ *
++ * We need to avoid collisions with `mirrored' VGA ports
++ * and other strange ISA hardware, so we always want the
++ * addresses to be allocated in the 0x000-0x0ff region
++ * modulo 0x400.
++ *
++ * Why? Because some silly external IO cards only decode
++ * the low 10 bits of the IO address. The 0x00-0xff region
++ * is reserved for motherboard devices that decode all 16
++ * bits, so it's ok to allocate at, say, 0x2800-0x28ff,
++ * but we want to try to avoid allocating at 0x2900-0x2bff
++ * which might be mirrored at 0x0100-0x03ff..
++ */
++resource_size_t pcibios_align_resource(void *data, const struct resource *res,
++				resource_size_t size, resource_size_t align)
++{
++	resource_size_t start = res->start;
++
++	if (res->flags & IORESOURCE_IO && start & 0x300)
++		start = (start + 0x3ff) & ~0x3ff;
++
++	start = (start + align - 1) & ~(align - 1);
++
++	return start;
++}
++
++/**
++ * pcibios_enable_device - Enable I/O and memory.
++ * @dev: PCI device to be enabled
++ */
++int pcibios_enable_device(struct pci_dev *dev, int mask)
++{
++	u16 cmd, old_cmd;
++	int idx;
++	struct resource *r;
++
++	pci_read_config_word(dev, PCI_COMMAND, &cmd);
++	old_cmd = cmd;
++	for (idx = 0; idx < 6; idx++) {
++		/* Only set up the requested stuff */
++		if (!(mask & (1 << idx)))
++			continue;
++
++		r = dev->resource + idx;
++		if (!r->start && r->end) {
++			printk(KERN_ERR "PCI: Device %s not available because"
++			       " of resource collisions\n", pci_name(dev));
++			return -EINVAL;
++		}
++		if (r->flags & IORESOURCE_IO)
++			cmd |= PCI_COMMAND_IO;
++		if (r->flags & IORESOURCE_MEM)
++			cmd |= PCI_COMMAND_MEMORY;
++	}
++
++	/*
++	 * Bridges (eg, cardbus bridges) need to be fully enabled
++	 */
++	if ((dev->class >> 16) == PCI_BASE_CLASS_BRIDGE)
++		cmd |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY;
++
++	if (cmd != old_cmd) {
++		printk("PCI: enabling device %s (%04x -> %04x)\n",
++		       pci_name(dev), old_cmd, cmd);
++		pci_write_config_word(dev, PCI_COMMAND, cmd);
++	}
++	return 0;
++}
++
++int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
++			enum pci_mmap_state mmap_state, int write_combine)
++{
++	unsigned long phys;
++
++	if (mmap_state == pci_mmap_io)
++		return -EINVAL;
++
++	phys = vma->vm_pgoff;
++
++	/*
++	 * Mark this as IO
++	 */
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	if (remap_pfn_range(vma, vma->vm_start, phys,
++			     vma->vm_end - vma->vm_start,
++			     vma->vm_page_prot))
++		return -EAGAIN;
++
++	return 0;
++}
+diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+index 98e6fdf..77cf813 100644
+--- a/drivers/pci/Makefile
++++ b/drivers/pci/Makefile
+@@ -42,6 +42,7 @@ obj-$(CONFIG_PCI_IOV) += iov.o
+ obj-$(CONFIG_X86) += setup-bus.o
+ obj-$(CONFIG_ALPHA) += setup-bus.o setup-irq.o
+ obj-$(CONFIG_ARM) += setup-bus.o setup-irq.o
++obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
+ obj-$(CONFIG_PARISC) += setup-bus.o
+ obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
+ obj-$(CONFIG_PPC) += setup-bus.o
 -- 
 1.7.4.1
 
