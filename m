@@ -1,34 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab1B0LyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 06:54:07 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44683 "EHLO mx3.mail.elte.hu"
+	id S1751936Ab1B0L4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 06:56:25 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55494 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955Ab1B0LyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 06:54:04 -0500
-Date: Sun, 27 Feb 2011 12:53:50 +0100
+	id S1751150Ab1B0L4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 06:56:22 -0500
+Date: Sun, 27 Feb 2011 12:56:04 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+To: Mike Travis <travis@sgi.com>
+Cc: David Rientjes <rientjes@google.com>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86,mm,64bit: Round up memory boundary for
- init_memory_mapping_high()
-Message-ID: <20110227115350.GB16453@elte.hu>
-References: <4D656D1A.7030006@kernel.org>
- <20110223204656.GA27738@atj.dyndns.org>
- <4D657359.5060901@kernel.org>
- <20110223210326.GB27738@atj.dyndns.org>
- <AANLkTintYZ00-MZD5hv7p0zNeDJTyyzdR-C=7qWo78Ly@mail.gmail.com>
- <20110224091557.GD7840@htj.dyndns.org>
- <4D674A33.8000809@kernel.org>
- <20110225111606.GG24828@htj.dyndns.org>
- <4D680EA4.6050402@kernel.org>
- <20110226085737.GT24828@htj.dyndns.org>
+Subject: Re: [PATCH 2/4] printk: Break out printk_time
+Message-ID: <20110227115604.GD16453@elte.hu>
+References: <20110225180633.857892225@gulag1.americas.sgi.com>
+ <20110225180634.147732905@gulag1.americas.sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110226085737.GT24828@htj.dyndns.org>
+In-Reply-To: <20110225180634.147732905@gulag1.americas.sgi.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -42,25 +36,13 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Tejun Heo <tj@kernel.org> wrote:
+* Mike Travis <travis@sgi.com> wrote:
 
-> > will have problem with cross node conf. like 0-4g, 8-12g on node0, 4g-8g, 
-> > 12g-16g on node1.
-> 
-> And how common are they?  This whole cruft is basically meaningless if 1GiB 
-> mapping is supported, IOW, basically on all AMD 64s and all post-nehalem intels.  
-> Why not just cite the limitation in the comment and stick to something simple?
+> +			/* add time if requested */
+> +			if (printk_time)
+> +				printed_len += printk_emit_time();
 
-Such complexity should be justified via very careful "perf stat --repeat" 
-measurements.
-
-I.e. showing 'before patch' and 'after patch' instruction, TLB miss and cycle 
-counts, showing that a positive effect that goes beyond the noise of the measurement 
-exists.
-
-1GB mappings should be assumed as the common case - anything else probably does not 
-matter from a future performance/scalability POV. For vmalloc() it might make sense 
-- but even for those precise measurements should be done about the positive effect.
+Why isnt't the printk_time condition pushed into printk_emit_time() as well?
 
 Thanks,
 
