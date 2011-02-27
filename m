@@ -1,103 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1B0K7L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 05:59:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899Ab1B0K7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 05:59:10 -0500
-Message-ID: <4D6A2E73.6070806@redhat.com>
-Date: Sun, 27 Feb 2011 07:58:59 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1752162Ab1B0LCa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 06:02:30 -0500
+Received: from sirokuusama.dnainternet.net ([83.102.40.133]:54253 "EHLO
+	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751925Ab1B0LC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 06:02:28 -0500
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Feb 2011 06:02:28 EST
+X-Spam-Flag: NO
+X-Spam-Score: -1.44
+Message-ID: <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+Date: Sun, 27 Feb 2011 12:55:40 +0200
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: Albert Cahalan <acahalan@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+ <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+ <1298793252.8726.45.camel@edumazet-laptop>
+ <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+In-Reply-To: <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
 MIME-Version: 1.0
-To: halli manjunatha <manjunatha_halli@ti.com>
-CC: linux-media <linux-media@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>
-Subject: Re: [GIT PULL] TI WL 128x FM V4L2 driver
-References: <AANLkTinAYrGV1k357Bn8trtxafZDoYozG7LDcm3KNBSt@mail.gmail.com>
-In-Reply-To: <AANLkTinAYrGV1k357Bn8trtxafZDoYozG7LDcm3KNBSt@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/mixed;
+ boundary="=_4apxj7u8upq8"
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 25-01-2011 03:48, halli manjunatha escreveu:
-> Hi Mauro,
-> 
-> Please pull the WL128x FM V4L2 driver from
-> http://dev.omapzoom.org/pub/scm/manju/L24x-btfm.git fm_v4l2_upstream
-> 
-> This is TI WL128x FM V4L2 driver and it introduces ‘wl128x’ folder
-> under the ‘drivers/media/radio’. This driver enables support for FM RX
-> and TX for Texas Instrument's WL128x (also compatible with WL127x)
-> WiLink chip sets. The V4L2 FM driver can work in either Rx or Tx mode,
-> and V4L2 interfaces are provided for both.
-> 
-> Texas Instrument's WL128x chip set packs BT, FM, GPS and WLAN in a
-> single die with BT, FM and GPS being interfaced over a single UART.
-> This driver works on top of the shared transport line discipline
-> driver. This driver can also be made use for the WL127x version of the
-> chip which packs BT, FM and WLAN only.
-> 
-> This driver has been reviewed by various folks within TI and also in
-> Linux media community. The driver has been tested extensively on TI
-> platforms and we believe that it is ready for merge into mainline.
+This message is in MIME format.
 
-Applied, thanks.
+--=_4apxj7u8upq8
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->From what I understood from your comments, this driver will also cover 
-wl127x chips. As such, it would be better to double check if all functionalities
-present at drivers/media/radio/radio-wl1273.c (assuming that wl1273 is covered)
-are also on the new driver, and, if not, merge the remaining ones and deprecate
-the wl1273-specific driver.
+Quoting Albert Cahalan <acahalan@gmail.com>:
 
-Cheers,
-Mauro
-> 
-> The following changes since commit db309d3d54c2f721dd1176ce86c63b0381c0a258:
->   Mauro Carvalho Chehab (1):
->         [media] add support for Encore FM3
-> 
-> are available in the git repository at:
-> 
->   http://dev.omapzoom.org/pub/scm/manju/L24x-btfm.git fm_v4l2_upstream
-> 
-> Manjunatha Halli (7):
->       drivers:media:radio: wl128x: FM Driver common header file
->       drivers:media:radio: wl128x: FM Driver V4L2 sources
->       drivers:media:radio: wl128x: FM Driver Common sources
->       drivers:media:radio: wl128x: FM driver RX sources
->       drivers:media:radio: wl128x: FM driver TX sources
->       drivers:media:radio: wl128x: Kconfig & Makefile for wl128x driver
->       drivers:media:radio: Update Kconfig and Makefile for wl128x FM driver
-> 
->  drivers/media/radio/Kconfig               |    3 +
->  drivers/media/radio/Makefile              |    1 +
->  drivers/media/radio/wl128x/Kconfig        |   17 +
->  drivers/media/radio/wl128x/Makefile       |    6 +
->  drivers/media/radio/wl128x/fmdrv.h        |  244 +++++
->  drivers/media/radio/wl128x/fmdrv_common.c | 1677 +++++++++++++++++++++++++++++
->  drivers/media/radio/wl128x/fmdrv_common.h |  402 +++++++
->  drivers/media/radio/wl128x/fmdrv_rx.c     |  847 +++++++++++++++
->  drivers/media/radio/wl128x/fmdrv_rx.h     |   59 +
->  drivers/media/radio/wl128x/fmdrv_tx.c     |  425 ++++++++
->  drivers/media/radio/wl128x/fmdrv_tx.h     |   37 +
->  drivers/media/radio/wl128x/fmdrv_v4l2.c   |  580 ++++++++++
->  drivers/media/radio/wl128x/fmdrv_v4l2.h   |   33 +
->  13 files changed, 4331 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/media/radio/wl128x/Kconfig
->  create mode 100644 drivers/media/radio/wl128x/Makefile
->  create mode 100644 drivers/media/radio/wl128x/fmdrv.h
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_common.c
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_common.h
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.c
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.h
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.c
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.h
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
-> 
+> On Sun, Feb 27, 2011 at 2:54 AM, Eric Dumazet <eric.dumazet@gmail.com> wr=
+ote:
+>> Le dimanche 27 f=E9vrier 2011 =E0 08:02 +0100, Mikael Abrahamsson a =E9c=
+rit :
+>>> On Sun, 27 Feb 2011, Albert Cahalan wrote:
+>>>
+>>> > Nanoseconds seems fine; it's unlikely you'd ever want
+>>> > more than 4.2 seconds (32-bit unsigned) of queue.
+> ...
+>> Problem is some machines have slow High Resolution timing services.
+>>
+>> _If_ we have a time limit, it will probably use the low resolution (aka
+>> jiffies), unless high resolution services are cheap.
+>
+> As long as that is totally internal to the kernel and never
+> getting exposed by some API for setting the amount, sure.
+>
+>> I was thinking not having an absolute hard limit, but an EWMA based one.
+>
+> The whole point is to prevent stale packets, especially to prevent
+> them from messing with TCP, so I really don't think so. I suppose
+> you do get this to some extent via early drop.
+
+I made simple hack on sch_fifo with per packet time limits =20
+(attachment) this weekend and have been doing limited testing on =20
+wireless link. I think hardlimit is fine, it's simple and does =20
+somewhat same as what packet(-hard)limited buffer does, drops packets =20
+when buffer is 'full'. My hack checks for timed out packets on =20
+enqueue, might be wrong approach (on other hand might allow some more =20
+burstiness).
+
+-Jussi
+--=_4apxj7u8upq8
+Content-Type: text/x-csrc;
+ charset=UTF-8;
+ name="sch_fifo_to.c"
+Content-Disposition: attachment;
+ filename="sch_fifo_to.c"
+Content-Transfer-Encoding: 7bit
+
+/*
+ * sch_fifo_timeout.c	Simple FIFO queue with per packet timeout.
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 2 of the License, or (at your option) any later
+ * version.
+ *
+ */
+
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/types.h>
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/skbuff.h>
+#include <net/pkt_sched.h>
+#include <net/inet_ecn.h>
+
+#define DEFAULT_TIMEOUT_PKT_MS 10
+#define DEFAULT_TIMEOUT_PKT PSCHED_NS2TICKS((u64)NSEC_PER_SEC * \
+						DEFAULT_TIMEOUT_PKT_MS / 1000)
+
+struct tc_fifo_timeout_qopt {
+	__u64	timeout;	/* Max time packet may stay in buffer */
+	__u32   limit;		/* Queue length: bytes for bfifo, packets for pfifo */
+};
+
+struct fifo_timeout_skb_cb {
+	psched_time_t	time_queued;
+};
+
+struct fifo_timeout_sched_data {
+	psched_tdiff_t	timeout;
+	u32		limit;
+};
+
+static inline
+struct fifo_timeout_skb_cb *fifo_timeout_skb_cb(struct sk_buff *skb)
+{
+	BUILD_BUG_ON(sizeof(skb->cb) <
+		sizeof(struct qdisc_skb_cb) +
+			sizeof(struct fifo_timeout_skb_cb));
+	return (struct fifo_timeout_skb_cb *)qdisc_skb_cb(skb)->data;
+}
+
+static void pfifo_timeout_drop_timedout_packets(struct Qdisc *sch,
+						psched_time_t now)
+{
+	struct fifo_timeout_sched_data *q = qdisc_priv(sch);
+	struct sk_buff *skb;
+
+check_next:
+	skb = qdisc_peek_head(sch);
+	if (likely(!skb))
+		return;
+
+	if (likely(fifo_timeout_skb_cb(skb)->time_queued + q->timeout > now))
+		return;
+
+	__qdisc_queue_drop_head(sch, &sch->q);
+	sch->qstats.drops++;
+
+	goto check_next;
+}
+
+static int pfifo_tail_enqueue(struct sk_buff *skb, struct Qdisc* sch)
+{
+	struct fifo_timeout_sched_data *q = qdisc_priv(sch);
+
+	if (likely(skb_queue_len(&sch->q) < q->limit))
+		return qdisc_enqueue_tail(skb, sch);
+
+	/* queue full, remove one skb to fulfill the limit */
+	__qdisc_queue_drop_head(sch, &sch->q);
+	sch->qstats.drops++;
+	qdisc_enqueue_tail(skb, sch);
+
+	return NET_XMIT_CN;
+}
+
+static int bfifo_enqueue(struct sk_buff *skb, struct Qdisc* sch)
+{
+	struct fifo_timeout_sched_data *q = qdisc_priv(sch);
+
+	if (likely(sch->qstats.backlog + qdisc_pkt_len(skb) <= q->limit))
+		return qdisc_enqueue_tail(skb, sch);
+
+	return qdisc_reshape_fail(skb, sch);
+}
+
+static int pfifo_enqueue(struct sk_buff *skb, struct Qdisc* sch)
+{
+	struct fifo_timeout_sched_data *q = qdisc_priv(sch);
+
+	if (likely(skb_queue_len(&sch->q) < q->limit))
+		return qdisc_enqueue_tail(skb, sch);
+
+	return qdisc_reshape_fail(skb, sch);
+}
+
+static int pfifo_timeout_tail_enqueue(struct sk_buff *skb, struct Qdisc* sch)
+{
+	psched_time_t now = psched_get_time();
+
+	fifo_timeout_skb_cb(skb)->time_queued = now;
+	pfifo_timeout_drop_timedout_packets(sch, now);
+
+	return pfifo_tail_enqueue(skb, sch);
+}
+
+static int bfifo_timeout_enqueue(struct sk_buff *skb, struct Qdisc* sch)
+{
+	psched_time_t now = psched_get_time();
+
+	fifo_timeout_skb_cb(skb)->time_queued = now;
+	pfifo_timeout_drop_timedout_packets(sch, now);
+
+	return bfifo_enqueue(skb, sch);
+}
+
+static int pfifo_timeout_enqueue(struct sk_buff *skb, struct Qdisc* sch)
+{
+	psched_time_t now = psched_get_time();
+
+	fifo_timeout_skb_cb(skb)->time_queued = now;
+	pfifo_timeout_drop_timedout_packets(sch, now);
+
+	return pfifo_enqueue(skb, sch);
+}
+
+static int fifo_timeout_init(struct Qdisc *sch, struct nlattr *opt)
+{
+	struct fifo_timeout_sched_data *q = qdisc_priv(sch);
+
+	if (opt == NULL) {
+		u32 limit = qdisc_dev(sch)->tx_queue_len ? : 1;
+
+		q->limit = limit;
+		q->timeout = DEFAULT_TIMEOUT_PKT;
+	} else {
+		struct tc_fifo_timeout_qopt *ctl = nla_data(opt);
+
+		if (nla_len(opt) < sizeof(*ctl))
+			return -EINVAL;
+
+		q->limit = ctl->limit;
+		q->timeout = ctl->timeout ? : DEFAULT_TIMEOUT_PKT;
+	}
+
+	return 0;
+}
+
+static int fifo_timeout_dump(struct Qdisc *sch, struct sk_buff *skb)
+{
+	struct fifo_timeout_sched_data *q = qdisc_priv(sch);
+	struct tc_fifo_timeout_qopt opt = {
+		.limit = q->limit,
+		.timeout = q->timeout
+	};
+
+	NLA_PUT(skb, TCA_OPTIONS, sizeof(opt), &opt);
+	return skb->len;
+
+nla_put_failure:
+	return -1;
+}
+
+static struct Qdisc_ops pfifo_timeout_qdisc_ops __read_mostly = {
+	.id		=	"pfifo_timeout",
+	.priv_size	=	sizeof(struct fifo_timeout_sched_data),
+	.enqueue	=	pfifo_timeout_enqueue,
+	.dequeue	=	qdisc_dequeue_head,
+	.peek		=	qdisc_peek_head,
+	.drop		=	qdisc_queue_drop,
+	.init		=	fifo_timeout_init,
+	.reset		=	qdisc_reset_queue,
+	.change		=	fifo_timeout_init,
+	.dump		=	fifo_timeout_dump,
+	.owner		=	THIS_MODULE,
+};
+
+static struct Qdisc_ops bfifo_timeout_qdisc_ops __read_mostly = {
+	.id		=	"bfifo_timeout",
+	.priv_size	=	sizeof(struct fifo_timeout_sched_data),
+	.enqueue	=	bfifo_timeout_enqueue,
+	.dequeue	=	qdisc_dequeue_head,
+	.peek		=	qdisc_peek_head,
+	.drop		=	qdisc_queue_drop,
+	.init		=	fifo_timeout_init,
+	.reset		=	qdisc_reset_queue,
+	.change		=	fifo_timeout_init,
+	.dump		=	fifo_timeout_dump,
+	.owner		=	THIS_MODULE,
+};
+
+static struct Qdisc_ops pfifo_head_drop_timeout_qdisc_ops __read_mostly = {
+	.id		=	"pfifo_hd_tout",
+	.priv_size	=	sizeof(struct fifo_timeout_sched_data),
+	.enqueue	=	pfifo_timeout_tail_enqueue,
+	.dequeue	=	qdisc_dequeue_head,
+	.peek		=	qdisc_peek_head,
+	.drop		=	qdisc_queue_drop_head,
+	.init		=	fifo_timeout_init,
+	.reset		=	qdisc_reset_queue,
+	.change		=	fifo_timeout_init,
+	.dump		=	fifo_timeout_dump,
+	.owner		=	THIS_MODULE,
+};
+
+static int __init fifo_timeout_module_init(void)
+{
+	int retval;
+
+	retval = register_qdisc(&pfifo_timeout_qdisc_ops);
+	if (retval)
+		goto cleanup;
+	retval = register_qdisc(&bfifo_timeout_qdisc_ops);
+	if (retval)
+		goto cleanup;
+	retval = register_qdisc(&pfifo_head_drop_timeout_qdisc_ops);
+	if (retval)
+		goto cleanup;
+
+	return 0;
+
+cleanup:
+	unregister_qdisc(&pfifo_timeout_qdisc_ops);
+	unregister_qdisc(&bfifo_timeout_qdisc_ops);
+	unregister_qdisc(&pfifo_head_drop_timeout_qdisc_ops);
+	return retval;
+}
+static void __exit fifo_timeout_module_exit(void)
+{
+	unregister_qdisc(&pfifo_timeout_qdisc_ops);
+	unregister_qdisc(&bfifo_timeout_qdisc_ops);
+	unregister_qdisc(&pfifo_head_drop_timeout_qdisc_ops);
+}
+
+module_init(fifo_timeout_module_init)
+module_exit(fifo_timeout_module_exit)
+MODULE_LICENSE("GPL");
+
+
+--=_4apxj7u8upq8--
 
