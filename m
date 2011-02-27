@@ -1,90 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab1B0P46 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 10:56:58 -0500
-Received: from 75-145-127-229-Colorado.hfc.comcastbusiness.net ([75.145.127.229]:51263
-	"EHLO gw.co.teklibre.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752383Ab1B0P4u convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 10:56:50 -0500
-X-Greylist: delayed 1506 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Feb 2011 10:56:50 EST
-From: d@taht.net (Dave =?utf-8?Q?T=C3=A4ht?=)
-To: sedat.dilek@gmail.com
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        bloat-devel@lists.bufferbloat.net, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: ANNOUNCE: debloat-testing kernel git tree
-Organization: Teklibre - http://www.teklibre.com
-References: <20110225222210.GA3618@tuxdriver.com>
-	<AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
-	<87fwr9jxya.fsf@cruithne.co.teklibre.org>
-	<AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
-Date: Sun, 27 Feb 2011 08:56:48 -0700
-In-Reply-To: <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
-	(Sedat Dilek's message of "Sun, 27 Feb 2011 16:38:17 +0100")
-Message-ID: <8739n9ii7z.fsf@cruithne.co.teklibre.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1752377Ab1B0QBB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 11:01:01 -0500
+Received: from hera.kernel.org ([140.211.167.34]:58472 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752265Ab1B0QA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 11:00:59 -0500
+From: Guan Xuetao <epip@hera.kernel.org>
+To: arnd@arndb.de
+Cc: Guan Xuetao <epip@hera.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, greg@kroah.com, gxt@mprc.pku.edu.cn
+Subject: [PATCH 00/17] unicore32: resend patches after machine related files
+Date: Sun, 27 Feb 2011 15:59:28 +0000
+Message-Id: <cover.1298821856.git.epip@hera.kernel.org>
+X-Mailer: git-send-email 1.7.4.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Feb 2011 16:00:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@googlemail.com> writes:
+This patch set will resend patches after machine related files.
+I2C bus driver and framebuffer driver are also added in this set.
 
-> On Sun, Feb 27, 2011 at 4:31 PM, Dave Täht <d@taht.net> wrote:
->>
->> Sedat Dilek <sedat.dilek@googlemail.com> writes:
->>
->>> On Fri, Feb 25, 2011 at 11:22 PM, John W. Linville
->>> <linville@tuxdriver.com> wrote:
->>>> Announcement
->>>>
->>>> The bufferbloat project [1] is pleased to announce the availability
->>>> of the debloat-testing Linux kernel git tree:
->>>>
->>>>   git://git.infradead.org/debloat-testing.git
->>
->> ----snip----
+The whole subsystem code could be fetched from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
+  with branch name: unicore32.
 
->> Excellent. At moment I would recommend building "low latency preempt
->> desktop" kernels with a high HZ value (400 or 1000), enabling highres
->> timers, and compiling in SFB as a module. (I'd like the default for SFB
->> to be "m" rather than "n", too)
->>
+GuanXuetao (17):
+  unicore32 machine related files: core files
+  unicore32 machine related files: hardware registers
+  unicore32 machine related files: pci bus handling
+  unicore32 machine related files: ps2 driver
+  unicore32: ADD MAINTAINER for unicore32 architecture
+  unicore32 time.c: change calculate method for clock_event_device
+  unicore32: remove unused lines in arch/unicore32/include/asm/irq.h
+  unicore32: modify function names and parameters for irq_chips
+  unicore32: rename PKUNITY_IOSPACE_BASE to PKUNITY_MMIO_BASE
+  unicore32 i8042: adjust io funcs of i8042-unicore32io.h
+  unicore32 upgrade to v2.6.38-rc5: add one more paramter for pte_alloc_map call
+  unicore32 i8042 upgrade and bugfix: adjust resource request region type
+  unicore32 io: redefine __REG(x) and re-use readl/writel funcs
+  unicore32 machine related files: add i2c bus drivers for pkunity-v3 soc
+  unicore32 machine related: add frame buffer driver for pkunity-v3 soc
+  unicore32: add (void __iomem *) to io_p2v macro
+  unicore32: replace unicore32-specific iomap functions with generic
+    lib implementation
 
-> These "debloat guys" are fast :-).  I was just preparing my
-> build-system (which I normally use to debianize linux-next kernels).
-> Any other recommendation for kernel-config options?  For example:
-> linux-next has already CONFIG_NET_SCH_CHOKE (but I have unset it).
-
-Enable CHOKe.
-
-The HZ value change is due to my worry that we've smashed latency so
-much in the driver/mac layer that it's interacting with the higher
-layers somewhat badly... So we need to add more hooks to the servo loops
-involved in order to have a normal HZ. 
-
-> Which commits are in debloat-testing GIT but not in linux-next tree?
-
-The current list was in the release announcement. More on the way
-(mostly embedded drivers at this point) git pull early and often!
-
-> Are you planning debloat feature for 2.6.39?
-
-Depends on how many testers we get and what the results are. 
-
-I feel the eBDP stuff will not be ready during this release cycle. SFB
-and CHOKe are in net-next, so, probably. Various driver patches -
-particularly those that increase the available dynamic range via
-ethtool, (e.g lowering the bottommost TX queue limit to, like, 4,
-especially for home gateways) may make it out if people look harder into
-the issue.
-
->
-> - Sedat -
+ MAINTAINERS                               |   16 +
+ arch/unicore32/Kconfig                    |   29 +
+ arch/unicore32/configs/debug_defconfig    |    7 +-
+ arch/unicore32/include/asm/gpio.h         |    9 +-
+ arch/unicore32/include/asm/io.h           |    9 +-
+ arch/unicore32/include/asm/irq.h          |    2 -
+ arch/unicore32/include/asm/pci.h          |   46 ++
+ arch/unicore32/include/mach/PKUnity.h     |  104 ++++
+ arch/unicore32/include/mach/bitfield.h    |   24 +
+ arch/unicore32/include/mach/dma.h         |   11 +-
+ arch/unicore32/include/mach/hardware.h    |   36 ++
+ arch/unicore32/include/mach/memory.h      |    2 +-
+ arch/unicore32/include/mach/regs-ac97.h   |   32 ++
+ arch/unicore32/include/mach/regs-dmac.h   |   81 +++
+ arch/unicore32/include/mach/regs-gpio.h   |   70 +++
+ arch/unicore32/include/mach/regs-i2c.h    |   63 +++
+ arch/unicore32/include/mach/regs-intc.h   |   28 +
+ arch/unicore32/include/mach/regs-nand.h   |   79 +++
+ arch/unicore32/include/mach/regs-ost.h    |   92 ++++
+ arch/unicore32/include/mach/regs-pci.h    |   94 ++++
+ arch/unicore32/include/mach/regs-pm.h     |  126 +++++
+ arch/unicore32/include/mach/regs-ps2.h    |   20 +
+ arch/unicore32/include/mach/regs-resetc.h |   34 ++
+ arch/unicore32/include/mach/regs-rtc.h    |   37 ++
+ arch/unicore32/include/mach/regs-sdc.h    |  156 ++++++
+ arch/unicore32/include/mach/regs-spi.h    |   98 ++++
+ arch/unicore32/include/mach/regs-uart.h   |    3 +
+ arch/unicore32/include/mach/regs-umal.h   |  229 ++++++++
+ arch/unicore32/include/mach/regs-unigfx.h |  200 +++++++
+ arch/unicore32/kernel/clock.c             |   34 +-
+ arch/unicore32/kernel/dma.c               |   15 +-
+ arch/unicore32/kernel/gpio.c              |   12 +-
+ arch/unicore32/kernel/irq.c               |  148 +++---
+ arch/unicore32/kernel/pci.c               |  404 ++++++++++++++
+ arch/unicore32/kernel/process.c           |   10 +-
+ arch/unicore32/kernel/puv3-core.c         |  285 ++++++++++
+ arch/unicore32/kernel/puv3-nb0916.c       |  145 +++++
+ arch/unicore32/kernel/rtc.c               |   34 +-
+ arch/unicore32/kernel/time.c              |   55 +-
+ arch/unicore32/mm/Makefile                |    2 +-
+ arch/unicore32/mm/iomap.c                 |   56 --
+ arch/unicore32/mm/pgd.c                   |    2 +-
+ drivers/i2c/busses/Kconfig                |   11 +
+ drivers/i2c/busses/Makefile               |    1 +
+ drivers/i2c/busses/i2c-puv3.c             |  306 +++++++++++
+ drivers/input/serio/i8042-unicore32io.h   |   73 +++
+ drivers/input/serio/i8042.h               |    2 +
+ drivers/pci/Makefile                      |    1 +
+ drivers/video/Kconfig                     |   11 +
+ drivers/video/Makefile                    |    1 +
+ drivers/video/fb-puv3.c                   |  846 +++++++++++++++++++++++++++++
+ include/linux/fb.h                        |    2 +
+ 52 files changed, 3968 insertions(+), 225 deletions(-)
+ create mode 100644 arch/unicore32/include/asm/pci.h
+ create mode 100644 arch/unicore32/include/mach/PKUnity.h
+ create mode 100644 arch/unicore32/include/mach/bitfield.h
+ create mode 100644 arch/unicore32/include/mach/hardware.h
+ create mode 100644 arch/unicore32/include/mach/regs-ac97.h
+ create mode 100644 arch/unicore32/include/mach/regs-dmac.h
+ create mode 100644 arch/unicore32/include/mach/regs-gpio.h
+ create mode 100644 arch/unicore32/include/mach/regs-i2c.h
+ create mode 100644 arch/unicore32/include/mach/regs-intc.h
+ create mode 100644 arch/unicore32/include/mach/regs-nand.h
+ create mode 100644 arch/unicore32/include/mach/regs-ost.h
+ create mode 100644 arch/unicore32/include/mach/regs-pci.h
+ create mode 100644 arch/unicore32/include/mach/regs-pm.h
+ create mode 100644 arch/unicore32/include/mach/regs-ps2.h
+ create mode 100644 arch/unicore32/include/mach/regs-resetc.h
+ create mode 100644 arch/unicore32/include/mach/regs-rtc.h
+ create mode 100644 arch/unicore32/include/mach/regs-sdc.h
+ create mode 100644 arch/unicore32/include/mach/regs-spi.h
+ create mode 100644 arch/unicore32/include/mach/regs-uart.h
+ create mode 100644 arch/unicore32/include/mach/regs-umal.h
+ create mode 100644 arch/unicore32/include/mach/regs-unigfx.h
+ create mode 100644 arch/unicore32/kernel/pci.c
+ create mode 100644 arch/unicore32/kernel/puv3-core.c
+ create mode 100644 arch/unicore32/kernel/puv3-nb0916.c
+ delete mode 100644 arch/unicore32/mm/iomap.c
+ create mode 100644 drivers/i2c/busses/i2c-puv3.c
+ create mode 100644 drivers/input/serio/i8042-unicore32io.h
+ create mode 100644 drivers/video/fb-puv3.c
 
 -- 
-Dave Taht
-http://nex-6.taht.net
+1.7.4.1
+
