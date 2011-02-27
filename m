@@ -1,71 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab1B0VQm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 16:16:42 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64847 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab1B0VQk (ORCPT
+	id S1751908Ab1B0VVp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 16:21:45 -0500
+Received: from diomedes.noc.ntua.gr ([147.102.222.220]:60749 "EHLO
+	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab1B0VVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 16:16:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=pL1KNm22CnAYYVpoZJ/HwKe/FRaFfZ0MG/rN6C94IUEeYN6cro2NI6q+SzpI7aYoyq
-         V/Nu6OJGgEZBfxLoDbhifJXDw3qK9tu+ySagWGCoGXG4+pog5OJZwjpz/4E63pK15u9+
-         gmY47xi0RLFUWj2B467n8Z+HfdWuiGadF9RNg=
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>,
-        Alessio Igor Bogani <abogani@kernel.org>
-Subject: [PATCH] rtlwifi: make gcc happy
-Date: Sun, 27 Feb 2011 22:16:30 +0100
-Message-Id: <1298841390-1194-1-git-send-email-abogani@kernel.org>
+	Sun, 27 Feb 2011 16:21:44 -0500
+From: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+To: linux-kernel@vger.kernel.org
+Cc: Stratos Psomadakis <psomas@cslab.ece.ntua.gr>
+Subject: [PATCH 0/2] x86_32 cleanup: KERNEL_IMAGE_SIZE
+Date: Sun, 27 Feb 2011 23:21:36 +0200
+Message-Id: <1298841698-31823-1-git-send-email-psomas@cslab.ece.ntua.gr>
 X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (diomedes.noc.ntua.gr [147.102.222.220]); Sun, 27 Feb 2011 23:21:43 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/net/wireless/rtlwifi/rtl8192ce/trx.c: In function ‘rtl92ce_rx_query_desc’:
-drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:255:5: warning: ‘rf_rx_num’ may be used uninitialized in this function
-drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:257:12: warning: ‘total_rssi’ may be used uninitialized in this function
-drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:466:6: warning: ‘weighting’ may be used uninitialized in this function
+I noticed that KERNEL_IMAGE_SIZE is no longer used by x86_32 code
+(head_32.S no longer uses it for the initial kernel mapping).
 
-Signed-off-by: Alessio Igor Bogani <abogani@kernel.org>
----
- drivers/net/wireless/rtlwifi/rtl8192ce/trx.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+We can thus remove the assert from the vmlinux.lds.S file, and 
+remove it completely for x86_32 code. 
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
-index bf5852f..593eb8e 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
-@@ -252,9 +252,9 @@ static void _rtl92ce_query_rxphystatus(struct ieee80211_hw *hw,
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct phy_sts_cck_8192s_t *cck_buf;
- 	s8 rx_pwr_all, rx_pwr[4];
--	u8 rf_rx_num, evm, pwdb_all;
-+	u8 evm, pwdb_all, rf_rx_num = 0;
- 	u8 i, max_spatial_stream;
--	u32 rssi, total_rssi;
-+	u32 rssi, total_rssi = 0;
- 	bool is_cck_rate;
- 
- 	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
-@@ -463,7 +463,7 @@ static void _rtl92ce_update_rxsignalstatistics(struct ieee80211_hw *hw,
- 					       struct rtl_stats *pstats)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	int weighting;
-+	int weighting = 0;
- 
- 	if (rtlpriv->stats.recv_signal_power == 0)
- 		rtlpriv->stats.recv_signal_power = pstats->recvsignalpower;
--- 
-1.7.4.1
+Since head_32.S doesn't use it anymore, I can't find a reason 
+why we should impose such a limit on the kernel image size
+(although a 512+MB kernel image isn't what one would call a realistic
+scenario :P)
 
+I think that a limit on the size of the image is imposed anyway
+by decompress_kernel()(if I understood correctly).
+
+I also updated the comments in head_32.S which still had references
+to KERNEL_IMAGE_SIZE.
