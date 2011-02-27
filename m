@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab1B0XRg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 18:17:36 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46606
+	id S1752041Ab1B0XSi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 18:18:38 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49233
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751794Ab1B0XRe (ORCPT
+	by vger.kernel.org with ESMTP id S1751852Ab1B0XSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 18:17:34 -0500
-Date: Sun, 27 Feb 2011 15:18:10 -0800 (PST)
-Message-Id: <20110227.151810.246542623.davem@davemloft.net>
+	Sun, 27 Feb 2011 18:18:36 -0500
+Date: Sun, 27 Feb 2011 15:19:12 -0800 (PST)
+Message-Id: <20110227.151912.28823451.davem@davemloft.net>
 To: segoon@openwall.com
 Cc: bhutchings@solarflare.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
@@ -34,13 +34,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Vasiliy Kulikov <segoon@openwall.com>
 Date: Sun, 27 Feb 2011 14:44:38 +0300
 
->    d) run modprobe with CAP_NET_ADMIN only
+> Then the things are still broken - a user has to update modprobe
+> together with the kernel, otherwise the updated kernel would call
+> "modprobe" with unsupported argument and even "sit0" wouldn't work.
 
-This is not part of my scheme.
+The capability bits get passed on the modprobe command line.
 
-The module loading will run with existing module loading privileges,
-the "allowed capability" bits will be passed along back into the
-kernel at module load time (via modprobe arguments or similar)
-and validated by the kernel as it walks the ELF sections anyways
-to perform relocations and whatnot.
-
+The module loading system call in the kernel inspects the command
+line looking for the argument, and uses it to validate the module
+load by comparing the mask with the special ELF section.
