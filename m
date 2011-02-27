@@ -1,108 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab1B0QBf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 11:01:35 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54543 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab1B0QB3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 11:01:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=nEcPV6HJ6ISgE2dRiihIbrQPKPPa17LYh/3uSemjE2PR6wQIFWqLrumNkkIyGSemtA
-         6W5nZO2KLZHA40Y68jZ0+6k86wdcGkClBLMJnFrlqLzTtDN70BAnr0BB34BrZ9tJP+ed
-         3sUj6nWy1Wv/yB0KNyt9Gs+49B9XCbvqq8TTs=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <8739n9ii7z.fsf@cruithne.co.teklibre.org>
-References: <20110225222210.GA3618@tuxdriver.com>
-	<AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
-	<87fwr9jxya.fsf@cruithne.co.teklibre.org>
-	<AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
-	<8739n9ii7z.fsf@cruithne.co.teklibre.org>
-Date: Sun, 27 Feb 2011 17:01:27 +0100
-Message-ID: <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
-Subject: Re: ANNOUNCE: debloat-testing kernel git tree
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: =?UTF-8?Q?Dave_T=C3=A4ht?= <d@taht.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        bloat-devel@lists.bufferbloat.net, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752585Ab1B0QBs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 11:01:48 -0500
+Received: from hera.kernel.org ([140.211.167.34]:58549 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752463Ab1B0QBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 11:01:45 -0500
+From: Guan Xuetao <epip@hera.kernel.org>
+To: arnd@arndb.de
+Cc: GuanXuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, greg@kroah.com
+Subject: [PATCH 08/17] unicore32: modify function names and parameters for irq_chips
+Date: Sun, 27 Feb 2011 15:59:36 +0000
+Message-Id: <31797b3a96e9074225c8e455169576882354bb08.1298821856.git.epip@hera.kernel.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <cover.1298821856.git.epip@hera.kernel.org>
+References: <cover.1298821856.git.epip@hera.kernel.org>
+In-Reply-To: <cover.1298821856.git.epip@hera.kernel.org>
+References: <cover.1298821856.git.epip@hera.kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 27 Feb 2011 16:01:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 27, 2011 at 4:56 PM, Dave Täht <d@taht.net> wrote:
-> Sedat Dilek <sedat.dilek@googlemail.com> writes:
->
->> On Sun, Feb 27, 2011 at 4:31 PM, Dave Täht <d@taht.net> wrote:
->>>
->>> Sedat Dilek <sedat.dilek@googlemail.com> writes:
->>>
->>>> On Fri, Feb 25, 2011 at 11:22 PM, John W. Linville
->>>> <linville@tuxdriver.com> wrote:
->>>>> Announcement
->>>>>
->>>>> The bufferbloat project [1] is pleased to announce the availability
->>>>> of the debloat-testing Linux kernel git tree:
->>>>>
->>>>>   git://git.infradead.org/debloat-testing.git
->>>
->>> ----snip----
->
->>> Excellent. At moment I would recommend building "low latency preempt
->>> desktop" kernels with a high HZ value (400 or 1000), enabling highres
->>> timers, and compiling in SFB as a module. (I'd like the default for SFB
->>> to be "m" rather than "n", too)
->>>
->
->> These "debloat guys" are fast :-).  I was just preparing my
->> build-system (which I normally use to debianize linux-next kernels).
->> Any other recommendation for kernel-config options?  For example:
->> linux-next has already CONFIG_NET_SCH_CHOKE (but I have unset it).
->
-> Enable CHOKe.
->
-> The HZ value change is due to my worry that we've smashed latency so
-> much in the driver/mac layer that it's interacting with the higher
-> layers somewhat badly... So we need to add more hooks to the servo loops
-> involved in order to have a normal HZ.
->
->> Which commits are in debloat-testing GIT but not in linux-next tree?
->
-> The current list was in the release announcement. More on the way
-> (mostly embedded drivers at this point) git pull early and often!
->
->> Are you planning debloat feature for 2.6.39?
->
-> Depends on how many testers we get and what the results are.
->
-> I feel the eBDP stuff will not be ready during this release cycle. SFB
-> and CHOKe are in net-next, so, probably. Various driver patches -
-> particularly those that increase the available dynamic range via
-> ethtool, (e.g lowering the bottommost TX queue limit to, like, 4,
-> especially for home gateways) may make it out if people look harder into
-> the issue.
->
->>
->> - Sedat -
->
-> --
-> Dave Taht
-> http://nex-6.taht.net
->
+From: GuanXuetao <gxt@mprc.pku.edu.cn>
 
-OK, thanks for the explanations.
+  -- by advice with Thomas Gleixner
 
-Concerning "more drivers":
-What would I have to do to modify ath5k?
-I looked into the ath9k patch in debloat-testing GIT and it was to mod
-some (TX/BUF) values only.
-Not sure if ath9k is/was "well" prepared or only a good choice by the
-testers/committers as they own such a device.
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/Kconfig      |    1 +
+ arch/unicore32/kernel/irq.c |   82 +++++++++++++++++++++---------------------
+ 2 files changed, 42 insertions(+), 41 deletions(-)
 
-- Sedat -
+diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+index 90835c9..7f65018 100644
+--- a/arch/unicore32/Kconfig
++++ b/arch/unicore32/Kconfig
+@@ -10,6 +10,7 @@ config UNICORE32
+ 	select HAVE_KERNEL_LZMA
+ 	select GENERIC_FIND_FIRST_BIT
+ 	select GENERIC_IRQ_PROBE
++	select GENERIC_HARDIRQS_NO_DEPRECATED
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	help
+ 	  UniCore-32 is 32-bit Instruction Set Architecture,
+diff --git a/arch/unicore32/kernel/irq.c b/arch/unicore32/kernel/irq.c
+index 7c211f5..38e3089 100644
+--- a/arch/unicore32/kernel/irq.c
++++ b/arch/unicore32/kernel/irq.c
+@@ -42,14 +42,14 @@ static int GPIO_IRQ_mask = 0;
+ 
+ #define GPIO_MASK(irq)		(1 << (irq - IRQ_GPIO0))
+ 
+-static int puv3_gpio_type(unsigned int irq, unsigned int type)
++static int puv3_gpio_type(struct irq_data *d, unsigned int type)
+ {
+ 	unsigned int mask;
+ 
+-	if (irq < IRQ_GPIOHIGH)
+-		mask = 1 << irq;
++	if (d->irq < IRQ_GPIOHIGH)
++		mask = 1 << d->irq;
+ 	else
+-		mask = GPIO_MASK(irq);
++		mask = GPIO_MASK(d->irq);
+ 
+ 	if (type == IRQ_TYPE_PROBE) {
+ 		if ((GPIO_IRQ_rising_edge | GPIO_IRQ_falling_edge) & mask)
+@@ -75,37 +75,37 @@ static int puv3_gpio_type(unsigned int irq, unsigned int type)
+ /*
+  * GPIO IRQs must be acknowledged.  This is for IRQs from 0 to 7.
+  */
+-static void puv3_low_gpio_ack(unsigned int irq)
++static void puv3_low_gpio_ack(struct irq_data *d)
+ {
+-	GPIO_GEDR = (1 << irq);
++	GPIO_GEDR = (1 << d->irq);
+ }
+ 
+-static void puv3_low_gpio_mask(unsigned int irq)
++static void puv3_low_gpio_mask(struct irq_data *d)
+ {
+-	INTC_ICMR &= ~(1 << irq);
++	INTC_ICMR &= ~(1 << d->irq);
+ }
+ 
+-static void puv3_low_gpio_unmask(unsigned int irq)
++static void puv3_low_gpio_unmask(struct irq_data *d)
+ {
+-	INTC_ICMR |= 1 << irq;
++	INTC_ICMR |= 1 << d->irq;
+ }
+ 
+-static int puv3_low_gpio_wake(unsigned int irq, unsigned int on)
++static int puv3_low_gpio_wake(struct irq_data *d, unsigned int on)
+ {
+ 	if (on)
+-		PM_PWER |= 1 << irq;
++		PM_PWER |= 1 << d->irq;
+ 	else
+-		PM_PWER &= ~(1 << irq);
++		PM_PWER &= ~(1 << d->irq);
+ 	return 0;
+ }
+ 
+ static struct irq_chip puv3_low_gpio_chip = {
+ 	.name		= "GPIO-low",
+-	.ack		= puv3_low_gpio_ack,
+-	.mask		= puv3_low_gpio_mask,
+-	.unmask		= puv3_low_gpio_unmask,
+-	.set_type	= puv3_gpio_type,
+-	.set_wake	= puv3_low_gpio_wake,
++	.irq_ack	= puv3_low_gpio_ack,
++	.irq_mask	= puv3_low_gpio_mask,
++	.irq_unmask	= puv3_low_gpio_unmask,
++	.irq_set_type	= puv3_gpio_type,
++	.irq_set_wake	= puv3_low_gpio_wake,
+ };
+ 
+ /*
+@@ -142,16 +142,16 @@ puv3_gpio_handler(unsigned int irq, struct irq_desc *desc)
+  * In addition, the IRQs are all collected up into one bit in the
+  * interrupt controller registers.
+  */
+-static void puv3_high_gpio_ack(unsigned int irq)
++static void puv3_high_gpio_ack(struct irq_data *d)
+ {
+-	unsigned int mask = GPIO_MASK(irq);
++	unsigned int mask = GPIO_MASK(d->irq);
+ 
+ 	GPIO_GEDR = mask;
+ }
+ 
+-static void puv3_high_gpio_mask(unsigned int irq)
++static void puv3_high_gpio_mask(struct irq_data *d)
+ {
+-	unsigned int mask = GPIO_MASK(irq);
++	unsigned int mask = GPIO_MASK(d->irq);
+ 
+ 	GPIO_IRQ_mask &= ~mask;
+ 
+@@ -159,9 +159,9 @@ static void puv3_high_gpio_mask(unsigned int irq)
+ 	GPIO_GFER &= ~mask;
+ }
+ 
+-static void puv3_high_gpio_unmask(unsigned int irq)
++static void puv3_high_gpio_unmask(struct irq_data *d)
+ {
+-	unsigned int mask = GPIO_MASK(irq);
++	unsigned int mask = GPIO_MASK(d->irq);
+ 
+ 	GPIO_IRQ_mask |= mask;
+ 
+@@ -169,7 +169,7 @@ static void puv3_high_gpio_unmask(unsigned int irq)
+ 	GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
+ }
+ 
+-static int puv3_high_gpio_wake(unsigned int irq, unsigned int on)
++static int puv3_high_gpio_wake(struct irq_data *d, unsigned int on)
+ {
+ 	if (on)
+ 		PM_PWER |= PM_PWER_GPIOHIGH;
+@@ -180,33 +180,33 @@ static int puv3_high_gpio_wake(unsigned int irq, unsigned int on)
+ 
+ static struct irq_chip puv3_high_gpio_chip = {
+ 	.name		= "GPIO-high",
+-	.ack		= puv3_high_gpio_ack,
+-	.mask		= puv3_high_gpio_mask,
+-	.unmask		= puv3_high_gpio_unmask,
+-	.set_type	= puv3_gpio_type,
+-	.set_wake	= puv3_high_gpio_wake,
++	.irq_ack	= puv3_high_gpio_ack,
++	.irq_mask	= puv3_high_gpio_mask,
++	.irq_unmask	= puv3_high_gpio_unmask,
++	.irq_set_type	= puv3_gpio_type,
++	.irq_set_wake	= puv3_high_gpio_wake,
+ };
+ 
+ /*
+  * We don't need to ACK IRQs on the PKUnity unless they're GPIOs
+  * this is for internal IRQs i.e. from 8 to 31.
+  */
+-static void puv3_mask_irq(unsigned int irq)
++static void puv3_mask_irq(struct irq_data *d)
+ {
+-	INTC_ICMR &= ~(1 << irq);
++	INTC_ICMR &= ~(1 << d->irq);
+ }
+ 
+-static void puv3_unmask_irq(unsigned int irq)
++static void puv3_unmask_irq(struct irq_data *d)
+ {
+-	INTC_ICMR |= (1 << irq);
++	INTC_ICMR |= (1 << d->irq);
+ }
+ 
+ /*
+  * Apart form GPIOs, only the RTC alarm can be a wakeup event.
+  */
+-static int puv3_set_wake(unsigned int irq, unsigned int on)
++static int puv3_set_wake(struct irq_data *d, unsigned int on)
+ {
+-	if (irq == IRQ_RTCAlarm) {
++	if (d->irq == IRQ_RTCAlarm) {
+ 		if (on)
+ 			PM_PWER |= PM_PWER_RTC;
+ 		else
+@@ -218,10 +218,10 @@ static int puv3_set_wake(unsigned int irq, unsigned int on)
+ 
+ static struct irq_chip puv3_normal_chip = {
+ 	.name		= "PKUnity-v3",
+-	.ack		= puv3_mask_irq,
+-	.mask		= puv3_mask_irq,
+-	.unmask		= puv3_unmask_irq,
+-	.set_wake	= puv3_set_wake,
++	.irq_ack	= puv3_mask_irq,
++	.irq_mask	= puv3_mask_irq,
++	.irq_unmask	= puv3_unmask_irq,
++	.irq_set_wake	= puv3_set_wake,
+ };
+ 
+ static struct resource irq_resource = {
+@@ -383,7 +383,7 @@ int show_interrupts(struct seq_file *p, void *v)
+ 		seq_printf(p, "%3d: ", i);
+ 		for_each_present_cpu(cpu)
+ 			seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
+-		seq_printf(p, " %10s", desc->chip->name ? : "-");
++		seq_printf(p, " %10s", desc->irq_data.chip->name ? : "-");
+ 		seq_printf(p, "  %s", action->name);
+ 		for (action = action->next; action; action = action->next)
+ 			seq_printf(p, ", %s", action->name);
+-- 
+1.7.4.1
+
