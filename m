@@ -1,167 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab1B0WCa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 17:02:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45212 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab1B0WC1 (ORCPT
+	id S1751924Ab1B0WUb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 17:20:31 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47681 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab1B0WUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 17:02:27 -0500
+	Sun, 27 Feb 2011 17:20:30 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=rNyEx6CNXaeTIlHgMejrV99WnadB/Lg8dobZL/kd/jXpjhJiKmszULBgd3W79/kc6m
-         ARASpCgdUXjUvzBGavGZfPbBcjUYVnlOxQh1y7O/i42RwfbU3xyy9kzSW6Myq6HJjuv/
-         XR+NOKAiGp4VzGMcPJzgUFR/P0F/w2IiZ7KH8=
-Message-ID: <4D6AC9EE.2070904@lwfinger.net>
-Date: Sun, 27 Feb 2011 16:02:22 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Alessio Igor Bogani <abogani@kernel.org>
-CC: Chaoming Li <chaoming_li@realsil.com.cn>, linux-wireless@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH] rtlwifi: Add the missing rcu_read_lock/unlock
-References: <1298840392-588-1-git-send-email-abogani@kernel.org>
-In-Reply-To: <1298840392-588-1-git-send-email-abogani@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DGuC5MKYGZYxQSYqbTheNStqMEFkFZdbHEHkw095hkMDAdLuVAhdoyZQ0tTreb8lT8
+         Yylmb3iGPgtbfmPAyfd3snhJn8E/37ggIAQgkyWNYNAv6mUGq6vYwPqfKO6M/vXqAGgb
+         FbkkguGXI/PHfJJBOLdF9Fq0llyxCvdjQhaJs=
+From: Roel Van Nyen <roel.vannyen@gmail.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Roel Van Nyen <roel.vannyen@gmail.com>
+Subject: [PATCH] keucr: Change the custom counting functions to hweight8 and hweight16
+Date: Sun, 27 Feb 2011 23:20:24 +0100
+Message-Id: <1298845224-22423-1-git-send-email-roel.vannyen@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2011 02:59 PM, Alessio Igor Bogani wrote:
-> ===================================================
-> [ INFO: suspicious rcu_dereference_check() usage. ]
-> ---------------------------------------------------
-> net/mac80211/sta_info.c:125 invoked rcu_dereference_check() without protection!
->
-> other info that might help us debug this:
->
-> rcu_scheduler_active = 1, debug_locks = 0
-> 5 locks held by wpa_supplicant/468:
->   #0:  (rtnl_mutex){+.+.+.}, at: [<c1465d84>] rtnl_lock+0x14/0x20
->   #1:  (&rdev->mtx){+.+.+.}, at: [<f84b8c2b>] cfg80211_mgd_wext_siwfreq+0x6b/0x170 [cfg80211]
->   #2:  (&rdev->devlist_mtx){+.+.+.}, at: [<f84b8c37>] cfg80211_mgd_wext_siwfreq+0x77/0x170 [cfg80211]
->   #3:  (&wdev->mtx){+.+.+.}, at: [<f84b8c44>] cfg80211_mgd_wext_siwfreq+0x84/0x170 [cfg80211]
->   #4:  (&rtlpriv->locks.conf_mutex){+.+.+.}, at: [<f8506476>] rtl_op_bss_info_changed+0x26/0xc10 [rtlwifi]
->
-> stack backtrace:
-> Pid: 468, comm: wpa_supplicant Not tainted 2.6.38-rc6+ #79
-> Call Trace:
->   [<c108806a>] ? lockdep_rcu_dereference+0xaa/0xb0
->   [<f8523d2c>] ? sta_info_get_bss+0x19c/0x1b0 [mac80211]
->   [<f8523d62>] ? ieee80211_find_sta+0x22/0x40 [mac80211]
->   [<f850661c>] ? rtl_op_bss_info_changed+0x1cc/0xc10 [rtlwifi]
->   [<c153671c>] ? __mutex_unlock_slowpath+0x14c/0x160
->   [<c153673d>] ? mutex_unlock+0xd/0x10
->   [<f8507180>] ? rtl_op_config+0x120/0x310 [rtlwifi]
->   [<c10896db>] ? trace_hardirqs_on+0xb/0x10
->   [<f8522169>] ? ieee80211_bss_info_change_notify+0xf9/0x1f0 [mac80211]
->   [<f8506450>] ? rtl_op_bss_info_changed+0x0/0xc10 [rtlwifi]
->   [<f853646f>] ? ieee80211_set_channel+0xbf/0xd0 [mac80211]
->   [<f84b5f41>] ? cfg80211_set_freq+0x121/0x180 [cfg80211]
->   [<f85363b0>] ? ieee80211_set_channel+0x0/0xd0 [mac80211]
->   [<f84b8ceb>] ? cfg80211_mgd_wext_siwfreq+0x12b/0x170 [cfg80211]
->   [<f84b87eb>] ? cfg80211_wext_siwfreq+0x9b/0x100 [cfg80211]
->   [<c153b98b>] ? sub_preempt_count+0x7b/0xb0
->   [<c150f874>] ? ioctl_standard_call+0x74/0x3b0
->   [<c1465d84>] ? rtnl_lock+0x14/0x20
->   [<f84b8750>] ? cfg80211_wext_siwfreq+0x0/0x100 [cfg80211]
->   [<c14568bd>] ? __dev_get_by_name+0x8d/0xb0
->   [<c150fddb>] ? wext_handle_ioctl+0x16b/0x180
->   [<f84b8750>] ? cfg80211_wext_siwfreq+0x0/0x100 [cfg80211]
->   [<c145bc7a>] ? dev_ioctl+0x5ba/0x720
->   [<c108a947>] ? __lock_acquire+0x3e7/0x19b0
->   [<c1443b0b>] ? sock_ioctl+0x1eb/0x290
->   [<c108bfa5>] ? lock_release_non_nested+0x95/0x2f0
->   [<c1443920>] ? sock_ioctl+0x0/0x290
->   [<c114d74d>] ? do_vfs_ioctl+0x7d/0x5c0
->   [<c1112232>] ? might_fault+0x62/0xb0
->   [<c113e3c6>] ? fget_light+0x226/0x390
->   [<c1112278>] ? might_fault+0xa8/0xb0
->   [<c114dd17>] ? sys_ioctl+0x87/0x90
->   [<c1002f9f>] ? sysenter_do_call+0x12/0x38
->
-> This work was supported by a hardware donation from the CE Linux Forum.
->
-> Signed-off-by: Alessio Igor Bogani<abogani@kernel.org>
-> ---
->   drivers/net/wireless/rtlwifi/core.c          |    4 ++++
->   drivers/net/wireless/rtlwifi/rtl8192ce/trx.c |    5 ++++-
->   2 files changed, 8 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
-> index d6a924a..b93f12d 100644
-> --- a/drivers/net/wireless/rtlwifi/core.c
-> +++ b/drivers/net/wireless/rtlwifi/core.c
-> @@ -552,6 +552,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
->   		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_TRACE,
->   			 ("BSS_CHANGED_HT\n"));
->
-> +		rcu_read_lock();
->   		sta = ieee80211_find_sta(mac->vif, mac->bssid);
->
->   		if (sta) {
-> @@ -564,6 +565,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
->   				mac->current_ampdu_factor =
->   				    sta->ht_cap.ampdu_factor;
->   		}
-> +		rcu_read_unlock();
->
->   		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SHORTGI_DENSITY,
->   					      (u8 *) (&mac->max_mss_density));
-> @@ -615,6 +617,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
->   		else
->   			mac->mode = WIRELESS_MODE_G;
->
-> +		rcu_read_lock();
->   		sta = ieee80211_find_sta(mac->vif, mac->bssid);
->
->   		if (sta) {
-> @@ -649,6 +652,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
->   				 */
->   			}
->   		}
-> +		rcu_read_unlock();
->
->   		/*mac80211 just give us CCK rates any time
->   		 *So we add G rate in basic rates when
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
-> index bf5852f..8a8b0e2 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192ce/trx.c
-> @@ -729,7 +729,7 @@ void rtl92ce_tx_fill_desc(struct ieee80211_hw *hw,
->   	struct rtl_ps_ctl *ppsc = rtl_psc(rtl_priv(hw));
->   	bool b_defaultadapter = true;
->
-> -	struct ieee80211_sta *sta = ieee80211_find_sta(mac->vif, mac->bssid);
-> +	struct ieee80211_sta *sta;
->
->   	u8 *pdesc = (u8 *) pdesc_tx;
->   	struct rtl_tcb_desc tcb_desc;
-> @@ -811,10 +811,13 @@ void rtl92ce_tx_fill_desc(struct ieee80211_hw *hw,
->   		SET_TX_DESC_LINIP(pdesc, 0);
->   		SET_TX_DESC_PKT_SIZE(pdesc, (u16) skb->len);
->
-> +		rcu_read_lock();
-> +		sta = ieee80211_find_sta(mac->vif, mac->bssid);
->   		if (sta) {
->   			u8 ampdu_density = sta->ht_cap.ampdu_density;
->   			SET_TX_DESC_AMPDU_DENSITY(pdesc, ampdu_density);
->   		}
-> +		rcu_read_unlock();
->
->   		if (info->control.hw_key) {
->   			struct ieee80211_key_conf *keyconf =
+Change the custom counting functions to hweight8 and hweight16
 
-When I turned RCU lock debugging on, I got the same diagnostic.
+Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
+---
+ drivers/staging/keucr/smcommon.h |    2 --
+ drivers/staging/keucr/smilsub.c  |   37 ++++++-------------------------------
+ 2 files changed, 6 insertions(+), 33 deletions(-)
 
-BTW, drivers/net/wireless/rtlwifi/rtl8192cu/trx.c has the same problem in 
-rtl92cu_tx_fill_desc() as you found in the rtl8192ce version of the routine. Do 
-you want to include that in a V2 of the patch, or should I prepare a second one?
+diff --git a/drivers/staging/keucr/smcommon.h b/drivers/staging/keucr/smcommon.h
+index 1694605..00064ca 100644
+--- a/drivers/staging/keucr/smcommon.h
++++ b/drivers/staging/keucr/smcommon.h
+@@ -25,8 +25,6 @@ Define Difinetion
+ #define ERR_NoSmartMedia    0x003A /* Medium Not Present */
+ 
+ /***************************************************************************/
+-char Bit_D_Count(BYTE);
+-char Bit_D_CountWord(WORD);
+ void StringCopy(char *, char *, int);
+ int  StringCmp(char *, char *, int);
+ 
+diff --git a/drivers/staging/keucr/smilsub.c b/drivers/staging/keucr/smilsub.c
+index 6dbc81d..80da61c 100644
+--- a/drivers/staging/keucr/smilsub.c
++++ b/drivers/staging/keucr/smilsub.c
+@@ -79,7 +79,7 @@ int Check_D_FailBlock(BYTE *redundant)
+ 		return(SUCCESS);
+ 	if (!*redundant)
+ 		return(ERROR);
+-	if (Bit_D_Count(*redundant)<7)
++	if (hweight8(*redundant)<7)
+ 		return(ERROR);
+ 
+ 	return(SUCCESS);
+@@ -100,7 +100,7 @@ int Check_D_DataStatus(BYTE *redundant)
+ 	else
+ 		ErrXDCode = NO_ERROR;
+ 
+-	if (Bit_D_Count(*redundant)<5)
++	if (hweight8(*redundant)<5)
+ 		return(ERROR);
+ 
+ 	return(SUCCESS);
+@@ -120,14 +120,14 @@ int Load_D_LogBlockAddr(BYTE *redundant)
+ 		if ((addr1 &0xF000)==0x1000)
+ 		{ Media.LogBlock=(addr1 &0x0FFF)/2; return(SUCCESS); }
+ 
+-	if (Bit_D_CountWord((WORD)(addr1^addr2))!=0x01) return(ERROR);
++	if (hweight16((WORD)(addr1^addr2))!=0x01) return(ERROR);
+ 
+ 	if ((addr1 &0xF000)==0x1000)
+-		if (!(Bit_D_CountWord(addr1) &0x01))
++		if (!(hweight16(addr1) &0x01))
+ 		{ Media.LogBlock=(addr1 &0x0FFF)/2; return(SUCCESS); }
+ 
+ 	if ((addr2 &0xF000)==0x1000)
+-		if (!(Bit_D_CountWord(addr2) &0x01))
++		if (!(hweight16(addr2) &0x01))
+ 		{ Media.LogBlock=(addr2 &0x0FFF)/2; return(SUCCESS); }
+ 
+ 	return(ERROR);
+@@ -151,7 +151,7 @@ void Set_D_LogBlockAddr(BYTE *redundant)
+ 	*(redundant+REDT_DATA) =0xFF;
+ 	addr=Media.LogBlock*2+0x1000;
+ 
+-	if ((Bit_D_CountWord(addr)%2))
++	if ((hweight16(addr)%2))
+ 		addr++;
+ 
+ 	*(redundant+REDT_ADDR1H)=*(redundant+REDT_ADDR2H)=(BYTE)(addr/0x0100);
+@@ -1549,31 +1549,6 @@ void Set_D_RightECC(BYTE *redundant)
+ //    StringCopy((char *)(redundant+0x08),(char *)(EccBuf+0x03),3);
+ //}
+ */
+-//Common Subroutine
+-char Bit_D_Count(BYTE cdata)
+-{
+-    WORD bitcount=0;
+-
+-    while(cdata) {
+-        bitcount+=(WORD)(cdata &0x01);
+-        cdata /=2;
+-    }
+-
+-    return((char)bitcount);
+-}
+-
+-//-----
+-char Bit_D_CountWord(WORD cdata)
+-{
+-    WORD bitcount=0;
+-
+-    while(cdata) {
+-        bitcount+=(cdata &0x01);
+-        cdata /=2;
+-    }
+-
+-    return((char)bitcount);
+-}
+ 
+ /*
+ //----- SM_ReadBlock() ---------------------------------------------
+-- 
+1.7.1
 
-For the content of this one, ACK.
-
-Larry
