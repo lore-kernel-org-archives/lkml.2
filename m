@@ -1,34 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1B0MQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 07:16:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab1B0MQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 07:16:34 -0500
-Message-ID: <4D6A409E.9010107@redhat.com>
-Date: Sun, 27 Feb 2011 14:16:30 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751979Ab1B0Mdu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 07:33:50 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:42639 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751150Ab1B0Mdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 07:33:47 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 27 Feb 2011 13:34:05 +0100
+To: Kevin McNeely <Kevin.McNeely@cypress.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Brown <davidb@codeaurora.org>,
+        Trilok Soni <tsoni@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
+        Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
+Message-ID: <20110227123405.GA4961@polaris.bitmath.org>
+References: <kev@cypress.com>
+ <1294188847-24728-1-git-send-email-kev@cypress.com>
+ <20110105085942.GA23321@polaris.bitmath.org>
+ <FB9C2CB29A07AB45B575A4E8D2AABC09014003B8@labamba.mis.cypress.com>
+ <20110105173403.GA2146@polaris.bitmath.org>
+ <FB9C2CB29A07AB45B575A4E8D2AABC0901629825@labamba.mis.cypress.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] expose kvmclock upper msr set.
-References: <1298483054-1665-1-git-send-email-glommer@redhat.com>
-In-Reply-To: <1298483054-1665-1-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <FB9C2CB29A07AB45B575A4E8D2AABC0901629825@labamba.mis.cypress.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.248.192.164
+X-Scan-Result: No virus found in message 1Ptfnd-0002R9-4Y.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Ptfnd-0002R9-4Y 8cac0bc5706674e7fd6fa72c0c34aaeb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2011 07:44 PM, Glauber Costa wrote:
-> We've been supporting kvmclock MSRs in the 0x4b564d00-0x4b564dff range
-> for a while now, but we're not exposing it yet, meaning nobody is using it.
-> This simple patch takes care of that.
+Hi Kevin,
 
-We're exposing them via KVM_GET_SUPPORTED_CPUID, leaf KVM_CPUID_FEATURES.
+> I have been testing with Android based systems.
+> What system configurations are good for testing the slot handling in
+> Protocol B?
 
--- 
-error compiling committee.c: too many arguments to function
+The mtview project is a graphical way to test out hardware [1]. If no
+graphics is wanted, there is utouch-frame. For low-level testing, the
+mtdev project can be used, or even evtest.
 
+Thanks,
+Henrik
+
+[1] https://launchpad.net/mtview/, or http://bitmath.org/code/mtview/
