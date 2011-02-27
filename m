@@ -1,113 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab1B0Q0B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 11:26:01 -0500
-Received: from 75-145-127-229-Colorado.hfc.comcastbusiness.net ([75.145.127.229]:55464
-	"EHLO gw.co.teklibre.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752076Ab1B0QZ7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 11:25:59 -0500
-From: d@taht.net (Dave =?utf-8?Q?T=C3=A4ht?=)
-To: sedat.dilek@gmail.com
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        bloat-devel@lists.bufferbloat.net, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: ANNOUNCE: debloat-testing kernel git tree
-Organization: Teklibre - http://www.teklibre.com
-References: <20110225222210.GA3618@tuxdriver.com>
-	<AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
-	<87fwr9jxya.fsf@cruithne.co.teklibre.org>
-	<AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
-	<8739n9ii7z.fsf@cruithne.co.teklibre.org>
-	<AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
-Date: Sun, 27 Feb 2011 09:25:56 -0700
-In-Reply-To: <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
-	(Sedat Dilek's message of "Sun, 27 Feb 2011 17:01:27 +0100")
-Message-ID: <87tyfph2az.fsf@cruithne.co.teklibre.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1752442Ab1B0Qi3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 11:38:29 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47537 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab1B0Qi1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 11:38:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BsJuxnJg1FK7gl0iEJBe5jSILwmHgL7M2D9Hf2xrhNSK3zYot6r1ZG02ci+M0Kvnct
+         B7I1nOg5wE9VueIGnmE/PuMV7H+4jJt/97slxgWg6/2negm9t+jJjZtb8/7wC8r3xq2H
+         35YswbKjkSwh8dhDGRNHXzVNUVGNTFacQO5Hc=
+Date: Mon, 28 Feb 2011 01:38:15 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v5 4/9] writeback: create dirty_info structure
+Message-ID: <20110227163815.GC3226@barrios-desktop>
+References: <1298669760-26344-1-git-send-email-gthelen@google.com>
+ <1298669760-26344-5-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298669760-26344-5-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@googlemail.com> writes:
+On Fri, Feb 25, 2011 at 01:35:55PM -0800, Greg Thelen wrote:
+> Bundle dirty limits and dirty memory usage metrics into a dirty_info
+> structure to simplify interfaces of routines that need all.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-> On Sun, Feb 27, 2011 at 4:56 PM, Dave Täht <d@taht.net> wrote:
->> Sedat Dilek <sedat.dilek@googlemail.com> writes:
->>
->>> On Sun, Feb 27, 2011 at 4:31 PM, Dave Täht <d@taht.net> wrote:
->>>>
->>>> Sedat Dilek <sedat.dilek@googlemail.com> writes:
->>
->>> Are you planning debloat feature for 2.6.39?
->>
->> Depends on how many testers we get and what the results are.
->>
->> I feel the eBDP stuff will not be ready during this release cycle. SFB
->> and CHOKe are in net-next, so, probably. Various driver patches -
->> particularly those that increase the available dynamic range via
->> ethtool, (e.g lowering the bottommost TX queue limit to, like, 4,
->> especially for home gateways) may make it out if people look harder into
->> the issue.
->
-> OK, thanks for the explanations.
->
-> Concerning "more drivers":
-> What would I have to do to modify ath5k?
-> I looked into the ath9k patch in debloat-testing GIT and it was to mod
-> some (TX/BUF) values only.
+> ---
+> Changelog since v4:
+> - Within new dirty_info structure, replaced nr_reclaimable with nr_file_dirty
+>   and nr_unstable_nfs to give callers finer grain dirty usage information.
+> - Added new dirty_info_reclaimable() function.
+> - Made more use of dirty_info structure in throttle_vm_writeout().
+> 
+> Changelog since v3:
+> - This is a new patch in v4.
+> 
+>  fs/fs-writeback.c         |    7 ++---
+>  include/linux/writeback.h |   15 ++++++++++++-
+>  mm/backing-dev.c          |   18 +++++++++------
+>  mm/page-writeback.c       |   50 ++++++++++++++++++++++----------------------
+>  mm/vmstat.c               |    6 +++-
+>  5 files changed, 57 insertions(+), 39 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 59c6e49..d75e4da 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -595,12 +595,11 @@ static void __writeback_inodes_sb(struct super_block *sb,
+>  
+>  static inline bool over_bground_thresh(void)
+>  {
+> -	unsigned long background_thresh, dirty_thresh;
+> +	struct dirty_info info;
+>  
+> -	global_dirty_limits(&background_thresh, &dirty_thresh);
+> +	global_dirty_info(&info);
+>  
+> -	return (global_page_state(NR_FILE_DIRTY) +
+> -		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
+> +	return dirty_info_reclaimable(&info) > info.background_thresh;
+>  }
 
-Yes, reducing your TX buffer size greatly is the first, best, and
-easiest patch.
+Get unnecessary nr_writeback.
 
-For wireless routers and cable home gateways especially, this research
-shows that the total un-managed buffers in your system should be less
-than 32.
+>  
+>  /*
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index 0ead399..a06fb38 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -84,6 +84,19 @@ static inline void inode_sync_wait(struct inode *inode)
+>  /*
+>   * mm/page-writeback.c
+>   */
+> +struct dirty_info {
+> +	unsigned long dirty_thresh;
+> +	unsigned long background_thresh;
+> +	unsigned long nr_file_dirty;
+> +	unsigned long nr_writeback;
+> +	unsigned long nr_unstable_nfs;
+> +};
+> +
+> +static inline unsigned long dirty_info_reclaimable(struct dirty_info *info)
+> +{
+> +	return info->nr_file_dirty + info->nr_unstable_nfs;
+> +}
+> +
+>  #ifdef CONFIG_BLOCK
+>  void laptop_io_completion(struct backing_dev_info *info);
+>  void laptop_sync_completion(void);
+> @@ -124,7 +137,7 @@ struct ctl_table;
+>  int dirty_writeback_centisecs_handler(struct ctl_table *, int,
+>  				      void __user *, size_t *, loff_t *);
+>  
+> -void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
+> +void global_dirty_info(struct dirty_info *info);
+>  unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+>  			       unsigned long dirty);
+>  
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 027100d..17a06ab 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -66,8 +66,7 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
+>  {
+>  	struct backing_dev_info *bdi = m->private;
+>  	struct bdi_writeback *wb = &bdi->wb;
+> -	unsigned long background_thresh;
+> -	unsigned long dirty_thresh;
+> +	struct dirty_info dirty_info;
+>  	unsigned long bdi_thresh;
+>  	unsigned long nr_dirty, nr_io, nr_more_io, nr_wb;
+>  	struct inode *inode;
+> @@ -82,8 +81,8 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
+>  		nr_more_io++;
+>  	spin_unlock(&inode_lock);
+>  
+> -	global_dirty_limits(&background_thresh, &dirty_thresh);
+> -	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+> +	global_dirty_info(&dirty_info);
+> +	bdi_thresh = bdi_dirty_limit(bdi, dirty_info.dirty_thresh);
+>  
+>  #define K(x) ((x) << (PAGE_SHIFT - 10))
+>  	seq_printf(m,
+> @@ -99,9 +98,14 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
+>  		   "state:            %8lx\n",
+>  		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+>  		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+> -		   K(bdi_thresh), K(dirty_thresh),
+> -		   K(background_thresh), nr_dirty, nr_io, nr_more_io,
+> -		   !list_empty(&bdi->bdi_list), bdi->state);
+> +		   K(bdi_thresh),
+> +		   K(dirty_info.dirty_thresh),
+> +		   K(dirty_info.background_thresh),
 
-http://www.cs.clemson.edu/~jmarty/papers/PID1154937.pdf
+Get unnecessary nr_file_dirty, nr_writeback, nr_unstable_nfs.
 
-I found their data convincing, and there are dozens of other papers that
-we are sorting out on the bufferbloat.net web site.
+> +		   nr_dirty,
+> +		   nr_io,
+> +		   nr_more_io,
+> +		   !list_empty(&bdi->bdi_list),
+> +		   bdi->state);
+>  #undef K
+>  
+>  	return 0;
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 4408e54..00424b9 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -398,7 +398,7 @@ unsigned long determine_dirtyable_memory(void)
+>  }
+>  
+>  /*
+> - * global_dirty_limits - background-writeback and dirty-throttling thresholds
+> + * global_dirty_info - return dirty thresholds and usage metrics
+>   *
+>   * Calculate the dirty thresholds based on sysctl parameters
+>   * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
+> @@ -406,7 +406,7 @@ unsigned long determine_dirtyable_memory(void)
+>   * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
+>   * real-time tasks.
+>   */
+> -void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+> +void global_dirty_info(struct dirty_info *info)
+>  {
+>  	unsigned long background;
+>  	unsigned long dirty;
+> @@ -426,6 +426,10 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+>  	else
+>  		background = (dirty_background_ratio * available_memory) / 100;
+>  
+> +	info->nr_file_dirty = global_page_state(NR_FILE_DIRTY);
+> +	info->nr_writeback = global_page_state(NR_WRITEBACK);
+> +	info->nr_unstable_nfs = global_page_state(NR_UNSTABLE_NFS);
+> +
+>  	if (background >= dirty)
+>  		background = dirty / 2;
+>  	tsk = current;
+> @@ -433,8 +437,8 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+>  		background += background / 4;
+>  		dirty += dirty / 4;
+>  	}
+> -	*pbackground = background;
+> -	*pdirty = dirty;
+> +	info->background_thresh = background;
+> +	info->dirty_thresh = dirty;
+>  }
+>  
+>  /*
+> @@ -478,12 +482,9 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+>  static void balance_dirty_pages(struct address_space *mapping,
+>  				unsigned long write_chunk)
+>  {
+> -	unsigned long nr_reclaimable;
+> +	struct dirty_info sys_info;
+>  	long bdi_nr_reclaimable;
+> -	unsigned long nr_writeback;
+>  	long bdi_nr_writeback;
+> -	unsigned long background_thresh;
+> -	unsigned long dirty_thresh;
+>  	unsigned long bdi_thresh;
+>  	unsigned long pages_written = 0;
+>  	unsigned long pause = 1;
+> @@ -498,22 +499,19 @@ static void balance_dirty_pages(struct address_space *mapping,
+>  			.range_cyclic	= 1,
+>  		};
+>  
+> -		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+> -					global_page_state(NR_UNSTABLE_NFS);
+> -		nr_writeback = global_page_state(NR_WRITEBACK);
+> -
+> -		global_dirty_limits(&background_thresh, &dirty_thresh);
+> +		global_dirty_info(&sys_info);
+>  
+>  		/*
+>  		 * Throttle it only when the background writeback cannot
+>  		 * catch-up. This avoids (excessively) small writeouts
+>  		 * when the bdi limits are ramping up.
+>  		 */
+> -		if (nr_reclaimable + nr_writeback <=
+> -				(background_thresh + dirty_thresh) / 2)
+> +		if (dirty_info_reclaimable(&sys_info) + sys_info.nr_writeback <=
+> +				(sys_info.background_thresh +
+> +				 sys_info.dirty_thresh) / 2)
+>  			break;
+>  
+> -		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+> +		bdi_thresh = bdi_dirty_limit(bdi, sys_info.dirty_thresh);
+>  		bdi_thresh = task_dirty_limit(current, bdi_thresh);
+>  
+>  		/*
+> @@ -542,7 +540,8 @@ static void balance_dirty_pages(struct address_space *mapping,
+>  		 */
+>  		dirty_exceeded =
+>  			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
+> -			|| (nr_reclaimable + nr_writeback > dirty_thresh);
+> +			|| (dirty_info_reclaimable(&sys_info) +
+> +			     sys_info.nr_writeback > sys_info.dirty_thresh);
+>  
+>  		if (!dirty_exceeded)
+>  			break;
+> @@ -595,7 +594,8 @@ static void balance_dirty_pages(struct address_space *mapping,
+>  	 * background_thresh, to keep the amount of dirty memory low.
+>  	 */
+>  	if ((laptop_mode && pages_written) ||
+> -	    (!laptop_mode && (nr_reclaimable > background_thresh)))
+> +	    (!laptop_mode && (dirty_info_reclaimable(&sys_info) >
+> +			      sys_info.background_thresh)))
+>  		bdi_start_background_writeback(bdi);
+>  }
+>  
+> @@ -655,21 +655,21 @@ EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
+>  
+>  void throttle_vm_writeout(gfp_t gfp_mask)
+>  {
+> -	unsigned long background_thresh;
+> -	unsigned long dirty_thresh;
+> +	struct dirty_info sys_info;
+>  
+>          for ( ; ; ) {
+> -		global_dirty_limits(&background_thresh, &dirty_thresh);
+> +		global_dirty_info(&sys_info);
 
-(PLEASE Note the key word there is un-managed)
+Get unnecessary nr_file_dirty.
 
-0 would be the best value. :/
+>  
+>                  /*
+>                   * Boost the allowable dirty threshold a bit for page
+>                   * allocators so they don't get DoS'ed by heavy writers
+>                   */
+> -                dirty_thresh += dirty_thresh / 10;      /* wheeee... */
+> +		sys_info.dirty_thresh +=
+> +			sys_info.dirty_thresh / 10;      /* wheeee... */
+>  
+> -                if (global_page_state(NR_UNSTABLE_NFS) +
+> -			global_page_state(NR_WRITEBACK) <= dirty_thresh)
+> -                        	break;
+> +		if (sys_info.nr_unstable_nfs +
+> +		    sys_info.nr_writeback <= sys_info.dirty_thresh)
+> +			break;
+>                  congestion_wait(BLK_RW_ASYNC, HZ/10);
+>  
+>  		/*
+> diff --git a/mm/vmstat.c b/mm/vmstat.c
+> index 0c3b504..ec95924 100644
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -1044,6 +1044,7 @@ static void *vmstat_start(struct seq_file *m, loff_t *pos)
+>  {
+>  	unsigned long *v;
+>  	int i, stat_items_size;
+> +	struct dirty_info dirty_info;
+>  
+>  	if (*pos >= ARRAY_SIZE(vmstat_text))
+>  		return NULL;
+> @@ -1062,8 +1063,9 @@ static void *vmstat_start(struct seq_file *m, loff_t *pos)
+>  		v[i] = global_page_state(i);
+>  	v += NR_VM_ZONE_STAT_ITEMS;
+>  
+> -	global_dirty_limits(v + NR_DIRTY_BG_THRESHOLD,
+> -			    v + NR_DIRTY_THRESHOLD);
+> +	global_dirty_info(&dirty_info);
+> +	v[NR_DIRTY_BG_THRESHOLD] = dirty_info.background_thresh;
+> +	v[NR_DIRTY_THRESHOLD] = dirty_info.dirty_thresh;
+>  	v += NR_VM_WRITEBACK_STAT_ITEMS;
 
-In the case of wireless, you also have retries to take into account.
-I'd argue in those cases, that what I say above is that the number
-should be FAR less than 32.
+Get unnecessary nr_file_dirty, nr_writeback, nr_unstable_nfs.
 
-Now, whether there is a good compromise between throughput and latency
-in that range in a DMA TX queue + TXQUEUE, remains to be seen. 
+The code itself doesn't have a problem. but although it makes code simple, 
+sometime it get unnecessary information in that context. The global_page_state never 
+cheap operation and we have been tried to reduce overhead in page-writeback.
+(16c4042f, e50e3720).
 
-> Not sure if ath9k is/was "well" prepared or only a good choice by the
-> testers/committers as they own such a device.
-
-My test network is mostly ath9k - the nanostation M5s and the WNDR5700
-router described here:
-
-http://www.bufferbloat.net/projects/bloat/wiki/Experiment_-_Bloated_LAGN_vs_debloated_WNDR5700
-
-There are people looking into the ath6kl, but you're the first to step
-up with the ath5k. :) Maybe the folk over at #ath6kl on irc can help.
-
-The ath9k patch improves latency under load enormously - I can run voip
-over it AND do big transfers and stream audio via samba... Which I
-couldn't before - and DNS, ND, NTP, babel, etc behave much better, but
-the currently hard coded nature of the TX queue limit does put an upper
-limit on packet aggregation that the eBDP folk are trying to resolve
-more generically.
-
-In practice, at "normal" 180Mbit rates, with the new queue depth of 3, I
-get most of the benefits of packet aggregation without the lag.
-
-I do see higher packet loss than I would like, at present.
-
->
-> - Sedat -
+Fortunately this patch doesn't increase balance_dirty_pages's overhead and 
+things affected by this patch are not fast-path. 
+So I think it doesn't have a problem.
 
 -- 
-Dave Taht
-http://nex-6.taht.net
+Kind regards,
+Minchan Kim
