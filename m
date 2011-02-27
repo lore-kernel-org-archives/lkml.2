@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab1B0LKs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 06:10:48 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60661 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751955Ab1B0LKp (ORCPT
+	id S1752152Ab1B0LLs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 06:11:48 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:37764 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab1B0LLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 06:10:45 -0500
-Subject: Re: [PATCH 1/4] msm: scm: Mark inline asm as volatile
-From: Will Deacon <will.deacon@arm.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <8yapqqe3bs3.fsf@huya.qualcomm.com>
-References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>
-	 <1298573085-23217-2-git-send-email-sboyd@codeaurora.org>
-	 <1298635017.958.0.camel@e102144-lin.cambridge.arm.com>
-	 <8yapqqe3bs3.fsf@huya.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 27 Feb 2011 11:10:33 +0000
-Message-ID: <1298805034.4626.4.camel@jazzbox>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 27 Feb 2011 06:11:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=xmLBqlfEUDgMLU6gorFamQhC9HmzALmig4rQ5StFKLE+SeLMrskwUn1Ji1KwEqijbz
+         f1jFMk7F/+1wm1G57nK5Ri2T0l+Xvn8LZpQG2j6nd1v5A8ZowLrG0QkVQO8AE1Lu5Hgl
+         C09OTHWAdnp4ULKV/0NbSj4APQi30u1e+B0pQ=
+MIME-Version: 1.0
+In-Reply-To: <1298742844-8256-4-git-send-email-brgerst@gmail.com>
+References: <1298742844-8256-1-git-send-email-brgerst@gmail.com>
+	<1298742844-8256-4-git-send-email-brgerst@gmail.com>
+Date: Sun, 27 Feb 2011 13:11:47 +0200
+X-Google-Sender-Auth: ZnBlSBOHXzCo3fXYe1oxhD4gVDw
+Message-ID: <AANLkTi=F7tFoBkauFK-R_t7vCjhHmL+cgq+UmpNhCNgZ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86, boot: merge memcpy()
+From: Pekka Enberg <penberg@kernel.org>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-02-26 at 18:12 +0000, David Brown wrote:
-> On Fri, Feb 25 2011, Will Deacon wrote:
+On Sat, Feb 26, 2011 at 7:54 PM, Brian Gerst <brgerst@gmail.com> wrote:
+> Merge the 32-bit and 64-bit memcpy functions.
+>
+> Signed-off-by: Brian Gerst <brgerst@gmail.com>
 
-> > These asm blocks all have sensible looking output constraints. Why
-> > do they need to be marked volatile?
-> 
-> Without the volatile, the compiler is free to assume the only side
-> effects of the asm are to modify the output registers.  The volatile is
-> needed to indicate to the compiler that the asm has other side effects.
-
-As far as I know, volatile asm does two things:
-
-(1) It stops the compiler from reordering the asm block with respect to
-other volatile statements.
-
-(2) It prevents the compiler from optimising the block away when
-dataflow analysis indicates it's not required.
-
-If side-effects need to be indicated, won't a memory clobber do the
-trick?
-
-Will
-
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
