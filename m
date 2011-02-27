@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1B0SUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 13:20:12 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35678 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab1B0SUJ convert rfc822-to-8bit (ORCPT
+	id S1752209Ab1B0So4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 13:44:56 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:33091 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab1B0Soz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 13:20:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=FMN2ox1nRGr0zsQtAXk1SKxlEkajbgPRR3eyz0Fk9ls7MHe9NnMfTU9JZCKkQBu5VM
-         5fUs6USGQqpPezybnbPuWNs/lyuWSdbOjFuBmhHfTKnHHw0YLkZYUElcGPLjJstHKlPd
-         Z6lBeWdpIhpkBO0lFQbOTPAcsF4IZZ+zSo8I0=
+	Sun, 27 Feb 2011 13:44:55 -0500
+Date: Sun, 27 Feb 2011 19:44:53 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Jeff Mahoney <jeffm@suse.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] Add ``cloneconfig'' target
+Message-ID: <20110227184453.GA28732@merkur.ravnborg.org>
+References: <4D671556.80607@suse.com> <20110225060706.GA12723@merkur.ravnborg.org> <AANLkTimFd+KFKgiOF8iVoM8Pk77Zy+5CsFs5BCYqCw=L@mail.gmail.com> <20110226221838.GA24028@merkur.ravnborg.org> <AANLkTi=+AU3gJJOov8R1fNcZVE7iNpbTLDuMB5PHUk8s@mail.gmail.com> <AANLkTikigj1rDHrUaySHAYrW=GPPezbmcaDfx78AqE1_@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110202182013.GA2924@pengutronix.de>
-References: <alpine.DEB.2.00.1102021504550.31867@ayla.of.borg>
-	<20110202182013.GA2924@pengutronix.de>
-Date: Sun, 27 Feb 2011 19:20:08 +0100
-X-Google-Sender-Auth: q_37vRRDZLpDohivcJhMQlU2lAM
-Message-ID: <AANLkTinXQmTmQCchYzGSdGah9ww2tnwY+6WFDXGTuCpb@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v2.6.38-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikigj1rDHrUaySHAYrW=GPPezbmcaDfx78AqE1_@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 2, 2011 at 19:20, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> On Wed, Feb 02, 2011 at 03:05:16PM +0100, Geert Uytterhoeven wrote:
->
->> Below is the list of build error/warning regressions/improvements in
->
-> Is it an idea to prefix regressions with "+" and improvements with "-" (so it
-> looks a bit like a diff)? In those long lists, it is quite easy to overlook
-> where you currently are.
+On Sat, Feb 26, 2011 at 06:28:43PM -0500, Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Sat, Feb 26, 2011 at 6:03 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> >> The fact that the configuration is gzipped does not warrant
+> >> a new option to deal with this that almost duplicate the
+> >> existing functionality.
+> >>
+> > agree.
+> >
+> Let me precise, as there may be confusion. I agree about the new
+> target issue, but definitively think this kconfig "option" (more a
+> hack, which required a special option within kconfig) should be
+> handled by Kbuild, not Kconfig, ie. I'd discard "option
+> defconfig_list". File decompression (and eventually which config to
+> pick) should be done prior to the invocation of Kconfig.
 
-Thx for the suggestion!
-As you probably already noticed, I started doing that.
+If you can come up with something simpler and better than
+what we have today then fine.
+Simplifying kconfgi would be good.
 
-Gr{oetje,eeting}s,
+But at least barebox uses defconfig_list - an maybe others.
+We need to consider non-kernel users too.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Sam
