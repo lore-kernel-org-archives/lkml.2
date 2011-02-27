@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab1B0PmU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 10:42:20 -0500
-Received: from toutatis.isc.org ([149.20.54.64]:32930 "EHLO
-	mainmail.teklibre.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161Ab1B0PmR (ORCPT
+	id S1752346Ab1B0Ptp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 10:49:45 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64899 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab1B0Ptm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 10:42:17 -0500
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Feb 2011 10:42:17 EST
-From: d@taht.net (Dave =?utf-8?Q?T=C3=A4ht?=)
-To: sedat.dilek@gmail.com
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        bloat-devel@lists.bufferbloat.net, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: ANNOUNCE: debloat-testing kernel git tree
-Organization: Teklibre - http://www.teklibre.com
-References: <20110225222210.GA3618@tuxdriver.com>
-	<AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
-Date: Sun, 27 Feb 2011 08:31:41 -0700
-In-Reply-To: <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
-	(Sedat Dilek's message of "Sun, 27 Feb 2011 16:23:59 +0100")
-Message-ID: <87fwr9jxya.fsf@cruithne.co.teklibre.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 27 Feb 2011 10:49:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=JE7ZEOi7zl3Mv79QzQUijjawbxefW1jHYXhzB1KZIjeE+IJFR/RVtx14G6XvCyfJBt
+         qUIRru/XVtLrr0fzuxFaVdOnso3cXagkllckbcwqv9cHTLRCabrHtO7G+6hRW7CCRNdY
+         rGPleaHtxN/cLs9yxsp9SZ4+O6JoDuJenpdQs=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH] memcg: clean up migration
+Date: Mon, 28 Feb 2011 00:49:25 +0900
+Message-Id: <1298821765-3167-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch cleans up unncessary BUG_ON check and confusing
+charge variable.
 
-Sedat Dilek <sedat.dilek@googlemail.com> writes:
+That's because memcg charge/uncharge could be handled by
+mem_cgroup_[prepare/end] migration itself so charge local variable
+in unmap_and_move lost the role since we introduced 01b1ae63c2.
 
-> On Fri, Feb 25, 2011 at 11:22 PM, John W. Linville
-> <linville@tuxdriver.com> wrote:
->> Announcement
->>
->> The bufferbloat project [1] is pleased to announce the availability
->> of the debloat-testing Linux kernel git tree:
->>
->>   git://git.infradead.org/debloat-testing.git
+And mem_cgroup_prepare_migratio return 0 if only it is successful.
+Otherwise, it jumps to unlock label to clean up so BUG_ON(charge)
+isn;t meaningless.
 
-----snip----
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/memcontrol.c |    1 +
+ mm/migrate.c    |   14 ++++----------
+ 2 files changed, 5 insertions(+), 10 deletions(-)
 
-> Hi,
->
-> it should be "localversion-debloat" in the commit-subject in [1] (not
-> "localversion-wireless") :-).  "-db" as suffix is IMHO not very
-> meaningful... Why not add simply a suffix called "-debloat"?  (Anyway,
-> I will revert this patch because I don't want to have any suffix added
-> automatically.)
->
-> I have several other questions, but I start compiling first and test
-> this debloat kernel.
-
-Excellent. At moment I would recommend building "low latency preempt
-desktop" kernels with a high HZ value (400 or 1000), enabling highres
-timers, and compiling in SFB as a module. (I'd like the default for SFB
-to be "m" rather than "n", too)
-
->
-> Regards,
-> - Sedat -
->
-> [1] "Add localversion-wireless to identify builds from this tree."
-> http://git.infradead.org/debloat-testing.git/commit/3f9bdb4f44b076feda72d353d8ad717831416f36
-> _______________________________________________
-> Bloat-devel mailing list
-> Bloat-devel@lists.bufferbloat.net
-> https://lists.bufferbloat.net/listinfo/bloat-devel
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 2fc97fc..6832926 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2872,6 +2872,7 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
+ /*
+  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
+  * page belongs to.
++ * Return 0 if charge is successful. Otherwise return -errno.
+  */
+ int mem_cgroup_prepare_migration(struct page *page,
+ 	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask)
+diff --git a/mm/migrate.c b/mm/migrate.c
+index eb083a6..737c2e5 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -622,7 +622,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	int *result = NULL;
+ 	struct page *newpage = get_new_page(page, private, &result);
+ 	int remap_swapcache = 1;
+-	int charge = 0;
+ 	struct mem_cgroup *mem;
+ 	struct anon_vma *anon_vma = NULL;
+ 
+@@ -637,9 +636,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 		if (unlikely(split_huge_page(page)))
+ 			goto move_newpage;
+ 
+-	/* prepare cgroup just returns 0 or -ENOMEM */
+ 	rc = -EAGAIN;
+-
+ 	if (!trylock_page(page)) {
+ 		if (!force)
+ 			goto move_newpage;
+@@ -678,13 +675,11 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	}
+ 
+ 	/* charge against new page */
+-	charge = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
+-	if (charge == -ENOMEM) {
+-		rc = -ENOMEM;
++	rc = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
++	if (rc)
+ 		goto unlock;
+-	}
+-	BUG_ON(charge);
+ 
++	rc = -EAGAIN;
+ 	if (PageWriteback(page)) {
+ 		if (!force || !sync)
+ 			goto uncharge;
+@@ -767,8 +762,7 @@ skip_unmap:
+ 		drop_anon_vma(anon_vma);
+ 
+ uncharge:
+-	if (!charge)
+-		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
++	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+ unlock:
+ 	unlock_page(page);
+ 
 -- 
-Dave Taht
-http://nex-6.taht.net
+1.7.1
+
