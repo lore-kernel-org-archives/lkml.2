@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab1B0UIC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 15:08:02 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37556 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab1B0UH7 (ORCPT
+	id S1751881Ab1B0USJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 15:18:09 -0500
+Received: from slow3-v.mail.gandi.net ([217.70.178.89]:47693 "EHLO
+	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab1B0USG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 15:07:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=bPhWY8k4kpk6wPf5FdCIL+/a2kSwRW1yPevP+CtdkEpK19WU3/a9UtmeErmqFabC3M
-         S9NBm7k8XxnU3zQBbze0SKSMF6D8jER7QdAEX4t2ReOPqp76XU89rIdv1+fOKdoAQzKV
-         hO/qpg3E1fDq/wUJyca68Q+xjGn+YYM/oMlUY=
-Subject: Re: txqueuelen has wrong units; should be time
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Cc: Albert Cahalan <acahalan@gmail.com>, Mikael Abrahamsson <swmike@swm.pp.se>,
-        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-In-Reply-To: <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
-References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
-	 <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
-	 <1298793252.8726.45.camel@edumazet-laptop>
-	 <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
-	 <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 27 Feb 2011 21:07:53 +0100
-Message-ID: <1298837273.8726.128.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sun, 27 Feb 2011 15:18:06 -0500
+X-WhiteListed: mail was accepted with no delay
+X-WhiteListed: mail was accepted with no delay
+X-Originating-IP: 217.70.178.45
+X-Originating-IP: 173.50.155.44
+Message-ID: <4D6AB159.7010809@pbjtriplett.org>
+Date: Sun, 27 Feb 2011 12:17:29 -0800
+From: Burt Triplett <burt@pbjtriplett.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>, Len Brown <lenb@kernel.org>
+Subject: Re: Performance/resume issues on Toshiba NB305
+References: <20110225164239.GA24686@thinkpad-t410> <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6> <20110225212142.GC24686@thinkpad-t410> <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6> <20110225222900.GD24686@thinkpad-t410> <alpine.LFD.2.00.1102252330290.2701@localhost6.localdomain6> <4D689681.1030301@pbjtriplett.org> <20110226150032.GA2053@thinkpad-t410>
+In-Reply-To: <20110226150032.GA2053@thinkpad-t410>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 27 février 2011 à 12:55 +0200, Jussi Kivilinna a écrit :
-> Quoting Albert Cahalan <acahalan@gmail.com>:
-> 
-> > On Sun, Feb 27, 2011 at 2:54 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >> Le dimanche 27 février 2011 à 08:02 +0100, Mikael Abrahamsson a écrit :
-> >>> On Sun, 27 Feb 2011, Albert Cahalan wrote:
-> >>>
-> >>> > Nanoseconds seems fine; it's unlikely you'd ever want
-> >>> > more than 4.2 seconds (32-bit unsigned) of queue.
-> > ...
-> >> Problem is some machines have slow High Resolution timing services.
-> >>
-> >> _If_ we have a time limit, it will probably use the low resolution (aka
-> >> jiffies), unless high resolution services are cheap.
-> >
-> > As long as that is totally internal to the kernel and never
-> > getting exposed by some API for setting the amount, sure.
-> >
-> >> I was thinking not having an absolute hard limit, but an EWMA based one.
-> >
-> > The whole point is to prevent stale packets, especially to prevent
-> > them from messing with TCP, so I really don't think so. I suppose
-> > you do get this to some extent via early drop.
-> 
-> I made simple hack on sch_fifo with per packet time limits  
-> (attachment) this weekend and have been doing limited testing on  
-> wireless link. I think hardlimit is fine, it's simple and does  
-> somewhat same as what packet(-hard)limited buffer does, drops packets  
-> when buffer is 'full'. My hack checks for timed out packets on  
-> enqueue, might be wrong approach (on other hand might allow some more  
-> burstiness).
-> 
+On 02/26/2011 07:00 AM, Seth Forshee wrote:
+> On Fri, Feb 25, 2011 at 09:58:25PM -0800, Burt Triplett wrote:
+>> Looks like the Toshiba NB305 has an Intel Atom processor in it.
+>> bits-327, released today, now detects Intel Atom processors, and no
+>> longer shows them as unknown.  We don't have any processor-specific
+>> tests for Atom yet, though we may add some in the future.  All of
+>> the general tests should work, however.
+>
+> The new release detects the Atom processor okay, but in bits-327 the
+> system resets during the SMI frequency/latency test, whereas it didn't
+> with bits-316.
 
+The SMI Frequency and Latency test should be fixed in bits-329.
 
-Qdisc should return to caller a good indication packet is queued or
-dropped at enqueue() time... not later (aka : never)
+>> Can you provide more details on which MSRs show up as inconsistent
+>> on your system?  They might represent actual bugs in your BIOS, but
+>> we might just need to add a few more entries to the Atom
+>> CPU-specific MSR blacklist as expected inconsistencies.
+>
+> Here's what it says:
+>
+>    (MSR 0x39 consistent): FAIL
+>    (MSR 0x199 consistent): FAIL
+>    (MSR 0x1a0 consistent): FAIL
+>    Summary: 7917 passed, 3 failed
+>
+> I have 3 systems with this same processor, and they all report the same
+> thing here.
 
-Accepting a packet at t0, and dropping it later at t0+limit without
-giving any indication to caller is a problem.
+To get more information on how the MSRs differ between CPUs, you can 
+turn on verbose mode.  Go to the GRUB command line by hitting 'c', and 
+enter "test_options -v 2".  Then hit Esc to go back to the menu, and 
+re-run the MSR consistency check.  It will now show you the value of the 
+MSR on each CPU.
 
-This is why I suggested using an EWMA plus a probabilist drop or
-congestion indication (NET_XMIT_CN) to caller at enqueue() time.
+MSR 0x1a0 is IA32_MISC_ENABLE, and generally any inconsistency in that 
+MSR represents a BIOS bug: it didn't enable features identically on all 
+CPUs.  Once you see which bits differ, you can look at the Intel 
+Software Developer's Manual (specifically volume 3B) to find out what 
+those bits mean and which specific features the BIOS inconsistently enabled.
 
-The absolute time limit you are trying to implement should be checked at
-dequeue time, to cope with enqueue bursts or pauses on wire.
+MSR 0x199 is IA32_PERF_CTL.  A difference in that MSR usually means the 
+BIOS left CPUs in different P-states when booting, which it really 
+shouldn't do.  Again, you can decode the result with the Intel SDM.
 
+Looking into MSR 0x39.
 
-
+- Burt Triplett
