@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab1B0RwT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 12:52:19 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52075 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab1B0RwR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 12:52:17 -0500
-Date: Sun, 27 Feb 2011 09:51:54 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-media@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Cc: Mauro <mchehab@infradead.org>, Matti Aaltonen <matti.j.aaltonen@nokia.com>
-Subject: [PATCH] media/radio/wl1273: fix build errors
-Message-Id: <20110227095154.2741d051.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752217Ab1B0RyJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 12:54:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54745 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402Ab1B0RyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 12:54:07 -0500
+Message-ID: <4D6A8FB9.3080408@suse.com>
+Date: Sun, 27 Feb 2011 12:54:01 -0500
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] Add ``cloneconfig'' target
+References: <4D671556.80607@suse.com>	<20110225060706.GA12723@merkur.ravnborg.org>	<AANLkTimFd+KFKgiOF8iVoM8Pk77Zy+5CsFs5BCYqCw=L@mail.gmail.com>	<20110226221838.GA24028@merkur.ravnborg.org> <AANLkTi=xoiCg9AQJDMjVC=pT-t0XKc+FQ9GZujD3pjHE@mail.gmail.com>
+In-Reply-To: <AANLkTi=xoiCg9AQJDMjVC=pT-t0XKc+FQ9GZujD3pjHE@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D6A8F44.00B6:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-RADIO_WL1273 needs to make sure that the mfd core is built to avoid
-build errors:
+On 02/27/2011 04:03 AM, Geert Uytterhoeven wrote:
+> On Sat, Feb 26, 2011 at 23:18, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> On Sat, Feb 26, 2011 at 02:47:01PM -0500, Arnaud Lacombe wrote:
+>>> On Fri, Feb 25, 2011 at 1:07 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>>>> We already have something remotely similar in kconfig.
+>>>> We use the following list:
+>>>> config DEFCONFIG_LIST
+>>>>        string
+>>>>        depends on !UML
+>>>>        option defconfig_list
+>>>>        default "/lib/modules/$UNAME_RELEASE/.config"
+>>>>        default "/etc/kernel-config"
+>>>>        default "/boot/config-$UNAME_RELEASE"
+>>>>        default "$ARCH_DEFCONFIG"
+>>>>        default "arch/$ARCH/defconfig"
+>>>>
+>>> I may argue that anything within the Linux tree which point
+>>> _by_default_ to something outside the tree itself is broken.
+>> The above allows the average user to just type "make menuconfig"
+>> and then the configuration of the current kernel is presented to
+>> the user. This is convinient in many cases.
+>> We know the /proc/config.gz is an incresingly popular way to gain
+>> access to the configuration of the running kernel. So extending
+>> the already know and working way to obtaing the configuration
+>> of the running kernel to suppport /proc/config.gz is logical.
+> 
+> Does this detect cross-compiling? The 'depends on !UML' triggered me...
 
-ERROR: "mfd_add_devices" [drivers/mfd/wl1273-core.ko] undefined!
-ERROR: "mfd_remove_devices" [drivers/mfd/wl1273-core.ko] undefined!
+No, and it never has. The DEFCONFIG_LIST feature has been mostly
+unaltered since it was added in Jun 2006. Prior to that it was hardcoded
+into scripts/kconfig/confdata.c since before 2002.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Matti Aaltonen <matti.j.aaltonen@nokia.com>
----
-(also needed in mainline)
+- -Jeff
 
- drivers/media/radio/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+- -- 
+Jeff Mahoney
+SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
---- linux-next-20110223.orig/drivers/media/radio/Kconfig
-+++ linux-next-20110223/drivers/media/radio/Kconfig
-@@ -441,6 +441,7 @@ config RADIO_TIMBERDALE
- config RADIO_WL1273
- 	tristate "Texas Instruments WL1273 I2C FM Radio"
- 	depends on I2C && VIDEO_V4L2
-+	select MFD_CORE
- 	select MFD_WL1273_CORE
- 	select FW_LOADER
- 	---help---
+iEYEARECAAYFAk1qj7kACgkQLPWxlyuTD7J/ZwCfQzFM6Qo+1Va5RTYKj4bXEydm
+28EAoINVyrH+F4hYhCWSkXYCq3Y0euY/
+=T1qc
+-----END PGP SIGNATURE-----
