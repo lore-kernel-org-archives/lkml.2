@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab1B0HyU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 02:54:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45941 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab1B0HyR (ORCPT
+	id S1751696Ab1B0HzK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 02:55:10 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:46132 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab1B0HzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 02:54:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GY2StMiLlId6N3nm8vqJ3rObGfJxOyvV+OyI0NJFi7L4stVOmKzsgY7QSXDodxw0oc
-         QyH/wnlXcZTUbfSZQPip7b/LVJABvL+kpwfusu5czutxTBY+MGkgdD+hpgENC3hO6H0b
-         EaFJT3VthJrCvdav1E/HhoffvpuV7oDG3zchI=
-Subject: Re: txqueuelen has wrong units; should be time
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Mikael Abrahamsson <swmike@swm.pp.se>
-Cc: Albert Cahalan <acahalan@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-In-Reply-To: <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
-References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
-	 <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 27 Feb 2011 08:54:12 +0100
-Message-ID: <1298793252.8726.45.camel@edumazet-laptop>
+	Sun, 27 Feb 2011 02:55:08 -0500
+Date: Sun, 27 Feb 2011 08:54:55 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH 10/17]drivers:hwmon:sht15.c Remove one to many n's in a
+ word.
+Message-ID: <20110227085455.701a5665@endymion.delvare>
+In-Reply-To: <1298781250-2718-11-git-send-email-justinmattock@gmail.com>
+References: <1298781250-2718-1-git-send-email-justinmattock@gmail.com>
+	<1298781250-2718-11-git-send-email-justinmattock@gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 27 février 2011 à 08:02 +0100, Mikael Abrahamsson a écrit :
-> On Sun, 27 Feb 2011, Albert Cahalan wrote:
+On Sat, 26 Feb 2011 20:34:03 -0800, Justin P. Mattock wrote:
+> The Patch below removes one to many "n's" in a word..
+
+4 spelling mistakes in the summary of a spelling fix patch. Ah, the
+irony ;)
+
+
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> CC: Jean Delvare <khali@linux-fr.org>
+> CC: Guenter Roeck <guenter.roeck@ericsson.com>
+> CC: lm-sensors@lm-sensors.org
+> ---
+>  drivers/hwmon/sht15.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> > Nanoseconds seems fine; it's unlikely you'd ever want
-> > more than 4.2 seconds (32-bit unsigned) of queue.
-> 
-> I think this is shortsighted and I'm sure someone will come up with a case 
-> where 4.2 seconds isn't enough. Let's not build in those kinds of 
-> limitations from start.
-> 
-> Why not make it 64bit and go to picoseconds from start?
-> 
-> If you need to make it 32bit unsigned, I'd suggest to start from 
-> microseconds instead. It's less likely someone would want less than a 
-> microsecond of queue, than someone wanting more than 4.2 seconds of queue.
-> 
+> diff --git a/drivers/hwmon/sht15.c b/drivers/hwmon/sht15.c
+> index a610e78..3ba7dd8 100644
+> --- a/drivers/hwmon/sht15.c
+> +++ b/drivers/hwmon/sht15.c
+> @@ -610,7 +610,7 @@ static int __devexit sht15_remove(struct platform_device *pdev)
+>  	struct sht15_data *data = platform_get_drvdata(pdev);
+>  
+>  	/* Make sure any reads from the device are done and
+> -	 * prevent new ones beginnning */
+> +	 * prevent new ones from beginning */
+>  	mutex_lock(&data->read_lock);
+>  	hwmon_device_unregister(data->hwmon_dev);
+>  	sysfs_remove_group(&pdev->dev.kobj, &sht15_attr_group);
 
-32 or 64 bits doesnt matter a lot. At Qdisc stage we have up to 40 bytes
-available in skb->sb[] for our usage.
+Applied, thanks.
 
-Problem is some machines have slow High Resolution timing services.
-
-_If_ we have a time limit, it will probably use the low resolution (aka
-jiffies), unless high resolution services are cheap.
-
-I was thinking not having an absolute hard limit, but an EWMA based one.
-
-
-
+-- 
+Jean Delvare
