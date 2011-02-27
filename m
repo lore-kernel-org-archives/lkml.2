@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab1B0Mdu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 07:33:50 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:42639 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751150Ab1B0Mdr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 07:33:47 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sun, 27 Feb 2011 13:34:05 +0100
-To: Kevin McNeely <Kevin.McNeely@cypress.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        Trilok Soni <tsoni@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
-        Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
-Message-ID: <20110227123405.GA4961@polaris.bitmath.org>
-References: <kev@cypress.com>
- <1294188847-24728-1-git-send-email-kev@cypress.com>
- <20110105085942.GA23321@polaris.bitmath.org>
- <FB9C2CB29A07AB45B575A4E8D2AABC09014003B8@labamba.mis.cypress.com>
- <20110105173403.GA2146@polaris.bitmath.org>
- <FB9C2CB29A07AB45B575A4E8D2AABC0901629825@labamba.mis.cypress.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FB9C2CB29A07AB45B575A4E8D2AABC0901629825@labamba.mis.cypress.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1Ptfnd-0002R9-4Y.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Ptfnd-0002R9-4Y 8cac0bc5706674e7fd6fa72c0c34aaeb
+	id S1752166Ab1B0NNh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 08:13:37 -0500
+Received: from mga14.intel.com ([143.182.124.37]:62581 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752062Ab1B0NNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 08:13:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,234,1297065600"; 
+   d="scan'208";a="394695473"
+Subject: perf: fix the missing event initialization when pmu is found in idr
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 27 Feb 2011 21:13:31 +0800
+Message-Id: <1298812411.2699.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Currently, the event is not initialized if pmu is found in idr.
+This never causes bug just because now no pmu is associated with the idr
+id.
+This patch fixes the potential bug.
 
-> I have been testing with Android based systems.
-> What system configurations are good for testing the slot handling in
-> Protocol B?
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ kernel/perf_event.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-The mtview project is a graphical way to test out hardware [1]. If no
-graphics is wanted, there is utouch-frame. For low-level testing, the
-mtdev project can be used, or even evtest.
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 64a018e..821ce82 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -6098,17 +6098,22 @@ struct pmu *perf_init_event(struct perf_event *event)
+ {
+ 	struct pmu *pmu = NULL;
+ 	int idx;
++	int ret;
+ 
+ 	idx = srcu_read_lock(&pmus_srcu);
+ 
+ 	rcu_read_lock();
+ 	pmu = idr_find(&pmu_idr, event->attr.type);
+ 	rcu_read_unlock();
+-	if (pmu)
++	if (pmu) {
++		ret = pmu->event_init(event);
++		if (ret)
++			pmu = ERR_PTR(ret);
+ 		goto unlock;
++	}
+ 
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		int ret = pmu->event_init(event);
++		ret = pmu->event_init(event);
+ 		if (!ret)
+ 			goto unlock;
+ 
 
-Thanks,
-Henrik
 
-[1] https://launchpad.net/mtview/, or http://bitmath.org/code/mtview/
