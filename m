@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab1B1QJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:09:16 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:36478 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab1B1QJP (ORCPT
+	id S1754822Ab1B1QPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:15:41 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48781 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab1B1QPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:09:15 -0500
-Date: Mon, 28 Feb 2011 11:08:50 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Pierre Tardy <tardyp@gmail.com>
-Cc: linux-pm@lists.linux-foundation.org, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_idle: disable NHM/WSM HW C-state auto-demotion (v3)
-In-reply-to: <AANLkTinVCvUkmX3pnSy_Ah3fOm6hV-jAPrQXAQ971xnS@mail.gmail.com>
-Message-id: <alpine.LFD.2.02.1102281105460.17782@x980>
-References: <alpine.LFD.2.02.1101182150400.14668@x980>
- <alpine.LFD.2.02.1101190035200.14668@x980>
- <alpine.LFD.2.02.1102160119430.843@x980>
- <AANLkTinVCvUkmX3pnSy_Ah3fOm6hV-jAPrQXAQ971xnS@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 28 Feb 2011 11:15:40 -0500
+Date: Mon, 28 Feb 2011 11:11:15 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Albert Cahalan <acahalan@gmail.com>,
+        Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+Message-ID: <20110228161115.GB2515@tuxdriver.com>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+ <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+ <1298793252.8726.45.camel@edumazet-laptop>
+ <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+ <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+ <1298837273.8726.128.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298837273.8726.128.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Hardware C-state auto-demotion is a mechanism where the HW overrides
-> > the OS C-state request, instead demoting to a shallower state,
-> > which is less expensive, but saves less power.
+On Sun, Feb 27, 2011 at 09:07:53PM +0100, Eric Dumazet wrote:
 
-> I'm interrested, for pytimechart, to have trace information of what
-> actual c-state got reached after each idle request.
-> Do you have any info on how to get that?
+> Qdisc should return to caller a good indication packet is queued or
+> dropped at enqueue() time... not later (aka : never)
+> 
+> Accepting a packet at t0, and dropping it later at t0+limit without
+> giving any indication to caller is a problem.
 
-the actual c-state residency can be seen in the residency 
-counters that are exported by turbostat.
-However, at the time of the request/return the OS doesn't know
-that it's request got demoted demoted (or un-demoted).
+Can you elaborate on what problem this causes?  Is it any worse than
+if the packet is dropped at some later hop?
 
-No, checking the counters is not something we want to
-add to the idle entry/exit path -- they are not optimized for speed.
+Is there any API that could report the drop to the sender (at
+least a local one) without having to wait for the ack timeout?
+Should there be?
 
-thanks,
-Len Brown, Intel Open Source Technology Center
-
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
