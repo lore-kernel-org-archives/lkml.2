@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab1B1QiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:38:11 -0500
-Received: from kroah.org ([198.145.64.141]:48206 "EHLO coco.kroah.org"
+	id S1755833Ab1B1QiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:38:23 -0500
+Received: from kroah.org ([198.145.64.141]:48279 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755694Ab1B1QiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:38:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:11 2011
-Message-Id: <20110228162411.038228403@clark.kroah.org>
+	id S1755814Ab1B1QiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:12 2011
+Message-Id: <20110228162412.024809927@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:23:14 -0800
+Date: Mon, 28 Feb 2011 08:23:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Maciej Szmigiero <mhej@o2.pl>
-Subject: [53/68] USB: Add Samsung SGH-I500/Android modem ID switch to visor driver
+        NeilBrown <neilb@suse.de>
+Subject: [63/68] md: correctly handle probe of an mdp device.
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maciej Szmigiero <mhej@o2.pl>
+From: NeilBrown <neilb@suse.de>
 
-commit acb52cb1613e1d3c8a8c650717cc51965c60d7d4 upstream.
+commit 8f5f02c460b7ca74ce55ce126ce0c1e58a3f923d upstream.
 
-[USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
+'mdp' devices are md devices with preallocated device numbers
+for partitions. As such it is possible to mknod and open a partition
+before opening the whole device.
 
-Samsung decided to reuse USB ID of its old CDMA phone SGH-I500 for the
-modem part of some of their Android phones. At least Galaxy Spica
-is affected.
+this causes  md_probe() to be called with a device number of a
+partition, which in-turn calls mddev_find with such a number.
 
-This modem needs ACM driver and does not work with visor driver which
-binds the conflicting ID for SGH-I500.
-Because SGH-I500 is pretty an old hardware its best to add switch to
-visor
-driver in cause somebody still wants to use that phone with Linux.
+However mddev_find expects the number of a 'whole device' and
+does the wrong thing with partition numbers.
 
-Note that this is needed only when using the Android phone as modem,
-not in USB storage or ADB mode.
+So add code to mddev_find to remove the 'partition' part of
+a device number and just work with the 'whole device'.
 
-Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
+This patch addresses https://bugzilla.kernel.org/show_bug.cgi?id=28652
+
+Reported-by: hkmaly@bigfoot.com
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/visor.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/md/md.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/serial/visor.c
-+++ b/drivers/usb/serial/visor.c
-@@ -27,6 +27,7 @@
- #include <linux/uaccess.h>
- #include <linux/usb.h>
- #include <linux/usb/serial.h>
-+#include <linux/usb/cdc.h>
- #include "visor.h"
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -305,6 +305,9 @@ static mddev_t * mddev_find(dev_t unit)
+ {
+ 	mddev_t *mddev, *new = NULL;
  
- /*
-@@ -758,6 +759,17 @@ static int visor_probe(struct usb_serial
- 
- 	dbg("%s", __func__);
- 
-+	/*
-+	 * some Samsung Android phones in modem mode have the same ID
-+	 * as SPH-I500, but they are ACM devices, so dont bind to them
-+	 */
-+	if (id->idVendor == SAMSUNG_VENDOR_ID &&
-+		id->idProduct == SAMSUNG_SPH_I500_ID &&
-+		serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM &&
-+		serial->dev->descriptor.bDeviceSubClass ==
-+			USB_CDC_SUBCLASS_ACM)
-+		return -ENODEV;
++	if (unit && MAJOR(unit) != MD_MAJOR)
++		unit &= ~((1<<MdpMinorShift)-1);
 +
- 	if (serial->dev->actconfig->desc.bConfigurationValue != 1) {
- 		dev_err(&serial->dev->dev, "active config #%d != 1 ??\n",
- 			serial->dev->actconfig->desc.bConfigurationValue);
+  retry:
+ 	spin_lock(&all_mddevs_lock);
+ 
 
 
