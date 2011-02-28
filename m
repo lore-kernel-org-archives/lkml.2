@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab1B1Rbt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 12:31:49 -0500
-Received: from mga11.intel.com ([192.55.52.93]:53752 "EHLO mga11.intel.com"
+	id S1753683Ab1B1RcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 12:32:13 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:33569 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab1B1Rbr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 12:31:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,241,1297065600"; 
-   d="scan'208";a="892026408"
-From: "Allyn, Mark A" <mark.a.allyn@intel.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Date: Mon, 28 Feb 2011 10:31:44 -0700
-Subject: RE: RFC: [PATCH 0/5] staging: sep: Enable kernel crypto
-Thread-Topic: RFC: [PATCH 0/5] staging: sep: Enable kernel crypto
-Thread-Index: AcvXUx9EJHxI1GGASrCvBh9hWlT5sAAGhuMg
-Message-ID: <8A0E4C92AE2D6D40AF99653191DA3231614A005D7C@rrsmsx501.amr.corp.intel.com>
-References: <1298869824-4246-1-git-send-email-mark.a.allyn@intel.com>
- <20110228141527.GA25667@kroah.com>
-In-Reply-To: <20110228141527.GA25667@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753195Ab1B1RcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 12:32:12 -0500
+X-ASG-Debug-ID: 1298914330-03d6a50f0be4e90001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D6BDC18.7020205@fusionio.com>
+Date: Mon, 28 Feb 2011 12:32:08 -0500
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "dk@in-telegence.net" <dk@in-telegence.net>,
+        "tj@kernel.org" <tj@kernel.org>
+Subject: Re: [PATCH] blk-thrttole: Do not use kblockd workqueue for throtl
+ work
+References: <1298908305-12032-1-git-send-email-vgoyal@redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH] blk-thrttole: Do not use kblockd workqueue for throtl
+ work
+In-Reply-To: <1298908305-12032-1-git-send-email-vgoyal@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1298914330
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.56662
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011-02-28 10:51, Vivek Goyal wrote:
+> o Dominik Klein reported a system hang issue while doing some blkio throttling
+>   testing.
+> 
+>   https://lkml.org/lkml/2011/2/24/173
+> 
+> o Some tracing revealed that CFQ was not dispatching any more jobs as queue
+>   unplug was not happening. And queue unplug was not happening because unplug
+>   work was not being called as there was one throttling work on same cpu
+>   which as not finished yet. And throttling work had not finished as it
+>   was tyring to dispatch a bio to CFQ but all the request descriptors were
+>   consume to it was put to sleep.
+> 
+> o So basically it is a cyclic dependecny between CFQ unplug work and throtl
+>   dispatch work. Tejun suggested that use separate workqueue for such cases..
+> 
+> o This patch uses a separate workqueue for throttle related work and does not
+>   rely on kblockd workqueue anymore.
 
-Is this really a "request for comments" set of patches, or do you want
-me to apply them to my tree?
+Not good, that's definitely a bug. I'll queue this up for 2.6.38.
 
-confused,
+-- 
+Jens Axboe
 
-greg k-h
-
-Greg:
-
-This was meant to be request for comment so that I can make any necessary
-Changes prior to submitting it for the tree.
-
-Mark
