@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab1B1Kqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 05:46:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33052 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab1B1Kqj (ORCPT
+	id S1753497Ab1B1KuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 05:50:05 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:46637 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab1B1KuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 05:46:39 -0500
-Date: Mon, 28 Feb 2011 10:46:35 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: dan.j.williams@intel.com, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        shiraz.hashim@st.com, amit.goel@st.com, armando.visconti@st.com
-Subject: Re: [PATCH 3/8 resend] dw_dmac: call dwc_scan_descriptor from
- dwc_issue_pending only if active list is empty
-Message-ID: <20110228104635.GB2754@pulham.picochip.com>
-References: <cover.1298889267.git.viresh.kumar@st.com>
- <8003205172278ef36cfca1fd50a54cb143fad958.1298889267.git.viresh.kumar@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8003205172278ef36cfca1fd50a54cb143fad958.1298889267.git.viresh.kumar@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Feb 2011 05:50:03 -0500
+Date: Mon, 28 Feb 2011 19:49:57 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 01/09] ARM: s3c2442: gta02: Fix usage gpio bank j pin
+ definitions
+In-reply-to: <4D6B7D19.1050103@metafoo.de>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Message-id: <003301cbd735$40353b20$c09fb160$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcvXNJsQ+YFxl90cQ6G4YMjKfkokKwAAFGKg
+References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
+ <000801cbd712$907019c0$b1504d40$%kim@samsung.com> <4D6B7D19.1050103@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 04:11:18PM +0530, Viresh Kumar wrote:
-> dwc_scan_descriptor was called even when there were descriptors in active list.
-> Checking if active list is empty or not.
+Lars-Peter Clausen wrote:
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> On 02/28/2011 07:41 AM, Kukjin Kim wrote:
+> > Lars-Peter Clausen wrote:
 
-Hi Viresh,
+(snip)
 
-I have a similar patch to this that is already in next that should 
-achieve the same thing (dmaengine/dw_dmac: don't scan descriptors if no 
-xfers in progress).
+> >
+> > Yeah, old S3C2440_GPJx has removed.
+> > Is the S3C2410_GPJ(1) right instead of S3C2440_GPJ1?
+> 
+> I think so. At least the the compile errors are gone and the drivers using
+> these gpios work as expected.
+> 
+Ok, you mean test it on board...so will apply into my s5p-fixes-for-linus
+for 38-rc.
 
-Jamie
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
