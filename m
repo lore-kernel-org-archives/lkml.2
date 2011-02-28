@@ -1,85 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab1CVBKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Mar 2011 21:10:17 -0400
-Received: from umbout1.umaryland.edu ([134.192.184.201]:13642 "EHLO
-	umbout1.umaryland.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab1CVBKP (ORCPT
+	id S1757231Ab1CAThY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:37:24 -0500
+Received: from 206.83.70.71.ptr.us.xo.net ([206.83.70.71]:52545 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757176Ab1CAThS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Mar 2011 21:10:15 -0400
-X-Greylist: delayed 678 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 21:10:15 EDT
-X-IronPort-AV: E=Sophos;i="4.63,222,1299474000"; 
-   d="scan'208";a="220099354"
-From: Ronald Kasl <rkasl@computer.org>
-To: gregkh@suse.de, arun.thomas@gmail.com
-Cc: darren.armstrong85@gmail.com, mithlesh@linsyssoft.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ronald Kasl <rkasl@computer.org>
-Subject: [PATCH 1/1] Staging: comedi: fix coding style / spaces
-Date: Mon, 13 Sep 2010 16:31:01 -0400
-Message-Id: <1284409861-3446-1-git-send-email-rkasl@computer.org>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 1 Mar 2011 14:37:18 -0500
+Message-Id: <201103011934.p21JYb4Q010297@farm-0010.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 28 Feb 2011 13:08:32 -0500
+Subject: [PATCH] arch/tile: bug fix: exec'ed task thought it was still single-stepping
+To: linux-kernel@vger.kernel.org
+In-Reply-To: <201103011931.p21JVtqp010237@farm-0010.internal.tilera.com>
+X-OriginalArrivalTime: 01 Mar 2011 19:34:37.0373 (UTC) FILETIME=[B35DAED0:01CBD847]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ssv_dnp.c file that fixes up the extra space warning
-found by the checkpatch.pl tool
+To handle single-step, tile mmap's a page of memory in the process
+space for each thread and uses it to construct a version of the
+instruction that we want to single step.  If the process exec's,
+though, we lose that mapping, and the kernel needs to be aware that
+it will need to recreate it if the exec'ed process than tries to
+single-step as well.
 
-Signed-off-by: Ronald Kasl <rkasl@computer.org>
+Also correct some int32_t to s32 for better kernel style.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/staging/comedi/drivers/ssv_dnp.c |   40 +++++++++++++++---------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+ arch/tile/include/asm/ptrace.h |    3 +++
+ arch/tile/kernel/process.c     |    4 ++++
+ arch/tile/kernel/single_step.c |   21 +++++++++++++++++++--
+ 3 files changed, 26 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ssv_dnp.c b/drivers/staging/comedi/drivers/ssv_dnp.c
-index 526de2e..cb72436 100644
---- a/drivers/staging/comedi/drivers/ssv_dnp.c
-+++ b/drivers/staging/comedi/drivers/ssv_dnp.c
-@@ -1,24 +1,24 @@
- /*
--    comedi/drivers/ssv_dnp.c
--    generic comedi driver for SSV Embedded Systems' DIL/Net-PCs
--    Copyright (C) 2001 Robert Schwebel <robert@schwebel.de>
--
--    COMEDI - Linux Control and Measurement Device Interface
--    Copyright (C) 2000 David A. Schleef <ds@schleef.org>
--
--    This program is free software; you can redistribute it and/or modify
--    it under the terms of the GNU General Public License as published by
--    the Free Software Foundation; either version 2 of the License, or
--    (at your option) any later version.
--
--    This program is distributed in the hope that it will be useful,
--    but WITHOUT ANY WARRANTY; without even the implied warranty of
--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    GNU General Public License for more details.
--
--    You should have received a copy of the GNU General Public License
--    along with this program; if not, write to the Free Software
--    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+comedi/drivers/ssv_dnp.c
-+generic comedi driver for SSV Embedded Systems' DIL/Net-PCs
-+Copyright (C) 2001 Robert Schwebel <robert@schwebel.de>
-+
-+COMEDI - Linux Control and Measurement Device Interface
-+Copyright (C) 2000 David A. Schleef <ds@schleef.org>
-+
-+This program is free software; you can redistribute it and/or modify
-+it under the terms of the GNU General Public License as published by
-+the Free Software Foundation; either version 2 of the License, or
-+(at your option) any later version.
-+
-+This program is distributed in the hope that it will be useful,
-+but WITHOUT ANY WARRANTY; without even the implied warranty of
-+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+GNU General Public License for more details.
-+
-+You should have received a copy of the GNU General Public License
-+along with this program; if not, write to the Free Software
-+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+diff --git a/arch/tile/include/asm/ptrace.h b/arch/tile/include/asm/ptrace.h
+index ac6d343..6be2246 100644
+--- a/arch/tile/include/asm/ptrace.h
++++ b/arch/tile/include/asm/ptrace.h
+@@ -141,6 +141,9 @@ struct single_step_state {
+ /* Single-step the instruction at regs->pc */
+ extern void single_step_once(struct pt_regs *regs);
  
- */
- /*
++/* Clean up after execve(). */
++extern void single_step_execve(void);
++
+ struct task_struct;
+ 
+ extern void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index e90eb53..5db8b5b 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -574,6 +574,8 @@ SYSCALL_DEFINE4(execve, const char __user *, path,
+ 		goto out;
+ 	error = do_execve(filename, argv, envp, regs);
+ 	putname(filename);
++	if (error == 0)
++		single_step_execve();
+ out:
+ 	return error;
+ }
+@@ -593,6 +595,8 @@ long compat_sys_execve(const char __user *path,
+ 		goto out;
+ 	error = compat_do_execve(filename, argv, envp, regs);
+ 	putname(filename);
++	if (error == 0)
++		single_step_execve();
+ out:
+ 	return error;
+ }
+diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
+index 1eb3b39..84a729e 100644
+--- a/arch/tile/kernel/single_step.c
++++ b/arch/tile/kernel/single_step.c
+@@ -56,7 +56,7 @@ enum mem_op {
+ 	MEMOP_STORE_POSTINCR
+ };
+ 
+-static inline tile_bundle_bits set_BrOff_X1(tile_bundle_bits n, int32_t offset)
++static inline tile_bundle_bits set_BrOff_X1(tile_bundle_bits n, s32 offset)
+ {
+ 	tile_bundle_bits result;
+ 
+@@ -254,6 +254,18 @@ P("\n");
+ 	return bundle;
+ }
+ 
++/*
++ * Called after execve() has started the new image.  This allows us
++ * to reset the info state.  Note that the the mmap'ed memory, if there
++ * was any, has already been unmapped by the exec.
++ */
++void single_step_execve(void)
++{
++	struct thread_info *ti = current_thread_info();
++	kfree(ti->step_state);
++	ti->step_state = NULL;
++}
++
+ /**
+  * single_step_once() - entry point when single stepping has been triggered.
+  * @regs: The machine register state
+@@ -373,7 +385,7 @@ void single_step_once(struct pt_regs *regs)
+ 		/* branches */
+ 		case BRANCH_OPCODE_X1:
+ 		{
+-			int32_t offset = signExtend17(get_BrOff_X1(bundle));
++			s32 offset = signExtend17(get_BrOff_X1(bundle));
+ 
+ 			/*
+ 			 * For branches, we use a rewriting trick to let the
+@@ -731,4 +743,9 @@ void single_step_once(struct pt_regs *regs)
+ 	__insn_mtspr(SPR_SINGLE_STEP_EN_K_K, 1 << USER_PL);
+ }
+ 
++void single_step_execve(void)
++{
++	/* Nothing */
++}
++
+ #endif /* !__tilegx__ */
 -- 
-1.7.0.4
+1.6.5.2
 
