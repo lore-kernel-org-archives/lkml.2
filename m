@@ -1,82 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1B1XBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 18:01:53 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45677 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753421Ab1B1XBv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 18:01:51 -0500
-Date: Mon, 28 Feb 2011 15:01:09 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>
-Subject: Re: [PATCH] RxRPC: Fix v1 keys
-Message-Id: <20110228150109.352d0713.akpm@linux-foundation.org>
-In-Reply-To: <20110228132753.30463.24909.stgit@warthog.procyon.org.uk>
-References: <20110228132753.30463.24909.stgit@warthog.procyon.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753507Ab1B1XCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 18:02:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952Ab1B1XCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 18:02:40 -0500
+Date: Mon, 28 Feb 2011 18:01:14 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
+Message-ID: <20110228230114.GB20845@redhat.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298888105-3778-1-git-send-email-arighi@develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Feb 2011 13:27:53 +0000
-David Howells <dhowells@redhat.com> wrote:
+On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
+> Overview
+> ========
+> Currently the blkio.throttle controller only support synchronous IO requests.
+> This means that we always look at the current task to identify the "owner" of
+> each IO request.
+> 
+> However dirty pages in the page cache can be wrote to disk asynchronously by
+> the per-bdi flusher kernel threads or by any other thread in the system,
+> according to the writeback policy.
+> 
+> For this reason the real writes to the underlying block devices may
+> occur in a different IO context respect to the task that originally
+> generated the dirty pages involved in the IO operation. This makes the
+> tracking and throttling of writeback IO more complicate respect to the
+> synchronous IO from the blkio controller's perspective.
+> 
+> Proposed solution
+> =================
+> In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
+> the problem of the buffered writes limitation by tracking the ownership of all
+> the dirty pages in the system.
+> 
+> This would allow to always identify the owner of each IO operation at the block
+> layer and apply the appropriate throttling policy implemented by the
+> blkio.throttle controller.
+> 
+> This solution makes the blkio.throttle controller to work as expected also for
+> writeback IO, but it does not resolve the problem of faster cgroups getting
+> blocked by slower cgroups (that would expose a potential way to create DoS in
+> the system).
+> 
+> In fact, at the moment critical IO requests (that have dependency with other IO
+> requests made by other cgroups) and non-critical requests are mixed together at
+> the filesystem layer in a way that throttling a single write request may stop
+> also other requests in the system, and at the block layer it's not possible to
+> retrieve such informations to make the right decision.
+> 
+> A simple solution to this problem could be to just limit the rate of async
+> writes at the time a task is generating dirty pages in the page cache. The
+> big advantage of this approach is that it does not need the overhead of
+> tracking the ownership of the dirty pages, because in this way from the blkio
+> controller perspective all the IO operations will happen from the process
+> context: writes in memory and synchronous reads from the block device.
+> 
+> The drawback of this approach is that the blkio.throttle controller becomes a
+> little bit leaky, because with this solution the controller is still affected
+> by the IO spikes during the writeback of dirty pages executed by the kernel
+> threads.
+> 
+> Probably an even better approach would be to introduce the tracking of the
+> dirty page ownership to properly account the cost of each IO operation at the
+> block layer and apply the throttling of async writes in memory only when IO
+> limits are exceeded.
 
-> From: Anton Blanchard <anton@au1.ibm.com>
-> 
-> commit 339412841d7 (RxRPC: Allow key payloads to be passed in XDR form)
-> broke klog for me. I notice the v1 key struct had a kif_version field
-> added:
-> 
-> -struct rxkad_key {
-> -       u16     security_index;         /* RxRPC header security index */
-> -       u16     ticket_len;             /* length of ticket[] */
-> -       u32     expiry;                 /* time at which expires */
-> -       u32     kvno;                   /* key version number */
-> -       u8      session_key[8];         /* DES session key */
-> -       u8      ticket[0];              /* the encrypted ticket */
-> -};
-> 
-> +struct rxrpc_key_data_v1 {
-> +       u32             kif_version;            /* 1 */
-> +       u16             security_index;
-> +       u16             ticket_length;
-> +       u32             expiry;                 /* time_t */
-> +       u32             kvno;
-> +       u8              session_key[8];
-> +       u8              ticket[0];
-> +};
-> 
-> However the code in rxrpc_instantiate strips it away:
-> 
-> 	data += sizeof(kver);
-> 	datalen -= sizeof(kver);
-> 
-> Removing kif_version fixes my problem.
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  include/keys/rxrpc-type.h |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/keys/rxrpc-type.h b/include/keys/rxrpc-type.h
-> index 5cb86c3..fc48754 100644
-> --- a/include/keys/rxrpc-type.h
-> +++ b/include/keys/rxrpc-type.h
-> @@ -99,7 +99,6 @@ struct rxrpc_key_token {
->   * structure of raw payloads passed to add_key() or instantiate key
->   */
->  struct rxrpc_key_data_v1 {
-> -	u32		kif_version;		/* 1 */
->  	u16		security_index;
->  	u16		ticket_length;
->  	u32		expiry;			/* time_t */
+Andrea, I am curious to know more about it third option. Can you give more
+details about accouting in block layer but throttling in memory. So say 
+a process starts IO, then it will still be in throttle limits at block
+layer (because no writeback has started), then the process will write
+bunch of pages in cache. By the time throttle limits are crossed at
+block layer, we already have lots of dirty data in page cache and
+throttling process now is already late?
 
-Isn't the patch also needed in 2.6.37.x?
+> 
+> To summarize, we can identify three possible solutions to properly throttle the
+> buffered writes:
+> 
+> 1) account & throttle everything at block IO layer (bad for "priority
+>    inversion" problems, needs page tracking for blkio)
+> 
+> 2) account at block IO layer and throttle in memory (needs page tracking for
+>    blkio)
+> 
+> 3) account & throttle in memory (affected by IO spikes, depending on
+>    dirty_ratio / dirty_background_ratio settings)
+> 
+> For now we start with the solution 3) that seems to be the simplest way to
+> proceed.
+
+Yes, IO spikes is the weakness of this 3rd solution. But it should be
+simple too. Also as you said problem can be reduced up to some extent
+by changing reducing dirty_ratio and background dirty ratio But that
+will have other trade offs, I guess.
+
+Thanks
+Vivek
+
+> 
+> Testcase
+> ========
+> - create a cgroup with 4MiB/s write limit:
+>   # mount -t cgroup -o blkio none /mnt/cgroup
+>   # mkdir /mnt/cgroup/foo
+>   # echo 8:0 $((4 * 1024 * 1024)) > /mnt/cgroup/foo/blkio.throttle.write_bps_device
+> 
+>   NOTE: async io is still limited per-device, as well as sync io
+> 
+> - move a task into the cgroup and run a dd to generate some writeback IO
+> 
+> Results:
+> 
+>   - 2.6.38-rc6 vanilla:
+> 
+>   $ cat /proc/$$/cgroup
+>   1:blkio:/foo
+>   $ dd if=/dev/zero of=zero bs=1M count=128 &
+>   $ dstat -df
+>   --dsk/sda--
+>    read  writ
+>    0     0
+>   ...
+>    0     0
+>    0    22M  <--- writeback starts here and is not limited at all
+>    0    43M
+>    0    45M
+>    0    18M
+>   ...
+> 
+>   - 2.6.38-rc6 + async write throttling:
+> 
+>   $ cat /proc/$$/cgroup
+>   1:blkio:/foo
+>   $ dd if=/dev/zero of=zero bs=1M count=128 &
+>   $ dstat -df
+>   --dsk/sda--
+>    read  writ
+>    0     0
+>    0     0
+>    0     0
+>    0     0
+>    0    22M  <--- we have some IO spikes but the overall writeback IO
+>    0     0        is controlled according to the blkio write limit
+>    0     0
+>    0     0
+>    0     0
+>    0    29M
+>    0     0
+>    0     0
+>    0     0
+>    0     0
+>    0    26M
+>    0     0
+>    0     0
+>    0     0
+>    0     0
+>    0    30M
+>    0     0
+>    0     0
+>    0     0
+>    0     0
+>    0    20M
+> 
+> TODO
+> ~~~~
+>  - Consider to add the following new files in the blkio controller to allow the
+>    user to explicitly limit async writes as well as sync writes:
+> 
+>    blkio.throttle.async.write_bps_limit
+>    blkio.throttle.async.write_iops_limit
+> 
+> Any feedback is welcome.
+> -Andrea
+> 
+> [PATCH 1/3] block: introduce REQ_DIRECT to track direct io bio
+> [PATCH 2/3] blkio-throttle: infrastructure to throttle async io
+> [PATCH 3/3] blkio-throttle: async write io instrumentation
+> 
+>  block/blk-throttle.c      |  106 ++++++++++++++++++++++++++++++---------------
+>  fs/direct-io.c            |    1 +
+>  include/linux/blk_types.h |    2 +
+>  include/linux/blkdev.h    |    6 +++
+>  mm/page-writeback.c       |   17 +++++++
+>  5 files changed, 97 insertions(+), 35 deletions(-)
