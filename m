@@ -1,173 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab1B1JtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 04:49:21 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46389 "EHLO
+	id S1753276Ab1B1Jvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 04:51:42 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33473 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab1B1JtT (ORCPT
+	with ESMTP id S1752886Ab1B1Jvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 04:49:19 -0500
+	Mon, 28 Feb 2011 04:51:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=ZB6hGJqts3bTU26iKDo3jf81jYetqqiauoiHXgdah3zF/7Mp/mCzj+1UAnsZ82Rb8B
-         40els5YQIIBose0D1KZMFBlsxRXGYJJp3Rj1kPIwGtO6VfI/rUdJ9QRoZDRf5djXsyBD
-         Qw58RBympI7vEs25jewkM2frKJwtPWfWeOwwc=
-Message-ID: <4D6B6F9A.1020102@gmail.com>
-Date: Mon, 28 Feb 2011 10:49:14 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Z2YZl5I1vnUqtYtXxz7Sks8BvQL3onv0r66K0NojdEtwZJPtmEnE1kfU8AALs7mPrV
+         OK23hwS/LVmuLNMiNkIrU1yu0nz+AAk81dYkA4pUisNxlM8ZsTdPQOcrd3is5oiBjnLf
+         Xnzg/P1e+SgzZw+2DCL+S2uS4qHrmd6ASliEo=
+Date: Mon, 28 Feb 2011 12:51:33 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        eric.dumazet@gmail.com, therbert@google.com, xiaosuo@gmail.com,
+        jesse@nicira.com, kees.cook@canonical.com, eugene@redhat.com,
+        dan.j.rosenberg@gmail.com, akpm@linux-foundation.org
+Subject: Re: [PATCH] don't allow CAP_NET_ADMIN to load non-netdev kernel
+ modules
+Message-ID: <20110228095133.GA4351@albatros>
+References: <1298660879.2554.23.camel@bwh-desktop>
+ <1298666310.2554.47.camel@bwh-desktop>
+ <AANLkTikmtKksP6o1hecf0=ZnRv0j4+_Q326UEG8ss16k@mail.gmail.com>
+ <201102272122.52643.arnd@arndb.de>
+ <4D6B6AE7.2050202@msgid.tls.msk.ru>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jiri Slaby <jslaby@suse.cz>, corentincj@iksaif.net,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: eeepc: rfkill on 900A defunct
-References: <4CED26EF.5000109@suse.cz> <20101124201834.GA7760@srcf.ucam.org>
-In-Reply-To: <20101124201834.GA7760@srcf.ucam.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6B6AE7.2050202@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2010 09:18 PM, Matthew Garrett wrote:
-> Hm. As a shorter term fix, can you try this (entirely untested!) 
-> approach?
+On Mon, Feb 28, 2011 at 12:29 +0300, Michael Tokarev wrote:
+> 27.02.2011 23:22, Arnd Bergmann wrote:
+> > The backwards compatibility should mostly be for systems that today don't
+> > use split capabilities, right?
+> > 
+> > The fallback could therefore rely on CAP_SYS_MODULE as well:
+> > 
+> > 	if (request_module("netdev-%s", name)) {
+> > 		if (capable(CAP_SYS_MODULE))
+> > 			request_module("%s", name);
+> > 	}
+> > 
+> > Not 100% solution, but should solve the capability escalation nicely without
+> > causing much pain.
+> 
+> To me this looks like the best solution so far - trivial and
+> compatible.
 
-What is the status of this? Was there any alternative merged?
+Agreed, it's looks good.  But before the request_module() there is a check
+for capabile(CAP_NET_ADMIN), IMO it's better to request either
+CAP_NET_ADMIN or CAP_SYS_MODULE, not both of them.
 
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index b2edfdc..8f817d6 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -574,8 +574,9 @@ static bool eeepc_wlan_rfkill_blocked(struct eeepc_laptop *eeepc)
->  	return true;
->  }
->  
-> -static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
-> +static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
->  {
-> +	struct pci_dev *port;
->  	struct pci_dev *dev;
->  	struct pci_bus *bus;
->  	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
-> @@ -588,9 +589,17 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc)
->  	mutex_lock(&eeepc->hotplug_lock);
->  
->  	if (eeepc->hotplug_slot) {
-> -		bus = pci_find_bus(0, 1);
-> +		port = acpi_get_pci_dev(handle);
-> +
-> +		if (!port) {
-> +			pr_warning("Unable to find port\n");
-> +			goto out_unlock;
-> +		}
-> +
-> +		bus = port->subordinate;
-> +
->  		if (!bus) {
-> -			pr_warning("Unable to find PCI bus 1?\n");
-> +			pr_warning("Unable to find PCI bus?\n");
->  			goto out_unlock;
->  		}
->  
-> @@ -636,6 +645,17 @@ out_unlock:
->  	mutex_unlock(&eeepc->hotplug_lock);
->  }
->  
-> +static void eeepc_rfkill_hotplug_update(struct eeepc_laptop *eeepc, char *node)
-> +{
-> +	acpi_status status = AE_OK;
-> +	acpi_handle handle;
-> +
-> +	status = acpi_get_handle(NULL, node, &handle);
-> +
-> +	if (ACPI_SUCCESS(status))
-> +		eeepc_rfkill_hotplug(eeepc, handle);
-> +}
-> +
->  static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
->  {
->  	struct eeepc_laptop *eeepc = data;
-> @@ -643,7 +663,7 @@ static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
->  	if (event != ACPI_NOTIFY_BUS_CHECK)
->  		return;
->  
-> -	eeepc_rfkill_hotplug(eeepc);
-> +	eeepc_rfkill_hotplug(eeepc, handle);
->  }
->  
->  static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
-> @@ -661,6 +681,11 @@ static int eeepc_register_rfkill_notifier(struct eeepc_laptop *eeepc,
->  						     eeepc);
->  		if (ACPI_FAILURE(status))
->  			pr_warning("Failed to register notify on %s\n", node);
-> +		/*
-> +		 * Refresh pci hotplug in case the rfkill state was
-> +		 * changed during setup.
-> +		 */
-> +		eeepc_rfkill_hotplug(eeepc, handle);
->  	} else
->  		return -ENODEV;
->  
-> @@ -682,6 +707,12 @@ static void eeepc_unregister_rfkill_notifier(struct eeepc_laptop *eeepc,
->  		if (ACPI_FAILURE(status))
->  			pr_err("Error removing rfkill notify handler %s\n",
->  				node);
-> +			/*
-> +			 * Refresh pci hotplug in case the rfkill
-> +			 * state was changed after
-> +			 * eeepc_unregister_rfkill_notifier()
-> +			 */
-> +		eeepc_rfkill_hotplug(eeepc, handle);
->  	}
->  }
->  
-> @@ -805,11 +836,7 @@ static void eeepc_rfkill_exit(struct eeepc_laptop *eeepc)
->  		rfkill_destroy(eeepc->wlan_rfkill);
->  		eeepc->wlan_rfkill = NULL;
->  	}
-> -	/*
-> -	 * Refresh pci hotplug in case the rfkill state was changed after
-> -	 * eeepc_unregister_rfkill_notifier()
-> -	 */
-> -	eeepc_rfkill_hotplug(eeepc);
-> +
->  	if (eeepc->hotplug_slot)
->  		pci_hp_deregister(eeepc->hotplug_slot);
->  
-> @@ -878,11 +905,6 @@ static int eeepc_rfkill_init(struct eeepc_laptop *eeepc)
->  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P5");
->  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P6");
->  	eeepc_register_rfkill_notifier(eeepc, "\\_SB.PCI0.P0P7");
-> -	/*
-> -	 * Refresh pci hotplug in case the rfkill state was changed during
-> -	 * setup.
-> -	 */
-> -	eeepc_rfkill_hotplug(eeepc);
->  
->  exit:
->  	if (result && result != -ENODEV)
-> @@ -917,8 +939,11 @@ static int eeepc_hotk_restore(struct device *device)
->  	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
->  
->  	/* Refresh both wlan rfkill state and pci hotplug */
-> -	if (eeepc->wlan_rfkill)
-> -		eeepc_rfkill_hotplug(eeepc);
-> +	if (eeepc->wlan_rfkill) {
-> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P5");
-> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P6");
-> +		eeepc_rfkill_hotplug_update(eeepc, "\\_SB.PCI0.P0P7");
-> +	}
->  
->  	if (eeepc->bluetooth_rfkill)
->  		rfkill_set_sw_state(eeepc->bluetooth_rfkill,
+	if (!dev) {
+        if (capable(CAP_NET_ADMIN))
+            request_module("netdev-%s", name))
+        if (capable(CAP_SYS_MODULE) {
+            if (!request_module("%s", name))
+                WARN_ONE(1, "Loading kernel module for a network device"
+" with CAP_SYS_MODULE (deprecated).  Use CAP_NET_ADMIN and alias"
+" netdev-%s instead\n", name);
+        }
+    }
 
-thanks,
+The only drawback is distributions/setups that already use
+CAP_SYS_MODULE'less network scripts.
+
+David, are you OK with this way?
+
+
+Thanks,
+
 -- 
-js
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
