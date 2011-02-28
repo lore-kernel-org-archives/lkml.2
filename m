@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab1B1Qkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:40:43 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34643 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab1B1QiT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755925Ab1B1Qk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:40:58 -0500
+Received: from kroah.org ([198.145.64.141]:48272 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755765Ab1B1QiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Feb 2011 11:38:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=f8Q50HPHoAFgMg7UrKn+zTHQB+7bUzorO2+jm8csh5FAOI3IHd5rZXlisUO7qi5iid
-         y4c8WF5Zcr4rF/uSfywqwnBlFb8ghm5XfcRzPvT+uO7oN3OxmjaS3V7DnhTcYNCmr9a7
-         zbbGNFeuEwLY8thEYxsYBpi6WAIDPUcgCpvLk=
-MIME-Version: 1.0
-In-Reply-To: <cbb9e1113901f1a324359b6ed3f1a611@localhost>
-References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
-	<alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
-	<1298793252.8726.45.camel@edumazet-laptop>
-	<AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
-	<20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
-	<AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
-	<cbb9e1113901f1a324359b6ed3f1a611@localhost>
-Date: Mon, 28 Feb 2011 11:37:45 -0500
-Message-ID: <AANLkTimh1xWU9V9phOKZZMgOWKOmDDSBYfofnnOjjRh=@mail.gmail.com>
-Subject: Re: txqueuelen has wrong units; should be time
-From: Albert Cahalan <acahalan@gmail.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mikael Abrahamsson <swmike@swm.pp.se>,
-        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:12 2011
+Message-Id: <20110228162411.926177441@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Mon, 28 Feb 2011 08:23:23 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
+        Richard Russon <ldm@flatcap.org>,
+        Harvey Harrison <harvey.harrison@gmail.com>
+Subject: [62/68] ldm: corrupted partition table can cause kernel oops
+In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 10:38 AM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> On Sun, 27 Feb 2011 18:33:39 -0500, Albert Cahalan wrote:
->
->> I suppose there is a need to allow at least 2 packets despite any
->> time limits, so that it remains possible to use a traditional modem
->> even if a huge packet takes several seconds to send.
->
-> That is a good point! We talk about as we may know every use case of
-> Linux. But this is not true at all. One of my customer for example operates
-> the Linux network stack functionality on top of a proprietary MAC/Driver
-> where the current packet queue characteristic is just fine. The
-> time-drop-approach is unsuitable because the bandwidth can vary in a small
-> amount of time over a great range (0 till max. bandwidth). A sufficient
-> buffering shows up superior in this environment (only IPv{4,6}/UDP).
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-I don't think the current non-time queue is just fine for him.
-I can see that time-based discard-on-enqueue would not be
-fine either. He needs time-based discard-on-dequeue.
-Good for him is probably:
+------------------
 
-On dequeue, discard all packets that are too old.
-On enqueue, assume max bandwidth and discard all
-packets that have no hope of surviving the dequeue check.
-(the enqueue check is only to prevent wasting RAM)
-Exception: always keep at least 2 packets.
+From: Timo Warns <Warns@pre-sense.de>
 
-Better is something that would allow random drop.
-The trouble here is that bandwidth varies greatly.
-Some sort of undelete functionality is needed...?
+commit 294f6cf48666825d23c9372ef37631232746e40d upstream.
 
-Assuming the difficulty with implementing random drop
-is solvable, I think this would work for the rest of us too.
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
+a bug that causes a kernel oops on certain corrupted LDM partitions.  A
+kernel subsystem seems to crash, because, after the oops, the kernel no
+longer recognizes newly connected storage devices.
 
-Keeping the timeout really low is important because it isn't
-OK to eat up all the latency tolerance in one hop. You have
-an end-to-end budget of 20 ms for usable GUI rubber banding.
-The budget for gaming is about 80 and for VoIP is about 150.
+The patch changes ldm_parse_vmdb() to Validate the value of vblk_size.
+
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Acked-by: Richard Russon <ldm@flatcap.org>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/partitions/ldm.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -251,6 +251,11 @@ static bool ldm_parse_vmdb (const u8 *da
+ 	}
+ 
+ 	vm->vblk_size     = get_unaligned_be32(data + 0x08);
++	if (vm->vblk_size == 0) {
++		ldm_error ("Illegal VBLK size");
++		return false;
++	}
++
+ 	vm->vblk_offset   = get_unaligned_be32(data + 0x0C);
+ 	vm->last_vblk_seq = get_unaligned_be32(data + 0x04);
+ 
+
+
