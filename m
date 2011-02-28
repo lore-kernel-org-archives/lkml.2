@@ -1,88 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1B1Nlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 08:41:51 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33057 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047Ab1B1Nlu convert rfc822-to-8bit (ORCPT
+	id S1754202Ab1B1NrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 08:47:04 -0500
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:55578 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754044Ab1B1NrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 08:41:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=K/LmkoS4V1336iRuCOz0MUUzX+q9gdExOdxLtAN1uihPSXXWuI5yUAc788TaGagLfq
-         HI0RzGFytWqRpjGJ3de7YDIMOWWEWcaVyvfHaCYICFlT8+aNFUSm3d96+YEYFmNXpKmj
-         3mCzT+wmaDJ3Tk76/zJJOYDQAdyoz0igmgV+U=
+	Mon, 28 Feb 2011 08:47:03 -0500
+Message-ID: <4D6BA72C.5000100@linux.vnet.ibm.com>
+Date: Mon, 28 Feb 2011 10:46:20 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110228132941.GB9326@htj.dyndns.org>
-References: <20110214190141.GA19221@redhat.com> <20110224202941.GA12258@redhat.com>
- <20110225155142.GQ24828@htj.dyndns.org> <201102260348.03312.vda.linux@googlemail.com>
- <20110228125622.GA9326@htj.dyndns.org> <AANLkTik1+XVrkwTouERoxF2AWYyv-UCqie_Wq3OLjoXg@mail.gmail.com>
- <20110228132941.GB9326@htj.dyndns.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Mon, 28 Feb 2011 14:41:29 +0100
-Message-ID: <AANLkTin9HW5R5Wihw+yceKkW=Pj+eB8-id0E1Gud2y-G@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after PTRACE_ATTACH
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: James Morris <jmorris@namei.org>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Guillaume Chazarain <guichaz@gmail.com>, akpm@linux-foundation.org
+Subject: [GIT PULL]  TPM timeouts and resume fixes
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11022813-8936-0000-0000-000000CF014F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 2:29 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Feb 28, 2011 at 02:16:48PM +0100, Denys Vlasenko wrote:
->> (gdb) print getpid()
->>
->> gdb modifies IP, sets breakpoint on return address, and issues PTRACE_CONT(0).
->> Kernel has to put the tracee into group-stop, right?
->> Becuase if it doesn't, if it makes tracee run, then the kernel is
->> still broken. For example,
->> stracing a program and sending SIGSTOP on it won't work: the sequence
->> of events will be
->> got SIGSTOP because SIGSTOP was delivered
->> PTRACE_SYSCALL(SIGSTOP) - "inject it"
->> got SIGSTOP because tracee is in group-stop now
->> PTRACE_SYSCALL(SIGSTOP) - equivalent to PTRACE_SYSCALL(0)
->>   because we aren't in signal delivery ptrace-stop
->> and tracee continues.
->>
->> That's why I think gdb's "print getpid()" today depends on the bug.
->> If we simply fix the bug (by making PTRACE_CONT/SYSCALL(0)
->> re-enter group-stop), then "print getpid()" will stop working
->> for stopped tracees.
->
-> There's no reason to make the tracee re-enter group stop after pulling
-> it out to execute 'print getpid()'.
+Hi James,
 
-If we want to execute 'print getpid()', you are right, we don't want
-to enter group stop. That's use case #1. But there is use case #2:
-"strace sleep" + ^Z. if we want to continue stracing sleep
-without continuing, our PTRACE_SYSCALL(0) *must* make sleep
-enter group stop. Otherwise, sleep won't be stopped. It will
-continue sleeping and will exit, which is not what we want. Right?
+Please pull from:
+   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
 
->  The only thing necessary is a way
-> for the debugger to find out that group stop has been lifted.
+The first change corrects the logic used to extract timeouts values from TPMs.
+This second version includes an adjustment of such values from msecs to usecs,
+since some chips return such values in the first form, causing some commands
+to fail due the resulting short timeouts.
 
-What do you mean by "has been *lifted*"?
+The second change re-enables TPM interrupts after a resume, making sure
+that the TPM interrupts are enabled when running in the interrupt mode.
+The TPM's interrupt enable register maye have been cleared by
+the TPM's TIS loosing its state during device sleep in ACPI S3 (suspend)
+or by the BIOS, which upon resume sends a TPM_Startup() command to the
+TPM, and may run the TPM in polling mode and leave the TIS interrupts
+disabled once it transfers control to the OS again.
 
-> The debugger then can resume the tracee if it wishes so.  ie. group stop
-> becomes a trap point + a state which the debugger can monitor.  If the
-> debugger wants the tracee to follow the jctl behavior, it can do so by
-> resuming the tracee as it sees fit.
+Stefan Berger (2):
+       tpm_tis: Use timeouts returned from TPM
+       tpm_tis: Re-enable interrupts upon resume
 
-Can you describe this in more details? Do you propose that
-debugger can detect that we are in group stop (it is already sort-of
-possible with PTRACE_GETSIGINFO) and if it doesn't want to
-restart tracee, it simply doesn't do any PTRACE_SYSCALL/CONT?
-I tried that. This makes tracee sit in *ptrace* stop, not group stop.
-Meaning: debugger is never be able to see waking SIGCONT:
-waitpid doesn't report it to the debugger.
+  drivers/char/tpm/tpm.c     |   40 +++++++++++++++++++++++++++++++---------
+  drivers/char/tpm/tpm.h     |    3 +++
+  drivers/char/tpm/tpm_tis.c |   21 ++++++++++++++++++++-
+  3 files changed, 54 insertions(+), 10 deletions(-)
 
--- 
-vda
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 36e0fa1..a92254e 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -577,23 +577,30 @@ duration:
+      if (rc)
+          return;
+
+-    if (be32_to_cpu(tpm_cmd.header.out.return_code)
+-        != 3 * sizeof(u32))
++    if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
++        be32_to_cpu(tpm_cmd.header.out.length)
++        != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 * sizeof(u32))
+          return;
++
+      duration_cap =&tpm_cmd.params.getcap_out.cap.duration;
+      chip->vendor.duration[TPM_SHORT] =
+          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
+-    /* The Broadcom BCM0102 chipset in a Dell Latitude D820 gets the above
+-     * value wrong and apparently reports msecs rather than usecs. So we
+-     * fix up the resulting too-small TPM_SHORT value to make things work.
+-     */
+-    if (chip->vendor.duration[TPM_SHORT]<  (HZ/100))
+-        chip->vendor.duration[TPM_SHORT] = HZ;
+-
+      chip->vendor.duration[TPM_MEDIUM] =
+          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_medium));
+      chip->vendor.duration[TPM_LONG] =
+          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_long));
++
++    /* The Broadcom BCM0102 chipset in a Dell Latitude D820 gets the above
++     * value wrong and apparently reports msecs rather than usecs. So we
++     * fix up the resulting too-small TPM_SHORT value to make things work.
++     */
++    if (chip->vendor.duration[TPM_SHORT]<  (HZ/100)) {
++        chip->vendor.duration[TPM_SHORT]   = HZ;
++        chip->vendor.duration[TPM_MEDIUM] *= 1000;
++        chip->vendor.duration[TPM_LONG]   *= 1000;
++        chip->vendor.duration_adjusted = true;
++        dev_info(chip->dev, "Adjusting TPM timeout parameters.");
++    }
+  }
+  EXPORT_SYMBOL_GPL(tpm_get_timeouts);
+@@ -939,6 +946,21 @@ ssize_t tpm_show_caps_1_2(struct device * dev,
+  }
+  EXPORT_SYMBOL_GPL(tpm_show_caps_1_2);
++ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
++              char *buf)
++{
++    struct tpm_chip *chip = dev_get_drvdata(dev);
++
++    return sprintf(buf, "%d %d %d [%s]\n",
++               jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
++               jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
++               jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
++               chip->vendor.duration_adjusted
++             ? "adjusted"
++             : "original");
++}
++EXPORT_SYMBOL_GPL(tpm_show_timeouts);
++
+  ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
+              const char *buf, size_t count)
+  {
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 72ddb03..85e47af 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -56,6 +56,8 @@ extern ssize_t tpm_show_owned(struct device *, struct device_attribute *attr,
+                  char *);
+  extern ssize_t tpm_show_temp_deactivated(struct device *,
+                       struct device_attribute *attr, char *);
++extern ssize_t tpm_show_timeouts(struct device *,
++                 struct device_attribute *attr, char *);
+  struct tpm_chip;
+@@ -82,6 +84,7 @@ struct tpm_vendor_specific {
+      int locality;
+      unsigned long timeout_a, timeout_b, timeout_c, timeout_d; /* jiffies */
+      unsigned long duration[3]; /* jiffies */
++    bool duration_adjusted;
+      wait_queue_head_t read_queue;
+      wait_queue_head_t int_queue;
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index dd21df5..38040bd 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -376,6 +376,7 @@ static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
+             NULL);
+  static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
+  static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
++static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
+  static struct attribute *tis_attrs[] = {
+      &dev_attr_pubek.attr,
+@@ -385,7 +386,8 @@ static struct attribute *tis_attrs[] = {
+      &dev_attr_owned.attr,
+      &dev_attr_temp_deactivated.attr,
+      &dev_attr_caps.attr,
+-&dev_attr_cancel.attr, NULL,
++&dev_attr_cancel.attr,
++&dev_attr_timeouts.attr, NULL,
+  };
+  static struct attribute_group tis_attr_grp = {
+@@ -649,6 +651,23 @@ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
+  {
+      struct tpm_chip *chip = pnp_get_drvdata(dev);
+      int ret;
++    u32 intmask;
++
++    if (chip->vendor.irq) {
++        /* reenable interrupts that device may have lost or
++           BIOS/firmware may have disabled */
++        intmask =
++            ioread32(chip->vendor.iobase +
++                 TPM_INT_ENABLE(chip->vendor.locality));
++
++        intmask |= TPM_INTF_CMD_READY_INT
++            | TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_DATA_AVAIL_INT
++            | TPM_INTF_STS_VALID_INT | TPM_GLOBAL_INT_ENABLE;
++
++        iowrite32(intmask,
++              chip->vendor.iobase +
++              TPM_INT_ENABLE(chip->vendor.locality));
++    }
+      ret = tpm_pm_resume(&dev->dev);
+      if (!ret)
+
+
