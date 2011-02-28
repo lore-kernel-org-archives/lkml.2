@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab1B1P7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:59:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37630 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab1B1P7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:59:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=pXoi+MFWXXJe9HPRro5tQr7FTNVwm7cntDqRWGWFYVaN5vusf+I6b//vcjDUQUudKy
-         0AoN4ldu/HHGzU8jyD0gvWbLuixtvJ9fB6kUQWLJ+FoyK4KJZ7RjxTjKdl8OM9rwaH28
-         F8j0dc90te9UxonDmQdq7vZX/l8SpXUMJhVHA=
-Message-ID: <4D6BC666.4010603@gmail.com>
-Date: Mon, 28 Feb 2011 16:59:34 +0100
-From: "=?ISO-8859-15?Q?Andreas_Bie=DFmann?=" <andreas.devel@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1754834Ab1B1QEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:04:16 -0500
+Received: from cantor.suse.de ([195.135.220.2]:41883 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753650Ab1B1QEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:04:15 -0500
+Date: Mon, 28 Feb 2011 08:04:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        kernel@pengutronix.de, Arjan van de Ven <arjan@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 6/6] tty/vt: add some KERN_CONT markers to continuation
+ lines
+Message-ID: <20110228160459.GB27184@suse.de>
+References: <20101124085645.GW4693@pengutronix.de>
+ <1290589070-854-6-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20110228151641.GN22310@pengutronix.de>
+ <20110228153946.GA26719@suse.de>
+ <20110228155008.GQ22310@pengutronix.de>
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: =?ISO-8859-15?Q?Andreas_Bie=DFmann?= <biessmann@corscience.de>,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs-writeback: fix NULL pointer dereference in __mark_inode_dirty
-References: <1298906733-31427-1-git-send-email-biessmann@corscience.de> <20110228154314.GA4675@swordfish.minsk.epam.com>
-In-Reply-To: <20110228154314.GA4675@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110228155008.GQ22310@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sergey Senozhatsky,
-
-Am 28.02.2011 16:43, schrieb Sergey Senozhatsky:
-> On (02/28/11 16:25), Andreas Bieﬂmann wrote:
-
->> The reference to sb->s_bdi may be deleted from mmc_blk_remove() ->
->> del_gendisk() -> unlink_gendisk() -> bdi_unregister() -> bdi_prune_sb() while
->> another instance try to write some data to the device.
->>
->> Signed-off-by: Andreas Bieﬂmann <biessmann@corscience.de>
->> ---
->>  fs/fs-writeback.c |    3 +++
->>  1 files changed, 3 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
->> index cdbf7ac..96b4b25 100644
->> --- a/fs/fs-writeback.c
->> +++ b/fs/fs-writeback.c
->> @@ -1047,6 +1047,9 @@ void __mark_inode_dirty(struct inode *inode, int flags)
->>  		if (!was_dirty) {
->>  			bdi = inode_to_bdi(inode);
->>  
->> +			if (!bdi)
->> +				goto out;
->> +
->>  			if (bdi_cap_writeback_dirty(bdi)) {
->>  				WARN(!test_bit(BDI_registered, &bdi->state),
->>  				     "bdi-%s not registered\n", bdi->name);
+On Mon, Feb 28, 2011 at 04:50:08PM +0100, Uwe Kleine-Kˆnig wrote:
+> Hello Greg,
 > 
-> Hello,
-> I had something very similar to this some time ago
-> https://lkml.org/lkml/2010/12/9/436
+> On Mon, Feb 28, 2011 at 07:39:46AM -0800, Greg KH wrote:
+> > On Mon, Feb 28, 2011 at 04:16:41PM +0100, Uwe Kleine-Kˆnig wrote:
+> > > Hello Greg,
+> > > 
+> > > should this patch go via your tree?
+> > 
+> > Yes, care to resend it in a format I can apply it in?
+> I bounced you the original mail assuming this is enough.
 
-Sorry, I did not see that patch.
+Yup, I'll queue it up in a few days, thanks.
 
-> However, I'm not sure that this check is sufficient.
-
-Why are you think this is not sufficient?
-If an instance try to write that specific inode to an physical device
-which is not longer available how should we react then?
-
-Another solution could be to clean up all instances referring to that
-superblock in del_/unlink_gendisk(). But I think to check the return of
-inode_to_bdi() is needed in any case.
-
-regards
-
-Andreas Bieﬂmann
+greg k-h
