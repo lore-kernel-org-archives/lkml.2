@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab1B1QiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:38:14 -0500
-Received: from kroah.org ([198.145.64.141]:48240 "EHLO coco.kroah.org"
+	id S1755725Ab1B1QiI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:38:08 -0500
+Received: from kroah.org ([198.145.64.141]:48210 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755555Ab1B1QiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:38:13 -0500
+	id S1755695Ab1B1QiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:07 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:11 2011
-Message-Id: <20110228162411.522623001@clark.kroah.org>
+Message-Id: <20110228162411.137849151@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:23:19 -0800
+Date: Mon, 28 Feb 2011 08:23:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Max Vozeler <max@vozeler.com>
-Subject: [58/68] staging: usbip: vhci: give back URBs from in-flight unlink requests
+        Maciej Szmigiero <mhej@o2.pl>
+Subject: [54/68] USB: Add quirk for Samsung Android phone modem
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,138 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Vozeler <max@vozeler.com>
+From: Maciej Szmigiero <mhej@o2.pl>
 
-commit b92a5e23737172c52656a090977408a80d7f06d1 upstream.
+commit 72a012ce0a02c6c616676a24b40ff81d1aaeafda upstream.
 
-If we never received a RET_UNLINK because the TCP
-connection broke the pending URBs still need to be
-unlinked and given back.
+My Galaxy Spica needs this quirk when in modem mode, otherwise
+it causes endless USB bus resets and is unusable in this mode.
 
-Previously processes would be stuck trying to kill
-the URB even after the device was detached.
+Unfortunately Samsung decided to reuse ID of its old CDMA phone SGH-I500
+for the modem part.
+That's why in addition to this patch the visor driver must be prevented
+from binding to SPH-I500 ID, so ACM driver can do that.
 
-Signed-off-by: Max Vozeler <max@vozeler.com>
-Tested-by: Mark Wehby <MWehby@luxotticaRetail.com>
+Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/vhci.h     |    3 +++
- drivers/staging/usbip/vhci_hcd.c |   24 +++++++++++++++++++++++-
- drivers/staging/usbip/vhci_rx.c  |   15 +++++++++------
- 3 files changed, 35 insertions(+), 7 deletions(-)
+ drivers/usb/core/quirks.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/staging/usbip/vhci.h
-+++ b/drivers/staging/usbip/vhci.h
-@@ -119,6 +119,9 @@ void rh_port_disconnect(int rhport);
- void vhci_rx_loop(struct usbip_task *ut);
- void vhci_tx_loop(struct usbip_task *ut);
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -48,6 +48,10 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x04b4, 0x0526), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
-+struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
-+					    __u32 seqnum);
++	/* Samsung Android phone modem - ID conflict with SPH-I500 */
++	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
++			USB_QUIRK_CONFIG_INTF_STRINGS },
 +
- #define hardware		(&the_controller->pdev.dev)
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
  
- static inline struct vhci_device *port_to_vdev(__u32 port)
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -807,7 +807,6 @@ static int vhci_urb_dequeue(struct usb_h
- 	return 0;
- }
- 
--
- static void vhci_device_unlink_cleanup(struct vhci_device *vdev)
- {
- 	struct vhci_unlink *unlink, *tmp;
-@@ -815,11 +814,34 @@ static void vhci_device_unlink_cleanup(s
- 	spin_lock(&vdev->priv_lock);
- 
- 	list_for_each_entry_safe(unlink, tmp, &vdev->unlink_tx, list) {
-+		usbip_uinfo("unlink cleanup tx %lu\n", unlink->unlink_seqnum);
- 		list_del(&unlink->list);
- 		kfree(unlink);
- 	}
- 
- 	list_for_each_entry_safe(unlink, tmp, &vdev->unlink_rx, list) {
-+		struct urb *urb;
-+
-+		/* give back URB of unanswered unlink request */
-+		usbip_uinfo("unlink cleanup rx %lu\n", unlink->unlink_seqnum);
-+
-+		urb = pickup_urb_and_free_priv(vdev, unlink->unlink_seqnum);
-+		if (!urb) {
-+			usbip_uinfo("the urb (seqnum %lu) was already given back\n",
-+							unlink->unlink_seqnum);
-+			list_del(&unlink->list);
-+			kfree(unlink);
-+			continue;
-+		}
-+
-+		urb->status = -ENODEV;
-+
-+		spin_lock(&the_controller->lock);
-+		usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
-+		spin_unlock(&the_controller->lock);
-+
-+		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb, urb->status);
-+
- 		list_del(&unlink->list);
- 		kfree(unlink);
- 	}
---- a/drivers/staging/usbip/vhci_rx.c
-+++ b/drivers/staging/usbip/vhci_rx.c
-@@ -21,16 +21,14 @@
- #include "vhci.h"
- 
- 
--/* get URB from transmitted urb queue */
--static struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
-+/* get URB from transmitted urb queue. caller must hold vdev->priv_lock */
-+struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
- 					    __u32 seqnum)
- {
- 	struct vhci_priv *priv, *tmp;
- 	struct urb *urb = NULL;
- 	int status;
- 
--	spin_lock(&vdev->priv_lock);
--
- 	list_for_each_entry_safe(priv, tmp, &vdev->priv_rx, list) {
- 		if (priv->seqnum == seqnum) {
- 			urb = priv->urb;
-@@ -61,8 +59,6 @@ static struct urb *pickup_urb_and_free_p
- 		}
- 	}
- 
--	spin_unlock(&vdev->priv_lock);
--
- 	return urb;
- }
- 
-@@ -72,9 +68,11 @@ static void vhci_recv_ret_submit(struct
- 	struct usbip_device *ud = &vdev->ud;
- 	struct urb *urb;
- 
-+	spin_lock(&vdev->priv_lock);
- 
- 	urb = pickup_urb_and_free_priv(vdev, pdu->base.seqnum);
- 
-+	spin_unlock(&vdev->priv_lock);
- 
- 	if (!urb) {
- 		usbip_uerr("cannot find a urb of seqnum %u\n",
-@@ -159,7 +157,12 @@ static void vhci_recv_ret_unlink(struct
- 		return;
- 	}
- 
-+	spin_lock(&vdev->priv_lock);
-+
- 	urb = pickup_urb_and_free_priv(vdev, unlink->unlink_seqnum);
-+
-+	spin_unlock(&vdev->priv_lock);
-+
- 	if (!urb) {
- 		/*
- 		 * I get the result of a unlink request. But, it seems that I
 
 
