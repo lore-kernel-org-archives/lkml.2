@@ -1,326 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab1B1VCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 16:02:19 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44105 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754292Ab1B1VCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 16:02:12 -0500
-From: Pratheesh Gangadhar <pratheesh@ti.com>
+	id S1755276Ab1B1VEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 16:04:25 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47113 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab1B1VEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 16:04:24 -0500
+From: Jim Keniston <jkenisto@us.ibm.com>
+Subject: [PATCH] zlib: Slim down zlib_deflate workspace when possible
 To: linux-kernel@vger.kernel.org
-Cc: hjk@hansjkoch.de, gregkh@suse.de, tglx@linutronix.de, sshtylyov@mvista.com,
-        arnd@arndb.de, pratheesh@ti.com, amit.chatterjee@ti.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6 1/1] PRUSS UIO driver support
-Date: Tue,  1 Mar 2011 02:31:35 +0530
-Message-Id: <1298926895-5294-2-git-send-email-pratheesh@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <1298926895-5294-1-git-send-email-pratheesh@ti.com>
-References: <1298926895-5294-1-git-send-email-pratheesh@ti.com>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org
+Date: Mon, 28 Feb 2011 13:04:20 -0800
+Message-ID: <20110228210420.15417.41430.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements PRUSS (Programmable Real-time Unit Sub System)
-UIO driver which exports SOC resources associated with PRUSS like
-I/O, memories and IRQs to user space. PRUSS is dual 32-bit RISC
-processors which is efficient in performing embedded tasks that
-require manipulation of packed memory mapped data structures and
-handling system events that have tight real time constraints. This
-driver is currently supported on Texas Instruments DA850, AM18xx and
-OMAP-L138 devices.
-For example, PRUSS runs firmware for real-time critical industrial
-communication data link layer and communicates with application stack
-running in user space via shared memory and IRQs.
+Instead of always creating a huge (268K) deflate_workspace with the
+maximum compression parameters (windowBits=15, memLevel=8), allow the
+caller to obtain a smaller workspace by specifying smaller parameter
+values -- via zlib_deflate_workspacesize2().
 
-Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+For example, when capturing oops and panic reports to a medium with
+limited capacity, such as NVRAM, compression may be the only way to
+capture the whole report.  In this case, a small workspace (24K works
+fine) is a win, whether you allocate the workspace when you need it
+(i.e., during an oops or panic) or at boot time.
+
+I've verified that this patch works with all accepted values of
+windowBits (positive and negative), memLevel, and compression level;
+and also via the existing zlib_deflate_workspacesize() /
+zlib_deflateInit() interface.
+
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- drivers/uio/Kconfig     |   17 ++++
- drivers/uio/Makefile    |    1 +
- drivers/uio/uio_pruss.c |  237 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 255 insertions(+), 0 deletions(-)
- create mode 100644 drivers/uio/uio_pruss.c
 
-diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
-index bb44079..6f3ea9b 100644
---- a/drivers/uio/Kconfig
-+++ b/drivers/uio/Kconfig
-@@ -94,4 +94,21 @@ config UIO_NETX
- 	  To compile this driver as a module, choose M here; the module
- 	  will be called uio_netx.
+ include/linux/zlib.h            |   14 ++++++++++++--
+ lib/zlib_deflate/deflate.c      |   33 ++++++++++++++++++++++++++++++++-
+ lib/zlib_deflate/deflate_syms.c |    1 +
+ lib/zlib_deflate/defutil.h      |   17 +++++++++++++----
+ 4 files changed, 58 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/zlib.h b/include/linux/zlib.h
+index 40c49cb..3f15036 100644
+--- a/include/linux/zlib.h
++++ b/include/linux/zlib.h
+@@ -179,11 +179,21 @@ typedef z_stream *z_streamp;
  
-+config UIO_PRUSS
-+	tristate "Texas Instruments PRUSS driver"
-+	depends on ARCH_DAVINCI_DA850
-+	help
-+	  PRUSS driver for OMAPL138/DA850/AM18XX devices
-+	  PRUSS driver requires user space components, examples and user space
-+	  driver is available from below SVN repo - you may use anonymous login
-+
-+	  https://gforge.ti.com/gf/project/pru_sw/
-+
-+	  More info on API is available at below wiki
-+
-+	  http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called uio_pruss.
-+
- endif
-diff --git a/drivers/uio/Makefile b/drivers/uio/Makefile
-index 18fd818..d4dd9a5 100644
---- a/drivers/uio/Makefile
-+++ b/drivers/uio/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_UIO_AEC)	+= uio_aec.o
- obj-$(CONFIG_UIO_SERCOS3)	+= uio_sercos3.o
- obj-$(CONFIG_UIO_PCI_GENERIC)	+= uio_pci_generic.o
- obj-$(CONFIG_UIO_NETX)	+= uio_netx.o
-+obj-$(CONFIG_UIO_PRUSS)         += uio_pruss.o
-diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
-new file mode 100644
-index 0000000..e5ced29
---- /dev/null
-+++ b/drivers/uio/uio_pruss.c
-@@ -0,0 +1,237 @@
+                         /* basic functions */
+ 
++extern int zlib_deflate_workspacesize2 (int windowBits, int memLevel);
 +/*
-+ * Programmable Real-Time Unit Sub System (PRUSS) UIO driver (uio_pruss)
-+ *
-+ * This driver exports PRUSS host event out interrupts and PRUSS, L3 RAM,
-+ * and DDR RAM to user space for applications interacting with PRUSS firmware
-+ *
-+ * Copyright (C) 2010-11 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/platform_device.h>
-+#include <linux/uio_driver.h>
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <mach/sram.h>
-+
-+
-+#define DRV_NAME "pruss_uio"
-+#define DRV_VERSION "0.50"
-+
-+
-+static int sram_pool_sz = SZ_16K;
-+module_param(sram_pool_sz, int, 0);
-+MODULE_PARM_DESC(sram_pool_sz, "sram pool size to allocate ");
-+
-+static int extram_pool_sz = SZ_256K;
-+module_param(extram_pool_sz, int, 0);
-+MODULE_PARM_DESC(extram_pool_sz, "external ram pool size to allocate");
-+
-+
-+/*
-+ * Host event IRQ numbers from PRUSS - PRUSS can generate upto 8 interrupt
-+ * events to AINTC of ARM host processor - which can be used for IPC b/w PRUSS
-+ * firmware and user space application, async notification from PRU firmware
-+ * to user space application
-+ * 3	PRU_EVTOUT0
-+ * 4	PRU_EVTOUT1
-+ * 5	PRU_EVTOUT2
-+ * 6	PRU_EVTOUT3
-+ * 7	PRU_EVTOUT4
-+ * 8	PRU_EVTOUT5
-+ * 9	PRU_EVTOUT6
-+ * 10	PRU_EVTOUT7
++   Returns the number of bytes that needs to be allocated for a per-
++   stream workspace with the specified parameters.  A pointer to this
++   number of bytes should be returned in stream->workspace before
++   calling zlib_deflateInit2(); and the windowBits and memLevel
++   parameters passed to zlib_deflateInit2() must not exceed those
++   passed here.
 +*/
 +
-+#define MAX_PRUSS_EVT			8
+ extern int zlib_deflate_workspacesize (void);
+ /*
+    Returns the number of bytes that needs to be allocated for a per-
+-   stream workspace.  A pointer to this number of bytes should be
+-   returned in stream->workspace before calling zlib_deflateInit().
++   stream workspace with the default (large) windowBits and memLevel
++   parameters.
+ */
+ 
+ /* 
+diff --git a/lib/zlib_deflate/deflate.c b/lib/zlib_deflate/deflate.c
+index 46a31e5..cdb207a 100644
+--- a/lib/zlib_deflate/deflate.c
++++ b/lib/zlib_deflate/deflate.c
+@@ -176,6 +176,7 @@ int zlib_deflateInit2(
+     deflate_state *s;
+     int noheader = 0;
+     deflate_workspace *mem;
++    char *next;
+ 
+     ush *overlay;
+     /* We overlay pending_buf and d_buf+l_buf. This works since the average
+@@ -199,6 +200,21 @@ int zlib_deflateInit2(
+ 	strategy < 0 || strategy > Z_HUFFMAN_ONLY) {
+         return Z_STREAM_ERROR;
+     }
 +
-+#define	PINTC_HIPIR			0x4900
-+#define	HIPIR_NOPEND			0x80000000
-+#define	PINTC_HIER			0x5500
++    /*
++     * Direct the workspace's pointers to the chunks that were allocated
++     * along with the deflate_workspace struct.
++     */
++    next = (char *) mem;
++    next += sizeof(*mem);
++    mem->window_memory = (Byte *) next;
++    next += zlib_deflate_window_memsize(windowBits);
++    mem->prev_memory = (Pos *) next;
++    next += zlib_deflate_prev_memsize(windowBits);
++    mem->head_memory = (Pos *) next;
++    next += zlib_deflate_head_memsize(memLevel);
++    mem->overlay_memory = next;
 +
-+static spinlock_t lock;
-+static struct clk *pruss_clk;
-+static struct uio_info *info;
-+static dma_addr_t sram_paddr, ddr_paddr;
-+static void *prussio_vaddr, *sram_vaddr, *ddr_vaddr;
-+
-+static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
-+{
-+	unsigned long flags;
-+	int val, intr_mask = (1 << (irq - 1));
-+	void __iomem *base = dev_info->mem[0].internal_addr;
-+	void __iomem *intren_reg = base + PINTC_HIER;
-+	void __iomem *intrstat_reg = base + PINTC_HIPIR + ((irq - 1) << 2);
-+
-+	spin_lock_irqsave(&lock, flags);
-+	val = ioread32(intren_reg);
-+	/* Is interrupt enabled and active ? */
-+	if (!(val & intr_mask) && (ioread32(intrstat_reg) & HIPIR_NOPEND)) {
-+		spin_unlock_irqrestore(&lock, flags);
-+		return IRQ_NONE;
-+	}
-+
-+	/* Disable interrupt */
-+	iowrite32((val & ~intr_mask), intren_reg);
-+	spin_unlock_irqrestore(&lock, flags);
-+	return IRQ_HANDLED;
+     s = (deflate_state *) &(mem->deflate_memory);
+     strm->state = (struct internal_state *)s;
+     s->strm = strm;
+@@ -1249,5 +1265,20 @@ static block_state deflate_slow(
+ 
+ int zlib_deflate_workspacesize(void)
+ {
+-    return sizeof(deflate_workspace);
++    return zlib_deflate_workspacesize2(MAX_WBITS, MAX_MEM_LEVEL);
 +}
 +
-+static void pruss_cleanup(struct platform_device *dev, struct uio_info *info)
++int zlib_deflate_workspacesize2(int windowBits, int memLevel)
 +{
-+	struct uio_info *p = info;
-+	int cnt;
++    if (windowBits < 0) /* undocumented feature: suppress zlib header */
++        windowBits = -windowBits;
++    if (memLevel < 1 || memLevel > MAX_MEM_LEVEL ||
++        windowBits < 9 || windowBits > 15)
++        return -1;
 +
-+	for (cnt = 0; cnt < MAX_PRUSS_EVT; cnt++, p++) {
-+		uio_unregister_device(p);
-+		kfree(p->name);
-+	}
-+	iounmap(prussio_vaddr);
-+	if (ddr_vaddr) {
-+		dma_free_coherent(&dev->dev, extram_pool_sz, ddr_vaddr,
-+			ddr_paddr);
-+	}
-+	if (sram_vaddr)
-+		sram_free(sram_vaddr, sram_pool_sz);
-+	kfree(info);
-+	clk_put(pruss_clk);
-+}
++    return sizeof(deflate_workspace)
++        + zlib_deflate_window_memsize(windowBits)
++        + zlib_deflate_prev_memsize(windowBits)
++        + zlib_deflate_head_memsize(memLevel)
++        + zlib_deflate_overlay_memsize(memLevel);
+ }
+diff --git a/lib/zlib_deflate/deflate_syms.c b/lib/zlib_deflate/deflate_syms.c
+index ccfe25f..cdf1cdd 100644
+--- a/lib/zlib_deflate/deflate_syms.c
++++ b/lib/zlib_deflate/deflate_syms.c
+@@ -11,6 +11,7 @@
+ #include <linux/zlib.h>
+ 
+ EXPORT_SYMBOL(zlib_deflate_workspacesize);
++EXPORT_SYMBOL(zlib_deflate_workspacesize2);
+ EXPORT_SYMBOL(zlib_deflate);
+ EXPORT_SYMBOL(zlib_deflateInit2);
+ EXPORT_SYMBOL(zlib_deflateEnd);
+diff --git a/lib/zlib_deflate/defutil.h b/lib/zlib_deflate/defutil.h
+index 6b15a90..b640b64 100644
+--- a/lib/zlib_deflate/defutil.h
++++ b/lib/zlib_deflate/defutil.h
+@@ -241,12 +241,21 @@ typedef struct deflate_state {
+ typedef struct deflate_workspace {
+     /* State memory for the deflator */
+     deflate_state deflate_memory;
+-    Byte window_memory[2 * (1 << MAX_WBITS)];
+-    Pos prev_memory[1 << MAX_WBITS];
+-    Pos head_memory[1 << (MAX_MEM_LEVEL + 7)];
+-    char overlay_memory[(1 << (MAX_MEM_LEVEL + 6)) * (sizeof(ush)+2)];
++    Byte *window_memory;
++    Pos *prev_memory;
++    Pos *head_memory;
++    char *overlay_memory;
+ } deflate_workspace;
+ 
++#define zlib_deflate_window_memsize(windowBits) \
++	(2 * (1 << (windowBits)) * sizeof(Byte))
++#define zlib_deflate_prev_memsize(windowBits) \
++	((1 << (windowBits)) * sizeof(Pos))
++#define zlib_deflate_head_memsize(memLevel) \
++	((1 << ((memLevel)+7)) * sizeof(Pos))
++#define zlib_deflate_overlay_memsize(memLevel) \
++	((1 << ((memLevel)+6)) * (sizeof(ush)+2))
 +
-+static int __devinit pruss_probe(struct platform_device *dev)
-+{
-+	struct uio_info *p;
-+	int ret = -ENODEV, cnt = 0, len;
-+	struct resource *regs_prussio;
-+
-+	info = kzalloc(sizeof(struct uio_info) * MAX_PRUSS_EVT, GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+	/* Power on PRU in case its not done as part of boot-loader */
-+	pruss_clk = clk_get(&dev->dev, "pruss");
-+	if (IS_ERR(pruss_clk)) {
-+		dev_err(&dev->dev, "Failed to get clock\n");
-+		kfree(info);
-+		ret = PTR_ERR(pruss_clk);
-+		return ret;
-+	} else {
-+		clk_enable(pruss_clk);
-+	}
-+
-+	regs_prussio = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	if (!regs_prussio) {
-+		dev_err(&dev->dev, "No PRUSS I/O resource specified\n");
-+		goto out_free;
-+	}
-+
-+	if (!regs_prussio->start) {
-+		dev_err(&dev->dev, "Invalid memory resource\n");
-+		goto out_free;
-+	}
-+
-+	sram_vaddr = sram_alloc(sram_pool_sz, &sram_paddr);
-+	if (!sram_vaddr) {
-+		dev_err(&dev->dev, "Could not allocate SRAM pool\n");
-+		goto out_free;
-+	}
-+
-+	ddr_vaddr = dma_alloc_coherent(&dev->dev, extram_pool_sz, &ddr_paddr,
-+				GFP_KERNEL | GFP_DMA);
-+	if (!ddr_vaddr) {
-+		dev_err(&dev->dev, "Could not allocate external memory\n");
-+		goto out_free;
-+	}
-+
-+	len = resource_size(regs_prussio);
-+	prussio_vaddr = ioremap(regs_prussio->start, len);
-+	if (!prussio_vaddr) {
-+		dev_err(&dev->dev, "Can't remap PRUSS I/O  address range\n");
-+		goto out_free;
-+	}
-+
-+	for (cnt = 0, p = info; cnt < MAX_PRUSS_EVT; cnt++, p++) {
-+		p->mem[0].internal_addr = prussio_vaddr;
-+		p->mem[0].addr = regs_prussio->start;
-+		p->mem[0].size = resource_size(regs_prussio);
-+		p->mem[0].memtype = UIO_MEM_PHYS;
-+
-+		p->mem[1].internal_addr = sram_vaddr;
-+		p->mem[1].addr = sram_paddr;
-+		p->mem[1].size = sram_pool_sz;
-+		p->mem[1].memtype = UIO_MEM_PHYS;
-+
-+		p->mem[2].internal_addr = ddr_vaddr;
-+		p->mem[2].addr = ddr_paddr;
-+		p->mem[2].size = extram_pool_sz;
-+		p->mem[2].memtype = UIO_MEM_PHYS;
-+
-+		p->name = kasprintf(GFP_KERNEL, "pruss_evt%d", cnt);
-+		p->version = "0.50";
-+
-+		/* Register PRUSS IRQ lines */
-+		p->irq = IRQ_DA8XX_EVTOUT0 + cnt;
-+		p->handler = pruss_handler;
-+
-+		ret = uio_register_device(&dev->dev, p);
-+
-+		if (ret < 0)
-+			goto out_free;
-+	}
-+
-+	spin_lock_init(&lock);
-+	platform_set_drvdata(dev, info);
-+	return 0;
-+
-+out_free:
-+	pruss_cleanup(dev, info);
-+	return ret;
-+}
-+
-+static int __devexit pruss_remove(struct platform_device *dev)
-+{
-+	struct uio_info *info = platform_get_drvdata(dev);
-+
-+	pruss_cleanup(dev, info);
-+	platform_set_drvdata(dev, NULL);
-+	return 0;
-+}
-+
-+static struct platform_driver pruss_driver = {
-+	.probe = pruss_probe,
-+	.remove = __devexit_p(pruss_remove),
-+	.driver = {
-+		   .name = DRV_NAME,
-+		   .owner = THIS_MODULE,
-+		   },
-+};
-+
-+static int __init pruss_init_module(void)
-+{
-+	return platform_driver_register(&pruss_driver);
-+}
-+
-+module_init(pruss_init_module);
-+
-+static void __exit pruss_exit_module(void)
-+{
-+	platform_driver_unregister(&pruss_driver);
-+}
-+
-+module_exit(pruss_exit_module);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_VERSION(DRV_VERSION);
-+MODULE_AUTHOR("Amit Chatterjee <amit.chatterjee@ti.com>");
-+MODULE_AUTHOR("Pratheesh Gangadhar <pratheesh@ti.com>");
--- 
-1.6.0.6
+ /* Output a byte on the stream.
+  * IN assertion: there is enough room in pending_buf.
+  */
 
