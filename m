@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab1B1Qlf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:41:35 -0500
-Received: from kroah.org ([198.145.64.141]:48246 "EHLO coco.kroah.org"
+	id S1756001Ab1B1Ql7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:41:59 -0500
+Received: from kroah.org ([198.145.64.141]:48228 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755749Ab1B1QiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:38:14 -0500
+	id S1755085Ab1B1QiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:10 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:11 2011
-Message-Id: <20110228162411.624757354@clark.kroah.org>
+Message-Id: <20110228162411.326228646@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:23:20 -0800
+Date: Mon, 28 Feb 2011 08:23:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Max Vozeler <max@vozeler.com>
-Subject: [59/68] staging: usbip: vhci: refuse to enqueue for dead connections
+        Jon Thomas <jthomas@redhat.com>
+Subject: [56/68] sierra: add new ID for Airprime/Sierra USB IP modem
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Vozeler <max@vozeler.com>
+From: Jon Thomas <jthomas@redhat.com>
 
-commit 6d212153a838354078cc7d96f9bb23b7d1fd3d1b upstream.
+commit e1dc5157c574e7249dc1cd072fde2e48b3011533 upstream.
 
-There can be requests to enqueue URBs while we are shutting
-down a connection.
+I picked up a new Sierra usb 308 (At&t Shockwave) on 2/2011 and the vendor code
+is 0x0f3d
 
-Signed-off-by: Max Vozeler <max@vozeler.com>
-Tested-by: Mark Wehby <MWehby@luxotticaRetail.com>
+Looking up vendor and product id's I see:
+
+0f3d  Airprime, Incorporated
+ 0112  CDMA 1xEVDO PC Card, PC 5220
+
+Sierra and Airprime are somehow related and I'm guessing the At&t usb 308 might
+be have some common hardware with the AirPrime SL809x.
+
+Signed-off-by: Jon Thomas <jthomas@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/vhci_hcd.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/usb/serial/sierra.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -558,6 +558,7 @@ static int vhci_urb_enqueue(struct usb_h
- 	struct device *dev = &urb->dev->dev;
- 	int ret = 0;
- 	unsigned long flags;
-+	struct vhci_device *vdev;
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -266,6 +266,9 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
++	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
++	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
++	},
  
- 	usbip_dbg_vhci_hc("enter, usb_hcd %p urb %p mem_flags %d\n",
- 		    hcd, urb, mem_flags);
-@@ -573,6 +574,18 @@ static int vhci_urb_enqueue(struct usb_h
- 		return urb->status;
- 	}
- 
-+	vdev = port_to_vdev(the_controller->pending_port);
-+
-+	/* refuse enqueue for dead connection */
-+	spin_lock(&vdev->ud.lock);
-+	if (vdev->ud.status == VDEV_ST_NULL || vdev->ud.status == VDEV_ST_ERROR) {
-+		usbip_uerr("enqueue for inactive port %d\n", vdev->rhport);
-+		spin_unlock(&vdev->ud.lock);
-+		spin_unlock_irqrestore(&the_controller->lock, flags);
-+		return -ENODEV;
-+	}
-+	spin_unlock(&vdev->ud.lock);
-+
- 	ret = usb_hcd_link_urb_to_ep(hcd, urb);
- 	if (ret)
- 		goto no_need_unlink;
-@@ -591,8 +604,6 @@ static int vhci_urb_enqueue(struct usb_h
- 		__u8 type = usb_pipetype(urb->pipe);
- 		struct usb_ctrlrequest *ctrlreq =
- 				(struct usb_ctrlrequest *) urb->setup_packet;
--		struct vhci_device *vdev =
--				port_to_vdev(the_controller->pending_port);
- 
- 		if (type != PIPE_CONTROL || !ctrlreq) {
- 			dev_err(dev, "invalid request to devnum 0\n");
+ 	{ }
+ };
 
 
