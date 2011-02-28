@@ -1,306 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1B1UNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 15:13:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab1B1UNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 15:13:05 -0500
-Date: Mon, 28 Feb 2011 15:12:06 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Nelson Elhage <nelhage@ksplice.com>
-Cc: davidel@xmailserver.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        security@kernel.org
-Subject: Re: [PATCH] optimize epoll loop detection
-Message-ID: <20110228201205.GA2965@redhat.com>
-References: <201102251950.p1PJorw9023013@int-mx12.intmail.prod.int.phx2.redhat.com> <20110226025830.GA22935@ksplice.com>
+	id S1755121Ab1B1UR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 15:17:58 -0500
+Received: from prod-mail-xrelay03.akamai.com ([96.6.114.84]:54555 "EHLO
+	prod-mail-xrelay03.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753465Ab1B1UR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 15:17:56 -0500
+Message-ID: <4D6C02F3.7070209@akamai.com>
+Date: Mon, 28 Feb 2011 12:17:55 -0800
+From: Josh Hunt <johunt@akamai.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110226025830.GA22935@ksplice.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jan Kara <jack@suse.cz>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "sandeen@redhat.com" <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] ext2: Resolve i_nlink race in ext2_rename
+References: <1298528501-32176-1-git-send-email-johunt@akamai.com> <20110224063749.GV22723@ZenIV.linux.org.uk> <20110224112010.GB23042@quack.suse.cz> <4D66BD18.2030207@akamai.com> <20110228175734.GC20805@quack.suse.cz>
+In-Reply-To: <20110228175734.GC20805@quack.suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 09:58:30PM -0500, Nelson Elhage wrote:
-> This patch looks reasonable to me, but unfortunately, thinking about
-> this, the problem is even worse than you've described.
+On 02/28/2011 09:57 AM, Jan Kara wrote:
+> On Thu 24-02-11 12:18:32, Josh Hunt wrote:
+>> On 02/24/2011 03:20 AM, Jan Kara wrote:
+>>> On Thu 24-02-11 06:37:49, Al Viro wrote:
+>>>> On Wed, Feb 23, 2011 at 10:21:41PM -0800, Josh Hunt wrote:
+>>>>> [resending: left Jan off the original mail by accident]
+>>>>>
+>>>>> We have a multi-threaded workload which is currently "losing" files in the form
+>>>>> of unattached inodes. The workload is link, rename, unlink intensive. This is
+>>>>> happening on an ext2 filesystem and have reproduced the issue in kernel
+>>>>> 2.6.37.  Here's a sample strace:
+>>>>>
+>>>>>     open("/a/tmp/tmpfile.1296184058", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE, 0666) = 9
+>>>>>     link("/a/tmp/tmpfile.1296184058", "/a/tmp/tmpfile.28117.1296184059") = 0
+>>>>>     rename("/a/tmp/tmpfile.28117.1296184059", "/a/tmp/tmpfile") = 0
+>>>>>     stat64("/a/tmp/tmpfile", {st_mode=S_IFREG|0644, st_size=24248267, ...}) = 0
+>>>>>     link("/a/tmp/tmpfile", "/a/tmp/submit/tmpfile")        = 0
+>>>>>     open("/a/tmp/tmpfile.1296184058", O_RDONLY) = 13
+>>>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDWR|O_CREAT|O_EXCL, 0600) = 824
+>>>>>     rename("/a/tmp/submit/tmpfile", "/a/tmp/submit/tmpfile.send.q9SNoL")                = 0
+>>>>>     unlink("/a/tmp/tmpfile.1296184058") = 0
+>>>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 827
+>>>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 828
+>>>>>     open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 829
+>>>>>     unlink("/a/tmp/submit/tmpfile.send.q9SNoL") = 0
+>>>>>
+>>>>> The application behavior shown above repeats indefinitely with most filenames
+>>>>> changing during each iteration except for 'tmpfile'. Looking into this issue I
+>>>>> see that vfs_rename_other() only takes i_mutex for the new inode and the new
+>>>>> inode's directory as well as the old directory's mutex. This works for
+>>>>> modifying the dir entry and appears to be fine for most filesystems, but
+>>>>> ext2 and a few others (exofs, minix, nilfs2, omfs, sysv, ufs) modify i_nlink
+>>>>> inside of their respective rename functions without grabbing the i_mutex. The
+>>>>> modifications are done through calls to inode_inc_link_count(old_inode) and
+>>>>> inode_dec_link_count(old_inode), etc.
+>>>>>
+>>>>> Taking the mutex for the old inode appears to resolve the issue of the
+>>>>> lost files/unattached inodes that I am seeing with this workload. I've attached
+>>>>> a patch below doing what I've described above. If this is an accepted solution
+>>>>> I believe other filesystems may also be affected by this and I could provide
+>>>>> a patch for those as well.
+>>>>
+>>>> I don't know...  The thing is, we mostly do that to make life easier for
+>>>> fsck in case of crash.  Other than that, there's no reason to play with
+>>>> link count of that sucker at all.  The question is, do we really want
+>>>> such rename() interrupted by dirty shutdown to result in what looks like two
+>>>> legitimate links to that inode without any indications of what had happened?
+>>>> Note that fsck (at least on ext2) will correct link counts anyway and if
+>>>> nothing else, we probably want some noise pointing to the inode in question...
+>>>   Yeah, I agree that playing with the link count is not worth it. It is
+>>> even more disputable because it would have some reasonable effect only if
+>>> we happened to write out the moved inode after it is linked to the new
+>>> directory and before it is unlinked from the old one. Moreover we'd need
+>>> to writeout the new directory and not the old directory before crash
+>>> happens. All this is highly unlikely and even if that happens, it is
+>>> questionable whether the result is worth it. So I'll just do away with
+>>> those games with link count...
+>>>   The patch is attached. Josh, can you test it as well? Thanks.
+>>>
+>>> 								Honza
+>> Jan
+>>
+>> I'm not seeing the problem with your patch as was expected since we're
+>> not messing with i_nlink anymore. Al suggested marking the inode as
+>> dirty where we were previously doing the old_inode dec. I believe this
+>> is needed as well since we are updating it's ctime. I've attached a
+>> version marking the inode dirty and it also fixes the comment making
+>> reference to calling inode_dec_link_count().
+>   Yeah, good catch. Thanks.
 > 
-> In particular, causing a wakeup up an epoll fd makes it wakeup any
-> epoll fds that contain it. So if I have a big tree of epoll fd's, and
-> trigger a wakeup on the right one, the kernel does the exact same kind
-> of brute-force walk of the entire tree.
+>> I'm not completely clear on the historical reasons for messing with the
+>> link count of old_inode in the first place. It was just to simulate the
+>> linking and unlinking of the old_inode?
+>   Yes.
 > 
-> This is somewhat worse than your example in that you can make it
-> happen in interrupt context (since it's triggered by an fd wakeup,
-> instead of directly from a syscall), but also because it exists even
-> before the recent patch.
+> So I took your patch and used a changelog from mine as I find it more
+> descriptive. The resulting patch is in my tree (and attached).
 > 
-> Secondly, because epoll fd's actually store (struct file*, int fd)
-> pairs, you can add a single epoll fd to another fd multiple times, so
-> you can carry out the same attack with only 4 epoll fd's, which you
-> take turns dup()ing, adding to the next one, and then closing
-> all-but-one references to. This lets you crank the base of the
-> exponent up almost to RLIMIT_NOFILE, instead of RLIMIT_NOFILE/4. The
-> following test program causes one CPU to hang basically indefinitely,
-> even without the cycle-prevention patch:
-> 
-> -----
-> #include <unistd.h>
-> #include <sys/epoll.h>
-> #include <stdio.h>
-> #include <stdlib.h>
-> 
-> #define DEPTH 6
-> #define FANOUT 1000
-> 
-> void die(const char *msg) {
->     perror(msg);
->     exit(-1);
-> }
-> 
-> void add_many(int parent, int child) {
->     int i;
->     int fds[FANOUT];
->     struct epoll_event evt = { .events = EPOLLIN };
->     for (i = 0; i < FANOUT; i++) {
->         if ((fds[i] = dup(child)) < 0)
->             die("dup");
-> 
->         if (epoll_ctl(parent, EPOLL_CTL_ADD, fds[i], &evt) < 0)
->             die("add");
->     }
->     for (i = 0; i < FANOUT; i++)
->         close(fds[i]);
-> }
-> 
-> int main(void) {
->     int fds[DEPTH];
->     int i;
->     int p[2];
->     struct epoll_event evt = { .events = EPOLLIN };
-> 
->     for (i = 0; i < DEPTH; i++) {
->         if ((fds[i] = epoll_create(1)) < 0)
->             die("create");
->     }
->     for (i = 1; i < DEPTH; i++) {
->         add_many(fds[i-1], fds[i]);
->     }
->     if (pipe(p) < 0)
->         die("pipe");
-> 
->     epoll_ctl(fds[DEPTH-1], EPOLL_CTL_ADD, p[0], &evt);
->     write(p[1], p, sizeof(int));
-> 
->     return 0;
-> }
-> ----
-> 
-> A similar marking-visited-fds patch might be workable here, but the
-> concurrency is going to be much trickier, since there may be multiple
-> wakeups going on at once.
-> 
-> - Nelson
-> 
+> 								Honza
+Jan
 
-indeed, the brute-force walk can be tickled by quite a few paths in the
-epoll code....in terms of a fix, even if we disabled local irq for
-ep_poll_safewake(), we still can have NR_CPUS running these brute-force
-walks. Then to store the visisted list we would need NR_CPUS bits per
-struct eventpoll. That's way too much space. Instead we could have
-say a u64, per 'struct eventpoll', and essentially, pass out 1 of the 64
-open slots as needed. If they are all busy we spin waiting for a free
-one. Of course its probabilistic over 64 cpus...
+Thanks. We should probably send this to the stable guys as well.
 
-The other thing of course, is to cut down on the allowable branching and
-nesting factors. I'm not sure how viable that is in terms of potential
-regressions...
+I've found the same issue with a few other filesystems. I'll bundle up
+those patches and send out a set in the coming days along with an easily
+reproducible testcase.
 
-thanks,
-
--Jason
-
-
-> On Fri, Feb 25, 2011 at 02:50:53PM -0500, Jason Baron wrote:
-> > Hi,
-> > 
-> > The recent epoll patch to prevent introducing cycles among the epoll
-> > data structures is implemented using a brute force search. Although,
-> > the epoll code limits path lengths to 4 deep, it is still possible
-> > exploit the algorithm and cause a local dos. Using the program below,
-> > I was able to busy the kernel to run for 15 minutes in the loop
-> > detection algorithm. (That can't be good for real-time performance :))
-> > 
-> > The test program is diabolical, but it represents a local 'dos'
-> > attack. The program can be run by any user, and uses almost all 1024
-> > of its open file descriptor limit. If that limit were raised by a
-> > sysadmin, the program could be run indefinitely. (The run time is
-> > basically: (max # of open file descriptors / 4) ^ 4. So in the
-> > case of 1024 max file descriptor, we generate ~256 ^ 4 path checks,
-> > which causes a quite a lot of function calls.
-> > 
-> > We can improve the loop detection code, to not be brute force, and
-> > make sure that it doesn't re-visit nodes that it has already visited.
-> > Using this optimized version the 15 minute test ran in .3 seconds.
-> > The algorithm relies on the fact that there are no cycles in the
-> > graph to begin with, and thus the newly added link must be involved
-> > in the cycle (if there is one introduced).
-> > 
-> > I've re-tested the original test program, and the diabolical test
-> > case below, but otherwise haven't done further epoll testing.
-> > 
-> > test program:
-> > 
-> > #include <unistd.h>
-> > #include <sys/epoll.h>
-> > #include <sys/time.h>
-> > #include <stdio.h>
-> > 
-> > #define SIZE 250
-> > 
-> > int main(void) {
-> > 
-> > 	int links[SIZE];
-> > 	int links2[SIZE];
-> > 	int links3[SIZE];
-> > 	int links4[SIZE];
-> > 	int i, j;
-> > 	int ret;
-> > 	int ep1, ep2;
-> > 	struct timeval start, end;
-> > 
-> > 	struct epoll_event evt = {
-> > 		.events = EPOLLIN
-> > 	};
-> > 
-> > 	ep1 = epoll_create(1);
-> > 	for (i = 0; i < SIZE; i++) {
-> > 		links[i] = epoll_create(1);
-> > 		ret = epoll_ctl(ep1, EPOLL_CTL_ADD, links[i], &evt);
-> > 		if (ret)
-> > 			perror("error 1");
-> > 	}
-> > 	for (i = 0; i < SIZE; i++) {
-> > 		links2[i] = epoll_create(1);
-> > 		for (j = 0; j < SIZE; j++) {
-> > 			epoll_ctl(links[j], EPOLL_CTL_ADD, links2[i], &evt);
-> > 			if (ret)
-> > 				perror("error 2");
-> > 		}
-> > 	}
-> > 	for (i = 0; i < SIZE; i++) {
-> > 		links3[i] = epoll_create(1);
-> > 		for (j = 0; j < SIZE; j++) {
-> > 			epoll_ctl(links2[j], EPOLL_CTL_ADD, links3[i], &evt);
-> > 			if (ret)
-> > 				perror("error 3");
-> > 		}
-> > 	}
-> > 	for (i = 0; i < SIZE; i++) {
-> > 		links4[i] = epoll_create(1);
-> > 		for (j = 0; j < SIZE; j++) {
-> > 			epoll_ctl(links3[j], EPOLL_CTL_ADD, links4[i], &evt);
-> > 			if (ret)
-> > 				perror("error 4");
-> > 		}
-> > 	}
-> > 
-> >  	ep2 = epoll_create(1);
-> > 	gettimeofday(&start, NULL);
-> > 	ret = epoll_ctl(ep2, EPOLL_CTL_ADD, ep1, &evt);
-> > 	/* creates a loop */
-> > 	//ret = epoll_ctl(links4[499], EPOLL_CTL_ADD, ep1, &evt);
-> > 	if (ret)
-> > 		perror("error 5");
-> > 	gettimeofday(&end, NULL);
-> > 
-> > 	printf("%ld\n", ((end.tv_sec * 1000000 + end.tv_usec)
-> > 		- (start.tv_sec * 1000000 + start.tv_usec)));
-> > 
-> > 	return 0;
-> > 
-> > }
-> > 
-> > thanks,
-> > 
-> > -Jason
-> > 
-> > Signed-off-by: Jason Baron <jbaron@redhat.com>
-> > ---
-> >  fs/eventpoll.c |   26 ++++++++++++++++++++++++--
-> >  1 files changed, 24 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> > index 4a09af9..ea74bc9 100644
-> > --- a/fs/eventpoll.c
-> > +++ b/fs/eventpoll.c
-> > @@ -95,6 +95,9 @@ struct epoll_filefd {
-> >  	int fd;
-> >  };
-> >  
-> > +/* used to keep track of visited nodes, so they can be cleared */
-> > +LIST_HEAD(visited_list);
-> > +
-> >  /*
-> >   * Structure used to track possible nested calls, for too deep recursions
-> >   * and loop cycles.
-> > @@ -188,6 +191,10 @@ struct eventpoll {
-> >  
-> >  	/* The user that created the eventpoll descriptor */
-> >  	struct user_struct *user;
-> > +
-> > +	/* used to optimize loop detection check */
-> > +	int visited;
-> > +	struct list_head visitedllink;
-> >  };
-> >  
-> >  /* Wait structure used by the poll hooks */
-> > @@ -1228,16 +1235,22 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
-> >  	int error = 0;
-> >  	struct file *file = priv;
-> >  	struct eventpoll *ep = file->private_data;
-> > +	struct eventpoll *ep_tovisit;
-> >  	struct rb_node *rbp;
-> >  	struct epitem *epi;
-> >  
-> >  	mutex_lock(&ep->mtx);
-> > +	ep->visited = 1;
-> > +	list_add(&ep->visitedllink, &visited_list);
-> >  	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-> >  		epi = rb_entry(rbp, struct epitem, rbn);
-> >  		if (unlikely(is_file_epoll(epi->ffd.file))) {
-> > +			ep_tovisit = epi->ffd.file->private_data;
-> > +			if (ep_tovisit->visited)
-> > +				continue;
-> >  			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-> >  					       ep_loop_check_proc, epi->ffd.file,
-> > -					       epi->ffd.file->private_data, current);
-> > +					       ep_tovisit, current);
-> >  			if (error != 0)
-> >  				break;
-> >  		}
-> > @@ -1260,8 +1273,17 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
-> >   */
-> >  static int ep_loop_check(struct eventpoll *ep, struct file *file)
-> >  {
-> > -	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-> > +	int ret;
-> > +	struct eventpoll *ep_cur, *ep_next;
-> > +
-> > +	ret = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-> >  			      ep_loop_check_proc, file, ep, current);
-> > +	/* clear visited list */
-> > +	list_for_each_entry_safe(ep_cur, ep_next, &visited_list, visitedllink) {
-> > +		ep_cur->visited = 0;
-> > +		list_del(&ep_cur->visitedllink);
-> > +	}
-> > +	return ret;
-> >  }
-> >  
-> >  /*
-> > -- 
-> > 1.7.1
-> > 
+Josh
