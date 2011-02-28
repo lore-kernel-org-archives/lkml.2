@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab1B1S5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 13:57:32 -0500
-Received: from avas1.ac-besancon.fr ([195.221.85.113]:55733 "EHLO
-	avas1.ac-besancon.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab1B1S5b (ORCPT
+	id S1754662Ab1B1S73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 13:59:29 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48010 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428Ab1B1S71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 13:57:31 -0500
-From: <Rolande.Blondeau@ac-besancon.fr>
-Reply-To: mrallan_davis1@yahoo.co.jp
-Message-ID: <bcc06fe85928f4db.4d6b63a0@ac-besancon.fr>
-Date: Mon, 28 Feb 2011 08:58:08 -0800
-X-Mailer: Sun Java(tm) System Messenger Express 6.2-4.03 (built Sep 22
- 2005)
-MIME-Version: 1.0
-Content-Language: fr
-X-Accept-Language: fr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-To: undisclosed-recipients:;
+	Mon, 28 Feb 2011 13:59:27 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: arnaud.patard@rtp-net.org, gregkh@suse.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] staging: xgifb: eliminate fbcon_XGI_copyarea()
+Date: Mon, 28 Feb 2011 20:59:21 +0200
+Message-Id: <1298919565-6061-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+fbcon_XGI_copyarea() implementation is trivial and can be replaced with
+cfb_copyarea().
 
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ drivers/staging/xgifb/XGI_accel.c   |    9 ---------
+ drivers/staging/xgifb/XGI_accel.h   |    2 --
+ drivers/staging/xgifb/XGI_main.h    |    2 --
+ drivers/staging/xgifb/XGI_main_26.c |    2 +-
+ 4 files changed, 1 insertions(+), 14 deletions(-)
 
-My working partner in relationship with
-HSBC London has concluded that our working
-partner has helped us to send you first payment of US$5,000 to you as
-instructed by Malaysia government and will
-keep sending you $5000 twice a week until
-the payment of (US$820,000 ) is completed
-within six months and here is the information
+diff --git a/drivers/staging/xgifb/XGI_accel.c b/drivers/staging/xgifb/XGI_accel.c
+index 905b34a..968ac04 100644
+--- a/drivers/staging/xgifb/XGI_accel.c
++++ b/drivers/staging/xgifb/XGI_accel.c
+@@ -123,12 +123,3 @@ void fbcon_XGI_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
+ 	cfb_fillrect(info, rect);
+ 	return;
+ }
+-
+-void fbcon_XGI_copyarea(struct fb_info *info, const struct fb_copyarea *area)
+-{
+-   	cfb_copyarea(info, area);
+-	return;
+-}
+-
+-
+-
+diff --git a/drivers/staging/xgifb/XGI_accel.h b/drivers/staging/xgifb/XGI_accel.h
+index 6cecdf7..836ee40 100644
+--- a/drivers/staging/xgifb/XGI_accel.h
++++ b/drivers/staging/xgifb/XGI_accel.h
+@@ -479,7 +479,5 @@ int fbcon_XGI_sync(struct fb_info *info);
+ extern struct video_info xgi_video_info;
+ 
+ void fbcon_XGI_fillrect(struct fb_info *info, const struct fb_fillrect *rect);
+-void fbcon_XGI_copyarea(struct fb_info *info, const struct fb_copyarea *area);
+-
+ 
+ #endif
+diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
+index 1b45414..15d72ee 100644
+--- a/drivers/staging/xgifb/XGI_main.h
++++ b/drivers/staging/xgifb/XGI_main.h
+@@ -795,8 +795,6 @@ static int      XGIfb_blank(int blank,
+ */
+ extern void     fbcon_XGI_fillrect(struct fb_info *info,
+                                    const struct fb_fillrect *rect);
+-extern void     fbcon_XGI_copyarea(struct fb_info *info,
+-                                   const struct fb_copyarea *area);
+ 
+ static int XGIfb_ioctl(struct fb_info *info, unsigned int cmd,
+ 			    unsigned long arg);
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 5e69728..6cf2eea 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -1739,7 +1739,7 @@ static struct fb_ops XGIfb_ops = {
+ #endif
+ 	.fb_blank = XGIfb_blank,
+ 	.fb_fillrect = fbcon_XGI_fillrect,
+-	.fb_copyarea = fbcon_XGI_copyarea,
++	.fb_copyarea = cfb_copyarea,
+ 	.fb_imageblit = cfb_imageblit,
+ 	.fb_ioctl = XGIfb_ioctl,
+ 	/* .fb_mmap = XGIfb_mmap, */
+-- 
+1.5.6.5
 
-
-MONEY TRANSFER REFERENCE:2116-3297
-
-SENDER'S NAME: Mike Marx
-AMOUNT: US$5000
-To track your funds forward money gram
-Transfer agent Mr Allan Davis
-
-Your Name.__________________________
-Phone .__________________________
-
-Contact Allan Davis for the funds clearance
-certificate neccessary for the realise of your funds
-
-E-mail:mrallan_davis1@yahoo.co.jp
-D/L: Tel:+601-635-44376
-
-Please direct all enquiring to:
-money gram
-Alex Rogers: Please direct all enquiring to:
-dmr.allan@yahoo.com.hk 
-
-Best Regards,
-Mr Allan Davis
