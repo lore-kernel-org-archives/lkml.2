@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1B1Ps1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:48:27 -0500
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:49062 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754995Ab1B1Ps0 (ORCPT
+	id S1755030Ab1B1PuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:50:16 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51294 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab1B1PuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:48:26 -0500
-X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Feb 2011 10:48:26 EST
-To: Albert Cahalan <acahalan@gmail.com>
-Subject: Re: txqueuelen has wrong units; should be time
+	Mon, 28 Feb 2011 10:50:15 -0500
+Date: Mon, 28 Feb 2011 16:50:08 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        kernel@pengutronix.de, Arjan van de Ven <arjan@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 6/6] tty/vt: add some KERN_CONT markers to continuation
+ lines
+Message-ID: <20110228155008.GQ22310@pengutronix.de>
+References: <20101124085645.GW4693@pengutronix.de>
+ <1290589070-854-6-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20110228151641.GN22310@pengutronix.de>
+ <20110228153946.GA26719@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Mon, 28 Feb 2011 16:38:57 +0100
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mikael Abrahamsson <swmike@swm.pp.se>,
-        linux-kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
-References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
- <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
- <1298793252.8726.45.camel@edumazet-laptop>
- <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
- <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
- <AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
-Message-ID: <cbb9e1113901f1a324359b6ed3f1a611@localhost>
-User-Agent: RoundCube Webmail/0.1-rc1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110228153946.GA26719@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Greg,
 
-On Sun, 27 Feb 2011 18:33:39 -0500, Albert Cahalan wrote:
+On Mon, Feb 28, 2011 at 07:39:46AM -0800, Greg KH wrote:
+> On Mon, Feb 28, 2011 at 04:16:41PM +0100, Uwe Kleine-König wrote:
+> > Hello Greg,
+> > 
+> > should this patch go via your tree?
+> 
+> Yes, care to resend it in a format I can apply it in?
+I bounced you the original mail assuming this is enough.
 
-> I suppose there is a need to allow at least 2 packets despite any
-> time limits, so that it remains possible to use a traditional modem
-> even if a huge packet takes several seconds to send.
+Best regards
+Uwe
 
-That is a good point! We talk about as we may know every use case of
-Linux. But this is not true at all. One of my customer for example operates
-the Linux network stack functionality on top of a proprietary MAC/Driver
-where the current packet queue characteristic is just fine. The
-time-drop-approach is unsuitable because the bandwidth can vary in a small
-amount of time over a great range (0 till max. bandwidth). A sufficient
-buffering shows up superior in this environment (only IPv{4,6}/UDP).
-
-Hagen
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
