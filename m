@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab1B1T67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 14:58:59 -0500
-Received: from ulysses.noc.ntua.gr ([147.102.222.230]:49883 "EHLO
-	ulysses.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab1B1T66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 14:58:58 -0500
-Message-ID: <4D6BFE7D.9000907@ece.ntua.gr>
-Date: Mon, 28 Feb 2011 21:58:53 +0200
-From: Stratos Psomadakis <psomas@ece.ntua.gr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110225 Lightning/1.0b3pre Lanikai/3.1.7
+	id S1755021Ab1B1UCO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 15:02:14 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:34557 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754535Ab1B1UCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 15:02:13 -0500
+Message-ID: <4D6BFF46.3050001@sgi.com>
+Date: Mon, 28 Feb 2011 12:02:14 -0800
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        psomas@cslab.ntua.gr
-Subject: Re: [PATCH 0/2] x86_32 cleanup: KERNEL_IMAGE_SIZE
-References: <1298841698-31823-1-git-send-email-psomas@cslab.ece.ntua.gr>
-In-Reply-To: <1298841698-31823-1-git-send-email-psomas@cslab.ece.ntua.gr>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, David Rientjes <rientjes@google.com>,
+        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/4] printk: Allocate kernel log buffer earlier
+References: <20110225180633.857892225@gulag1.americas.sgi.com>	<20110225180634.017570095@gulag1.americas.sgi.com>	<20110227120949.GF16453@elte.hu>	<20110227121518.GA19165@elte.hu>	<4D6AFBB0.70401@kernel.org>	<4D6BF63D.2020404@sgi.com> <AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>
+In-Reply-To: <AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (ulysses.noc.ntua.gr [147.102.222.230]); Mon, 28 Feb 2011 21:58:55 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2011 11:21 PM, Stratos Psomadakis wrote:
-> I noticed that KERNEL_IMAGE_SIZE is no longer used by x86_32 code
-> (head_32.S no longer uses it for the initial kernel mapping).
->
-> We can thus remove the assert from the vmlinux.lds.S file, and 
-> remove it completely for x86_32 code. 
->
-> Since head_32.S doesn't use it anymore, I can't find a reason 
-> why we should impose such a limit on the kernel image size
-> (although a 512+MB kernel image isn't what one would call a realistic
-> scenario :P)
->
-> I think that a limit on the size of the image is imposed anyway
-> by decompress_kernel()(if I understood correctly).
->
-> I also updated the comments in head_32.S which still had references
-> to KERNEL_IMAGE_SIZE.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-added cc, just in case anyone is interested
 
--- 
-Stratos Psomadakis
-<psomas@ece.ntua.gr>
 
+Yinghai Lu wrote:
+> On Mon, Feb 28, 2011 at 11:23 AM, Mike Travis <travis@sgi.com> wrote:
+>>
+>> Yinghai Lu wrote:
+>>> On 02/27/2011 04:15 AM, Ingo Molnar wrote:
+>>>> * Ingo Molnar <mingo@elte.hu> wrote:
+>>>>
+>>>>> You could avoid all this ugly workaround of bootmem limitations by
+>>>>> moving the allocation to memblock_alloc() and desupporting the log_buf_len=
+>>>>> boot parameter on non-memblock architectures.
+>>>> memblock_alloc() could return -ENOSYS on architectures that do not
+>>>> implement it - thus enabling such optional features without ugly #ifdef
+>>>> CONFIG_HAVE_MEMBLOCK conditionals.
+>>> Mike,
+>>>
+>>> please check updated patch...
+>>>
+>>> with the memblock change, you don't need to change acpi SRAT handling etc
+>>> any more.
+>> I had to debug a weird ACPI -> Node mapping last week and the
+>> "improved" SRAT messages helped that considerably.  It was
+>> far easier to spot which Node didn't have the correct assignments.
+>> I'd submit that patch even without needing fewer (like 512 lines
+>> max instead of 4096 lines max) bytes in the log buffer.
+> 
+> Your current change to ACPI srat is not complete yet.
+> 
+> you only handle x2apic entries.
+> 
+> According to ACPI 4.0 spec, We should have mixed entries with apic
+> entries and x2apic entries.
+> apic entries are for apic id < 255.
+> x2apic entries are for apic id > 255.
+> 
+> Yinghai
+
+Are you sure you can run both "legacy" and "x2" apic modes in
+the same SSI under the Intel or AMD rules?
+
+(And it's highly probable that you cannot overflow the log
+buffer with less than 256 CPU's.)
+
+Thanks,
+Mike
