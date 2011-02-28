@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab1B1Rhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 12:37:41 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52872 "EHLO mx3.mail.elte.hu"
+	id S1753509Ab1B1RkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 12:40:09 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53141 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752805Ab1B1Rhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 12:37:40 -0500
-Date: Mon, 28 Feb 2011 18:37:27 +0100
+	id S1753064Ab1B1RkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 12:40:08 -0500
+Date: Mon, 28 Feb 2011 18:39:52 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20110228173727.GA4383@elte.hu>
+Subject: [GIT PULL] timer fix
+Message-ID: <20110228173952.GA4592@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,32 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-fixes-for-linus git tree from:
+Please pull the latest timers-fixes-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Don Zickus (1):
-      x86: Use u32 instead of long to set reset vector back to 0
+Thomas Gleixner (1):
+      clockevents: Prevent oneshot mode when broadcast device is periodic
 
 
- arch/x86/include/asm/smpboot_hooks.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/time/tick-broadcast.c |   10 ++++++++++
+ kernel/time/tick-common.c    |    6 +++++-
+ kernel/time/tick-internal.h  |    3 +++
+ 3 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
-index 6c22bf3..725b778 100644
---- a/arch/x86/include/asm/smpboot_hooks.h
-+++ b/arch/x86/include/asm/smpboot_hooks.h
-@@ -34,7 +34,7 @@ static inline void smpboot_restore_warm_reset_vector(void)
- 	 */
- 	CMOS_WRITE(0, 0xf);
- 
--	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
-+	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 48b2761..a3b5aff 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -600,4 +600,14 @@ int tick_broadcast_oneshot_active(void)
+ 	return tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT;
  }
  
- static inline void __init smpboot_setup_io_apic(void)
++/*
++ * Check whether the broadcast device supports oneshot.
++ */
++bool tick_broadcast_oneshot_available(void)
++{
++	struct clock_event_device *bc = tick_broadcast_device.evtdev;
++
++	return bc ? bc->features & CLOCK_EVT_FEAT_ONESHOT : false;
++}
++
+ #endif
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 051bc80..ed228ef 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -51,7 +51,11 @@ int tick_is_oneshot_available(void)
+ {
+ 	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
+ 
+-	return dev && (dev->features & CLOCK_EVT_FEAT_ONESHOT);
++	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
++		return 0;
++	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
++		return 1;
++	return tick_broadcast_oneshot_available();
+ }
+ 
+ /*
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 290eefb..f65d3a7 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -36,6 +36,7 @@ extern void tick_shutdown_broadcast_oneshot(unsigned int *cpup);
+ extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
+ extern int tick_broadcast_oneshot_active(void);
+ extern void tick_check_oneshot_broadcast(int cpu);
++bool tick_broadcast_oneshot_available(void);
+ # else /* BROADCAST */
+ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ {
+@@ -46,6 +47,7 @@ static inline void tick_broadcast_switch_to_oneshot(void) { }
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
+ static inline int tick_broadcast_oneshot_active(void) { return 0; }
+ static inline void tick_check_oneshot_broadcast(int cpu) { }
++static inline bool tick_broadcast_oneshot_available(void) { return true; }
+ # endif /* !BROADCAST */
+ 
+ #else /* !ONESHOT */
+@@ -76,6 +78,7 @@ static inline int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
+ 	return 0;
+ }
+ static inline int tick_broadcast_oneshot_active(void) { return 0; }
++static inline bool tick_broadcast_oneshot_available(void) { return false; }
+ #endif /* !TICK_ONESHOT */
+ 
+ /*
