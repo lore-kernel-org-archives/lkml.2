@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab1B1BBk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 20:01:40 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41506 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab1B1BBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 20:01:39 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 28 Feb 2011 09:55:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] memcg: clean up migration
-Message-Id: <20110228095521.9b8a08cf.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1298821765-3167-1-git-send-email-minchan.kim@gmail.com>
-References: <1298821765-3167-1-git-send-email-minchan.kim@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752243Ab1B1BE5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 20:04:57 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:51911 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab1B1BE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 20:04:56 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        "'Greg KH'" <greg@kroah.com>
+References: <014b01cbcdad$f110afb0$d3320f10$@mprc.pku.edu.cn> <201102171845.01177.arnd@arndb.de> <017b01cbd62d$633fd070$29bf7150$@mprc.pku.edu.cn> <201102271821.34017.arnd@arndb.de>
+In-Reply-To: <201102271821.34017.arnd@arndb.de>
+Subject: RE: [PATCH 05/12] unicore32 additional architecture files: low-level lib: uaccess
+Date: Mon, 28 Feb 2011 09:04:42 +0800
+Message-ID: <018f01cbd6e3$7c825e70$75871b50$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQJUJ5R0byzuScHkceok2M2VIwxC3QHwN80AAUGn5hICEnJmU5LbVBHg
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Feb 2011 00:49:25 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
-
-> This patch cleans up unncessary BUG_ON check and confusing
-> charge variable.
-> 
-> That's because memcg charge/uncharge could be handled by
-> mem_cgroup_[prepare/end] migration itself so charge local variable
-> in unmap_and_move lost the role since we introduced 01b1ae63c2.
-> 
-> And mem_cgroup_prepare_migratio return 0 if only it is successful.
-> Otherwise, it jumps to unlock label to clean up so BUG_ON(charge)
-> isn;t meaningless.
-> 
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
-> ---
->  mm/memcontrol.c |    1 +
->  mm/migrate.c    |   14 ++++----------
->  2 files changed, 5 insertions(+), 10 deletions(-)
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Monday, February 28, 2011 1:22 AM
+> To: Guan Xuetao
+> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
+> Subject: Re: [PATCH 05/12] unicore32 additional architecture files: low-level lib: uaccess
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2fc97fc..6832926 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2872,6 +2872,7 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
->  /*
->   * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
->   * page belongs to.
-> + * Return 0 if charge is successful. Otherwise return -errno.
->   */
->  int mem_cgroup_prepare_migration(struct page *page,
->  	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask)
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index eb083a6..737c2e5 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -622,7 +622,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  	int *result = NULL;
->  	struct page *newpage = get_new_page(page, private, &result);
->  	int remap_swapcache = 1;
-> -	int charge = 0;
->  	struct mem_cgroup *mem;
->  	struct anon_vma *anon_vma = NULL;
->  
-> @@ -637,9 +636,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  		if (unlikely(split_huge_page(page)))
->  			goto move_newpage;
->  
-> -	/* prepare cgroup just returns 0 or -ENOMEM */
->  	rc = -EAGAIN;
-> -
->  	if (!trylock_page(page)) {
->  		if (!force)
->  			goto move_newpage;
-> @@ -678,13 +675,11 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  	}
->  
->  	/* charge against new page */
-> -	charge = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
-> -	if (charge == -ENOMEM) {
-> -		rc = -ENOMEM;
-> +	rc = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
-> +	if (rc)
->  		goto unlock;
-> -	}
-> -	BUG_ON(charge);
->  
-> +	rc = -EAGAIN;
->  	if (PageWriteback(page)) {
->  		if (!force || !sync)
->  			goto uncharge;
-> @@ -767,8 +762,7 @@ skip_unmap:
->  		drop_anon_vma(anon_vma);
->  
->  uncharge:
-> -	if (!charge)
-> -		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-> +	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
->  unlock:
->  	unlock_page(page);
->  
-> -- 
-> 1.7.1
+> On Sunday 27 February 2011, Guan Xuetao wrote:
+> > > -----Original Message-----
+> > > From: Arnd Bergmann [mailto:arnd@arndb.de]
+> > > Sent: Friday, February 18, 2011 1:45 AM
+> > > To: Guan Xuetao
+> > > Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
+> > > Subject: Re: [PATCH 05/12] unicore32 additional architecture files: low-level lib: uaccess
+> > >
+> > > On Wednesday 16 February 2011, Guan Xuetao wrote:
+> > > > +
+> > > > +#define __kernel_ok                (segment_eq(get_fs(), KERNEL_DS))
+> > > > +#define __user_ok(addr, size)      (((size) <= TASK_SIZE)                  \
+> > > > +                           && ((addr) <= TASK_SIZE - (size)))
+> > > > +#define __access_ok(addr, size)    (__kernel_ok || __user_ok((addr), (size)))
+> > >
+> > > A nice trick to simplify this is to introduce a per-process variable for comparing
+> > > the pointer, set_fs() then sets this variable to either TASK_SIZE or
+> > > UINT_MAX.
+> >
+> > Perhaps like this:
+> > 1. add a member named kaddr in thread_info
+> > 2. add following assignment codes in set_fs:
+> >         current_thread_info()->kaddr =  segment_eq(fs, KERNEL_DS) ? UINT_MAX : TASK_SIZE;
+> > 3. then __access_ok will be:
+> >         #define addr
+> >         #define __access_ok(addr, size)   (((size) <= TASK_SIZE)                        \
+> >                                 && ((addr) <= current_thread_info()->kaddr)  - (size)))
 > 
+> That would also work. What I meant was to have
 > 
+> #define set_fs(fs) \
+> 	do { current_thread_info()->kaddr = (fs); } while (0)
+> 
+> #define KERNEL_DS	UINT_MAX
+> #define USER_DS		TASK_SIZE
+> 
+> Either way is fine with me, just choose whichever works best for you in terms of code size.
+I can't find the difference between this way and the way in asm-generic/uaccess.h.
+Perhaps, under this idea, __kernel_ok could be ignored.
+
+> 
+> 	Arnd
+
+Thanks & Regards.
+Guan Xuetao
 
