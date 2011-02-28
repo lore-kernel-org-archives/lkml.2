@@ -1,94 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab1B1Ua3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 15:30:29 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37396 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729Ab1B1Ua1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 15:30:27 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: 2.6.38 regression caused by commit 415e12b
-Date: Mon, 28 Feb 2011 21:29:56 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ozan Caglayan <ozan@pardus.org.tr>
-References: <20110228014218.GA11083@xanatos>
-In-Reply-To: <20110228014218.GA11083@xanatos>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1755201Ab1B1Ucw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 15:32:52 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55594
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752852Ab1B1Ucu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 15:32:50 -0500
+Date: Mon, 28 Feb 2011 12:33:27 -0800 (PST)
+Message-Id: <20110228.123327.102545454.davem@davemloft.net>
+To: rlandley@parallels.com
+Cc: rdunlap@xenotime.net, netdev@vger.kernel.org, mk@lab.zgora.pl,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: net: update Documentation/networking/00-INDEX
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D64504D.6070306@parallels.com>
+References: <20110221120303.48106f6c.rdunlap@xenotime.net>
+	<20110222142343.f3318134.rdunlap@xenotime.net>
+	<4D64504D.6070306@parallels.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102282129.56835.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 28, 2011, Sarah Sharp wrote:
-> I'm having an issue with an xHCI (USB 3.0 host controller) Express Card.
-> This card works fine on 2.6.37, but on 2.6.38-rc5, when I plug in the
-> card, I get this output in dmesg:
-> 
-> Feb 22 16:32:28 xanatos kernel: [  119.345996] irq 23: nobody cared (try booting with the "irqpoll" option)
-> Feb 22 16:32:28 xanatos kernel: [  119.346002] Pid: 0, comm: kworker/0:0 Not tainted 2.6.38-rc5+ #745
-> Feb 22 16:32:28 xanatos kernel: [  119.346005] Call Trace:
-> Feb 22 16:32:28 xanatos kernel: [  119.346007]  <IRQ>  [<ffffffff8109a1f6>] ? __report_bad_irq+0x26/0xa0
-> Feb 22 16:32:28 xanatos kernel: [  119.346019]  [<ffffffff8109a3fc>] ? note_interrupt+0x18c/0x1d0
-> Feb 22 16:32:28 xanatos kernel: [  119.346024]  [<ffffffff8109ad7d>] ? handle_fasteoi_irq+0xcd/0x100
-> Feb 22 16:32:28 xanatos kernel: [  119.346029]  [<ffffffff8100543d>] ? handle_irq+0x1d/0x30
-> Feb 22 16:32:28 xanatos kernel: [  119.346032]  [<ffffffff81004bb8>] ? do_IRQ+0x58/0xd0
-> Feb 22 16:32:28 xanatos kernel: [  119.346037]  [<ffffffff8149f5d3>] ? ret_from_intr+0x0/0xe
-> Feb 22 16:32:28 xanatos kernel: [  119.346040]  <EOI>  [<ffffffff8126f2d0>] ? acpi_idle_enter_c1+0x7e/0x99
-> Feb 22 16:32:28 xanatos kernel: [  119.346048]  [<ffffffff8126f2b2>] ? acpi_idle_enter_c1+0x60/0x99
-> Feb 22 16:32:28 xanatos kernel: [  119.346054]  [<ffffffff8138ac92>] ? cpuidle_idle_call+0x82/0xf0
-> Feb 22 16:32:28 xanatos kernel: [  119.346059]  [<ffffffff81001906>] ? cpu_idle+0x56/0xb0
-> Feb 22 16:32:28 xanatos kernel: [  119.346064]  [<ffffffff8149861b>] ? start_secondary+0x1c1/0x1c8
-> Feb 22 16:32:28 xanatos kernel: [  119.346068]  [<ffffffff81263386>] ? acpi_ns_parse_table+0x2e/0x34
-> Feb 22 16:32:28 xanatos kernel: [  119.346073]  [<ffffffff81267a8c>] ? acpi_load_tables+0x9c/0x15d
-> Feb 22 16:32:28 xanatos kernel: [  119.346076] handlers:
-> Feb 22 16:32:28 xanatos kernel: [  119.346078] [<ffffffffa0123500>] (usb_hcd_irq+0x0/0x70 [usbcore])
-> Feb 22 16:32:28 xanatos kernel: [  119.346100] Disabling IRQ #23
-> 
-> This happens before the xHCI driver has a chance to start PCI
-> initialization.
-> 
-> I've been trying to bisect this on a slow laptop, so I haven't had a
-> chance to test with the latest tree from Linus to see if this is already
-> fixed.  I'll do that later this evening.
-> 
-> I've bisected the issue down to this commit:
-> 
-> 415e12b2379239973feab91850b0dce985c6058a is first bad commit
-> commit 415e12b2379239973feab91850b0dce985c6058a
-> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> Date:   Fri Jan 7 00:55:09 2011 +0100
-> 
->     PCI/ACPI: Request _OSC control once for each root bridge (v3)
->     
->     Move the evaluation of acpi_pci_osc_control_set() (to request control of
->     PCI Express native features) into acpi_pci_root_add() to avoid calling
->     it many times for the same root complex with the same arguments.
->     Additionally, check if all of the requisite _OSC support bits are set
->     before calling acpi_pci_osc_control_set() for a given root complex.
->     
->     References: https://bugzilla.kernel.org/show_bug.cgi?id=20232
->     Reported-by: Ozan Caglayan <ozan@pardus.org.tr>
->     Tested-by: Ozan Caglayan <ozan@pardus.org.tr>
->     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
->     Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> 
-> :040000 040000 531c48ec0c23b72f0ca1b5f33828ea63808e4033 7ffa298e34dd842e1f84f0b1fea6dc5af1f70514 M	drivers
-> :040000 040000 4e484ec0cab0ebc7c82a029c4860802617b7aaf2 01b429bcaeb7b50af04667664cf25453058e803f M	include
-> 
-> lspci from a kernel where the Express Card works is attached.
+From: Rob Landley <rlandley@parallels.com>
+Date: Tue, 22 Feb 2011 18:09:49 -0600
 
-Most likely your card requires PCIe hotplug to work which doesn't with the
-above commit applied due to some dependencies that aren't met.
+> On 02/22/2011 04:23 PM, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>> 
+>> Clean up entries in 00-INDEX: drop files that have been removed.
+>> 
+>> Reported-by: Rob Landley <rlandley@parallels.com>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Acked-by: Rob Landley <rlandley@parallels.com>
 
-May I see full dmesg output with and without the above commit?
-
-It may be more convenient to add a Bugzilla entry for it.
-
-Thanks,
-Rafael
+Applied, thanks.
