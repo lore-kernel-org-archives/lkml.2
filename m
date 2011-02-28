@@ -1,148 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab1B1Knc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 05:43:32 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34253 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753501Ab1B1Kna (ORCPT
+	id S1753491Ab1B1Kob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 05:44:31 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:43746 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab1B1Koa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 05:43:30 -0500
-Message-ID: <4D6B7CA5.9010708@metafoo.de>
-Date: Mon, 28 Feb 2011 11:44:53 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: "'Ben Dooks'" <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+	Mon, 28 Feb 2011 05:44:30 -0500
+Date: Mon, 28 Feb 2011 19:44:25 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 08/09] ARM: s3c2440: gta02: Request usb pullup pin before
+ using it
+In-reply-to: <4D6B7826.1030500@metafoo.de>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/09] ARM: s3c2440: gta02: Add touchscreen support
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de> <1297043521-21903-9-git-send-email-lars@metafoo.de> <000201cbd70d$4f67f1f0$ee37d5d0$%kim@samsung.com>
-In-Reply-To: <000201cbd70d$4f67f1f0$ee37d5d0$%kim@samsung.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-id: <003201cbd734$79d87050$6d8950f0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcvXMobLmP58a6k6SqmvcZc3hMOBxAAAQdVQ
+References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
+ <1297043521-21903-8-git-send-email-lars@metafoo.de>
+ <000301cbd70f$12367070$36a35150$%kim@samsung.com> <4D6B7826.1030500@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2011 07:04 AM, Kukjin Kim wrote:
-> Lars-Peter Clausen wrote:
->>
->> This patch registers the s3c touchscreen and adc devices to add
-> touchscreen
->> support for the gta02.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->>  arch/arm/mach-s3c2440/mach-gta02.c |   12 ++++++++++++
->>  1 files changed, 12 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c
-> b/arch/arm/mach-s3c2440/mach-
->> gta02.c
->> index 94456fa..2300ec5 100644
->> --- a/arch/arm/mach-s3c2440/mach-gta02.c
->> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
->> @@ -79,6 +79,8 @@
->>  #include <mach/regs-mem.h>
->>  #include <mach/hardware.h>
->>
->> +#include <plat/ts.h>
->> +
+Lars-Peter Clausen wrote:
 > 
-> Please group same/similar inclusion together like following.
-> <linux/...> <asm/...> then <mach/...> or <plat/...>
+> On 02/28/2011 07:16 AM, Kukjin Kim wrote:
+> > Lars-Peter Clausen wrote:
+> >>
+> >> Request the gpio pin used to control the usb pullup before using it to
+> > avoid
+> >> a
+> >> runtime warning about an auto-requested gpio.
+> >>
+> >> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> >> ---
+> >>  arch/arm/mach-s3c2440/mach-gta02.c |   17 +++++++++++++++--
+> >>  1 files changed, 15 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c
+> > b/arch/arm/mach-s3c2440/mach-
+> >> gta02.c
+> >> index 1396639..94456fa 100644
+> >> --- a/arch/arm/mach-s3c2440/mach-gta02.c
+> >> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
+> >> @@ -451,11 +451,11 @@ static void gta02_udc_command(enum
+s3c2410_udc_cmd_e
+> >> cmd)
+> >>  	switch (cmd) {
+> >>  	case S3C2410_UDC_P_ENABLE:
+> >>  		pr_debug("%s S3C2410_UDC_P_ENABLE\n", __func__);
+> >> -		gpio_direction_output(GTA02_GPIO_USB_PULLUP, 1);
+> >> +		gpio_set_value(GTA02_GPIO_USB_PULLUP, 1);
+> >
+> > How about following instead?
+> > 	gpio_request(GTA02_GPIO_USB_PULLUP, "USB_PULLUP");
+> > 	gpio_direction_output(GTA02_GPIO_USB_PULLUP, 1);
+> > 	gpio_free(GTA02_GPIO_USB_PULLUP);
+> >
 > 
-> In other words, please add your <plat/ts.h> inclusion after other <plat/...>
+> I don't think that is a good idea. This gpio should really be reserved for
+> the
+> udc driver. If it is freed again, it could be requested from someone else
+> which
+> could lead to undefined behaviour.
+> 
+Yes right, but I mean the board designer already knows the usage of
+regarding GPIOs on his board.
+So why do we really need gpio_request for it?...
 
-Ok.
-> 
->>  #include <mach/gta02.h>
->>
->>  #include <plat/regs-serial.h>
->> @@ -480,6 +482,13 @@ static struct s3c2410_hcd_info gta02_usb_info
-> __initdata
->> = {
->>  	},
->>  };
->>
->> +/* Touchscreen */
->> +static struct s3c2410_ts_mach_info gta02_ts_info = {
->> +	.delay = 10000,
->> +	.presc = 0xff, /* slow as we can go */
->> +	.oversampling_shift = 2,
->> +};
-> 
-> How about to use tab between member and = like following?
-> 
-> static struct s3c2410_ts_mach_info gta02_ts_info = {
-> 	.delay			= 10000,
-> 	.presc			= 0xff, /* slow as we can go */
-> 	.oversampling_shift	= 2,
-> };
+Thanks.
 
-Ok.
-
-> 
->> +
->>  /* Buttons */
->>  static struct gpio_keys_button gta02_buttons[] = {
->>  	{
->> @@ -533,6 +542,8 @@ static struct platform_device *gta02_devices[]
-> __initdata
->> = {
->>  	&samsung_asoc_dma,
->>  	&s3c_device_i2c0,
->>  	&gta02_buttons_device,
->> +	&s3c_device_adc,
-> 
-> No need to build plat-samsung/dev-adc.c for this?
-> If you want to add '&s3c_deivce_adc', should add 'select SAMSUNG_DEV_ADC'
-> into "config MACH_NEO1973_GTA02".
-
-There appear to be two different definitions for s3c_deivce_adc one is in
-plat-samsung/dev-adc.c the other is in plat-s3c24xx/devs.c. So if I select
-SAMSUNG_DEV_ADC I'll actually get compile errors.
-The definition in plat-s3c24xx/devs.c should probably be dropped, but thats
-something for a different patch.
-
-
-> 
->> +	&s3c_device_ts,
-> 
-> 'select SAMSUNG_DEV_TS'
-
-Same here.
-
-> 
->>  };
->>
->>  /* These guys DO need to be children of PMU. */
->> @@ -597,6 +608,7 @@ static void __init gta02_machine_init(void)
->>  #endif
->>
->>  	s3c24xx_udc_set_platdata(&gta02_udc_cfg);
->> +	s3c24xx_ts_set_platdata(&gta02_ts_info);
-> 
-> Same as above. 'select SAMSUNG_DEV_TS' should be added for
-> plat-samsung/dev-ts.c.
-
-And here.
-
-> 
->>  	s3c_ohci_set_platdata(&gta02_usb_info);
->>  	s3c_nand_set_platdata(&gta02_nand_info);
->>  	s3c_i2c0_set_platdata(NULL);
->> --
->> 1.7.2.3
-> 
-> 
-> Thanks.
-> 
-> Best regards,
-> Kgene.
-> --
-> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
-> 
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
