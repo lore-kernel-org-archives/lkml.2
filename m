@@ -1,225 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1B1Xvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 18:51:45 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51146 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab1B1Xvo (ORCPT
+	id S1755160Ab1B1XxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 18:53:18 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:45421 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754781Ab1B1XxQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 18:51:44 -0500
-Date: Mon, 28 Feb 2011 15:51:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110228235136.GC2331@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D6765B6.1030401@cn.fujitsu.com>
- <20110225203219.GD2269@linux.vnet.ibm.com>
- <4D6B16A8.4050405@cn.fujitsu.com>
+	Mon, 28 Feb 2011 18:53:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Lc816SQoYkR609NH3HYWyoDZJO3A+OZ019PvazOQ0SG4AN2iAOuJz9ByBxC98sRrEx
+         Sfza7fSj44o8aVgmgLBQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6B16A8.4050405@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110227160721.GB3226@barrios-desktop>
+References: <1298669760-26344-1-git-send-email-gthelen@google.com>
+ <1298669760-26344-4-git-send-email-gthelen@google.com> <20110227160721.GB3226@barrios-desktop>
+From: Greg Thelen <gthelen@google.com>
+Date: Mon, 28 Feb 2011 15:52:53 -0800
+Message-ID: <AANLkTik7LfGfYpteufr68AqEe3wUriJKgAMkmT8pJSzZ@mail.gmail.com>
+Subject: Re: [PATCH v5 3/9] writeback: convert variables to unsigned
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 11:29:44AM +0800, Lai Jiangshan wrote:
-> On 02/26/2011 04:32 AM, Paul E. McKenney wrote:
-> >>> +/*
-> >>> + * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
-> >>> + * This can happen while the corresponding CPU is either coming online
-> >>> + * or going offline.  We cannot wait until the CPU is fully online
-> >>> + * before starting the kthread, because the various notifier functions
-> >>> + * can wait for RCU grace periods.  So we park rcu_cpu_kthread() until
-> >>> + * the corresponding CPU is online.
-> >>> + *
-> >>> + * Return 1 if the kthread needs to stop, 0 otherwise.
-> >>> + *
-> >>> + * Caller must disable bh.  This function can momentarily enable it.
-> >>> + */
-> >>> +static int rcu_cpu_kthread_should_stop(int cpu)
-> >>> +{
-> >>> +	while (cpu_is_offline(cpu) || smp_processor_id() != cpu) {
-> >>> +		if (kthread_should_stop())
-> >>> +			return 1;
-> >>> +		local_bh_enable();
-> >>> +		schedule_timeout_uninterruptible(1);
-> >>> +		if (smp_processor_id() != cpu)
-> >>> +			set_cpus_allowed_ptr(current, cpumask_of(cpu));
-> >>
-> >> The current task is PF_THREAD_BOUND,
-> >> Why do "set_cpus_allowed_ptr(current, cpumask_of(cpu));" ?
-> > 
-> > Because I have seen CPU hotplug operations unbind PF_THREAD_BOUND threads.
-> > In addition, I end up having to spawn the kthread at CPU_UP_PREPARE time,
-> > at which point the thread must run unbound because its CPU isn't online
-> > yet.  I cannot invoke kthread_create() within the stop-machine handler
-> > (right?).  I cannot wait until CPU_ONLINE time because that results in
-> > hangs when other CPU notifiers wait for grace periods.
-> > 
-> > Yes, I did find out about the hangs the hard way.  Why do you ask?  ;-)
-> 
-> The current task is PF_THREAD_BOUND, "set_cpus_allowed_ptr(current, cpumask_of(cpu))"
-> will do nothing even it runs on the wrong CPU.
+On Sun, Feb 27, 2011 at 8:07 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Fri, Feb 25, 2011 at 01:35:54PM -0800, Greg Thelen wrote:
+>> Convert two balance_dirty_pages() page counter variables (nr_reclaimable
+>> and nr_writeback) from 'long' to 'unsigned long'.
+>>
+>> These two variables are used to store results from global_page_state().
+>> global_page_state() returns unsigned long and carefully sums per-cpu
+>> counters explicitly avoiding returning a negative value.
+>>
+>> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+>
+>> ---
+>> Changelog since v4:
+>> - Created this patch for clarity.  Previously this patch was integrated within
+>>   the "writeback: create dirty_info structure" patch.
+>>
+>>  mm/page-writeback.c |    6 ++++--
+>>  1 files changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>> index 2cb01f6..4408e54 100644
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -478,8 +478,10 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+>>  static void balance_dirty_pages(struct address_space *mapping,
+>>                               unsigned long write_chunk)
+>>  {
+>> -     long nr_reclaimable, bdi_nr_reclaimable;
+>> -     long nr_writeback, bdi_nr_writeback;
+>> +     unsigned long nr_reclaimable;
+>> +     long bdi_nr_reclaimable;
+>> +     unsigned long nr_writeback;
+>> +     long bdi_nr_writeback;
+>>       unsigned long background_thresh;
+>>       unsigned long dirty_thresh;
+>>       unsigned long bdi_thresh;
+>> --
+>> 1.7.3.1
+>>
+> bdi_nr_[reclaimable|writeback] can return negative value?
+> When I just look through bdi_stat_sum, it uses *percpu_counter_sum_positive*.
+> So I guess it always returns positive value.
+> If it is right, could you change it, too?
 
-You lost me on this one.
+Yes, I think we can also change bdi_nr_[reclaimable|writeback] to unsigned long.
 
-Looking at set_cpus_allowed_ptr()...
+bdi_stat_sum() and bdi_stat() both call percpu_counter_sum_positive(),
+which return a positive number.  bdi_stat[_sum]() return s64.  Should
+we also change bdi_stat[_sum]() to return unsigned long rather than
+s64?  I would like the return value type to match the type of the
+corresponding local variables in balance_dirty_pages().  All current
+callers appear to expect bdi_stat[_sum]() to return unsigned long.
 
-The "again" loop won't happen because the task is already running.
-The CPU is online, so the cpumask_intersects() check won't kick
-us out.  We are working with the current task, so the check for
-PF_THREAD_BOUND, current, and cpumask_equal() won't kick us out.
-If the old and new cpumasks had been the same, we would not have called
-set_cpus_allowed_ptr() in the first place.  So we should get to
-the call to migrate_task().
-
-What am I missing here?
-
-> If the task runs on the wrong CPU. We have no API to force/migrate the task
-> to the bound CPU when the cpu becomes online. But wake_up_process() has
-> a side affect that it will move a slept task to the correct online CPU.
-> "schedule_timeout_uninterruptible(1);" will call
-> wake_up_process() when timeout, so it will do all thing you need.
-> 
-> But "set_cpus_allowed_ptr(current, cpumask_of(cpu));" will do nothing.
-> 
-> The code is a little nasty I think. The proper solution I like:
-> set the rcu_cpu_notify a proper priority, and wake up the kthread
-> in the notifier.
-
-I will be using both belt and suspenders on this one -- too much can
-go wrong given slight adjustments in scheduler, CPU hotplug, and so on.
-
-But speaking of paranoia, I should add a check of smp_processor_id()
-vs. the local variable "cpu", shouldn't I?
-
-> Steven, any suggestion? I just known very little about scheduler.
-> 
-> > 
-> > Please feel free to suggest improvements in the header comment above
-> > for rcu_cpu_kthread_should_stop(), which is my apparently insufficient
-> > attempt to explain this.
-> > 
-> >>> +		local_bh_disable();
-> >>> +	}
-> >>> +	return 0;
-> >>> +}
-> >>> +
-> >>> +/*
-> >>> + * Per-CPU kernel thread that invokes RCU callbacks.  This replaces the
-> >>> + * earlier RCU softirq.
-> >>> + */
-> >>> +static int rcu_cpu_kthread(void *arg)
-> >>> +{
-> >>> +	int cpu = (int)(long)arg;
-> >>> +	unsigned long flags;
-> >>> +	int spincnt = 0;
-> >>> +	wait_queue_head_t *wqp = &per_cpu(rcu_cpu_wq, cpu);
-> >>> +	char work;
-> >>> +	char *workp = &per_cpu(rcu_cpu_has_work, cpu);
-> >>> +
-> >>> +	for (;;) {
-> >>> +		wait_event_interruptible(*wqp,
-> >>> +					 *workp != 0 || kthread_should_stop());
-> >>> +		local_bh_disable();
-> >>> +		if (rcu_cpu_kthread_should_stop(cpu)) {
-> >>> +			local_bh_enable();
-> >>> +			break;
-> >>> +		}
-> >>> +		local_irq_save(flags);
-> >>> +		work = *workp;
-> >>> +		*workp = 0;
-> >>> +		local_irq_restore(flags);
-> >>> +		if (work)
-> >>> +			rcu_process_callbacks();
-> >>> +		local_bh_enable();
-> >>> +		if (*workp != 0)
-> >>> +			spincnt++;
-> >>> +		else
-> >>> +			spincnt = 0;
-> >>> +		if (spincnt > 10) {
-> >>
-> >> "10" is a magic number here.
-> > 
-> > It is indeed.  Suggestions for a cpp macro name to hide it behind?
-> > 
-> >>> +			rcu_yield(cpu);
-> >>> +			spincnt = 0;
-> >>> +		}
-> >>> +	}
-> >>> +	return 0;
-> >>> +}
-> >>> +
-> >>
-> >>
-> >>> +/*
-> >>> + * Per-rcu_node kthread, which is in charge of waking up the per-CPU
-> >>> + * kthreads when needed.
-> >>> + */
-> >>> +static int rcu_node_kthread(void *arg)
-> >>> +{
-> >>> +	int cpu;
-> >>> +	unsigned long flags;
-> >>> +	unsigned long mask;
-> >>> +	struct rcu_node *rnp = (struct rcu_node *)arg;
-> >>> +	struct sched_param sp;
-> >>> +	struct task_struct *t;
-> >>> +
-> >>> +	for (;;) {
-> >>> +		wait_event_interruptible(rnp->node_wq, rnp->wakemask != 0 ||
-> >>> +						       kthread_should_stop());
-> >>> +		if (kthread_should_stop())
-> >>> +			break;
-> >>> +		raw_spin_lock_irqsave(&rnp->lock, flags);
-> >>> +		mask = rnp->wakemask;
-> >>> +		rnp->wakemask = 0;
-> >>> +		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> >>> +		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask <<= 1) {
-> >>> +			if ((mask & 0x1) == 0)
-> >>> +				continue;
-> >>> +			preempt_disable();
-> >>> +			per_cpu(rcu_cpu_has_work, cpu) = 1;
-> >>> +			t = per_cpu(rcu_cpu_kthread_task, cpu);
-> >>> +			if (t == NULL) {
-> >>> +				preempt_enable();
-> >>> +				continue;
-> >>> +			}
-> >>
-> >> Obviously preempt_disable() is not for protecting remote percpu data.
-> >> Is it for disabling cpu hotplug? I am afraid the @t may leave
-> >> and become invalid.
-> > 
-> > Indeed, acquiring the rnp->lock is safer, except that I don't trust
-> > calling sched_setscheduler_nocheck() in that state.  So I need to check
-> > for the CPU being online after the preempt_disable().  This means that
-> > I ignore requests to do work after CPU_DYING time, but that is OK because
-> > force_quiescent_state() will figure out that the CPU is in fact offline.
-> > 
-> > Make sense?
-> 
-> Yes.
-
-Good, I will take that approach.
-
-> Another:
-> 
-> #if CONFIG_HOTPLUG_CPU
-> get_task_struct() when set bit in wakemask
-> put_task_struct() when clear bit in wakemask
-> #endif
-
-Good point, but I will pass on the added #ifdef.  ;-)
-
-							Thanx, Paul
+> --
+> Kind regards,
+> Minchan Kim
+>
