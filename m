@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab1B1OvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:51:13 -0500
-Received: from mss-uk.mssgmbh.com ([217.174.251.109]:41912 "EHLO
-	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab1B1OvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:51:12 -0500
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: fix multithreaded signal handling in unix recv routines
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-Date: Mon, 28 Feb 2011 14:50:55 +0000
-Message-ID: <877hck43hs.fsf@sapphire.mobileactivedefense.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754600Ab1B1Owb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:52:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:40876 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754316Ab1B1Owa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:52:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,240,1297065600"; 
+   d="scan'208";a="607274975"
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTinDBPsUaNhTOv7fgz-u3TWur08-HA3SpLt9s=BV@mail.gmail.com>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	 <1298884559.2428.10083.camel@twins>
+	 <AANLkTims=DvdmDPET=G-_9w7Za2O_kkQhgQF8fKMV_x1@mail.gmail.com>
+	 <1298903626.2169.52.camel@localhost>
+	 <AANLkTinDBPsUaNhTOv7fgz-u3TWur08-HA3SpLt9s=BV@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Feb 2011 22:52:27 +0800
+Message-Id: <1298904747.2169.56.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+On Mon, 2011-02-28 at 22:43 +0800, Stephane Eranian wrote:
+> On Mon, Feb 28, 2011 at 3:33 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > On Mon, 2011-02-28 at 20:25 +0800, Stephane Eranian wrote:
+> >> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
+> >> >> This patch adds basic SandyBridge support, including hardware cache
+> >> >> events and PEBS events support.
+> >> >>
+> >> >> LLC-* hareware cache events don't work for now, it depends on the
+> >> >> offcore patches.
+> >> >
+> >> > What's the status of those, Stephane reported some problems last I
+> >> > remember?
+> >> >
+> >> >
+> >> >>  #define INTEL_EVENT_CONSTRAINT(c, n) \
+> >> >>       EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+> >> >> +#define INTEL_EVENT_CONSTRAINT2(c, n)        \
+> >> >> +     EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+> >> >
+> >> > That's a particularly bad name, how about something like
+> >> >
+> >> > INTEL_UEVENT_CONSTRAINT or somesuch.
+> >> >
+> >> >> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
+> >> >>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+> >> >>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+> >> >>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+> >> >> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+> >> >> +                     switch (boot_cpu_data.x86_model) {
+> >> >> +                     case 42: /* SandyBridge */
+> >> >> +                             x86_pmu.pebs_constraints = intel_snb_pebs_events;
+> >> >> +                             break;
+> >> >> +                     default:
+> >> >> +                             x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+> >> >> +                     }
+> >> >>                       break;
+> >> >>
+> >> >>               default:
+> >> >
+> >> > We already have this massive model switch right after this function,
+> >> > might as well move the pebs constraint assignment there.
+> >> >
+> >> My PEBS  patch was going to cleanup this part, though it was using
+> >> it's own switch
+> >> statement.
+> >
+> > Did you send out the patch? A link?
+> >
+> For what?
 
-The unix_dgram_recvmsg and unix_stream_recvmsg routines in
-net/af_unix.c utilize mutex_lock(&u->readlock) calls in order to
-serialize read operations of multiple threads on a single socket. This
-implies that, if all n threads of a process block in an AF_UNIX recv
-call trying to read data from the same socket, one of these threads
-will be sleeping in state TASK_INTERRUPTIBLE and all others in state
-TASK_UNINTERRUPTIBLE. Provided that a particular signal is supposed to
-be handled by a signal handler defined by the process and that none of
-this threads is blocking the signal, the complete_signal routine in
-kernel/signal.c will select the 'first' such thread it happens to
-encounter when deciding which thread to notify that a signal is
-supposed to be handled and if this is one of the TASK_UNINTERRUPTIBLE
-threads, the signal won't be handled until the one thread not blocking
-on the u->readlock mutex is woken up because some data to process has
-arrived (if this ever happens). The included patch fixes this by
-changing mutex_lock to mutex_lock_interruptible and handling possible
-error returns in the same way interruptions are handled by the actual
-receive-code.
+I mean your PEBS patch to do the cleanup.
 
-Signed-off-by: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+> 
+> >
+> >
 
----
-diff -urp net-2.6/net/unix/af_unix.c net-2.6-patched//net/unix/af_unix.c
---- net-2.6/net/unix/af_unix.c	2011-02-16 22:19:43.338358559 +0000
-+++ net-2.6-patched//net/unix/af_unix.c	2011-02-16 22:38:39.483543598 +0000
-@@ -1724,7 +1724,11 @@ static int unix_dgram_recvmsg(struct kio
- 
- 	msg->msg_namelen = 0;
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err) {
-+		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
-+		goto out;
-+	}
- 
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb) {
-@@ -1864,7 +1868,11 @@ static int unix_stream_recvmsg(struct ki
- 		memset(&tmp_scm, 0, sizeof(tmp_scm));
- 	}
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err) {
-+		err = sock_intr_errno(timeo);
-+		goto out;
-+	}
- 
- 	do {
- 		int chunk;
-@@ -1895,11 +1903,12 @@ static int unix_stream_recvmsg(struct ki
- 
- 			timeo = unix_stream_data_wait(sk, timeo);
- 
--			if (signal_pending(current)) {
-+			if (signal_pending(current)
-+			    ||  mutex_lock_interruptible(&u->readlock)) {
- 				err = sock_intr_errno(timeo);
- 				goto out;
- 			}
--			mutex_lock(&u->readlock);
-+
- 			continue;
-  unlock:
- 			unix_state_unlock(sk);
+
