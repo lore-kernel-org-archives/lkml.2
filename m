@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab1B1S73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 13:59:29 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48010 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab1B1S71 (ORCPT
+	id S1754784Ab1B1S7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 13:59:34 -0500
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:38853 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab1B1S7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 13:59:27 -0500
+	Mon, 28 Feb 2011 13:59:33 -0500
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: arnaud.patard@rtp-net.org, gregkh@suse.de, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] staging: xgifb: eliminate fbcon_XGI_copyarea()
-Date: Mon, 28 Feb 2011 20:59:21 +0200
-Message-Id: <1298919565-6061-1-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 5/5] staging: xgifb: delete unused module parameter "noaccel"
+Date: Mon, 28 Feb 2011 20:59:25 +0200
+Message-Id: <1298919565-6061-5-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1298919565-6061-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1298919565-6061-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fbcon_XGI_copyarea() implementation is trivial and can be replaced with
-cfb_copyarea().
+The parameter is not used by the driver.
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/XGI_accel.c   |    9 ---------
- drivers/staging/xgifb/XGI_accel.h   |    2 --
- drivers/staging/xgifb/XGI_main.h    |    2 --
- drivers/staging/xgifb/XGI_main_26.c |    2 +-
- 4 files changed, 1 insertions(+), 14 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/xgifb/XGI_accel.c b/drivers/staging/xgifb/XGI_accel.c
-index 905b34a..968ac04 100644
---- a/drivers/staging/xgifb/XGI_accel.c
-+++ b/drivers/staging/xgifb/XGI_accel.c
-@@ -123,12 +123,3 @@ void fbcon_XGI_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
- 	cfb_fillrect(info, rect);
- 	return;
- }
--
--void fbcon_XGI_copyarea(struct fb_info *info, const struct fb_copyarea *area)
--{
--   	cfb_copyarea(info, area);
--	return;
--}
--
--
--
-diff --git a/drivers/staging/xgifb/XGI_accel.h b/drivers/staging/xgifb/XGI_accel.h
-index 6cecdf7..836ee40 100644
---- a/drivers/staging/xgifb/XGI_accel.h
-+++ b/drivers/staging/xgifb/XGI_accel.h
-@@ -479,7 +479,5 @@ int fbcon_XGI_sync(struct fb_info *info);
- extern struct video_info xgi_video_info;
- 
- void fbcon_XGI_fillrect(struct fb_info *info, const struct fb_fillrect *rect);
--void fbcon_XGI_copyarea(struct fb_info *info, const struct fb_copyarea *area);
--
- 
- #endif
-diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
-index 1b45414..15d72ee 100644
---- a/drivers/staging/xgifb/XGI_main.h
-+++ b/drivers/staging/xgifb/XGI_main.h
-@@ -795,8 +795,6 @@ static int      XGIfb_blank(int blank,
- */
- extern void     fbcon_XGI_fillrect(struct fb_info *info,
-                                    const struct fb_fillrect *rect);
--extern void     fbcon_XGI_copyarea(struct fb_info *info,
--                                   const struct fb_copyarea *area);
- 
- static int XGIfb_ioctl(struct fb_info *info, unsigned int cmd,
- 			    unsigned long arg);
 diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 5e69728..6cf2eea 100644
+index f2a4a2a..c569d97 100644
 --- a/drivers/staging/xgifb/XGI_main_26.c
 +++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -1739,7 +1739,7 @@ static struct fb_ops XGIfb_ops = {
- #endif
- 	.fb_blank = XGIfb_blank,
- 	.fb_fillrect = fbcon_XGI_fillrect,
--	.fb_copyarea = fbcon_XGI_copyarea,
-+	.fb_copyarea = cfb_copyarea,
- 	.fb_imageblit = cfb_imageblit,
- 	.fb_ioctl = XGIfb_ioctl,
- 	/* .fb_mmap = XGIfb_mmap, */
+@@ -3435,7 +3435,6 @@ static char *forcecrt2type = NULL;
+ static int forcecrt1 = -1;
+ static int pdc = -1;
+ static int pdc1 = -1;
+-static int noaccel = -1;
+ static int noypan = -1;
+ static int nomax = -1;
+ static int userom = -1;
+@@ -3456,7 +3455,6 @@ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("XGITECH , Others");
+ 
+ module_param(mem, int, 0);
+-module_param(noaccel, int, 0);
+ module_param(noypan, int, 0);
+ module_param(nomax, int, 0);
+ module_param(userom, int, 0);
+@@ -3490,10 +3488,6 @@ MODULE_PARM_DESC(mem,
+ 		"The value is to be specified without 'KB' and must match the MaxXFBMem setting\n"
+ 		"for XFree86 4.x/X.org 6.7 and later.\n");
+ 
+-MODULE_PARM_DESC(noaccel,
+-		"\nIf set to anything other than 0, 2D acceleration will be disabled.\n"
+-		"(default: 0)\n");
+-
+ MODULE_PARM_DESC(noypan,
+ 		"\nIf set to anything other than 0, y-panning will be disabled and scrolling\n"
+ 		"will be performed by redrawing the screen. (default: 0)\n");
 -- 
 1.5.6.5
 
