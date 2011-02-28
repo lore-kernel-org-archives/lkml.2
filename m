@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab1B1Owb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:52:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40876 "EHLO mga09.intel.com"
+	id S1754552Ab1B1Oxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:53:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57632 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754316Ab1B1Owa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:52:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,240,1297065600"; 
-   d="scan'208";a="607274975"
-Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinDBPsUaNhTOv7fgz-u3TWur08-HA3SpLt9s=BV@mail.gmail.com>
-References: <1298877772.4937.25.camel@minggr.sh.intel.com>
-	 <1298884559.2428.10083.camel@twins>
-	 <AANLkTims=DvdmDPET=G-_9w7Za2O_kkQhgQF8fKMV_x1@mail.gmail.com>
-	 <1298903626.2169.52.camel@localhost>
-	 <AANLkTinDBPsUaNhTOv7fgz-u3TWur08-HA3SpLt9s=BV@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Feb 2011 22:52:27 +0800
-Message-Id: <1298904747.2169.56.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754316Ab1B1Oxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:53:31 -0500
+From: Ludwig Nussel <ludwig.nussel@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de> (maintainer:X86
+	ARCHITECTURE...),
+        Ingo Molnar <mingo@redhat.com> (maintainer:X86 ARCHITECTURE...),
+        "H. Peter Anvin" <hpa@zytor.com> (maintainer:X86 ARCHITECTURE...),
+        x86@kernel.org (maintainer:X86 ARCHITECTURE...)
+Subject: [PATCH] fix mmap random address range on x86 (try2)
+Date: Mon, 28 Feb 2011 15:53:03 +0100
+Message-Id: <1298904783-4291-1-git-send-email-ludwig.nussel@suse.de>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 22:43 +0800, Stephane Eranian wrote:
-> On Mon, Feb 28, 2011 at 3:33 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > On Mon, 2011-02-28 at 20:25 +0800, Stephane Eranian wrote:
-> >> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
-> >> >> This patch adds basic SandyBridge support, including hardware cache
-> >> >> events and PEBS events support.
-> >> >>
-> >> >> LLC-* hareware cache events don't work for now, it depends on the
-> >> >> offcore patches.
-> >> >
-> >> > What's the status of those, Stephane reported some problems last I
-> >> > remember?
-> >> >
-> >> >
-> >> >>  #define INTEL_EVENT_CONSTRAINT(c, n) \
-> >> >>       EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
-> >> >> +#define INTEL_EVENT_CONSTRAINT2(c, n)        \
-> >> >> +     EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
-> >> >
-> >> > That's a particularly bad name, how about something like
-> >> >
-> >> > INTEL_UEVENT_CONSTRAINT or somesuch.
-> >> >
-> >> >> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
-> >> >>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
-> >> >>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
-> >> >>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
-> >> >> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> >> >> +                     switch (boot_cpu_data.x86_model) {
-> >> >> +                     case 42: /* SandyBridge */
-> >> >> +                             x86_pmu.pebs_constraints = intel_snb_pebs_events;
-> >> >> +                             break;
-> >> >> +                     default:
-> >> >> +                             x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> >> >> +                     }
-> >> >>                       break;
-> >> >>
-> >> >>               default:
-> >> >
-> >> > We already have this massive model switch right after this function,
-> >> > might as well move the pebs constraint assignment there.
-> >> >
-> >> My PEBS  patch was going to cleanup this part, though it was using
-> >> it's own switch
-> >> statement.
-> >
-> > Did you send out the patch? A link?
-> >
-> For what?
+On x86 casting the unsigned int result of get_random_int() to long
+may result in a negative value. On x86 the range of mmap_rnd()
+therefore was -255 to 255. The 32bit mode on x86_64 used 0 to 255 as
+intended.
 
-I mean your PEBS patch to do the cleanup.
+The bug was introduced by commit 675a081 in January 2008.
 
-> 
-> >
-> >
+Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+---
+ arch/x86/mm/mmap.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index 1dab519..f927429 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
+ 	*/
+ 	if (current->flags & PF_RANDOMIZE) {
+ 		if (mmap_is_ia32())
+-			rnd = (long)get_random_int() % (1<<8);
++			rnd = get_random_int() % (1<<8);
+ 		else
+-			rnd = (long)(get_random_int() % (1<<28));
++			rnd = get_random_int() % (1<<28);
+ 	}
+ 	return rnd << PAGE_SHIFT;
+ }
+-- 
+1.7.3.4
 
