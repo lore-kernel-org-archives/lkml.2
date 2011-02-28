@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab1B1O0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:26:16 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50192 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118Ab1B1O0P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:26:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=EKNqZ4F/3pnlS0QFCgvD39ed/VfCPLsMDZ6IZtrmK0cRo/4gj5Ud28uSFdBINo8qY0
-         kgW8ity7K27MAGab+jw4LoOJFNOHsvxbi+cz61t2dhw7WkwAg2rqJpjj4j6Dn6B+GYib
-         oE8iDjc70acLlkWg/Gov0pLsmGR0O6wZ9Vvcw=
-MIME-Version: 1.0
-In-Reply-To: <20110228135312.GC9326@htj.dyndns.org>
-References: <20110214190141.GA19221@redhat.com> <20110224202941.GA12258@redhat.com>
- <20110225155142.GQ24828@htj.dyndns.org> <201102260348.03312.vda.linux@googlemail.com>
- <20110228125622.GA9326@htj.dyndns.org> <AANLkTik1+XVrkwTouERoxF2AWYyv-UCqie_Wq3OLjoXg@mail.gmail.com>
- <20110228132941.GB9326@htj.dyndns.org> <AANLkTin9HW5R5Wihw+yceKkW=Pj+eB8-id0E1Gud2y-G@mail.gmail.com>
- <20110228135312.GC9326@htj.dyndns.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Mon, 28 Feb 2011 15:25:53 +0100
-Message-ID: <AANLkTimQV0j2MuPdwQBgpdCN6nA9KTbVwrSM1Ut0i_=q@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after PTRACE_ATTACH
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754428Ab1B1O2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:28:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23489 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118Ab1B1O2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:28:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,239,1297065600"; 
+   d="scan'208";a="607266666"
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1298901821.2169.36.camel@localhost>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	 <AANLkTimAkCtPwEMzHM3A_=kWs+HbYMJ_OBvxcHo46RJg@mail.gmail.com>
+	 <1298883087.4937.42.camel@minggr.sh.intel.com>
+	 <AANLkTim_2ZgZTwJw_fSOdeyvAC96e5H4scGp+byuk6ZD@mail.gmail.com>
+	 <1298901821.2169.36.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Feb 2011 22:28:48 +0800
+Message-Id: <1298903328.2169.51.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 2:53 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On Mon, Feb 28, 2011 at 02:41:29PM +0100, Denys Vlasenko wrote:
->> > There's no reason to make the tracee re-enter group stop after pulling
->> > it out to execute 'print getpid()'.
->>
->> If we want to execute 'print getpid()', you are right, we don't want
->> to enter group stop. That's use case #1. But there is use case #2:
->> "strace sleep" + ^Z. if we want to continue stracing sleep
->> without continuing, our PTRACE_SYSCALL(0) *must* make sleep
->> enter group stop. Otherwise, sleep won't be stopped. It will
->> continue sleeping and will exit, which is not what we want. Right?
->
-> I don't really follow the distinction you're trying to make.  It
-> doesn't matter what you're trying to do.  All that's necessary is for
-> the debugger to find out whether group stop is in effect or not and a
-> way to control the tracee's execution.  Nothing else is necessary.
-> The debugger already knows when the tracee enters group stop.  We just
-> need a way for the debugger to find out when group stop stops.
+On Mon, 2011-02-28 at 22:03 +0800, Lin Ming wrote:
+> > >>
+> > >> Not quite. For event 0xd0, you are not listing the right umask combinations.
+> > >> The following combinations are supported for event 0xd0:
+> > >>
+> > >> 0x5381d0      snb::MEM_UOP_RETIRED:ANY_LOADS
+> > >> 0x5382d0      snb::MEM_UOP_RETIRED:ANY_STORES
+> > >> 0x5321d0      snb::MEM_UOP_RETIRED:LOCK_LOADS
+> > >> 0x5322d0      snb::MEM_UOP_RETIRED:LOCK_STORES
+> > >> 0x5341d0      snb::MEM_UOP_RETIRED:SPLIT_LOADS
+> > >> 0x5342d0      snb::MEM_UOP_RETIRED:SPLIT_STORES
+> > >> 0x5311d0      snb::MEM_UOP_RETIRED:STLB_MISS_LOADS
+> > >> 0x5312d0      snb::MEM_UOP_RETIRED:STLB_MISS_STORES
+> > >>
+> > >> In other words, bit 0-3 of the umask cannot be zero.
+> > >
+> > > I got the umask from "Table 30-20. PEBS Performance Events for Intel
+> > > microarchitecture code name Sandy Bridge".
+> > >
+> > > But from "Table A-2. Non-Architectural Performance Events In the
+> > > Processor Core for Intel Core Processor 2xxx Series", the combinations
+> > > are needed as you show above.
+> > >
+> > > Which one is correct?
+> > >
+> > I think Table A-2 is correct. Umasks 10h, 20h, 40h, 80h MUST be combined
+> > to collect something meaningful.
+> 
+> Yes, thanks for figuring this out.
 
-If I understand you right, you are proposing to handle strace+^Z
-scenario this way (simplified pseudo-C):
+I also fix the dTLB-loads/stores events.
 
-for(;;) {
-  waitpid(-1, ...);
-  tracee_is_stopped = 0;
-  if (waitpid reported *stopping* signal) {
-    PTRACE_GETSIGINFO();
-    if (PTRACE_GETSIGINFO failed)
-      tracee_is_stopped = 1;
-  }
-  if (!tracee_is_stopped)
-    PTRACE_SYSCALL(signal);
-}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 3085868..66712dd 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -160,11 +160,11 @@ static __initconst const u64 snb_hw_cache_event_ids
+  },
+  [ C(DTLB) ] = {
+ 	[ C(OP_READ) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x01d0, /* MEM_UOP_RETIRED.LOADS */
++		[ C(RESULT_ACCESS) ] = 0x81d0, /* MEM_UOP_RETIRED.ANY_LOADS */
+ 		[ C(RESULT_MISS)   ] = 0x0108, /* DTLB_LOAD_MISSES.CAUSES_A_WALK */
+ 	},
+ 	[ C(OP_WRITE) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x02d0, /* MEM_UOP_RETIRED.STORES */
++		[ C(RESULT_ACCESS) ] = 0x82d0, /* MEM_UOP_RETIRED.ANY_STORES */
+ 		[ C(RESULT_MISS)   ] = 0x0149, /* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
+ 	},
+ 	[ C(OP_PREFETCH) ] = {
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index e60f91b..2128755 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -406,12 +406,14 @@ static struct event_constraint intel_snb_pebs_events[] = {
+ 	PEBS_EVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.TAKEN */
+ 	PEBS_EVENT_CONSTRAINT(0x01cd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+ 	PEBS_EVENT_CONSTRAINT(0x02cd, 0x8), /* MEM_TRANS_RETIRED.PRECISE_STORE */
+-	PEBS_EVENT_CONSTRAINT(0x01d0, 0xf), /* MEM_UOP_RETIRED.LOADS */
+-	PEBS_EVENT_CONSTRAINT(0x02d0, 0xf), /* MEM_UOP_RETIRED.STORES */
+-	PEBS_EVENT_CONSTRAINT(0x10d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x20d0, 0xf), /* MEM_UOP_RETIRED.LOCK */
+-	PEBS_EVENT_CONSTRAINT(0x40d0, 0xf), /* MEM_UOP_RETIRED.SPLIT */
+-	PEBS_EVENT_CONSTRAINT(0x80d0, 0xf), /* MEM_UOP_RETIRED.ALL */
++	PEBS_EVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_LOADS */
++	PEBS_EVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_STORES */
++	PEBS_EVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOP_RETIRED.LOCK_LOADS */
++	PEBS_EVENT_CONSTRAINT(0x22d0, 0xf), /* MEM_UOP_RETIRED.LOCK_STORES */
++	PEBS_EVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOP_RETIRED.SPLIT_LOADS */
++	PEBS_EVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOP_RETIRED.SPLIT_STORES */
++	PEBS_EVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOP_RETIRED.ANY_LOADS */
++	PEBS_EVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOP_RETIRED.ANY_STORES */
+ 	PEBS_EVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+ 	PEBS_EVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+ 	PEBS_EVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
 
-This requires API change to make waitpid in debugger
-see waking SIGCONTs even if we did not restart the tracee
-(at least in the case when tracee was in group stop).
 
-This sounds like viable plan from userspace POV.
 
->> Can you describe this in more details? Do you propose that
->> debugger can detect that we are in group stop (it is already sort-of
->> possible with PTRACE_GETSIGINFO) and if it doesn't want to
->> restart tracee, it simply doesn't do any PTRACE_SYSCALL/CONT?
->> I tried that. This makes tracee sit in *ptrace* stop, not group stop.
->> Meaning: debugger is never be able to see waking SIGCONT:
->> waitpid doesn't report it to the debugger.
->
-> A tracee should _always_ enter ptrace trap whenever stopping while
-> ptraced.  The stop here or stop there depending on the type of stop
-> behavior is hardly useful and very fragile (I think it's inherently
-> fragile that way).  Again, the only missing thing is a way for the
-> debugger to find out when task stop stops.
-
-PTRACE_GETSIGINFO tells you that. It's a bit of a hack
-(PTRACE_GETSIGINFO was meant to be used for a different purpose)
-but it seems to be working well.
-
-The problematic case is when we attach to *already stopped* task.
-gdb today goes through insane gyrations to detect that condition
-(I believe it looks into /proc/TID/state).
-
-If we are going to add PTRACE_ATTACH_NOSTOP or something like it,
-perhaps we need to take care to make tracee state detectable
-at attach time more easily. Maybe by delivering "I have stopped with SIGfoo"
-notification to the debugger if tracee was in group stop?
-
-> BTW, I'm not talking about
-> the current behavior.  There's no way to make jctl work properly as it
-> is.  We need to improve the kernel one way or another.
-
-I'm happy to hear that :)
-Thanks!
--- 
-vda
