@@ -1,279 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab1B1HWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 02:22:44 -0500
-Received: from mga11.intel.com ([192.55.52.93]:56670 "EHLO mga11.intel.com"
+	id S1752669Ab1B1H0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 02:26:46 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:54210 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896Ab1B1HWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 02:22:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,238,1297065600"; 
-   d="scan'208";a="891844740"
-Subject: [PATCH v2 -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Feb 2011 15:22:52 +0800
-Message-ID: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	id S1750896Ab1B1H0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 02:26:44 -0500
+Date: Mon, 28 Feb 2011 18:26:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for February 28
+Message-Id: <20110228182634.11912f96.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__28_Feb_2011_18_26_34_+1100_.IMVo0c5Aey8Hg7b"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic SandyBridge support, including hardware cache
-events and PEBS events support.
+--Signature=_Mon__28_Feb_2011_18_26_34_+1100_.IMVo0c5Aey8Hg7b
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-LLC-* hareware cache events don't work for now, it depends on the
-offcore patches.
+Hi all,
 
-All PEBS events are tested on my SandyBridge machine and work well.
-Note that SandyBridge does not support INSTR_RETIRED.ANY(0x00c0) PEBS
-event, instead it supports INST_RETIRED.PRECDIST(0x01c0) event and PMC1
-only.
+Changes since 20110225:
 
-v1 -> v2:
-- add more raw and PEBS events constraints
-- use offcore events for LLC-* cache events
-- remove the call to Nehalem workaround enable_all function
+Dropped tree: xen
 
-todo:
-- precise store
-- precise distribution of instructions retired
+The v4l-dvb tree gained a build failure so I used the version from
+next-20110225.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- arch/x86/kernel/cpu/perf_event.c          |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c    |  123 +++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   44 ++++++++++-
- 3 files changed, 168 insertions(+), 1 deletions(-)
+The kvm tree still has its build failure for which I reverted 3 commits.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 10bfe24..49d51be 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -148,6 +148,8 @@ struct cpu_hw_events {
-  */
- #define INTEL_EVENT_CONSTRAINT(c, n)	\
- 	EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
-+#define INTEL_EVENT_CONSTRAINT2(c, n)	\
-+	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
- 
- /*
-  * Constraint on the Event code + UMask + fixed-mask
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 084b383..3085868 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -76,6 +76,19 @@ static struct event_constraint intel_westmere_event_constraints[] =
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct event_constraint intel_snb_event_constraints[] =
-+{
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-+	/* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
-+	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
-+	INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* OFF_CORE_RESPONSE_0 */
-+	INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* OFF_CORE_RESPONSE_1 */
-+	INTEL_EVENT_CONSTRAINT2(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct event_constraint intel_gen_event_constraints[] =
- {
- 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-@@ -89,6 +102,106 @@ static u64 intel_pmu_event_map(int hw_event)
- 	return intel_perfmon_event_map[hw_event];
- }
- 
-+static __initconst const u64 snb_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xf1d0, /* MEM_UOP_RETIRED.LOADS        */
-+		[ C(RESULT_MISS)   ] = 0x0151, /* L1D.REPLACEMENT              */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xf2d0, /* MEM_UOP_RETIRED.STORES       */
-+		[ C(RESULT_MISS)   ] = 0x0851, /* L1D.ALL_M_REPLACEMENT        */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x024e, /* HW_PRE_REQ.DL1_MISS          */
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0280, /* ICACHE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	/*
-+	 * TBD: Need Off-core Response Performance Monitoring support
-+	 */
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01bb,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		/* OFFCORE_RESPONSE_0.ANY_RFO.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE_1.ANY_RFO.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01bb,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		/* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01bb,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x01d0, /* MEM_UOP_RETIRED.LOADS */
-+		[ C(RESULT_MISS)   ] = 0x0108, /* DTLB_LOAD_MISSES.CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x02d0, /* MEM_UOP_RETIRED.STORES */
-+		[ C(RESULT_MISS)   ] = 0x0149, /* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x1085, /* ITLB_MISSES.STLB_HIT         */
-+		[ C(RESULT_MISS)   ] = 0x0185, /* ITLB_MISSES.CAUSES_A_WALK    */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ALL_BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0x00c5, /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
- static __initconst const u64 westmere_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -1062,6 +1175,16 @@ static __init int intel_pmu_init(void)
- 		pr_cont("Westmere events, ");
- 		break;
- 
-+	case 42: /* SandyBridge */
-+		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-+		       sizeof(hw_cache_event_ids));
-+
-+		intel_pmu_lbr_init_nhm();
-+
-+		x86_pmu.event_constraints = intel_snb_event_constraints;
-+		pr_cont("SandyBridge events, ");
-+		break;
-+
- 	default:
- 		/*
- 		 * default constraints for v2 and up
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index b7dcd9f..e60f91b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -388,6 +388,42 @@ static struct event_constraint intel_nehalem_pebs_events[] = {
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct event_constraint intel_snb_pebs_events[] = {
-+	PEBS_EVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	PEBS_EVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-+	PEBS_EVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-+	PEBS_EVENT_CONSTRAINT(0x01c4, 0xf), /* BR_INST_RETIRED.CONDITIONAL */
-+	PEBS_EVENT_CONSTRAINT(0x02c4, 0xf), /* BR_INST_RETIRED.NEAR_CALL */
-+	PEBS_EVENT_CONSTRAINT(0x04c4, 0xf), /* BR_INST_RETIRED.ALL_BRANCHES */
-+	PEBS_EVENT_CONSTRAINT(0x08c4, 0xf), /* BR_INST_RETIRED.NEAR_RETURN */
-+	PEBS_EVENT_CONSTRAINT(0x10c4, 0xf), /* BR_INST_RETIRED.NOT_TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x20c4, 0xf), /* BR_INST_RETIRED.NEAR_TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x40c4, 0xf), /* BR_INST_RETIRED.FAR_BRANCH */
-+	PEBS_EVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-+	PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
-+	PEBS_EVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	PEBS_EVENT_CONSTRAINT(0x10c5, 0xf), /* BR_MISP_RETIRED.NOT_TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x01cd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-+	PEBS_EVENT_CONSTRAINT(0x02cd, 0x8), /* MEM_TRANS_RETIRED.PRECISE_STORE */
-+	PEBS_EVENT_CONSTRAINT(0x01d0, 0xf), /* MEM_UOP_RETIRED.LOADS */
-+	PEBS_EVENT_CONSTRAINT(0x02d0, 0xf), /* MEM_UOP_RETIRED.STORES */
-+	PEBS_EVENT_CONSTRAINT(0x10d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS */
-+	PEBS_EVENT_CONSTRAINT(0x20d0, 0xf), /* MEM_UOP_RETIRED.LOCK */
-+	PEBS_EVENT_CONSTRAINT(0x40d0, 0xf), /* MEM_UOP_RETIRED.SPLIT */
-+	PEBS_EVENT_CONSTRAINT(0x80d0, 0xf), /* MEM_UOP_RETIRED.ALL */
-+	PEBS_EVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-+	PEBS_EVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-+	PEBS_EVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x04d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HITM */
-+	PEBS_EVENT_CONSTRAINT(0x08d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_NONE */
-+	PEBS_EVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct event_constraint *
- intel_pebs_constraints(struct perf_event *event)
- {
-@@ -702,7 +738,13 @@ static void intel_ds_init(void)
- 			printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
- 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
--			x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-+			switch (boot_cpu_data.x86_model) {
-+			case 42: /* SandyBridge */
-+				x86_pmu.pebs_constraints = intel_snb_pebs_events;
-+				break;
-+			default:
-+				x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-+			}
- 			break;
- 
- 		default:
+The sound and sound-asoc trees gained the same build failure so I used
+the versions from next-20110225.
 
+The wireless tree lost its build failure.
 
+The trivial tree gained a conflict against Linus' tree.
+
+The tty tree lost its build failure.
+
+The bkl-config tree gained a conflict against the tty tree.
+
+The powerpc allyesconfig build is still broken by some obscure bloating
+of the low memory code.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 187 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
+.h
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/cpu-db8500.c
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+CONFLICT (content): Merge conflict in drivers/hwmon/Makefile
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+$ git reset --hard HEAD^
+Merging refs/next/20110225/v4l-dvb
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+[master e78175a] Revert "mm: remove is_hwpoison_address"
+[master 158b873] Revert "KVM: Replace is_hwpoison_address with __get_user_p=
+ages"
+[master d87b993] Revert "mm: make __get_user_pages return -EHWPOISON for HW=
+POISON page optionally"
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_ata.c
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_scsi_host.c
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+$ git reset --hard HEAD^
+Merging refs/next/20110225/sound
+Merging sound-asoc/for-next
+$ git reset --hard HEAD^
+Merging refs/next/20110225/sound-asoc
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in fs/eventpoll.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+CONFLICT (content): Merge conflict in drivers/spi/pxa2xx_spi_pci.c
+Merging spi/spi/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in arch/x86/kernel/acpi/sleep.c
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
+Merging edac-amd/for-next
+CONFLICT (content): Merge conflict in include/linux/pci_ids.h
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in arch/x86/kernel/vmlinux.lds.S
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in drivers/hwmon/lm85.c
+Applying: OLPC: fix for removal of run_wake_count
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
+CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmsmac/wl=
+_mac80211.c
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (content): Merge conflict in drivers/scsi/pm8001/pm8001_sas.h
+CONFLICT (content): Merge conflict in drivers/staging/Kconfig
+CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
+nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
+ing/stradis/Kconfig left in tree.
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+$ git rm -f drivers/staging/stradis/Kconfig
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Mon__28_Feb_2011_18_26_34_+1100_.IMVo0c5Aey8Hg7b
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNa04qAAoJEDMEi1NhKgbsQ18H/3Ul4kTgOVb0KNYgOfkwPl6O
+eAuHF7EZycOio8nUlnnSuStlCcQyvnfU4QxVAcNUMAIrhYbbuu8v7KuniFFYXMNG
++sf6LqkEzJBoiDZtQu9VLA+tGTjLKpU4cy7cr54DXRbt1UGQtatxNzeIuS6XxdA6
+pRhYytQ0MlPI3NUP1x9eXC49s+b5yvp0SGdvEF3BbHerQcP19dzQeatLBGWTRNi8
+PG4Ke7tCLUg+YzWY6Vh1poqEqaJzAsjEbjK/EAV0nmLNidVdCXQR5ETTB/tuT8Md
+tBhp3AyjwEyC8FInKFS5SupN2a9ZS/oIKCvoD02EZRCriNKTz3EbnUxofjTplu4=
+=Ou7S
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Feb_2011_18_26_34_+1100_.IMVo0c5Aey8Hg7b--
