@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab1B1S05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 13:26:57 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41262 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577Ab1B1S04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 13:26:56 -0500
-Date: Mon, 28 Feb 2011 19:26:42 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@novell.com, heukelum@fastmail.fm, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/asm] x86-64: Add CFI annotations to lib/rwsem_64.S
-Message-ID: <20110228182642.GA7041@elte.hu>
-References: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
- <tip-39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754394Ab1B1SaD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 13:30:03 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:36786 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752695Ab1B1SaA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 13:30:00 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX192WQAsiIV2OQ+oahZc/3BjVCDsRI5FAr8T24Hshs
+	xaj8rSqRHiai5r
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+From: Mike Galbraith <efault@gmx.de>
+To: torbenh <torbenh@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Yong Zhang <yong.zhang0@gmail.com>, bharata@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, linux-audio-dev@music.columbia.edu,
+        linux-audio-user@music.columbia.edu
+In-Reply-To: <20110228175303.GG2977@siel.b>
+References: <1294810842.8370.7.camel@marge.simson.net>
+	 <AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
+	 <1294890890.8089.39.camel@marge.simson.net>
+	 <1295270160.30950.96.camel@laptop> <20110215154612.GI3055@siel.b>
+	 <1297788210.15382.51.camel@marge.simson.net> <20110218110955.GA3124@siel.b>
+	 <1298033412.8735.30.camel@marge.simson.net> <20110222122449.GC11548@siel.b>
+	 <1298386073.8036.49.camel@marge.simson.net>  <20110228175303.GG2977@siel.b>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Feb 2011 19:29:54 +0100
+Message-ID: <1298917794.9387.31.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* tip-bot for Jan Beulich <JBeulich@novell.com> wrote:
-
-> Commit-ID:  39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c
-> Gitweb:     http://git.kernel.org/tip/39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c
-> Author:     Jan Beulich <JBeulich@novell.com>
-> AuthorDate: Mon, 28 Feb 2011 15:31:59 +0000
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 28 Feb 2011 18:06:21 +0100
+On Mon, 2011-02-28 at 18:53 +0100, torbenh wrote:
 > 
-> x86-64: Add CFI annotations to lib/rwsem_64.S
+> On Tue, Feb 22, 2011 at 03:47:53PM +0100, Mike Galbraith wrote:
+> > On Tue, 2011-02-22 at 13:24 +0100, torbenh wrote:
+> > > On Fri, Feb 18, 2011 at 01:50:12PM +0100, Mike Galbraith wrote:
+>  
+> > > > Sounds like you just want to turn CONFIG_RT_GROUP_SCHED off.
+> > > 
+> > > but distros turn it on.
+> > > we could prevent debian from turning it on. 
+> > > now opensuse 11.4 has turned it on.
+> > 
+> > If you or anyone else turns on RT_GROUP_SCHED, you will count your
+> > beans, and pay up front, or you will not play.  That's a very sensible
+> > policy for realtime.
 > 
-> These weren't part of the initial commit of this code.
+> this probably means that generic computer distros should not turn this
+> option on ?
+
+Yeah, agreed, not for a great default config, but only because
+newfangled automation thingies can't (possibly?) deal with it sanely.
+ 
+> > If systemd deals with it at all, seems to me it can only make a mess of
+> > it.  But who knows, maybe they made a clever allocator.  If they didn't,
+> > they'll need an escape hatch methinks.
 > 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> Cc: Alexander van Heukelum <heukelum@fastmail.fm>
-> LKML-Reference: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/lib/rwsem_64.S |   56 ++++++++++++++++++++++++++++------------------
->  1 files changed, 34 insertions(+), 22 deletions(-)
+> the problem is that audio applications can not really pre allocate their
+> cpu needs. user can add processing plugins until he pushes his machine
+> to the limit. (or the cgroup where his process is running in)
+> 
+> we dont really have a mechanism for plugins to publish their needed
+> cycles.
 
-this change breaks the UML build:
+I can't see how it could matter what any individual group of arbitrary
+groups N (who can appear/disappear in the blink of an eye) advertises as
+it's wish of the instant.  "Hard" + "Arbitrary" doesn't compute for me.
 
- tip/arch/um/sys-x86_64/../../x86/lib/rwsem_64.S:46: Error: no such instruction: `pushq_cfi %rdi'
+	-Mike
 
-Thanks,
-
-	Ingo
