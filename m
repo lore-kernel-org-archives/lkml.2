@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab1B1QPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:15:41 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48781 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab1B1QPk (ORCPT
+	id S1754914Ab1B1QUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:20:16 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:31527 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab1B1QUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:15:40 -0500
-Date: Mon, 28 Feb 2011 11:11:15 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Albert Cahalan <acahalan@gmail.com>,
-        Mikael Abrahamsson <swmike@swm.pp.se>,
-        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: Re: txqueuelen has wrong units; should be time
-Message-ID: <20110228161115.GB2515@tuxdriver.com>
-References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
- <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
- <1298793252.8726.45.camel@edumazet-laptop>
- <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
- <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
- <1298837273.8726.128.camel@edumazet-laptop>
+	Mon, 28 Feb 2011 11:20:15 -0500
+X-IronPort-AV: E=Sophos;i="4.62,240,1297036800"; 
+   d="scan'208";a="4540810"
+Date: Mon, 28 Feb 2011 16:20:11 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: linux-kernel@vger.kernel.org
+CC: xen-devel@lists.xensource.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        Allen Kay <allen.m.kay@intel.com>
+Subject: [RFC PATCH] set current_state to D0 in register_slot
+Message-ID: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298837273.8726.128.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 27, 2011 at 09:07:53PM +0100, Eric Dumazet wrote:
+Hi all,
+if a device doesn't support power management (pm_cap == 0) but it is
+acpi_pci_power_manageable() because there is a _PS0 method declared for
+it and _EJ0 is also declared for the slot then nobody is going to set
+current_state = PCI_D0 for this device.  This is what I think it is
+happening:
 
-> Qdisc should return to caller a good indication packet is queued or
-> dropped at enqueue() time... not later (aka : never)
-> 
-> Accepting a packet at t0, and dropping it later at t0+limit without
-> giving any indication to caller is a problem.
 
-Can you elaborate on what problem this causes?  Is it any worse than
-if the packet is dropped at some later hop?
+pci_enable_device
+    |
+__pci_enable_device_flags
+/* here we do not set current_state because !pm_cap */
+    |
+do_pci_enable_device
+    |
+pci_set_power_state
+    |
+__pci_start_power_transition
+    |
+pci_platform_power_transition
+/* platform_pci_power_manageable() calls acpi_pci_power_manageable that
+ * returns true */
+    |
+platform_pci_set_power_state
+/* acpi_pci_set_power_state gets called and does nothing because the
+ * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
+ * ignore the device" */
 
-Is there any API that could report the drop to the sender (at
-least a local one) without having to wait for the ack timeout?
-Should there be?
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+at this point if we refer to the commit message that introduced the
+comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
+the hotplug driver to set the state to D0.
+However AFAICT the pci hotplug driver never does, in fact
+drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
+(SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
+current state to PCI_D0.
+
+So my proposed fix is also to set current_state = PCI_D0 in
+register_slot.
+Comments are very welcome.
+
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+---
+
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index cb23aa2..e610cfe 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -212,6 +212,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 
+ 	pdev = pci_get_slot(pbus, PCI_DEVFN(device, function));
+ 	if (pdev) {
++		pdev->current_state = PCI_D0;
+ 		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
+ 		pci_dev_put(pdev);
+ 	}
