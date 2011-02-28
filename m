@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab1B1TrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 14:47:01 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63763 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180Ab1B1Tq7 convert rfc822-to-8bit (ORCPT
+	id S1754705Ab1B1Twq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 14:52:46 -0500
+Received: from 15.70.mail-out.ovh.net ([178.33.253.55]:37925 "HELO
+	70.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1753265Ab1B1Twp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 14:46:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=votCHvZGUnzuBGIrNLPhVZf81zJg8QKljLsKFmlCjGQSaE0qq5HqbOn/TNjmGJdI04
-         v5PzYA9zRcJM1XybJa7D21GkuGMROP0gcuGeitMNncI+rSFxZnANC17QjtcikgezJ58c
-         x2stquF2GfjQv8EABVnno3wYYBnfHoBvYwQqI=
+	Mon, 28 Feb 2011 14:52:45 -0500
+X-Greylist: delayed 13999 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Feb 2011 14:52:44 EST
+Message-ID: <4D6BC4CB.6050602@osean.fr>
+Date: Mon, 28 Feb 2011 16:52:43 +0100
+From: Jean-Francois Argentino <jf.argentino@osean.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D6BF63D.2020404@sgi.com>
-References: <20110225180633.857892225@gulag1.americas.sgi.com>
-	<20110225180634.017570095@gulag1.americas.sgi.com>
-	<20110227120949.GF16453@elte.hu>
-	<20110227121518.GA19165@elte.hu>
-	<4D6AFBB0.70401@kernel.org>
-	<4D6BF63D.2020404@sgi.com>
-Date: Mon, 28 Feb 2011 11:46:58 -0800
-X-Google-Sender-Auth: o4SiV3IQqtFdsscNdfxNuzG0gAQ
-Message-ID: <AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>
-Subject: Re: [PATCH 1/4] printk: Allocate kernel log buffer earlier
-From: Yinghai Lu <yinghai@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, David Rientjes <rientjes@google.com>,
-        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: jhovold@gmail.com
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] ftdi_sio: adding support for OLIMEX ARM-USB-OCD-H
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 14180427853780148558
+X-Ovh-Remote: 82.241.52.98 (tga83-1-82-241-52-98.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 11:23 AM, Mike Travis <travis@sgi.com> wrote:
->
->
-> Yinghai Lu wrote:
->>
->> On 02/27/2011 04:15 AM, Ingo Molnar wrote:
->>>
->>> * Ingo Molnar <mingo@elte.hu> wrote:
->>>
->>>> You could avoid all this ugly workaround of bootmem limitations by
->>>> moving the allocation to memblock_alloc() and desupporting the log_buf_len=
->>>> boot parameter on non-memblock architectures.
->>>
->>> memblock_alloc() could return -ENOSYS on architectures that do not
->>> implement it - thus enabling such optional features without ugly #ifdef
->>> CONFIG_HAVE_MEMBLOCK conditionals.
->>
->> Mike,
->>
->> please check updated patch...
->>
->> with the memblock change, you don't need to change acpi SRAT handling etc
->> any more.
->
-> I had to debug a weird ACPI -> Node mapping last week and the
-> "improved" SRAT messages helped that considerably.  It was
-> far easier to spot which Node didn't have the correct assignments.
-> I'd submit that patch even without needing fewer (like 512 lines
-> max instead of 4096 lines max) bytes in the log buffer.
+from JF Argentino <jf.argentino@free.fr>
 
-Your current change to ACPI srat is not complete yet.
+Adding support for the OLIMEX ARM-USB-OCD-H JTAG device (id 15ba:002b) 
+based on FTDI FT2232H
+Signed-off-by: JF Argentino <jf.argentino@free.fr>
 
-you only handle x2apic entries.
+--- linux-2.6.37.2/drivers/usb/serial/ftdi_sio_ids.h	2011-02-25 
+00:09:00.000000000 +0100
++++ linux/drivers/usb/serial/ftdi_sio_ids.h	2011-02-28 
+15:42:19.000000000 +0100
+@@ -730,6 +730,7 @@
+  /* Olimex */
+  #define OLIMEX_VID			0x15BA
+  #define OLIMEX_ARM_USB_OCD_PID		0x0003
++#define OLIMEX_ARM_USB_OCD_H_PID	0x002b
 
-According to ACPI 4.0 spec, We should have mixed entries with apic
-entries and x2apic entries.
-apic entries are for apic id < 255.
-x2apic entries are for apic id > 255.
-
-Yinghai
+  /*
+   * Telldus Technologies
+--- linux-2.6.37.2/drivers/usb/serial/ftdi_sio.c	2011-02-25 
+00:09:00.000000000 +0100
++++ linux/drivers/usb/serial/ftdi_sio.c	2011-02-28 16:27:02.000000000 +0100
+@@ -721,6 +721,8 @@ static struct usb_device_id id_table_com
+  	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_JTAGCABLEII_PID) },
+  	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_PID),
+  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_H_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+  	{ USB_DEVICE(FIC_VID, FIC_NEO1973_DEBUG_PID),
+  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+  	{ USB_DEVICE(FTDI_VID, FTDI_OOCDLINK_PID),
