@@ -1,107 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab1B1GQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 01:16:46 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:42850 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab1B1GQp (ORCPT
+	id S1752321Ab1B1GU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 01:20:26 -0500
+Received: from nm10-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.72]:42972 "HELO
+	nm10-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750802Ab1B1GUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 01:16:45 -0500
-Date: Mon, 28 Feb 2011 15:16:40 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 08/09] ARM: s3c2440: gta02: Request usb pullup pin before
- using it
-In-reply-to: <1297043521-21903-8-git-send-email-lars@metafoo.de>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-id: <000301cbd70f$12367070$36a35150$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvGalvZ4dBwGVwzSGqZ/sPGiL2+/gQox6kQ
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
- <1297043521-21903-8-git-send-email-lars@metafoo.de>
+	Mon, 28 Feb 2011 01:20:24 -0500
+X-Yahoo-Newman-Id: 253241.68545.bm@omp1038.mail.ne1.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: y0F6R8oVM1kwlHUMj.NYrnDebEB9WsxC2p0rIUm1fmUYqwk
+ cpRcCzgnoRlX91GJ2v3N6g87q3ioTGXbmrLf..9BwpzxMX.W0hVJLXDCX2eP
+ gGw5zqaaWc6FzjdIRQeFcq1sJcI2jZapcAUHhMJW6x5pLzPGuSuV4ELFtfCi
+ A3TW3w.zhzeMkalI.3aqg.tGdQDtZtF.eypoS20TRHdAQf0lTLr_oXG2rde_
+ o._M0pEH2jyIgvT5G7lDHArImfx4m2Vh0BC_UPgWd_09h5wVm60J5HwRgR2I
+ fBXg1kPf4tXsDS7gtWi4Nc9Agt.IphWEBPpYP
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Joel Becker <jlbec@evilplan.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/5] target updates for scsi-post-merge .39 (round one)
+Date: Sun, 27 Feb 2011 22:20:15 -0800
+Message-Id: <1298874020-15628-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars-Peter Clausen wrote:
-> 
-> Request the gpio pin used to control the usb pullup before using it to
-avoid
-> a
-> runtime warning about an auto-requested gpio.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  arch/arm/mach-s3c2440/mach-gta02.c |   17 +++++++++++++++--
->  1 files changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c
-b/arch/arm/mach-s3c2440/mach-
-> gta02.c
-> index 1396639..94456fa 100644
-> --- a/arch/arm/mach-s3c2440/mach-gta02.c
-> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
-> @@ -451,11 +451,11 @@ static void gta02_udc_command(enum s3c2410_udc_cmd_e
-> cmd)
->  	switch (cmd) {
->  	case S3C2410_UDC_P_ENABLE:
->  		pr_debug("%s S3C2410_UDC_P_ENABLE\n", __func__);
-> -		gpio_direction_output(GTA02_GPIO_USB_PULLUP, 1);
-> +		gpio_set_value(GTA02_GPIO_USB_PULLUP, 1);
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-How about following instead?
-	gpio_request(GTA02_GPIO_USB_PULLUP, "USB_PULLUP");
-	gpio_direction_output(GTA02_GPIO_USB_PULLUP, 1);
-	gpio_free(GTA02_GPIO_USB_PULLUP);
+Hi James and Co,
 
->  		break;
->  	case S3C2410_UDC_P_DISABLE:
->  		pr_debug("%s S3C2410_UDC_P_DISABLE\n", __func__);
-> -		gpio_direction_output(GTA02_GPIO_USB_PULLUP, 0);
-> +		gpio_set_value(GTA02_GPIO_USB_PULLUP, 0);
->  		break;
->  	case S3C2410_UDC_P_RESET:
->  		pr_debug("%s S3C2410_UDC_P_RESET\n", __func__);
-> @@ -572,11 +572,24 @@ static void gta02_poweroff(void)
->  	pcf50633_reg_set_bit_mask(gta02_pcf, PCF50633_REG_OOCSHDWN, 1, 1);
->  }
-> 
-> +static void gta02_request_gpios(void)
-> +{
-> +	int ret;
-> +	ret = gpio_request_one(GTA02_GPIO_USB_PULLUP, GPIOF_OUT_INIT_LOW,
-> +				"USB pullup");
-> +	if (ret) {
-> +		printk(KERN_ERR "Failed to request USB pullup gpio pin:
-%d\n",
-> +			ret);
-> +	}
-> +}
-> +
->  static void __init gta02_machine_init(void)
->  {
->  	/* Set the panic callback to turn AUX LED on or off. */
->  	panic_blink = gta02_panic_blink;
-> 
-> +	gta02_request_gpios();
-> +
->  	s3c_pm_init();
-> 
->  #ifdef CONFIG_CHARGER_PCF50633
-> --
+The following is the first round of target patches intended for .39
+scsi-post-merge tree that introduces new target functionality and the
+first mainline TCM fabric module (TCM_Loop).
 
+Patches #1 -> #4 involve the addition of new ConfigFS context based
+statistics groups in target_core_stat.c following RFC-4455 to address
+the removal of the legacy ProcFS based target_core_mib.c in .38 code.
 
+Patch #5 adds the TCM_Loop virtual SCSI LLD module that was originally
+reviewed and intended for .38 code.  This module currently supports
+high level port emulation for SAS, FC and iSCSI ProtoIdents.
 
-Thanks.
+Please be sure to apply this series on top the critical 'for-38-urgent'
+fix posted here:
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+[PATCH-FOR-38] target: Fix t_transport_aborted handling in LUN_RESET + active I/O shutdown
+http://marc.info/?l=linux-scsi&m=129859551620778&w=2
+
+as well as the 14 patch series for-39-misc-v2 posted recently here:
+
+[PATCH 00/14] target patches for .39 scsi-misc (v2)
+http://marc.info/?l=linux-scsi&m=129866341626173&w=2
+
+This full series is also available directly from git here:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-post-merge
+
+Please review and apply,
+
+Thanks!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+
+Nicholas Bellinger (5):
+  target: add initial device backend context target_core_stat.c code
+  target: add initial fabric port context target_core_stat.c code
+  target: add initial fabric MappedLUN context target_core_stat.c code
+  target: Add fabric_stat_group for fabric module statistics
+    default_group
+  tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
+
+ drivers/target/Kconfig                         |    2 +
+ drivers/target/Makefile                        |    6 +-
+ drivers/target/target_core_configfs.c          |   76 +-
+ drivers/target/target_core_fabric_configfs.c   |  209 +++-
+ drivers/target/target_core_stat.c              | 1810 ++++++++++++++++++++++++
+ drivers/target/target_core_stat.h              |    8 +
+ drivers/target/tcm_loop/Kconfig                |   11 +
+ drivers/target/tcm_loop/Makefile               |   11 +
+ drivers/target/tcm_loop/tcm_loop_configfs.c    |  647 +++++++++
+ drivers/target/tcm_loop/tcm_loop_configfs.h    |    2 +
+ drivers/target/tcm_loop/tcm_loop_core.h        |   77 +
+ drivers/target/tcm_loop/tcm_loop_fabric.c      |  476 +++++++
+ drivers/target/tcm_loop/tcm_loop_fabric.h      |   40 +
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  605 ++++++++
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.h |   10 +
+ include/target/target_core_base.h              |   35 +-
+ include/target/target_core_configfs.h          |    4 +
+ 17 files changed, 4011 insertions(+), 18 deletions(-)
+ create mode 100644 drivers/target/target_core_stat.c
+ create mode 100644 drivers/target/target_core_stat.h
+ create mode 100644 drivers/target/tcm_loop/Kconfig
+ create mode 100644 drivers/target/tcm_loop/Makefile
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_core.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
+
+-- 
+1.7.4.1
 
