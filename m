@@ -1,115 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1B1RkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 12:40:09 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53141 "EHLO mx3.mail.elte.hu"
+	id S1753586Ab1B1Rqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 12:46:55 -0500
+Received: from mga01.intel.com ([192.55.52.88]:45812 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab1B1RkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 12:40:08 -0500
-Date: Mon, 28 Feb 2011 18:39:52 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] timer fix
-Message-ID: <20110228173952.GA4592@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753188Ab1B1Rqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 12:46:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,241,1297065600"; 
+   d="scan'208";a="892031228"
+Subject: Re: [PATCH 03/10] Intel PTI implementaiton of MIPI 1149.7.
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+Reply-To: james_p_freyensee@linux.intel.com
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        christophe.guerard@intel.com
+In-Reply-To: <201102281028.48314.arnd@arndb.de>
+References: <james_p_freyensee@linux.intel.com>
+	 <1298570824-26085-4-git-send-email-james_p_freyensee@linux.intel.com>
+	 <201102281028.48314.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 28 Feb 2011 09:46:52 -0800
+Message-ID: <1298915213.3156.32.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 2011-02-28 at 10:28 +0100, Arnd Bergmann wrote:
+> Hi James,
+> 
+> On Thursday 24 February 2011, james_p_freyensee@linux.intel.com wrote:
+> > From: J Freyensee <james_p_freyensee@linux.intel.com>
+> > 
+> > This driver is the Intel Atom implementation of MIPI P1149.7,
+> > compact JTAG standard for mobile devices.
+> > 
+> > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+> > ---
+> >  drivers/misc/pti.c |  890 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 890 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/misc/pti.c
+> 
+> I have no idea what a "misc" driver really is, but this one clearly isn't
+> one. When you register a tty here, drivers/tty would be the right place.
 
-Please pull the latest timers-fixes-for-linus git tree from:
+It went in misc because this driver has a tty interface, char interface,
+and uses other things like console.  It is not just a tty-only device.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
+> > +
+> > +struct pti_tty {
+> > +	struct pti_masterchannel *mc;
+> > +};
+> > +
+> > +struct pti_dev {
+> > +	struct tty_port port;
+> > +	unsigned long pti_addr;
+> > +	unsigned long aperture_base;
+> > +	void __iomem *pti_ioaddr;
+> > +	unsigned long pti_iolen;
+> 
+> pti_adr, aperture_base and pti_iolen seem to be unused in the driver, you
+> only use them to get pti_ioaddr, so no need to store them.
+> 
+> > +	u8 IA_App[MAX_APP_IDS];
+> > +	u8 IA_OS[MAX_OS_IDS];
+> > +	u8 IA_Modem[MAX_MODEM_IDS];
+> 
+> Please use lowercase identifiers.
+> 
+> > +static DEFINE_MUTEX(alloclock);
+> 
+> It's not really clear what this protects. Please add some comment here.
+> 
+> > +static struct tty_driver *pti_tty_driver;
+> > +
+> > +static struct pti_dev *drv_data;
+> 
+> You use drv_data both for the global structure and for local variables,
+> which is rather confusing to the reader.
+> 
+> > +static unsigned int pti_console_channel;
+> > +static unsigned int pti_control_channel;
+> 
+> These don't need to be global, because they are only used in one function
+> each (besides a pointless initialization).
+> 
+> Are you sure that you need no locking for them?
+> 
+> 
+> > +static ssize_t pti_char_write(struct file *filp, const char __user *data,
+> > +			      size_t len, loff_t *ppose)
+> > +{
+> > +	struct pti_masterchannel *mc;
+> > +	void *kbuf;
+> > +	const char __user *tmp;
+> > +	size_t size = USER_COPY_SIZE, n = 0;
+> > +
+> > +	tmp = data;
+> > +	mc = filp->private_data;
+> > +
+> > +	kbuf = kmalloc(size, GFP_KERNEL);
+> > +	if (kbuf == NULL)  {
+> > +		pr_err("%s(%d): buf allocation failed\n",
+> > +			__func__, __LINE__);
+> > +		return 0;
+> > +	}
+> > +
+> > +	do {
+> > +		if (len - n > USER_COPY_SIZE)
+> > +			size = USER_COPY_SIZE;
+> > +		else
+> > +			size = len - n;
+> > +
+> > +		if (copy_from_user(kbuf, tmp, size)) {
+> > +			kfree(kbuf);
+> > +			return n ? n : -EFAULT;
+> > +		}
+> > +
+> > +		pti_write_to_aperture(mc, kbuf, size);
+> > +		n  += size;
+> > +		tmp += size;
+> > +
+> > +	} while (len > n);
+> > +
+> > +	kfree(kbuf);
+> > +	kbuf = NULL;
+> > +
+> > +	return len;
+> > +}
+> 
+> You write chunks of 8KB here, which sounds rather large for a serial port.
+> Is that intentional? What is the typical line rate? If you need more than
+> a milisecond for a single write, you should probably return a short write
+> to user space or at least call cond_resched() to be more friendly to
+> other tasks.
 
- Thanks,
+Yes, 8KB of chunks is intentional.  In a side review with Alan cox, we
+concluded 8KB was an appropriate size for this driver.
 
-	Ingo
+> 
+> > +static const struct tty_operations pti_tty_driver_ops = {
+> > +	.open		= pti_tty_driver_open,
+> > +	.close		= pti_tty_driver_close,
+> > +	.write		= pti_tty_driver_write,
+> > +	.write_room	= pti_tty_write_room,
+> > +	.install	= pti_tty_install,
+> > +	.cleanup	= pti_tty_cleanup
+> > +};
+> > +
+> > +static const struct file_operations pti_char_driver_ops = {
+> > +	.owner		= THIS_MODULE,
+> > +	.write		= pti_char_write,
+> > +	.open		= pti_char_open,
+> > +	.release	= pti_char_release,
+> > +};
+> > +
+> > +static struct miscdevice pti_char_driver = {
+> > +	.minor		= MISC_DYNAMIC_MINOR,
+> > +	.name		= CHARNAME,
+> > +	.fops		= &pti_char_driver_ops
+> > +};
+> > +
+> 
+> It's really strange to have both a tty and a character device that have similar
+> operations. Why can't you have the pti_char_driver functionality in the tty driver?
+> 
 
------------------->
-Thomas Gleixner (1):
-      clockevents: Prevent oneshot mode when broadcast device is periodic
+Because that is not what the customer wanted and this is why the driver
+is located in misc/ ;-).  
 
 
- kernel/time/tick-broadcast.c |   10 ++++++++++
- kernel/time/tick-common.c    |    6 +++++-
- kernel/time/tick-internal.h  |    3 +++
- 3 files changed, 18 insertions(+), 1 deletions(-)
+> 	Arnd
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 48b2761..a3b5aff 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -600,4 +600,14 @@ int tick_broadcast_oneshot_active(void)
- 	return tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT;
- }
- 
-+/*
-+ * Check whether the broadcast device supports oneshot.
-+ */
-+bool tick_broadcast_oneshot_available(void)
-+{
-+	struct clock_event_device *bc = tick_broadcast_device.evtdev;
-+
-+	return bc ? bc->features & CLOCK_EVT_FEAT_ONESHOT : false;
-+}
-+
- #endif
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 051bc80..ed228ef 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -51,7 +51,11 @@ int tick_is_oneshot_available(void)
- {
- 	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
- 
--	return dev && (dev->features & CLOCK_EVT_FEAT_ONESHOT);
-+	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
-+		return 0;
-+	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return 1;
-+	return tick_broadcast_oneshot_available();
- }
- 
- /*
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index 290eefb..f65d3a7 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -36,6 +36,7 @@ extern void tick_shutdown_broadcast_oneshot(unsigned int *cpup);
- extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
- extern int tick_broadcast_oneshot_active(void);
- extern void tick_check_oneshot_broadcast(int cpu);
-+bool tick_broadcast_oneshot_available(void);
- # else /* BROADCAST */
- static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- {
-@@ -46,6 +47,7 @@ static inline void tick_broadcast_switch_to_oneshot(void) { }
- static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
- static inline int tick_broadcast_oneshot_active(void) { return 0; }
- static inline void tick_check_oneshot_broadcast(int cpu) { }
-+static inline bool tick_broadcast_oneshot_available(void) { return true; }
- # endif /* !BROADCAST */
- 
- #else /* !ONESHOT */
-@@ -76,6 +78,7 @@ static inline int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
- 	return 0;
- }
- static inline int tick_broadcast_oneshot_active(void) { return 0; }
-+static inline bool tick_broadcast_oneshot_available(void) { return false; }
- #endif /* !TICK_ONESHOT */
- 
- /*
+
