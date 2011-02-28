@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab1B1Cd4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 21:33:56 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49319 "EHLO
+	id S1752259Ab1B1CfM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 21:35:12 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49386 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab1B1Cdz (ORCPT
+	with ESMTP id S1752096Ab1B1CfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 21:33:55 -0500
+	Sun, 27 Feb 2011 21:35:10 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 28 Feb 2011 11:27:25 +0900
+Date: Mon, 28 Feb 2011 11:28:46 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Greg Thelen <gthelen@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -22,11 +22,11 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         Wu Fengguang <fengguang.wu@intel.com>,
         Chad Talbott <ctalbott@google.com>,
         Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v5 1/9] memcg: document cgroup dirty memory interfaces
-Message-Id: <20110228112725.ef433d01.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1298669760-26344-2-git-send-email-gthelen@google.com>
+Subject: Re: [PATCH v5 3/9] writeback: convert variables to unsigned
+Message-Id: <20110228112846.454cea86.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1298669760-26344-4-git-send-email-gthelen@google.com>
 References: <1298669760-26344-1-git-send-email-gthelen@google.com>
-	<1298669760-26344-2-git-send-email-gthelen@google.com>
+	<1298669760-26344-4-git-send-email-gthelen@google.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -36,16 +36,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Feb 2011 13:35:52 -0800
+On Fri, 25 Feb 2011 13:35:54 -0800
 Greg Thelen <gthelen@google.com> wrote:
 
-> Document cgroup dirty memory interfaces and statistics.
+> Convert two balance_dirty_pages() page counter variables (nr_reclaimable
+> and nr_writeback) from 'long' to 'unsigned long'.
 > 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
+> These two variables are used to store results from global_page_state().
+> global_page_state() returns unsigned long and carefully sums per-cpu
+> counters explicitly avoiding returning a negative value.
+> 
 > Signed-off-by: Greg Thelen <gthelen@google.com>
 
-very nice. Thank you.
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
+Reviewd-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
