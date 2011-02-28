@@ -1,114 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab1B1Km6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 05:42:58 -0500
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:56180 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753587Ab1B1Kmv (ORCPT
+	id S1753660Ab1B1Knc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 05:43:32 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34253 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753501Ab1B1Kna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 05:42:51 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <dan.j.williams@intel.com>, <linus.walleij@stericsson.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Viresh Kumar <viresh.kumar@st.com>, <shiraz.hashim@st.com>,
-        <amit.goel@st.com>, <armando.visconti@st.com>
-Subject: [PATCH 8/8 resend] dw_dmac.c: Pass Channel Priority from platform_data
-Date: Mon, 28 Feb 2011 16:11:23 +0530
-Message-ID: <12a1cd2df6804fbd27adf57d73b5fb0c0fb6145c.1298889267.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1298889267.git.viresh.kumar@st.com>
-References: <cover.1298889267.git.viresh.kumar@st.com>
+	Mon, 28 Feb 2011 05:43:30 -0500
+Message-ID: <4D6B7CA5.9010708@metafoo.de>
+Date: Mon, 28 Feb 2011 11:44:53 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: "'Ben Dooks'" <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/09] ARM: s3c2440: gta02: Add touchscreen support
+References: <1297043521-21903-1-git-send-email-lars@metafoo.de> <1297043521-21903-9-git-send-email-lars@metafoo.de> <000201cbd70d$4f67f1f0$ee37d5d0$%kim@samsung.com>
+In-Reply-To: <000201cbd70d$4f67f1f0$ee37d5d0$%kim@samsung.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Synopsys designware, channel priority is programmable. This patch adds
-support for passing channel priority through platform data. By default Ascending
-channel priority will be followed, i.e. channel 0 will get highest priority and
-channel 7 will get lowest.
+On 02/28/2011 07:04 AM, Kukjin Kim wrote:
+> Lars-Peter Clausen wrote:
+>>
+>> This patch registers the s3c touchscreen and adc devices to add
+> touchscreen
+>> support for the gta02.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>> ---
+>>  arch/arm/mach-s3c2440/mach-gta02.c |   12 ++++++++++++
+>>  1 files changed, 12 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c
+> b/arch/arm/mach-s3c2440/mach-
+>> gta02.c
+>> index 94456fa..2300ec5 100644
+>> --- a/arch/arm/mach-s3c2440/mach-gta02.c
+>> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
+>> @@ -79,6 +79,8 @@
+>>  #include <mach/regs-mem.h>
+>>  #include <mach/hardware.h>
+>>
+>> +#include <plat/ts.h>
+>> +
+> 
+> Please group same/similar inclusion together like following.
+> <linux/...> <asm/...> then <mach/...> or <plat/...>
+> 
+> In other words, please add your <plat/ts.h> inclusion after other <plat/...>
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/dw_dmac.c      |   11 ++++++++++-
- drivers/dma/dw_dmac_regs.h |    3 +++
- include/linux/dw_dmac.h    |    4 +++-
- 3 files changed, 16 insertions(+), 2 deletions(-)
+Ok.
+> 
+>>  #include <mach/gta02.h>
+>>
+>>  #include <plat/regs-serial.h>
+>> @@ -480,6 +482,13 @@ static struct s3c2410_hcd_info gta02_usb_info
+> __initdata
+>> = {
+>>  	},
+>>  };
+>>
+>> +/* Touchscreen */
+>> +static struct s3c2410_ts_mach_info gta02_ts_info = {
+>> +	.delay = 10000,
+>> +	.presc = 0xff, /* slow as we can go */
+>> +	.oversampling_shift = 2,
+>> +};
+> 
+> How about to use tab between member and = like following?
+> 
+> static struct s3c2410_ts_mach_info gta02_ts_info = {
+> 	.delay			= 10000,
+> 	.presc			= 0xff, /* slow as we can go */
+> 	.oversampling_shift	= 2,
+> };
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 37ffd2c..edb3d3b 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -896,8 +896,11 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 		BUG_ON(!dws->dma_dev || dws->dma_dev != dw->dma.dev);
- 
- 		cfghi = dws->cfg_hi;
--		cfglo = dws->cfg_lo;
-+		cfglo = dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
- 	}
-+
-+	cfglo |= DWC_CFGL_CH_PRIOR(dwc->priority);
-+
- 	channel_writel(dwc, CFG_LO, cfglo);
- 	channel_writel(dwc, CFG_HI, cfghi);
- 
-@@ -1320,6 +1323,12 @@ static int __init dw_probe(struct platform_device *pdev)
- 		else
- 			list_add(&dwc->chan.device_node, &dw->dma.channels);
- 
-+		/* 7 is highest priority & 0 is lowest. */
-+		if (pdata->chan_priority == CHAN_PRIORITY_ASCENDING)
-+			dwc->priority = 7 - i;
-+		else
-+			dwc->priority = i;
-+
- 		dwc->ch_regs = &__dw_regs(dw)->CHAN[i];
- 		spin_lock_init(&dwc->lock);
- 		dwc->mask = 1 << i;
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index d9a939f..6a8e6d3 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -101,6 +101,8 @@ struct dw_dma_regs {
- #define DWC_CTLH_BLOCK_TS_MASK	0x00000fff
- 
- /* Bitfields in CFG_LO. Platform-configurable bits are in <linux/dw_dmac.h> */
-+#define DWC_CFGL_CH_PRIOR_MASK	(0x7 << 5)	/* priority mask */
-+#define DWC_CFGL_CH_PRIOR(x)	((x) << 5)	/* priority */
- #define DWC_CFGL_CH_SUSP	(1 << 8)	/* pause xfer */
- #define DWC_CFGL_FIFO_EMPTY	(1 << 9)	/* pause xfer */
- #define DWC_CFGL_HS_DST		(1 << 10)	/* handshake w/dst */
-@@ -134,6 +136,7 @@ struct dw_dma_chan {
- 	struct dma_chan		chan;
- 	void __iomem		*ch_regs;
- 	u8			mask;
-+	u8			priority;
- 
- 	spinlock_t		lock;
- 
-diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
-index 057e883..53072c8 100644
---- a/include/linux/dw_dmac.h
-+++ b/include/linux/dw_dmac.h
-@@ -22,6 +22,9 @@ struct dw_dma_platform_data {
- #define CHAN_ALLOCATION_ASCENDING	0	/* zero to seven */
- #define CHAN_ALLOCATION_DESCENDING	1	/* seven to zero */
- 	unsigned int	chan_allocation_order;
-+#define CHAN_PRIORITY_ASCENDING		0	/* chan0 highest */
-+#define CHAN_PRIORITY_DESCENDING	1	/* chan7 highest */
-+	unsigned int	chan_priority;
- };
- 
- /**
-@@ -65,7 +68,6 @@ struct dw_dma_slave {
- #define DWC_CFGH_DST_PER(x)	((x) << 11)
- 
- /* Platform-configurable bits in CFG_LO */
--#define DWC_CFGL_PRIO(x)	((x) << 5)	/* priority */
- #define DWC_CFGL_LOCK_CH_XFER	(0 << 12)	/* scope of LOCK_CH */
- #define DWC_CFGL_LOCK_CH_BLOCK	(1 << 12)
- #define DWC_CFGL_LOCK_CH_XACT	(2 << 12)
--- 
-1.7.2.2
+Ok.
+
+> 
+>> +
+>>  /* Buttons */
+>>  static struct gpio_keys_button gta02_buttons[] = {
+>>  	{
+>> @@ -533,6 +542,8 @@ static struct platform_device *gta02_devices[]
+> __initdata
+>> = {
+>>  	&samsung_asoc_dma,
+>>  	&s3c_device_i2c0,
+>>  	&gta02_buttons_device,
+>> +	&s3c_device_adc,
+> 
+> No need to build plat-samsung/dev-adc.c for this?
+> If you want to add '&s3c_deivce_adc', should add 'select SAMSUNG_DEV_ADC'
+> into "config MACH_NEO1973_GTA02".
+
+There appear to be two different definitions for s3c_deivce_adc one is in
+plat-samsung/dev-adc.c the other is in plat-s3c24xx/devs.c. So if I select
+SAMSUNG_DEV_ADC I'll actually get compile errors.
+The definition in plat-s3c24xx/devs.c should probably be dropped, but thats
+something for a different patch.
+
+
+> 
+>> +	&s3c_device_ts,
+> 
+> 'select SAMSUNG_DEV_TS'
+
+Same here.
+
+> 
+>>  };
+>>
+>>  /* These guys DO need to be children of PMU. */
+>> @@ -597,6 +608,7 @@ static void __init gta02_machine_init(void)
+>>  #endif
+>>
+>>  	s3c24xx_udc_set_platdata(&gta02_udc_cfg);
+>> +	s3c24xx_ts_set_platdata(&gta02_ts_info);
+> 
+> Same as above. 'select SAMSUNG_DEV_TS' should be added for
+> plat-samsung/dev-ts.c.
+
+And here.
+
+> 
+>>  	s3c_ohci_set_platdata(&gta02_usb_info);
+>>  	s3c_nand_set_platdata(&gta02_nand_info);
+>>  	s3c_i2c0_set_platdata(NULL);
+>> --
+>> 1.7.2.3
+> 
+> 
+> Thanks.
+> 
+> Best regards,
+> Kgene.
+> --
+> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+> SW Solution Development Team, Samsung Electronics Co., Ltd.
+> 
 
