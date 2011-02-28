@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab1B1QiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:38:23 -0500
-Received: from kroah.org ([198.145.64.141]:48279 "EHLO coco.kroah.org"
+	id S1755466Ab1B1Qi1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:38:27 -0500
+Received: from kroah.org ([198.145.64.141]:48294 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755814Ab1B1QiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:38:20 -0500
+	id S1755835Ab1B1QiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:23 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:12 2011
-Message-Id: <20110228162412.024809927@clark.kroah.org>
+Message-Id: <20110228162412.210204373@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:23:24 -0800
+Date: Mon, 28 Feb 2011 08:23:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [63/68] md: correctly handle probe of an mdp device.
+        Paul Zimmerman <paulz@synopsys.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [65/68] xhci: Avoid BUG() in interrupt context
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
 
-commit 8f5f02c460b7ca74ce55ce126ce0c1e58a3f923d upstream.
+commit 68e41c5d032668e2905404afbef75bc58be179d6 upstream.
 
-'mdp' devices are md devices with preallocated device numbers
-for partitions. As such it is possible to mknod and open a partition
-before opening the whole device.
+Change the BUGs in xhci_find_new_dequeue_state() to WARN_ONs, to avoid
+bringing down the box if one of them is hit
 
-this causes  md_probe() to be called with a device number of a
-partition, which in-turn calls mddev_find with such a number.
+This patch should be queued for stable kernels back to 2.6.31.
 
-However mddev_find expects the number of a 'whole device' and
-does the wrong thing with partition numbers.
-
-So add code to mddev_find to remove the 'partition' part of
-a device number and just work with the 'whole device'.
-
-This patch addresses https://bugzilla.kernel.org/show_bug.cgi?id=28652
-
-Reported-by: hkmaly@bigfoot.com
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/xhci-ring.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -305,6 +305,9 @@ static mddev_t * mddev_find(dev_t unit)
- {
- 	mddev_t *mddev, *new = NULL;
- 
-+	if (unit && MAJOR(unit) != MD_MAJOR)
-+		unit &= ~((1<<MdpMinorShift)-1);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -391,8 +391,11 @@ void xhci_find_new_dequeue_state(struct
+ 	state->new_deq_seg = find_trb_seg(cur_td->start_seg,
+ 			dev->eps[ep_index].stopped_trb,
+ 			&state->new_cycle_state);
+-	if (!state->new_deq_seg)
+-		BUG();
++	if (!state->new_deq_seg) {
++		WARN_ON(1);
++		return;
++	}
 +
-  retry:
- 	spin_lock(&all_mddevs_lock);
+ 	/* Dig out the cycle state saved by the xHC during the stop ep cmd */
+ 	xhci_dbg(xhci, "Finding endpoint context\n");
+ 	ep_ctx = xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
+@@ -403,8 +406,10 @@ void xhci_find_new_dequeue_state(struct
+ 	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
+ 			state->new_deq_ptr,
+ 			&state->new_cycle_state);
+-	if (!state->new_deq_seg)
+-		BUG();
++	if (!state->new_deq_seg) {
++		WARN_ON(1);
++		return;
++	}
  
+ 	trb = &state->new_deq_ptr->generic;
+ 	if ((trb->field[3] & TRB_TYPE_BITMASK) == TRB_TYPE(TRB_LINK) &&
 
 
