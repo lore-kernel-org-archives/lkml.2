@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1B1U44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 15:56:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40512 "EHLO mx2.suse.de"
+	id S1755089Ab1B1VCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 16:02:12 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37438 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab1B1U4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 15:56:54 -0500
-Date: Mon, 28 Feb 2011 21:56:52 +0100
-From: Jan Kara <jack@suse.cz>
-To: Josh Hunt <johunt@akamai.com>
-Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "sandeen@redhat.com" <sandeen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] ext2: Resolve i_nlink race in ext2_rename
-Message-ID: <20110228205652.GH20805@quack.suse.cz>
-References: <1298528501-32176-1-git-send-email-johunt@akamai.com>
- <20110224063749.GV22723@ZenIV.linux.org.uk>
- <20110224112010.GB23042@quack.suse.cz>
- <4D66BD18.2030207@akamai.com>
- <20110228175734.GC20805@quack.suse.cz>
- <4D6C02F3.7070209@akamai.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6C02F3.7070209@akamai.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751667Ab1B1VCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 16:02:11 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: hjk@hansjkoch.de, gregkh@suse.de, tglx@linutronix.de, sshtylyov@mvista.com,
+        arnd@arndb.de, pratheesh@ti.com, amit.chatterjee@ti.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v6 0/1] Add PRUSS UIO driver support
+Date: Tue,  1 Mar 2011 02:31:34 +0530
+Message-Id: <1298926895-5294-1-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 28-02-11 12:17:55, Josh Hunt wrote:
-> On 02/28/2011 09:57 AM, Jan Kara wrote:
-> > So I took your patch and used a changelog from mine as I find it more
-> > descriptive. The resulting patch is in my tree (and attached).
-> > 
-> > 								Honza
-> Jan
-> 
-> Thanks. We should probably send this to the stable guys as well.
-  Good point. Made sure they are warned when the patch gets in.
+This patch series add support for PRUSS (Programmable Real-time Unit Sub
+System) UIO driver in Texas Instruments DA850, AM18xx and OMAP-L138 processors.
+PRUSS is programmable RISC core which can be used to implement Soft IPs
+(eg:- DMA, CAN, UART,SmartCard) and Industrial communications data link layers
+(eg:- PROFIBUS). UIO driver exposes PRUSS resources like memory and interrupts
+to user space application.PRUSS UIO application API can be used to control PRUs
+in PRUSS, setup PRU INTC, load firmware to PRUs and implement IPC between Host
+processor and PRUs. More information on PRUSS and UIO linux user space API
+available in the links below
 
-								Honza
+http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader_API_Guide
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Platform/board specific portion of this patch depends on Mistral patches below
+
+[PATCH 1/1] davinci: changed SRAM allocator to shared ram :
+				https://patchwork.kernel.org/patch/549351/
+[PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS :
+				 https://patchwork.kernel.org/patch/549331/
+[PATCH v2 01/13] mfd: pruss mfd driver :
+				https://patchwork.kernel.org/patch/549531/
+[PATCH v2 02/13] da850: pruss platform specific additions :
+				https://patchwork.kernel.org/patch/549521/
+
+I will submit a seperate patch set on top of these patches to support PRUSS UIO
+driver.
+
+Pratheesh Gangadhar (1):
+  PRUSS UIO driver support
+
+ drivers/uio/Kconfig     |   17 ++++
+ drivers/uio/Makefile    |    1 +
+ drivers/uio/uio_pruss.c |  237 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 255 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/uio/uio_pruss.c
+
