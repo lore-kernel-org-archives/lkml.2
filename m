@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1B1JQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 04:16:20 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34365 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab1B1JQT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 04:16:19 -0500
-Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1298877772.4937.25.camel@minggr.sh.intel.com>
-References: <1298877772.4937.25.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 28 Feb 2011 10:15:59 +0100
-Message-ID: <1298884559.2428.10083.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753146Ab1B1JQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 04:16:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62558 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753132Ab1B1JQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 04:16:32 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH] bonding: use the correct size for _simple_hash()
+Date: Mon, 28 Feb 2011 17:34:28 +0800
+Message-Id: <1298885668-3917-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
-> This patch adds basic SandyBridge support, including hardware cache
-> events and PEBS events support.
-> 
-> LLC-* hareware cache events don't work for now, it depends on the
-> offcore patches.
+Clearly it should be the size of ->ip_dst here.
+Although this is harmless, but it still reads odd.
 
-What's the status of those, Stephane reported some problems last I
-remember?
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-
->  #define INTEL_EVENT_CONSTRAINT(c, n)	\
->  	EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
-> +#define INTEL_EVENT_CONSTRAINT2(c, n)	\
-> +	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
-
-That's a particularly bad name, how about something like
-
-INTEL_UEVENT_CONSTRAINT or somesuch.
-
-> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
->  			printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
->  			x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
->  			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
-> -			x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> +			switch (boot_cpu_data.x86_model) {
-> +			case 42: /* SandyBridge */
-> +				x86_pmu.pebs_constraints = intel_snb_pebs_events;
-> +				break;
-> +			default:
-> +				x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> +			}
->  			break;
->  
->  		default:
-
-We already have this massive model switch right after this function,
-might as well move the pebs constraint assignment there.
+---
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index 5c6fba8..9bc5de3 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -604,7 +604,7 @@ static struct slave *rlb_choose_channel(struct sk_buff *skb, struct bonding *bon
+ 
+ 	_lock_rx_hashtbl(bond);
+ 
+-	hash_index = _simple_hash((u8 *)&arp->ip_dst, sizeof(arp->ip_src));
++	hash_index = _simple_hash((u8 *)&arp->ip_dst, sizeof(arp->ip_dst));
+ 	client_info = &(bond_info->rx_hashtbl[hash_index]);
+ 
+ 	if (client_info->assigned) {
