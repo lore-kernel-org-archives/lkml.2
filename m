@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab1B1QxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:53:09 -0500
-Received: from kroah.org ([198.145.64.141]:41163 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab1B1Qgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:36:51 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
-Message-Id: <20110228162406.082092634@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:25 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Vlad Yasevich <vladislav.yasevich@hp.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [04/68] sctp: Fix out-of-bounds reading in sctp_asoc_get_hmac()
-In-Reply-To: <20110228163502.GA27221@kroah.com>
+	id S1755165Ab1B1Qzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:55:39 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18273 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab1B1Qzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:55:36 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/8OPKVxlWg8UvWF3y9Xc32
+Date: Mon, 28 Feb 2011 08:55:30 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/21]arch:arm:Kconfig remove one to many l's in the
+ word.
+Message-ID: <20110228165530.GI20560@atomide.com>
+References: <1298614175-3456-1-git-send-email-justinmattock@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298614175-3456-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+* Justin P. Mattock <justinmattock@gmail.com> [110224 22:08]:
+> The patch below removes an extra "l" in the word.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-------------------
-
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-
-commit 51e97a12bef19b7e43199fc153cf9bd5f2140362 upstream.
-
-The sctp_asoc_get_hmac() function iterates through a peer's hmac_ids
-array and attempts to ensure that only a supported hmac entry is
-returned.  The current code fails to do this properly - if the last id
-in the array is out of range (greater than SCTP_AUTH_HMAC_ID_MAX), the
-id integer remains set after exiting the loop, and the address of an
-out-of-bounds entry will be returned and subsequently used in the parent
-function, causing potentially ugly memory corruption.  This patch resets
-the id integer to 0 on encountering an invalid id so that NULL will be
-returned after finishing the loop if no valid ids are found.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/sctp/auth.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/net/sctp/auth.c
-+++ b/net/sctp/auth.c
-@@ -542,16 +542,20 @@ struct sctp_hmac *sctp_auth_asoc_get_hma
- 		id = ntohs(hmacs->hmac_ids[i]);
+Acked-by: Tony Lindgren <tony@atomide.com>
  
- 		/* Check the id is in the supported range */
--		if (id > SCTP_AUTH_HMAC_ID_MAX)
-+		if (id > SCTP_AUTH_HMAC_ID_MAX) {
-+			id = 0;
- 			continue;
-+		}
- 
- 		/* See is we support the id.  Supported IDs have name and
- 		 * length fields set, so that we can allocated and use
- 		 * them.  We can safely just check for name, for without the
- 		 * name, we can't allocate the TFM.
- 		 */
--		if (!sctp_hmac_list[id].hmac_name)
-+		if (!sctp_hmac_list[id].hmac_name) {
-+			id = 0;
- 			continue;
-+		}
- 
- 		break;
- 	}
-
-
+> ---
+>  arch/arm/plat-omap/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+> index b6333ae..cd5f993 100644
+> --- a/arch/arm/plat-omap/Kconfig
+> +++ b/arch/arm/plat-omap/Kconfig
+> @@ -54,7 +54,7 @@ config OMAP_SMARTREFLEX
+>  	  user must write 1 to
+>  		/debug/voltage/vdd_<X>/smartreflex/autocomp,
+>  	  where X is mpu or core for OMAP3.
+> -	  Optionallly autocompensation can be enabled in the kernel
+> +	  Optionally autocompensation can be enabled in the kernel
+>  	  by default during system init via the enable_on_init flag
+>  	  which an be passed as platform data to the smartreflex driver.
+>  
+> -- 
+> 1.7.4.1
+> 
