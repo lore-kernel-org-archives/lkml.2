@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab1B1Kme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 05:42:34 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:41518 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753557Ab1B1Kmd (ORCPT
+	id S1753602Ab1B1Kmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 05:42:47 -0500
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:59271 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752886Ab1B1Kmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 05:42:33 -0500
+	Mon, 28 Feb 2011 05:42:45 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <dan.j.williams@intel.com>, <linus.walleij@stericsson.com>
 Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Viresh Kumar <viresh.kumar@st.com>, <shiraz.hashim@st.com>,
         <amit.goel@st.com>, <armando.visconti@st.com>
-Subject: [PATCH 5/8 resend] dw_dmac: adding support for 64 bit access width for memcpy xfers
-Date: Mon, 28 Feb 2011 16:11:20 +0530
-Message-ID: <3db0ead268f6c53647de07286e3d60332d23abe8.1298889267.git.viresh.kumar@st.com>
+Subject: [PATCH 6/8 resend] dw_dmac: Mark all tx_descriptors with DMA_CRTL_ACK after xfer finish
+Date: Mon, 28 Feb 2011 16:11:21 +0530
+Message-ID: <82027aa0c6446df3f7fb8e3c5fbdc28f60ea33b7.1298889267.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1298889267.git.viresh.kumar@st.com>
 References: <cover.1298889267.git.viresh.kumar@st.com>
@@ -24,26 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+dwc_desc_get checks all descriptors for DMA_CTRL_ACK before allocating them for
+transfers. And descriptors are not marked with DMA_CRTL_ACK after transfer
+finishes. Thus descriptor once used is not usable again. This patch marks
+descriptors with DMA_CRTL_ACK after dma xfer finishes
+
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dw_dmac.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/dma/dw_dmac.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 5cc5abf..c40b89f 100644
+index c40b89f..01f783d 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -577,7 +577,9 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 	 * We can be a lot more clever here, but this should take care
- 	 * of the most common optimization.
- 	 */
--	if (!((src | dest  | len) & 3))
-+	if (!((src | dest  | len) & 7))
-+		src_width = dst_width = 3;
-+	else if (!((src | dest  | len) & 3))
- 		src_width = dst_width = 2;
- 	else if (!((src | dest | len) & 1))
- 		src_width = dst_width = 1;
+@@ -196,6 +196,7 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
+ 	dma_async_tx_callback		callback;
+ 	void				*param;
+ 	struct dma_async_tx_descriptor	*txd = &desc->txd;
++	struct dw_desc	*child;
+ 
+ 	dev_vdbg(chan2dev(&dwc->chan), "descriptor %u complete\n", txd->cookie);
+ 
+@@ -204,6 +205,12 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc)
+ 	param = txd->callback_param;
+ 
+ 	dwc_sync_desc_for_cpu(dwc, desc);
++
++	/* async_tx_ack */
++	list_for_each_entry(child, &desc->tx_list, desc_node)
++		async_tx_ack(&child->txd);
++	async_tx_ack(&desc->txd);
++
+ 	list_splice_init(&desc->tx_list, &dwc->free_list);
+ 	list_move(&desc->desc_node, &dwc->free_list);
+ 
 -- 
 1.7.2.2
 
