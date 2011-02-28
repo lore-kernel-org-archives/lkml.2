@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab1B1OVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:21:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2176 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754149Ab1B1OVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:21:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,239,1297065600"; 
-   d="scan'208";a="714130098"
-Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1298884559.2428.10083.camel@twins>
-References: <1298877772.4937.25.camel@minggr.sh.intel.com>
-	 <1298884559.2428.10083.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Feb 2011 22:21:27 +0800
-Message-Id: <1298902887.2169.48.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754443Ab1B1OWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:22:24 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:6589 "EHLO
+	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754037Ab1B1OWX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:22:23 -0500
+X-SpamScore: -30
+X-BigFish: VPS-30(zz542N1432N98dN4015L9371Pzz1202hzz8275bhz2dh95h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH V4 0/4] ARM: Basic Xilinx Support
+Date: Mon, 28 Feb 2011 07:22:15 -0700
+In-Reply-To: <20110228111949.GC2754@pulham.picochip.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH V4 0/4] ARM: Basic Xilinx Support
+Thread-Index: AcvXOW3tCndHTg1oRQG3tThvWnyuEgAGUPXg
+References: <0d410c20-32b4-46d6-9639-249a2816cbe9@VA3EHSMHS005.ehs.local> <20110228111949.GC2754@pulham.picochip.com>
+From: John Linn <John.Linn@xilinx.com>
+To: Jamie Iles <jamie@jamieiles.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, <arnd@arndb.de>
+X-OriginalArrivalTime: 28 Feb 2011 14:22:16.0459 (UTC) FILETIME=[E67F65B0:01CBD752]
+X-RCIS-Action: ALLOW
+Message-ID: <091b12f3-f266-4727-8166-962af92872d3@VA3EHSMHS022.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 17:15 +0800, Peter Zijlstra wrote:
-> On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
-> > This patch adds basic SandyBridge support, including hardware cache
-> > events and PEBS events support.
-> > 
-> > LLC-* hareware cache events don't work for now, it depends on the
-> > offcore patches.
+> -----Original Message-----
+> From: Jamie Iles [mailto:jamie@jamieiles.com]
+> Sent: Monday, February 28, 2011 4:20 AM
+> To: John Linn
+> Cc: linux-arm-kernel@lists.infradead.org;
+linux-kernel@vger.kernel.org; linux@arm.linux.org.uk;
+> catalin.marinas@arm.com; glikely@secretlab.ca; jamie@jamieiles.com;
+arnd@arndb.de
+> Subject: Re: [PATCH V4 0/4] ARM: Basic Xilinx Support
 > 
-> What's the status of those, Stephane reported some problems last I
-> remember?
+> On Fri, Feb 18, 2011 at 11:14:37AM -0700, John Linn wrote:
+> >
+> > V4
+> >
+> > I incorporated more feedback from Jamie Iles. It was
+> > primariy cleanup with the only significant change
+> > being a move to using raw_read/write in the uncompressor
+> > uart code.
+> >
+> > The other changes were minor updates so that the patch
+> > set applies to linux-next.
+> >
+> > This patch set is now tested against the linux-next branch
+> > from pub/scm/linux/kernel/git/sfr/linux-next.git.
+> 
+> Hi John,
+> 
+> I've just tried a quick dummy build of this series (with a fudge in
+> mach-types to get it building) and I see a couple of minor sparse
+> warnings:
+> 
+> arch/arm/mach-xilinx/common.c:54:13: warning: symbol
+> 'xilinx_system_init' was not declared. Should it be static?
+> arch/arm/mach-xilinx/common.c:68:13: warning: symbol 'xilinx_irq_init'
+> was not declared. Should it be static?
+> arch/arm/mach-xilinx/common.c:110:13: warning: symbol 'xilinx_map_io'
+> was not declared. Should it be static?
+> arch/arm/mach-xilinx/timer.c:290:18: warning: symbol
+'xttcpss_sys_timer'
+> was not declared. Should it be static?
+> 
+> I think all of these can be resolved by including "common.h" in both
+> timer.c and common.c.
 
-There is an event scheduling issue.
-http://marc.info/?l=linux-kernel&m=129842356323752&w=2
-
-I'll look at it.
+Will have a look at it.  Easy enough to fix and verify.
 
 > 
-> 
-> >  #define INTEL_EVENT_CONSTRAINT(c, n)	\
-> >  	EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
-> > +#define INTEL_EVENT_CONSTRAINT2(c, n)	\
-> > +	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
-> 
-> That's a particularly bad name, how about something like
-> 
-> INTEL_UEVENT_CONSTRAINT or somesuch.
+> I've put a couple of nitpicks for the individual patches, sorry I
+didn't
+> spot them before.  Otherwise,
 
-OK.
+No problem, appreciate your time, patience and input.
 
-But any case it's duplicated with PEBS_EVENT_CONSTRAINT.
-
-#define PEBS_EVENT_CONSTRAINT(c, n)     \
-        EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+Thanks,
+John
 
 > 
-> > @@ -702,7 +738,13 @@ static void intel_ds_init(void)
-> >  			printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
-> >  			x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
-> >  			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
-> > -			x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> > +			switch (boot_cpu_data.x86_model) {
-> > +			case 42: /* SandyBridge */
-> > +				x86_pmu.pebs_constraints = intel_snb_pebs_events;
-> > +				break;
-> > +			default:
-> > +				x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> > +			}
-> >  			break;
-> >  
-> >  		default:
+> Reviewed-by: Jamie Iles <jamie@jamieiles.com>
 > 
-> We already have this massive model switch right after this function,
-> might as well move the pebs constraint assignment there.
+> Jamie
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
 
