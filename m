@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab1B1Qk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:40:58 -0500
-Received: from kroah.org ([198.145.64.141]:48272 "EHLO coco.kroah.org"
+	id S1755780Ab1B1QiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:38:17 -0500
+Received: from kroah.org ([198.145.64.141]:48232 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755765Ab1B1QiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:38:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:12 2011
-Message-Id: <20110228162411.926177441@clark.kroah.org>
+	id S1755741Ab1B1QiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:11 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:11 2011
+Message-Id: <20110228162411.422053830@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:23:23 -0800
+Date: Mon, 28 Feb 2011 08:23:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
-        Richard Russon <ldm@flatcap.org>,
-        Harvey Harrison <harvey.harrison@gmail.com>
-Subject: [62/68] ldm: corrupted partition table can cause kernel oops
+        Max Vozeler <max@vozeler.com>
+Subject: [57/68] staging: usbip: vhci: update reference count for usb_device
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Warns <Warns@pre-sense.de>
+From: Max Vozeler <max@vozeler.com>
 
-commit 294f6cf48666825d23c9372ef37631232746e40d upstream.
+commit 7606ee8aa33287dd3e6eb44c78541b87a413a325 upstream.
 
-The kernel automatically evaluates partition tables of storage devices.
-The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
-a bug that causes a kernel oops on certain corrupted LDM partitions.  A
-kernel subsystem seems to crash, because, after the oops, the kernel no
-longer recognizes newly connected storage devices.
+This fixes an oops observed when reading status during
+removal of a device:
 
-The patch changes ldm_parse_vmdb() to Validate the value of vblk_size.
+[ 1706.648285] general protection fault: 0000 [#1] SMP
+[ 1706.648294] last sysfs file: /sys/devices/platform/vhci_hcd/status
+[ 1706.648297] CPU 1
+[ 1706.648300] Modules linked in: binfmt_misc microcode fuse loop vhci_hcd(N) usbip(N) usbcore usbip_common_mod(N) rtc_core rtc_lib joydev dm_mirror dm_region_hash dm_log linear dm_snapshot xennet dm_mod ext3 mbcache jbd processor thermal_sys hwmon xenblk cdrom
+[ 1706.648324] Supported: Yes
+[ 1706.648327] Pid: 10422, comm: usbip Tainted: G          N  2.6.32.12-0.7-xen #1
+[ 1706.648330] RIP: e030:[<ffffffff801b10d5>]  [<ffffffff801b10d5>] strnlen+0x5/0x40
+[ 1706.648340] RSP: e02b:ffff8800a994dd30  EFLAGS: 00010286
+[ 1706.648343] RAX: ffffffff80481ec1 RBX: 0000000000000000 RCX: 0000000000000002
+[ 1706.648347] RDX: 00200d1d4f1c001c RSI: ffffffffffffffff RDI: 00200d1d4f1c001c
+[ 1706.648350] RBP: ffff880129a1c0aa R08: ffffffffa01901c4 R09: 0000000000000006
+[ 1706.648353] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800a9a1c0ab
+[ 1706.648357] R13: 00200d1d4f1c001c R14: 00000000ffffffff R15: ffff880129a1c0aa
+[ 1706.648363] FS:  00007f2f2e9ca700(0000) GS:ffff880001018000(0000) knlGS:0000000000000000
+[ 1706.648367] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1706.648370] CR2: 000000000071b048 CR3: 00000000b4b68000 CR4: 0000000000002660
+[ 1706.648374] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1706.648378] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 1706.648381] Process usbip (pid: 10422, threadinfo ffff8800a994c000, task ffff88007b170200)
+[ 1706.648385] Stack:
+[ 1706.648387]  ffffffff801b28c9 0000000000000002 ffffffffa01901c4 ffff8800a9a1c0ab
+[ 1706.648391] <0> ffffffffa01901c6 ffff8800a994de08 ffffffff801b339b 0000000000000004
+[ 1706.648397] <0> 0000000affffffff ffffffffffffffff 00000000000067c0 0000000000000000
+[ 1706.648404] Call Trace:
+[ 1706.648413]  [<ffffffff801b28c9>] string+0x39/0xe0
+[ 1706.648419]  [<ffffffff801b339b>] vsnprintf+0x1eb/0x620
+[ 1706.648423]  [<ffffffff801b3813>] sprintf+0x43/0x50
+[ 1706.648429]  [<ffffffffa018d719>] show_status+0x1b9/0x220 [vhci_hcd]
+[ 1706.648438]  [<ffffffff8024a2b7>] dev_attr_show+0x27/0x60
+[ 1706.648445]  [<ffffffff80144821>] sysfs_read_file+0x101/0x1d0
+[ 1706.648451]  [<ffffffff800da4a7>] vfs_read+0xc7/0x130
+[ 1706.648457]  [<ffffffff800da613>] sys_read+0x53/0xa0
+[ 1706.648462]  [<ffffffff80007458>] system_call_fastpath+0x16/0x1b
+[ 1706.648468]  [<00007f2f2de40f30>] 0x7f2f2de40f30
+[ 1706.648470] Code: 66 0f 1f 44 00 00 48 83 c2 01 80 3a 00 75 f7 48 89 d0 48 29 f8 f3 c3 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 48 85 f6 74 29 <80> 3f 00 74 24 48 8d 56 ff 48 89 f8 eb 0e 0f 1f 44 00 00 48 83
+[ 1706.648507] RIP  [<ffffffff801b10d5>] strnlen+0x5/0x40
+[ 1706.648511]  RSP <ffff8800a994dd30>
+[ 1706.649575] ---[ end trace b4eb72bf2e149593 ]---
 
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Acked-by: Richard Russon <ldm@flatcap.org>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Max Vozeler <max@vozeler.com>
+Tested-by: Mark Wehby <MWehby@luxotticaRetail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/partitions/ldm.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/staging/usbip/vhci_hcd.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/fs/partitions/ldm.c
-+++ b/fs/partitions/ldm.c
-@@ -251,6 +251,11 @@ static bool ldm_parse_vmdb (const u8 *da
- 	}
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -606,7 +606,9 @@ static int vhci_urb_enqueue(struct usb_h
+ 			dev_info(dev, "SetAddress Request (%d) to port %d\n",
+ 				 ctrlreq->wValue, vdev->rhport);
  
- 	vm->vblk_size     = get_unaligned_be32(data + 0x08);
-+	if (vm->vblk_size == 0) {
-+		ldm_error ("Illegal VBLK size");
-+		return false;
-+	}
+-			vdev->udev = urb->dev;
++			if (vdev->udev)
++				usb_put_dev(vdev->udev);
++			vdev->udev = usb_get_dev(urb->dev);
+ 
+ 			spin_lock(&vdev->ud.lock);
+ 			vdev->ud.status = VDEV_ST_USED;
+@@ -626,8 +628,9 @@ static int vhci_urb_enqueue(struct usb_h
+ 						"Get_Descriptor to device 0 "
+ 						"(get max pipe size)\n");
+ 
+-			/* FIXME: reference count? (usb_get_dev()) */
+-			vdev->udev = urb->dev;
++			if (vdev->udev)
++				usb_put_dev(vdev->udev);
++			vdev->udev = usb_get_dev(urb->dev);
+ 			goto out;
+ 
+ 		default:
+@@ -886,6 +889,10 @@ static void vhci_device_reset(struct usb
+ 	vdev->speed  = 0;
+ 	vdev->devid  = 0;
+ 
++	if (vdev->udev)
++		usb_put_dev(vdev->udev);
++	vdev->udev = NULL;
 +
- 	vm->vblk_offset   = get_unaligned_be32(data + 0x0C);
- 	vm->last_vblk_seq = get_unaligned_be32(data + 0x04);
+ 	ud->tcp_socket = NULL;
  
+ 	ud->status = VDEV_ST_NULL;
 
 
