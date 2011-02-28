@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab1B1HrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 02:47:05 -0500
-Received: from nm15.bullet.mail.ne1.yahoo.com ([98.138.90.78]:39113 "HELO
-	nm15.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752341Ab1B1HrE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 02:47:04 -0500
-X-Yahoo-Newman-Id: 72593.75656.bm@omp1057.mail.ne1.yahoo.com
-X-Yahoo-SMTP: qX6at_SswBACaRRT.MfRX4JbKLNImPWQFkRvucJk9pcwqiGjNQ--
-X-YMail-OSG: u98lOB0VM1mWkqAqn3TCTPABiIDHOhcRIeukHqRZ86xdi9g
- D1VwYnkoOZN6OZ2l5R7xdaMgb9J0uib7f2ppDUwPnzks_TPYnJ3DkDuXpCAC
- QmtkgnDhLSLMD4YZMjKF8Owj_S4pK3aaSZY2GWzpKTJPAHFk3HcltOXWV5tH
- e9PF5GrCYoyi1tyGLl0CJfp47kHqu3TF1nesvkKjrpjRog2YDkmq48P8bqSZ
- cjj89O_WmduCmEgsdiS4CzwOAtFygyN3Nwcm3ax9QSuiXpgJOeWkk_.R6oe.
- Io80U1Teo3h0PTSpNYhMqwCvM07gOUTgjoaAk41o_cYk-
-X-Yahoo-Newman-Property: ymail-3
-From: "Mr.David Gurupatham" <attorney_chamber@att.net>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: davidgurupatham9@gmail.com
-Date: Mon, 28 Feb 2011 09:58:12 +0800
-Subject: Re: KIND
+	id S1752737Ab1B1HtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 02:49:13 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37637 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab1B1HtL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 02:49:11 -0500
+Date: Mon, 28 Feb 2011 08:49:09 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/3] mfd: mc13xxx-core: add MODULE_DEVICE_TABLE
+Message-ID: <20110228074909.GI22310@pengutronix.de>
+References: <1298874735.5562.3.camel@mola>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=gb2312
-Content-Transfer-Encoding: 8BIT
-Message-ID: <USERPC107808be747c4296b7015656194879e4@userPC>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1298874735.5562.3.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Mr.David Gurupatham, an attorney at law. A deceased client of mine,
-that shares the same last name as yours,died as the result of a heart-
-related condition on March 12th 2005.His heart condition was due to the
-death of allthe members of his family in the tsunami disaster on the 26th
-December2004 in Sumatra
-Indonesia .http://en.wikipedia.org/wiki/2004_Indian_Ocean_earthquake
+Hello Axel,
 
-I can be reached on (davidgurupatham9@gmail.com) for
-Dollars (US$19 Million Dollars) left behind.
-more information.My late Client has a deposit of Nineteen Million
+On Mon, Feb 28, 2011 at 02:32:15PM +0800, Axel Lin wrote:
+> The device table is required to load modules based on modaliases.
+> After adding the MODULE_DEVICE_TABLE, below entries will be added to
+> modules.alias:
+> alias spi:mc13892 mc13xxx_core
+> alias spi:mc13783 mc13xxx_core
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-Best regards,
-Mr.David Gurupatham(Esq.)
-Attorney at Law
+Thanks
+Uwe
 
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
