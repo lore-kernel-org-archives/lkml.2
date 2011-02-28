@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab1B1PRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:17:31 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43922 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab1B1PR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754885Ab1B1PRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:17:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7330 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754661Ab1B1PR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Feb 2011 10:17:29 -0500
-Date: Mon, 28 Feb 2011 15:15:47 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 06/17] arm: mmu_gather rework
-Message-ID: <20110228151547.GC4911@flint.arm.linux.org.uk>
-Mail-Followup-To: Peter Zijlstra <peterz@infradead.org>,
-	Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-	akpm@linux-foundation.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-	linux-mm@kvack.org,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	David Miller <davem@davemloft.net>,
-	Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-	Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-	Paul McKenney <paulmck@linux.vnet.ibm.com>,
-	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-	"Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>,
-	Chris Metcalf <cmetcalf@tilera.com>
-References: <20110217162327.434629380@chello.nl> <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins> <1298657083.2428.2483.camel@twins> <20110225215123.GA10026@flint.arm.linux.org.uk> <1298893487.2428.10537.camel@twins> <1298902727.2428.10867.camel@twins> <20110228145750.GA4911@flint.arm.linux.org.uk> <1298905548.5226.848.camel@laptop>
+Message-ID: <4D6BBC84.6020408@redhat.com>
+Date: Mon, 28 Feb 2011 10:17:24 -0500
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298905548.5226.848.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+CC: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+ boot
+References: <4D663886.6080803@redhat.com> <20110224112742.GB29840@pcnci.linuxbox.cz> <4D664E85.8070808@redhat.com> <20110224124151.GK25673@pcnci.linuxbox.cz> <4D665449.4050908@redhat.com> <20110224125702.GC29840@pcnci.linuxbox.cz> <20110225104823.GD29840@pcnci.linuxbox.cz> <4D67C077.6060108@redhat.com> <20110227172052.GB2474@nik-comp.lan> <4D6BA85B.7080908@redhat.com> <20110228143247.GE29840@pcnci.linuxbox.cz>
+In-Reply-To: <20110228143247.GE29840@pcnci.linuxbox.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 04:05:48PM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-02-28 at 14:57 +0000, Russell King wrote:
-> > On Mon, Feb 28, 2011 at 03:18:47PM +0100, Peter Zijlstra wrote:
-> > > On Mon, 2011-02-28 at 12:44 +0100, Peter Zijlstra wrote:
-> > > >   unmap_region()
-> > > >     tlb_gather_mmu()
-> > > >     unmap_vmas()
-> > > >       for (; vma; vma = vma->vm_next)
-> > > >         unmao_page_range()
-> > > >           tlb_start_vma() -> flush cache range
-> > > 
-> > > So why is this correct? Can't we race with a concurrent access to the
-> > > memory region (munmap() vs other thread access race)? While
-> > > unmap_region() callers will have removed the vma from the tree so faults
-> > > will not be satisfied, TLBs might still be present and allow us to
-> > > access the memory and thereby reloading it in the cache.
-> > 
-> > It is my understanding that code sections between tlb_gather_mmu() and
-> > tlb_finish_mmu() are non-preemptible - that was the case once upon a
-> > time when this stuff first appeared.  
-> 
-> It is still so, but that doesn't help with SMP. The case mentioned above
-> has two threads running, one doing munmap() and the other is poking at
-> the memory being unmapped.
+On 02/28/2011 09:32 AM, Nikola Ciprich wrote:
+>> Does the bug you are hitting manifest on both Intel and AMD platforms?
+>>      
+> I don't have any AMD box here, I'll try this out at my home box.
+>
+>    
+>> Further, do the systems you are hitting this on have stable or unstable
+>> TSCs?
+>>      
+> how do I find this out? I don't see any warning about TSC in guest, but I've
+> just started it..
+> n.
 
-Luckily its a no-op on SMP capable CPUs (and actually is also a no-op
-on any PIPT or VIPT ARM CPU.)
-
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Before worrying about the guest, is the host TSC stable?  What is the 
+host clocksource?
