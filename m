@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1B1Qg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:36:59 -0500
-Received: from kroah.org ([198.145.64.141]:41191 "EHLO coco.kroah.org"
+	id S1755182Ab1B1Qg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:36:56 -0500
+Received: from kroah.org ([198.145.64.141]:41170 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab1B1Qg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:36:57 -0500
+	id S1755143Ab1B1Qgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:36:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
-Message-Id: <20110228162406.465833956@clark.kroah.org>
+Message-Id: <20110228162406.171285427@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:29 -0800
+Date: Mon, 28 Feb 2011 08:22:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Apollon Oikonomopoulos <apollon@noc.grnet.gr>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [08/68] x25: decrement netdev reference counts on unload
+        dann frazier <dann.frazier@canonical.com>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: [05/68] ocfs2_connection_find() returns pointer to bad structure
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Apollon Oikonomopoulos <apollon@noc.grnet.gr>
+From: dann frazier <dann.frazier@canonical.com>
 
-commit 171995e5d82dcc92bea37a7d2a2ecc21068a0f19 upstream.
+commit 226291aa4641fa13cb5dec3bcb3379faa83009e2 upstream.
 
-x25 does not decrement the network device reference counts on module unload.
-Thus unregistering any pre-existing interface after unloading the x25 module
-hangs and results in
+If ocfs2_live_connection_list is empty, ocfs2_connection_find() will return
+a pointer to the LIST_HEAD, cast as a ocfs2_live_connection. This can cause
+an oops when ocfs2_control_send_down() dereferences c->oc_conn:
 
- unregister_netdevice: waiting for tap0 to become free. Usage count = 1
+Call Trace:
+  [<ffffffffa00c2a3c>] ocfs2_control_message+0x28c/0x2b0 [ocfs2_stack_user]
+  [<ffffffffa00c2a95>] ocfs2_control_write+0x35/0xb0 [ocfs2_stack_user]
+  [<ffffffff81143a88>] vfs_write+0xb8/0x1a0
+  [<ffffffff8155cc13>] ? do_page_fault+0x153/0x3b0
+  [<ffffffff811442f1>] sys_write+0x51/0x80
+  [<ffffffff810121b2>] system_call_fastpath+0x16/0x1b
 
-This patch decrements the reference counts of all interfaces in x25_link_free,
-the way it is already done in x25_link_device_down for NETDEV_DOWN events.
+Fix by explicitly returning NULL if no match is found.
 
-Signed-off-by: Apollon Oikonomopoulos <apollon@noc.grnet.gr>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: dann frazier <dann.frazier@canonical.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/x25/x25_link.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/stack_user.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/x25/x25_link.c
-+++ b/net/x25/x25_link.c
-@@ -393,6 +393,7 @@ void __exit x25_link_free(void)
- 	list_for_each_safe(entry, tmp, &x25_neigh_list) {
- 		nb = list_entry(entry, struct x25_neigh, node);
- 		__x25_remove_neigh(nb);
-+		dev_put(nb->dev);
+--- a/fs/ocfs2/stack_user.c
++++ b/fs/ocfs2/stack_user.c
+@@ -191,7 +191,7 @@ static struct ocfs2_live_connection *ocf
+ 			return c;
  	}
- 	write_unlock_bh(&x25_neigh_list_lock);
+ 
+-	return c;
++	return NULL;
  }
+ 
+ /*
 
 
