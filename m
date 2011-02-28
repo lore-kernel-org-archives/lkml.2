@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab1B1ELh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 23:11:37 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38781
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752168Ab1B1ELg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 23:11:36 -0500
-Date: Sun, 27 Feb 2011 20:12:13 -0800 (PST)
-Message-Id: <20110227.201213.193724028.davem@davemloft.net>
-To: amwang@redhat.com
-Cc: linux-kernel@vger.kernel.org, nhorman@redhat.com,
-        herbert@gondor.hengli.com.au, nhorman@tuxdriver.com,
-        eric.dumazet@gmail.com, netdev@vger.kernel.org
-Subject: Re: [V4 PATCH 3/3] bond: service netpoll arp queue on master device
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D6B1742.6030108@redhat.com>
-References: <1298022215-21059-3-git-send-email-amwang@redhat.com>
-	<20110227.161225.200373200.davem@davemloft.net>
-	<4D6B1742.6030108@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1752413Ab1B1EWC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 23:22:02 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:58293 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752303Ab1B1EWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 23:22:00 -0500
+Date: Mon, 28 Feb 2011 15:21:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Daniel Baluta <daniel.baluta@gmail.com>
+Subject: linux-next: manual merge of the trivial tree with Linus' tree
+Message-Id: <20110228152153.25e94457.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <amwang@redhat.com>
-Date: Mon, 28 Feb 2011 11:32:18 +0800
+Hi Jiri,
 
-> 于 2011年02月28日 08:12, David Miller 写道:
->> From: Amerigo Wang<amwang@redhat.com>
->> Date: Fri, 18 Feb 2011 17:43:34 +0800
->>
->>> Neil pointed out that we can't send ARP reply on behalf of slaves,
->>> we need to move the arp queue to their bond device.
->>>
->>> Signed-off-by: WANG Cong<amwang@redhat.com>
->>
->> Applied.
-> 
-> Oops! Just found that this one I sent was not a refreshed patch.
-> Please discard this one, and use the one below, that is the
-> correct one in my git tree and the one that I tested.
+Today's linux-next merge of the trivial tree got a conflict in
+fs/eventpoll.c between commit 22bacca48a1755f79b7e0f192ddb9fbb7fc6e64e
+("epoll: prevent creating circular epoll structures") from Linus' tree
+and commit bf6a41db7726e6c09b9c6ac993457b7260473406 ("fs/eventpoll.c: fix
+spelling") from the trivial tree.
 
-Done.
+Just context.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/eventpoll.c
+index 4a09af9,7513066..0000000
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@@ -62,14 -62,7 +62,14 @@@
+   * This mutex is acquired by ep_free() during the epoll file
+   * cleanup path and it is also acquired by eventpoll_release_file()
+   * if a file has been pushed inside an epoll set and it is then
+-  * close()d without a previous call toepoll_ctl(EPOLL_CTL_DEL).
++  * close()d without a previous call to epoll_ctl(EPOLL_CTL_DEL).
+ + * It is also acquired when inserting an epoll fd onto another epoll
+ + * fd. We do this so that we walk the epoll tree and ensure that this
+ + * insertion does not create a cycle of epoll file descriptors, which
+ + * could lead to deadlock. We need a global mutex to prevent two
+ + * simultaneous inserts (A into B and B into A) from racing and
+ + * constructing a cycle without either insert observing that it is
+ + * going to.
+   * It is possible to drop the "ep->mtx" and to use the global
+   * mutex "epmutex" (together with "ep->lock") to have it working,
+   * but having "ep->mtx" will make the interface more scalable.
