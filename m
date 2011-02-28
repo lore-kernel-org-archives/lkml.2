@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab1B1Qg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:36:57 -0500
-Received: from kroah.org ([198.145.64.141]:41179 "EHLO coco.kroah.org"
+	id S1755282Ab1B1QhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:37:07 -0500
+Received: from kroah.org ([198.145.64.141]:41214 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab1B1Qgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:36:55 -0500
+	id S1755226Ab1B1QhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:37:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
-Message-Id: <20110228162406.273179231@clark.kroah.org>
+Message-Id: <20110228162406.752962160@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:27 -0800
+Date: Mon, 28 Feb 2011 08:22:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Subject: [06/68] Fix pktcdvd ioctl dev_minor range check
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [11/68] x86/pvclock: Zero last_value on resume
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-commit 252a52aa4fa22a668f019e55b3aac3ff71ec1c29 upstream.
+commit e7a3481c0246c8e45e79c629efd63b168e91fcda upstream.
 
-The PKT_CTRL_CMD_STATUS device ioctl retrieves a pointer to a
-pktcdvd_device from the global pkt_devs array.  The index into this
-array is provided directly by the user and is a signed integer, so the
-comparison to ensure that it falls within the bounds of this array will
-fail when provided with a negative index.
+If the guest domain has been suspend/resumed or migrated, then the
+system clock backing the pvclock clocksource may revert to a smaller
+value (ie, can be non-monotonic across the migration/save-restore).
 
-This can be used to read arbitrary kernel memory or cause a crash due to
-an invalid pointer dereference.  This can be exploited by users with
-permission to open /dev/pktcdvd/control (on many distributions, this is
-readable by group "cdrom").
+Make sure we zero last_value in that case so that the domain
+continues to see clock updates.
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-[ Rather than add a cast, just make the function take the right type -Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/pktcdvd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/pvclock.h |    1 +
+ arch/x86/kernel/pvclock.c      |    5 +++++
+ arch/x86/xen/time.c            |    2 ++
+ 3 files changed, 8 insertions(+)
 
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -2408,7 +2408,7 @@ static void pkt_release_dev(struct pktcd
- 	pkt_shrink_pktlist(pd);
- }
+--- a/arch/x86/include/asm/pvclock.h
++++ b/arch/x86/include/asm/pvclock.h
+@@ -10,5 +10,6 @@ unsigned long pvclock_tsc_khz(struct pvc
+ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
+ 			    struct pvclock_vcpu_time_info *vcpu,
+ 			    struct timespec *ts);
++void pvclock_resume(void);
  
--static struct pktcdvd_device *pkt_find_dev_from_minor(int dev_minor)
-+static struct pktcdvd_device *pkt_find_dev_from_minor(unsigned int dev_minor)
+ #endif /* _ASM_X86_PVCLOCK_H */
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -111,6 +111,11 @@ unsigned long pvclock_tsc_khz(struct pvc
+ 
+ static atomic64_t last_value = ATOMIC64_INIT(0);
+ 
++void pvclock_resume(void)
++{
++	atomic64_set(&last_value, 0);
++}
++
+ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
  {
- 	if (dev_minor >= MAX_WRITERS)
- 		return NULL;
+ 	struct pvclock_shadow_time shadow;
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -424,6 +424,8 @@ void xen_timer_resume(void)
+ {
+ 	int cpu;
+ 
++	pvclock_resume();
++
+ 	if (xen_clockevent != &xen_vcpuop_clockevent)
+ 		return;
+ 
 
 
