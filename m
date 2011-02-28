@@ -1,127 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab1B1GnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 01:43:18 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:62561 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1B1GnR (ORCPT
+	id S1751839Ab1B1Gpv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 01:45:51 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:51201 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab1B1Gpt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 01:43:17 -0500
-Date: Mon, 28 Feb 2011 15:41:39 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 01/09] ARM: s3c2442: gta02: Fix usage gpio bank j pin
- definitions
-In-reply-to: <1297043521-21903-1-git-send-email-lars@metafoo.de>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-id: <000801cbd712$907019c0$b1504d40$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvGaWsLml7Qs7B+RIi4LQie++LyxAQp/UjA
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
+	Mon, 28 Feb 2011 01:45:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=WKdwrBNzLUeNUHyI3T6JNTiArbZxY0/WOEHoQx/NHouQzXbnmoj5cq+ZK4295pXXlr
+         FGJ6ZgjbgQ7dHQNijmXUMsQWk1esMrrzeJOSbjP+s848mzEKLOKOxPmwO8/CcZj546nf
+         vrXLbyW7GuGLwwBW17AXOFxpXaUozyX/q2HFM=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1102251114580.3316@dhcp-27-109.brq.redhat.com>
+References: <20110225010346.GA9019@july>
+	<alpine.LFD.2.00.1102251114580.3316@dhcp-27-109.brq.redhat.com>
+Date: Mon, 28 Feb 2011 15:45:46 +0900
+X-Google-Sender-Auth: S3eZc36Qzl_Zg2mH8kEFI5ARc9g
+Message-ID: <AANLkTikBOk=gJ70fO4zQTYJ5=bdWAmjVfuNiVaMt-atW@mail.gmail.com>
+Subject: Re: [PATCH v3] fat: Batched discard support for fat
+From: Kyungmin Park <kmpark@infradead.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars-Peter Clausen wrote:
-> 
-> The gta02 header file still uses the old S3C2410_GPJx defines instead of
-the
-> S3C2410_GPJ(x) macro. Since the S3C2410_GPJx defines have already been
-> removed
-> this causes the following build failure:
-> 
-> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_set_spk':
-> 	sound/soc/samsung/neo1973_wm8753.c:259: error: 'S3C2440_GPJ2'
-> undeclared (first use in this function)
-> 	sound/soc/samsung/neo1973_wm8753.c:259: error: (Each undeclared
-> identifier is reported only once
-> 	sound/soc/samsung/neo1973_wm8753.c:259: error: for each function it
-> appears in.)
-> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_get_spk':
-> 	sound/soc/samsung/neo1973_wm8753.c:267: error: 'S3C2440_GPJ2'
-> undeclared (first use in this function)
-> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_event':
-> 	sound/soc/samsung/neo1973_wm8753.c:276: error: 'S3C2440_GPJ1'
-> undeclared (first use in this function)
-> 	sound/soc/samsung/neo1973_wm8753.c: At top level:
-> 	sound/soc/samsung/neo1973_wm8753.c:439: error: 'S3C2440_GPJ2'
-> undeclared here (not in a function)
-> 	sound/soc/samsung/neo1973_wm8753.c:440: error: 'S3C2440_GPJ1'
-> undeclared here (not in a function)
-> 
-> This patches fixes the issue by doing a
-> s,S3C2410_GPJ([\d]+),S3C2410_GPJ(\1),g
+On Fri, Feb 25, 2011 at 8:17 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> On Fri, 25 Feb 2011, Kyungmin Park wrote:
+>
+>> From: Kyungmin Park <kyungmin.park@samsung.com>
+>>
+>> FAT supports batched discard as ext4.
+>>
+>> Cited from Lukas words.
+>> "The current solution is not ideal because of its bad performance impact.
+>> So basic idea to improve things is to avoid discarding every time some
+>> blocks are freed. and instead batching is together into bigger trims,
+>> which tends to be more effective."
+>>
+>> You can find an information in detail at following URLs.
+>> http://lwn.net/Articles/397538/
+>> http://lwn.net/Articles/383933/
+>>
+>> Clearify the meaning of "len" (Cited form Lukas mail)
+>>
+>> Let the "O" be free (bytes, blocks, whatever), and "=" be used.
+>> Now, we have a filesystem like this.
+>>
+>>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>>   ^                                      ^
+>>   0                                      40
+>>
+>> This is how it supposed to wotk if you have called FITIRM with parameters:
+>>
+>> start = 0
+>> minlen = 2
+>> len = 20
+>>
+>> So you will go through (blocks, bytes...) 0 -> 20
+>>
+>>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>>   ^                   ^
+>>   0                   20
+>>
+>> So, you will call discard on extents:
+>>
+>> 0-3
+>> You'll skip 6 because is smaller than minlen
+>> 10-11
+>> 15-19
+>>
+>> instead of
+>>
+>> 0-3
+>> 10-11
+>> 15-19
+>> 30-36
+>
+> Hi thanks for the next version. And again I have to ask: Did you test it
+> ? and how ? Did you tried xfstest No. 251 ? Couple of comments bellow.
 
-Maybe, "s,S3C2440_GPJ([\d]+),S3C2410_GPJ(\1),g" instead ?
+I tested it with your test program. Of course I modified for our
+environment (eMMC).
 
-> on the file.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  arch/arm/mach-s3c2440/include/mach/gta02.h |   26
-+++++++++++++-------------
->  1 files changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c2440/include/mach/gta02.h b/arch/arm/mach-
-> s3c2440/include/mach/gta02.h
-> index 953331d..3a56a22 100644
-> --- a/arch/arm/mach-s3c2440/include/mach/gta02.h
-> +++ b/arch/arm/mach-s3c2440/include/mach/gta02.h
-> @@ -44,19 +44,19 @@
->  #define GTA02v3_GPIO_nUSB_FLT	S3C2410_GPG(10)	/* v3 + v4 only */
->  #define GTA02v3_GPIO_nGSM_OC	S3C2410_GPG(11)	/* v3 + v4 only */
-> 
-> -#define GTA02_GPIO_AMP_SHUT	S3C2440_GPJ1	/* v2 + v3 + v4 only */
-> -#define GTA02v1_GPIO_WLAN_GPIO10	S3C2440_GPJ2
-> -#define GTA02_GPIO_HP_IN	S3C2440_GPJ2	/* v2 + v3 + v4 only */
-> -#define GTA02_GPIO_INT0		S3C2440_GPJ3	/* v2 + v3 + v4 only
-*/
-> -#define GTA02_GPIO_nGSM_EN	S3C2440_GPJ4
-> -#define GTA02_GPIO_3D_RESET	S3C2440_GPJ5
-> -#define GTA02_GPIO_nDL_GSM	S3C2440_GPJ6	/* v4 + v5 only */
-> -#define GTA02_GPIO_WLAN_GPIO0	S3C2440_GPJ7
-> -#define GTA02v1_GPIO_BAT_ID	S3C2440_GPJ8
-> -#define GTA02_GPIO_KEEPACT	S3C2440_GPJ8
-> -#define GTA02v1_GPIO_HP_IN	S3C2440_GPJ10
-> -#define GTA02_CHIP_PWD		S3C2440_GPJ11	/* v2 + v3 + v4 only
-*/
-> -#define GTA02_GPIO_nWLAN_RESET	S3C2440_GPJ12	/* v2 + v3 + v4 only
-*/
-> +#define GTA02_GPIO_AMP_SHUT	S3C2410_GPJ(1)	/* v2 + v3 + v4 only */
-> +#define GTA02v1_GPIO_WLAN_GPIO10	S3C2410_GPJ(2)
-> +#define GTA02_GPIO_HP_IN	S3C2410_GPJ(2)	/* v2 + v3 + v4 only */
-> +#define GTA02_GPIO_INT0		S3C2410_GPJ(3)	/* v2 + v3 + v4 only
-*/
-> +#define GTA02_GPIO_nGSM_EN	S3C2410_GPJ(4)
-> +#define GTA02_GPIO_3D_RESET	S3C2410_GPJ(5)
-> +#define GTA02_GPIO_nDL_GSM	S3C2410_GPJ(6)	/* v4 + v5 only */
-> +#define GTA02_GPIO_WLAN_GPIO0	S3C2410_GPJ(7)
-> +#define GTA02v1_GPIO_BAT_ID	S3C2410_GPJ(8)
-> +#define GTA02_GPIO_KEEPACT	S3C2410_GPJ(8)
-> +#define GTA02v1_GPIO_HP_IN	S3C2410_GPJ(10)
-> +#define GTA02_CHIP_PWD		S3C2410_GPJ(11)	/* v2 + v3 + v4
-> only */
-> +#define GTA02_GPIO_nWLAN_RESET	S3C2410_GPJ(12)	/* v2 + v3 + v4
-> only */
-> 
->  #define GTA02_IRQ_GSENSOR_1	IRQ_EINT0
->  #define GTA02_IRQ_MODEM		IRQ_EINT1
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <sys/ioctl.h>
+
+struct fstrim_range {
+        uint64_t start;
+        uint64_t len;
+        uint64_t minlen;
+};
+
+#define FITRIM          _IOWR('X', 121, struct fstrim_range)
+
+int main(int argc, char **argv)
+{
+        struct fstrim_range range;
+        uint64_t len;
+        int fd;
+
+        if (argc < 2) {
+                fprintf(stderr, "usage: %s mountpoint [size]\n", argv[0]);
+                return 1;
+        }
+
+        if (argc == 3)
+                len = atoll(argv[1]);
+        else
+                len = ((1UL<<31) - 1);
+
+        range.start = 0;
+        range.len = len;
+        range.minlen = 256 * 1024;      /* Minimum is 256KiB */
+
+        fd = open(argv[1], O_RDONLY);
+        if (fd < 0) {
+                perror("open");
+                return 1;
+        }
+
+        if (ioctl(fd, FITRIM, &range)) {
+                if (errno == EOPNOTSUPP)
+                        fprintf(stderr, "TRIM not supported\n");
+                else
+                        perror("FITRIM");
+                return 1;
+        }
+
+        fprintf(stderr, "Trimmed size %llu\n", range.len);
+
+        return 0;
+}
+
+>
+> Thanks!
+> -Lukas
+>
+>>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>> Changelog v3:
+>>       Adjust the minlen from queue discard_granularity
+>>       Use the corrent len usage
+>> Changelog v2:
+>>       Use the given start and len as Lukas comments
+>>       Check the queue supports discard feature
+>> ---
+>> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+>> index f504089..08b53e1 100644
+>> --- a/fs/fat/fat.h
+>> +++ b/fs/fat/fat.h
+>> @@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
+>>                             int nr_cluster);
+>>  extern int fat_free_clusters(struct inode *inode, int cluster);
+>>  extern int fat_count_free_clusters(struct super_block *sb);
+>> +extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
+>>
+>>  /* fat/file.c */
+>>  extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
+>> diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+>> index b47d2c9..a8e3837 100644
+>> --- a/fs/fat/fatent.c
+>> +++ b/fs/fat/fatent.c
+>> @@ -1,6 +1,8 @@
+>>  /*
+>>   * Copyright (C) 2004, OGAWA Hirofumi
+>>   * Released under GPL v2.
+>> + *
+>> + * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
+>>   */
+>>
+>>  #include <linux/module.h>
+>> @@ -541,6 +543,16 @@ out:
+>>       return err;
+>>  }
+>>
+>> +static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
+>> +{
+>> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> +     sector_t block, nr_blocks;
+>> +
+>> +     block = fat_clus_to_blknr(sbi, cluster);
+>> +     nr_blocks = nr_clus * sbi->sec_per_clus;
+>> +     return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
+>> +}
+>> +
+>>  int fat_free_clusters(struct inode *inode, int cluster)
+>>  {
+>>       struct super_block *sb = inode->i_sb;
+>> @@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
+>>                       if (cluster != fatent.entry + 1) {
+>>                               int nr_clus = fatent.entry - first_cl + 1;
+>>
+>> -                             sb_issue_discard(sb,
+>> -                                     fat_clus_to_blknr(sbi, first_cl),
+>> -                                     nr_clus * sbi->sec_per_clus,
+>> -                                     GFP_NOFS, 0);
+>> -
+>> +                             fat_issue_discard(sb, first_cl, nr_clus);
+>>                               first_cl = cluster;
+>>                       }
+>>               }
+>> @@ -683,3 +691,88 @@ out:
+>>       unlock_fat(sbi);
+>>       return err;
+>>  }
+>> +
+>> +int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
+>> +{
+>> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> +     struct fatent_operations *ops = sbi->fatent_ops;
+>> +     struct fat_entry fatent;
+>> +     unsigned long reada_blocks, reada_mask, cur_block;
+>> +     int err = 0, free, count, entry;
+>> +     int start, len, minlen, trimmed;
+>> +
+>> +     start = range->start >> sb->s_blocksize_bits;
+>> +     start = start / sbi->sec_per_clus;
+>> +     len = range->len >> sb->s_blocksize_bits;
+>> +     len = len / sbi->sec_per_clus;
+>> +     minlen = range->minlen >> sb->s_blocksize_bits;
+>> +     minlen = minlen / sbi->sec_per_clus;
+>> +     trimmed = 0;
+>> +     count = 0;
+>> +
+>> +     lock_fat(sbi);
+>> +     if (sbi->free_clusters != -1 && sbi->free_clus_valid)
+>> +             goto out;
+>> +
+>> +     reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
+>> +     reada_mask = reada_blocks - 1;
+>> +     cur_block = 0;
+>> +
+>> +     entry = 0;
+>> +     free = 0;
+>> +     fatent_init(&fatent);
+>> +
+>> +     if (start < FAT_START_ENT)
+>> +             start = FAT_START_ENT;
+>> +
+>> +     fatent_set_entry(&fatent, start);
+>> +
+>> +     while (count < sbi->max_cluster) {
+>> +             if (fatent.entry >= sbi->max_cluster)
+>> +                     fatent.entry = FAT_START_ENT;
+>> +             /* readahead of fat blocks */
+>> +             if ((cur_block & reada_mask) == 0) {
+>> +                     unsigned long rest = sbi->fat_length - cur_block;
+>> +                     fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
+>
+> You really do not need new variable "rest" just for passing it into one
+> function. Get rid of it.
+
+Umm. I don't want to modify it since it's routine is same as
+free_count codes. I just borrowed it from FAT codes.
+>
+>> +             }
+>> +             cur_block++;
+>> +
+>> +             err = fat_ent_read_block(sb, &fatent);
+>> +             if (err)
+>> +                     goto out;
+>> +
+>> +             do {
+>> +                     if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
+>> +                             free++;
+>> +                             if (!entry)
+>> +                                     entry = fatent.entry;
+>> +                             if (count >= len && free >= minlen) {
+>> +                                     fat_issue_discard(sb, entry, free);
+>> +                                     trimmed += free;
+> I really do not understand FAT code very much, but is this right ?
+> Should not you be setting free = 0 ?
+Right but count is larger then "len". it will exit at next if (count
+>= len) goto done statement.
+
+> What will happen if you'll end up
+> in the same branch in next iteration ? -- free will be still set to
+> previous value+1, bu you'll be discarding next entry. I am sorry but
+> this whole thing is not very readable.
+
+>
+>> +                             }
+>> +                             if (count >= len)
+>> +                                     goto done;
+>> +                     } else if (entry) {
+>> +                             if (free >= minlen) {
+>> +                                     fat_issue_discard(sb, entry, free);
+>> +                                     trimmed += free;
+>> +                             }
+>> +                             if (count >= len)
+>> +                                     goto done;
+>> +                             free = 0;
+>> +                             entry = 0;
+>> +                     }
+>
+> I don't not see why you are testing count all the time since it has not been
+> changed since the "if" condition started. how about doing one test
+> before the "if" condition ?
+
+For looping the whole fat max_cluster size. now start can be any
+address and if start is a middle point and len is max, then it will
+search from middle -> end -> start -> middle. The "count" is used for
+this purpose.
+
+Thank you,
+Kyungmin Park
+>
+>> +                     count++;
+>> +             } while (fat_ent_next(sbi, &fatent));
+>> +     }
+>> +     if (free >= minlen) {
+>> +             fat_issue_discard(sb, entry, free);
+>> +             trimmed += free;
+>> +     }
+>> +done:
+>> +     range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
+>> +     fatent_brelse(&fatent);
+>> +out:
+>> +     unlock_fat(sbi);
+>> +     return err;
+>> +}
+>> diff --git a/fs/fat/file.c b/fs/fat/file.c
+>> index 7257752..9910aba 100644
+>> --- a/fs/fat/file.c
+>> +++ b/fs/fat/file.c
+>> @@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>>               return fat_ioctl_get_attributes(inode, user_attr);
+>>       case FAT_IOCTL_SET_ATTRIBUTES:
+>>               return fat_ioctl_set_attributes(filp, user_attr);
+>> +     case FITRIM:
+>> +     {
+>> +             struct super_block *sb = inode->i_sb;
+>> +             struct request_queue *q = bdev_get_queue(sb->s_bdev);
+>> +             struct fstrim_range range;
+>> +             int ret = 0;
+>> +
+>> +             if (!capable(CAP_SYS_ADMIN))
+>> +                     return -EPERM;
+>> +
+>> +             if (!blk_queue_discard(q))
+>> +                     return -EOPNOTSUPP;
+>> +
+>> +             if (copy_from_user(&range, (struct fstrim_range *)arg,
+>> +                                     sizeof(range)))
+>> +                     return -EFAULT;
+>> +
+>> +             range.minlen = max((unsigned int)range.minlen,
+>> +                                     q->limits.discard_granularity);
+>> +             ret = fat_trim_fs(sb, &range);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +
+>> +             if (copy_to_user((struct fstrim_range *)arg, &range,
+>> +                                     sizeof(range)))
+>> +                     return -EFAULT;
+>> +
+>> +             return 0;
+>> +     }
+>> +
+>>       default:
+>>               return -ENOTTY; /* Inappropriate ioctl for device */
+>>       }
+>>
+>
 > --
-> 1.7.2.3
-
-Yeah, old S3C2440_GPJx has removed.
-Is the S3C2410_GPJ(1) right instead of S3C2440_GPJ1?
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+>
