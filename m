@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1B1XHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 18:07:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14922 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752696Ab1B1XHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 18:07:44 -0500
-Date: Tue, 1 Mar 2011 00:07:12 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Arthur Marsh <arthur.marsh@internode.on.net>,
-        Clemens Ladisch <cladisch@googlemail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are
- disabled while isolating pages for migration
-Message-ID: <20110228230712.GR22700@random.random>
-References: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
- <1298664299-10270-3-git-send-email-mel@csn.ul.ie>
- <20110228230131.GB1896@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110228230131.GB1896@barrios-desktop>
+	id S1753599Ab1B1XTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 18:19:17 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37931 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752696Ab1B1XTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 18:19:16 -0500
+Date: Mon, 28 Feb 2011 15:18:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ludwig Nussel <ludwig.nussel@suse.de>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] fix mmap random address range on x86
+Message-Id: <20110228151825.26458ec9.akpm@linux-foundation.org>
+In-Reply-To: <1298034957-17128-1-git-send-email-ludwig.nussel@suse.de>
+References: <1298034957-17128-1-git-send-email-ludwig.nussel@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 08:01:31AM +0900, Minchan Kim wrote:
-> I am not sure it's good if we release the lock whenever lru->lock was contended
-> unconditionally? There are many kinds of lru_lock operations(add to lru, 
-> del from lru, isolation, reclaim, activation, deactivation and so on).
+On Fri, 18 Feb 2011 14:15:57 +0100
+Ludwig Nussel <ludwig.nussel@suse.de> wrote:
 
-This is mostly to mirror cond_resched_lock (which actually uses
-spin_needbreak but it's ok to have it also when preempt is off). I
-doubt it makes a big difference but I tried to mirror
-cond_resched_lock.
+> On x86 casting the unsigned int result of get_random_int() to long
+> may result in a negative value. On x86 the range of mmap_rnd()
+> therefore was -255 to 255. The 32bit mode on x86_64 used 0 to 255 as
+> intended.
+> 
+> The bug was introduced by commit 675a081 in January 2008.
+> 
+> Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+> ---
+>  arch/x86/mm/mmap.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+> index 1dab519..f927429 100644
+> --- a/arch/x86/mm/mmap.c
+> +++ b/arch/x86/mm/mmap.c
+> @@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
+>  	*/
+>  	if (current->flags & PF_RANDOMIZE) {
+>  		if (mmap_is_ia32())
+> -			rnd = (long)get_random_int() % (1<<8);
+> +			rnd = get_random_int() % (1<<8);
+>  		else
+> -			rnd = (long)(get_random_int() % (1<<28));
+> +			rnd = get_random_int() % (1<<28);
+>  	}
+>  	return rnd << PAGE_SHIFT;
+>  }
 
-> Do we really need to release the lock whenever all such operations were contened?
-> I think what we need is just spin_is_contended_irqcontext.
-> Otherwise, please write down the comment for justifying for it.
+The changelog didn't describe the user-visible consequences of this
+bug, so readers must try to work this out for themselves.  That's not a
+very desirable or efficient thing, so please do prepare more complete
+changelogs.
 
-What is spin_is_contended_irqcontext?
+afacit the effects are very small: the mmap base may fall slightly
+below MIN_GAP, but that won't really affect anything?
 
-> This patch is for reducing for irq latency but do we have to check signal 
-> in irq hold time?
-
-I think it's good idea to check the signal in case the loop is very
-long and this is run in direct compaction context.
