@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab1B1Qg4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:36:56 -0500
-Received: from kroah.org ([198.145.64.141]:41170 "EHLO coco.kroah.org"
+	id S1754995Ab1B1Qwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:52:47 -0500
+Received: from kroah.org ([198.145.64.141]:41182 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755143Ab1B1Qgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:36:53 -0500
+	id S1755143Ab1B1Qg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:36:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
-Message-Id: <20110228162406.171285427@clark.kroah.org>
+Message-Id: <20110228162406.369267453@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:26 -0800
+Date: Mon, 28 Feb 2011 08:22:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        dann frazier <dann.frazier@canonical.com>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: [05/68] ocfs2_connection_find() returns pointer to bad structure
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [07/68] filter: make sure filters dont read uninitialized memory
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +26,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: dann frazier <dann.frazier@canonical.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit 226291aa4641fa13cb5dec3bcb3379faa83009e2 upstream.
+commit 57fe93b374a6b8711995c2d466c502af9f3a08bb upstream.
 
-If ocfs2_live_connection_list is empty, ocfs2_connection_find() will return
-a pointer to the LIST_HEAD, cast as a ocfs2_live_connection. This can cause
-an oops when ocfs2_control_send_down() dereferences c->oc_conn:
+There is a possibility malicious users can get limited information about
+uninitialized stack mem array. Even if sk_run_filter() result is bound
+to packet length (0 .. 65535), we could imagine this can be used by
+hostile user.
 
-Call Trace:
-  [<ffffffffa00c2a3c>] ocfs2_control_message+0x28c/0x2b0 [ocfs2_stack_user]
-  [<ffffffffa00c2a95>] ocfs2_control_write+0x35/0xb0 [ocfs2_stack_user]
-  [<ffffffff81143a88>] vfs_write+0xb8/0x1a0
-  [<ffffffff8155cc13>] ? do_page_fault+0x153/0x3b0
-  [<ffffffff811442f1>] sys_write+0x51/0x80
-  [<ffffffff810121b2>] system_call_fastpath+0x16/0x1b
+Initializing mem[] array, like Dan Rosenberg suggested in his patch is
+expensive since most filters dont even use this array.
 
-Fix by explicitly returning NULL if no match is found.
+Its hard to make the filter validation in sk_chk_filter(), because of
+the jumps. This might be done later.
 
-Signed-off-by: dann frazier <dann.frazier@canonical.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
+In this patch, I use a bitmap (a single long var) so that only filters
+using mem[] loads/stores pay the price of added security checks.
+
+For other filters, additional cost is a single instruction.
+
+[ Since we access fentry->k a lot now, cache it in a local variable
+  and mark filter entry pointer as const. -DaveM ]
+
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[Backported by dann frazier <dannf@debian.org>]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/stack_user.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/filter.c |   64 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 35 insertions(+), 29 deletions(-)
 
---- a/fs/ocfs2/stack_user.c
-+++ b/fs/ocfs2/stack_user.c
-@@ -191,7 +191,7 @@ static struct ocfs2_live_connection *ocf
- 			return c;
- 	}
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -111,39 +111,41 @@ EXPORT_SYMBOL(sk_filter);
+  */
+ unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int flen)
+ {
+-	struct sock_filter *fentry;	/* We walk down these */
+ 	void *ptr;
+ 	u32 A = 0;			/* Accumulator */
+ 	u32 X = 0;			/* Index Register */
+ 	u32 mem[BPF_MEMWORDS];		/* Scratch Memory Store */
++	unsigned long memvalid = 0;
+ 	u32 tmp;
+ 	int k;
+ 	int pc;
  
--	return c;
-+	return NULL;
- }
++	BUILD_BUG_ON(BPF_MEMWORDS > BITS_PER_LONG);
+ 	/*
+ 	 * Process array of filter instructions.
+ 	 */
+ 	for (pc = 0; pc < flen; pc++) {
+-		fentry = &filter[pc];
++		const struct sock_filter *fentry = &filter[pc];
++		u32 f_k = fentry->k;
  
- /*
+ 		switch (fentry->code) {
+ 		case BPF_ALU|BPF_ADD|BPF_X:
+ 			A += X;
+ 			continue;
+ 		case BPF_ALU|BPF_ADD|BPF_K:
+-			A += fentry->k;
++			A += f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_SUB|BPF_X:
+ 			A -= X;
+ 			continue;
+ 		case BPF_ALU|BPF_SUB|BPF_K:
+-			A -= fentry->k;
++			A -= f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_MUL|BPF_X:
+ 			A *= X;
+ 			continue;
+ 		case BPF_ALU|BPF_MUL|BPF_K:
+-			A *= fentry->k;
++			A *= f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_DIV|BPF_X:
+ 			if (X == 0)
+@@ -151,49 +153,49 @@ unsigned int sk_run_filter(struct sk_buf
+ 			A /= X;
+ 			continue;
+ 		case BPF_ALU|BPF_DIV|BPF_K:
+-			A /= fentry->k;
++			A /= f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_AND|BPF_X:
+ 			A &= X;
+ 			continue;
+ 		case BPF_ALU|BPF_AND|BPF_K:
+-			A &= fentry->k;
++			A &= f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_OR|BPF_X:
+ 			A |= X;
+ 			continue;
+ 		case BPF_ALU|BPF_OR|BPF_K:
+-			A |= fentry->k;
++			A |= f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_LSH|BPF_X:
+ 			A <<= X;
+ 			continue;
+ 		case BPF_ALU|BPF_LSH|BPF_K:
+-			A <<= fentry->k;
++			A <<= f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_RSH|BPF_X:
+ 			A >>= X;
+ 			continue;
+ 		case BPF_ALU|BPF_RSH|BPF_K:
+-			A >>= fentry->k;
++			A >>= f_k;
+ 			continue;
+ 		case BPF_ALU|BPF_NEG:
+ 			A = -A;
+ 			continue;
+ 		case BPF_JMP|BPF_JA:
+-			pc += fentry->k;
++			pc += f_k;
+ 			continue;
+ 		case BPF_JMP|BPF_JGT|BPF_K:
+-			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A > f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_JMP|BPF_JGE|BPF_K:
+-			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A >= f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_JMP|BPF_JEQ|BPF_K:
+-			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A == f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_JMP|BPF_JSET|BPF_K:
+-			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A & f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_JMP|BPF_JGT|BPF_X:
+ 			pc += (A > X) ? fentry->jt : fentry->jf;
+@@ -208,7 +210,7 @@ unsigned int sk_run_filter(struct sk_buf
+ 			pc += (A & X) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_LD|BPF_W|BPF_ABS:
+-			k = fentry->k;
++			k = f_k;
+ load_w:
+ 			ptr = load_pointer(skb, k, 4, &tmp);
+ 			if (ptr != NULL) {
+@@ -217,7 +219,7 @@ load_w:
+ 			}
+ 			break;
+ 		case BPF_LD|BPF_H|BPF_ABS:
+-			k = fentry->k;
++			k = f_k;
+ load_h:
+ 			ptr = load_pointer(skb, k, 2, &tmp);
+ 			if (ptr != NULL) {
+@@ -226,7 +228,7 @@ load_h:
+ 			}
+ 			break;
+ 		case BPF_LD|BPF_B|BPF_ABS:
+-			k = fentry->k;
++			k = f_k;
+ load_b:
+ 			ptr = load_pointer(skb, k, 1, &tmp);
+ 			if (ptr != NULL) {
+@@ -241,32 +243,34 @@ load_b:
+ 			X = skb->len;
+ 			continue;
+ 		case BPF_LD|BPF_W|BPF_IND:
+-			k = X + fentry->k;
++			k = X + f_k;
+ 			goto load_w;
+ 		case BPF_LD|BPF_H|BPF_IND:
+-			k = X + fentry->k;
++			k = X + f_k;
+ 			goto load_h;
+ 		case BPF_LD|BPF_B|BPF_IND:
+-			k = X + fentry->k;
++			k = X + f_k;
+ 			goto load_b;
+ 		case BPF_LDX|BPF_B|BPF_MSH:
+-			ptr = load_pointer(skb, fentry->k, 1, &tmp);
++			ptr = load_pointer(skb, f_k, 1, &tmp);
+ 			if (ptr != NULL) {
+ 				X = (*(u8 *)ptr & 0xf) << 2;
+ 				continue;
+ 			}
+ 			return 0;
+ 		case BPF_LD|BPF_IMM:
+-			A = fentry->k;
++			A = f_k;
+ 			continue;
+ 		case BPF_LDX|BPF_IMM:
+-			X = fentry->k;
++			X = f_k;
+ 			continue;
+ 		case BPF_LD|BPF_MEM:
+-			A = mem[fentry->k];
++			A = (memvalid & (1UL << f_k)) ?
++				mem[f_k] : 0;
+ 			continue;
+ 		case BPF_LDX|BPF_MEM:
+-			X = mem[fentry->k];
++			X = (memvalid & (1UL << f_k)) ?
++				mem[f_k] : 0;
+ 			continue;
+ 		case BPF_MISC|BPF_TAX:
+ 			X = A;
+@@ -275,14 +279,16 @@ load_b:
+ 			A = X;
+ 			continue;
+ 		case BPF_RET|BPF_K:
+-			return fentry->k;
++			return f_k;
+ 		case BPF_RET|BPF_A:
+ 			return A;
+ 		case BPF_ST:
+-			mem[fentry->k] = A;
++			memvalid |= 1UL << f_k;
++			mem[f_k] = A;
+ 			continue;
+ 		case BPF_STX:
+-			mem[fentry->k] = X;
++			memvalid |= 1UL << f_k;
++			mem[f_k] = X;
+ 			continue;
+ 		default:
+ 			WARN_ON(1);
 
 
