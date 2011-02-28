@@ -1,57 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab1B1MuC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 07:50:02 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46061 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915Ab1B1MuA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 07:50:00 -0500
-Subject: Re: [PATCH 06/17] arm: mmu_gather rework
-From: Peter Zijlstra <peterz@infradead.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>,
-        Chris Metcalf <cmetcalf@tilera.com>
-In-Reply-To: <20110228122803.GC492@flint.arm.linux.org.uk>
-References: <20110217162327.434629380@chello.nl>
-	 <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins>
-	 <1298657083.2428.2483.camel@twins>
-	 <20110225215123.GA10026@flint.arm.linux.org.uk>
-	 <1298893487.2428.10537.camel@twins>
-	 <20110228115907.GB492@flint.arm.linux.org.uk>
-	 <1298895612.2428.10621.camel@twins>
-	 <20110228122803.GC492@flint.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 28 Feb 2011 13:49:02 +0100
-Message-ID: <1298897342.2428.10687.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753955Ab1B1Mv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 07:51:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753789Ab1B1Mv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 07:51:26 -0500
+Date: Mon, 28 Feb 2011 13:51:12 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Kyungmin Park <kmpark@infradead.org>
+cc: Lukas Czerner <lczerner@redhat.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v3] fat: Batched discard support for fat
+In-Reply-To: <AANLkTikBOk=gJ70fO4zQTYJ5=bdWAmjVfuNiVaMt-atW@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1102281334080.3297@dhcp-27-109.brq.redhat.com>
+References: <20110225010346.GA9019@july> <alpine.LFD.2.00.1102251114580.3316@dhcp-27-109.brq.redhat.com> <AANLkTikBOk=gJ70fO4zQTYJ5=bdWAmjVfuNiVaMt-atW@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="571140353-136912474-1298897477=:3297"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 12:28 +0000, Russell King wrote:
-> Can you point out where pte_free_tlb() is used with unmap_region()?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-unmap_region()
-  free_pgtables()
-    free_pgd_range()
-      free_pud_range()
-        free_pmd_range()
-          free_pte_range()
-            pte_free_tlb()
+--571140353-136912474-1298897477=:3297
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
+On Mon, 28 Feb 2011, Kyungmin Park wrote:
 
-        
+> On Fri, Feb 25, 2011 at 8:17 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> > On Fri, 25 Feb 2011, Kyungmin Park wrote:
+> >
+> >> From: Kyungmin Park <kyungmin.park@samsung.com>
+> >>
+> >> FAT supports batched discard as ext4.
+> >>
+> >> Cited from Lukas words.
+> >> "The current solution is not ideal because of its bad performance impact.
+> >> So basic idea to improve things is to avoid discarding every time some
+> >> blocks are freed. and instead batching is together into bigger trims,
+> >> which tends to be more effective."
+> >>
+> >> You can find an information in detail at following URLs.
+> >> http://lwn.net/Articles/397538/
+> >> http://lwn.net/Articles/383933/
+> >>
+> >> Clearify the meaning of "len" (Cited form Lukas mail)
+> >>
+> >> Let the "O" be free (bytes, blocks, whatever), and "=" be used.
+> >> Now, we have a filesystem like this.
+> >>
+> >>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+> >>   ^                                      ^
+> >>   0                                      40
+> >>
+> >> This is how it supposed to wotk if you have called FITIRM with parameters:
+> >>
+> >> start = 0
+> >> minlen = 2
+> >> len = 20
+> >>
+> >> So you will go through (blocks, bytes...) 0 -> 20
+> >>
+> >>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+> >>   ^                   ^
+> >>   0                   20
+> >>
+> >> So, you will call discard on extents:
+> >>
+> >> 0-3
+> >> You'll skip 6 because is smaller than minlen
+> >> 10-11
+> >> 15-19
+> >>
+> >> instead of
+> >>
+> >> 0-3
+> >> 10-11
+> >> 15-19
+> >> 30-36
+> >
+> > Hi thanks for the next version. And again I have to ask: Did you test it
+> > ? and how ? Did you tried xfstest No. 251 ? Couple of comments bellow.
+> 
+> I tested it with your test program. Of course I modified for our
+> environment (eMMC).
+
+Ok, good.
+
+> 
+> #include <errno.h>
+> #include <fcntl.h>
+> #include <stdio.h>
+> #include <stdint.h>
+> #include <sys/ioctl.h>
+> 
+> struct fstrim_range {
+>         uint64_t start;
+>         uint64_t len;
+>         uint64_t minlen;
+> };
+> 
+> #define FITRIM          _IOWR('X', 121, struct fstrim_range)
+> 
+> int main(int argc, char **argv)
+> {
+>         struct fstrim_range range;
+>         uint64_t len;
+>         int fd;
+> 
+>         if (argc < 2) {
+>                 fprintf(stderr, "usage: %s mountpoint [size]\n", argv[0]);
+>                 return 1;
+>         }
+> 
+>         if (argc == 3)
+>                 len = atoll(argv[1]);
+>         else
+>                 len = ((1UL<<31) - 1);
+> 
+>         range.start = 0;
+>         range.len = len;
+>         range.minlen = 256 * 1024;      /* Minimum is 256KiB */
+
+Why exactly you need to set this ? What will happen if the minlen is 0 ?
+
+> 
+>         fd = open(argv[1], O_RDONLY);
+>         if (fd < 0) {
+>                 perror("open");
+>                 return 1;
+>         }
+> 
+>         if (ioctl(fd, FITRIM, &range)) {
+>                 if (errno == EOPNOTSUPP)
+>                         fprintf(stderr, "TRIM not supported\n");
+>                 else
+>                         perror("FITRIM");
+>                 return 1;
+>         }
+> 
+>         fprintf(stderr, "Trimmed size %llu\n", range.len);
+> 
+>         return 0;
+> }
+> 
+> >
+> > Thanks!
+> > -Lukas
+> >
+> >>
+> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >> ---
+> >> Changelog v3:
+> >>       Adjust the minlen from queue discard_granularity
+> >>       Use the corrent len usage
+> >> Changelog v2:
+> >>       Use the given start and len as Lukas comments
+> >>       Check the queue supports discard feature
+> >> ---
+> >> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+> >> index f504089..08b53e1 100644
+> >> --- a/fs/fat/fat.h
+> >> +++ b/fs/fat/fat.h
+> >> @@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
+> >>                             int nr_cluster);
+> >>  extern int fat_free_clusters(struct inode *inode, int cluster);
+> >>  extern int fat_count_free_clusters(struct super_block *sb);
+> >> +extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
+> >>
+> >>  /* fat/file.c */
+> >>  extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
+> >> diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+> >> index b47d2c9..a8e3837 100644
+> >> --- a/fs/fat/fatent.c
+> >> +++ b/fs/fat/fatent.c
+> >> @@ -1,6 +1,8 @@
+> >>  /*
+> >>   * Copyright (C) 2004, OGAWA Hirofumi
+> >>   * Released under GPL v2.
+> >> + *
+> >> + * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
+> >>   */
+> >>
+> >>  #include <linux/module.h>
+> >> @@ -541,6 +543,16 @@ out:
+> >>       return err;
+> >>  }
+> >>
+> >> +static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
+> >> +{
+> >> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> >> +     sector_t block, nr_blocks;
+> >> +
+> >> +     block = fat_clus_to_blknr(sbi, cluster);
+> >> +     nr_blocks = nr_clus * sbi->sec_per_clus;
+> >> +     return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
+> >> +}
+> >> +
+> >>  int fat_free_clusters(struct inode *inode, int cluster)
+> >>  {
+> >>       struct super_block *sb = inode->i_sb;
+> >> @@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
+> >>                       if (cluster != fatent.entry + 1) {
+> >>                               int nr_clus = fatent.entry - first_cl + 1;
+> >>
+> >> -                             sb_issue_discard(sb,
+> >> -                                     fat_clus_to_blknr(sbi, first_cl),
+> >> -                                     nr_clus * sbi->sec_per_clus,
+> >> -                                     GFP_NOFS, 0);
+> >> -
+> >> +                             fat_issue_discard(sb, first_cl, nr_clus);
+> >>                               first_cl = cluster;
+> >>                       }
+> >>               }
+> >> @@ -683,3 +691,88 @@ out:
+> >>       unlock_fat(sbi);
+> >>       return err;
+> >>  }
+> >> +
+> >> +int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
+> >> +{
+> >> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> >> +     struct fatent_operations *ops = sbi->fatent_ops;
+> >> +     struct fat_entry fatent;
+> >> +     unsigned long reada_blocks, reada_mask, cur_block;
+> >> +     int err = 0, free, count, entry;
+> >> +     int start, len, minlen, trimmed;
+> >> +
+> >> +     start = range->start >> sb->s_blocksize_bits;
+> >> +     start = start / sbi->sec_per_clus;
+> >> +     len = range->len >> sb->s_blocksize_bits;
+> >> +     len = len / sbi->sec_per_clus;
+> >> +     minlen = range->minlen >> sb->s_blocksize_bits;
+> >> +     minlen = minlen / sbi->sec_per_clus;
+> >> +     trimmed = 0;
+> >> +     count = 0;
+> >> +
+> >> +     lock_fat(sbi);
+> >> +     if (sbi->free_clusters != -1 && sbi->free_clus_valid)
+> >> +             goto out;
+> >> +
+> >> +     reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
+> >> +     reada_mask = reada_blocks - 1;
+> >> +     cur_block = 0;
+> >> +
+> >> +     entry = 0;
+> >> +     free = 0;
+> >> +     fatent_init(&fatent);
+> >> +
+> >> +     if (start < FAT_START_ENT)
+> >> +             start = FAT_START_ENT;
+> >> +
+> >> +     fatent_set_entry(&fatent, start);
+> >> +
+> >> +     while (count < sbi->max_cluster) {
+> >> +             if (fatent.entry >= sbi->max_cluster)
+> >> +                     fatent.entry = FAT_START_ENT;
+> >> +             /* readahead of fat blocks */
+> >> +             if ((cur_block & reada_mask) == 0) {
+> >> +                     unsigned long rest = sbi->fat_length - cur_block;
+> >> +                     fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
+> >
+> > You really do not need new variable "rest" just for passing it into one
+> > function. Get rid of it.
+> 
+> Umm. I don't want to modify it since it's routine is same as
+> free_count codes. I just borrowed it from FAT codes.
+> >
+> >> +             }
+> >> +             cur_block++;
+> >> +
+> >> +             err = fat_ent_read_block(sb, &fatent);
+> >> +             if (err)
+> >> +                     goto out;
+> >> +
+> >> +             do {
+> >> +                     if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
+> >> +                             free++;
+> >> +                             if (!entry)
+> >> +                                     entry = fatent.entry;
+> >> +                             if (count >= len && free >= minlen) {
+> >> +                                     fat_issue_discard(sb, entry, free);
+> >> +                                     trimmed += free;
+
+I think you can remove this condition completely is you move "done"
+label befor the if (free >= minlen) condition.
+
+> > I really do not understand FAT code very much, but is this right ?
+> > Should not you be setting free = 0 ?
+> Right but count is larger then "len". it will exit at next if (count
+> >= len) goto done statement.
+
+Oh, ok I see. But it proves my point that this code is not very well
+readable.
+
+> 
+> > What will happen if you'll end up
+> > in the same branch in next iteration ? -- free will be still set to
+> > previous value+1, bu you'll be discarding next entry. I am sorry but
+> > this whole thing is not very readable.
+> 
+> >
+> >> +                             }
+> >> +                             if (count >= len)
+> >> +                                     goto done;
+				   ^^^^^^^^^^^^^^^^^^
+this
+
+> >> +                     } else if (entry) {
+> >> +                             if (free >= minlen) {
+> >> +                                     fat_issue_discard(sb, entry, free);
+> >> +                                     trimmed += free;
+> >> +                             }
+> >> +                             if (count >= len)
+> >> +                                     goto done;
+				   ^^^^^^^^^^^^^^^^^^
+and this
+
+> >> +                             free = 0;
+> >> +                             entry = 0;
+> >> +                     }
+> >
+> > I don't not see why you are testing count all the time since it has not been
+> > changed since the "if" condition started. how about doing one test
+> > before the "if" condition ?
+> 
+> For looping the whole fat max_cluster size. now start can be any
+> address and if start is a middle point and len is max, then it will
+> search from middle -> end -> start -> middle. The "count" is used for
+> this purpose.
+> 
+> Thank you,
+> Kyungmin Park
+> >
+can go here -->>
+                           if (count >= len)
+                                   goto done;
+
+> >> +                     count++;
+> >> +             } while (fat_ent_next(sbi, &fatent));
+> >> +     }
+> >> +     if (free >= minlen) {
+> >> +             fat_issue_discard(sb, entry, free);
+> >> +             trimmed += free;
+> >> +     }
+> >> +done:
+> >> +     range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
+> >> +     fatent_brelse(&fatent);
+> >> +out:
+> >> +     unlock_fat(sbi);
+> >> +     return err;
+> >> +}
+> >> diff --git a/fs/fat/file.c b/fs/fat/file.c
+> >> index 7257752..9910aba 100644
+> >> --- a/fs/fat/file.c
+> >> +++ b/fs/fat/file.c
+> >> @@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+> >>               return fat_ioctl_get_attributes(inode, user_attr);
+> >>       case FAT_IOCTL_SET_ATTRIBUTES:
+> >>               return fat_ioctl_set_attributes(filp, user_attr);
+> >> +     case FITRIM:
+> >> +     {
+> >> +             struct super_block *sb = inode->i_sb;
+> >> +             struct request_queue *q = bdev_get_queue(sb->s_bdev);
+> >> +             struct fstrim_range range;
+> >> +             int ret = 0;
+> >> +
+> >> +             if (!capable(CAP_SYS_ADMIN))
+> >> +                     return -EPERM;
+> >> +
+> >> +             if (!blk_queue_discard(q))
+> >> +                     return -EOPNOTSUPP;
+> >> +
+> >> +             if (copy_from_user(&range, (struct fstrim_range *)arg,
+> >> +                                     sizeof(range)))
+> >> +                     return -EFAULT;
+> >> +
+> >> +             range.minlen = max((unsigned int)range.minlen,
+> >> +                                     q->limits.discard_granularity);
+> >> +             ret = fat_trim_fs(sb, &range);
+> >> +             if (ret < 0)
+> >> +                     return ret;
+> >> +
+> >> +             if (copy_to_user((struct fstrim_range *)arg, &range,
+> >> +                                     sizeof(range)))
+> >> +                     return -EFAULT;
+> >> +
+> >> +             return 0;
+> >> +     }
+> >> +
+> >>       default:
+> >>               return -ENOTTY; /* Inappropriate ioctl for device */
+> >>       }
+> >>
+> >
+> > --
+> >
+> 
+
+-- 
+--571140353-136912474-1298897477=:3297--
