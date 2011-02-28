@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1B1Qi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:38:27 -0500
-Received: from kroah.org ([198.145.64.141]:48294 "EHLO coco.kroah.org"
+	id S1755599Ab1B1Qhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:37:53 -0500
+Received: from kroah.org ([198.145.64.141]:48128 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755835Ab1B1QiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:38:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:12 2011
-Message-Id: <20110228162412.210204373@clark.kroah.org>
+	id S1755566Ab1B1Qht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:37:49 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:10 2011
+Message-Id: <20110228162409.957063642@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:23:26 -0800
+Date: Mon, 28 Feb 2011 08:23:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [65/68] xhci: Avoid BUG() in interrupt context
+        Takashi Iwai <tiwai@suse.de>
+Subject: [42/68] ALSA: caiaq - Fix possible string-buffer overflow
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 68e41c5d032668e2905404afbef75bc58be179d6 upstream.
+commit eaae55dac6b64c0616046436b294e69fc5311581 upstream.
 
-Change the BUGs in xhci_find_new_dequeue_state() to WARN_ONs, to avoid
-bringing down the box if one of them is hit
+Use strlcpy() to assure not to overflow the string array sizes by
+too long USB device name string.
 
-This patch should be queued for stable kernels back to 2.6.31.
-
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Rafa <rafa@mwrinfosecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ sound/usb/caiaq/audio.c |    2 +-
+ sound/usb/caiaq/midi.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -391,8 +391,11 @@ void xhci_find_new_dequeue_state(struct
- 	state->new_deq_seg = find_trb_seg(cur_td->start_seg,
- 			dev->eps[ep_index].stopped_trb,
- 			&state->new_cycle_state);
--	if (!state->new_deq_seg)
--		BUG();
-+	if (!state->new_deq_seg) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
- 	/* Dig out the cycle state saved by the xHC during the stop ep cmd */
- 	xhci_dbg(xhci, "Finding endpoint context\n");
- 	ep_ctx = xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
-@@ -403,8 +406,10 @@ void xhci_find_new_dequeue_state(struct
- 	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
- 			state->new_deq_ptr,
- 			&state->new_cycle_state);
--	if (!state->new_deq_seg)
--		BUG();
-+	if (!state->new_deq_seg) {
-+		WARN_ON(1);
-+		return;
-+	}
+--- a/sound/usb/caiaq/audio.c
++++ b/sound/usb/caiaq/audio.c
+@@ -639,7 +639,7 @@ int snd_usb_caiaq_audio_init(struct snd_
+ 	}
  
- 	trb = &state->new_deq_ptr->generic;
- 	if ((trb->field[3] & TRB_TYPE_BITMASK) == TRB_TYPE(TRB_LINK) &&
+ 	dev->pcm->private_data = dev;
+-	strcpy(dev->pcm->name, dev->product_name);
++	strlcpy(dev->pcm->name, dev->product_name, sizeof(dev->pcm->name));
+ 
+ 	memset(dev->sub_playback, 0, sizeof(dev->sub_playback));
+ 	memset(dev->sub_capture, 0, sizeof(dev->sub_capture));
+--- a/sound/usb/caiaq/midi.c
++++ b/sound/usb/caiaq/midi.c
+@@ -135,7 +135,7 @@ int snd_usb_caiaq_midi_init(struct snd_u
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	strcpy(rmidi->name, device->product_name);
++	strlcpy(rmidi->name, device->product_name, sizeof(rmidi->name));
+ 
+ 	rmidi->info_flags = SNDRV_RAWMIDI_INFO_DUPLEX;
+ 	rmidi->private_data = device;
 
 
