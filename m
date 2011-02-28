@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1B1PHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:07:49 -0500
-Received: from mss-uk.mssgmbh.com ([217.174.251.109]:36494 "EHLO
-	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab1B1PHr (ORCPT
+	id S1754702Ab1B1PHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:07:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55201 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab1B1PHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:07:47 -0500
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: fix multithreaded signal handling in unix recv routines/ background
-In-Reply-To: <877hck43hs.fsf@sapphire.mobileactivedefense.com> (Rainer Weikusat's message of "Mon\, 28 Feb 2011 14\:50\:55 +0000")
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-References: <877hck43hs.fsf@sapphire.mobileactivedefense.com>
-From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-Date: Mon, 28 Feb 2011 15:07:37 +0000
-Message-ID: <8739n842py.fsf@sapphire.mobileactivedefense.com>
+	Mon, 28 Feb 2011 10:07:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=plvNBnupxsWRsPBK6XHmo5jMehpuns0w/5RodY+ufUyJ6TA/R8DORkIeX9YXzKe0JF
+         HPdjbsuWQP9fG1AVVohpSwylKiFyO4xWj5sAz8eOtCwoHD9D2AhBXAs48VguFsoCVrod
+         y3z2fRUDhIxLjdN/aKmMxqeUxBv6FqboYG3eM=
+Message-ID: <4D6BBA3F.2000205@suse.cz>
+Date: Mon, 28 Feb 2011 16:07:43 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 -resend#1 1/1] V4L: videobuf, don't use dma addr as
+ physical
+References: <1298885822-10083-1-git-send-email-jslaby@suse.cz> <201102281153.30585.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201102281153.30585.laurent.pinchart@ideasonboard.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rainer Weikusat <rw@sapphire.mobileactivedefense.com> writes:
-> The unix_dgram_recvmsg and unix_stream_recvmsg routines in
-> net/af_unix.c utilize mutex_lock(&u->readlock) calls
+On 02/28/2011 11:53 AM, Laurent Pinchart wrote:
+> On Monday 28 February 2011 10:37:02 Jiri Slaby wrote:
+>> mem->dma_handle is a dma address obtained by dma_alloc_coherent which
+>> needn't be a physical address in presence of IOMMU. So ensure we are
+>> remapping (remap_pfn_range) the right page in __videobuf_mmap_mapper
+>> by using virt_to_phys(mem->vaddr) and not mem->dma_handle.
+> 
+> Quoting arch/arm/include/asm/memory.h,
+> 
+> /*
+>  * These are *only* valid on the kernel direct mapped RAM memory.
 
-This is IMHO a more sensible place for additional information.
+Which the DMA allocation shall be.
 
-I noticed this because the intended termination processing sequence of
-some program which is used as part of a 'content-filtering solution'
-for mobile devices (aka iPhones, iPads etc) stopped working the first
-time I tested the program in its intended 'actual execution
-context'. The program is supposed to listen for 'URL classifiction
-requests' on a AF_UNIX SOCK_SEQPACKET socket, pass these to a
-third-party library which does the actual classification job and then
-send a reply containing a list of categories associated with the URL
-in question. It uses multiple threads which basically work as follows:
+>  * Note: Drivers should NOT use these. 
 
-	1. initialize the library
-        2. unblock termination signals
-        3. block in read awaiting requests
-        4. block termination signals
-        5. process request and send reply
-        6. goto 2
+This is weird.
 
-Upon termination, each thread needs to execute the library
-finalization routine before exiting. This is supposed to work with the
-help of a signal handler for 'termination signals' calling siglongjmp
-to get the particular thread executing it out of the processing
-loop. Afterwards, this thread (with termination signals again blocked)
-does the finalization call, executes a kill(getpid(), SIGTERM) and
-exits via pthread_exit. The SIGTERM should then be picked up by
-another thread of the process which will then perform the same
-shutdown sequence and signal the next thread, until all threads of the
-process have terminated properly. An example program whose structure
-is basically identical to that of the actual application which
-demonstrates the problem is available here:
+> They are the wrong
+>  * translation for translating DMA addresses.  Use the driver
+>  * DMA support - see dma-mapping.h.
 
-	http://mss-uk.mssgmbh.com/~rw/signal/signal-problem-app.c
+Yes, ACK, and vice versa. DMA addresses cannot be used as physical ones.
 
-I've since spent some more thoughts on this and came to the conclusion
-that this should also affect independent process blocking on the same
-AF_UNIX socket and this even in absence of any user-defined signal
-handling. Another example program demonstrating this phenomenon can be
-downloaded from
+>  */
+> static inline unsigned long virt_to_phys(const volatile void *x)
+> {
+>         return __virt_to_phys((unsigned long)(x));
+> }
+> 
+> Why would you use physically contiguous memory if you have an IOMMU anyway ?
 
-	http://mss-uk.mssgmbh.com/~rw/signal/signal-problem-fork-simple.c
+Sorry, what? When IOMMU is used, dma_alloc_* functions may return "tags"
+as a DMA address, not a physical address. So using these DMA "addresses"
+directly (e.g. in remap_pfn_range) is a bug.
 
-This basically creates an 'unkillable' process, meaning, one which is
-even immune to a SIGKILL.
+Maybe there is a better way to convert a kernel address of the DMA
+mapping into a physical frame, but I'm not aware of any...
 
-I've also tested that the issue still occurs with 2.6.38-rc5 and that
-it is fixed by the proposed patch. The program itself has meanwhile
-been moved to the computers which are actually used by the customers
-of my employer. This move included patching all the kernels running on
-these machines in the way I suggested.
+>> While at it, use PFN_DOWN instead of explicit shift.
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> ---
+>>  drivers/media/video/videobuf-dma-contig.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/media/video/videobuf-dma-contig.c
+>> b/drivers/media/video/videobuf-dma-contig.c index c969111..19d3e4a 100644
+>> --- a/drivers/media/video/videobuf-dma-contig.c
+>> +++ b/drivers/media/video/videobuf-dma-contig.c
+>> @@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue
+>> *q,
+>>
+>>  	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>>  	retval = remap_pfn_range(vma, vma->vm_start,
+>> -				 mem->dma_handle >> PAGE_SHIFT,
+>> +				 PFN_DOWN(virt_to_phys(mem->vaddr))
+>>  				 size, vma->vm_page_prot);
+>>  	if (retval) {
+>>  		dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
+> 
+
+regards,
+-- 
+js
+suse labs
