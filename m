@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab1B1Qgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:36:49 -0500
-Received: from kroah.org ([198.145.64.141]:41151 "EHLO coco.kroah.org"
+	id S1755161Ab1B1Qgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:36:52 -0500
+Received: from kroah.org ([198.145.64.141]:41157 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753903Ab1B1Qgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:36:48 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:05 2011
-Message-Id: <20110228162405.886774166@clark.kroah.org>
+	id S1755143Ab1B1Qgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:36:50 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
+Message-Id: <20110228162405.984747466@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:23 -0800
+Date: Mon, 28 Feb 2011 08:22:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Kashyap Desai <kashyap.desai@lsi.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [02/68] [SCSI] mptfusion: mptctl_release is required in mptctl.c
+Subject: [03/68] [SCSI] mptfusion: Fix Incorrect return value in mptscsih_dev_reset
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kashyap, Desai <kashyap.desai@lsi.com>
 
-commit 84857c8bf83e8aa87afc57d2956ba01f11d82386 upstream.
+commit bcfe42e98047f1935c5571c8ea77beb2d43ec19d upstream.
 
-Added missing release callback for file_operations mptctl_fops.
-Without release callback there will be never freed. It remains on
-mptctl's eent list even after the file is closed and released.
+There's a branch at the end of this function that
+is supposed to normalize the return value with what
+the mid-layer expects. In this one case, we get it wrong.
 
-Relavent RHEL bugzilla is 660871
+Also increase the verbosity of the INFO level printk
+at the end of mptscsih_abort to include the actual return value
+and the scmd->serial_number. The reason being success
+or failure is actually determined by the state of
+the internal tag list when a TMF is issued, and not the
+return value of the TMF cmd. The serial_number is also
+used in this decision, thus it's useful to know for debugging
+purposes.
 
+Reported-by: Peter M. Petrakis <peter.petrakis@canonical.com>
 Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/message/fusion/mptctl.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/message/fusion/mptscsih.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/message/fusion/mptctl.c
-+++ b/drivers/message/fusion/mptctl.c
-@@ -577,6 +577,13 @@ mptctl_event_process(MPT_ADAPTER *ioc, E
- }
+--- a/drivers/message/fusion/mptscsih.c
++++ b/drivers/message/fusion/mptscsih.c
+@@ -1835,8 +1835,9 @@ mptscsih_abort(struct scsi_cmnd * SCpnt)
+ 	}
  
- static int
-+mptctl_release(struct inode *inode, struct file *filep)
-+{
-+	fasync_helper(-1, filep, 0, &async_queue);
-+	return 0;
-+}
-+
-+static int
- mptctl_fasync(int fd, struct file *filep, int mode)
- {
- 	MPT_ADAPTER	*ioc;
-@@ -2778,6 +2785,7 @@ static const struct file_operations mptc
- 	.llseek =	no_llseek,
- 	.fasync = 	mptctl_fasync,
- 	.unlocked_ioctl = mptctl_ioctl,
-+	.release =	mptctl_release,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = compat_mpctl_ioctl,
- #endif
+  out:
+-	printk(MYIOC_s_INFO_FMT "task abort: %s (sc=%p)\n",
+-	    ioc->name, ((retval == SUCCESS) ? "SUCCESS" : "FAILED"), SCpnt);
++	printk(MYIOC_s_INFO_FMT "task abort: %s (rv=%04x) (sc=%p) (sn=%ld)\n",
++	    ioc->name, ((retval == SUCCESS) ? "SUCCESS" : "FAILED"), retval,
++	    SCpnt, SCpnt->serial_number);
+ 
+ 	return retval;
+ }
+@@ -1873,7 +1874,7 @@ mptscsih_dev_reset(struct scsi_cmnd * SC
+ 
+ 	vdevice = SCpnt->device->hostdata;
+ 	if (!vdevice || !vdevice->vtarget) {
+-		retval = SUCCESS;
++		retval = 0;
+ 		goto out;
+ 	}
+ 
 
 
