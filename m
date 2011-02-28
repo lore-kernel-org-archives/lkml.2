@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1B1PVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:21:21 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59179 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754428Ab1B1PVU (ORCPT
+	id S1754709Ab1B1PYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:24:09 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:33207 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754421Ab1B1PYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:21:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Guan Xuetao <epip@hera.kernel.org>
-Subject: Re: [PATCH 14/17] unicore32 machine related files: add i2c bus drivers for pkunity-v3 soc
-Date: Mon, 28 Feb 2011 16:21:09 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: GuanXuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, greg@kroah.com
-References: <cover.1298821856.git.epip@hera.kernel.org> <af52fefef7d120cd6bcdd10c115f276c445c45bf.1298821856.git.epip@hera.kernel.org>
-In-Reply-To: <af52fefef7d120cd6bcdd10c115f276c445c45bf.1298821856.git.epip@hera.kernel.org>
+	Mon, 28 Feb 2011 10:24:08 -0500
+Date: Mon, 28 Feb 2011 10:24:05 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] x86: stop machine text poke should issue sync core
+Message-ID: <20110228152405.GA7064@Krystal>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102281621.10091.arnd@arndb.de>
-X-Provags-ID: V02:K0:FEa02ZBDKVIG79R0yTeVYVLtlI2zz7pdjny95f1gpSS
- mQ0yEXsclFNACspDckUbG3N508hcPlPXVVKZfeFx4yjnz646bz
- rBInWSmtSd8JI+2CvmqZktbodWlON6Yx22HsPXDTf/dMQbZeZa
- OFFmaB7QgjvOV9JQpKzeYu/wARL9yUjtD4l4jg66agGb9zwKLg
- pVrEjnfeIfngjPQOTlEdg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 10:21:31 up 96 days, 20:24,  4 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 27 February 2011, Guan Xuetao wrote:
-> From: GuanXuetao <gxt@mprc.pku.edu.cn>
-> 
-> change from original version -- by advice of Jean Delvare
-> 1. remove global variable i2c_reg, replaced by local variables
-> 2. replace ENXIO with ENODEV when no platform resources
-> 3. add adapter->nr assignment before i2c_add_numbered_adapter() call
-> 4. add judgement for i2c_del_adapter() return value
-> 5. release adapter when driver removed
-> 6. add __devexit for puv3_i2c_remove() function
-> 7. modify several names to more appropriated ones
-> 
-> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Intel Archiecture Software Developer's Manual section 7.1.3 specifies that a
+core serializing instruction such as "cpuid" should be executed on _each_ core
+before the new instruction is made visible.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Failure to do so can lead to unspecified behavior (Intel XMC erratas include
+General Protection Fault in the list), so we should avoid this at all cost.
+
+This problem can affect modified code executed by interrupt handlers after
+interrupt are re-enabled at the end of stop_machine, because no core serializing
+instruction is executed between the code modification and the moment interrupts
+are reenabled.
+
+Because stop_machine_text_poke performs the text modification from the first CPU
+decrementing stop_machine_first, modified code executed in thread context is
+also affected by this problem. To explain why, we have to split the CPUs in two
+categories: the CPU that initiates the text modification (calls text_poke_smp)
+and all the others. The scheduler, executed on all other CPUs after
+stop_machine, issues an "iret" core serializing instruction, and therefore
+handles core serialization for all these CPUs. However, the text modification
+initiator can continue its execution on the same thread and access the modified
+text without any scheduler call. Given that the CPU that initiates the code
+modification is not guaranteed to be the one actually performing the code
+modification, it falls into the XMC errata.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Arjan van de Ven <arjan@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Andi Kleen <andi@firstfloor.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+---
+ arch/x86/kernel/alternative.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+Index: linux-2.6-lttng/arch/x86/kernel/alternative.c
+===================================================================
+--- linux-2.6-lttng.orig/arch/x86/kernel/alternative.c
++++ linux-2.6-lttng/arch/x86/kernel/alternative.c
+@@ -612,6 +612,12 @@ static int __kprobes stop_machine_text_p
+ 
+ 	flush_icache_range((unsigned long)tpp->addr,
+ 			   (unsigned long)tpp->addr + tpp->len);
++	/*
++	 * Intel Archiecture Software Developer's Manual section 7.1.3 specifies
++	 * that a core serializing instruction such as "cpuid" should be
++	 * executed on _each_ core before the new instruction is made visible.
++	 */
++	sync_core();
+ 	return 0;
+ }
+ 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
