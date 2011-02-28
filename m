@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1B1Aiq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 19:38:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37307 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab1B1Aio (ORCPT
+	id S1752172Ab1B1Ali (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 19:41:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60400 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab1B1Alh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 19:38:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition
-         :content-transfer-encoding:in-reply-to:user-agent;
-        b=DLMQa4A+Qp4TRhFVaW+lW0nQXra/DQDGyRuxIwKVULypWrQopreZVveCRHyNYXn4Pf
-         9p7eL9rSymaPuzGdyFAVrQFmbwBGeigBDc5IzGMQoBYHSwssccDRPLy54w15lbI63mgB
-         lMOBIDohKdP1krjp3aJvlYlAgRwZJc0q86Tdw=
-Date: Mon, 28 Feb 2011 03:38:23 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH] rtlwifi: make gcc happy
-Message-ID: <20110228003734.GA9075@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Alessio Igor Bogani <abogani@kernel.org>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	Chaoming Li <chaoming_li@realsil.com.cn>,
-	linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Tim Bird <tim.bird@am.sony.com>
-References: <1298841390-1194-1-git-send-email-abogani@kernel.org>
+	Sun, 27 Feb 2011 19:41:37 -0500
+From: Benson Leung <bleung@chromium.org>
+To: linux-kernel@vger.kernel.org, cbouatmailru@gmail.com
+Cc: rklein@nvidia.com, bleung@chromium.org
+Subject: [PATCH] power: bq20z75: Fix time and temp units
+Date: Sun, 27 Feb 2011 16:41:12 -0800
+Message-Id: <1298853672-21330-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1298841390-1194-1-git-send-email-abogani@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 27, 2011 at 10:16:30PM +0100, Alessio Igor Bogani wrote:
-> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c: In function ‘rtl92ce_rx_query_desc’:
-> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:255:5: warning: ‘rf_rx_num’ may be used uninitialized in this function
-> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:257:12: warning: ‘total_rssi’ may be used uninitialized in this function
-> drivers/net/wireless/rtlwifi/rtl8192ce/trx.c:466:6: warning: ‘weighting’ may be used uninitialized in this function
-> 
+Corrected temperature and time to empty/full conversions.
+Temperature is in 0.1°C, time is in seconds.
 
-These fix actual bugs where uninitialized values are used; it's not
-just a matter of silencing warnings.  The patch title should mention
-that.  Perhaps something like:
+Signed-off-by: Benson Leung <bleung@chromium.org>
+---
+ drivers/power/bq20z75.c |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
 
-[patch] rtlwifi: fix places where uninitialized data is used
+diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+index 4141775..998123e 100644
+--- a/drivers/power/bq20z75.c
++++ b/drivers/power/bq20z75.c
+@@ -269,12 +269,15 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
+ {
+ #define BASE_UNIT_CONVERSION		1000
+ #define BATTERY_MODE_CAP_MULT_WATT	(10 * BASE_UNIT_CONVERSION)
+-#define TIME_UNIT_CONVERSION		600
+-#define TEMP_KELVIN_TO_CELCIUS		2731
++#define TIME_UNIT_CONVERSION		60
++#define TEMP_KELVIN_TO_CELSIUS		2731
+ 	switch (psp) {
+ 	case POWER_SUPPLY_PROP_ENERGY_NOW:
+ 	case POWER_SUPPLY_PROP_ENERGY_FULL:
+ 	case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
++		/* bq20z75 provides energy in units of 10mWh.
++		 * Convert to µW
++		 */
+ 		val->intval *= BATTERY_MODE_CAP_MULT_WATT;
+ 		break;
+ 
+@@ -288,14 +291,17 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_TEMP:
+-		/* bq20z75 provides battery tempreture in 0.1°K
+-		 * so convert it to 0.1°C */
+-		val->intval -= TEMP_KELVIN_TO_CELCIUS;
+-		val->intval *= 10;
++		/* bq20z75 provides battery temperature in 0.1K
++		 * so convert it to 0.1°C
++		 */
++		val->intval -= TEMP_KELVIN_TO_CELSIUS;
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
+ 	case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
++		/* bq20z75 provides time to empty and time to full in minutes.
++		 * Convert to seconds
++		 */
+ 		val->intval *= TIME_UNIT_CONVERSION;
+ 		break;
+ 
+-- 
+1.7.1
 
-regards,
-dan carpenter
