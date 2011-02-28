@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab1B1Qwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:52:47 -0500
-Received: from kroah.org ([198.145.64.141]:41182 "EHLO coco.kroah.org"
+	id S1755288Ab1B1QxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:53:09 -0500
+Received: from kroah.org ([198.145.64.141]:41163 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755143Ab1B1Qg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:36:56 -0500
+	id S1755155Ab1B1Qgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:36:51 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
-Message-Id: <20110228162406.369267453@clark.kroah.org>
+Message-Id: <20110228162406.082092634@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:28 -0800
+Date: Mon, 28 Feb 2011 08:22:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Vlad Yasevich <vladislav.yasevich@hp.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [07/68] filter: make sure filters dont read uninitialized memory
+Subject: [04/68] sctp: Fix out-of-bounds reading in sctp_asoc_get_hmac()
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,237 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 57fe93b374a6b8711995c2d466c502af9f3a08bb upstream.
+commit 51e97a12bef19b7e43199fc153cf9bd5f2140362 upstream.
 
-There is a possibility malicious users can get limited information about
-uninitialized stack mem array. Even if sk_run_filter() result is bound
-to packet length (0 .. 65535), we could imagine this can be used by
-hostile user.
+The sctp_asoc_get_hmac() function iterates through a peer's hmac_ids
+array and attempts to ensure that only a supported hmac entry is
+returned.  The current code fails to do this properly - if the last id
+in the array is out of range (greater than SCTP_AUTH_HMAC_ID_MAX), the
+id integer remains set after exiting the loop, and the address of an
+out-of-bounds entry will be returned and subsequently used in the parent
+function, causing potentially ugly memory corruption.  This patch resets
+the id integer to 0 on encountering an invalid id so that NULL will be
+returned after finishing the loop if no valid ids are found.
 
-Initializing mem[] array, like Dan Rosenberg suggested in his patch is
-expensive since most filters dont even use this array.
-
-Its hard to make the filter validation in sk_chk_filter(), because of
-the jumps. This might be done later.
-
-In this patch, I use a bitmap (a single long var) so that only filters
-using mem[] loads/stores pay the price of added security checks.
-
-For other filters, additional cost is a single instruction.
-
-[ Since we access fentry->k a lot now, cache it in a local variable
-  and mark filter entry pointer as const. -DaveM ]
-
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[Backported by dann frazier <dannf@debian.org>]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/core/filter.c |   64 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 35 insertions(+), 29 deletions(-)
+ net/sctp/auth.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -111,39 +111,41 @@ EXPORT_SYMBOL(sk_filter);
-  */
- unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int flen)
- {
--	struct sock_filter *fentry;	/* We walk down these */
- 	void *ptr;
- 	u32 A = 0;			/* Accumulator */
- 	u32 X = 0;			/* Index Register */
- 	u32 mem[BPF_MEMWORDS];		/* Scratch Memory Store */
-+	unsigned long memvalid = 0;
- 	u32 tmp;
- 	int k;
- 	int pc;
+--- a/net/sctp/auth.c
++++ b/net/sctp/auth.c
+@@ -542,16 +542,20 @@ struct sctp_hmac *sctp_auth_asoc_get_hma
+ 		id = ntohs(hmacs->hmac_ids[i]);
  
-+	BUILD_BUG_ON(BPF_MEMWORDS > BITS_PER_LONG);
- 	/*
- 	 * Process array of filter instructions.
- 	 */
- 	for (pc = 0; pc < flen; pc++) {
--		fentry = &filter[pc];
-+		const struct sock_filter *fentry = &filter[pc];
-+		u32 f_k = fentry->k;
+ 		/* Check the id is in the supported range */
+-		if (id > SCTP_AUTH_HMAC_ID_MAX)
++		if (id > SCTP_AUTH_HMAC_ID_MAX) {
++			id = 0;
+ 			continue;
++		}
  
- 		switch (fentry->code) {
- 		case BPF_ALU|BPF_ADD|BPF_X:
- 			A += X;
+ 		/* See is we support the id.  Supported IDs have name and
+ 		 * length fields set, so that we can allocated and use
+ 		 * them.  We can safely just check for name, for without the
+ 		 * name, we can't allocate the TFM.
+ 		 */
+-		if (!sctp_hmac_list[id].hmac_name)
++		if (!sctp_hmac_list[id].hmac_name) {
++			id = 0;
  			continue;
- 		case BPF_ALU|BPF_ADD|BPF_K:
--			A += fentry->k;
-+			A += f_k;
- 			continue;
- 		case BPF_ALU|BPF_SUB|BPF_X:
- 			A -= X;
- 			continue;
- 		case BPF_ALU|BPF_SUB|BPF_K:
--			A -= fentry->k;
-+			A -= f_k;
- 			continue;
- 		case BPF_ALU|BPF_MUL|BPF_X:
- 			A *= X;
- 			continue;
- 		case BPF_ALU|BPF_MUL|BPF_K:
--			A *= fentry->k;
-+			A *= f_k;
- 			continue;
- 		case BPF_ALU|BPF_DIV|BPF_X:
- 			if (X == 0)
-@@ -151,49 +153,49 @@ unsigned int sk_run_filter(struct sk_buf
- 			A /= X;
- 			continue;
- 		case BPF_ALU|BPF_DIV|BPF_K:
--			A /= fentry->k;
-+			A /= f_k;
- 			continue;
- 		case BPF_ALU|BPF_AND|BPF_X:
- 			A &= X;
- 			continue;
- 		case BPF_ALU|BPF_AND|BPF_K:
--			A &= fentry->k;
-+			A &= f_k;
- 			continue;
- 		case BPF_ALU|BPF_OR|BPF_X:
- 			A |= X;
- 			continue;
- 		case BPF_ALU|BPF_OR|BPF_K:
--			A |= fentry->k;
-+			A |= f_k;
- 			continue;
- 		case BPF_ALU|BPF_LSH|BPF_X:
- 			A <<= X;
- 			continue;
- 		case BPF_ALU|BPF_LSH|BPF_K:
--			A <<= fentry->k;
-+			A <<= f_k;
- 			continue;
- 		case BPF_ALU|BPF_RSH|BPF_X:
- 			A >>= X;
- 			continue;
- 		case BPF_ALU|BPF_RSH|BPF_K:
--			A >>= fentry->k;
-+			A >>= f_k;
- 			continue;
- 		case BPF_ALU|BPF_NEG:
- 			A = -A;
- 			continue;
- 		case BPF_JMP|BPF_JA:
--			pc += fentry->k;
-+			pc += f_k;
- 			continue;
- 		case BPF_JMP|BPF_JGT|BPF_K:
--			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A > f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JGE|BPF_K:
--			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A >= f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JEQ|BPF_K:
--			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A == f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JSET|BPF_K:
--			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A & f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_JMP|BPF_JGT|BPF_X:
- 			pc += (A > X) ? fentry->jt : fentry->jf;
-@@ -208,7 +210,7 @@ unsigned int sk_run_filter(struct sk_buf
- 			pc += (A & X) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_LD|BPF_W|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_w:
- 			ptr = load_pointer(skb, k, 4, &tmp);
- 			if (ptr != NULL) {
-@@ -217,7 +219,7 @@ load_w:
- 			}
- 			break;
- 		case BPF_LD|BPF_H|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_h:
- 			ptr = load_pointer(skb, k, 2, &tmp);
- 			if (ptr != NULL) {
-@@ -226,7 +228,7 @@ load_h:
- 			}
- 			break;
- 		case BPF_LD|BPF_B|BPF_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_b:
- 			ptr = load_pointer(skb, k, 1, &tmp);
- 			if (ptr != NULL) {
-@@ -241,32 +243,34 @@ load_b:
- 			X = skb->len;
- 			continue;
- 		case BPF_LD|BPF_W|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_w;
- 		case BPF_LD|BPF_H|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_h;
- 		case BPF_LD|BPF_B|BPF_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_b;
- 		case BPF_LDX|BPF_B|BPF_MSH:
--			ptr = load_pointer(skb, fentry->k, 1, &tmp);
-+			ptr = load_pointer(skb, f_k, 1, &tmp);
- 			if (ptr != NULL) {
- 				X = (*(u8 *)ptr & 0xf) << 2;
- 				continue;
- 			}
- 			return 0;
- 		case BPF_LD|BPF_IMM:
--			A = fentry->k;
-+			A = f_k;
- 			continue;
- 		case BPF_LDX|BPF_IMM:
--			X = fentry->k;
-+			X = f_k;
- 			continue;
- 		case BPF_LD|BPF_MEM:
--			A = mem[fentry->k];
-+			A = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_LDX|BPF_MEM:
--			X = mem[fentry->k];
-+			X = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_MISC|BPF_TAX:
- 			X = A;
-@@ -275,14 +279,16 @@ load_b:
- 			A = X;
- 			continue;
- 		case BPF_RET|BPF_K:
--			return fentry->k;
-+			return f_k;
- 		case BPF_RET|BPF_A:
- 			return A;
- 		case BPF_ST:
--			mem[fentry->k] = A;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = A;
- 			continue;
- 		case BPF_STX:
--			mem[fentry->k] = X;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = X;
- 			continue;
- 		default:
- 			WARN_ON(1);
++		}
+ 
+ 		break;
+ 	}
 
 
