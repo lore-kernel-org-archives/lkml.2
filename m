@@ -1,32 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab1B1JSl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 04:18:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58839 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab1B1JSk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 04:18:40 -0500
-Subject: Re: perf: fix the missing event initialization when pmu is found
- in idr
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1298812411.2699.9.camel@localhost>
-References: <1298812411.2699.9.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 28 Feb 2011 10:18:27 +0100
-Message-ID: <1298884707.2428.10090.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753112Ab1B1JVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 04:21:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45178 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752849Ab1B1JVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 04:21:23 -0500
+Message-ID: <4D6B690C.9090206@redhat.com>
+Date: Mon, 28 Feb 2011 11:21:16 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH] kvm: better readability of efer_reserved_bits
+References: <4D61E147.8050602@cn.fujitsu.com>
+In-Reply-To: <4D61E147.8050602@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-02-27 at 21:13 +0800, Lin Ming wrote:
-> Currently, the event is not initialized if pmu is found in idr.
-> This never causes bug just because now no pmu is associated with the
-> idr id. 
+On 02/21/2011 05:51 AM, Lai Jiangshan wrote:
+> use EFER_SCE, EFER_LME and EFER_LMA instead of magic numbers.
+>
 
-Yeah, d'0h, thanks!
+Applied, thanks.
+
+-- 
+error compiling committee.c: too many arguments to function
+
