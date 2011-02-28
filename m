@@ -1,72 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1B1Mwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 07:52:44 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52643 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab1B1Mwm (ORCPT
+	id S1753988Ab1B1MzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 07:55:05 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28756 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab1B1MzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 07:52:42 -0500
-Date: Mon, 28 Feb 2011 12:50:58 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 06/17] arm: mmu_gather rework
-Message-ID: <20110228125058.GD492@flint.arm.linux.org.uk>
-Mail-Followup-To: Peter Zijlstra <peterz@infradead.org>,
-	Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-	akpm@linux-foundation.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-	linux-mm@kvack.org,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	David Miller <davem@davemloft.net>,
-	Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-	Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
-	Paul McKenney <paulmck@linux.vnet.ibm.com>,
-	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-	"Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>,
-	Chris Metcalf <cmetcalf@tilera.com>
-References: <20110217162327.434629380@chello.nl> <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins> <1298657083.2428.2483.camel@twins> <20110225215123.GA10026@flint.arm.linux.org.uk> <1298893487.2428.10537.camel@twins> <20110228115907.GB492@flint.arm.linux.org.uk> <1298895612.2428.10621.camel@twins> <20110228122803.GC492@flint.arm.linux.org.uk> <1298897342.2428.10687.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298897342.2428.10687.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 28 Feb 2011 07:55:03 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jan Kara <jack@suse.cz>, Joel Becker <jlbec@evilplan.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
+In-reply-to: <20110224182732.GV27190@tux1.beaverton.ibm.com>
+References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com>
+Date: Mon, 28 Feb 2011 07:54:05 -0500
+Message-Id: <1298897186-sup-9394@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D6B9B17.0261:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 01:49:02PM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-02-28 at 12:28 +0000, Russell King wrote:
-> > Can you point out where pte_free_tlb() is used with unmap_region()?
+Excerpts from Darrick J. Wong's message of 2011-02-24 13:27:32 -0500:
+> On Thu, Feb 24, 2011 at 12:37:53PM -0500, Chris Mason wrote:
+> > Excerpts from Jan Kara's message of 2011-02-24 11:47:58 -0500:
+> > > On Wed 23-02-11 15:35:11, Chris Mason wrote:
+> > > > Excerpts from Joel Becker's message of 2011-02-23 15:24:47 -0500:
+> > > > > On Tue, Feb 22, 2011 at 11:45:44AM -0500, Martin K. Petersen wrote:
+> > > > > > Also, DIX is only the tip of the iceberg. Many other impending
+> > > > > > technologies feature checksums and require pages to be stable during I/O
+> > > > > > due to checksumming, encryption and so on.
+> > > > > > 
+> > > > > > The VM is already trying to do the right thing. We just need the
+> > > > > > relevant filesystems to catch up.
+> > > > > 
+> > > > >     ocfs2 handles stable metadata for its checksums when feeding
+> > > > > things to the journal.  If we're doing pagecache-based I/O, is the
+> > > > > pagecache going to help here for data?
+> > > > 
+> > > > Data is much easier than metadata.  All you really need is to wait on
+> > > > writeback in file_write, wait on writeback in page_mkwrite, and make
+> > > > sure you don't free blocks back to the allocator that are actively under
+> > > > IO.
+> > > > 
+> > > > I expect the hard part to be jbd and metadata in ext34.
+> > >   But JBD already has to do data copy if a buffer is going to be modified
+> > > before/while it is written to the journal. So we should alredy do all that
+> > > is needed for metadata. I don't say there aren't any bugs as they could be
+> > > triggered only by crashing at the wrong moment and observing fs corruption.
+> > > But most of the work should be there...
+> > 
+> > Most of it is there, but there are always little bits and pieces.  The
+> > ext4 journal csumming code was one semi-recent example where we found
+> > metadata changing in flight.
+> > 
+> > A big part of testing this is getting some way to detect the bugs
+> > without dif/dix.  With btrfs I have patches to do set_memory_ro on
+> > pages once I've don the crc, hopefully we can generalize that idea or
+> > some up with something smarter.
 > 
-> unmap_region()
->   free_pgtables()
->     free_pgd_range()
->       free_pud_range()
->         free_pmd_range()
->           free_pte_range()
->             pte_free_tlb()
+> Right now I'm faking it with modprobe scsi_debug ato=1 guard=1 dif=3 dix=199.
+> 
+> Hm, would you mind sharing those patches?  I've been working on a second patch
+> to do the wait-on-writeback per everyone's suggestions, but I still see the
+> occasional corruption error as soon as I enable the mmap write case and covet
+> some more debugging tools.  It does seem to be working for the pure pwrite()
+> case. :)
 
-Damn it.  Okay, I give up with this.  The TLB shootdown interface is
-total crap.
+Here's an ext4 version of the debugging patch.  It's a few years old but
+it'll give you the idea.  This only covers metadata pages.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Looks like I hacked the btrfs version up and didn't keep the original,
+I'll have to rework it, I was trying to use it for the big corruption I
+fixed recently and made a bunch of changes.
+
+For data if mmap is giving you trouble you need to wait on writeback in
+page_mkwrite, with the page locked.  fs/btrfs/inode.c has our
+page_mkwrite, which uses wait_on_page_writeback() and also the btrfs
+ordered write code.  But for the other filesystems, waiting on writeback
+should be enough.
+
+-chris
+
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index d4cfd6d..9f278db 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -28,6 +28,16 @@
+ #include <linux/blkdev.h>
+ #include <trace/events/jbd2.h>
+ 
++int set_memory_ro(unsigned long addr, int numpages);
++
++static int set_page_ro(struct page *page)
++{
++	unsigned long addr = (unsigned long)page_address(page);
++	if (PageHighMem(page))
++		return 0;
++	return set_memory_ro(addr, 1);
++}
++
+ /*
+  * Default IO end handler for temporary BJ_IO buffer_heads.
+  */
+@@ -639,6 +654,8 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+ 		set_bit(BH_JWrite, &jh2bh(new_jh)->b_state);
+ 		wbuf[bufs++] = jh2bh(new_jh);
+ 
++		set_page_ro(jh2bh(new_jh)->b_page);
++
+ 		/* Record the new block's tag in the current descriptor
+                    buffer */
+ 
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index a051270..153888e 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -28,6 +28,15 @@
+ #include <linux/hrtimer.h>
+ 
+ static void __jbd2_journal_temp_unlink_buffer(struct journal_head *jh);
++int set_memory_rw(unsigned long addr, int numpages);
++static int set_page_rw(struct page *page)
++{
++	unsigned long addr = (unsigned long)page_address(page);
++	if (PageHighMem(page))
++		return 0;
++	return set_memory_rw(addr, 1);
++}
++
+ 
+ /*
+  * jbd2_get_transaction: obtain a new transaction_t object.
+@@ -1474,9 +1487,11 @@ void __jbd2_journal_temp_unlink_buffer(struct journal_head *jh)
+ 		break;
+ 	case BJ_IO:
+ 		list = &transaction->t_iobuf_list;
++		set_page_rw(bh->b_page);
+ 		break;
+ 	case BJ_Shadow:
+ 		list = &transaction->t_shadow_list;
++		set_page_rw(bh->b_page);
+ 		break;
+ 	case BJ_LogCtl:
+ 		list = &transaction->t_log_list;
