@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab1B1Twq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 14:52:46 -0500
-Received: from 15.70.mail-out.ovh.net ([178.33.253.55]:37925 "HELO
-	70.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1753265Ab1B1Twp (ORCPT
+	id S1754873Ab1B1T5O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 14:57:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50531 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341Ab1B1T5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 14:52:45 -0500
-X-Greylist: delayed 13999 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Feb 2011 14:52:44 EST
-Message-ID: <4D6BC4CB.6050602@osean.fr>
-Date: Mon, 28 Feb 2011 16:52:43 +0100
-From: Jean-Francois Argentino <jf.argentino@osean.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: jhovold@gmail.com
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] ftdi_sio: adding support for OLIMEX ARM-USB-OCD-H
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 14180427853780148558
-X-Ovh-Remote: 82.241.52.98 (tga83-1-82-241-52-98.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Mon, 28 Feb 2011 14:57:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=KZDhHLmi9W+lDLLlgKwVqWc8Vmr0PDkmkis17mKKv4NrYWLZvJd3+164tBM0gtj0Xh
+         ETfiO8wGZJ2HmR/p7lXg11A+6hzyVQlVOnqGcGg76Al3d0pWOEjCqTiaiD70H1I9vKSD
+         oLWh0fRLlLdiCDSQidQ8UmjS+XiKSSne9tbEU=
+From: Johan Wessfeldt <johan.wessfeldt@gmail.com>
+To: lenb@kernel.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johan Wessfeldt <johan.wessfeldt@gmail.com>
+Subject: [PATCH] acpi: Corrections of unchecked calls to request_region
+Date: Mon, 28 Feb 2011 20:56:48 +0100
+Message-Id: <1298923008-16796-1-git-send-email-johan.wessfeldt@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from JF Argentino <jf.argentino@free.fr>
+This patch introduces checks when acpi osl reserves resources by calling
+request_region.
 
-Adding support for the OLIMEX ARM-USB-OCD-H JTAG device (id 15ba:002b) 
-based on FTDI FT2232H
-Signed-off-by: JF Argentino <jf.argentino@free.fr>
+Please review:
+Is it valid to return early when acpi_request_region() fails?
 
---- linux-2.6.37.2/drivers/usb/serial/ftdi_sio_ids.h	2011-02-25 
-00:09:00.000000000 +0100
-+++ linux/drivers/usb/serial/ftdi_sio_ids.h	2011-02-28 
-15:42:19.000000000 +0100
-@@ -730,6 +730,7 @@
-  /* Olimex */
-  #define OLIMEX_VID			0x15BA
-  #define OLIMEX_ARM_USB_OCD_PID		0x0003
-+#define OLIMEX_ARM_USB_OCD_H_PID	0x002b
+Signed-off-by: Johan Wessfeldt <johan.wessfeldt@gmail.com>
+---
+ drivers/acpi/osl.c |   85 +++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 57 insertions(+), 28 deletions(-)
 
-  /*
-   * Telldus Technologies
---- linux-2.6.37.2/drivers/usb/serial/ftdi_sio.c	2011-02-25 
-00:09:00.000000000 +0100
-+++ linux/drivers/usb/serial/ftdi_sio.c	2011-02-28 16:27:02.000000000 +0100
-@@ -721,6 +721,8 @@ static struct usb_device_id id_table_com
-  	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_JTAGCABLEII_PID) },
-  	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_PID),
-  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_H_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-  	{ USB_DEVICE(FIC_VID, FIC_NEO1973_DEBUG_PID),
-  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-  	{ USB_DEVICE(FTDI_VID, FTDI_OOCDLINK_PID),
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index c90c76a..5c8c521 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -166,48 +166,77 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
+ 	return supported;
+ }
+ 
+-static void __init acpi_request_region (struct acpi_generic_address *addr,
++static int __init acpi_request_region(struct acpi_generic_address *addr,
+ 	unsigned int length, char *desc)
+ {
++	struct resource *pRes;
++
+ 	if (!addr->address || !length)
+-		return;
++		return -EIO;
+ 
+ 	/* Resources are never freed */
+-	if (addr->space_id == ACPI_ADR_SPACE_SYSTEM_IO)
+-		request_region(addr->address, length, desc);
+-	else if (addr->space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
+-		request_mem_region(addr->address, length, desc);
++	if (addr->space_id == ACPI_ADR_SPACE_SYSTEM_IO) {
++		pRes = request_region(addr->address, length, desc);
++		if (pRes == NULL)
++			return -EIO;
++
++	} else if (addr->space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY) {
++		pRes = request_mem_region(addr->address, length, desc);
++		if (pRes == NULL)
++			return -EIO;
++	}
++
++	return 0;
+ }
+ 
+ static int __init acpi_reserve_resources(void)
+ {
+-	acpi_request_region(&acpi_gbl_FADT.xpm1a_event_block, acpi_gbl_FADT.pm1_event_length,
+-		"ACPI PM1a_EVT_BLK");
++	if (!acpi_request_region(&acpi_gbl_FADT.xpm1a_event_block,
++				 acpi_gbl_FADT.pm1_event_length,
++				 "ACPI PM1a_EVT_BLK"))
++		return -EIO;
+ 
+-	acpi_request_region(&acpi_gbl_FADT.xpm1b_event_block, acpi_gbl_FADT.pm1_event_length,
+-		"ACPI PM1b_EVT_BLK");
++	if (!acpi_request_region(&acpi_gbl_FADT.xpm1b_event_block,
++				 acpi_gbl_FADT.pm1_event_length,
++				 "ACPI PM1b_EVT_BLK"))
++		return -EIO;
+ 
+-	acpi_request_region(&acpi_gbl_FADT.xpm1a_control_block, acpi_gbl_FADT.pm1_control_length,
+-		"ACPI PM1a_CNT_BLK");
++	if (!acpi_request_region(&acpi_gbl_FADT.xpm1a_control_block,
++				 acpi_gbl_FADT.pm1_control_length,
++				 "ACPI PM1a_CNT_BLK"))
++		return -EIO;
+ 
+-	acpi_request_region(&acpi_gbl_FADT.xpm1b_control_block, acpi_gbl_FADT.pm1_control_length,
+-		"ACPI PM1b_CNT_BLK");
++	if (!acpi_request_region(&acpi_gbl_FADT.xpm1b_control_block,
++				 acpi_gbl_FADT.pm1_control_length,
++				 "ACPI PM1b_CNT_BLK"))
++		return -EIO;
+ 
+-	if (acpi_gbl_FADT.pm_timer_length == 4)
+-		acpi_request_region(&acpi_gbl_FADT.xpm_timer_block, 4, "ACPI PM_TMR");
++	if (acpi_gbl_FADT.pm_timer_length == 4) {
++		if (!acpi_request_region(&acpi_gbl_FADT.xpm_timer_block,
++					 4, "ACPI PM_TMR"))
++			return -EIO;
++	}
+ 
+-	acpi_request_region(&acpi_gbl_FADT.xpm2_control_block, acpi_gbl_FADT.pm2_control_length,
+-		"ACPI PM2_CNT_BLK");
++	if (!acpi_request_region(&acpi_gbl_FADT.xpm2_control_block,
++				 acpi_gbl_FADT.pm2_control_length,
++				 "ACPI PM2_CNT_BLK"))
++		return -EIO;
+ 
+ 	/* Length of GPE blocks must be a non-negative multiple of 2 */
+ 
+-	if (!(acpi_gbl_FADT.gpe0_block_length & 0x1))
+-		acpi_request_region(&acpi_gbl_FADT.xgpe0_block,
+-			       acpi_gbl_FADT.gpe0_block_length, "ACPI GPE0_BLK");
++	if (!(acpi_gbl_FADT.gpe0_block_length & 0x1)) {
++		if (!acpi_request_region(&acpi_gbl_FADT.xgpe0_block,
++					 acpi_gbl_FADT.gpe0_block_length,
++					 "ACPI GPE0_BLK"))
++			return -EIO;
++	}
+ 
+-	if (!(acpi_gbl_FADT.gpe1_block_length & 0x1))
+-		acpi_request_region(&acpi_gbl_FADT.xgpe1_block,
+-			       acpi_gbl_FADT.gpe1_block_length, "ACPI GPE1_BLK");
++	if (!(acpi_gbl_FADT.gpe1_block_length & 0x1)) {
++		if (!acpi_request_region(&acpi_gbl_FADT.xgpe1_block,
++					 acpi_gbl_FADT.gpe1_block_length,
++					 "ACPI GPE1_BLK"))
++			return -EIO;
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.7.2.3
+
