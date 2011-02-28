@@ -1,92 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab1B1LoU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 06:44:20 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:38307 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab1B1LoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 06:44:18 -0500
-From: shubhrajyoti@ti.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH] bh1780gli : Convert to dev pm ops
-Date: Mon, 28 Feb 2011 17:14:07 +0530
-Message-Id: <1298893447-27745-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753724Ab1B1Lpo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 06:45:44 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:47532 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab1B1Lpm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 06:45:42 -0500
+Subject: Re: [PATCH 06/17] arm: mmu_gather rework
+From: Peter Zijlstra <peterz@infradead.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+In-Reply-To: <20110225215123.GA10026@flint.arm.linux.org.uk>
+References: <20110217162327.434629380@chello.nl>
+	 <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins>
+	 <1298657083.2428.2483.camel@twins>
+	 <20110225215123.GA10026@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Feb 2011 12:44:47 +0100
+Message-ID: <1298893487.2428.10537.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
+On Fri, 2011-02-25 at 21:51 +0000, Russell King wrote:
+> On Fri, Feb 25, 2011 at 07:04:43PM +0100, Peter Zijlstra wrote:
+> > I'm not quite sure why you chose to add range tracking on
+> > pte_free_tlb(), the only affected code path seems to be unmap_region()
+> > where you'll use a flush_tlb_range(), but its buggy, the pte_free_tlb()
+> > range is much larger than 1 page, and if you do it there you also need
+> > it for all the other p??_free_tlb() functions.
+> 
+> My reasoning is to do with the way the LPAE stuff works.  For the
+> explaination below, I'm going to assume a 2 level page table system
+> for simplicity.
+> 
+> The first thing to realise is that if we have L2 entries, then we'll
+> have unmapped them first using the usual tlb shootdown interfaces.
+> 
+> However, when we're freeing the page tables themselves, we should
+> already have removed the L2 entries, so all we have are the L1 entries.
+> In most 'normal' processors, these aren't cached in any way.
+> 
+> Howver, with LPAE, these are cached.  I'm told that any TLB flush for an
+> address which is covered by the L1 entry will cause that cached entry to
+> be invalidated.
+> 
+> So really this is about getting rid of cached L1 entries, and not the
+> usual TLB lookaside entries that you'd come to expect.
 
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/misc/bh1780gli.c |   19 ++++++++++---------
- 1 files changed, 10 insertions(+), 9 deletions(-)
+Right, so the normal case is:
 
-diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
-index d5f3a3f..d07cd67 100644
---- a/drivers/misc/bh1780gli.c
-+++ b/drivers/misc/bh1780gli.c
-@@ -196,10 +196,11 @@ static int __devexit bh1780_remove(struct i2c_client *client)
- }
- 
- #ifdef CONFIG_PM
--static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
-+static int bh1780_suspend(struct device *dev)
- {
- 	struct bh1780_data *ddata;
- 	int state, ret;
-+	struct i2c_client *client = to_i2c_client(dev);
- 
- 	ddata = i2c_get_clientdata(client);
- 	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
-@@ -217,14 +218,14 @@ static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
- 	return 0;
- }
- 
--static int bh1780_resume(struct i2c_client *client)
-+static int bh1780_resume(struct device *dev)
- {
- 	struct bh1780_data *ddata;
- 	int state, ret;
-+	struct i2c_client *client = to_i2c_client(dev);
- 
- 	ddata = i2c_get_clientdata(client);
- 	state = ddata->power_state;
--
- 	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
- 				"CONTROL");
- 
-@@ -233,9 +234,10 @@ static int bh1780_resume(struct i2c_client *client)
- 
- 	return 0;
- }
-+static SIMPLE_DEV_PM_OPS(bh1780_pm, bh1780_suspend, bh1780_resume);
-+#define BH1780_PMOPS (&bh1780_pm)
- #else
--#define bh1780_suspend NULL
--#define bh1780_resume NULL
-+#define BH1780_PMOPS NULL
- #endif /* CONFIG_PM */
- 
- static const struct i2c_device_id bh1780_id[] = {
-@@ -247,11 +249,10 @@ static struct i2c_driver bh1780_driver = {
- 	.probe		= bh1780_probe,
- 	.remove		= bh1780_remove,
- 	.id_table	= bh1780_id,
--	.suspend	= bh1780_suspend,
--	.resume		= bh1780_resume,
- 	.driver = {
--		.name = "bh1780"
--	},
-+		.name = "bh1780",
-+		.pm	= BH1780_PMOPS,
-+},
- };
- 
- static int __init bh1780_init(void)
--- 
-1.7.1
+  unmap_region()
+    tlb_gather_mmu()
+    unmap_vmas()
+      for (; vma; vma = vma->vm_next)
+        unmao_page_range()
+          tlb_start_vma() -> flush cache range
+          zap_*_range()
+            ptep_get_and_clear_full() -> batch/track external tlbs
+            tlb_remove_tlb_entry() -> batch/track external tlbs
+            tlb_remove_page() -> track range/batch page
+          tlb_end_vma() -> flush tlb range
+
+ [ for architectures that have hardware page table walkers
+   concurrent faults can still load the page tables ]
+
+    free_pgtables()
+      while (vma)
+        unlink_*_vma()
+        free_*_range()
+          *_free_tlb()
+    tlb_finish_mmu()
+
+  free vmas
+
+
+Now, if we want to track ranges _and_ have hardware page table walkers
+(ARM seems to be one such), we must flush TLBs at tlb_end_vma() because
+flush_tlb_range() requires a vma pointer (ARM and TILE actually use more
+than ->vm_mm), and on tlb_finish_mmu() issue a full mm wide invalidate
+because the hardware walker could have re-populated the cache after
+clearing the PTEs but before freeing the page tables.
+
+What ARM does is it retains the last vma pointer and tracks
+pte_free_tlb() range and uses that in tlb_finish_mmu(), which is a tad
+hacky.
+
+Mostly because of shift_arg_pages(), where we have:
+
+  shift_arg_pages()
+    tlb_gather_mmu()
+    free_*_range()
+    tlb_finish_mmu()
+
+For which ARM now punts and does a full tlb invalidate (no vma pointer).
+But also because it drags along that vma pointer, which might not at all
+match the range its actually going to invalidate (and hence its vm_flags
+might not accurately reflect things -- at worst more expensive than
+needed).
+
+The reason I wanted flush_tlb_range() to take an mm_struct and not the
+current vm_area_struct is because we can avoid doing the
+flush_tlb_range() from tlb_end_vma() and delay the thing until
+tlb_finish_mmu() without having to resort to such games as above. We
+could simply track the full range over all VMAs and free'd page-tables
+and do one range invalidate.
+
+ARM uses vm_flags & VM_EXEC to see if it also needs to invalidate
+I-TLBs, and TILE uses VM_EXEC and VM_HUGETLB.
+
+For the I-TLBs we could easily use
+ptep_get_and_clear_full()/tlb_remove_tlb_entry() and see if any of the
+cleared pte's had its executable bit set (both ARM and TILE seem to have
+such a PTE bit).
+
+I'm not sure what we can do about TILE's VM_HUGETLB usage though, if it
+needs explicit flushes for huge ptes it might just have to issue
+multiple tlb invalidates and do them from tlb_start_vma()/tlb_end_vma().
+
+So my current proposal for generic mmu_gather (not fully coded yet) is
+to provide a number of CONFIG_goo switches:
+
+  CONFIG_HAVE_RCU_TABLE_FREE - for architectures that do not walk the
+linux page tables in hardware (Sparc64, PowerPC, etc), and others where
+TLB flushing isn't delayed by disabling IRQs (Xen, s390).
+
+  CONFIG_HAVE_MMU_GATHER_RANGE - will track start,end ranges from
+tlb_remove_tlb_entry() and p*_free_tlb() and issue
+flush_tlb_range(mm,start,end) instead of mm-wide invalidates.
+
+  CONFIG_HAVE_MMU_GATHER_ITLB - will use
+ptep_get_and_clear_full()/tlb_remove_tlb_entry() to test pte_exec() and
+issue flush_itlb_range(mm,start,end).
+
+Then there is the optimization s390 wants, which is to do a full mm tlb
+flush for fullmm (exit_mmap()) at tlb_gather_mmu() and never again after
+that, since there is guaranteed no concurrency to poke at anything.
+AFAICT that should work on all architectures so we can do that
+unconditionally.
+
+So the biggest problem with implementing the above is TILE, where we
+need to figure out wth to do with its hugetlb stuff.
+
+The second biggest problem is with ARM and TILE, where we'd need to
+implement flush_itlb_range(). I've already got a patch for all other
+architectures to convert flush_tlb_range() to mm_struct.
+
 
