@@ -1,77 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab1B1Cg2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 21:36:28 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:17916 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab1B1Cg1 (ORCPT
+	id S1752252Ab1B1Ckn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 21:40:43 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50465 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab1B1Ckm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 21:36:27 -0500
-Date: Mon, 28 Feb 2011 11:36:21 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-Subject: Re: [PATCH V2] sdhci: always use max timeout for xfers
-In-reply-to: <20110225200722.GA2192@pengutronix.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Philip Rakity <prakity@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chuanxiao Dong <chuanxiao.dong@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-id: <4D6B0A25.1060009@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-References: <D8739074-546D-4531-A8E9-23E9F7A33EB5@marvell.com>
- <20110225180248.GA15491@pengutronix.de>
- <9C437661-BFCC-4F73-989E-06589E0D37CA@marvell.com>
- <20110225182206.GC15491@pengutronix.de>
- <62F39533-530F-4DF4-BBC6-AF8E9AB9E751@marvell.com>
- <20110225200722.GA2192@pengutronix.de>
-X-OriginalArrivalTime: 28 Feb 2011 02:36:26.0012 (UTC)
- FILETIME=[4BAA05C0:01CBD6F0]
+	Sun, 27 Feb 2011 21:40:42 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 28 Feb 2011 11:34:17 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v5 5/9] memcg: add dirty page accounting infrastructure
+Message-Id: <20110228113417.b924dfec.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110227164730.GD3226@barrios-desktop>
+References: <1298669760-26344-1-git-send-email-gthelen@google.com>
+	<1298669760-26344-6-git-send-email-gthelen@google.com>
+	<20110227164730.GD3226@barrios-desktop>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that always use max timeout for xfers is not bed..
-But when i have sent the RFC patch, during suspend/resume is appeared some problem.
-(when busy-waiting, occurred interrupt..so illegal sequence error is occurred..)
-Anyone found same problem when suspend/resume?
+On Mon, 28 Feb 2011 01:47:30 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-So, i think that setting maximum timeout value is not good solution about every case.
+> On Fri, Feb 25, 2011 at 01:35:56PM -0800, Greg Thelen wrote:
+> > Add memcg routines to track dirty, writeback, and unstable_NFS pages.
+> > These routines are not yet used by the kernel to count such pages.
+> > A later change adds kernel calls to these new routines.
+> > 
+> > Signed-off-by: Greg Thelen <gthelen@google.com>
+> > Signed-off-by: Andrea Righi <arighi@develer.com>
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> > ---
+> > Changelog since v1:
+> > - Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+> >   memory.stat to match /proc/meminfo.
+> > - Rename (for clarity):
+> >   - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
+> >   - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
+> > - Remove redundant comments.
+> > - Made mem_cgroup_move_account_page_stat() inline.
+> > 
+> >  include/linux/memcontrol.h |    5 ++-
+> >  mm/memcontrol.c            |   87 ++++++++++++++++++++++++++++++++++++++++----
+> >  2 files changed, 83 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > index 3da48ae..e1f70a9 100644
+> > --- a/include/linux/memcontrol.h
+> > +++ b/include/linux/memcontrol.h
+> > @@ -25,9 +25,12 @@ struct page_cgroup;
+> >  struct page;
+> >  struct mm_struct;
+> >  
+> > -/* Stats that can be updated by kernel. */
+> > +/* mem_cgroup page counts accessed by kernel. */
+> 
+> I confused by 'kernel', 'access'?
+> So, What's the page counts accessed by user?
+> I don't like such words.
+> 
+> Please, clarify the comment.
+> 'Stats of page that can be tracking by memcg' or whatever.
+> 
+Ah, yes. that's better.
 
-Regards,
-Jaehoon Chung
 
-Wolfram Sang wrote:
-> On Fri, Feb 25, 2011 at 10:49:25AM -0800, Philip Rakity wrote:
->> v2
->>
->> use define for max timeout.  remove subroutine call and just
->> set the register directly
+
+
+> >  enum mem_cgroup_page_stat_item {
+> >  	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
+> > +	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
+> > +	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
+> > +	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
+> >  };
+> >  
+> >  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 1c2704a..38f786b 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -92,8 +92,11 @@ enum mem_cgroup_stat_index {
+> >  	 */
+> >  	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
+> >  	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+> > -	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+> >  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+> > +	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+> > +	MEM_CGROUP_STAT_FILE_DIRTY,	/* # of dirty pages in page cache */
+> > +	MEM_CGROUP_STAT_FILE_WRITEBACK,		/* # of pages under writeback */
+> > +	MEM_CGROUP_STAT_FILE_UNSTABLE_NFS,	/* # of NFS unstable pages */
+> >  	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+> >  	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
+> >  	MEM_CGROUP_STAT_NSTATS,
+> > @@ -1622,6 +1625,44 @@ void mem_cgroup_update_page_stat(struct page *page,
+> >  			ClearPageCgroupFileMapped(pc);
+> >  		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+> >  		break;
+> > +
+> > +	case MEMCG_NR_FILE_DIRTY:
+> > +		/* Use Test{Set,Clear} to only un/charge the memcg once. */
+> > +		if (val > 0) {
+> > +			if (TestSetPageCgroupFileDirty(pc))
+> > +				val = 0;
+> > +		} else {
+> > +			if (!TestClearPageCgroupFileDirty(pc))
+> > +				val = 0;
+> > +		}
+> > +		idx = MEM_CGROUP_STAT_FILE_DIRTY;
+> > +		break;
+> > +
+> > +	case MEMCG_NR_FILE_WRITEBACK:
+> > +		/*
+> > +		 * This counter is adjusted while holding the mapping's
+> > +		 * tree_lock.  Therefore there is no race between settings and
+> > +		 * clearing of this flag.
+> > +		 */
+> > +		if (val > 0)
+> > +			SetPageCgroupFileWriteback(pc);
+> > +		else
+> > +			ClearPageCgroupFileWriteback(pc);
+> > +		idx = MEM_CGROUP_STAT_FILE_WRITEBACK;
+> > +		break;
+> > +
+> > +	case MEMCG_NR_FILE_UNSTABLE_NFS:
+> > +		/* Use Test{Set,Clear} to only un/charge the memcg once. */
+> > +		if (val > 0) {
+> > +			if (TestSetPageCgroupFileUnstableNFS(pc))
+> > +				val = 0;
+> > +		} else {
+> > +			if (!TestClearPageCgroupFileUnstableNFS(pc))
+> > +				val = 0;
+> > +		}
+> > +		idx = MEM_CGROUP_STAT_FILE_UNSTABLE_NFS;
+> > +		break;
 > 
-> The generic description goes above the "---" line, the incremental
-> history of the patch usually below.
+> This part can be simplified by some macro work.
+> But it's another issue.
 > 
->> v1
->>
->> The card/host controller may sometimes return a value that is
->> too low and cause the h/w to timeout a transfer that would have
->> worked.  Using the maximum value avoids this.
->>
->> Signed-off-by: Philip Rakity <prakity@marvell.com>
-> 
-> What is there seems ok, but it is not enough yet. The quirks can also go
-> from the users.
-> 
-> After that, it gets even more complicated; after this patch
-> 'host->timeout_clk' becomes obsolete which should probably cleaned up in
-> a later patch together with host->ops->get_timeout_clk. Hmmmm, that
-> needs careful auditing.
-> 
-> Regards,
-> 
->    Wolfram
-> 
+Agreed, doing in another patch is better.
+
+Thanks,
+-Kame
 
