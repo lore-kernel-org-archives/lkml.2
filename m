@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab1B1Viw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 16:38:52 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:42990 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab1B1Viv (ORCPT
+	id S1752737Ab1B1VkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 16:40:19 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44359 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab1B1VkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 16:38:51 -0500
+	Mon, 28 Feb 2011 16:40:17 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=tKQ4w4zsUq9JbYLDMxHhfwM1PuD+zuytdKATWmLH5xKeWg/pI3geckaSUl8ie+cqeu
-         65VN2olOfKLiV7wLVv9A==
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=aoRJ1YjO6wgt2RRqoKrQlsXGVfskZVECuT4y76BwpQhQVuPaC8DFE15LXf7LW4e7pE
+         0XPynZYTIlri6Xy3wAuueE5tzxs7tp8Zg8e1KLZAowBCZ2/4h1JXz9UTj66DEBGLfAHq
+         tV+pN00B0222YxV8J0qJcERxgDj463c/yqw+0=
+Message-ID: <4D6C163A.4010904@openvz.org>
+Date: Tue, 01 Mar 2011 00:40:10 +0300
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110228122236.GA1211@merkur.ravnborg.org>
-References: <1298506377-16796-1-git-send-email-mikew@google.com>
- <201102272107.48934.arnd@arndb.de> <AANLkTikijjZwQp6Fer9TqRqQe=2WhSCPcDv5mczcGD8g@mail.gmail.com>
- <201102281311.16811.arnd@arndb.de> <20110228122236.GA1211@merkur.ravnborg.org>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 28 Feb 2011 13:38:28 -0800
-Message-ID: <AANLkTi=pY4-c6W8O1+OG1Fpe-7y20E6eiwt3yzA0EwQq@mail.gmail.com>
-Subject: Re: [klibc] [PATCH] build: Define __EXPORTED_HEADER__
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, klibc@zytor.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>
+Subject: [PATHC -tip 1/2] x86, nmi: Define a name for NMI control port
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 4:22 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Mon, Feb 28, 2011 at 01:11:16PM +0100, Arnd Bergmann wrote:
->> On Monday 28 February 2011, Mike Waychison wrote:
->> > How is one expected to test if the files should be rebuild or not?
->> > Forcing a headers_install as part of a build will cause the entire
->> > userland to be rebuilt.
->>
->> How about changing headers_install to only install files that have
->> changed? Make headers_install alreadh knows the list of all files
->> it is installing.
->
-> make headers_install already does so. Only changes fiels are updated.
-> So I consider this a non-issue.
+Also add a comment anout why we need in-out operations.
 
-Aha, I missed this point.  I've updated our build to do a
-headers_install and things seem to work fine.
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+  arch/x86/include/asm/mach_traps.h |   18 +++++++++++++-----
+  1 file changed, 13 insertions(+), 5 deletions(-)
 
-Thanks for the pointers :)  Please forget about this patch.
+Index: linux-2.6.git/arch/x86/include/asm/mach_traps.h
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/mach_traps.h
++++ linux-2.6.git/arch/x86/include/asm/mach_traps.h
+@@ -8,6 +8,7 @@
+  #include <asm/mc146818rtc.h>
+
+  #define NMI_REASON_PORT		0x61
++#define NMI_ENABLE_PORT		0x70 /* Real-Time Clock Address Register as well */
+
+  #define NMI_REASON_SERR		0x80
+  #define NMI_REASON_IOCHK	0x40
+@@ -30,12 +31,19 @@ static inline void reassert_nmi(void)
+  		old_reg = current_lock_cmos_reg();
+  	else
+  		lock_cmos(0); /* register doesn't matter here */
+-	outb(0x8f, 0x70);
+-	inb(0x71);		/* dummy */
+-	outb(0x0f, 0x70);
+-	inb(0x71);		/* dummy */
++
++	/*
++	 * This will cause the NMI output to transition low
++	 * then high if there are any pending NMI sources. The
++	 * CPU's NMI input logic will then register a new NMI.
++	 */
++	outb(0x8f, NMI_ENABLE_PORT);
++	inb(0x71);	/* dummy */
++	outb(0x0f, NMI_ENABLE_PORT);
++	inb(0x71);	/* dummy */
++
+  	if (old_reg >= 0)
+-		outb(old_reg, 0x70);
++		outb(old_reg, NMI_ENABLE_PORT);
+  	else
+  		unlock_cmos();
+  }
+-- 
+     Cyrill
