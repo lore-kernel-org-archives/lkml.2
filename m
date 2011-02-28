@@ -1,62 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750896Ab1B1FFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 00:05:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10996 "EHLO mx1.redhat.com"
+	id S1750926Ab1B1FHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 00:07:44 -0500
+Received: from mga03.intel.com ([143.182.124.21]:50752 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab1B1FFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 00:05:02 -0500
-Date: Mon, 28 Feb 2011 10:34:56 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Chuck Ebbert <cebbert@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Can't build in the virtio console driver on x86_64 when the
- other virtio drivers are modular
-Message-ID: <20110228050456.GB29933@amit-x200.redhat.com>
-References: <20110224112819.10f59f68@katamari>
- <20110225060815.GB15723@amit-x200.redhat.com>
- <20110225121320.2f540f12@katamari>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110225121320.2f540f12@katamari>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750720Ab1B1FHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 00:07:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,238,1297065600"; 
+   d="scan'208";a="394871305"
+From: Mark Allyn <mark.a.allyn@intel.com>
+To: linux-kernel@vger.kernel.org, greg@kroah.com, mark.a.allyn@intel.com,
+        alan@linux.intel.com
+Subject: RFC: [PATCH 0/5] staging: sep: Enable kernel crypto
+Date: Sun, 27 Feb 2011 21:10:24 -0800
+Message-Id: <1298869824-4246-1-git-send-email-mark.a.allyn@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 25 Feb 2011 [12:13:20], Chuck Ebbert wrote:
-> On Fri, 25 Feb 2011 11:38:15 +0530
-> Amit Shah <amit.shah@redhat.com> wrote:
-> 
-> > On (Thu) 24 Feb 2011 [11:28:19], Chuck Ebbert wrote:
-> > > The virtio configuration options are inconsistent. According to this,
-> > > every options that needs virtio will select it:
-> > > 
-> > >  # Virtio always gets selected by whoever wants it.
-> > >  config VIRTIO
-> > >         tristate
-> > > 
-> > > Note that it's not user-selectable, so any config file that tries to
-> > > set it will be ignored when kconfig loads those options. And yet we
-> > > have a whole set of options that depend on VIRTIO, like VIRTIO_CONSOLE
-> > > for example. This makes it impossible to have VIRTIO_PCI modular and
-> > > VIRTIO_CONSOLE built-in on x86_64, because:
-> > 
-> > Any reason to have VIRTIO_PCI modular instead of built in (on x86-64,
-> > virtio-console won't work without virtio-pci anyway)?
-> > 
-> 
-> None that I know of offhand, other than not building in things unless
-> absolutely necessary. There's no dependency of any kind there, so it's
-> even possible to build a kernel with VIRTIO_CONSOLE enabled and
-> VIRTIO_PCI completely disabled.
+This is a set of 5 patches to enable kernel crypto operation of the
+SEP device
 
-Yes, that's that way because not all architectures need virtio-pci to
-have virtio-console functional (eg. s390, which doesn't have a PCI
-bus).
+All patches are required as a set.
 
-So if you're only interested in the x86-64 arch, you could compile in
-virtio-pci and virtio-console and this should happily work.
-
-		Amit
+Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
