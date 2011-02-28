@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab1B1Qhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:37:41 -0500
-Received: from kroah.org ([198.145.64.141]:48077 "EHLO coco.kroah.org"
+	id S1755483Ab1B1Qhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:37:35 -0500
+Received: from kroah.org ([198.145.64.141]:48061 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755347Ab1B1Qhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:37:37 -0500
+	id S1755347Ab1B1Qhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:37:33 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:09 2011
-Message-Id: <20110228162409.142730523@clark.kroah.org>
+Message-Id: <20110228162408.940483340@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:55 -0800
+Date: Mon, 28 Feb 2011 08:22:53 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <dchinner@redhat.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, dannf@debian.org
-Subject: [34/68] xfs: validate untrusted inode numbers during lookup
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [32/68] nfsd: correctly handle return value from nfsd_map_name_to_*
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,205 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: NeilBrown <neilb@suse.de>
 
-From: Dave Chinner <dchinner@redhat.com>
+commit 47c85291d3dd1a51501555000b90f8e281a0458e upstream.
 
-Upstream commit: 7124fe0a5b619d65b739477b3b55a20bf805b06d
+These functions return an nfs status, not a host_err.  So don't
+try to convert  before returning.
 
-When we decode a handle or do a bulkstat lookup, we are using an
-inode number we cannot trust to be valid. If we are deleting inode
-chunks from disk (default noikeep mode), then we cannot trust the on
-disk inode buffer for any given inode number to correctly reflect
-whether the inode has been unlinked as the di_mode nor the
-generation number may have been updated on disk.
+This is a regression introduced by
+3c726023402a2f3b28f49b9d90ebf9e71151157d; I fixed up two of the callers,
+but missed these two.
 
-This is due to the fact that when we delete an inode chunk, we do
-not write the clusters back to disk when they are removed - instead
-we mark them stale to avoid them being written back potentially over
-the top of something that has been subsequently allocated at that
-location. The result is that we can have locations of disk that look
-like they contain valid inodes but in reality do not. Hence we
-cannot simply convert the inode number to a block number and read
-the location from disk to determine if the inode is valid or not.
-
-As a result, and XFS_IGET_BULKSTAT lookup needs to actually look the
-inode up in the inode allocation btree to determine if the inode
-number is valid or not.
-
-It should be noted even on ikeep filesystems, there is the
-possibility that blocks on disk may look like valid inode clusters.
-e.g. if there are filesystem images hosted on the filesystem. Hence
-even for ikeep filesystems we really need to validate that the inode
-number is valid before issuing the inode buffer read.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-[dannf: backported to 2.6.32.y]
-Cc: dann frazier <dannf@debian.org>
+Reported-by: Herbert Poetzl <herbert@13thfloor.at>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- fs/xfs/xfs_ialloc.c |  125 +++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 80 insertions(+), 45 deletions(-)
 
---- a/fs/xfs/xfs_ialloc.c
-+++ b/fs/xfs/xfs_ialloc.c
-@@ -1206,6 +1206,65 @@ error0:
- 	return error;
- }
- 
-+STATIC int
-+xfs_imap_lookup(
-+	struct xfs_mount	*mp,
-+	struct xfs_trans	*tp,
-+	xfs_agnumber_t		agno,
-+	xfs_agino_t		agino,
-+	xfs_agblock_t		agbno,
-+	xfs_agblock_t		*chunk_agbno,
-+	xfs_agblock_t		*offset_agbno,
-+	int			flags)
-+{
-+	struct xfs_inobt_rec_incore rec;
-+	struct xfs_btree_cur	*cur;
-+	struct xfs_buf		*agbp;
-+	xfs_agino_t		startino;
-+	int			error;
-+	int			i;
-+
-+	down_read(&mp->m_peraglock);
-+	error = xfs_ialloc_read_agi(mp, tp, agno, &agbp);
-+	up_read(&mp->m_peraglock);
-+	if (error) {
-+		xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
-+				"xfs_ialloc_read_agi() returned "
-+				"error %d, agno %d",
-+				error, agno);
-+		return error;
-+	}
-+
-+	/*
-+	 * derive and lookup the exact inode record for the given agino. If the
-+	 * record cannot be found, then it's an invalid inode number and we
-+	 * should abort.
-+	 */
-+	cur = xfs_inobt_init_cursor(mp, tp, agbp, agno);
-+	startino = agino & ~(XFS_IALLOC_INODES(mp) - 1);
-+	error = xfs_inobt_lookup(cur, startino, XFS_LOOKUP_EQ, &i);
-+	if (!error) {
-+		if (i)
-+			error = xfs_inobt_get_rec(cur, &rec, &i);
-+		if (!error && i == 0)
-+			error = EINVAL;
-+	}
-+
-+	xfs_trans_brelse(tp, agbp);
-+	xfs_btree_del_cursor(cur, XFS_BTREE_NOERROR);
-+	if (error)
-+		return error;
-+
-+	/* for untrusted inodes check it is allocated first */
-+	if ((flags & XFS_IGET_BULKSTAT) &&
-+	    (rec.ir_free & XFS_INOBT_MASK(agino - rec.ir_startino)))
-+		return EINVAL;
-+
-+	*chunk_agbno = XFS_AGINO_TO_AGBNO(mp, rec.ir_startino);
-+	*offset_agbno = agbno - *chunk_agbno;
-+	return 0;
-+}
-+
- /*
-  * Return the location of the inode in imap, for mapping it into a buffer.
-  */
-@@ -1266,6 +1325,23 @@ xfs_imap(
- 		return XFS_ERROR(EINVAL);
+---
+ fs/nfsd/nfs4xdr.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -323,8 +323,8 @@ nfsd4_decode_fattr(struct nfsd4_compound
+ 		READ_BUF(dummy32);
+ 		len += (XDR_QUADLEN(dummy32) << 2);
+ 		READMEM(buf, dummy32);
+-		if ((host_err = nfsd_map_name_to_uid(argp->rqstp, buf, dummy32, &iattr->ia_uid)))
+-			goto out_nfserr;
++		if ((status = nfsd_map_name_to_uid(argp->rqstp, buf, dummy32, &iattr->ia_uid)))
++			return status;
+ 		iattr->ia_valid |= ATTR_UID;
  	}
- 
-+	blks_per_cluster = XFS_INODE_CLUSTER_SIZE(mp) >> mp->m_sb.sb_blocklog;
-+
-+	/*
-+	 * For bulkstat and handle lookups, we have an untrusted inode number
-+	 * that we have to verify is valid. We cannot do this just by reading
-+	 * the inode buffer as it may have been unlinked and removed leaving
-+	 * inodes in stale state on disk. Hence we have to do a btree lookup
-+	 * in all cases where an untrusted inode number is passed.
-+	 */
-+	if (flags & XFS_IGET_BULKSTAT) {
-+		error = xfs_imap_lookup(mp, tp, agno, agino, agbno,
-+					&chunk_agbno, &offset_agbno, flags);
-+		if (error)
-+			return error;
-+		goto out_map;
-+	}
-+
- 	/*
- 	 * If the inode cluster size is the same as the blocksize or
- 	 * smaller we get to the buffer by simple arithmetics.
-@@ -1280,10 +1356,8 @@ xfs_imap(
- 		return 0;
+ 	if (bmval[1] & FATTR4_WORD1_OWNER_GROUP) {
+@@ -334,8 +334,8 @@ nfsd4_decode_fattr(struct nfsd4_compound
+ 		READ_BUF(dummy32);
+ 		len += (XDR_QUADLEN(dummy32) << 2);
+ 		READMEM(buf, dummy32);
+-		if ((host_err = nfsd_map_name_to_gid(argp->rqstp, buf, dummy32, &iattr->ia_gid)))
+-			goto out_nfserr;
++		if ((status = nfsd_map_name_to_gid(argp->rqstp, buf, dummy32, &iattr->ia_gid)))
++			return status;
+ 		iattr->ia_valid |= ATTR_GID;
  	}
- 
--	blks_per_cluster = XFS_INODE_CLUSTER_SIZE(mp) >> mp->m_sb.sb_blocklog;
--
- 	/*
--	 * If we get a block number passed from bulkstat we can use it to
-+	 * If we get a block number passed we can use it to
- 	 * find the buffer easily.
- 	 */
- 	if (imap->im_blkno) {
-@@ -1307,52 +1381,13 @@ xfs_imap(
- 		offset_agbno = agbno & mp->m_inoalign_mask;
- 		chunk_agbno = agbno - offset_agbno;
- 	} else {
--		xfs_btree_cur_t	*cur;	/* inode btree cursor */
--		xfs_inobt_rec_incore_t chunk_rec;
--		xfs_buf_t	*agbp;	/* agi buffer */
--		int		i;	/* temp state */
--
--		down_read(&mp->m_peraglock);
--		error = xfs_ialloc_read_agi(mp, tp, agno, &agbp);
--		up_read(&mp->m_peraglock);
--		if (error) {
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_ialloc_read_agi() returned "
--					"error %d, agno %d",
--					error, agno);
--			return error;
--		}
--
--		cur = xfs_inobt_init_cursor(mp, tp, agbp, agno);
--		error = xfs_inobt_lookup(cur, agino, XFS_LOOKUP_LE, &i);
--		if (error) {
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_inobt_lookup() failed");
--			goto error0;
--		}
--
--		error = xfs_inobt_get_rec(cur, &chunk_rec, &i);
--		if (error) {
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_inobt_get_rec() failed");
--			goto error0;
--		}
--		if (i == 0) {
--#ifdef DEBUG
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_inobt_get_rec() failed");
--#endif /* DEBUG */
--			error = XFS_ERROR(EINVAL);
--		}
-- error0:
--		xfs_trans_brelse(tp, agbp);
--		xfs_btree_del_cursor(cur, XFS_BTREE_NOERROR);
-+		error = xfs_imap_lookup(mp, tp, agno, agino, agbno,
-+					&chunk_agbno, &offset_agbno, flags);
- 		if (error)
- 			return error;
--		chunk_agbno = XFS_AGINO_TO_AGBNO(mp, chunk_rec.ir_startino);
--		offset_agbno = agbno - chunk_agbno;
- 	}
- 
-+out_map:
- 	ASSERT(agbno >= chunk_agbno);
- 	cluster_agbno = chunk_agbno +
- 		((offset_agbno / blks_per_cluster) * blks_per_cluster);
+ 	if (bmval[1] & FATTR4_WORD1_TIME_ACCESS_SET) {
 
 
