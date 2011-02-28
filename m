@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab1B1Qmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:42:33 -0500
-Received: from xenotime.net ([184.105.210.51]:41036 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756025Ab1B1Qmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:42:31 -0500
-Date: Mon, 28 Feb 2011 08:42:22 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Ludwig Nussel <ludwig.nussel@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Gleixner (maintainer:X86 ARCHITECTURE...) 
-	<tglx@linutronix.de>,
-        Ingo Molnar (maintainer:X86 ARCHITECTURE...) <mingo@redhat.com>,
-        "H. Peter Anvin" (maintainer:X86 ARCHITECTURE...) <hpa@zytor.com>,
-        x86@kernel.org (maintainer:X86 ARCHITECTURE...)
-Subject: Re: [PATCH] fix mmap random address range on x86 (try2)
-Message-Id: <20110228084222.eb52e7c4.rdunlap@xenotime.net>
-In-Reply-To: <1298904783-4291-1-git-send-email-ludwig.nussel@suse.de>
-References: <1298904783-4291-1-git-send-email-ludwig.nussel@suse.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756049Ab1B1Qmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:42:49 -0500
+Received: from kroah.org ([198.145.64.141]:48200 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755670Ab1B1QiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:04 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:11 2011
+Message-Id: <20110228162410.917297520@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Mon, 28 Feb 2011 08:23:13 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [52/68] USB: add quirks entry for Keytouch QWERTY Panel
+In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Feb 2011 15:53:03 +0100 Ludwig Nussel wrote:
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-> On x86 casting the unsigned int result of get_random_int() to long
-> may result in a negative value. On x86 the range of mmap_rnd()
-> therefore was -255 to 255. The 32bit mode on x86_64 used 0 to 255 as
-> intended.
-> 
-> The bug was introduced by commit 675a081 in January 2008.
-> 
-> Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
-> ---
->  arch/x86/mm/mmap.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> index 1dab519..f927429 100644
-> --- a/arch/x86/mm/mmap.c
-> +++ b/arch/x86/mm/mmap.c
-> @@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
->  	*/
->  	if (current->flags & PF_RANDOMIZE) {
->  		if (mmap_is_ia32())
-> -			rnd = (long)get_random_int() % (1<<8);
-> +			rnd = get_random_int() % (1<<8);
->  		else
-> -			rnd = (long)(get_random_int() % (1<<28));
-> +			rnd = get_random_int() % (1<<28);
->  	}
->  	return rnd << PAGE_SHIFT;
->  }
-> -- 
+------------------
 
-Is there a test case for this?
-Can it be tested/checked/observed?
+From: Alan Stern <stern@rowland.harvard.edu>
 
-thanks,
+commit 3c18e30f87ac5466bddbb05cf955605efd7db025 upstream.
+
+This patch (as1448) adds a quirks entry for the Keytouch QWERTY Panel
+firmware, used in the IEC 60945 keyboard.  This device crashes during
+enumeration when the computer asks for its configuration string
+descriptor.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: kholis <nur.kholis.majid@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/usb/core/quirks.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -68,6 +68,10 @@ static const struct usb_device_id usb_qu
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* Keytouch QWERTY Panel keyboard */
++	{ USB_DEVICE(0x0926, 0x3333), .driver_info =
++			USB_QUIRK_CONFIG_INTF_STRINGS },
++
+ 	/* X-Rite/Gretag-Macbeth Eye-One Pro display colorimeter */
+ 	{ USB_DEVICE(0x0971, 0x2000), .driver_info = USB_QUIRK_NO_SET_INTF },
+ 
+
+
