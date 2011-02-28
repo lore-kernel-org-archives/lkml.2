@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab1B1SYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 13:24:45 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41243 "EHLO mail.skyhub.de"
+	id S1754484Ab1B1SZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 13:25:27 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46272 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754351Ab1B1SYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 13:24:44 -0500
-Date: Mon, 28 Feb 2011 19:24:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>
-Cc: torvalds@linux-foundation.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kbuild@vger.kernel.org, bp@amd64.org
-Subject: Re: [PATCH -v4] kbuild: Add extra gcc checks
-Message-ID: <20110228182440.GA12411@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-	torvalds@linux-foundation.org, x86@kernel.org,
-	linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-	linux-kbuild@vger.kernel.org, bp@amd64.org
-References: <20110221110322.GA9819@liondog.tnic>
+	id S1753325Ab1B1SZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 13:25:25 -0500
+Date: Mon, 28 Feb 2011 19:25:21 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 12/17]fs:jbd Remove one to many n's in a word.
+Message-ID: <20110228182521.GF20805@quack.suse.cz>
+References: <1298781250-2718-1-git-send-email-justinmattock@gmail.com>
+ <1298781250-2718-13-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110221110322.GA9819@liondog.tnic>
+In-Reply-To: <1298781250-2718-13-git-send-email-justinmattock@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 12:03:22PM +0100, Borislav Petkov wrote:
-> 
-> Add a 'W=1' Makefile switch which adds additional checking per build
-> object.
-> 
-> The idea behind this option is targeted at developers who, in the
-> process of writing their code, want to do the occasional
-> 
-> make W=1 [target.o]
-> 
-> and let gcc do more extensive code checking for them. Then, they
-> could eyeball the output for valid gcc warnings about various
-> bugs/discrepancies which are not reported during the normal build
-> process.
-> 
-> For more background information and a use case, read through this
-> thread: http://marc.info/?l=kernel-janitors&m=129802065918147&w=2
-> 
-> -v4: Enable this for gcc only. Also, check for options which are not
-> supported by every gcc version we use to build the kernel. Adding those
-> checks for _every_ option slows down the build noticeably so be sensible
-> here and add it only when your gcc version chokes on a particular
-> option.
-> 
-> -v[2..3]: move to Makefile.build
-> 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Sam Ravnborg <sam@ravnborg.org>
-> Cc: linux-kbuild@vger.kernel.org
-> Acked-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
+On Sat 26-02-11 20:34:05, Justin P. Mattock wrote:
+> The Patch below removes one to many "n's" in a word.. 
+  Thanks. Merged.
 
-Ping?
+							Honza
 
-Michal, Sam,
-
-any news here? FWIW, I've been build-testing amd64_edac.c with it and
-have caught a bunch of buglets with it. IMHO, it really helps to enable
-more extensive gcc checking in debugging builds.
-
-Thanks.
-
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org> 
+> CC: Jan Kara <jack@suse.cz> 
+> CC: linux-ext4@vger.kernel.org
+> ---
+>  fs/jbd/journal.c  |    2 +-
+>  fs/jbd2/journal.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+> index da1b5e4..eb11601 100644
+> --- a/fs/jbd/journal.c
+> +++ b/fs/jbd/journal.c
+> @@ -839,7 +839,7 @@ journal_t * journal_init_inode (struct inode *inode)
+>  	err = journal_bmap(journal, 0, &blocknr);
+>  	/* If that failed, give up */
+>  	if (err) {
+> -		printk(KERN_ERR "%s: Cannnot locate journal superblock\n",
+> +		printk(KERN_ERR "%s: Cannot locate journal superblock\n",
+>  		       __func__);
+>  		goto out_err;
+>  	}
+> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> index 97e7346..90407b8 100644
+> --- a/fs/jbd2/journal.c
+> +++ b/fs/jbd2/journal.c
+> @@ -991,7 +991,7 @@ journal_t * jbd2_journal_init_inode (struct inode *inode)
+>  	err = jbd2_journal_bmap(journal, 0, &blocknr);
+>  	/* If that failed, give up */
+>  	if (err) {
+> -		printk(KERN_ERR "%s: Cannnot locate journal superblock\n",
+> +		printk(KERN_ERR "%s: Cannot locate journal superblock\n",
+>  		       __func__);
+>  		goto out_err;
+>  	}
+> -- 
+> 1.7.4.1
+> 
 -- 
-Regards/Gruss,
-Boris.
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
