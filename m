@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab1B1Qvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:51:36 -0500
-Received: from kroah.org ([198.145.64.141]:41227 "EHLO coco.kroah.org"
+	id S1755244Ab1B1QhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:37:01 -0500
+Received: from kroah.org ([198.145.64.141]:41198 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755259Ab1B1QhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:37:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:07 2011
-Message-Id: <20110228162406.946241235@clark.kroah.org>
+	id S1755226Ab1B1Qg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:36:59 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
+Message-Id: <20110228162406.554108148@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:34 -0800
+Date: Mon, 28 Feb 2011 08:22:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Howells <dhowells@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [13/68] CRED: Fix get_task_cred() and task_state() to not resurrect dead credentials
+        Shaohua Li <shaohua.li@intel.com>, venkatesh.pallipadi@intel.com,
+        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>
+Subject: [09/68] x86, hpet: Disable per-cpu hpet timer if ARAT is supported
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,177 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Shaohua Li <shaohua.li@intel.com>
 
-commit de09a9771a5346029f4d11e4ac886be7f9bfdd75 upstream.
+commit 39fe05e58c5e448601ce46e6b03900d5bf31c4b0 upstream.
 
-It's possible for get_task_cred() as it currently stands to 'corrupt' a set of
-credentials by incrementing their usage count after their replacement by the
-task being accessed.
+If CPU support always running local APIC timer, per-cpu hpet
+timer could be disabled, which is useless and wasteful in such
+case. Let's leave the timers to others.
 
-What happens is that get_task_cred() can race with commit_creds():
+The effect is that we reserve less timers.
 
-	TASK_1			TASK_2			RCU_CLEANER
-	-->get_task_cred(TASK_2)
-	rcu_read_lock()
-	__cred = __task_cred(TASK_2)
-				-->commit_creds()
-				old_cred = TASK_2->real_cred
-				TASK_2->real_cred = ...
-				put_cred(old_cred)
-				  call_rcu(old_cred)
-		[__cred->usage == 0]
-	get_cred(__cred)
-		[__cred->usage == 1]
-	rcu_read_unlock()
-							-->put_cred_rcu()
-							[__cred->usage == 1]
-							panic()
-
-However, since a tasks credentials are generally not changed very often, we can
-reasonably make use of a loop involving reading the creds pointer and using
-atomic_inc_not_zero() to attempt to increment it if it hasn't already hit zero.
-
-If successful, we can safely return the credentials in the knowledge that, even
-if the task we're accessing has released them, they haven't gone to the RCU
-cleanup code.
-
-We then change task_state() in procfs to use get_task_cred() rather than
-calling get_cred() on the result of __task_cred(), as that suffers from the
-same problem.
-
-Without this change, a BUG_ON in __put_cred() or in put_cred_rcu() can be
-tripped when it is noticed that the usage count is not zero as it ought to be,
-for example:
-
-kernel BUG at kernel/cred.c:168!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/kernel/mm/ksm/run
-CPU 0
-Pid: 2436, comm: master Not tainted 2.6.33.3-85.fc13.x86_64 #1 0HR330/OptiPlex
-745
-RIP: 0010:[<ffffffff81069881>]  [<ffffffff81069881>] __put_cred+0xc/0x45
-RSP: 0018:ffff88019e7e9eb8  EFLAGS: 00010202
-RAX: 0000000000000001 RBX: ffff880161514480 RCX: 00000000ffffffff
-RDX: 00000000ffffffff RSI: ffff880140c690c0 RDI: ffff880140c690c0
-RBP: ffff88019e7e9eb8 R08: 00000000000000d0 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000040 R12: ffff880140c690c0
-R13: ffff88019e77aea0 R14: 00007fff336b0a5c R15: 0000000000000001
-FS:  00007f12f50d97c0(0000) GS:ffff880007400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f8f461bc000 CR3: 00000001b26ce000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process master (pid: 2436, threadinfo ffff88019e7e8000, task ffff88019e77aea0)
-Stack:
- ffff88019e7e9ec8 ffffffff810698cd ffff88019e7e9ef8 ffffffff81069b45
-<0> ffff880161514180 ffff880161514480 ffff880161514180 0000000000000000
-<0> ffff88019e7e9f28 ffffffff8106aace 0000000000000001 0000000000000246
-Call Trace:
- [<ffffffff810698cd>] put_cred+0x13/0x15
- [<ffffffff81069b45>] commit_creds+0x16b/0x175
- [<ffffffff8106aace>] set_current_groups+0x47/0x4e
- [<ffffffff8106ac89>] sys_setgroups+0xf6/0x105
- [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
-Code: 48 8d 71 ff e8 7e 4e 15 00 85 c0 78 0b 8b 75 ec 48 89 df e8 ef 4a 15 00
-48 83 c4 18 5b c9 c3 55 8b 07 8b 07 48 89 e5 85 c0 74 04 <0f> 0b eb fe 65 48 8b
-04 25 00 cc 00 00 48 3b b8 58 04 00 00 75
-RIP  [<ffffffff81069881>] __put_cred+0xc/0x45
- RSP <ffff88019e7e9eb8>
----[ end trace df391256a100ebdd ]---
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Cc: venkatesh.pallipadi@intel.com
+LKML-Reference: <20090812031612.GA10062@sli10-desk.sh.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/array.c      |    2 +-
- include/linux/cred.h |   21 +--------------------
- kernel/cred.c        |   25 +++++++++++++++++++++++++
- 3 files changed, 27 insertions(+), 21 deletions(-)
+ arch/x86/kernel/hpet.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -172,7 +172,7 @@ static inline void task_state(struct seq
- 		if (tracer)
- 			tpid = task_pid_nr_ns(tracer, ns);
- 	}
--	cred = get_cred((struct cred *) __task_cred(p));
-+	cred = get_task_cred(p);
- 	seq_printf(m,
- 		"State:\t%s\n"
- 		"Tgid:\t%d\n"
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -153,6 +153,7 @@ struct cred {
- extern void __put_cred(struct cred *);
- extern void exit_creds(struct task_struct *);
- extern int copy_creds(struct task_struct *, unsigned long);
-+extern const struct cred *get_task_cred(struct task_struct *);
- extern struct cred *cred_alloc_blank(void);
- extern struct cred *prepare_creds(void);
- extern struct cred *prepare_exec_creds(void);
-@@ -283,26 +284,6 @@ static inline void put_cred(const struct
- 	((const struct cred *)(rcu_dereference((task)->real_cred)))
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -606,6 +606,8 @@ static void hpet_msi_capability_lookup(u
+ 	if (hpet_msi_disable)
+ 		return;
  
- /**
-- * get_task_cred - Get another task's objective credentials
-- * @task: The task to query
-- *
-- * Get the objective credentials of a task, pinning them so that they can't go
-- * away.  Accessing a task's credentials directly is not permitted.
-- *
-- * The caller must make sure task doesn't go away, either by holding a ref on
-- * task or by holding tasklist_lock to prevent it from being unlinked.
-- */
--#define get_task_cred(task)				\
--({							\
--	struct cred *__cred;				\
--	rcu_read_lock();				\
--	__cred = (struct cred *) __task_cred((task));	\
--	get_cred(__cred);				\
--	rcu_read_unlock();				\
--	__cred;						\
--})
--
--/**
-  * get_current_cred - Get the current task's subjective credentials
-  *
-  * Get the subjective credentials of the current task, pinning them so that
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -208,6 +208,31 @@ void exit_creds(struct task_struct *tsk)
- 	}
- }
++	if (boot_cpu_has(X86_FEATURE_ARAT))
++		return;
+ 	id = hpet_readl(HPET_ID);
  
-+/**
-+ * get_task_cred - Get another task's objective credentials
-+ * @task: The task to query
-+ *
-+ * Get the objective credentials of a task, pinning them so that they can't go
-+ * away.  Accessing a task's credentials directly is not permitted.
-+ *
-+ * The caller must also make sure task doesn't get deleted, either by holding a
-+ * ref on task or by holding tasklist_lock to prevent it from being unlinked.
-+ */
-+const struct cred *get_task_cred(struct task_struct *task)
-+{
-+	const struct cred *cred;
+ 	num_timers = ((id & HPET_ID_NUMBER) >> HPET_ID_NUMBER_SHIFT);
+@@ -894,10 +896,8 @@ int __init hpet_enable(void)
+ 
+ 	if (id & HPET_ID_LEGSUP) {
+ 		hpet_legacy_clockevent_register();
+-		hpet_msi_capability_lookup(2);
+ 		return 1;
+ 	}
+-	hpet_msi_capability_lookup(0);
+ 	return 0;
+ 
+ out_nohpet:
+@@ -930,12 +930,20 @@ static __init int hpet_late_init(void)
+ 	if (!hpet_virt_address)
+ 		return -ENODEV;
+ 
++	if (hpet_readl(HPET_ID) & HPET_ID_LEGSUP)
++		hpet_msi_capability_lookup(2);
++	else
++		hpet_msi_capability_lookup(0);
 +
-+	rcu_read_lock();
+ 	hpet_reserve_platform_timers(hpet_readl(HPET_ID));
+ 	hpet_print_config();
+ 
+ 	if (hpet_msi_disable)
+ 		return 0;
+ 
++	if (boot_cpu_has(X86_FEATURE_ARAT))
++		return 0;
 +
-+	do {
-+		cred = __task_cred((task));
-+		BUG_ON(!cred);
-+	} while (!atomic_inc_not_zero(&((struct cred *)cred)->usage));
-+
-+	rcu_read_unlock();
-+	return cred;
-+}
-+
- /*
-  * Allocate blank credentials, such that the credentials can be filled in at a
-  * later date without risk of ENOMEM.
+ 	for_each_online_cpu(cpu) {
+ 		hpet_cpuhp_notify(NULL, CPU_ONLINE, (void *)(long)cpu);
+ 	}
 
 
