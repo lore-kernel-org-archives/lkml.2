@@ -1,181 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab1B1NrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 08:47:04 -0500
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:55578 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab1B1NrD (ORCPT
+	id S1754205Ab1B1NtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 08:49:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42897 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064Ab1B1NtK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 08:47:03 -0500
-Message-ID: <4D6BA72C.5000100@linux.vnet.ibm.com>
-Date: Mon, 28 Feb 2011 10:46:20 -0300
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Guillaume Chazarain <guichaz@gmail.com>, akpm@linux-foundation.org
-Subject: [GIT PULL]  TPM timeouts and resume fixes
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11022813-8936-0000-0000-000000CF014F
+	Mon, 28 Feb 2011 08:49:10 -0500
+Subject: Re: [CFS Bandwidth Control v4 3/7] sched: throttle cfs_rq entities
+ which exceed their local quota
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
+In-Reply-To: <AANLkTimydWA5xyROhdXeW5as3t8aqfR1H2dqc-42C+6=@mail.gmail.com>
+References: <20110216031831.571628191@google.com>
+	 <20110216031841.068673650@google.com> <1298467933.2217.765.camel@twins>
+	 <AANLkTimydWA5xyROhdXeW5as3t8aqfR1H2dqc-42C+6=@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Feb 2011 14:48:15 +0100
+Message-ID: <1298900895.2428.10831.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Thu, 2011-02-24 at 19:10 -0800, Paul Turner wrote:
 
-Please pull from:
-   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+> >> @@ -761,7 +788,11 @@ static void update_cfs_load(struct cfs_r
+> >>       u64 now, delta;
+> >>       unsigned long load = cfs_rq->load.weight;
+> >>
+> >> -     if (cfs_rq->tg == &root_task_group)
+> >> +     /*
+> >> +      * Don't maintain averages for the root task group, or while we are
+> >> +      * throttled.
+> >> +      */
+> >> +     if (cfs_rq->tg == &root_task_group || cfs_rq_throttled(cfs_rq))
+> >>               return;
+> >>
+> >>       now = rq_of(cfs_rq)->clock_task;
+> >
+> > Placing the return there avoids updating the timestamps, so once we get
+> > unthrottled we'll observe a very long period and skew the load avg?
+> >
+> 
+> It's easier to avoid this by fixing up the load average on unthrottle,
+> since there's no point in moving up the intermediate timestamps on
+> each throttled update.
+> 
+> The one "gotcha" in either case is that it's possible for time to
+> drift on the child of a throttled group and I don't see an easy way
+> around this.
 
-The first change corrects the logic used to extract timeouts values from TPMs.
-This second version includes an adjustment of such values from msecs to usecs,
-since some chips return such values in the first form, causing some commands
-to fail due the resulting short timeouts.
+drift how? running while being throttled due to non-preempt and other
+things?
 
-The second change re-enables TPM interrupts after a resume, making sure
-that the TPM interrupts are enabled when running in the interrupt mode.
-The TPM's interrupt enable register maye have been cleared by
-the TPM's TIS loosing its state during device sleep in ACPI S3 (suspend)
-or by the BIOS, which upon resume sends a TPM_Startup() command to the
-TPM, and may run the TPM in polling mode and leave the TIS interrupts
-disabled once it transfers control to the OS again.
+> > Ideally we'd never call this on throttled groups to begin with and
+> > handle them like full dequeue/enqueue like things.
+> >
+> 
+> This is what is attempted -- however it's still possible actions such
+> as wakeup which may still occur against throttled groups regardless of
+> their queue state.
+> 
+> In this case we still need to preserve the correct child hierarchy
+> state so that it can be re-enqueued when there is again bandwidth.
 
-Stefan Berger (2):
-       tpm_tis: Use timeouts returned from TPM
-       tpm_tis: Re-enable interrupts upon resume
+If wakeup is the one sore spot, why not terminate the hierarchy
+iteration in enqueue_task_fair that does all the load bits?
 
-  drivers/char/tpm/tpm.c     |   40 +++++++++++++++++++++++++++++++---------
-  drivers/char/tpm/tpm.h     |    3 +++
-  drivers/char/tpm/tpm_tis.c |   21 ++++++++++++++++++++-
-  3 files changed, 54 insertions(+), 10 deletions(-)
+> >> @@ -1015,6 +1046,14 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+> >>        * Update run-time statistics of the 'current'.
+> >>        */
+> >>       update_curr(cfs_rq);
+> >> +
+> >> +
+> >> +#ifdef CONFIG_CFS_BANDWIDTH
+> >> +     if (!entity_is_task(se) && (cfs_rq_throttled(group_cfs_rq(se)) ||
+> >> +          !group_cfs_rq(se)->nr_running))
+> >> +             return;
+> >> +#endif
+> >> +
+> >>       update_cfs_load(cfs_rq, 0);
+> >>       account_entity_enqueue(cfs_rq, se);
+> >>       update_cfs_shares(cfs_rq);
+> >> @@ -1087,6 +1126,11 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+> >>        */
+> >>       update_curr(cfs_rq);
+> >>
+> >> +#ifdef CONFIG_CFS_BANDWIDTH
+> >> +     if (!entity_is_task(se) && cfs_rq_throttled(group_cfs_rq(se)))
+> >> +             return;
+> >> +#endif
+> >> +
+> >>       update_stats_dequeue(cfs_rq, se);
+> >>       if (flags & DEQUEUE_SLEEP) {
+> >>  #ifdef CONFIG_SCHEDSTATS
+> >
+> > These make me very nervous, on enqueue you bail after adding
+> > min_vruntime to ->vruntime and calling update_curr(), but on dequeue you
+> > bail before subtracting min_vruntime from ->vruntime.
+> >
+> 
+> min_vruntime shouldn't be added in enqueue since unthrottling is
+> treated as a wakeup (which results in placement versus min as opposed
+> to normalization).
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 36e0fa1..a92254e 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -577,23 +577,30 @@ duration:
-      if (rc)
-          return;
+Sure, but at least put a comment there, I mean that's a glaring
+asymmetry.
 
--    if (be32_to_cpu(tpm_cmd.header.out.return_code)
--        != 3 * sizeof(u32))
-+    if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
-+        be32_to_cpu(tpm_cmd.header.out.length)
-+        != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 * sizeof(u32))
-          return;
-+
-      duration_cap =&tpm_cmd.params.getcap_out.cap.duration;
-      chip->vendor.duration[TPM_SHORT] =
-          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
--    /* The Broadcom BCM0102 chipset in a Dell Latitude D820 gets the above
--     * value wrong and apparently reports msecs rather than usecs. So we
--     * fix up the resulting too-small TPM_SHORT value to make things work.
--     */
--    if (chip->vendor.duration[TPM_SHORT]<  (HZ/100))
--        chip->vendor.duration[TPM_SHORT] = HZ;
--
-      chip->vendor.duration[TPM_MEDIUM] =
-          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_medium));
-      chip->vendor.duration[TPM_LONG] =
-          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_long));
-+
-+    /* The Broadcom BCM0102 chipset in a Dell Latitude D820 gets the above
-+     * value wrong and apparently reports msecs rather than usecs. So we
-+     * fix up the resulting too-small TPM_SHORT value to make things work.
-+     */
-+    if (chip->vendor.duration[TPM_SHORT]<  (HZ/100)) {
-+        chip->vendor.duration[TPM_SHORT]   = HZ;
-+        chip->vendor.duration[TPM_MEDIUM] *= 1000;
-+        chip->vendor.duration[TPM_LONG]   *= 1000;
-+        chip->vendor.duration_adjusted = true;
-+        dev_info(chip->dev, "Adjusting TPM timeout parameters.");
-+    }
-  }
-  EXPORT_SYMBOL_GPL(tpm_get_timeouts);
-@@ -939,6 +946,21 @@ ssize_t tpm_show_caps_1_2(struct device * dev,
-  }
-  EXPORT_SYMBOL_GPL(tpm_show_caps_1_2);
-+ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
-+              char *buf)
-+{
-+    struct tpm_chip *chip = dev_get_drvdata(dev);
-+
-+    return sprintf(buf, "%d %d %d [%s]\n",
-+               jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
-+               jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
-+               jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
-+               chip->vendor.duration_adjusted
-+             ? "adjusted"
-+             : "original");
-+}
-+EXPORT_SYMBOL_GPL(tpm_show_timeouts);
-+
-  ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
-              const char *buf, size_t count)
-  {
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 72ddb03..85e47af 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -56,6 +56,8 @@ extern ssize_t tpm_show_owned(struct device *, struct device_attribute *attr,
-                  char *);
-  extern ssize_t tpm_show_temp_deactivated(struct device *,
-                       struct device_attribute *attr, char *);
-+extern ssize_t tpm_show_timeouts(struct device *,
-+                 struct device_attribute *attr, char *);
-  struct tpm_chip;
-@@ -82,6 +84,7 @@ struct tpm_vendor_specific {
-      int locality;
-      unsigned long timeout_a, timeout_b, timeout_c, timeout_d; /* jiffies */
-      unsigned long duration[3]; /* jiffies */
-+    bool duration_adjusted;
-      wait_queue_head_t read_queue;
-      wait_queue_head_t int_queue;
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index dd21df5..38040bd 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -376,6 +376,7 @@ static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
-             NULL);
-  static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
-  static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-+static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
-  static struct attribute *tis_attrs[] = {
-      &dev_attr_pubek.attr,
-@@ -385,7 +386,8 @@ static struct attribute *tis_attrs[] = {
-      &dev_attr_owned.attr,
-      &dev_attr_temp_deactivated.attr,
-      &dev_attr_caps.attr,
--&dev_attr_cancel.attr, NULL,
-+&dev_attr_cancel.attr,
-+&dev_attr_timeouts.attr, NULL,
-  };
-  static struct attribute_group tis_attr_grp = {
-@@ -649,6 +651,23 @@ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
-  {
-      struct tpm_chip *chip = pnp_get_drvdata(dev);
-      int ret;
-+    u32 intmask;
-+
-+    if (chip->vendor.irq) {
-+        /* reenable interrupts that device may have lost or
-+           BIOS/firmware may have disabled */
-+        intmask =
-+            ioread32(chip->vendor.iobase +
-+                 TPM_INT_ENABLE(chip->vendor.locality));
-+
-+        intmask |= TPM_INTF_CMD_READY_INT
-+            | TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_DATA_AVAIL_INT
-+            | TPM_INTF_STS_VALID_INT | TPM_GLOBAL_INT_ENABLE;
-+
-+        iowrite32(intmask,
-+              chip->vendor.iobase +
-+              TPM_INT_ENABLE(chip->vendor.locality));
-+    }
-      ret = tpm_pm_resume(&dev->dev);
-      if (!ret)
+> >> @@ -1363,6 +1407,9 @@ enqueue_task_fair(struct rq *rq, struct
+> >>                       break;
+> >>               cfs_rq = cfs_rq_of(se);
+> >>               enqueue_entity(cfs_rq, se, flags);
+> >> +             /* don't continue to enqueue if our parent is throttled */
+> >> +             if (cfs_rq_throttled(cfs_rq))
+> >> +                     break;
+> >>               flags = ENQUEUE_WAKEUP;
+> >>       }
+> >>
+> >> @@ -1390,8 +1437,11 @@ static void dequeue_task_fair(struct rq
+> >>               cfs_rq = cfs_rq_of(se);
+> >>               dequeue_entity(cfs_rq, se, flags);
+> >>
+> >> -             /* Don't dequeue parent if it has other entities besides us */
+> >> -             if (cfs_rq->load.weight)
+> >> +             /*
+> >> +              * Don't dequeue parent if it has other entities besides us,
+> >> +              * or if it is throttled
+> >> +              */
+> >> +             if (cfs_rq->load.weight || cfs_rq_throttled(cfs_rq))
+> >>                       break;
+> >>               flags |= DEQUEUE_SLEEP;
+> >>       }
+> >
+> > How could we even be running if our parent was throttled?
+> >
+> 
+> It's possible we throttled within the preceding dequeue_entity -- the
+> partial update_curr against cfs_rq might be just enough to push it
+> over the edge.  In which case that entity has already been dequeued
+> and we want to bail out.
 
+right.
 
+> 
+> >> @@ -1430,6 +1480,42 @@ static u64 tg_request_cfs_quota(struct t
+> >>       return delta;
+> >>  }
+> >>
+> >> +static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+> >> +{
+> >> +     struct sched_entity *se;
+> >> +
+> >> +     se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
+> >> +
+> >> +     /* account load preceeding throttle */
+> >> +     update_cfs_load(cfs_rq, 0);
+> >> +
+> >> +     /* prevent previous buddy nominations from re-picking this se */
+> >> +     clear_buddies(cfs_rq_of(se), se);
+> >> +
+> >> +     /*
+> >> +      * It's possible for the current task to block and re-wake before task
+> >> +      * switch, leading to a throttle within enqueue_task->update_curr()
+> >> +      * versus an an entity that has not technically been enqueued yet.
+> >
+> > I'm not quite seeing how this would happen.. care to expand on this?
+> >
+> 
+> I'm not sure the example Bharata gave is correct -- I'm going to treat
+> that discussion separately as it's not the intent here.
+> 
+> Here the task _is_ running.
+> 
+> Specifically:
+> 
+> - Suppose the current task on a cfs_rq blocks
+> - Accordingly we issue dequeue against that task (however it remains
+> as curr until the put)
+> - Before we get to the put some other activity (e.g. network bottom
+> half) gets to run and re-wake the task
+> - The time elapsed for this is charged to the task, which might push
+> it over its reservation, it then gets throttled while we're trying to
+> queue it
+> 
+> BUT
+> 
+> We haven't actually done any of the enqueue work yet so there's
+> nothing to do to take it off rq.  So what we just mark it throttled
+> and make sure that the rest of the enqueue work gets short circuited.
+> 
+> The clock_task helps reduce the occurrence of this since the task will
+> be spared the majority of the SI time but it's still possible to push
+> it over.
+
+Ah, uhm, so this is all due to us dropping rq->lock after dequeue,
+right? Would 
+
+  https://lkml.org/lkml/2011/1/4/228
+
+help here?
+
+> >> +      * In this case, since we haven't actually done the enqueue yet, cut
+> >> +      * out and allow enqueue_entity() to short-circuit
+> >> +      */
+> >> +     if (!se->on_rq)
+> >> +             goto out_throttled;
+> >> +
+> >> +     for_each_sched_entity(se) {
+> >> +             struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> >> +
+> >> +             dequeue_entity(cfs_rq, se, 1);
+> >> +             if (cfs_rq->load.weight || cfs_rq_throttled(cfs_rq))
+> >> +                     break;
+> >> +     }
+> >> +
+> >> +out_throttled:
+> >> +     cfs_rq->throttled = 1;
+> >> +     update_cfs_rq_load_contribution(cfs_rq, 1);
+> >> +}
+> >> +
+> >>  static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
+> >>               unsigned long delta_exec)
+> >>  {
+> >> @@ -1438,10 +1524,16 @@ static void account_cfs_rq_quota(struct
+> >>
+> >>       cfs_rq->quota_used += delta_exec;
+> >>
+> >> -     if (cfs_rq->quota_used < cfs_rq->quota_assigned)
+> >> +     if (cfs_rq_throttled(cfs_rq) ||
+> >> +             cfs_rq->quota_used < cfs_rq->quota_assigned)
+> >>               return;
+> >
+> > So we are throttled but running anyway, I suppose this comes from the PI
+> > ceiling muck?
+> >
+> 
+> No -- this is just the fact that there are cases where reschedule
+> can't evict the task immediately.
+> 
+> e.g. softirq or any kernel time without config_preempt
+> 
+> Once we're throttled we know there's no time left or point in trying
+> to acquire it so just short circuit these until we get to a point
+> where this task can be removed from rq.
+
+Right, but like I argued in another email, it could be refreshed on
+another cpu and you now miss it.. :-)
+
+> >> +     if (!entity_on_rq(pse))
+> >> +             return;
+> >> +#endif
+> >
+> > Ideally that #ifdef'ery would go away too.
+> 
+> This can 100% go away (and is already in the #ifdefs), but it will
+> always be true in the !BANDWIDTH case, so it's a micro-overhead.
+> Accompanying micro-optimization isn't really needed :)
+
+Wouldn't gcc be able to optimize if (!true) stmt; with DCE ?
