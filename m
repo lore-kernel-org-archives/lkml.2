@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab1B1P0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:26:32 -0500
-Received: from hera.kernel.org ([140.211.167.34]:42448 "EHLO hera.kernel.org"
+	id S1754592Ab1B1PaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:30:06 -0500
+Received: from gwu.lbox.cz ([62.245.111.132]:50250 "EHLO gwu.lbox.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753634Ab1B1P0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:26:31 -0500
-Date: Mon, 28 Feb 2011 15:26:04 GMT
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, stable@kernel.org, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <1297139100-424-1-git-send-email-dzickus@redhat.com>
-References: <1297139100-424-1-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Use u32 instead of long to set reset vector back to 0
-Message-ID: <tip-299c56966a72b9109d47c71a6db52097098703dd@git.kernel.org>
-Git-Commit-ID: 299c56966a72b9109d47c71a6db52097098703dd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753519Ab1B1PaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 10:30:04 -0500
+Date: Mon, 28 Feb 2011 16:28:23 +0100
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+	boot
+Message-ID: <20110228152823.GF29840@pcnci.linuxbox.cz>
+References: <4D664E85.8070808@redhat.com> <20110224124151.GK25673@pcnci.linuxbox.cz> <4D665449.4050908@redhat.com> <20110224125702.GC29840@pcnci.linuxbox.cz> <20110225104823.GD29840@pcnci.linuxbox.cz> <4D67C077.6060108@redhat.com> <20110227172052.GB2474@nik-comp.lan> <4D6BA85B.7080908@redhat.com> <20110228143247.GE29840@pcnci.linuxbox.cz> <4D6BBC84.6020408@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Feb 2011 15:26:04 +0000 (UTC)
+In-Reply-To: <4D6BBC84.6020408@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 4673852 records (last update: 20110228)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  299c56966a72b9109d47c71a6db52097098703dd
-Gitweb:     http://git.kernel.org/tip/299c56966a72b9109d47c71a6db52097098703dd
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Mon, 7 Feb 2011 23:25:00 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 28 Feb 2011 16:22:18 +0100
+On Mon, Feb 28, 2011 at 10:17:24AM -0500, Zachary Amsden wrote:
+> On 02/28/2011 09:32 AM, Nikola Ciprich wrote:
+>>> Does the bug you are hitting manifest on both Intel and AMD platforms?
+>>>      
+>> I don't have any AMD box here, I'll try this out at my home box.
+>>
+>>    
+>>> Further, do the systems you are hitting this on have stable or unstable
+>>> TSCs?
+>>>      
+>> how do I find this out? I don't see any warning about TSC in guest, but I've
+>> just started it..
+>> n.
+>
+> Before worrying about the guest, is the host TSC stable?  What is the  
+> host clocksource?
+not sure, I'm not setting anything specifically, is this snippet of dmesg relevant:
 
-x86: Use u32 instead of long to set reset vector back to 0
+[    1.148829] HPET: 8 timers in total, 5 timers will be used for per-cpu timer
+[    1.148934] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 40, 41, 42, 43, 44, 0
+[    1.149331] hpet0: 8 comparators, 64-bit 14.318180 MHz counter
+[    1.151831] hpet: hpet2 irq 40 for MSI
+[    1.151962] hpet: hpet3 irq 41 for MSI
+[    1.155930] hpet: hpet4 irq 42 for MSI
+[    1.159937] hpet: hpet5 irq 43 for MSI
+[    1.163943] hpet: hpet6 irq 44 for MSI
+[    1.175955] Switching to clocksource tsc
 
-A customer of ours, complained that when setting the reset
-vector back to 0, it trashed other data and hung their box.
-They noticed when only 4 bytes were set to 0 instead of 8,
-everything worked correctly.
+so I guess I'm using hpet?
+n.
 
-Mathew pointed out:
 
- |
- | We're supposed to be resetting trampoline_phys_low and
- | trampoline_phys_high here, which are two 16-bit values.
- | Writing 64 bits is definitely going to overwrite space
- | that we're not supposed to be touching.
- |
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-So limit the area modified to u32.
+-- 
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Cc: <stable@kernel.org>
-LKML-Reference: <1297139100-424-1-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/smpboot_hooks.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
 
-diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
-index 6c22bf3..725b778 100644
---- a/arch/x86/include/asm/smpboot_hooks.h
-+++ b/arch/x86/include/asm/smpboot_hooks.h
-@@ -34,7 +34,7 @@ static inline void smpboot_restore_warm_reset_vector(void)
- 	 */
- 	CMOS_WRITE(0, 0xf);
- 
--	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
-+	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
- }
- 
- static inline void __init smpboot_setup_io_apic(void)
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
