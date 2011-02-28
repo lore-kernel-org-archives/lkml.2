@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab1B1Oxc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:53:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57632 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754316Ab1B1Oxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:53:31 -0500
-From: Ludwig Nussel <ludwig.nussel@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de> (maintainer:X86
-	ARCHITECTURE...),
-        Ingo Molnar <mingo@redhat.com> (maintainer:X86 ARCHITECTURE...),
-        "H. Peter Anvin" <hpa@zytor.com> (maintainer:X86 ARCHITECTURE...),
-        x86@kernel.org (maintainer:X86 ARCHITECTURE...)
-Subject: [PATCH] fix mmap random address range on x86 (try2)
-Date: Mon, 28 Feb 2011 15:53:03 +0100
-Message-Id: <1298904783-4291-1-git-send-email-ludwig.nussel@suse.de>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754584Ab1B1Oyj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:54:39 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57532 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab1B1Oyi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:54:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
+References: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
+Date: Mon, 28 Feb 2011 15:54:37 +0100
+Message-ID: <AANLkTikAV306-Cv9PS-nfft3BvWHaMrRG8g7h43OM0EE@mail.gmail.com>
+Subject: Re: [PATCH] MFD: ab8500: New ab8500_gpadc APIs and reentrance
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Daniel Willerud <daniel.willerud@stericsson.com>,
+        Arun MURTHY <arun.murthy@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 casting the unsigned int result of get_random_int() to long
-may result in a negative value. On x86 the range of mmap_rnd()
-therefore was -255 to 255. The 32bit mode on x86_64 used 0 to 255 as
-intended.
+On Tue, Feb 22, 2011 at 1:24 PM, Daniel Willerud
+<daniel.willerud@stericsson.com> wrote:
 
-The bug was introduced by commit 675a081 in January 2008.
+> Added ab8500_gpadc_get() API: A client do not need to be a ab8500 sub-device
+> Added ab8500_gpadc_convert() API
+> Added support for multiple ab8500-gpadc instances, driver is now reentrant
+>
+> Corrected regulator naming according to ste-next
+>
+> Signed-off-by: Daniel Willerud <daniel.willerud@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> Acked-by: Mattias Wallin <mattias.wallin@stericsson.com>
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
----
- arch/x86/mm/mmap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Sam, are you happy with this patch?
 
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 1dab519..f927429 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
- 	*/
- 	if (current->flags & PF_RANDOMIZE) {
- 		if (mmap_is_ia32())
--			rnd = (long)get_random_int() % (1<<8);
-+			rnd = get_random_int() % (1<<8);
- 		else
--			rnd = (long)(get_random_int() % (1<<28));
-+			rnd = get_random_int() % (1<<28);
- 	}
- 	return rnd << PAGE_SHIFT;
- }
--- 
-1.7.3.4
+I think it makes everyone happy inside ST-Ericsson and get
+us in perfect sync with what we have internally. It'd be great to
+have this queued for -next. It's a dependency to our battery
+charging code which we will likely work on in the next (2.6.40)
+merge window.
 
+Yours,
+Linus Walleij
