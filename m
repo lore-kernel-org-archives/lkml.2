@@ -1,51 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab1B1LjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 06:39:24 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59655 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab1B1LjX (ORCPT
+	id S1753705Ab1B1Ln5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 06:43:57 -0500
+Received: from sirokuusama.dnainternet.net ([83.102.40.133]:38538 "EHLO
+	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753470Ab1B1Ln4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 06:39:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=tlvi9zpolhAnmknXVeOzziidb9PWATc08bDqYNx5VU+K9RI2dgi6///dJQ/Mr8j4m3
-         Qo22quseKAodKWsOibEO3AB6tqykZvhQI/TDUUsvjmwvKkj2zSszZi3V0xJsGgPEqKBM
-         MUrwz2HHYhhHGL/5I6ygV6X0x+TICyISgMwMk=
+	Mon, 28 Feb 2011 06:43:56 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -1.44
+Message-ID: <20110228134338.1241484mkljbz4w0@hayate.sektori.org>
+Date: Mon, 28 Feb 2011 13:43:38 +0200
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Albert Cahalan <acahalan@gmail.com>, Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+ <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+ <1298793252.8726.45.camel@edumazet-laptop>
+ <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+ <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+ <1298837273.8726.128.camel@edumazet-laptop>
+In-Reply-To: <1298837273.8726.128.camel@edumazet-laptop>
 MIME-Version: 1.0
-In-Reply-To: <1298874020-15628-1-git-send-email-nab@linux-iscsi.org>
-References: <1298874020-15628-1-git-send-email-nab@linux-iscsi.org>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Mon, 28 Feb 2011 12:39:02 +0100
-X-Google-Sender-Auth: k5qlw7HAGLBtNBFG_cibCqlfWE8
-Message-ID: <AANLkTimDu-KFFfvWd95URQJMt2YbWU9tLwzNeE2Lf4OW@mail.gmail.com>
-Subject: Re: [PATCH 0/5] target updates for scsi-post-merge .39 (round one)
-To: linux-iscsi-target-dev@googlegroups.com
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Joel Becker <jlbec@evilplan.org>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 7:20 AM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
-> Patches #1 -> #4 involve the addition of new ConfigFS context based
-> statistics groups in target_core_stat.c following RFC-4455 to address
-> the removal of the legacy ProcFS based target_core_mib.c in .38 code.
+Quoting Eric Dumazet <eric.dumazet@gmail.com>:
 
-Hot-pluggable InfiniBand HCAs are available since some time. As I
-wrote before, exporting RFC-4455 data via configfs instead of sysfs
-makes implementing RFC 4455 in a (user space) SNMP agent overly
-complex.
+> Le dimanche 27 février 2011 à 12:55 +0200, Jussi Kivilinna a écrit :
+>> Quoting Albert Cahalan <acahalan@gmail.com>:
+>>
+>> > On Sun, Feb 27, 2011 at 2:54 AM, Eric Dumazet  
+>> <eric.dumazet@gmail.com> wrote:
+>> >> Le dimanche 27 février 2011 à 08:02 +0100, Mikael Abrahamsson a écrit :
+>> >>> On Sun, 27 Feb 2011, Albert Cahalan wrote:
+>> >>>
+>> >>> > Nanoseconds seems fine; it's unlikely you'd ever want
+>> >>> > more than 4.2 seconds (32-bit unsigned) of queue.
+>> > ...
+>> >> Problem is some machines have slow High Resolution timing services.
+>> >>
+>> >> _If_ we have a time limit, it will probably use the low resolution (aka
+>> >> jiffies), unless high resolution services are cheap.
+>> >
+>> > As long as that is totally internal to the kernel and never
+>> > getting exposed by some API for setting the amount, sure.
+>> >
+>> >> I was thinking not having an absolute hard limit, but an EWMA based one.
+>> >
+>> > The whole point is to prevent stale packets, especially to prevent
+>> > them from messing with TCP, so I really don't think so. I suppose
+>> > you do get this to some extent via early drop.
+>>
+>> I made simple hack on sch_fifo with per packet time limits
+>> (attachment) this weekend and have been doing limited testing on
+>> wireless link. I think hardlimit is fine, it's simple and does
+>> somewhat same as what packet(-hard)limited buffer does, drops packets
+>> when buffer is 'full'. My hack checks for timed out packets on
+>> enqueue, might be wrong approach (on other hand might allow some more
+>> burstiness).
+>>
+>
+>
+> Qdisc should return to caller a good indication packet is queued or
+> dropped at enqueue() time... not later (aka : never)
+>
+> Accepting a packet at t0, and dropping it later at t0+limit without
+> giving any indication to caller is a problem.
+>
+> This is why I suggested using an EWMA plus a probabilist drop or
+> congestion indication (NET_XMIT_CN) to caller at enqueue() time.
+>
+> The absolute time limit you are trying to implement should be checked at
+> dequeue time, to cope with enqueue bursts or pauses on wire.
+>
 
-Bart.
+Would it be better to implement this as generic feature instead of  
+qdisc specific? Have qdisc_enqueue_root do ewma check:
+
+static inline int qdisc_enqueue_root(struct sk_buff *skb, struct Qdisc *sch)
+{
+	qdisc_skb_cb(skb)->pkt_len = skb->len;
+	if (likely(!sch->use_timeout)) {
+ewma_ok:
+		return qdisc_enqueue(skb, sch) & NET_XMIT_MASK;
+	}
+
+	status = qdisc_check_ewma_status()
+	if (status == ok)
+		goto ewma_ok;
+
+	if (status == overlimits)
+		...drop...
+
+	if (status == congestion) {
+		ret = qdisc_enqueue(skb, sch) & NET_XMIT_MASK;
+		return (ret == success) ? NET_XMIT_CN : ret;
+	}
+}
+
+And add qdisc_dequeue_root:
+
+static inline struct sk_buff *qdisc_dequeue_root(struct Qdisc *sch)
+{
+	skb = sch->dequeue(sch);
+
+	if (skb && unlikely(sch->use_timeout))
+		qdisc_update_ewma(skb);
+
+	return skb;
+}
+
+Then user could specify any qdisc to use timeout or not with tc. Maybe  
+go even as far as have some default timeout for default qdisc(?)
+
+-Jussi
+
+
