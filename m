@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab1B1Oj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:39:58 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:46869 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754245Ab1B1Oj4 (ORCPT
+	id S1754356Ab1B1On4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:43:56 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:41138 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab1B1Onz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:39:56 -0500
-X-Sasl-enc: WpLiL9PQOoVElyGHxYQj83kUmP3/JGNBmFRgejAR5M7E 1298903995
-Message-ID: <4D6BB403.9000908@ladisch.de>
-Date: Mon, 28 Feb 2011 15:41:07 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Mon, 28 Feb 2011 09:43:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mXK3AVfPgPTGtlkFHxKB4FqaCsDY2Ik0r4l5s82uovjcnG5TRlBo2EvDp5+3WkTWHv
+         N72bU6Sh98AkQuNPoVRw==
 MIME-Version: 1.0
-To: linux-fbdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: (WARNING) possible deadlock in del_timer_sync, called from fbcon_del_cursor_timer
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1298903626.2169.52.camel@localhost>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	<1298884559.2428.10083.camel@twins>
+	<AANLkTims=DvdmDPET=G-_9w7Za2O_kkQhgQF8fKMV_x1@mail.gmail.com>
+	<1298903626.2169.52.camel@localhost>
+Date: Mon, 28 Feb 2011 15:43:50 +0100
+Message-ID: <AANLkTinDBPsUaNhTOv7fgz-u3TWur08-HA3SpLt9s=BV@mail.gmail.com>
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While using the FB console, I tried to change the console log level
-with SysRq, and got this warning that del_timer_sync() is used in
-an interrupt handler:
+On Mon, Feb 28, 2011 at 3:33 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Mon, 2011-02-28 at 20:25 +0800, Stephane Eranian wrote:
+>> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
+>> >> This patch adds basic SandyBridge support, including hardware cache
+>> >> events and PEBS events support.
+>> >>
+>> >> LLC-* hareware cache events don't work for now, it depends on the
+>> >> offcore patches.
+>> >
+>> > What's the status of those, Stephane reported some problems last I
+>> > remember?
+>> >
+>> >
+>> >>  #define INTEL_EVENT_CONSTRAINT(c, n) \
+>> >>       EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+>> >> +#define INTEL_EVENT_CONSTRAINT2(c, n)        \
+>> >> +     EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+>> >
+>> > That's a particularly bad name, how about something like
+>> >
+>> > INTEL_UEVENT_CONSTRAINT or somesuch.
+>> >
+>> >> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
+>> >>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+>> >>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+>> >>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+>> >> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+>> >> +                     switch (boot_cpu_data.x86_model) {
+>> >> +                     case 42: /* SandyBridge */
+>> >> +                             x86_pmu.pebs_constraints = intel_snb_pebs_events;
+>> >> +                             break;
+>> >> +                     default:
+>> >> +                             x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+>> >> +                     }
+>> >>                       break;
+>> >>
+>> >>               default:
+>> >
+>> > We already have this massive model switch right after this function,
+>> > might as well move the pebs constraint assignment there.
+>> >
+>> My PEBS  patch was going to cleanup this part, though it was using
+>> it's own switch
+>> statement.
+>
+> Did you send out the patch? A link?
+>
+For what?
 
-SysRq :
-------------[ cut here ]------------
-WARNING: at kernel/timer.c:983 del_timer_sync+0x93/0xae()
-Hardware name: System Product Name
-Modules linked in: soundcore firewire_ohci firewire_core ohci_hcd ehci_hcd
-Pid: 0, comm: kworker/0:1 Not tainted 2.6.38-rc6+ #235
-Call Trace:
- <IRQ>  [<ffffffff8103a6df>] ? warn_slowpath_common+0x80/0x98
- [<ffffffff8103a70c>] ? warn_slowpath_null+0x15/0x17
- [<ffffffff810452a7>] ? del_timer_sync+0x93/0xae
- [<ffffffff81045214>] ? del_timer_sync+0x0/0xae
- [<ffffffff8120725a>] ? fbcon_del_cursor_timer+0x32/0x3d
- [<ffffffff812077f0>] ? fbcon_cursor+0x9a/0x152
- [<ffffffff8125fd84>] ? hide_cursor+0x2c/0x7d
- [<ffffffff8126022b>] ? vt_console_print+0xd9/0x2f7
- [<ffffffff8103a891>] ? __call_console_drivers+0x67/0x79
- [<ffffffff8103a8fc>] ? _call_console_drivers+0x59/0x5d
- [<ffffffff8103ae3e>] ? console_unlock+0x160/0x1ce
- [<ffffffff8103b44a>] ? vprintk+0x358/0x38e
- [<ffffffff81466199>] ? printk+0x3c/0x3e
- [<ffffffff812594ce>] ? __handle_sysrq+0x23/0x157
- [<ffffffff812594f0>] ? __handle_sysrq+0x45/0x157
- [<ffffffff81259758>] ? sysrq_filter+0x116/0x17b
- [<ffffffff8139b9c5>] ? input_pass_event+0xbe/0x111
- [<ffffffff8139b907>] ? input_pass_event+0x0/0x111
- [<ffffffff8139cfb4>] ? input_handle_event+0x42a/0x439
- [<ffffffff8139d0e9>] ? input_event+0x5b/0x7a
- [<ffffffff813a37f3>] ? atkbd_interrupt+0x50f/0x5e0
- [<ffffffff8139735c>] ? serio_interrupt+0x40/0x7c
- [<ffffffff81398647>] ? i8042_interrupt+0x289/0x2a3
- [<ffffffff8107ae98>] ? handle_IRQ_event+0x20/0xa8
- [<ffffffff8107cd68>] ? handle_edge_irq+0x103/0x14f
- [<ffffffff81004a2b>] ? handle_irq+0x83/0x8c
- [<ffffffff81004067>] ? do_IRQ+0x48/0xaf
- [<ffffffff81469a93>] ? ret_from_intr+0x0/0x13
- <EOI>  [<ffffffff8105d49e>] ? tick_broadcast_oneshot_control+0x1a/0xfb
- [<ffffffff810098cc>] ? default_idle+0x27/0x43
- [<ffffffff810098ce>] ? default_idle+0x29/0x43
- [<ffffffff810098cc>] ? default_idle+0x27/0x43
- [<ffffffff81009a33>] ? c1e_idle+0xcd/0xf4
- [<ffffffff810012e5>] ? cpu_idle+0x5f/0x96
- [<ffffffff81462b7c>] ? start_secondary+0x1e3/0x1e5
----[ end trace 80565a42945fc993 ]---
-Changing Loglevel
-Loglevel set to 3
-
-
-To add insult to injury, my cursor is configured not to blink.
-
-
-Regards,
-Clemens
+>
+>
