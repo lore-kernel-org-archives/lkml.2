@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1B1OpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:45:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57328 "EHLO mx1.redhat.com"
+	id S1754592Ab1B1Opd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:45:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29994 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754521Ab1B1OpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:45:03 -0500
-Date: Mon, 28 Feb 2011 15:36:34 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110228143634.GB31850@redhat.com>
-References: <20110214190141.GA19221@redhat.com> <20110224202941.GA12258@redhat.com> <20110225155142.GQ24828@htj.dyndns.org> <201102260348.03312.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102260348.03312.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754325Ab1B1Opc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:45:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,240,1297065600"; 
+   d="scan'208";a="714139852"
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1298903087.2428.10875.camel@twins>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	 <1298884559.2428.10083.camel@twins>  <1298902887.2169.48.camel@localhost>
+	 <1298903087.2428.10875.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Feb 2011 22:45:25 +0800
+Message-Id: <1298904325.2169.54.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26, Denys Vlasenko wrote:
->
-> * HOWEVER, this behavior _is_ indeed used by gdb to run small fragments
->   of tracee even if it's stopped. Jan's example:
->     # gdb -p applicationpid
->     (gdb) print getpid()
->     (gdb) print show_me_your_internal_debug_dump()
->     (gdb) continue
->   gdb people want to preserve this feature.
+On Mon, 2011-02-28 at 22:24 +0800, Peter Zijlstra wrote:
+> On Mon, 2011-02-28 at 22:21 +0800, Lin Ming wrote:
+> > > >  #define INTEL_EVENT_CONSTRAINT(c, n)       \
+> > > >     EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+> > > > +#define INTEL_EVENT_CONSTRAINT2(c, n)      \
+> > > > +   EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+> > > 
+> > > That's a particularly bad name, how about something like
+> > > 
+> > > INTEL_UEVENT_CONSTRAINT or somesuch.
+> > 
+> > OK.
+> > 
+> > But any case it's duplicated with PEBS_EVENT_CONSTRAINT.
+> > 
+> > #define PEBS_EVENT_CONSTRAINT(c, n)     \
+> >         EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK) 
+> 
+> Ah, indeed, so maybe we can remove PEBS_EVENT_CONSTRAINT and use regular
+> INTEL_*_CONSTRAINTS there, that could also help for PEBS events where
+> all umasks are allowed (not sure there are any such things but the SNB
+> PEBS list was quite large).
 
-Yes. Jan is looking at this, and probably he will nack this change.
-
-> How we can accomodate this gdb need while fixing this bug?
->
->
-> Oleg's POV is that gdb should SIGCONT the tracee (at least if it is
-> currently in group-stop). This has the advantage of using standard Unix
-> tool. The disadvantage is that SIGCONT will wake up *all* threads,
-
-Not necessarily. That is why, btw, I started to like Tejun's suggestion,
-the traced task should always stop in TASK_TRACED state. This means
-SIGCONT can only wakeup the tracee after PTRACE_CONT from debugger.
-
-Even without enforcing TASK_TRACED from the kernel side, gdb should
-do at least one ptrace() call after attach, this makes it TASK_TRACED
-anyway.
-
-> gdb people
-> do want here a "secret" backdoor-ish way to make a *thread*
-> (not the whole process) running even when the process is in group-stop.
-
-And this is what I disagree with. This was my main motivation to start
-this hopeless^W lengthy discussion ;) I simply can't accept the current
-behaviour: the task runs while the kernel and parent think the whole
-process is stopped.
-
-That is why I also considered another (and imho worse) option. OK, let's
-resume the tracee even if it is stopped. But in this case, let's clear
-SIGNAL_STOP_STOPPED and notify its parent.
-
-> how to open a backdoor in ptrace API for gdb:
-
-Probably I am wrong, but in the context of this discussion I do not
-care much about the new possible requests/improvements in gdb/kernel.
-
-Of course we can do something to make gdb happy, but the problem is
-the current/old code. The main objection (and I have to respect it)
-is: this change is not compatible.
-
-Oleg.
+Yes, there are, for example, BR_INST_RETIRED.*
 
