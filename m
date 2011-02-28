@@ -1,122 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab1B1K6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 05:58:16 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:53719 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab1B1K6P (ORCPT
+	id S1753683Ab1B1K6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 05:58:46 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:42465 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753560Ab1B1K6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 05:58:15 -0500
-Date: Mon, 28 Feb 2011 19:58:11 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 06/09] ARM: s3c2440: gta02: Remove state_mem constraints
- for the pcf50633 regulators
-In-reply-to: <4D6B78CD.5090602@metafoo.de>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-id: <003601cbd736$65cbc510$31634f30$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvXMgwC9vuGqSg9R5ib/89iG3xhnwABENeA
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
- <1297043521-21903-6-git-send-email-lars@metafoo.de>
- <000401cbd710$6035fab0$20a1f010$%kim@samsung.com> <4D6B78CD.5090602@metafoo.de>
+	Mon, 28 Feb 2011 05:58:45 -0500
+Message-ID: <4D6B7FC9.4020905@st.com>
+Date: Mon, 28 Feb 2011 16:28:17 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>
+Subject: Re: [PATCH 3/8 resend] dw_dmac: call dwc_scan_descriptor from dwc_issue_pending
+ only if active list is empty
+References: <cover.1298889267.git.viresh.kumar@st.com> <8003205172278ef36cfca1fd50a54cb143fad958.1298889267.git.viresh.kumar@st.com> <20110228104635.GB2754@pulham.picochip.com>
+In-Reply-To: <20110228104635.GB2754@pulham.picochip.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars-Peter Clausen wrote:
+On 02/28/2011 04:16 PM, Jamie Iles wrote:
+> On Mon, Feb 28, 2011 at 04:11:18PM +0530, Viresh Kumar wrote:
+>> > dwc_scan_descriptor was called even when there were descriptors in active list.
+>> > Checking if active list is empty or not.
+>> > 
+>> > Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> Hi Viresh,
 > 
-> On 02/28/2011 07:26 AM, Kukjin Kim wrote:
-> > Lars-Peter Clausen wrote:
-> >>
-> >> The pcf50633 regulator driver does not use the state_mem constraints,
-so
-> >> there
-> >> is no use in setting them.
-> >>
-> >> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> >> ---
-> >>  arch/arm/mach-s3c2440/mach-gta02.c |   15 ---------------
-> >>  1 files changed, 0 insertions(+), 15 deletions(-)
-> >>
-> >> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c
-> > b/arch/arm/mach-s3c2440/mach-
-> >> gta02.c
-> >> index e57c4d8..01e0930 100644
-> >> --- a/arch/arm/mach-s3c2440/mach-gta02.c
-> >> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
-> >> @@ -283,9 +283,6 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
-> >>  				.valid_modes_mask = REGULATOR_MODE_NORMAL,
-> >>  				.always_on = 1,
-> >>  				.apply_uV = 1,
-> >> -				.state_mem = {
-> >> -					.enabled = 1,
-> >> -				},
-> >>  			},
-> >>  		},
-> >>  		[PCF50633_REGULATOR_DOWN1] = {
-> >> @@ -304,9 +301,6 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
-> >>  				.valid_modes_mask = REGULATOR_MODE_NORMAL,
-> >>  				.apply_uV = 1,
-> >>  				.always_on = 1,
-> >> -				.state_mem = {
-> >> -					.enabled = 1,
-> >> -				},
-> >>  			},
-> >>  		},
-> >>  		[PCF50633_REGULATOR_HCLDO] = {
-> >> @@ -325,9 +319,6 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
-> >>  				.valid_modes_mask = REGULATOR_MODE_NORMAL,
-> >>  				.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-> >>  				.apply_uV = 1,
-> >> -				.state_mem = {
-> >> -					.enabled = 0,
-> >> -				},
-> >>  			},
-> >>  		},
-> >>  		[PCF50633_REGULATOR_LDO2] = {
-> >> @@ -362,9 +353,6 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
-> >>  				.valid_modes_mask = REGULATOR_MODE_NORMAL,
-> >>  				.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-> >>  				.apply_uV = 1,
-> >> -				.state_mem = {
-> >> -					.enabled = 1,
-> >> -				},
-> >>  			},
-> >>  		},
-> >>  		[PCF50633_REGULATOR_LDO6] = {
-> >> @@ -379,9 +367,6 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
-> >>  				.min_uV = 1800000,
-> >>  				.max_uV = 1800000,
-> >>  				.valid_modes_mask = REGULATOR_MODE_NORMAL,
-> >> -				.state_mem = {
-> >> -					.enabled = 1,
-> >> -				},
-> >>  			},
-> >>  		},
-> >>
-> >> --
-> >
-> > Don't we need regulator_suspend_mem_state_show() on PCF50633?
-> >
-> >
-> No. The pcf50633 driver has no set_suspend_enable or set_suspend_disable
-ops.
-> So the 'suspend_mem_state' sysfs file does not get registered and that
-> function
-> is never called.
-> 
-Ok, will apply.
-Thanks.
+> I have a similar patch to this that is already in next that should 
+> achieve the same thing (dmaengine/dw_dmac: don't scan descriptors if no 
+> xfers in progress).
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Jamie,
 
+Sorry for missing that!!
+This patch can be dropped.
+
+-- 
+viresh
