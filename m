@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab1B1POv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:14:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:59633 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764Ab1B1POu (ORCPT
+	id S1754814Ab1B1PP0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:15:26 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:43256 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab1B1PPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:14:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Guan Xuetao <epip@hera.kernel.org>
-Subject: Re: [PATCH 01/17] unicore32 machine related files: core files
-Date: Mon, 28 Feb 2011 16:14:37 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: GuanXuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, greg@kroah.com
-References: <cover.1298821856.git.epip@hera.kernel.org> <6d3625573b3efeb6c18b8cdebf5eccfb792ab5fd.1298821856.git.epip@hera.kernel.org>
-In-Reply-To: <6d3625573b3efeb6c18b8cdebf5eccfb792ab5fd.1298821856.git.epip@hera.kernel.org>
+	Mon, 28 Feb 2011 10:15:25 -0500
+Date: Mon, 28 Feb 2011 15:15:16 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>, mingo@redhat.com
+Subject: Re: [PATCH] x86: use int instead of long to set reset vector back
+	to 0
+Message-ID: <20110228151516.GA5662@srcf.ucam.org>
+References: <1297139100-424-1-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102281614.38095.arnd@arndb.de>
-X-Provags-ID: V02:K0:8soxer2u21BvdtHFeqqLU2Es1jopV1WwWT6G64mUTXK
- wtMCikx/Xqyo2iTPP6AIh/zM4d/yWqlhla8FCp4ssV0gQ4ymec
- M83r3QclhwY3AXG7Ycys20PVpkuzlOOQkPSNoVDHK6hCkt29Ru
- AOig5dmr2xjO0536Uih2ZXEkboDi07raLET2sJiE7nWT/v7c5l
- rydoqBspYTswlRR0k+fsg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297139100-424-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 27 February 2011, Guan Xuetao wrote:
-> From: GuanXuetao <gxt@mprc.pku.edu.cn>
-> 
-> This patch adds machine related core files, also including build infrastructure.
-> 
-> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+On Mon, Feb 07, 2011 at 11:25:00PM -0500, Don Zickus wrote:
+> A customer of ours, complained that when setting the reset vector
+> back to 0, it trashed other data and hung their box.  They noticed
+> when only 4 bytes were set to 0 instead of 8, everything worked
+> correctly.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+We're supposed to be resetting trampoline_phys_low and 
+trampoline_phys_high here, which are two 16-bit values. Writing 64 bits 
+is definitely going to overwrite space that we're not supposed to be 
+touching.
+
+> -	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+> +	*((volatile int *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+
+I'd suggest either using u32 here, or alternatively make it more obvious 
+what's going on and set trampoline_phys_low and trampoline_phys_high 
+(which are both 16 bit) independently.
+
+Ingo? Looks like you touched this last, but it seems that the bug was 
+there already.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
