@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab1B1S7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 13:59:33 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48029 "EHLO
+	id S1754838Ab1B1S77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 13:59:59 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48024 "EHLO
 	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab1B1S7a (ORCPT
+	with ESMTP id S1754497Ab1B1S72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 13:59:30 -0500
+	Mon, 28 Feb 2011 13:59:28 -0500
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: arnaud.patard@rtp-net.org, gregkh@suse.de, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] staging: xgifb: delete XGI_accel.[ch]
-Date: Mon, 28 Feb 2011 20:59:24 +0200
-Message-Id: <1298919565-6061-4-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 3/5] staging: xgifb: eliminate "accel" field from video_info
+Date: Mon, 28 Feb 2011 20:59:23 +0200
+Message-Id: <1298919565-6061-3-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1298919565-6061-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1298919565-6061-1-git-send-email-aaro.koskinen@iki.fi>
@@ -20,652 +20,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The files contain nothing actually needed by the driver.
+The value is always false, so the field can be eliminated.
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/Makefile    |    2 +-
- drivers/staging/xgifb/XGI_accel.c |  116 ---------
- drivers/staging/xgifb/XGI_accel.h |  481 -------------------------------------
- drivers/staging/xgifb/XGI_main.h  |    4 -
- 4 files changed, 1 insertions(+), 602 deletions(-)
- delete mode 100644 drivers/staging/xgifb/XGI_accel.c
- delete mode 100644 drivers/staging/xgifb/XGI_accel.h
+ drivers/staging/xgifb/XGI_main_26.c |    9 ---------
+ drivers/staging/xgifb/XGIfb.h       |    1 -
+ 2 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/xgifb/Makefile b/drivers/staging/xgifb/Makefile
-index f2ca6b1..3c8c7de 100644
---- a/drivers/staging/xgifb/Makefile
-+++ b/drivers/staging/xgifb/Makefile
-@@ -1,4 +1,4 @@
- obj-$(CONFIG_FB_XGI)  += xgifb.o
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index fa97c37..f2a4a2a 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -1187,7 +1187,6 @@ static int XGIfb_do_set_var(struct fb_var_screeninfo *var, int isactive,
+ 		xgi_video_info.org_x = xgi_video_info.org_y = 0;
+ 		xgi_video_info.video_linelength = info->var.xres_virtual
+ 				* (xgi_video_info.video_bpp >> 3);
+-		xgi_video_info.accel = 0;
+ 		switch (xgi_video_info.video_bpp) {
+ 		case 8:
+ 			xgi_video_info.DstColor = 0x0000;
+@@ -1219,7 +1218,6 @@ static int XGIfb_do_set_var(struct fb_var_screeninfo *var, int isactive,
+ 		default:
+ 			xgi_video_info.video_cmap_len = 16;
+ 			printk(KERN_ERR "XGIfb: Unsupported depth %d", xgi_video_info.video_bpp);
+-			xgi_video_info.accel = 0;
+ 			break;
+ 		}
+ 	}
+@@ -1635,7 +1633,6 @@ static int XGIfb_ioctl(struct fb_info *info, unsigned int cmd,
+ 		default:
+ 			xgi_video_info.video_cmap_len = 16;
+ 			printk(KERN_ERR "XGIfb: Unsupported accel depth %d", xgi_video_info.video_bpp);
+-			xgi_video_info.accel = 0;
+ 			break;
+ 		}
  
--xgifb-y := XGI_main_26.o XGI_accel.o vb_init.o vb_setmode.o vb_util.o vb_ext.o
-+xgifb-y := XGI_main_26.o vb_init.o vb_setmode.o vb_util.o vb_ext.o
+@@ -2617,10 +2614,6 @@ static void XGIfb_pre_setmode(void)
+ 	outXGIIDXREG(XGICR, IND_XGI_SCRATCH_REG_CR30, cr30);
+ 	outXGIIDXREG(XGICR, IND_XGI_SCRATCH_REG_CR31, cr31);
+ 	outXGIIDXREG(XGICR, IND_XGI_SCRATCH_REG_CR33, (XGIfb_rate_idx & 0x0F));
+-
+-	if (xgi_video_info.accel)
+-		XGIfb_syncaccel();
+-
+ }
  
-diff --git a/drivers/staging/xgifb/XGI_accel.c b/drivers/staging/xgifb/XGI_accel.c
-deleted file mode 100644
-index 1e4c06c..0000000
---- a/drivers/staging/xgifb/XGI_accel.c
-+++ /dev/null
-@@ -1,116 +0,0 @@
--/*
-- * XGI 300/630/730/540/315/550/650/740 frame buffer driver
-- * for Linux kernels 2.4.x and 2.5.x
-- *
-- * 2D acceleration part
-- *
-- * Based on the X driver's XGI300_accel.c which is
-- *     Copyright Xavier Ducoin <x.ducoin@lectra.com>
-- *     Copyright 2002 by Thomas Winischhofer, Vienna, Austria
-- * and XGI310_accel.c which is
-- *     Copyright 2002 by Thomas Winischhofer, Vienna, Austria
-- *
-- * Author: Thomas Winischhofer <thomas@winischhofer.net>
-- *			(see http://www.winischhofer.net/
-- *			for more information and updates)
-- */
--
--//#include <linux/config.h>
--#include <linux/version.h>
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/errno.h>
--#include <linux/string.h>
--#include <linux/mm.h>
--#include <linux/tty.h>
--#include <linux/slab.h>
--#include <linux/delay.h>
--#include <linux/fb.h>
--#include <linux/console.h>
--#include <linux/selection.h>
--#include <linux/ioport.h>
--#include <linux/init.h>
--#include <linux/pci.h>
--#include <linux/vt_kern.h>
--#include <linux/capability.h>
--#include <linux/fs.h>
--#include <linux/agp_backend.h>
--
--#include <linux/types.h>
--#include <asm/io.h>
--
--#ifdef CONFIG_MTRR
--#include <asm/mtrr.h>
--#endif
--
--#include "vgatypes.h"
--#include "vb_struct.h"
--#include "XGIfb.h"
--#include "XGI_accel.h"
--
--static const int XGIALUConv[] =
--{
--    0x00,       /* dest = 0;            0,      GXclear,        0 */
--    0x88,       /* dest &= src;         DSa,    GXand,          0x1 */
--    0x44,       /* dest = src & ~dest;  SDna,   GXandReverse,   0x2 */
--    0xCC,       /* dest = src;          S,      GXcopy,         0x3 */
--    0x22,       /* dest &= ~src;        DSna,   GXandInverted,  0x4 */
--    0xAA,       /* dest = dest;         D,      GXnoop,         0x5 */
--    0x66,       /* dest = ^src;         DSx,    GXxor,          0x6 */
--    0xEE,       /* dest |= src;         DSo,    GXor,           0x7 */
--    0x11,       /* dest = ~src & ~dest; DSon,   GXnor,          0x8 */
--    0x99,       /* dest ^= ~src ;       DSxn,   GXequiv,        0x9 */
--    0x55,       /* dest = ~dest;        Dn,     GXInvert,       0xA */
--    0xDD,       /* dest = src|~dest ;   SDno,   GXorReverse,    0xB */
--    0x33,       /* dest = ~src;         Sn,     GXcopyInverted, 0xC */
--    0xBB,       /* dest |= ~src;        DSno,   GXorInverted,   0xD */
--    0x77,       /* dest = ~src|~dest;   DSan,   GXnand,         0xE */
--    0xFF,       /* dest = 0xFF;         1,      GXset,          0xF */
--};
--/* same ROP but with Pattern as Source */
--static const int XGIPatALUConv[] =
--{
--    0x00,       /* dest = 0;            0,      GXclear,        0 */
--    0xA0,       /* dest &= src;         DPa,    GXand,          0x1 */
--    0x50,       /* dest = src & ~dest;  PDna,   GXandReverse,   0x2 */
--    0xF0,       /* dest = src;          P,      GXcopy,         0x3 */
--    0x0A,       /* dest &= ~src;        DPna,   GXandInverted,  0x4 */
--    0xAA,       /* dest = dest;         D,      GXnoop,         0x5 */
--    0x5A,       /* dest = ^src;         DPx,    GXxor,          0x6 */
--    0xFA,       /* dest |= src;         DPo,    GXor,           0x7 */
--    0x05,       /* dest = ~src & ~dest; DPon,   GXnor,          0x8 */
--    0xA5,       /* dest ^= ~src ;       DPxn,   GXequiv,        0x9 */
--    0x55,       /* dest = ~dest;        Dn,     GXInvert,       0xA */
--    0xF5,       /* dest = src|~dest ;   PDno,   GXorReverse,    0xB */
--    0x0F,       /* dest = ~src;         Pn,     GXcopyInverted, 0xC */
--    0xAF,       /* dest |= ~src;        DPno,   GXorInverted,   0xD */
--    0x5F,       /* dest = ~src|~dest;   DPan,   GXnand,         0xE */
--    0xFF,       /* dest = 0xFF;         1,      GXset,          0xF */
--};
--
--static const unsigned char myrops[] = {
--   	3, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
--   };
--
--/* 300 series */
--static void
--XGI310Sync(void)
--{
--	XGI310Idle
--}
--
--/* --------------------------------------------------------------------- */
--
--/* The exported routines */
--
--int XGIfb_initaccel(void)
--{
--    return(0);
--}
--
--void XGIfb_syncaccel(void)
--{
--
--    XGI310Sync();
--
--}
-diff --git a/drivers/staging/xgifb/XGI_accel.h b/drivers/staging/xgifb/XGI_accel.h
-deleted file mode 100644
-index a1fb5d3..0000000
---- a/drivers/staging/xgifb/XGI_accel.h
-+++ /dev/null
-@@ -1,481 +0,0 @@
--/*
-- * XGI 300/630/730/540/315/550/650/740 frame buffer driver
-- * for Linux kernels 2.4.x and 2.5.x
-- *
-- * 2D acceleration part
-- *
-- * Based on the X driver's XGI300_accel.h which is
-- *     Copyright Xavier Ducoin <x.ducoin@lectra.com>
-- *     Copyright 2002 by Thomas Winischhofer, Vienna, Austria
-- * and XGI310_accel.h which is
-- *     Copyright 2002 by Thomas Winischhofer, Vienna, Austria
-- *
-- * Author:   Thomas Winischhofer <thomas@winischhofer.net>:
-- *			(see http://www.winischhofer.net/
-- *			for more information and updates)
-- */
--
--#ifndef _XGIFB_ACCEL_H
--#define _XGIFB_ACCEL_H
--
--/* Definitions for the XGI engine communication. */
--
--#define PATREGSIZE      384  /* Pattern register size. 384 bytes @ 0x8300 */
--#define BR(x)   (0x8200 | (x) << 2)
--#define PBR(x)  (0x8300 | (x) << 2)
--
--/* XGI300 engine commands */
--#define BITBLT                  0x00000000  /* Blit */
--#define COLOREXP                0x00000001  /* Color expand */
--#define ENCOLOREXP              0x00000002  /* Enhanced color expand */
--#define MULTIPLE_SCANLINE       0x00000003  /* ? */
--#define LINE                    0x00000004  /* Draw line */
--#define TRAPAZOID_FILL          0x00000005  /* Fill trapezoid */
--#define TRANSPARENT_BITBLT      0x00000006  /* Transparent Blit */
--
--/* Additional engine commands for 310/325 */
--#define ALPHA_BLEND		0x00000007  /* Alpha blend ? */
--#define A3D_FUNCTION		0x00000008  /* 3D command ? */
--#define	CLEAR_Z_BUFFER		0x00000009  /* ? */
--#define GRADIENT_FILL		0x0000000A  /* Gradient fill */
--#define STRETCH_BITBLT		0x0000000B  /* Stretched Blit */
--
--/* source select */
--#define SRCVIDEO                0x00000000  /* source is video RAM */
--#define SRCSYSTEM               0x00000010  /* source is system memory */
--#define SRCCPUBLITBUF           SRCSYSTEM   /* source is CPU-driven BitBuffer (for color expand) */
--#define SRCAGP                  0x00000020  /* source is AGP memory (?) */
--
--/* Pattern flags */
--#define PATFG                   0x00000000  /* foreground color */
--#define PATPATREG               0x00000040  /* pattern in pattern buffer (0x8300) */
--#define PATMONO                 0x00000080  /* mono pattern */
--
--/* blitting direction (300 series only) */
--#define X_INC                   0x00010000
--#define X_DEC                   0x00000000
--#define Y_INC                   0x00020000
--#define Y_DEC                   0x00000000
--
--/* Clipping flags */
--#define NOCLIP                  0x00000000
--#define NOMERGECLIP             0x04000000
--#define CLIPENABLE              0x00040000
--#define CLIPWITHOUTMERGE        0x04040000
--
--/* Transparency */
--#define OPAQUE                  0x00000000
--#define TRANSPARENT             0x00100000
--
--/* ? */
--#define DSTAGP                  0x02000000
--#define DSTVIDEO                0x02000000
--
--/* Line */
--#define LINE_STYLE              0x00800000
--#define NO_RESET_COUNTER        0x00400000
--#define NO_LAST_PIXEL           0x00200000
--
--/* Subfunctions for Color/Enhanced Color Expansion (310/325 only) */
--#define COLOR_TO_MONO		0x00100000
--#define AA_TEXT			0x00200000
--
--/* Some general registers for 310/325 series */
--#define SRC_ADDR		0x8200
--#define SRC_PITCH		0x8204
--#define AGP_BASE		0x8206 /* color-depth dependent value */
--#define SRC_Y			0x8208
--#define SRC_X			0x820A
--#define DST_Y			0x820C
--#define DST_X			0x820E
--#define DST_ADDR		0x8210
--#define DST_PITCH		0x8214
--#define DST_HEIGHT		0x8216
--#define RECT_WIDTH		0x8218
--#define RECT_HEIGHT		0x821A
--#define PAT_FGCOLOR		0x821C
--#define PAT_BGCOLOR		0x8220
--#define SRC_FGCOLOR		0x8224
--#define SRC_BGCOLOR		0x8228
--#define MONO_MASK		0x822C
--#define LEFT_CLIP		0x8234
--#define TOP_CLIP		0x8236
--#define RIGHT_CLIP		0x8238
--#define BOTTOM_CLIP		0x823A
--#define COMMAND_READY		0x823C
--#define FIRE_TRIGGER      	0x8240
--
--#define PATTERN_REG		0x8300  /* 384 bytes pattern buffer */
--
--/* Line registers */
--#define LINE_X0			SRC_Y
--#define LINE_X1			DST_Y
--#define LINE_Y0			SRC_X
--#define LINE_Y1			DST_X
--#define LINE_COUNT		RECT_WIDTH
--#define LINE_STYLE_PERIOD	RECT_HEIGHT
--#define LINE_STYLE_0		MONO_MASK
--#define LINE_STYLE_1		0x8230
--#define LINE_XN			PATTERN_REG
--#define LINE_YN			PATTERN_REG+2
--
--/* Transparent bitblit registers */
--#define TRANS_DST_KEY_HIGH	PAT_FGCOLOR
--#define TRANS_DST_KEY_LOW	PAT_BGCOLOR
--#define TRANS_SRC_KEY_HIGH	SRC_FGCOLOR
--#define TRANS_SRC_KEY_LOW	SRC_BGCOLOR
--
--/* Queue */
--#define Q_BASE_ADDR		0x85C0  /* Base address of software queue (?) */
--#define Q_WRITE_PTR		0x85C4  /* Current write pointer (?) */
--#define Q_READ_PTR		0x85C8  /* Current read pointer (?) */
--#define Q_STATUS		0x85CC  /* queue status */
--
--
--#define MMIO_IN8(base, offset) \
--	*(volatile u8 *)(((u8*)(base)) + (offset))
--#define MMIO_IN16(base, offset) \
--	*(volatile u16 *)(void *)(((u8*)(base)) + (offset))
--#define MMIO_IN32(base, offset) \
--	*(volatile u32 *)(void *)(((u8*)(base)) + (offset))
--#define MMIO_OUT8(base, offset, val) \
--	*(volatile u8 *)(((u8*)(base)) + (offset)) = (val)
--#define MMIO_OUT16(base, offset, val) \
--	*(volatile u16 *)(void *)(((u8*)(base)) + (offset)) = (val)
--#define MMIO_OUT32(base, offset, val) \
--	*(volatile u32 *)(void *)(((u8*)(base)) + (offset)) = (val)
--
--
--
--/* ------------- XGI 300 series -------------- */
--
--/* Macros to do useful things with the XGI BitBLT engine */
--
--/* BR(16) (0x8420):
--
--   bit 31 2D engine: 1 is idle,
--   bit 30 3D engine: 1 is idle,
--   bit 29 Command queue: 1 is empty
--
--   bits 28:24: Current CPU driven BitBlt buffer stage bit[4:0]
--
--   bits 15:0:  Current command queue length
--
--*/
--
--/* TW: BR(16)+2 = 0x8242 */
--
--static int     xgiCmdQueLen;
--
--#define XGI300Idle \
--  { \
--  while( (MMIO_IN16(xgi_video_info.mmio_vbase, BR(16)+2) & 0xE000) != 0xE000){}; \
--  while( (MMIO_IN16(xgi_video_info.mmio_vbase, BR(16)+2) & 0xE000) != 0xE000){}; \
--  while( (MMIO_IN16(xgi_video_info.mmio_vbase, BR(16)+2) & 0xE000) != 0xE000){}; \
--  xgiCmdQueLen=MMIO_IN16(xgi_video_info.mmio_vbase, 0x8240); \
--  }
--/* TW: (do three times, because 2D engine seems quite unsure about whether or not it's idle) */
--
--#define XGI300SetupSRCBase(base) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(0), base);\
--                xgiCmdQueLen --;
--
--#define XGI300SetupSRCPitch(pitch) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT16(xgi_video_info.mmio_vbase, BR(1), pitch);\
--                xgiCmdQueLen --;
--
--#define XGI300SetupSRCXY(x,y) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(2), (x)<<16 | (y) );\
--                xgiCmdQueLen --;
--
--#define XGI300SetupDSTBase(base) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(4), base);\
--                xgiCmdQueLen --;
--
--#define XGI300SetupDSTXY(x,y) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(3), (x)<<16 | (y) );\
--                xgiCmdQueLen --;
--
--#define XGI300SetupDSTRect(x,y) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(5), (y)<<16 | (x) );\
--                xgiCmdQueLen --;
--
--#define XGI300SetupDSTColorDepth(bpp) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT16(xgi_video_info.mmio_vbase, BR(1)+2, bpp);\
--                xgiCmdQueLen --;
--
--#define XGI300SetupRect(w,h) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(6), (h)<<16 | (w) );\
--                xgiCmdQueLen --;
--
--#define XGI300SetupPATFG(color) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(7), color);\
--                xgiCmdQueLen --;
--
--#define XGI300SetupPATBG(color) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(8), color);\
--                xgiCmdQueLen --;
--
--#define XGI300SetupSRCFG(color) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(9), color);\
--                xgiCmdQueLen --;
--
--#define XGI300SetupSRCBG(color) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(10), color);\
--                xgiCmdQueLen --;
--
--/* 0x8224 src colorkey high */
--/* 0x8228 src colorkey low */
--/* 0x821c dest colorkey high */
--/* 0x8220 dest colorkey low */
--#define XGI300SetupSRCTrans(color) \
--                if (xgiCmdQueLen <= 1)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, 0x8224, color);\
--		MMIO_OUT32(xgi_video_info.mmio_vbase, 0x8228, color);\
--		xgiCmdQueLen -= 2;
--
--#define XGI300SetupDSTTrans(color) \
--		if (xgiCmdQueLen <= 1)  XGI300Idle;\
--		MMIO_OUT32(xgi_video_info.mmio_vbase, 0x821C, color); \
--		MMIO_OUT32(xgi_video_info.mmio_vbase, 0x8220, color); \
--                xgiCmdQueLen -= 2;
--
--#define XGI300SetupMONOPAT(p0,p1) \
--                if (xgiCmdQueLen <= 1)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(11), p0);\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(12), p1);\
--                xgiCmdQueLen -= 2;
--
--#define XGI300SetupClipLT(left,top) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(13), ((left) & 0xFFFF) | (top)<<16 );\
--                xgiCmdQueLen--;
--
--#define XGI300SetupClipRB(right,bottom) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(14), ((right) & 0xFFFF) | (bottom)<<16 );\
--                xgiCmdQueLen--;
--
--/* General */
--#define XGI300SetupROP(rop) \
--                xgi_video_info.CommandReg = (rop) << 8;
--
--#define XGI300SetupCMDFlag(flags) \
--                xgi_video_info.CommandReg |= (flags);
--
--#define XGI300DoCMD \
--                if (xgiCmdQueLen <= 1)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(15), xgi_video_info.CommandReg); \
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(16), 0);\
--                xgiCmdQueLen -= 2;
--
--/* Line */
--#define XGI300SetupX0Y0(x,y) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(2), (y)<<16 | (x) );\
--                xgiCmdQueLen--;
--
--#define XGI300SetupX1Y1(x,y) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(3), (y)<<16 | (x) );\
--                xgiCmdQueLen--;
--
--#define XGI300SetupLineCount(c) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT16(xgi_video_info.mmio_vbase, BR(6), c);\
--                xgiCmdQueLen--;
--
--#define XGI300SetupStylePeriod(p) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT16(xgi_video_info.mmio_vbase, BR(6)+2, p);\
--                xgiCmdQueLen--;
--
--#define XGI300SetupStyleLow(ls) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(11), ls);\
--                xgiCmdQueLen--;
--
--#define XGI300SetupStyleHigh(ls) \
--                if (xgiCmdQueLen <= 0)  XGI300Idle;\
--                MMIO_OUT32(xgi_video_info.mmio_vbase, BR(12), ls);\
--                xgiCmdQueLen--;
--
--
--
--/* ----------- XGI 310/325 series --------------- */
--
--/* Q_STATUS:
--   bit 31 = 1: All engines idle and all queues empty
--   bit 30 = 1: Hardware Queue (=HW CQ, 2D queue, 3D queue) empty
--   bit 29 = 1: 2D engine is idle
--   bit 28 = 1: 3D engine is idle
--   bit 27 = 1: HW command queue empty
--   bit 26 = 1: 2D queue empty
--   bit 25 = 1: 3D queue empty
--   bit 24 = 1: SW command queue empty
--   bits 23:16: 2D counter 3
--   bits 15:8:  2D counter 2
--   bits 7:0:   2D counter 1
--
--   Where is the command queue length (current amount of commands the queue
--   can accept) on the 310/325 series? (The current implementation is taken
--   from 300 series and certainly wrong...)
--*/
--
--/* TW: FIXME: xgiCmdQueLen is... where....? */
--#define XGI310Idle \
--  { \
--  while( (MMIO_IN16(xgi_video_info.mmio_vbase, Q_STATUS+2) & 0x8000) != 0x8000){}; \
--  while( (MMIO_IN16(xgi_video_info.mmio_vbase, Q_STATUS+2) & 0x8000) != 0x8000){}; \
--  xgiCmdQueLen=MMIO_IN16(xgi_video_info.mmio_vbase, Q_STATUS); \
--  }
--
--#define XGI310SetupSRCBase(base) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, SRC_ADDR, base);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupSRCPitch(pitch) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT16(xgi_video_info.mmio_vbase, SRC_PITCH, pitch);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupSRCXY(x,y) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, SRC_Y, (x)<<16 | (y) );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupDSTBase(base) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, DST_ADDR, base);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupDSTXY(x,y) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, DST_Y, (x)<<16 | (y) );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupDSTRect(x,y) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, DST_PITCH, (y)<<16 | (x) );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupDSTColorDepth(bpp) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT16(xgi_video_info.mmio_vbase, AGP_BASE, bpp);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupRect(w,h) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, RECT_WIDTH, (h)<<16 | (w) );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupPATFG(color) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, PAT_FGCOLOR, color);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupPATBG(color) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, PAT_BGCOLOR, color);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupSRCFG(color) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, SRC_FGCOLOR, color);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupSRCBG(color) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, SRC_BGCOLOR, color);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupSRCTrans(color) \
--      if (xgiCmdQueLen <= 1)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, TRANS_SRC_KEY_HIGH, color);\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, TRANS_SRC_KEY_LOW, color);\
--      xgiCmdQueLen -= 2;
--
--#define XGI310SetupDSTTrans(color) \
--      if (xgiCmdQueLen <= 1)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, TRANS_DST_KEY_HIGH, color); \
--      MMIO_OUT32(xgi_video_info.mmio_vbase, TRANS_DST_KEY_LOW, color); \
--      xgiCmdQueLen -= 2;
--
--#define XGI310SetupMONOPAT(p0,p1) \
--      if (xgiCmdQueLen <= 1)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, MONO_MASK, p0);\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, MONO_MASK+4, p1);\
--      xgiCmdQueLen -= 2;
--
--#define XGI310SetupClipLT(left,top) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, LEFT_CLIP, ((left) & 0xFFFF) | (top)<<16 );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupClipRB(right,bottom) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, RIGHT_CLIP, ((right) & 0xFFFF) | (bottom)<<16 );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupROP(rop) \
--      xgi_video_info.CommandReg = (rop) << 8;
--
--#define XGI310SetupCMDFlag(flags) \
--      xgi_video_info.CommandReg |= (flags);
--
--#define XGI310DoCMD \
--      if (xgiCmdQueLen <= 1)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, COMMAND_READY, xgi_video_info.CommandReg); \
--      MMIO_OUT32(xgi_video_info.mmio_vbase, FIRE_TRIGGER, 0); \
--      xgiCmdQueLen -= 2;
--
--#define XGI310SetupX0Y0(x,y) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, LINE_X0, (y)<<16 | (x) );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupX1Y1(x,y) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, LINE_X1, (y)<<16 | (x) );\
--      xgiCmdQueLen--;
--
--#define XGI310SetupLineCount(c) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT16(xgi_video_info.mmio_vbase, LINE_COUNT, c);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupStylePeriod(p) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT16(xgi_video_info.mmio_vbase, LINE_STYLE_PERIOD, p);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupStyleLow(ls) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, LINE_STYLE_0, ls);\
--      xgiCmdQueLen--;
--
--#define XGI310SetupStyleHigh(ls) \
--      if (xgiCmdQueLen <= 0)  XGI310Idle;\
--      MMIO_OUT32(xgi_video_info.mmio_vbase, LINE_STYLE_1, ls);\
--      xgiCmdQueLen--;
--
--int  XGIfb_initaccel(void);
--void XGIfb_syncaccel(void);
--int fbcon_XGI_sync(struct fb_info *info);
--
--extern struct video_info xgi_video_info;
--
--#endif
-diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
-index 39e15de..eb0f79a 100644
---- a/drivers/staging/xgifb/XGI_main.h
-+++ b/drivers/staging/xgifb/XGI_main.h
-@@ -814,10 +814,6 @@ extern unsigned char XGI_SearchModeID(unsigned short ModeNo,
- static int      XGIfb_get_fix(struct fb_fix_screeninfo *fix, int con,
- 			      struct fb_info *info);
+ static void XGIfb_post_setmode(void)
+@@ -3341,8 +3334,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
  
--/* Internal 2D accelerator functions */
--extern int      XGIfb_initaccel(void);
--extern void     XGIfb_syncaccel(void);
+ 		}
+ 
+-		xgi_video_info.accel = 0;
 -
- /* Internal general routines */
- static void     XGIfb_search_mode(const char *name);
- static int      XGIfb_validate_mode(int modeindex);
+ 		fb_info->flags = FBINFO_FLAG_DEFAULT;
+ 		fb_info->var = default_var;
+ 		fb_info->fix = XGIfb_fix;
+diff --git a/drivers/staging/xgifb/XGIfb.h b/drivers/staging/xgifb/XGIfb.h
+index b6715ba..8e59e15 100644
+--- a/drivers/staging/xgifb/XGIfb.h
++++ b/drivers/staging/xgifb/XGIfb.h
+@@ -193,7 +193,6 @@ struct video_info{
+         unsigned int   pcislot;
+         unsigned int   pcifunc;
+ 
+-        int            accel;
+         unsigned short subsysvendor;
+         unsigned short subsysdevice;
+ 
 -- 
 1.5.6.5
 
