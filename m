@@ -1,87 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab1B1W0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 17:26:18 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43109 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752562Ab1B1W0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 17:26:17 -0500
-Date: Mon, 28 Feb 2011 14:25:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, ben@simtec.co.uk,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Subject: Re: [PATCH] rtc: rtc-s3c: fix prototype for s3c_rtc_setaie()
-Message-Id: <20110228142528.bb69cd73.akpm@linux-foundation.org>
-In-Reply-To: <1297416172.14816.2.camel@mola>
-References: <1297416172.14816.2.camel@mola>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753313Ab1B1WnY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 17:43:24 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37653 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753102Ab1B1WnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 17:43:22 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH upstream build breakage] acpi: several drivers depend on NET
+Date: Mon, 28 Feb 2011 23:42:59 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Len Brown <lenb@kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Luming Yu <luming.yu@intel.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <20101220200013.df8fbc88.sfr@canb.auug.org.au> <20110228090332.9ffe2087.randy.dunlap@oracle.com> <201102282137.15390.rjw@sisk.pl>
+In-Reply-To: <201102282137.15390.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102282342.59407.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Feb 2011 17:22:52 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
-
-> Fix s3c_rtc_setaie() prototype to eliminate below compile warning.
-> drivers/rtc/rtc-s3c.c:383: warning: initialization from incompatible pointer type
+On Monday, February 28, 2011, Rafael J. Wysocki wrote:
+> On Monday, February 28, 2011, Randy Dunlap wrote:
+> > On Tue, 1 Feb 2011 13:03:23 +0100 Ingo Molnar wrote:
+> > 
+> > > * Ingo Molnar <mingo@elte.hu> wrote:
+> > > 
+> > > > * Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > > > 
+> > > > > On Mon, 20 Dec 2010 20:00:13 +1100 Stephen Rothwell wrote:
+> > > > > 
+> > > > > > Hi all,
+> > > > > > 
+> > > > > > [The mirroring on kernel.org is running slowly]
+> > > > > > 
+> > > > > > Changes since 20101217:
+> > > > > 
+> > > > > ERROR: "thermal_cooling_device_register" [drivers/acpi/video.ko] undefined!
+> > > > > ERROR: "thermal_cooling_device_unregister" [drivers/acpi/video.ko] undefined!
+> > > > 
+> > > > This bug has been reported two months ago, one month ago, it has been ignored twice 
+> > > > and now the bug has been pushed upstream and it's triggering there as well.
+> > > > 
+> > > > What's going on?
+> > > 
+> > > *Tap*, *tap*, is this thing on? :)
+> > > 
+> > > acpi-video is still build-broken upstream, as of .38-rc3:
+> > > 
+> > >    MODPOST 651 modules
+> > >  ERROR: "thermal_cooling_device_register" [drivers/acpi/video.ko] undefined!
+> > >  ERROR: "thermal_cooling_device_unregister" [drivers/acpi/video.ko] undefined!
+> > >  WARNING: modpost: Found 37 section mismatch(es).
+> > >  To see full details build your kernel with:
+> > >  'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+> > >  make[1]: *** [__modpost] Error 1
+> > >  make: *** [modules] Error 2
+> > > 
+> > > Triggers in about 10% of all randconfig builds. Config attached.
+> > 
+> > 
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > Several ACPI drivers select THERMAL, but THERMAL depends on NET
+> > (for netlink).  Fix build breakage by making the ACPI drivers
+> > also depend on NET.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/rtc/rtc-s3c.c |   12 +++++++-----
->  1 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-> index cf953ec..b80fa28 100644
-> --- a/drivers/rtc/rtc-s3c.c
-> +++ b/drivers/rtc/rtc-s3c.c
-> @@ -77,18 +77,20 @@ static irqreturn_t s3c_rtc_tickirq(int irq, void *id)
->  }
->  
->  /* Update control registers */
-> -static void s3c_rtc_setaie(int to)
-> +static int s3c_rtc_setaie(struct device *dev, unsigned int enabled)
->  {
->  	unsigned int tmp;
->  
-> -	pr_debug("%s: aie=%d\n", __func__, to);
-> +	pr_debug("%s: aie=%d\n", __func__, enabled);
->  
->  	tmp = readb(s3c_rtc_base + S3C2410_RTCALM) & ~S3C2410_RTCALM_ALMEN;
->  
-> -	if (to)
-> +	if (enabled)
->  		tmp |= S3C2410_RTCALM_ALMEN;
->  
->  	writeb(tmp, s3c_rtc_base + S3C2410_RTCALM);
-> +
-> +	return 0;
->  }
->  
->  static int s3c_rtc_setpie(struct device *dev, int enabled)
-> @@ -308,7 +310,7 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
->  
->  	writeb(alrm_en, base + S3C2410_RTCALM);
->  
-> -	s3c_rtc_setaie(alrm->enabled);
-> +	s3c_rtc_setaie(dev, alrm->enabled);
->  
->  	return 0;
->  }
-> @@ -440,7 +442,7 @@ static int __devexit s3c_rtc_remove(struct platform_device *dev)
->  	rtc_device_unregister(rtc);
->  
->  	s3c_rtc_setpie(&dev->dev, 0);
-> -	s3c_rtc_setaie(0);
-> +	s3c_rtc_setaie(&dev->dev, 0);
->  
->  	clk_disable(rtc_clk);
->  	clk_put(rtc_clk);
+> Well, making ACPI_FAN depend on NET seems to be a kind of an overstretch to me.
+> A proper fix would be to disable the netlink interface in THERMAL when
+> NET is unset, I guess.  I'll see what can be done to that end (although I had
+> hoped that the people who introduced the breakage would handle it).
 
-This does more than fix a warning!  The rtc_class_ops.alarm_irq_enable()
-handler was being passed two arguments where it expected one and it
-wouldn't have functioned correctly.
+OK, please check if the appended patch helps.  Admittedly, I only built it
+with CONFIG_NET set, so caveat emptor.
+
+Thanks,
+Rafael
+
+
+---
+ drivers/thermal/Kconfig       |    1 -
+ drivers/thermal/thermal_sys.c |   40 +++++++++++++++++++++-------------------
+ include/linux/thermal.h       |    8 ++++++++
+ 3 files changed, 29 insertions(+), 20 deletions(-)
+
+Index: linux-2.6/drivers/thermal/thermal_sys.c
+===================================================================
+--- linux-2.6.orig/drivers/thermal/thermal_sys.c
++++ linux-2.6/drivers/thermal/thermal_sys.c
+@@ -62,20 +62,6 @@ static DEFINE_MUTEX(thermal_list_lock);
+ 
+ static unsigned int thermal_event_seqnum;
+ 
+-static struct genl_family thermal_event_genl_family = {
+-	.id = GENL_ID_GENERATE,
+-	.name = THERMAL_GENL_FAMILY_NAME,
+-	.version = THERMAL_GENL_VERSION,
+-	.maxattr = THERMAL_GENL_ATTR_MAX,
+-};
+-
+-static struct genl_multicast_group thermal_event_mcgrp = {
+-	.name = THERMAL_GENL_MCAST_GROUP_NAME,
+-};
+-
+-static int genetlink_init(void);
+-static void genetlink_exit(void);
+-
+ static int get_idr(struct idr *idr, struct mutex *lock, int *id)
+ {
+ 	int err;
+@@ -1225,6 +1211,18 @@ void thermal_zone_device_unregister(stru
+ 
+ EXPORT_SYMBOL(thermal_zone_device_unregister);
+ 
++#ifdef CONFIG_NET
++static struct genl_family thermal_event_genl_family = {
++	.id = GENL_ID_GENERATE,
++	.name = THERMAL_GENL_FAMILY_NAME,
++	.version = THERMAL_GENL_VERSION,
++	.maxattr = THERMAL_GENL_ATTR_MAX,
++};
++
++static struct genl_multicast_group thermal_event_mcgrp = {
++	.name = THERMAL_GENL_MCAST_GROUP_NAME,
++};
++
+ int generate_netlink_event(u32 orig, enum events event)
+ {
+ 	struct sk_buff *skb;
+@@ -1301,6 +1299,15 @@ static int genetlink_init(void)
+ 	return result;
+ }
+ 
++static void genetlink_exit(void)
++{
++	genl_unregister_family(&thermal_event_genl_family);
++}
++#else /* !CONFIG_NET */
++static inline int genetlink_init(void) { return 0; }
++static inline void genetlink_exit(void) {}
++#endif /* !CONFIG_NET */
++
+ static int __init thermal_init(void)
+ {
+ 	int result = 0;
+@@ -1316,11 +1323,6 @@ static int __init thermal_init(void)
+ 	return result;
+ }
+ 
+-static void genetlink_exit(void)
+-{
+-	genl_unregister_family(&thermal_event_genl_family);
+-}
+-
+ static void __exit thermal_exit(void)
+ {
+ 	class_unregister(&thermal_class);
+Index: linux-2.6/include/linux/thermal.h
+===================================================================
+--- linux-2.6.orig/include/linux/thermal.h
++++ linux-2.6/include/linux/thermal.h
+@@ -172,6 +172,14 @@ void thermal_zone_device_update(struct t
+ struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
+ 		const struct thermal_cooling_device_ops *);
+ void thermal_cooling_device_unregister(struct thermal_cooling_device *);
++
++#ifdef CONFIG_NET
+ extern int generate_netlink_event(u32 orig, enum events event);
++#else
++static inline int generate_netlink_event(u32 orig, enum events event)
++{
++	return 0;
++}
++#endif
+ 
+ #endif /* __THERMAL_H__ */
+Index: linux-2.6/drivers/thermal/Kconfig
+===================================================================
+--- linux-2.6.orig/drivers/thermal/Kconfig
++++ linux-2.6/drivers/thermal/Kconfig
+@@ -4,7 +4,6 @@
+ 
+ menuconfig THERMAL
+ 	tristate "Generic Thermal sysfs driver"
+-	depends on NET
+ 	help
+ 	  Generic Thermal Sysfs driver offers a generic mechanism for
+ 	  thermal management. Usually it's made up of one or more thermal
