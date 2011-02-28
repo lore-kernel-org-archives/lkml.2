@@ -1,142 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab1B1C1h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 21:27:37 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:59510 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1B1C1g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 21:27:36 -0500
-Date: Mon, 28 Feb 2011 11:18:22 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] memcg: clean up migration
-Message-Id: <20110228111822.41484020.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <1298821765-3167-1-git-send-email-minchan.kim@gmail.com>
-References: <1298821765-3167-1-git-send-email-minchan.kim@gmail.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1752206Ab1B1C27 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 21:28:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:8010 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752056Ab1B1C25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 21:28:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,237,1297065600"; 
+   d="scan'208";a="891793886"
+Subject: Re: linux-next: build failure after merge of the final tree (kvm
+ tree related)
+From: Huang Ying <ying.huang@intel.com>
+To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110228131556.3822f3ca.sfr@canb.auug.org.au>
+References: <20110221175658.2dc4d1ac.sfr@canb.auug.org.au>
+	 <20110228131556.3822f3ca.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Feb 2011 10:28:44 +0800
+Message-ID: <1298860124.27725.2.camel@yhuang-dev>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Feb 2011 00:49:25 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+Hi, Avi and Marcelo,
 
-> This patch cleans up unncessary BUG_ON check and confusing
-> charge variable.
+On Mon, 2011-02-28 at 10:15 +0800, Stephen Rothwell wrote:
+> Hi All,
 > 
-> That's because memcg charge/uncharge could be handled by
-> mem_cgroup_[prepare/end] migration itself so charge local variable
-> in unmap_and_move lost the role since we introduced 01b1ae63c2.
+> On Mon, 21 Feb 2011 17:56:58 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the final tree, today's linux-next build (sparc64 defconfig)
+> > failed like this:
+> > 
+> > mm/memory.c: In function '__get_user_pages':
+> > mm/memory.c:1584: error: 'EHWPOISON' undeclared (first use in this function)
+> > 
+> > Caused by commit b1c4f2836370f5c8207d4c61e91c93bd6a4ce27a ("mm: make
+> > __get_user_pages return -EHWPOISON for HWPOISON page optionally") from
+> > the kvm tree.
+> > 
+> > Not all architectures use include/asm-generic/errno.h ...
+> > 
+> > I have reverted that commit (and commits
+> > d47b742c5661385b927c03188549b2d2004b80f4 "KVM: Replace
+> > is_hwpoison_address with __get_user_pages" and
+> > eef8839430b72deac59e9ec51eb56c44512fcc66 "mm: remove is_hwpoison_address"
+> > which depend on it) for today.
 > 
-> And mem_cgroup_prepare_migratio return 0 if only it is successful.
-> Otherwise, it jumps to unlock label to clean up so BUG_ON(charge)
-> isn;t meaningless.
-> 
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> I am still doing those reverts ...
 
-It looks good to me, but I have one minor comment.
+Can you merge the fixes following the email into my original EHWPOISON
+patch to check if that fixes linux-next issue?
 
-> ---
->  mm/memcontrol.c |    1 +
->  mm/migrate.c    |   14 ++++----------
->  2 files changed, 5 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2fc97fc..6832926 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2872,6 +2872,7 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
->  /*
->   * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
->   * page belongs to.
-> + * Return 0 if charge is successful. Otherwise return -errno.
->   */
->  int mem_cgroup_prepare_migration(struct page *page,
->  	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask)
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index eb083a6..737c2e5 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -622,7 +622,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  	int *result = NULL;
->  	struct page *newpage = get_new_page(page, private, &result);
->  	int remap_swapcache = 1;
-> -	int charge = 0;
->  	struct mem_cgroup *mem;
->  	struct anon_vma *anon_vma = NULL;
->  
-> @@ -637,9 +636,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  		if (unlikely(split_huge_page(page)))
->  			goto move_newpage;
->  
-> -	/* prepare cgroup just returns 0 or -ENOMEM */
->  	rc = -EAGAIN;
-> -
->  	if (!trylock_page(page)) {
->  		if (!force)
->  			goto move_newpage;
-> @@ -678,13 +675,11 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  	}
->  
->  	/* charge against new page */
-> -	charge = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
-> -	if (charge == -ENOMEM) {
-> -		rc = -ENOMEM;
-> +	rc = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
-> +	if (rc)
->  		goto unlock;
-> -	}
-> -	BUG_ON(charge);
->  
-> +	rc = -EAGAIN;
->  	if (PageWriteback(page)) {
->  		if (!force || !sync)
->  			goto uncharge;
-How about
+Or you prefer I resend the patchset?
 
-	if (mem_cgroup_prepare_migration(..)) {
-		rc = -ENOMEM;
-		goto unlock;
-	}
+Best Regards,
+Huang Ying
 
-?
+---
+ arch/alpha/include/asm/errno.h  |    2 ++
+ arch/mips/include/asm/errno.h   |    2 ++
+ arch/parisc/include/asm/errno.h |    2 ++
+ arch/sparc/include/asm/errno.h  |    2 ++
+ 4 files changed, 8 insertions(+)
 
-Re-setting "rc" to -EAGAIN is not necessary in this case.
-"if (mem_cgroup_...)" is commonly used in many places.
-
-Anyway,
-
-	Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+--- a/arch/parisc/include/asm/errno.h
++++ b/arch/parisc/include/asm/errno.h
+@@ -122,4 +122,6 @@
+ 
+ #define	ERFKILL		256	/* Operation not possible due to RF-kill */
+ 
++#define EHWPOISON	257	/* Memory page has hardware error */
++
+ #endif
+--- a/arch/sparc/include/asm/errno.h
++++ b/arch/sparc/include/asm/errno.h
+@@ -112,4 +112,6 @@
+ 
+ #define	ERFKILL		134	/* Operation not possible due to RF-kill */
+ 
++#define EHWPOISON	135	/* Memory page has hardware error */
++
+ #endif
+--- a/arch/alpha/include/asm/errno.h
++++ b/arch/alpha/include/asm/errno.h
+@@ -122,4 +122,6 @@
+ 
+ #define	ERFKILL		138	/* Operation not possible due to RF-kill */
+ 
++#define EHWPOISON	139	/* Memory page has hardware error */
++
+ #endif
+--- a/arch/mips/include/asm/errno.h
++++ b/arch/mips/include/asm/errno.h
+@@ -121,6 +121,8 @@
+ 
+ #define	ERFKILL		167	/* Operation not possible due to RF-kill */
+ 
++#define EHWPOISON	168	/* Memory page has hardware error */
++
+ #define EDQUOT		1133	/* Quota exceeded */
+ 
+ #ifdef __KERNEL__
 
 
-Thanks,
-Daisuke Nishimura.
-
-> @@ -767,8 +762,7 @@ skip_unmap:
->  		drop_anon_vma(anon_vma);
->  
->  uncharge:
-> -	if (!charge)
-> -		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-> +	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
->  unlock:
->  	unlock_page(page);
->  
-> -- 
-> 1.7.1
-> 
