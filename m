@@ -1,143 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab1B1KHP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 05:07:15 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:46296 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1B1KHO (ORCPT
+	id S1753216Ab1B1KJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 05:09:16 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33696 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab1B1KJP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 05:07:14 -0500
-Date: Mon, 28 Feb 2011 19:07:07 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 1/2] drivers/watchdog/s3c2410_wdt.c: Convert
- release_resource to release_region/release_mem_region
-In-reply-to: <1298738079-28893-1-git-send-email-julia@diku.dk>
-To: "'Julia Lawall'" <julia@diku.dk>, "'Ben Dooks'" <ben-linux@fluff.org>
-Cc: kernel-janitors@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
-        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-id: <002e01cbd72f$448ac150$cda043f0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvV0xbypL/oSPNeTu+Ya7vzSCiJFQBWkz8Q
-References: <1298738079-28893-1-git-send-email-julia@diku.dk>
+	Mon, 28 Feb 2011 05:09:15 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 28 Feb 2011 15:38:38 +0530
+Subject: RE: [PATCH v4 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources
+	used by PRUSS UIO driver
+Thread-Topic: [PATCH v4 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources
+	used by PRUSS UIO driver
+Thread-Index: AcvU4f49Fzg54d97ReeyVWHymX7IdgCHt6oAAAttnuA=
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BF35C6E@dbde02.ent.ti.com>
+References: <1298556402-26456-1-git-send-email-pratheesh@ti.com>
+	<1298556402-26456-2-git-send-email-pratheesh@ti.com>
+	<1298556402-26456-3-git-send-email-pratheesh@ti.com>
+	<4D6796D6.5050008@mvista.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024BF3591A@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BF3591A@dbde02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall wrote:
-> 
-> Request_mem_region should be used with release_mem_region, not
-> release_resource.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,E;
-> @@
-> *x = request_mem_region(...)
-> ... when != release_mem_region(x)
->     when != x = E
-> * release_resource(x);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/watchdog/s3c2410_wdt.c |   19 ++++++++-----------
->  1 file changed, 8 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/watchdog/s3c2410_wdt.c
-b/drivers/watchdog/s3c2410_wdt.c
-> index 25b39bf..95ae53d 100644
-> --- a/drivers/watchdog/s3c2410_wdt.c
-> +++ b/drivers/watchdog/s3c2410_wdt.c
-> @@ -402,7 +402,6 @@ static inline void s3c2410wdt_cpufreq_deregister(void)
-> 
->  static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
->  {
-> -	struct resource *res;
->  	struct device *dev;
->  	unsigned int wtcon;
->  	int started = 0;
-> @@ -416,20 +415,19 @@ static int __devinit s3c2410wdt_probe(struct
-> platform_device *pdev)
-> 
->  	/* get the memory region for the watchdog timer */
-> 
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (res == NULL) {
-> +	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (wdt_mem == NULL) {
+Hi Pratheesh,
 
-Hmm...I think, 'res' is better for platform_get_resource().
-Do we _really_ need to change the name?...
+On Mon, Feb 28, 2011 at 10:16:18, TK, Pratheesh Gangadhar wrote:
 
->  		dev_err(dev, "no memory resource specified\n");
->  		return -ENOENT;
->  	}
-> 
-> -	size = resource_size(res);
-> -	wdt_mem = request_mem_region(res->start, size, pdev->name);
-> -	if (wdt_mem == NULL) {
-> +	size = resource_size(wdt_mem);
-> +	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
+> > > diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-
+> > davinci/devices-da8xx.c
+> > > index beda8a4..4ea3d1f 100644
+> > > --- a/arch/arm/mach-davinci/devices-da8xx.c
+> > > +++ b/arch/arm/mach-davinci/devices-da8xx.c
+> > > @@ -725,3 +725,76 @@ int __init da8xx_register_cpuidle(void)
+> > >
+> > >   	return platform_device_register(&da8xx_cpuidle_device);
+> > >   }
+> > > +static struct resource pruss_resources[] = {
+> > > +	[0] = {
+> > > +		.start  = DA8XX_PRUSS_BASE,
+> > > +		.end    = DA8XX_PRUSS_BASE + SZ_64K - 1,
+> > > +		.flags  = IORESOURCE_MEM,
+> > > +	},
+> > > +	[1] = {
+> > > +		.start  = DA8XX_L3RAM_BASE,
+> > > +		.end    = DA8XX_L3RAM_BASE + SZ_128K - 1,
+> > > +		.flags  = IORESOURCE_MEM,
+> > > +	},
+> > > +	[2] = {
+> > > +		.start  = 0,
+> > > +		.end    = SZ_256K - 1,
+> > 
+> >     Huh? I don't see where it's filled...
+> > 
+> The current use is only to indicate memory block size to the PRUSS UIO 
+> driver when we allocate DDR memory using dma_alloc_coherent.
 
-If we keep the name 'res', don't need to change above.
+If the user/platform needs to specify the amount of memory that
+will be allocated by the driver, it can be done though platform
+data or (better) using module params.
 
->  		dev_err(dev, "failed to get memory region\n");
->  		return -EBUSY;
->  	}
-> 
-> -	wdt_base = ioremap(res->start, size);
-> +	wdt_base = ioremap(wdt_mem->start, size);
+> sram_alloc is changed to use L3_RAM (128KB) instead of ARM RAM (8KB) in 
+> Mistral patch set - I need to follow the same convention for L3 RAM as well 
+> if I need to align with that patch. Is there a better way to do this?
 
-Same as above.
+Yes, with that patch sram_alloc() will allocate from L3 RAM. You can make
+calls to sram_alloc() in your driver. Again the size to be allocated can
+be platform data or module params.
 
->  	if (wdt_base == NULL) {
->  		dev_err(dev, "failed to ioremap() region\n");
->  		ret = -EINVAL;
-> @@ -524,8 +522,8 @@ static int __devinit s3c2410wdt_probe(struct
-> platform_device *pdev)
->  	iounmap(wdt_base);
-> 
->   err_req:
-> -	release_resource(wdt_mem);
-> -	kfree(wdt_mem);
-> +	release_mem_region(wdt_mem->start, size);
-
-release_mem_region(res->start, size); ?
-
-> +	wdt_mem = NULL;
-> 
->  	return ret;
->  }
-> @@ -545,8 +543,7 @@ static int __devexit s3c2410wdt_remove(struct
-> platform_device *dev)
-> 
->  	iounmap(wdt_base);
-> 
-> -	release_resource(wdt_mem);
-> -	kfree(wdt_mem);
-> +	release_mem_region(wdt_mem->start, resource_size(wdt_mem));
-
-release_mem_region(res->start, resource_size(res)); ?
-
->  	wdt_mem = NULL;
->  	return 0;
->  }
-
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Thanks,
+Sekhar
 
