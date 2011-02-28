@@ -1,123 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab1B1KpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 05:45:24 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34388 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752878Ab1B1KpX (ORCPT
+	id S1753479Ab1B1Kqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 05:46:40 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33052 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab1B1Kqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 05:45:23 -0500
-Message-ID: <4D6B7D19.1050103@metafoo.de>
-Date: Mon, 28 Feb 2011 11:46:49 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Mon, 28 Feb 2011 05:46:39 -0500
+Date: Mon, 28 Feb 2011 10:46:35 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: dan.j.williams@intel.com, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        shiraz.hashim@st.com, amit.goel@st.com, armando.visconti@st.com
+Subject: Re: [PATCH 3/8 resend] dw_dmac: call dwc_scan_descriptor from
+ dwc_issue_pending only if active list is empty
+Message-ID: <20110228104635.GB2754@pulham.picochip.com>
+References: <cover.1298889267.git.viresh.kumar@st.com>
+ <8003205172278ef36cfca1fd50a54cb143fad958.1298889267.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: "'Ben Dooks'" <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/09] ARM: s3c2442: gta02: Fix usage gpio bank j pin
- definitions
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de> <000801cbd712$907019c0$b1504d40$%kim@samsung.com>
-In-Reply-To: <000801cbd712$907019c0$b1504d40$%kim@samsung.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8003205172278ef36cfca1fd50a54cb143fad958.1298889267.git.viresh.kumar@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2011 07:41 AM, Kukjin Kim wrote:
-> Lars-Peter Clausen wrote:
->>
->> The gta02 header file still uses the old S3C2410_GPJx defines instead of
-> the
->> S3C2410_GPJ(x) macro. Since the S3C2410_GPJx defines have already been
->> removed
->> this causes the following build failure:
->>
->> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_set_spk':
->> 	sound/soc/samsung/neo1973_wm8753.c:259: error: 'S3C2440_GPJ2'
->> undeclared (first use in this function)
->> 	sound/soc/samsung/neo1973_wm8753.c:259: error: (Each undeclared
->> identifier is reported only once
->> 	sound/soc/samsung/neo1973_wm8753.c:259: error: for each function it
->> appears in.)
->> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_get_spk':
->> 	sound/soc/samsung/neo1973_wm8753.c:267: error: 'S3C2440_GPJ2'
->> undeclared (first use in this function)
->> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_event':
->> 	sound/soc/samsung/neo1973_wm8753.c:276: error: 'S3C2440_GPJ1'
->> undeclared (first use in this function)
->> 	sound/soc/samsung/neo1973_wm8753.c: At top level:
->> 	sound/soc/samsung/neo1973_wm8753.c:439: error: 'S3C2440_GPJ2'
->> undeclared here (not in a function)
->> 	sound/soc/samsung/neo1973_wm8753.c:440: error: 'S3C2440_GPJ1'
->> undeclared here (not in a function)
->>
->> This patches fixes the issue by doing a
->> s,S3C2410_GPJ([\d]+),S3C2410_GPJ(\1),g
+On Mon, Feb 28, 2011 at 04:11:18PM +0530, Viresh Kumar wrote:
+> dwc_scan_descriptor was called even when there were descriptors in active list.
+> Checking if active list is empty or not.
 > 
-> Maybe, "s,S3C2440_GPJ([\d]+),S3C2410_GPJ(\1),g" instead ?
-> 
->> on the file.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->>  arch/arm/mach-s3c2440/include/mach/gta02.h |   26
-> +++++++++++++-------------
->>  1 files changed, 13 insertions(+), 13 deletions(-)
->>
->> diff --git a/arch/arm/mach-s3c2440/include/mach/gta02.h b/arch/arm/mach-
->> s3c2440/include/mach/gta02.h
->> index 953331d..3a56a22 100644
->> --- a/arch/arm/mach-s3c2440/include/mach/gta02.h
->> +++ b/arch/arm/mach-s3c2440/include/mach/gta02.h
->> @@ -44,19 +44,19 @@
->>  #define GTA02v3_GPIO_nUSB_FLT	S3C2410_GPG(10)	/* v3 + v4 only */
->>  #define GTA02v3_GPIO_nGSM_OC	S3C2410_GPG(11)	/* v3 + v4 only */
->>
->> -#define GTA02_GPIO_AMP_SHUT	S3C2440_GPJ1	/* v2 + v3 + v4 only */
->> -#define GTA02v1_GPIO_WLAN_GPIO10	S3C2440_GPJ2
->> -#define GTA02_GPIO_HP_IN	S3C2440_GPJ2	/* v2 + v3 + v4 only */
->> -#define GTA02_GPIO_INT0		S3C2440_GPJ3	/* v2 + v3 + v4 only
-> */
->> -#define GTA02_GPIO_nGSM_EN	S3C2440_GPJ4
->> -#define GTA02_GPIO_3D_RESET	S3C2440_GPJ5
->> -#define GTA02_GPIO_nDL_GSM	S3C2440_GPJ6	/* v4 + v5 only */
->> -#define GTA02_GPIO_WLAN_GPIO0	S3C2440_GPJ7
->> -#define GTA02v1_GPIO_BAT_ID	S3C2440_GPJ8
->> -#define GTA02_GPIO_KEEPACT	S3C2440_GPJ8
->> -#define GTA02v1_GPIO_HP_IN	S3C2440_GPJ10
->> -#define GTA02_CHIP_PWD		S3C2440_GPJ11	/* v2 + v3 + v4 only
-> */
->> -#define GTA02_GPIO_nWLAN_RESET	S3C2440_GPJ12	/* v2 + v3 + v4 only
-> */
->> +#define GTA02_GPIO_AMP_SHUT	S3C2410_GPJ(1)	/* v2 + v3 + v4 only */
->> +#define GTA02v1_GPIO_WLAN_GPIO10	S3C2410_GPJ(2)
->> +#define GTA02_GPIO_HP_IN	S3C2410_GPJ(2)	/* v2 + v3 + v4 only */
->> +#define GTA02_GPIO_INT0		S3C2410_GPJ(3)	/* v2 + v3 + v4 only
-> */
->> +#define GTA02_GPIO_nGSM_EN	S3C2410_GPJ(4)
->> +#define GTA02_GPIO_3D_RESET	S3C2410_GPJ(5)
->> +#define GTA02_GPIO_nDL_GSM	S3C2410_GPJ(6)	/* v4 + v5 only */
->> +#define GTA02_GPIO_WLAN_GPIO0	S3C2410_GPJ(7)
->> +#define GTA02v1_GPIO_BAT_ID	S3C2410_GPJ(8)
->> +#define GTA02_GPIO_KEEPACT	S3C2410_GPJ(8)
->> +#define GTA02v1_GPIO_HP_IN	S3C2410_GPJ(10)
->> +#define GTA02_CHIP_PWD		S3C2410_GPJ(11)	/* v2 + v3 + v4
->> only */
->> +#define GTA02_GPIO_nWLAN_RESET	S3C2410_GPJ(12)	/* v2 + v3 + v4
->> only */
->>
->>  #define GTA02_IRQ_GSENSOR_1	IRQ_EINT0
->>  #define GTA02_IRQ_MODEM		IRQ_EINT1
->> --
->> 1.7.2.3
-> 
-> Yeah, old S3C2440_GPJx has removed.
-> Is the S3C2410_GPJ(1) right instead of S3C2440_GPJ1?
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 
-I think so. At least the the compile errors are gone and the drivers using
-these gpios work as expected.
+Hi Viresh,
 
-- Lars
+I have a similar patch to this that is already in next that should 
+achieve the same thing (dmaengine/dw_dmac: don't scan descriptors if no 
+xfers in progress).
+
+Jamie
