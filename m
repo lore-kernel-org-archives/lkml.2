@@ -1,62 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab1B1JBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 04:01:14 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38440 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970Ab1B1JBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 04:01:13 -0500
-Date: Mon, 28 Feb 2011 09:00:57 GMT
-From: tip-bot for Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        bigeasy@linutronix.de, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bigeasy@linutronix.de
-In-Reply-To: <1298830419-22681-1-git-send-email-bigeasy@linutronix.de>
-References: <1298830419-22681-1-git-send-email-bigeasy@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86: dt: Correct local apic documentation in device tree bindings
-Message-ID: <tip-a56ec98357ad26b380f1005198de1aa519c9e9cb@git.kernel.org>
-Git-Commit-ID: a56ec98357ad26b380f1005198de1aa519c9e9cb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753019Ab1B1JCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 04:02:35 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:35949 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab1B1JCe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 04:02:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Vam4borBx3pRanrPD8jw/PbyFC9jQonvzZ33t7Kr2QsTA0UojbUvFufpGc9M/W3Nam
+         pBHQVq+sXRJpBOVhLLsA==
 MIME-Version: 1.0
+In-Reply-To: <1298883087.4937.42.camel@minggr.sh.intel.com>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	<AANLkTimAkCtPwEMzHM3A_=kWs+HbYMJ_OBvxcHo46RJg@mail.gmail.com>
+	<1298883087.4937.42.camel@minggr.sh.intel.com>
+Date: Mon, 28 Feb 2011 10:02:30 +0100
+Message-ID: <AANLkTim_2ZgZTwJw_fSOdeyvAC96e5H4scGp+byuk6ZD@mail.gmail.com>
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Feb 2011 09:00:58 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a56ec98357ad26b380f1005198de1aa519c9e9cb
-Gitweb:     http://git.kernel.org/tip/a56ec98357ad26b380f1005198de1aa519c9e9cb
-Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-AuthorDate: Sun, 27 Feb 2011 19:13:39 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 28 Feb 2011 09:58:06 +0100
-
-x86: dt: Correct local apic documentation in device tree bindings
-
-Until "x86: dt: Cleanup local apic setup" we read the local apic
-address from the MSR and ignored the entry in DT. Reflect this change
-in the documentation.
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-LKML-Reference: <1298830419-22681-1-git-send-email-bigeasy@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- .../devicetree/bindings/x86/interrupt.txt          |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/x86/interrupt.txt b/Documentation/devicetree/bindings/x86/interrupt.txt
-index 8b0efb0..7d19f49 100644
---- a/Documentation/devicetree/bindings/x86/interrupt.txt
-+++ b/Documentation/devicetree/bindings/x86/interrupt.txt
-@@ -24,6 +24,3 @@ Interrupt chips
-   Required property:
- 
-      compatible = "intel,ce4100-lapic";
--
--  This node is currently unused by Linux as the address of the local APIC
--  read from a MSR.
+On Mon, Feb 28, 2011 at 9:51 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Mon, 2011-02-28 at 16:20 +0800, Stephane Eranian wrote:
+>> On Mon, Feb 28, 2011 at 8:22 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> > This patch adds basic SandyBridge support, including hardware cache
+>> > events and PEBS events support.
+>> >
+>> > LLC-* hareware cache events don't work for now, it depends on the
+>> > offcore patches.
+>> >
+>> > All PEBS events are tested on my SandyBridge machine and work well.
+>> > Note that SandyBridge does not support INSTR_RETIRED.ANY(0x00c0) PEBS
+>> > event, instead it supports INST_RETIRED.PRECDIST(0x01c0) event and PMC1
+>> > only.
+>> >
+>> > v1 -> v2:
+>> > - add more raw and PEBS events constraints
+>> > - use offcore events for LLC-* cache events
+>> > - remove the call to Nehalem workaround enable_all function
+>> >
+>> > todo:
+>> > - precise store
+>> > - precise distribution of instructions retired
+>> >
+>> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+>> > ---
+>> >  arch/x86/kernel/cpu/perf_event.c          |    2 +
+>> >  arch/x86/kernel/cpu/perf_event_intel.c    |  123 +++++++++++++++++++++++++++++
+>> >  arch/x86/kernel/cpu/perf_event_intel_ds.c |   44 ++++++++++-
+>> >  3 files changed, 168 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>> > index 10bfe24..49d51be 100644
+>> > --- a/arch/x86/kernel/cpu/perf_event.c
+>> > +++ b/arch/x86/kernel/cpu/perf_event.c
+>> > @@ -148,6 +148,8 @@ struct cpu_hw_events {
+>> >  */
+>> >  #define INTEL_EVENT_CONSTRAINT(c, n)   \
+>> >        EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+>> > +#define INTEL_EVENT_CONSTRAINT2(c, n)  \
+>> > +       EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+>> >
+>> >  /*
+>> >  * Constraint on the Event code + UMask + fixed-mask
+>> > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+>> > index 084b383..3085868 100644
+>> > --- a/arch/x86/kernel/cpu/perf_event_intel.c
+>> > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>> > @@ -76,6 +76,19 @@ static struct event_constraint intel_westmere_event_constraints[] =
+>> >        EVENT_CONSTRAINT_END
+>> >  };
+>> >
+>> > +static struct event_constraint intel_snb_event_constraints[] =
+>> > +{
+>> > +       FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+>> > +       FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+>> > +       /* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
+>> > +       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+>> > +       INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* OFF_CORE_RESPONSE_0 */
+>> > +       INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* OFF_CORE_RESPONSE_1 */
+>> > +       INTEL_EVENT_CONSTRAINT2(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+>> > +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+>> > +       EVENT_CONSTRAINT_END
+>> > +};
+>> > +
+>> >  static struct event_constraint intel_gen_event_constraints[] =
+>> >  {
+>> >        FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+>> > @@ -89,6 +102,106 @@ static u64 intel_pmu_event_map(int hw_event)
+>> >        return intel_perfmon_event_map[hw_event];
+>> >  }
+>> >
+>> > +static __initconst const u64 snb_hw_cache_event_ids
+>> > +                               [PERF_COUNT_HW_CACHE_MAX]
+>> > +                               [PERF_COUNT_HW_CACHE_OP_MAX]
+>> > +                               [PERF_COUNT_HW_CACHE_RESULT_MAX] =
+>> > +{
+>> > + [ C(L1D) ] = {
+>> > +       [ C(OP_READ) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0xf1d0, /* MEM_UOP_RETIRED.LOADS        */
+>> > +               [ C(RESULT_MISS)   ] = 0x0151, /* L1D.REPLACEMENT              */
+>> > +       },
+>> > +       [ C(OP_WRITE) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0xf2d0, /* MEM_UOP_RETIRED.STORES       */
+>> > +               [ C(RESULT_MISS)   ] = 0x0851, /* L1D.ALL_M_REPLACEMENT        */
+>> > +       },
+>> > +       [ C(OP_PREFETCH) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x0,
+>> > +               [ C(RESULT_MISS)   ] = 0x024e, /* HW_PRE_REQ.DL1_MISS          */
+>> > +       },
+>> > + },
+>> > + [ C(L1I ) ] = {
+>> > +       [ C(OP_READ) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x0,
+>> > +               [ C(RESULT_MISS)   ] = 0x0280, /* ICACHE.MISSES */
+>> > +       },
+>> > +       [ C(OP_WRITE) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = -1,
+>> > +               [ C(RESULT_MISS)   ] = -1,
+>> > +       },
+>> > +       [ C(OP_PREFETCH) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x0,
+>> > +               [ C(RESULT_MISS)   ] = 0x0,
+>> > +       },
+>> > + },
+>> > + [ C(LL  ) ] = {
+>> > +       /*
+>> > +        * TBD: Need Off-core Response Performance Monitoring support
+>> > +        */
+>> > +       [ C(OP_READ) ] = {
+>> > +               /* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
+>> > +               [ C(RESULT_ACCESS) ] = 0x01b7,
+>> > +               /* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
+>> > +               [ C(RESULT_MISS)   ] = 0x01bb,
+>> > +       },
+>> > +       [ C(OP_WRITE) ] = {
+>> > +               /* OFFCORE_RESPONSE_0.ANY_RFO.LOCAL_CACHE */
+>> > +               [ C(RESULT_ACCESS) ] = 0x01b7,
+>> > +               /* OFFCORE_RESPONSE_1.ANY_RFO.ANY_LLC_MISS */
+>> > +               [ C(RESULT_MISS)   ] = 0x01bb,
+>> > +       },
+>> > +       [ C(OP_PREFETCH) ] = {
+>> > +               /* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
+>> > +               [ C(RESULT_ACCESS) ] = 0x01b7,
+>> > +               /* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
+>> > +               [ C(RESULT_MISS)   ] = 0x01bb,
+>> > +       },
+>> > + },
+>> > + [ C(DTLB) ] = {
+>> > +       [ C(OP_READ) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x01d0, /* MEM_UOP_RETIRED.LOADS */
+>> > +               [ C(RESULT_MISS)   ] = 0x0108, /* DTLB_LOAD_MISSES.CAUSES_A_WALK */
+>> > +       },
+>> > +       [ C(OP_WRITE) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x02d0, /* MEM_UOP_RETIRED.STORES */
+>> > +               [ C(RESULT_MISS)   ] = 0x0149, /* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
+>> > +       },
+>> > +       [ C(OP_PREFETCH) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x0,
+>> > +               [ C(RESULT_MISS)   ] = 0x0,
+>> > +       },
+>> > + },
+>> > + [ C(ITLB) ] = {
+>> > +       [ C(OP_READ) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x1085, /* ITLB_MISSES.STLB_HIT         */
+>> > +               [ C(RESULT_MISS)   ] = 0x0185, /* ITLB_MISSES.CAUSES_A_WALK    */
+>> > +       },
+>> > +       [ C(OP_WRITE) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = -1,
+>> > +               [ C(RESULT_MISS)   ] = -1,
+>> > +       },
+>> > +       [ C(OP_PREFETCH) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = -1,
+>> > +               [ C(RESULT_MISS)   ] = -1,
+>> > +       },
+>> > + },
+>> > + [ C(BPU ) ] = {
+>> > +       [ C(OP_READ) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ALL_BRANCHES */
+>> > +               [ C(RESULT_MISS)   ] = 0x00c5, /* BR_MISP_RETIRED.ALL_BRANCHES */
+>> > +       },
+>> > +       [ C(OP_WRITE) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = -1,
+>> > +               [ C(RESULT_MISS)   ] = -1,
+>> > +       },
+>> > +       [ C(OP_PREFETCH) ] = {
+>> > +               [ C(RESULT_ACCESS) ] = -1,
+>> > +               [ C(RESULT_MISS)   ] = -1,
+>> > +       },
+>> > + },
+>> > +};
+>> > +
+>> >  static __initconst const u64 westmere_hw_cache_event_ids
+>> >                                [PERF_COUNT_HW_CACHE_MAX]
+>> >                                [PERF_COUNT_HW_CACHE_OP_MAX]
+>> > @@ -1062,6 +1175,16 @@ static __init int intel_pmu_init(void)
+>> >                pr_cont("Westmere events, ");
+>> >                break;
+>> >
+>> > +       case 42: /* SandyBridge */
+>> > +               memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+>> > +                      sizeof(hw_cache_event_ids));
+>> > +
+>> > +               intel_pmu_lbr_init_nhm();
+>> > +
+>> > +               x86_pmu.event_constraints = intel_snb_event_constraints;
+>> > +               pr_cont("SandyBridge events, ");
+>> > +               break;
+>> > +
+>> >        default:
+>> >                /*
+>> >                 * default constraints for v2 and up
+>> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> > index b7dcd9f..e60f91b 100644
+>> > --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> > +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> > @@ -388,6 +388,42 @@ static struct event_constraint intel_nehalem_pebs_events[] = {
+>> >        EVENT_CONSTRAINT_END
+>> >  };
+>> >
+>> > +static struct event_constraint intel_snb_pebs_events[] = {
+>> > +       PEBS_EVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+>> > +       PEBS_EVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+>> > +       PEBS_EVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+>> > +       PEBS_EVENT_CONSTRAINT(0x01c4, 0xf), /* BR_INST_RETIRED.CONDITIONAL */
+>> > +       PEBS_EVENT_CONSTRAINT(0x02c4, 0xf), /* BR_INST_RETIRED.NEAR_CALL */
+>> > +       PEBS_EVENT_CONSTRAINT(0x04c4, 0xf), /* BR_INST_RETIRED.ALL_BRANCHES */
+>> > +       PEBS_EVENT_CONSTRAINT(0x08c4, 0xf), /* BR_INST_RETIRED.NEAR_RETURN */
+>> > +       PEBS_EVENT_CONSTRAINT(0x10c4, 0xf), /* BR_INST_RETIRED.NOT_TAKEN */
+>> > +       PEBS_EVENT_CONSTRAINT(0x20c4, 0xf), /* BR_INST_RETIRED.NEAR_TAKEN */
+>> > +       PEBS_EVENT_CONSTRAINT(0x40c4, 0xf), /* BR_INST_RETIRED.FAR_BRANCH */
+>> > +       PEBS_EVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+>> > +       PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
+>> > +       PEBS_EVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+>> > +       PEBS_EVENT_CONSTRAINT(0x10c5, 0xf), /* BR_MISP_RETIRED.NOT_TAKEN */
+>> > +       PEBS_EVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.TAKEN */
+>> > +       PEBS_EVENT_CONSTRAINT(0x01cd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+>> > +       PEBS_EVENT_CONSTRAINT(0x02cd, 0x8), /* MEM_TRANS_RETIRED.PRECISE_STORE */
+>>
+>> > +       PEBS_EVENT_CONSTRAINT(0x01d0, 0xf), /* MEM_UOP_RETIRED.LOADS */
+>> > +       PEBS_EVENT_CONSTRAINT(0x02d0, 0xf), /* MEM_UOP_RETIRED.STORES */
+>> > +       PEBS_EVENT_CONSTRAINT(0x10d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS */
+>> > +       PEBS_EVENT_CONSTRAINT(0x20d0, 0xf), /* MEM_UOP_RETIRED.LOCK */
+>> > +       PEBS_EVENT_CONSTRAINT(0x40d0, 0xf), /* MEM_UOP_RETIRED.SPLIT */
+>> > +       PEBS_EVENT_CONSTRAINT(0x80d0, 0xf), /* MEM_UOP_RETIRED.ALL */
+>>
+>> Not quite. For event 0xd0, you are not listing the right umask combinations.
+>> The following combinations are supported for event 0xd0:
+>>
+>> 0x5381d0      snb::MEM_UOP_RETIRED:ANY_LOADS
+>> 0x5382d0      snb::MEM_UOP_RETIRED:ANY_STORES
+>> 0x5321d0      snb::MEM_UOP_RETIRED:LOCK_LOADS
+>> 0x5322d0      snb::MEM_UOP_RETIRED:LOCK_STORES
+>> 0x5341d0      snb::MEM_UOP_RETIRED:SPLIT_LOADS
+>> 0x5342d0      snb::MEM_UOP_RETIRED:SPLIT_STORES
+>> 0x5311d0      snb::MEM_UOP_RETIRED:STLB_MISS_LOADS
+>> 0x5312d0      snb::MEM_UOP_RETIRED:STLB_MISS_STORES
+>>
+>> In other words, bit 0-3 of the umask cannot be zero.
+>
+> I got the umask from "Table 30-20. PEBS Performance Events for Intel
+> microarchitecture code name Sandy Bridge".
+>
+> But from "Table A-2. Non-Architectural Performance Events In the
+> Processor Core for Intel Core Processor 2xxx Series", the combinations
+> are needed as you show above.
+>
+> Which one is correct?
+>
+I think Table A-2 is correct. Umasks 10h, 20h, 40h, 80h MUST be combined
+to collect something meaningful.
