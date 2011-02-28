@@ -1,208 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab1B1XCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 18:02:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31331 "EHLO mx1.redhat.com"
+	id S1753556Ab1B1XEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 18:04:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7962 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab1B1XCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 18:02:40 -0500
-Date: Mon, 28 Feb 2011 18:01:14 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
-Message-ID: <20110228230114.GB20845@redhat.com>
-References: <1298888105-3778-1-git-send-email-arighi@develer.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298888105-3778-1-git-send-email-arighi@develer.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753266Ab1B1XEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 18:04:34 -0500
+Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable
+ memory slots using wbtree
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com
+In-Reply-To: <4D6A1F55.7080804@redhat.com>
+References: <1298386481.5764.60.camel@x201>
+	 <20110222183822.22026.62832.stgit@s20.home>  <4D6507C9.1000906@redhat.com>
+	 <1298484395.18387.28.camel@x201> <1298489332.18387.56.camel@x201>
+	 <4D662DBF.2020706@redhat.com> <1298568944.6140.21.camel@x201>
+	 <4D6A1F55.7080804@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Feb 2011 16:04:31 -0700
+Message-ID: <1298934271.4177.19.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
-> Overview
-> ========
-> Currently the blkio.throttle controller only support synchronous IO requests.
-> This means that we always look at the current task to identify the "owner" of
-> each IO request.
+On Sun, 2011-02-27 at 11:54 +0200, Avi Kivity wrote:
+> On 02/24/2011 07:35 PM, Alex Williamson wrote:
+> > On Thu, 2011-02-24 at 12:06 +0200, Avi Kivity wrote:
+> > >  On 02/23/2011 09:28 PM, Alex Williamson wrote:
+> > >  >  I had forgotten about<1M mem, so actually the slot configuration was:
+> > >  >
+> > >  >  0:<1M
+> > >  >  1: 1M - 3.5G
+> > >  >  2: 4G+
+> > >  >
+> > >  >  I stacked the deck in favor of the static array (0: 4G+, 1: 1M-3.5G, 2:
+> > >  >  <1M), and got these kernbench results:
+> > >  >
+> > >  >               base (stdev)    reorder (stdev)   wbtree (stdev)
+> > >  >  --------+-----------------+----------------+----------------+
+> > >  >  Elapsed |  42.809 (0.19)  |  42.160 (0.22) |  42.305 (0.23) |
+> > >  >  User    | 115.709 (0.22)  | 114.358 (0.40) | 114.720 (0.31) |
+> > >  >  System  |  41.605 (0.14)  |  40.741 (0.22) |  40.924 (0.20) |
+> > >  >  %cpu    |   366.9 (1.45)  |   367.4 (1.17) |   367.6 (1.51) |
+> > >  >  context |  7272.3 (68.6)  |  7248.1 (89.7) |  7249.5 (97.8) |
+> > >  >  sleeps  | 14826.2 (110.6) | 14780.7 (86.9) | 14798.5 (63.0) |
+> > >  >
+> > >  >  So, wbtree is only slightly behind reordering, and the standard
+> > >  >  deviation suggests the runs are mostly within the noise of each other.
+> > >  >  Thanks,
+> > >
+> > >  Doesn't this indicate we should use reordering, instead of a new data
+> > >  structure?
+> >
+> > The original problem that brought this on was scaling.  The re-ordered
+> > array still has O(N) scaling while the tree should have ~O(logN) (note
+> > that it currently doesn't because it needs a compaction algorithm added
+> > after insert and remove).  So yes, it's hard to beat the results of a
+> > test that hammers on the first couple entries of a sorted array, but I
+> > think the tree has better than current performance and more predictable
+> > when scaled performance.
 > 
-> However dirty pages in the page cache can be wrote to disk asynchronously by
-> the per-bdi flusher kernel threads or by any other thread in the system,
-> according to the writeback policy.
-> 
-> For this reason the real writes to the underlying block devices may
-> occur in a different IO context respect to the task that originally
-> generated the dirty pages involved in the IO operation. This makes the
-> tracking and throttling of writeback IO more complicate respect to the
-> synchronous IO from the blkio controller's perspective.
-> 
-> Proposed solution
-> =================
-> In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
-> the problem of the buffered writes limitation by tracking the ownership of all
-> the dirty pages in the system.
-> 
-> This would allow to always identify the owner of each IO operation at the block
-> layer and apply the appropriate throttling policy implemented by the
-> blkio.throttle controller.
-> 
-> This solution makes the blkio.throttle controller to work as expected also for
-> writeback IO, but it does not resolve the problem of faster cgroups getting
-> blocked by slower cgroups (that would expose a potential way to create DoS in
-> the system).
-> 
-> In fact, at the moment critical IO requests (that have dependency with other IO
-> requests made by other cgroups) and non-critical requests are mixed together at
-> the filesystem layer in a way that throttling a single write request may stop
-> also other requests in the system, and at the block layer it's not possible to
-> retrieve such informations to make the right decision.
-> 
-> A simple solution to this problem could be to just limit the rate of async
-> writes at the time a task is generating dirty pages in the page cache. The
-> big advantage of this approach is that it does not need the overhead of
-> tracking the ownership of the dirty pages, because in this way from the blkio
-> controller perspective all the IO operations will happen from the process
-> context: writes in memory and synchronous reads from the block device.
-> 
-> The drawback of this approach is that the blkio.throttle controller becomes a
-> little bit leaky, because with this solution the controller is still affected
-> by the IO spikes during the writeback of dirty pages executed by the kernel
-> threads.
-> 
-> Probably an even better approach would be to introduce the tracking of the
-> dirty page ownership to properly account the cost of each IO operation at the
-> block layer and apply the throttling of async writes in memory only when IO
-> limits are exceeded.
+> Scaling doesn't matter, only actual performance.  Even a guest with 512 
+> slots would still hammer only on the first few slots, since these will 
+> contain the bulk of memory.
 
-Andrea, I am curious to know more about it third option. Can you give more
-details about accouting in block layer but throttling in memory. So say 
-a process starts IO, then it will still be in throttle limits at block
-layer (because no writeback has started), then the process will write
-bunch of pages in cache. By the time throttle limits are crossed at
-block layer, we already have lots of dirty data in page cache and
-throttling process now is already late?
+It seems like we need a good mixed workload benchmark.  So far we've
+only tested worst case, with a pure emulated I/O test, and best case,
+with a pure memory test.  Ordering an array only helps the latter, and
+only barely beats the tree, so I suspect overall performance would be
+better with a tree.
 
+> > If we knew when we were searching for which type of data, it would
+> > perhaps be nice if we could use a sorted array for guest memory (since
+> > it's nicely bounded into a small number of large chunks), and a tree for
+> > mmio (where we expect the scaling to be a factor).  Thanks,
 > 
-> To summarize, we can identify three possible solutions to properly throttle the
-> buffered writes:
+> We have three types of memory:
 > 
-> 1) account & throttle everything at block IO layer (bad for "priority
->    inversion" problems, needs page tracking for blkio)
+> - RAM - a few large slots
+> - mapped mmio (for device assignment) - possible many small slots
+> - non-mapped mmio (for emulated devices) - no slots
 > 
-> 2) account at block IO layer and throttle in memory (needs page tracking for
->    blkio)
+> The first two are handled in exactly the same way - they're just memory 
+> slots.  We expect a lot more hits into the RAM slots, since they're much 
+> bigger.  But by far the majority of faults will be for the third 
+> category - mapped memory will be hit once per page, then handled by 
+> hardware until Linux memory management does something about the page, 
+> which should hopefully be rare (with device assignment, rare == never, 
+> since those pages are pinned).
 > 
-> 3) account & throttle in memory (affected by IO spikes, depending on
->    dirty_ratio / dirty_background_ratio settings)
-> 
-> For now we start with the solution 3) that seems to be the simplest way to
-> proceed.
+> Therefore our optimization priorities should be
+> - complete miss into the slot list
 
-Yes, IO spikes is the weakness of this 3rd solution. But it should be
-simple too. Also as you said problem can be reduced up to some extent
-by changing reducing dirty_ratio and background dirty ratio But that
-will have other trade offs, I guess.
+The tree is obviously the most time and space efficient for this and the
+netperf results show a pretty clear win here.  I think it's really only
+a question of whether we'd be ok with slow, cache thrashing, searches
+here if we could effectively cache the result for next time as you've
+suggested.  Even then, it seems like steady state performance would be
+prone to unusual slowdowns (ex. have to flush sptes on every add, what's
+the regeneration time to replace all those slow lookups?).
 
-Thanks
-Vivek
+> - hit into the RAM slots
 
+It's really just the indirection of the tree and slightly larger element
+size that gives the sorted array an edge here.
+
+> - hit into the other slots (trailing far behind)
+
+Obviously an array sucks at this.
+
+> Of course worst-case performance matters.  For example, we might (not 
+> sure) be searching the list with the mmu spinlock held.
 > 
-> Testcase
-> ========
-> - create a cgroup with 4MiB/s write limit:
->   # mount -t cgroup -o blkio none /mnt/cgroup
->   # mkdir /mnt/cgroup/foo
->   # echo 8:0 $((4 * 1024 * 1024)) > /mnt/cgroup/foo/blkio.throttle.write_bps_device
-> 
->   NOTE: async io is still limited per-device, as well as sync io
-> 
-> - move a task into the cgroup and run a dd to generate some writeback IO
-> 
-> Results:
-> 
->   - 2.6.38-rc6 vanilla:
-> 
->   $ cat /proc/$$/cgroup
->   1:blkio:/foo
->   $ dd if=/dev/zero of=zero bs=1M count=128 &
->   $ dstat -df
->   --dsk/sda--
->    read  writ
->    0     0
->   ...
->    0     0
->    0    22M  <--- writeback starts here and is not limited at all
->    0    43M
->    0    45M
->    0    18M
->   ...
-> 
->   - 2.6.38-rc6 + async write throttling:
-> 
->   $ cat /proc/$$/cgroup
->   1:blkio:/foo
->   $ dd if=/dev/zero of=zero bs=1M count=128 &
->   $ dstat -df
->   --dsk/sda--
->    read  writ
->    0     0
->    0     0
->    0     0
->    0     0
->    0    22M  <--- we have some IO spikes but the overall writeback IO
->    0     0        is controlled according to the blkio write limit
->    0     0
->    0     0
->    0     0
->    0    29M
->    0     0
->    0     0
->    0     0
->    0     0
->    0    26M
->    0     0
->    0     0
->    0     0
->    0     0
->    0    30M
->    0     0
->    0     0
->    0     0
->    0     0
->    0    20M
-> 
-> TODO
-> ~~~~
->  - Consider to add the following new files in the blkio controller to allow the
->    user to explicitly limit async writes as well as sync writes:
-> 
->    blkio.throttle.async.write_bps_limit
->    blkio.throttle.async.write_iops_limit
-> 
-> Any feedback is welcome.
-> -Andrea
-> 
-> [PATCH 1/3] block: introduce REQ_DIRECT to track direct io bio
-> [PATCH 2/3] blkio-throttle: infrastructure to throttle async io
-> [PATCH 3/3] blkio-throttle: async write io instrumentation
-> 
->  block/blk-throttle.c      |  106 ++++++++++++++++++++++++++++++---------------
->  fs/direct-io.c            |    1 +
->  include/linux/blk_types.h |    2 +
->  include/linux/blkdev.h    |    6 +++
->  mm/page-writeback.c       |   17 +++++++
->  5 files changed, 97 insertions(+), 35 deletions(-)
+> I think we still have a bit to go before we can justify the new data 
+> structure.
+
+Suggestions for a mixed workload benchmark?  What else would you like to
+see?  Thanks,
+
+Alex
+
