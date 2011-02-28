@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1B1JhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 04:37:18 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:52197 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab1B1JhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752950Ab1B1JhQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 04:37:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752655Ab1B1JhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Feb 2011 04:37:14 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: mchehab@infradead.org
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v2 -resend#1 1/1] V4L: videobuf, don't use dma addr as physical
-Date: Mon, 28 Feb 2011 10:37:02 +0100
-Message-Id: <1298885822-10083-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.4.1
+Message-ID: <4D6B6CB8.7050209@redhat.com>
+Date: Mon, 28 Feb 2011 11:36:56 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the final tree (kvm
+ tree related)
+References: <20110221175658.2dc4d1ac.sfr@canb.auug.org.au>	 <20110228131556.3822f3ca.sfr@canb.auug.org.au> <1298860124.27725.2.camel@yhuang-dev>
+In-Reply-To: <1298860124.27725.2.camel@yhuang-dev>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem->dma_handle is a dma address obtained by dma_alloc_coherent which
-needn't be a physical address in presence of IOMMU. So ensure we are
-remapping (remap_pfn_range) the right page in __videobuf_mmap_mapper
-by using virt_to_phys(mem->vaddr) and not mem->dma_handle.
+On 02/28/2011 04:28 AM, Huang Ying wrote:
+> Hi, Avi and Marcelo,
+>
+> On Mon, 2011-02-28 at 10:15 +0800, Stephen Rothwell wrote:
+> >  Hi All,
+> >
+> >  On Mon, 21 Feb 2011 17:56:58 +1100 Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
+> >  >
+> >  >  After merging the final tree, today's linux-next build (sparc64 defconfig)
+> >  >  failed like this:
+> >  >
+> >  >  mm/memory.c: In function '__get_user_pages':
+> >  >  mm/memory.c:1584: error: 'EHWPOISON' undeclared (first use in this function)
+> >  >
+> >  >  Caused by commit b1c4f2836370f5c8207d4c61e91c93bd6a4ce27a ("mm: make
+> >  >  __get_user_pages return -EHWPOISON for HWPOISON page optionally") from
+> >  >  the kvm tree.
+> >  >
+> >  >  Not all architectures use include/asm-generic/errno.h ...
+> >  >
+> >  >  I have reverted that commit (and commits
+> >  >  d47b742c5661385b927c03188549b2d2004b80f4 "KVM: Replace
+> >  >  is_hwpoison_address with __get_user_pages" and
+> >  >  eef8839430b72deac59e9ec51eb56c44512fcc66 "mm: remove is_hwpoison_address"
+> >  >  which depend on it) for today.
+> >
+> >  I am still doing those reverts ...
+>
+> Can you merge the fixes following the email into my original EHWPOISON
+> patch to check if that fixes linux-next issue?
+>
 
-While at it, use PFN_DOWN instead of explicit shift.
+I folded this into the original patch, will show up in next linux-next.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/media/video/videobuf-dma-contig.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
-index c969111..19d3e4a 100644
---- a/drivers/media/video/videobuf-dma-contig.c
-+++ b/drivers/media/video/videobuf-dma-contig.c
-@@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
- 
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- 	retval = remap_pfn_range(vma, vma->vm_start,
--				 mem->dma_handle >> PAGE_SHIFT,
-+				 PFN_DOWN(virt_to_phys(mem->vaddr))
- 				 size, vma->vm_page_prot);
- 	if (retval) {
- 		dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
 -- 
-1.7.4.1
-
+error compiling committee.c: too many arguments to function
 
