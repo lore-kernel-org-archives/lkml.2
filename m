@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab1B1W7w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 17:59:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60841 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab1B1W7s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 17:59:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AFpK47CJHr83rBkMD1SNeLTE/amL5QcLsDw9IhKA7MPGGo64A12/bvGzbAluzleKlp
-         WR2m3l66f3bbMVpgIKYyVvXJsnlU7Ie/HxiswpB9E4gQwId96ck5AkI+YmRTTfVJL3+I
-         3KvxMpqWnUmCCjfFDcUSQbCb4X2Wiz7p5Pd60=
+	id S1753547Ab1B1XDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 18:03:05 -0500
+Received: from mail.digium.com ([216.207.245.2]:56221 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952Ab1B1XDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 18:03:03 -0500
+X-Greylist: delayed 1354 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Feb 2011 18:03:03 EST
+Date: Mon, 28 Feb 2011 16:41:24 -0600
+From: Russ Meyerriecks <rmeyerriecks@digium.com>
+To: akpm@linux-foundation.org
+Cc: sruffell@digium.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mm/dmapool.c: Do not create/destroy sysfs file while
+	holding pools_lock
+Message-ID: <20110228224124.GA31769@blackmagic.digium.internal>
 MIME-Version: 1.0
-In-Reply-To: <4D6BFF46.3050001@sgi.com>
-References: <20110225180633.857892225@gulag1.americas.sgi.com>
-	<20110225180634.017570095@gulag1.americas.sgi.com>
-	<20110227120949.GF16453@elte.hu>
-	<20110227121518.GA19165@elte.hu>
-	<4D6AFBB0.70401@kernel.org>
-	<4D6BF63D.2020404@sgi.com>
-	<AANLkTi=Sn6DKAjGHQjtWGiLGh8vpuS-vmXK=TMDrbjdv@mail.gmail.com>
-	<4D6BFF46.3050001@sgi.com>
-Date: Mon, 28 Feb 2011 14:59:47 -0800
-X-Google-Sender-Auth: AAmsToDV1JovVeTdB32AHH_gn6Q
-Message-ID: <AANLkTi=Xf5RaF559QsRNijmG0YP7amkG569NZFhpt4QY@mail.gmail.com>
-Subject: Re: [PATCH 1/4] printk: Allocate kernel log buffer earlier
-From: Yinghai Lu <yinghai@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, David Rientjes <rientjes@google.com>,
-        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 12:02 PM, Mike Travis <travis@sgi.com> wrote:
->
->
-> Yinghai Lu wrote:
->>
->> On Mon, Feb 28, 2011 at 11:23 AM, Mike Travis <travis@sgi.com> wrote:
->>>
->>> Yinghai Lu wrote:
->>>>
->>>> On 02/27/2011 04:15 AM, Ingo Molnar wrote:
->>>>>
->>>>> * Ingo Molnar <mingo@elte.hu> wrote:
->>>>>
->>>>>> You could avoid all this ugly workaround of bootmem limitations by
->>>>>> moving the allocation to memblock_alloc() and desupporting the
->>>>>> log_buf_len=
->>>>>> boot parameter on non-memblock architectures.
->>>>>
->>>>> memblock_alloc() could return -ENOSYS on architectures that do not
->>>>> implement it - thus enabling such optional features without ugly #ifdef
->>>>> CONFIG_HAVE_MEMBLOCK conditionals.
->>>>
->>>> Mike,
->>>>
->>>> please check updated patch...
->>>>
->>>> with the memblock change, you don't need to change acpi SRAT handling
->>>> etc
->>>> any more.
->>>
->>> I had to debug a weird ACPI -> Node mapping last week and the
->>> "improved" SRAT messages helped that considerably.  It was
->>> far easier to spot which Node didn't have the correct assignments.
->>> I'd submit that patch even without needing fewer (like 512 lines
->>> max instead of 4096 lines max) bytes in the log buffer.
->>
->> Your current change to ACPI srat is not complete yet.
->>
->> you only handle x2apic entries.
->>
->> According to ACPI 4.0 spec, We should have mixed entries with apic
->> entries and x2apic entries.
->> apic entries are for apic id < 255.
->> x2apic entries are for apic id > 255.
->>
->> Yinghai
->
-> Are you sure you can run both "legacy" and "x2" apic modes in
-> the same SSI under the Intel or AMD rules?
->
-No.
+From: Shaun Ruffell <sruffell@digium.com>
 
-According to ACPI 4.0 Spec:
-even the CPUs are with x2apic mode (aka pre-enabled in BIOS),
-if their apic id < 255, BIOS still need to use xapic entries for them.
+Eliminates a circular lock dependency reported by lockdep. When reading the
+"pools" file from a PCI device via sysfs, the s_active lock is acquired before
+the pools_lock. When unloading the driver and destroying the pool, pools_lock
+is acquired before the s_active lock.
 
-Yinghai
+ cat/12016 is trying to acquire lock:
+  (pools_lock){+.+.+.}, at: [<c04ef113>] show_pools+0x43/0x140
+
+ but task is already holding lock:
+  (s_active#82){++++.+}, at: [<c0554e1b>] sysfs_read_file+0xab/0x160
+
+ which lock already depends on the new lock.
+
+Signed-off-by: Shaun Ruffell <sruffell@digium.com>
+Signed-off-by: Russ Meyerriecks <rmeyerriecks@digium.com>
+---
+ mm/dmapool.c |   34 ++++++++++++++++++++++++----------
+ 1 files changed, 24 insertions(+), 10 deletions(-)
+
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index 03bf3bb..d693872 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -174,21 +174,28 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ 	init_waitqueue_head(&retval->waitq);
+ 
+ 	if (dev) {
+-		int ret;
++		int first_pool;
+ 
+ 		mutex_lock(&pools_lock);
+ 		if (list_empty(&dev->dma_pools))
+-			ret = device_create_file(dev, &dev_attr_pools);
++			first_pool = 1;
+ 		else
+-			ret = 0;
++			first_pool = 0;
+ 		/* note:  not currently insisting "name" be unique */
+-		if (!ret)
+-			list_add(&retval->pools, &dev->dma_pools);
+-		else {
+-			kfree(retval);
+-			retval = NULL;
+-		}
++		list_add(&retval->pools, &dev->dma_pools);
+ 		mutex_unlock(&pools_lock);
++
++		if (first_pool) {
++			int ret;
++			ret = device_create_file(dev, &dev_attr_pools);
++			if (ret) {
++				mutex_lock(&pools_lock);
++				list_del(&retval->pools);
++				mutex_unlock(&pools_lock);
++				kfree(retval);
++				retval = NULL;
++			}
++		}
+ 	} else
+ 		INIT_LIST_HEAD(&retval->pools);
+ 
+@@ -263,12 +270,19 @@ static void pool_free_page(struct dma_pool *pool, struct dma_page *page)
+  */
+ void dma_pool_destroy(struct dma_pool *pool)
+ {
++	int last_pool;
++
+ 	mutex_lock(&pools_lock);
+ 	list_del(&pool->pools);
+ 	if (pool->dev && list_empty(&pool->dev->dma_pools))
+-		device_remove_file(pool->dev, &dev_attr_pools);
++		last_pool = 1;
++	else
++		last_pool = 0;
+ 	mutex_unlock(&pools_lock);
+ 
++	if (last_pool)
++		device_remove_file(pool->dev, &dev_attr_pools);
++
+ 	while (!list_empty(&pool->page_list)) {
+ 		struct dma_page *page;
+ 		page = list_entry(pool->page_list.next,
+-- 
+1.7.2.1
+
