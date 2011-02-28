@@ -1,102 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1B1NRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 08:17:11 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33257 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab1B1NRJ convert rfc822-to-8bit (ORCPT
+	id S1753988Ab1B1NS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 08:18:59 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46680 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753741Ab1B1NS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 08:17:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ap4vsxNwgQ/9wkpkv0O/isf/Tdu75lcUJBw+dLO30pbGMxkMNS0gIu+zFTDSXIZzkS
-         L3VPmHR8GxkHeI3kL61bYET3xTkz+6cgJ3n7PDo5BhCGvJFZAEL2/+WDedycLTgCaIMt
-         V2b6RqYHKlCoNUofuOi9bQ9xRFiEQ3r5zPbQg=
+	Mon, 28 Feb 2011 08:18:58 -0500
+Message-ID: <4D6BA118.9090304@metafoo.de>
+Date: Mon, 28 Feb 2011 14:20:24 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20110228125622.GA9326@htj.dyndns.org>
-References: <20110214190141.GA19221@redhat.com> <20110224202941.GA12258@redhat.com>
- <20110225155142.GQ24828@htj.dyndns.org> <201102260348.03312.vda.linux@googlemail.com>
- <20110228125622.GA9326@htj.dyndns.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Mon, 28 Feb 2011 14:16:48 +0100
-Message-ID: <AANLkTik1+XVrkwTouERoxF2AWYyv-UCqie_Wq3OLjoXg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after PTRACE_ATTACH
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
+        Heikki Krogerus <ext-heikki.krogerus@nokia.com>
+Subject: Re: [PATCH] bq27x00: New property POWER_SUPPLY_PROP_CURRENT_MAX
+References: <AANLkTimba0wqefAxwNP+ANiGgpbmHi60tci_8sg=Sdi7@mail.gmail.com>
+In-Reply-To: <AANLkTimba0wqefAxwNP+ANiGgpbmHi60tci_8sg=Sdi7@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 1:56 PM, Tejun Heo <tj@kernel.org> wrote:
->> * group-stop state is currently not preserved across ptrace-stop.
->> † This makes, in particular, ^Z and SIGSTOP inoperative for straced
->> † programs. Everyone agrees this needs to be fixed.
->> † (There is a small bug of not notifying real parent about the group-stop,
->> † I don't want to go there since it is also non-contentious - everybody
->> † is in agreement this also should be fixed in "obvious" way).
->
-> Yeap, we do agree on this one, unfortunately not on how yet.
->
->> * HOWEVER, this behavior _is_ indeed used by gdb to run small fragments
->> † of tracee even if it's stopped. Jan's example:
->> † † # gdb -p applicationpid
->> † † (gdb) print getpid()
->> † † (gdb) print show_me_your_internal_debug_dump()
->> † † (gdb) continue
->> † gdb people want to preserve this feature.
->> † How gdb implements this? I ssume it does this by modifying IP,
->> † setting a breakpoint on return address, and issues PTRACE_CONT(0).
->> † Currently it works because of "group-stop is ignored under ptrace" bug.
->
-> I don't think it works because of "group-stop is ignored under ptrace"
-> bug.
+On 02/27/2011 01:02 PM, Pali Roh√°r wrote:
+> This patch add support for reporting property POWER_SUPPLY_PROP_CURRENT_MAX
+> 
+> Signed-off-by: Pali Roh√°r <pali.rohar@gmail.com>
+> 
+> ---  a/drivers/power/bq27x00_battery.c	2011-02-27 12:14:56.000000000 +0100
+> +++  b/drivers/power/bq27x00_battery.c	2011-02-27 12:55:33.000000000 +0100
+> @@ -4,6 +4,7 @@
+>   * Copyright (C) 2008 Rodolfo Giometti <giometti@linux.it>
+>   * Copyright (C) 2008 Eurotech S.p.A. <info@eurotech.it>
+>   * Copyright (C) 2010-2011 Lars-Peter Clausen <lars@metafoo.de>
+> + * Copyright (C) 2011 Pali Roh√°r <pali.rohar@gmail.com>
+>   *
+>   * Based on a previous work by Copyright (C) 2008 Texas Instruments, Inc.
+>   *
+> @@ -53,11 +54,13 @@
+> 
+>  #define BQ27000_REG_RSOC		0x0B /* Relative State-of-Charge */
+>  #define BQ27000_REG_ILMD		0x76 /* Initial last measured discharge */
+> +#define BQ27000_REG_IMLC		0x7D /* Initial max load current */
+>  #define BQ27000_FLAG_CHGS		BIT(7)
+>  #define BQ27000_FLAG_FC			BIT(5)
+> 
+>  #define BQ27500_REG_SOC			0x2C
+>  #define BQ27500_REG_DCAP		0x3C /* Design capacity */
+> +#define BQ27500_REG_MLI			0x1E /* Max load current */
+>  #define BQ27500_FLAG_DSC		BIT(0)
+>  #define BQ27500_FLAG_FC			BIT(9)
+> 
+> @@ -90,6 +93,7 @@ struct bq27x00_device_info {
+> 
+>  	struct bq27x00_reg_cache cache;
+>  	int charge_design_full;
+> +	int current_max;
+> 
+>  	unsigned long last_update;
+>  	struct delayed_work work;
+> @@ -106,6 +110,7 @@ static enum power_supply_property bq27x0
+>  	POWER_SUPPLY_PROP_PRESENT,
+>  	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+>  	POWER_SUPPLY_PROP_CURRENT_NOW,
+> +	POWER_SUPPLY_PROP_CURRENT_MAX,
+>  	POWER_SUPPLY_PROP_CAPACITY,
+>  	POWER_SUPPLY_PROP_TEMP,
+>  	POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW,
+> @@ -220,6 +225,32 @@ static int bq27x00_battery_read_ilmd(str
+>  }
+> 
+>  /*
+> + * Return the battery Initial max load current in ¬µA
+> + * Or < 0 if something fails.
+> + */
+> +static int bq27x00_battery_read_imlc(struct bq27x00_device_info *di)
+> +{
+> +	int imlc;
+> +
+> +	if (di->chip == BQ27500)
+> +		imlc = bq27x00_read(di, BQ27500_REG_MLI, false);
+> +	else
+> +		imlc = bq27x00_read(di, BQ27000_REG_IMLC, true);
+> +
 
-How so?
-Imagine the following: tracee was stopped (two cases: it was stopped
-before we attached to it, or it was stopped by SIGSTOP during debug session),
-and we do run on a hypothetical kernel which preserves group-stop.
-At this point, in gdb user does this:
+According to the datasheet the MLI register contains an adaptive value which is
+averaged each time the battery has been fully charged after previously being
+discharged to less then 50%.
+The IMLC register holds some preprogrammed value and is used to initialize the
+MLI register upon a battery reset.
+So with the current implementation you'll get different results for
+bq27000/bq27200 and bq27500.
 
-(gdb) print getpid()
+Furthermore I'm not sure if the CURRENT_MAX property actually makes sense in
+the context of a battery.
+There is no entry for the CURRENT_MAX property in
+Documentation/power/power_supply. But according to the commit message of the
+commit adding that property I would assume that it is supposed to be used for
+chargers to indicate the maximum current that can be drawn from it. (Adding the
+author of that commit to Cc).
 
-gdb modifies IP, sets breakpoint on return address, and issues PTRACE_CONT(0).
-Kernel has to put the tracee into group-stop, right?
-Becuase if it doesn't, if it makes tracee run, then the kernel is
-still broken. For example,
-stracing a program and sending SIGSTOP on it won't work: the sequence
-of events will be
-got SIGSTOP because SIGSTOP was delivered
-PTRACE_SYSCALL(SIGSTOP) - "inject it"
-got SIGSTOP because tracee is in group-stop now
-PTRACE_SYSCALL(SIGSTOP) - equivalent to PTRACE_SYSCALL(0)
-  because we aren't in signal delivery ptrace-stop
-and tracee continues.
+- Lars
 
-That's why I think gdb's "print getpid()" today depends on the bug.
-If we simply fix the bug (by making PTRACE_CONT/SYSCALL(0)
-re-enter group-stop), then "print getpid()" will stop working
-for stopped tracees.
+> +	if (imlc < 0) {
+> +		dev_err(di->dev, "error reading initial max load current\n");
+> +		return imlc;
+> +	}
+> +
+> +	if (di->chip == BQ27500)
+> +		imlc *= 1000;
+> +	else
+> +		imlc = imlc * 457000 / BQ27000_RS;
+> +
+> +	return imlc;
+> +}
+> +
+> +/*
+>   * Return the battery Cycle count total
+>   * Or < 0 if something fails.
+>   */
+> @@ -275,6 +306,10 @@ static void bq27x00_update(struct bq27x0
+>  		/* We only have to read charge design full once */
+>  		if (di->charge_design_full <= 0)
+>  			di->charge_design_full = bq27x00_battery_read_ilmd(di);
+> +
+> +		/* We only have to read current design max once */
+> +		if (di->current_max <= 0)
+> +			di->current_max = bq27x00_battery_read_imlc(di);
+>  	}
+> 
+>  	/* Ignore current_now which is a snapshot of the current battery state
+> @@ -469,6 +504,9 @@ static int bq27x00_battery_get_property(
+>  	case POWER_SUPPLY_PROP_CURRENT_NOW:
+>  		ret = bq27x00_battery_current(di, val);
+>  		break;
+> +	case POWER_SUPPLY_PROP_CURRENT_MAX:
+> +		ret = bq27x00_simple_value(di->current_max, val);
+> +		break;
+>  	case POWER_SUPPLY_PROP_CAPACITY:
+>  		ret = bq27x00_simple_value(di->cache.capacity, val);
+>  		break;
+> 
+> 
 
->†IMO, it's because ptrace is inherently per-task not
-> per-task-group, which I think is the right way to do it.
-
-Yes, it is, and I don't propose to change that.
-However, I don't see how that is relevant to examples
-I just described.
-
-> Yeah, agreed and as I said multiple times I think this is by design
-> and actually the better and more useful behavior, albeit slightly less
-> intuitive.
-
-As I described, current behavior breaks stracing of programs
-which get SIGSTOPed or SIGTSTP'ed (^Z).
-Which is pretty lame - ^Z is not exactly rare use case.
-
--- 
-vda
