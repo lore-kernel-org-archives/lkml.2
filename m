@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab1B1Hld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 02:41:33 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53386 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab1B1Hlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 02:41:32 -0500
-Date: Mon, 28 Feb 2011 00:41:28 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        devicetree-discuss@lists.ozlabs.org, sfr@canb.auug.org.au,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        sparclinux@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC PATCH 06/15] dt: xilinx_hwicap: merge platform and
- of_platformdriver bindings
-Message-ID: <20110228074128.GB7855@angua.secretlab.ca>
-References: <20110223043015.20795.37090.stgit@localhost6.localdomain6>
- <20110223043405.20795.19903.stgit@localhost6.localdomain6>
- <8da12938-78ee-4a0f-b1e4-7bfac7fa16c3@VA3EHSMHS036.ehs.local>
+	id S1752699Ab1B1HrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 02:47:05 -0500
+Received: from nm15.bullet.mail.ne1.yahoo.com ([98.138.90.78]:39113 "HELO
+	nm15.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752341Ab1B1HrE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 02:47:04 -0500
+X-Yahoo-Newman-Id: 72593.75656.bm@omp1057.mail.ne1.yahoo.com
+X-Yahoo-SMTP: qX6at_SswBACaRRT.MfRX4JbKLNImPWQFkRvucJk9pcwqiGjNQ--
+X-YMail-OSG: u98lOB0VM1mWkqAqn3TCTPABiIDHOhcRIeukHqRZ86xdi9g
+ D1VwYnkoOZN6OZ2l5R7xdaMgb9J0uib7f2ppDUwPnzks_TPYnJ3DkDuXpCAC
+ QmtkgnDhLSLMD4YZMjKF8Owj_S4pK3aaSZY2GWzpKTJPAHFk3HcltOXWV5tH
+ e9PF5GrCYoyi1tyGLl0CJfp47kHqu3TF1nesvkKjrpjRog2YDkmq48P8bqSZ
+ cjj89O_WmduCmEgsdiS4CzwOAtFygyN3Nwcm3ax9QSuiXpgJOeWkk_.R6oe.
+ Io80U1Teo3h0PTSpNYhMqwCvM07gOUTgjoaAk41o_cYk-
+X-Yahoo-Newman-Property: ymail-3
+From: "Mr.David Gurupatham" <attorney_chamber@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: davidgurupatham9@gmail.com
+Date: Mon, 28 Feb 2011 09:58:12 +0800
+Subject: Re: KIND
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8da12938-78ee-4a0f-b1e4-7bfac7fa16c3@VA3EHSMHS036.ehs.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=gb2312
+Content-Transfer-Encoding: 8BIT
+Message-ID: <USERPC107808be747c4296b7015656194879e4@userPC>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 10:25:22AM -0800, Stephen Neuendorffer wrote:
-> Minor nit below
-> 
-> Acked-by: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
-> 
-> Steve
-> 
-> > +#ifdef CONFIG_OF
-> >  /* Match table for of_platform binding */
-> 
-> Does the comment still make sense?
+I am Mr.David Gurupatham, an attorney at law. A deceased client of mine,
+that shares the same last name as yours,died as the result of a heart-
+related condition on March 12th 2005.His heart condition was due to the
+death of allthe members of his family in the tsunami disaster on the 26th
+December2004 in Sumatra
+Indonesia .http://en.wikipedia.org/wiki/2004_Indian_Ocean_earthquake
 
-Fixed, thanks.
+I can be reached on (davidgurupatham9@gmail.com) for
+Dollars (US$19 Million Dollars) left behind.
+more information.My late Client has a deposit of Nineteen Million
+
+Best regards,
+Mr.David Gurupatham(Esq.)
+Attorney at Law
 
