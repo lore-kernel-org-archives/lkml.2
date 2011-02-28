@@ -1,203 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab1B1Uj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 15:39:59 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53201 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab1B1Uj6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 15:39:58 -0500
-Message-ID: <4D6C0814.5020901@linux.vnet.ibm.com>
-Date: Mon, 28 Feb 2011 15:39:48 -0500
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754971Ab1B1Umb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 15:42:31 -0500
+Received: from www.tglx.de ([62.245.132.106]:59936 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754515Ab1B1Umb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 15:42:31 -0500
+Date: Mon, 28 Feb 2011 21:42:25 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Taking forward the realtime work
+In-Reply-To: <4D691ACA.9090405@gmail.com>
+Message-ID: <alpine.LFD.2.00.1102282140540.2701@localhost6.localdomain6>
+References: <4D691ACA.9090405@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Guillaume Chazarain <guichaz@gmail.com>, akpm@linux-foundation.org
-Subject: Re: [GIT PULL]  TPM timeouts and resume fixes
-References: <4D6BA72C.5000100@linux.vnet.ibm.com>
-In-Reply-To: <4D6BA72C.5000100@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2011 08:46 AM, Rajiv Andrade wrote:
-> Hi James,
->
-> Please pull from:
->   git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+Maarten,
 
-Unless it already happened, please don't pull. I would like to post a 
-revised version of the patch that re-enables interrupts after a resume.
+On Sat, 26 Feb 2011, Maarten Lankhorst wrote:
 
-    Stefan
+> Hi all,
+> 
+> After digging through the -rt patchset again I wanted to take it forward to
+> the current kernel, so far I didn't to get much work done as the code seems to
+> be kinda invasive, even with a lot of the things already in mainline. However
+> a lot of things in the -rt patch seem to no longer be needed, since softirqs
+> are merged, the BKL is gone, and there's a patch set out to make mm
+> preemptible.
+> 
+> I've started testing from the mm-preempt patchset, and it seems to boot, but
+> now that I'm actually looking at the -rt patchset diff from v2.6.33.7 it's not
+> that trivial to port forward, so I'm looking for help. Blindly trying to apply
+> the diff forward 6 versions will not work, so I'm looking at how to add the
+> patches in such a way that each change is done in a logical order, in such a
+> way preferably that at each point the kernel is bootable. I understand that
+> for -rt there will be a few commits for which that won't be possible, but it
+> seems to me the amount of work needed to get -rt working isn't as big any more
+> as it used to be.
+> 
+> Note: There's no guarantee I'll be able to pull it off, but there's this itch
+> I need to get rid of. ;)
 
->
-> The first change corrects the logic used to extract timeouts values 
-> from TPMs.
-> This second version includes an adjustment of such values from msecs 
-> to usecs,
-> since some chips return such values in the first form, causing some 
-> commands
-> to fail due the resulting short timeouts.
->
-> The second change re-enables TPM interrupts after a resume, making sure
-> that the TPM interrupts are enabled when running in the interrupt mode.
-> The TPM's interrupt enable register maye have been cleared by
-> the TPM's TIS loosing its state during device sleep in ACPI S3 (suspend)
-> or by the BIOS, which upon resume sends a TPM_Startup() command to the
-> TPM, and may run the TPM in polling mode and leave the TIS interrupts
-> disabled once it transfers control to the OS again.
->
-> Stefan Berger (2):
->       tpm_tis: Use timeouts returned from TPM
->       tpm_tis: Re-enable interrupts upon resume
->
->  drivers/char/tpm/tpm.c     |   40 
-> +++++++++++++++++++++++++++++++---------
->  drivers/char/tpm/tpm.h     |    3 +++
->  drivers/char/tpm/tpm_tis.c |   21 ++++++++++++++++++++-
->  3 files changed, 54 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> index 36e0fa1..a92254e 100644
-> --- a/drivers/char/tpm/tpm.c
-> +++ b/drivers/char/tpm/tpm.c
-> @@ -577,23 +577,30 @@ duration:
->      if (rc)
->          return;
->
-> -    if (be32_to_cpu(tpm_cmd.header.out.return_code)
-> -        != 3 * sizeof(u32))
-> +    if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
-> +        be32_to_cpu(tpm_cmd.header.out.length)
-> +        != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 * sizeof(u32))
->          return;
-> +
->      duration_cap =&tpm_cmd.params.getcap_out.cap.duration;
->      chip->vendor.duration[TPM_SHORT] =
->          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
-> -    /* The Broadcom BCM0102 chipset in a Dell Latitude D820 gets the 
-> above
-> -     * value wrong and apparently reports msecs rather than usecs. So we
-> -     * fix up the resulting too-small TPM_SHORT value to make things 
-> work.
-> -     */
-> -    if (chip->vendor.duration[TPM_SHORT]<  (HZ/100))
-> -        chip->vendor.duration[TPM_SHORT] = HZ;
-> -
->      chip->vendor.duration[TPM_MEDIUM] =
->          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_medium));
->      chip->vendor.duration[TPM_LONG] =
->          usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_long));
-> +
-> +    /* The Broadcom BCM0102 chipset in a Dell Latitude D820 gets the 
-> above
-> +     * value wrong and apparently reports msecs rather than usecs. So we
-> +     * fix up the resulting too-small TPM_SHORT value to make things 
-> work.
-> +     */
-> +    if (chip->vendor.duration[TPM_SHORT]<  (HZ/100)) {
-> +        chip->vendor.duration[TPM_SHORT]   = HZ;
-> +        chip->vendor.duration[TPM_MEDIUM] *= 1000;
-> +        chip->vendor.duration[TPM_LONG]   *= 1000;
-> +        chip->vendor.duration_adjusted = true;
-> +        dev_info(chip->dev, "Adjusting TPM timeout parameters.");
-> +    }
->  }
->  EXPORT_SYMBOL_GPL(tpm_get_timeouts);
-> @@ -939,6 +946,21 @@ ssize_t tpm_show_caps_1_2(struct device * dev,
->  }
->  EXPORT_SYMBOL_GPL(tpm_show_caps_1_2);
-> +ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute 
-> *attr,
-> +              char *buf)
-> +{
-> +    struct tpm_chip *chip = dev_get_drvdata(dev);
-> +
-> +    return sprintf(buf, "%d %d %d [%s]\n",
-> +               jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
-> +               jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
-> +               jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
-> +               chip->vendor.duration_adjusted
-> +             ? "adjusted"
-> +             : "original");
-> +}
-> +EXPORT_SYMBOL_GPL(tpm_show_timeouts);
-> +
->  ssize_t tpm_store_cancel(struct device *dev, struct device_attribute 
-> *attr,
->              const char *buf, size_t count)
->  {
-> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> index 72ddb03..85e47af 100644
-> --- a/drivers/char/tpm/tpm.h
-> +++ b/drivers/char/tpm/tpm.h
-> @@ -56,6 +56,8 @@ extern ssize_t tpm_show_owned(struct device *, 
-> struct device_attribute *attr,
->                  char *);
->  extern ssize_t tpm_show_temp_deactivated(struct device *,
->                       struct device_attribute *attr, char *);
-> +extern ssize_t tpm_show_timeouts(struct device *,
-> +                 struct device_attribute *attr, char *);
->  struct tpm_chip;
-> @@ -82,6 +84,7 @@ struct tpm_vendor_specific {
->      int locality;
->      unsigned long timeout_a, timeout_b, timeout_c, timeout_d; /* 
-> jiffies */
->      unsigned long duration[3]; /* jiffies */
-> +    bool duration_adjusted;
->      wait_queue_head_t read_queue;
->      wait_queue_head_t int_queue;
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-> index dd21df5..38040bd 100644
-> --- a/drivers/char/tpm/tpm_tis.c
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -376,6 +376,7 @@ static DEVICE_ATTR(temp_deactivated, S_IRUGO, 
-> tpm_show_temp_deactivated,
->             NULL);
->  static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
->  static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-> +static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
->  static struct attribute *tis_attrs[] = {
-> &dev_attr_pubek.attr,
-> @@ -385,7 +386,8 @@ static struct attribute *tis_attrs[] = {
-> &dev_attr_owned.attr,
-> &dev_attr_temp_deactivated.attr,
-> &dev_attr_caps.attr,
-> -&dev_attr_cancel.attr, NULL,
-> +&dev_attr_cancel.attr,
-> +&dev_attr_timeouts.attr, NULL,
->  };
->  static struct attribute_group tis_attr_grp = {
-> @@ -649,6 +651,23 @@ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
->  {
->      struct tpm_chip *chip = pnp_get_drvdata(dev);
->      int ret;
-> +    u32 intmask;
-> +
-> +    if (chip->vendor.irq) {
-> +        /* reenable interrupts that device may have lost or
-> +           BIOS/firmware may have disabled */
-> +        intmask =
-> +            ioread32(chip->vendor.iobase +
-> +                 TPM_INT_ENABLE(chip->vendor.locality));
-> +
-> +        intmask |= TPM_INTF_CMD_READY_INT
-> +            | TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_DATA_AVAIL_INT
-> +            | TPM_INTF_STS_VALID_INT | TPM_GLOBAL_INT_ENABLE;
-> +
-> +        iowrite32(intmask,
-> +              chip->vendor.iobase +
-> +              TPM_INT_ENABLE(chip->vendor.locality));
-> +    }
->      ret = tpm_pm_resume(&dev->dev);
->      if (!ret)
->
->
+Note: It would be nice to Cc those who are working on it and I can
+assure you that there will be an update to -rt in the foreseeable
+future.
 
+Thanks,
+
+	tglx
