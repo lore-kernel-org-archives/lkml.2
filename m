@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab1B1Qos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:44:48 -0500
-Received: from kroah.org ([198.145.64.141]:48135 "EHLO coco.kroah.org"
+	id S1755769Ab1B1QpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:45:15 -0500
+Received: from kroah.org ([198.145.64.141]:48116 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755576Ab1B1Qhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:37:50 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:10 2011
-Message-Id: <20110228162410.053397393@clark.kroah.org>
+	id S1755551Ab1B1Qhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:37:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:09 2011
+Message-Id: <20110228162409.753155455@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:23:04 -0800
+Date: Mon, 28 Feb 2011 08:23:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        dann frazier <dannf@debian.org>
-Subject: [43/68] [media] radio-aimslab.c needs #include <linux/delay.h>
+        Timo Warns <warns@pre-sense.de>
+Subject: [40/68] fs/partitions: Validate map_count in Mac partition tables
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Timo Warns <warns@pre-sense.de>
 
-commit 2400982a2e8a8e4e95f0a0e1517bbe63cc88038f upstream.
+commit fa7ea87a057958a8b7926c1a60a3ca6d696328ed upstream.
 
-Commit e3c92215198cb6aa00ad38db2780faa6b72e0a3f ("[media] radio-aimslab.c: Fix
-gcc 4.5+ bug") removed the include, but introduced new callers of msleep():
+Validate number of blocks in map and remove redundant variable.
 
-| drivers/media/radio/radio-aimslab.c: In function ‘rt_decvol’:
-| drivers/media/radio/radio-aimslab.c:76: error: implicit declaration of function ‘msleep’
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: dann frazier <dannf@debian.org>
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/radio/radio-aimslab.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/partitions/mac.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/media/radio/radio-aimslab.c
-+++ b/drivers/media/radio/radio-aimslab.c
-@@ -31,6 +31,7 @@
- #include <linux/module.h>	/* Modules 			*/
- #include <linux/init.h>		/* Initdata			*/
- #include <linux/ioport.h>	/* request_region		*/
-+#include <linux/delay.h>	/* msleep			*/
- #include <linux/videodev2.h>	/* kernel radio structs		*/
- #include <linux/version.h>	/* for KERNEL_VERSION MACRO	*/
- #include <linux/io.h>		/* outb, outb_p			*/
+--- a/fs/partitions/mac.c
++++ b/fs/partitions/mac.c
+@@ -29,10 +29,9 @@ static inline void mac_fix_string(char *
+ 
+ int mac_partition(struct parsed_partitions *state, struct block_device *bdev)
+ {
+-	int slot = 1;
+ 	Sector sect;
+ 	unsigned char *data;
+-	int blk, blocks_in_map;
++	int slot, blocks_in_map;
+ 	unsigned secsize;
+ #ifdef CONFIG_PPC_PMAC
+ 	int found_root = 0;
+@@ -59,10 +58,14 @@ int mac_partition(struct parsed_partitio
+ 		put_dev_sector(sect);
+ 		return 0;		/* not a MacOS disk */
+ 	}
+-	printk(" [mac]");
+ 	blocks_in_map = be32_to_cpu(part->map_count);
+-	for (blk = 1; blk <= blocks_in_map; ++blk) {
+-		int pos = blk * secsize;
++	if (blocks_in_map < 0 || blocks_in_map >= DISK_MAX_PARTS) {
++		put_dev_sector(sect);
++		return 0;
++	}
++	printk(" [mac]");
++	for (slot = 1; slot <= blocks_in_map; ++slot) {
++		int pos = slot * secsize;
+ 		put_dev_sector(sect);
+ 		data = read_dev_sector(bdev, pos/512, &sect);
+ 		if (!data)
+@@ -113,13 +116,11 @@ int mac_partition(struct parsed_partitio
+ 			}
+ 
+ 			if (goodness > found_root_goodness) {
+-				found_root = blk;
++				found_root = slot;
+ 				found_root_goodness = goodness;
+ 			}
+ 		}
+ #endif /* CONFIG_PPC_PMAC */
+-
+-		++slot;
+ 	}
+ #ifdef CONFIG_PPC_PMAC
+ 	if (found_root_goodness)
 
 
