@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab1B1PsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:48:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39802 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab1B1PsC (ORCPT
+	id S1755012Ab1B1Ps1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:48:27 -0500
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:49062 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754995Ab1B1Ps0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:48:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=TJ3XxLXlHxYVeINuGA3UCzTqopRGMEpeyZLk9PlOfgKeamVMD4l5SFN0koB/HV6V09
-         lLrZTunGaztGo9XiEI8yOm5neYyc5ahIwIpYEgpEWlANm3ms3Ovu6GB5CDqgivT/5y2O
-         P89UkRx/PNUBk13HiU8N8YCz9J/1izQEacAqg=
-Message-ID: <4D6BC3AE.903@suse.cz>
-Date: Mon, 28 Feb 2011 16:47:58 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	Mon, 28 Feb 2011 10:48:26 -0500
+X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Feb 2011 10:48:26 EST
+To: Albert Cahalan <acahalan@gmail.com>
+Subject: Re: txqueuelen has wrong units; should be time
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: Re: [PATCH v2 -resend#1 1/1] V4L: videobuf, don't use dma addr as
- physical
-References: <1298885822-10083-1-git-send-email-jslaby@suse.cz> <20110228145301.GC10846@dumpdata.com>
-In-Reply-To: <20110228145301.GC10846@dumpdata.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
 Content-Transfer-Encoding: 7bit
+Date: Mon, 28 Feb 2011 16:38:57 +0100
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+ <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+ <1298793252.8726.45.camel@edumazet-laptop>
+ <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+ <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+ <AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
+Message-ID: <cbb9e1113901f1a324359b6ed3f1a611@localhost>
+User-Agent: RoundCube Webmail/0.1-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2011 03:53 PM, Konrad Rzeszutek Wilk wrote:
-> On Mon, Feb 28, 2011 at 10:37:02AM +0100, Jiri Slaby wrote:
->> mem->dma_handle is a dma address obtained by dma_alloc_coherent which
->> needn't be a physical address in presence of IOMMU. So ensure we are
-> 
-> Can you add a comment why you are fixing it? Is there a bug report for this?
-> Under what conditions did you expose this fault?
 
-No, by a just peer review when I was looking for something completely
-different.
+On Sun, 27 Feb 2011 18:33:39 -0500, Albert Cahalan wrote:
 
-> You also might want to mention that "needn't be a physical address as
-> a hardware IOMMU can (and most likely) will return a bus address where
-> physical != bus address."
+> I suppose there is a need to allow at least 2 packets despite any
+> time limits, so that it remains possible to use a traditional modem
+> even if a huge packet takes several seconds to send.
 
-Mauro, do you want me to resend this with such an udpate in the changelog?
+That is a good point! We talk about as we may know every use case of
+Linux. But this is not true at all. One of my customer for example operates
+the Linux network stack functionality on top of a proprietary MAC/Driver
+where the current packet queue characteristic is just fine. The
+time-drop-approach is unsuitable because the bandwidth can vary in a small
+amount of time over a great range (0 till max. bandwidth). A sufficient
+buffering shows up superior in this environment (only IPv{4,6}/UDP).
 
-> Otherwise you can stick 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>'
-> on it.
-
-thanks,
--- 
-js
-suse labs
+Hagen
