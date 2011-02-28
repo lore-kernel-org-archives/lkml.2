@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1B1JhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 04:37:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20162 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab1B1JhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 04:37:14 -0500
-Message-ID: <4D6B6CB8.7050209@redhat.com>
-Date: Mon, 28 Feb 2011 11:36:56 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree (kvm
- tree related)
-References: <20110221175658.2dc4d1ac.sfr@canb.auug.org.au>	 <20110228131556.3822f3ca.sfr@canb.auug.org.au> <1298860124.27725.2.camel@yhuang-dev>
-In-Reply-To: <1298860124.27725.2.camel@yhuang-dev>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753232Ab1B1JpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 04:45:21 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:35263 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab1B1JpS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 04:45:18 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Renninger <trenn@suse.de>
+Subject: [PATCH 1/2] PCI: add more checking to ICH region quirks
+Date: Mon, 28 Feb 2011 10:45:09 +0100
+Message-Id: <1298886310-11381-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2011 04:28 AM, Huang Ying wrote:
-> Hi, Avi and Marcelo,
->
-> On Mon, 2011-02-28 at 10:15 +0800, Stephen Rothwell wrote:
-> >  Hi All,
-> >
-> >  On Mon, 21 Feb 2011 17:56:58 +1100 Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
-> >  >
-> >  >  After merging the final tree, today's linux-next build (sparc64 defconfig)
-> >  >  failed like this:
-> >  >
-> >  >  mm/memory.c: In function '__get_user_pages':
-> >  >  mm/memory.c:1584: error: 'EHWPOISON' undeclared (first use in this function)
-> >  >
-> >  >  Caused by commit b1c4f2836370f5c8207d4c61e91c93bd6a4ce27a ("mm: make
-> >  >  __get_user_pages return -EHWPOISON for HWPOISON page optionally") from
-> >  >  the kvm tree.
-> >  >
-> >  >  Not all architectures use include/asm-generic/errno.h ...
-> >  >
-> >  >  I have reverted that commit (and commits
-> >  >  d47b742c5661385b927c03188549b2d2004b80f4 "KVM: Replace
-> >  >  is_hwpoison_address with __get_user_pages" and
-> >  >  eef8839430b72deac59e9ec51eb56c44512fcc66 "mm: remove is_hwpoison_address"
-> >  >  which depend on it) for today.
-> >
-> >  I am still doing those reverts ...
->
-> Can you merge the fixes following the email into my original EHWPOISON
-> patch to check if that fixes linux-next issue?
->
+Per ICH4 and ICH6 specs, ACPI and GPIO regions are valid iff ACPI_EN
+and GPIO_EN bits are set to 1. Add checks for these bits into the
+quirks prior to the region creation.
 
-I folded this into the original patch, will show up in next linux-next.
+While at it, name the constants by macros.
 
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Renninger <trenn@suse.de>
+---
+ drivers/pci/quirks.c |   45 +++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 37 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 53a786f..8db2426 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -533,6 +533,17 @@ static void __devinit quirk_piix4_acpi(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82371AB_3,	quirk_piix4_acpi);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	quirk_piix4_acpi);
+ 
++#define ICH_PMBASE	0x40
++#define ICH_ACPI_CNTL	0x44
++#define  ICH4_ACPI_EN	0x10
++#define  ICH6_ACPI_EN	0x80
++#define ICH4_GPIOBASE	0x58
++#define ICH4_GPIO_CNTL	0x5c
++#define  ICH4_GPIO_EN	0x10
++#define ICH6_GPIOBASE	0x48
++#define ICH6_GPIO_CNTL	0x4c
++#define  ICH6_GPIO_EN	0x10
++
+ /*
+  * ICH4, ICH4-M, ICH5, ICH5-M ACPI: Three IO regions pointed to by longwords at
+  *	0x40 (128 bytes of ACPI, GPIO & TCO registers)
+@@ -541,12 +552,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	qui
+ static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
+ {
+ 	u32 region;
++	u8 enable;
+ 
+-	pci_read_config_dword(dev, 0x40, &region);
+-	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
++	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
++	if (enable & ICH4_ACPI_EN) {
++		pci_read_config_dword(dev, ICH_PMBASE, &region);
++		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++				"ICH4 ACPI/GPIO/TCO");
++	}
+ 
+-	pci_read_config_dword(dev, 0x58, &region);
+-	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
++	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
++	if (enable & ICH4_GPIO_EN) {
++		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
++		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
++				"ICH4 GPIO");
++	}
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AB_0,		quirk_ich4_lpc_acpi);
+@@ -562,12 +582,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_ESB_1,		qui
+ static void __devinit ich6_lpc_acpi_gpio(struct pci_dev *dev)
+ {
+ 	u32 region;
++	u8 enable;
+ 
+-	pci_read_config_dword(dev, 0x40, &region);
+-	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH6 ACPI/GPIO/TCO");
++	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
++	if (enable & ICH6_ACPI_EN) {
++		pci_read_config_dword(dev, ICH_PMBASE, &region);
++		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++				"ICH6 ACPI/GPIO/TCO");
++	}
+ 
+-	pci_read_config_dword(dev, 0x48, &region);
+-	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH6 GPIO");
++	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
++	if (enable & ICH4_GPIO_EN) {
++		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
++		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
++				"ICH6 GPIO");
++	}
+ }
+ 
+ static void __devinit ich6_lpc_generic_decode(struct pci_dev *dev, unsigned reg, const char *name, int dynsize)
 -- 
-error compiling committee.c: too many arguments to function
+1.7.4.1
+
 
