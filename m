@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1B1MNP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 07:13:15 -0500
-Received: from www.tglx.de ([62.245.132.106]:47845 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752922Ab1B1MNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 07:13:14 -0500
-To: dedekind1@gmail.com
-Cc: linux-omap@vger.kernel.org
-Cc: s-ghorai@ti.com
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/1] omap3: nand: report corrected ecc errors
-From: John Ogness <john.ogness@linutronix.de>
-References: <87oc64qr5b.fsf@vostro.fn.ogness.net>
-	<1298631549.2798.56.camel@localhost>
-Date: Mon, 28 Feb 2011 13:12:46 +0100
-In-Reply-To: <1298631549.2798.56.camel@localhost> (Artem Bityutskiy's message of "Fri\, 25 Feb 2011 12\:59\:09 +0200")
-Message-ID: <87y650pdc1.fsf_-_@vostro.fn.ogness.net>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1753868Ab1B1MNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 07:13:46 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38954 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331Ab1B1MNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 07:13:45 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6270"; a="77042736"
+Message-ID: <4D6B9171.60600@codeaurora.org>
+Date: Mon, 28 Feb 2011 17:43:37 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+CC: davidb@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] msm: iommu: Rework clock logic and add IOMMU bus
+ clock control
+References: <1298599242-21971-1-git-send-email-stepanm@codeaurora.org> <1298599242-21971-2-git-send-email-stepanm@codeaurora.org> <4D675A42.9090803@codeaurora.org> <4D6828B5.6050608@codeaurora.org>
+In-Reply-To: <4D6828B5.6050608@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Ogness <john.ogness@linutronix.de>
+Hi Steve,
 
-The number of corrected ECC errors should be reported since other MTD
-systems make use of this information (such as UBI data scrubbing).
+On 2/26/2011 3:39 AM, Stepan Moskovchenko wrote:
+> On 2/24/2011 11:29 PM, Trilok Soni wrote:
+>> Hi Steve,
+> 
+> Hello
+> 
+>>> @@ -130,117 +131,134 @@ static int msm_iommu_probe(struct platform_device *pdev)
+>>>   {
+>>>       struct resource *r, *r2;
+>>>       struct clk *iommu_clk;
+>>> +    struct clk *iommu_pclk;
+>>>       struct msm_iommu_drvdata *drvdata;
+>>>       struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
+>> const please.
+>>
+> 
+> I am not clear on what you mean. Please be more specific here.
 
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
----
-Patch v2:
-o Patch against linux-next-20110225.
-o Added comments explaining return codes.
+I mean
 
- drivers/mtd/nand/omap2.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+const struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data; 
 
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index 4e33972..6324230 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -668,6 +668,8 @@ static void gen_true_ecc(u8 *ecc_buf)
-  *
-  * This function compares two ECC's and indicates if there is an error.
-  * If the error can be corrected it will be corrected to the buffer.
-+ * If there is no error, %0 is returned. If there is an error but it
-+ * was corrected, %1 is returned. Otherwise, %-1 is returned.
-  */
- static int omap_compare_ecc(u8 *ecc_data1,	/* read from NAND memory */
- 			    u8 *ecc_data2,	/* read from register */
-@@ -773,7 +775,7 @@ static int omap_compare_ecc(u8 *ecc_data1,	/* read from NAND memory */
- 
- 		page_data[find_byte] ^= (1 << find_bit);
- 
--		return 0;
-+		return 1;
- 	default:
- 		if (isEccFF) {
- 			if (ecc_data2[0] == 0 &&
-@@ -794,8 +796,11 @@ static int omap_compare_ecc(u8 *ecc_data1,	/* read from NAND memory */
-  * @calc_ecc: ecc read from HW ECC registers
-  *
-  * Compares the ecc read from nand spare area with ECC registers values
-- * and if ECC's mismached, it will call 'omap_compare_ecc' for error detection
-- * and correction.
-+ * and if ECC's mismatched, it will call 'omap_compare_ecc' for error
-+ * detection and correction. If there are no errors, %0 is returned. If
-+ * there were errors and all of the errors were corrected, the number of
-+ * corrected errors is returned. If uncorrectable errors exist, %-1 is
-+ * returned.
-  */
- static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
- 				u_char *read_ecc, u_char *calc_ecc)
-@@ -803,6 +808,7 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
- 	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
- 							mtd);
- 	int blockCnt = 0, i = 0, ret = 0;
-+	int stat = 0;
- 
- 	/* Ex NAND_ECC_HW12_2048 */
- 	if ((info->nand.ecc.mode == NAND_ECC_HW) &&
-@@ -816,12 +822,14 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
- 			ret = omap_compare_ecc(read_ecc, calc_ecc, dat);
- 			if (ret < 0)
- 				return ret;
-+			/* keep track of the number of corrected errors */
-+			stat += ret;
- 		}
- 		read_ecc += 3;
- 		calc_ecc += 3;
- 		dat      += 512;
- 	}
--	return 0;
-+	return stat;
- }
- 
- /**
+Now I see that this change is not part of this patch so you can ignore my comment.
+
+> 
+>>> +    iommu_pclk = clk_get(NULL, "smmu_pclk");
+>>> +    if (IS_ERR(iommu_pclk)) {
+>>> +        ret = -ENODEV;
+>>> +        goto fail;
+>>> +    }
+>> I am not a big fan of this when you have the "device" around. You should just do
+>>
+>> iommu_pclk = clk_get(&pdev->dev, NULL);
+>>
+>> ...error logic...
+>>
+>> iommu_clk = clk_get(&pdev->dev, "iommu_clk");
+>>
+>> ...error logic...
+>>
+> 
+> The pclk is a "special" bus clock and does not have a specific device instance associated with it, so passing a device would not be appropriate in this case. I pass the device for other clocks that are indeed associated with devices, but this is not one of them. I suppose we could create 11 or 12 aliases for the pclk and associate it with all the IOMMU devices, but I would prefer to avoid doing that as I believe the current approach is cleaner.
+
+ok.
+
+> 
+>>> -            ret = -EBUSY;
+>>> -            goto fail;
+>>> -        }
+>>> +    len = r->end - r->start + 1;
+>>
+>> resource_size please.
+>>
+> 
+> Ok
+
+Thanks.
+
+---Trilok Soni
+
 -- 
-1.5.6.5
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
