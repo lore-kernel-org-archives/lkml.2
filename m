@@ -1,59 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1B1MRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 07:17:38 -0500
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:56607 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab1B1MRg (ORCPT
+	id S1753860Ab1B1MVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 07:21:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40694 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab1B1MVG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 07:17:36 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D6B9281.4060700@cam.ac.uk>
-Date: Mon, 28 Feb 2011 12:18:09 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kernel.embedded
-CC: Sascha Hauer <s.hauer@pengutronix.de>, Bill Gatliff <bgat@billgatliff.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-embedded@vger.kernel.org
-Subject: Re: [GIT PULL] Generic PWM Device API
-References: <AANLkTi=rxzrnt0QZQPJFRboSW_Fyt6zQ5S9KD4Lp=hnU@mail.gmail.com> <20110228103124.GI29521@pengutronix.de> <4D6B86EE.1050908@cam.ac.uk>
-In-Reply-To: <4D6B86EE.1050908@cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 28 Feb 2011 07:21:06 -0500
+Subject: Re: [PATCH 06/17] arm: mmu_gather rework
+From: Peter Zijlstra <peterz@infradead.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+In-Reply-To: <20110228115907.GB492@flint.arm.linux.org.uk>
+References: <20110217162327.434629380@chello.nl>
+	 <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins>
+	 <1298657083.2428.2483.camel@twins>
+	 <20110225215123.GA10026@flint.arm.linux.org.uk>
+	 <1298893487.2428.10537.camel@twins>
+	 <20110228115907.GB492@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Feb 2011 13:20:12 +0100
+Message-ID: <1298895612.2428.10621.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/11 11:28, Jonathan Cameron wrote:
-> On 02/28/11 10:31, Sascha Hauer wrote:
->> On Sun, Feb 27, 2011 at 09:38:38PM -0600, Bill Gatliff wrote:
->>> Andrew, Linus:
->>>
->>>
->>> The git repository described in the following pull request implements
->>> a generic PWM device driver API.  This API is intended to eventually
->>> supercede the existing PWM device drivers, but during a migration
->>> period will coexist peacefully with them.
->>
->> Sorry for the late answer, but it took some time to read the patches
->> again.
->>
->> Is it a good idea to have to APIs for the same thing in the kernel?
->> The old API has users whereas the new API has none. How can we migrate
->> from one API to the other when for example the backlight pwm driver
->> depends on the old API, SoC level drivers implement the old API, but
->> the atmel pwm driver is only available for the new API?
->>
-> See the info in Bill's previous postings.  He has other drivers queued
-> up but wants to break up the review burden by merging this core stuff
-> first...
+On Mon, 2011-02-28 at 11:59 +0000, Russell King wrote:
+> On Mon, Feb 28, 2011 at 12:44:47PM +0100, Peter Zijlstra wrote:
+> > Right, so the normal case is:
+> > 
+> >   unmap_region()
+> >     tlb_gather_mmu()
 > 
-Come to think of it, Bill, could you post these at this stage to
-show the full benefit of this move?
+> The fullmm argument is important here as it specifies the mode.
 
+well, unmap_region always has that 0, I've mentioned the fullmm mode
+separately below, its in many way the easiest case to deal with.
 
+>       tlb_gather_mmu(, 0)
+> 
+> >     unmap_vmas()
+> >       for (; vma; vma = vma->vm_next)
+> >         unmao_page_range()
+> >           tlb_start_vma() -> flush cache range
+> >           zap_*_range()
+> >             ptep_get_and_clear_full() -> batch/track external tlbs
+> >             tlb_remove_tlb_entry() -> batch/track external tlbs
+> >             tlb_remove_page() -> track range/batch page
+> >           tlb_end_vma() -> flush tlb range
+> 
+>        tlb_finish_mmu() -> nothing
+> 
+> > 
+> >  [ for architectures that have hardware page table walkers
+> >    concurrent faults can still load the page tables ]
+> > 
+> >     free_pgtables()
+> 
+>         tlb_gather_mmu(, 1)
+> 
+> >       while (vma)
+> >         unlink_*_vma()
+> >         free_*_range()
+> >           *_free_tlb()
+> >     tlb_finish_mmu()
+> 
+>       tlb_finish_mmu() -> flush tlb mm
+> 
+> > 
+> >   free vmas
+> 
+> So this is all fine.  Note that we *don't* use the range stuff here.
+> 
+> > Now, if we want to track ranges _and_ have hardware page table walkers
+> > (ARM seems to be one such), we must flush TLBs at tlb_end_vma() because
+> > flush_tlb_range() requires a vma pointer (ARM and TILE actually use more
+> > than ->vm_mm), and on tlb_finish_mmu() issue a full mm wide invalidate
+> > because the hardware walker could have re-populated the cache after
+> > clearing the PTEs but before freeing the page tables.
+> 
+> No.  The hardware walker won't re-populate the TLB after the page table
+
+Never said it would repopulate the TLB, just said it could repopulate
+your cache thing and that it might still walk the page tables.
+
+> entries have been cleared - where would it get this information from if
+> not from the page tables?
+> 
+> > What ARM does is it retains the last vma pointer and tracks
+> > pte_free_tlb() range and uses that in tlb_finish_mmu(), which is a tad
+> > hacky.
+> 
+> It may be hacky but then the TLB shootdown interface is hacky too.  We
+> don't keep the vma around to re-use after tlb_end_vma() - if you think
+> that then you misunderstand what's going on.  The vma pointer is kept
+> around as a cheap way of allowing tlb_finish_mmu() to distinguish
+> between the unmap_region() mode and the shift_arg_pages() mode.
+
+Well, you most certainly use it in the unmap_region() case above.
+tlb_end_vma() will do a flush_tlb_range(), but then your
+__pte_free_tlb() will also track range and the tlb_finish_mmu() will
+then again issue a flush_tlb_range() using the last vma pointer.
+
+You argued you need that second tlb flush fo flush your cached level1
+entries for your LPAE mode (btw arm sucks for having all those docs
+private).
+
+> > Mostly because of shift_arg_pages(), where we have:
+> > 
+> >   shift_arg_pages()
+> >     tlb_gather_mmu()
+> 
+>       tlb_gather_mmu(, 0)
+> 
+> >     free_*_range()
+> >     tlb_finish_mmu()
+> 
+>       tlb_finish_mmu() does nothing without the ARM change.
+>       tlb_finish_mmu() -> flush_tlb_mm() with the ARM change.
+> 
+> And this is where the bug was - these page table entries could find
+> their way into the TLB and persist after they've been torn down.
+
+Sure, I got that, you punt and do a full mm tlb invalidate (IA64 and SH
+seem similarly challenged).
+
+> > For which ARM now punts and does a full tlb invalidate (no vma pointer).
+> > But also because it drags along that vma pointer, which might not at all
+> > match the range its actually going to invalidate (and hence its vm_flags
+> > might not accurately reflect things -- at worst more expensive than
+> > needed).
+> 
+> Where do you get that from?  Where exactly in the above code would the
+> VMA pointer get set?  In this case, it will be NULL, so we do a
+> flush_tlb_mm() for this case.  We have to - we don't have any VMA to
+> deal with at this point.
+
+unmap_region()'s last tlb_start_vma(), with __pte_free_tlb() tracking
+range will then get tlb_finish_mmu() to issue a second
+flush_tlb_range().
+
+> > The reason I wanted flush_tlb_range() to take an mm_struct and not the
+> > current vm_area_struct is because we can avoid doing the
+> > flush_tlb_range() from tlb_end_vma() and delay the thing until
+> > tlb_finish_mmu() without having to resort to such games as above. We
+> > could simply track the full range over all VMAs and free'd page-tables
+> > and do one range invalidate.
+> 
+> No.  That's stupid.  Consider the case where you have to loop one page
+> at a time over the range (we do on ARM.)  If we ended up with your
+> suggestion above, that means we could potentially have to loop 4K at a
+> time over 3GB of address space.  That's idiotic when we have an
+> instruction which can flush the entire TLB for a particular thread.
+
+*blink* so you've implemented flush_tlb_range() as an iteration of
+single page invalidates?
+
+x86 could have done the same I think, instead we chose to implement it
+as a full mm invalidate simply because that's way cheaper in general.
+
+You could also put a threshold in, if (end-start) >> PAGE_SHIFT > n,
+flush everything if you want.
+
+Anyway, I don't see how that's related to the I-TLB thing?
