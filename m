@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab1B1BE5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Feb 2011 20:04:57 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:51911 "EHLO mprc.pku.edu.cn"
+	id S1752339Ab1B1BFQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Feb 2011 20:05:16 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:51245 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752096Ab1B1BE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Feb 2011 20:04:56 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        "'Greg KH'" <greg@kroah.com>
-References: <014b01cbcdad$f110afb0$d3320f10$@mprc.pku.edu.cn> <201102171845.01177.arnd@arndb.de> <017b01cbd62d$633fd070$29bf7150$@mprc.pku.edu.cn> <201102271821.34017.arnd@arndb.de>
-In-Reply-To: <201102271821.34017.arnd@arndb.de>
-Subject: RE: [PATCH 05/12] unicore32 additional architecture files: low-level lib: uaccess
-Date: Mon, 28 Feb 2011 09:04:42 +0800
-Message-ID: <018f01cbd6e3$7c825e70$75871b50$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQJUJ5R0byzuScHkceok2M2VIwxC3QHwN80AAUGn5hICEnJmU5LbVBHg
-Content-Language: zh-cn
+	id S1752260Ab1B1BFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Feb 2011 20:05:14 -0500
+Date: Mon, 28 Feb 2011 12:05:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Subject: linux-next: build failure after merge of the v4l-dvb tree
+Message-Id: <20110228120501.eb6840e0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__28_Feb_2011_12_05_01_+1100_L4H2MS2tqHh.4wws"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__28_Feb_2011_12_05_01_+1100_L4H2MS2tqHh.4wws
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Mauro,
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Monday, February 28, 2011 1:22 AM
-> To: Guan Xuetao
-> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
-> Subject: Re: [PATCH 05/12] unicore32 additional architecture files: low-level lib: uaccess
-> 
-> On Sunday 27 February 2011, Guan Xuetao wrote:
-> > > -----Original Message-----
-> > > From: Arnd Bergmann [mailto:arnd@arndb.de]
-> > > Sent: Friday, February 18, 2011 1:45 AM
-> > > To: Guan Xuetao
-> > > Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
-> > > Subject: Re: [PATCH 05/12] unicore32 additional architecture files: low-level lib: uaccess
-> > >
-> > > On Wednesday 16 February 2011, Guan Xuetao wrote:
-> > > > +
-> > > > +#define __kernel_ok                (segment_eq(get_fs(), KERNEL_DS))
-> > > > +#define __user_ok(addr, size)      (((size) <= TASK_SIZE)                  \
-> > > > +                           && ((addr) <= TASK_SIZE - (size)))
-> > > > +#define __access_ok(addr, size)    (__kernel_ok || __user_ok((addr), (size)))
-> > >
-> > > A nice trick to simplify this is to introduce a per-process variable for comparing
-> > > the pointer, set_fs() then sets this variable to either TASK_SIZE or
-> > > UINT_MAX.
-> >
-> > Perhaps like this:
-> > 1. add a member named kaddr in thread_info
-> > 2. add following assignment codes in set_fs:
-> >         current_thread_info()->kaddr =  segment_eq(fs, KERNEL_DS) ? UINT_MAX : TASK_SIZE;
-> > 3. then __access_ok will be:
-> >         #define addr
-> >         #define __access_ok(addr, size)   (((size) <= TASK_SIZE)                        \
-> >                                 && ((addr) <= current_thread_info()->kaddr)  - (size)))
-> 
-> That would also work. What I meant was to have
-> 
-> #define set_fs(fs) \
-> 	do { current_thread_info()->kaddr = (fs); } while (0)
-> 
-> #define KERNEL_DS	UINT_MAX
-> #define USER_DS		TASK_SIZE
-> 
-> Either way is fine with me, just choose whichever works best for you in terms of code size.
-I can't find the difference between this way and the way in asm-generic/uaccess.h.
-Perhaps, under this idea, __kernel_ok could be ignored.
+After merging the v4l-dvb tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-> 
-> 	Arnd
+drivers/video/matrox/matroxfb_base.c: In function 'matroxfb_ioctl':
+drivers/video/matrox/matroxfb_base.c:1155: error: 'VIDIOC_S_CTRL_OLD' undec=
+lared (first use in this function)
 
-Thanks & Regards.
-Guan Xuetao
+Caused by commit 0ff69fe7cebb65856eba7feb3fd76fb4ba365bf8 ("[media] v4l:
+removal of old, obsolete ioctls"). grep is your friend ...
 
+I have used the v4l-dvb tree from next-20110225 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__28_Feb_2011_12_05_01_+1100_L4H2MS2tqHh.4wws
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNavS9AAoJEDMEi1NhKgbsLwkH+wcVxbHaAF65HAT246X56icc
+Yd0ONtNsEgSA8jS/CADodYKIzN/y/N0u0Hz7XRtlFKa72KVUGlByODQA2jiUAyzi
+nInT0MsDBYJPFuOaGexD41bSnzcPRj6osdihDKolhjFSnMpYdg2UKRZBboxsx0qD
+rd+POoJRaHueBDM79b9Znm/j5cpEG75pnjGF6bXuFBvbfQBMl2fL7j/xnhtkoTol
+VxW3yOSi1Vdkjn3ex2CqPysOiJGWwHhQGPjRv3nRfY3xQ3BL/JW/KpiSg7/tN25I
+zPr5mKa3iNsJcU+au8aUJ9HyGnEcDCXRyx+1BBmRknP16cO5gi/48vHgry0wAJs=
+=n9iY
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Feb_2011_12_05_01_+1100_L4H2MS2tqHh.4wws--
