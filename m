@@ -1,201 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab1B1NhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 08:37:25 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:62561 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab1B1NhX convert rfc822-to-8bit (ORCPT
+	id S1754178Ab1B1Nlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 08:41:51 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33057 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047Ab1B1Nlu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 08:37:23 -0500
+	Mon, 28 Feb 2011 08:41:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=K/LmkoS4V1336iRuCOz0MUUzX+q9gdExOdxLtAN1uihPSXXWuI5yUAc788TaGagLfq
+         HI0RzGFytWqRpjGJ3de7YDIMOWWEWcaVyvfHaCYICFlT8+aNFUSm3d96+YEYFmNXpKmj
+         3mCzT+wmaDJ3Tk76/zJJOYDQAdyoz0igmgV+U=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1102241900540.2701@localhost6.localdomain6>
-References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
-	<alpine.LFD.2.00.1102241900540.2701@localhost6.localdomain6>
-Date: Mon, 28 Feb 2011 14:36:40 +0100
-Message-ID: <AANLkTik1Aqt8qJ62h4k0PbLOU7qu3TtA=fWn=LJ6tQjc@mail.gmail.com>
-Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110228132941.GB9326@htj.dyndns.org>
+References: <20110214190141.GA19221@redhat.com> <20110224202941.GA12258@redhat.com>
+ <20110225155142.GQ24828@htj.dyndns.org> <201102260348.03312.vda.linux@googlemail.com>
+ <20110228125622.GA9326@htj.dyndns.org> <AANLkTik1+XVrkwTouERoxF2AWYyv-UCqie_Wq3OLjoXg@mail.gmail.com>
+ <20110228132941.GB9326@htj.dyndns.org>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 28 Feb 2011 14:41:29 +0100
+Message-ID: <AANLkTin9HW5R5Wihw+yceKkW=Pj+eB8-id0E1Gud2y-G@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after PTRACE_ATTACH
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 February 2011 19:40, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 24 Feb 2011, Vincent Guittot wrote:
->
-> Please send full patch series not a single V5 2/2 which lacks any
-> references to 0/2 1/2.
->
-
-I'm going to create a complete patch series and add a 0/2 reference
-with more details about the patch purpose.
-
-This patch adds traces for 2 main goals. The 1st one is to detect the
-plug and unplug of a core. As explained by Nicolas, smp arm platforms
-use the cpu hotplug feature. In fact, the state of a core can modify
-the cpuidle activity because some Arm SoC can't go into deep idle
-state when more than one core is plugged and also because running into
-mono core mode makes the cpuidle job easier and more efficient which
-results in the improvement of powersaving of some use cases. That's
-why it's interesting to monitor the plug state of cores and to
-correlate it with cpuidle traces. The goal is not to make cpu hotplug
-feature part of cpuidle one but to use cpu hotplug in a low frequency
-manner (few dozens of seconds or minutes), we plug several cpus only
-when needed by the system activity.
-Then, the 2nd goal of these traces is to measure the duration of cpu
-plug/unplug sequence across various use cases and cpu load. Cpu
-hotplug is known to be an expensive operation which also takes a
-variable time depending of other processes' activity (from hundreds of
-ms up to few seconds). I have seen with these traces that the arch
-part stays almost constant whatever the cpu load is on arm platform,
-and I have also seen that the core duration depends of threads
-creation when we plug a cpu.
-
->> Please find below a new proposal for adding trace events for cpu hotplug:
->
-> Either it's a patch or a proposal. Darn, why think people that
-> proposal is such a important word? It's just useless. You don't have
-> to sell anything to your manager. You provide a patch which is judged
-> on it's technical merits and correctness. Nothing else.
->
->> -the lock/unlock of cpu_add_remove_lock mutex is now outside the trace
+On Mon, Feb 28, 2011 at 2:29 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Feb 28, 2011 at 02:16:48PM +0100, Denys Vlasenko wrote:
+>> (gdb) print getpid()
 >>
->> The goal is to measure the latency of each part (kernel, architecture)
->> and also to trace the cpu hotplug activity with other power events. I
->> have tested these traces events on an arm platform.
->
-> This belongs into a cover mail [0/2] not into the patch itself
->
->> Subject: [PATCH 2/2] add hotplug tracepoint
->
-> While your mail subject is correct, this is not.
->
-> If you would have sent a [0/2] cover mail with all the above blurb in
-> it then this extra subject line would be not needed at all.
->
->> this patch adds new events for cpu hotplug tracing
->
-> Sentences start with an upper case letter.
->
-> Also we already know that this is a patch. Where is the value of this
-> changelog? It does not tell more than the subject line.
->
->>  * plug/unplug sequence
->
-> How surprising.
->
->>  * core and architecture latency measurements
->
-> No it does not. It does not add latency measurements. It merily adds
-> tracepoints which allow you to compute the time spent in the various
-> steps of the hotplug state machine and the overall time.
->
->>  #ifdef CONFIG_SMP
->>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
->>  static DEFINE_MUTEX(cpu_add_remove_lock);
->> @@ -197,10 +200,13 @@ struct take_cpu_down_param {
->>  static int __ref take_cpu_down(void *_param)
->>  {
->>       struct take_cpu_down_param *param = _param;
->> +     unsigned int cpu = (unsigned int)(param->hcpu);
->>       int err;
+>> gdb modifies IP, sets breakpoint on return address, and issues PTRACE_CONT(0).
+>> Kernel has to put the tracee into group-stop, right?
+>> Becuase if it doesn't, if it makes tracee run, then the kernel is
+>> still broken. For example,
+>> stracing a program and sending SIGSTOP on it won't work: the sequence
+>> of events will be
+>> got SIGSTOP because SIGSTOP was delivered
+>> PTRACE_SYSCALL(SIGSTOP) - "inject it"
+>> got SIGSTOP because tracee is in group-stop now
+>> PTRACE_SYSCALL(SIGSTOP) - equivalent to PTRACE_SYSCALL(0)
+>>   because we aren't in signal delivery ptrace-stop
+>> and tracee continues.
 >>
->>       /* Ensure this CPU doesn't handle any more interrupts. */
->> +     trace_cpu_hotplug_disable_start(cpu);
->>       err = __cpu_disable();
->> +     trace_cpu_hotplug_disable_end(cpu);
+>> That's why I think gdb's "print getpid()" today depends on the bug.
+>> If we simply fix the bug (by making PTRACE_CONT/SYSCALL(0)
+>> re-enter group-stop), then "print getpid()" will stop working
+>> for stopped tracees.
 >
-> How useful. What about recording the return code of __cpu_disable()?
->
+> There's no reason to make the tracee re-enter group stop after pulling
+> it out to execute 'print getpid()'.
 
-The goal is to monitor the cpu hotplug activity and duration. I want
-to detect 2 kind of cpu_down/cpu_up call, ones which succeed to
-unplug/plug a core and ones which don't. But I'm not sure that we need
-to sort the failed calls into to the trace. We trace them because too
-much fails could point out a bug or a wrong use of cpu hotplug.
+If we want to execute 'print getpid()', you are right, we don't want
+to enter group stop. That's use case #1. But there is use case #2:
+"strace sleep" + ^Z. if we want to continue stracing sleep
+without continuing, our PTRACE_SYSCALL(0) *must* make sleep
+enter group stop. Otherwise, sleep won't be stopped. It will
+continue sleeping and will exit, which is not what we want. Right?
 
->>       if (err < 0)
->>               return err;
->
->> +     trace_cpu_hotplug_down_start(cpu);
->> +
->
-> What's the point of this tracepoint _BEFORE_ the cpu_hotplug_disabled
-> check without recording cpu_hotplug_disabled ?
->
+>  The only thing necessary is a way
+> for the debugger to find out that group stop has been lifted.
 
-I want to trace all cpu_down call even those which returns immediately
-which will be part of the failed calls.
+What do you mean by "has been *lifted*"?
 
->>       if (cpu_hotplug_disabled) {
->>               err = -EBUSY;
->>               goto out;
->> @@ -284,6 +294,8 @@ int __ref cpu_down(unsigned int cpu)
->>       err = _cpu_down(cpu, 0);
->>
->>  out:
->> +     trace_cpu_hotplug_down_end(cpu);
->
-> And this one is misplaced as well. It wants to be only called when we
-> actually called _cpu_down() and it wants to record the return code as
-> well.
->
+> The debugger then can resume the tracee if it wishes so.  ie. group stop
+> becomes a trap point + a state which the debugger can monitor.  If the
+> debugger wants the tracee to follow the jctl behavior, it can do so by
+> resuming the tracee as it sees fit.
 
-It has been placed here to be called each time
-trace_cpu_hotplug_down_start is called.
+Can you describe this in more details? Do you propose that
+debugger can detect that we are in group stop (it is already sort-of
+possible with PTRACE_GETSIGINFO) and if it doesn't want to
+restart tracee, it simply doesn't do any PTRACE_SYSCALL/CONT?
+I tried that. This makes tracee sit in *ptrace* stop, not group stop.
+Meaning: debugger is never be able to see waking SIGCONT:
+waitpid doesn't report it to the debugger.
 
->> +
->>       cpu_maps_update_done();
->>       return err;
->>  }
->> @@ -310,7 +322,9 @@ static int __cpuinit _cpu_up(unsigned int cpu, int
->> tasks_frozen)
->>       }
->>
->>       /* Arch-specific enabling code. */
->> +     trace_cpu_hotplug_arch_up_start(cpu);
->>       ret = __cpu_up(cpu);
->> +     trace_cpu_hotplug_arch_up_end(cpu);
->
-> See above.
->
->>       if (ret != 0)
->>               goto out_notify;
->>       BUG_ON(!cpu_online(cpu));
->> @@ -369,6 +383,8 @@ int __cpuinit cpu_up(unsigned int cpu)
->>
->>       cpu_maps_update_begin();
->>
->> +     trace_cpu_hotplug_up_start(cpu);
->> +
->
-> Ditto
->
->>       if (cpu_hotplug_disabled) {
->>               err = -EBUSY;
->>               goto out;
->> @@ -377,6 +393,8 @@ int __cpuinit cpu_up(unsigned int cpu)
->>       err = _cpu_up(cpu, 0);
->>
->>  out:
->> +     trace_cpu_hotplug_up_end(cpu);
->> +
->
-> Sigh.
->
->>       cpu_maps_update_done();
->>       return err;
->
-> Thanks,
->
->        tglx
->
-
-Thanks,
-Vincent
+-- 
+vda
