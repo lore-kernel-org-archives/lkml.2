@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1B1Qhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:37:47 -0500
-Received: from kroah.org ([198.145.64.141]:48104 "EHLO coco.kroah.org"
+	id S1755847Ab1B1QjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:39:16 -0500
+Received: from kroah.org ([198.145.64.141]:48283 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755529Ab1B1Qhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:37:43 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:09 2011
-Message-Id: <20110228162409.538747649@clark.kroah.org>
+	id S1755818Ab1B1QiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:12 2011
+Message-Id: <20110228162412.120795842@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:59 -0800
+Date: Mon, 28 Feb 2011 08:23:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [38/68] s390: remove task_show_regs
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [64/68] x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +26,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit 261cd298a8c363d7985e3482946edb4bfedacf98 upstream.
+commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12 upstream.
 
-task_show_regs used to be a debugging aid in the early bringup days
-of Linux on s390. /proc/<pid>/status is a world readable file, it
-is not a good idea to show the registers of a process. The only
-correct fix is to remove task_show_regs.
+On some SB800 systems polarity for IOAPIC pin2 is wrongly
+specified as low active by BIOS. This caused system hangs after
+resume from S3 when HPET was used in one-shot mode on such
+systems because a timer interrupt was missed (HPET signal is
+high active).
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+For more details see:
+
+  http://marc.info/?l=linux-kernel&m=129623757413868
+
+Tested-by: Manoj Iyer <manoj.iyer@canonical.com>
+Tested-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20110224145346.GD3658@alberich.amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/include/asm/processor.h |    5 -----
- arch/s390/kernel/traps.c          |   37 -------------------------------------
- fs/proc/array.c                   |    3 ---
- 3 files changed, 45 deletions(-)
+ arch/x86/include/asm/acpi.h    |    1 +
+ arch/x86/kernel/acpi/boot.c    |   14 ++++++++++----
+ arch/x86/kernel/early-quirks.c |   16 +++++++---------
+ 3 files changed, 18 insertions(+), 13 deletions(-)
 
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -150,11 +150,6 @@ extern int kernel_thread(int (*fn)(void
-  */
- extern unsigned long thread_saved_pc(struct task_struct *t);
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -89,6 +89,7 @@ extern int acpi_ht;
+ extern int acpi_pci_disabled;
+ extern int acpi_skip_timer_override;
+ extern int acpi_use_timer_override;
++extern int acpi_fix_pin2_polarity;
  
--/*
-- * Print register of task into buffer. Used in fs/proc/array.c.
-- */
--extern void task_show_regs(struct seq_file *m, struct task_struct *task);
--
- extern void show_code(struct pt_regs *regs);
+ extern u8 acpi_sci_flags;
+ extern int acpi_sci_override_gsi;
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -70,6 +70,7 @@ u8 acpi_sci_flags __initdata;
+ int acpi_sci_override_gsi __initdata;
+ int acpi_skip_timer_override __initdata;
+ int acpi_use_timer_override __initdata;
++int acpi_fix_pin2_polarity __initdata;
  
- unsigned long get_wchan(struct task_struct *p);
---- a/arch/s390/kernel/traps.c
-+++ b/arch/s390/kernel/traps.c
-@@ -243,43 +243,6 @@ void show_regs(struct pt_regs *regs)
- 	show_last_breaking_event(regs);
+ #ifdef CONFIG_X86_LOCAL_APIC
+ static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
+@@ -360,10 +361,15 @@ acpi_parse_int_src_ovr(struct acpi_subta
+ 		return 0;
+ 	}
+ 
+-	if (acpi_skip_timer_override &&
+-	    intsrc->source_irq == 0 && intsrc->global_irq == 2) {
+-		printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
+-		return 0;
++	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
++		if (acpi_skip_timer_override) {
++			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
++			return 0;
++		}
++		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
++			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
++			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
++		}
+ 	}
+ 
+ 	mp_override_legacy_irq(intsrc->source_irq,
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -145,15 +145,10 @@ static void __init ati_bugs(int num, int
+ 
+ static u32 __init ati_sbx00_rev(int num, int slot, int func)
+ {
+-	u32 old, d;
++	u32 d;
+ 
+-	d = read_pci_config(num, slot, func, 0x70);
+-	old = d;
+-	d &= ~(1<<8);
+-	write_pci_config(num, slot, func, 0x70, d);
+ 	d = read_pci_config(num, slot, func, 0x8);
+ 	d &= 0xff;
+-	write_pci_config(num, slot, func, 0x70, old);
+ 
+ 	return d;
  }
+@@ -162,13 +157,16 @@ static void __init ati_bugs_contd(int nu
+ {
+ 	u32 d, rev;
  
--/* This is called from fs/proc/array.c */
--void task_show_regs(struct seq_file *m, struct task_struct *task)
--{
--	struct pt_regs *regs;
+-	if (acpi_use_timer_override)
+-		return;
 -
--	regs = task_pt_regs(task);
--	seq_printf(m, "task: %p, ksp: %p\n",
--		       task, (void *)task->thread.ksp);
--	seq_printf(m, "User PSW : %p %p\n",
--		       (void *) regs->psw.mask, (void *)regs->psw.addr);
--
--	seq_printf(m, "User GPRS: " FOURLONG,
--			  regs->gprs[0], regs->gprs[1],
--			  regs->gprs[2], regs->gprs[3]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[4], regs->gprs[5],
--			  regs->gprs[6], regs->gprs[7]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[8], regs->gprs[9],
--			  regs->gprs[10], regs->gprs[11]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[12], regs->gprs[13],
--			  regs->gprs[14], regs->gprs[15]);
--	seq_printf(m, "User ACRS: %08x %08x %08x %08x\n",
--			  task->thread.acrs[0], task->thread.acrs[1],
--			  task->thread.acrs[2], task->thread.acrs[3]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[4], task->thread.acrs[5],
--			  task->thread.acrs[6], task->thread.acrs[7]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[8], task->thread.acrs[9],
--			  task->thread.acrs[10], task->thread.acrs[11]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[12], task->thread.acrs[13],
--			  task->thread.acrs[14], task->thread.acrs[15]);
--}
--
- static DEFINE_SPINLOCK(die_lock);
+ 	rev = ati_sbx00_rev(num, slot, func);
++	if (rev >= 0x40)
++		acpi_fix_pin2_polarity = 1;
++
+ 	if (rev > 0x13)
+ 		return;
  
- void die(const char * str, struct pt_regs * regs, long err)
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -336,9 +336,6 @@ int proc_pid_status(struct seq_file *m,
- 	task_sig(m, task);
- 	task_cap(m, task);
- 	cpuset_task_status_allowed(m, task);
--#if defined(CONFIG_S390)
--	task_show_regs(m, task);
--#endif
- 	task_context_switch_counts(m, task);
- 	return 0;
- }
++	if (acpi_use_timer_override)
++		return;
++
+ 	/* check for IRQ0 interrupt swap */
+ 	d = read_pci_config(num, slot, func, 0x64);
+ 	if (!(d & (1<<14)))
 
 
