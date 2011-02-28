@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab1B1QhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:37:01 -0500
-Received: from kroah.org ([198.145.64.141]:41198 "EHLO coco.kroah.org"
+	id S1756089Ab1B1Qv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:51:59 -0500
+Received: from kroah.org ([198.145.64.141]:41205 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755226Ab1B1Qg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:36:59 -0500
+	id S1755232Ab1B1QhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:37:01 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Feb 28 08:24:06 2011
-Message-Id: <20110228162406.554108148@clark.kroah.org>
+Message-Id: <20110228162406.651259246@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Mon, 28 Feb 2011 08:22:30 -0800
+Date: Mon, 28 Feb 2011 08:22:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>, venkatesh.pallipadi@intel.com,
-        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>
-Subject: [09/68] x86, hpet: Disable per-cpu hpet timer if ARAT is supported
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Subject: [10/68] OHCI: work around for nVidia shutdown problem
 In-Reply-To: <20110228163502.GA27221@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +26,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 39fe05e58c5e448601ce46e6b03900d5bf31c4b0 upstream.
+commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
 
-If CPU support always running local APIC timer, per-cpu hpet
-timer could be disabled, which is useless and wasteful in such
-case. Let's leave the timers to others.
+This patch (as1417) fixes a problem affecting some (or all) nVidia
+chipsets.  When the computer is shut down, the OHCI controllers
+continue to power the USB buses and evidently they drive a Reset
+signal out all their ports.  This prevents attached devices from going
+to low power.  Mouse LEDs stay on, for example, which is disconcerting
+for users and a drain on laptop batteries.
 
-The effect is that we reserve less timers.
+The fix involves leaving each OHCI controller in the OPERATIONAL state
+during system shutdown rather than putting it in the RESET state.
+Although this nominally means the controller is running, in fact it's
+not doing very much since all the schedules are all disabled.  However
+there is ongoing DMA to the Host Controller Communications Area, so
+the patch also disables the bus-master capability of all PCI USB
+controllers after the shutdown routine runs.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Cc: venkatesh.pallipadi@intel.com
-LKML-Reference: <20090812031612.GA10062@sli10-desk.sh.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Renninger <trenn@suse.de>
+The fix is applied only to nVidia-based PCI OHCI controllers, so it
+shouldn't cause problems on systems using other hardware.  As an added
+safety measure, in case the kernel encounters one of these running
+controllers during boot, the patch changes quirk_usb_handoff_ohci()
+(which runs early on during PCI discovery) to reset the controller
+before anything bad can happen.
+
+Reported-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: David Brownell <david-b@pacbell.net>
+Tested-by: Pali Rohár <pali.rohar@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/hpet.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd-pci.c    |    4 +++-
+ drivers/usb/host/ohci-hcd.c   |    9 ++++++++-
+ drivers/usb/host/ohci-pci.c   |   18 ++++++++++++++++++
+ drivers/usb/host/ohci.h       |    1 +
+ drivers/usb/host/pci-quirks.c |   18 +++++++++++-------
+ 5 files changed, 41 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -606,6 +606,8 @@ static void hpet_msi_capability_lookup(u
- 	if (hpet_msi_disable)
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -197,8 +197,10 @@ void usb_hcd_pci_shutdown(struct pci_dev
+ 	if (!hcd)
  		return;
  
-+	if (boot_cpu_has(X86_FEATURE_ARAT))
-+		return;
- 	id = hpet_readl(HPET_ID);
+-	if (hcd->driver->shutdown)
++	if (hcd->driver->shutdown) {
+ 		hcd->driver->shutdown(hcd);
++		pci_disable_device(dev);
++	}
+ }
+ EXPORT_SYMBOL_GPL(usb_hcd_pci_shutdown);
  
- 	num_timers = ((id & HPET_ID_NUMBER) >> HPET_ID_NUMBER_SHIFT);
-@@ -894,10 +896,8 @@ int __init hpet_enable(void)
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -398,7 +398,14 @@ ohci_shutdown (struct usb_hcd *hcd)
  
- 	if (id & HPET_ID_LEGSUP) {
- 		hpet_legacy_clockevent_register();
--		hpet_msi_capability_lookup(2);
- 		return 1;
- 	}
--	hpet_msi_capability_lookup(0);
+ 	ohci = hcd_to_ohci (hcd);
+ 	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+-	ohci_usb_reset (ohci);
++	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
++
++	/* If the SHUTDOWN quirk is set, don't put the controller in RESET */
++	ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
++			OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
++			OHCI_CTRL_RWC);
++	ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
++
+ 	/* flush the writes */
+ 	(void) ohci_readl (ohci, &ohci->regs->control);
+ }
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -201,6 +201,20 @@ static int ohci_quirk_amd700(struct usb_
  	return 0;
+ }
  
- out_nohpet:
-@@ -930,12 +930,20 @@ static __init int hpet_late_init(void)
- 	if (!hpet_virt_address)
- 		return -ENODEV;
- 
-+	if (hpet_readl(HPET_ID) & HPET_ID_LEGSUP)
-+		hpet_msi_capability_lookup(2);
-+	else
-+		hpet_msi_capability_lookup(0);
++/* nVidia controllers continue to drive Reset signalling on the bus
++ * even after system shutdown, wasting power.  This flag tells the
++ * shutdown routine to leave the controller OPERATIONAL instead of RESET.
++ */
++static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
++{
++	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
 +
- 	hpet_reserve_platform_timers(hpet_readl(HPET_ID));
- 	hpet_print_config();
- 
- 	if (hpet_msi_disable)
- 		return 0;
- 
-+	if (boot_cpu_has(X86_FEATURE_ARAT))
-+		return 0;
++	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
++	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
 +
- 	for_each_online_cpu(cpu) {
- 		hpet_cpuhp_notify(NULL, CPU_ONLINE, (void *)(long)cpu);
++	return 0;
++}
++
+ /*
+  * The hardware normally enables the A-link power management feature, which
+  * lets the system lower the power consumption in idle states.
+@@ -332,6 +346,10 @@ static const struct pci_device_id ohci_p
+ 		PCI_DEVICE(PCI_VENDOR_ID_ATI, 0x4399),
+ 		.driver_data = (unsigned long)ohci_quirk_amd700,
+ 	},
++	{
++		PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
++		.driver_data = (unsigned long) ohci_quirk_nvidia_shutdown,
++	},
+ 
+ 	/* FIXME for some of the early AMD 760 southbridges, OHCI
+ 	 * won't work at all.  blacklist them.
+--- a/drivers/usb/host/ohci.h
++++ b/drivers/usb/host/ohci.h
+@@ -403,6 +403,7 @@ struct ohci_hcd {
+ #define	OHCI_QUIRK_HUB_POWER	0x100			/* distrust firmware power/oc setup */
+ #define	OHCI_QUIRK_AMD_ISO	0x200			/* ISO transfers*/
+ #define	OHCI_QUIRK_AMD_PREFETCH	0x400			/* pre-fetch for ISO transfer */
++#define	OHCI_QUIRK_SHUTDOWN	0x800			/* nVidia power bug */
+ 	// there are also chip quirks/bugs in init logic
+ 
+ 	struct work_struct	nec_work;	/* Worker for NEC quirk */
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -169,6 +169,7 @@ static int __devinit mmio_resource_enabl
+ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ {
+ 	void __iomem *base;
++	u32 control;
+ 
+ 	if (!mmio_resource_enabled(pdev, 0))
+ 		return;
+@@ -177,10 +178,14 @@ static void __devinit quirk_usb_handoff_
+ 	if (base == NULL)
+ 		return;
+ 
++	control = readl(base + OHCI_CONTROL);
++
+ /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
+-#ifndef __hppa__
+-{
+-	u32 control = readl(base + OHCI_CONTROL);
++#ifdef __hppa__
++#define	OHCI_CTRL_MASK		(OHCI_CTRL_RWC | OHCI_CTRL_IR)
++#else
++#define	OHCI_CTRL_MASK		OHCI_CTRL_RWC
++
+ 	if (control & OHCI_CTRL_IR) {
+ 		int wait_time = 500; /* arbitrary; 5 seconds */
+ 		writel(OHCI_INTR_OC, base + OHCI_INTRENABLE);
+@@ -194,13 +199,12 @@ static void __devinit quirk_usb_handoff_
+ 			dev_warn(&pdev->dev, "OHCI: BIOS handoff failed"
+ 					" (BIOS bug?) %08x\n",
+ 					readl(base + OHCI_CONTROL));
+-
+-		/* reset controller, preserving RWC */
+-		writel(control & OHCI_CTRL_RWC, base + OHCI_CONTROL);
  	}
+-}
+ #endif
+ 
++	/* reset controller, preserving RWC (and possibly IR) */
++	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
++
+ 	/*
+ 	 * disable interrupts
+ 	 */
 
 
