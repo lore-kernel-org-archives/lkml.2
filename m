@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1B1PYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:24:09 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:33207 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754421Ab1B1PYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:24:08 -0500
-Date: Mon, 28 Feb 2011 10:24:05 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] x86: stop machine text poke should issue sync core
-Message-ID: <20110228152405.GA7064@Krystal>
+	id S1754838Ab1B1PYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:24:15 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27892 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab1B1PYM (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 28 Feb 2011 10:24:12 -0500
+Date: Mon, 28 Feb 2011 09:53:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH v2 -resend#1 1/1] V4L: videobuf, don't use dma addr as
+ physical
+Message-ID: <20110228145301.GC10846@dumpdata.com>
+References: <1298885822-10083-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:21:31 up 96 days, 20:24,  4 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1298885822-10083-1-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D6BBDF5.0132:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Archiecture Software Developer's Manual section 7.1.3 specifies that a
-core serializing instruction such as "cpuid" should be executed on _each_ core
-before the new instruction is made visible.
+On Mon, Feb 28, 2011 at 10:37:02AM +0100, Jiri Slaby wrote:
+> mem->dma_handle is a dma address obtained by dma_alloc_coherent which
+> needn't be a physical address in presence of IOMMU. So ensure we are
 
-Failure to do so can lead to unspecified behavior (Intel XMC erratas include
-General Protection Fault in the list), so we should avoid this at all cost.
+Can you add a comment why you are fixing it? Is there a bug report for this?
+Under what conditions did you expose this fault?
 
-This problem can affect modified code executed by interrupt handlers after
-interrupt are re-enabled at the end of stop_machine, because no core serializing
-instruction is executed between the code modification and the moment interrupts
-are reenabled.
+You also might want to mention that "needn't be a physical address as
+a hardware IOMMU can (and most likely) will return a bus address where
+physical != bus address."
 
-Because stop_machine_text_poke performs the text modification from the first CPU
-decrementing stop_machine_first, modified code executed in thread context is
-also affected by this problem. To explain why, we have to split the CPUs in two
-categories: the CPU that initiates the text modification (calls text_poke_smp)
-and all the others. The scheduler, executed on all other CPUs after
-stop_machine, issues an "iret" core serializing instruction, and therefore
-handles core serialization for all these CPUs. However, the text modification
-initiator can continue its execution on the same thread and access the modified
-text without any scheduler call. Given that the CPU that initiates the code
-modification is not guaranteed to be the one actually performing the code
-modification, it falls into the XMC errata.
+Otherwise you can stick 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>'
+on it.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Arjan van de Ven <arjan@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
- arch/x86/kernel/alternative.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-Index: linux-2.6-lttng/arch/x86/kernel/alternative.c
-===================================================================
---- linux-2.6-lttng.orig/arch/x86/kernel/alternative.c
-+++ linux-2.6-lttng/arch/x86/kernel/alternative.c
-@@ -612,6 +612,12 @@ static int __kprobes stop_machine_text_p
- 
- 	flush_icache_range((unsigned long)tpp->addr,
- 			   (unsigned long)tpp->addr + tpp->len);
-+	/*
-+	 * Intel Archiecture Software Developer's Manual section 7.1.3 specifies
-+	 * that a core serializing instruction such as "cpuid" should be
-+	 * executed on _each_ core before the new instruction is made visible.
-+	 */
-+	sync_core();
- 	return 0;
- }
- 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> remapping (remap_pfn_range) the right page in __videobuf_mmap_mapper
+> by using virt_to_phys(mem->vaddr) and not mem->dma_handle.
+> 
+> While at it, use PFN_DOWN instead of explicit shift.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/media/video/videobuf-dma-contig.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
+> index c969111..19d3e4a 100644
+> --- a/drivers/media/video/videobuf-dma-contig.c
+> +++ b/drivers/media/video/videobuf-dma-contig.c
+> @@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+>  
+>  	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>  	retval = remap_pfn_range(vma, vma->vm_start,
+> -				 mem->dma_handle >> PAGE_SHIFT,
+> +				 PFN_DOWN(virt_to_phys(mem->vaddr))
+>  				 size, vma->vm_page_prot);
+>  	if (retval) {
+>  		dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
+> -- 
+> 1.7.4.1
+> 
