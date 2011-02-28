@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1B1OXt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:23:49 -0500
-Received: from kroah.org ([198.145.64.141]:43098 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754304Ab1B1OXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:23:48 -0500
-Date: Mon, 28 Feb 2011 06:15:27 -0800
-From: Greg KH <greg@kroah.com>
-To: Mark Allyn <mark.a.allyn@intel.com>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com
-Subject: Re: RFC: [PATCH 0/5] staging: sep: Enable kernel crypto
-Message-ID: <20110228141527.GA25667@kroah.com>
-References: <1298869824-4246-1-git-send-email-mark.a.allyn@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298869824-4246-1-git-send-email-mark.a.allyn@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754490Ab1B1OZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:25:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37894 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab1B1OZH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:25:07 -0500
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1298902887.2169.48.camel@localhost>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	 <1298884559.2428.10083.camel@twins>  <1298902887.2169.48.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 28 Feb 2011 15:24:47 +0100
+Message-ID: <1298903087.2428.10875.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 27, 2011 at 09:10:24PM -0800, Mark Allyn wrote:
-> This is a set of 5 patches to enable kernel crypto operation of the
-> SEP device
+On Mon, 2011-02-28 at 22:21 +0800, Lin Ming wrote:
+> > >  #define INTEL_EVENT_CONSTRAINT(c, n)       \
+> > >     EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+> > > +#define INTEL_EVENT_CONSTRAINT2(c, n)      \
+> > > +   EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+> > 
+> > That's a particularly bad name, how about something like
+> > 
+> > INTEL_UEVENT_CONSTRAINT or somesuch.
 > 
-> All patches are required as a set.
+> OK.
 > 
-> Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
+> But any case it's duplicated with PEBS_EVENT_CONSTRAINT.
+> 
+> #define PEBS_EVENT_CONSTRAINT(c, n)     \
+>         EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK) 
 
-Is this really a "request for comments" set of patches, or do you want
-me to apply them to my tree?
-
-confused,
-
-greg k-h
+Ah, indeed, so maybe we can remove PEBS_EVENT_CONSTRAINT and use regular
+INTEL_*_CONSTRAINTS there, that could also help for PEBS events where
+all umasks are allowed (not sure there are any such things but the SNB
+PEBS list was quite large).
