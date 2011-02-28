@@ -1,378 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751069Ab1B1FIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 00:08:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22429 "EHLO mga02.intel.com"
+	id S1751163Ab1B1FJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 00:09:01 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64630 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab1B1FIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 00:08:43 -0500
+	id S1750802Ab1B1FI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 00:08:59 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,238,1297065600"; 
-   d="scan'208";a="607111348"
+   d="scan'208";a="891819111"
 From: Mark Allyn <mark.a.allyn@intel.com>
 To: linux-kernel@vger.kernel.org, greg@kroah.com, mark.a.allyn@intel.com,
         alan@linux.intel.com
-Subject: RFC: [PATCH 2/5] staging: sep: update existing sep headers
-Date: Sun, 27 Feb 2011 21:11:09 -0800
-Message-Id: <1298869869-4320-1-git-send-email-mark.a.allyn@intel.com>
+Subject: RFC: [PATCH 3/5] staging: sep: add sep_crypto.h header
+Date: Sun, 27 Feb 2011 21:11:32 -0800
+Message-Id: <1298869892-4357-1-git-send-email-mark.a.allyn@intel.com>
 X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updates include new structures and constants necessary
-for kernel crypto operation
-
-Some functions in sep_main.c are made available to sep_crypto.c
-which will be added in subsequent patch
-
 Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
 ---
- drivers/staging/sep/sep_dev.h           |   24 ++++-
- drivers/staging/sep/sep_driver_api.h    |  192 ++++++++++++++++++++++++++++++-
- drivers/staging/sep/sep_driver_config.h |   14 +-
- 3 files changed, 215 insertions(+), 15 deletions(-)
+ drivers/staging/sep/sep_crypto.h |  315 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 315 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/sep/sep_crypto.h
 
-diff --git a/drivers/staging/sep/sep_dev.h b/drivers/staging/sep/sep_dev.h
-index 0ffe68c..122dc94 100644
---- a/drivers/staging/sep/sep_dev.h
-+++ b/drivers/staging/sep/sep_dev.h
-@@ -5,8 +5,8 @@
-  *
-  *  sep_dev.h - Security Processor Device Structures
-  *
-- *  Copyright(c) 2009,2010 Intel Corporation. All rights reserved.
-- *  Contributions(c) 2009,2010 Discretix. All rights reserved.
+diff --git a/drivers/staging/sep/sep_crypto.h b/drivers/staging/sep/sep_crypto.h
+new file mode 100644
+index 0000000..10a9425
+--- /dev/null
++++ b/drivers/staging/sep/sep_crypto.h
+@@ -0,0 +1,315 @@
++/*
++ *
++ *  sep_crypto.h - Crypto interface structures
++ *
 + *  Copyright(c) 2009,2011 Intel Corporation. All rights reserved.
-+ *  Contributions(c) 2009,2011 Discretix. All rights reserved.
-  *
-  *  This program is free software; you can redistribute it and/or modify it
-  *  under the terms of the GNU General Public License as published by the Free
-@@ -28,6 +28,7 @@
-  *
-  *  CHANGES
-  *  2010.09.14  upgrade to Medfield
-+ *  2011.02.22  enable kernel crypto
-  */
- 
- struct sep_device {
-@@ -51,6 +52,7 @@ struct sep_device {
- 
- 	struct mutex sep_mutex;
- 	struct mutex ioctl_mutex;
-+	struct mutex tasklet_mutex;
- 	spinlock_t snd_rply_lck;
- 
- 	/* flags to indicate use and lock status of sep */
-@@ -129,8 +131,26 @@ struct sep_device {
- 
- 	struct sep_dma_resource dma_res_arr[SEP_MAX_NUM_SYNC_DMA_OPS];
- 
-+	/* The following are used for kernel crypto client requests */
-+	u32 in_kernel; /* Set for kernel client request */
-+	struct tasklet_struct	finish_tasklet;
-+	struct ahash_request	*current_hash_req;
-+	struct ablkcipher_request *current_cypher_req;
-+	spinlock_t		busy_lock;
-+	enum type_of_request	current_request;
-+	enum hash_stage		current_hash_stage;
-+	void			*current_msg_ptr;
-+	u32			out_msg_size;
-+	u32			in_msg_size;
-+	struct scatterlist	*src_sg;
-+	struct scatterlist	*dst_sg;
-+	/* Used only if scatterlist replace due to oddball page sizes */
-+	struct scatterlist	*src_sg_hold;
-+	struct scatterlist	*dst_sg_hold;
- };
- 
-+extern struct sep_device *sep_dev;
++ *  Contributions(c) 2009,2010 Discretix. All rights reserved.
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under the terms of the GNU General Public License as published by the Free
++ *  Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but WITHOUT
++ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ *  more details.
++ *
++ *  You should have received a copy of the GNU General Public License along with
++ *  this program; if not, write to the Free Software Foundation, Inc., 59
++ *  Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++ *
++ *  CONTACTS:
++ *
++ *  Mark Allyn		mark.a.allyn@intel.com
++ *  Jayant Mangalampalli jayant.mangalampalli@intel.com
++ *
++ *  CHANGES:
++ *
++ *  2009.06.26	Initial publish
++ *  2011.02.22  Enable Kernel Crypto
++ *
++ */
 +
- static inline void sep_write_reg(struct sep_device *dev, int reg, u32 value)
- {
- 	void __iomem *addr = dev->reg_addr + reg;
-diff --git a/drivers/staging/sep/sep_driver_api.h b/drivers/staging/sep/sep_driver_api.h
-index 0f38d61..68e1b4b 100644
---- a/drivers/staging/sep/sep_driver_api.h
-+++ b/drivers/staging/sep/sep_driver_api.h
-@@ -2,8 +2,8 @@
-  *
-  *  sep_driver_api.h - Security Processor Driver api definitions
-  *
-- *  Copyright(c) 2009,2010 Intel Corporation. All rights reserved.
-- *  Contributions(c) 2009,2010 Discretix. All rights reserved.
-+ *  Copyright(c) 2009,2011 Intel Corporation. All rights reserved.
-+ *  Contributions(c) 2009,2011 Discretix. All rights reserved.
-  *
-  *  This program is free software; you can redistribute it and/or modify it
-  *  under the terms of the GNU General Public License as published by the Free
-@@ -26,6 +26,7 @@
-  *  CHANGES:
-  *
-  *  2010.09.14  Upgrade to Medfield
-+ *  2011.02.22  Enable kernel crypto
-  *
-  */
- 
-@@ -37,10 +38,27 @@
- #define SEP_DRIVER_SRC_REQ		2
- #define SEP_DRIVER_SRC_PRINTF		3
- 
--
--/*-------------------------------------------
--    TYPEDEFS
------------------------------------------------*/
-+/* Following enums are used only for kernel crypto api */
-+enum type_of_request {
-+	NO_REQUEST,
-+	AES_CBC,
-+	AES_ECB,
-+	DES_CBC,
-+	DES_ECB,
-+	DES3_ECB,
-+	DES3_CBC,
-+	SHA1,
-+	MD5,
-+	SHA224,
-+	SHA256
++/* Constants for SEP (from vendor) */
++#define SEP_START_MSG_TOKEN	0x02558808
++
++#define SEP_DES_IV_SIZE_WORDS	2
++#define SEP_DES_IV_SIZE_BYTES	(SEP_DES_IV_SIZE_WORDS * \
++	sizeof(u32))
++#define SEP_DES_KEY_SIZE_WORDS	2
++#define SEP_DES_KEY_SIZE_BYTES	(SEP_DES_KEY_SIZE_WORDS * \
++	sizeof(u32))
++#define SEP_DES_BLOCK_SIZE	8
++#define SEP_DES_DUMMY_SIZE	16
++
++#define SEP_DES_INIT_OPCODE	0x10
++#define SEP_DES_BLOCK_OPCODE	0x11
++
++#define SEP_AES_BLOCK_SIZE_WORDS 4
++#define SEP_AES_BLOCK_SIZE_BYTES \
++	(SEP_AES_BLOCK_SIZE_WORDS * sizeof(u32))
++
++#define SEP_AES_DUMMY_BLOCK_SIZE 16
++#define SEP_AES_IV_SIZE_WORDS	SEP_AES_BLOCK_SIZE_WORDS
++#define SEP_AES_IV_SIZE_BYTES \
++	(SEP_AES_IV_SIZE_WORDS * sizeof(u32))
++
++#define SEP_AES_KEY_128_SIZE	16
++#define SEP_AES_KEY_192_SIZE	24
++#define SEP_AES_KEY_256_SIZE	32
++#define SEP_AES_KEY_512_SIZE	64
++#define SEP_AES_MAX_KEY_SIZE_WORDS	16
++#define SEP_AES_MAX_KEY_SIZE_BYTES \
++	(SEP_AES_MAX_KEY_SIZE_WORDS * sizeof(u32))
++
++#define SEP_AES_WRAP_MIN_SIZE	8
++#define SEP_AES_WRAP_MAX_SIZE	0x10000000
++
++#define SEP_AES_WRAP_BLOCK_SIZE_WORDS	2
++#define SEP_AES_WRAP_BLOCK_SIZE_BYTES \
++	(SEP_AES_WRAP_BLOCK_SIZE_WORDS * sizeof(u32))
++
++#define SEP_AES_SECRET_RKEK1		0x1
++#define SEP_AES_SECRET_RKEK2		0x2
++
++#define SEP_AES_INIT_OPCODE		0x2
++#define SEP_AES_BLOCK_OPCODE		0x3
++#define SEP_AES_FINISH_OPCODE		0x4
++#define SEP_AES_WRAP_OPCODE		0x6
++#define SEP_AES_UNWRAP_OPCODE		0x7
++#define SEP_AES_XTS_FINISH_OPCODE	0x8
++
++#define SEP_HASH_RESULT_SIZE_WORDS	16
++#define SEP_MD5_DIGEST_SIZE_WORDS	4
++#define SEP_MD5_DIGEST_SIZE_BYTES \
++	(SEP_MD5_DIGEST_SIZE_WORDS * sizeof(u32))
++#define SEP_SHA1_DIGEST_SIZE_WORDS	5
++#define SEP_SHA1_DIGEST_SIZE_BYTES \
++	(SEP_SHA1_DIGEST_SIZE_WORDS * sizeof(u32))
++#define SEP_SHA224_DIGEST_SIZE_WORDS	7
++#define SEP_SHA224_DIGEST_SIZE_BYTES \
++	(SEP_SHA224_DIGEST_SIZE_WORDS * sizeof(u32))
++#define SEP_SHA256_DIGEST_SIZE_WORDS	8
++#define SEP_SHA256_DIGEST_SIZE_BYTES \
++	(SEP_SHA256_DIGEST_SIZE_WORDS * sizeof(u32))
++#define SEP_SHA384_DIGEST_SIZE_WORDS	12
++#define SEP_SHA384_DIGEST_SIZE_BYTES \
++	(SEP_SHA384_DIGEST_SIZE_WORDS * sizeof(u32))
++#define SEP_SHA512_DIGEST_SIZE_WORDS	16
++#define SEP_SHA512_DIGEST_SIZE_BYTES \
++	(SEP_SHA512_DIGEST_SIZE_WORDS * sizeof(u32))
++#define SEP_HASH_BLOCK_SIZE_WORDS	16
++#define SEP_HASH_BLOCK_SIZE_BYTES \
++	(SEP_HASH_BLOCK_SIZE_WORDS * sizeof(u32))
++#define SEP_SHA2_BLOCK_SIZE_WORDS	32
++#define SEP_SHA2_BLOCK_SIZE_BYTES \
++	(SEP_SHA2_BLOCK_SIZE_WORDS * sizeof(u32))
++
++#define SEP_HASH_INIT_OPCODE		0x20
++#define SEP_HASH_UPDATE_OPCODE		0x21
++#define SEP_HASH_FINISH_OPCODE		0x22
++#define SEP_HASH_SINGLE_OPCODE		0x23
++
++#define SEP_HOST_ERROR		0x0b000000
++#define SEP_OK			0x0
++#define SEP_INVALID_START	(SEP_HOST_ERROR + 0x3)
++#define SEP_WRONG_OPCODE	(SEP_HOST_ERROR + 0x1)
++
++/* Macros */
++#ifndef __LITTLE_ENDIAN
++#define CHG_ENDIAN(val) \
++	(((val) >> 24) | \
++	(((val) & 0x00FF0000) >> 8) | \
++	(((val) & 0x0000FF00) << 8) | \
++	(((val) & 0x000000FF) << 24))
++#else
++#define CHG_ENDIAN(val) val
++#endif
++/* Enums for SEP (from vendor) */
++enum des_numkey {
++	DES_KEY_1 = 1,
++	DES_KEY_2 = 2,
++	DES_KEY_3 = 3,
++	SEP_NUMKEY_OPTIONS,
++	SEP_NUMKEY_LAST = 0x7fffffff,
++};
++
++enum des_enc_mode {
++	SEP_DES_ENCRYPT = 0,
++	SEP_DES_DECRYPT = 1,
++	SEP_DES_ENC_OPTIONS,
++	SEP_DES_ENC_LAST = 0x7fffffff,
++};
++
++enum des_op_mode {
++	SEP_DES_ECB = 0,
++	SEP_DES_CBC = 1,
++	SEP_OP_OPTIONS,
++	SEP_OP_LAST = 0x7fffffff,
++};
++
++enum aes_keysize {
++	AES_128 = 0,
++	AES_192 = 1,
++	AES_256 = 2,
++	AES_512 = 3,
++	AES_SIZE_OPTIONS,
++	AEA_SIZE_LAST = 0x7FFFFFFF,
++};
++
++enum aes_enc_mode {
++	SEP_AES_ENCRYPT = 0,
++	SEP_AES_DECRYPT = 1,
++	SEP_AES_ENC_OPTIONS,
++	SEP_AES_ENC_LAST = 0x7FFFFFFF,
++};
++
++enum aes_op_mode {
++	SEP_AES_ECB = 0,
++	SEP_AES_CBC = 1,
++	SEP_AES_MAC = 2,
++	SEP_AES_CTR = 3,
++	SEP_AES_XCBC = 4,
++	SEP_AES_CMAC = 5,
++	SEP_AES_XTS = 6,
++	SEP_AES_OP_OPTIONS,
++	SEP_AES_OP_LAST = 0x7FFFFFFF,
++};
++
++enum hash_op_mode {
++	SEP_HASH_SHA1 = 0,
++	SEP_HASH_SHA224 = 1,
++	SEP_HASH_SHA256 = 2,
++	SEP_HASH_SHA384 = 3,
++	SEP_HASH_SHA512 = 4,
++	SEP_HASH_MD5 = 5,
++	SEP_HASH_OPTIONS,
++	SEP_HASH_LAST_MODE = 0x7FFFFFFF,
++};
++
++/* Structures for SEP (from vendor) */
++struct sep_des_internal_key {
++	u32 key1[SEP_DES_KEY_SIZE_WORDS];
++	u32 key2[SEP_DES_KEY_SIZE_WORDS];
++	u32 key3[SEP_DES_KEY_SIZE_WORDS];
++};
++
++struct sep_des_internal_context {
++	u32 iv_context[SEP_DES_IV_SIZE_WORDS];
++	struct sep_des_internal_key context_key;
++	enum des_numkey nbr_keys;
++	enum des_enc_mode encryption;
++	enum des_op_mode operation;
++	u8 dummy_block[SEP_DES_DUMMY_SIZE];
++};
++
++struct sep_des_private_context {
++	u32 valid_tag;
++	u32 iv;
++	u8 ctx_buf[sizeof(struct sep_des_internal_context)];
++};
++
++/* This is the structure passed to SEP via msg area */
++struct sep_des_key {
++	u32 key1[SEP_DES_KEY_SIZE_WORDS];
++	u32 key2[SEP_DES_KEY_SIZE_WORDS];
++	u32 key3[SEP_DES_KEY_SIZE_WORDS];
++	u32 pad[SEP_DES_KEY_SIZE_WORDS];
++};
++
++struct sep_aes_internal_context {
++	u32 aes_ctx_iv[SEP_AES_IV_SIZE_WORDS];
++	u32 aes_ctx_key[SEP_AES_MAX_KEY_SIZE_WORDS / 2];
++	enum aes_keysize keysize;
++	enum aes_enc_mode encmode;
++	enum aes_op_mode opmode;
++	u8 secret_key;
++	u32 no_add_blocks;
++	u32 last_block_size;
++	u32 last_block[SEP_AES_BLOCK_SIZE_WORDS];
++	u32 prev_iv[SEP_AES_BLOCK_SIZE_WORDS];
++	u32 remaining_size;
++	union {
++		struct {
++			u32 dkey1[SEP_AES_BLOCK_SIZE_WORDS];
++			u32 dkey2[SEP_AES_BLOCK_SIZE_WORDS];
++			u32 dkey3[SEP_AES_BLOCK_SIZE_WORDS];
++		} cmac_data;
++		struct {
++			u32 xts_key[SEP_AES_MAX_KEY_SIZE_WORDS / 2];
++			u32 temp1[SEP_AES_BLOCK_SIZE_WORDS];
++			u32 temp2[SEP_AES_BLOCK_SIZE_WORDS];
++		} xtx_data;
++	} s_data;
++	u8 dummy_block[SEP_AES_DUMMY_BLOCK_SIZE];
++};
++
++struct sep_aes_private_context {
++	u32 valid_tag;
++	u32 aes_iv;
++	u32 op_mode;
++	u8 cbuff[sizeof(struct sep_aes_internal_context)];
++};
++
++struct sep_hash_internal_context {
++	u32 hash_result[SEP_HASH_RESULT_SIZE_WORDS];
++	enum hash_op_mode hash_opmode;
++	u32 previous_data[SEP_SHA2_BLOCK_SIZE_WORDS];
++	u16 prev_update_bytes;
++	u32 total_proc_128bit[4];
++	u16 op_mode_block_size;
++	u8 dummy_aes_block[SEP_AES_DUMMY_BLOCK_SIZE];
++};
++
++struct sep_hash_private_context {
++	u32 valid_tag;
++	u32 iv;
++	u8 internal_context[sizeof(struct sep_hash_internal_context)];
++};
++
++/* Context structures for crypto API */
++struct sep_block_ctx {
++	struct sep_device *sep;
++	u32 done;
++	unsigned char iv[100];
++	enum des_enc_mode des_encmode;
++	enum des_op_mode des_opmode;
++	enum aes_enc_mode aes_encmode;
++	enum aes_op_mode aes_opmode;
++	size_t data_length;
++	size_t ivlen;
++	struct ablkcipher_walk walk;
++	struct sep_des_private_context des_private_ctx;
++	struct sep_aes_private_context aes_private_ctx;
 +	};
 +
-+enum hash_stage {
-+	HASH_INIT,
-+	HASH_UPDATE,
-+	HASH_FINISH,
-+	HASH_DIGEST
-+};
- 
- /*
-  * Note that several members of these structres are only here
-@@ -212,6 +230,10 @@ struct sep_dma_resource {
- 
- 	/* number of entries of the output mapp array */
- 	u32 out_map_num_entries;
++struct sep_hash_ctx {
++	u32 done;
++	unsigned char *buf;
++	size_t buflen;
++	unsigned char *dgst;
++	int digest_size_words;
++	int digest_size_bytes;
++	int block_size_words;
++	int block_size_bytes;
++	struct scatterlist *sg;
++	enum hash_op_mode hash_opmode;
++	struct sep_hash_private_context hash_private_ctx;
++	};
 +
-+	/* Scatter list for kernel operations */
-+	struct scatterlist *src_sg;
-+	struct scatterlist *dst_sg;
- };
- 
- 
-@@ -294,4 +316,162 @@ struct sep_lli_entry {
- #define SEP_IOCFREEDCB					\
- 	_IO(SEP_IOC_MAGIC_NUMBER, 36)
- 
++struct sep_system_ctx {
++	struct sep_device *sep_used;
++	union key_t {
++		struct sep_des_key des;
++		u32 aes[SEP_AES_MAX_KEY_SIZE_WORDS];
++	} key;
++	size_t keylen;
++	enum des_numkey des_nbr_keys;
++	enum aes_keysize aes_key_size;
++	u32 key_sent; /* Indicate if key is sent to sep */
++	u32 last_block; /* Indicate that this is the final block */
++	};
 +
-+/* functions */
-+
-+/**
-+ *	sep_map_shared_area -
-+ *	returns@ return virtual address of shared area
-+ */
-+void *sep_map_shared_area(void);
-+
-+/**
-+ *	sep_send_command_handler - kick off a command
-+ *	@sep: SEP being signalled
-+ *
-+ *	This function raises interrupt to SEP that signals that is has a new
-+ *	command from the host
-+ *
-+ *      Note that this function does fall under the ioctl lock
-+ */
-+int sep_send_msg_rdy_cmd(void);
-+
-+/**
-+ *	sep_lock -
-+ *	returns@ 0 on success; -EINTR on error
-+ *	This locks the device to this process
-+ */
-+int sep_lock(void);
-+
-+/**
-+ *	sep_unlock -
-+ *	This locks the device to this process
-+ */
-+void sep_unlock(void);
-+
-+/**
-+ *	sep_driver_poll -
-+ *	@returns: 0 on success; error value on failure
-+ *	This poll function is used only for kernel call;
-+ *	userspace calls (via ioctl) use sep_poll
-+ */
-+int sep_driver_poll(void);
-+
-+struct sep_device;
-+
-+/**
-+ *	sep_prepare_input_output_dma_table - prepare DMA I/O table
-+ *	@app_virt_in_addr:
-+ *	@app_virt_out_addr:
-+ *	@data_size:
-+ *	@block_size:
-+ *	@lli_table_in_ptr:
-+ *	@lli_table_out_ptr:
-+ *	@in_num_entries_ptr:
-+ *	@out_num_entries_ptr:
-+ *	@table_data_size_ptr:
-+ *	@is_kva: set for kernel data; used only for kernel crypto module
-+ *
-+ *	This function builds input and output DMA tables for synhronic
-+ *	symmetric operations (AES, DES, HASH). It also checks that each table
-+ *	is of the modular block size
-+ *	Note that all bus addresses that are passed to the SEP
-+ *	are in 32 bit format; the SEP is a 32 bit device
-+ */
-+int sep_prepare_input_output_dma_table(struct sep_device *sep,
-+	unsigned long app_virt_in_addr,
-+	unsigned long app_virt_out_addr,
-+	u32 data_size,
-+	u32 block_size,
-+	dma_addr_t *lli_table_in_ptr,
-+	dma_addr_t *lli_table_out_ptr,
-+	u32 *in_num_entries_ptr,
-+	u32 *out_num_entries_ptr,
-+	u32 *table_data_size_ptr,
-+	bool is_kva);
-+
-+/**
-+ *	sep_prepare_input_dma_table - prepare input DMA mappings
-+ *	@sep: pointer to struct sep_device
-+ *	@data_size:
-+ *	@block_size:
-+ *	@lli_table_ptr:
-+ *	@num_entries_ptr:
-+ *	@table_data_size_ptr:
-+ *	@is_kva: set for kernel data (kernel cryptio call)
-+ *
-+ *	This function prepares only input DMA table for synhronic symmetric
-+ *	operations (HASH)
-+ *	Note that all bus addresses that are passed to the SEP
-+ *	are in 32 bit format; the SEP is a 32 bit device
-+ */
-+int sep_prepare_input_dma_table(struct sep_device *sep,
-+	unsigned long app_virt_addr,
-+	u32 data_size,
-+	u32 block_size,
-+	dma_addr_t *lli_table_ptr,
-+	u32 *num_entries_ptr,
-+	u32 *table_data_size_ptr,
-+	bool is_kva);
-+
-+/**
-+ *	sep_prepare_input_output_dma_table_in_dcb - prepare control blocks
-+ *	@app_in_address: unsigned long; for data buffer in (user space)
-+ *	@app_out_address: unsigned long; for data buffer out (user space)
-+ *	@data_in_size: u32; for size of data
-+ *	@block_size: u32; for block size
-+ *	@tail_block_size: u32; for size of tail block
-+ *	@isapplet: bool; to indicate external app
-+ *	@is_kva: bool; kernel buffer; only used for kernel crypto module
-+ *
-+ *	This function prepares the linked DMA tables and puts the
-+ *	address for the linked list of tables inta a DCB (data control
-+ *	block) the address of which is known by the SEP hardware
-+ *	Note that all bus addresses that are passed to the SEP
-+ *	are in 32 bit format; the SEP is a 32 bit device
-+ */
-+int sep_prepare_input_output_dma_table_in_dcb(struct sep_device *sep,
-+	unsigned long  app_in_address,
-+	unsigned long  app_out_address,
-+	u32  data_in_size,
-+	u32  block_size,
-+	u32  tail_block_size,
-+	bool isapplet,
-+	bool	is_kva);
-+
-+/**
-+ *	sep_allocate_data_pool_memory -allocate pool memory
-+ *	@sizeInBytes: size to allocate
-+ *	@virtAddr_ptr: place to return the pointer to the memory
-+ *
-+ *	This function handles the allocate data pool memory request
-+ *	This function returns calculates the bus and virtual addresses
-+ *	of the region
-+ */
-+int sep_allocate_data_pool_memory(u32 sizeInBytes, void **virtAddr_ptr);
-+
-+/**
-+ *	sep_free_dma_table_kernel_data - free DMA table for kernel data
-+ *
-+ *	Handles the request to  free DMA table for synchronic actions
-+ *	from a kernel caller
-+ */
-+void sep_free_dma_table_kernel_data(void);
-+
-+/**
-+ *	sep_free_dma_tables_and_dcb - free DMA tables and DCBs
-+ *	@sep: pointer to struct sep_device
-+ *	@isapplet: indicates external application (used for kernel access)
-+ *	@is_kva: indicates kernel addresses (only used for kernel crypto)
-+ *
-+ *	This function frees the DMA tables and DCB
-+ */
-+int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
-+	bool is_kva);
-+/**
-+ *	sep_dump_message - dump the message that is pending
-+ *	@sep: SEP device
-+ */
-+void sep_dump_message(struct sep_device *sep);
-+
- #endif
-diff --git a/drivers/staging/sep/sep_driver_config.h b/drivers/staging/sep/sep_driver_config.h
-index d3b9220..12ec690 100644
---- a/drivers/staging/sep/sep_driver_config.h
-+++ b/drivers/staging/sep/sep_driver_config.h
-@@ -2,8 +2,8 @@
-  *
-  *  sep_driver_config.h - Security Processor Driver configuration
-  *
-- *  Copyright(c) 2009,2010 Intel Corporation. All rights reserved.
-- *  Contributions(c) 2009,2010 Discretix. All rights reserved.
-+ *  Copyright(c) 2009,2011 Intel Corporation. All rights reserved.
-+ *  Contributions(c) 2009,2011 Discretix. All rights reserved.
-  *
-  *  This program is free software; you can redistribute it and/or modify it
-  *  under the terms of the GNU General Public License as published by the Free
-@@ -26,6 +26,7 @@
-  *  CHANGES:
-  *
-  *  2010.06.26	Upgrade to Medfield
-+ *  2011.02.22  Enable kernel crypto
-  *
-  */
- 
-@@ -76,10 +77,6 @@ held by the proccess (struct file) */
- #define SEP_REQUEST_DAEMON_MAPPED 1
- #define SEP_REQUEST_DAEMON_UNMAPPED 0
- 
--#define SEP_DEV_NAME "sep_sec_driver"
--#define SEP_DEV_SINGLETON "sep_sec_singleton_driver"
--#define SEP_DEV_DAEMON "sep_req_daemon_driver"
--
- /*--------------------------------------------------------
- 	SHARED AREA  memory total size is 36K
- 	it is divided is following:
-@@ -132,6 +129,9 @@ held by the proccess (struct file) */
- /* system data (time, caller id etc') pool */
- #define SEP_DRIVER_SYSTEM_DATA_MEMORY_SIZE_IN_BYTES		(1024 * 3)
- 
-+/* Offset of the sep printf buffer in the message area */
-+#define SEP_DRIVER_PRINTF_OFFSET_IN_BYTES			(5888)
-+
- /* the size in bytes of the time memory */
- #define SEP_DRIVER_TIME_MEMORY_SIZE_IN_BYTES			8
- 
-@@ -180,7 +180,7 @@ held by the proccess (struct file) */
- /* offset of the caller id area */
- #define SEP_CALLER_ID_OFFSET_BYTES \
- 	(SEP_DRIVER_SYSTEM_RAR_MEMORY_OFFSET_IN_BYTES + \
--    SEP_DRIVER_SYSTEM_RAR_MEMORY_SIZE_IN_BYTES)
-+	SEP_DRIVER_SYSTEM_RAR_MEMORY_SIZE_IN_BYTES)
- 
- /* offset of the DCB area */
- #define SEP_DRIVER_SYSTEM_DCB_MEMORY_OFFSET_IN_BYTES \
++/* Functions */
++int sep_crypto_setup(void);
++void sep_crypto_takedown(void);
 -- 
 1.6.3.3
 
