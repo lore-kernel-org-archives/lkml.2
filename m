@@ -1,35 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab1B1Od7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:33:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46120 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753918Ab1B1Od6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:33:58 -0500
-Date: Mon, 28 Feb 2011 14:34:18 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zeng Zhaoming <zhaoming.zeng@freescale.com>
-Subject: Re: linux-next: build failure after merge of the sound and
- sound-asoc trees
-Message-ID: <20110228143418.GB13869@opensource.wolfsonmicro.com>
-References: <20110228141528.00fc4ab4.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110228141528.00fc4ab4.sfr@canb.auug.org.au>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754545Ab1B1OeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:34:05 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37590 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754271Ab1B1OeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:34:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,239,1297065600"; 
+   d="scan'208";a="891955106"
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTims=DvdmDPET=G-_9w7Za2O_kkQhgQF8fKMV_x1@mail.gmail.com>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	 <1298884559.2428.10083.camel@twins>
+	 <AANLkTims=DvdmDPET=G-_9w7Za2O_kkQhgQF8fKMV_x1@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Feb 2011 22:33:46 +0800
+Message-Id: <1298903626.2169.52.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 02:15:28PM +1100, Stephen Rothwell wrote:
+On Mon, 2011-02-28 at 20:25 +0800, Stephane Eranian wrote:
+> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
+> >> This patch adds basic SandyBridge support, including hardware cache
+> >> events and PEBS events support.
+> >>
+> >> LLC-* hareware cache events don't work for now, it depends on the
+> >> offcore patches.
+> >
+> > What's the status of those, Stephane reported some problems last I
+> > remember?
+> >
+> >
+> >>  #define INTEL_EVENT_CONSTRAINT(c, n) \
+> >>       EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+> >> +#define INTEL_EVENT_CONSTRAINT2(c, n)        \
+> >> +     EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+> >
+> > That's a particularly bad name, how about something like
+> >
+> > INTEL_UEVENT_CONSTRAINT or somesuch.
+> >
+> >> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
+> >>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+> >>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+> >>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+> >> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+> >> +                     switch (boot_cpu_data.x86_model) {
+> >> +                     case 42: /* SandyBridge */
+> >> +                             x86_pmu.pebs_constraints = intel_snb_pebs_events;
+> >> +                             break;
+> >> +                     default:
+> >> +                             x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+> >> +                     }
+> >>                       break;
+> >>
+> >>               default:
+> >
+> > We already have this massive model switch right after this function,
+> > might as well move the pebs constraint assignment there.
+> >
+> My PEBS  patch was going to cleanup this part, though it was using
+> it's own switch
+> statement.
 
-> After merging the sound tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+Did you send out the patch? A link?
 
-I've applied a fix for this from Zjaoming.
+
