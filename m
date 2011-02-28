@@ -1,58 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab1B1IHD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 03:07:03 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49457 "EHLO mx2.mail.elte.hu"
+	id S1752794Ab1B1II0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 03:08:26 -0500
+Received: from verein.lst.de ([213.95.11.210]:56008 "EHLO verein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab1B1IHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 03:07:00 -0500
-Date: Mon, 28 Feb 2011 09:06:42 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Mike Travis <travis@sgi.com>, David Rientjes <rientjes@google.com>,
-        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/4] printk: Allocate kernel log buffer earlier
-Message-ID: <20110228080642.GC1600@elte.hu>
-References: <20110225180633.857892225@gulag1.americas.sgi.com>
- <20110225180634.017570095@gulag1.americas.sgi.com>
- <20110227120949.GF16453@elte.hu>
- <20110227121518.GA19165@elte.hu>
- <4D6AFBB0.70401@kernel.org>
-MIME-Version: 1.0
+	id S1752597Ab1B1IIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 03:08:25 -0500
+Date: Mon, 28 Feb 2011 09:07:48 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Joel Becker <jlbec@evilplan.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [PATCH 5/5] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
+Message-ID: <20110228080748.GA15238@lst.de>
+References: <1298874020-15628-1-git-send-email-nab@linux-iscsi.org> <1298874020-15628-6-git-send-email-nab@linux-iscsi.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6AFBB0.70401@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1298874020-15628-6-git-send-email-nab@linux-iscsi.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 1.052 (*) DOMAIN_BODY
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> --- /dev/null
+> +++ b/drivers/target/tcm_loop/Makefile
+> @@ -0,0 +1,11 @@
+> +EXTRA_CFLAGS += -I$(srctree)/drivers/target/ -I$(srctree)/drivers/scsi/ -I$(srctree)/include/scsi/ -I$(srctree)/drivers/target/tcm_loop/
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+This should not be needed.
 
-> +	new_addr = memblock_alloc(new_log_buf_len, PAGE_SIZE);
-> +	if (new_addr != MEMBLOCK_ERROR)
-> +		new_log_buf = __va(new_addr);
-> +	else
-> +		new_log_buf = alloc_bootmem(new_log_buf_len);
+> +
+> +tcm_loop-y			:= tcm_loop_fabric.o \
+> +				   tcm_loop_fabric_scsi.o \
+> +				   tcm_loop_configfs.o \
+> +
+> +obj-$(CONFIG_TCM_LOOP_FABRIC)	+= tcm_loop.o
+> +
+> +ifdef CONFIG_TCM_LOOP_CDB_DEBUG
+> +EXTRA_CFLAGS			+= -DTCM_LOOP_CDB_DEBUG
+> +endif
 
-alloc_bootmem() can fail, especially if someone uses a too large boot parameter 
-value - and your code does not check for failure.
+Please just test for CONFIG_TCM_LOOP_CDB_DEBUG directly in the code.
 
-Thanks,
+> +#include <linux/version.h>
+> +#include <generated/utsrelease.h>
+> +#include <linux/utsname.h>
 
-	Ingo
+These should not be needed.
+
+> +#include <linux/init.h>
+> +#include <linux/slab.h>
+> +#include <linux/kthread.h>
+
+You don't use kthreads in this file, so it shouldn't be needed either.
+
+> +#include <tcm_loop_core.h>
+> +#include <tcm_loop_configfs.h>
+> +#include <tcm_loop_fabric.h>
+> +#include <tcm_loop_fabric_scsi.h>
+
+Theseshould be ""-style includes.
+
+> +	tl_nexus = kzalloc(sizeof(struct tcm_loop_nexus), GFP_KERNEL);
+> +	if (!(tl_nexus)) {
+
+Please remove all these totally pointless braces inside negations.
+
+> diff --git a/drivers/target/tcm_loop/tcm_loop_configfs.h b/drivers/target/tcm_loop/tcm_loop_configfs.h
+> new file mode 100644
+> index 0000000..f46aa4b
+> --- /dev/null
+> +++ b/drivers/target/tcm_loop/tcm_loop_configfs.h
+> @@ -0,0 +1,2 @@
+> +extern int tcm_loop_register_configfs(void);
+> +extern void tcm_loop_deregister_configfs(void);
+
+I think just having one header for this module instead of mini-headers
+like this is a lot easier to read/maintain.
+
+> +#include <linux/kthread.h>
+
+Again, this should not be needed.
+
+> +int tcm_loop_queue_data_in(struct se_cmd *se_cmd)
+> +{
+> +	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
+> +				struct tcm_loop_cmd, tl_se_cmd);
+> +	struct scsi_cmnd *sc = tl_cmd->sc;
+> +
+> +	TL_CDB_DEBUG( "tcm_loop_queue_data_in() called for scsi_cmnd: %p"
+> +			" cdb: 0x%02x\n", sc, sc->cmnd[0]);
+> +
+> +	sc->result = SAM_STAT_GOOD;
+> +	set_host_byte(sc, DID_OK);
+> +	(*sc->scsi_done)(sc);
+
+This can be written simpler as sc->scsi_done(sc);
+
+> +#include <linux/version.h>
+> +#include <generated/utsrelease.h>
+> +#include <linux/utsname.h>
+
+not needed.
+
+> +#include <scsi/libsas.h> /* For TASK_ATTR_* */
+
+I thought that got fixed for the next merge window?
+
+> + * Copied from drivers/scsi/libfc/fc_fcp.c:fc_change_queue_depth() and
+> + * drivers/scsi/libiscsi.c:iscsi_change_queue_depth()
+> + */
+
+Sounds like we should move it to generic code instead of adding a third
+duplicate.
+
+> +static inline struct tcm_loop_hba *tcm_loop_get_hba(struct scsi_cmnd *sc)
+> +{
+> +	return (struct tcm_loop_hba *)sc->device->host->hostdata[0];
+> +}
+
+You probably want to use shost_priv instead.
+
+> +	struct se_portal_group *se_tpg;
+> +	struct tcm_loop_hba *tl_hba;
+> +	struct tcm_loop_tpg *tl_tpg;
+> +
+> +	TL_CDB_DEBUG("tcm_loop_queuecommand() %d:%d:%d:%d got CDB: 0x%02x"
+> +		" scsi_buf_len: %u\n", sc->device->host->host_no,
+> +		sc->device->id, sc->device->channel, sc->device->lun,
+> +		sc->cmnd[0], scsi_bufflen(sc));
+> +	/*
+> +	 * Locate the tcm_loop_hba_t pointer 
+> +	 */
+> +	tl_hba = tcm_loop_get_hba(sc);
+> +	if (!(tl_hba)) {
+> +		printk(KERN_ERR "Unable to locate struct tcm_loop_hba from"
+> +				" struct scsi_cmnd\n");
+> +		set_host_byte(sc, DID_ERROR);
+> +		sc->scsi_done(sc);
+> +		return 0;	
+> +	}
+
+This can't ever be null.
+
+> +static struct scsi_host_template tcm_loop_driver_template = {
+> +	.proc_info		= tcm_loop_proc_info,
+> +	.proc_name		= "tcm_loopback",
+> +	.name			= "TCM_Loopback",
+> +	.info			= NULL,
+> +	.slave_alloc		= NULL,
+> +	.slave_configure	= NULL,
+> +	.slave_destroy		= NULL,
+> +	.ioctl			= NULL,
+
+There is no need to fill unused methods with NULLs.
