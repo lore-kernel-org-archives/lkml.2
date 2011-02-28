@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1B1Q5Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:57:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971Ab1B1Q5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:57:15 -0500
-Date: Mon, 28 Feb 2011 17:48:14 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110228164814.GA8538@redhat.com>
-References: <20110224202941.GA12258@redhat.com> <20110225155142.GQ24828@htj.dyndns.org> <201102260348.03312.vda.linux@googlemail.com> <20110228125622.GA9326@htj.dyndns.org> <AANLkTik1+XVrkwTouERoxF2AWYyv-UCqie_Wq3OLjoXg@mail.gmail.com> <20110228132941.GB9326@htj.dyndns.org> <AANLkTin9HW5R5Wihw+yceKkW=Pj+eB8-id0E1Gud2y-G@mail.gmail.com> <20110228135312.GC9326@htj.dyndns.org> <AANLkTimQV0j2MuPdwQBgpdCN6nA9KTbVwrSM1Ut0i_=q@mail.gmail.com> <20110228143920.GD9326@htj.dyndns.org>
+	id S1755169Ab1B1RAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 12:00:43 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:36847 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754761Ab1B1RAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 12:00:41 -0500
+Date: Mon, 28 Feb 2011 11:55:01 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Albert Cahalan <acahalan@gmail.com>,
+        Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+Message-ID: <20110228165501.GC2515@tuxdriver.com>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+ <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+ <1298793252.8726.45.camel@edumazet-laptop>
+ <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+ <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+ <1298837273.8726.128.camel@edumazet-laptop>
+ <20110228161115.GB2515@tuxdriver.com>
+ <1298911694.2941.639.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110228143920.GD9326@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1298911694.2941.639.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28, Tejun Heo wrote:
->
-> I believe this is already solved by making the tracee always enter
-> TASK_TRACED via ptrace_stop() on attach, which always reports the
-> group stop signal to the ptracer whether the real parent has consumed
-> it or not.  The patch is at the top of this gigantic thread.  Oleg,
-> this is solved one, right?
+On Mon, Feb 28, 2011 at 05:48:14PM +0100, Eric Dumazet wrote:
+> Le lundi 28 février 2011 à 11:11 -0500, John W. Linville a écrit :
+> > On Sun, Feb 27, 2011 at 09:07:53PM +0100, Eric Dumazet wrote:
+> > 
+> > > Qdisc should return to caller a good indication packet is queued or
+> > > dropped at enqueue() time... not later (aka : never)
+> > > 
+> > > Accepting a packet at t0, and dropping it later at t0+limit without
+> > > giving any indication to caller is a problem.
+> > 
+> > Can you elaborate on what problem this causes?  Is it any worse than
+> > if the packet is dropped at some later hop?
+> > 
+> > Is there any API that could report the drop to the sender (at
+> > least a local one) without having to wait for the ack timeout?
+> > Should there be?
+> > 
+> 
+> Not all protocols have ACKS ;)
+> 
+> dev_queue_xmit() returns an error code, some callers use it.
 
-Yes, sure. gdb will never see the stopped (I mean task->state) tracee
-after attach, so it does not need to do something special. This problem
-with exit_code == 0 is fixed too.
+Well, OK -- I agree it is best if you can return the status at
+enqueue time.  The question becomes whether or not a dropped frame
+is worse than living with high latency.  The answer, of course, still
+seems to be a bit subjective.  But, if the admin has determined that
+a link should be low latency...?
 
-Oleg.
-
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
