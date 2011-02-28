@@ -1,133 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab1B1QbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:31:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51333 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab1B1QbC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:31:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fA6e7o7ALqm8z0AjSsb6cszhLuR+ORokKOgcNv9Ob6uAttwXATdzrLlv2wowI4imPb
-         b6tM9N6+Wozh9f/A0DeT/Dz66QqsikTWbsSYSVuhdpHJa72vlN8IMiirvGbpiJo2YP7H
-         S1LOciPfE34lShiLhIWcmsMej6kXToFEFd9FE=
-Date: Mon, 28 Feb 2011 18:29:09 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andreas =?iso-8859-1?Q?Bie=DFmann?= <andreas.devel@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs-writeback: fix NULL pointer dereference in
- __mark_inode_dirty
-Message-ID: <20110228162909.GB4675@swordfish.minsk.epam.com>
-References: <1298906733-31427-1-git-send-email-biessmann@corscience.de>
- <20110228154314.GA4675@swordfish.minsk.epam.com>
- <4D6BC666.4010603@gmail.com>
+	id S1755102Ab1B1Qd6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:33:58 -0500
+Received: from cantor.suse.de ([195.135.220.2]:43113 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753369Ab1B1Qd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:33:56 -0500
+Date: Mon, 28 Feb 2011 17:33:48 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Anders Nilsson Plymoth <lml@telhoc.se>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: ICMP reply uses wrong source address as destination
+In-Reply-To: <AANLkTi=2hEK9rR2h1hzWtud0DdJU5A4d9rBYD6aTLFx-@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1102281733070.4359@twin.jikos.cz>
+References: <AANLkTi=2hEK9rR2h1hzWtud0DdJU5A4d9rBYD6aTLFx-@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="b5gNqxB1S1yM7hjW"
-Content-Disposition: inline
-In-Reply-To: <4D6BC666.4010603@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---b5gNqxB1S1yM7hjW
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ adding netdev@ to CC ]
 
-On (02/28/11 16:59), Andreas Bie=DFmann wrote:
-> Dear Sergey Senozhatsky,
->=20
-> Am 28.02.2011 16:43, schrieb Sergey Senozhatsky:
-> > On (02/28/11 16:25), Andreas Bie=DFmann wrote:
->=20
-> >> The reference to sb->s_bdi may be deleted from mmc_blk_remove() ->
-> >> del_gendisk() -> unlink_gendisk() -> bdi_unregister() -> bdi_prune_sb(=
-) while
-> >> another instance try to write some data to the device.
-> >>
-> >> Signed-off-by: Andreas Bie=DFmann <biessmann@corscience.de>
-> >> ---
-> >>  fs/fs-writeback.c |    3 +++
-> >>  1 files changed, 3 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> >> index cdbf7ac..96b4b25 100644
-> >> --- a/fs/fs-writeback.c
-> >> +++ b/fs/fs-writeback.c
-> >> @@ -1047,6 +1047,9 @@ void __mark_inode_dirty(struct inode *inode, int=
- flags)
-> >>  		if (!was_dirty) {
-> >>  			bdi =3D inode_to_bdi(inode);
-> >> =20
-> >> +			if (!bdi)
-> >> +				goto out;
-> >> +
-> >>  			if (bdi_cap_writeback_dirty(bdi)) {
-> >>  				WARN(!test_bit(BDI_registered, &bdi->state),
-> >>  				     "bdi-%s not registered\n", bdi->name);
-> >=20
-> > Hello,
-> > I had something very similar to this some time ago
-> > https://lkml.org/lkml/2010/12/9/436
->=20
-> Sorry, I did not see that patch.
->
-No problem :-)
-=20
-> > However, I'm not sure that this check is sufficient.
->=20
-> Why are you think this is not sufficient?
-> If an instance try to write that specific inode to an physical device
-> which is not longer available how should we react then?
->=20
+On Mon, 28 Feb 2011, Anders Nilsson Plymoth wrote:
 
-I think the path which `kills' the device should take care of that.
-Otherwise, IMHO, we have:
-- ok, we're falling on line 42 -- let's fix line 42
+> Dear linux kernel enthusiasts,
+> 
+> I came upon an issue where ICMP reply packets were issued towards the
+> IP address of the receiving interface, rather than the source IP
+> address.
+> Looking at the kernel code, I saw that this is caused by the following
+> line in net/ipv4/icmp.c function icmp_reply:
+> 
+> daddr = ipc.addr = rt->rt_src;
+> 
+> For most cases the original line of code is ok, but in some situations
+> doesn't arrive to the kernel from the network device, but through some
+> other mechanism such as a userspace application. In these cases the
+> receiving device in the skb appears to be the loopback interface, not
+> a physical device. icmp_reply will thus issue the reply to the
+> loopback IP address, rather than the source IP address as it should.
+> 
+> While googling to see if this issue have been submitted, I found this
+> two threads that address the same problem:
+> 
+> ([PATCH] 2.6.22.6 NETWORKING [IPV4]: Always use source addr in skb to
+> reply packet) on 17 sep 2007
+> AND
+> ([PATCH RESEND] 2.6.22.6 networking [ipv4]: fix wrong destination when
+> reply packetes) on 20 sep 2007).
+> 
+> Nothing came out of these threads, and some of the questions there are
+> easy to answer; such as this doesn't affect DNAT, and if source IP
+> address is not set then you should not issue a reply for echo and
+> timestamp anyway.
+> 
+> As to the statement:
+> "... which IP address should be used as the source
+> 1. the destination address of the packet that generated the message
+> 
+> or.
+> 
+> 2. the IP address that the machine would use by default if the machine
+> were to generate a new connection to the destination."
+> These may be relevant questions, but the ICMP RFC clearly states the
+> answer is 1. 2. may seem relevant to multi-homing, but its not the
+> role of the ICMP reply to resolve multi-homing issues.
+> The following code will correct the issue.
+> {
+>    struct iphdr *ip = ip_hdr(skb);
+>    daddr = ipc.addr = ip->saddr;
+> }
+> The only functions that use icmp_reply are icmp_echo and
+> icmp_timestamp, and this change do not modify their behavior. After
+> extensive testing, in regular setups and DNATed situations, I can
+> verify this change works as intended.
+> Thanks,
 
-ignoring the fact that there are reasons which led to faulty line 42,
-which are, for example:
-#0=20
- 604     spin_lock(&sb_lock);
- 605     list_for_each_entry(sb, &super_blocks, s_list) {
- 606         if (sb->s_bdi =3D=3D bdi)
- 607             sb->s_bdi =3D NULL;
- 608     }
- 609     spin_unlock(&sb_lock);
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
 
-#1 bdi_prune_sb                                        =20
-#2 bdi_unregister               =20
-#3 del_gendisk                  =20
-
-Of course, I may be wrong.
-
-
-> Another solution could be to clean up all instances referring to that
-> superblock in del_/unlink_gendisk(). But I think to check the return of
-> inode_to_bdi() is needed in any case.
->=20
-
-
-	Sergey
-
---b5gNqxB1S1yM7hjW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAk1rzVUACgkQfKHnntdSXjSn1gP/fTZKLBKHKPn7Q5Om6E2ysfSY
-ijAoOJMFzsPjPsfpk/bDNkDnyQ6b99dktDga3j8QcxkexN5AN7PbmGRGOBfEh8Pr
-IHxyBTTVnVC36j5dSa+/w0XymepWeyJ2uPiMoKp6s+Cunnaob1x8uZ7rddAsESH/
-Br5dvW1uJLqO4bigntA=
-=9+gG
------END PGP SIGNATURE-----
-
---b5gNqxB1S1yM7hjW--
