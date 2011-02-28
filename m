@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab1B1PZi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:25:38 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62501 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421Ab1B1PZg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:25:36 -0500
-From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] fs-writeback: fix NULL pointer dereference in __mark_inode_dirty
-Date: Mon, 28 Feb 2011 16:25:33 +0100
-Message-Id: <1298906733-31427-1-git-send-email-biessmann@corscience.de>
-X-Mailer: git-send-email 1.7.2.3
+	id S1754428Ab1B1P0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:26:32 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42448 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753634Ab1B1P0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 10:26:31 -0500
+Date: Mon, 28 Feb 2011 15:26:04 GMT
+From: tip-bot for Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, stable@kernel.org, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <1297139100-424-1-git-send-email-dzickus@redhat.com>
+References: <1297139100-424-1-git-send-email-dzickus@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Use u32 instead of long to set reset vector back to 0
+Message-ID: <tip-299c56966a72b9109d47c71a6db52097098703dd@git.kernel.org>
+Git-Commit-ID: 299c56966a72b9109d47c71a6db52097098703dd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:IDXiObyK2FhwQm7uLq+sSzGWapJnfG9zqSvZ7GptvJt
- YxcKR2Q3sKLG1Ux0nHEkKK2TZrlB+d7fJm+GiEwwaM6Nozrgij
- TPtLJ+fcSX332Irlen4UUaUOZYcE2Kjgh3UCi75o3e1/ZBGWtz
- wwBvB8ZHXqnA1kQaOWRdSQvCEI456dWhjSIDQcC4LM8o5ZhbPV
- qAZ3f7nRktPRewFOfjCtw==
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 28 Feb 2011 15:26:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a kernel NULL pointer dereference as mentioned in this log:
+Commit-ID:  299c56966a72b9109d47c71a6db52097098703dd
+Gitweb:     http://git.kernel.org/tip/299c56966a72b9109d47c71a6db52097098703dd
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Mon, 7 Feb 2011 23:25:00 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 28 Feb 2011 16:22:18 +0100
 
----8<---
-[   43.044000] mmc0: card c556 removed
-[   43.059000] mmcblk0: error -123 sending status comand
-[   43.064000] mmcblk0: error -123 sending read/write command, response 0x0, card status 0x0
-[   43.089000] mmcblk0: error -123 requesting status
-[   43.096000] end_request: I/O error, dev mmcblk0, sector 1667989
-<snip repeated error>
-[   43.830000] end_request: I/O error, dev mmcblk0, sector 1667988
-[   44.679000] Unable to handle kernel NULL pointer dereference at virtual address 00000010
-[   44.688000] ptbr = 93ec0000 pgd = 93ebf000
-[   44.692000] Oops: Kernel access of bad area, sig: 11 [#1]
-[   44.692000] FRAME_POINTER chip: 0x01f:0x1e82 rev 2
-[   44.692000] Modules linked in:
-[   44.692000] PC is at __mark_inode_dirty+0x8a/0x11c
-[   44.692000] LR is at __mark_inode_dirty+0x7c/0x11c
-<snip stack trace>
-[   44.692000] Call trace:
-[   44.692000]  [<900780a4>] file_update_time+0x96/0xaa
-[   44.692000]  [<9005439a>] __generic_file_aio_write+0x212/0x330
-[   44.692000]  [<900544f4>] generic_file_aio_write+0x3c/0x74
-[   44.692000]  [<9006b82c>] do_sync_readv_writev+0x68/0x90
-[   44.692000]  [<9006b8c0>] do_readv_writev+0x6c/0x108
-[   44.692000]  [<9006b98a>] vfs_writev+0x2e/0x34
-[   44.692000]  [<9006be60>] sys_writev+0x2c/0x4c
-[   44.692000]  [<90023132>] syscall_return+0x0/0x12
-[   44.692000]
---->8---
+x86: Use u32 instead of long to set reset vector back to 0
 
-The reference to sb->s_bdi may be deleted from mmc_blk_remove() ->
-del_gendisk() -> unlink_gendisk() -> bdi_unregister() -> bdi_prune_sb() while
-another instance try to write some data to the device.
+A customer of ours, complained that when setting the reset
+vector back to 0, it trashed other data and hung their box.
+They noticed when only 4 bytes were set to 0 instead of 8,
+everything worked correctly.
 
-Signed-off-by: Andreas Bießmann <biessmann@corscience.de>
+Mathew pointed out:
+
+ |
+ | We're supposed to be resetting trampoline_phys_low and
+ | trampoline_phys_high here, which are two 16-bit values.
+ | Writing 64 bits is definitely going to overwrite space
+ | that we're not supposed to be touching.
+ |
+
+So limit the area modified to u32.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Cc: <stable@kernel.org>
+LKML-Reference: <1297139100-424-1-git-send-email-dzickus@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- fs/fs-writeback.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/smpboot_hooks.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index cdbf7ac..96b4b25 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1047,6 +1047,9 @@ void __mark_inode_dirty(struct inode *inode, int flags)
- 		if (!was_dirty) {
- 			bdi = inode_to_bdi(inode);
+diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
+index 6c22bf3..725b778 100644
+--- a/arch/x86/include/asm/smpboot_hooks.h
++++ b/arch/x86/include/asm/smpboot_hooks.h
+@@ -34,7 +34,7 @@ static inline void smpboot_restore_warm_reset_vector(void)
+ 	 */
+ 	CMOS_WRITE(0, 0xf);
  
-+			if (!bdi)
-+				goto out;
-+
- 			if (bdi_cap_writeback_dirty(bdi)) {
- 				WARN(!test_bit(BDI_registered, &bdi->state),
- 				     "bdi-%s not registered\n", bdi->name);
--- 
-1.7.2.3
-
+-	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
++	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+ }
+ 
+ static inline void __init smpboot_setup_io_apic(void)
