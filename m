@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab1B1QkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 11:40:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25096 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab1B1QkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 11:40:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,240,1297065600"; 
-   d="scan'208";a="662202564"
-Date: Mon, 28 Feb 2011 17:40:14 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 28/29] mfd-core: add platform_device sharing support
- for mfd (v2)
-Message-ID: <20110228164013.GC5263@sortiz-mobl>
-References: <1297998456-7615-1-git-send-email-dilinger@queued.net>
- <1297998456-7615-29-git-send-email-dilinger@queued.net>
+	id S1755874Ab1B1Qkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 11:40:43 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34643 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755773Ab1B1QiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 11:38:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=f8Q50HPHoAFgMg7UrKn+zTHQB+7bUzorO2+jm8csh5FAOI3IHd5rZXlisUO7qi5iid
+         y4c8WF5Zcr4rF/uSfywqwnBlFb8ghm5XfcRzPvT+uO7oN3OxmjaS3V7DnhTcYNCmr9a7
+         zbbGNFeuEwLY8thEYxsYBpi6WAIDPUcgCpvLk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297998456-7615-29-git-send-email-dilinger@queued.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <cbb9e1113901f1a324359b6ed3f1a611@localhost>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+	<alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+	<1298793252.8726.45.camel@edumazet-laptop>
+	<AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+	<20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+	<AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
+	<cbb9e1113901f1a324359b6ed3f1a611@localhost>
+Date: Mon, 28 Feb 2011 11:37:45 -0500
+Message-ID: <AANLkTimh1xWU9V9phOKZZMgOWKOmDDSBYfofnnOjjRh=@mail.gmail.com>
+Subject: Re: txqueuelen has wrong units; should be time
+From: Albert Cahalan <acahalan@gmail.com>
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andres,
+On Mon, Feb 28, 2011 at 10:38 AM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
+> On Sun, 27 Feb 2011 18:33:39 -0500, Albert Cahalan wrote:
+>
+>> I suppose there is a need to allow at least 2 packets despite any
+>> time limits, so that it remains possible to use a traditional modem
+>> even if a huge packet takes several seconds to send.
+>
+> That is a good point! We talk about as we may know every use case of
+> Linux. But this is not true at all. One of my customer for example operates
+> the Linux network stack functionality on top of a proprietary MAC/Driver
+> where the current packet queue characteristic is just fine. The
+> time-drop-approach is unsuitable because the bandwidth can vary in a small
+> amount of time over a great range (0 till max. bandwidth). A sufficient
+> buffering shows up superior in this environment (only IPv{4,6}/UDP).
 
-On Thu, Feb 17, 2011 at 07:07:35PM -0800, Andres Salomon wrote:
-> This adds functions to enable platform_device sharing for mfd clients.
-> 
-> Each platform driver (mfd client) that wants to share an mfd_cell's
-> platform_device uses the mfd_shared_platform_driver_{un,}register()
-> functions instead of platform_driver_{un,}register().  Along with
-> registering the platform driver, these also register a new platform
-> device with the same characteristics as the original cell, but a different
-> name.  Given an mfd_cell with the name "foo", drivers that want to
-> share access to its resources can call mfd_shared_platform_driver_register
-> with platform drivers named (for example) "bar" and "baz".  This
-> will register two platform devices and drivers named "bar" and "baz"
-> that share the same cell as the platform device "foo".  The drivers
-> can then call "foo" cell's enable hooks (or mfd_shared_cell_enable)
-> to enable resources, and obtain platform resources as they normally
-> would.
-I'm not fine with the naming, as it really is doing more than
-registering a platform driver. But since I can not come up with a better name
-right now, I would really appreciate if you could add some comments there
-explaining what this routine (mfd_shared_platform_driver_register)
-does and in which cases it is needed. The OLPC example could also be
-mentioned.
+I don't think the current non-time queue is just fine for him.
+I can see that time-based discard-on-enqueue would not be
+fine either. He needs time-based discard-on-dequeue.
+Good for him is probably:
 
-Cheers,
-Samuel.
+On dequeue, discard all packets that are too old.
+On enqueue, assume max bandwidth and discard all
+packets that have no hope of surviving the dequeue check.
+(the enqueue check is only to prevent wasting RAM)
+Exception: always keep at least 2 packets.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Better is something that would allow random drop.
+The trouble here is that bandwidth varies greatly.
+Some sort of undelete functionality is needed...?
+
+Assuming the difficulty with implementing random drop
+is solvable, I think this would work for the rest of us too.
+
+Keeping the timeout really low is important because it isn't
+OK to eat up all the latency tolerance in one hop. You have
+an end-to-end budget of 20 ms for usable GUI rubber banding.
+The budget for gaming is about 80 and for VoIP is about 150.
