@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab1B1Pkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 10:40:39 -0500
-Received: from cantor.suse.de ([195.135.220.2]:41019 "EHLO mx1.suse.de"
+	id S1754911Ab1B1PlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 10:41:15 -0500
+Received: from mga11.intel.com ([192.55.52.93]:11932 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab1B1Pki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 10:40:38 -0500
-Date: Mon, 28 Feb 2011 07:39:46 -0800
-From: Greg KH <gregkh@suse.de>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        kernel@pengutronix.de, Arjan van de Ven <arjan@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 6/6] tty/vt: add some KERN_CONT markers to continuation
- lines
-Message-ID: <20110228153946.GA26719@suse.de>
-References: <20101124085645.GW4693@pengutronix.de>
- <1290589070-854-6-git-send-email-u.kleine-koenig@pengutronix.de>
- <20110228151641.GN22310@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110228151641.GN22310@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754264Ab1B1PlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 10:41:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,240,1297065600"; 
+   d="scan'208";a="662182671"
+Date: Mon, 28 Feb 2011 15:19:43 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jirislaby@gmail.com>
+Subject: Re: [PATCH 1/2] USB: serial/keyspan_pda, fix potential tty NULL
+ dereferences
+Message-ID: <20110228151943.140546a5@bob.linux.org.uk>
+In-Reply-To: <Pine.LNX.4.44L0.1102281006560.2161-100000@iolanthe.rowland.org>
+References: <1298885646-9293-1-git-send-email-jslaby@suse.cz>
+	<Pine.LNX.4.44L0.1102281006560.2161-100000@iolanthe.rowland.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 04:16:41PM +0100, Uwe Kleine-König wrote:
-> Hello Greg,
-> 
-> should this patch go via your tree?
+> I wonder about these changes.  Does it makes sense to add this
+> checking everywhere?  A more reasonable approach might be to make
+> sure that tty_port_tty_get is never called in a context where it
+> could return NULL.  Or would that involve just as much effort, making
+> work routines and so on check to see whether there's an open TTY
+> device before doing anything else?
 
-Yes, care to resend it in a format I can apply it in?
+The tty is refcounted so it can go away at any time including on
+another processor parallel to an IRQ happening.
 
-thanks,
+The right way to fix it longer term is to get every tty to be using a
+tty_port (which is something we are close to) and then stuff all the
+physical device related properties into the tty_port so most rx paths
+simply don't dereference the tty struct.
 
-greg k-h
+At that point the lifetime of the relevant objects is the lifetime of
+the physical port which means the driver can do
+
+	ref count = 0
+		disable interrupts
+		free physical port representation & associated tty_port
+
+the locking and tty struct use on most of the irq paths can go away for
+most situations (still needed for some cases like SYSRQ).
+
+Unfortunately there is quite a lot to move including the tty buffers,
+various bits of flow control, wait queues and the like. Possibly even
+the termios data.
+
+At that point we'd only need a tty reference when we actually did the
+ldisc processing or in exceptional situations.
+
+Alan
