@@ -1,157 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab1B1SZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 13:25:45 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:19387 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab1B1SZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 13:25:26 -0500
-X-IronPort-AV: E=Sophos;i="4.62,241,1297054800"; 
-   d="scan'208";a="137922017"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, hpa@zytor.com, konrad.wilk@oracle.com,
-        yinghai@kernel.org, jeremy@goop.org, Stefano.Stabellini@eu.citrix.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 1/2] x86: Cleanup highmap after brk is concluded
-Date: Mon, 28 Feb 2011 18:25:16 +0000
-Message-Id: <1298917517-5858-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1102281755270.2917@kaball-desktop>
-References: <alpine.DEB.2.00.1102281755270.2917@kaball-desktop>
-X-OriginalArrivalTime: 28 Feb 2011 18:25:25.0200 (UTC) FILETIME=[DE109D00:01CBD774]
+	id S1754434Ab1B1S05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 13:26:57 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41262 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752577Ab1B1S04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 13:26:56 -0500
+Date: Mon, 28 Feb 2011 19:26:42 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, heukelum@fastmail.fm, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/asm] x86-64: Add CFI annotations to lib/rwsem_64.S
+Message-ID: <20110228182642.GA7041@elte.hu>
+References: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
+ <tip-39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
 
-Now cleanup_highmap actually is in two steps: one is early in head64.c
-and only clears above _end; a second one is in init_memory_mapping() and
-tries to clean from _brk_end to _end.
-It should check if those boundaries are PMD_SIZE aligned but currently
-does not.
-Also init_memory_mapping() is called several times for numa or memory
-hotplug, so we really should not handle initial kernel mappings there.
+* tip-bot for Jan Beulich <JBeulich@novell.com> wrote:
 
-This patch moves cleanup_highmap() down after _brk_end is settled so
-we can do everything in one step.
-Also we honor max_pfn_mapped in the implementation of cleanup_highmap.
+> Commit-ID:  39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c
+> Gitweb:     http://git.kernel.org/tip/39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c
+> Author:     Jan Beulich <JBeulich@novell.com>
+> AuthorDate: Mon, 28 Feb 2011 15:31:59 +0000
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Mon, 28 Feb 2011 18:06:21 +0100
+> 
+> x86-64: Add CFI annotations to lib/rwsem_64.S
+> 
+> These weren't part of the initial commit of this code.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+> LKML-Reference: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/lib/rwsem_64.S |   56 ++++++++++++++++++++++++++++------------------
+>  1 files changed, 34 insertions(+), 22 deletions(-)
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/kernel/head64.c |    3 ---
- arch/x86/kernel/setup.c  |    6 ++++++
- arch/x86/mm/init.c       |   19 -------------------
- arch/x86/mm/init_64.c    |   11 ++++++-----
- 4 files changed, 12 insertions(+), 27 deletions(-)
+this change breaks the UML build:
 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 2d2673c..5655c22 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -77,9 +77,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 	/* Make NULL pointers segfault */
- 	zap_identity_mappings();
- 
--	/* Cleanup the over mapped high alias */
--	cleanup_highmap();
--
- 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
- 
- 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d3cfe26..f03e6e0 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -297,6 +297,9 @@ static void __init init_gbpages(void)
- static inline void init_gbpages(void)
- {
- }
-+static void __init cleanup_highmap(void)
-+{
-+}
- #endif
- 
- static void __init reserve_brk(void)
-@@ -922,6 +925,9 @@ void __init setup_arch(char **cmdline_p)
- 	 */
- 	reserve_brk();
- 
-+	/* Cleanup the over mapped high alias after _brk_end*/
-+	cleanup_highmap();
-+
- 	memblock.current_limit = get_max_mapped();
- 	memblock_x86_fill();
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 947f42a..f13ff3a 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -279,25 +279,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	load_cr3(swapper_pg_dir);
- #endif
- 
--#ifdef CONFIG_X86_64
--	if (!after_bootmem && !start) {
--		pud_t *pud;
--		pmd_t *pmd;
--
--		mmu_cr4_features = read_cr4();
--
--		/*
--		 * _brk_end cannot change anymore, but it and _end may be
--		 * located on different 2M pages. cleanup_highmap(), however,
--		 * can only consider _end when it runs, so destroy any
--		 * mappings beyond _brk_end here.
--		 */
--		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
--		pmd = pmd_offset(pud, _brk_end - 1);
--		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
--			pmd_clear(pmd);
--	}
--#endif
- 	__flush_tlb_all();
- 
- 	if (!after_bootmem && e820_table_end > e820_table_start)
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 71a5929..a8d08c2 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -51,6 +51,7 @@
- #include <asm/numa.h>
- #include <asm/cacheflush.h>
- #include <asm/init.h>
-+#include <asm/setup.h>
- 
- static int __init parse_direct_gbpages_off(char *arg)
- {
-@@ -293,18 +294,18 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
-  * to the compile time generated pmds. This results in invalid pmds up
-  * to the point where we hit the physaddr 0 mapping.
-  *
-- * We limit the mappings to the region from _text to _end.  _end is
-- * rounded up to the 2MB boundary. This catches the invalid pmds as
-+ * We limit the mappings to the region from _text to _brk_end.  _brk_end
-+ * is rounded up to the 2MB boundary. This catches the invalid pmds as
-  * well, as they are located before _text:
-  */
- void __init cleanup_highmap(void)
- {
- 	unsigned long vaddr = __START_KERNEL_map;
--	unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
-+	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
-+	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
- 	pmd_t *pmd = level2_kernel_pgt;
--	pmd_t *last_pmd = pmd + PTRS_PER_PMD;
- 
--	for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
-+	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
- 		if (pmd_none(*pmd))
- 			continue;
- 		if (vaddr < (unsigned long) _text || vaddr > end)
--- 
-1.5.6.5
+ tip/arch/um/sys-x86_64/../../x86/lib/rwsem_64.S:46: Error: no such instruction: `pushq_cfi %rdi'
 
+Thanks,
+
+	Ingo
