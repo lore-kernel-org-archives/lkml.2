@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab1B1Jc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 04:32:26 -0500
-Received: from mx1.zhaw.ch ([160.85.104.50]:53989 "EHLO mx1.zhaw.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384Ab1B1JcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 04:32:25 -0500
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: [PATCH] asm-generic/user.h: Fix spelling in comment
-Date: Mon, 28 Feb 2011 10:32:22 +0100
-Message-Id: <1298885542-6583-1-git-send-email-tklauser@distanz.ch>
-X-Mailer: git-send-email 1.7.0.4
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.2.28.92419
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_700_799 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
+	id S1753254Ab1B1JeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 04:34:13 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:36585 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab1B1JeL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 04:34:11 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 1/2] USB: serial/keyspan_pda, fix potential tty NULL dereferences
+Date: Mon, 28 Feb 2011 10:34:05 +0100
+Message-Id: <1298885646-9293-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix two misspellings.
+Make sure that we check the return value of tty_port_tty_get.
+Sometimes it may return NULL and we later dereference that.
 
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+There are several places to check. For easier handling,
+tty_port_tty_get is moved directly to the palce where needed in
+keyspan_pda_rx_interrupt.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/asm-generic/user.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/keyspan_pda.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/include/asm-generic/user.h b/include/asm-generic/user.h
-index 8b9c3c9..35638c3 100644
---- a/include/asm-generic/user.h
-+++ b/include/asm-generic/user.h
-@@ -1,8 +1,8 @@
- #ifndef __ASM_GENERIC_USER_H
- #define __ASM_GENERIC_USER_H
- /*
-- * This file may define a 'struct user' structure. However, it it only
-- * used for a.out file, which are not supported on new architectures.
-+ * This file may define a 'struct user' structure. However, it is only
-+ * used for a.out files, which are not supported on new architectures.
-  */
+diff --git a/drivers/usb/serial/keyspan_pda.c b/drivers/usb/serial/keyspan_pda.c
+index 554a869..7b690f3 100644
+--- a/drivers/usb/serial/keyspan_pda.c
++++ b/drivers/usb/serial/keyspan_pda.c
+@@ -173,7 +173,8 @@ static void keyspan_pda_wakeup_write(struct work_struct *work)
+ 		container_of(work, struct keyspan_pda_private, wakeup_work);
+ 	struct usb_serial_port *port = priv->port;
+ 	struct tty_struct *tty = tty_port_tty_get(&port->port);
+-	tty_wakeup(tty);
++	if (tty)
++		tty_wakeup(tty);
+ 	tty_kref_put(tty);
+ }
  
- #endif	/* __ASM_GENERIC_USER_H */
+@@ -206,7 +207,7 @@ static void keyspan_pda_request_unthrottle(struct work_struct *work)
+ static void keyspan_pda_rx_interrupt(struct urb *urb)
+ {
+ 	struct usb_serial_port *port = urb->context;
+-	struct tty_struct *tty = tty_port_tty_get(&port->port);
++	struct tty_struct *tty;
+ 	unsigned char *data = urb->transfer_buffer;
+ 	int retval;
+ 	int status = urb->status;
+@@ -223,7 +224,7 @@ static void keyspan_pda_rx_interrupt(struct urb *urb)
+ 		/* this urb is terminated, clean up */
+ 		dbg("%s - urb shutting down with status: %d",
+ 		    __func__, status);
+-		goto out;
++		return;
+ 	default:
+ 		dbg("%s - nonzero urb status received: %d",
+ 		    __func__, status);
+@@ -233,12 +234,14 @@ static void keyspan_pda_rx_interrupt(struct urb *urb)
+ 	/* see if the message is data or a status interrupt */
+ 	switch (data[0]) {
+ 	case 0:
+-		/* rest of message is rx data */
+-		if (urb->actual_length) {
++		tty = tty_port_tty_get(&port->port);
++		 /* rest of message is rx data */
++		if (tty && urb->actual_length) {
+ 			tty_insert_flip_string(tty, data + 1,
+ 						urb->actual_length - 1);
+ 			tty_flip_buffer_push(tty);
+ 		}
++		tty_kref_put(tty);
+ 		break;
+ 	case 1:
+ 		/* status interrupt */
+@@ -265,8 +268,6 @@ exit:
+ 		dev_err(&port->dev,
+ 			"%s - usb_submit_urb failed with result %d",
+ 			__func__, retval);
+-out:
+-	tty_kref_put(tty);		     
+ }
+ 
+ 
 -- 
-1.7.0.4
+1.7.4.1
+
 
