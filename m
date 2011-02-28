@@ -1,101 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1BDGuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 01:50:00 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48627 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab1BDGt7 (ORCPT
+	id S1753384Ab1B1XBk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 18:01:40 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:39682 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab1B1XBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 01:49:59 -0500
+	Mon, 28 Feb 2011 18:01:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=fbuPVIvUouF7IfRmmBmyb7Dh2lRbkKlkJBQHixGYeawx2wXovkAqYkBWZYFEWfoKoL
-         cTk9TphGwdTqegh70gDzUl3mYt6mZwwXbnW7/PNk/EM7dWo0xsCcgvfQZnQ014oRd91Q
-         6YQViXNlbFrjeeinbiyPzf4hfg1QEy9vSwTCA=
-Date: Thu, 3 Feb 2011 22:49:52 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>, Felix Fietkau <nbd@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Wireless regression (was 2.6.38-rc3: FUSE (sshfs) hangs under load)
-Message-ID: <20110204064952.GA12914@core.coreip.homeip.net>
-References: <20110201175452.GB518@core.coreip.homeip.net>
- <E1PkbGG-0005Rf-QL@pomaz-ex.szeredi.hu>
- <20110202165236.GA3178@core.coreip.homeip.net>
- <20110203065541.GB5592@core.coreip.homeip.net>
- <E1Pkx7s-00073l-5B@pomaz-ex.szeredi.hu>
- <20110203194115.GA14159@core.coreip.homeip.net>
+        b=MXFZw63X9sqTZtZgOSIcx0qfm0SrG2yhGU4bhHsf+oPL7jgq5Osg82tUmQXTYZksgU
+         LzB1h8gs53TYdYIswCIKvZIq84Rcre0m7TKsXYh+1b8QT5iEJrn9OrnmInERFNWeKw47
+         KxVmV+r91On1SmZag8p4Y7E93y7HDINWJZCYU=
+Date: Tue, 1 Mar 2011 08:01:31 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are
+ disabled while isolating pages for migration
+Message-ID: <20110228230131.GB1896@barrios-desktop>
+References: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
+ <1298664299-10270-3-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110203194115.GA14159@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1298664299-10270-3-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 11:41:15AM -0800, Dmitry Torokhov wrote:
-> On Thu, Feb 03, 2011 at 12:13:24PM +0100, Miklos Szeredi wrote:
-> > On Wed, 2 Feb 2011, Dmitry Torokhov wrote:
-> > > On Wed, Feb 02, 2011 at 08:52:36AM -0800, Dmitry Torokhov wrote:
-> > > > On Wed, Feb 02, 2011 at 12:52:36PM +0100, Miklos Szeredi wrote:
-> > > > > On Tue, 1 Feb 2011, Dmitry Torokhov wrote:
-> > > > > > Hi,
-> > > > > > 
-> > > > > > After installing 2.6.38-rc3 (plus a few input patches) sshfs started to
-> > > > > > misbehave on me under load. It starts off fine but when I try to compile
-> > > > > > a few modules against kernel sources residing on the other box the
-> > > > > > processes go into 'D' state and just sit there doing nothing.
-> > > > > 
-> > > > > Can you please post a stack trace from SysRq-T?
-> > > > > 
-> > > > 
-...
-> > > 
-> > > OK, so here are the stack traces you requested. First one is snapshot of
-> > > when compile got stuck, the 2nd one is when I interrupted make which
-> > > caused gcc to go to 'D' state.
-> > 
-> > There doesn't appear anything abnormal there.
-> > 
-> > It's going into D state after it has received an interrupt and sent it
-> > along to the userspace filesystem.  Then it will go into
-> > uninterruptible sleep until the answer is received.
-> > 
-> > So the hang is because the answer to an open request is not being
-> > received.  I can't tell where it got stuck, apparently not anywhere on
-> > the local machine.
-> > 
-> > Can you please get a log from sshfs with "-odebug,sshfs_debug" and
-> > redirect stderr to a file?  That might tell a bit more about the
-> > situation.  Or it might not...
+On Fri, Feb 25, 2011 at 08:04:59PM +0000, Mel Gorman wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> Hmm, it might be just the network itself, last night mutt in ssh session
-> froze on me as well. I guess I'll just have to finish my bisect
-> exercise.
+> compaction_alloc() isolates pages for migration in isolate_migratepages. While
+> it's scanning, IRQs are disabled on the mistaken assumption the scanning
+> should be short. Tests show this to be true for the most part but
+> contention times on the LRU lock can be increased. Before this patch,
+> the IRQ disabled times for a simple test looked like
 > 
+> Total sampled time IRQs off (not real total time): 5493
+> Event shrink_inactive_list..shrink_zone                  1596 us count 1
+> Event shrink_inactive_list..shrink_zone                  1530 us count 1
+> Event shrink_inactive_list..shrink_zone                   956 us count 1
+> Event shrink_inactive_list..shrink_zone                   541 us count 1
+> Event shrink_inactive_list..shrink_zone                   531 us count 1
+> Event split_huge_page..add_to_swap                        232 us count 1
+> Event save_args..call_softirq                              36 us count 1
+> Event save_args..call_softirq                              35 us count 2
+> Event __wake_up..__wake_up                                  1 us count 1
+> 
+> This patch reduces the worst-case IRQs-disabled latencies by releasing the
+> lock every SWAP_CLUSTER_MAX pages that are scanned and releasing the CPU if
+> necessary. The cost of this is that the processing performing compaction will
+> be slower but IRQs being disabled for too long a time has worse consequences
+> as the following report shows;
+> 
+> Total sampled time IRQs off (not real total time): 4367
+> Event shrink_inactive_list..shrink_zone                   881 us count 1
+> Event shrink_inactive_list..shrink_zone                   875 us count 1
+> Event shrink_inactive_list..shrink_zone                   868 us count 1
+> Event shrink_inactive_list..shrink_zone                   555 us count 1
+> Event split_huge_page..add_to_swap                        495 us count 1
+> Event compact_zone..compact_zone_order                    269 us count 1
+> Event split_huge_page..add_to_swap                        266 us count 1
+> Event shrink_inactive_list..shrink_zone                    85 us count 1
+> Event save_args..call_softirq                              36 us count 2
+> Event __wake_up..__wake_up                                  1 us count 1
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  mm/compaction.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 11d88a2..ec9eb0f 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -279,9 +279,27 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  	}
+>  
+>  	/* Time to isolate some pages for migration */
+> +	cond_resched();
+>  	spin_lock_irq(&zone->lru_lock);
+>  	for (; low_pfn < end_pfn; low_pfn++) {
+>  		struct page *page;
+> +		bool unlocked = false;
+> +
+> +		/* give a chance to irqs before checking need_resched() */
+> +		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
+> +			spin_unlock_irq(&zone->lru_lock);
+> +			unlocked = true;
+> +		}
+> +		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
 
-I finished bisecting and it turned out that the problematic commit
-happened to be in wireless (I have iwl3945):
+I am not sure it's good if we release the lock whenever lru->lock was contended
+unconditionally? There are many kinds of lru_lock operations(add to lru, 
+del from lru, isolation, reclaim, activation, deactivation and so on).
 
-commit 4cd06a344db752f513437138953af191cbe9a691
-Author: Felix Fietkau <nbd@openwrt.org>
-Date:   Sat Dec 18 19:30:49 2010 +0100
+Do we really need to release the lock whenever all such operations were contened?
+I think what we need is just spin_is_contended_irqcontext.
+Otherwise, please write down the comment for justifying for it.
 
-    mac80211: skip unnecessary pskb_expand_head calls
+> +			if (!unlocked)
+> +				spin_unlock_irq(&zone->lru_lock);
+> +			cond_resched();
+> +			spin_lock_irq(&zone->lru_lock);
+> +			if (fatal_signal_pending(current))
+> +				break;
 
-    If the skb is not cloned and we don't need any extra headroom, there
-    is no point in reallocating the skb head.
+This patch is for reducing for irq latency but do we have to check signal 
+in irq hold time?
 
-    Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-With this commit reverted from 2.6.38-rc3 I can not reproduce sshfs
-getting stuck here.
-
-Thanks.
+> +		} else if (unlocked)
+> +			spin_lock_irq(&zone->lru_lock);
+> +
+>  		if (!pfn_valid_within(low_pfn))
+>  			continue;
+>  		nr_scanned++;
+> -- 
+> 1.7.2.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Dmitry
+Kind regards,
+Minchan Kim
