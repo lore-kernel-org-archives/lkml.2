@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab1B1OuQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 09:50:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118Ab1B1OuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 09:50:15 -0500
-Date: Mon, 28 Feb 2011 15:50:09 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Dave Young <hidave.darkstar@gmail.com>
-cc: Josef Bacik <josef@redhat.com>, Theodore Tso <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ext2/3/4: punch support?
-In-Reply-To: <AANLkTimwpoi6agwO4q8qhOcohhSnYFrKhFOCnk0BuTEC@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1102281549050.5172@dhcp-27-109.brq.redhat.com>
-References: <AANLkTimyu6A=LgF8pit6So6JkPrScFLB42U3NwBJq7mv@mail.gmail.com> <20110228131118.GA18193@dhcp231-156.rdu.redhat.com> <AANLkTimwpoi6agwO4q8qhOcohhSnYFrKhFOCnk0BuTEC@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754580Ab1B1OvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 09:51:13 -0500
+Received: from mss-uk.mssgmbh.com ([217.174.251.109]:41912 "EHLO
+	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316Ab1B1OvM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 09:51:12 -0500
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: fix multithreaded signal handling in unix recv routines
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+Date: Mon, 28 Feb 2011 14:50:55 +0000
+Message-ID: <877hck43hs.fsf@sapphire.mobileactivedefense.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="571140353-850269878-1298904612=:5172"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
 
---571140353-850269878-1298904612=:5172
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+The unix_dgram_recvmsg and unix_stream_recvmsg routines in
+net/af_unix.c utilize mutex_lock(&u->readlock) calls in order to
+serialize read operations of multiple threads on a single socket. This
+implies that, if all n threads of a process block in an AF_UNIX recv
+call trying to read data from the same socket, one of these threads
+will be sleeping in state TASK_INTERRUPTIBLE and all others in state
+TASK_UNINTERRUPTIBLE. Provided that a particular signal is supposed to
+be handled by a signal handler defined by the process and that none of
+this threads is blocking the signal, the complete_signal routine in
+kernel/signal.c will select the 'first' such thread it happens to
+encounter when deciding which thread to notify that a signal is
+supposed to be handled and if this is one of the TASK_UNINTERRUPTIBLE
+threads, the signal won't be handled until the one thread not blocking
+on the u->readlock mutex is woken up because some data to process has
+arrived (if this ever happens). The included patch fixes this by
+changing mutex_lock to mutex_lock_interruptible and handling possible
+error returns in the same way interruptions are handled by the actual
+receive-code.
 
-On Mon, 28 Feb 2011, Dave Young wrote:
+Signed-off-by: Rainer Weikusat <rweikusat@mobileactivedefense.com>
 
-> On Mon, Feb 28, 2011 at 9:11 PM, Josef Bacik <josef@redhat.com> wrote:
-> > On Mon, Feb 28, 2011 at 03:03:40PM +0800, Dave Young wrote:
-> >> Hi, josef and ext guys
-> >>
-> >> Do you have any plan with ext4 hole punching support? And the
-> >> fallocate for ext2/3?
-> >>
-> >> What's the obstacle to work on this? could someone tell the status of
-> >> this issue?
-> >
-> > There is no obstacle, just nobody has bothered to do it.  If you want to do it
-> > go for it.  Thanks,
-> 
-> Yes, I want to do some kvm image space discard stuff,
-> I use ext4 as my filesystem, but currently only xfs support something
-> like trim/discard.
-
-Ext4 supports discard as well, actually batched discard support was
-added into ext4 before xfs :)
-
-Thanks!
--Lukas
-
-> 
-> I know general knowledge about ext filesystem, but nearly new to ext4 code,
-> could you give some hint where to start?
-> 
-> --
-> Thanks
-> dave
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
---571140353-850269878-1298904612=:5172--
+---
+diff -urp net-2.6/net/unix/af_unix.c net-2.6-patched//net/unix/af_unix.c
+--- net-2.6/net/unix/af_unix.c	2011-02-16 22:19:43.338358559 +0000
++++ net-2.6-patched//net/unix/af_unix.c	2011-02-16 22:38:39.483543598 +0000
+@@ -1724,7 +1724,11 @@ static int unix_dgram_recvmsg(struct kio
+ 
+ 	msg->msg_namelen = 0;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err) {
++		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
++		goto out;
++	}
+ 
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb) {
+@@ -1864,7 +1868,11 @@ static int unix_stream_recvmsg(struct ki
+ 		memset(&tmp_scm, 0, sizeof(tmp_scm));
+ 	}
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err) {
++		err = sock_intr_errno(timeo);
++		goto out;
++	}
+ 
+ 	do {
+ 		int chunk;
+@@ -1895,11 +1903,12 @@ static int unix_stream_recvmsg(struct ki
+ 
+ 			timeo = unix_stream_data_wait(sk, timeo);
+ 
+-			if (signal_pending(current)) {
++			if (signal_pending(current)
++			    ||  mutex_lock_interruptible(&u->readlock)) {
+ 				err = sock_intr_errno(timeo);
+ 				goto out;
+ 			}
+-			mutex_lock(&u->readlock);
++
+ 			continue;
+  unlock:
+ 			unix_state_unlock(sk);
