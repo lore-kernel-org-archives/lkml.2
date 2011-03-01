@@ -1,253 +1,631 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab1CAXN1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:13:27 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50083 "EHLO
+	id S1757370Ab1CAXNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:13:32 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63308 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756926Ab1CAXNY (ORCPT
+	with ESMTP id S1756971Ab1CAXN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:13:24 -0500
+	Tue, 1 Mar 2011 18:13:29 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org
-Subject: [PATCH 7/7] ipx: remove the BKL
-Date: Wed,  2 Mar 2011 00:13:11 +0100
-Message-Id: <1299021191-17961-8-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>,
+        Max Vozeler <max@vozeler.com>
+Subject: [PATCH 1/7] staging/usbip: convert to kthread
+Date: Wed,  2 Mar 2011 00:13:05 +0100
+Message-Id: <1299021191-17961-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299021191-17961-1-git-send-email-arnd@arndb.de>
 References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:f5yef9V3ktjmxZPgGfGW3bV2xCUXm6NVsAWtoGQUZrr
- qxVIhltMJnEYX7TWyfr4EehTuxioJmiFs5RZ6Grz1VobnZ1pM9
- a8YBj4WmAGVPURJ02+YeMsklrTHFdV9syQP97CUew1faVGELhr
- 14xBvPpJn+WEw2hIB/uSTZSTdgIE+xtrKbxx7cwMfzd+H5tIvb
- 9k1wsM5AYQznByUQvftzA==
+X-Provags-ID: V02:K0:cGn/f6+0YWuAoRd70G8EYtweBz1BWP9XrgZAUURL+ES
+ YcLE2uiTgc1D686Oyc2Szom4am1NCHRrva/6s3Xf1i3YqqSnZk
+ 7BanOjn8oCWiBrO3F5BCn0NtE0mNgN0/vl8wBg2jPW9l8EVVYO
+ afTpKOOjOXdW62KKLIm8fvC4DUuOyQCN+bbKrMPfJv7eYvY4mF
+ iwqIHoXA92BPfUk/rxoJw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces all instances of lock_kernel in the
-IPX code with lock_sock. As far as I can tell, this
-is safe to do, because there is no global state
-that needs to be locked in IPX, and the code does
-not recursively take the lock or sleep indefinitely
-while holding it.
+usbip has its own infrastructure for managing kernel
+threads, similar to kthread. By changing it to use
+the standard functions, we can simplify the code
+and get rid of one of the last BKL users at the
+same time.
 
-Compile-tested only.
+Includes changes suggested by Max Vozeler.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: netdev@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+Cc: Max Vozeler <max@vozeler.com>
 ---
- net/ipx/Kconfig  |    1 -
- net/ipx/af_ipx.c |   52 ++++++++++++++++++++--------------------------------
- 2 files changed, 20 insertions(+), 33 deletions(-)
+ drivers/staging/usbip/Kconfig        |    2 +-
+ drivers/staging/usbip/stub.h         |    4 +-
+ drivers/staging/usbip/stub_dev.c     |   12 ++--
+ drivers/staging/usbip/stub_rx.c      |   13 ++---
+ drivers/staging/usbip/stub_tx.c      |   17 +++---
+ drivers/staging/usbip/usbip_common.c |  105 ----------------------------------
+ drivers/staging/usbip/usbip_common.h |   20 +------
+ drivers/staging/usbip/usbip_event.c  |   38 ++++--------
+ drivers/staging/usbip/vhci.h         |    4 +-
+ drivers/staging/usbip/vhci_hcd.c     |   10 ++-
+ drivers/staging/usbip/vhci_rx.c      |   16 ++---
+ drivers/staging/usbip/vhci_sysfs.c   |    9 +--
+ drivers/staging/usbip/vhci_tx.c      |   17 +++---
+ 13 files changed, 64 insertions(+), 203 deletions(-)
 
-diff --git a/net/ipx/Kconfig b/net/ipx/Kconfig
-index 02549cb..e9ad006 100644
---- a/net/ipx/Kconfig
-+++ b/net/ipx/Kconfig
-@@ -3,7 +3,6 @@
- #
- config IPX
- 	tristate "The IPX protocol"
--	depends on BKL # should be fixable
- 	select LLC
+diff --git a/drivers/staging/usbip/Kconfig b/drivers/staging/usbip/Kconfig
+index b11ec37..2c1d10a 100644
+--- a/drivers/staging/usbip/Kconfig
++++ b/drivers/staging/usbip/Kconfig
+@@ -1,6 +1,6 @@
+ config USB_IP_COMMON
+ 	tristate "USB IP support (EXPERIMENTAL)"
+-	depends on USB && NET && EXPERIMENTAL && BKL
++	depends on USB && NET && EXPERIMENTAL
+ 	default N
  	---help---
- 	  This is support for the Novell networking protocol, IPX, commonly
-diff --git a/net/ipx/af_ipx.c b/net/ipx/af_ipx.c
-index da3d21c..2731b51 100644
---- a/net/ipx/af_ipx.c
-+++ b/net/ipx/af_ipx.c
-@@ -42,7 +42,6 @@
- #include <linux/uio.h>
+ 	  This enables pushing USB packets over IP to allow remote
+diff --git a/drivers/staging/usbip/stub.h b/drivers/staging/usbip/stub.h
+index d732679..6004fcd 100644
+--- a/drivers/staging/usbip/stub.h
++++ b/drivers/staging/usbip/stub.h
+@@ -95,13 +95,13 @@ extern struct kmem_cache *stub_priv_cache;
+ 
+ /* stub_tx.c */
+ void stub_complete(struct urb *);
+-void stub_tx_loop(struct usbip_task *);
++int stub_tx_loop(void *data);
+ 
+ /* stub_dev.c */
+ extern struct usb_driver stub_driver;
+ 
+ /* stub_rx.c */
+-void stub_rx_loop(struct usbip_task *);
++int stub_rx_loop(void *data);
+ void stub_enqueue_ret_unlink(struct stub_device *, __u32, __u32);
+ 
+ /* stub_main.c */
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index a7ce51c..8214c35 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -18,6 +18,7 @@
+  */
+ 
  #include <linux/slab.h>
- #include <linux/skbuff.h>
--#include <linux/smp_lock.h>
- #include <linux/socket.h>
- #include <linux/sockios.h>
- #include <linux/string.h>
-@@ -1299,7 +1298,7 @@ static int ipx_setsockopt(struct socket *sock, int level, int optname,
- 	int opt;
- 	int rc = -EINVAL;
++#include <linux/kthread.h>
  
--	lock_kernel();
-+	lock_sock(sk);
- 	if (optlen != sizeof(int))
- 		goto out;
+ #include "usbip_common.h"
+ #include "stub.h"
+@@ -138,7 +139,8 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
  
-@@ -1314,7 +1313,7 @@ static int ipx_setsockopt(struct socket *sock, int level, int optname,
- 	ipx_sk(sk)->type = opt;
- 	rc = 0;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return rc;
+ 		spin_unlock(&sdev->ud.lock);
+ 
+-		usbip_start_threads(&sdev->ud);
++		sdev->ud.tcp_rx = kthread_run(stub_rx_loop, &sdev->ud, "stub_rx");
++		sdev->ud.tcp_tx = kthread_run(stub_tx_loop, &sdev->ud, "stub_tx");
+ 
+ 		spin_lock(&sdev->ud.lock);
+ 		sdev->ud.status = SDEV_ST_USED;
+@@ -218,7 +220,8 @@ static void stub_shutdown_connection(struct usbip_device *ud)
+ 	}
+ 
+ 	/* 1. stop threads */
+-	usbip_stop_threads(ud);
++	kthread_stop(ud->tcp_rx);
++	kthread_stop(ud->tcp_tx);
+ 
+ 	/* 2. close the socket */
+ 	/*
+@@ -336,9 +339,6 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
+ 	 */
+ 	sdev->devid     = (busnum << 16) | devnum;
+ 
+-	usbip_task_init(&sdev->ud.tcp_rx, "stub_rx", stub_rx_loop);
+-	usbip_task_init(&sdev->ud.tcp_tx, "stub_tx", stub_tx_loop);
+-
+ 	sdev->ud.side = USBIP_STUB;
+ 	sdev->ud.status = SDEV_ST_AVAILABLE;
+ 	/* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
+@@ -543,7 +543,7 @@ static void stub_disconnect(struct usb_interface *interface)
+ 	stub_remove_files(&interface->dev);
+ 
+ 	/*If usb reset called from event handler*/
+-	if (busid_priv->sdev->ud.eh.thread == current) {
++	if (busid_priv->sdev->ud.eh == current) {
+ 		busid_priv->interf_count--;
+ 		return;
+ 	}
+diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
+index ae6ac82..6445f12 100644
+--- a/drivers/staging/usbip/stub_rx.c
++++ b/drivers/staging/usbip/stub_rx.c
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/kthread.h>
+ 
+ #include "usbip_common.h"
+ #include "stub.h"
+@@ -616,19 +617,15 @@ static void stub_rx_pdu(struct usbip_device *ud)
+ 
  }
  
-@@ -1326,7 +1325,7 @@ static int ipx_getsockopt(struct socket *sock, int level, int optname,
- 	int len;
- 	int rc = -ENOPROTOOPT;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	if (!(level == SOL_IPX && optname == IPX_TYPE))
- 		goto out;
- 
-@@ -1347,7 +1346,7 @@ static int ipx_getsockopt(struct socket *sock, int level, int optname,
- 
- 	rc = 0;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return rc;
- }
- 
-@@ -1396,7 +1395,7 @@ static int ipx_release(struct socket *sock)
- 	if (!sk)
- 		goto out;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	if (!sock_flag(sk, SOCK_DEAD))
- 		sk->sk_state_change(sk);
- 
-@@ -1404,7 +1403,7 @@ static int ipx_release(struct socket *sock)
- 	sock->sk = NULL;
- 	sk_refcnt_debug_release(sk);
- 	ipx_destroy_socket(sk);
--	unlock_kernel();
-+	release_sock(sk);
- out:
- 	return 0;
- }
-@@ -1530,11 +1529,12 @@ out:
- 
- static int ipx_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+-void stub_rx_loop(struct usbip_task *ut)
++int stub_rx_loop(void *data)
  {
-+	struct sock *sk = sock->sk;
- 	int rc;
+-	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_rx);
+-
+-	while (1) {
+-		if (signal_pending(current)) {
+-			usbip_dbg_stub_rx("signal caught!\n");
+-			break;
+-		}
++	struct usbip_device *ud = data;
  
--	lock_kernel();
-+	lock_sock(sk);
- 	rc = __ipx_bind(sock, uaddr, addr_len);
--	unlock_kernel();
-+	release_sock(sk);
++	while (!kthread_should_stop()) {
+ 		if (usbip_event_happened(ud))
+ 			break;
  
- 	return rc;
+ 		stub_rx_pdu(ud);
+ 	}
++	return 0;
  }
-@@ -1551,7 +1551,7 @@ static int ipx_connect(struct socket *sock, struct sockaddr *uaddr,
- 	sk->sk_state	= TCP_CLOSE;
- 	sock->state 	= SS_UNCONNECTED;
+diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
+index d7136e2..5523f25 100644
+--- a/drivers/staging/usbip/stub_tx.c
++++ b/drivers/staging/usbip/stub_tx.c
+@@ -18,6 +18,7 @@
+  */
  
--	lock_kernel();
-+	lock_sock(sk);
- 	if (addr_len != sizeof(*addr))
- 		goto out;
- 	addr = (struct sockaddr_ipx *)uaddr;
-@@ -1598,7 +1598,7 @@ static int ipx_connect(struct socket *sock, struct sockaddr *uaddr,
- 		ipxrtr_put(rt);
- 	rc = 0;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return rc;
+ #include <linux/slab.h>
++#include <linux/kthread.h>
+ 
+ #include "usbip_common.h"
+ #include "stub.h"
+@@ -333,17 +334,12 @@ static int stub_send_ret_unlink(struct stub_device *sdev)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-void stub_tx_loop(struct usbip_task *ut)
++int stub_tx_loop(void *data)
+ {
+-	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_tx);
++	struct usbip_device *ud = data;
+ 	struct stub_device *sdev = container_of(ud, struct stub_device, ud);
+ 
+-	while (1) {
+-		if (signal_pending(current)) {
+-			usbip_dbg_stub_tx("signal catched\n");
+-			break;
+-		}
+-
++	while (!kthread_should_stop()) {
+ 		if (usbip_event_happened(ud))
+ 			break;
+ 
+@@ -369,6 +365,9 @@ void stub_tx_loop(struct usbip_task *ut)
+ 
+ 		wait_event_interruptible(sdev->tx_waitq,
+ 				(!list_empty(&sdev->priv_tx) ||
+-				 !list_empty(&sdev->unlink_tx)));
++				 !list_empty(&sdev->unlink_tx) ||
++				 kthread_should_stop()));
+ 	}
++
++	return 0;
  }
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index 210ef16..337abc4 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -18,7 +18,6 @@
+  */
  
-@@ -1614,7 +1614,7 @@ static int ipx_getname(struct socket *sock, struct sockaddr *uaddr,
+ #include <linux/kernel.h>
+-#include <linux/smp_lock.h>
+ #include <linux/file.h>
+ #include <linux/tcp.h>
+ #include <linux/in.h>
+@@ -349,110 +348,6 @@ void usbip_dump_header(struct usbip_header *pdu)
+ }
+ EXPORT_SYMBOL_GPL(usbip_dump_header);
  
- 	*uaddr_len = sizeof(struct sockaddr_ipx);
- 
+-
+-/*-------------------------------------------------------------------------*/
+-/* thread routines */
+-
+-int usbip_thread(void *param)
+-{
+-	struct usbip_task *ut = param;
+-
+-	if (!ut)
+-		return -EINVAL;
+-
 -	lock_kernel();
-+	lock_sock(sk);
- 	if (peer) {
- 		rc = -ENOTCONN;
- 		if (sk->sk_state != TCP_ESTABLISHED)
-@@ -1649,19 +1649,7 @@ static int ipx_getname(struct socket *sock, struct sockaddr *uaddr,
- 
- 	rc = 0;
- out:
+-	daemonize(ut->name);
+-	allow_signal(SIGKILL);
+-	ut->thread = current;
 -	unlock_kernel();
--	return rc;
+-
+-	/* srv.rb must wait for rx_thread starting */
+-	complete(&ut->thread_done);
+-
+-	/* start of while loop */
+-	ut->loop_ops(ut);
+-
+-	/* end of loop */
+-	ut->thread = NULL;
+-
+-	complete_and_exit(&ut->thread_done, 0);
 -}
 -
--static unsigned int ipx_datagram_poll(struct file *file, struct socket *sock,
--			   poll_table *wait)
+-static void stop_rx_thread(struct usbip_device *ud)
 -{
--	int rc;
+-	if (ud->tcp_rx.thread != NULL) {
+-		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
+-		wait_for_completion(&ud->tcp_rx.thread_done);
+-		usbip_udbg("rx_thread for ud %p has finished\n", ud);
+-	}
+-}
 -
--	lock_kernel();
--	rc = datagram_poll(file, sock, wait);
--	unlock_kernel();
+-static void stop_tx_thread(struct usbip_device *ud)
+-{
+-	if (ud->tcp_tx.thread != NULL) {
+-		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
+-		wait_for_completion(&ud->tcp_tx.thread_done);
+-		usbip_udbg("tx_thread for ud %p has finished\n", ud);
+-	}
+-}
 -
-+	release_sock(sk);
- 	return rc;
+-int usbip_start_threads(struct usbip_device *ud)
+-{
+-	/*
+-	 * threads are invoked per one device (per one connection).
+-	 */
+-	struct task_struct *th;
+-	int err = 0;
+-
+-	th = kthread_run(usbip_thread, (void *)&ud->tcp_rx, "usbip");
+-	if (IS_ERR(th)) {
+-		printk(KERN_WARNING
+-			"Unable to start control thread\n");
+-		err = PTR_ERR(th);
+-		goto ust_exit;
+-	}
+-
+-	th = kthread_run(usbip_thread, (void *)&ud->tcp_tx, "usbip");
+-	if (IS_ERR(th)) {
+-		printk(KERN_WARNING
+-			"Unable to start control thread\n");
+-		err = PTR_ERR(th);
+-		goto tx_thread_err;
+-	}
+-
+-	/* confirm threads are starting */
+-	wait_for_completion(&ud->tcp_rx.thread_done);
+-	wait_for_completion(&ud->tcp_tx.thread_done);
+-
+-	return 0;
+-
+-tx_thread_err:
+-	stop_rx_thread(ud);
+-
+-ust_exit:
+-	return err;
+-}
+-EXPORT_SYMBOL_GPL(usbip_start_threads);
+-
+-void usbip_stop_threads(struct usbip_device *ud)
+-{
+-	/* kill threads related to this sdev, if v.c. exists */
+-	stop_rx_thread(ud);
+-	stop_tx_thread(ud);
+-}
+-EXPORT_SYMBOL_GPL(usbip_stop_threads);
+-
+-void usbip_task_init(struct usbip_task *ut, char *name,
+-		void (*loop_ops)(struct usbip_task *))
+-{
+-	ut->thread = NULL;
+-	init_completion(&ut->thread_done);
+-	ut->name = name;
+-	ut->loop_ops = loop_ops;
+-}
+-EXPORT_SYMBOL_GPL(usbip_task_init);
+-
+-
+ /*-------------------------------------------------------------------------*/
+ /* socket routines */
+ 
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index d280e23..9f809c3 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -307,13 +307,6 @@ void usbip_dump_header(struct usbip_header *pdu);
+ 
+ struct usbip_device;
+ 
+-struct usbip_task {
+-	struct task_struct *thread;
+-	struct completion thread_done;
+-	char *name;
+-	void (*loop_ops)(struct usbip_task *);
+-};
+-
+ enum usbip_side {
+ 	USBIP_VHCI,
+ 	USBIP_STUB,
+@@ -346,8 +339,8 @@ struct usbip_device {
+ 
+ 	struct socket *tcp_socket;
+ 
+-	struct usbip_task tcp_rx;
+-	struct usbip_task tcp_tx;
++	struct task_struct *tcp_rx;
++	struct task_struct *tcp_tx;
+ 
+ 	/* event handler */
+ #define USBIP_EH_SHUTDOWN	(1 << 0)
+@@ -367,7 +360,7 @@ struct usbip_device {
+ #define	VDEV_EVENT_ERROR_MALLOC	(USBIP_EH_SHUTDOWN | USBIP_EH_UNUSABLE)
+ 
+ 	unsigned long event;
+-	struct usbip_task eh;
++	struct task_struct *eh;
+ 	wait_queue_head_t eh_waitq;
+ 
+ 	struct eh_ops {
+@@ -378,13 +371,6 @@ struct usbip_device {
+ };
+ 
+ 
+-void usbip_task_init(struct usbip_task *ut, char *,
+-				void (*loop_ops)(struct usbip_task *));
+-
+-int usbip_start_threads(struct usbip_device *ud);
+-void usbip_stop_threads(struct usbip_device *ud);
+-int usbip_thread(void *param);
+-
+ void usbip_pack_pdu(struct usbip_header *pdu, struct urb *urb, int cmd,
+ 								int pack);
+ 
+diff --git a/drivers/staging/usbip/usbip_event.c b/drivers/staging/usbip/usbip_event.c
+index af3832b..f4b287e 100644
+--- a/drivers/staging/usbip/usbip_event.c
++++ b/drivers/staging/usbip/usbip_event.c
+@@ -62,55 +62,43 @@ static int event_handler(struct usbip_device *ud)
+ 	return 0;
  }
  
-@@ -1736,7 +1724,7 @@ static int ipx_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	int rc = -EINVAL;
- 	int flags = msg->msg_flags;
+-static void event_handler_loop(struct usbip_task *ut)
++static int event_handler_loop(void *data)
+ {
+-	struct usbip_device *ud = container_of(ut, struct usbip_device, eh);
++	struct usbip_device *ud = data;
  
--	lock_kernel();
-+	lock_sock(sk);
- 	/* Socket gets bound below anyway */
- /*	if (sk->sk_zapped)
- 		return -EIO; */	/* Socket not bound */
-@@ -1788,7 +1776,7 @@ static int ipx_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	if (rc >= 0)
- 		rc = len;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return rc;
- }
+-	while (1) {
+-		if (signal_pending(current)) {
+-			usbip_dbg_eh("signal catched!\n");
+-			break;
+-		}
++	while (!kthread_should_stop()) {
++		wait_event_interruptible(ud->eh_waitq,
++					usbip_event_happened(ud) ||
++					kthread_should_stop());
++		usbip_dbg_eh("wakeup\n");
  
-@@ -1803,7 +1791,7 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct sk_buff *skb;
- 	int copied, rc;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	/* put the autobinding in */
- 	if (!ipxs->port) {
- 		struct sockaddr_ipx uaddr;
-@@ -1862,7 +1850,7 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- out_free:
- 	skb_free_datagram(sk, skb);
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return rc;
- }
- 
-@@ -1874,7 +1862,7 @@ static int ipx_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
- 	struct sock *sk = sock->sk;
- 	void __user *argp = (void __user *)arg;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	switch (cmd) {
- 	case TIOCOUTQ:
- 		amount = sk->sk_sndbuf - sk_wmem_alloc_get(sk);
-@@ -1937,7 +1925,7 @@ static int ipx_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
- 		rc = -ENOIOCTLCMD;
- 		break;
+ 		if (event_handler(ud) < 0)
+ 			break;
+-
+-		wait_event_interruptible(ud->eh_waitq,
+-					usbip_event_happened(ud));
+-		usbip_dbg_eh("wakeup\n");
  	}
--	unlock_kernel();
-+	release_sock(sk);
- 
- 	return rc;
++	return 0;
  }
-@@ -1984,7 +1972,7 @@ static const struct proto_ops ipx_dgram_ops = {
- 	.socketpair	= sock_no_socketpair,
- 	.accept		= sock_no_accept,
- 	.getname	= ipx_getname,
--	.poll		= ipx_datagram_poll,
-+	.poll		= datagram_poll,
- 	.ioctl		= ipx_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ipx_compat_ioctl,
+ 
+ int usbip_start_eh(struct usbip_device *ud)
+ {
+-	struct usbip_task *eh = &ud->eh;
+-	struct task_struct *th;
+-
+ 	init_waitqueue_head(&ud->eh_waitq);
+ 	ud->event = 0;
+ 
+-	usbip_task_init(eh, "usbip_eh", event_handler_loop);
+-
+-	th = kthread_run(usbip_thread, (void *)eh, "usbip");
+-	if (IS_ERR(th)) {
++	ud->eh = kthread_run(event_handler_loop, ud, "usbip_eh");
++	if (IS_ERR(ud->eh)) {
+ 		printk(KERN_WARNING
+ 			"Unable to start control thread\n");
+-		return PTR_ERR(th);
++		return PTR_ERR(ud->eh);
+ 	}
+-
+-	wait_for_completion(&eh->thread_done);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(usbip_start_eh);
+ 
+ void usbip_stop_eh(struct usbip_device *ud)
+ {
+-	struct usbip_task *eh = &ud->eh;
+-
+-	if (eh->thread == current)
++	if (ud->eh == current)
+ 		return; /* do not wait for myself */
+ 
+-	wait_for_completion(&eh->thread_done);
++	kthread_stop(ud->eh);
+ 	usbip_dbg_eh("usbip_eh has finished\n");
+ }
+ EXPORT_SYMBOL_GPL(usbip_stop_eh);
+diff --git a/drivers/staging/usbip/vhci.h b/drivers/staging/usbip/vhci.h
+index afc3b1a..d3f1e5f 100644
+--- a/drivers/staging/usbip/vhci.h
++++ b/drivers/staging/usbip/vhci.h
+@@ -113,8 +113,8 @@ extern struct attribute_group dev_attr_group;
+ /* vhci_hcd.c */
+ void rh_port_connect(int rhport, enum usb_device_speed speed);
+ void rh_port_disconnect(int rhport);
+-void vhci_rx_loop(struct usbip_task *ut);
+-void vhci_tx_loop(struct usbip_task *ut);
++int vhci_rx_loop(void *data);
++int vhci_tx_loop(void *data);
+ 
+ struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
+ 					    __u32 seqnum);
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index a35fe61..36ae9fb 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/kthread.h>
+ 
+ #include "usbip_common.h"
+ #include "vhci.h"
+@@ -874,7 +875,10 @@ static void vhci_shutdown_connection(struct usbip_device *ud)
+ 		kernel_sock_shutdown(ud->tcp_socket, SHUT_RDWR);
+ 	}
+ 
+-	usbip_stop_threads(&vdev->ud);
++	/* kill threads related to this sdev, if v.c. exists */
++	kthread_stop(vdev->ud.tcp_rx);
++	kthread_stop(vdev->ud.tcp_tx);
++
+ 	usbip_uinfo("stop threads\n");
+ 
+ 	/* active connection is closed */
+@@ -945,8 +949,8 @@ static void vhci_device_init(struct vhci_device *vdev)
+ {
+ 	memset(vdev, 0, sizeof(*vdev));
+ 
+-	usbip_task_init(&vdev->ud.tcp_rx, "vhci_rx", vhci_rx_loop);
+-	usbip_task_init(&vdev->ud.tcp_tx, "vhci_tx", vhci_tx_loop);
++	vdev->ud.tcp_rx = kthread_create(vhci_rx_loop, &vdev->ud, "vhci_rx");
++	vdev->ud.tcp_tx = kthread_create(vhci_tx_loop, &vdev->ud, "vhci_tx");
+ 
+ 	vdev->ud.side   = USBIP_VHCI;
+ 	vdev->ud.status = VDEV_ST_NULL;
+diff --git a/drivers/staging/usbip/vhci_rx.c b/drivers/staging/usbip/vhci_rx.c
+index bf69914..09bf235 100644
+--- a/drivers/staging/usbip/vhci_rx.c
++++ b/drivers/staging/usbip/vhci_rx.c
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/kthread.h>
+ 
+ #include "usbip_common.h"
+ #include "vhci.h"
+@@ -269,22 +270,17 @@ static void vhci_rx_pdu(struct usbip_device *ud)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-void vhci_rx_loop(struct usbip_task *ut)
++int vhci_rx_loop(void *data)
+ {
+-	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_rx);
+-
+-
+-	while (1) {
+-		if (signal_pending(current)) {
+-			usbip_dbg_vhci_rx("signal catched!\n");
+-			break;
+-		}
++	struct usbip_device *ud = data;
+ 
+ 
++	while (!kthread_should_stop()) {
+ 		if (usbip_event_happened(ud))
+ 			break;
+ 
+ 		vhci_rx_pdu(ud);
+ 	}
+-}
+ 
++	return 0;
++}
+diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
+index f6e34e0..3f2459f 100644
+--- a/drivers/staging/usbip/vhci_sysfs.c
++++ b/drivers/staging/usbip/vhci_sysfs.c
+@@ -220,16 +220,13 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
+ 	vdev->ud.tcp_socket = socket;
+ 	vdev->ud.status     = VDEV_ST_NOTASSIGNED;
+ 
++	wake_up_process(vdev->ud.tcp_rx);
++	wake_up_process(vdev->ud.tcp_tx);
++
+ 	spin_unlock(&vdev->ud.lock);
+ 	spin_unlock(&the_controller->lock);
+ 	/* end the lock */
+ 
+-	/*
+-	 * this function will sleep, so should be out of the lock. but, it's ok
+-	 * because we already marked vdev as being used. really?
+-	 */
+-	usbip_start_threads(&vdev->ud);
+-
+ 	rh_port_connect(rhport, speed);
+ 
+ 	return count;
+diff --git a/drivers/staging/usbip/vhci_tx.c b/drivers/staging/usbip/vhci_tx.c
+index e1c1f71..d9ab49d 100644
+--- a/drivers/staging/usbip/vhci_tx.c
++++ b/drivers/staging/usbip/vhci_tx.c
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/kthread.h>
+ 
+ #include "usbip_common.h"
+ #include "vhci.h"
+@@ -215,17 +216,12 @@ static int vhci_send_cmd_unlink(struct vhci_device *vdev)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-void vhci_tx_loop(struct usbip_task *ut)
++int vhci_tx_loop(void *data)
+ {
+-	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_tx);
++	struct usbip_device *ud = data;
+ 	struct vhci_device *vdev = container_of(ud, struct vhci_device, ud);
+ 
+-	while (1) {
+-		if (signal_pending(current)) {
+-			usbip_uinfo("vhci_tx signal catched\n");
+-			break;
+-		}
+-
++	while (!kthread_should_stop()) {
+ 		if (vhci_send_cmd_submit(vdev) < 0)
+ 			break;
+ 
+@@ -234,8 +230,11 @@ void vhci_tx_loop(struct usbip_task *ut)
+ 
+ 		wait_event_interruptible(vdev->waitq_tx,
+ 				(!list_empty(&vdev->priv_tx) ||
+-				 !list_empty(&vdev->unlink_tx)));
++				 !list_empty(&vdev->unlink_tx) ||
++				 kthread_should_stop()));
+ 
+ 		usbip_dbg_vhci_tx("pending urbs ?, now wake up\n");
+ 	}
++
++	return 0;
+ }
 -- 
 1.7.1
 
