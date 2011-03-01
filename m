@@ -1,80 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1CAEml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 23:42:41 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:46095 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582Ab1CAEmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 23:42:39 -0500
-Date: Tue, 1 Mar 2011 15:42:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andres Salomon <dilinger@queued.net>
-Subject: linux-next: build warnings after merge of the mfd tree
-Message-Id: <20110301154230.df32be17.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__1_Mar_2011_15_42_30_+1100_soykBIbCO58_B0Rx"
+	id S1754348Ab1CAEpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 23:45:13 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40038 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673Ab1CAEpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 23:45:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=daTKlNYdWhV/2YdD/JUcPp16U/dXYEBW8H7eEvSjjFDpFgJ4kngPmuVfuk25Ma0Bgc
+         NqwzAzDBQIMyzQPHPp41Eb/6fKkHZvOr5+xLeHtvOS5DeYdV3FgBryeUvQBZDiTF+gHU
+         Om8RlZFm3CmA82X+IKjOV9K7/8bk+WGdb59hc=
+Date: Tue, 1 Mar 2011 13:44:55 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v5 9/9] memcg: check memcg dirty limits in page
+ writeback
+Message-ID: <20110301044455.GB2107@barrios-desktop>
+References: <1298669760-26344-1-git-send-email-gthelen@google.com>
+ <1298669760-26344-10-git-send-email-gthelen@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298669760-26344-10-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Mar_2011_15_42_30_+1100_soykBIbCO58_B0Rx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 25, 2011 at 01:36:00PM -0800, Greg Thelen wrote:
+> If the current process is in a non-root memcg, then
+> balance_dirty_pages() will consider the memcg dirty limits as well as
+> the system-wide limits.  This allows different cgroups to have distinct
+> dirty limits which trigger direct and background writeback at different
+> levels.
+> 
+> If called with a mem_cgroup, then throttle_vm_writeout() should query
+> the given cgroup for its dirty memory usage limits.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+  
+<snip>
 
-Hi Samuel,
+>  /*
+> @@ -477,12 +502,14 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+>   * data.  It looks at the number of dirty pages in the machine and will force
+>   * the caller to perform writeback if the system is over `vm_dirty_ratio'.
+>   * If we're over `background_thresh' then the writeback threads are woken to
+> - * perform some writeout.
+> + * perform some writeout.  The current task may have per-memcg dirty
+> + * limits, which are also checked.
+>   */
+>  static void balance_dirty_pages(struct address_space *mapping,
+>  				unsigned long write_chunk)
+>  {
+>  	struct dirty_info sys_info;
+> +	struct dirty_info memcg_info;
+>  	long bdi_nr_reclaimable;
+>  	long bdi_nr_writeback;
+>  	unsigned long bdi_thresh;
+> @@ -500,18 +527,27 @@ static void balance_dirty_pages(struct address_space *mapping,
+>  		};
+>  
+>  		global_dirty_info(&sys_info);
+> +		if (!memcg_dirty_info(NULL, &memcg_info))
+> +			memcg_info = sys_info;
 
-After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-produced these warnings:
 
-drivers/video/tmiofb.c: In function 'tmiofb_hw_init':
-drivers/video/tmiofb.c:270: warning: initialization discards qualifiers fro=
-m pointer target type
-drivers/video/tmiofb.c: In function 'tmiofb_hw_mode':
-drivers/video/tmiofb.c:314: warning: initialization discards qualifiers fro=
-m pointer target type
-drivers/video/tmiofb.c:314: warning: unused variable 'cell'
-drivers/video/tmiofb.c: In function 'tmiofb_probe':
-drivers/video/tmiofb.c:683: warning: initialization discards qualifiers fro=
-m pointer target type
-drivers/video/tmiofb.c: In function 'tmiofb_remove':
-drivers/video/tmiofb.c:811: warning: initialization discards qualifiers fro=
-m pointer target type
-drivers/video/tmiofb.c: In function 'tmiofb_suspend':
-drivers/video/tmiofb.c:941: warning: initialization discards qualifiers fro=
-m pointer target type
-drivers/video/tmiofb.c: In function 'tmiofb_resume':
-drivers/video/tmiofb.c:973: warning: initialization discards qualifiers fro=
-m pointer target type
+Sigh.
 
-Introduced by commits 2a79bb1d72f5ac22dff96de340d90d512f852ecb ("mfd:
-mfd_cell is now implicitly available to tc6393xb drivers") and
-b6361637190e6cb7acb84509499942ada69e7136 ("fb: Use mfd_data instead of
-driver_data for tmio-fb").
+I don't like dobule check in case of no-memcg configuration or root memcgroup.
+"Dobule check" means 1) sys_info check and 2) memcg_info check but it's same so
+second check is redundant. 
+In addition, we always need same logic between global and memcg.
+It adds binary bloating.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>  
+>  		/*
+>  		 * Throttle it only when the background writeback cannot
+>  		 * catch-up. This avoids (excessively) small writeouts
+>  		 * when the bdi limits are ramping up.
+>  		 */
+> -		if (dirty_info_reclaimable(&sys_info) + sys_info.nr_writeback <=
+> +		if ((dirty_info_reclaimable(&sys_info) +
+> +		     sys_info.nr_writeback <=
+>  				(sys_info.background_thresh +
+> -				 sys_info.dirty_thresh) / 2)
+> +				 sys_info.dirty_thresh) / 2) &&
+> +		    (dirty_info_reclaimable(&memcg_info) +
+> +		     memcg_info.nr_writeback <=
+> +				(memcg_info.background_thresh +
+> +				 memcg_info.dirty_thresh) / 2))
+>  			break;
+>  
+> -		bdi_thresh = bdi_dirty_limit(bdi, sys_info.dirty_thresh);
+> +		bdi_thresh = bdi_dirty_limit(bdi,
+> +				min(sys_info.dirty_thresh,
+> +				    memcg_info.dirty_thresh));
+>  		bdi_thresh = task_dirty_limit(current, bdi_thresh);
+>  
+>  		/*
+> @@ -541,7 +577,9 @@ static void balance_dirty_pages(struct address_space *mapping,
+>  		dirty_exceeded =
+>  			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
+>  			|| (dirty_info_reclaimable(&sys_info) +
+> -			     sys_info.nr_writeback > sys_info.dirty_thresh);
+> +			    sys_info.nr_writeback > sys_info.dirty_thresh)
+> +			|| (dirty_info_reclaimable(&memcg_info) +
+> +			    memcg_info.nr_writeback > memcg_info.dirty_thresh);
+>  
+>  		if (!dirty_exceeded)
+>  			break;
+> @@ -559,7 +597,9 @@ static void balance_dirty_pages(struct address_space *mapping,
+>  		 * up.
+>  		 */
+>  		trace_wbc_balance_dirty_start(&wbc, bdi);
+> -		if (bdi_nr_reclaimable > bdi_thresh) {
+> +		if ((bdi_nr_reclaimable > bdi_thresh) ||
+> +		    (dirty_info_reclaimable(&memcg_info) >
+> +		     memcg_info.dirty_thresh)) {
 
---Signature=_Tue__1_Mar_2011_15_42_30_+1100_soykBIbCO58_B0Rx
-Content-Type: application/pgp-signature
+Why does memcg need this check?
+I guess bdi_thresh is the f(x), x = dirty_thresh and dirty_thresh is already memcg's one.
+So isn't it enough?
+I don't know the logic well but as I look at the comment, at least you change the behavior.
+Please write down why you need it and if you need it, please change comment, too.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+"
+ * Only move pages to writeback if this bdi is over its
+ * threshold otherwise wait until the disk writes catch
+ * up.
+"
 
-iQEcBAEBAgAGBQJNbHk2AAoJEDMEi1NhKgbsYRsH/jCd5Hr3XqDG9k0R7lCxTZbS
-S55jZiPqQyOASWWzwNajxyGmXVxBcAcsHmxeeRcQ9Gu/tVDkUdqbOzeskDDSnGKH
-q0PXzW8pjOmg0qHzcWrTQ7oojlrWrhkjNK1lnIjS8Dnpzg9CF5cHPJ2/kHve0We8
-vyq6HRD8KFEUJq1br7DYEYimefyoF05IcsBnNB1sXMrGIZePjULY0MyL5NaO0zt6
-2OvAYLfAbC3or0YIpRzZ7SCpxC5qhILRcamo2CO309fwDiPoHJukixbmtsP1GX8u
-qNgi25xw+W1UWYMbpoyfGmR3waye8PRb1aaubBx8180MEKZjXWj8FTODmU9cFjw=
-=m03S
------END PGP SIGNATURE-----
+>  			writeback_inodes_wb(&bdi->wb, &wbc);
+>  			pages_written += write_chunk - wbc.nr_to_write;
+>  			trace_wbc_balance_dirty_written(&wbc, bdi);
+> @@ -594,8 +634,10 @@ static void balance_dirty_pages(struct address_space *mapping,
+>  	 * background_thresh, to keep the amount of dirty memory low.
+>  	 */
+>  	if ((laptop_mode && pages_written) ||
+> -	    (!laptop_mode && (dirty_info_reclaimable(&sys_info) >
+> -			      sys_info.background_thresh)))
+> +	    (!laptop_mode && ((dirty_info_reclaimable(&sys_info) >
+> +			       sys_info.background_thresh) ||
+> +			      (dirty_info_reclaimable(&memcg_info) >
+> +			       memcg_info.background_thresh))))
+>  		bdi_start_background_writeback(bdi);
+>  }
+>  
+> @@ -653,12 +695,20 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+>  }
+>  EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
+>  
+> -void throttle_vm_writeout(gfp_t gfp_mask)
+> +/*
+> + * Throttle the current task if it is near dirty memory usage limits.
+> + * If @mem_cgroup is NULL or the root_cgroup, then use global dirty memory
+> + * information; otherwise use the per-memcg dirty limits.
+> + */
+> +void throttle_vm_writeout(gfp_t gfp_mask, struct mem_cgroup *mem_cgroup)
+>  {
+>  	struct dirty_info sys_info;
+> +	struct dirty_info memcg_info;
+>  
+>          for ( ; ; ) {
+>  		global_dirty_info(&sys_info);
+> +		if (!memcg_dirty_info(mem_cgroup, &memcg_info))
+> +			memcg_info = sys_info;
+>  
+>                  /*
+>                   * Boost the allowable dirty threshold a bit for page
+> @@ -666,9 +716,13 @@ void throttle_vm_writeout(gfp_t gfp_mask)
+>                   */
+>  		sys_info.dirty_thresh +=
+>  			sys_info.dirty_thresh / 10;      /* wheeee... */
+> +		memcg_info.dirty_thresh +=
+> +			memcg_info.dirty_thresh / 10;    /* wheeee... */
+>  
+> -		if (sys_info.nr_unstable_nfs +
+> -		    sys_info.nr_writeback <= sys_info.dirty_thresh)
+> +		if ((sys_info.nr_unstable_nfs +
+> +		     sys_info.nr_writeback <= sys_info.dirty_thresh) &&
+> +		    (memcg_info.nr_unstable_nfs +
+> +		     memcg_info.nr_writeback <= memcg_info.dirty_thresh))
+>  			break;
+>                  congestion_wait(BLK_RW_ASYNC, HZ/10);
+>  
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index ba11e28..f723242 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1927,7 +1927,7 @@ restart:
+>  					sc->nr_scanned - nr_scanned, sc))
+>  		goto restart;
+>  
+> -	throttle_vm_writeout(sc->gfp_mask);
+> +	throttle_vm_writeout(sc->gfp_mask, sc->mem_cgroup);
+>  }
+>  
+>  /*
+> -- 
+> 1.7.3.1
+> 
 
---Signature=_Tue__1_Mar_2011_15_42_30_+1100_soykBIbCO58_B0Rx--
+-- 
+Kind regards,
+Minchan Kim
