@@ -1,109 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1CAA2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 19:28:45 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35158 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753143Ab1CAA2n (ORCPT
+	id S1755062Ab1CAA3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 19:29:15 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:8036 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab1CAA3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 19:28:43 -0500
-Date: Mon, 28 Feb 2011 16:28:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, dhowells@redhat.com,
-        oleg@mail.hallyn.com, dlezcano@mail.hallyn.com,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 01/10] Add a user_namespace as creator/owner of
- uts_namespace
-Message-Id: <20110228162830.35a051a8.akpm@linux-foundation.org>
-In-Reply-To: <20110224150150.GA8262@mail.hallyn.com>
-References: <20110224150150.GA8262@mail.hallyn.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Feb 2011 19:29:14 -0500
+From: Simon Glass <sjg@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
+        Simon Glass <sjg@chromium.org>
+Subject: [RFC PATCH] ARM: Use generic BUG() handler
+Date: Mon, 28 Feb 2011 16:27:43 -0800
+Message-Id: <1298939263-16421-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011 15:01:51 +0000
-"Serge E. Hallyn" <serge@hallyn.com> wrote:
+I am looking for comments please on this patch.
 
-> Cc: oleg@mail.hallyn.com, dlezcano@mail.hallyn.com
+ARM uses its own BUG() handler which makes its output slightly different
+from other archtectures.
 
-I don't think those addresses do what you think they do.
+One of the problems is that the ARM implementation doesn't report the function
+with the BUG() in it, but always reports the PC being in __bug(). The generic
+implementation doesn't have this problem.
 
-> copy_process() handles CLONE_NEWUSER before the rest of the
-> namespaces.  So in the case of clone(CLONE_NEWUSER|CLONE_NEWUTS)
-> the new uts namespace will have the new user namespace as its
-> owner.  That is what we want, since we want root in that new
-> userns to be able to have privilege over it.
-> 
+Currently we get something like:
 
-Well this sucks.  Anyone who is reading this patch series really won't
-have a clue what any of it is for.  There's no context provided.
+kernel BUG at fs/proc/breakme.c:35!
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+...
+PC is at __bug+0x20/0x2c
 
-A useful way of thinking about this is to ask yourself "what will Linus
-think when this stuff hits his inbox".  If the answer is "he'll say
-wtf" then we're doing it wrong.
+With this patch it displays:
 
-Sigh.
+kernel BUG at fs/proc/breakme.c:35!
+Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
+...
+PC is at write_breakme+0xd0/0x1b4
 
-I shall (again) paste in the below text, which I snarfed from the wiki.
-Please check that it is complete, accurate and adequate.  If not,
-please send along replacement text.
+This implementation uses an undefined instruction to implement BUG, and sets up
+a bug table containing the relevant information.
 
+Also backtraces were reported slightly differently - so I have added a newline
+after the backtrace message, a space before the address, and ensured that the
+message appears even when CONFIG_ARM_UNWIND is defined. These are aimed at
+consistency between architectures, and may or may not be acceptable for ARM.
+In any case they may be best as a separate patch.
 
-: The expected course of development for user namespaces targeted
-: capabilities is laid out at https://wiki.ubuntu.com/UserNamespace.
-: 
-: Goals:
-: 
-: - Make it safe for an unprivileged user to unshare namespaces.  They
-:   will be privileged with respect to the new namespace, but this should
-:   only include resources which the unprivileged user already owns.
-: 
-: - Provide separate limits and accounting for userids in different
-:   namespaces.  
-: 
-: Status:
-: 
-:   Currently (as of 2.6.38) you can clone with the CLONE_NEWUSER flag to
-:   get a new user namespace if you have the CAP_SYS_ADMIN, CAP_SETUID, and
-:   CAP_SETGID capabilities.  What this gets you is a whole new set of
-:   userids, meaning that user 500 will have a different 'struct user' in
-:   your namespace than in other namespaces.  So any accounting information
-:   stored in struct user will be unique to your namespace.
-: 
-:   However, throughout the kernel there are checks which
-: 
-:   - simply check for a capability.  Since root in a child namespace
-:     has all capabilities, this means that a child namespace is not
-:     constrained.
-: 
-:   - simply compare uid1 == uid2.  Since these are the integer uids,
-:     uid 500 in namespace 1 will be said to be equal to uid 500 in
-:     namespace 2.  
-: 
-:   As a result, the lxc implementation at lxc.sf.net does not use user
-:   namespaces.  This is actually helpful because it leaves us free to
-:   develop user namespaces in such a way that, for some time, user
-:   namespaces may be unuseful.  
-: 
-: 
-: Bugs aside, this patchset is supposed to not at all affect systems which
-: are not actively using user namespaces, and only restrict what tasks in
-: child user namespace can do.  They begin to limit privilege to a user
-: namespace, so that root in a container cannot kill or ptrace tasks in the
-: parent user namespace, and can only get world access rights to files. 
-: Since all files currently belong to the initila user namespace, that means
-: that child user namespaces can only get world access rights to *all*
-: files.  While this temporarily makes user namespaces bad for system
-: containers, it starts to get useful for some sandboxing.
-: 
-: I've run the 'runltplite.sh' with and without this patchset and found no
-: difference.
+Change-Id: I515db9a04e98084e6bbb21c4a1d13579568a0904
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+---
+ arch/arm/Kconfig              |    4 ++++
+ arch/arm/include/asm/bug.h    |   40 +++++++++++++++++++++++++++++++++++++++-
+ arch/arm/kernel/traps.c       |   21 +++++++++++++++++++--
+ arch/arm/kernel/unwind.c      |    1 +
+ arch/arm/kernel/vmlinux.lds.S |   15 +++++++++++++--
+ 5 files changed, 76 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 26d45e5..d4fb0fb 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -191,6 +191,10 @@ config VECTORS_BASE
+ 	help
+ 	  The base address of exception vectors.
+ 
++config GENERIC_BUG
++	def_bool y
++	depends on BUG
++
+ source "init/Kconfig"
+ 
+ source "kernel/Kconfig.freezer"
+diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
+index 4d88425..bbbebe4 100644
+--- a/arch/arm/include/asm/bug.h
++++ b/arch/arm/include/asm/bug.h
+@@ -3,6 +3,40 @@
+ 
+ 
+ #ifdef CONFIG_BUG
++
++#ifdef CONFIG_GENERIC_BUG
++
++
++/* A suitable undefined instruction to use for ARM bug handling */
++#define BUG_INSTR_ARM 0xec000000
++
++
++#ifdef CONFIG_DEBUG_BUGVERBOSE
++#define BUG()							\
++do {								\
++	asm volatile("1:\t.word %c3\n"				\
++		     ".pushsection __bug_table,\"a\"\n"		\
++		     "2:\t.word 1b, %c0\n"			\
++		     "\t.hword %c1, 0\n"			\
++		     "\t.org 2b+%c2\n"				\
++		     ".popsection"				\
++		     :						\
++		     : "i" (__FILE__), "i" (__LINE__),		\
++		     "i" (sizeof(struct bug_entry)),		\
++		     "i" (BUG_INSTR_ARM));			\
++	unreachable();						\
++} while (0)
++
++#else
++#define BUG()							\
++do {								\
++	asm volatile("ud2");					\
++	unreachable();						\
++} while (0)
++#endif
++
++#else  /* not CONFIG_GENERIC_BUG */
++
+ #ifdef CONFIG_DEBUG_BUGVERBOSE
+ extern void __bug(const char *file, int line) __attribute__((noreturn));
+ 
+@@ -16,8 +50,12 @@ extern void __bug(const char *file, int line) __attribute__((noreturn));
+ 
+ #endif
+ 
++#endif  /* CONFIG_GENERIC_BUG */
++
+ #define HAVE_ARCH_BUG
+-#endif
++
++#endif /* CONFIG_BUG */
++
+ 
+ #include <asm-generic/bug.h>
+ 
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index ee57640..d5e5df9 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -21,6 +21,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/module.h>
+ #include <linux/kexec.h>
++#include <linux/bug.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ 
+@@ -55,7 +56,8 @@ static void dump_mem(const char *, const char *, unsigned long, unsigned long);
+ void dump_backtrace_entry(unsigned long where, unsigned long from, unsigned long frame)
+ {
+ #ifdef CONFIG_KALLSYMS
+-	printk("[<%08lx>] (%pS) from [<%08lx>] (%pS)\n", where, (void *)where, from, (void *)from);
++	printk(" [<%08lx>] (%pS) from [<%08lx>] (%pS)\n", where, (void *)where,
++	       from, (void *)from);
+ #else
+ 	printk("Function entered at [<%08lx>] from [<%08lx>]\n", where, from);
+ #endif
+@@ -171,7 +173,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ 	unsigned int fp, mode;
+ 	int ok = 1;
+ 
+-	printk("Backtrace: ");
++	printk("Backtrace:\n");
+ 
+ 	if (!tsk)
+ 		tsk = current;
+@@ -271,6 +273,8 @@ void die(const char *str, struct pt_regs *regs, int err)
+ 	spin_lock_irq(&die_lock);
+ 	console_verbose();
+ 	bust_spinlocks(1);
++	if (!user_mode(regs))
++		report_bug(regs->ARM_pc, regs);
+ 	ret = __die(str, err, thread, regs);
+ 
+ 	if (regs && kexec_should_crash(thread->task))
+@@ -302,6 +306,19 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
+ 	}
+ }
+ 
++int is_valid_bugaddr(unsigned long pc)
++{
++	unsigned bkpt;
++
++	if (pc < PAGE_OFFSET)
++		return 0;
++	if (probe_kernel_address((unsigned *)pc, bkpt))
++		return 0;
++
++	return bkpt == BUG_INSTR_ARM;
++}
++
++
+ static LIST_HEAD(undef_hook);
+ static DEFINE_SPINLOCK(undef_lock);
+ 
+diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+index d2cb0b3..3f065bd 100644
+--- a/arch/arm/kernel/unwind.c
++++ b/arch/arm/kernel/unwind.c
+@@ -355,6 +355,7 @@ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ 	register unsigned long current_sp asm ("sp");
+ 
+ 	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
++	printk("Backtrace:\n");
+ 
+ 	if (!tsk)
+ 		tsk = current;
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 86b66f3..591ab50 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -72,6 +72,18 @@ SECTIONS
+ 
+ 	PERCPU(PAGE_SIZE)
+ 
++	/*
++	 * .exit.text is discarded at runtime, not link time, to deal with
++	 *  references from bug_table
++	 */
++	.exit.text : AT(ADDR(.exit.text)) {
++		EXIT_TEXT
++	}
++
++	.exit.data : AT(ADDR(.exit.data)) {
++		EXIT_DATA
++	}
++
+ #ifndef CONFIG_XIP_KERNEL
+ 	. = ALIGN(PAGE_SIZE);
+ 	__init_end = .;
+@@ -246,7 +258,6 @@ SECTIONS
+ 		__tcm_end = .;
+ 	}
+ #endif
+-
+ 	BSS_SECTION(0, 0, 0)
+ 	_end = .;
+ 
+@@ -254,7 +265,7 @@ SECTIONS
+ 	.comment 0 : { *(.comment) }
+ 
+ 	/* Default discards */
+-	DISCARDS
++	/*DISCARDS*/
+ 
+ #ifndef CONFIG_SMP_ON_UP
+ 	/DISCARD/ : {
+-- 
+1.7.3.1
 
