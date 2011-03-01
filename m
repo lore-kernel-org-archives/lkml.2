@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab1CAD3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 22:29:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43190 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab1CAD3f convert rfc822-to-8bit (ORCPT
+	id S1753219Ab1CADhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 22:37:46 -0500
+Received: from qmta15.westchester.pa.mail.comcast.net ([76.96.59.228]:45270
+	"EHLO qmta15.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752800Ab1CADhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 22:29:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=jkB65TasIoad1iLXIoPfHOQvLdJ7mV/irWKFcvNftMfDTRumQec2CZYUe9XcfFqan9
-         zPddFUtFlkjtEpUViv+Q3/C1ouazIOpfcILOpWMmDCM/Hs7yhwLeLqsxEpZdkTjuHkV8
-         XR3awE2K8DN2b+fBsZV3iXctXbNOZU3su7W6Y=
+	Mon, 28 Feb 2011 22:37:45 -0500
+X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Feb 2011 22:37:45 EST
+Message-ID: <4D6C68A4.3020306@gentoo.org>
+Date: Mon, 28 Feb 2011 22:31:48 -0500
+From: Kumba <kumba@gentoo.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinV+bnSBe+5CSuYYCU4gCq9Z2c9ELdy-LFAvdf0@mail.gmail.com>
-References: <1298611140-21573-1-git-send-email-keng-yu.lin@canonical.com>
- <AANLkTim_JKQU9J3OJ0FRQ_ZVPktAPbnzr2t8SvhL2Uzj@mail.gmail.com>
- <20110225071827.GA14053@core.coreip.homeip.net> <AANLkTinV+bnSBe+5CSuYYCU4gCq9Z2c9ELdy-LFAvdf0@mail.gmail.com>
-From: =?UTF-8?B?S2VuZy1Zw7wgTGlu?= <keng-yu.lin@canonical.com>
-Date: Tue, 1 Mar 2011 11:29:15 +0800
-X-Google-Sender-Auth: Y7sjBqBdmPTpcV6P1CUUOk2CTsw
-Message-ID: <AANLkTi=GFz4i1Y7ok=2Zt9ApbeAc4zN4tbaKppqB_LGA@mail.gmail.com>
-Subject: Re: [PATCH] eeepc-wmi: set the touchpad toggle key code to F21
-To: Chris Bagwell <chris@cnpbagwell.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tyson.chen@canonical.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Subject: Can I nest kobjects to create directories under parent directories
+ for my driver?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 11:14 PM, Chris Bagwell <chris@cnpbagwell.com> wrote:
->
-> I submitted last month a patch to udev to do the scancode-to-F21
-> mapping.  So that part should be covered for near term.
->
-> I also agree if we are going to change kernel side, we should change
-> to KEY_TOUCHPAD_TOGGLE in both eeepc-laptop and eeepc-wmi.
->
-> http://git.kernel.org/?p=linux/hotplug/udev.git;a=commit;h=0d8b6be5f5238360d2d8e220d6da280f842c5358
->
-> Chris
->
+So I'm attempting to write my first kernel driver for an RTC chip (Dallas/Maxim 
+DS1685/DS1687), and running into a problem with using sysfs properly.  First 
+off, a patch for this specific RTC was sent int to rtc-linux about two years 
+ago, but never made it anywhere.  I based off of that and have pretty much 
+re-written the thing since then.  It's undergoing a second re-write after some 
+initial feedback from the rtc-linux folks.
 
-Thanks Chris for the information. I also tested; it works.
+What I'm trying to do, is, in sysfs, create individual attributes for the bits 
+in each control register.  DS1685 defines 6 control registers (4 are the 
+standard DS1286-style, and 2 are "extended" in another address bank).
 
-I will re-send a eeepc-wmi patch with KEY_TOUCHPAD_TOGGLE.
+I want to organize it such that:
+
+# ls /sys/devices/platform/rtc-ds1685/
+driver@  misc/  modalias  nvram  regs/  rtc/  subsystem@  uevent
+
+And in regs/:
+ctrla/  ctrlb/  ctrlc/  ctrld/  ctrl4a/  ctrl4b/
+
+And under each register folder, the available bits for that register.  When 
+read, each bit returns either a 0 or a 1, and certain bits can be made writable 
+to change their values.
+
+So I started investigating how to do this.  I first got it setup such that the 
+ctrla through ctrl4b folders appeared in the top-level folder 
+(/sys/devices/platform/rtc-ds1685).  Reading/writing to those worked fine.  But 
+when I changed my code to nest those attribute groups under a "regs" kobject, 
+any attempt to read or write the registers resulted in an Oops (or unaligned 
+access, page fault, etc).
+
+So far, I've determined that by attaching the "regs" kobject to the parent 
+dev->kobj, and then attaching each attribute group kobject to the "regs" 
+kobject, I lose the reference to the device structure holding all the relevant 
+data for the RTC.  Thus, when I try to readb() or writeb() the RTC registers, I 
+hit a NULL pointer and its lights out.
+
+So I know I'm doing it wrong.  Question is, how can I do it right?  I've already 
+looked into (and tried) ksets.  I'm not setting those up properly because I run 
+into the same issue in the custom "show" function I have to write out where I 
+don't have a valid reference to the live device structure.
+
+I've gone through the kobject and kset examples, polled through quite a few 
+drivers (some in drivers/rtc, some elsewhere), and looked over the sysfs, 
+kobject, and device headers.  But because I'm still learning, I'm not 100% what 
+I need to look for to accomplish this.  Everything else in the driver mostly 
+works.  All this kobject debugging pointed out a few improper uses of spinlocks, 
+and I optimized some other bits, but by and large, this thing is about ready to 
+ship to rtc-linux for review (again).
+
+I should add, I'm developing this on an SGI O2 (mips), which actually uses one 
+of these RTCs.  The O2 currently taps into the rtc-cmos driver, which appears to 
+provide baseline functionality.  None of my debugging points at flaws in the 
+mips base or in the RTC system, so I'm directing my inquiry here to see if 
+anyone has advice I can use to get this working.
+
+Are ksets what I need to use, or can I nest kobjects together to accomplish 
+things?  Or is there another way that I need to study up on?
+
+
+Thanks!
+
+-- 
+Joshua Kinard
+Gentoo/MIPS
+kumba@gentoo.org
+
+"The past tempts us, the present confuses us, the future frightens us.  And our 
+lives slip away, moment by moment, lost in that vast, terrible in-between."
+
+--Emperor Turhan, Centauri Republic
