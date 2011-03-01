@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab1CALhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 06:37:54 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64181 "EHLO
+	id S1756255Ab1CALni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 06:43:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:50756 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756217Ab1CALhx (ORCPT
+	with ESMTP id S1756167Ab1CALng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 06:37:53 -0500
+	Tue, 1 Mar 2011 06:43:36 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: james_p_freyensee@linux.intel.com
-Subject: Re: [PATCH 04/10] PTI Makefile and Kconfig additions.
-Date: Tue, 1 Mar 2011 12:37:50 +0100
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 3/8] Add a mfd IPUv3 driver
+Date: Tue, 1 Mar 2011 12:43:33 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        christophe.guerard@intel.com
-References: <james_p_freyensee@linux.intel.com> <201102281031.42402.arnd@arndb.de> <1298915373.3156.34.camel@localhost>
-In-Reply-To: <1298915373.3156.34.camel@localhost>
+Cc: linux-arm-kernel@lists.infradead.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <1298887229-7987-1-git-send-email-s.hauer@pengutronix.de> <201103011127.51605.arnd@arndb.de> <20110301111220.GN29521@pengutronix.de>
+In-Reply-To: <20110301111220.GN29521@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103011237.50400.arnd@arndb.de>
-X-Provags-ID: V02:K0:BOqaToE9FnZTittQqKZmvgabsiS0C6nIx9FE+AveXu3
- 7M3bWgl0SK5yIX4Q3CskKeyJ9V/M3gtDE0HyrrRfjpsi86Nq/Y
- rLDiFAyJRk9i/MkoRdQ/DFV5GnVVEvFnS01Z0aj+4ho5jMuX7W
- /X7L7PhejnTKc1Jo8KmHImnTD+lepXLq0y2qxyuAWkbisZv5hT
- vHnnqdVtJ5eQuI+zNBCNQ==
+Message-Id: <201103011243.33765.arnd@arndb.de>
+X-Provags-ID: V02:K0:fZRPXftdgsEIaA3+5+vEYgvnSN4Y9h1PMtTnMGP21g3
+ Gk7vww/iQWLWHWn9ZW8+hkg0+yJ1iZwD7NuQhfREDQKNU4MFdc
+ Lyz49Y6vXUrWsv53cmB7OJ88WKSdljxAHcA2HA3hkOy2WHdzQX
+ wYEhQHo48aot0BP/Ih++20bjqFcQwaEOK8+/0i94pGKc05P6PX
+ DmLfNGxGpI8MTdG2k+0cw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 28 February 2011, J Freyensee wrote:
-> On Mon, 2011-02-28 at 10:31 +0100, Arnd Bergmann wrote:
->
-> > The Kconfig description is a nice text, how about copying it to the
-> > changeset so that reviewers know what the driver is about?
-> > 
+On Tuesday 01 March 2011, Sascha Hauer wrote:
+> > Taking one step back from this, have you considered making this
+> > a regular interrupt controller? That would make the client drivers
+> > more standard -- you could define the interrupt numbers as resources
+> > of a platform device or in the device tree, for instance.
+> > The cost might be more complex code, e.g. when a device requires
+> > many interrupts, but I think it will be at least as efficient
+> > at run-time, and less surprising for readers and authors of
+> > client drivers.
 > 
-> I thought patch 02/10, 'Kernel documentation', would had been first and
-> met this need?  
+> I thought about this, but hesitated to increase NR_IRQS by 463. Do you
+> think we should do this instead?
 
-Documentation in source files is not the same as documentation in the
-changelog, you need both. The changeset comments are usually just one
-sentence in your series, and a little more would certainly be helpful.
-
-Also, if you have one changeset with the documentation, that does
-not help anyone who looks at another changeset.
+I think there is a plan to virtualize the interrupt numbers on ARM,
+and in that case NR_IRQS becomes rather meaningless. I don't know
+exactly how far that effort has come.
 
 	Arnd
