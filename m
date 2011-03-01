@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab1CAQnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:43:41 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55811 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756644Ab1CAQnj (ORCPT
+	id S1756450Ab1CAQpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:45:14 -0500
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:2679 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab1CAQpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:43:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stuart Menefy <stuart.menefy@st.com>
-Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Date: Tue, 1 Mar 2011 17:43:19 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Peppe CAVALLARO <peppe.cavallaro@st.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com> <201102241820.55873.arnd@arndb.de> <4D6D0EA3.9000504@st.com>
-In-Reply-To: <4D6D0EA3.9000504@st.com>
+	Tue, 1 Mar 2011 11:45:12 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EANKxbE2rR7Ht/2dsb2JhbACEKKIkdKBBiwWRIoEng0R2BIUShw2DQA
+X-IronPort-AV: E=Sophos;i="4.62,248,1297036800"; 
+   d="scan'208";a="337080158"
+Message-ID: <4D6D22A7.6000000@cisco.com>
+Date: Tue, 01 Mar 2011 09:45:27 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 3/6] perf record: add time-of-day option
+References: <1298865151-23656-1-git-send-email-daahern@cisco.com>	 <1298865151-23656-4-git-send-email-daahern@cisco.com>	 <1298989751.5226.863.camel@laptop>  <4D6D0438.2090901@cisco.com>	 <1298993714.5226.871.camel@laptop>  <4D6D13C6.5020807@cisco.com>	 <1298995250.5226.882.camel@laptop>  <4D6D1A4C.1090009@cisco.com> <1298997435.5226.890.camel@laptop>
+In-Reply-To: <1298997435.5226.890.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103011743.19847.arnd@arndb.de>
-X-Provags-ID: V02:K0:Ruo9ry3YiV1len4qCJjAiC7ENYvpcnZgIG78mN5DbkT
- Pv4GpONduLHJ9DKD5TN2+nXdNR9WEoNpTvwmVtwvRlp8yU0elR
- X36zw5iV5YUnRs1UZZK4YGLghhE09lu86/txWwmhhbly9dqGBw
- kVpaTGqpC3i9MefK0DFiNUe0zXA5l3A6WoU1C6fZodKkg8eb95
- PI0LbQ7lDS+Yd7ijTBKMA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 March 2011, Stuart Menefy wrote:
-> On 24/02/11 17:20, Arnd Bergmann wrote:
->
-> > Why is this code useful to you? In the scenarios I've seen, the
-> > board can always assign a timer to a specific device in a fixed
-> > way that can be describe in a board file or device tree.
+
+
+On 03/01/2011 09:37 AM, Peter Zijlstra wrote:
+> On Tue, 2011-03-01 at 09:09 -0700, David Ahern wrote:
+>>
+>> I did not code it create samples of a realtime-clock event; I coded it
+>> to add an event to the stream on demand -- whatever event the fd is
+>> tied to.
+>>
+>>
+> Well yes, but aside from you and the realtime clock stuff, who'd ever
+> want to do this particular thing?
+
+One example would be a system watchdog that decided for some reason or
+another to force an event sample because of some event it detected.
+
 > 
-> What we were trying to do was separate the code which actually manipulates
-> the timer hardware from the code which wants that timer service. In this
-> case it was a network device driver which is used on multiple SoC devices,
-> while the timer hardware tends to differ from device to device.
-
-Right. It certainly makes sense to have an well-defined interface between
-the user and the provider of a timer interrupt.
-
-> The other user of this code which we have is an OProfile driver, which
-> with this change can now be independent of the hardware it is running on,
-> while the previous version manipulated the timer hardware directly.
-
-Ok.
-
-> > Also, what is the difference between this and clkdev?
+> I'd much rather expose the whole
+> local_clock()/perf_clock()/trace_clock() (should all be the same anyway)
+> as a posix clock using CLOCK_TRACING or whatever would be an appropriate
+> name.
 > 
-> clkdev can be used to find a struct clk, which is fine if you just want to
-> read the time. In this instance we want to get interrupts from the timer
-> hardware, which isn't supported by the clk infrastructure.
+> [ Since the whole thing is NMI safe it should be well possible to make a
+> VDSO version as well. ]
+> 
+> Anyway, once its visible as a posix clock you can sync up from
+> userspace. And this clock is indeed wanted for other things too, like
+> user-space tracing etc.
+> 
 
-(adding Russell to Cc)
+And for some silly reason I sense a time trap here (pun intended) .....
 
-Is this something that could sensibly be added to clk/clkdev?
+So your pushback is:
+1. throw out the realtime-clock event patch,
 
-> If anything this duplicates clockevents. The main reason for not using
-> clockevents was that nobody else does! Currently clockevents are
-> used strictly for time keeping within the kernel, and most architectures
-> only register those which are intended to be used for this purpose.
-> We felt a bit nervous about adding code to register all the device's timers
-> as clockevents, and having the network device driver pick up one of those
-> for its own use.
+2. add a new CLOCK_TRACING type to clock_gettime with VDSO hook,
 
-I see. Using a clock_event_device for anything but the system timer tick
-is currently not supported, so it certainly would not be straightforward.
+3. and use a synthesized event from userspace for snapshotting
+perf_clock to time-of-day -- similar to what I have now, but one that
+will guarantee a time-of-day to perf_clock correlation (versus the
+current one which hopes that perf_clock is the monotonic clock).
 
-I think you need a bit of both, clkdev and clockevent. I think the
-options you have are:
-
-1. copy the clkdev code to make it possible to associate a device with
-a periodic timer.
-2. extend the clkdev/clk code to handle periodic interrupts and reuse
-the infrastructure there.
-3. extend the clockevent code to make it possible for regular device
-drivers to use a clockevent source.
-
-I have no idea which makes the most sense (or if there are other ideas).
-Maybe Russell, Thomas or John can comment.
-
-	Arnd
+David
