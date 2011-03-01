@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab1CAGya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 01:54:30 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:48767 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533Ab1CAGy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 01:54:29 -0500
-Date: Tue, 1 Mar 2011 17:54:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (devicetree
- tree related)
-Message-Id: <20110301175425.50296d21.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755552Ab1CAG6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 01:58:01 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61704 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab1CAG6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 01:58:00 -0500
+Message-ID: <4102429DCB2B4B47A4F51ED0B9A62E2B@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Cc: <sachi@mistralsolutions.com>, "Russell King" <linux@arm.linux.org.uk>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-3-git-send-email-subhasish@mistralsolutions.com> <B85A65D85D7EB246BE421B3FB0FBB593024BF35DEE@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BF35DEE@dbde02.ent.ti.com>
+Subject: Re: [PATCH v2 02/13] da850: pruss platform specific additions.
+Date: Tue, 1 Mar 2011 12:29:28 +0530
+Organization: Mistral Solutions
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Hello,
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+Can we not have the PRU UIO also as a part of the MFD framework.
+I know that the UIO is not really a device, but I feel its incorrect to 
+register the same device twice.
+Instead we can have a single entry as the MFD framework and the UIO, as a 
+child device, based upon the MFD driver APIs.
 
-drivers/mtd/nand/pasemi_nand.c:221: error: variable 'pasemi_nand_driver' has initializer but incomplete type
-drivers/mtd/nand/pasemi_nand.c:223: error: unknown field 'driver' specified in initializer
-drivers/mtd/nand/pasemi_nand.c:223: error: extra brace group at end of initializer
-drivers/mtd/nand/pasemi_nand.c:223: error: (near initialization for 'pasemi_nand_driver')
-drivers/mtd/nand/pasemi_nand.c:227: warning: excess elements in struct initializer
-drivers/mtd/nand/pasemi_nand.c:227: warning: (near initialization for 'pasemi_nand_driver')
-drivers/mtd/nand/pasemi_nand.c:228: error: unknown field 'probe' specified in initializer
-drivers/mtd/nand/pasemi_nand.c:228: warning: excess elements in struct initializer
-drivers/mtd/nand/pasemi_nand.c:228: warning: (near initialization for 'pasemi_nand_driver')
-drivers/mtd/nand/pasemi_nand.c:229: error: unknown field 'remove' specified in initializer
-drivers/mtd/nand/pasemi_nand.c:229: warning: excess elements in struct initializer
-drivers/mtd/nand/pasemi_nand.c:229: warning: (near initialization for 'pasemi_nand_driver')
-drivers/mtd/nand/pasemi_nand.c: In function 'pasemi_nand_init':
-drivers/mtd/nand/pasemi_nand.c:234: warning: passing argument 1 of 'platform_driver_register' from incompatible pointer type
-include/linux/platform_device.h:124: note: expected 'struct platform_driver *' but argument is of type 'struct latform_driver *'
-drivers/mtd/nand/pasemi_nand.c: In function 'pasemi_nand_exit':
-drivers/mtd/nand/pasemi_nand.c:240: warning: passing argument 1 of 'platform_driver_unregister' from incompatible pointer type
-include/linux/platform_device.h:125: note: expected 'struct platform_driver *' but argument is of type 'struct latform_driver *'
+All that we need to do is add an entry into the da8xx_pruss_devices 
+structure
+and the MFD driver will do the rest to get the UIO probe called.
 
-Caused by commit ac677e82cd5c031a010458304821bb8b1e47cf24 ("dt: Eliminate
-of_platform_{,un}register_driver").  Looks like a typo to me :-)
+--------------------------------------------------
+From: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+Sent: Monday, February 28, 2011 6:34 PM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>; 
+<davinci-linux-open-source@linux.davincidsp.com>
+Cc: <sachi@mistralsolutions.com>; "Russell King" <linux@arm.linux.org.uk>; 
+"Kevin Hilman" <khilman@deeprootsystems.com>; "open list" 
+<linux-kernel@vger.kernel.org>; "Watkins, Melissa" <m-watkins@ti.com>; 
+<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v2 02/13] da850: pruss platform specific additions.
 
-I applied this patch for today:
+> Hi,
+>
+>> -----Original Message-----
+>> From: davinci-linux-open-source-bounces@linux.davincidsp.com
+>> [mailto:davinci-linux-open-source-bounces@linux.davincidsp.com] On Behalf
+>> Of Subhasish Ghosh
+>> Sent: Friday, February 11, 2011 8:21 PM
+>> To: davinci-linux-open-source@linux.davincidsp.com
+>> Cc: sachi@mistralsolutions.com; Russell King; Kevin Hilman; Subhasish
+>> Ghosh; open list; Watkins, Melissa; linux-arm-kernel@lists.infradead.org
+>> Subject: [PATCH v2 02/13] da850: pruss platform specific additions.
+>>
+>> This patch adds the platform device and assignes the platform resources
+>> for the PRUSS mfd driver.
+>>
+>> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+>> ---
+>> +struct platform_device da8xx_pruss_dev = {
+> Can you please rename this to da8xx_pruss_mfddev?
+>> + .name = "da8xx_pruss",
+> Can you please rename name string as pruss_mfd? This will help to
+> base my UIO patches on top of yours.
+>> + .id = -1,
+>> + .num_resources = ARRAY_SIZE(da8xx_pruss_resources),
+>> + .resource = da8xx_pruss_resources,
+>> +};
+>> +
+>> +int __init da8xx_register_pruss(struct da8xx_pruss_devices 
+>> *pruss_device)
+> Please rename this to da8xx_register_pruss_mfd
+>
+> Thanks,
+> Pratheesh 
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 1 Mar 2011 17:51:33 +1100
-Subject: [PATCH] dt: fix typo
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/mtd/nand/pasemi_nand.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mtd/nand/pasemi_nand.c b/drivers/mtd/nand/pasemi_nand.c
-index 5a0f1cf..59efa82 100644
---- a/drivers/mtd/nand/pasemi_nand.c
-+++ b/drivers/mtd/nand/pasemi_nand.c
-@@ -218,7 +218,7 @@ static const struct of_device_id pasemi_nand_match[] =
- 
- MODULE_DEVICE_TABLE(of, pasemi_nand_match);
- 
--static struct latform_driver pasemi_nand_driver =
-+static struct platform_driver pasemi_nand_driver =
- {
- 	.driver = {
- 		.name = (char*)driver_name,
--- 
-1.7.4.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
