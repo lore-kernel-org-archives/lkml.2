@@ -1,237 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab1CAIpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 03:45:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23902 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755696Ab1CAIpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 03:45:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,246,1297065600"; 
-   d="scan'208";a="714558992"
-Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTi=eUnZqT3MF7Y8ONrnGh-7MoZJsefisWFR10p7d@mail.gmail.com>
-References: <1298877772.4937.25.camel@minggr.sh.intel.com>
-	 <1298884559.2428.10083.camel@twins>
-	 <AANLkTi=eUnZqT3MF7Y8ONrnGh-7MoZJsefisWFR10p7d@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Mar 2011 16:45:41 +0800
-Message-ID: <1298969141.4937.94.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755945Ab1CAIvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 03:51:31 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53541 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755915Ab1CAIva (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 03:51:30 -0500
+Date: Tue, 1 Mar 2011 08:49:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Simon Glass <sjg@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
+Message-ID: <20110301084949.GA16733@n2100.arm.linux.org.uk>
+References: <1298939263-16421-1-git-send-email-sjg@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298939263-16421-1-git-send-email-sjg@chromium.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 15:43 +0800, Stephane Eranian wrote:
-> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
-> >> This patch adds basic SandyBridge support, including hardware cache
-> >> events and PEBS events support.
-> >>
-> >> LLC-* hareware cache events don't work for now, it depends on the
-> >> offcore patches.
-> >
-> > What's the status of those, Stephane reported some problems last I
-> > remember?
-> >
-> I tried the trick I mentioned and it seems to work.
-> 
-> Something like below with hwc->extra_alloc.
-> Could probably find a better name for that field.
+On Mon, Feb 28, 2011 at 04:27:43PM -0800, Simon Glass wrote:
+> +	asm volatile("1:\t.word %c3\n"				\
+> +		     ".pushsection __bug_table,\"a\"\n"		\
+> +		     "2:\t.word 1b, %c0\n"			\
+> +		     "\t.hword %c1, 0\n"			\
+> +		     "\t.org 2b+%c2\n"				\
 
-Stephane,
-
-I'll integrate below changes to the offcore patches, OK?
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f152930..ac1d100 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -906,7 +906,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 	int free_slot;
- 	int found;
- 
--	if (!x86_pmu.percore_constraints)
-+	if (!x86_pmu.percore_constraints || hwc->extra_alloc)
- 		return NULL;
- 
- 	for (c = x86_pmu.percore_constraints; c->cmask; c++) {
-@@ -931,6 +931,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 				if (hwc->extra_config == era->extra_config) {
- 					era->ref++;
- 					cpuc->percore_used = 1;
-+					hwc->extra_alloc = 1;
- 					c = NULL;
- 				}
- 				/* else conflict */
-@@ -945,6 +946,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 			era->extra_reg = hwc->extra_reg;
- 			era->extra_config = hwc->extra_config;
- 			cpuc->percore_used = 1;
-+			hwc->extra_alloc = 1;
- 			c = NULL;
- 		}
- 		raw_spin_unlock(&pc->lock);
-@@ -998,6 +1000,7 @@ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
- 			    era->extra_config == hwc->extra_config &&
- 			    era->extra_reg == er->msr) {
- 				era->ref--;
-+				hwc->extra_alloc = 0;
- 				break;
- 			}
- 		}
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f531ce3..dbbf33a 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -546,6 +546,7 @@ struct hw_perf_event {
- 			int		last_cpu;
- 			unsigned int	extra_reg;
- 			u64		extra_config;
-+			int		extra_alloc;
- 		};
- 		struct { /* software */
- 			struct hrtimer	hrtimer;
-
-
-> 
-> static struct event_constraint *
-> intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-> {
->         struct hw_perf_event *hwc = &event->hw;
->         unsigned int e = hwc->config & ARCH_PERFMON_EVENTSEL_EVENT;
->         struct event_constraint *c;
->         struct intel_percore *pc;
->         struct er_account *era;
->         int i;
->         int free_slot;
->         int found;
-> 
->         if (!x86_pmu.percore_constraints)
->                 return NULL;
-> 
->         if (hwc->extra_alloc)
->                 return NULL;
-> 
->         for (c = x86_pmu.percore_constraints; c->cmask; c++) {
->                 if (e != c->code)
->                         continue;
-> 
->                 /*
->                  * Allocate resource per core.
->                  */
->                 c = NULL;
->                 pc = cpuc->per_core;
->                 if (!pc)
->                         break;
->                 c = &emptyconstraint;
->                 raw_spin_lock(&pc->lock);
->                 free_slot = -1;
->                 found = 0;
->                 for (i = 0; i < MAX_EXTRA_REGS; i++) {
->                         era = &pc->regs[i];
->                         if (era->ref > 0 && hwc->extra_reg == era->extra_reg) {
->                                 /* Allow sharing same config */
->                                 if (hwc->extra_config == era->extra_config) {
->                                         era->ref++;
->                                         cpuc->percore_used = 1;
->                                         hwc->extra_alloc = 1;
->                                         c = NULL;
->                                 }
->                                 /* else conflict */
->                                 found = 1;
->                                 break;
->                         } else if (era->ref == 0 && free_slot == -1)
->                                 free_slot = i;
->                 }
->                 if (!found && free_slot != -1) {
->                         era = &pc->regs[free_slot];
->                         era->ref = 1;
->                         era->extra_reg = hwc->extra_reg;
->                         era->extra_config = hwc->extra_config;
->                         cpuc->percore_used = 1;
->                         hwc->extra_alloc = 1;
->                         c = NULL;
->                 }
->                 raw_spin_unlock(&pc->lock);
->                 return c;
->         }
-> 
->         return NULL;
-> }
-> 
-> static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
->                                         struct perf_event *event)
-> {
->         struct extra_reg *er;
->         struct intel_percore *pc;
->         struct er_account *era;
->         struct hw_perf_event *hwc = &event->hw;
->         int i, allref;
-> 
->         if (!cpuc->percore_used)
->                 return;
-> 
->         for (er = x86_pmu.extra_regs; er->msr; er++) {
->                 if (er->event != (hwc->config & er->config_mask))
->                         continue;
-> 
->                 pc = cpuc->per_core;
->                 raw_spin_lock(&pc->lock);
->                 for (i = 0; i < MAX_EXTRA_REGS; i++) {
->                         era = &pc->regs[i];
->                         if (era->ref > 0 &&
->                             era->extra_config == hwc->extra_config &&
->                             era->extra_reg == er->msr) {
->                                 era->ref--;
->                                 hwc->extra_alloc = 0;
->                                 break;
->                         }
->                 }
->                 allref = 0;
->                 for (i = 0; i < MAX_EXTRA_REGS; i++)
->                         allref += pc->regs[i].ref;
->                 if (allref == 0)
->                         cpuc->percore_used = 0;
->                 raw_spin_unlock(&pc->lock);
->                 break;
->         }
-> }
-> 
-> >
-> >>  #define INTEL_EVENT_CONSTRAINT(c, n) \
-> >>       EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
-> >> +#define INTEL_EVENT_CONSTRAINT2(c, n)        \
-> >> +     EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
-> >
-> > That's a particularly bad name, how about something like
-> >
-> > INTEL_UEVENT_CONSTRAINT or somesuch.
-> >
-> >> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
-> >>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
-> >>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
-> >>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
-> >> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> >> +                     switch (boot_cpu_data.x86_model) {
-> >> +                     case 42: /* SandyBridge */
-> >> +                             x86_pmu.pebs_constraints = intel_snb_pebs_events;
-> >> +                             break;
-> >> +                     default:
-> >> +                             x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> >> +                     }
-> >>                       break;
-> >>
-> >>               default:
-> >
-> > We already have this massive model switch right after this function,
-> > might as well move the pebs constraint assignment there.
-> >
-
-
+%c doesn't work on lots of versions of gcc, which is why we can't use
+the generic bug support.  There's no way to reliably generate constants
+without many compiler versions spitting out a '#' before them.
