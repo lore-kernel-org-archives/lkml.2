@@ -1,122 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1CABAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 20:00:07 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4218 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab1CABAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 20:00:05 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Mon, 28 Feb 2011 17:00:03 -0800
-From: rklein@nvidia.com
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: olof@lixom.net, linux-kernel@vger.kernel.org,
-        Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 2/4] power: bq20z75: add i2c retry mechanism
-Date: Mon, 28 Feb 2011 16:55:29 -0800
-Message-Id: <1298940931-17552-3-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1298940931-17552-1-git-send-email-rklein@nvidia.com>
-References: <1298940931-17552-1-git-send-email-rklein@nvidia.com>
+	id S1754106Ab1CABDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 20:03:38 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54489 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753537Ab1CABDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 20:03:37 -0500
+Message-ID: <4D6C4652.6030804@cn.fujitsu.com>
+Date: Tue, 01 Mar 2011 09:05:22 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Paul Menage <menage@google.com>, David Rientjes <rientjes@google.com>,
+        =?UTF-8?B?57yqIOWLsA==?= <miaox@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] cpuset: Add a missing unlock in cpuset_write_resmask()
+References: <4D6601B2.1090207@cn.fujitsu.com> <20110228155524.6d7563e0.akpm@linux-foundation.org>
+In-Reply-To: <20110228155524.6d7563e0.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-01 09:02:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-01 09:02:28,
+	Serialize complete at 2011-03-01 09:02:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rhyland Klein <rklein@nvidia.com>
+>> @@ -1561,8 +1561,10 @@ static int cpuset_write_resmask(struct cgroup *cgrp, struct cftype *cft,
+>>  		return -ENODEV;
+>>  
+>>  	trialcs = alloc_trial_cpuset(cs);
+>> -	if (!trialcs)
+>> +	if (!trialcs) {
+>> +		cgroup_unlock();
+>>  		return -ENOMEM;
+>> +	}
+>>  
+>>  	switch (cft->private) {
+>>  	case FILE_CPULIST:
+> 
+> It would be better to avoid multiple returns - it leads to more
+> maintainable code and often shorter code:
+> 
 
-With the support of platform data, now adding support for option i2c retries
-on read/write failures. Ths is specified through the optional platform data.
+I have no strong opinion on this.
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
- drivers/power/bq20z75.c       |   37 +++++++++++++++++++++++++++++++------
- include/linux/power/bq20z75.h |    2 ++
- 2 files changed, 33 insertions(+), 6 deletions(-)
+> --- a/kernel/cpuset.c~cpuset-add-a-missing-unlock-in-cpuset_write_resmask-fix
+> +++ a/kernel/cpuset.c
+> @@ -1562,8 +1562,8 @@ static int cpuset_write_resmask(struct c
+>  
+>  	trialcs = alloc_trial_cpuset(cs);
+>  	if (!trialcs) {
+> -		cgroup_unlock();
+> -		return -ENOMEM;
+> +		retval = -ENOMEM;
+> +		goto out;
+>  	}
+>  
+>  	switch (cft->private) {
+> @@ -1579,6 +1579,7 @@ static int cpuset_write_resmask(struct c
+>  	}
+>  
+>  	free_trial_cpuset(trialcs);
+> +out:
+>  	cgroup_unlock();
+>  	return retval;
+>  }
+> _
+> 
+> also, alloc_trial_cpuset() is a fairly slow-looking function. 
+> cpuset_write_resmask() could run alloc_trial_cpuset() before running
+> cgroup_lock_live_group(), thereby reducing lock hold times.
+> 
 
-diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-index a51e98d..e82d10e 100644
---- a/drivers/power/bq20z75.c
-+++ b/drivers/power/bq20z75.c
-@@ -156,30 +156,55 @@ struct bq20z75_info {
- 
- static int bq20z75_read_word_data(struct i2c_client *client, u8 address)
- {
--	s32 ret;
-+	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
-+	s32 ret = 0;
-+	int retries = 1;
-+
-+	if (bq20z75_device->pdata)
-+		retries = max(bq20z75_device->pdata->i2c_retry_count + 1, 1);
-+
-+	while (retries > 0) {
-+		ret = i2c_smbus_read_word_data(client, address);
-+		if (ret >= 0)
-+			break;
-+		retries--;
-+	}
- 
--	ret = i2c_smbus_read_word_data(client, address);
- 	if (ret < 0) {
--		dev_err(&client->dev,
-+		dev_warn(&client->dev,
- 			"%s: i2c read at address 0x%x failed\n",
- 			__func__, address);
- 		return ret;
- 	}
-+
- 	return le16_to_cpu(ret);
- }
- 
- static int bq20z75_write_word_data(struct i2c_client *client, u8 address,
- 	u16 value)
- {
--	s32 ret;
-+	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
-+	s32 ret = 0;
-+	int retries = 1;
-+
-+	if (bq20z75_device->pdata)
-+		retries = max(bq20z75_device->pdata->i2c_retry_count + 1, 1);
-+
-+	while (retries > 0) {
-+		ret = i2c_smbus_write_word_data(client, address,
-+			le16_to_cpu(value));
-+		if (ret >= 0)
-+			break;
-+		retries--;
-+	}
- 
--	ret = i2c_smbus_write_word_data(client, address, le16_to_cpu(value));
- 	if (ret < 0) {
--		dev_err(&client->dev,
-+		dev_warn(&client->dev,
- 			"%s: i2c write to address 0x%x failed\n",
- 			__func__, address);
- 		return ret;
- 	}
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/power/bq20z75.h b/include/linux/power/bq20z75.h
-index 0e1b8a2..b0843b6 100644
---- a/include/linux/power/bq20z75.h
-+++ b/include/linux/power/bq20z75.h
-@@ -28,10 +28,12 @@
-  * struct bq20z75_platform_data - platform data for bq20z75 devices
-  * @battery_detect:		GPIO which is used to detect battery presence
-  * @battery_detect_present:	gpio state when battery is present (0 / 1)
-+ * @i2c_retry_count:		# of times to retry on i2c IO failure
-  */
- struct bq20z75_platform_data {
- 	int battery_detect;
- 	int battery_detect_present;
-+	int i2c_retry_count;
- };
- 
- #endif
--- 
-1.7.0.4
-
+Nope. alloc_trial_cpuset() will read 'cs', so it must be protected by
+the lock.
