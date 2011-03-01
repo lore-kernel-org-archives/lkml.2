@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab1CAUXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:23:05 -0500
-Received: from www.tglx.de ([62.245.132.106]:41443 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757148Ab1CAUXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:23:03 -0500
-Date: Tue, 1 Mar 2011 21:22:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Seth Forshee <seth.forshee@canonical.com>
-cc: Len Brown <lenb@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: Performance/resume issues on Toshiba NB305
-In-Reply-To: <20110301200446.GA2235@thinkpad-t410>
-Message-ID: <alpine.LFD.2.00.1103012117010.2701@localhost6.localdomain6>
-References: <20110225164239.GA24686@thinkpad-t410> <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6> <20110225212142.GC24686@thinkpad-t410> <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6> <20110301200446.GA2235@thinkpad-t410>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757447Ab1CAU0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:26:37 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39809 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757153Ab1CAU0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 15:26:36 -0500
+Date: Tue, 1 Mar 2011 20:26:11 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stuart Menefy <stuart.menefy@st.com>,
+        Peppe CAVALLARO <peppe.cavallaro@st.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
+Message-ID: <20110301202611.GC27107@n2100.arm.linux.org.uk>
+References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com> <201102241820.55873.arnd@arndb.de> <4D6D0EA3.9000504@st.com> <201103011743.19847.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103011743.19847.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Mar 2011, Seth Forshee wrote:
-> On Fri, Feb 25, 2011 at 10:47:16PM +0100, Thomas Gleixner wrote:
-> > On Fri, 25 Feb 2011, Seth Forshee wrote:
-> > > On Fri, Feb 25, 2011 at 09:37:39PM +0100, Thomas Gleixner wrote:
-> > > > On Fri, 25 Feb 2011, Seth Forshee wrote:
-> > > > That seems to be related to low power states. When the machine goes
-> > > > idle we switch into lower power states and that requires to use the
-> > > > hpet instead of the local apic timer as that one stops.
-> > > > 
-> > > > You could verify that theory by booting with processor.max_cstate=1
-> > > 
-> > > This fixes the performance in combination with intel_idle.max_cstate=0.
-> > > Alternately, intel_idle.max_cstate=1 works. But the resume still hangs.
+On Tue, Mar 01, 2011 at 05:43:19PM +0100, Arnd Bergmann wrote:
+> On Tuesday 01 March 2011, Stuart Menefy wrote:
+> > On 24/02/11 17:20, Arnd Bergmann wrote:
+> > > Also, what is the difference between this and clkdev?
 > > 
-> > That was expected :)
-> > 
-> > > Is the answer to quirk the machine to avoid deep C-states, or is there
-> > > some better way I can fix this?
-> > 
-> > Let's wait for the intel and acpi folks. It would be interesting what
-> > the new intel toy says to your BIOS.
+> > clkdev can be used to find a struct clk, which is fine if you just want to
+> > read the time. In this instance we want to get interrupts from the timer
+> > hardware, which isn't supported by the clk infrastructure.
 > 
-> Since the discussion on this issue died without really getting anywhere,
-> I went ahead and threw together the patch below to disable anything
-> deeper than C1 for this machine. I hope a better solution can be found,
-> but if not would something like this be an acceptable workaround?
+> (adding Russell to Cc)
 > 
-> As for the hangs during resume, unless someone has a better suggestion I
-> guess I'll start looking into forcing the HPET to remain in periodic
-> mode throughout suspend.
+> Is this something that could sensibly be added to clk/clkdev?
 
-The problem with such DMI quirks is that it's hard to get rid of them
-when a fixed BIOS version comes out while simply adding nohpet to the
-kernel command line, is a non permanent, but sensible workaround.
-
-Thanks,
-
-	tglx
-
-
+I don't understand - why would anyone want to use clk/clkdev for timers.
+clk/clkdev is all about those signals on the SoC which wiggle at regular
+intervals between logic 0 and logic 1.  It's not about things which count,
+which seems to be an entirely separate problem, and hence why there's
+nothing to deal with interrupts or setting timeouts etc.
