@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab1CAMtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 07:49:45 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:48392 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750802Ab1CAMtn (ORCPT
+	id S1752826Ab1CANAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 08:00:05 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:52580 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab1CANAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 07:49:43 -0500
-X-Sasl-enc: SlPGp1l6bw5MimXYTepSddHxa0ean8cE8ZdaR94f9s64 1298983782
-Subject: Re: [PATCH 0/4] more on vfs-scale and vfs-automount
-From: Ian Kent <raven@themaw.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Nick Piggin <npiggin@gmail.com>, David Howells <dhowells@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110301044457.4615.40333.stgit@localhost6.localdomain6>
-References: <20110301044457.4615.40333.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Mar 2011 20:49:37 +0800
-Message-ID: <1298983777.3726.37.camel@perseus>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Mar 2011 08:00:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=doExVdNJnrI2E49ugNNKoljRQaVOitdDncW0I2kRVWTB0H28VaC6SbWnA2EqyURy21
+         bIljqcPwckgpXgI0E2VatbjKDaXz3xSks1dOSq7H2iR1oKhWZJWVmgSqYvGHDmCylVLQ
+         0JPuDYSAcZYGmFYfDVOI7P+k4u/gMsEzyEn2w=
+MIME-Version: 1.0
+In-Reply-To: <4D6CA852.3060303@cn.fujitsu.com>
+References: <4D6CA852.3060303@cn.fujitsu.com>
+Date: Tue, 1 Mar 2011 15:00:02 +0200
+X-Google-Sender-Auth: 9SSBwsYnGBmCOHRJU55IRsLODoM
+Message-ID: <AANLkTimXy2Yaj+NTDMNTWuLqHHfKZJhVDpeXj3CfMvBf@mail.gmail.com>
+Subject: Re: [PATCH 2/4] slub,rcu: don't assume the size of struct rcu_head
+From: Pekka Enberg <penberg@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 12:56 +0800, Ian Kent wrote:
-> 
-> I am still seeing occassional incorrect ENOENT returns. They must be
-> comming from the VFS or the daemon as I've changed almost all the
-> ENOENT returns in the autofs module to identify where it's comming
-> from.
+On Tue, Mar 1, 2011 at 10:03 AM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> The size of struct rcu_head may be changed. When it becomes larger,
+> it will pollute the page array.
+>
+> We reserve some some bytes for struct rcu_head when a slab
+> is allocated in this situation.
+>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-That's not quite right either.
-I got another of these (after 5 runs of my test) but from the autofs
-module this time which means I still have a race on blocking pending
-mounts. Oh well, there's still more for me to do.
-
-Ian
-
+The SLAB and SLUB patches are fine by me if there are going to be real
+users for this. Christoph, Paul?
