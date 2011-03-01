@@ -1,100 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab1CARIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 12:08:00 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59567 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756612Ab1CARH6 (ORCPT
+	id S1756982Ab1CARJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 12:09:11 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:36643 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756877Ab1CARJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 12:07:58 -0500
+	Tue, 1 Mar 2011 12:09:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=dORlJVjuQ9B/qVl7vb3us+EGKKmxJahpBnuB5Yb400p0YtYglC3a7IxkuKrXCi/4wP
-         6TJaVqKlo0C8QaLQhYs+o6hLiVnafqZ7sW6yBcG0P7qKZ5GvIWK99roJ+HmiJG7j8S2G
-         7BAV/kUBRuhTk8WUu5Ft26fYVkyylURC+trRM=
-Date: Tue, 1 Mar 2011 14:07:50 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <daahern@cisco.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/6] perf record: add time-of-day option
-Message-ID: <20110301170750.GE26068@ghostprotocols.net>
-References: <1298865151-23656-1-git-send-email-daahern@cisco.com>
- <1298865151-23656-4-git-send-email-daahern@cisco.com>
- <1298989751.5226.863.camel@laptop>
- <4D6D0438.2090901@cisco.com>
- <1298993714.5226.871.camel@laptop>
- <4D6D13C6.5020807@cisco.com>
- <1298995250.5226.882.camel@laptop>
- <4D6D1A4C.1090009@cisco.com>
- <1298997435.5226.890.camel@laptop>
- <4D6D22A7.6000000@cisco.com>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Epz/mCq7GpnhmB2lZuYCnd8HXKXvLXQMAhl3J4Joih/cvmS0irM/HJHRGGiiyvelAO
+         DqTNuV47b5yilAJuGlMA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6D22A7.6000000@cisco.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1298998076.2170.62.camel@localhost>
+References: <1298998076.2170.62.camel@localhost>
+Date: Tue, 1 Mar 2011 18:09:05 +0100
+Message-ID: <AANLkTimvx+MYhOw8VFsJn4V6FQutKiYO6pHxgd9xGY8A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] perf-events: Add support for supplementary event registers
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p21H9JR3014710
 
-Em Tue, Mar 01, 2011 at 09:45:27AM -0700, David Ahern escreveu:
-> 
-> 
-> On 03/01/2011 09:37 AM, Peter Zijlstra wrote:
-> > On Tue, 2011-03-01 at 09:09 -0700, David Ahern wrote:
-> >>
-> >> I did not code it create samples of a realtime-clock event; I coded it
-> >> to add an event to the stream on demand -- whatever event the fd is
-> >> tied to.
-> >>
-> >>
-> > Well yes, but aside from you and the realtime clock stuff, who'd ever
-> > want to do this particular thing?
-> 
-> One example would be a system watchdog that decided for some reason or
-> another to force an event sample because of some event it detected.
-> 
-> > 
-> > I'd much rather expose the whole
-> > local_clock()/perf_clock()/trace_clock() (should all be the same anyway)
-> > as a posix clock using CLOCK_TRACING or whatever would be an appropriate
-> > name.
-> > 
-> > [ Since the whole thing is NMI safe it should be well possible to make a
-> > VDSO version as well. ]
-> > 
-> > Anyway, once its visible as a posix clock you can sync up from
-> > userspace. And this clock is indeed wanted for other things too, like
-> > user-space tracing etc.
-> > 
-> 
-> And for some silly reason I sense a time trap here (pun intended) .....
-> 
-> So your pushback is:
-> 1. throw out the realtime-clock event patch,
+Lin,
 
-Nope
- 
-> 2. add a new CLOCK_TRACING type to clock_gettime with VDSO hook,
+See comments below:
 
-Yes
- 
-> 3. and use a synthesized event from userspace for snapshotting
-> perf_clock to time-of-day -- similar to what I have now, but one that
-> will guarantee a time-of-day to perf_clock correlation (versus the
-> current one which hopes that perf_clock is the monotonic clock).
+On Tue, Mar 1, 2011 at 5:47 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>  static struct event_constraint *
+> +intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+> +{
+> +       struct hw_perf_event *hwc = &event->hw;
+> +       unsigned int e = hwc->config & ARCH_PERFMON_EVENTSEL_EVENT;
+> +       struct event_constraint *c;
+> +       struct intel_percore *pc;
+> +       struct er_account *era;
+> +       int i;
+> +       int free_slot;
+> +       int found;
+> +
+> +       if (!x86_pmu.percore_constraints || hwc->extra_alloc)
+> +               return NULL;
+> +
+> +       for (c = x86_pmu.percore_constraints; c->cmask; c++) {
+> +               if (e != c->code)
+> +                       continue;
+> +
+> +               /*
+> +                * Allocate resource per core.
+> +                */
+> +               c = NULL;
 
-Nope.
+Not sure I understand this c = NULL, given you hardcoded return NULL
+outside of the
+loop. I forgot to mention this earlier.
 
-My understanding was that for the initial gettime you use
-clock_gettime(), and then you get CLOCK_REALTIME events in the stream
-for resynch, etc.
-
-Peter?
-
-- Arnaldo
+> +               pc = cpuc->per_core;
+> +               if (!pc)
+> +                       break;
+> +               c = &emptyconstraint;
+> +               raw_spin_lock(&pc->lock);
+> +               free_slot = -1;
+> +               found = 0;
+> +               for (i = 0; i < MAX_EXTRA_REGS; i++) {
+> +                       era = &pc->regs[i];
+> +                       if (era->ref > 0 && hwc->extra_reg == era->extra_reg) {
+> +                               /* Allow sharing same config */
+> +                               if (hwc->extra_config == era->extra_config) {
+> +                                       era->ref++;
+> +                                       cpuc->percore_used = 1;
+> +                                       hwc->extra_alloc = 1;
+> +                                       c = NULL;
+> +                               }
+> +                               /* else conflict */
+> +                               found = 1;
+> +                               break;
+> +                       } else if (era->ref == 0 && free_slot == -1)
+> +                               free_slot = i;
+> +               }
+> +               if (!found && free_slot != -1) {
+> +                       era = &pc->regs[free_slot];
+> +                       era->ref = 1;
+> +                       era->extra_reg = hwc->extra_reg;
+> +                       era->extra_config = hwc->extra_config;
+> +                       cpuc->percore_used = 1;
+> +                       hwc->extra_alloc = 1;
+> +                       c = NULL;
+> +               }
+> +               raw_spin_unlock(&pc->lock);
+> +               return c;
+> +       }
+> +
+> +       return NULL;
+> +}
+> +
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 8ceb5a6..48d966a 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -225,8 +225,14 @@ struct perf_event_attr {
+>        };
+>
+>        __u32                   bp_type;
+> -       __u64                   bp_addr;
+> -       __u64                   bp_len;
+> +       union {
+> +               __u64           bp_addr;
+> +               __u64           config1; /* extension of config0 */
+> +       };
+> +       union {
+> +               __u64           bp_len;
+> +               __u64           config2; /* extension of config1 */
+> +       };
+>  };
+>
+I don't see where those config0 or config1 are coming from.
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
