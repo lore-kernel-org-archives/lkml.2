@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab1CAPLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 10:11:39 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:27722 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756566Ab1CAPLi (ORCPT
+	id S1756607Ab1CAPLo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 10:11:44 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:37192 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756566Ab1CAPLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 10:11:38 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: y9nAQ9oVM1nLyTooo8lXnqIA_JXSmcmMja4KuNJggGzKW00
- sX2JROpOHSouAHhbQsECrz8O1DPL3SvNhjMQAfT3Wsg5llqK_tEnsm0yKOvL
- sd7e86YYGpkS0MP0NasglDCdFwJh6JzZtPrKFu1QY91CHkTtGBRlAcZFX3fB
- 9tHmSKDabIYMkRMNOQ0ChUD.4pXP9iCUnEomoav96s8rtpSXj1VGCzYo_TaR
- pTafdpuHmDAf6E8rTtW4seWwwl1P.Q6cqFzly
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 1 Mar 2011 09:11:31 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/4] slub,rcu: don't assume the size of struct rcu_head
-In-Reply-To: <AANLkTimXy2Yaj+NTDMNTWuLqHHfKZJhVDpeXj3CfMvBf@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1103010909320.6253@router.home>
-References: <4D6CA852.3060303@cn.fujitsu.com> <AANLkTimXy2Yaj+NTDMNTWuLqHHfKZJhVDpeXj3CfMvBf@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 1 Mar 2011 10:11:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=hes8IR7zlxt2jP3JY1WLeZU1f3JQQ1xiHdhZHmpEFLjBS5c4idyEpuet8Cemsl2V95
+         9EfyOfuDx9/Xmrhq81gDiUPAEhgv4MsaIqhO4CKuUQUbjfLNDGP0gebLbEMrHJa5hV8f
+         +CvyNtToN0ehgimo9CUdulEz+7PTDK05Emop4=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4D6D004F.5010602@cisco.com>
+References: <1298865151-23656-1-git-send-email-daahern@cisco.com>
+	<1298865151-23656-5-git-send-email-daahern@cisco.com>
+	<AANLkTikwsuBGVfB6uu7=H0jbL+2YbbvX=ea6rLwNP8w-@mail.gmail.com>
+	<4D6D004F.5010602@cisco.com>
+Date: Tue, 1 Mar 2011 16:11:40 +0100
+Message-ID: <AANLkTi=jmS80Rs13QiTmdA5iUXvNaSKxQ9Gpp2P2nqRU@mail.gmail.com>
+Subject: Re: [PATCH 4/6] perf script: dump software events too
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Mar 2011, Pekka Enberg wrote:
+2011/3/1 David Ahern <daahern@cisco.com>:
+> I don't follow what you mean.
+>
+> This is the same place that tracepoints are dumped. In the
+> PERF_TYPE_TRACEPOINT case process_event == print_event which dumps the
+> lines to stdout.
 
-> The SLAB and SLUB patches are fine by me if there are going to be real
-> users for this. Christoph, Paul?
+No it's not. scripting_ops can be either default_scripting_ops,
+perl_scripting_ops
+or python_scripting_ops.
 
-The solution is a bit overkill. It would be much simpler to add a union to
-struct page that has lru and the rcu in there similar things can be done
-for SLAB and the network layer. A similar issue already exists for the
-spinlock in struct page. Lets follow the existing way of handling this.
+Hence process_sample_event() doesn't necessarily ends up pretty print events.
+It can also invoke a script that may decide to do what it wants with events.
 
-Struct page may be larger for debugging purposes already because of the
-need for extended spinlock data.
+pretty printing must be an endpoint decision.
+
+> I came in added a switch that invokes a different handler for software
+> events. Software events will be processed differently than tracepoint.
+> The print_event function and its pretty_print function are not designed
+> to dump software events (and eventually hardware events).
+
+Why shouldn't it be designed to dump software events? It's called print_event().
+Its current version is rather something I would call "limited". But it
+was not designed
+to be limited.
+
+Ideally, we should have print_tracepoint_event() in
+trace-event-parse.c, print_software_event()
+where you want, and have print_event() in builtin-script.c that wraps on those.
