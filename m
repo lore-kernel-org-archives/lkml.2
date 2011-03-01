@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab1CAANM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 19:13:12 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51962 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab1CAANJ (ORCPT
+	id S1753801Ab1CAARo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 19:17:44 -0500
+Received: from nm3-vm0.bullet.mail.sp2.yahoo.com ([98.139.90.230]:38873 "HELO
+	nm3-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753489Ab1CAARl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 19:13:09 -0500
-Date: Mon, 28 Feb 2011 16:13:00 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110301001300.GD2331@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D6765B6.1030401@cn.fujitsu.com>
- <20110225203219.GD2269@linux.vnet.ibm.com>
- <4D6B16A8.4050405@cn.fujitsu.com>
- <1298886437.2428.10174.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298886437.2428.10174.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Feb 2011 19:17:41 -0500
+X-Yahoo-Newman-Id: 340053.74195.bm@omp1025.mail.sp2.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: SxL5MIEVM1klSWleMht4H7pKwqE25v3ZzWdDa1uiNSu.Eav
+ iZr_KPYGHFlA7rVcPF01Z8CVfpO8NfSdvdaeG07wIsTw3lZIWx6MYxfloH3g
+ PYd4gNw20kvZe5fOuJJpOcLBTOgEscu11aQrBcOj8Qw.aZjmf6fdc_swpxaJ
+ GL_5xb75yjYO_MCY8eMN4L.KJEJXaZFYJSCrd2LE6ySpCSAG_KLRV81bgZS8
+ 9cB2byiGRTKhh5p_xAfth.ms60mlyCgVYx2LE7awUqFnP8luV.SR.mINHz8z
+ 43W_oB5gMwnxV5ZM2q2jP._G6XyK8lGis4R8QgER9BmTik1xB3li6zDeXbWg
+ 50vdyVsNV21FMs0UFnB0kEt9g7rbS484SmOPsrUiqrw--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Joel Becker <jlbec@evilplan.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/5] target updates for scsi-post-merge .39 (round one, v2)
+Date: Mon, 28 Feb 2011 16:17:26 -0800
+Message-Id: <1298938651-18784-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 10:47:17AM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-02-28 at 11:29 +0800, Lai Jiangshan wrote:
-> > >>> +static int rcu_cpu_kthread_should_stop(int cpu)
-> > >>> +{
-> > >>> +   while (cpu_is_offline(cpu) || smp_processor_id() != cpu) {
-> > >>> +           if (kthread_should_stop())
-> > >>> +                   return 1;
-> > >>> +           local_bh_enable();
-> > >>> +           schedule_timeout_uninterruptible(1);
-> > >>> +           if (smp_processor_id() != cpu)
-> > >>> +                   set_cpus_allowed_ptr(current, cpumask_of(cpu));
-> > >>
-> > >> The current task is PF_THREAD_BOUND,
-> > >> Why do "set_cpus_allowed_ptr(current, cpumask_of(cpu));" ?
-> > > 
-> > > Because I have seen CPU hotplug operations unbind PF_THREAD_BOUND threads.
-> 
-> Correct, but that's on unplug, the rest of the story seems about plug,
-> so just detatch the thread on down/offline and let it die when its done.
-> 
-> > > In addition, I end up having to spawn the kthread at CPU_UP_PREPARE time,
-> 
-> Sure, that's a common time to create such treads :-), you can
-> kthread_ceate()+kthread_bind() in UP_PREPARE, just don't wake them yet.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-I am OK doing the sched_setscheduler_nocheck() in UP_PREPARE, correct?
+Hi James and Co,
 
-But yes, I can have the CPU_STARTING notifier wake up any kthreads that
-the current CPU might have caused to be created.
+The following is the first round (v2) of target patches intended for .39
+scsi-post-merge tree that introduces new target functionality and the
+first mainline TCM fabric module (TCM_Loop).
 
-> > > at which point the thread must run unbound because its CPU isn't online
-> > > yet.  I cannot invoke kthread_create() within the stop-machine handler
-> > > (right?).
-> 
-> No you can not ;-)
+Patches #1 -> #4 involve the addition of new ConfigFS context based
+statistics groups in target_core_stat.c following RFC-4455 to address
+the removal of the legacy ProcFS based target_core_mib.c in .38 code.
 
-Glad I am maintaining at least a shred of sanity.  ;-)
+Patch #5 adds the TCM_Loop virtual SCSI LLD module that was originally
+reviewed and intended for .38 code.  This module currently supports
+high level port emulation for SAS, FC and iSCSI ProtoIdents.  The changes
+from v1 -> v2 include address Christoph's comments for patch #5 for
+TCM_Loop included into lio-core-2.6.git/lio-4.1.
 
-> >   I cannot wait until CPU_ONLINE time because that results in
-> > > hangs when other CPU notifiers wait for grace periods.
-> > > 
-> > > Yes, I did find out about the hangs the hard way.  Why do you ask?  ;-)
-> 
-> Right, so I assume that whoever needs the thread will:
-> 
->  1) wake the thread,
->  2) only do so after the cpu is actually online, how else could it be
-> executing code? :-)
+Please be sure to apply this series on top the critical 'for-38-urgent'
+fix posted here:
 
-Ah, there is the rub -- I am using wait_event(), so I need to wake up the
-kthread once before anyone uses it (or at least concurrently with anyone
-using it).  Which I can presumably do from the CPU_STARTING notifier.
+[PATCH-FOR-38] target: Fix t_transport_aborted handling in LUN_RESET + active I/O shutdown
+http://marc.info/?l=linux-scsi&m=129859551620778&w=2
 
-Make sense, or am I still missing something?
+as well as the 14 patch series for-39-misc-v2 posted recently here:
 
-							Thanx, Paul
+[PATCH 00/14] target patches for .39 scsi-misc (v2)
+http://marc.info/?l=linux-scsi&m=129866341626173&w=2
+
+This full series is also available directly from git here:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-39-post-merge-v2
+
+Please review and apply,
+
+Thanks!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+
+Nicholas Bellinger (5):
+  target: add initial device backend context target_core_stat.c code
+  target: add initial fabric port context target_core_stat.c code
+  target: add initial fabric MappedLUN context target_core_stat.c code
+  target: Add fabric_stat_group for fabric module statistics
+    default_group
+  tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
+
+ drivers/target/Kconfig                         |    2 +
+ drivers/target/Makefile                        |    6 +-
+ drivers/target/target_core_configfs.c          |   76 +-
+ drivers/target/target_core_fabric_configfs.c   |  209 +++-
+ drivers/target/target_core_stat.c              | 1810 ++++++++++++++++++++++++
+ drivers/target/target_core_stat.h              |    8 +
+ drivers/target/tcm_loop/Kconfig                |   11 +
+ drivers/target/tcm_loop/Makefile               |    5 +
+ drivers/target/tcm_loop/tcm_loop_configfs.c    |  643 +++++++++
+ drivers/target/tcm_loop/tcm_loop_core.h        |  141 ++
+ drivers/target/tcm_loop/tcm_loop_fabric.c      |  472 ++++++
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  574 ++++++++
+ include/target/target_core_base.h              |   35 +-
+ include/target/target_core_configfs.h          |    4 +
+ 14 files changed, 3978 insertions(+), 18 deletions(-)
+ create mode 100644 drivers/target/target_core_stat.c
+ create mode 100644 drivers/target/target_core_stat.h
+ create mode 100644 drivers/target/tcm_loop/Kconfig
+ create mode 100644 drivers/target/tcm_loop/Makefile
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_core.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+
+-- 
+1.7.4.1
+
