@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab1CAFq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 00:46:57 -0500
-Received: from kroah.org ([198.145.64.141]:43583 "EHLO coco.kroah.org"
+	id S1755255Ab1CAFra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 00:47:30 -0500
+Received: from kroah.org ([198.145.64.141]:43566 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755448Ab1CAFqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 00:46:22 -0500
-Date: Mon, 28 Feb 2011 18:52:30 -0800
+	id S1755200Ab1CAFqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 00:46:12 -0500
+Date: Mon, 28 Feb 2011 18:32:48 -0800
 From: Greg KH <greg@kroah.com>
 To: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 4/6] Staging: hv:  Unify the hyperv driver abstractions
-Message-ID: <20110301025230.GE1663@kroah.com>
-References: <1298686023-30892-1-git-send-email-kys@microsoft.com>
+Subject: Re: [PATCH 2/6] Staging: hv: Rename vm_device to hyperv_device
+Message-ID: <20110301023248.GB1663@kroah.com>
+References: <1298685963-30831-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298686023-30892-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1298685963-30831-1-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 06:07:03PM -0800, K. Y. Srinivasan wrote:
-> This patch combines the two driver abstractions into
-> a single driver abstraction.
+On Fri, Feb 25, 2011 at 06:06:03PM -0800, K. Y. Srinivasan wrote:
+> Rename the vm_device abstraction as hyperv_device.
 
-Ah, how sweet.  Unfortunatly you don't say "how" you did this.
+That's a nice name, but it's the first one with a "hyperv_" prefix in
+this subsystem.  Ok, second, but hyperv_service_context doesn't really
+count as it's not really used.
 
-Nor do you describe _what_ those two driver abstractions were.  Are we
-talking i2c and usb abstractions?  gpio and spi?  Driver core and
-platform?  We want to know exactly what is going on here.
+Everything else is named "hv_" here.  Which is it going to be, "hv_" or
+"hyperv_"?
 
-Think of writing something that when you look back, in 3 years, while
-staring at a Linux hyperv driver originally written for the 2.6.9
-kernel, that somehow never got forward ported and you are tasked with
-doing this, that you can just do a simple 'git log drivers/staging/hv/'
-and instantly know just from the changelog comments exactly what you
-need to do to your driver to clean it up and properly get it to work on
-the new 8.2.2 kernel release.
+Either is fine, just be aware of the work involved if you pick
+"hyperv_"...
 
-This changelog entry, would require you to go and dig through the guts
-of the patch itself, trying to figure out what abstractions you are
-talking about, and exactly how they were combined, all the while
-wondering _why_ they were combined.
+You also rename vm_device_info to hyperv_device_info here, doing more
+than one thing in a single patch.
 
-Please, think of your future self, you will thank him in the years to
-come by doing this properly.  Not to mention making other's lives easier
-if you happen to have escaped this dire task by then.
+Please don't do that, this should be 2 patches.
 
-Oh, you have an extra space up there in the subject, please fix it next
-time.
 
-> -int blk_vsc_initialize(struct hv_driver *driver)
-> +int blk_vsc_initialize(struct driver_context *driver)
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> 
+> ---
+>  drivers/staging/hv/blkvsc.c        |    4 +-
+>  drivers/staging/hv/blkvsc_drv.c    |    8 ++--
+>  drivers/staging/hv/channel_mgmt.h  |    2 +-
+>  drivers/staging/hv/netvsc.c        |   56 +++++++++++++++++++----------------
+>  drivers/staging/hv/netvsc.h        |    2 +-
+>  drivers/staging/hv/netvsc_api.h    |   12 ++++----
+>  drivers/staging/hv/netvsc_drv.c    |   14 ++++----
+>  drivers/staging/hv/rndis_filter.c  |   18 ++++++------
+>  drivers/staging/hv/storvsc.c       |   36 ++++++++++++-----------
+>  drivers/staging/hv/storvsc_api.h   |    4 +-
+>  drivers/staging/hv/storvsc_drv.c   |   10 +++---
+>  drivers/staging/hv/vmbus.h         |    6 ++--
+>  drivers/staging/hv/vmbus_api.h     |    8 ++--
+>  drivers/staging/hv/vmbus_drv.c     |   50 ++++++++++++++++----------------
+>  drivers/staging/hv/vmbus_private.h |   12 ++++----
+>  15 files changed, 124 insertions(+), 118 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/blkvsc.c b/drivers/staging/hv/blkvsc.c
+> index ecface3..47ccec2 100644
+> --- a/drivers/staging/hv/blkvsc.c
+> +++ b/drivers/staging/hv/blkvsc.c
+> @@ -35,8 +35,8 @@ static const struct hv_guid g_blk_device_type = {
+>  	}
+>  };
+>  
+> -static int blk_vsc_on_device_add(struct vm_device *device,
+> -				void *additional_info)
+> +static int
+> +blk_vsc_on_device_add(struct hyperv_device *device, void *additional_info)
 
-"struct driver_context"?  Oh please no.
+Ick, why break the formatting like this?  Please keep the return type on
+the same line as the function name.
 
-I realize that you are hopefully going to later rename this to something
-else, but remember, a few patches back you thought that the "ctx" name
-wasn't nice.  And here you go resuscitating it from the graveyard of
-pointy bits.
-
-And what happens if your future patch is rejected?  You are stuck with a
-"driver_context" structure in a subsystem?  That's a pretty big abuse of
-the global namespace, don't you think?  It sounds like something that
-should go into include/linux/device.h
-
-Please be careful about names, they mean things, even when you think
-they don't.
+You do that in a number of places, please don't.
 
 thanks,
 
