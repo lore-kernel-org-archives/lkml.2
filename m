@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab1CAP07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 10:26:59 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58365 "EHLO
+	id S1756744Ab1CAP1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 10:27:09 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58379 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756630Ab1CAP06 (ORCPT
+	with ESMTP id S1756718Ab1CAP1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 10:26:58 -0500
+	Tue, 1 Mar 2011 10:27:05 -0500
 From: Borislav Petkov <bp@amd64.org>
 To: <linux-edac@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/8] amd64_edac: Fix DRAM base macros
-Date: Tue,  1 Mar 2011 16:26:51 +0100
-Message-Id: <1298993216-19434-4-git-send-email-bp@amd64.org>
+Subject: [PATCH 7/8] amd64_edac: Fix DCT argument type
+Date: Tue,  1 Mar 2011 16:26:55 +0100
+Message-Id: <1298993216-19434-8-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1298993216-19434-1-git-send-email-bp@amd64.org>
 References: <1298993216-19434-1-git-send-email-bp@amd64.org>
@@ -22,54 +22,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Return unsigned u8 values only.
+Fix amd64_debug_display_dimm_sizes() arguments order per convention (pvt
+is always first). Also, the now second arg denotes the DCT so adjust its
+type.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/amd64_edac.c |    3 +--
- drivers/edac/amd64_edac.h |    8 ++++----
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/edac/amd64_edac.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 8d9def5..e6adc73 100644
+index 1b8fa7a..cc4f887 100644
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -621,7 +621,6 @@ static u64 input_addr_to_dram_addr(struct mem_ctl_info *mci, u64 input_addr)
- 	BUG_ON(node_id > 7);
+@@ -768,8 +768,7 @@ static enum edac_type amd64_determine_edac_cap(struct amd64_pvt *pvt)
+ 	return edac_cap;
+ }
  
- 	intlv_shift = num_node_interleave_bits(dram_intlv_en(pvt, 0));
 -
- 	if (intlv_shift == 0) {
- 		debugf1("    InputAddr 0x%lx translates to DramAddr of "
- 			"same value\n",	(unsigned long)input_addr);
-@@ -1192,7 +1191,7 @@ static void read_dram_ctl_register(struct amd64_pvt *pvt)
- static u8 f1x_determine_channel(struct amd64_pvt *pvt, u64 sys_addr,
- 				bool hi_range_sel, u8 intlv_en)
+-static void amd64_debug_display_dimm_sizes(int ctrl, struct amd64_pvt *pvt);
++static void amd64_debug_display_dimm_sizes(struct amd64_pvt *, u8);
+ 
+ static void amd64_dump_dramcfg_low(u32 dclr, int chan)
  {
--	u32 dct_sel_high = (pvt->dct_sel_lo >> 1) & 1;
-+	u8 dct_sel_high = (pvt->dct_sel_lo >> 1) & 1;
+@@ -817,13 +816,13 @@ static void dump_misc_regs(struct amd64_pvt *pvt)
  
- 	if (dct_ganging_enabled(pvt))
- 		return 0;
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 6220bae..11be36a 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -180,10 +180,10 @@
- #define DRAM_BASE_LO			0x40
- #define DRAM_LIMIT_LO			0x44
+ 	debugf1("  DramHoleValid: %s\n", dhar_valid(pvt) ? "yes" : "no");
  
--#define dram_intlv_en(pvt, i)		((pvt->ranges[i].base.lo >> 8) & 0x7)
--#define dram_rw(pvt, i)			(pvt->ranges[i].base.lo & 0x3)
--#define dram_intlv_sel(pvt, i)		((pvt->ranges[i].lim.lo >> 8) & 0x7)
--#define dram_dst_node(pvt, i)		(pvt->ranges[i].lim.lo & 0x7)
-+#define dram_intlv_en(pvt, i)		((u8)((pvt->ranges[i].base.lo >> 8) & 0x7))
-+#define dram_rw(pvt, i)			((u8)(pvt->ranges[i].base.lo & 0x3))
-+#define dram_intlv_sel(pvt, i)		((u8)((pvt->ranges[i].lim.lo >> 8) & 0x7))
-+#define dram_dst_node(pvt, i)		((u8)(pvt->ranges[i].lim.lo & 0x7))
+-	amd64_debug_display_dimm_sizes(0, pvt);
++	amd64_debug_display_dimm_sizes(pvt, 0);
  
- #define DHAR				0xf0
- #define dhar_valid(pvt)			((pvt)->dhar & BIT(0))
+ 	/* everything below this point is Fam10h and above */
+ 	if (boot_cpu_data.x86 == 0xf)
+ 		return;
+ 
+-	amd64_debug_display_dimm_sizes(1, pvt);
++	amd64_debug_display_dimm_sizes(pvt, 1);
+ 
+ 	amd64_info("using %s syndromes.\n", ((pvt->ecc_sym_sz == 8) ? "x8" : "x4"));
+ 
+@@ -1536,7 +1535,7 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+  * debug routine to display the memory sizes of all logical DIMMs and its
+  * CSROWs
+  */
+-static void amd64_debug_display_dimm_sizes(int ctrl, struct amd64_pvt *pvt)
++static void amd64_debug_display_dimm_sizes(struct amd64_pvt *pvt, u8 ctrl)
+ {
+ 	int dimm, size0, size1, factor = 0;
+ 	u32 *dcsb = ctrl ? pvt->csels[1].csbases : pvt->csels[0].csbases;
 -- 
 1.7.4.rc2
 
