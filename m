@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab1CALPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 06:15:01 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:59730 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab1CALPA convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Tue, 1 Mar 2011 06:15:00 -0500
-Message-Id: <4D6CE3400200007800034498@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 01 Mar 2011 11:14:55 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: "Jeff Dike" <jdike@addtoit.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: fix UML build after adding CFI annotations to
-	 lib/rwsem_64.S
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756192Ab1CALUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 06:20:43 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60536 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755822Ab1CALUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 06:20:42 -0500
+Date: Tue, 1 Mar 2011 11:20:38 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/18] MAINTAINERS: Remove unnecessary
+	linux-kernel@vger.kernel.org entries
+Message-ID: <20110301112038.GA12568@sirena.org.uk>
+References: <cover.1298439175.git.joe@perches.com> <03b0dc89c5badbc0b8f155ecdd5912cad3e278f2.1298439175.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <03b0dc89c5badbc0b8f155ecdd5912cad3e278f2.1298439175.git.joe@perches.com>
+X-Cookie: Who's scruffy-looking?
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Jeff Dike <jdike@addtoit.com>
+On Tue, Feb 22, 2011 at 09:41:58PM -0800, Joe Perches wrote:
+> CC'ing lkml is the default and doesn't need separate entries.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
----
- arch/um/Kconfig.x86     |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
---- 2.6.38-rc6/arch/um/Kconfig.x86
-+++ 2.6.38-rc6-x86_64-cfi-annotate-rwsem-UML/arch/um/Kconfig.x86
-@@ -19,6 +19,9 @@ config X86_32
- 	def_bool !64BIT
- 	select HAVE_AOUT
- 
-+config X86_64
-+	def_bool 64BIT
-+
- config RWSEM_XCHGADD_ALGORITHM
- 	def_bool X86_XADD
- 
-
-
-
+I've run into a noticable number of issues with users not parsing this
+convention as expected and sending only direct to maintainer mail for
+things that have no list.  For the amount of space it saves in the file
+I'm not sure it's worth removing such entries.
