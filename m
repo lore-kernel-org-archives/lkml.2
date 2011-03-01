@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab1CATSV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:18:21 -0500
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:55666 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756903Ab1CATST (ORCPT
+	id S1757077Ab1CATUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:20:33 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62932 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab1CATUc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:18:19 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Ondrej Zajicek <santiago@crfreenet.org>
-Subject: [PATCH 1/5] s3fb: maximize virtual vertical size for fast scrolling
-Date: Tue, 1 Mar 2011 20:18:08 +0100
-User-Agent: KMail/1.9.10
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201103012018.11283.linux@rainbow-software.org>
+	Tue, 1 Mar 2011 14:20:32 -0500
+Date: Tue, 1 Mar 2011 11:19:22 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Subject: Re: linux-next: Tree for March 1 (staging/winbond)
+Message-Id: <20110301111922.69b0d8c1.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTimX0zvBEMxedXnhXiaxwEKHmm_Tu6fiZQkahZrC@mail.gmail.com>
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+	<20110301104924.071044ef.randy.dunlap@oracle.com>
+	<AANLkTimX0zvBEMxedXnhXiaxwEKHmm_Tu6fiZQkahZrC@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D6D46C6.01AD:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maximize virtual vertical framebuffer size during init to allow fast scrolling 
-(accelerated by panning).
+On Tue, 1 Mar 2011 21:10:23 +0200 Pekka Enberg wrote:
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> On Tue, Mar 1, 2011 at 8:49 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > On Tue, 1 Mar 2011 18:11:19 +1100 Stephen Rothwell wrote:
+> >
+> >> Hi all,
+> >>
+> >> Changes since 20110228:
+> >
+> >
+> > commit ddee7e28e7d5e4ba2b8537c6a59b035745c250bb
+> > Author: Pekka Enberg <penberg@kernel.org>
+> > Date:   Sun Nov 28 23:00:01 2010 +0200
+> >    Staging: w35und: Remove empty sysdef.h header
+> >
+> >
+> > This header should not have been empty, since in
+> >
+> > commit 412dc7f368bf10a8049a8a4c41abbfd0108742e7
+> > Author: Randy Dunlap <randy.dunlap@oracle.com>
+> > Date:   Fri Nov 19 09:30:18 2010 -0800
+> >    staging: fix winbond build, needs delay.h
+> >
+> > I added delay.h to it.  And now we have the same build
+> > errors that I fixed last November:
+> >
+> > drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration of function 'msleep'
+> > drivers/staging/winbond/phy_calibration.c:1555: error: implicit declaration of function 'udelay'
+> > drivers/staging/winbond/reg.c:893: error: implicit declaration of function 'msleep'
+> > drivers/staging/winbond/reg.c:1169: error: implicit declaration of function 'udelay'
+> 
+> Strange. I didn't see the problem. We should add delay.h to
+> phy_calibration.c and reg.c instead. Care to make a patch?
+> --
 
---- linux-2.6.38-rc4-/drivers/video/s3fb.c	2011-02-20 19:11:28.000000000 +0100
-+++ linux-2.6.38-rc4/drivers/video/s3fb.c	2011-02-20 19:17:04.000000000 +0100
-@@ -1060,6 +1060,14 @@ static int __devinit s3_pci_probe(struct
- 		goto err_find_mode;
- 	}
- 
-+	/* maximize virtual vertical size for fast scrolling */
-+	info->var.yres_virtual = info->fix.smem_len * 8 /
-+			(info->var.bits_per_pixel * info->var.xres_virtual);
-+	if (info->var.yres_virtual < info->var.yres) {
-+		dev_err(info->device, "virtual vertical size smaller than real\n");
-+		goto err_find_mode;
-+	}
-+
- 	rc = fb_alloc_cmap(&info->cmap, 256, 0);
- 	if (rc < 0) {
- 		dev_err(info->device, "cannot allocate colormap\n");
+No thanks, I'll let the staging people do that.
 
--- 
-Ondrej Zary
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
