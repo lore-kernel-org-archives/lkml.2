@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab1CAUKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:10:00 -0500
-Received: from nm30-vm1.bullet.mail.ne1.yahoo.com ([98.138.90.46]:25586 "HELO
-	nm30-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756478Ab1CAUJ7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:09:59 -0500
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 373461.94111.bm@omp1024.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=att.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=hpH6VOOa16+6rE+7uo0LWWtynRcu87yCpb4TEs70/z/ArB6jYmqvT1lJVktVV/pGR2ClP6Qw8qt3wdtROtewG80zs5ADQD8ESEQWEYlRNYbSbF8jbx88OwL33/3u/mwLsg+3TdddZcyENJTPPuhIw/T+qEWVLnXE3A7v1Fac9xQ=;
-Message-ID: <405503.29042.qm@web181413.mail.ne1.yahoo.com>
-X-YMail-OSG: 2TqJeBoVM1n3rGSkze0KgOhOcP31WdkwTjUR_m0ZhSdL4_7
- vUmM_979OZrbVTgXsPv4MDeS29XgYHYkvOmy8tu0Bp69.FjO9cLLz9YkEbzV
- q2cSXGfzNV0vnpOhiiddPP1NgSLSsxCInZ6V4Qq8BunaagPgfcmErVbCloBC
- TdZVf9DQCKXVtufkjVHZ0.123LBjzaGpz1e699IV1Jk6xAzmSLQkoJlfEC4B
- PUmVqxCp5mtpns7QTVikDSOFsPKI4rOmywg5DwOAygWW9EYt6eS3UZmYn_hT
- hVxPS00r0c_4OmDJz9GtSQJENMR.queEs9eMnqVelU4mAK.Nzdwn5L8QRZG1
- rJlvSa6t319gaohUWTLgfeUZVTMPtb98z1VA.hfU2SLJzAOI.12CRTvkN1kM
- ObHh9YKY1yuu6peS7i6dnDym.j7ngG.B0Az85CaKtrl1m24faCNUKng3TCij
- duUSx2J83k4cbZP8ch5ew7Q0SIdWRxwVcYdZLdHBNajMw4ijgnpjDwHR3BmX
- ZddjCCEtrqUC4dz9teX4m9d6ZBOebycFtRuJr4BqYsaaWnvqgi1m3nu.VLpT
- lVCCQykeLvpyELnFJK1.3hmexCSac.S0gBLJ2D6VNP_B1jJ_hW2fC1O8orZc
- SDF5ImTZ5fjhvogUe5RTz37W5IZFmao95MlHTHBstOwMzF81mQzA5VRD4H.v
- E_YOjDj814dgAh8TE_OHSKiowqDfB5jiNLVH0FdGjgOeG0jHgXJVgdBxFVb.
- OOjkCmNYXpI14cVR7U24qG6KtOvgDfNO9IM5p2WSdgLis0.c5hOCiEZgGOeO
- 210SCBNuB1VCZuUdaCUr4JmlXeEyTXVXb6SOnHbaagx_kfup4EQofZN5KVVX
- UTZuGzk95HPv_0LEqi4E9GR0e56Qhu8v7B10MUxLGJUhmDVKY8cibVTo8zio
- 6.MT09Hubz90i_4IgSzdExYno2bEG2iY6Ztp.m6sHTofCgCvGrscCd69OfOj
- jW3BtI5WEdUPyJNh.45J4QRbXiJDtw60KniYBQ9vwgQSVFdffQo9RtCPjpFN
- Xe0qEwvC85uLsyFTLgqxol830cyl9l1NH_ODfY7TIu8zPqB09vnLufF0O0jX
- 6pR1oEeuGBM9wJbgPEIanxBGS0tIyED5dtNTnv.vSYP7FP.KWT0XbjoXftVW
- AR7TGgwP4yWnrxGYO64A0rH.Z06AQONwPRZNUD4SJFmmN5ihLErciznkvKXQ
- HJ2Ujze58wa1bdENYtuAEOsg.LYm2yX0IWkIQvcmTfiaf3o47Sk.a1zUchqj
- Qb0BKZbahK6ctXhQ7SknmOTE_SDKyI577DU012XAgsu5I.Dbvg8WzWKP4Ju4
- Be5MFNESKAR5gP7TqXXdrDI3DctdJw.G3gZIPo0G6gxEKkNbyUXwrjDS534T
- jYbUnnPoBRpVDXEn5.Hw6Y6MWt4_4dS61JHKyjCBSqIHIQf36lhjiG._cA58
- fsVKrlVXNFtOH2lZn4KoRdRJOHaAqymlzfkF1OrTQ6Dz88WbMqJs0tEZ_s3E
- ZTCqhuy7NnxJJgDyo57QprYOGeifV9nDjUKvmO7SKhNVTEw9Nz_XdvLDutkF
- oOIncqETo8AbLag_zlFZSvg9eKkI2J74qiaD9.2nAUAAO6XlSPP8ZTLAcGhF
- TJJOBaDldDGkYWGFLJpPrCHHF.dHi0OpOOqJ7LpzaZG7fvOOLTMIyA7xRHzV
- 9jLc4jv29qvZc.t836XmtLkSYiZtkeOpCoTJbddj49pzKCREZmttw08louzN
- dnuuDT0OMX_Kcw_ttlGUeUqltULNvo6s2AmoXePwbncH_3r7U1swkHC.Jhva
- pEq1S_Z6hE.2qLUdCI5tiT5RjduuWTuX462zQgcw3ux_06QbO.yTJDPJDDdD
- lrXjw8p70EdlP9FIuTR.ECREvCqDANezGoGR8IzB49dcc_vGK39Hay2VpA3i
- ksFrKft6fK7rLxYfOicmzGEJgq_2wUoSUrrI3uyuaZcJ8WLtXWmZyjZQBPe9
- V_i5xirIX8p4tZdKt_hkIaclgChi3tFf_t_HrleveqPFS_hyd3bT3wfMJPdv
- n687Ahy0AcmMM7x4ETFNXb6Bh7DKUiVAk9tJiLkOY.t3tYiaZ2p9PnHdZKvN
- eU9gkrrvTGySNKaC8Bl9E03g0JfQ82t7PnzNAXY6.pLfvWUHgIv1AETpUpuc
- uGgx_H6Daa.duze14QIKFo3Fz5zduTFDQmybMu0Rl1teImijMJi2JMpmpPgG
- oYEJhjiKc9q0QzBYnzp7Opi2BIwgDt92clEGT80hjjhVwxD5AiRM9kcRp580
- izCAioRMQaAbztOm7ZZFMX.FthInz3iOCC_3NsV0TnhCgylt2KH_CZGcmT7J
- m8A32LYPM5Y3VBETqdjNRz3LrG1_JmBCq.BjGI3VES6tlElvn4m8mB1oXNVz
- 9gjLQDZUT69bBO4ChJOmVTVV8YaDOY3wq4lQFVqUfVrwc9SIZwNA9e2bAdp9
- 5sGJTIcIxv51V3WI7hcZQxXezkvdS6zsL_n6BVluk03ZbUhDCVxaNbE5fjRm
- V0Qhh91B5iDKKLs1k9Dup_uPwyAlv.YUA5du08r5TQ80yWAU.Bo3LjM9EGGu
- gu7_JyJGTzpMzGH6QtvjmKMRWc3HIUkEW3zK5xIMXRm1Pi1ujhpjOeKpVRKz
- MgVDv47NnlpTxnC430ycfD5WwSB2Z_OtIlzvYyASasLEKFi4HBMXtiTnkIbu
- GjHYdi.jP2VR1CliqFH9kUmpC5NMFeXcG2JoQ_f5BIbFFcxmB5bcWk9dWYyP
- LbE91nkmZb23c9TICNCFQZvtiibVdnu5oYoo7dTfh8pQnMSg3Q3mx1xOo1qO
- Y2g25VVRRF3QpLBhHL6w2n0jfUIKadZ_udDrEvqNVM9F__e.DVUKPmXa5Hmk
- HGofB.8GP_X_7yjPX7Tnd4JYFSjAYHocuCOimOu8zaW1fawSKKZRittl8Jqm
- GzyGt.fFwnyUorc0HGjz4ecZPHuwCBs2w17N8CSnbkgal.CFewXcklAQtFdF
- pDu4sisL4r24bsneZmQyKmWNIkCTEEJe0LLcb2fOrn7fyTK00ijiVAl9LyY0
- b1QroIZPpeK5n3ggEDU7TgNqNWE8R79bZfkzNWkHEyg9_eXF5A1mbTkn2.U4
- ct8e2b97tUhDagjGv_R5POTYL7ziJHI16khSh9TpvCkl6rd.O13dZmUArK_3
- dg2efuYtowdTLLYd4EFcENp2hu0LqKaEBRKq5AzZ_mt4PSv8SMNKyH5PeOhO
- lH108ePkpMPqB.Px.rVJtPhaQsPPWTCVJZiykq_7FijWxEVE6cBC_4aTPAL0
- E8ge7Pj9ir1E.cyd03sQ0YNzBjo1lT3ouu1bu6JzSEhTrekGroRvFb_SYAtC
- jK4MPHDCs7IVPWCUtGG8TWVNm1c2lCg50ljpOQ7Q5Qb7U9Rk4EI0DzvKpwy4
- _qcPCNVHkviwGEUS9UdAs2VO.F5wXLYaYxpC1LLPckpiaAiDuB0MihQGug51
- jq1oW3xNaxO1z7ob4Dn7pi_Y.NxARgGrDzNaTRwuz8Nu81WYc_TKLVPD1d9L
- I4H0v3Kcto8IbGsyt532ACP767VmMbHyDSYKMY8Pnkmogcjc_WG4g4zOxJdk
- HWuyjrPdtLmrznLdbLVDEu5OzsvgeNXJPcA2PxtMVHNLVtoBUrJTZN9dn0eP
- IBzajyrCeRKnxpJHRYq.YYAOcO.vnXSh86P.pQKGGO8X07M06QnRg98dmyoD
- hRy8e0NKtacfZuFTRoCpHhP4v6HMs_gqOjqmNwXJaiXuK1hpn5TVrRPcWhgp
- gIu.WC01rw8CfX88tn8RJ2AoE6ixYajrcxy0QWDlpH0RrysF2mbpE9IQmGqS
- R5D0D_PpDm9Y4LEEwMBUfHZ8P7ogh01r2x.9hjmojxyUJluBRwqVN5kTFfFC
- XD5RG2lv07eec8KrwjYAP7Y_QRyL7hUNwBWEqBE3xD7oSS.R7l4rb_KKL5__
- RjbwBV_A78jIA2aEK2hT9QQ9Nv0586wga6ZplCsr01uPxvBwPt0SNqNh0xCe
- yy.FWk7KdNDDVYw0fKiTlN7X5_.GM.jbLPBoqoeif387I15IujK.6mWGY1xO
- Yn9U0t0CFJVq0eE.utNxF_Oy3DvjPLplqkmVraJKTQiF9K2hHnGqbSlHhmFb
- xcJXeep8Cr6e7B8wCSZIh.mVTgXQWm3mi9IOzz6IBhIt_4si8P2jNE_3k1KZ
- RLhWeMozFpwGpiYzoUDYBOmaOTHimBhXTyfG4ZAOi8DiwP0Kzddt5LnKwZdl
- 6JaQsYESqn7Ca8p76dLPz7CAd
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.292656
-Date: Tue, 1 Mar 2011 08:34:50 -0800 (PST)
-From: =?iso-8859-1?Q?Western_Union=AE?= <harry---owens@att.net>
-Reply-To: wumtdisbursementdesk5@w.cn
-Subject: Transfer now
-To: undisclosed recipients:;
+	id S1757363Ab1CAULr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:11:47 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:55548 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab1CAULq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 15:11:46 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6271"; a="77193475"
+From: David Brown <davidb@codeaurora.org>
+To: Kenneth Heitke <kheitke@codeaurora.org>
+Cc: bryanh@codeaurora.org, dwalker@fifo99.com, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.intradead.org, yanhe@codeaurora.org,
+        palnatim@codeaurora.org, subhashj@codeaurora.org,
+        Amir Samuelovi <amirs@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [RFC PATCH 5/5] RFC: msm: sps: Smart Peripheral System (SPS) driver.
+References: <1298941892-25173-1-git-send-email-kheitke@codeaurora.org>
+	<1298941892-25173-6-git-send-email-kheitke@codeaurora.org>
+X-Hashcash: 1:20:110301:linux-arm-kernel@lists.infradead.org::OKYxN9JNZo70S1rk:00000000000000000000000000oFk
+X-Hashcash: 1:20:110301:amirs@codeaurora.org::JHP1XSWB6Rsilro7:000000000000000000000000000000000000000001ZT5
+X-Hashcash: 1:20:110301:subhashj@codeaurora.org::2AIzH4Hg1gptmqpT:000000000000000000000000000000000000000Yup
+X-Hashcash: 1:20:110301:yanhe@codeaurora.org::boI0dqwsoVLbZFGO:000000000000000000000000000000000000000002Dzc
+X-Hashcash: 1:20:110301:linux-arm-kernel@lists.intradead.org::yUF0EjebBT7F4OQ7:000000000000000000000000004lH
+X-Hashcash: 1:20:110301:linux-arm-msm@vger.kernel.org::dIqgzcgPdTsOuR+u:000000000000000000000000000000004L8/
+X-Hashcash: 1:20:110301:dwalker@fifo99.com::0kTnmt4Y8kTAt/OX:00000000000000000000000000000000000000000001GaP
+X-Hashcash: 1:20:110301:bryanh@codeaurora.org::QEZf7CYXbN9QE/oZ:00000000000000000000000000000000000000001kcJ
+X-Hashcash: 1:20:110301:palnatim@codeaurora.org::FbORTuwA4I+N7/xI:000000000000000000000000000000000000004RM/
+X-Hashcash: 1:20:110301:kheitke@codeaurora.org::0CzxcCIvoGmnEzNt:000000000000000000000000000000000000000JpqJ
+X-Hashcash: 1:20:110301:linux-kernel@vger.kernel.org::ML0iI5upL4T0y+LU:000000000000000000000000000000000Lh7N
+Date: Tue, 01 Mar 2011 12:11:45 -0800
+In-Reply-To: <1298941892-25173-6-git-send-email-kheitke@codeaurora.org>
+	(Kenneth Heitke's message of "Mon, 28 Feb 2011 18:11:32 -0700")
+Message-ID: <8yahbbmvbwe.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have $85,000USD in cash credit by the International Monetary Funds(IMF) via western union. Confirm this receipt by replying the due process unit officer. Details required: Full Name,Address,Tel,Occupation
+On Mon, Feb 28 2011, Kenneth Heitke wrote:
+
+> diff --git a/arch/arm/mach-msm/include/mach/msm_sps.h b/arch/arm/mach-msm/include/mach/msm_sps.h
+> +
+
+> diff --git a/arch/arm/mach-msm/sps/Makefile b/arch/arm/mach-msm/sps/Makefile
+> +
+
+> diff --git a/arch/arm/mach-msm/sps/sps.c b/arch/arm/mach-msm/sps/sps.c
+> +
+
+> diff --git a/arch/arm/mach-msm/sps/sps_bam.c b/arch/arm/mach-msm/sps/sps_bam.c
+> +
+
+These four files add spurious blank lines to the end of their files.  If
+there are no other changes to the patches, I can fix this up before
+applying the patches.  Otherwise, please remove these before resending
+the patches.
+
+Thanks,
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
