@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab1CAFEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 00:04:15 -0500
-Received: from dakia2.marvell.com ([65.219.4.35]:46176 "EHLO
-	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab1CAFEO (ORCPT
+	id S1753013Ab1CAFGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 00:06:15 -0500
+Received: from outbound.icp-qv1-irony-out4.iinet.net.au ([203.59.1.104]:29420
+	"EHLO outbound.icp-qv1-irony-out4.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750772Ab1CAFGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 00:04:14 -0500
-X-ASG-Debug-ID: 1298955853-082d62f00001-xx1T2L
-X-Barracuda-Envelope-From: bzhao@marvell.com
-From: Bing Zhao <bzhao@marvell.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Kiran Divekar <dkiran@marvell.com>, Frank Huang <frankh@marvell.com>,
-        Bing Zhao <bzhao@marvell.com>
-X-ASG-Orig-Subj: [RFC v2 1/2] dynamic debug: add dynamic_hexdump_debug macro
-Subject: [RFC v2 1/2] dynamic debug: add dynamic_hexdump_debug macro
-Date: Mon, 28 Feb 2011 21:06:55 -0800
-X-ASG-Orig-Subj: [RFC v2 1/2] dynamic debug: add dynamic_hexdump_debug macro
-Message-Id: <1298956016-30673-2-git-send-email-bzhao@marvell.com>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1298956016-30673-1-git-send-email-bzhao@marvell.com>
-References: <1298956016-30673-1-git-send-email-bzhao@marvell.com>
-X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1298955853
-X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: -1002.00
-X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
+	Tue, 1 Mar 2011 00:06:14 -0500
+X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 00:06:13 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAKYLbE18qV3C/2dsb2JhbACEJ6IjdKookHSBJ4FXgW12BIUQimc
+X-IronPort-AV: E=Sophos;i="4.62,245,1297008000"; 
+   d="scan'208";a="637553851"
+From: Ian Kent <raven@themaw.net>
+Subject: [PATCH 0/4] more on vfs-scale and vfs-automount
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Nick Piggin <npiggin@gmail.com>, David Howells <dhowells@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 01 Mar 2011 12:56:50 +0800
+Message-ID: <20110301044457.4615.40333.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dynamic_hexdump_debug(str, buf, len)
+I've put quite a bit of time into testing 2.6.38-rc and, given the
+time frame, and update is needed. The included patch series much
+improves the behaviour of autofs under load.
 
-str: "subject string"
-buf: buffer pointer
-len: length of the buffer being printed
+I first thought the dentry leak you found was not the cause of the
+BUG() I was seeing but that appears to not be the case. I'm not
+seeing the BUG() at shutdown when umounting any more.
 
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+I am still seeing occassional incorrect ENOENT returns. They must be
+comming from the VFS or the daemon as I've changed almost all the
+ENOENT returns in the autofs module to identify where it's comming
+from.
+
+Anyway, all, please review.
+
 ---
- include/linux/dynamic_debug.h |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 0c9653f..429a176 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -70,6 +70,19 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
- 	} while (0)
- 
-+#define dynamic_hexdump_debug(str, buf, len)				\
-+do {									\
-+	static struct _ddebug descriptor				\
-+	__used								\
-+	__attribute__((section("__verbose"), aligned(8))) =		\
-+	{ KBUILD_MODNAME, __func__, __FILE__, str, __LINE__,		\
-+		_DPRINTK_FLAGS_DEFAULT };				\
-+	if (unlikely(descriptor.enabled)) {				\
-+		printk(KERN_DEBUG str);					\
-+		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, buf, len);	\
-+	}								\
-+} while (0)
-+
- #else
- 
- static inline int ddebug_remove_module(const char *mod)
-@@ -81,6 +94,15 @@ static inline int ddebug_remove_module(const char *mod)
- 	do { if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); } while (0)
- #define dynamic_dev_dbg(dev, fmt, ...)					\
- 	do { if (0) dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__); } while (0)
-+
-+#define dynamic_hexdump_debug(str, buf, len)				\
-+do {									\
-+	if (0) {							\
-+		printk(KERN_DEBUG str);					\
-+		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, buf, len);	\
-+	}								\
-+} while (0)
-+
- #endif
- 
- #endif
+Ian Kent (4):
+      autofs4 - fix autofs4_expire_indirect() traversal
+      autofs4 - fix dentry leak in autofs4_expire_direct()
+      autofs4 - fix rootless multi-mount race
+      vfs - check non-mountpoint dentry might block in __follow_mount_rcu()
+
+
+ fs/autofs4/expire.c |   72 ++++++++++++++++++++++++++++++++++++++++-----------
+ fs/autofs4/root.c   |   20 +++-----------
+ fs/namei.c          |   24 ++++++++++++++---
+ 3 files changed, 80 insertions(+), 36 deletions(-)
+
 -- 
-1.6.2.5
-
+Ian
