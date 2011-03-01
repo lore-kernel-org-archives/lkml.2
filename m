@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab1CATeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:34:08 -0500
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:44932 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756816Ab1CATeF (ORCPT
+	id S1757160Ab1CATgB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:36:01 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55250 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756962Ab1CATgA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:34:05 -0500
-From: Bing Zhao <bzhao@marvell.com>
-To: Joe Perches <joe@perches.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Kiran Divekar <dkiran@marvell.com>, Frank Huang <frankh@marvell.com>
-Date: Tue, 1 Mar 2011 11:33:55 -0800
-Subject: RE: [RFC v2 1/2] dynamic debug: add dynamic_hexdump_debug macro
-Thread-Topic: [RFC v2 1/2] dynamic debug: add dynamic_hexdump_debug macro
-Thread-Index: AcvX0Rx8d+v69aUBQ+S5mml6FYrx6AAdOprQ
-Message-ID: <477F20668A386D41ADCC57781B1F704307F5150529@SC-VEXCH1.marvell.com>
-References: <1298956016-30673-1-git-send-email-bzhao@marvell.com>
-	 <1298956016-30673-2-git-send-email-bzhao@marvell.com>
- <1298957138.4367.3.camel@Joe-Laptop>
-In-Reply-To: <1298957138.4367.3.camel@Joe-Laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 1 Mar 2011 14:36:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ApN/Jntcm7GImxesD6BbT/8M+Bjz2t/AB6MRk684S8HVCrRGVgtVupwDreBMfG3B1z
+         hStnQfscw0lVGC1PovZ8XGL43WCFWEtUI+sC1z1uKt/EgyziEaVpPUEjk4m4aMG4A7do
+         fxBJpxuh5LHBVd6X+uH+JgSkhQ2txMrQZpZlw=
 MIME-Version: 1.0
+In-Reply-To: <20110301111922.69b0d8c1.randy.dunlap@oracle.com>
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+	<20110301104924.071044ef.randy.dunlap@oracle.com>
+	<AANLkTimX0zvBEMxedXnhXiaxwEKHmm_Tu6fiZQkahZrC@mail.gmail.com>
+	<20110301111922.69b0d8c1.randy.dunlap@oracle.com>
+Date: Tue, 1 Mar 2011 21:35:59 +0200
+X-Google-Sender-Auth: qfFxqZU6BCj3UwNReOxbNrmWjtY
+Message-ID: <AANLkTimayi4tSe=r1HOPgpcSucBWC7SoBV1ocmV5LEs4@mail.gmail.com>
+Subject: Re: linux-next: Tree for March 1 (staging/winbond)
+From: Pekka Enberg <penberg@kernel.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p21JYFuV015252
 
-Hi Joe,
+On Tue, Mar 1, 2011 at 9:19 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Tue, 1 Mar 2011 21:10:23 +0200 Pekka Enberg wrote:
+>
+>> On Tue, Mar 1, 2011 at 8:49 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> > On Tue, 1 Mar 2011 18:11:19 +1100 Stephen Rothwell wrote:
+>> >
+>> >> Hi all,
+>> >>
+>> >> Changes since 20110228:
+>> >
+>> >
+>> > commit ddee7e28e7d5e4ba2b8537c6a59b035745c250bb
+>> > Author: Pekka Enberg <penberg@kernel.org>
+>> > Date:   Sun Nov 28 23:00:01 2010 +0200
+>> >    Staging: w35und: Remove empty sysdef.h header
+>> >
+>> >
+>> > This header should not have been empty, since in
+>> >
+>> > commit 412dc7f368bf10a8049a8a4c41abbfd0108742e7
+>> > Author: Randy Dunlap <randy.dunlap@oracle.com>
+>> > Date:   Fri Nov 19 09:30:18 2010 -0800
+>> >    staging: fix winbond build, needs delay.h
+>> >
+>> > I added delay.h to it.  And now we have the same build
+>> > errors that I fixed last November:
+>> >
+>> > drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration of function 'msleep'
+>> > drivers/staging/winbond/phy_calibration.c:1555: error: implicit declaration of function 'udelay'
+>> > drivers/staging/winbond/reg.c:893: error: implicit declaration of function 'msleep'
+>> > drivers/staging/winbond/reg.c:1169: error: implicit declaration of function 'udelay'
+>>
+>> Strange. I didn't see the problem. We should add delay.h to
+>> phy_calibration.c and reg.c instead. Care to make a patch?
+>> --
+>
+> No thanks, I'll let the staging people do that.
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Monday, February 28, 2011 9:26 PM
-> To: Bing Zhao
-> Cc: linux-kernel@vger.kernel.org; linux-wireless@vger.kernel.org; John W. Linville; Johannes Berg;
-> Amitkumar Karwar; Kiran Divekar; Frank Huang
-> Subject: Re: [RFC v2 1/2] dynamic debug: add dynamic_hexdump_debug macro
-> 
-> On Mon, 2011-02-28 at 21:06 -0800, Bing Zhao wrote:
-> > dynamic_hexdump_debug(str, buf, len)
-> 
-> > diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-> > +#define dynamic_hexdump_debug(str, buf, len)				\
-> > +do {									\
-> > +	static struct _ddebug descriptor				\
-> > +	__used								\
-> > +	__attribute__((section("__verbose"), aligned(8))) =		\
-> > +	{ KBUILD_MODNAME, __func__, __FILE__, str, __LINE__,		\
-> > +		_DPRINTK_FLAGS_DEFAULT };				\
-> > +	if (unlikely(descriptor.enabled)) {				\
-> > +		printk(KERN_DEBUG str);					\
-> > +		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, buf, len);	\
-> 
-> Perhaps
-> 		print_hex_dump(str, DUMP_PREFIX_OFFSET, buf, len);
-
-I wanted to print the "str" as a subject line, like this:
-
-mwifiex data: tx_buf:
-00000000: 34 8c 24 a0 ff ff ff ff 36 72 24 a0 ff ff ff ff  4.$.....6r$.....
-00000010: d7 7f 24 a0 ff ff ff ff 80 8e 24 a0 ff ff ff ff  ..$.......$.....
-00000020: df 7d 24 a0 ff ff                                .}$...
-
-The "str" will serve as the prefix strings if we use
-print_hex_dump(KERN_DEBUG, str, DUMP_PREFIX_OFFSET, 16, 1, buf, len, true);
-
-mwifiex data: tx_buf:00000000: 34 8c 24 a0 ff ff ff ff 36 72 24 a0 ff ff ff ff  4.$.....6r$.....
-mwifiex data: tx_buf:00000010: d7 7f 24 a0 ff ff ff ff 80 8e 24 a0 ff ff ff ff  ..$.......$.....
-mwifiex data: tx_buf:00000020: df 7d 24 a0 ff ff                                .}$...
-
-I'm okay with this format too.
-
-Thanks,
-
-Bing
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hmm, commit cecf826df8648c843ea8db63b1f82c154a74db36 ("staging:
+winbond: needs <linux/delay.h> for msleep and friends") should fix it.
+Isn't it in linux-next yet?
