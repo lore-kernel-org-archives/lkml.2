@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175Ab1CAXkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:40:13 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52460 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab1CAXkL convert rfc822-to-8bit (ORCPT
+	id S1757378Ab1CAXlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:41:23 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53865 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756799Ab1CAXlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:40:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bymsS5w8qAn3IK6D+HbZgvvGGYzpBxwqH6q82Hp97hWyGfbNouM+mOtuiOkq6UZPsN
-         h9nSSB9B6UUg9KFgamIP5HjZUyDCspS+K7TRAipC4IhBkJbBTijF9mT/bvT5JXNaPuj3
-         +BFYzKyIIxM9VnN5JDB54Pr6Ht5D+2DHqd/xU=
-MIME-Version: 1.0
-In-Reply-To: <201103012207.22798.rjw@sisk.pl>
-References: <cover.1298820825.git.tardyp@gmail.com>
-	<Pine.LNX.4.44L0.1103011431400.2034-100000@iolanthe.rowland.org>
-	<AANLkTi=ogThxB_2bxANV4hUsLGZs04gzHSCyH90Bm87U@mail.gmail.com>
-	<201103012207.22798.rjw@sisk.pl>
-Date: Wed, 2 Mar 2011 00:40:09 +0100
-Message-ID: <AANLkTinNG9ecqSGk+zDjd0A+nLXmwHQkRot0WZ18amsv@mail.gmail.com>
-Subject: Re: [linux-pm] [RFC,PATCHv3 0/3] sdhci runtime_pm implementation
-From: Pierre Tardy <tardyp@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Mar 2011 18:41:21 -0500
+Date: Tue, 1 Mar 2011 15:41:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: nai.xia@gmail.com
+Cc: Izik Eidus <ieidus@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte
+ mapping to ksm pages
+Message-Id: <20110301154100.212c4ff9.akpm@linux-foundation.org>
+In-Reply-To: <201102262256.31565.nai.xia@gmail.com>
+References: <201102262256.31565.nai.xia@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 10:07 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, March 01, 2011, Pierre Tardy wrote:
->> On Tue, Mar 1, 2011 at 8:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> > On Tue, 1 Mar 2011, Pierre Tardy wrote:
->> >
->> >> Please find sdhci runtime_pm implementation.
->> >>
->> >> It uses clock gating fw as a tip to know when our chip is idle.
->> >> It implements wake up from card insertion/removal.
->> >>
->> >> This is RFC, please dont merge yet. I really would like to have deep review
->> >> from PCI linux-pm guys.
->> >>
->> >> Opens are:
->> >>
->> >> 1/ Not sure if the pci configs in the driver in rpm_suspend/resume flow
->> >>  are not duplicate from what the core is doing.
->> >
->> > There may be one or two small errors.
->> >
->> >> 2/ Wakeup from D3hot: I cannot find any driver that is implementing it in current upstream,
->> >
->> > Other drivers do it, but they use PCI PME# instead of interrupts.
->> Could you please elaborate?
->> My understanding is that PCI PME will generate MSI, which translate in
->> interrupt.
->
-> Your driver won't get those interrupts.
->
-> How it works is, basically, that when the device signals wakeup, it either
-> causes a PME# signal to be raised (parallel PCI), or a PME Message to be
-> sent upstream (PCIe).  In the first case it will cause a platform event
-> (eg. ACPI GPE) to occur and the handle of that event will resume your
-> device (using pm_request_resume()).  In the second case it will cause the PCIe
-> root port handling the PME Message to generate an interrupt and the handler of
-> that interrupt will resume your device.
-Thanks, that explain a lot how it works.
-What I still dont understand is that the wake source I'll have (e.g.
-sd card insert) is still an interrupt source.
-So it is supposed to generate interrupt until the interrupt source is
-acknowledged.
-Are we supposed to mask that interrupt source while suspended to make
-sure we have either wake or interrupt?
+On Sat, 26 Feb 2011 22:56:31 +0800
+Nai Xia <nai.xia@gmail.com> wrote:
 
->
-> In fact, there are a few drivers in the tree using this mechanism already
-> (r8169, e1000e, i believe PCI HCDs too).
-Hope there will be more and more.
+> ksm_pages_sharing is updated by ksmd periodically.  In some cases, it cannot 
+> reflect the actual savings and makes the benchmarks on volatile VMAs very 
+> inaccurate.
+> 
+> This patch add a vm_stat entry and let the /proc/meminfo show information 
+> about how much virutal address pte is being mapped to ksm pages.  With default 
+> ksm paramters (pages_to_scan==100 && sleep_millisecs==20), this can result in 
+> 50% more accurate averaged savings result for the following test program. 
+> Bigger sleep_millisecs values will increase this deviation. 
 
-thanks,
-Pierre
+So I think you're saying that the existing ksm_pages_sharing sysfs file
+is no good.
+
+You added a new entry to /proc/meminfo and left ksm_pages_sharing
+as-is.  Why not leave /proc/meminfo alone, and fix up the existing
+ksm_pages_sharing?
+
+Also, the patch accumulates the NR_KSM_PAGES_SHARING counts on a
+per-zone basis as well as on a global basis, but only provides the
+global count to userspace.  The per-zone counts are potentially
+interesting?  If not, maintaining the per-zone counters is wasted
+overhead.
+
+> 
+> --- test.c-----
+>
+
+The "^---" token conventionally means "end of changelog".  Please avoid
+inserting it into the middle of the changelog.
+
+> +++ b/mm/ksm.c
+> @@ -897,6 +897,7 @@ static int try_to_merge_one_page(struct vm_area_struct 
+> *vma,
+
+Your email client wordwraps the patches.
