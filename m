@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab1CASEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 13:04:42 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:47536 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1CASEk (ORCPT
+	id S1756268Ab1CASPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 13:15:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59213 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab1CASPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 13:04:40 -0500
+	Tue, 1 Mar 2011 13:15:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jFdvbn7sSYOi4O8XEf7BFYk+JYlNWvjb/JoNtEWtd3VdwArDOJCmW/wYoYZKmXn3Lt
-         VHibgpwnQ2cmUxrUuIHuRkSjiIbmptlgWqe2Geu01XtVbLcWYdhhj0SPUrTOg/tz5Sfk
-         XKvpq0Xa/A5p+U2gm96X2hZt0L0z+aCJ5RISE=
-Date: Tue, 1 Mar 2011 10:04:29 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38-rc6: SysRq broken?
-Message-ID: <20110301180429.GD27560@core.coreip.homeip.net>
-References: <20110228214054.GA18538@p183.telecom.by>
- <201102281357.21747.dmitry.torokhov@gmail.com>
- <20110228220447.GB18538@p183.telecom.by>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110228220447.GB18538@p183.telecom.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=oKQ0O5FuwcMcNGJFrexo+wDK+h00xzwRuVFF5VmDN1ARzMwXM3u0JQJFBYVRIolXAF
+         ZoKaX1ESu6Tjczh4d0HZyd8OnbEkAaswzJvB8coTk7R9kN0CW0QiCgAz5Pn6ioW5RVk9
+         l46uAC/asUSddoaM10JW7W0IKYv2Sshm8VvAI=
+From: Pierre Tardy <tardyp@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-mmc@vger.kernel.org
+Cc: Pierre Tardy <tardyp@gmail.com>
+Subject: [RFC,PATCHv3 0/3] sdhci runtime_pm implementation
+Date: Tue,  1 Mar 2011 19:15:30 +0100
+Message-Id: <cover.1298820825.git.tardyp@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 12:04:47AM +0200, Alexey Dobriyan wrote:
-> On Mon, Feb 28, 2011 at 01:57:21PM -0800, Dmitry Torokhov wrote:
-> > On Monday, February 28, 2011 01:40:54 pm Alexey Dobriyan wrote:
-> > > It just strikes me that SysRq is broken here:
-> > > Alt+SysRq+h doesn't print anything
-> > > 
-> > > CONFIG_MAGIC_SYSRQ=y
-> > > CONFIG_INPUT_EVDEV=y
-> > > kernel.sysrq=1
-> > > echo h >/proc/sysrq-trigger works
-> > > 
-> > > Keyboard is USB one, "Logitech HID compliant keyboard".
-> > 
-> > What does /proc/bus/input/devices show?
-> 
-> 
-> I: Bus=0003 Vendor=046d Product=c30e Version=0110
-> N: Name="Logitech HID compliant keyboard"
-> P: Phys=usb-0000:00:1d.0-1.2/input0
-> S: Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/input/input3
-> U: Uniq=
-> H: Handlers=sysrq kbd event3 
-> B: PROP=0
-> B: EV=120013
-> B: KEY=1000000000007 ff800000000007ff febeffdff3cfffff fffffffffffffffe
-> B: MSC=10
-> B: LED=7
-> 
+Please find sdhci runtime_pm implementation.
 
-Hmm, looks like we bound sysrq handler here and the device has both alt
-and SysRq keys. Is it only help that is not working? What abouth other
-functions (reboot, etc)?
+It uses clock gating fw as a tip to know when our chip is idle.
+It implements wake up from card insertion/removal.
 
--- 
-Dmitry
+This is RFC, please dont merge yet. I really would like to have deep review
+from PCI linux-pm guys.
+
+Opens are: 
+
+1/ Not sure if the pci configs in the driver in rpm_suspend/resume flow
+ are not duplicate from what the core is doing.
+
+2/ Wakeup from D3hot: I cannot find any driver that is implementing it in current upstream,
+I'm not sure if I'm doing it the good way. 
+We have the exact same issue for our not yet upstreamable usb-otg driver.
+Not sure if this cannot be implemented generically in core.
+
+version 1: was RFC and untested,
+version 2: has been tested on intel medfield platform.
+version 3: RFC, untested.
+- Change runtime_pm initialization to match latest PCI framework scheme
+- Added wake-up support
+
+Pierre Tardy (2):
+  mmc: sdhci: use ios->clock to know when sdhci is idle
+  mmc: sdhci: handle wake-up from runtime_pm
+
+Yunpeng Gao (1):
+  mmc: sdhci-pci: Enable runtime PM support
+
+ drivers/mmc/host/sdhci-pci.c |  117 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/mmc/host/sdhci.c     |   88 +++++++++++++++++++++++++++++++
+ drivers/mmc/host/sdhci.h     |    5 ++
+ include/linux/mmc/sdhci.h    |    3 +
+ scripts/checkpatch.pl        |    6 +-
+ 5 files changed, 215 insertions(+), 4 deletions(-)
+
