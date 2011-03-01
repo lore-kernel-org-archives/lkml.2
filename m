@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab1CAJMu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 04:12:50 -0500
-Received: from fanny.its.uu.se ([130.238.4.241]:63043 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755420Ab1CAJMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 04:12:48 -0500
+	id S1756058Ab1CAJN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 04:13:29 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:35348 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756035Ab1CAJN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 04:13:27 -0500
+Message-ID: <4D6CB8A3.9080203@st.com>
+Date: Tue, 1 Mar 2011 14:43:07 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19820.47240.801312.507393@pilspetsen.it.uu.se>
-Date: Tue, 1 Mar 2011 10:12:40 +0100
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Simon Glass <sjg@chromium.org>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
-In-Reply-To: <20110301085911.GB16733@n2100.arm.linux.org.uk>
-References: <1298939263-16421-1-git-send-email-sjg@chromium.org>
-	<20110301084949.GA16733@n2100.arm.linux.org.uk>
-	<20110301085911.GB16733@n2100.arm.linux.org.uk>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] device.h: add device_set_platdata routine
+References: <5c561db378360ad1763da41f8350c7be816daa06.1298953633.git.viresh.kumar@st.com> <20110301075953.GR22310@pengutronix.de> <4D6CADE5.6000206@st.com> <20110301090518.GV22310@pengutronix.de>
+In-Reply-To: <20110301090518.GV22310@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux writes:
- > On Tue, Mar 01, 2011 at 08:49:49AM +0000, Russell King - ARM Linux wrote:
- > > On Mon, Feb 28, 2011 at 04:27:43PM -0800, Simon Glass wrote:
- > > > +	asm volatile("1:\t.word %c3\n"				\
- > > > +		     ".pushsection __bug_table,\"a\"\n"		\
- > > > +		     "2:\t.word 1b, %c0\n"			\
- > > > +		     "\t.hword %c1, 0\n"			\
- > > > +		     "\t.org 2b+%c2\n"				\
- > > 
- > > %c doesn't work on lots of versions of gcc, which is why we can't use
- > > the generic bug support.  There's no way to reliably generate constants
- > > without many compiler versions spitting out a '#' before them.
- > 
- > gcc 4.3.2:
- > 
- > asm(".word %c0" : : "i" (0));
- > 
- > produces:
- > 
- >         .word #0
- > 
- > which gas chokes on:
- > 
- > /tmp/cc2hGOHd.s:12: Error: bad expression
- > /tmp/cc2hGOHd.s:12: Error: junk at end of line, first unrecognized character is `0'
- > 
- > So what this means is that it's impossible to generate constants in
- > assembly with GCC targetting ARM without having them prefixed by '#',
- > which in turn makes it impossible to use the generic BUG support.
- > 
- > I reported this bug to gcc folk many years ago.  I've no idea which
- > version it has been fixed in or if it's even been fixed.
+On 03/01/2011 02:35 PM, Uwe Kleine-König wrote:
+>> > Ok. So we should use platform_device_add_data instead and mark our platform
+>> > data's struct as __init. So that it doesn't consume any memory after
+>> > this routine is done??
+> Yeah, either __initdata or still better const + __initconst if possible.
 
-What's the gcc bugzilla bug number?
+Ok. Thanks for your help.
+
+-- 
+viresh
