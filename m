@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab1CAXWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:22:54 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39214 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab1CAXWx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:22:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition
-         :content-transfer-encoding:in-reply-to:user-agent;
-        b=EKjpuaekbyCtqBNbqwqjasm9yv77rcdJ5O1DJzNabO1LrB91pbTbz9LKRPxJCR85a2
-         b5HvhwG4CIHVwO4mkvatte4z4EeeayZC7O6faJsHsYSDTxCOlTUJLqhm8EriNJ/rgrE6
-         zkdRL8KD+Pd/wnf5K+0dELnoQbd0SBDC+LZF0=
-Date: Wed, 2 Mar 2011 02:22:34 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Jonathan =?iso-8859-1?Q?Neusch=E4fer?= <j.neuschaefer@gmx.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Angelo Arrifano <miknix@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: quickstart: remove trailing whitespace
-Message-ID: <20110301232234.GA18043@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Jonathan =?iso-8859-1?Q?Neusch=E4fer?= <j.neuschaefer@gmx.net>,
-	Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-	Angelo Arrifano <miknix@gmail.com>, linux-kernel@vger.kernel.org
-References: <1299021017-11918-1-git-send-email-j.neuschaefer@gmx.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1299021017-11918-1-git-send-email-j.neuschaefer@gmx.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757566Ab1CAXZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:25:00 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:36406 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755084Ab1CAXY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 18:24:59 -0500
+Date: Wed, 2 Mar 2011 10:24:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>
+Subject: Re: linux-next: manual merge of the bkl-config tree with the tty
+ tree
+Message-Id: <20110302102453.b66ed95f.sfr@canb.auug.org.au>
+In-Reply-To: <201103020016.53993.arnd@arndb.de>
+References: <20110228174007.b6faf01e.sfr@canb.auug.org.au>
+	<201103012324.27725.arnd@arndb.de>
+	<20110302101357.7d2a3d81.sfr@canb.auug.org.au>
+	<201103020016.53993.arnd@arndb.de>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__2_Mar_2011_10_24_53_+1100_9CrEUg=wLPc_M=eN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 12:10:16AM +0100, Jonathan Neuschäfer wrote:
-> Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
-> ---
+--Signature=_Wed__2_Mar_2011_10_24_53_+1100_9CrEUg=wLPc_M=eN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Someone already fixed this in a different patch.
+Hi Arnd,
 
-Generally these things aren't worth fixing on their own.  No one 
-will even notice the whitespace unless they're looking for it.
+On Wed, 2 Mar 2011 00:16:53 +0100 Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> > So can I remove the bkl-trivial, bkl-llseek and bkl-vfs trees?
+>=20
+> Yes.
 
-regards,
-dan carpenter
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__2_Mar_2011_10_24_53_+1100_9CrEUg=wLPc_M=eN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNbYBFAAoJEDMEi1NhKgbsrv0H/2tA3ophjlfa5ONkwIXfCK4o
+LTlLq6mySuZkvWlDQEH0jmvySVSrfwg4myJ6vihYeKPo5cY7AOUsn7hkBIB+xWue
+uw//pH2VZWfQ9NwJunN6v3igi2LnJzGZdVcH2od4gSd66y4QNBI3QTLSEdBFNvfn
+CyyaNFWweRdq/aFaQ27yh3j/x50tnmRwD5tOwEiJ0u1ZObtbmBIFBWEHGPqz3ZP8
+1HRn9Wuav4Go7SsHOhg38ZiaHBkGdh9TR2LFigURVJKkyoOzQ3IajaWvESvst4bw
+65rvp+1lTGrKlpuCrGJLr2D6DIl8VdcT3T/tJ34IfIBmr3/tSJUQ5bJ8dQB6zu8=
+=pDrS
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__2_Mar_2011_10_24_53_+1100_9CrEUg=wLPc_M=eN--
