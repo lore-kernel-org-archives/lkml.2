@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab1CAQ2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:28:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754000Ab1CAQ2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:28:22 -0500
-Date: Tue, 1 Mar 2011 11:27:53 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
-Message-ID: <20110301162753.GB2539@redhat.com>
-References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+	id S1756867Ab1CAQ2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:28:41 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:37026 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab1CAQ2k convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 11:28:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bMg3g3miNlfOdeqy6KueKjEx97x7W5M1L8Hlex6sDT0j0QNEixDutKf8we/Hzs4Hok
+         F7C2Xpm8d9CHGxxoikwa4bFY7frw4NC/f/9RLv9ARLqdkac/z1VVIVZUaJf+b1s7tLFy
+         /mDFqmwsDa2AtF64qZxaAtdyaQCarbb06tswA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298888105-3778-1-git-send-email-arighi@develer.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D6D1AA8.4060809@cisco.com>
+References: <1298865151-23656-1-git-send-email-daahern@cisco.com>
+	<1298865151-23656-5-git-send-email-daahern@cisco.com>
+	<AANLkTikwsuBGVfB6uu7=H0jbL+2YbbvX=ea6rLwNP8w-@mail.gmail.com>
+	<4D6D004F.5010602@cisco.com>
+	<AANLkTi=jmS80Rs13QiTmdA5iUXvNaSKxQ9Gpp2P2nqRU@mail.gmail.com>
+	<4D6D1AA8.4060809@cisco.com>
+Date: Tue, 1 Mar 2011 17:24:44 +0100
+Message-ID: <AANLkTin_ShM+OA3QPxJ1Tc-EGf6enHg-d84Cdpg00=Op@mail.gmail.com>
+Subject: Re: [PATCH 4/6] perf script: dump software events too
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
+2011/3/1 David Ahern <daahern@cisco.com>:
+>
+>
+> On 03/01/2011 08:11 AM, Frederic Weisbecker wrote:
+>>
+>> Why shouldn't it be designed to dump software events? It's called print_event().
+>> Its current version is rather something I would call "limited". But it
+>> was not designed
+>> to be limited.
+>
+> That's because its origins are trace specific. Per last week's thread,
+> perf-script was perf-trace until Nov 2010. perf-script deals with
+> tracepoints.
 
-[..]
-> TODO
-> ~~~~
->  - Consider to add the following new files in the blkio controller to allow the
->    user to explicitly limit async writes as well as sync writes:
-> 
->    blkio.throttle.async.write_bps_limit
->    blkio.throttle.async.write_iops_limit
+Right it has been first created to support tracing events. Now why
+should it stay limited to them?
 
-I am kind of split on this.
+>> Ideally, we should have print_tracepoint_event() in
+>> trace-event-parse.c, print_software_event()
+>> where you want, and have print_event() in builtin-script.c that wraps on those.
+>
+>
+> process_event does not take the event sample, it takes elements of it:
+>
+> struct scripting_ops {
+> ...
+>    void (*process_event) (int cpu, void *data, int size,
+>                   unsigned long long nsecs, char *comm);
+> ...
+> };
 
-- One way of thinking is that blkio.throttle.read/write_limits represent
-  the limits on requeuest queue of the IO which is actually passing
-  through queue now. So we should not mix the two and keep async limits
-  separately. This will also tell the customer explicitly that async
-  throttling does not mean the same thing as throttling happens before
-  entering the page cache and there can be/will be IO spikes later
-  at the request queue.
-
-  Also creating the separate files leaves the door open for future
-  extension of implementing async control when async IO is actually
-  submitted to request queue. (Though I think that will be hard as
-  making sure all the filesystems, writeback logic, device mapper
-  drivers are aware of throttling and will take steps to ensure faster
-  groups are not stuck behind slower groups).
-
- So keeping async accounting separate will help differentiating that
- async control is not same as sync control. There are fundamental
- differences.
-
-
-- On the other hand, it makes life a bit simple for user as they don't
-  have to specify the async limits separately and there is one aggregate
-  limit for sync and async (assuming we fix the throttling state issues
-  so that throttling logic can handle both bio and task throttling out
-  of single limit).
-
-Any thoughts?
-
-Thanks
-Vivek
+What is the problem with changing a function prototype?
