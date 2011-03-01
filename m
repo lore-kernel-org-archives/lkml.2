@@ -1,109 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab1CARS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 12:18:57 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:55880 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756949Ab1CARSz (ORCPT
+	id S1757041Ab1CARVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 12:21:34 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:9838 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821Ab1CARVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 12:18:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=QazxMhyQO1ybYQww++fXDOxL7wu8IkwDWACzh57TNaG4T6D4cHI+KCVJZou+NkkJ1I
-         AFE2SemnCS2yXKoyKLLQ==
-Date: Tue, 1 Mar 2011 09:18:45 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
+	Tue, 1 Mar 2011 12:21:33 -0500
+X-IronPort-AV: E=Sophos;i="4.62,248,1297036800"; 
+   d="scan'208";a="4562549"
+Date: Tue, 1 Mar 2011 17:21:21 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
 To: Yinghai Lu <yinghai@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL tip:x86/mm]
-In-Reply-To: <4D66B176.9030300@kernel.org>
-Message-ID: <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
-References: <20110224145128.GM7840@htj.dyndns.org> <4D66AC9C.6080500@kernel.org> <20110224192305.GB15498@elte.hu> <4D66B176.9030300@kernel.org>
+CC: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: "x86-64, mm: Put early page table high" causes crash on Xen
+Message-ID: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Feb 2011, Yinghai Lu wrote:
+Yinghai Lu,
+while testing tip/x86/mm on Xen I found out that the commit "x86-64, mm:
+Put early page table high" reliably crashes Linux at boot.
+The reason is well explained by the commit message of
+fef5ba797991f9335bcfc295942b684f9bf613a1:
 
-> DavidR reported that x86/mm broke his numa emulation with 128M etc.
-> 
-> So wonder if that would hold you to push whole tip/x86/mm to Linus for .39
-> or need to rebase it while taking the tip/x86/numa-emulation-unify out.
-> 
+"Xen requires that all pages containing pagetable entries to be mapped
+read-only.  If pages used for the initial pagetable are already mapped
+then we can change the mapping to RO.  However, if they are initially
+unmapped, we need to make sure that when they are later mapped, they
+are also mapped RO.
 
-Ok, so 1f565a896ee1 (x86-64, NUMA: Fix size of numa_distance array) fixes 
-the boot failure when using numa=fake, but there's still another issue 
-that was introduced with regard to emulated distances between fake nodes 
-sitting hardware using a SLIT.
+We do this by knowing that the kernel pagetable memory is pre-allocated
+in the range e820_table_start - e820_table_end, so any pfn within this
+range should be mapped read-only.  However, the pagetable setup code
+early_ioremaps the pages to write their entries, so we must make sure
+that mappings created in the early_ioremap fixmap area are mapped RW.
+(Those mappings are removed before the pages are presented to Xen
+as pagetable pages.)"
 
-This is important because we want to ensure that the physical topoloy of 
-the machine is still represented in an emulated environment to 
-appropriately describe the expected latencies between the nodes.  It also 
-allows users who are using numa=fake purely as a debugging tool to test 
-more interesting configurations and benchmark memory accesses between 
-emulated nodes as though they were real.
+In other words mask_rw_pte (called by xen_set_pte_init) should mark RO
+the already existing pagetable pages (like the ones belonging to the
+initial mappings), while it should mark RW the new pages not yet hooked
+into the pagetable.  This is what the following lines used to achieve,
+but don't anymore:
 
-For example, on my four-node system with a custom SLIT, this is the 
-distance when booting without numa=fake:
+    /*
+	 * If the new pfn is within the range of the newly allocated
+	 * kernel pagetable, and it isn't being mapped into an
+	 * early_ioremap fixmap slot, make sure it is RO.
+	 */
+    if (!is_early_ioremap_ptep(ptep) &&
+	    pfn >= pgt_buf_start && pfn < pgt_buf_end)
+		pte = pte_wrprotect(pte);
 
-	$ cat /sys/devices/system/node/node*/distance 
-	10 20 20 30
-	20 10 20 20
-	20 20 10 20
-	30 20 20 10
+Unfortunately now we map the already existing initial pagetable pages a
+second time and the new zeroed pages using map_low_page, so we are
+unable to distinguish between the two.
 
-These physical nodes are all symmetric in size.
+Can we go back to the previous way of accessing pagetable pages from
+kernel_physical_mapping_init, while keeping the new pagetable allocation
+strategy? It seems to me that the introduction of map_low_page is not
+actually required, is it? In that case we could just revert that bit...
+(appended partial revert example).
+Otherwise is there a way we can adapt mask_rw_pte to do the right thing
+even in the new scenario?
+Suggestions are very welcome.
 
-With numa=fake=16, we expect to see the fake nodes interleaved (as the 
-default) over the set of physical nodes.  This would suggest distance 
-files for these nodes to be:
+- Stefano
 
-	10 20 20 30 10 20 20 30 10 20 20 30 10 20 20 30
-	20 20 10 20 20 20 10 20 20 20 10 20 20 20 10 20
-	30 20 20 10 30 20 20 10 30 20 20 10 30 20 20 10
-	10 20 20 30 10 20 20 30 10 20 20 30 10 20 20 30
-	20 10 20 20 20 10 20 20 20 10 20 20 20 10 20 20
-	20 20 10 20 20 20 10 20 20 20 10 20 20 20 10 20
-	30 20 20 10 30 20 20 10 30 20 20 10 30 20 20 10
-	20 10 20 20 20 10 20 20 20 10 20 20 20 10 20 20
-	20 20 10 20 20 20 10 20 20 20 10 20 20 20 10 20
-	30 20 20 10 30 20 20 10 30 20 20 10 30 20 20 10
-	10 20 20 30 10 20 20 30 10 20 20 30 10 20 20 30
-	20 10 20 20 20 10 20 20 20 10 20 20 20 10 20 20
-	20 20 10 20 20 20 10 20 20 20 10 20 20 20 10 20
-	30 20 20 10 30 20 20 10 30 20 20 10 30 20 20 10
-	10 20 20 30 10 20 20 30 10 20 20 30 10 20 20 30
-	20 10 20 20 20 10 20 20 20 10 20 20 20 10 20 20
 
-(And that is what we see with 2.6.37.)
+---
 
-However, x86/mm describes these distances differently:
 
-	node0/distance:10 20 20 20 10 20 20 20 10 20 20 20 10 20 20 20
-	node1/distance:10 10 20 20 10 20 20 20 10 20 20 20 10 20 20 20
-	node2/distance:10 20 10 20 10 20 20 20 10 20 20 20 10 20 20 20
-	node3/distance:10 20 20 10 10 20 20 20 10 20 20 20 10 20 20 20
-	node4/distance:10 20 20 20 10 20 20 20 10 20 20 20 10 20 20 20
-	node5/distance:10 20 20 20 10 10 20 20 10 20 20 20 10 20 20 20
-	node6/distance:10 20 20 20 10 20 10 20 10 20 20 20 10 20 20 20
-	node7/distance:10 20 20 20 10 20 20 10 10 20 20 20 10 20 20 20
-	node8/distance:10 20 20 20 10 20 20 20 10 20 20 20 10 20 20 20
-	node9/distance:10 20 20 20 10 20 20 20 10 10 20 20 10 20 20 20
-	node10/distance:10 20 20 20 10 20 20 20 10 20 10 20 10 20 20 20
-	node11/distance:10 20 20 20 10 20 20 20 10 20 20 10 10 20 20 20
-	node12/distance:10 20 20 20 10 20 20 20 10 20 20 20 10 20 20 20
-	node13/distance:10 20 20 20 10 20 20 20 10 20 20 20 10 10 20 20
-	node14/distance:10 20 20 20 10 20 20 20 10 20 20 20 10 20 10 20
-	node15/distance:10 20 20 20 10 20 20 20 10 20 20 20 10 20 20 10
-
-It looks as though the emulation changes sitting in x86/mm have dropped 
-the SLIT and are merely describing the emulated nodes as either having 
-physical affinity or not.
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 13b6fb1..413e140 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -334,28 +334,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 	return adr;
+ }
+ 
+-static __ref void *map_low_page(void *virt)
+-{
+-	void *adr;
+-	unsigned long phys, left;
+-
+-	if (after_bootmem)
+-		return virt;
+-
+-	phys = __pa(virt);
+-	left = phys & (PAGE_SIZE - 1);
+-	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
+-	adr = (void *)(((unsigned long)adr) | left);
+-
+-	return adr;
+-}
+-
+ static __ref void unmap_low_page(void *adr)
+ {
+ 	if (after_bootmem)
+ 		return;
+ 
+-	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
++	early_iounmap(adr, PAGE_SIZE);
+ }
+ 
+ static unsigned long __meminit
+@@ -403,6 +387,15 @@ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ }
+ 
+ static unsigned long __meminit
++phys_pte_update(pmd_t *pmd, unsigned long address, unsigned long end,
++		pgprot_t prot)
++{
++	pte_t *pte = (pte_t *)pmd_page_vaddr(*pmd);
++
++	return phys_pte_init(pte, address, end, prot);
++}
++
++static unsigned long __meminit
+ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 	      unsigned long page_size_mask, pgprot_t prot)
+ {
+@@ -428,10 +421,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 		if (pmd_val(*pmd)) {
+ 			if (!pmd_large(*pmd)) {
+ 				spin_lock(&init_mm.page_table_lock);
+-				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
+-				last_map_addr = phys_pte_init(pte, address,
++				last_map_addr = phys_pte_update(pmd, address,
+ 								end, prot);
+-				unmap_low_page(pte);
+ 				spin_unlock(&init_mm.page_table_lock);
+ 				continue;
+ 			}
+@@ -478,6 +469,18 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ }
+ 
+ static unsigned long __meminit
++phys_pmd_update(pud_t *pud, unsigned long address, unsigned long end,
++		unsigned long page_size_mask, pgprot_t prot)
++{
++	pmd_t *pmd = pmd_offset(pud, 0);
++	unsigned long last_map_addr;
++
++	last_map_addr = phys_pmd_init(pmd, address, end, page_size_mask, prot);
++	__flush_tlb_all();
++	return last_map_addr;
++}
++
++static unsigned long __meminit
+ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 			 unsigned long page_size_mask)
+ {
+@@ -502,11 +505,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 
+ 		if (pud_val(*pud)) {
+ 			if (!pud_large(*pud)) {
+-				pmd = map_low_page(pmd_offset(pud, 0));
+-				last_map_addr = phys_pmd_init(pmd, addr, end,
++				last_map_addr = phys_pmd_update(pud, addr, end,
+ 							 page_size_mask, prot);
+-				unmap_low_page(pmd);
+-				__flush_tlb_all();
+ 				continue;
+ 			}
+ 			/*
+@@ -554,6 +554,17 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 	return last_map_addr;
+ }
+ 
++static unsigned long __meminit
++phys_pud_update(pgd_t *pgd, unsigned long addr, unsigned long end,
++		 unsigned long page_size_mask)
++{
++	pud_t *pud;
++
++	pud = (pud_t *)pgd_page_vaddr(*pgd);
++
++	return phys_pud_init(pud, addr, end, page_size_mask);
++}
++
+ unsigned long __meminit
+ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+@@ -577,10 +588,8 @@ kernel_physical_mapping_init(unsigned long start,
+ 			next = end;
+ 
+ 		if (pgd_val(*pgd)) {
+-			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
+-			last_map_addr = phys_pud_init(pud, __pa(start),
++			last_map_addr = phys_pud_update(pgd, __pa(start),
+ 						 __pa(end), page_size_mask);
+-			unmap_low_page(pud);
+ 			continue;
+ 		}
+ 
