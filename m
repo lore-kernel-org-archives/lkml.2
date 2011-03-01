@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab1CAU2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:28:25 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:59754 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757148Ab1CAU2X (ORCPT
+	id S1757456Ab1CAU3T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:29:19 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34849 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757153Ab1CAU3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:28:23 -0500
-X-Sasl-enc: xCfPrljn4FcaE3dCXV7/qwU/xjz6pgcM/goKeatWZYhj 1299011303
-Date: Tue, 1 Mar 2011 17:28:12 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        Pedro Ribeiro <pedrib@gmail.com>, linux-kernel@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net
-Subject: Re: [ibm-acpi-devel] ThinkPad T400 : should kernel option
- "reboot=pci" be hard	coded ?
-Message-ID: <20110301202812.GB25758@khazad-dum.debian.net>
-References: <201006071122.21925.toralf.foerster@gmx.de>
- <201006091343.48924.toralf.foerster@gmx.de>
- <AANLkTimkWN5tU88J-M3Q4aq9pq-WljyyPAUPfnf9cuhf@mail.gmail.com>
- <201103010940.13647.toralf.foerster@gmx.de>
- <20110301123520.GA30115@srcf.ucam.org>
+	Tue, 1 Mar 2011 15:29:18 -0500
+Date: Tue, 1 Mar 2011 20:28:43 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Simon Glass <sjg@chromium.org>
+Cc: Mikael Pettersson <mikpe@it.uu.se>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
+Message-ID: <20110301202843.GD27107@n2100.arm.linux.org.uk>
+References: <1298939263-16421-1-git-send-email-sjg@chromium.org> <20110301084949.GA16733@n2100.arm.linux.org.uk> <20110301085911.GB16733@n2100.arm.linux.org.uk> <19820.47240.801312.507393@pilspetsen.it.uu.se> <20110301100306.GA18007@n2100.arm.linux.org.uk> <AANLkTinMnZAupxn7oYFhqkN1Y0OD-eyN=UeRpw96no9r@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110301123520.GA30115@srcf.ucam.org>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinMnZAupxn7oYFhqkN1Y0OD-eyN=UeRpw96no9r@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Mar 2011, Matthew Garrett wrote:
-> On Tue, Mar 01, 2011 at 09:40:13AM +0100, Toralf Förster wrote:
-> > I'd like to point to this after a half year of lthe last email. Shouldn't it 
-> > be hard coded ?
-> 
-> Windows appears to have exactly the same behaviour, so it seems that 
-> this is working like designed.
+On Tue, Mar 01, 2011 at 08:34:37AM -0800, Simon Glass wrote:
+> It seems I am lucky with the gcc I am using. I would have thought this
+> would be a pretty fundamental feature, but yes I did notice that %c
+> wasn't used anywhere.
 
-Which makes this "something we could ask Lenovo" about.  The standard rules
-apply.  Assuming you do not have direct contacts in the Lenovo BIOS team
-yourself, send me or to Thomas Renninger a full description of the observed
-problem, and of our workaround, and what you'd like to know (e.g: what is
-causing the delay?).
+It is, and I think it's something that I found back in 2002 or so.
+I've still not had the time yet to search out the bug report, and
+probably won't do for some time yet.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> Would this kernel feature be acceptable as a selectable config option
+> on ARM then?
+
+If I were to ask you if you knew which GCC version supported this,
+would you know that answer?
+
+If the answer to that is no, how would you expect people configuring
+the kernel to know whether they should enable or disable this option?
