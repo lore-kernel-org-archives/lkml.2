@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab1CAWfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 17:35:23 -0500
-Received: from sj-iport-3.cisco.com ([171.71.176.72]:4017 "EHLO
-	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756526Ab1CAWfV (ORCPT
+	id S1756716Ab1CAWf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 17:35:29 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54995 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756671Ab1CAWf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 17:35:21 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJ4DbU2rR7H+/2dsb2JhbACEKKIpdKIIiwWQeoEng0R2BIUShw2DQA
-X-IronPort-AV: E=Sophos;i="4.62,249,1297036800"; 
-   d="scan'208";a="272444164"
-Message-ID: <4D6D74B8.4010607@cisco.com>
-Date: Tue, 01 Mar 2011 15:35:36 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/6] perf record: add time-of-day option
-References: <1298865151-23656-1-git-send-email-daahern@cisco.com>	 <1298865151-23656-4-git-send-email-daahern@cisco.com>	 <1298989751.5226.863.camel@laptop>  <4D6D0438.2090901@cisco.com>	 <1298993714.5226.871.camel@laptop>  <4D6D13C6.5020807@cisco.com>	 <1298995250.5226.882.camel@laptop>  <4D6D1A4C.1090009@cisco.com>	 <1298997435.5226.890.camel@laptop>  <4D6D22A7.6000000@cisco.com> <1299018489.5226.940.camel@laptop>
-In-Reply-To: <1299018489.5226.940.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 1 Mar 2011 17:35:28 -0500
+Date: Tue, 1 Mar 2011 14:34:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled
+ while isolating pages for migration
+Message-Id: <20110301143444.2ed102aa.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTimpTyaAU0JzFKp4s14w=ciq152MWSmbgn8xtkOx@mail.gmail.com>
+References: <20110301153558.GA2031@barrios-desktop>
+	<20110301161900.GA21860@random.random>
+	<AANLkTimpTyaAU0JzFKp4s14w=ciq152MWSmbgn8xtkOx@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 Mar 2011 07:22:33 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
+
+> On Wed, Mar 2, 2011 at 1:19 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > On Wed, Mar 02, 2011 at 12:35:58AM +0900, Minchan Kim wrote:
+> >> On Tue, Mar 01, 2011 at 01:49:25PM +0900, KAMEZAWA Hiroyuki wrote:
+> >> > On Tue, 1 Mar 2011 13:11:46 +0900
+> >> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> >> >
+>
+> ...
+>
+> > pages freed from irq shouldn't be PageLRU.
+> 
+> Hmm..
+> As looking code, it seems to be no problem and I didn't see the any
+> comment about such rule. It should have been written down in
+> __page_cache_release.
+> Just out of curiosity.
+> What kinds of problem happen if we release lru page in irq context?
+
+put_page() from irq context has been permissible for ten years.  I
+expect there are a number of sites which do this (via subtle code
+paths, often).  It might get messy.
+
+> >
+> > deferring freeing to workqueue doesn't look ok. firewall loads runs
+> > only from irq and this will cause some more work and a delay in the
+> > freeing. I doubt it's worhwhile especially for the lru_lock.
+> >
+> 
+> As you said, if it is for decreasing lock contention in SMP to deliver
+> overall better performance, maybe we need to check again how much it
+> helps.
+> If it doesn't help much, could we remove irq_save/restore of lru_lock?
+> Do you know any benchmark to prove it had a benefit at that time or
+> any thread discussing about that in lkml?
 
 
-On 03/01/2011 03:28 PM, Peter Zijlstra wrote:
+: commit b10a82b195d63575958872de5721008b0e9bef2d
+: Author: akpm <akpm>
+: Date:   Thu Aug 15 18:21:05 2002 +0000
+: 
+:     [PATCH] make pagemap_lru_lock irq-safe
+:     
+:     It is expensive for a CPU to take an interrupt while holding the page
+:     LRU lock, because other CPUs will pile up on the lock while the
+:     interrupt runs.
+:     
+:     Disabling interrupts while holding the lock reduces contention by an
+:     additional 30% on 4-way.  This is when the only source of interrupts is
+:     disk completion.  The improvement will be higher with more CPUs and it
+:     will be higher if there is networking happening.
+:     
+:     The maximum hold time of this lock is 17 microseconds on 500 MHx PIII,
+:     which is well inside the kernel's maximum interrupt latency (which was
+:     100 usecs when I last looked, a year ago).
+:     
+:     This optimisation is not needed on uniprocessor, but the patch disables
+:     IRQs while holding pagemap_lru_lock anyway, so it becomes an irq-safe
+:     spinlock, and pages can be moved from the LRU in interrupt context.
+:     
+:     pagemap_lru_lock has been renamed to _pagemap_lru_lock to pick up any
+:     missed uses, and to reliably break any out-of-tree patches which may be
+:     using the old semantics.
+:     
+:     BKrev: 3d5bf1110yfdAAur4xqJfiLBDJ2Cqw
 
->> And for some silly reason I sense a time trap here (pun intended) .....
->>
->> So your pushback is:
->> 1. throw out the realtime-clock event patch,
-> 
-> Well, no, you need continues samples to keep in sync, so having this is
-> required [*].
-> 
->> 2. add a new CLOCK_TRACING type to clock_gettime with VDSO hook,
-> 
-> Right, that is something we need anyway at some point in time.
-> 
->> 3. and use a synthesized event from userspace for snapshotting
->> perf_clock to time-of-day -- similar to what I have now, but one that
->> will guarantee a time-of-day to perf_clock correlation (versus the
->> current one which hopes that perf_clock is the monotonic clock).
-> 
-> I guess you could do that if we have full userspace tracing support, but
-> it wouldn't need synthesized events, it would need a pure userspace
-> event stream.
 
+Ancient stuff, and not a lot of detail.  But I did measure it.  I
+measured everything ;) And, as mentioned, I'd expect that the
+contention problems would worsen on higher CPU machines and higher
+interrupt frequencies.
 
-I still don't see how this solves the need to trigger the initial sample
-into the event stream.
+I expect we could eliminate the irqsave requirement from
+rotate_reclaimable_page() simply by switching to a trylock.  Some pages
+will end up at the wrong end of the LRU but the effects may be
+negligible.  Or perhaps they may not - disk seeks are costly.
 
-David
-
-> 
-> Thing is, I really dislike the ioctl() trigger
-> 
-> 
-> 
