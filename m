@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab1CAO2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 09:28:17 -0500
-Received: from kroah.org ([198.145.64.141]:57323 "EHLO coco.kroah.org"
+	id S1756516Ab1CAO21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:28:27 -0500
+Received: from cantor.suse.de ([195.135.220.2]:50155 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756466Ab1CAO2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 09:28:12 -0500
-Date: Tue, 1 Mar 2011 09:29:08 -0500
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Alan Cox <alan@linux.jf.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: gma500: Rip out the memory manager
-Message-ID: <20110301142908.GA13144@kroah.com>
-References: <20110224162440.27093.80825.stgit@localhost.localdomain>
- <20110224162457.27093.32399.stgit@localhost.localdomain>
- <20110301020302.GA11353@kroah.com>
- <20110301122437.4477fa65@bob.linux.org.uk>
- <20110301141527.GA12881@kroah.com>
+	id S1756471Ab1CAO2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 09:28:25 -0500
+Date: Tue, 1 Mar 2011 15:28:24 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Steve French <smfrench@gmail.com>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>, sfrench@samba.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/21]fs:cifs:connect.c remove one to many l's in the
+ word.
+In-Reply-To: <AANLkTimneD0d=qpTq2CMpfvjYuQC2kx1mf2ZnORG32KK@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1103011526560.32580@pobox.suse.cz>
+References: <1298614502-4114-1-git-send-email-justinmattock@gmail.com> <AANLkTimneD0d=qpTq2CMpfvjYuQC2kx1mf2ZnORG32KK@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110301141527.GA12881@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 09:15:27AM -0500, Greg KH wrote:
-> On Tue, Mar 01, 2011 at 12:24:37PM +0000, Alan Cox wrote:
-> > On Mon, 28 Feb 2011 18:03:02 -0800
-> > Greg KH <greg@kroah.com> wrote:
-> > 
-> > > On Thu, Feb 24, 2011 at 04:25:09PM +0000, Alan Cox wrote:
-> > > > At this point we simply stuff the display at the start of the
-> > > > stolen memory area that the BIOS gave us. No user framebuffers no
-> > > > multiple framebuffers.
-> > > > 
-> > > > However from here we have a better chance of seeing what is going
-> > > > on and writing an actual gem manager for the driver.
-> > > > 
-> > > > Signed-off-by: Alan Cox <alan@linux.intel.com>
-> > > 
-> > > This doesn't apply.
-> > > 
-> > > The 1/2 patch had some fuzz in the Makefile, which I fixed up by hand,
-> > > but it makes me think that you are diffing this against some different
-> > > tree.
-> > 
-> > I've investigated this. The cause seems to be a patch
-> > 
-> > commit 5352161fc449d7a7573b2e13bd02162aae7aeb69
-> > 
-> > applied by yourself which cleaned up all sorts of random whitespace
-> > noise and broke further patch application. Given that this is staging
-> > and random whitespace is less important than actually fixing the code I
-> > think the fix is to revert that commit and then apply mine.
+On Fri, 25 Feb 2011, Steve French wrote:
+
+> merged into cifs-2.6.git
+
+Doesn't seem to be in linux-next as of today. Is cifs tree not being 
+merged into linux-next?
+
 > 
-> Well, I did copy you on that patch, and let you know I made it, so this
-> type of thing wouldn't happen.  I'll go fix it by just stripping out the
-> trailing whitespace from your patch :)
-> 
-> This doesn't seem to explain the Makefile difference in the 1/2 patch
-> though...
+> On Fri, Feb 25, 2011 at 12:15 AM, Justin P. Mattock
+> <justinmattock@gmail.com> wrote:
+> > The patch below removes an extra "l" in the word.
+> >
+> > Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> >
+> > ---
+> >  fs/cifs/connect.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+> > index 8d6c17a..ea4a146 100644
+> > --- a/fs/cifs/connect.c
+> > +++ b/fs/cifs/connect.c
+> > @@ -722,7 +722,7 @@ multi_t2_fnd:
+> >                sock_release(csocket);
+> >                server->ssocket = NULL;
+> >        }
+> > -       /* buffer usuallly freed in free_mid - need to free it here on exit */
+> > +       /* buffer usually freed in free_mid - need to free it here on exit */
+> >        cifs_buf_release(bigbuf);
+> >        if (smallbuf) /* no sense logging a debug message if NULL */
+> >                cifs_small_buf_release(smallbuf);
 
-And I still don't think this is the issue.
-
-Your patch removes two lines from drivers/staging/gma500/psb_drm.h with
-the following diff:
---- a/drivers/staging/gma500/psb_drm.h
-+++ b/drivers/staging/gma500/psb_drm.h
-@@ -28,9 +28,6 @@
- #include "drm_mode.h"
- #endif
- 
--#include "psb_ttm_fence_user.h"
--#include "psb_ttm_placement_user.h"
--
- #define DRM_PSB_SAREA_MAJOR 0
- #define DRM_PSB_SAREA_MINOR 2
- #define PSB_FIXED_SHIFT 16
-
-
-Yet those #defines are not present in this file right now.  That's not a
-whitespace change...
-
-Still confused,
-
-greg k-h
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
