@@ -1,130 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab1CAUE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:04:56 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:59677 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757358Ab1CAUEz (ORCPT
+	id S1757381Ab1CAUF2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:05:28 -0500
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:47354 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757215Ab1CAUF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:04:55 -0500
-Date: Tue, 1 Mar 2011 14:04:46 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: Performance/resume issues on Toshiba NB305
-Message-ID: <20110301200446.GA2235@thinkpad-t410>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
-	Len Brown <lenb@kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Venkatesh Pallipadi <venki@google.com>
-References: <20110225164239.GA24686@thinkpad-t410>
- <alpine.LFD.2.00.1102252108190.2701@localhost6.localdomain6>
- <20110225212142.GC24686@thinkpad-t410>
- <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Mar 2011 15:05:26 -0500
+Subject: Re: linux-next: Tree for March 1 (staging/winbond)
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+In-Reply-To: <20110301113930.69d7d992.randy.dunlap@oracle.com>
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+	 <20110301104924.071044ef.randy.dunlap@oracle.com>
+	 <AANLkTimX0zvBEMxedXnhXiaxwEKHmm_Tu6fiZQkahZrC@mail.gmail.com>
+	 <20110301111922.69b0d8c1.randy.dunlap@oracle.com>
+	 <AANLkTimayi4tSe=r1HOPgpcSucBWC7SoBV1ocmV5LEs4@mail.gmail.com>
+	 <20110301113930.69d7d992.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 01 Mar 2011 22:05:24 +0200
+Message-ID: <1299009924.30654.109.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 10:47:16PM +0100, Thomas Gleixner wrote:
-> On Fri, 25 Feb 2011, Seth Forshee wrote:
-> > On Fri, Feb 25, 2011 at 09:37:39PM +0100, Thomas Gleixner wrote:
-> > > On Fri, 25 Feb 2011, Seth Forshee wrote:
-> > > That seems to be related to low power states. When the machine goes
-> > > idle we switch into lower power states and that requires to use the
-> > > hpet instead of the local apic timer as that one stops.
-> > > 
-> > > You could verify that theory by booting with processor.max_cstate=1
+On Tue, 2011-03-01 at 11:39 -0800, Randy Dunlap wrote:
+> On Tue, 1 Mar 2011 21:35:59 +0200 Pekka Enberg wrote:
+> 
+> > On Tue, Mar 1, 2011 at 9:19 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > > On Tue, 1 Mar 2011 21:10:23 +0200 Pekka Enberg wrote:
+> > >
+> > >> On Tue, Mar 1, 2011 at 8:49 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > >> > On Tue, 1 Mar 2011 18:11:19 +1100 Stephen Rothwell wrote:
+> > >> >
+> > >> >> Hi all,
+> > >> >>
+> > >> >> Changes since 20110228:
+> > >> >
+> > >> >
+> > >> > commit ddee7e28e7d5e4ba2b8537c6a59b035745c250bb
+> > >> > Author: Pekka Enberg <penberg@kernel.org>
+> > >> > Date:   Sun Nov 28 23:00:01 2010 +0200
+> > >> >    Staging: w35und: Remove empty sysdef.h header
+> > >> >
+> > >> >
+> > >> > This header should not have been empty, since in
+> > >> >
+> > >> > commit 412dc7f368bf10a8049a8a4c41abbfd0108742e7
+> > >> > Author: Randy Dunlap <randy.dunlap@oracle.com>
+> > >> > Date:   Fri Nov 19 09:30:18 2010 -0800
+> > >> >    staging: fix winbond build, needs delay.h
+> > >> >
+> > >> > I added delay.h to it.  And now we have the same build
+> > >> > errors that I fixed last November:
+> > >> >
+> > >> > drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration of function 'msleep'
+> > >> > drivers/staging/winbond/phy_calibration.c:1555: error: implicit declaration of function 'udelay'
+> > >> > drivers/staging/winbond/reg.c:893: error: implicit declaration of function 'msleep'
+> > >> > drivers/staging/winbond/reg.c:1169: error: implicit declaration of function 'udelay'
+> > >>
+> > >> Strange. I didn't see the problem. We should add delay.h to
+> > >> phy_calibration.c and reg.c instead. Care to make a patch?
+> > >> --
+> > >
+> > > No thanks, I'll let the staging people do that.
 > > 
-> > This fixes the performance in combination with intel_idle.max_cstate=0.
-> > Alternately, intel_idle.max_cstate=1 works. But the resume still hangs.
+> > Hmm, commit cecf826df8648c843ea8db63b1f82c154a74db36 ("staging:
+> > winbond: needs <linux/delay.h> for msleep and friends") should fix it.
+> > Isn't it in linux-next yet?
 > 
-> That was expected :)
+> I'll have to let GregKH answer that.
 > 
-> > Is the answer to quirk the machine to avoid deep C-states, or is there
-> > some better way I can fix this?
-> 
-> Let's wait for the intel and acpi folks. It would be interesting what
-> the new intel toy says to your BIOS.
+> Where is the commit ID from?
 
-Since the discussion on this issue died without really getting anywhere,
-I went ahead and threw together the patch below to disable anything
-deeper than C1 for this machine. I hope a better solution can be found,
-but if not would something like this be an acceptable workaround?
+It's from staging tree staging-next branch.
 
-As for the hangs during resume, unless someone has a better suggestion I
-guess I'll start looking into forcing the HPET to remain in periodic
-mode throughout suspend.
-
-Thanks,
-Seth
-
----
-
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 1fa091e..7d88540 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -61,6 +61,7 @@
- #include <linux/sched.h>
- #include <linux/notifier.h>
- #include <linux/cpu.h>
-+#include <linux/dmi.h>
- #include <asm/mwait.h>
- 
- #define INTEL_IDLE_VERSION "0.4"
-@@ -441,6 +442,32 @@ static int intel_idle_cpuidle_devices_init(void)
- }
- 
- 
-+/*
-+ * dmi_disable_cstates()
-+ * Disable states beyond C1 for broken machines
-+ */
-+static int __init dmi_disable_cstates(const struct dmi_system_id *d)
-+{
-+	if (max_cstate == MWAIT_MAX_NUM_CSTATES - 1) {
-+		pr_notice(PREFIX "%s detected, disabling C-states past C1\n",
-+			  d->ident);
-+		max_cstate = 1;
-+	}
-+}
-+
-+/* List of systems with known idle problems */
-+static struct dmi_system_id __initdata bad_cstate_dmi_table[] = {
-+	{
-+		.callback	= dmi_disable_cstates,
-+		.ident		= "Toshiba NB305",
-+		.matches	= {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_BOARD_NAME, "NPVAA"),
-+		},
-+	},
-+	{}
-+};
-+
- static int __init intel_idle_init(void)
- {
- 	int retval;
-@@ -449,6 +476,9 @@ static int __init intel_idle_init(void)
- 	if (boot_option_idle_override != IDLE_NO_OVERRIDE)
- 		return -ENODEV;
- 
-+	/* Check for known-bad hardware */
-+	dmi_check_system(bad_cstate_dmi_table);
-+
- 	retval = intel_idle_probe();
- 	if (retval)
- 		return retval;
--- 
-1.7.4.1
+			Pekka
 
