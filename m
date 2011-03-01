@@ -1,188 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab1CAQuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:50:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54419 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751773Ab1CAQuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:50:24 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Convert WM831x regulators to genirq
-Date: Tue,  1 Mar 2011 16:50:43 +0000
-Message-Id: <1298998243-12177-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1756913Ab1CAQ4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:56:37 -0500
+Received: from mail.perches.com ([173.55.12.10]:4013 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752551Ab1CAQ4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 11:56:35 -0500
+From: Joe Perches <joe@perches.com>
+To: Samuel Chessman <chessman@tux.org>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] tlan: Remove changelog
+Date: Tue,  1 Mar 2011 08:56:32 -0800
+Message-Id: <901ce76108a5ab7327159b57a1b8c9283673532b.1298998514.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.4.2.g597a6.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/wm831x-dcdc.c  |   26 +++++++++++---------------
- drivers/regulator/wm831x-isink.c |    8 +++-----
- drivers/regulator/wm831x-ldo.c   |   17 +++++++----------
- 3 files changed, 21 insertions(+), 30 deletions(-)
+As it isn't necessary nor really useful any longer.
 
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index 06df898..857d741 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -565,9 +565,8 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 	}
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/tlan.c |  145 ----------------------------------------------------
+ 1 files changed, 0 insertions(+), 145 deletions(-)
+
+diff --git a/drivers/net/tlan.c b/drivers/net/tlan.c
+index e48a808..7721e6c 100644
+--- a/drivers/net/tlan.c
++++ b/drivers/net/tlan.c
+@@ -25,151 +25,6 @@
+  *		Microchip Technology, 24C01A/02A/04A Data Sheet
+  *			available in PDF format from www.microchip.com
+  *
+- * Change History
+- *
+- *	Tigran Aivazian <tigran@sco.com>:	TLan_PciProbe() now uses
+- *						new PCI BIOS interface.
+- *	Alan Cox	<alan@lxorguk.ukuu.org.uk>:
+- *						Fixed the out of memory
+- *						handling.
+- *
+- *	Torben Mathiasen <torben.mathiasen@compaq.com> New Maintainer!
+- *
+- *	v1.1 Dec 20, 1999    - Removed linux version checking
+- *			       Patch from Tigran Aivazian.
+- *			     - v1.1 includes Alan's SMP updates.
+- *			     - We still have problems on SMP though,
+- *			       but I'm looking into that.
+- *
+- *	v1.2 Jan 02, 2000    - Hopefully fixed the SMP deadlock.
+- *			     - Removed dependency of HZ being 100.
+- *			     - We now allow higher priority timers to
+- *			       overwrite timers like TLAN_TIMER_ACTIVITY
+- *			       Patch from John Cagle <john.cagle@compaq.com>.
+- *			     - Fixed a few compiler warnings.
+- *
+- *	v1.3 Feb 04, 2000    - Fixed the remaining HZ issues.
+- *			     - Removed call to pci_present().
+- *			     - Removed SA_INTERRUPT flag from irq handler.
+- *			     - Added __init and __initdata to reduce resisdent
+- *			       code size.
+- *			     - Driver now uses module_init/module_exit.
+- *			     - Rewrote init_module and tlan_probe to
+- *			       share a lot more code. We now use tlan_probe
+- *			       with builtin and module driver.
+- *			     - Driver ported to new net API.
+- *			     - tlan.txt has been reworked to reflect current
+- *			       driver (almost)
+- *			     - Other minor stuff
+- *
+- *	v1.4 Feb 10, 2000    - Updated with more changes required after Dave's
+- *			       network cleanup in 2.3.43pre7 (Tigran & myself)
+- *			     - Minor stuff.
+- *
+- *	v1.5 March 22, 2000  - Fixed another timer bug that would hang the
+- *			       driver if no cable/link were present.
+- *			     - Cosmetic changes.
+- *			     - TODO: Port completely to new PCI/DMA API
+- *				     Auto-Neg fallback.
+- *
+- *	v1.6 April 04, 2000  - Fixed driver support for kernel-parameters.
+- *			       Haven't tested it though, as the kernel support
+- *			       is currently broken (2.3.99p4p3).
+- *			     - Updated tlan.txt accordingly.
+- *			     - Adjusted minimum/maximum frame length.
+- *			     - There is now a TLAN website up at
+- *			       http://hp.sourceforge.net/
+- *
+- *	v1.7 April 07, 2000  - Started to implement custom ioctls. Driver now
+- *			       reports PHY information when used with Donald
+- *			       Beckers userspace MII diagnostics utility.
+- *
+- *	v1.8 April 23, 2000  - Fixed support for forced speed/duplex settings.
+- *			     - Added link information to Auto-Neg and forced
+- *			       modes. When NIC operates with auto-neg the driver
+- *			       will report Link speed & duplex modes as well as
+- *			       link partner abilities. When forced link is used,
+- *			       the driver will report status of the established
+- *			       link.
+- *			       Please read tlan.txt for additional information.
+- *			     - Removed call to check_region(), and used
+- *			       return value of request_region() instead.
+- *
+- *	v1.8a May 28, 2000   - Minor updates.
+- *
+- *	v1.9 July 25, 2000   - Fixed a few remaining Full-Duplex issues.
+- *			     - Updated with timer fixes from Andrew Morton.
+- *			     - Fixed module race in TLan_Open.
+- *			     - Added routine to monitor PHY status.
+- *			     - Added activity led support for Proliant devices.
+- *
+- *	v1.10 Aug 30, 2000   - Added support for EISA based tlan controllers
+- *			       like the Compaq NetFlex3/E.
+- *			     - Rewrote tlan_probe to better handle multiple
+- *			       bus probes. Probing and device setup is now
+- *			       done through TLan_Probe and TLan_init_one. Actual
+- *			       hardware probe is done with kernel API and
+- *			       TLan_EisaProbe.
+- *			     - Adjusted debug information for probing.
+- *			     - Fixed bug that would cause general debug
+- *			       information to be printed after driver removal.
+- *			     - Added transmit timeout handling.
+- *			     - Fixed OOM return values in tlan_probe.
+- *			     - Fixed possible mem leak in tlan_exit
+- *			       (now tlan_remove_one).
+- *			     - Fixed timer bug in TLan_phyMonitor.
+- *			     - This driver version is alpha quality, please
+- *			       send me any bug issues you may encounter.
+- *
+- *	v1.11 Aug 31, 2000   - Do not try to register irq 0 if no irq line was
+- *			       set for EISA cards.
+- *			     - Added support for NetFlex3/E with nibble-rate
+- *			       10Base-T PHY. This is untestet as I haven't got
+- *			       one of these cards.
+- *			     - Fixed timer being added twice.
+- *			     - Disabled PhyMonitoring by default as this is
+- *			       work in progress. Define MONITOR to enable it.
+- *			     - Now we don't display link info with PHYs that
+- *			       doesn't support it (level1).
+- *			     - Incresed tx_timeout beacuse of auto-neg.
+- *			     - Adjusted timers for forced speeds.
+- *
+- *	v1.12 Oct 12, 2000   - Minor fixes (memleak, init, etc.)
+- *
+- *	v1.13 Nov 28, 2000   - Stop flooding console with auto-neg issues
+- *			       when link can't be established.
+- *			     - Added the bbuf option as a kernel parameter.
+- *			     - Fixed ioaddr probe bug.
+- *			     - Fixed stupid deadlock with MII interrupts.
+- *			     - Added support for speed/duplex selection with
+- *			       multiple nics.
+- *			     - Added partly fix for TX Channel lockup with
+- *			       TLAN v1.0 silicon. This needs to be investigated
+- *			       further.
+- *
+- *	v1.14 Dec 16, 2000   - Added support for servicing multiple frames per.
+- *			       interrupt. Thanks goes to
+- *			       Adam Keys <adam@ti.com>
+- *			       Denis Beaudoin <dbeaudoin@ti.com>
+- *			       for providing the patch.
+- *			     - Fixed auto-neg output when using multiple
+- *			       adapters.
+- *			     - Converted to use new taskq interface.
+- *
+- *	v1.14a Jan 6, 2001   - Minor adjustments (spinlocks, etc.)
+- *
+- *	Samuel Chessman <chessman@tux.org> New Maintainer!
+- *
+- *	v1.15 Apr 4, 2002    - Correct operation when aui=1 to be
+- *			       10T half duplex no loopback
+- *			       Thanks to Gunnar Eikman
+- *
+- *	Sakari Ailus <sakari.ailus@iki.fi>:
+- *
+- *	v1.15a Dec 15 2008   - Remove bbuf support, it doesn't work anyway.
+- *	v1.16  Jan 6  2011   - Make checkpatch.pl happy.
+- *	v1.17  Jan 6  2011   - Add suspend/resume support.
+- *
+  ******************************************************************************/
  
- 	irq = platform_get_irq_byname(pdev, "UV");
--	ret = wm831x_request_irq(wm831x, irq, wm831x_dcdc_uv_irq,
--				 IRQF_TRIGGER_RISING, dcdc->name,
--				 dcdc);
-+	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
-+				   IRQF_TRIGGER_RISING, dcdc->name, dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -575,9 +574,8 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = platform_get_irq_byname(pdev, "HC");
--	ret = wm831x_request_irq(wm831x, irq, wm831x_dcdc_oc_irq,
--				 IRQF_TRIGGER_RISING, dcdc->name,
--				 dcdc);
-+	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_oc_irq,
-+				   IRQF_TRIGGER_RISING, dcdc->name, dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request HC IRQ %d: %d\n",
- 			irq, ret);
-@@ -589,7 +587,7 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_uv:
--	wm831x_free_irq(wm831x, platform_get_irq_byname(pdev, "UV"), dcdc);
-+	free_irq(platform_get_irq_byname(pdev, "UV"), dcdc);
- err_regulator:
- 	regulator_unregister(dcdc->regulator);
- err:
-@@ -756,9 +754,8 @@ static __devinit int wm831x_buckp_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = platform_get_irq_byname(pdev, "UV");
--	ret = wm831x_request_irq(wm831x, irq, wm831x_dcdc_uv_irq,
--				 IRQF_TRIGGER_RISING, dcdc->name,
--				 dcdc);
-+	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
-+				   IRQF_TRIGGER_RISING,	dcdc->name, dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -885,9 +882,9 @@ static __devinit int wm831x_boostp_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = platform_get_irq_byname(pdev, "UV");
--	ret = wm831x_request_irq(wm831x, irq, wm831x_dcdc_uv_irq,
--				 IRQF_TRIGGER_RISING, dcdc->name,
--				 dcdc);
-+	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
-+				   IRQF_TRIGGER_RISING, dcdc->name,
-+				   dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -908,11 +905,10 @@ err:
- static __devexit int wm831x_boostp_remove(struct platform_device *pdev)
- {
- 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
--	struct wm831x *wm831x = dcdc->wm831x;
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	wm831x_free_irq(wm831x, platform_get_irq_byname(pdev, "UV"), dcdc);
-+	free_irq(platform_get_irq_byname(pdev, "UV"), dcdc);
- 	regulator_unregister(dcdc->regulator);
- 	kfree(dcdc);
- 
-diff --git a/drivers/regulator/wm831x-isink.c b/drivers/regulator/wm831x-isink.c
-index 6c446cd..01f27c7 100644
---- a/drivers/regulator/wm831x-isink.c
-+++ b/drivers/regulator/wm831x-isink.c
-@@ -198,9 +198,8 @@ static __devinit int wm831x_isink_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = platform_get_irq(pdev, 0);
--	ret = wm831x_request_irq(wm831x, irq, wm831x_isink_irq,
--				 IRQF_TRIGGER_RISING, isink->name,
--				 isink);
-+	ret = request_threaded_irq(irq, NULL, wm831x_isink_irq,
-+				   IRQF_TRIGGER_RISING, isink->name, isink);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request ISINK IRQ %d: %d\n",
- 			irq, ret);
-@@ -221,11 +220,10 @@ err:
- static __devexit int wm831x_isink_remove(struct platform_device *pdev)
- {
- 	struct wm831x_isink *isink = platform_get_drvdata(pdev);
--	struct wm831x *wm831x = isink->wm831x;
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	wm831x_free_irq(wm831x, platform_get_irq(pdev, 0), isink);
-+	free_irq(platform_get_irq(pdev, 0), isink);
- 
- 	regulator_unregister(isink->regulator);
- 	kfree(isink);
-diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
-index c94fc5b..2220cf8 100644
---- a/drivers/regulator/wm831x-ldo.c
-+++ b/drivers/regulator/wm831x-ldo.c
-@@ -354,9 +354,9 @@ static __devinit int wm831x_gp_ldo_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = platform_get_irq_byname(pdev, "UV");
--	ret = wm831x_request_irq(wm831x, irq, wm831x_ldo_uv_irq,
--				 IRQF_TRIGGER_RISING, ldo->name,
--				 ldo);
-+	ret = request_threaded_irq(irq, NULL, wm831x_ldo_uv_irq,
-+				   IRQF_TRIGGER_RISING, ldo->name,
-+				   ldo);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -377,11 +377,10 @@ err:
- static __devexit int wm831x_gp_ldo_remove(struct platform_device *pdev)
- {
- 	struct wm831x_ldo *ldo = platform_get_drvdata(pdev);
--	struct wm831x *wm831x = ldo->wm831x;
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	wm831x_free_irq(wm831x, platform_get_irq_byname(pdev, "UV"), ldo);
-+	free_irq(platform_get_irq_byname(pdev, "UV"), ldo);
- 	regulator_unregister(ldo->regulator);
- 	kfree(ldo);
- 
-@@ -619,9 +618,8 @@ static __devinit int wm831x_aldo_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = platform_get_irq_byname(pdev, "UV");
--	ret = wm831x_request_irq(wm831x, irq, wm831x_ldo_uv_irq,
--				 IRQF_TRIGGER_RISING, ldo->name,
--				 ldo);
-+	ret = request_threaded_irq(irq, NULL, wm831x_ldo_uv_irq,
-+				   IRQF_TRIGGER_RISING, ldo->name, ldo);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -642,9 +640,8 @@ err:
- static __devexit int wm831x_aldo_remove(struct platform_device *pdev)
- {
- 	struct wm831x_ldo *ldo = platform_get_drvdata(pdev);
--	struct wm831x *wm831x = ldo->wm831x;
- 
--	wm831x_free_irq(wm831x, platform_get_irq_byname(pdev, "UV"), ldo);
-+	free_irq(platform_get_irq_byname(pdev, "UV"), ldo);
- 	regulator_unregister(ldo->regulator);
- 	kfree(ldo);
- 
+ #include <linux/module.h>
 -- 
-1.7.2.3
+1.7.4.2.g597a6.dirty
 
