@@ -1,108 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab1CAVUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 16:20:32 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34902 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754244Ab1CAVUb convert rfc822-to-8bit (ORCPT
+	id S1755244Ab1CAVWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 16:22:19 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:18408 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab1CAVWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 16:20:31 -0500
-From: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 2 Mar 2011 02:49:54 +0530
-Subject: RE: [PATCH v6 1/1] PRUSS UIO driver support
-Thread-Topic: [PATCH v6 1/1] PRUSS UIO driver support
-Thread-Index: AcvYP1sAbJEEIH3SQQiXHTz09c/qKQAFmwcg
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BF36683@dbde02.ent.ti.com>
-References: <1298926895-5294-1-git-send-email-pratheesh@ti.com>
- <1298926895-5294-2-git-send-email-pratheesh@ti.com>
- <20110228212638.GB16806@local>
- <B85A65D85D7EB246BE421B3FB0FBB593024BF3601C@dbde02.ent.ti.com>
- <20110301183334.GC20497@local>
-In-Reply-To: <20110301183334.GC20497@local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 1 Mar 2011 16:22:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:from:date:to:reply-to:cc:subject;
+        b=ibrKYS/E1xmsEc3VgzNHVxAyaY4fJaMUP+ZV6Yz2xo2Of0vSMh9akn1+InhHRgF5j6
+         cWhOa1ASY3xlGayn4i9A==
+Message-ID: <4d6d636b.98a1df0a.15d8.57d1@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Tue, 1 Mar 2011 22:20:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, ming.m.lin@intel.com,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, eranian@google.com,
+        robert.richter@amd.com, acme@redhat.com
+Subject: [PATCH] perf_events: update PEBS event constraints (v2)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-> -----Original Message-----
-> From: Hans J. Koch [mailto:hjk@hansjkoch.de]
-> Sent: Wednesday, March 02, 2011 12:04 AM
-> To: TK, Pratheesh Gangadhar
-> Cc: Hans J. Koch; linux-kernel@vger.kernel.org; gregkh@suse.de;
-> tglx@linutronix.de; sshtylyov@mvista.com; arnd@arndb.de; Chatterjee, Amit;
-> davinci-linux-open-source@linux.davincidsp.com; linux-arm-
-> kernel@lists.infradead.org
-> Subject: Re: [PATCH v6 1/1] PRUSS UIO driver support
-> 
-> On Tue, Mar 01, 2011 at 10:15:27AM +0530, TK, Pratheesh Gangadhar wrote:
-> > Hi,
-> >
-> > > -----Original Message-----
-> > > From: Hans J. Koch [mailto:hjk@hansjkoch.de]
-> > > Sent: Tuesday, March 01, 2011 2:57 AM
-> > > To: TK, Pratheesh Gangadhar
-> > > Cc: linux-kernel@vger.kernel.org; hjk@hansjkoch.de; gregkh@suse.de;
-> > > tglx@linutronix.de; sshtylyov@mvista.com; arnd@arndb.de; Chatterjee,
-> Amit;
-> > > davinci-linux-open-source@linux.davincidsp.com; linux-arm-
-> > > kernel@lists.infradead.org
-> > > Subject: Re: [PATCH v6 1/1] PRUSS UIO driver support
-> > >
-> > > On Tue, Mar 01, 2011 at 02:31:35AM +0530, Pratheesh Gangadhar wrote:
-> > > > +
-> > > > +		/* Register PRUSS IRQ lines */
-> > > > +		p->irq = IRQ_DA8XX_EVTOUT0 + cnt;
-> > > > +		p->handler = pruss_handler;
-> > > > +
-> > > > +		ret = uio_register_device(&dev->dev, p);
-> > > > +
-> > > > +		if (ret < 0)
-> > > > +			goto out_free;
-> > > > +	}
-> > > > +
-> > > > +	spin_lock_init(&lock);
-> > >
-> > > That's too late. uio_register_device() enables the irq, and your
-> spin_lock
-> > > is not ready at that time.
-> >
-> > This is ok in this context as "modprobe uio_pruss" is pre-requisite for
-> > running PRUSS firmware and without firmware running PRUSS won't
-> > generate interrupts. Actually PRUSS INTC is not setup till we start
-> > user application.
-> 
-> What if the user application is stopped, UIO driver module unloaded
-> and loaded again?
-> 
-This is a possible scenario - may be a buggy application. Normally when
-application is stopped, PRUs are stopped by exit handler.
+This patch updates PEBS event constraints for Intel Atom, Nehalem, Westmere.
 
-> Anyway, please don't use that kind of argumentation. The next newbie
-> developer might copy your work as a basis for his new driver, and there
-> it probably won't work.
-> 
-> Simply put the spin_lock_init before the loop.
-> 
-Agree, will fix this in next version.
+This patch also reorganizes the PEBS format/constraint detection code. It is
+now based on processor model and not PEBS format. Two processors may use the
+same PEBS format without have the same list of PEBS events.
 
-Thanks,
-Pratheesh
+In this second version, we simplified the initialization of the PEBS constraints
+by leveraging the existing switch() statement in perf_event_intel.c. We also
+renamed the constraint tables to be more consistent with regular constraints.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 084b383..ddf6c4f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1024,6 +1024,7 @@ static __init int intel_pmu_init(void)
+ 		intel_pmu_lbr_init_core();
+ 
+ 		x86_pmu.event_constraints = intel_core2_event_constraints;
++		x86_pmu.pebs_constraints = intel_core2_pebs_event_constraints;
+ 		pr_cont("Core2 events, ");
+ 		break;
+ 
+@@ -1036,6 +1037,7 @@ static __init int intel_pmu_init(void)
+ 		intel_pmu_lbr_init_nhm();
+ 
+ 		x86_pmu.event_constraints = intel_nehalem_event_constraints;
++		x86_pmu.pebs_constraints = intel_nehalem_pebs_event_constraints;
+ 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+ 		pr_cont("Nehalem events, ");
+ 		break;
+@@ -1047,6 +1049,7 @@ static __init int intel_pmu_init(void)
+ 		intel_pmu_lbr_init_atom();
+ 
+ 		x86_pmu.event_constraints = intel_gen_event_constraints;
++		x86_pmu.pebs_constraints = intel_atom_pebs_event_constraints;
+ 		pr_cont("Atom events, ");
+ 		break;
+ 
+@@ -1059,6 +1062,8 @@ static __init int intel_pmu_init(void)
+ 
+ 		x86_pmu.event_constraints = intel_westmere_event_constraints;
+ 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
++		x86_pmu.pebs_constraints =
++				intel_westmere_pebs_event_constraints;
+ 		pr_cont("Westmere events, ");
+ 		break;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index b7dcd9f..916e6c7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -361,30 +361,49 @@ static int intel_pmu_drain_bts_buffer(void)
+ /*
+  * PEBS
+  */
+-
+-static struct event_constraint intel_core_pebs_events[] = {
++static struct event_constraint intel_core2_pebs_event_constraints[] = {
+ 	PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INSTR_RETIRED.ANY */
+ 	PEBS_EVENT_CONSTRAINT(0xfec1, 0x1), /* X87_OPS_RETIRED.ANY */
+ 	PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
+ 	PEBS_EVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
+-	PEBS_EVENT_CONSTRAINT(0x01cb, 0x1), /* MEM_LOAD_RETIRED.L1D_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x02cb, 0x1), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x04cb, 0x1), /* MEM_LOAD_RETIRED.L2_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x08cb, 0x1), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x10cb, 0x1), /* MEM_LOAD_RETIRED.DTLB_MISS */
++	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
++	EVENT_CONSTRAINT_END
++};
++
++static struct event_constraint intel_atom_pebs_event_constraints[] = {
++	PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INSTR_RETIRED.ANY */
++	PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
++	PEBS_EVENT_CONSTRAINT(0x0ac4, 0x1), /* BR_INST_RETIRED.MISPRED */
++	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+-static struct event_constraint intel_nehalem_pebs_events[] = {
+-	PEBS_EVENT_CONSTRAINT(0x00c0, 0xf), /* INSTR_RETIRED.ANY */
+-	PEBS_EVENT_CONSTRAINT(0xfec1, 0xf), /* X87_OPS_RETIRED.ANY */
+-	PEBS_EVENT_CONSTRAINT(0x00c5, 0xf), /* BR_INST_RETIRED.MISPRED */
+-	PEBS_EVENT_CONSTRAINT(0x1fc7, 0xf), /* SIMD_INST_RETURED.ANY */
+-	PEBS_EVENT_CONSTRAINT(0x01cb, 0xf), /* MEM_LOAD_RETIRED.L1D_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x02cb, 0xf), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x04cb, 0xf), /* MEM_LOAD_RETIRED.L2_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x08cb, 0xf), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
+-	PEBS_EVENT_CONSTRAINT(0x10cb, 0xf), /* MEM_LOAD_RETIRED.DTLB_MISS */
++static struct event_constraint intel_nehalem_pebs_event_constraints[] = {
++	INTEL_EVENT_CONSTRAINT(0x0b, 0xf),  /* MEM_INST_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),  /* MEM_UNCORE_RETIRED.* */
++	PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
++	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INST_RETIRED.ANY */
++	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0x00c4, 0xf),/* BR_INST_RETIRED.* */
++	PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
++	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
++	PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
++	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
++	EVENT_CONSTRAINT_END
++};
++
++static struct event_constraint intel_westmere_pebs_event_constraints[] = {
++	INTEL_EVENT_CONSTRAINT(0x0b, 0xf), /* MEM_INST_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0x0f, 0xf), /* MEM_UNCORE_RETIRED.* */
++	PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
++	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INSTR_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
++
++	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),  /* BR_INST_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),  /* BR_MISP_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
++	PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
++	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -695,20 +714,18 @@ static void intel_ds_init(void)
+ 			printk(KERN_CONT "PEBS fmt0%c, ", pebs_type);
+ 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_core);
+ 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_core;
+-			x86_pmu.pebs_constraints = intel_core_pebs_events;
+ 			break;
+ 
+ 		case 1:
+ 			printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+ 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+ 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+-			x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+ 			break;
+ 
+ 		default:
+-			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
++			printk(KERN_CONT "no PEBS fmt%d%c, ",
++			       format, pebs_type);
+ 			x86_pmu.pebs = 0;
+-			break;
+ 		}
+ 	}
+ }
