@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab1CAQfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:35:47 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52904 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756644Ab1CAQfq (ORCPT
+	id S1756847Ab1CAQmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:42:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47037 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756567Ab1CAQmG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:35:46 -0500
-Subject: Re: [PATCH 3/6] perf record: add time-of-day option
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-In-Reply-To: <4D6D1A4C.1090009@cisco.com>
-References: <1298865151-23656-1-git-send-email-daahern@cisco.com>
-	 <1298865151-23656-4-git-send-email-daahern@cisco.com>
-	 <1298989751.5226.863.camel@laptop>  <4D6D0438.2090901@cisco.com>
-	 <1298993714.5226.871.camel@laptop>  <4D6D13C6.5020807@cisco.com>
-	 <1298995250.5226.882.camel@laptop>  <4D6D1A4C.1090009@cisco.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Mar 2011 17:37:15 +0100
-Message-ID: <1298997435.5226.890.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Mar 2011 11:42:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110301175425.50296d21.sfr@canb.auug.org.au>
+References: <20110301175425.50296d21.sfr@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 1 Mar 2011 09:41:45 -0700
+X-Google-Sender-Auth: el7SAF5r--ljSkIpKdAZCsmUqtA
+Message-ID: <AANLkTi=emhx8tZ-SqZok7oMPpcXiYUr+b1t3CMgeAxao@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (devicetree tree related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 09:09 -0700, David Ahern wrote:
-> 
-> I did not code it create samples of a realtime-clock event; I coded it
-> to add an event to the stream on demand -- whatever event the fd is
-> tied to.
-> 
-> 
-Well yes, but aside from you and the realtime clock stuff, who'd ever
-want to do this particular thing?
+On Mon, Feb 28, 2011 at 11:54 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> drivers/mtd/nand/pasemi_nand.c:221: error: variable 'pasemi_nand_driver' has initializer but incomplete type
+> drivers/mtd/nand/pasemi_nand.c:223: error: unknown field 'driver' specified in initializer
+> drivers/mtd/nand/pasemi_nand.c:223: error: extra brace group at end of initializer
+> drivers/mtd/nand/pasemi_nand.c:223: error: (near initialization for 'pasemi_nand_driver')
+> drivers/mtd/nand/pasemi_nand.c:227: warning: excess elements in struct initializer
+> drivers/mtd/nand/pasemi_nand.c:227: warning: (near initialization for 'pasemi_nand_driver')
+> drivers/mtd/nand/pasemi_nand.c:228: error: unknown field 'probe' specified in initializer
+> drivers/mtd/nand/pasemi_nand.c:228: warning: excess elements in struct initializer
+> drivers/mtd/nand/pasemi_nand.c:228: warning: (near initialization for 'pasemi_nand_driver')
+> drivers/mtd/nand/pasemi_nand.c:229: error: unknown field 'remove' specified in initializer
+> drivers/mtd/nand/pasemi_nand.c:229: warning: excess elements in struct initializer
+> drivers/mtd/nand/pasemi_nand.c:229: warning: (near initialization for 'pasemi_nand_driver')
+> drivers/mtd/nand/pasemi_nand.c: In function 'pasemi_nand_init':
+> drivers/mtd/nand/pasemi_nand.c:234: warning: passing argument 1 of 'platform_driver_register' from incompatible pointer type
+> include/linux/platform_device.h:124: note: expected 'struct platform_driver *' but argument is of type 'struct latform_driver *'
+> drivers/mtd/nand/pasemi_nand.c: In function 'pasemi_nand_exit':
+> drivers/mtd/nand/pasemi_nand.c:240: warning: passing argument 1 of 'platform_driver_unregister' from incompatible pointer type
+> include/linux/platform_device.h:125: note: expected 'struct platform_driver *' but argument is of type 'struct latform_driver *'
+>
+> Caused by commit ac677e82cd5c031a010458304821bb8b1e47cf24 ("dt: Eliminate
+> of_platform_{,un}register_driver").  Looks like a typo to me :-)
 
-I'd much rather expose the whole
-local_clock()/perf_clock()/trace_clock() (should all be the same anyway)
-as a posix clock using CLOCK_TRACING or whatever would be an appropriate
-name.
+Indeed!  Fix pushed out.  Thanks.
 
-[ Since the whole thing is NMI safe it should be well possible to make a
-VDSO version as well. ]
-
-Anyway, once its visible as a posix clock you can sync up from
-userspace. And this clock is indeed wanted for other things too, like
-user-space tracing etc.
-
+g.
