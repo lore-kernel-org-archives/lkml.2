@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab1CAHPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 02:15:36 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50865 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab1CAHPf (ORCPT
+	id S1755169Ab1CAHY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 02:24:26 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38441
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751100Ab1CAHYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 02:15:35 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6271"; a="77061037"
-Message-ID: <4D6C9D12.8090207@codeaurora.org>
-Date: Tue, 01 Mar 2011 12:45:30 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-CC: davidb@codeaurora.org, dwalker@fifo99.com, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] msm: iommu: Rework clock logic and add IOMMU bus
- clock control
-References: <1298599242-21971-2-git-send-email-stepanm@codeaurora.org> <1298937782-28725-1-git-send-email-stepanm@codeaurora.org>
-In-Reply-To: <1298937782-28725-1-git-send-email-stepanm@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Mar 2011 02:24:25 -0500
+Date: Mon, 28 Feb 2011 23:25:02 -0800 (PST)
+Message-Id: <20110228.232502.226763923.davem@davemloft.net>
+To: acahalan@gmail.com
+Cc: johnwheffner@gmail.com, linville@tuxdriver.com, eric.dumazet@gmail.com,
+        jussi.kivilinna@mbnet.fi, swmike@swm.pp.se,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTi=eDQh9Kvr9N_dTC5Cnbcfb+DbO-6tLxkZiEp9v@mail.gmail.com>
+References: <AANLkTinFZu5AgfhO6PoA7C1NTGSfD8HH0KXq_o-mHEJF@mail.gmail.com>
+	<20110228.201852.193726064.davem@davemloft.net>
+	<AANLkTi=eDQh9Kvr9N_dTC5Cnbcfb+DbO-6tLxkZiEp9v@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+From: Albert Cahalan <acahalan@gmail.com>
+Date: Tue, 1 Mar 2011 01:54:09 -0500
 
-On 3/1/2011 5:33 AM, Stepan Moskovchenko wrote:
-> Clean up the clock control code in the probe calls, and add
-> support for controlling the clock for the IOMMU bus
-> interconnect. With the (proper) clock driver in place, the
-> clock control logic in the probe function can be made much
-> cleaner since it does not have to deal with the placeholder
-> driver anymore.
-> 
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> ---
-> v2: Use resource_size.
+> In case it makes you feel any better, consider two cases
+> where synchronous feedback is already impossible.
+> One is when you're routing packets that merely pass through.
+> The other is when some other box is doing that to you.
+> Either way, packets go bye-bye and nobody tells TCP.
 
-Looks good to me.
-
-Reviewed-by: Trilok Soni <tsoni@codeaurora.org>
-
----Trilok Soni
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+I consider ECN quite synchronous, and routers will set ECN bits to
+propagate congestion information when they do or are about to drop
+packets.
