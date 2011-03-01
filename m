@@ -1,59 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab1CAWvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 17:51:23 -0500
-Received: from mga01.intel.com ([192.55.52.88]:53035 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755340Ab1CAWvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 17:51:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,249,1297065600"; 
-   d="scan'208";a="662815793"
-Date: Tue, 1 Mar 2011 14:51:20 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ozan Caglayan <ozan@pardus.org.tr>
-Subject: Re: 2.6.38 regression caused by commit 415e12b
-Message-ID: <20110301225058.GA2294@xanatos>
-References: <20110228014218.GA11083@xanatos>
- <201102282129.56835.rjw@sisk.pl>
- <20110301183057.GA2359@xanatos>
- <201103012155.34182.rjw@sisk.pl>
+	id S1756743Ab1CAW5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 17:57:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45501 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950Ab1CAW5v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 17:57:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oqDHfgIak9AJtPaPwS39/dVI7O6+ddS5nCZ0Pv009MxFot9GqUxb+2WCC45sCbe/9M
+         yA81R4laTeCUXAcCt1dC2vvDV52GRr/TF8+lNqsddS9o9hCGqPxnTsDaypzkcLdIeS59
+         YU5rUhukC5jpTexVHAKHtG6/PybtVMfZDjcWA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103012155.34182.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110301143444.2ed102aa.akpm@linux-foundation.org>
+References: <20110301153558.GA2031@barrios-desktop>
+	<20110301161900.GA21860@random.random>
+	<AANLkTimpTyaAU0JzFKp4s14w=ciq152MWSmbgn8xtkOx@mail.gmail.com>
+	<20110301143444.2ed102aa.akpm@linux-foundation.org>
+Date: Wed, 2 Mar 2011 07:57:51 +0900
+Message-ID: <AANLkTikkXnaWcxeEjCZ3g4FYD5qYDzVN50Lyw-k=oB_5@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled
+ while isolating pages for migration
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 09:55:33PM +0100, Rafael J. Wysocki wrote:
-> Please check if the appended patch (on top of the Linus' current) helps.
+On Wed, Mar 2, 2011 at 7:34 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed, 2 Mar 2011 07:22:33 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> On Wed, Mar 2, 2011 at 1:19 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+>> > On Wed, Mar 02, 2011 at 12:35:58AM +0900, Minchan Kim wrote:
+>> >> On Tue, Mar 01, 2011 at 01:49:25PM +0900, KAMEZAWA Hiroyuki wrote:
+>> >> > On Tue, 1 Mar 2011 13:11:46 +0900
+>> >> > Minchan Kim <minchan.kim@gmail.com> wrote:
+>> >> >
+>>
+>> ...
+>>
+>> > pages freed from irq shouldn't be PageLRU.
+>>
+>> Hmm..
+>> As looking code, it seems to be no problem and I didn't see the any
+>> comment about such rule. It should have been written down in
+>> __page_cache_release.
+>> Just out of curiosity.
+>> What kinds of problem happen if we release lru page in irq context?
+>
+> put_page() from irq context has been permissible for ten years.  I
+> expect there are a number of sites which do this (via subtle code
+> paths, often).  It might get messy.
+>
+>> >
+>> > deferring freeing to workqueue doesn't look ok. firewall loads runs
+>> > only from irq and this will cause some more work and a delay in the
+>> > freeing. I doubt it's worhwhile especially for the lru_lock.
+>> >
+>>
+>> As you said, if it is for decreasing lock contention in SMP to deliver
+>> overall better performance, maybe we need to check again how much it
+>> helps.
+>> If it doesn't help much, could we remove irq_save/restore of lru_lock?
+>> Do you know any benchmark to prove it had a benefit at that time or
+>> any thread discussing about that in lkml?
+>
+>
+> : commit b10a82b195d63575958872de5721008b0e9bef2d
+> : Author: akpm <akpm>
+> : Date:   Thu Aug 15 18:21:05 2002 +0000
+> :
+> :     [PATCH] make pagemap_lru_lock irq-safe
+> :
+> :     It is expensive for a CPU to take an interrupt while holding the page
+> :     LRU lock, because other CPUs will pile up on the lock while the
+> :     interrupt runs.
+> :
+> :     Disabling interrupts while holding the lock reduces contention by an
+> :     additional 30% on 4-way.  This is when the only source of interrupts is
+> :     disk completion.  The improvement will be higher with more CPUs and it
+> :     will be higher if there is networking happening.
+> :
+> :     The maximum hold time of this lock is 17 microseconds on 500 MHx PIII,
+> :     which is well inside the kernel's maximum interrupt latency (which was
+> :     100 usecs when I last looked, a year ago).
+> :
+> :     This optimisation is not needed on uniprocessor, but the patch disables
+> :     IRQs while holding pagemap_lru_lock anyway, so it becomes an irq-safe
+> :     spinlock, and pages can be moved from the LRU in interrupt context.
+> :
+> :     pagemap_lru_lock has been renamed to _pagemap_lru_lock to pick up any
+> :     missed uses, and to reliably break any out-of-tree patches which may be
+> :     using the old semantics.
+> :
+> :     BKrev: 3d5bf1110yfdAAur4xqJfiLBDJ2Cqw
+>
+>
+> Ancient stuff, and not a lot of detail.  But I did measure it.  I
+> measured everything ;) And, as mentioned, I'd expect that the
+> contention problems would worsen on higher CPU machines and higher
+> interrupt frequencies.
 
-Sorry, it doesn't help.  Same message as before.
+Thanks for giving the important information.
 
-Sarah
+>
+> I expect we could eliminate the irqsave requirement from
+> rotate_reclaimable_page() simply by switching to a trylock.  Some pages
+> will end up at the wrong end of the LRU but the effects may be
+> negligible.  Or perhaps they may not - disk seeks are costly.
+>
+>
 
-> ---
->  drivers/acpi/pci_root.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> Index: linux-2.6/drivers/acpi/pci_root.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/pci_root.c
-> +++ linux-2.6/drivers/acpi/pci_root.c
-> @@ -48,10 +48,7 @@ static int acpi_pci_root_add(struct acpi
->  static int acpi_pci_root_remove(struct acpi_device *device, int type);
->  static int acpi_pci_root_start(struct acpi_device *device);
->  
-> -#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
-> -				| OSC_ACTIVE_STATE_PWR_SUPPORT \
-> -				| OSC_CLOCK_PWR_CAPABILITY_SUPPORT \
-> -				| OSC_MSI_SUPPORT)
-> +#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT | OSC_MSI_SUPPORT)
->  
->  static const struct acpi_device_id root_device_ids[] = {
->  	{"PNP0A03", 0},
+Releasing 14 pages should not have much cost about interrupt latency
+and It's a general concept we have been used. If it really has a
+problem, I think it would be better to reduce PAGEVEC_SIZE rather than
+fixing the rotate_reclaimable_page.
+
+
+
+
+-- 
+Kind regards,
+Minchan Kim
