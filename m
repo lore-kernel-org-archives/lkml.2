@@ -1,125 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027Ab1CARW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 12:22:58 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38334 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab1CARW4 convert rfc822-to-8bit (ORCPT
+	id S1757006Ab1CARdj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 12:33:39 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42275 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756713Ab1CARdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 12:22:56 -0500
+	Tue, 1 Mar 2011 12:33:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=D/U3LXwhFv2KIVOOI2AeULLZn9266LB41P0G9zeiYrrHTULONJ9lbp7AqQ2ExnLCKR
-         /kYMexKjkofPid2pdywL4bC8jYeD3uG96R43aqTDMWw4lNquyjSAI2Z+sCR7pC2Hzlhg
-         Dq6P9WvzCLIbvWdRyvq+X/JqgBZa/sYfG8h5I=
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=swPZNPFNOLJZLCwNbI4ZxX7dm0gp6QVhH8ksXfcDZvB0D5Npda5X66EN44zCrtLHdp
+         dBhvafIXg6R9H/fz892ti62k8kJCtuooOluJaBFQqGaSbwcmlIwY9+/X6+PSevwzt5pa
+         l0gV+74wa5lVZpF0zQr04GHra9kUvN3VyeIuI=
+Message-ID: <4D6D2DD1.1020707@openvz.org>
+Date: Tue, 01 Mar 2011 20:33:05 +0300
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110301170953.GB17933@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org> <201103011757.48593.vda.linux@googlemail.com>
- <20110301170953.GB17933@htj.dyndns.org>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 1 Mar 2011 18:21:49 +0100
-Message-ID: <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
-Subject: Re: [RFC] Proposal for ptrace improvements
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Don Zickus <dzickus@redhat.com>, "Huang, Ying" <ying.huang@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>
+Subject: Re: [PATHC -tip 1/2] x86, nmi: Define a name for NMI control port
+References: <4D6C163A.4010904@openvz.org> <20110301075712.GA13857@elte.hu>
+In-Reply-To: <20110301075712.GA13857@elte.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 6:09 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Denys.
+On 03/01/2011 10:57 AM, Ingo Molnar wrote:
+...
 >
-> On Tue, Mar 01, 2011 at 05:57:48PM +0100, Denys Vlasenko wrote:
->> > * jctl stop initiates when one of the stop signals is received and
->> >   completes when all the member tasks participate in the group stop,
->> >   where participation preciesly means that a member task stops in
->> >   do_signal_stop().  Any member task can only participate once in any
->> >   given group stop.  ptrace does NOT make any difference in this
->> >   regard.
->>
->> This proposal adds a new rule for handling of stop notification
->> by debuggers. Let's spell it out, because currently strace
->> doesn't act according to this new rule:
->>
->> "When waitpid indicates stop on a *stop* signal, then it may be either:
->> * a signal delivery (strace will inject this signal with PTRACE_SYSCALL(sig));
->> * or it may be a stop notification, in which case strace *must not*
->>   try to inject this signal (this would be a bug, it'd make task running).
->>   Instead, strace should just go back to waiting in waitpid().
->>
->> These two possibilities can be distinquished by querying
->> PTRACE_GETSIGINFO. On stop notifications, PTRACE_GETSIGINFO
->> errors out - stop notification is not a signal delivery
->> and therefore it has no siginfo."
+> FYI, the patch is whitespace damaged.
 >
-> Hmmm... but the above also holds for the current kernel too.  That
-> hasn't really changed and the current broken behavior - unconditional
-> PTRACE_SYSCALL(sig) - will behave the same regardless of the proposed
-> changes.
+> 	Ingo
 
-There is a different proposal under which current strace behavior
-would be a correct one.
+Ingo, this one should be fine
 
-I'm not saying that I like that other proposal more -
-I am saying that your proposal needs to specify whether strace
-needs to be changed, and how exactly, to correctly handle
-SIGSTOPs under this proposal.
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH -tip 1/2] x86, nmi: Define a name for NMI control port
 
+Also add a comment anout why we need in-out operations.
 
->> > * However, PTRACE_DETACH should maintain the integrity of group stop.
->> >   After a tracee is detached, it should be in a state which is
->> >   conformant to the current jctl state.  If jctl stop is in effect,
->> >   the task should be put into TASK_STOPPED; otherwise, TASK_RUNNING.
->>
->> This means that without changes to gdb, this:
->>
->> # gdb -p pid_of_application_currently_in_jctl_stop
->> (gdb) print getpid()
->> (gdb) print show_me_your_internal_debug_dump()
->> (gdb) continue
->>
->> will make application run, whereas this:
->>
->> # gdb -p pid_of_application_currently_in_jctl_stop
->> (gdb) print getpid()
->> (gdb) print show_me_your_internal_debug_dump()
->> (gdb) quit
->>
->> will leave application stopped. This looks a bit inconsistent to me.
->>
->> Do you propose gdb to be chaged so that "continue" command
->> issues PTRACE_CONT only if gdb knows that application is not
->> in jctl stop?
->
-> gdb can do whatever it wants to do but I don't think the above needs
-> fixing.  In the first case, the user is explicitly telling gdb to
-> continue the tracee, so it continues as it always has.
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+  arch/x86/include/asm/mach_traps.h |   18 +++++++++++++-----
+  1 file changed, 13 insertions(+), 5 deletions(-)
 
-It does not look like that to me.
+Index: linux-2.6.git/arch/x86/include/asm/mach_traps.h
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/mach_traps.h
++++ linux-2.6.git/arch/x86/include/asm/mach_traps.h
+@@ -8,6 +8,7 @@
+  #include <asm/mc146818rtc.h>
 
-User attached to some process. User might be unaware that
-the process is currently stopped (imagine a group of processes
-which use SIGSTOP/SIGCONT in their normal interactions).
+  #define NMI_REASON_PORT		0x61
++#define NMI_ENABLE_PORT		0x70 /* Real-Time Clock Address Register as well */
 
-User peeked some state, and then wants to let process
-continue whatever process was doing, but remain in the debugger.
-
-What user did not know is that "whatever process was doing" =
-"being stopped by SIGSTOP, waiting to be woken up".
-Therefore, if "continue" makes process run, it does not
-return process to whatever process was doing.
-
-> In the latter
-> case, the debugging session is over.  The tracee now should do
-> whatever it's supposed to do.
-
-It should do that in both cases.
-
--- 
-vda
+  #define NMI_REASON_SERR		0x80
+  #define NMI_REASON_IOCHK	0x40
+@@ -30,12 +31,19 @@ static inline void reassert_nmi(void)
+  		old_reg = current_lock_cmos_reg();
+  	else
+  		lock_cmos(0); /* register doesn't matter here */
+-	outb(0x8f, 0x70);
+-	inb(0x71);		/* dummy */
+-	outb(0x0f, 0x70);
+-	inb(0x71);		/* dummy */
++
++	/*
++	 * This will cause the NMI output to transition low
++	 * then high if there are any pending NMI sources. The
++	 * CPU's NMI input logic will then register a new NMI.
++	 */
++	outb(0x8f, NMI_ENABLE_PORT);
++	inb(0x71);	/* dummy */
++	outb(0x0f, NMI_ENABLE_PORT);
++	inb(0x71);	/* dummy */
++
+  	if (old_reg >= 0)
+-		outb(old_reg, 0x70);
++		outb(old_reg, NMI_ENABLE_PORT);
+  	else
+  		unlock_cmos();
+  }
