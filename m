@@ -1,183 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab1CAMii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 07:38:38 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:57927 "EHLO
+	id S1756355Ab1CAMih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 07:38:37 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:57930 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab1CAMhD (ORCPT
+	with ESMTP id S1755120Ab1CAMhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Mar 2011 07:37:03 -0500
-Message-Id: <20110301123645.189703316@szeredi.hu>
+Message-Id: <20110301123700.283898043@szeredi.hu>
+References: <20110301123645.189703316@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Tue, 01 Mar 2011 13:36:45 +0100
+Date: Tue, 01 Mar 2011 13:36:46 +0100
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: apw@canonical.com
-Subject: [PATCH 0/6 v6] overlay filesystem prototype
+Subject: [PATCH 1/6 v6] vfs: add i_op->open()
+Content-Disposition: inline; filename=vfs-add-i_op-open.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's an updated patch series.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Git tree is here:
+Add a new inode operation i_op->open().  This is for stacked
+filesystems that want to return a struct file from a different
+filesystem.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v6
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/open.c          |   83 +++++++++++++++++++++++++++++++----------------------
+ include/linux/fs.h |    2 +
+ 2 files changed, 51 insertions(+), 34 deletions(-)
 
-Thanks,
-Miklos
+Index: linux-2.6/include/linux/fs.h
+===================================================================
+--- linux-2.6.orig/include/linux/fs.h	2011-03-01 12:18:10.000000000 +0100
++++ linux-2.6/include/linux/fs.h	2011-03-01 12:18:15.000000000 +0100
+@@ -1587,6 +1587,7 @@ struct inode_operations {
+ 	void (*truncate_range)(struct inode *, loff_t, loff_t);
+ 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
+ 		      u64 len);
++	struct file *(*open)(struct dentry *, int flags, const struct cred *);
+ } ____cacheline_aligned;
+ 
+ struct seq_file;
+@@ -1990,6 +1991,7 @@ extern int do_fallocate(struct file *fil
+ extern long do_sys_open(int dfd, const char __user *filename, int flags,
+ 			int mode);
+ extern struct file *filp_open(const char *, int, int);
++extern struct file *vfs_open(struct path *, int flags, const struct cred *);
+ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
+ 				 const struct cred *);
+ extern int filp_close(struct file *, fl_owner_t id);
+Index: linux-2.6/fs/open.c
+===================================================================
+--- linux-2.6.orig/fs/open.c	2011-03-01 12:18:10.000000000 +0100
++++ linux-2.6/fs/open.c	2011-03-01 12:18:15.000000000 +0100
+@@ -656,19 +656,19 @@ static inline int __get_file_write_acces
+ 	return error;
+ }
+ 
+-static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+-					struct file *f,
++static struct file *__dentry_open(struct path *path, struct file *f,
+ 					int (*open)(struct inode *, struct file *),
+ 					const struct cred *cred)
+ {
+ 	struct inode *inode;
+ 	int error;
+ 
++	path_get(path);
+ 	f->f_mode = OPEN_FMODE(f->f_flags) | FMODE_LSEEK |
+ 				FMODE_PREAD | FMODE_PWRITE;
+-	inode = dentry->d_inode;
++	inode = path->dentry->d_inode;
+ 	if (f->f_mode & FMODE_WRITE) {
+-		error = __get_file_write_access(inode, mnt);
++		error = __get_file_write_access(inode, path->mnt);
+ 		if (error)
+ 			goto cleanup_file;
+ 		if (!special_file(inode->i_mode))
+@@ -676,8 +676,7 @@ static struct file *__dentry_open(struct
+ 	}
+ 
+ 	f->f_mapping = inode->i_mapping;
+-	f->f_path.dentry = dentry;
+-	f->f_path.mnt = mnt;
++	f->f_path = *path;
+ 	f->f_pos = 0;
+ 	f->f_op = fops_get(inode->i_fop);
+ 	file_sb_list_add(f, inode->i_sb);
+@@ -723,7 +722,7 @@ static struct file *__dentry_open(struct
+ 			 * here, so just reset the state.
+ 			 */
+ 			file_reset_write(f);
+-			mnt_drop_write(mnt);
++			mnt_drop_write(path->mnt);
+ 		}
+ 	}
+ 	file_sb_list_del(f);
+@@ -731,8 +730,7 @@ static struct file *__dentry_open(struct
+ 	f->f_path.mnt = NULL;
+ cleanup_file:
+ 	put_filp(f);
+-	dput(dentry);
+-	mntput(mnt);
++	path_put(path);
+ 	return ERR_PTR(error);
+ }
+ 
+@@ -758,14 +756,14 @@ static struct file *__dentry_open(struct
+ struct file *lookup_instantiate_filp(struct nameidata *nd, struct dentry *dentry,
+ 		int (*open)(struct inode *, struct file *))
+ {
++	struct path path = { .dentry = dentry, .mnt = nd->path.mnt };
+ 	const struct cred *cred = current_cred();
+ 
+ 	if (IS_ERR(nd->intent.open.file))
+ 		goto out;
+ 	if (IS_ERR(dentry))
+ 		goto out_err;
+-	nd->intent.open.file = __dentry_open(dget(dentry), mntget(nd->path.mnt),
+-					     nd->intent.open.file,
++	nd->intent.open.file = __dentry_open(&path, nd->intent.open.file,
+ 					     open, cred);
+ out:
+ 	return nd->intent.open.file;
+@@ -794,10 +792,17 @@ struct file *nameidata_to_filp(struct na
+ 
+ 	/* Has the filesystem initialised the file for us? */
+ 	if (filp->f_path.dentry == NULL) {
+-		path_get(&nd->path);
+-		filp = __dentry_open(nd->path.dentry, nd->path.mnt, filp,
+-				     NULL, cred);
++		struct inode *inode = nd->path.dentry->d_inode;
++
++		if (inode->i_op->open) {
++			int flags = filp->f_flags;
++			put_filp(filp);
++			filp = inode->i_op->open(nd->path.dentry, flags, cred);
++		} else {
++			filp = __dentry_open(&nd->path, filp, NULL, cred);
++		}
+ 	}
++
+ 	return filp;
+ }
+ 
+@@ -808,35 +813,45 @@ struct file *nameidata_to_filp(struct na
+ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
+ 			 const struct cred *cred)
+ {
+-	int error;
++	struct path path = { .dentry = dentry, .mnt = mnt };
++	struct file *ret;
++
++	BUG_ON(!mnt);
++
++	ret = vfs_open(&path, flags, cred);
++	path_put(&path);
++
++	return ret;
++}
++EXPORT_SYMBOL(dentry_open);
++
++/**
++ * vfs_open - open the file at the given path
++ * @path: path to open
++ * @flags: open flags
++ * @cred: credentials to use
++ *
++ * Open the file.  If successful, the returned file will have acquired
++ * an additional reference for path.
++ */
++struct file *vfs_open(struct path *path, int flags, const struct cred *cred)
++{
+ 	struct file *f;
++	struct inode *inode = path->dentry->d_inode;
+ 
+ 	validate_creds(cred);
+ 
+-	/*
+-	 * We must always pass in a valid mount pointer.   Historically
+-	 * callers got away with not passing it, but we must enforce this at
+-	 * the earliest possible point now to avoid strange problems deep in the
+-	 * filesystem stack.
+-	 */
+-	if (!mnt) {
+-		printk(KERN_WARNING "%s called with NULL vfsmount\n", __func__);
+-		dump_stack();
+-		return ERR_PTR(-EINVAL);
+-	}
++	if (inode->i_op->open)
++		return inode->i_op->open(path->dentry, flags, cred);
+ 
+-	error = -ENFILE;
+ 	f = get_empty_filp();
+-	if (f == NULL) {
+-		dput(dentry);
+-		mntput(mnt);
+-		return ERR_PTR(error);
+-	}
++	if (f == NULL)
++		return ERR_PTR(-ENFILE);
+ 
+ 	f->f_flags = flags;
+-	return __dentry_open(dentry, mnt, f, NULL, cred);
++	return __dentry_open(path, f, NULL, cred);
+ }
+-EXPORT_SYMBOL(dentry_open);
++EXPORT_SYMBOL(vfs_open);
+ 
+ static void __put_unused_fd(struct files_struct *files, unsigned int fd)
+ {
 
-------------------------------------------------------------------------------
-Changes from v5 to v6
-
-- optimize directory merging
-
-  o use rbtree for weeding out duplicates
-
-  o use a cursor for current position within the stream
-
-- instead of f_op->open_other(), implement i_op->open()
-
-- don't share inodes for non-directory dentries - for now.  I hope
-  this can come back once RCU lookup code has settled.
-
-- misc bug fixes
-
-------------------------------------------------------------------------------
-Changes from v4 to v5
-
-- fix copying up if fs doesn't support xattrs (Andy Whitcroft)
-
-- clone mounts to be used internally to access the underlying
-  filesystems
-
-------------------------------------------------------------------------------
-Changes from v3 to v4
-
-- export security_inode_permission to allow overlayfs to be modular
-  (Andy Whitcroft)
-
-- add statfs support (Andy Whitcroft)
-
-- change BUG_ON to WARN_ON
-
-- Revert "vfs: add flag to allow rename to same inode", instead
-  introduce s_op->is_same_inode()
-
-- overlayfs: fix rename to self
-
-- fix whiteout after rename
-
-------------------------------------------------------------------------------
-Changes from v2 to v3
-
- - Minimal remount support.  As overlayfs reflects the 'readonly'
-   mount status in write-access to the upper filesystem, we must
-   handle remount and either drop or take write access when the ro
-   status changes. (NeilBrown)
-
- - Use correct seek function for directories.  It is incorrect to call
-   generic_llseek_file on a file from a different filesystem.  For
-   that we must use the seek function that the filesystem defines,
-   which is called by vfs_llseek.  Also, we only want to seek the
-   realfile when is_real is true.  Otherwise we just want to update
-   our own f_pos pointer, so use generic_llseek_file for
-   that. (NeilBrown)
-
- - Initialise is_real before use.  The previous patch can use
-   od->is_real before it is properly initialised is llseek is called
-   before readdir.  So factor out the initialisation of is_real and
-   call it from both readdir and llseek when f_pos is 0. (NeilBrown)
-
- - Rename ovl_fill_cache to ovl_dir_read (NeilBrown)
-
- - Tiny optimisation in open_other handling (NeilBrown)
-
- - Assorted updates to Documentation/filesystems/overlayfs.txt (NeilBrown)
-
- - Make copy-up work for >=4G files, make it killable during copy-up.
-   Need to fix recovery after a failed/interrupted copy-up.
-
- - Store and reference upper/lower dentries in overlay dentries.
-   Store and reference upper/lower vfsmounts in overlay superblock.
-
- - Add necessary barriers for setting upper dentry in copyup and for
-   retrieving upper dentry locklessly.
-
- - Make sure the right file is used for directory fsync() after
-   copy-up.
-
- - Add locking to ovl_dir_llseek() to prevent concurrent call of
-   ovl_dir_reset() with ovl_dir_read().
-
- - Get rid of ovl_dentry_iput().  The VFS doesn't provide enough
-   locking for this function that the contents of ->d_fsdata could be
-   safely updated.
-
- - After copying up a non-directory unhash the dentry.  This way the
-   lower dentry ref, which is no longer necessary, can go away.  This
-   revealed a use-after-free bug in truncate handling in
-   fs/namei.c:finish_open().
-
- - Fix if a copy-up happens between the follow_linka the put_link
-   calls.
-
- - Replace some WARN_ONs with BUG_ON.  Some things just _really_
-   shouldn't happen.
-
- - Extract common code from ovl_unlink and ovl_rmdir to a helper
-   function.
-
- - After unlink and rmdir unhash the dentry.  This will get rid of the
-   lower and upper dentry references after there are no more users of
-   the deleted dentry.  This is a safe replacement for the removed
-   ->d_iput() functionality.
-
- - Added checks to unlink, rmdir and rename to verify that the
-   parent-child relationship in the upper filesystem matches that of
-   the overlay.  This is necessary to prevent crash and/or corruption
-   if the upper filesystem topology is being modified while part of
-   the overlay.
-
- - Optimize checking whiteout and opaque attributes.
-
- - Optimize copy-up on truncate: don't copy up whole file before
-   truncating
-
- - Misc bug fixes
-
-------------------------------------------------------------------------------
-Changes from v1 to v2
-
- - rename "hybrid union filesystem" to "overlay filesystem" or overlayfs
-
- - added documentation written by Neil
-
- - correct st_dev for directories (reported by Neil)
-
- - use getattr() to get attributes from the underlying filesystems,
-   this means that now an overlay filesystem itself can be the lower,
-   read-only layer of another overlay
-
- - listxattr filters out private extended attributes
-
- - get write ref on the upper layer on mount unless the overlay
-   itself is mounted read-only
-
- - raise capabilities for copy up, dealing with whiteouts and opaque
-   directories.  Now the overlay works for non-root users as well
-
- - "rm -rf" didn't work correctly in all cases if the directory was
-   copied up between opendir and the first readdir, this is now fixed
-   (and the directory operations consolidated)
-
- - simplified copy up, this broke optimization for truncate and
-   open(O_TRUNC) (now file is copied up to be immediately truncated,
-   will fix)
-
- - st_nlink for merged directories set to 1, this is an "illegal"
-   value that normal filesystems never have but some use it to
-   indicate that the number of subdirectories is unknown.  Utilities
-   (find, ...) seem to tolerate this well.
-
- - misc fixes I forgot about
+-- 
