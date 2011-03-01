@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab1CAEvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 23:51:39 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4873 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953Ab1CAEvi (ORCPT
+	id S1754672Ab1CAE4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 23:56:21 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44202 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322Ab1CAE4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 23:51:38 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6271"; a="77048016"
-Message-ID: <4D6C7B56.9060109@codeaurora.org>
-Date: Mon, 28 Feb 2011 20:51:34 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>
-CC: "eduardo.valentin@nokia.com" <eduardo.valentin@nokia.com>,
-        ext Nishanth Menon <nm@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Jonas ABERG <jonas.aberg@stericsson.com>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
-        ext Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jouni Hogander <jouni.hogander@nokia.com>, Ambresh <a0393775@ti.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        loic.pallardy@stericsson.com,
+	Mon, 28 Feb 2011 23:56:20 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 1 Mar 2011 13:49:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Lee Jones <Lee.Jones@linaro.org>,
-        "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>
-Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
- OMAP data
-References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>	<AANLkTin7vRMreG3hOAk95MYZUCV-Kr6ac7gD7jgvX6Gf@mail.gmail.com>	<20110216115729.GA29817@besouro.research.nokia.com> <4D6B78BF.1020102@stericsson.com>
-In-Reply-To: <4D6B78BF.1020102@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled
+ while isolating pages for migration
+Message-Id: <20110301134925.59bcff0d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110301041146.GA2107@barrios-desktop>
+References: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
+	<1298664299-10270-3-git-send-email-mel@csn.ul.ie>
+	<20110228111746.34f3f3e0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110228054818.GF22700@random.random>
+	<20110228145402.65e6f200.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110228092814.GC9548@csn.ul.ie>
+	<20110228184230.7c2eefb7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110228101827.GE9548@csn.ul.ie>
+	<20110301084209.2cfbd063.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110301041146.GA2107@barrios-desktop>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2011 02:28 AM, Maxime Coquelin wrote:
-> Hello Eduardo,
->
-> On 02/16/2011 12:57 PM, Eduardo Valentin wrote:
->>> Eduardo, what has happened to this patchset?
->> Got forgotten :-(. Unfortunately I didn't pushed it hard enough.
-> I propose to refactor your patchset, moving from procfs to sysfs.
+On Tue, 1 Mar 2011 13:11:46 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
->>> Do you want help in picking it up and try to polish it up?
->> Yeah, but it would need a refactoring. IIRC, result of last discussion
->> was that we should not mess with /proc. So, maybe moving back
- >> to something under sysfs. Perhaps /sys/devices/soc or so?
-> About the location of this new sysfs entry, where do you think it should
-> be?
-> I propose to create a new directory named "soc" in /sys/devices/system/.
->
-> As platform vendors have several/different kind of IDs to export to
-> sysfs, I propose each vendor to create file entries related to their IDs
-> (eg. /sys/devices/system/soc/idcode for OMAP platforms).
+> On Tue, Mar 01, 2011 at 08:42:09AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Mon, 28 Feb 2011 10:18:27 +0000
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> > 
+> > > > BTW, can't we drop disable_irq() from all lru_lock related codes ?
+> > > > 
+> > > 
+> > > I don't think so - at least not right now. Some LRU operations such as LRU
+> > > pagevec draining are run from IPI which is running from an interrupt so
+> > > minimally spin_lock_irq is necessary.
+> > > 
+> > 
+> > pagevec draining is done by workqueue(schedule_on_each_cpu()). 
+> > I think only racy case is just lru rotation after writeback.
+> 
+> put_page still need irq disable.
+> 
 
-I think the path /sys/devices/system/soc/ will work for the MSM too. I 
-would have ideally liked it to be /sys/devices/system/soc/msm, 
-/sys/devices/system/soc/omap, etc, but we can't get to pick names for 
-devices under a class. So, we can make do with /sys/devices/system/soc/.
-
-> However, I think we should have a common file entry to export the unique
-> ID of the platforms. Indeed, user-space applications should have a
-> unified way to get this kind of ID, regardless of the platform (eg.
-> /sys/devices/system/soc/unique_id).
-
-I like the idea of have a common file across all implementations that 
-will let user space identify what implementation is exporting the other 
-files and how to interpret them.
-
-I would like to propose an "arch" file to identify the arch the soc info 
-file are for. I'm guessing within an arch, the soc files would mostly be 
-the same? If there are other minor differences, we can let the arch 
-specific code deal with how the files are interpreted.
-
-Does "arch" work for everyone?
+Aha..ok. put_page() removes a page from LRU via __page_cache_release().
+Then, we may need to remove a page from LRU under irq context.
+Hmm...
 
 Thanks,
-Saravana
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-Kame
+
