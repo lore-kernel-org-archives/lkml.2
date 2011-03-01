@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1CAVXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 16:23:25 -0500
-Received: from kroah.org ([198.145.64.141]:39347 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754479Ab1CAVXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 16:23:24 -0500
-Date: Tue, 1 Mar 2011 16:23:50 -0500
-From: Greg KH <greg@kroah.com>
-To: "Allyn, Mark A" <mark.a.allyn@intel.com>
-Cc: "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
-        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Subject: Re: RFC: [PATCH 0/5] staging: sep: Enable kernel crypto
-Message-ID: <20110301212350.GA22953@kroah.com>
-References: <1298869824-4246-1-git-send-email-mark.a.allyn@intel.com>
- <20110228212018.GE8851@kroah.com>
- <8A0E4C92AE2D6D40AF99653191DA3231614A0A654E@rrsmsx501.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8A0E4C92AE2D6D40AF99653191DA3231614A0A654E@rrsmsx501.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755483Ab1CAV2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 16:28:50 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55895 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab1CAV2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 16:28:49 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: hjk@hansjkoch.de, gregkh@suse.de, tglx@linutronix.de, sshtylyov@mvista.com,
+        arnd@arndb.de, pratheesh@ti.com, amit.chatterjee@ti.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v7 0/1] Add PRUSS UIO driver support
+Date: Wed,  2 Mar 2011 02:58:14 +0530
+Message-Id: <1299014895-2022-1-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 02:10:09PM -0700, Allyn, Mark A wrote:
-> Greg writes:
-> 
-> Why?  What does this mean to me?  To users?  You need to sell this new
-> feature to me a LOT before I will take it as I really want and need to
-> see this driver fixed up first before you can add new features to it.
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> 
-> =================
-> 
-> Greg:
-> 
-> I agree; I will work on getting the current core driver out of staging prior to making the kernel crypto changes.
+This patch series add support for PRUSS (Programmable Real-time Unit Sub
+System) UIO driver in Texas Instruments DA850, AM18xx and OMAP-L138 processors.
+PRUSS is programmable RISC core which can be used to implement Soft IPs
+(eg:- DMA, CAN, UART,SmartCard) and Industrial communications data link layers
+(eg:- PROFIBUS). UIO driver exposes PRUSS resources like memory and interrupts
+to user space application.PRUSS UIO application API can be used to control PRUs
+in PRUSS, setup PRU INTC, load firmware to PRUs and implement IPC between Host
+processor and PRUs. More information on PRUSS and UIO linux user space API
+available in the links below
 
-First off, please fix your email client to do proper quoting and wrap
-lines at 72 columns.  Even Outlook can do this so there really is no
-excuse anymore...
+http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader_API_Guide
 
-> 
-> What are the major issues with the core driver? I know about the current items in the TODO list having to do with the unused ioctl calls and structures.
-> 
-> What other issues are there?
+Platform/board specific portion of this patch depends on Mistral patches below
 
-That's a good place to start, fix those up and when you feel you have
-addressed everything, ask for a review of the code and we can go from
-there.
+[PATCH 1/1] davinci: changed SRAM allocator to shared ram :
+				https://patchwork.kernel.org/patch/549351/
+[PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS :
+				 https://patchwork.kernel.org/patch/549331/
+[PATCH v2 01/13] mfd: pruss mfd driver :
+				https://patchwork.kernel.org/patch/549531/
+[PATCH v2 02/13] da850: pruss platform specific additions :
+				https://patchwork.kernel.org/patch/549521/
 
-thanks,
+I will submit a seperate patch set on top of these patches to support PRUSS
+UIO driver.
 
-greg k-h
+Pratheesh Gangadhar (1):
+  PRUSS UIO driver support
+
+ drivers/uio/Kconfig     |   17 +++
+ drivers/uio/Makefile    |    1 +
+ drivers/uio/uio_pruss.c |  257 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 275 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/uio/uio_pruss.c
+
