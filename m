@@ -1,205 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab1CARVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 12:21:34 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:9838 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821Ab1CARVd (ORCPT
+	id S1757027Ab1CARW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 12:22:58 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38334 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1CARW4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 12:21:33 -0500
-X-IronPort-AV: E=Sophos;i="4.62,248,1297036800"; 
-   d="scan'208";a="4562549"
-Date: Tue, 1 Mar 2011 17:21:21 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Yinghai Lu <yinghai@kernel.org>
-CC: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: "x86-64, mm: Put early page table high" causes crash on Xen
-Message-ID: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 1 Mar 2011 12:22:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=D/U3LXwhFv2KIVOOI2AeULLZn9266LB41P0G9zeiYrrHTULONJ9lbp7AqQ2ExnLCKR
+         /kYMexKjkofPid2pdywL4bC8jYeD3uG96R43aqTDMWw4lNquyjSAI2Z+sCR7pC2Hzlhg
+         Dq6P9WvzCLIbvWdRyvq+X/JqgBZa/sYfG8h5I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20110301170953.GB17933@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org> <201103011757.48593.vda.linux@googlemail.com>
+ <20110301170953.GB17933@htj.dyndns.org>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Tue, 1 Mar 2011 18:21:49 +0100
+Message-ID: <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
+Subject: Re: [RFC] Proposal for ptrace improvements
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu,
-while testing tip/x86/mm on Xen I found out that the commit "x86-64, mm:
-Put early page table high" reliably crashes Linux at boot.
-The reason is well explained by the commit message of
-fef5ba797991f9335bcfc295942b684f9bf613a1:
+On Tue, Mar 1, 2011 at 6:09 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Denys.
+>
+> On Tue, Mar 01, 2011 at 05:57:48PM +0100, Denys Vlasenko wrote:
+>> > * jctl stop initiates when one of the stop signals is received and
+>> >   completes when all the member tasks participate in the group stop,
+>> >   where participation preciesly means that a member task stops in
+>> >   do_signal_stop().  Any member task can only participate once in any
+>> >   given group stop.  ptrace does NOT make any difference in this
+>> >   regard.
+>>
+>> This proposal adds a new rule for handling of stop notification
+>> by debuggers. Let's spell it out, because currently strace
+>> doesn't act according to this new rule:
+>>
+>> "When waitpid indicates stop on a *stop* signal, then it may be either:
+>> * a signal delivery (strace will inject this signal with PTRACE_SYSCALL(sig));
+>> * or it may be a stop notification, in which case strace *must not*
+>>   try to inject this signal (this would be a bug, it'd make task running).
+>>   Instead, strace should just go back to waiting in waitpid().
+>>
+>> These two possibilities can be distinquished by querying
+>> PTRACE_GETSIGINFO. On stop notifications, PTRACE_GETSIGINFO
+>> errors out - stop notification is not a signal delivery
+>> and therefore it has no siginfo."
+>
+> Hmmm... but the above also holds for the current kernel too.  That
+> hasn't really changed and the current broken behavior - unconditional
+> PTRACE_SYSCALL(sig) - will behave the same regardless of the proposed
+> changes.
 
-"Xen requires that all pages containing pagetable entries to be mapped
-read-only.  If pages used for the initial pagetable are already mapped
-then we can change the mapping to RO.  However, if they are initially
-unmapped, we need to make sure that when they are later mapped, they
-are also mapped RO.
+There is a different proposal under which current strace behavior
+would be a correct one.
 
-We do this by knowing that the kernel pagetable memory is pre-allocated
-in the range e820_table_start - e820_table_end, so any pfn within this
-range should be mapped read-only.  However, the pagetable setup code
-early_ioremaps the pages to write their entries, so we must make sure
-that mappings created in the early_ioremap fixmap area are mapped RW.
-(Those mappings are removed before the pages are presented to Xen
-as pagetable pages.)"
-
-In other words mask_rw_pte (called by xen_set_pte_init) should mark RO
-the already existing pagetable pages (like the ones belonging to the
-initial mappings), while it should mark RW the new pages not yet hooked
-into the pagetable.  This is what the following lines used to achieve,
-but don't anymore:
-
-    /*
-	 * If the new pfn is within the range of the newly allocated
-	 * kernel pagetable, and it isn't being mapped into an
-	 * early_ioremap fixmap slot, make sure it is RO.
-	 */
-    if (!is_early_ioremap_ptep(ptep) &&
-	    pfn >= pgt_buf_start && pfn < pgt_buf_end)
-		pte = pte_wrprotect(pte);
-
-Unfortunately now we map the already existing initial pagetable pages a
-second time and the new zeroed pages using map_low_page, so we are
-unable to distinguish between the two.
-
-Can we go back to the previous way of accessing pagetable pages from
-kernel_physical_mapping_init, while keeping the new pagetable allocation
-strategy? It seems to me that the introduction of map_low_page is not
-actually required, is it? In that case we could just revert that bit...
-(appended partial revert example).
-Otherwise is there a way we can adapt mask_rw_pte to do the right thing
-even in the new scenario?
-Suggestions are very welcome.
-
-- Stefano
+I'm not saying that I like that other proposal more -
+I am saying that your proposal needs to specify whether strace
+needs to be changed, and how exactly, to correctly handle
+SIGSTOPs under this proposal.
 
 
----
+>> > * However, PTRACE_DETACH should maintain the integrity of group stop.
+>> >   After a tracee is detached, it should be in a state which is
+>> >   conformant to the current jctl state.  If jctl stop is in effect,
+>> >   the task should be put into TASK_STOPPED; otherwise, TASK_RUNNING.
+>>
+>> This means that without changes to gdb, this:
+>>
+>> # gdb -p pid_of_application_currently_in_jctl_stop
+>> (gdb) print getpid()
+>> (gdb) print show_me_your_internal_debug_dump()
+>> (gdb) continue
+>>
+>> will make application run, whereas this:
+>>
+>> # gdb -p pid_of_application_currently_in_jctl_stop
+>> (gdb) print getpid()
+>> (gdb) print show_me_your_internal_debug_dump()
+>> (gdb) quit
+>>
+>> will leave application stopped. This looks a bit inconsistent to me.
+>>
+>> Do you propose gdb to be chaged so that "continue" command
+>> issues PTRACE_CONT only if gdb knows that application is not
+>> in jctl stop?
+>
+> gdb can do whatever it wants to do but I don't think the above needs
+> fixing.  In the first case, the user is explicitly telling gdb to
+> continue the tracee, so it continues as it always has.
 
+It does not look like that to me.
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 13b6fb1..413e140 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -334,28 +334,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
- 	return adr;
- }
- 
--static __ref void *map_low_page(void *virt)
--{
--	void *adr;
--	unsigned long phys, left;
--
--	if (after_bootmem)
--		return virt;
--
--	phys = __pa(virt);
--	left = phys & (PAGE_SIZE - 1);
--	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
--	adr = (void *)(((unsigned long)adr) | left);
--
--	return adr;
--}
--
- static __ref void unmap_low_page(void *adr)
- {
- 	if (after_bootmem)
- 		return;
- 
--	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
-+	early_iounmap(adr, PAGE_SIZE);
- }
- 
- static unsigned long __meminit
-@@ -403,6 +387,15 @@ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- }
- 
- static unsigned long __meminit
-+phys_pte_update(pmd_t *pmd, unsigned long address, unsigned long end,
-+		pgprot_t prot)
-+{
-+	pte_t *pte = (pte_t *)pmd_page_vaddr(*pmd);
-+
-+	return phys_pte_init(pte, address, end, prot);
-+}
-+
-+static unsigned long __meminit
- phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 	      unsigned long page_size_mask, pgprot_t prot)
- {
-@@ -428,10 +421,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
--				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
--				last_map_addr = phys_pte_init(pte, address,
-+				last_map_addr = phys_pte_update(pmd, address,
- 								end, prot);
--				unmap_low_page(pte);
- 				spin_unlock(&init_mm.page_table_lock);
- 				continue;
- 			}
-@@ -478,6 +469,18 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- }
- 
- static unsigned long __meminit
-+phys_pmd_update(pud_t *pud, unsigned long address, unsigned long end,
-+		unsigned long page_size_mask, pgprot_t prot)
-+{
-+	pmd_t *pmd = pmd_offset(pud, 0);
-+	unsigned long last_map_addr;
-+
-+	last_map_addr = phys_pmd_init(pmd, address, end, page_size_mask, prot);
-+	__flush_tlb_all();
-+	return last_map_addr;
-+}
-+
-+static unsigned long __meminit
- phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 			 unsigned long page_size_mask)
- {
-@@ -502,11 +505,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 
- 		if (pud_val(*pud)) {
- 			if (!pud_large(*pud)) {
--				pmd = map_low_page(pmd_offset(pud, 0));
--				last_map_addr = phys_pmd_init(pmd, addr, end,
-+				last_map_addr = phys_pmd_update(pud, addr, end,
- 							 page_size_mask, prot);
--				unmap_low_page(pmd);
--				__flush_tlb_all();
- 				continue;
- 			}
- 			/*
-@@ -554,6 +554,17 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 	return last_map_addr;
- }
- 
-+static unsigned long __meminit
-+phys_pud_update(pgd_t *pgd, unsigned long addr, unsigned long end,
-+		 unsigned long page_size_mask)
-+{
-+	pud_t *pud;
-+
-+	pud = (pud_t *)pgd_page_vaddr(*pgd);
-+
-+	return phys_pud_init(pud, addr, end, page_size_mask);
-+}
-+
- unsigned long __meminit
- kernel_physical_mapping_init(unsigned long start,
- 			     unsigned long end,
-@@ -577,10 +588,8 @@ kernel_physical_mapping_init(unsigned long start,
- 			next = end;
- 
- 		if (pgd_val(*pgd)) {
--			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
--			last_map_addr = phys_pud_init(pud, __pa(start),
-+			last_map_addr = phys_pud_update(pgd, __pa(start),
- 						 __pa(end), page_size_mask);
--			unmap_low_page(pud);
- 			continue;
- 		}
- 
+User attached to some process. User might be unaware that
+the process is currently stopped (imagine a group of processes
+which use SIGSTOP/SIGCONT in their normal interactions).
+
+User peeked some state, and then wants to let process
+continue whatever process was doing, but remain in the debugger.
+
+What user did not know is that "whatever process was doing" =
+"being stopped by SIGSTOP, waiting to be woken up".
+Therefore, if "continue" makes process run, it does not
+return process to whatever process was doing.
+
+> In the latter
+> case, the debugging session is over.  The tracee now should do
+> whatever it's supposed to do.
+
+It should do that in both cases.
+
+-- 
+vda
