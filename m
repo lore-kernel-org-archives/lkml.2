@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab1CABcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 20:32:23 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42159 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab1CABcV convert rfc822-to-8bit (ORCPT
+	id S1754963Ab1CABwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 20:52:30 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63935 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab1CABw3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 20:32:21 -0500
+	Mon, 28 Feb 2011 20:52:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=n5zDmrSfLtineKHiC3HC6Z5UbTPjQHiO9GQ5FiYumFtGPR+3WPm4ZF20ydFMO0cZuK
-         F3DprCR23DZuSXa5LTEu3nlp6g4jdPUIjrFsAG2iT/OTPhceFRYZthUs/bO9nmV9ezwY
-         ARVKD/mVAQUgzDcCDMy7prjU6pDzNA/ByARWc=
+        b=j4P73pu2PhuXYYzDESkGKIy814jQfWLJSL0/qlvIehF+lTwbbKrSobbjXmqK7wpY1L
+         kPDX/hF7XPlibwSau/PYBmMtI00bCd1Rh5c1p/iIDuQY8+EbDlXqlLgxxNgNdJe6AN0h
+         BaeVFF0z5BR3Xak6TX7qsKLv+h+5PcsKR/L60=
 MIME-Version: 1.0
-In-Reply-To: <OFF2910C77.5B46C8B2-ON87257846.000354EE-07257846.000414E9@us.ibm.com>
-References: <AANLkTimyu6A=LgF8pit6So6JkPrScFLB42U3NwBJq7mv@mail.gmail.com>
-	<20110228131118.GA18193@dhcp231-156.rdu.redhat.com>
-	<OFF2910C77.5B46C8B2-ON87257846.000354EE-07257846.000414E9@us.ibm.com>
-Date: Tue, 1 Mar 2011 09:32:20 +0800
-Message-ID: <AANLkTikkDS38RhwP9LC47_Q-ZnUB_6q=EKRyQ8tswKW=@mail.gmail.com>
-Subject: Re: ext2/3/4: punch support?
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Allison C Henderson <achender@us.ibm.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-ext4-owner@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Theodore Tso <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110228162554.GE25998@cr0.redhat.com>
+References: <AANLkTimp0bywKCoqdc8=dZdGmRoOQZoySvjFRLsrk0np@mail.gmail.com>
+	<AANLkTimxxTMU3=4ry-_zbY6v1xiDi+hW9y1RegTr8vLK@mail.gmail.com>
+	<20110228162554.GE25998@cr0.redhat.com>
+Date: Tue, 1 Mar 2011 09:52:28 +0800
+Message-ID: <AANLkTinLHji_PKZ5pRHVHdsVdiX0N3=NJxDHsORNS4T5@mail.gmail.com>
+Subject: Re: [2.6.38-rc6] build:mkpiggy fixlet...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 8:44 AM, Allison C Henderson <achender@us.ibm.com> wrote:
+On 1 March 2011 00:25, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Wed, Feb 23, 2011 at 09:33:59AM +0800, Daniel J Blueman wrote:
+>>Ensure build doesn't silently continue despite read failure,
+>>addressing a warning due to the unchecked call.
+>>
+>>Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+>>
+>>diff --git a/arch/x86/boot/compressed/mkpiggy.c
+>>b/arch/x86/boot/compressed/mkpiggy.c
+>>index 646aa78..845a1f8 100644
+>>--- a/arch/x86/boot/compressed/mkpiggy.c
+>>+++ b/arch/x86/boot/compressed/mkpiggy.c
+>>@@ -62,7 +62,12 @@ int main(int argc, char *argv[])
+>>       if (fseek(f, -4L, SEEK_END)) {
+>>               perror(argv[1]);
+>>       }
+>>-      fread(&olen, sizeof olen, 1, f);
+>>+
+>>+      if (fread(&olen, sizeof(olen), 1, f) != 1) {
+>>+              perror(argv[1]);
+>>+              return 1;
 >
-> Hi All,
->
-> I've actually already started on a patch set for punch hole support in ext4.
-> Â I've sent them out on the ltc-fsdev mailing list for review. Â I had planned
-> to spend another week or two running it through some more debug cases before
-> sending it to the ext4 mailing list though.
+> You need to close the file here...
 
-Where can find your patch? should be sent to linux-ext4?
+I could close the file here to be polite, but since the program is
+exiting, the OS will close the file.
 
->
-> linux-ext4-owner@vger.kernel.org wrote on 02/28/2011 06:11:18 AM:
->
->> Josef Bacik <josef@redhat.com>
->> Sent by: linux-ext4-owner@vger.kernel.org
->>
->> 02/28/2011 06:11 AM
->>
->> To
->>
->> Dave Young <hidave.darkstar@gmail.com>
->>
->> cc
->>
->> josef@redhat.com, Theodore Tso <tytso@mit.edu>, linux-
->> ext4@vger.kernel.org, Linux Kernel Mailing List
->> <linux-kernel@vger.kernel.org>
->>
->> Subject
->>
->> Re: ext2/3/4: punch support?
->>
->> On Mon, Feb 28, 2011 at 03:03:40PM +0800, Dave Young wrote:
->> > Hi, josef and ext guys
->> >
->> > Do you have any plan with ext4 hole punching support? And the
->> > fallocate for ext2/3?
->> >
->> > What's the obstacle to work on this? could someone tell the status of
->> > this issue?
->>
->> There is no obstacle, just nobody has bothered to do it. Â If you want to
->> do it
->> go for it. Â Thanks,
->>
->> Josef
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
->
+I added the error path in a way consistent with the following error
+path - perhaps better than a more intrusive patch to handle everything
+gracefully; it just fixes the bug (ie silent failure) and isn't a
+cleanup.
 
-
-
+>>+      }
+>>+
+>>       ilen = ftell(f);
+>>       olen = getle32(&olen);
+>>       fclose(f);
 -- 
-Regards
-dave
+Daniel J Blueman
