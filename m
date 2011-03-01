@@ -1,88 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab1CAI4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 03:56:44 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50024 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755420Ab1CAI4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 03:56:43 -0500
-Date: Tue, 1 Mar 2011 09:56:30 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>, Jeff Dike <jdike@addtoit.com>
-Cc: heukelum@fastmail.fm, tglx@linutronix.de, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [tip:x86/asm] x86-64: Add CFI annotations to lib/rwsem_64.S
-Message-ID: <20110301085630.GA16050@elte.hu>
-References: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
- <tip-39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c@git.kernel.org>
- <20110228182642.GA7041@elte.hu>
- <4D6CBBD502000078000343DF@vpn.id2.novell.com>
+	id S1755844Ab1CAI5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 03:57:43 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:33742 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab1CAI5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 03:57:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gJX4MDoWt+nem8FTme+9Gvv3dcqUl5izX9U4o6AlYmCnp9kL+cqw5UVmqXTiE2lgNJ
+         O1ezQR1h5X/i/fyutz8g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6CBBD502000078000343DF@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1298969141.4937.94.camel@minggr.sh.intel.com>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	<1298884559.2428.10083.camel@twins>
+	<AANLkTi=eUnZqT3MF7Y8ONrnGh-7MoZJsefisWFR10p7d@mail.gmail.com>
+	<1298969141.4937.94.camel@minggr.sh.intel.com>
+Date: Tue, 1 Mar 2011 09:57:37 +0100
+Message-ID: <AANLkTinP9zdHEoq96nf-eBektNc6g9fPRmjoQHTK1jKY@mail.gmail.com>
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p218vpK4011970
 
+On Tue, Mar 1, 2011 at 9:45 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Tue, 2011-03-01 at 15:43 +0800, Stephane Eranian wrote:
+>> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
+>> >> This patch adds basic SandyBridge support, including hardware cache
+>> >> events and PEBS events support.
+>> >>
+>> >> LLC-* hareware cache events don't work for now, it depends on the
+>> >> offcore patches.
+>> >
+>> > What's the status of those, Stephane reported some problems last I
+>> > remember?
+>> >
+>> I tried the trick I mentioned and it seems to work.
+>>
+>> Something like below with hwc->extra_alloc.
+>> Could probably find a better name for that field.
+>
+> Stephane,
+>
+> I'll integrate below changes to the offcore patches, OK?
+>
+Let me try one more test on this.
+I want to show the case the caused the problem in the first place.
 
-* Jan Beulich <JBeulich@novell.com> wrote:
-
-> >>> On 28.02.11 at 19:26, Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > * tip-bot for Jan Beulich <JBeulich@novell.com> wrote:
-> > 
-> >> Commit-ID:  39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c
-> >> Gitweb:     
-> > http://git.kernel.org/tip/39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c 
-> >> Author:     Jan Beulich <JBeulich@novell.com>
-> >> AuthorDate: Mon, 28 Feb 2011 15:31:59 +0000
-> >> Committer:  Ingo Molnar <mingo@elte.hu>
-> >> CommitDate: Mon, 28 Feb 2011 18:06:21 +0100
-> >> 
-> >> x86-64: Add CFI annotations to lib/rwsem_64.S
-> >> 
-> >> These weren't part of the initial commit of this code.
-> >> 
-> >> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> >> Cc: Alexander van Heukelum <heukelum@fastmail.fm>
-> >> LKML-Reference: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
-> >> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> >> ---
-> >>  arch/x86/lib/rwsem_64.S |   56 ++++++++++++++++++++++++++++------------------
-> >>  1 files changed, 34 insertions(+), 22 deletions(-)
-> > 
-> > this change breaks the UML build:
-> > 
-> >  tip/arch/um/sys-x86_64/../../x86/lib/rwsem_64.S:46: Error: no such 
-> > instruction: `pushq_cfi %rdi'
-> 
-> Any reason why arch/um/Kconfig.x86 has X86_32 but not
-> X86_64? That's resulting in asm/dwarf2.h producing the 32-bit
-> (pushl_cfi & Co) macros instead of the 64-bit ones. And I
-> wonder what other inconsistencies this may cause...
-
-No idea - UML seems stale. I've Cc:-ed Jeff Dike just in case.
-
-> If this is on purpose (i.e. simply adding X86_64 as a new config
-> option there isn't the right solution), what would be the preferred
-> way of fixing this in asm/dwarf2.h:
-> - #ifndef CONFIG_X86_32,
-> - #ifdef CONFIG_64BIT,
-> - yet something else?
-
-You could try it out - UML isnt that hard to build: "make ARCH=um" and then run the 
-resulting binary. It will produce bootup messages then fails when mounting root. 
-That's enough of a build & functionality test.
-
-Thanks,
-
-	Ingo
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index f152930..ac1d100 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -906,7 +906,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>        int free_slot;
+>        int found;
+>
+> -       if (!x86_pmu.percore_constraints)
+> +       if (!x86_pmu.percore_constraints || hwc->extra_alloc)
+>                return NULL;
+>
+>        for (c = x86_pmu.percore_constraints; c->cmask; c++) {
+> @@ -931,6 +931,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>                                if (hwc->extra_config == era->extra_config) {
+>                                        era->ref++;
+>                                        cpuc->percore_used = 1;
+> +                                       hwc->extra_alloc = 1;
+>                                        c = NULL;
+>                                }
+>                                /* else conflict */
+> @@ -945,6 +946,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>                        era->extra_reg = hwc->extra_reg;
+>                        era->extra_config = hwc->extra_config;
+>                        cpuc->percore_used = 1;
+> +                       hwc->extra_alloc = 1;
+>                        c = NULL;
+>                }
+>                raw_spin_unlock(&pc->lock);
+> @@ -998,6 +1000,7 @@ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+>                            era->extra_config == hwc->extra_config &&
+>                            era->extra_reg == er->msr) {
+>                                era->ref--;
+> +                               hwc->extra_alloc = 0;
+>                                break;
+>                        }
+>                }
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index f531ce3..dbbf33a 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -546,6 +546,7 @@ struct hw_perf_event {
+>                        int             last_cpu;
+>                        unsigned int    extra_reg;
+>                        u64             extra_config;
+> +                       int             extra_alloc;
+>                };
+>                struct { /* software */
+>                        struct hrtimer  hrtimer;
+>
+>
+>>
+>> static struct event_constraint *
+>> intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>> {
+>>         struct hw_perf_event *hwc = &event->hw;
+>>         unsigned int e = hwc->config & ARCH_PERFMON_EVENTSEL_EVENT;
+>>         struct event_constraint *c;
+>>         struct intel_percore *pc;
+>>         struct er_account *era;
+>>         int i;
+>>         int free_slot;
+>>         int found;
+>>
+>>         if (!x86_pmu.percore_constraints)
+>>                 return NULL;
+>>
+>>         if (hwc->extra_alloc)
+>>                 return NULL;
+>>
+>>         for (c = x86_pmu.percore_constraints; c->cmask; c++) {
+>>                 if (e != c->code)
+>>                         continue;
+>>
+>>                 /*
+>>                  * Allocate resource per core.
+>>                  */
+>>                 c = NULL;
+>>                 pc = cpuc->per_core;
+>>                 if (!pc)
+>>                         break;
+>>                 c = &emptyconstraint;
+>>                 raw_spin_lock(&pc->lock);
+>>                 free_slot = -1;
+>>                 found = 0;
+>>                 for (i = 0; i < MAX_EXTRA_REGS; i++) {
+>>                         era = &pc->regs[i];
+>>                         if (era->ref > 0 && hwc->extra_reg == era->extra_reg) {
+>>                                 /* Allow sharing same config */
+>>                                 if (hwc->extra_config == era->extra_config) {
+>>                                         era->ref++;
+>>                                         cpuc->percore_used = 1;
+>>                                         hwc->extra_alloc = 1;
+>>                                         c = NULL;
+>>                                 }
+>>                                 /* else conflict */
+>>                                 found = 1;
+>>                                 break;
+>>                         } else if (era->ref == 0 && free_slot == -1)
+>>                                 free_slot = i;
+>>                 }
+>>                 if (!found && free_slot != -1) {
+>>                         era = &pc->regs[free_slot];
+>>                         era->ref = 1;
+>>                         era->extra_reg = hwc->extra_reg;
+>>                         era->extra_config = hwc->extra_config;
+>>                         cpuc->percore_used = 1;
+>>                         hwc->extra_alloc = 1;
+>>                         c = NULL;
+>>                 }
+>>                 raw_spin_unlock(&pc->lock);
+>>                 return c;
+>>         }
+>>
+>>         return NULL;
+>> }
+>>
+>> static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+>>                                         struct perf_event *event)
+>> {
+>>         struct extra_reg *er;
+>>         struct intel_percore *pc;
+>>         struct er_account *era;
+>>         struct hw_perf_event *hwc = &event->hw;
+>>         int i, allref;
+>>
+>>         if (!cpuc->percore_used)
+>>                 return;
+>>
+>>         for (er = x86_pmu.extra_regs; er->msr; er++) {
+>>                 if (er->event != (hwc->config & er->config_mask))
+>>                         continue;
+>>
+>>                 pc = cpuc->per_core;
+>>                 raw_spin_lock(&pc->lock);
+>>                 for (i = 0; i < MAX_EXTRA_REGS; i++) {
+>>                         era = &pc->regs[i];
+>>                         if (era->ref > 0 &&
+>>                             era->extra_config == hwc->extra_config &&
+>>                             era->extra_reg == er->msr) {
+>>                                 era->ref--;
+>>                                 hwc->extra_alloc = 0;
+>>                                 break;
+>>                         }
+>>                 }
+>>                 allref = 0;
+>>                 for (i = 0; i < MAX_EXTRA_REGS; i++)
+>>                         allref += pc->regs[i].ref;
+>>                 if (allref == 0)
+>>                         cpuc->percore_used = 0;
+>>                 raw_spin_unlock(&pc->lock);
+>>                 break;
+>>         }
+>> }
+>>
+>> >
+>> >>  #define INTEL_EVENT_CONSTRAINT(c, n) \
+>> >>       EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+>> >> +#define INTEL_EVENT_CONSTRAINT2(c, n)        \
+>> >> +     EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+>> >
+>> > That's a particularly bad name, how about something like
+>> >
+>> > INTEL_UEVENT_CONSTRAINT or somesuch.
+>> >
+>> >> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
+>> >>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+>> >>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+>> >>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+>> >> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+>> >> +                     switch (boot_cpu_data.x86_model) {
+>> >> +                     case 42: /* SandyBridge */
+>> >> +                             x86_pmu.pebs_constraints = intel_snb_pebs_events;
+>> >> +                             break;
+>> >> +                     default:
+>> >> +                             x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+>> >> +                     }
+>> >>                       break;
+>> >>
+>> >>               default:
+>> >
+>> > We already have this massive model switch right after this function,
+>> > might as well move the pebs constraint assignment there.
+>> >
+>
+>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
