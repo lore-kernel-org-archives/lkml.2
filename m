@@ -1,80 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab1CAXas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:30:48 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60472 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757592Ab1CAXaq convert rfc822-to-8bit (ORCPT
+	id S1757046Ab1CAXeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:34:24 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:20755 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab1CAXeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:30:46 -0500
+	Tue, 1 Mar 2011 18:34:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Te1Y616g5rJQZ7Xp5yspbjszIfK2SmqjisPnDap8urLPPi8x/k9yShALI1wnR9Pk8U
-         aP9FPevia30CAxIZnzH3KI8GVCSyKYr0c+igBzPgp2oxfSLlXfNIlxrV/5ri/dvgehd8
-         aEng4JYyvBtQghUOYWXnnYJB9sTX09BSgctvE=
-MIME-Version: 1.0
-In-Reply-To: <ded07e5c09d72da478c6218658095f5a.squirrel@deadhat.com>
-References: <ded07e5c09d72da478c6218658095f5a.squirrel@deadhat.com>
-Date: Wed, 2 Mar 2011 00:30:45 +0100
-Message-ID: <AANLkTimg1x56B4Yu=Zsd0VEci2i4jRKaMU+gxv3oFVr8@mail.gmail.com>
-Subject: Re: Why is my copyright code in the linux kernel?
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: dj@deadhat.com
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=EepI13wNDXHk1VAYUVXNn15rZuMER7pnjrsg+TcErRO3kM1Bcfp+lpuhxB5lPzkuwQ
+         vopoRG4ZytlpkmHXH7UA==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, Rik van Riel <riel@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] sched: next buddy hint on sleep and preempt path
+Date: Tue,  1 Mar 2011 15:33:53 -0800
+Message-Id: <1299022433-17233-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 11:49 PM,  <dj@deadhat.com> wrote:
-> I was surprised to find code that is mine in Linux.
->
-> Following the advice in the REPORTING_BUGS file, I'm sending this email
-> here, for want of knowledge of a better contact.
->
-> In 2002, I published code at www.deadhat.com to generate cryptographic
-> vectors to aid in the development of IEEE 802.11i, a spec for which I was
-> a contributor.
->
-> One example can be found here:
-> http://www.deadhat.com/wlancrypto/ccm1.2.c
->
-> You will see a remarkable resemblance to parts of
-> linux-2.6.36.2/drivers/staging/rt2860/common/cmm_aes.c. E.G. the AES code,
+When a task in a taskgroup sleeps, pick_next_task starts all the way back at
+the root and picks the task/taskgroup with the min vruntime across all
+runnable tasks. But, when there are many frequently sleeping tasks
+across different taskgroups, it makes better sense to stay with same taskgroup
+for its slice period (or until all tasks in the taskgroup sleeps) instead of
+switching cross taskgroup on each sleep after a short runtime.
+This helps specifically where taskgroups corresponds to a process with
+multiple threads. The change reduces the number of CR3 switches in this case.
 
-please note, this is a staging driver.
-cc'ing gregkh.
+Example:
+Two taskgroups with 2 threads each which are running for 2ms and
+sleeping for 1ms. Looking at sched:sched_switch shows -
 
-> the MIC header code and some ancillary functions.
->
-> However my header with my name and copyright has been removed. A different
-> copyright has been added and it has been licensed under the GPL without my
-> knowledge.
->
-> I am a happy user of Linux, I don't want to cause trouble and I'd be quite
-> honored to have some of my code in the kernel, so I'm not demanding the
-> immediate removal of this code. I'm willing to GPL my code if necessary,
-> but I do require proper attribution and acknowledgment of my copyright on
-> my code
->
-> I'd like to know who is an appropriate person to discuss this with.
+BEFORE: taskgroup_1 threads [5004, 5005], taskgroup_2 threads [5016, 5017]
+      cpu-soaker-5004  [003]  3683.391089
+      cpu-soaker-5016  [003]  3683.393106
+      cpu-soaker-5005  [003]  3683.395119
+      cpu-soaker-5017  [003]  3683.397130
+      cpu-soaker-5004  [003]  3683.399143
+      cpu-soaker-5016  [003]  3683.401155
+      cpu-soaker-5005  [003]  3683.403168
+      cpu-soaker-5017  [003]  3683.405170
 
-the code is from ralink.
+AFTER: taskgroup_1 threads [21890, 21891], taskgroup_2 threads [21934, 21935]
+      cpu-soaker-21890 [003]   865.895494
+      cpu-soaker-21935 [003]   865.897506
+      cpu-soaker-21934 [003]   865.899520
+      cpu-soaker-21935 [003]   865.901532
+      cpu-soaker-21934 [003]   865.903543
+      cpu-soaker-21935 [003]   865.905546
+      cpu-soaker-21891 [003]   865.907548
+      cpu-soaker-21890 [003]   865.909560
+      cpu-soaker-21891 [003]   865.911571
+      cpu-soaker-21890 [003]   865.913582
+      cpu-soaker-21891 [003]   865.915594
+      cpu-soaker-21934 [003]   865.917606
 
-> Thank you,
-> David Johnston
-> dj@deadhat.com
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Similar problem is there when there are multiple taskgroups and say a task A
+preempts currently running task B of taskgroup_1. On schedule, pick_next_task
+can pick an unrelated task on taskgroup_2. Here it would be better to give some
+preference to task B on pick_next_task.
 
+A simple (may be extreme case) benchmark I tried was tbench with 2 tbench
+client processes with 2 threads each running on a single CPU. Avg throughput
+across 5 50 sec runs was -
+BEFORE: 105.84 MB/sec
+AFTER: 112.42 MB/sec
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ kernel/sched_fair.c |   20 ++++++++++++++++++--
+ 1 files changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 3a88dee..36e8f02 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1339,6 +1339,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	hrtick_update(rq);
+ }
+ 
++static void set_next_buddy(struct sched_entity *se);
++
+ /*
+  * The dequeue_task method is called before nr_running is
+  * decreased. We remove the task from the rbtree and
+@@ -1348,14 +1350,22 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 	struct sched_entity *se = &p->se;
++	int task_flags = flags;
+ 
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		dequeue_entity(cfs_rq, se, flags);
+ 
+ 		/* Don't dequeue parent if it has other entities besides us */
+-		if (cfs_rq->load.weight)
++		if (cfs_rq->load.weight) {
++			/*
++			 * Bias pick_next to pick a task from this cfs_rq, as
++			 * p is sleeping when it is within its sched_slice.
++			 */
++			if (task_flags & DEQUEUE_SLEEP && se->parent)
++				set_next_buddy(se->parent);
+ 			break;
++		}
+ 		flags |= DEQUEUE_SLEEP;
+ 	}
+ 
+@@ -1887,8 +1897,14 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	update_curr(cfs_rq);
+ 	find_matching_se(&se, &pse);
+ 	BUG_ON(!pse);
+-	if (wakeup_preempt_entity(se, pse) == 1)
++	if (wakeup_preempt_entity(se, pse) == 1) {
++		/*
++		 * Bias pick_next to pick the sched entity that is
++		 * triggering this preemption.
++		 */
++		set_next_buddy(pse);
+ 		goto preempt;
++	}
+ 
+ 	return;
+ 
 -- 
-Thanks,
-//richard
+1.7.3.1
+
