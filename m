@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1CAVpn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 16:45:43 -0500
-Received: from www.tglx.de ([62.245.132.106]:43453 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755684Ab1CAVpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 16:45:42 -0500
-Date: Tue, 1 Mar 2011 22:45:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Pratheesh Gangadhar <pratheesh@ti.com>
-cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de, gregkh@suse.de,
-        sshtylyov@mvista.com, arnd@arndb.de, amit.chatterjee@ti.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 1/1] PRUSS UIO driver support
-In-Reply-To: <1299014895-2022-2-git-send-email-pratheesh@ti.com>
-Message-ID: <alpine.LFD.2.00.1103012238360.2701@localhost6.localdomain6>
-References: <1299014895-2022-1-git-send-email-pratheesh@ti.com> <1299014895-2022-2-git-send-email-pratheesh@ti.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756178Ab1CAVrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 16:47:07 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:54971 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755762Ab1CAVrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 16:47:05 -0500
+Date: Tue, 1 Mar 2011 16:47:02 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [REGRESSION] tpm_tis on Lenovo T410 broken in 2.6.38-rc6
+Message-ID: <20110301214702.GB2959@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	James Morris <jmorris@namei.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <E1PuKHL-0000lw-RM@tytso-glaptop>
+ <4D6CFA80.3020505@linux.vnet.ibm.com>
+ <BD305A55-A581-4779-B5EA-084B186C903D@mit.edu>
+ <4D6D65C4.5000602@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6D65C4.5000602@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011, Pratheesh Gangadhar wrote:
-> +
-> +static DEFINE_SPINLOCK(lock);
-> +static struct clk *pruss_clk;
-> +static struct uio_info *info;
-> +static dma_addr_t sram_paddr, ddr_paddr;
-> +static void *prussio_vaddr, *sram_vaddr, *ddr_vaddr;
-> +
-> +static irqreturn_t pruss_handler(int irq, struct uio_info *info)
-> +{
-> +	int intr_bit = (irq - IRQ_DA8XX_EVTOUT0 + 2);
-> +	int val, intr_mask = (1 << intr_bit);
-> +	void __iomem *base = info->mem[0].internal_addr;
-> +	void __iomem *intren_reg = base + PINTC_HIER;
-> +	void __iomem *intrstat_reg = base + PINTC_HIPIR + (intr_bit << 2);
-> +
-> +	spin_lock_irq(&lock);
+On Tue, Mar 01, 2011 at 06:31:48PM -0300, Rajiv Andrade wrote:
+> 
+> Thanks for clarifying the context. Please add a
+> 
+> WARN_ON(duration<=0, "no duration for ordinal %x (duration_idx
+> %d)", ordinal, duration_idx);
 
-No, I said: spin_lock() is sufficient.
+Data has been sent in another e-mail.
 
-> +	val = ioread32(intren_reg);
-> +	/* Is interrupt enabled and active ? */
-> +	if (!(val & intr_mask) && (ioread32(intrstat_reg) & HIPIR_NOPEND)) {
-> +		spin_unlock_irq(&lock);
+> as Linus suggested. Also please check if there's an IRQ assigned to the TPM on both scenarios:
+> 
+> cat /proc/interrupts | grep -i tpm
 
-You unconditinally enable interrupts here where you are not supposed
-to do so.
+Unfortunately, I was off-line doing these tests (because I can't
+connect to the company intranet :-P), so I did't see your e-mail.
+I'll be able to reboot and collect this information later, but there's
+Real Work I have to get done at this point....  I can tell you that in
+my working configuration, both with 2.6.37 and with the latest Linus
+tip with commit c4ff4b829e reverted, I have no interrupt assigned to
+the TPM.
 
-> +		return IRQ_NONE;
-> +	}
-> +
-> +	/* Disable interrupt */
-> +	iowrite32((val & ~intr_mask), intren_reg);
-> +	spin_unlock_irq(&lock);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int pruss_irqcontrol(struct uio_info *info, s32 irq_on)
-> +{
-> +	int intr_bit = info->irq - IRQ_DA8XX_EVTOUT0 + 2;
-> +	int val, intr_mask = (1 << intr_bit);
-> +	void __iomem *base = info->mem[0].internal_addr;
-> +	void __iomem *intren_reg = base + PINTC_HIER;
-> +
-> +	spin_lock_irq(&lock);
+> and finally, before the revert, with the
+> 9b29050f tpm_tis: Use timeouts returned from TPM
+> commit applied:
+> 
+> cat /sys/devices/pnp0/00\:0*/timeouts
 
-This one is correct, as this is always called from non interrupt
-disabled context.
+See above; I can get this information later, if it's really needed,
+but unfortunately it's on the company laptop, and I have some real
+work I need to get back to.  (I don't need network access while at
+meetings, so I could run some tests before lunch; now the meetings are
+done and I have to get back to coding.  :-)
 
-> +	val = ioread32(intren_reg);
-> +	if (irq_on)
-> +		iowrite32((val | intr_mask), intren_reg);
-> +	else
-> +		iowrite32((val & ~intr_mask), intren_reg);
-> +	spin_unlock_irq(&lock);
-> +
-> +	return 0;
-> +}
-
-
-> +
-> +	spin_lock_init(&lock);
-
-Sigh. DEFINE_SPINLOCK(lock); already initializes the lock.
-
-It's not the purpose of a review to tell you what you need to change
-mechanically. Reviewers hint to a correct solution and you are
-supposed to lookup what that solution means and act accordingly. If
-you do not understand the hint or its implications please ask _before_
-sending a new patch set.
-
-Thanks,
-
-	tglx
+						- Ted
