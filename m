@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab1CATjt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:39:49 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22642 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757234Ab1CATjq convert rfc822-to-8bit (ORCPT
+	id S1757345Ab1CATlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:41:37 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33643 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329Ab1CATlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:39:46 -0500
-Date: Tue, 1 Mar 2011 11:39:30 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
-Subject: Re: linux-next: Tree for March 1 (staging/winbond)
-Message-Id: <20110301113930.69d7d992.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTimayi4tSe=r1HOPgpcSucBWC7SoBV1ocmV5LEs4@mail.gmail.com>
-References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
-	<20110301104924.071044ef.randy.dunlap@oracle.com>
-	<AANLkTimX0zvBEMxedXnhXiaxwEKHmm_Tu6fiZQkahZrC@mail.gmail.com>
-	<20110301111922.69b0d8c1.randy.dunlap@oracle.com>
-	<AANLkTimayi4tSe=r1HOPgpcSucBWC7SoBV1ocmV5LEs4@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D6D4B79.00C1:SCFMA4539814,ss=1,fgs=0
+	Tue, 1 Mar 2011 14:41:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vu33YUiCIQnBzZgr54feAMhQmkJ9srB4xmzWdgC2t3EEC/hZibcW7Fzj1xJiisKDwi
+         rzyUJla2NTpNGIFTAuIm9wcyOdya7teY1sPgNWb3fEhXQNDt+C70kx5Mkr187UM7YVro
+         T9hChjA988cQ21sGQb/QiCSOSU+VXz/Podpqs=
+Date: Tue, 1 Mar 2011 22:41:27 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: rklein@nvidia.com
+Cc: olof@lixom.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] power: bq20z75: update support
+Message-ID: <20110301194127.GC5649@oksana.dev.rtsoft.ru>
+References: <1298940931-17552-1-git-send-email-rklein@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1298940931-17552-1-git-send-email-rklein@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Mar 2011 21:35:59 +0200 Pekka Enberg wrote:
-
-> On Tue, Mar 1, 2011 at 9:19 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > On Tue, 1 Mar 2011 21:10:23 +0200 Pekka Enberg wrote:
-> >
-> >> On Tue, Mar 1, 2011 at 8:49 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> >> > On Tue, 1 Mar 2011 18:11:19 +1100 Stephen Rothwell wrote:
-> >> >
-> >> >> Hi all,
-> >> >>
-> >> >> Changes since 20110228:
-> >> >
-> >> >
-> >> > commit ddee7e28e7d5e4ba2b8537c6a59b035745c250bb
-> >> > Author: Pekka Enberg <penberg@kernel.org>
-> >> > Date:   Sun Nov 28 23:00:01 2010 +0200
-> >> >    Staging: w35und: Remove empty sysdef.h header
-> >> >
-> >> >
-> >> > This header should not have been empty, since in
-> >> >
-> >> > commit 412dc7f368bf10a8049a8a4c41abbfd0108742e7
-> >> > Author: Randy Dunlap <randy.dunlap@oracle.com>
-> >> > Date:   Fri Nov 19 09:30:18 2010 -0800
-> >> >    staging: fix winbond build, needs delay.h
-> >> >
-> >> > I added delay.h to it.  And now we have the same build
-> >> > errors that I fixed last November:
-> >> >
-> >> > drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration of function 'msleep'
-> >> > drivers/staging/winbond/phy_calibration.c:1555: error: implicit declaration of function 'udelay'
-> >> > drivers/staging/winbond/reg.c:893: error: implicit declaration of function 'msleep'
-> >> > drivers/staging/winbond/reg.c:1169: error: implicit declaration of function 'udelay'
-> >>
-> >> Strange. I didn't see the problem. We should add delay.h to
-> >> phy_calibration.c and reg.c instead. Care to make a patch?
-> >> --
-> >
-> > No thanks, I'll let the staging people do that.
+On Mon, Feb 28, 2011 at 04:55:27PM -0800, rklein@nvidia.com wrote:
+> From: Rhyland Klein <rklein@nvidia.com>
 > 
-> Hmm, commit cecf826df8648c843ea8db63b1f82c154a74db36 ("staging:
-> winbond: needs <linux/delay.h> for msleep and friends") should fix it.
-> Isn't it in linux-next yet?
+> Adds support to driver for the following:
+> * optional gpio for battery detection
+> * optional retries for i2c I/O failures
+> * POWER_NOW property
+> 
+> For more detailed information, see specifics patches.
+> 
+> Rhyland Klein (4):
+>   power: bq20z75: add optional battery detect gpio
+>   power: bq20z75: add i2c retry mechanism
+>   power: bq20z75: add support for POWER_NOW
+>   power_supply: update power_supply_is_watt_property
 
-I'll have to let GregKH answer that.
+You're fast! :-)
 
-Where is the commit ID from?
+Applied all the patches, modulo "add support for POWER_NOW".
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
