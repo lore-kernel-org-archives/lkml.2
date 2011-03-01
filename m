@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab1CAPLK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 10:11:10 -0500
-Received: from hosting.visp.net.lb ([194.146.153.11]:48475 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab1CAPLI (ORCPT
+	id S1756593Ab1CAPLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 10:11:39 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:27722 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756566Ab1CAPLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 10:11:08 -0500
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 10:11:08 EST
+	Tue, 1 Mar 2011 10:11:38 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: y9nAQ9oVM1nLyTooo8lXnqIA_JXSmcmMja4KuNJggGzKW00
+ sX2JROpOHSouAHhbQsECrz8O1DPL3SvNhjMQAfT3Wsg5llqK_tEnsm0yKOvL
+ sd7e86YYGpkS0MP0NasglDCdFwJh6JzZtPrKFu1QY91CHkTtGBRlAcZFX3fB
+ 9tHmSKDabIYMkRMNOQ0ChUD.4pXP9iCUnEomoav96s8rtpSXj1VGCzYo_TaR
+ pTafdpuHmDAf6E8rTtW4seWwwl1P.Q6cqFzly
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 1 Mar 2011 09:11:31 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/4] slub,rcu: don't assume the size of struct rcu_head
+In-Reply-To: <AANLkTimXy2Yaj+NTDMNTWuLqHHfKZJhVDpeXj3CfMvBf@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1103010909320.6253@router.home>
+References: <4D6CA852.3060303@cn.fujitsu.com> <AANLkTimXy2Yaj+NTDMNTWuLqHHfKZJhVDpeXj3CfMvBf@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Tue, 01 Mar 2011 17:03:08 +0200
-From: denys@visp.net.lb
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: NMI received for unknown reason, 2.6.38-rc6
- =?UTF-8?Q?regression=3F?=
-Message-ID: <950d04b27ce43565cdef24e4072d7e71@visp.net.lb>
-User-Agent: VISP Webmail/0.5-beta
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- I upgrade around 140 hosts (from 2.6.33 till 2.6.37), and got on many 
- of them error/warining, flooding kernel log. Here is short snapshot:
+On Tue, 1 Mar 2011, Pekka Enberg wrote:
 
- [ 1882.057474] Uhhuh. NMI received for unknown reason 3c on CPU 0.
- [ 1882.057576] Do you have a strange power saving mode enabled?
- [ 1882.057672] Dazed and confused, but trying to continue
- [ 2421.419732] Uhhuh. NMI received for unknown reason 3c on CPU 0.
- [ 2421.419835] Do you have a strange power saving mode enabled?
- [ 2421.419930] Dazed and confused, but trying to continue
- [ 2636.016831] Uhhuh. NMI received for unknown reason 2c on CPU 1.
- [ 2636.016934] Do you have a strange power saving mode enabled?
- [ 2636.017003] Dazed and confused, but trying to continue
+> The SLAB and SLUB patches are fine by me if there are going to be real
+> users for this. Christoph, Paul?
 
- Full dmesg from 2 machines:
- http://www.nuclearcat.com/dmesg1.txt
- http://www.nuclearcat.com/dmesg2.txt
- I can provide more, if required.
+The solution is a bit overkill. It would be much simpler to add a union to
+struct page that has lru and the rcu in there similar things can be done
+for SLAB and the network layer. A similar issue already exists for the
+spinlock in struct page. Lets follow the existing way of handling this.
 
- It seems nmi_watchdog is enabled by default, and it is causing issue. I 
- am checking now with nmi_watchdog=0, but i need more time to confirm 
- that.
- Also i am experiencing some problem with ppp users(all of them is pppoe 
- servers), but i am not sure it is related to that, so maybe this NMI 
- warning is just cosmetic regression.
-
- All systems is x86, same kernel config.
- If you need more information - let me know.
-
+Struct page may be larger for debugging purposes already because of the
+need for extended spinlock data.
