@@ -1,86 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab1CAIly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 03:41:54 -0500
-Received: from cantor.suse.de ([195.135.220.2]:36856 "EHLO mx1.suse.de"
+	id S1755931Ab1CAIpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 03:45:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23902 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755696Ab1CAIlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 03:41:53 -0500
-From: Ludwig Nussel <ludwig.nussel@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Security] [PATCH] fix mmap random address range on x86
-Date: Tue, 1 Mar 2011 09:41:50 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37-20-default; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, security@kernel.org, x86@kernel.org,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <1298034957-17128-1-git-send-email-ludwig.nussel@suse.de> <20110228151825.26458ec9.akpm@linux-foundation.org>
-In-Reply-To: <20110228151825.26458ec9.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755696Ab1CAIpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 03:45:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,246,1297065600"; 
+   d="scan'208";a="714558992"
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTi=eUnZqT3MF7Y8ONrnGh-7MoZJsefisWFR10p7d@mail.gmail.com>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	 <1298884559.2428.10083.camel@twins>
+	 <AANLkTi=eUnZqT3MF7Y8ONrnGh-7MoZJsefisWFR10p7d@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Mar 2011 16:45:41 +0800
+Message-ID: <1298969141.4937.94.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103010941.50421.ludwig.nussel@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Fri, 18 Feb 2011 14:15:57 +0100
-> Ludwig Nussel <ludwig.nussel@suse.de> wrote:
+On Tue, 2011-03-01 at 15:43 +0800, Stephane Eranian wrote:
+> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
+> >> This patch adds basic SandyBridge support, including hardware cache
+> >> events and PEBS events support.
+> >>
+> >> LLC-* hareware cache events don't work for now, it depends on the
+> >> offcore patches.
+> >
+> > What's the status of those, Stephane reported some problems last I
+> > remember?
+> >
+> I tried the trick I mentioned and it seems to work.
 > 
-> > On x86 casting the unsigned int result of get_random_int() to long
-> > may result in a negative value. On x86 the range of mmap_rnd()
-> > therefore was -255 to 255. The 32bit mode on x86_64 used 0 to 255 as
-> > intended.
-> > 
-> > The bug was introduced by commit 675a081 in January 2008.
-> > 
-> > Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
-> > ---
-> >  arch/x86/mm/mmap.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> > index 1dab519..f927429 100644
-> > --- a/arch/x86/mm/mmap.c
-> > +++ b/arch/x86/mm/mmap.c
-> > @@ -87,9 +87,9 @@ static unsigned long mmap_rnd(void)
-> >  	*/
-> >  	if (current->flags & PF_RANDOMIZE) {
-> >  		if (mmap_is_ia32())
-> > -			rnd = (long)get_random_int() % (1<<8);
-> > +			rnd = get_random_int() % (1<<8);
-> >  		else
-> > -			rnd = (long)(get_random_int() % (1<<28));
-> > +			rnd = get_random_int() % (1<<28);
-> >  	}
-> >  	return rnd << PAGE_SHIFT;
-> >  }
+> Something like below with hwc->extra_alloc.
+> Could probably find a better name for that field.
+
+Stephane,
+
+I'll integrate below changes to the offcore patches, OK?
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index f152930..ac1d100 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -906,7 +906,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 	int free_slot;
+ 	int found;
+ 
+-	if (!x86_pmu.percore_constraints)
++	if (!x86_pmu.percore_constraints || hwc->extra_alloc)
+ 		return NULL;
+ 
+ 	for (c = x86_pmu.percore_constraints; c->cmask; c++) {
+@@ -931,6 +931,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 				if (hwc->extra_config == era->extra_config) {
+ 					era->ref++;
+ 					cpuc->percore_used = 1;
++					hwc->extra_alloc = 1;
+ 					c = NULL;
+ 				}
+ 				/* else conflict */
+@@ -945,6 +946,7 @@ intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 			era->extra_reg = hwc->extra_reg;
+ 			era->extra_config = hwc->extra_config;
+ 			cpuc->percore_used = 1;
++			hwc->extra_alloc = 1;
+ 			c = NULL;
+ 		}
+ 		raw_spin_unlock(&pc->lock);
+@@ -998,6 +1000,7 @@ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+ 			    era->extra_config == hwc->extra_config &&
+ 			    era->extra_reg == er->msr) {
+ 				era->ref--;
++				hwc->extra_alloc = 0;
+ 				break;
+ 			}
+ 		}
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index f531ce3..dbbf33a 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -546,6 +546,7 @@ struct hw_perf_event {
+ 			int		last_cpu;
+ 			unsigned int	extra_reg;
+ 			u64		extra_config;
++			int		extra_alloc;
+ 		};
+ 		struct { /* software */
+ 			struct hrtimer	hrtimer;
+
+
 > 
-> The changelog didn't describe the user-visible consequences of this
-> bug, so readers must try to work this out for themselves.  That's not a
-> very desirable or efficient thing, so please do prepare more complete
-> changelogs.
+> static struct event_constraint *
+> intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+> {
+>         struct hw_perf_event *hwc = &event->hw;
+>         unsigned int e = hwc->config & ARCH_PERFMON_EVENTSEL_EVENT;
+>         struct event_constraint *c;
+>         struct intel_percore *pc;
+>         struct er_account *era;
+>         int i;
+>         int free_slot;
+>         int found;
+> 
+>         if (!x86_pmu.percore_constraints)
+>                 return NULL;
+> 
+>         if (hwc->extra_alloc)
+>                 return NULL;
+> 
+>         for (c = x86_pmu.percore_constraints; c->cmask; c++) {
+>                 if (e != c->code)
+>                         continue;
+> 
+>                 /*
+>                  * Allocate resource per core.
+>                  */
+>                 c = NULL;
+>                 pc = cpuc->per_core;
+>                 if (!pc)
+>                         break;
+>                 c = &emptyconstraint;
+>                 raw_spin_lock(&pc->lock);
+>                 free_slot = -1;
+>                 found = 0;
+>                 for (i = 0; i < MAX_EXTRA_REGS; i++) {
+>                         era = &pc->regs[i];
+>                         if (era->ref > 0 && hwc->extra_reg == era->extra_reg) {
+>                                 /* Allow sharing same config */
+>                                 if (hwc->extra_config == era->extra_config) {
+>                                         era->ref++;
+>                                         cpuc->percore_used = 1;
+>                                         hwc->extra_alloc = 1;
+>                                         c = NULL;
+>                                 }
+>                                 /* else conflict */
+>                                 found = 1;
+>                                 break;
+>                         } else if (era->ref == 0 && free_slot == -1)
+>                                 free_slot = i;
+>                 }
+>                 if (!found && free_slot != -1) {
+>                         era = &pc->regs[free_slot];
+>                         era->ref = 1;
+>                         era->extra_reg = hwc->extra_reg;
+>                         era->extra_config = hwc->extra_config;
+>                         cpuc->percore_used = 1;
+>                         hwc->extra_alloc = 1;
+>                         c = NULL;
+>                 }
+>                 raw_spin_unlock(&pc->lock);
+>                 return c;
+>         }
+> 
+>         return NULL;
+> }
+> 
+> static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+>                                         struct perf_event *event)
+> {
+>         struct extra_reg *er;
+>         struct intel_percore *pc;
+>         struct er_account *era;
+>         struct hw_perf_event *hwc = &event->hw;
+>         int i, allref;
+> 
+>         if (!cpuc->percore_used)
+>                 return;
+> 
+>         for (er = x86_pmu.extra_regs; er->msr; er++) {
+>                 if (er->event != (hwc->config & er->config_mask))
+>                         continue;
+> 
+>                 pc = cpuc->per_core;
+>                 raw_spin_lock(&pc->lock);
+>                 for (i = 0; i < MAX_EXTRA_REGS; i++) {
+>                         era = &pc->regs[i];
+>                         if (era->ref > 0 &&
+>                             era->extra_config == hwc->extra_config &&
+>                             era->extra_reg == er->msr) {
+>                                 era->ref--;
+>                                 hwc->extra_alloc = 0;
+>                                 break;
+>                         }
+>                 }
+>                 allref = 0;
+>                 for (i = 0; i < MAX_EXTRA_REGS; i++)
+>                         allref += pc->regs[i].ref;
+>                 if (allref == 0)
+>                         cpuc->percore_used = 0;
+>                 raw_spin_unlock(&pc->lock);
+>                 break;
+>         }
+> }
+> 
+> >
+> >>  #define INTEL_EVENT_CONSTRAINT(c, n) \
+> >>       EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT)
+> >> +#define INTEL_EVENT_CONSTRAINT2(c, n)        \
+> >> +     EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+> >
+> > That's a particularly bad name, how about something like
+> >
+> > INTEL_UEVENT_CONSTRAINT or somesuch.
+> >
+> >> @@ -702,7 +738,13 @@ static void intel_ds_init(void)
+> >>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+> >>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+> >>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+> >> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+> >> +                     switch (boot_cpu_data.x86_model) {
+> >> +                     case 42: /* SandyBridge */
+> >> +                             x86_pmu.pebs_constraints = intel_snb_pebs_events;
+> >> +                             break;
+> >> +                     default:
+> >> +                             x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+> >> +                     }
+> >>                       break;
+> >>
+> >>               default:
+> >
+> > We already have this massive model switch right after this function,
+> > might as well move the pebs constraint assignment there.
+> >
 
-The consequence of the bug is that (pie)programs and libraries are
-mapped to 511 possible addresses on i586. The intention of the code
-is to use only 256 addresses though ("8 bits of randomness"). That's
-also what the code did on x86_64.
 
-> afacit the effects are very small: the mmap base may fall slightly
-> below MIN_GAP, but that won't really affect anything?
-
-Apparently it has no bad effect otherwise the bug would have been
-discovered earlier I guess. So given that the bigger address range
-worked unintentionally I wonder whether it would make sense to
-increase the range explicitly.
-
-cu
-Ludwig
-
--- 
- (o_   Ludwig Nussel
- //\   
- V_/_  http://www.suse.de/
-SUSE LINUX Products GmbH, GF: Markus Rex, HRB 16746 (AG Nuernberg)
