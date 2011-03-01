@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab1CAI1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 03:27:10 -0500
-Received: from fep32.mx.upcmail.net ([62.179.121.50]:39636 "EHLO
-	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab1CAI1I (ORCPT
+	id S1755786Ab1CAI2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 03:28:22 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:50271 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755269Ab1CAI2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 03:27:08 -0500
-X-SourceIP: 115.242.218.220
-Reply-To: <centerdept4@yahoo.com>
-From: "CONGRATULATIONS" <info@MSN.CO.UK>
-Subject: CONGRATULATIONS
-Date: Tue, 1 Mar 2011 13:54:11 +0530
+	Tue, 1 Mar 2011 03:28:21 -0500
+Message-ID: <4D6CADE5.6000206@st.com>
+Date: Tue, 1 Mar 2011 13:57:17 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_00DF_01C2A9A6.33F5C940"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110228-1, 02/28/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110301082413.FMXX11401.viefep17-int.chello.at@edge04.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=HQ3F56nxkum+cgCiDL7AXQpbvw7DWrWCBJRnYYnM0Zc= c=1 sm=0 a=geNL0gnBKRkA:10 a=oJL9TIRMo0YA:10 a=8EU9Q7FnrCoA:10 a=c0Cz9Ino1T4A:10 a=bOutH0DMEXxIVoOz3IEA:9 a=PzXrNk1X2OqOEqYPNgrQQi-F32IA:4 a=uWtV0rmd5s-2fODY:21 a=FI-8fSfzKhmApnev:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] device.h: add device_set_platdata routine
+References: <5c561db378360ad1763da41f8350c7be816daa06.1298953633.git.viresh.kumar@st.com> <20110301075953.GR22310@pengutronix.de>
+In-Reply-To: <20110301075953.GR22310@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On 03/01/2011 01:29 PM, Uwe Kleine-König wrote:
+> [added gregkh and lkml to Cc:]
+> 
 
-------=_NextPart_000_00DF_01C2A9A6.33F5C940
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+thanks.
 
+> On Tue, Mar 01, 2011 at 10:03:20AM +0530, Viresh Kumar wrote:
+>> device.h supports device_get_platdata but doesn't support device_set_platdata.
+>> This routine is required by platforms in which device structure is declared
+>> in a machine specific file and platform data comes from board specific file.
+>>
+>> This will be used by SPEAr patches sent in separate patch series.
+>>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+>> ---
+>>  include/linux/device.h |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/device.h b/include/linux/device.h
+>> index 1bf5cf0..6ce0f20 100644
+>> --- a/include/linux/device.h
+>> +++ b/include/linux/device.h
+>> @@ -576,6 +576,11 @@ static inline void *dev_get_platdata(const struct device *dev)
+>>  	return dev->platform_data;
+>>  }
+>>  
+>> +static inline void dev_set_platdata(struct device *dev, void *platdata)
+>> +{
+>> +	dev->platform_data = platdata;
+>> +}
+>> +
+> Note that dev->platform_data was designed to hold dynamically allocated
+> memory, at least it's kfreed in platform_device_release.  And note there
+> is platform_device_add_data that kmemdups its argument into
+> pdev->dev.platform_data.
+> 
 
-------=_NextPart_000_00DF_01C2A9A6.33F5C940
-Content-Type: application/octet-stream;
-	name="FMT.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="FMT.txt"
+Ok. So we should use platform_device_add_data instead and mark our platform
+data's struct as __init. So that it doesn't consume any memory after
+this routine is done??
 
-WW91ciBFbWFpbCBJZCBoYXMgd29uIDEsMDAwLDAwMCBHQlAgaW4gdGhlIFVL
-IE9ubGluZSBQcm9tbyAyMDExLiBzZW5kIHlvdXINCkZ1bGwgTmFtZXMNClJl
-c2lkZW50aWFsIEFkZHJlc3MNCk9jY3VwYXRpb24NCkFnZQ0KUGhvbmUNCkNv
-dW50cnkNCg0KdG8gb3VyIGNsYWltcyBkZXBhcnRtZW50ICAgZm9yIGNhaW1z
-IG9mIHdpbm5pbmdzLg==
+> Compared to your dev_set_platdata platform_device_add_data only works
+> for platform_devices, don't know if it's worth to change that.
+> 
 
-------=_NextPart_000_00DF_01C2A9A6.33F5C940--
+Currently i need this for platform devs only. So its good enough for me.
+
+-- 
+viresh
