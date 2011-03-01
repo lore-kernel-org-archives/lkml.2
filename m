@@ -1,207 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab1CATrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:47:00 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34019 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757236Ab1CATq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:46:58 -0500
-Date: Tue, 1 Mar 2011 14:46:56 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Pierre Tardy <tardyp@gmail.com>
-cc: linux-kernel@vger.kernel.org, <linux-pm@lists.linux-foundation.org>,
-        <linux-mmc@vger.kernel.org>, Pierre Tardy <pierre.tardy@intel.com>,
-        Yunpeng Gao <yunpeng.gao@intel.com>
-Subject: Re: [linux-pm] [RFC, PATCHv3 1/3] mmc: sdhci-pci: Enable runtime PM
- support
-In-Reply-To: <1c071e206d0d02e07d3872f20268fba6b101a6b4.1298820826.git.tardyp@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1103011433110.2034-100000@iolanthe.rowland.org>
+	id S1757276Ab1CATr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:47:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757171Ab1CATr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 14:47:56 -0500
+Date: Tue, 1 Mar 2011 16:47:03 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, xiaoguangrong@cn.fujitsu.com
+Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable
+ memory slots using wbtree
+Message-ID: <20110301194703.GA7736@amt.cnet>
+References: <1298386481.5764.60.camel@x201>
+ <20110222183822.22026.62832.stgit@s20.home>
+ <4D6507C9.1000906@redhat.com>
+ <1298484395.18387.28.camel@x201>
+ <1298489332.18387.56.camel@x201>
+ <4D662DBF.2020706@redhat.com>
+ <1298568944.6140.21.camel@x201>
+ <4D6A1F55.7080804@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6A1F55.7080804@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Mar 2011, Pierre Tardy wrote:
-
-> From: Yunpeng Gao <yunpeng.gao@intel.com>
+On Sun, Feb 27, 2011 at 11:54:29AM +0200, Avi Kivity wrote:
+> On 02/24/2011 07:35 PM, Alex Williamson wrote:
+> >On Thu, 2011-02-24 at 12:06 +0200, Avi Kivity wrote:
+> >>  On 02/23/2011 09:28 PM, Alex Williamson wrote:
+> >>  >  I had forgotten about<1M mem, so actually the slot configuration was:
+> >>  >
+> >>  >  0:<1M
+> >>  >  1: 1M - 3.5G
+> >>  >  2: 4G+
+> >>  >
+> >>  >  I stacked the deck in favor of the static array (0: 4G+, 1: 1M-3.5G, 2:
+> >>  >  <1M), and got these kernbench results:
+> >>  >
+> >>  >               base (stdev)    reorder (stdev)   wbtree (stdev)
+> >>  >  --------+-----------------+----------------+----------------+
+> >>  >  Elapsed |  42.809 (0.19)  |  42.160 (0.22) |  42.305 (0.23) |
+> >>  >  User    | 115.709 (0.22)  | 114.358 (0.40) | 114.720 (0.31) |
+> >>  >  System  |  41.605 (0.14)  |  40.741 (0.22) |  40.924 (0.20) |
+> >>  >  %cpu    |   366.9 (1.45)  |   367.4 (1.17) |   367.6 (1.51) |
+> >>  >  context |  7272.3 (68.6)  |  7248.1 (89.7) |  7249.5 (97.8) |
+> >>  >  sleeps  | 14826.2 (110.6) | 14780.7 (86.9) | 14798.5 (63.0) |
+> >>  >
+> >>  >  So, wbtree is only slightly behind reordering, and the standard
+> >>  >  deviation suggests the runs are mostly within the noise of each other.
+> >>  >  Thanks,
+> >>
+> >>  Doesn't this indicate we should use reordering, instead of a new data
+> >>  structure?
+> >
+> >The original problem that brought this on was scaling.  The re-ordered
+> >array still has O(N) scaling while the tree should have ~O(logN) (note
+> >that it currently doesn't because it needs a compaction algorithm added
+> >after insert and remove).  So yes, it's hard to beat the results of a
+> >test that hammers on the first couple entries of a sorted array, but I
+> >think the tree has better than current performance and more predictable
+> >when scaled performance.
 > 
-> Follow the kernel runtime PM framework, enable runtime PM support of the
-> sdhci host controller with pci interface.
+> Scaling doesn't matter, only actual performance.  Even a guest with
+> 512 slots would still hammer only on the first few slots, since
+> these will contain the bulk of memory.
 > 
-> Note that this patch implements runtime_pm but now actually detects
-> activity.
-> It relies on higher level (childrens) to do actual waking up
-> Activity detection is put in a following patch
+> >If we knew when we were searching for which type of data, it would
+> >perhaps be nice if we could use a sorted array for guest memory (since
+> >it's nicely bounded into a small number of large chunks), and a tree for
+> >mmio (where we expect the scaling to be a factor).  Thanks,
 > 
-> This patch also does not enable wakeups, so card insertion will not work
-> if runtime_pm is activated.
-> This is also dealt in a following patch
+> We have three types of memory:
 > 
-> Original version from: Yunpeng Gao <yunpeng.gao@intel.com>
-> with modifications by: Pierre Tardy <pierre.tardy@intel.com>
+> - RAM - a few large slots
+> - mapped mmio (for device assignment) - possible many small slots
+> - non-mapped mmio (for emulated devices) - no slots
+>
+> The first two are handled in exactly the same way - they're just
+> memory slots.  We expect a lot more hits into the RAM slots, since
+> they're much bigger.  But by far the majority of faults will be for
+> the third category - mapped memory will be hit once per page, then
+> handled by hardware until Linux memory management does something
+> about the page, which should hopefully be rare (with device
+> assignment, rare == never, since those pages are pinned).
 > 
-> Signed-off-by: Pierre Tardy <pierre.tardy@intel.com>
-> ---
->  drivers/mmc/host/sdhci-pci.c |  120 +++++++++++++++++++++++++++++++++++++++++-
->  drivers/mmc/host/sdhci.c     |   31 +++++++++++
->  drivers/mmc/host/sdhci.h     |    5 ++
->  3 files changed, 155 insertions(+), 1 deletions(-)
+> Therefore our optimization priorities should be
+> - complete miss into the slot list
+> - hit into the RAM slots
+> - hit into the other slots (trailing far behind)
+
+Whatever ordering considered optimal in one workload can be suboptimal
+in another. The binary search reduces the number of slots inspected
+in the average case. Using slot size as weight favours probability.
+
+> Of course worst-case performance matters.  For example, we might
+> (not sure) be searching the list with the mmu spinlock held.
 > 
-> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-> index 2f8d468..f167a55 100644
-> --- a/drivers/mmc/host/sdhci-pci.c
-> +++ b/drivers/mmc/host/sdhci-pci.c
-> @@ -18,6 +18,7 @@
->  #include <linux/dma-mapping.h>
->  #include <linux/slab.h>
->  #include <linux/device.h>
-> +#include <linux/pm_runtime.h>
->  
->  #include <linux/mmc/host.h>
->  
-> @@ -1031,6 +1032,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
->  	if (ret)
->  		return ret;
->  
-> +	pm_runtime_set_active(&pdev->dev);
+> I think we still have a bit to go before we can justify the new data
+> structure.
 
-This line is redundant.  It won't do anything, and the PCI core already 
-does it.
+Intensive IDE disk IO on guest with lots of assigned network devices, 3%
+improvement on netperf with rtl8139, 1% improvement on kernbench?
 
-> +
->  	slots = PCI_SLOT_INFO_SLOTS(slots) + 1;
->  	dev_dbg(&pdev->dev, "found %d slot(s)\n", slots);
->  	if (slots == 0)
-> @@ -1086,7 +1089,7 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
->  
->  		chip->slots[i] = slot;
->  	}
-> -
-> +	pm_runtime_put_noidle(&pdev->dev);
->  	return 0;
->  
->  free:
-> @@ -1114,8 +1117,120 @@ static void __devexit sdhci_pci_remove(struct pci_dev *pdev)
->  	}
->  
->  	pci_disable_device(pdev);
-> +	pm_runtime_get_noresume(&pdev->dev);
-> +
-> +}
-> +
-> +#ifdef CONFIG_PM_RUNTIME
-> +
-> +static int sdhci_pci_runtime_suspend(struct device *dev)
-> +{
-> +	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
-> +	struct sdhci_pci_chip *chip;
-> +	struct sdhci_pci_slot *slot;
-> +	int i, ret;
-> +	mmc_pm_flag_t pm_flags = 0;
-> +	pm_message_t state;
-> +
-> +	chip = pci_get_drvdata(pdev);
-> +	if (!chip)
-> +		return 0;
-> +
-> +	for (i = 0; i < chip->num_slots; i++) {
-> +		slot = chip->slots[i];
-> +		if (!slot)
-> +			continue;
-> +
-> +		ret = sdhci_runtime_suspend(slot->host);
-> +
-> +		if (ret) {
-> +			for (i--; i >= 0; i--)
-> +				sdhci_runtime_resume(chip->slots[i]->host);
-> +			return ret;
-> +		}
-> +
-> +		pm_flags |= slot->host->mmc->pm_flags;
-> +	}
-> +
-> +	state.event = PM_EVENT_AUTO_SUSPEND;
-> +	if (chip->fixes && chip->fixes->suspend) {
-> +		ret = chip->fixes->suspend(chip, state);
-> +		if (ret) {
-> +			for (i = chip->num_slots - 1; i >= 0; i--)
-> +				sdhci_runtime_resume(chip->slots[i]->host);
-> +			return ret;
-> +		}
-> +	}
-
-You probably should call synchronize_irq() here.  Otherwise a delayed
-IRQ might get delivered after the device has changed to D3.
-
-> +
-> +	pci_save_state(pdev);
-> +	if (pm_flags & MMC_PM_KEEP_POWER) {
-> +		if (pm_flags & MMC_PM_WAKE_SDIO_IRQ)
-> +			pci_enable_wake(pdev, PCI_D3hot, 1);
-> +	} else {
-> +		pci_enable_wake(pdev, PCI_D3hot, 0);
-> +		pci_disable_device(pdev);
-> +	}
-> +	pci_set_power_state(pdev, PCI_D3hot);
-
-Most of this isn't needed.  The PCI core does pci_save_state(), 
-pci_enable_wake(), and pci_set_power_state().
-
-Of course, you might want to override the wakeup setting selected by
-the core.  This is determined by pci_dev_run_wake(), for which you may 
-need to call device_set_run_wake().
-
-> +
-> +	return 0;
->  }
->  
-> +static int sdhci_pci_runtime_resume(struct device *dev)
-> +{
-> +	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
-> +	struct sdhci_pci_chip *chip;
-> +	struct sdhci_pci_slot *slot;
-> +	int i, ret;
-> +
-> +	chip = pci_get_drvdata(pdev);
-> +	if (!chip)
-> +		return 0;
-> +
-> +	pci_set_power_state(pdev, PCI_D0);
-> +	pci_restore_state(pdev);
-
-The PCI core does pci_set_power_state() and pci_restore_state().
-
-> +	ret = pci_enable_device(pdev);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (chip->fixes && chip->fixes->resume) {
-> +		ret = chip->fixes->resume(chip);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	for (i = 0; i < chip->num_slots; i++) {
-> +		slot = chip->slots[i];
-> +		if (!slot)
-> +			continue;
-> +
-> +		ret = sdhci_runtime_resume(slot->host);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int sdhci_pci_runtime_idle(struct device *dev)
-> +{
-> +	pm_runtime_autosuspend(dev);
-> +	return -EAGAIN;
-> +}
-
-Alan Stern
+Fail to see justification for not using it.
 
