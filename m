@@ -1,137 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab1CAW5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 17:57:53 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45501 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755950Ab1CAW5v convert rfc822-to-8bit (ORCPT
+	id S1756805Ab1CAW6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 17:58:10 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51621 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756753Ab1CAW6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 17:57:51 -0500
+	Tue, 1 Mar 2011 17:58:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oqDHfgIak9AJtPaPwS39/dVI7O6+ddS5nCZ0Pv009MxFot9GqUxb+2WCC45sCbe/9M
-         yA81R4laTeCUXAcCt1dC2vvDV52GRr/TF8+lNqsddS9o9hCGqPxnTsDaypzkcLdIeS59
-         YU5rUhukC5jpTexVHAKHtG6/PybtVMfZDjcWA=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qq0vaNz4CTEoWYJ+gkojtgkUxQcFUMkkKssvAN0yUVsM/r9csG0sKvylh/jehtjSNI
+         vSbSZ2eH8jlxCYnGR2/bRpS27LOBF/BdQ3DPnRX91ofZD3Z1xgBbYDreWeiUmD5+qj+N
+         ewFDQ5OefyJM7/XSZljvwb3u8ZdoIRHHI5KAQ=
+Date: Wed, 2 Mar 2011 01:58:03 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jz4740: silence warnings related to mfd_get_cell
+ changes
+Message-ID: <20110301225803.GA4881@oksana.dev.rtsoft.ru>
+References: <20110301133548.6acb5170@debxo>
 MIME-Version: 1.0
-In-Reply-To: <20110301143444.2ed102aa.akpm@linux-foundation.org>
-References: <20110301153558.GA2031@barrios-desktop>
-	<20110301161900.GA21860@random.random>
-	<AANLkTimpTyaAU0JzFKp4s14w=ciq152MWSmbgn8xtkOx@mail.gmail.com>
-	<20110301143444.2ed102aa.akpm@linux-foundation.org>
-Date: Wed, 2 Mar 2011 07:57:51 +0900
-Message-ID: <AANLkTikkXnaWcxeEjCZ3g4FYD5qYDzVN50Lyw-k=oB_5@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled
- while isolating pages for migration
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        Arthur Marsh <arthur.marsh@internode.on.net>,
-        Clemens Ladisch <cladisch@googlemail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110301133548.6acb5170@debxo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 7:34 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 2 Mar 2011 07:22:33 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Wed, Mar 2, 2011 at 1:19 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
->> > On Wed, Mar 02, 2011 at 12:35:58AM +0900, Minchan Kim wrote:
->> >> On Tue, Mar 01, 2011 at 01:49:25PM +0900, KAMEZAWA Hiroyuki wrote:
->> >> > On Tue, 1 Mar 2011 13:11:46 +0900
->> >> > Minchan Kim <minchan.kim@gmail.com> wrote:
->> >> >
->>
->> ...
->>
->> > pages freed from irq shouldn't be PageLRU.
->>
->> Hmm..
->> As looking code, it seems to be no problem and I didn't see the any
->> comment about such rule. It should have been written down in
->> __page_cache_release.
->> Just out of curiosity.
->> What kinds of problem happen if we release lru page in irq context?
->
-> put_page() from irq context has been permissible for ten years.  I
-> expect there are a number of sites which do this (via subtle code
-> paths, often).  It might get messy.
->
->> >
->> > deferring freeing to workqueue doesn't look ok. firewall loads runs
->> > only from irq and this will cause some more work and a delay in the
->> > freeing. I doubt it's worhwhile especially for the lru_lock.
->> >
->>
->> As you said, if it is for decreasing lock contention in SMP to deliver
->> overall better performance, maybe we need to check again how much it
->> helps.
->> If it doesn't help much, could we remove irq_save/restore of lru_lock?
->> Do you know any benchmark to prove it had a benefit at that time or
->> any thread discussing about that in lkml?
->
->
-> : commit b10a82b195d63575958872de5721008b0e9bef2d
-> : Author: akpm <akpm>
-> : Date:   Thu Aug 15 18:21:05 2002 +0000
-> :
-> :     [PATCH] make pagemap_lru_lock irq-safe
-> :
-> :     It is expensive for a CPU to take an interrupt while holding the page
-> :     LRU lock, because other CPUs will pile up on the lock while the
-> :     interrupt runs.
-> :
-> :     Disabling interrupts while holding the lock reduces contention by an
-> :     additional 30% on 4-way.  This is when the only source of interrupts is
-> :     disk completion.  The improvement will be higher with more CPUs and it
-> :     will be higher if there is networking happening.
-> :
-> :     The maximum hold time of this lock is 17 microseconds on 500 MHx PIII,
-> :     which is well inside the kernel's maximum interrupt latency (which was
-> :     100 usecs when I last looked, a year ago).
-> :
-> :     This optimisation is not needed on uniprocessor, but the patch disables
-> :     IRQs while holding pagemap_lru_lock anyway, so it becomes an irq-safe
-> :     spinlock, and pages can be moved from the LRU in interrupt context.
-> :
-> :     pagemap_lru_lock has been renamed to _pagemap_lru_lock to pick up any
-> :     missed uses, and to reliably break any out-of-tree patches which may be
-> :     using the old semantics.
-> :
-> :     BKrev: 3d5bf1110yfdAAur4xqJfiLBDJ2Cqw
->
->
-> Ancient stuff, and not a lot of detail.  But I did measure it.  I
-> measured everything ;) And, as mentioned, I'd expect that the
-> contention problems would worsen on higher CPU machines and higher
-> interrupt frequencies.
+On Tue, Mar 01, 2011 at 01:35:48PM -0800, Andres Salomon wrote:
+> 
+> mfd_get_cell returns a const, so change the jz4740 clients to store
+> a const mfd cell.  This silences type mismatch warnings.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  drivers/hwmon/jz4740-hwmon.c   |    2 +-
+>  drivers/power/jz4740-battery.c |    2 +-
 
-Thanks for giving the important information.
+For the drivers/power/ part:
 
->
-> I expect we could eliminate the irqsave requirement from
-> rotate_reclaimable_page() simply by switching to a trylock.  Some pages
-> will end up at the wrong end of the LRU but the effects may be
-> negligible.  Or perhaps they may not - disk seeks are costly.
->
->
+Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
 
-Releasing 14 pages should not have much cost about interrupt latency
-and It's a general concept we have been used. If it really has a
-problem, I think it would be better to reduce PAGEVEC_SIZE rather than
-fixing the rotate_reclaimable_page.
-
-
-
+Thanks!
 
 -- 
-Kind regards,
-Minchan Kim
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
