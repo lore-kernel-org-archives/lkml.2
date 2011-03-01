@@ -1,39 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1CAONP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 09:13:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58751 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752168Ab1CAONO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 09:13:14 -0500
-Date: Tue, 1 Mar 2011 14:13:08 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: joe@perches.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/18] MAINTAINERS: Remove unnecessary
- linux-kernel@vger.kernel.org entries
-Message-ID: <20110301141308.GG9662@opensource.wolfsonmicro.com>
-References: <cover.1298439175.git.joe@perches.com>
- <03b0dc89c5badbc0b8f155ecdd5912cad3e278f2.1298439175.git.joe@perches.com>
- <20110301112038.GA12568@sirena.org.uk>
- <20110301141024.GA9014@gmail.com>
+	id S1755229Ab1CAOQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:16:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38601 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061Ab1CAOQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 09:16:22 -0500
+Date: Tue, 1 Mar 2011 15:16:20 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
+        davem@davemloft.net, greg@kroah.com, rdunlap@xenotime.net
+Subject: Re: [PATCH]Maintain Chinese Documentations
+In-Reply-To: <20110216102801.GA10961@gmail.com>
+Message-ID: <alpine.LNX.2.00.1103011515510.32580@pobox.suse.cz>
+References: <iiqti3$3b5$2@dough.gmane.org> <AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com> <20110208093020.GA2016@gmail.com> <20110208093528.GA2580@pengutronix.de> <AANLkTi=RgPS_tzBP+0=wxuh58cV=3_m+5=gYwG8ffkY0@mail.gmail.com>
+ <20110208100153.GA2815@gmail.com> <20110208101328.GB2580@pengutronix.de> <AANLkTimSgeRKsAckU+2iE9oqo33uanLeLaKTQdYkpfw=@mail.gmail.com> <20110208103332.GA2932@gmail.com> <AANLkTimAAq10AzoWFBhKKSizH5pX_F8jOPsQE25w9J_E@mail.gmail.com>
+ <20110216102801.GA10961@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110301141024.GA9014@gmail.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 10:10:30PM +0800, Harry Wei wrote:
+On Wed, 16 Feb 2011, Harry Wei wrote:
 
-Please fix your MUA to word wrap within paragraphs.
+> 	I have translated some documentations of kernel so i want to 
+> maintain Chinese documentation in our kernel directories.
 
->      I agree with Joe. I think any patch about kernel should be
->      emailed to LKML and other connection ML, as well as maintainers.
+I don't see this in linux-next as of today, so I have picked it up.
 
-You're missing my point.  My point is that removing references to LKML
-from MAINTAINERS is working against this as it makes it harder for users
-to work out that they're supposed to do this.
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
