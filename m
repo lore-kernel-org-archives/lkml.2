@@ -1,211 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab1CAXQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:16:23 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55458 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab1CAXNZ (ORCPT
+	id S1757531Ab1CAXQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:16:47 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59889 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757099Ab1CAXQq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:13:25 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 6/7] appletalk: remove the BKL
-Date: Wed,  2 Mar 2011 00:13:10 +0100
-Message-Id: <1299021191-17961-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299021191-17961-1-git-send-email-arnd@arndb.de>
-References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:coQm8e02hRzXysaFpFJWh0DkTZ+asx8N3Hh2Lv8lykh
- Z/cbJs5kSeq+ygLjumA/gCUpKsQR54SPtSXmNOMu6XrzIVMUU/
- bGKgX3f6SfXj6DTBMgziL7hNgzDamqLvNp3JJ+WfxAKBztzPz/
- nqrbd6moOUQliFmUTeKVOLg0TfDlmF5gGswGLiM75szWqvIuyt
- cZUD2xQraExQc2Xh7okdw==
+	Tue, 1 Mar 2011 18:16:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=NcxaNkmEVtCDqVLeWGdN/X6vMRZmngwe3rs21v7ONxRIc7xow78Z+5hn4IyR8Hu06F
+         0K7oQjQqmKtvo80+FdxemimNa4ElCOa35F0c8dACircNtJzdK3LkZzWqd90yr3KTnioV
+         XTTufCrEJ/FnvrTMBtxqKn1c5Bm7tsROa818E=
+MIME-Version: 1.0
+In-Reply-To: <20110301152457.GE26074@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Wed, 2 Mar 2011 00:16:23 +0100
+Message-ID: <AANLkTi=cUM9S5M7h0unMfbQ88CzqhoDN9CUEVf_9HrdS@mail.gmail.com>
+Subject: Re: [RFC] Proposal for ptrace improvements
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes appletalk to use lock_sock instead of
-lock_kernel for serialization. I tried to make sure
-that we don't hold the socket lock during sleeping
-functions, but I did not try to prove whether the
-locks are necessary in the first place.
+On Tue, Mar 1, 2011 at 4:24 PM, Tejun Heo <tj@kernel.org> wrote:
+> PROPOSAL
+> --------
+> ...
+> P5. "^Z" and "fg" for tracees
+>
+> A ptracer, as it currently stands and proposed here, has full control
+> over the execution state of its tracee.  The tracer is notified
+> whenever the tracee stops and can always resume its execution;
+> however, there is one missing piece.
+>
+> As proposed, when a tracee enters jctl stop, it enters TASK_TRACED
+> from which emission of SIGCONT can't resume the tracee.  This makes it
+> impossible for a tracer to become transparent with respect to jctl.
+> For example, after strace(1) is attached to a task, the task can be
+> ^Z'd but then can't be fg'd.
+>
+> One approach to this problem is somehow making it work implicitly from
+> the kernel - as in putting the tracee into TASK_STOPPED or somehow
+> handling TASK_TRACED for jctl stop differently; however, I think such
+> approach is cumbersome in both concept and implementation.  Instead of
+> being able to say "while ptraced, a tracee's execution is fully under
+> the control of its tracer", subtle and fragile exceptions need to be
+> introduced.
+>
+> A better way to solve this is simply giving the tracer the capability
+> to listen for the end of jctl stop.  That way, the problem is solved
+> in a manner which is consistent, may not be to everyone's liking but
+> nonetheless consistent, with the rest of ptrace.  Execution state of
+> the tracee is always under the control of the tracer.  The only thing
+> which changes is that the tracer now can find out when jctl stop ends,
+> which also could be an additional useful debugging feature.
+>
+> It would be most fitting to use wait(2) for delivery of this
+> notification.  WCONTINUED is the obvious candidate but I think it is
+> better to use STOPPED notification because the task is not really
+> resumed.  Only its mode of stop changes.  What state the tracee is in
+> can be determined by retriving siginfo using PTRACE_GETSIGINFO.
+>
+> This also effectively makes the notification level-triggered instead
+> of edge-triggered, which is a big plus.  No matter which state the
+> tracee is in, a jctl stopped notification is guaranteed to happen
+> after the lastest event and the tracer can always find out the latest
+> state with PTRACE_GETSIGINFO.
+>
+> Using stopped notification also makes the new addition harmless to the
+> existing users.  It's just another stopped notification.  Both
+> strace(1) and gdb(1) don't distinguish the signal delivery and jctl
+> stop notifications and react the same way by resuming the tracee
+> unconditionally.  One more stopped notification on SIGCONT emission
+> doesn't change much.
 
-Compile-tested only.
+Let's spell this out in detail. Please correct me if
+I misunderstood your proposal:
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
----
- drivers/net/appletalk/Kconfig |    1 -
- net/appletalk/ddp.c           |   40 ++++++++++++++++------------------------
- 2 files changed, 16 insertions(+), 25 deletions(-)
+We have a stopped task under ptrace.
+(More precisely: debugger got a WSTOPPED notification via waitpid.
+Debugger decided to emulate the job control stop, therefore it
+keeps tracee stopped, therefore it just waits on waitpid
+without doing any PTRACE_CONTs).
 
-diff --git a/drivers/net/appletalk/Kconfig b/drivers/net/appletalk/Kconfig
-index 0b376a9..f5a8916 100644
---- a/drivers/net/appletalk/Kconfig
-+++ b/drivers/net/appletalk/Kconfig
-@@ -3,7 +3,6 @@
- #
- config ATALK
- 	tristate "Appletalk protocol support"
--	depends on BKL # waiting to be removed from net/appletalk/ddp.c
- 	select LLC
- 	---help---
- 	  AppleTalk is the protocol that Apple computers can use to communicate
-diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-index c410b93..3d4f4b0 100644
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -54,7 +54,6 @@
- #include <linux/capability.h>
- #include <linux/module.h>
- #include <linux/if_arp.h>
--#include <linux/smp_lock.h>
- #include <linux/termios.h>	/* For TIOCOUTQ/INQ */
- #include <linux/compat.h>
- #include <linux/slab.h>
-@@ -1052,13 +1051,13 @@ static int atalk_release(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	if (sk) {
- 		sock_orphan(sk);
- 		sock->sk = NULL;
- 		atalk_destroy_socket(sk);
- 	}
--	unlock_kernel();
-+	release_sock(sk);
- 	return 0;
- }
- 
-@@ -1143,7 +1142,7 @@ static int atalk_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 	if (addr->sat_family != AF_APPLETALK)
- 		return -EAFNOSUPPORT;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	if (addr->sat_addr.s_net == htons(ATADDR_ANYNET)) {
- 		struct atalk_addr *ap = atalk_find_primary();
- 
-@@ -1179,7 +1178,7 @@ static int atalk_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 	sock_reset_flag(sk, SOCK_ZAPPED);
- 	err = 0;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err;
- }
- 
-@@ -1215,7 +1214,7 @@ static int atalk_connect(struct socket *sock, struct sockaddr *uaddr,
- #endif
- 	}
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	err = -EBUSY;
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		if (atalk_autobind(sk) < 0)
-@@ -1233,7 +1232,7 @@ static int atalk_connect(struct socket *sock, struct sockaddr *uaddr,
- 	sk->sk_state = TCP_ESTABLISHED;
- 	err = 0;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err;
- }
- 
-@@ -1249,7 +1248,7 @@ static int atalk_getname(struct socket *sock, struct sockaddr *uaddr,
- 	struct atalk_sock *at = at_sk(sk);
- 	int err;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	err = -ENOBUFS;
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		if (atalk_autobind(sk) < 0)
-@@ -1277,17 +1276,7 @@ static int atalk_getname(struct socket *sock, struct sockaddr *uaddr,
- 	memcpy(uaddr, &sat, sizeof(sat));
- 
- out:
--	unlock_kernel();
--	return err;
--}
--
--static unsigned int atalk_poll(struct file *file, struct socket *sock,
--			   poll_table *wait)
--{
--	int err;
--	lock_kernel();
--	err = datagram_poll(file, sock, wait);
--	unlock_kernel();
-+	release_sock(sk);
- 	return err;
- }
- 
-@@ -1596,7 +1585,7 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	if (len > DDP_MAXSZ)
- 		return -EMSGSIZE;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	if (usat) {
- 		err = -EBUSY;
- 		if (sock_flag(sk, SOCK_ZAPPED))
-@@ -1651,7 +1640,9 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 			sk, size, dev->name);
- 
- 	size += dev->hard_header_len;
-+	release_sock(sk);
- 	skb = sock_alloc_send_skb(sk, size, (flags & MSG_DONTWAIT), &err);
-+	lock_sock(sk);
- 	if (!skb)
- 		goto out;
- 
-@@ -1738,7 +1729,7 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	SOCK_DEBUG(sk, "SK %p: Done write (%Zd).\n", sk, len);
- 
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err ? : len;
- }
- 
-@@ -1753,9 +1744,10 @@ static int atalk_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	int err = 0;
- 	struct sk_buff *skb;
- 
--	lock_kernel();
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 						flags & MSG_DONTWAIT, &err);
-+	lock_sock(sk);
-+
- 	if (!skb)
- 		goto out;
- 
-@@ -1787,7 +1779,7 @@ static int atalk_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	skb_free_datagram(sk, skb);	/* Free the datagram. */
- 
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err ? : copied;
- }
- 
-@@ -1887,7 +1879,7 @@ static const struct proto_ops atalk_dgram_ops = {
- 	.socketpair	= sock_no_socketpair,
- 	.accept		= sock_no_accept,
- 	.getname	= atalk_getname,
--	.poll		= atalk_poll,
-+	.poll		= datagram_poll,
- 	.ioctl		= atalk_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= atalk_compat_ioctl,
+Another task sends SIGCONT to the tracee.
+
+Debugger gets waitpid notification of the
+WSTOPPED, WSTOPSIG == SIGCONT form.
+
+Debugger can check PTRACE_GETSIGINFO, which succeeds.
+Debugger now knows it's a signal delivery notification.
+(This step looks optional, since currently
+WSTOPPED, WSTOPSIG == SIGCONT combination is only possible
+on signal delivery, unlike, for example,
+WSTOPPED, WSTOPSIG == SIGSTOP, which is ambiguous).
+
+Debugger performs PTRACE_CONT(SIGCONT) - it injects the signal.
+[Question: what if debugger doesn't? IOW: is it possible
+for debugger to suppress SIGCONTs, or not?
+IOW2: what should happen if debugger
+(a) does not do any PTRACE_CONT at all? or
+(b) does PTRACE_CONT(<other_sig>)? or
+(c) does PTRACE_CONT(0)?
+]
+
+Debugger gets WCONTINUED waitpid notification.
+[question: do we need this?]
+
+
 -- 
-1.7.1
-
+vda
