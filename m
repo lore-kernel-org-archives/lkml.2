@@ -1,121 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab1CAWFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 17:05:43 -0500
-Received: from usmamail.tilera.com ([206.83.70.70]:32825 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab1CAWFm (ORCPT
+	id S1756205Ab1CAWOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 17:14:36 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37597 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab1CAWOf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 17:05:42 -0500
-Message-ID: <4D6D6DB4.5020603@tilera.com>
-Date: Tue, 1 Mar 2011 17:05:40 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	Tue, 1 Mar 2011 17:14:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=TmsHNen11EYIwnxayIqWLEx2tM6eYDcyLmPyUEw2dMnBd4tlrt9tPQ/PXP5EynQRX7
+         KQMcCzXLNOcpWhUNoQHQvAVLobX5rQSFRNLdvaZm/KikCyKA1sOE6uMeDSLURQmwhDcN
+         tfH6CT3QkB1fUZob4Ox4orl0fQEQ4jaPlbN70=
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Russell King <rmk@arm.linux.org.uk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <linux-mm@kvack.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck,Tony" <tony.luck@intel.com>, PaulMundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 06/17] arm: mmu_gather rework
-References: <20110217162327.434629380@chello.nl>	 <20110217163235.106239192@chello.nl> <1298565253.2428.288.camel@twins>	 <1298657083.2428.2483.camel@twins>	 <20110225215123.GA10026@flint.arm.linux.org.uk> <1298893487.2428.10537.camel@twins>
-In-Reply-To: <1298893487.2428.10537.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110301190638.GA12196@host1.dyn.jankratochvil.net>
+References: <20110301152457.GE26074@htj.dyndns.org> <20110301190638.GA12196@host1.dyn.jankratochvil.net>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Tue, 1 Mar 2011 23:14:14 +0100
+Message-ID: <AANLkTiknaHNADRa3R4Tefg2TGuFmKPZY-_08_krFiNFF@mail.gmail.com>
+Subject: Re: [RFC] Proposal for ptrace improvements
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/28/2011 6:44 AM, Peter Zijlstra wrote:
+On Tue, Mar 1, 2011 at 8:06 PM, Jan Kratochvil
+<jan.kratochvil@redhat.com> wrote:
+> On Tue, 01 Mar 2011 16:24:57 +0100, Tejun Heo wrote:
+>> P4. PTRACE_SEIZE
 > [...]
-> Now, if we want to track ranges _and_ have hardware page table walkers
-> (ARM seems to be one such), we must flush TLBs at tlb_end_vma() because
-> flush_tlb_range() requires a vma pointer (ARM and TILE actually use more
-> than ->vm_mm), and on tlb_finish_mmu() issue a full mm wide invalidate
-> because the hardware walker could have re-populated the cache after
-> clearing the PTEs but before freeing the page tables.
+>> Completion notification is delivered in the usual way via wait(2).  If
+>> the task was in jctl stop, it would report the stop signal with the
+>> matching siginfo.  If the task hits an existing ptrace trap condition,
+>> the matching SIGTRAP will be reported; otherwise, SIGTRAP will be
+>> reported with siginfo indicating PTRACE_SEIZE trap.
 >
-> What ARM does is it retains the last vma pointer and tracks
-> pte_free_tlb() range and uses that in tlb_finish_mmu(), which is a tad
-> hacky.
->
-> Mostly because of shift_arg_pages(), where we have:
->
->   shift_arg_pages()
->     tlb_gather_mmu()
->     free_*_range()
->     tlb_finish_mmu()
->
-> For which ARM now punts and does a full tlb invalidate (no vma pointer).
-> But also because it drags along that vma pointer, which might not at all
-> match the range its actually going to invalidate (and hence its vm_flags
-> might not accurately reflect things -- at worst more expensive than
-> needed).
->
-> The reason I wanted flush_tlb_range() to take an mm_struct and not the
-> current vm_area_struct is because we can avoid doing the
-> flush_tlb_range() from tlb_end_vma() and delay the thing until
-> tlb_finish_mmu() without having to resort to such games as above. We
-> could simply track the full range over all VMAs and free'd page-tables
-> and do one range invalidate.
->
-> ARM uses vm_flags & VM_EXEC to see if it also needs to invalidate
-> I-TLBs, and TILE uses VM_EXEC and VM_HUGETLB.
->
-> For the I-TLBs we could easily use
-> ptep_get_and_clear_full()/tlb_remove_tlb_entry() and see if any of the
-> cleared pte's had its executable bit set (both ARM and TILE seem to have
-> such a PTE bit).
+> This is a change from the Roland's proposed PTRACE_ATTACH_NOSTOP.
 
-For Tile, the concern is that we want to make sure to invalidate the
-i-cache.  The I-TLB is handled by the regular TLB flush just fine, like the
-other architectures.  So our concern is that once we have cleared the page
-table entries and invalidated the TLBs, we still have to deal with i-cache
-lines in any core that may have run code from that page.  The risk is that
-the kernel might free, reallocate, and then run code from one of those
-pages, all before the stale i-cache lines happened to be evicted.
+As I see it, Tejun's PTRACE_SEIZE looks almost identical to the sequence of
+PTRACE_ATTACH_NOSTOP ("attach, but don't affect current state of the
+tracee. In particular, if it runs normally, let it continue to run")
+plus
+PTRACE_INTERRUPT ("if tracee isn't stopped yet, stop it with magic SIGTRAP").
 
-The current Tile code flushes the icache explicitly at two different times:
-
-1. Whenever we flush the TLB, since this is one time when we know who might
-currently be using the page (via cpu_vm_mask) and we can flush all of them
-easily, piggybacking on the infrastructure we use to flush remote TLBs.
-
-2. Whenever we context switch, to handle the case where cpu 1 is running
-process A, then switches to B, but another cpu still running process A
-unmaps an executable page that was in cpu 1's icache.  This way when cpu 1
-switches back to A, it doesn't have to worry about any unmaps that occurred
-while it was switched out.
+There may be reasons to have PTRACE_SEIZE operation split like that.
+For one, this allows debugger to do PTRACE_CONT, and later issue
+PTRACE_INTERRUPT to stop the tracee again. PTRACE_INTERRUPT stop may
+be better for some scenarios where debugger wants to make the stop
+invisible to the parent, or when debugger wants to stop just one
+thread of the process.
 
 
-> I'm not sure what we can do about TILE's VM_HUGETLB usage though, if it
-> needs explicit flushes for huge ptes it might just have to issue
-> multiple tlb invalidates and do them from tlb_start_vma()/tlb_end_vma().
+> Currently it is already a problem that apps did not / do not expect the first
+> waitpid after PTRACE_ATTACH may not be SIGSTOP.
 
-I'm not too concerned about this.  We can make the flush code check both
-page sizes at a small cost in efficiency, relative to the overall cost of
-global TLB invalidation.
-
->   CONFIG_HAVE_MMU_GATHER_ITLB - will use
-> ptep_get_and_clear_full()/tlb_remove_tlb_entry() to test pte_exec() and
-> issue flush_itlb_range(mm,start,end).
-
-So it sounds like the proposal for tile would be to piggy-back on
-flush_itlb_range() and use it to flush the i-cache?  It does seem like
-there must be other Linux architectures with incoherent icache out there,
-and some existing solution we could just repurpose.
+That's exactly why we want to add a better alternative, which doesn't
+insert that blasted SIGSTOP.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+vda
