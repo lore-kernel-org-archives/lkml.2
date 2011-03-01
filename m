@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab1CANyV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 08:54:21 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53976 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753640Ab1CANyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 08:54:19 -0500
-Subject: Re: [PATCH 2/4] msm: scm: Fix improper register assignment
-From: Will Deacon <will.deacon@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: David Brown <davidb@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <alpine.LFD.2.00.1102261452340.22034@xanadu.home>
-References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>
-	 <1298573085-23217-3-git-send-email-sboyd@codeaurora.org>
-	 <1298640219.958.74.camel@e102144-lin.cambridge.arm.com>
-	 <4D688AF1.1090607@codeaurora.org>
-	 <20110226084736.GB3640@n2100.arm.linux.org.uk>
-	 <8yazkpi3cfa.fsf@huya.qualcomm.com>
-	 <alpine.LFD.2.00.1102261452340.22034@xanadu.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Mar 2011 13:54:05 +0000
-Message-ID: <1298987645.8741.172.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754948Ab1CAODo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:03:44 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:37572 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753717Ab1CAODm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 09:03:42 -0500
+From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Vitaly Wool <vitalywool@gmail.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Pavan Savoy <pavan_savoy@sify.com>
+Date: Tue, 1 Mar 2011 15:02:56 +0100
+Subject: RE: [PATCH 00/11] mfd and bluetooth: Add CG2900 suppor
+Thread-Topic: [PATCH 00/11] mfd and bluetooth: Add CG2900 suppor
+Thread-Index: AcvXmPrH1+DwSB0cRziwpgo9aLm8UwAgDwrg
+Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA334C187A7F@EXDCVYMBSTM005.EQ1STM.local>
+References: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+	<201101061946.04790.arnd@arndb.de>
+	<AANLkTikJMx2QxYwXS_TrKK5hcnD3G0MNvEiDO+xAZrpo@mail.gmail.com>
+	<201101091955.05174.arnd@arndb.de>
+	<AFCDDB4A3EA003429EEF1E7B211FDBBA334C0FB0E2@EXDCVYMBSTM005.EQ1STM.local>
+	<AANLkTi=HvRTfo84L_VwOVtVq5hfb1g+9ueH6SX8FWF2b@mail.gmail.com>
+	<AANLkTik3hiNj7=K+uE6eQW2CokZtCz7Zwvt-+6PkD_Mo@mail.gmail.com>
+ <AANLkTimcBL6D7bGGt-QSWDEE=nnpK0hy1CQZK_JEmEYA@mail.gmail.com>
+In-Reply-To: <AANLkTimcBL6D7bGGt-QSWDEE=nnpK0hy1CQZK_JEmEYA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas,
+As you say, I think it could be good to put it into staging so we have a driver in place and then we can continue discussing the architecture from there.
 
-On Sat, 2011-02-26 at 20:04 +0000, Nicolas Pitre wrote:
-> Right.  A minimal test case may look like this if someone feels like
-> filling a gcc bug report:
+/P-G
+
+> -----Original Message-----
+> From: Linus Walleij [mailto:linus.walleij@linaro.org]
+> Sent: den 28 februari 2011 23:44
+> To: Vitaly Wool; Par-Gunnar Hjalmdahl
+> Cc: Par-Gunnar HJALMDAHL; Samuel Ortiz; Marcel Holtmann; Lee Jones;
+> Alan Cox; Arnd Bergmann; linux-bluetooth@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Lukasz Rymanowski; Pavan Savoy
+> Subject: Re: [PATCH 00/11] mfd and bluetooth: Add CG2900 suppor
 > 
-> extern int foo(int x);
+> On Fri, Feb 25, 2011 at 6:55 PM, Vitaly Wool <vitalywool@gmail.com>
+> wrote:
 > 
-> int bar(int x)
-> {
->         register int a asm("r0") = 1;
->         x = foo(x);
->         asm ("add %0, %1, %2" : "=r" (x) : "r" (a), "r" (x));
->         return x;
-> }
+> > Making hardware work is, if course, a valid point, but porting a
+> windows
+> > driver would do that as well, and it's not the reason to pull windows
+> > drivers' ports into mainline.
 > 
-> And the produced code is:
+> Yeah hm, that sounds like it has "drivers/staging" printed all over it
+> then,
+> so either we solve these issues or we need to put it into staging so we
+> can get help from others in fixing it up (we have a similar situation
+> with
+> the U8500 graphics stuff).
 > 
-> bar:
->         stmfd   sp!, {r3, lr}
->         bl      foo
-> #APP
->         add r0, r0, r0
->         ldmfd   sp!, {r3, pc}
+> P-G do you think it would be proper to take this into staging for the
+> moment, or do you prefer to drive it outside the mainline kernel tree
+> until
+> it lands in the proper place(s)?
 > 
-> So this is clearly bogus.
-
-
-I've had a chat with the compiler guys and they confirmed that this is a
-known bug. There's a really hairy bug report here:
-
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=38815
-
-It looks like the GCC stance will change in the future so that register
-variables will only be guaranteed to live in the specified register
-during asm blocks which use them. If the register is required elsewhere,
-spill/reload code will be emitted as necessary. This might break some
-weird and wonderful code (passing hidden operands to functions?) but I
-don't think we rely on the current behaviour anywhere in the kernel.
-
-Will
-
+> Yours,
+> Linus Walleij
