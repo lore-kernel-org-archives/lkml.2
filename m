@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab1CAVka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 16:40:30 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52182 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754185Ab1CAVk3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 16:40:29 -0500
+	id S1755952Ab1CAVlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 16:41:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754185Ab1CAVln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 16:41:43 -0500
+Date: Tue, 1 Mar 2011 16:40:12 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Moyer Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
+Message-ID: <20110301214012.GD2539@redhat.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+ <20110301162753.GB2539@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110301204739.GA30406@redhat.com>
-References: <20101130200129.GG11905@redhat.com> <compat-not-unlikely@mdm.bga.com>
- <20101201182747.GB6143@redhat.com> <20110225175202.GA19059@redhat.com>
- <20110225175314.GD19059@redhat.com> <AANLkTik8epq5cx8n=k6ocMUfbg9kkUAZ8KL7ZiG4UuoU@mail.gmail.com>
- <20110226123731.GC4416@redhat.com> <AANLkTinFVCR_znYtyVuJcjFQq_fgMp+ozbSz54UKzvQ_@mail.gmail.com>
- <20110226174408.GA17442@redhat.com> <20110301204739.GA30406@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 1 Mar 2011 13:39:35 -0800
-Message-ID: <AANLkTikVecxcGoZ9a4hmkoi4wynrNfH9_AU7Vb+hOvbH@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] exec: unify native/compat code
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110301162753.GB2539@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 12:47 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->        where that 'do_execve_common()' takes it's arguments as
->
->                union conditional_user_ptr_t __user *argv,
->                union conditional_user_ptr_t __user *envp
->
-> I hope you didn't really mean this...
+On Tue, Mar 01, 2011 at 11:27:53AM -0500, Vivek Goyal wrote:
+> On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
+> 
+> [..]
+> > TODO
+> > ~~~~
+> >  - Consider to add the following new files in the blkio controller to allow the
+> >    user to explicitly limit async writes as well as sync writes:
+> > 
+> >    blkio.throttle.async.write_bps_limit
+> >    blkio.throttle.async.write_iops_limit
+> 
+> I am kind of split on this.
+> 
+> - One way of thinking is that blkio.throttle.read/write_limits represent
+>   the limits on requeuest queue of the IO which is actually passing
+>   through queue now. So we should not mix the two and keep async limits
+>   separately. This will also tell the customer explicitly that async
+>   throttling does not mean the same thing as throttling happens before
+>   entering the page cache and there can be/will be IO spikes later
+>   at the request queue.
+> 
+>   Also creating the separate files leaves the door open for future
+>   extension of implementing async control when async IO is actually
+>   submitted to request queue. (Though I think that will be hard as
+>   making sure all the filesystems, writeback logic, device mapper
+>   drivers are aware of throttling and will take steps to ensure faster
+>   groups are not stuck behind slower groups).
+> 
+>  So keeping async accounting separate will help differentiating that
+>  async control is not same as sync control. There are fundamental
+>  differences.
+> 
+> 
+> - On the other hand, it makes life a bit simple for user as they don't
+>   have to specify the async limits separately and there is one aggregate
+>   limit for sync and async (assuming we fix the throttling state issues
+>   so that throttling logic can handle both bio and task throttling out
+>   of single limit).
+> 
+> Any thoughts?
 
-I really did mean that (although not the double "union" + "_t" thing
-for the typedef).
+Thinking more about it.
 
-But I'm not going to claim that it has to be done exactly that way,
-the union can certainly be encapsulated differently too.
+Was chatting with Jeff Moyer about this  and he mentioned that 
+applications might not like this frequent blocking in buffered write
+path. Which is a valid concern but I don't know how to address that.
+dirty_ratio, dity_bytes and dirty_background_ratio will not be enough
+to throttle the overall WRITE rate from application.
 
-So I'm ok with your alternative
+I am kind of now little inclined towards creating separate files for
+async writeout and not mix these throttling at device level for 
+following reasons.
 
->        typedef union {
->                const char __user *const __user *native;
->                compat_uptr_t __user *compat;
->        } conditional_user_ptr_t;
+- It is a different thorttling functionality at different layer and it is
+  not same as throttling sync IO at device level when IO is submitted to
+  device. We are just making use of existing throttling infrastructure to
+  account for writting rates in page cache. So having separate file and
+  separate async throttle state per group in blkio makes sense to me.
 
-model instead, which moves the pointer into the union.
+- There will be these unintutive side affects of frequent blocking
+  and keeping it separate atleast allows us to disable this functionality.
 
-However, if you do this, then I have one more suggestion: just move
-the "compat" flag in there too!
+- And we might come up with throttling async IO at device level and 
+  keeping it separate helps us at that point of time.
 
-Every time you pass the union, you're going to pass the compat flag to
-distinguish the cases. So do it like this:
+So to me throttling the async rate while writting to page cache is
+a different functionality and let it be controlled by separate blkio
+files. The bigger question is that in what cases this kind of functionality
+is really useful given that it can still produce IO spikes and given the fact
+that application will be put to sleep freqently depending on throttling rate
+configured.
 
-  struct conditional_ptr {
-    int is_compat;
-    union {
-      const char __user *const __user *native;
-      compat_uptr_t __user *compat;
-    };
-  };
-
-and it will all look much cleaner, I bet.
-
-                        Linus
+Thanks
+Vivek
