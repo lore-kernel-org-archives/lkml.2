@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab1CAO2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 09:28:09 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:49103 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab1CAO2I convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Tue, 1 Mar 2011 09:28:08 -0500
-Message-Id: <4D6D1082020000780003454C@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 01 Mar 2011 14:28:02 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ix86: fix a bogus unwind annotation in
-	 lib/semaphore_32.S
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756488Ab1CAO2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:28:17 -0500
+Received: from kroah.org ([198.145.64.141]:57323 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756466Ab1CAO2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 09:28:12 -0500
+Date: Tue, 1 Mar 2011 09:29:08 -0500
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Alan Cox <alan@linux.jf.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: gma500: Rip out the memory manager
+Message-ID: <20110301142908.GA13144@kroah.com>
+References: <20110224162440.27093.80825.stgit@localhost.localdomain>
+ <20110224162457.27093.32399.stgit@localhost.localdomain>
+ <20110301020302.GA11353@kroah.com>
+ <20110301122437.4477fa65@bob.linux.org.uk>
+ <20110301141527.GA12881@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110301141527.GA12881@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'simple' would have required specifying current frame address and
-return address location manually, but that's obviously not the case
-(and not necessary) here.
+On Tue, Mar 01, 2011 at 09:15:27AM -0500, Greg KH wrote:
+> On Tue, Mar 01, 2011 at 12:24:37PM +0000, Alan Cox wrote:
+> > On Mon, 28 Feb 2011 18:03:02 -0800
+> > Greg KH <greg@kroah.com> wrote:
+> > 
+> > > On Thu, Feb 24, 2011 at 04:25:09PM +0000, Alan Cox wrote:
+> > > > At this point we simply stuff the display at the start of the
+> > > > stolen memory area that the BIOS gave us. No user framebuffers no
+> > > > multiple framebuffers.
+> > > > 
+> > > > However from here we have a better chance of seeing what is going
+> > > > on and writing an actual gem manager for the driver.
+> > > > 
+> > > > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> > > 
+> > > This doesn't apply.
+> > > 
+> > > The 1/2 patch had some fuzz in the Makefile, which I fixed up by hand,
+> > > but it makes me think that you are diffing this against some different
+> > > tree.
+> > 
+> > I've investigated this. The cause seems to be a patch
+> > 
+> > commit 5352161fc449d7a7573b2e13bd02162aae7aeb69
+> > 
+> > applied by yourself which cleaned up all sorts of random whitespace
+> > noise and broke further patch application. Given that this is staging
+> > and random whitespace is less important than actually fixing the code I
+> > think the fix is to revert that commit and then apply mine.
+> 
+> Well, I did copy you on that patch, and let you know I made it, so this
+> type of thing wouldn't happen.  I'll go fix it by just stripping out the
+> trailing whitespace from your patch :)
+> 
+> This doesn't seem to explain the Makefile difference in the 1/2 patch
+> though...
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+And I still don't think this is the issue.
 
----
- arch/x86/lib/semaphore_32.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- 2.6.38-rc6/arch/x86/lib/semaphore_32.S
-+++ 2.6.38-rc6-ix86-unwind-write_lock_failed/arch/x86/lib/semaphore_32.S
-@@ -36,7 +36,7 @@
-  */
- #ifdef CONFIG_SMP
- ENTRY(__write_lock_failed)
--	CFI_STARTPROC simple
-+	CFI_STARTPROC
- 	FRAME
- 2: 	LOCK_PREFIX
- 	addl	$ RW_LOCK_BIAS,(%eax)
-
+Your patch removes two lines from drivers/staging/gma500/psb_drm.h with
+the following diff:
+--- a/drivers/staging/gma500/psb_drm.h
++++ b/drivers/staging/gma500/psb_drm.h
+@@ -28,9 +28,6 @@
+ #include "drm_mode.h"
+ #endif
+ 
+-#include "psb_ttm_fence_user.h"
+-#include "psb_ttm_placement_user.h"
+-
+ #define DRM_PSB_SAREA_MAJOR 0
+ #define DRM_PSB_SAREA_MINOR 2
+ #define PSB_FIXED_SHIFT 16
 
 
+Yet those #defines are not present in this file right now.  That's not a
+whitespace change...
+
+Still confused,
+
+greg k-h
