@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab1CASe6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 13:34:58 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47828 "EHLO
+	id S1756821Ab1CASh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 13:37:29 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59258 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756575Ab1CASe4 (ORCPT
+	with ESMTP id S1752551Ab1CASh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 13:34:56 -0500
+	Tue, 1 Mar 2011 13:37:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=vnSoLHZ/JC52fskVGfbZQBTY4NvaO228rUPEpaCuTO1XoyQ1rf24HRWGLGNFVP9Te3
-         LSd1VvOK7a7hPCa5WKlI9BpOjoXEnyddBBdoKJDzjmyDZKr1TyeQhuyOJPdCTlGUGACu
-         ADzJ6T0jeep95tYDIqLXRM3a82Tm24cMpO2lA=
-Date: Tue, 1 Mar 2011 19:34:54 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110301183454.GC23527@mtj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <201103011757.48593.vda.linux@googlemail.com>
- <20110301170953.GB17933@htj.dyndns.org>
- <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=JrCzPuXGJTX4ECRd+XFYwI1Qn7znVmuQjKHwcKPYSg+DUXv9jtXfhgApWrqnEglwmD
+         /PGRBO4oHqaKbzZD/wGtQ6vu5c/4snB0oXaSpU7z11ca8q66gGOBPpMYFCFWI52xGYWO
+         lfcdN/psSanX7Q1cEM/74SdJl0uKTHsszLve0=
+Date: Tue, 1 Mar 2011 20:37:22 +0200
+From: Jarkko Nikula <jhnikula@gmail.com>
+To: Abhilash K V <abhilash.kv@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] audio:am3517evm support for AIC23
+Message-Id: <20110301203722.3ba044e5.jhnikula@gmail.com>
+In-Reply-To: <1298994218-30610-1-git-send-email-abhilash.kv@ti.com>
+References: <1298994218-30610-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 06:21:49PM +0100, Denys Vlasenko wrote:
-> I'm not saying that I like that other proposal more -
-> I am saying that your proposal needs to specify whether strace
-> needs to be changed, and how exactly, to correctly handle
-> SIGSTOPs under this proposal.
+Hi
 
-Yeah, definitely.
+On Tue,  1 Mar 2011 21:13:38 +0530
+Abhilash K V <abhilash.kv@ti.com> wrote:
 
-> > gdb can do whatever it wants to do but I don't think the above needs
-> > fixing.  In the first case, the user is explicitly telling gdb to
-> > continue the tracee, so it continues as it always has.
+> This patch aims to fix the registration of the AIC23-based audio
+> module on the AM3517-EVM, with the following two changes:
 > 
-> It does not look like that to me.
+> 1. The i2c_board_info entry supporting aic23 codec was added into
+>    the i2c2 bus.
+> 2. The i2c client device name (".2-001a" in this case, including
+>    the separator period) was appended to the codec_name member of
+>    am3517evm_dai to resolve the names mismatch happening in
+>    soc_bind_dai_link().
 > 
-> User attached to some process. User might be unaware that
-> the process is currently stopped (imagine a group of processes
-> which use SIGSTOP/SIGCONT in their normal interactions).
+> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+> ---
+>  arch/arm/mach-omap2/board-am3517evm.c |    3 +++
+>  sound/soc/omap/am3517evm.c            |    2 +-
+>  2 files changed, 4 insertions(+), 1 deletions(-)
 > 
-> User peeked some state, and then wants to let process
-> continue whatever process was doing, but remain in the debugger.
-> 
-> What user did not know is that "whatever process was doing" =
-> "being stopped by SIGSTOP, waiting to be woken up".
-> Therefore, if "continue" makes process run, it does not
-> return process to whatever process was doing.
->
-> > In the latter
-> > case, the debugging session is over.  The tracee now should do
-> > whatever it's supposed to do.
-> 
-> It should do that in both cases.
+First, your patch does the correct things.
 
-Maybe it should, maybe not, but that's mostly irrelevant because the
-described behavior is the current behavior.  There is no
-continue-if-not-job-control-stopped operation and we shouldn't change
-that beneath gdb because otherwise not only the behavior changes
-unexpectedly but also the user doesn't have a way to resume the tracee
-from within gdb.  The user has to go to another terminal and send
-SIGCONT explicitly.  If gdb wants to improve the behavior, it sure can
-implement proper job control behavior using the proposed changes.
+I investigated a bit and it looks like the sound/soc/omap/am3517evm.c
+never worked in mainline since the patch below adding codec to
+board-am3517evm.c wasn't applied by reason or another.
 
-Thanks.
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg18470.html
 
--- 
-tejun
+This means that you should split this patch into two and they can be
+sent as independent patches. am3517evm.c change via alsa-devel
+and board-am3517evm.c via linux-omap & linux-arm-kernel. Some comments
+below.
+
+> diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+> index ad71cbf..8da8d20 100644
+> --- a/arch/arm/mach-omap2/board-am3517evm.c
+> +++ b/arch/arm/mach-omap2/board-am3517evm.c
+> @@ -358,6 +358,9 @@ static struct pca953x_platform_data am3517evm_gpio_expander_info_0 = {
+>  };
+>  static struct i2c_board_info __initdata am3517evm_i2c2_boardinfo[] = {
+>  	{
+> +		I2C_BOARD_INFO("tlv320aic23", 0x1A),
+> +	},
+> +	{
+
+This is ok and don't need anything else as the rest pieces from
+original missing patch are added by another patches.
+
+> --- a/sound/soc/omap/am3517evm.c
+> +++ b/sound/soc/omap/am3517evm.c
+> @@ -139,7 +139,7 @@ static struct snd_soc_dai_link am3517evm_dai = {
+>  	.cpu_dai_name ="omap-mcbsp-dai.0",
+>  	.codec_dai_name = "tlv320aic23-hifi",
+>  	.platform_name = "omap-pcm-audio",
+> -	.codec_name = "tlv320aic23-codec",
+> +	.codec_name = "tlv320aic23-codec.2-001a",
+>  	.init = am3517evm_aic23_init,
+>  	.ops = &am3517evm_ops,
+>  };
+
+Subject for this part could be something like
+"ASoC: AM3517: Update codec name after multi-component update".
+
+Remember to cc ASoC maintainers Mark Brown and Liam Girdwood.
+
+You could add my acks to splitted patches.
+
+Acked-by: Jarkko Nikula <jhnikula@gmail.com>
