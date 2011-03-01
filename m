@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab1CATHD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:07:03 -0500
-Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:39790 "EHLO
-	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752291Ab1CATHB (ORCPT
+	id S1756712Ab1CATK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:10:26 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:44483 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab1CATKY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:07:01 -0500
-Date: Tue, 1 Mar 2011 20:06:38 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110301190638.GA12196@host1.dyn.jankratochvil.net>
-References: <20110301152457.GE26074@htj.dyndns.org>
+	Tue, 1 Mar 2011 14:10:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=EHgPOUhae6dP2qV55P+3eDYf8U0ZcgcQptcKHSqfGZVDTrKBXnMxtBWrDXRkzf40Xj
+         BMqlSiMJgzoKiSN18LYzwNNMgbctSDFUzFR39vfnFIwGTI937rO8i61pgfogf6aEWPk3
+         jNdU3WjrQtSEt0RmsriUVqw1YvDAnngx1L5/U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110301152457.GE26074@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110301104924.071044ef.randy.dunlap@oracle.com>
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+	<20110301104924.071044ef.randy.dunlap@oracle.com>
+Date: Tue, 1 Mar 2011 21:10:23 +0200
+X-Google-Sender-Auth: np9dsSrBKEx67pmyWZbPK_N9g6g
+Message-ID: <AANLkTimX0zvBEMxedXnhXiaxwEKHmm_Tu6fiZQkahZrC@mail.gmail.com>
+Subject: Re: linux-next: Tree for March 1 (staging/winbond)
+From: Pekka Enberg <penberg@kernel.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Mar 2011 16:24:57 +0100, Tejun Heo wrote:
-> P4. PTRACE_SEIZE
-[...]
-> Completion notification is delivered in the usual way via wait(2).  If
-> the task was in jctl stop, it would report the stop signal with the
-> matching siginfo.  If the task hits an existing ptrace trap condition,
-> the matching SIGTRAP will be reported; otherwise, SIGTRAP will be
-> reported with siginfo indicating PTRACE_SEIZE trap.
+On Tue, Mar 1, 2011 at 8:49 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Tue, 1 Mar 2011 18:11:19 +1100 Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> Changes since 20110228:
+>
+>
+> commit ddee7e28e7d5e4ba2b8537c6a59b035745c250bb
+> Author: Pekka Enberg <penberg@kernel.org>
+> Date:   Sun Nov 28 23:00:01 2010 +0200
+>    Staging: w35und: Remove empty sysdef.h header
+>
+>
+> This header should not have been empty, since in
+>
+> commit 412dc7f368bf10a8049a8a4c41abbfd0108742e7
+> Author: Randy Dunlap <randy.dunlap@oracle.com>
+> Date:   Fri Nov 19 09:30:18 2010 -0800
+>    staging: fix winbond build, needs delay.h
+>
+> I added delay.h to it.  And now we have the same build
+> errors that I fixed last November:
+>
+> drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration of function 'msleep'
+> drivers/staging/winbond/phy_calibration.c:1555: error: implicit declaration of function 'udelay'
+> drivers/staging/winbond/reg.c:893: error: implicit declaration of function 'msleep'
+> drivers/staging/winbond/reg.c:1169: error: implicit declaration of function 'udelay'
 
-This is a change from the Roland's proposed PTRACE_ATTACH_NOSTOP.
-Currently it is already a problem that apps did not / do not expect the first
-waitpid after PTRACE_ATTACH may not be SIGSTOP.  And in the racy case of
-a pending signal during PTRACE_ATTACH which gets delivered by first waidpid
-the tracer either crashes or loses the signal etc.  (It was a problem for
-older GDB, it is fixed in recent GDBs, there exist other ptrace using tools.)
-
-And after all it gets complicated to call PTRACE_ATTACH and then postpone the
-reception of SIGSTOP while other signals are being delivered first.
-
-
-> WAY FORWARD (yeah, I'm feeling some marketing vibe)
-> -----------
-[...]
-> What someone would want if one could start from the scratch is interesting
-> but ultimately irrelevant.
-
-The ugdb project provides unified debugging facility for both local and remote
-debugging.  With the ptrace extensions a network protocol server needs to be
-developed/used anyway and it will be just a thin userland layer mapping
-read/write calls to the ptrace calls on the server side in an ineffective way.
-
-OTOH one can look at the similar case of TUX/khttpd (also) has never been
-merged into the kernel.
-
-
-Regards,
-Jan
+Strange. I didn't see the problem. We should add delay.h to
+phy_calibration.c and reg.c instead. Care to make a patch?
