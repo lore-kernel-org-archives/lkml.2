@@ -1,35 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab1CAQ0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:26:44 -0500
-Received: from cantor.suse.de ([195.135.220.2]:54805 "EHLO mx1.suse.de"
+	id S1756834Ab1CAQ2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:28:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7242 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756491Ab1CAQ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:26:42 -0500
-Date: Tue, 1 Mar 2011 17:26:41 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: Do not create input devices for feature reports
-In-Reply-To: <AANLkTikd67q_j_ySam7RZvau8WoESLEmdXkfCWerVrLp@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1103011726300.32580@pobox.suse.cz>
-References: <1298572259-18173-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1103011702240.32580@pobox.suse.cz> <AANLkTikd67q_j_ySam7RZvau8WoESLEmdXkfCWerVrLp@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754000Ab1CAQ2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 11:28:22 -0500
+Date: Tue, 1 Mar 2011 11:27:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
+Message-ID: <20110301162753.GB2539@redhat.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298888105-3778-1-git-send-email-arighi@develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Mar 2011, Benjamin Tissoires wrote:
+On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
 
-> Tested-by: Benjamin Tissoires <benjmain.tissoires@gmail.com>
-> Acked-by: Benjamin Tissoires <benjmain.tissoires@gmail.com>
+[..]
+> TODO
+> ~~~~
+>  - Consider to add the following new files in the blkio controller to allow the
+>    user to explicitly limit async writes as well as sync writes:
+> 
+>    blkio.throttle.async.write_bps_limit
+>    blkio.throttle.async.write_iops_limit
 
-Applied, thanks.
+I am kind of split on this.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+- One way of thinking is that blkio.throttle.read/write_limits represent
+  the limits on requeuest queue of the IO which is actually passing
+  through queue now. So we should not mix the two and keep async limits
+  separately. This will also tell the customer explicitly that async
+  throttling does not mean the same thing as throttling happens before
+  entering the page cache and there can be/will be IO spikes later
+  at the request queue.
+
+  Also creating the separate files leaves the door open for future
+  extension of implementing async control when async IO is actually
+  submitted to request queue. (Though I think that will be hard as
+  making sure all the filesystems, writeback logic, device mapper
+  drivers are aware of throttling and will take steps to ensure faster
+  groups are not stuck behind slower groups).
+
+ So keeping async accounting separate will help differentiating that
+ async control is not same as sync control. There are fundamental
+ differences.
+
+
+- On the other hand, it makes life a bit simple for user as they don't
+  have to specify the async limits separately and there is one aggregate
+  limit for sync and async (assuming we fix the throttling state issues
+  so that throttling logic can handle both bio and task throttling out
+  of single limit).
+
+Any thoughts?
+
+Thanks
+Vivek
