@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1CADMY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 22:12:24 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:44661 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312Ab1CADMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 22:12:23 -0500
-Message-ID: <4D6C6415.2080603@linux.vnet.ibm.com>
-Date: Mon, 28 Feb 2011 20:12:21 -0700
-From: Allison Henderson <achender@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1753240Ab1CAD3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 22:29:37 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43190 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab1CAD3f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 22:29:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=jkB65TasIoad1iLXIoPfHOQvLdJ7mV/irWKFcvNftMfDTRumQec2CZYUe9XcfFqan9
+         zPddFUtFlkjtEpUViv+Q3/C1ouazIOpfcILOpWMmDCM/Hs7yhwLeLqsxEpZdkTjuHkV8
+         XR3awE2K8DN2b+fBsZV3iXctXbNOZU3su7W6Y=
 MIME-Version: 1.0
-To: Dave Young <hidave.darkstar@gmail.com>
-CC: Allison C Henderson <achender@us.ibm.com>, Josef Bacik <josef@redhat.com>,
-        linux-ext4@vger.kernel.org, linux-ext4-owner@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Theodore Tso <tytso@mit.edu>
-Subject: Re: ext2/3/4: punch support?
-References: <AANLkTimyu6A=LgF8pit6So6JkPrScFLB42U3NwBJq7mv@mail.gmail.com> <20110228131118.GA18193@dhcp231-156.rdu.redhat.com> <OFF2910C77.5B46C8B2-ON87257846.000354EE-07257846.000414E9@us.ibm.com> <AANLkTikkDS38RhwP9LC47_Q-ZnUB_6q=EKRyQ8tswKW=@mail.gmail.com> <4D6C57A2.3040500@linux.vnet.ibm.com> <AANLkTimEFjQ2x86HgTJ3AwZ_oBXTZc_PdGzAHhacUEM7@mail.gmail.com>
-In-Reply-To: <AANLkTimEFjQ2x86HgTJ3AwZ_oBXTZc_PdGzAHhacUEM7@mail.gmail.com>
+In-Reply-To: <AANLkTinV+bnSBe+5CSuYYCU4gCq9Z2c9ELdy-LFAvdf0@mail.gmail.com>
+References: <1298611140-21573-1-git-send-email-keng-yu.lin@canonical.com>
+ <AANLkTim_JKQU9J3OJ0FRQ_ZVPktAPbnzr2t8SvhL2Uzj@mail.gmail.com>
+ <20110225071827.GA14053@core.coreip.homeip.net> <AANLkTinV+bnSBe+5CSuYYCU4gCq9Z2c9ELdy-LFAvdf0@mail.gmail.com>
+From: =?UTF-8?B?S2VuZy1Zw7wgTGlu?= <keng-yu.lin@canonical.com>
+Date: Tue, 1 Mar 2011 11:29:15 +0800
+X-Google-Sender-Auth: Y7sjBqBdmPTpcV6P1CUUOk2CTsw
+Message-ID: <AANLkTi=GFz4i1Y7ok=2Zt9ApbeAc4zN4tbaKppqB_LGA@mail.gmail.com>
+Subject: Re: [PATCH] eeepc-wmi: set the touchpad toggle key code to F21
+To: Chris Bagwell <chris@cnpbagwell.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tyson.chen@canonical.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/28/2011 7:26 PM, Dave Young wrote:
-> On Tue, Mar 1, 2011 at 10:19 AM, Allison Henderson
-> <achender@linux.vnet.ibm.com>  wrote:
->> Alrighty then, I can send it out a little early since people are interested.  It should show up here soon.  Any feedback is appreciated! :)
-> 
-> Hi, top post is bad here, please don't do that.
-> 
->>
->> Allison Henderson
->>
->> On 2/28/2011 6:32 PM, Dave Young wrote:
->>> On Tue, Mar 1, 2011 at 8:44 AM, Allison C Henderson<achender@us.ibm.com>    wrote:
->>>>
->>>> Hi All,
->>>>
->>>> I've actually already started on a patch set for punch hole support in ext4.
->>>>    I've sent them out on the ltc-fsdev mailing list for review.  I had planned
->>>> to spend another week or two running it through some more debug cases before
->>>> sending it to the ext4 mailing list though.
->>>
->>> Where can find your patch? should be sent to linux-ext4?
->>>
-> 
-> 
+On Fri, Feb 25, 2011 at 11:14 PM, Chris Bagwell <chris@cnpbagwell.com> wrote:
+>
+> I submitted last month a patch to udev to do the scancode-to-F21
+> mapping.  So that part should be covered for near term.
+>
+> I also agree if we are going to change kernel side, we should change
+> to KEY_TOUCHPAD_TOGGLE in both eeepc-laptop and eeepc-wmi.
+>
+> http://git.kernel.org/?p=linux/hotplug/udev.git;a=commit;h=0d8b6be5f5238360d2d8e220d6da280f842c5358
+>
+> Chris
+>
 
-Sorry about that, I'm still a little new here.  I've just sent out what I have so far. 
-Please let me know if you have trouble with any of the patches.  Thx!
+Thanks Chris for the information. I also tested; it works.
 
-Allison Henderson
-
+I will re-send a eeepc-wmi patch with KEY_TOUCHPAD_TOGGLE.
