@@ -1,49 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1CAQZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:25:01 -0500
-Received: from smtp.nokia.com ([147.243.1.47]:57906 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756452Ab1CAQZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:25:00 -0500
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Cc: Aaro Koskinen <aaro.koskinen@nokia.com>, stable@kernel.org
-Subject: [PATCH] procfs: fix /proc/<pid>/maps heap check
-Date: Tue,  1 Mar 2011 18:26:53 +0200
-Message-Id: <1298996813-8625-1-git-send-email-aaro.koskinen@nokia.com>
-X-Mailer: git-send-email 1.5.6.5
-X-Nokia-AV: Clean
+	id S1756850Ab1CAQ0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:26:32 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51109 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756452Ab1CAQ0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 11:26:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=ipcySeZ/N7VeMqMxlx2Q4I8sGJptsffy7WJHOe0V3o+WhDXn14rfAbEAFx3ma7LTZR
+         nHOp/KKFyoaChNp6m0AhT2U/v6PRWpati2LmcL+6zJlDxEkvPhRSUGKwWGq60sBDK/Hc
+         duIx7OJb+wiIcaNNxmd6M/PZphz2FMLjRYk+U=
+MIME-Version: 1.0
+Date: Wed, 2 Mar 2011 00:26:30 +0800
+Message-ID: <AANLkTinCvzNcK-Xpp7R15u1GZzUC+eSNUn=ytdyoL5vM@mail.gmail.com>
+Subject: [2.6.38-rc6, patch] mark some internal functions static...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Linux BTRFS <linux-btrfs@vger.kernel.org>
+Cc: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current check looks wrong and prints "[heap]" only if the mapping
-matches exactly the heap. However, the heap may be merged with some
-other mappings, and there may be also be multiple mappings.
+Prevent needless exporting of internal functions from compilation
+units by marking them static.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
-Cc: stable@kernel.org
----
- fs/proc/task_mmu.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 60b9148..f269ee6 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -249,8 +249,8 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- 		const char *name = arch_vma_name(vma);
- 		if (!name) {
- 			if (mm) {
--				if (vma->vm_start <= mm->start_brk &&
--						vma->vm_end >= mm->brk) {
-+				if (vma->vm_start <= mm->brk &&
-+						vma->vm_end >= mm->start_brk) {
- 					name = "[heap]";
- 				} else if (vma->vm_start <= mm->start_stack &&
- 					   vma->vm_end >= mm->start_stack) {
+diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
+index b5baff0..5e49196 100644
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -74,7 +74,7 @@ noinline void btrfs_set_path_blocking(struct btrfs_path *p)
+  * retake all the spinlocks in the path.  You can safely use NULL
+  * for held
+  */
+-noinline void btrfs_clear_path_blocking(struct btrfs_path *p,
++static noinline void btrfs_clear_path_blocking(struct btrfs_path *p,
+ 					struct extent_buffer *held)
+ {
+ 	int i;
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index e1aa8d6..c48d699 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -2279,7 +2279,7 @@ static int write_dev_supers(struct btrfs_device *device,
+ 	return errors < i ? 0 : -1;
+ }
+
+-int write_all_supers(struct btrfs_root *root, int max_mirrors)
++static int write_all_supers(struct btrfs_root *root, int max_mirrors)
+ {
+ 	struct list_head *head;
+ 	struct btrfs_device *dev;
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index f3c96fc..1961081 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -77,7 +77,7 @@ static int block_group_bits(struct
+btrfs_block_group_cache *cache, u64 bits)
+ 	return (cache->flags & bits) == bits;
+ }
+
+-void btrfs_get_block_group(struct btrfs_block_group_cache *cache)
++static void btrfs_get_block_group(struct btrfs_block_group_cache *cache)
+ {
+ 	atomic_inc(&cache->count);
+ }
+@@ -3576,7 +3576,7 @@ static void block_rsv_add_bytes(struct
+btrfs_block_rsv *block_rsv,
+ 	spin_unlock(&block_rsv->lock);
+ }
+
+-void block_rsv_release_bytes(struct btrfs_block_rsv *block_rsv,
++static void block_rsv_release_bytes(struct btrfs_block_rsv *block_rsv,
+ 			     struct btrfs_block_rsv *dest, u64 num_bytes)
+ {
+ 	struct btrfs_space_info *space_info = block_rsv->space_info;
+diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+index a039065..ec5015c 100644
+--- a/fs/btrfs/free-space-cache.c
++++ b/fs/btrfs/free-space-cache.c
+@@ -1371,7 +1371,7 @@ out:
+ 	return ret;
+ }
+
+-bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
++static bool try_merge_free_space(struct btrfs_block_group_cache *block_group,
+ 			  struct btrfs_free_space *info, bool update_stat)
+ {
+ 	struct btrfs_free_space *left_info;
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index be2d4f6..7b97854 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2193,7 +2193,7 @@ static void get_block_group_info(struct
+list_head *groups_list,
+ 	}
+ }
+
+-long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
++static long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+ {
+ 	struct btrfs_ioctl_space_args space_args;
+ 	struct btrfs_ioctl_space_info space;
 -- 
-1.5.6.5
-
+Daniel J Blueman
