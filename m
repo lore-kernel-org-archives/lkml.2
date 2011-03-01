@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab1CAVrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 16:47:07 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:54971 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755762Ab1CAVrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 16:47:05 -0500
-Date: Tue, 1 Mar 2011 16:47:02 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        James Morris <jmorris@namei.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION] tpm_tis on Lenovo T410 broken in 2.6.38-rc6
-Message-ID: <20110301214702.GB2959@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	James Morris <jmorris@namei.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <E1PuKHL-0000lw-RM@tytso-glaptop>
- <4D6CFA80.3020505@linux.vnet.ibm.com>
- <BD305A55-A581-4779-B5EA-084B186C903D@mit.edu>
- <4D6D65C4.5000602@linux.vnet.ibm.com>
+	id S1756234Ab1CAVrP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 16:47:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45344 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756148Ab1CAVrN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 16:47:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6D65C4.5000602@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20110228151736.GO22310@pengutronix.de>
+References: <20101124085645.GW4693@pengutronix.de> <1290589070-854-5-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20110228151736.GO22310@pengutronix.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 1 Mar 2011 13:46:52 -0800
+Message-ID: <AANLkTi=VB5po9Yt2oCcCq01UNQxXNY+_6RBpjWRFkvxN@mail.gmail.com>
+Subject: Re: [PATCH 5/6] mm: add some KERN_CONT markers to continuation lines
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        kernel@pengutronix.de, Arjan van de Ven <arjan@infradead.org>,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 06:31:48PM -0300, Rajiv Andrade wrote:
-> 
-> Thanks for clarifying the context. Please add a
-> 
-> WARN_ON(duration<=0, "no duration for ordinal %x (duration_idx
-> %d)", ordinal, duration_idx);
+2011/2/28 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> Hello,
+>
+>
+> On Wed, Nov 24, 2010 at 09:57:49AM +0100, Uwe Kleine-König wrote:
+>> -                             printk("\n");
+>> -                             printk("%spcpu-alloc: ", lvl);
+>> +                             printk(KERN_CONT "\n");
+>> +                             printk("%spcpu-alloc:", lvl);
 
-Data has been sent in another e-mail.
+So I hate this kind of "mindless search-and-replace" patch.
 
-> as Linus suggested. Also please check if there's an IRQ assigned to the TPM on both scenarios:
-> 
-> cat /proc/interrupts | grep -i tpm
+The whole point is that with the modern printk semantics, the above
+kind of crazy cdoe shouldn't be needed. You should be able to just
+write
 
-Unfortunately, I was off-line doing these tests (because I can't
-connect to the company intranet :-P), so I did't see your e-mail.
-I'll be able to reboot and collect this information later, but there's
-Real Work I have to get done at this point....  I can tell you that in
-my working configuration, both with 2.6.37 and with the latest Linus
-tip with commit c4ff4b829e reverted, I have no interrupt assigned to
-the TPM.
+     printk("%spcpu-alloc:", lvl);
 
-> and finally, before the revert, with the
-> 9b29050f tpm_tis: Use timeouts returned from TPM
-> commit applied:
-> 
-> cat /sys/devices/pnp0/00\:0*/timeouts
+without that "\n" at all, because printk() will insert the \n if
+necessary. So the concept of
 
-See above; I can get this information later, if it's really needed,
-but unfortunately it's on the company laptop, and I have some real
-work I need to get back to.  (I don't need network access while at
-meetings, so I could run some tests before lunch; now the meetings are
-done and I have to get back to coding.  :-)
+    printk(KERN_CONT "\n")
 
-						- Ted
+is just crazy: you're saying "I want to continue the line, in order to
+print a newline". Whaa?
+
+>> -                     printk("[%0*d] ", group_width, group);
+>> +                     printk(KERN_CONT " [%0*d]", group_width, group);
+>> -                                     printk("%0*d ", cpu_width,
+>> +                                     printk(KERN_CONT " %0*d", cpu_width,
+>> -                                     printk("%s ", empty_str);
+>> +                                     printk(KERN_CONT " %s", empty_str);
+
+These look ok, but:
+
+>> -     printk("\n");
+>> +     printk(KERN_CONT "\n");
+
+Same deal. Why do KERN_CONT + "\n"?
+
+Yes, yes, it does have semantic meaning ("do newline _now_"), and can
+matter if you are going to use KERN_CONT exclusively around it. But it
+still smells like just being silly to me. The point of the printk
+changes was to make things simpler. I really would suggest just
+removing those KERN_CONT "\n" lines. Doesn't it end up looking fine
+that way too?
+
+                     Linus
