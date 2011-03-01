@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab1CAOIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 09:08:02 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35316 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754619Ab1CAOIB (ORCPT
+	id S1755192Ab1CAOJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:09:19 -0500
+Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:53503 "EHLO
+	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754863Ab1CAOJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 09:08:01 -0500
-Date: Tue, 1 Mar 2011 14:07:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
-        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "Stalin Srinivasan" <stalin.s@mistralsolutions.com>
-Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
-Message-ID: <20110301140743.0b9cf140@lxorguk.ukuu.org.uk>
-In-Reply-To: <99CE1730AA2F4F2F91AFA71BD75FDC41@subhasishg>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
-	<1297435892-28278-14-git-send-email-subhasish@mistralsolutions.com>
-	<20110211162814.6ff274f1@lxorguk.ukuu.org.uk>
-	<A6D1CF0E941748448610BE8874FC586F@subhasishg>
-	<20110222111103.5d0dd0a7@lxorguk.ukuu.org.uk>
-	<99CE1730AA2F4F2F91AFA71BD75FDC41@subhasishg>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 1 Mar 2011 09:09:18 -0500
+Subject: [PATCH] drm: reorder drm_open_hash to remove padding on 64 bit
+ builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: David Airlie <airlied@linux.ie>
+Cc: lkml <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Mar 2011 14:09:16 +0000
+Message-ID: <1298988556.2030.4.camel@castor.rsk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I tried using a tasklet for the TX part, but that did not help.
-> Another way is to prepare the buffer for the next read and read the data 
-> immediately.
-> Something like this:
-> 
-> 1. Call tty_prepare_flip_string while startup.
-> 2. When the read interrupt arrives, read the data immediately.
-> 3. Call tty_prepare_flip_string for the next read.
+Remove 8 bytes of padding on 64 bit builds to reduce the size of
+drm_open_hash to 24 bytes, which also shrinks drm_object_file by 24
+bytes (136 -> 112) allowing it to fit in one fewer cache lines and a
+smaller slab.
 
-Only you then don't know the size of space required/
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+---
+patch against v2.6.38-rc6
+compiled & tested on x86_64 with nouveau.
 
-> Again, the problem here is that we need to use global variables to store the 
-> pre-allocated buffers
+regards
+Richard
 
-You don't. You can store them per port in the existing objects !
 
-> The best way is if we can keep the current implementation, one extra copy is 
-> not hurting us
-> as we do it after the read_data API.
 
-No problem with that at all.
+diff --git a/include/drm/drm_hashtab.h b/include/drm/drm_hashtab.h
+index 0af087a..ff2ab48 100644
+--- a/include/drm/drm_hashtab.h
++++ b/include/drm/drm_hashtab.h
+@@ -48,8 +48,8 @@ struct drm_open_hash {
+ 	unsigned int size;
+ 	unsigned int order;
+ 	unsigned int fill;
+-	struct hlist_head *table;
+ 	int use_vmalloc;
++	struct hlist_head *table;
+ };
+ 
+ 
+
 
