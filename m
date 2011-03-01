@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab1CATox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:44:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34031 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757179Ab1CATow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:44:52 -0500
-Message-ID: <4D6D4C9D.60403@zytor.com>
-Date: Tue, 01 Mar 2011 11:44:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: questions about init_memory_mapping_high()
-References: <20110223171945.GI26065@htj.dyndns.org> <4D6BE614.3010007@zytor.com> <20110301082915.GC26074@htj.dyndns.org>
-In-Reply-To: <20110301082915.GC26074@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757233Ab1CATqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:46:50 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:45044 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757195Ab1CATqt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 14:46:49 -0500
+From: Fernando Guzman Lugo <fernando.lugo@ti.com>
+To: <hiroshi.doyu@nokia.com>
+Cc: <tony@atomide.com>, <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Ramesh Gupta <grgupta@ti.com>, Hari Kanigeri <h-kanigeri2@ti.com>
+Subject: [PATCH] omap:iommu-added cache flushing operation for L2 cache
+Date: Tue,  1 Mar 2011 13:46:32 -0600
+Message-Id: <1299008793-27428-1-git-send-email-fernando.lugo@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2011 12:29 AM, Tejun Heo wrote:
-> Hey,
-> 
-> (sorry about the earlier empty reply, fat finger on my phone)
-> 
-> On Mon, Feb 28, 2011 at 10:14:44AM -0800, H. Peter Anvin wrote:
->>> 1. The only rationale given in the commit description is that a
->>>    RED-PEN is killed, which was the following.
->>>
->>> 	/*
->>> 	 * RED-PEN putting page tables only on node 0 could
->>> 	 * cause a hotspot and fill up ZONE_DMA. The page tables
->>> 	 * need roughly 0.5KB per GB.
->>> 	 */
->>>
->>>    This already wasn't true with top-down memblock allocation.
->>>
->>>    The 0.5KB per GiB comment is for 32bit w/ 3 level mapping.  On
->>>    64bit, it's ~4KiB per GiB when using 2MiB mappings and, well, very
->>>    small per GiB if 1GiB mapping is used.  Even with 2MiB mapping,
->>>    1TiB mapping would only be 4MiB.  Under ZONE_DMA, this could be
->>>    problematic but with top-down this can't be a problem in any
->>>    realistic way in foreseeable future.
->>>
->>
->> It's true on 64 bits too when PAE is not available (e.g. with Xen.)
-> 
-> Hmm... I don't follow.  Can you elaborate?  If PAE is not available
-> for whatever reason, the physical memory is limited to 4GiB but I
-> don't follow what that has to do with the above.
-> 
+From: Ramesh Gupta <grgupta@ti.com>
 
-Sorry, PSE, not PAE.
+Signed-off-by: Ramesh Gupta <grgupta@ti.com>
+Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
+---
+ arch/arm/plat-omap/iommu.c |   22 ++++++++--------------
+ 1 files changed, 8 insertions(+), 14 deletions(-)
 
-	-hpa
+diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
+index e3eb038..aeb2c33 100644
+--- a/arch/arm/plat-omap/iommu.c
++++ b/arch/arm/plat-omap/iommu.c
+@@ -471,22 +471,15 @@ EXPORT_SYMBOL_GPL(foreach_iommu_device);
+  */
+ static void flush_iopgd_range(u32 *first, u32 *last)
+ {
+-	/* FIXME: L2 cache should be taken care of if it exists */
+-	do {
+-		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pgd"
+-		    : : "r" (first));
+-		first += L1_CACHE_BYTES / sizeof(*first);
+-	} while (first <= last);
++	dmac_flush_range(first, last);
++	outer_flush_range(virt_to_phys(first), virt_to_phys(last));
+ }
+ 
++
+ static void flush_iopte_range(u32 *first, u32 *last)
+ {
+-	/* FIXME: L2 cache should be taken care of if it exists */
+-	do {
+-		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pte"
+-		    : : "r" (first));
+-		first += L1_CACHE_BYTES / sizeof(*first);
+-	} while (first <= last);
++	dmac_flush_range(first, last);
++	outer_flush_range(virt_to_phys(first), virt_to_phys(last));
+ }
+ 
+ static void iopte_free(u32 *iopte)
+@@ -750,7 +743,7 @@ size_t iopgtable_clear_entry(struct iommu *obj, u32 da)
+ }
+ EXPORT_SYMBOL_GPL(iopgtable_clear_entry);
+ 
+-static void iopgtable_clear_entry_all(struct iommu *obj)
++void iopgtable_clear_entry_all(struct iommu *obj)
+ {
+ 	int i;
+ 
+@@ -777,7 +770,7 @@ static void iopgtable_clear_entry_all(struct iommu *obj)
+ 
+ 	spin_unlock(&obj->page_table_lock);
+ }
+-
++EXPORT_SYMBOL_GPL(iopgtable_clear_entry_all);
+ /*
+  *	Device IOMMU generic operations
+  */
+@@ -1068,6 +1061,7 @@ static void iopte_cachep_ctor(void *iopte)
+ 	clean_dcache_area(iopte, IOPTE_TABLE_SIZE);
+ }
+ 
++
+ static int __init omap_iommu_init(void)
+ {
+ 	struct kmem_cache *p;
+-- 
+1.7.0.4
+
