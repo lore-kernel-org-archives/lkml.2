@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab1CAU3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:29:19 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34849 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153Ab1CAU3S (ORCPT
+	id S932074Ab1CAUab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:30:31 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:51145 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757148Ab1CAUaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:29:18 -0500
-Date: Tue, 1 Mar 2011 20:28:43 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Simon Glass <sjg@chromium.org>
-Cc: Mikael Pettersson <mikpe@it.uu.se>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
-Message-ID: <20110301202843.GD27107@n2100.arm.linux.org.uk>
-References: <1298939263-16421-1-git-send-email-sjg@chromium.org> <20110301084949.GA16733@n2100.arm.linux.org.uk> <20110301085911.GB16733@n2100.arm.linux.org.uk> <19820.47240.801312.507393@pilspetsen.it.uu.se> <20110301100306.GA18007@n2100.arm.linux.org.uk> <AANLkTinMnZAupxn7oYFhqkN1Y0OD-eyN=UeRpw96no9r@mail.gmail.com>
+	Tue, 1 Mar 2011 15:30:30 -0500
+Date: Tue, 1 Mar 2011 15:30:29 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Pierre Tardy <tardyp@gmail.com>
+cc: linux-kernel@vger.kernel.org, <linux-pm@lists.linux-foundation.org>,
+        <linux-mmc@vger.kernel.org>
+Subject: Re: [linux-pm] [RFC,PATCHv3 0/3] sdhci runtime_pm implementation
+In-Reply-To: <AANLkTik5HVxoOCH1ZVj50nUsCA5E04Y0J0RaWw7_KyKw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1103011528230.2034-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinMnZAupxn7oYFhqkN1Y0OD-eyN=UeRpw96no9r@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 08:34:37AM -0800, Simon Glass wrote:
-> It seems I am lucky with the gcc I am using. I would have thought this
-> would be a pretty fundamental feature, but yes I did notice that %c
-> wasn't used anywhere.
+On Tue, 1 Mar 2011, Pierre Tardy wrote:
 
-It is, and I think it's something that I found back in 2002 or so.
-I've still not had the time yet to search out the bug report, and
-probably won't do for some time yet.
+> >> > Other drivers do it, but they use PCI PME# instead of interrupts.
+> >> Could you please elaborate?
+> >> My understanding is that PCI PME will generate MSI, which translate in
+> >> interrupt.
+> >
+> > It depends on the platform.  On systems with ACPI, PCI PME generates an
+> > ACPI I/O event, which is handled by the ACPI and PM cores.  It does not
+> > invoke the device driver's interrupt handler.
+> So, let's say, in the ACPI case, if the interrupt handler dont get
+> called, how would the driver know that he got a sdcard insert event,
+> and trigger a mmc_rescan() ?
 
-> Would this kernel feature be acceptable as a selectable config option
-> on ARM then?
+When the ACPI and PCI cores process the PME event, they call
+pm_runtime_resume().  The driver's runtime_resume routine would read
+the device status and see the insert event, which would cause it to
+trigger mmc_rescan().
 
-If I were to ask you if you knew which GCC version supported this,
-would you know that answer?
+Alan Stern
 
-If the answer to that is no, how would you expect people configuring
-the kernel to know whether they should enable or disable this option?
