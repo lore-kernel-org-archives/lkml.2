@@ -1,396 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab1CAThe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:37:34 -0500
-Received: from 206.83.70.71.ptr.us.xo.net ([206.83.70.71]:52545 "EHLO
+	id S1757281Ab1CATh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:37:57 -0500
+Received: from 206.83.70.71.ptr.us.xo.net ([206.83.70.71]:52544 "EHLO
 	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757254Ab1CATha (ORCPT
+	with ESMTP id S1756067Ab1CATh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:37:30 -0500
-Message-Id: <201103011935.p21JZZU0010332@farm-0010.internal.tilera.com>
+	Tue, 1 Mar 2011 14:37:28 -0500
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 14:37:17 EST
+Message-Id: <201103011935.p21JZWSl010331@farm-0010.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 1 Mar 2011 13:30:15 -0500
-Subject: [PATCH] arch/tile: fix deadlock bugs in rwlock implementation
-To: linux-kernel@vger.kernel.org
-CC: David Miller <davem@davemloft.net>, <xiyou.wangcong@gmail.com>,
-        <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTim1F679mmnbHnYkvi6ZDojxD-tPGer4F+61C+di@mail.gmail.com>
-References: <4D5DA60A.8080201@tilera.com>
-	<20110217.145333.232751283.davem@davemloft.net>
-	<4D5DA96D.5060200@tilera.com>
-	<20110217.151147.35033921.davem@davemloft.net>
-	<4D5DACC5.60105@tilera.com>
-X-OriginalArrivalTime: 01 Mar 2011 19:35:35.0373 (UTC) FILETIME=[D5EFC7D0:01CBD847]
+Date: Tue, 1 Mar 2011 13:01:49 -0500
+Subject: [PATCH] drivers/edac: provide support for tile architecture
+To: linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org
+X-OriginalArrivalTime: 01 Mar 2011 19:35:32.0873 (UTC) FILETIME=[D4724F90:01CBD847]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first issue fixed in this patch is that pending rwlock write locks
-could lock out new readers; this could cause a deadlock if a read lock was
-held on cpu 1, a write lock was then attempted on cpu 2 and was pending,
-and cpu 1 was interrupted and attempted to re-acquire a read lock.
-The write lock code was modified to not lock out new readers.
-
-The second issue fixed is that there was a narrow race window where a tns
-instruction had been issued (setting the lock value to "1") and the store
-instruction to reset the lock value correctly had not yet been issued.
-In this case, if an interrupt occurred and the same cpu then tried to
-manipulate the lock, it would find the lock value set to "1" and spin
-forever, assuming some other cpu was partway through updating it.  The fix
-is to enforce an interrupt critical section around the tns/store pair.
-
-Since these changes make the rwlock "fast path" code heavier weight,
-I decided to move all the rwlock code all out of line, leaving only the
-conventional spinlock code with fastpath inlines.
-
-As part of this change I also eliminate support for the now-obsolete
-tns_atomic mode.
+Add tile support for the EDAC driver, which provides unified system
+error (memory, PCI, etc.) reporting. For now, the TILEPro port
+reports memory correctable error (CE) only.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/include/asm/spinlock_32.h |   84 ++----------------
- arch/tile/lib/spinlock_32.c         |  163 +++++++++++++++++++++--------------
- 2 files changed, 108 insertions(+), 139 deletions(-)
+ arch/tile/include/asm/edac.h |   29 +++++
+ drivers/edac/Kconfig         |   10 ++-
+ drivers/edac/Makefile        |    1 +
+ drivers/edac/tile_edac.c     |  254 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 293 insertions(+), 1 deletions(-)
+ create mode 100644 arch/tile/include/asm/edac.h
+ create mode 100644 drivers/edac/tile_edac.c
 
-diff --git a/arch/tile/include/asm/spinlock_32.h b/arch/tile/include/asm/spinlock_32.h
-index 88efdde..32ba1fe 100644
---- a/arch/tile/include/asm/spinlock_32.h
-+++ b/arch/tile/include/asm/spinlock_32.h
-@@ -21,6 +21,7 @@
- #include <asm/page.h>
- #include <asm/system.h>
- #include <linux/compiler.h>
-+#include <arch/spr_def.h>
- 
- /*
-  * We only use even ticket numbers so the '1' inserted by a tns is
-@@ -78,13 +79,6 @@ void arch_spin_unlock_wait(arch_spinlock_t *lock);
- #define _RD_COUNT_SHIFT 24
- #define _RD_COUNT_WIDTH 8
- 
--/* Internal functions; do not use. */
--void arch_read_lock_slow(arch_rwlock_t *, u32);
--int arch_read_trylock_slow(arch_rwlock_t *);
--void arch_read_unlock_slow(arch_rwlock_t *);
--void arch_write_lock_slow(arch_rwlock_t *, u32);
--void arch_write_unlock_slow(arch_rwlock_t *, u32);
--
- /**
-  * arch_read_can_lock() - would read_trylock() succeed?
-  */
-@@ -104,94 +98,32 @@ static inline int arch_write_can_lock(arch_rwlock_t *rwlock)
- /**
-  * arch_read_lock() - acquire a read lock.
-  */
--static inline void arch_read_lock(arch_rwlock_t *rwlock)
--{
--	u32 val = __insn_tns((int *)&rwlock->lock);
--	if (unlikely(val << _RD_COUNT_WIDTH)) {
--		arch_read_lock_slow(rwlock, val);
--		return;
--	}
--	rwlock->lock = val + (1 << _RD_COUNT_SHIFT);
--}
-+void arch_read_lock(arch_rwlock_t *rwlock);
- 
- /**
-- * arch_read_lock() - acquire a write lock.
-+ * arch_write_lock() - acquire a write lock.
-  */
--static inline void arch_write_lock(arch_rwlock_t *rwlock)
--{
--	u32 val = __insn_tns((int *)&rwlock->lock);
--	if (unlikely(val != 0)) {
--		arch_write_lock_slow(rwlock, val);
--		return;
--	}
--	rwlock->lock = 1 << _WR_NEXT_SHIFT;
--}
-+void arch_write_lock(arch_rwlock_t *rwlock);
- 
- /**
-  * arch_read_trylock() - try to acquire a read lock.
-  */
--static inline int arch_read_trylock(arch_rwlock_t *rwlock)
--{
--	int locked;
--	u32 val = __insn_tns((int *)&rwlock->lock);
--	if (unlikely(val & 1))
--		return arch_read_trylock_slow(rwlock);
--	locked = (val << _RD_COUNT_WIDTH) == 0;
--	rwlock->lock = val + (locked << _RD_COUNT_SHIFT);
--	return locked;
--}
-+int arch_read_trylock(arch_rwlock_t *rwlock);
- 
- /**
-  * arch_write_trylock() - try to acquire a write lock.
-  */
--static inline int arch_write_trylock(arch_rwlock_t *rwlock)
--{
--	u32 val = __insn_tns((int *)&rwlock->lock);
--
--	/*
--	 * If a tns is in progress, or there's a waiting or active locker,
--	 * or active readers, we can't take the lock, so give up.
--	 */
--	if (unlikely(val != 0)) {
--		if (!(val & 1))
--			rwlock->lock = val;
--		return 0;
--	}
--
--	/* Set the "next" field to mark it locked. */
--	rwlock->lock = 1 << _WR_NEXT_SHIFT;
--	return 1;
--}
-+int arch_write_trylock(arch_rwlock_t *rwlock);
- 
- /**
-  * arch_read_unlock() - release a read lock.
-  */
--static inline void arch_read_unlock(arch_rwlock_t *rwlock)
--{
--	u32 val;
--	mb();  /* guarantee anything modified under the lock is visible */
--	val = __insn_tns((int *)&rwlock->lock);
--	if (unlikely(val & 1)) {
--		arch_read_unlock_slow(rwlock);
--		return;
--	}
--	rwlock->lock = val - (1 << _RD_COUNT_SHIFT);
--}
-+void arch_read_unlock(arch_rwlock_t *rwlock);
- 
- /**
-  * arch_write_unlock() - release a write lock.
-  */
--static inline void arch_write_unlock(arch_rwlock_t *rwlock)
--{
--	u32 val;
--	mb();  /* guarantee anything modified under the lock is visible */
--	val = __insn_tns((int *)&rwlock->lock);
--	if (unlikely(val != (1 << _WR_NEXT_SHIFT))) {
--		arch_write_unlock_slow(rwlock, val);
--		return;
--	}
--	rwlock->lock = 0;
--}
-+void arch_write_unlock(arch_rwlock_t *rwlock);
- 
- #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
- #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
-diff --git a/arch/tile/lib/spinlock_32.c b/arch/tile/lib/spinlock_32.c
-index 5cd1c40..723e789 100644
---- a/arch/tile/lib/spinlock_32.c
-+++ b/arch/tile/lib/spinlock_32.c
-@@ -91,75 +91,82 @@ EXPORT_SYMBOL(arch_spin_unlock_wait);
- #define RD_COUNT_MASK   ((1 << RD_COUNT_WIDTH) - 1)
- 
- 
--/* Lock the word, spinning until there are no tns-ers. */
--static inline u32 get_rwlock(arch_rwlock_t *rwlock)
+diff --git a/arch/tile/include/asm/edac.h b/arch/tile/include/asm/edac.h
+new file mode 100644
+index 0000000..87fc83e
+--- /dev/null
++++ b/arch/tile/include/asm/edac.h
+@@ -0,0 +1,29 @@
 +/*
-+ * We spin until everything but the reader bits (which are in the high
-+ * part of the word) are zero, i.e. no active or waiting writers, no tns.
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
 + *
-+ * We guard the tns/store-back with an interrupt critical section to
-+ * preserve the semantic that the same read lock can be acquired in an
-+ * interrupt context.
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
 + *
-+ * ISSUE: This approach can permanently starve readers.  A reader who sees
-+ * a writer could instead take a ticket lock (just like a writer would),
-+ * and atomically enter read mode (with 1 reader) when it gets the ticket.
-+ * This way both readers and writers will always make forward progress
-+ * in a finite time.
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
 + */
-+void arch_read_lock(arch_rwlock_t *rwlock)
- {
--	u32 iterations = 0;
-+	u32 val, iterations = 0;
 +
- 	for (;;) {
--		u32 val = __insn_tns((int *)&rwlock->lock);
--		if (unlikely(val & 1)) {
--			delay_backoff(iterations++);
--			continue;
-+		__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
-+		val = __insn_tns((int *)&rwlock->lock);
-+		if (likely((val << _RD_COUNT_WIDTH) == 0)) {
-+			rwlock->lock = val + (1 << RD_COUNT_SHIFT);
-+			__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
-+			break;
- 		}
--		return val;
-+		if ((val & 1) == 0)
-+			rwlock->lock = val;
-+		__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
-+		delay_backoff(iterations++);
- 	}
- }
-+EXPORT_SYMBOL(arch_read_lock);
- 
--int arch_read_trylock_slow(arch_rwlock_t *rwlock)
-+int arch_read_trylock(arch_rwlock_t *rwlock)
- {
--	u32 val = get_rwlock(rwlock);
--	int locked = (val << RD_COUNT_WIDTH) == 0;
--	rwlock->lock = val + (locked << RD_COUNT_SHIFT);
-+	u32 val;
-+	int locked;
++#ifndef _ASM_TILE_EDAC_H
++#define _ASM_TILE_EDAC_H
 +
-+	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
-+	val = __insn_tns((int *)&rwlock->lock);
-+	locked = ((val << _RD_COUNT_WIDTH) == 0);
-+	if (likely(locked))
-+		rwlock->lock = val + (1 << RD_COUNT_SHIFT);
-+	else if ((val & 1) == 0)
-+		rwlock->lock = val;
-+	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
- 	return locked;
- }
--EXPORT_SYMBOL(arch_read_trylock_slow);
-+EXPORT_SYMBOL(arch_read_trylock);
- 
--void arch_read_unlock_slow(arch_rwlock_t *rwlock)
-+void arch_read_unlock(arch_rwlock_t *rwlock)
- {
--	u32 val = get_rwlock(rwlock);
--	rwlock->lock = val - (1 << RD_COUNT_SHIFT);
--}
--EXPORT_SYMBOL(arch_read_unlock_slow);
-+	u32 val, iterations = 0;
- 
--void arch_write_unlock_slow(arch_rwlock_t *rwlock, u32 val)
--{
--	u32 eq, mask = 1 << WR_CURR_SHIFT;
--	while (unlikely(val & 1)) {
--		/* Limited backoff since we are the highest-priority task. */
--		relax(4);
-+	mb();  /* guarantee anything modified under the lock is visible */
-+	for (;;) {
-+		__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
- 		val = __insn_tns((int *)&rwlock->lock);
-+		if (likely(val & 1) == 0) {
-+			rwlock->lock = val - (1 << _RD_COUNT_SHIFT);
-+			__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
-+			break;
-+		}
-+		__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
-+		delay_backoff(iterations++);
- 	}
--	val = __insn_addb(val, mask);
--	eq = __insn_seqb(val, val << (WR_CURR_SHIFT - WR_NEXT_SHIFT));
--	val = __insn_mz(eq & mask, val);
--	rwlock->lock = val;
- }
--EXPORT_SYMBOL(arch_write_unlock_slow);
-+EXPORT_SYMBOL(arch_read_unlock);
- 
- /*
-- * We spin until everything but the reader bits (which are in the high
-- * part of the word) are zero, i.e. no active or waiting writers, no tns.
-- *
-- * ISSUE: This approach can permanently starve readers.  A reader who sees
-- * a writer could instead take a ticket lock (just like a writer would),
-- * and atomically enter read mode (with 1 reader) when it gets the ticket.
-- * This way both readers and writers will always make forward progress
-- * in a finite time.
-+ * We don't need an interrupt critical section here (unlike for
-+ * arch_read_lock) since we should never use a bare write lock where
-+ * it could be interrupted by code that could try to re-acquire it.
-  */
--void arch_read_lock_slow(arch_rwlock_t *rwlock, u32 val)
--{
--	u32 iterations = 0;
--	do {
--		if (!(val & 1))
--			rwlock->lock = val;
--		delay_backoff(iterations++);
--		val = __insn_tns((int *)&rwlock->lock);
--	} while ((val << RD_COUNT_WIDTH) != 0);
--	rwlock->lock = val + (1 << RD_COUNT_SHIFT);
--}
--EXPORT_SYMBOL(arch_read_lock_slow);
--
--void arch_write_lock_slow(arch_rwlock_t *rwlock, u32 val)
-+void arch_write_lock(arch_rwlock_t *rwlock)
- {
- 	/*
- 	 * The trailing underscore on this variable (and curr_ below)
-@@ -168,6 +175,12 @@ void arch_write_lock_slow(arch_rwlock_t *rwlock, u32 val)
- 	 */
- 	u32 my_ticket_;
- 	u32 iterations = 0;
-+	u32 val = __insn_tns((int *)&rwlock->lock);
++/* ECC atomic, DMA, SMP and interrupt safe scrub function */
 +
-+	if (likely(val == 0)) {
-+		rwlock->lock = 1 << _WR_NEXT_SHIFT;
-+		return;
-+	}
- 
- 	/*
- 	 * Wait until there are no readers, then bump up the next
-@@ -206,23 +219,47 @@ void arch_write_lock_slow(arch_rwlock_t *rwlock, u32 val)
- 			relax(4);
- 	}
- }
--EXPORT_SYMBOL(arch_write_lock_slow);
-+EXPORT_SYMBOL(arch_write_lock);
- 
--int __tns_atomic_acquire(atomic_t *lock)
-+int arch_write_trylock(arch_rwlock_t *rwlock)
- {
--	int ret;
--	u32 iterations = 0;
-+	u32 val = __insn_tns((int *)&rwlock->lock);
- 
--	BUG_ON(__insn_mfspr(SPR_INTERRUPT_CRITICAL_SECTION));
--	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
++static inline void atomic_scrub(void *va, u32 size)
++{
 +	/*
-+	 * If a tns is in progress, or there's a waiting or active locker,
-+	 * or active readers, we can't take the lock, so give up.
++	 * These is nothing to be done here because CE is
++	 * corrected by the mshim.
 +	 */
-+	if (unlikely(val != 0)) {
-+		if (!(val & 1))
-+			rwlock->lock = val;
-+		return 0;
-+	}
- 
--	while ((ret = __insn_tns((void *)&lock->counter)) == 1)
--		delay_backoff(iterations++);
--	return ret;
-+	/* Set the "next" field to mark it locked. */
-+	rwlock->lock = 1 << _WR_NEXT_SHIFT;
-+	return 1;
- }
-+EXPORT_SYMBOL(arch_write_trylock);
- 
--void __tns_atomic_release(atomic_t *p, int v)
-+void arch_write_unlock(arch_rwlock_t *rwlock)
- {
--	p->counter = v;
--	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
-+	u32 val, eq, mask;
++	return;
++}
 +
-+	mb();  /* guarantee anything modified under the lock is visible */
-+	val = __insn_tns((int *)&rwlock->lock);
-+	if (likely(val == (1 << _WR_NEXT_SHIFT))) {
-+		rwlock->lock = 0;
++#endif /* _ASM_TILE_EDAC_H */
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index fe70a34..fac1a20 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -7,7 +7,7 @@
+ menuconfig EDAC
+ 	bool "EDAC (Error Detection And Correction) reporting"
+ 	depends on HAS_IOMEM
+-	depends on X86 || PPC
++	depends on X86 || PPC || TILE
+ 	help
+ 	  EDAC is designed to report errors in the core system.
+ 	  These are low-level errors that are reported in the CPU or
+@@ -282,4 +282,12 @@ config EDAC_CPC925
+ 	  a companion chip to the PowerPC 970 family of
+ 	  processors.
+ 
++config EDAC_TILE
++	tristate "Tilera Memory Controller"
++	depends on EDAC_MM_EDAC && TILE
++	default y
++	help
++	  Support for error detection and correction on the
++	  Tilera memory controller.
++
+ endif # EDAC
+diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+index ba2898b..3e23913 100644
+--- a/drivers/edac/Makefile
++++ b/drivers/edac/Makefile
+@@ -54,3 +54,4 @@ obj-$(CONFIG_EDAC_PPC4XX)		+= ppc4xx_edac.o
+ obj-$(CONFIG_EDAC_AMD8111)		+= amd8111_edac.o
+ obj-$(CONFIG_EDAC_AMD8131)		+= amd8131_edac.o
+ 
++obj-$(CONFIG_EDAC_TILE)			+= tile_edac.o
+diff --git a/drivers/edac/tile_edac.c b/drivers/edac/tile_edac.c
+new file mode 100644
+index 0000000..1d5cf06
+--- /dev/null
++++ b/drivers/edac/tile_edac.c
+@@ -0,0 +1,254 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ * Tilera-specific EDAC driver.
++ *
++ * This source code is derived from the following driver:
++ *
++ * Cell MIC driver for ECC counting
++ *
++ * Copyright 2007 Benjamin Herrenschmidt, IBM Corp.
++ *                <benh@kernel.crashing.org>
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/io.h>
++#include <linux/uaccess.h>
++#include <linux/edac.h>
++#include <hv/hypervisor.h>
++#include <hv/drv_mshim_intf.h>
++
++#include "edac_core.h"
++
++#define DRV_NAME	"tile-edac"
++
++/* Number of cs_rows needed per memory controller on TILEPro. */
++#define TILE_EDAC_NR_CSROWS	1
++
++/* Number of channels per memory controller on TILEPro. */
++#define TILE_EDAC_NR_CHANS	1
++
++/* Granularity of reported error in bytes on TILEPro. */
++#define TILE_EDAC_ERROR_GRAIN	8
++
++/* TILE processor has multiple independent memory controllers. */
++struct platform_device *mshim_pdev[TILE_MAX_MSHIMS];
++
++struct tile_edac_priv {
++	int		hv_devhdl;	/* Hypervisor device handle. */
++	int		node;		/* Memory controller instance #. */
++	unsigned int	ce_count;	/*
++					 * Correctable-error counter
++					 * kept by the driver.
++					 */
++};
++
++static void tile_edac_check(struct mem_ctl_info *mci)
++{
++	struct tile_edac_priv	*priv = mci->pvt_info;
++	struct mshim_mem_error	mem_error;
++
++	if (hv_dev_pread(priv->hv_devhdl, 0, (HV_VirtAddr)&mem_error,
++		sizeof(struct mshim_mem_error), MSHIM_MEM_ERROR_OFF) !=
++		sizeof(struct mshim_mem_error)) {
++		pr_err(DRV_NAME ": MSHIM_MEM_ERROR_OFF pread failure.\n");
 +		return;
 +	}
-+	while (unlikely(val & 1)) {
-+		/* Limited backoff since we are the highest-priority task. */
-+		relax(4);
-+		val = __insn_tns((int *)&rwlock->lock);
++
++	/* Check if the current error count is different from the saved one. */
++	if (mem_error.sbe_count != priv->ce_count) {
++		dev_dbg(mci->dev, "ECC CE err on node %d\n", priv->node);
++		priv->ce_count = mem_error.sbe_count;
++		edac_mc_handle_ce(mci, 0, 0, 0, 0, 0, mci->ctl_name);
 +	}
-+	mask = 1 << WR_CURR_SHIFT;
-+	val = __insn_addb(val, mask);
-+	eq = __insn_seqb(val, val << (WR_CURR_SHIFT - WR_NEXT_SHIFT));
-+	val = __insn_mz(eq & mask, val);
-+	rwlock->lock = val;
- }
-+EXPORT_SYMBOL(arch_write_unlock);
++}
++
++/*
++ * Initialize the 'csrows' table within the mci control structure with the
++ * addressing of memory.
++ */
++static int __devinit tile_edac_init_csrows(struct mem_ctl_info *mci)
++{
++	struct csrow_info	*csrow = &mci->csrows[0];
++	struct tile_edac_priv	*priv = mci->pvt_info;
++	struct mshim_mem_info	mem_info;
++
++	if (hv_dev_pread(priv->hv_devhdl, 0, (HV_VirtAddr)&mem_info,
++		sizeof(struct mshim_mem_info), MSHIM_MEM_INFO_OFF) !=
++		sizeof(struct mshim_mem_info)) {
++		pr_err(DRV_NAME ": MSHIM_MEM_INFO_OFF pread failure.\n");
++		return -1;
++	}
++
++	if (mem_info.mem_ecc)
++		csrow->edac_mode = EDAC_SECDED;
++	else
++		csrow->edac_mode = EDAC_NONE;
++	switch (mem_info.mem_type) {
++	case DDR2:
++		csrow->mtype = MEM_DDR2;
++		break;
++
++	case DDR3:
++		csrow->mtype = MEM_DDR3;
++		break;
++
++	default:
++		return -1;
++	}
++
++	csrow->first_page = 0;
++	csrow->nr_pages = mem_info.mem_size >> PAGE_SHIFT;
++	csrow->last_page = csrow->first_page + csrow->nr_pages - 1;
++	csrow->grain = TILE_EDAC_ERROR_GRAIN;
++	csrow->dtype = DEV_UNKNOWN;
++
++	return 0;
++}
++
++static int __devinit tile_edac_mc_probe(struct platform_device *pdev)
++{
++	char			hv_file[32];
++	int			hv_devhdl;
++	struct mem_ctl_info	*mci;
++	struct tile_edac_priv	*priv;
++	int			rc;
++
++	sprintf(hv_file, "mshim/%d", pdev->id);
++	hv_devhdl = hv_dev_open((HV_VirtAddr)hv_file, 0);
++	if (hv_devhdl < 0)
++		return -EINVAL;
++
++	/* A TILE MC has a single channel and one chip-select row. */
++	mci = edac_mc_alloc(sizeof(struct tile_edac_priv),
++		TILE_EDAC_NR_CSROWS, TILE_EDAC_NR_CHANS, pdev->id);
++	if (mci == NULL)
++		return -ENOMEM;
++	priv = mci->pvt_info;
++	priv->node = pdev->id;
++	priv->hv_devhdl = hv_devhdl;
++
++	mci->dev = &pdev->dev;
++	mci->mtype_cap = MEM_FLAG_DDR2;
++	mci->edac_ctl_cap = EDAC_FLAG_SECDED;
++
++	mci->mod_name = DRV_NAME;
++	mci->ctl_name = "TILEPro_Memory_Controller";
++	mci->dev_name = dev_name(&pdev->dev);
++	mci->edac_check = tile_edac_check;
++
++	/*
++	 * Initialize the MC control structure 'csrows' table
++	 * with the mapping and control information.
++	 */
++	if (tile_edac_init_csrows(mci)) {
++		/* No csrows found. */
++		mci->edac_cap = EDAC_FLAG_NONE;
++	} else {
++		mci->edac_cap = EDAC_FLAG_SECDED;
++	}
++
++	platform_set_drvdata(pdev, mci);
++
++	/* Register with EDAC core */
++	rc = edac_mc_add_mc(mci);
++	if (rc) {
++		dev_err(&pdev->dev, "failed to register with EDAC core\n");
++		edac_mc_free(mci);
++		return rc;
++	}
++
++	return 0;
++}
++
++static int __devexit tile_edac_mc_remove(struct platform_device *pdev)
++{
++	struct mem_ctl_info *mci = platform_get_drvdata(pdev);
++
++	edac_mc_del_mc(&pdev->dev);
++	if (mci)
++		edac_mc_free(mci);
++	return 0;
++}
++
++static struct platform_driver tile_edac_mc_driver = {
++	.driver		= {
++		.name	= DRV_NAME,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= tile_edac_mc_probe,
++	.remove		= __devexit_p(tile_edac_mc_remove),
++};
++
++/*
++ * Driver init routine.
++ */
++static int __init tile_edac_init(void)
++{
++	char	hv_file[32];
++	struct platform_device *pdev;
++	int i, err, num = 0;
++
++	/* Only support POLL mode. */
++	edac_op_state = EDAC_OPSTATE_POLL;
++
++	err = platform_driver_register(&tile_edac_mc_driver);
++	if (err)
++		return err;
++
++	for (i = 0; i < TILE_MAX_MSHIMS; i++) {
++		/*
++		 * Not all memory controllers are configured such as in the
++		 * case of a simulator. So we register only those mshims
++		 * that are configured by the hypervisor.
++		 */
++		sprintf(hv_file, "mshim/%d", i);
++		if (hv_dev_open((HV_VirtAddr)hv_file, 0) < 0)
++			continue;
++
++		pdev = platform_device_register_simple(DRV_NAME, i, NULL, 0);
++		if (IS_ERR(pdev))
++			continue;
++		mshim_pdev[i] = pdev;
++		num++;
++	}
++
++	if (num == 0) {
++		platform_driver_unregister(&tile_edac_mc_driver);
++		return -ENODEV;
++	}
++	return 0;
++}
++
++/*
++ * Driver cleanup routine.
++ */
++static void __exit tile_edac_exit(void)
++{
++	int i;
++
++	for (i = 0; i < TILE_MAX_MSHIMS; i++) {
++		struct platform_device *pdev = mshim_pdev[i];
++		if (!pdev)
++			continue;
++
++		platform_set_drvdata(pdev, NULL);
++		platform_device_unregister(pdev);
++	}
++	platform_driver_unregister(&tile_edac_mc_driver);
++}
++
++module_init(tile_edac_init);
++module_exit(tile_edac_exit);
 -- 
 1.6.5.2
 
