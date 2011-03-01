@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab1CAAcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 19:32:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33343 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753489Ab1CAAcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 19:32:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,244,1297065600"; 
-   d="scan'208";a="714380033"
-Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1298905892.5226.849.camel@laptop>
-References: <1298877772.4937.25.camel@minggr.sh.intel.com>
-	 <1298884559.2428.10083.camel@twins>  <1298904994.2169.60.camel@localhost>
-	 <1298905892.5226.849.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Mar 2011 08:32:23 +0800
-Message-ID: <1298939543.4937.44.camel@minggr.sh.intel.com>
+	id S1754976Ab1CAAjw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 19:39:52 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40169 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab1CAAjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 19:39:51 -0500
+Subject: Re: [PATCH 0/5] target updates for scsi-post-merge .39 (round one,
+	v2)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Joel Becker <jlbec@evilplan.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <1298938784.2487.72.camel@mulgrave.site>
+References: <1298938651-18784-1-git-send-email-nab@linux-iscsi.org>
+	 <1298938784.2487.72.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Mon, 28 Feb 2011 16:33:05 -0800
+Message-Id: <1298939585.5401.270.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 23:11 +0800, Peter Zijlstra wrote:
-> On Mon, 2011-02-28 at 22:56 +0800, Lin Ming wrote:
-> > @@ -740,13 +740,6 @@ static void intel_ds_init(void)
-> >                         printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
-> >                         x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
-> >                         x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
-> > -                       switch (boot_cpu_data.x86_model) {
-> > -                       case 42: /* SandyBridge */
-> > -                               x86_pmu.pebs_constraints = intel_snb_pebs_events;
-> > -                               break;
-> > -                       default:
-> > -                               x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
-> > -                       }
-> >                         break; 
+On Mon, 2011-02-28 at 18:19 -0600, James Bottomley wrote:
+> On Mon, 2011-02-28 at 16:17 -0800, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > Hi James and Co,
+> > 
+> > The following is the first round (v2) of target patches intended for .39
+> > scsi-post-merge tree that introduces new target functionality and the
+> > first mainline TCM fabric module (TCM_Loop).
 > 
-> it looks like you lost the nhm table assignment
+> OK, what postmerge tree?  There haven't been any conflicts this merge
+> cycle that necessitate running one.  Do you mean you want these after
+> the merge window for some reason?
+> 
 
-Ah, yes. Will update all in v3 patch.
+Not really.  What I meant here is that this series needs to be applied
+after the original 14 part series 'for .39 scsi-misc' fixes held over
+for .38..
+
+I was not sure if scsi-misc was for fixes only now, and if new target
+code (like this series) should be going into scsi-post-merge or what..
+So it sounds like this series for configfs statistics infrastructure and
+initial TCM_Loop merge should be going through scsi-misc as well for
+mainline .39, yes..?
+
+Also, just another heads up in TCM fabric module land.  At this point in
+lio-core-2.6.git/lio-4.1, drivers/target/iscsi/ has been fully converted
+to use mainline libiscsi -> include/scsi/iscsi_proto.h definitions with
+a few small additions/corrections.  This also includes a new set of
+iSCSI fabric dependent ConfigFS statistics groups, and include the
+removal of legacy ProcFS code from iscsi_target_mod.
+
+The full iscsi_target_mod series will be posted in the next days for
+review and comments.
+
+Best Regards,
+
+--nab
+
 
 
