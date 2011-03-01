@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab1CAQ7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:59:32 -0500
-Received: from smtp.getmail.no ([84.208.15.66]:50319 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752466Ab1CAQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756943Ab1CAQ7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:59:41 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56731 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab1CAQ7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Mar 2011 11:59:31 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org, clemens@ladisch.de
-Subject: Re: Possible bug, with extreme low latency audio.
-References: <op.vrm3n5yy6426ze@millennium> <4D6CD10E.3050805@ladisch.de>
-Date: Tue, 01 Mar 2011 17:59:27 +0100
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.vrob5de16426ze@millennium>
-In-reply-to: <4D6CD10E.3050805@ladisch.de>
-User-Agent: Opera Mail/11.01 (Linux)
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=WoOSC7BiWfOM3V0mhtuMhM2nJ4Fl1Srdumqtz0D69/XZlXaHcT0EuRYYnZGN1swxUJ
+         l0vUrrPYLTXklxZiTmpSbKs5vEk/EFy/zUzCh7UbsgSHvYXlAph1BTaGSAyuAr4LFWov
+         E7lIyrCxUCp4PDBDC+QJUfEjlLH4hPRagipUo=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] Proposal for ptrace improvements
+Date: Tue, 1 Mar 2011 17:57:48 +0100
+User-Agent: KMail/1.8.2
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+References: <20110301152457.GE26074@htj.dyndns.org>
+In-Reply-To: <20110301152457.GE26074@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201103011757.48593.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Mar 2011 11:57:18 +0100, Clemens Ladisch <clemens@ladisch.de>  
-wrote:
+On Tuesday 01 March 2011 16:24, Tejun Heo wrote:
+> PROPOSAL
+> --------
+> ...
+> P3. Keep ptrace resume separate from and beneath jctl stop
+> 
+> As written above, I think the current ptrace behavior, despite a lot
+> of rough edges, is in the right direction in that ptrace operates
+> beneath jctl.  Therefore, keep the basic operation principles but
+> clearly define how jctl and ptrace interacts, or rather, how they
+> don't.  The following two rules clearly separate jctl and ptrace.
+> 
+> * jctl stop initiates when one of the stop signals is received and
+>   completes when all the member tasks participate in the group stop,
+>   where participation preciesly means that a member task stops in
+>   do_signal_stop().  Any member task can only participate once in any
+>   given group stop.  ptrace does NOT make any difference in this
+>   regard.
 
-> Uwaysi Bin Kareem wrote:
->> I have shaved a kernel for features I suspected to add to os-jitter, to
->> get the lowest possible latency from it.
->>
->> What happens is, if I set my audioapp, (renoise) to extremely low
->> latencies, (96khz, 8 samples buffers x 2), the audio seems to be
->> distorting and speeding up, while having periods of normal playback.
->
-> I'd guess that buffer is so small that it's smaller than the DMA FIFO
-> and/or the DMA burst size of the sound device (whatever it is) so that
-> the DMA controller is not able to accurately report the current position
-> in the buffer.
->
-> Obviously, the lowest possible latency is higher than 167 µs.
+This proposal adds a new rule for handling of stop notification
+by debuggers. Let's spell it out, because currently strace
+doesn't act according to this new rule:
 
-Actually I have to different audiocards here. The one with the problem is  
-an nvidia onboard soundchip.
-It seems to behave like this, with my current .config, with latencies  
-below 1 ms. With an unshaved earlier .config, on 2.6.33, latencies would  
-not go below 1 ms on this card, but the audio would become noisy and  
-distorted. On 2.6.36 this has changed to 0.5ms. And shaving the kernel,  
-allows one to go even lower.
 
-00:10.1 Audio device: nVidia Corporation MCP51 High Definition Audio (rev  
-a2)
-	Subsystem: Micro-Star International Co., Ltd. Device 7380
-	Flags: bus master, 66MHz, fast devsel, latency 0, IRQ 22
-	Memory at f9ff8000 (32-bit, non-prefetchable) [size=16K]
-	Capabilities: <access denied>
-	Kernel driver in use: HDA Intel
-	Kernel modules: snd-hda-intel
+"When waitpid indicates stop on a *stop* signal, then it may be either:
+* a signal delivery (strace will inject this signal with PTRACE_SYSCALL(sig));
+* or it may be a stop notification, in which case strace *must not*
+  try to inject this signal (this would be a bug, it'd make task running).
+  Instead, strace should just go back to waiting in waitpid().
 
-The other is a firewire device (Konnekt24d using FFADO, running on the old  
-firewire stack).
-The firewire device actually plays nicely without much buffer underruns  
-down to 0.363 ms latency (8x2 @ 44.1k).
-However it seems to choke at 8x2 @ 96k. Glitching, because of buffer  
-underruns aren't the main problem here either, but the sound will  
-disappear for large amounts of time.
+These two possibilities can be distinquished by querying
+PTRACE_GETSIGINFO. On stop notifications, PTRACE_GETSIGINFO
+errors out - stop notification is not a signal delivery
+and therefore it has no siginfo."
+
+
+This is easy to implement (in strace at least).
+
+> * However, PTRACE_DETACH should maintain the integrity of group stop.
+>   After a tracee is detached, it should be in a state which is
+>   conformant to the current jctl state.  If jctl stop is in effect,
+>   the task should be put into TASK_STOPPED; otherwise, TASK_RUNNING.
+
+This means that without changes to gdb, this:
+
+# gdb -p pid_of_application_currently_in_jctl_stop
+(gdb) print getpid()
+(gdb) print show_me_your_internal_debug_dump()
+(gdb) continue
+
+will make application run, whereas this:
+
+# gdb -p pid_of_application_currently_in_jctl_stop
+(gdb) print getpid()
+(gdb) print show_me_your_internal_debug_dump()
+(gdb) quit
+
+will leave application stopped. This looks a bit inconsistent to me.
+
+Do you propose gdb to be chaged so that "continue" command
+issues PTRACE_CONT only if gdb knows that application is not
+in jctl stop?
+
+-- 
+vda
