@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab1CAKBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 05:01:44 -0500
-Received: from inx.pm.waw.pl ([195.116.170.130]:50431 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756146Ab1CAKBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 05:01:42 -0500
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org
-Subject: Re: NEC ND-4550A problems reading DVD-R
-References: <m339n7g7tw.fsf@intrepid.localdomain>
-	<20110301080153.GA26074@htj.dyndns.org>
-Date: Tue, 01 Mar 2011 11:01:41 +0100
-In-Reply-To: <20110301080153.GA26074@htj.dyndns.org> (Tejun Heo's message of
-	"Tue, 1 Mar 2011 09:01:53 +0100")
-Message-ID: <m37hcjgnwa.fsf@intrepid.localdomain>
+	id S1756082Ab1CAKDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 05:03:44 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47301 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755686Ab1CAKDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 05:03:42 -0500
+Date: Tue, 1 Mar 2011 10:03:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Simon Glass <sjg@chromium.org>, linux-kernel@vger.kernel.org,
+        Rabin Vincent <rabin@rab.in>, Alexander Shishkin <virtuoso@slind.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
+Message-ID: <20110301100306.GA18007@n2100.arm.linux.org.uk>
+References: <1298939263-16421-1-git-send-email-sjg@chromium.org> <20110301084949.GA16733@n2100.arm.linux.org.uk> <20110301085911.GB16733@n2100.arm.linux.org.uk> <19820.47240.801312.507393@pilspetsen.it.uu.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <19820.47240.801312.507393@pilspetsen.it.uu.se>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Tue, Mar 01, 2011 at 10:12:40AM +0100, Mikael Pettersson wrote:
+> Russell King - ARM Linux writes:
+>  > On Tue, Mar 01, 2011 at 08:49:49AM +0000, Russell King - ARM Linux wrote:
+>  > > On Mon, Feb 28, 2011 at 04:27:43PM -0800, Simon Glass wrote:
+>  > > > +	asm volatile("1:\t.word %c3\n"				\
+>  > > > +		     ".pushsection __bug_table,\"a\"\n"		\
+>  > > > +		     "2:\t.word 1b, %c0\n"			\
+>  > > > +		     "\t.hword %c1, 0\n"			\
+>  > > > +		     "\t.org 2b+%c2\n"				\
+>  > > 
+>  > > %c doesn't work on lots of versions of gcc, which is why we can't use
+>  > > the generic bug support.  There's no way to reliably generate constants
+>  > > without many compiler versions spitting out a '#' before them.
+>  > 
+>  > gcc 4.3.2:
+>  > 
+>  > asm(".word %c0" : : "i" (0));
+>  > 
+>  > produces:
+>  > 
+>  >         .word #0
+>  > 
+>  > which gas chokes on:
+>  > 
+>  > /tmp/cc2hGOHd.s:12: Error: bad expression
+>  > /tmp/cc2hGOHd.s:12: Error: junk at end of line, first unrecognized character is `0'
+>  > 
+>  > So what this means is that it's impossible to generate constants in
+>  > assembly with GCC targetting ARM without having them prefixed by '#',
+>  > which in turn makes it impossible to use the generic BUG support.
+>  > 
+>  > I reported this bug to gcc folk many years ago.  I've no idea which
+>  > version it has been fixed in or if it's even been fixed.
+> 
+> What's the gcc bugzilla bug number?
 
-> I think that's determined by drivers/scsi/sr.h::SR_TIMEOUT which is
-> hardcoded to be 30 seconds.  Maybe it's better to move it to use the
-> block parameter.  Anyways, the drive actually takes longer than 30secs
-> to recognize the media?
-
-Yes, sometimes it takes e.g. 18 seconds, and sometimes it's 33 secs or
-something alike. It's quite random.
-
-Perhaps we should have a longer timeout only while mounting the media?
-
-> Eeek, ugly.  Isn't there firmware update available for the drive?
-
-1.09 is already the latest. It's a '2005 drive.
-
-Thanks.
--- 
-Krzysztof Halasa
+No idea off hand - I'll have to search for that.
