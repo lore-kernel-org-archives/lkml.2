@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1CAODo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 09:03:44 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:37572 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753717Ab1CAODm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 09:03:42 -0500
-From: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Vitaly Wool <vitalywool@gmail.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Pavan Savoy <pavan_savoy@sify.com>
-Date: Tue, 1 Mar 2011 15:02:56 +0100
-Subject: RE: [PATCH 00/11] mfd and bluetooth: Add CG2900 suppor
-Thread-Topic: [PATCH 00/11] mfd and bluetooth: Add CG2900 suppor
-Thread-Index: AcvXmPrH1+DwSB0cRziwpgo9aLm8UwAgDwrg
-Message-ID: <AFCDDB4A3EA003429EEF1E7B211FDBBA334C187A7F@EXDCVYMBSTM005.EQ1STM.local>
-References: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-	<201101061946.04790.arnd@arndb.de>
-	<AANLkTikJMx2QxYwXS_TrKK5hcnD3G0MNvEiDO+xAZrpo@mail.gmail.com>
-	<201101091955.05174.arnd@arndb.de>
-	<AFCDDB4A3EA003429EEF1E7B211FDBBA334C0FB0E2@EXDCVYMBSTM005.EQ1STM.local>
-	<AANLkTi=HvRTfo84L_VwOVtVq5hfb1g+9ueH6SX8FWF2b@mail.gmail.com>
-	<AANLkTik3hiNj7=K+uE6eQW2CokZtCz7Zwvt-+6PkD_Mo@mail.gmail.com>
- <AANLkTimcBL6D7bGGt-QSWDEE=nnpK0hy1CQZK_JEmEYA@mail.gmail.com>
-In-Reply-To: <AANLkTimcBL6D7bGGt-QSWDEE=nnpK0hy1CQZK_JEmEYA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755065Ab1CAOIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:08:02 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35316 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754619Ab1CAOIB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 09:08:01 -0500
+Date: Tue, 1 Mar 2011 14:07:43 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
+        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Stalin Srinivasan" <stalin.s@mistralsolutions.com>
+Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
+Message-ID: <20110301140743.0b9cf140@lxorguk.ukuu.org.uk>
+In-Reply-To: <99CE1730AA2F4F2F91AFA71BD75FDC41@subhasishg>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
+	<1297435892-28278-14-git-send-email-subhasish@mistralsolutions.com>
+	<20110211162814.6ff274f1@lxorguk.ukuu.org.uk>
+	<A6D1CF0E941748448610BE8874FC586F@subhasishg>
+	<20110222111103.5d0dd0a7@lxorguk.ukuu.org.uk>
+	<99CE1730AA2F4F2F91AFA71BD75FDC41@subhasishg>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As you say, I think it could be good to put it into staging so we have a driver in place and then we can continue discussing the architecture from there.
+> I tried using a tasklet for the TX part, but that did not help.
+> Another way is to prepare the buffer for the next read and read the data 
+> immediately.
+> Something like this:
+> 
+> 1. Call tty_prepare_flip_string while startup.
+> 2. When the read interrupt arrives, read the data immediately.
+> 3. Call tty_prepare_flip_string for the next read.
 
-/P-G
+Only you then don't know the size of space required/
 
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> Sent: den 28 februari 2011 23:44
-> To: Vitaly Wool; Par-Gunnar Hjalmdahl
-> Cc: Par-Gunnar HJALMDAHL; Samuel Ortiz; Marcel Holtmann; Lee Jones;
-> Alan Cox; Arnd Bergmann; linux-bluetooth@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Lukasz Rymanowski; Pavan Savoy
-> Subject: Re: [PATCH 00/11] mfd and bluetooth: Add CG2900 suppor
-> 
-> On Fri, Feb 25, 2011 at 6:55 PM, Vitaly Wool <vitalywool@gmail.com>
-> wrote:
-> 
-> > Making hardware work is, if course, a valid point, but porting a
-> windows
-> > driver would do that as well, and it's not the reason to pull windows
-> > drivers' ports into mainline.
-> 
-> Yeah hm, that sounds like it has "drivers/staging" printed all over it
-> then,
-> so either we solve these issues or we need to put it into staging so we
-> can get help from others in fixing it up (we have a similar situation
-> with
-> the U8500 graphics stuff).
-> 
-> P-G do you think it would be proper to take this into staging for the
-> moment, or do you prefer to drive it outside the mainline kernel tree
-> until
-> it lands in the proper place(s)?
-> 
-> Yours,
-> Linus Walleij
+> Again, the problem here is that we need to use global variables to store the 
+> pre-allocated buffers
+
+You don't. You can store them per port in the existing objects !
+
+> The best way is if we can keep the current implementation, one extra copy is 
+> not hurting us
+> as we do it after the read_data API.
+
+No problem with that at all.
+
