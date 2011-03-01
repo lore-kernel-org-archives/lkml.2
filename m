@@ -1,242 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab1CASZy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 13:25:54 -0500
-Received: from xenotime.net ([184.105.210.51]:42411 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752551Ab1CASZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 13:25:53 -0500
-Date: Tue, 1 Mar 2011 10:25:46 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        apw@canonical.com
-Subject: Re: [PATCH 6/6 v6] overlay: overlay filesystem documentation
-Message-Id: <20110301102546.11b98682.rdunlap@xenotime.net>
-In-Reply-To: <20110301123711.818662770@szeredi.hu>
-References: <20110301123645.189703316@szeredi.hu>
-	<20110301123711.818662770@szeredi.hu>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756652Ab1CAS3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 13:29:46 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50807 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753459Ab1CAS3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 13:29:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110301175026.GA18770@us.ibm.com>
+References: <20110301175026.GA18770@us.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 1 Mar 2011 10:29:23 -0800
+Message-ID: <AANLkTikwSXN8VgDaoUqfHcxoTNxW9uA4D2fUtRLuLbHo@mail.gmail.com>
+Subject: Re: matroxfb: remove incorrect Matrox G200eV support
+To: Gary Hade <garyhade@us.ibm.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        Krzysztof Helt <krzysztof.h1@wp.pl>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Mar 2011 13:36:51 +0100 Miklos Szeredi wrote:
+On Tue, Mar 1, 2011 at 9:50 AM, Gary Hade <garyhade@us.ibm.com> wrote:
+>
+> Remove incorrect Matrox G200eV support that was previously added
+> by commit e3a1938805d2e81b27d3d348788644f3bad004f2
 
-> From: Neil Brown <neilb@suse.de>
-> 
-> Document the overlay filesystem.
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  Documentation/filesystems/overlayfs.txt |  163 ++++++++++++++++++++++++++++++++
->  1 file changed, 163 insertions(+)
-> 
-> Index: linux-2.6/Documentation/filesystems/overlayfs.txt
-> ===================================================================
-> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-> +++ linux-2.6/Documentation/filesystems/overlayfs.txt	2011-03-01 12:18:20.000000000 +0100
-> @@ -0,0 +1,163 @@
-> +Written by: Neil Brown <neilb@suse.de>
-> +
-> +Overlay Filesystem
-> +==================
-> +
-> +This document describes a prototype for a new approach to providing
-> +overlay-filesystem functionality in Linux (sometimes referred to as
-> +union-filesystems).  An overlay-filesystem tries to present a
-> +filesystem which is the result over overlaying one filesystem on top
-> +of the other.
-> +
-> +The result will inevitably fail to look exactly like a normal
-> +filesystem for various technical reasons.  The expectation is that
-> +many use cases will be able to ignore these differences.
-> +
-> +This approach is 'hybrid' because the objects that appear in the
-> +filesystem do not all appear to belong to that filesystem.  In many
-> +case an object accessed in the union will be indistinguishable
+That commit goes back to 2.6.28 (and is dated Oct 2008).
 
-   cases
+That means that you really need to describe the problem more:
 
-> +from accessing the corresponding object from the original filesystem.
-> +This is most obvious from the 'st_dev' field returned by stat(2).
-> +
-> +While directories will report an st_dev for the overlay-filesystem,
-> +all non-directory objects will report an st_dev whichever of the
-> +'lower' or 'upper' filesystem that is providing the object.  Similarly
+> One serious issue with the G200eV support that I have reproduced
+> on a Matrox G200eV equipped IBM x3650 M2 is the lack of text (login
+> banner, login prompt, etc) on the console when X not running and
+> lack of text on all of the virtual consoles after X is started.
 
-awkward sentence above.  How is this?
+.. but without the commit, you get no fb at all, right? So even with
+the commit, at worst you'd just be able to not use the matroxfb
+driver, right?
 
-While directories will report an st_dev for the overlay-filesystem,
-all non-directory objects will report an st_dev from whichever of the
-'lower' or 'upper' filesystem is providing the object.
+What I'm trying to say is that I suspect there are G200eV users that
+likely prefer having the support in - even though it's not perfect.
+And the fact that the commit has been there for 2.5 years without
+comments makes me very loath to just revert it.
 
-or just:
-                                                from the lower or upper
-filesystem that is providing the object.
-
-> +st_ino will only be unique when combined with st_dev, and both of
-> +these can change over the lifetime of a non-directory object.  Many
-> +applications and tools ignore these values and will not be affected.
-> +
-> +Upper and Lower
-> +---------------
-> +
-> +An overlay filesystem combines two filesystems - an 'upper' filesystem
-> +and a 'lower' filesystem.  When a name exists in both filesystems, the
-> +object in the 'upper' filesystem is visible while the object in the
-> +'lower' filesystem is either hidden or, in the case of directories,
-> +merged with the 'upper' object.
-> +
-> +It would be more correct to refer to an upper and lower 'directory
-> +tree' rather than 'filesystem' as it is quite possible for both
-> +directory trees to be in the same filesystem and there is no
-> +requirement that the root of a filesystem be given for either upper or
-> +lower.
-> +
-> +The lower filesystem can be any filesystem supported by Linux and does
-> +not need to be writable.  The lower filesystem can even be another
-> +overlayfs.  The upper filesystem will normally be writable and if it
-> +is it must support the creation of trusted.* extended attributes, and
-> +must provide valid d_type in readdir responses, at least for symbolic
-> +links - so NFS is not suitable.
-> +
-> +A read-only overlay of two read-only filesystems may use any
-> +filesystem type.
-> +
-> +Directories
-> +-----------
-> +
-> +Overlaying mainly involved directories.  If a given name appears in both
-> +upper and lower filesystems and refers to a non-directory in either,
-> +then the lower object is hidden - the name refers only to the upper
-> +object.
-> +
-> +Where both upper and lower objects are directories, a merged directory
-> +is formed.
-> +
-> +At mount time, the two directories given as mount options are combined
-> +into a merged directory.  Then whenever a lookup is requested in such
-> +a merged directory, the lookup is performed in each actual directory
-> +and the combined result is cached in the dentry belonging to the overlay
-> +filesystem.  If both actual lookups find directories, both are stored
-> +and a merged directory is created, otherwise only one is stored: the
-> +upper if it exists, else the lower.
-> +
-> +Only the lists of names from directories are merged.  Other content
-> +such as metadata and extended attributes are reported for the upper
-> +directory only.  These attributes of the lower directory are hidden.
-> +
-> +whiteouts and opaque directories
-> +--------------------------------
-> +
-> +In order to support rm and rmdir without changing the lower
-> +filesystem, an overlay filesystem needs to record in the upper filesystem
-> +that files have been removed.  This is done using whiteouts and opaque
-> +directories (non-directories are always opaque).
-> +
-> +The overlay filesystem uses extended attributes with a
-> +"trusted.overlay."  prefix to record these details.
-> +
-> +A whiteout is created as a symbolic link with target
-> +"(overlay-whiteout)" and with xattr "trusted.overlay.whiteout" set to "y".
-> +When a whiteout is found in the upper level of a merged directory, any
-> +matching name in the lower level is ignored, and the whiteout itself
-> +is also hidden.
-> +
-> +A directory is made opaque by setting the xattr "trusted.overlay.opaque"
-> +to "y".  Where the upper filesystem contains an opaque directory, any
-> +directory in the lower filesystem with the same name is ignored.
-> +
-> +readdir
-> +-------
-> +
-> +When a 'readdir' request is made on a merged directory, the upper and
-> +lower directories are each read and the name lists merged in the
-> +obvious way (upper is read first, then lower - entries that already
-> +exist are not re-added).  This merged name list is cached in the
-> +'struct file' and so remains as long as the file is kept open.  If the
-> +directory is opened and read by two processes at the same time, they
-> +will each have separate caches.  A seekdir to the start of the
-> +directory (offset 0) followed by a readdir will cause the cache to be
-> +discarded and rebuilt.
-> +
-> +This means that changes to the merged directory do not appear while a
-> +directory is being read.  This is unlikely to be noticed by many
-> +programs.
-> +
-> +seek offsets are assigned sequentially when the directories are read.
-> +Thus if
-> +  - read part of a directory
-> +  - remember an offset, and close the directory
-> +  - re-open the directory some time later
-> +  - seek to the remembered offset
-> +
-> +there may be little correlation between the old and new locations in
-> +the list of filenames, particularly if anything has changed in the
-> +directory.
-> +
-> +Readdir on directories that are not merged is simply handled by the
-> +underlying directory (upper or lower).
-> +
-> +
-> +Non-directories
-> +---------------
-> +
-> +Objects that are not directories (files, symlinks, device-special
-> +files etc) are presented either from the upper or lower filesystem as
-
-         etc.)
-
-> +appropriate.  When a file in the lower filesystem is accessed in a way
-> +the requires write-access; such as opening for write access, changing
-
-                      access,
-
-> +some metadata etc, the file is first copied from the lower filesystem
-
-                 etc.,
-
-> +to the upper filesystem (copy_up).  Note that creating a hard-link
-> +also requires copy-up, though of course creation of a symlink does
-
-                 copy_up,
-
-> +not.
-> +
-> +The copy_up process first makes sure that the containing directory
-> +exists in the upper filesystem - creating it and any parents as
-> +necessary.  It then creates the object with the same metadata (owner,
-> +mode, mtime, symlink-target etc) and then if the object is a file, the
-
-                               etc.)
-
-> +data is copied from the lower to the upper filesystem.  Finally any
-> +extended attributes are copied up.
-> +
-> +Once the copy_up is complete, the overlay filesystem simply
-> +provides direct access to the newly created file in the upper
-> +filesystem - future operations on the file are barely noticed by the
-> +overlay filesystem (though an operation on the name of the file such as
-> +rename or unlink will of course be noticed and handled).
-> +
-> +Changes to underlying filesystems
-> +---------------------------------
-> +
-> +Offline changes, when the overlay is not mounted, are allowed to either
-> +the upper or the lower trees.
-> +
-> +Changes to the underlying filesystems while part of a mounted overlay
-> +filesystem are not allowed.  This is not yet enforced, but will be in
-> +the future.
-> 
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+                           Linus
