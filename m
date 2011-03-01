@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab1CAPdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 10:33:49 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:47237 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab1CAPds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 10:33:48 -0500
-Subject: Re: [PATCH 3/6] perf record: add time-of-day option
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-In-Reply-To: <4D6D0438.2090901@cisco.com>
-References: <1298865151-23656-1-git-send-email-daahern@cisco.com>
-	 <1298865151-23656-4-git-send-email-daahern@cisco.com>
-	 <1298989751.5226.863.camel@laptop>  <4D6D0438.2090901@cisco.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Mar 2011 16:35:14 +0100
-Message-ID: <1298993714.5226.871.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756704Ab1CAPeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 10:34:13 -0500
+Received: from cantor.suse.de ([195.135.220.2]:52994 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752580Ab1CAPeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 10:34:12 -0500
+Date: Tue, 1 Mar 2011 10:34:38 -0500
+From: Greg KH <gregkh@suse.de>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Viresh Kumar <viresh.kumar@st.com>, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, vipin.kumar@st.com, shiraz.hashim@st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] device.h: add device_set_platdata routine
+Message-ID: <20110301153438.GB15633@suse.de>
+References: <5c561db378360ad1763da41f8350c7be816daa06.1298953633.git.viresh.kumar@st.com>
+ <20110301075953.GR22310@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110301075953.GR22310@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 07:35 -0700, David Ahern wrote:
+On Tue, Mar 01, 2011 at 08:59:53AM +0100, Uwe Kleine-König wrote:
+> [added gregkh and lkml to Cc:]
 > 
-> On 03/01/2011 07:29 AM, Peter Zijlstra wrote:
+> Hi Viresh,
 > 
-> >> +/* add a sample to the event stream based on user request */
-> >> +static int perf_event_generate_sample(struct perf_event *event)
-> >> +{
-> >> +       struct perf_sample_data data;
-> >> +       struct pt_regs regs;
-> >> +
-> >> +       perf_fetch_caller_regs(&regs);
-> >> +       event->pmu->read(event);
-> >> +       perf_sample_data_init(&data, 0);
-> >> +       data.period = event->hw.last_period;
-> >> +       perf_event_output(event, 0, &data, &regs);
-> >> +
-> >> +       return 0;
-> >> +}
+> On Tue, Mar 01, 2011 at 10:03:20AM +0530, Viresh Kumar wrote:
+> > device.h supports device_get_platdata but doesn't support device_set_platdata.
+> > This routine is required by platforms in which device structure is declared
+> > in a machine specific file and platform data comes from board specific file.
 > > 
-> > I'm not quite sure why you need this.. 
+> > This will be used by SPEAr patches sent in separate patch series.
 > > 
+> > Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> > ---
+> >  include/linux/device.h |    5 +++++
+> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/device.h b/include/linux/device.h
+> > index 1bf5cf0..6ce0f20 100644
+> > --- a/include/linux/device.h
+> > +++ b/include/linux/device.h
+> > @@ -576,6 +576,11 @@ static inline void *dev_get_platdata(const struct device *dev)
+> >  	return dev->platform_data;
+> >  }
+> >  
+> > +static inline void dev_set_platdata(struct device *dev, void *platdata)
+> > +{
+> > +	dev->platform_data = platdata;
+> > +}
+> > +
+> Note that dev->platform_data was designed to hold dynamically allocated
+> memory, at least it's kfreed in platform_device_release.  And note there
+> is platform_device_add_data that kmemdups its argument into
+> pdev->dev.platform_data.
 > 
-> periodic samples are generated after the specified period. I want the
-> first sample immediately and the remainder based on the set period.
+> Compared to your dev_set_platdata platform_device_add_data only works
+> for platform_devices, don't know if it's worth to change that.
 > 
-> So generically, how do you get the first sample into the event stream
-> and let the others happen based on the timer? I need not only the
-> counter value but also the perf_clock timestamp that comes from the
-> SAMPLE_TIME attribute.
+> And regarding platform_device_add_data I wonder if it wouldn't be more
+> consistent to set platform_data = NULL if (!data)?  Greg?
 
-Again, why?
+Maybe, care to send a patch?
 
+thanks,
+
+greg k-h
