@@ -1,195 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab1CATN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:13:59 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:2453 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622Ab1CATN6 (ORCPT
+	id S1757026Ab1CATSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:18:22 -0500
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45441 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756904Ab1CATST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:13:58 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=ZHoLxXrv2g3frAezCetsDNwQsQq6A7b7YrvNdJ0VoU/n+J5pp5ejXkeOp8YP+QT7t
-	Qt6GAl60xu3uZLz5E5r3Q==
-From: Justin TerAvest <teravest@google.com>
-To: vgoyal@redhat.com, jaxboe@fusionio.com
-Cc: ctalbott@google.com, mrubin@google.com, nauman@google.com,
-        guijianfeng@cn.fujitsu.com, czoccolo@gmail.com,
-        linux-kernel@vger.kernel.org, Justin TerAvest <teravest@google.com>
-Subject: [PATCH] cfq-iosched: Always provide group isolation.
-Date: Tue,  1 Mar 2011 11:13:18 -0800
-Message-Id: <1299006798-11769-1-git-send-email-teravest@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Tue, 1 Mar 2011 14:18:19 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Ondrej Zajicek <santiago@crfreenet.org>
+Subject: [PATCH 0/5] s3fb: various changes
+Date: Tue, 1 Mar 2011 20:17:59 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201103012018.01607.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Effectively, make group_isolation=1 the default and remove the tunable.
-The setting group_isolation=0 was because by default we idle on
-sync-noidle tree and on fast devices, this can be very harmful for
-throughput.
+This patch set adds new hardware support, fixes some display problems and also
+improves performance of s3fb driver.
 
-However, this problem can also be addressed by tuning slice_idle and
-possibly group_idle on faster storage devices.
+Everything was tested on various Trio32, Trio64V+, Trio64V2/DX, Virge, 
+Virge/DX, Trio3D and Trio3D/2X cards.
 
-This change simplifies the CFQ code by removing the feature entirely.
+It assumes that David Miller's "Make SVGA oriented FBs work on multi-domain 
+PCI" patch set is applied.
 
-Signed-off-by: Justin TerAvest <teravest@google.com>
----
- Documentation/cgroups/blkio-controller.txt |   28 ---------------------
- block/cfq-iosched.c                        |   37 +---------------------------
- 2 files changed, 1 insertions(+), 64 deletions(-)
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
-index 4ed7b5c..d915c16 100644
---- a/Documentation/cgroups/blkio-controller.txt
-+++ b/Documentation/cgroups/blkio-controller.txt
-@@ -343,34 +343,6 @@ Common files among various policies
- 
- CFQ sysfs tunable
- =================
--/sys/block/<disk>/queue/iosched/group_isolation
-------------------------------------------------
--
--If group_isolation=1, it provides stronger isolation between groups at the
--expense of throughput. By default group_isolation is 0. In general that
--means that if group_isolation=0, expect fairness for sequential workload
--only. Set group_isolation=1 to see fairness for random IO workload also.
--
--Generally CFQ will put random seeky workload in sync-noidle category. CFQ
--will disable idling on these queues and it does a collective idling on group
--of such queues. Generally these are slow moving queues and if there is a
--sync-noidle service tree in each group, that group gets exclusive access to
--disk for certain period. That means it will bring the throughput down if
--group does not have enough IO to drive deeper queue depths and utilize disk
--capacity to the fullest in the slice allocated to it. But the flip side is
--that even a random reader should get better latencies and overall throughput
--if there are lots of sequential readers/sync-idle workload running in the
--system.
--
--If group_isolation=0, then CFQ automatically moves all the random seeky queues
--in the root group. That means there will be no service differentiation for
--that kind of workload. This leads to better throughput as we do collective
--idling on root sync-noidle tree.
--
--By default one should run with group_isolation=0. If that is not sufficient
--and one wants stronger isolation between groups, then set group_isolation=1
--but this will come at cost of reduced throughput.
--
- /sys/block/<disk>/queue/iosched/slice_idle
- ------------------------------------------
- On a faster hardware CFQ can be slow, especially with sequential workload.
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 7be4c79..64feb6d 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -146,7 +146,6 @@ struct cfq_queue {
- 	struct cfq_rb_root *service_tree;
- 	struct cfq_queue *new_cfqq;
- 	struct cfq_group *cfqg;
--	struct cfq_group *orig_cfqg;
- 	/* Number of sectors dispatched from queue in single dispatch round */
- 	unsigned long nr_sectors;
- };
-@@ -285,7 +284,6 @@ struct cfq_data {
- 	unsigned int cfq_slice_idle;
- 	unsigned int cfq_group_idle;
- 	unsigned int cfq_latency;
--	unsigned int cfq_group_isolation;
- 
- 	unsigned int cic_index;
- 	struct list_head cic_list;
-@@ -1187,32 +1185,6 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	int new_cfqq = 1;
- 	int group_changed = 0;
- 
--#ifdef CONFIG_CFQ_GROUP_IOSCHED
--	if (!cfqd->cfq_group_isolation
--	    && cfqq_type(cfqq) == SYNC_NOIDLE_WORKLOAD
--	    && cfqq->cfqg && cfqq->cfqg != &cfqd->root_group) {
--		/* Move this cfq to root group */
--		cfq_log_cfqq(cfqd, cfqq, "moving to root group");
--		if (!RB_EMPTY_NODE(&cfqq->rb_node))
--			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
--		cfqq->orig_cfqg = cfqq->cfqg;
--		cfqq->cfqg = &cfqd->root_group;
--		cfqd->root_group.ref++;
--		group_changed = 1;
--	} else if (!cfqd->cfq_group_isolation
--		   && cfqq_type(cfqq) == SYNC_WORKLOAD && cfqq->orig_cfqg) {
--		/* cfqq is sequential now needs to go to its original group */
--		BUG_ON(cfqq->cfqg != &cfqd->root_group);
--		if (!RB_EMPTY_NODE(&cfqq->rb_node))
--			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
--		cfq_put_cfqg(cfqq->cfqg);
--		cfqq->cfqg = cfqq->orig_cfqg;
--		cfqq->orig_cfqg = NULL;
--		group_changed = 1;
--		cfq_log_cfqq(cfqd, cfqq, "moved to origin group");
--	}
--#endif
--
- 	service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
- 						cfqq_type(cfqq));
- 	if (cfq_class_idle(cfqq)) {
-@@ -2542,7 +2514,7 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
- static void cfq_put_queue(struct cfq_queue *cfqq)
- {
- 	struct cfq_data *cfqd = cfqq->cfqd;
--	struct cfq_group *cfqg, *orig_cfqg;
-+	struct cfq_group *cfqg;
- 
- 	BUG_ON(cfqq->ref <= 0);
- 
-@@ -2554,7 +2526,6 @@ static void cfq_put_queue(struct cfq_queue *cfqq)
- 	BUG_ON(rb_first(&cfqq->sort_list));
- 	BUG_ON(cfqq->allocated[READ] + cfqq->allocated[WRITE]);
- 	cfqg = cfqq->cfqg;
--	orig_cfqg = cfqq->orig_cfqg;
- 
- 	if (unlikely(cfqd->active_queue == cfqq)) {
- 		__cfq_slice_expired(cfqd, cfqq, 0);
-@@ -2564,8 +2535,6 @@ static void cfq_put_queue(struct cfq_queue *cfqq)
- 	BUG_ON(cfq_cfqq_on_rr(cfqq));
- 	kmem_cache_free(cfq_pool, cfqq);
- 	cfq_put_cfqg(cfqg);
--	if (orig_cfqg)
--		cfq_put_cfqg(orig_cfqg);
- }
- 
- /*
-@@ -3953,7 +3922,6 @@ static void *cfq_init_queue(struct request_queue *q)
- 	cfqd->cfq_slice_idle = cfq_slice_idle;
- 	cfqd->cfq_group_idle = cfq_group_idle;
- 	cfqd->cfq_latency = 1;
--	cfqd->cfq_group_isolation = 0;
- 	cfqd->hw_tag = -1;
- 	/*
- 	 * we optimistically start assuming sync ops weren't delayed in last
-@@ -4029,7 +3997,6 @@ SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
- SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
- SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
- SHOW_FUNCTION(cfq_low_latency_show, cfqd->cfq_latency, 0);
--SHOW_FUNCTION(cfq_group_isolation_show, cfqd->cfq_group_isolation, 0);
- #undef SHOW_FUNCTION
- 
- #define STORE_FUNCTION(__FUNC, __PTR, MIN, MAX, __CONV)			\
-@@ -4063,7 +4030,6 @@ STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
- 		UINT_MAX, 0);
- STORE_FUNCTION(cfq_low_latency_store, &cfqd->cfq_latency, 0, 1, 0);
--STORE_FUNCTION(cfq_group_isolation_store, &cfqd->cfq_group_isolation, 0, 1, 0);
- #undef STORE_FUNCTION
- 
- #define CFQ_ATTR(name) \
-@@ -4081,7 +4047,6 @@ static struct elv_fs_entry cfq_attrs[] = {
- 	CFQ_ATTR(slice_idle),
- 	CFQ_ATTR(group_idle),
- 	CFQ_ATTR(low_latency),
--	CFQ_ATTR(group_isolation),
- 	__ATTR_NULL
- };
- 
 -- 
-1.7.3.1
-
+Ondrej Zary
