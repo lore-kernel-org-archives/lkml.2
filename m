@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab1CAI0u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 03:26:50 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:33589 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696Ab1CAI0t convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Tue, 1 Mar 2011 03:26:49 -0500
-Message-Id: <4D6CBBD502000078000343DF@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 01 Mar 2011 08:26:45 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ingo Molnar" <mingo@elte.hu>
-Cc: <heukelum@fastmail.fm>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [tip:x86/asm] x86-64: Add CFI annotations to
-	 lib/rwsem_64.S
-References: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
- <tip-39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c@git.kernel.org>
- <20110228182642.GA7041@elte.hu>
-In-Reply-To: <20110228182642.GA7041@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755863Ab1CAI1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 03:27:10 -0500
+Received: from fep32.mx.upcmail.net ([62.179.121.50]:39636 "EHLO
+	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821Ab1CAI1I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 03:27:08 -0500
+X-SourceIP: 115.242.218.220
+Reply-To: <centerdept4@yahoo.com>
+From: "CONGRATULATIONS" <info@MSN.CO.UK>
+Subject: CONGRATULATIONS
+Date: Tue, 1 Mar 2011 13:54:11 +0530
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00DF_01C2A9A6.33F5C940"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 110228-1, 02/28/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20110301082413.FMXX11401.viefep17-int.chello.at@edge04.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=HQ3F56nxkum+cgCiDL7AXQpbvw7DWrWCBJRnYYnM0Zc= c=1 sm=0 a=geNL0gnBKRkA:10 a=oJL9TIRMo0YA:10 a=8EU9Q7FnrCoA:10 a=c0Cz9Ino1T4A:10 a=bOutH0DMEXxIVoOz3IEA:9 a=PzXrNk1X2OqOEqYPNgrQQi-F32IA:4 a=uWtV0rmd5s-2fODY:21 a=FI-8fSfzKhmApnev:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.02.11 at 19:26, Ingo Molnar <mingo@elte.hu> wrote:
+This is a multi-part message in MIME format.
 
-> * tip-bot for Jan Beulich <JBeulich@novell.com> wrote:
-> 
->> Commit-ID:  39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c
->> Gitweb:     
-> http://git.kernel.org/tip/39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c 
->> Author:     Jan Beulich <JBeulich@novell.com>
->> AuthorDate: Mon, 28 Feb 2011 15:31:59 +0000
->> Committer:  Ingo Molnar <mingo@elte.hu>
->> CommitDate: Mon, 28 Feb 2011 18:06:21 +0100
->> 
->> x86-64: Add CFI annotations to lib/rwsem_64.S
->> 
->> These weren't part of the initial commit of this code.
->> 
->> Signed-off-by: Jan Beulich <jbeulich@novell.com>
->> Cc: Alexander van Heukelum <heukelum@fastmail.fm>
->> LKML-Reference: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
->> Signed-off-by: Ingo Molnar <mingo@elte.hu>
->> ---
->>  arch/x86/lib/rwsem_64.S |   56 ++++++++++++++++++++++++++++------------------
->>  1 files changed, 34 insertions(+), 22 deletions(-)
-> 
-> this change breaks the UML build:
-> 
->  tip/arch/um/sys-x86_64/../../x86/lib/rwsem_64.S:46: Error: no such 
-> instruction: `pushq_cfi %rdi'
+------=_NextPart_000_00DF_01C2A9A6.33F5C940
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Any reason why arch/um/Kconfig.x86 has X86_32 but not
-X86_64? That's resulting in asm/dwarf2.h producing the 32-bit
-(pushl_cfi & Co) macros instead of the 64-bit ones. And I
-wonder what other inconsistencies this may cause...
 
-If this is on purpose (i.e. simply adding X86_64 as a new config
-option there isn't the right solution), what would be the preferred
-way of fixing this in asm/dwarf2.h:
-- #ifndef CONFIG_X86_32,
-- #ifdef CONFIG_64BIT,
-- yet something else?
+------=_NextPart_000_00DF_01C2A9A6.33F5C940
+Content-Type: application/octet-stream;
+	name="FMT.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="FMT.txt"
 
-Thanks, Jan
+WW91ciBFbWFpbCBJZCBoYXMgd29uIDEsMDAwLDAwMCBHQlAgaW4gdGhlIFVL
+IE9ubGluZSBQcm9tbyAyMDExLiBzZW5kIHlvdXINCkZ1bGwgTmFtZXMNClJl
+c2lkZW50aWFsIEFkZHJlc3MNCk9jY3VwYXRpb24NCkFnZQ0KUGhvbmUNCkNv
+dW50cnkNCg0KdG8gb3VyIGNsYWltcyBkZXBhcnRtZW50ICAgZm9yIGNhaW1z
+IG9mIHdpbm5pbmdzLg==
 
+------=_NextPart_000_00DF_01C2A9A6.33F5C940--
