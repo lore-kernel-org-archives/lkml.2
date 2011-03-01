@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab1CAPaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 10:30:24 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42778 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab1CAPaX (ORCPT
+	id S1756660Ab1CAPdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 10:33:49 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:47237 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab1CAPds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 10:30:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=cc:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:mime-version:subject:date:references
-         :x-mailer;
-        b=bsUuSAPUUh/9ZsP3Wd3RYJlrL1SRekn90WZSU15ka6uhQik9s7/QTx9Vy+vJEZdvcA
-         nHreELXjWJoYtHfRQJoHDYBDLyaHq6MthREaiMueFEi6Ts6d5mERzVrDOnj3r/8+leZ9
-         xMHtSMuff8I0gYSCJsu1d+75u2l6EMxvxsD2s=
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>, Eric Paris <eparis@redhat.com>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>
-Message-Id: <43A4FBC4-6A1C-4BD8-9F0C-23C0DBA2E35D@gmail.com>
-From: Justin Mattock <justinmattock@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1103011507120.32580@pobox.suse.cz>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+	Tue, 1 Mar 2011 10:33:48 -0500
+Subject: Re: [PATCH 3/6] perf record: add time-of-day option
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com,
+        paulus@samba.org, tglx@linutronix.de
+In-Reply-To: <4D6D0438.2090901@cisco.com>
+References: <1298865151-23656-1-git-send-email-daahern@cisco.com>
+	 <1298865151-23656-4-git-send-email-daahern@cisco.com>
+	 <1298989751.5226.863.camel@laptop>  <4D6D0438.2090901@cisco.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Mar 2011 16:35:14 +0100
+Message-ID: <1298993714.5226.871.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: [PATCH 00/00]Remove one to many n's in a word.
-Date: Tue, 1 Mar 2011 07:30:19 -0800
-References: <1298781250-2718-1-git-send-email-justinmattock@gmail.com> <1298781250-2718-17-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1103011507120.32580@pobox.suse.cz>
-X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-03-01 at 07:35 -0700, David Ahern wrote:
+> 
+> On 03/01/2011 07:29 AM, Peter Zijlstra wrote:
+> 
+> >> +/* add a sample to the event stream based on user request */
+> >> +static int perf_event_generate_sample(struct perf_event *event)
+> >> +{
+> >> +       struct perf_sample_data data;
+> >> +       struct pt_regs regs;
+> >> +
+> >> +       perf_fetch_caller_regs(&regs);
+> >> +       event->pmu->read(event);
+> >> +       perf_sample_data_init(&data, 0);
+> >> +       data.period = event->hw.last_period;
+> >> +       perf_event_output(event, 0, &data, &regs);
+> >> +
+> >> +       return 0;
+> >> +}
+> > 
+> > I'm not quite sure why you need this.. 
+> > 
+> 
+> periodic samples are generated after the specified period. I want the
+> first sample immediately and the remainder based on the set period.
+> 
+> So generically, how do you get the first sample into the event stream
+> and let the others happen based on the timer? I need not only the
+> counter value but also the perf_clock timestamp that comes from the
+> SAMPLE_TIME attribute.
 
-On Mar 1, 2011, at 6:12 AM, Jiri Kosina wrote:
+Again, why?
 
-> On Sat, 26 Feb 2011, Justin P. Mattock wrote:
->
->> The Patch below removes one to many "n's" in a word..
->
-> Hi Justin,
->
-> I have applied all the patches from the series which were not  
-> present in
-> linux-next as of today (in a squashed-together form, no need to have
-> separated commits for such cosmetic changes).
->
-> I'd suggest that, unless any subsystem maintainer explicitly states
-> otherwise, you submit all such similar changes justo to trivial@kernel.org
-> (and perhaps CC LKML). I propose this because:
->
-> - I believe most maintainers don't care about these changes and  
-> don't need
->  to be bothered
-> - it reduces annoying mail traffic (tens of mails because such
->  nano-change)
-> - it reduces the trivial tree maintainership load, as I don't have  
-> to wait
->  and cross-check which maintainer has applied which bits and which  
-> ones
->  were not picked up
->
-> -- 
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
-
-
-alright. makes sense.
-I have another set of fixes that I did, I'll send it out later today  
-or tomorrow to just trivial and lkml.
-
-Justin P. Mattock
