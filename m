@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab1CAFZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 00:25:41 -0500
-Received: from mail.perches.com ([173.55.12.10]:3998 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab1CAFZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 00:25:40 -0500
-Subject: Re: [RFC v2 1/2] dynamic debug: add dynamic_hexdump_debug macro
-From: Joe Perches <joe@perches.com>
-To: Bing Zhao <bzhao@marvell.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Kiran Divekar <dkiran@marvell.com>, Frank Huang <frankh@marvell.com>
-In-Reply-To: <1298956016-30673-2-git-send-email-bzhao@marvell.com>
-References: <1298956016-30673-1-git-send-email-bzhao@marvell.com>
-	 <1298956016-30673-2-git-send-email-bzhao@marvell.com>
+	id S1754978Ab1CAF0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 00:26:51 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47075 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab1CAF0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 00:26:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=eDuaK5OvDDnU9lrgTqI9T8gJr3f7I3jjbB/uOn2NpMVuyoYuK0JLZDsvLRwk5qLMpv
+         s5er7p46ym2GG9LlnC2fp4LIPhjwSwG1Ge1jB2HuquxkwVN/gZCl2HRW9MipGwLgMsNS
+         bXgsgmKBd/7tJrUBuOhTZqwDNtzB8qiQjGXLA=
+Subject: Re: [PATCH v6] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, joe@perches.com, dilinger@queued.net,
+        mirqus@gmail.com, davem@davemloft.net,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+In-Reply-To: <AANLkTimeDR27Q7fcBmB0ix7Q_pRT_GDpc7S3LO21-fh-@mail.gmail.com>
+References: <1298539762-2242-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1298627845-1583-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1298634040.2659.32.camel@edumazet-laptop>
+	 <AANLkTimeDR27Q7fcBmB0ix7Q_pRT_GDpc7S3LO21-fh-@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Feb 2011 21:25:38 -0800
-Message-ID: <1298957138.4367.3.camel@Joe-Laptop>
+Date: Tue, 01 Mar 2011 06:26:44 +0100
+Message-ID: <1298957204.2676.4.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 21:06 -0800, Bing Zhao wrote:
-> dynamic_hexdump_debug(str, buf, len)
+Le mardi 01 mars 2011 à 13:20 +0800, Po-Yu Chuang a écrit :
+> Hi Eric,
+> 
+> On Fri, Feb 25, 2011 at 7:40 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-> diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-> +#define dynamic_hexdump_debug(str, buf, len)				\
-> +do {									\
-> +	static struct _ddebug descriptor				\
-> +	__used								\
-> +	__attribute__((section("__verbose"), aligned(8))) =		\
-> +	{ KBUILD_MODNAME, __func__, __FILE__, str, __LINE__,		\
-> +		_DPRINTK_FLAGS_DEFAULT };				\
-> +	if (unlikely(descriptor.enabled)) {				\
-> +		printk(KERN_DEBUG str);					\
-> +		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, buf, len);	\
+> Both NIU and BENET refill rx ring after all packets receive work done,
+> but I allocate rx buffer right after a packet is received. I think it
+> is difficult
+> to use a page for two rx buffers in my driver now. Can we just keep it
+> the way it is? I can study how to achieve that after current driver is accepted.
+> 
 
-Perhaps
-		print_hex_dump(str, DUMP_PREFIX_OFFSET, buf, len);
+No problem, you are the author, I am only a reviewer and ask questions
+after all ;)
+
+Thanks !
+
+
+
 
