@@ -1,86 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab1CAXZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:25:17 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41459 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757337Ab1CAXZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:25:12 -0500
-Date: Tue, 1 Mar 2011 15:24:55 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, geert@linux-m68k.org, jj@chaosbits.net,
-        arnd@arndb.de
-Subject: Re: [PATCH] kstrto*: converting strings to integers done
- (hopefully) right
-Message-Id: <20110301152455.995eb661.akpm@linux-foundation.org>
-In-Reply-To: <20110226124708.GA29242@p183.telecom.by>
-References: <20110226124708.GA29242@p183.telecom.by>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757487Ab1CAX3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:29:12 -0500
+Received: from xes-mad.com ([216.165.139.218]:22685 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756456Ab1CAX3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 18:29:10 -0500
+From: Peter Tyser <ptyser@xes-inc.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Tyser <ptyser@xes-inc.com>, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH v5 2/4] gpiolib: Add ability to get GPIO direction
+Date: Tue,  1 Mar 2011 17:28:18 -0600
+Message-Id: <1299022100-14564-2-git-send-email-ptyser@xes-inc.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Feb 2011 14:47:08 +0200
-Alexey Dobriyan <adobriyan@gmail.com> wrote:
+Add a new get_direction() function to the gpio_chip structure.  This is
+useful so that the direction of a GPIO can be determined when its
+initially exported.  Previously, the direction defaulted to "unknown"
+regardless of the actual configuration of the GPIO.
 
-> 1. simple_strto*() do not contain overflow checks and crufty,
->    libc way to indicate failure.
-> 2. strict_strto*() also do not have overflow checks but the name and
->    comments pretend they do.
-> 3. Both families have only "long long" and "long" variants,
->    but users want strtou8()
-> 4. Both "simple" and "strict" prefixes are wrong:
->    Simple doesn't exactly say what's so simple, strict should not exist
->    because conversion should be strict by default.
-> 
-> The solution is to use "k" prefix and add convertors for more types.
-> Enter
-> 	kstrtoull()
-> 	kstrtoll()
-> 	kstrtoul()
-> 	kstrtol()
-> 	kstrtouint()
-> 	kstrtoint()
-> 
-> 	kstrtou64()
-> 	kstrtos64()
-> 	kstrtou32()
-> 	kstrtos32()
-> 	kstrtou16()
-> 	kstrtos16()
-> 	kstrtou8()
-> 	kstrtos8()
-> 
-> Include runtime testsuite (somewhat incomplete) as well.
-> 
-> strict_strto*() become deprecated, stubbed to kstrto*() and
-> eventually will be removed altogether.
+If a GPIO driver implements get_direction(), it is called in
+gpio_request() to set the initial direction of the GPIO accurately.
 
-Note that they're deprecated but not marked __deprecated.  That's OK.
+Cc: Alek Du <alek.du@intel.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+---
+Changes since v1:
+- Add support for "unknown" direction
 
-> Use kstrto*() in code today!
+Changes since v2:
+  Based on Wolfram's feedback:
+- Use GPIOF_DIR_* flags as returns from get_direction()
+- Call spin_lock_irqsave() to before setting flags
 
-If you can stomach perl, please prepare a checkpatch patch which alerts
-people to the new regime.
+Changes since v3:
+- Removed "pin" references from the commit message
+- Added might_sleep() call
+- Made the direction always be set in gpio_request()
 
-> Note: on some archs _kstrtoul() and _kstrtol() are left in tree, even if
->       they'll be unused at runtime. This is temporarily solution,
->       because I don't want to hardcode list of archs where these
->       functions aren't needed. Current solution with sizeof() and
->       __alignof__ at least always works.
-> ---
-> 
->  Let's merge this into mainline, so I can send individual patches
->  to subsystem maintainers. Whole tree is already converted locally.
+Change since V4:
+- None
 
-Talk to us about the tighter checking.  There's a risk here that
-current userspace which "works" will cease to work if we add additional
-input checking.  Even if that userspace was broken and
-just-happened-to-work, adding additional checks might cause disruption?
+ drivers/gpio/gpiolib.c     |   25 +++++++++++++++++++++++++
+ include/asm-generic/gpio.h |    4 ++++
+ 2 files changed, 29 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index eb74311..106164f 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1174,6 +1174,7 @@ int gpio_request(unsigned gpio, const char *label)
+ 	struct gpio_desc	*desc;
+ 	struct gpio_chip	*chip;
+ 	int			status = -EINVAL;
++	int			dir = -1; /* Default to unknown direction */
+ 	unsigned long		flags;
+ 
+ 	spin_lock_irqsave(&gpio_lock, flags);
+@@ -1214,6 +1215,30 @@ int gpio_request(unsigned gpio, const char *label)
+ 		}
+ 	}
+ 
++	if (chip->get_direction) {
++		/* chip->get_direction may sleep */
++		spin_unlock_irqrestore(&gpio_lock, flags);
++		might_sleep_if(chip->can_sleep);
++		dir = chip->get_direction(chip, gpio - chip->base);
++		spin_lock_irqsave(&gpio_lock, flags);
++	}
++
++	switch (dir) {
++	case GPIOF_DIR_OUT:
++		set_bit(FLAG_DIR_OUT, &desc->flags);
++		clear_bit(FLAG_DIR_IN, &desc->flags);
++		break;
++	case GPIOF_DIR_IN:
++		set_bit(FLAG_DIR_IN, &desc->flags);
++		clear_bit(FLAG_DIR_OUT, &desc->flags);
++		break;
++	default:
++		/* Direction isn't known */
++		clear_bit(FLAG_DIR_OUT, &desc->flags);
++		clear_bit(FLAG_DIR_IN, &desc->flags);
++		break;
++	}
++
+ done:
+ 	if (status)
+ 		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index ff5c660..6af5a3e 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -57,6 +57,8 @@ struct device_node;
+  * @direction_input: configures signal "offset" as input, or returns error
+  * @get: returns value for signal "offset"; for output signals this
+  *	returns either the value actually sensed, or zero
++ * @get_direction: optional hook to determine if a GPIO signal is configured
++ *	as an input, output, or unknown
+  * @direction_output: configures signal "offset" as output, or returns error
+  * @set: assigns output value for signal "offset"
+  * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
+@@ -101,6 +103,8 @@ struct gpio_chip {
+ 						unsigned offset);
+ 	int			(*get)(struct gpio_chip *chip,
+ 						unsigned offset);
++	int			(*get_direction)(struct gpio_chip *chip,
++						unsigned offset);
+ 	int			(*direction_output)(struct gpio_chip *chip,
+ 						unsigned offset, int value);
+ 	int			(*set_debounce)(struct gpio_chip *chip,
+-- 
+1.7.0.4
 
