@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab1CASPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 13:15:53 -0500
+	id S1756582Ab1CASP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 13:15:57 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:59213 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab1CASPu (ORCPT
+	with ESMTP id S1756474Ab1CASPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 13:15:50 -0500
+	Tue, 1 Mar 2011 13:15:55 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=RSQ8ZmLp7EGuVqfqx8UDPlC1yRodY6dwpaknSuw3RnMsfu2x2O6pp+1OAh9UKU0w1/
-         q4I4xp/C5r25WX4tGr+MSj496O3DTxGHJub9uwYq9gyUyYU5fEjXjUpbwYEIfbNSjfFJ
-         +rt8wi/2xvjMYkS/kGdjG0rGlLX51mLIeHkvA=
+        b=CQltZDnzKlsBPtU6KXPOAFnK9Am2tBZ0v7/ouTZfBaJEzrhqVTxBoS1evTHd7HRNs9
+         m/lafs3MsYeuAhHRSTvetN3P4H2FkxcqmFQY//CVN10I+ivIlFJnyGFklET591y76DN4
+         S3L7Pqt2vFeP2tI1ZXi4MakVJjWd11ewiDNIU=
 From: Pierre Tardy <tardyp@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-mmc@vger.kernel.org
-Cc: Yunpeng Gao <yunpeng.gao@intel.com>, Pierre Tardy <pierre.tardy@intel.com>
-Subject: [RFC,PATCHv3 1/3] mmc: sdhci-pci: Enable runtime PM support
-Date: Tue,  1 Mar 2011 19:15:31 +0100
-Message-Id: <1c071e206d0d02e07d3872f20268fba6b101a6b4.1298820826.git.tardyp@gmail.com>
+Cc: Pierre Tardy <tardyp@gmail.com>
+Subject: [RFC,PATCHv3 3/3] mmc: sdhci: handle wake-up from runtime_pm
+Date: Tue,  1 Mar 2011 19:15:33 +0100
+Message-Id: <b01ca43311e25bf24c6e60e9f6d6d7b91ae3a130.1298820826.git.tardyp@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1298820825.git.tardyp@gmail.com>
 References: <cover.1298820825.git.tardyp@gmail.com>
@@ -29,247 +29,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yunpeng Gao <yunpeng.gao@intel.com>
+When sdhci is runtime_suspended, it can still receive a wake-up
+because of card insertion.
+The wake-up will then be signaled by an interrupt which cannot be serviced
+immediatly, as the device is powered off, and register are not accessibles.
 
-Follow the kernel runtime PM framework, enable runtime PM support of the
-sdhci host controller with pci interface.
+We cannot call pm_runtime_get_sync() in irq context as on some architecture (e.g. intel_mid),
+runtime_resume can lead to too much latency, due to e.g. PLL warm-up and such aggressive
+power gating.
 
-Note that this patch implements runtime_pm but now actually detects
-activity.
-It relies on higher level (childrens) to do actual waking up
-Activity detection is put in a following patch
+We temporarly disable the interrupt, and trigger a runtime_resume of the device
+The interrupt will be re-enabled when resume is finished.
 
-This patch also does not enable wakeups, so card insertion will not work
-if runtime_pm is activated.
-This is also dealt in a following patch
-
-Original version from: Yunpeng Gao <yunpeng.gao@intel.com>
-with modifications by: Pierre Tardy <pierre.tardy@intel.com>
-
-Signed-off-by: Pierre Tardy <pierre.tardy@intel.com>
+Signed-off-by: Pierre Tardy <tardyp@gmail.com>
 ---
- drivers/mmc/host/sdhci-pci.c |  120 +++++++++++++++++++++++++++++++++++++++++-
- drivers/mmc/host/sdhci.c     |   31 +++++++++++
- drivers/mmc/host/sdhci.h     |    5 ++
- 3 files changed, 155 insertions(+), 1 deletions(-)
+ drivers/mmc/host/sdhci-pci.c |    8 +-------
+ drivers/mmc/host/sdhci.c     |   30 +++++++++++++++++++++++++++++-
+ include/linux/mmc/sdhci.h    |    2 ++
+ scripts/checkpatch.pl        |    6 +++---
+ 4 files changed, 35 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 2f8d468..f167a55 100644
+index 1b5e70b..fc3d2e1 100644
 --- a/drivers/mmc/host/sdhci-pci.c
 +++ b/drivers/mmc/host/sdhci-pci.c
-@@ -18,6 +18,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
- #include <linux/device.h>
-+#include <linux/pm_runtime.h>
- 
- #include <linux/mmc/host.h>
- 
-@@ -1031,6 +1032,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
- 	if (ret)
- 		return ret;
- 
-+	pm_runtime_set_active(&pdev->dev);
-+
- 	slots = PCI_SLOT_INFO_SLOTS(slots) + 1;
- 	dev_dbg(&pdev->dev, "found %d slot(s)\n", slots);
- 	if (slots == 0)
-@@ -1086,7 +1089,7 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
- 
- 		chip->slots[i] = slot;
+@@ -1166,13 +1166,7 @@ static int sdhci_pci_runtime_suspend(struct device *dev)
  	}
--
-+	pm_runtime_put_noidle(&pdev->dev);
+ 
+ 	pci_save_state(pdev);
+-	if (pm_flags & MMC_PM_KEEP_POWER) {
+-		if (pm_flags & MMC_PM_WAKE_SDIO_IRQ)
+-			pci_enable_wake(pdev, PCI_D3hot, 1);
+-	} else {
+-		pci_enable_wake(pdev, PCI_D3hot, 0);
+-		pci_disable_device(pdev);
+-	}
++	pci_enable_wake(pdev, PCI_D3hot, 1);
+ 	pci_set_power_state(pdev, PCI_D3hot);
+ 
  	return 0;
- 
- free:
-@@ -1114,8 +1117,120 @@ static void __devexit sdhci_pci_remove(struct pci_dev *pdev)
- 	}
- 
- 	pci_disable_device(pdev);
-+	pm_runtime_get_noresume(&pdev->dev);
-+
-+}
-+
-+#ifdef CONFIG_PM_RUNTIME
-+
-+static int sdhci_pci_runtime_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
-+	struct sdhci_pci_chip *chip;
-+	struct sdhci_pci_slot *slot;
-+	int i, ret;
-+	mmc_pm_flag_t pm_flags = 0;
-+	pm_message_t state;
-+
-+	chip = pci_get_drvdata(pdev);
-+	if (!chip)
-+		return 0;
-+
-+	for (i = 0; i < chip->num_slots; i++) {
-+		slot = chip->slots[i];
-+		if (!slot)
-+			continue;
-+
-+		ret = sdhci_runtime_suspend(slot->host);
-+
-+		if (ret) {
-+			for (i--; i >= 0; i--)
-+				sdhci_runtime_resume(chip->slots[i]->host);
-+			return ret;
-+		}
-+
-+		pm_flags |= slot->host->mmc->pm_flags;
-+	}
-+
-+	state.event = PM_EVENT_AUTO_SUSPEND;
-+	if (chip->fixes && chip->fixes->suspend) {
-+		ret = chip->fixes->suspend(chip, state);
-+		if (ret) {
-+			for (i = chip->num_slots - 1; i >= 0; i--)
-+				sdhci_runtime_resume(chip->slots[i]->host);
-+			return ret;
-+		}
-+	}
-+
-+	pci_save_state(pdev);
-+	if (pm_flags & MMC_PM_KEEP_POWER) {
-+		if (pm_flags & MMC_PM_WAKE_SDIO_IRQ)
-+			pci_enable_wake(pdev, PCI_D3hot, 1);
-+	} else {
-+		pci_enable_wake(pdev, PCI_D3hot, 0);
-+		pci_disable_device(pdev);
-+	}
-+	pci_set_power_state(pdev, PCI_D3hot);
-+
-+	return 0;
- }
- 
-+static int sdhci_pci_runtime_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
-+	struct sdhci_pci_chip *chip;
-+	struct sdhci_pci_slot *slot;
-+	int i, ret;
-+
-+	chip = pci_get_drvdata(pdev);
-+	if (!chip)
-+		return 0;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_restore_state(pdev);
-+	ret = pci_enable_device(pdev);
-+	if (ret)
-+		return ret;
-+
-+	if (chip->fixes && chip->fixes->resume) {
-+		ret = chip->fixes->resume(chip);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	for (i = 0; i < chip->num_slots; i++) {
-+		slot = chip->slots[i];
-+		if (!slot)
-+			continue;
-+
-+		ret = sdhci_runtime_resume(slot->host);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int sdhci_pci_runtime_idle(struct device *dev)
-+{
-+	pm_runtime_autosuspend(dev);
-+	return -EAGAIN;
-+}
-+
-+#else
-+
-+#define sdhci_pci_runtime_suspend	NULL
-+#define sdhci_pci_runtime_resume	NULL
-+#define sdhci_pci_runtime_idle		NULL
-+
-+#endif
-+
-+static const struct dev_pm_ops sdhci_pci_pm_ops = {
-+	.runtime_suspend = sdhci_pci_runtime_suspend,
-+	.runtime_resume = sdhci_pci_runtime_resume,
-+	.runtime_idle = sdhci_pci_runtime_idle,
-+};
-+
- static struct pci_driver sdhci_driver = {
- 	.name = 	"sdhci-pci",
- 	.id_table =	pci_ids,
-@@ -1123,6 +1238,9 @@ static struct pci_driver sdhci_driver = {
- 	.remove =	__devexit_p(sdhci_pci_remove),
- 	.suspend =	sdhci_pci_suspend,
- 	.resume	=	sdhci_pci_resume,
-+	.driver =	{
-+		.pm =	&sdhci_pci_pm_ops
-+	},
- };
- 
- /*****************************************************************************\
 diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 9e15f41..cd79a28 100644
+index 735c3f7..85a1956 100644
 --- a/drivers/mmc/host/sdhci.c
 +++ b/drivers/mmc/host/sdhci.c
-@@ -1715,6 +1715,37 @@ EXPORT_SYMBOL_GPL(sdhci_enable_irq_wakeups);
+@@ -1599,6 +1599,21 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+ 	u32 intmask;
+ 	int cardint = 0;
  
- #endif /* CONFIG_PM */
- 
-+#ifdef CONFIG_PM_RUNTIME
-+
-+int sdhci_runtime_suspend(struct sdhci_host *host)
-+{
-+	/* nothing to do yet */
-+	return 0;
-+}
-+
-+EXPORT_SYMBOL_GPL(sdhci_runtime_suspend);
-+
-+int sdhci_runtime_resume(struct sdhci_host *host)
-+{
-+	int ret = 0;
-+
-+	if (host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA)) {
-+		if (host->ops->enable_dma)
-+			host->ops->enable_dma(host);
++	/* we might come from a sd insertion or sdio irq wake.. */
++	if (pm_runtime_suspended()) {
++		host->waking_up = 1;
++		/* Note that we disable temporarly the interrupt until we do the
++		 * resume. If we don't then we'll get constantly interrupted
++		 * until we actually resume.
++		 *
++		 * as the irq is shared, this might not be very friendly to our
++		 * irq sharers but the pm_runtime workqueue should really be
++		 * called soon.
++		 */
++		disable_irq_nosync(irq);
++		pm_runtime_get(host->mmc->parent);
++		return IRQ_NONE;
 +	}
-+
-+	sdhci_init(host, (host->mmc->pm_flags & MMC_PM_KEEP_POWER));
-+	host->pwr = 0; /* force power reprogram */
-+	host->clock = 0; /* force clock reprogram */
-+	sdhci_set_ios(host->mmc, &host->mmc->ios);
-+	mmiowb();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(sdhci_runtime_resume);
-+
-+#endif /* CONFIG_PM_RUNTIME */
-+
- /*****************************************************************************\
-  *                                                                           *
-  * Device allocation/registration                                            *
-diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-index 6e0969e..1f032c0 100644
---- a/drivers/mmc/host/sdhci.h
-+++ b/drivers/mmc/host/sdhci.h
-@@ -327,4 +327,9 @@ extern int sdhci_resume_host(struct sdhci_host *host);
- extern void sdhci_enable_irq_wakeups(struct sdhci_host *host);
- #endif
+ 	spin_lock(&host->lock);
  
-+#ifdef CONFIG_PM_RUNTIME
-+extern int sdhci_runtime_suspend(struct sdhci_host *host);
-+extern int sdhci_runtime_resume(struct sdhci_host *host);
-+#endif
+ 	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
+@@ -1747,7 +1762,12 @@ EXPORT_SYMBOL_GPL(sdhci_enable_irq_wakeups);
+ 
+ int sdhci_runtime_suspend(struct sdhci_host *host)
+ {
+-	/* nothing to do yet */
++	u8 val;
++	/* make sure we wake up on sdcard insert/remove enabled */
++	val = SDHCI_WAKE_ON_INSERT | SDHCI_WAKE_ON_REMOVE;
++	if (host->mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ)
++		val |= SDHCI_WAKE_ON_INT;
++	sdhci_writeb(host, val, SDHCI_WAKE_UP_CONTROL);
+ 	return 0;
+ }
+ 
+@@ -1768,6 +1788,14 @@ int sdhci_runtime_resume(struct sdhci_host *host)
+ 	sdhci_set_ios(host->mmc, &host->mmc->ios);
+ 	mmiowb();
+ 
++	if (host->waking_up) {
++		host->waking_up = 0;
++		/* Re-enable the irq now we are perfectly resumed.
++		 * Any yet unhandled interrupt (i.e. the wake) will retrigger
++		 * irq
++		 */
++		irq_enable(host->irq);
++	}
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(sdhci_runtime_resume);
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index a38d040..6a3c6af 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -146,6 +146,8 @@ struct sdhci_host {
+ 	unsigned int            ocr_avail_sd;
+ 	unsigned int            ocr_avail_mmc;
+ 
++	bool                    waking_up;
 +
- #endif /* __SDHCI_HW_H */
+ 	unsigned long private[0] ____cacheline_aligned;
+ };
+ #endif /* __SDHCI_H */
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e3c7fc0..17aeda3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1325,8 +1325,8 @@ sub process {
+ 		$prefix = "$filename:$realline: " if ($emacs && $file);
+ 		$prefix = "$filename:$linenr: " if ($emacs && !$file);
+ 
+-		$here = "#$linenr: " if (!$file);
+-		$here = "#$realline: " if ($file);
++		$here = "" if (!$file);
++		$here = "" if ($file);
+ 
+ 		# extract the filename as it passes
+ 		if ($line =~ /^diff --git.*?(\S+)$/) {
+@@ -1349,7 +1349,7 @@ sub process {
+ 			next;
+ 		}
+ 
+-		$here .= "FILE: $realfile:$realline:" if ($realcnt != 0);
++		$here .= "$realfile:$realline:" if ($realcnt != 0);
+ 
+ 		my $hereline = "$here\n$rawline\n";
+ 		my $herecurr = "$here\n$rawline\n";
 -- 
 1.7.1
 
