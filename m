@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab1CASpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 13:45:22 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:47738 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756628Ab1CASpV (ORCPT
+	id S1756773Ab1CASuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 13:50:44 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51127 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab1CASun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 13:45:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=ou6n1BysnYhnzAZDnnGzcBEkbDd/nyjl6JGtEsocO6s9gLQeoeac3OVib883brFqQz
-         AJxD0DrW40iRKrTP7dvA==
-MIME-Version: 1.0
-In-Reply-To: <20110301142002.GB25699@redhat.com>
-References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com> <20110301142002.GB25699@redhat.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Tue, 1 Mar 2011 10:44:52 -0800
-Message-ID: <AANLkTimEcrZPv8L_Sn3UtkCQ3yUUJFORtHVEvFapcJG-@mail.gmail.com>
-Subject: Re: RFC: default group_isolation to 1, remove option
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>, lkml <linux-kernel@vger.kernel.org>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Tue, 1 Mar 2011 13:50:43 -0500
+Date: Tue, 1 Mar 2011 10:49:24 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Pekka Enberg <penberg@kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        gregkh@suse.de
+Subject: Re: linux-next: Tree for March 1 (staging/winbond)
+Message-Id: <20110301104924.071044ef.randy.dunlap@oracle.com>
+In-Reply-To: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D6D3FC7.0173:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 6:20 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Mon, Feb 28, 2011 at 04:19:43PM -0800, Justin TerAvest wrote:
->> Hi Vivek,
->>
->> I'd like to propose removing the group_isolation setting and changing
->> the default to 1. Do we know if anyone is using group_isolation=0 to get
->> easy group separation between sequential readers and random readers?
->
-> CCing Corrado.
->
-> I like the idea of setting group_isolation = 1 to default. So far I have
-> not found anybody trying to use group_isolation=0 and every time I had
-> to say can you try setting group_isolation to 1 if you are not seeing
-> service differentiation.
->
-> I think I would not mind removing it completely altogether also. This will
-> also remove some code from CFQ. The reason we introduced group_isolation
-> because by default we idle on sync-noidle tree and on fast devices idling on
-> every syn-noidle tree can be very harmful for throughput, especially on faster
-> storage like storage arrays.
->
-> One of the soutions for that problem can be that run with slice idle
-> enabled on SATA disks and run with slice_idle=0 and possibly group_idle=0
-> also on faster storage. Setting idling to 0 will increase throughput but
-> at the same time reduce the isolation significantly. But I guess this
-> is the performance vs isolation trade off.
+On Tue, 1 Mar 2011 18:11:19 +1100 Stephen Rothwell wrote:
 
-I agree. Thanks! I'll send a patch shortly, CCing everyone here and we
-can have any further discussion there.
+> Hi all,
+> 
+> Changes since 20110228:
 
->
->>
->> Allowing group_isolation complicates implementing per-cgroup request
->> descriptor pools when a queue is moved to the root group. Specifically,
->> if we have pools per-cgroup, we would be forced to use request
->> descriptors from the pool for the "original" cgroup, while the requests
->> are actually being serviced by the root cgroup.
->
-> I think creating per group request pool will complicate the implementation
-> further. (we have done that once in the past). Jens once mentioned that
-> he liked number of requests per iocontext limit better than overall queue
-> limit. So if we implement per iocontext limit, it will get rid of need
-> of doing anything extra for group infrastructure.
 
-I will go read the discussion history for this, but I am concerned that doing
-page tracking to look up the iocontext will be more complicated than
-tracking dirtied pages per-cgroup. I would hope there is a big advantage
-to per icontext limits.
+commit ddee7e28e7d5e4ba2b8537c6a59b035745c250bb
+Author: Pekka Enberg <penberg@kernel.org>
+Date:   Sun Nov 28 23:00:01 2010 +0200
+    Staging: w35und: Remove empty sysdef.h header
 
-Thanks,
-Justin
 
->
-> Jens, do you think per iocontext per queue limit on request descriptors make
-> sense and we can get rid of per queue overall limit?
->
-> Thanks
-> Vivek
->
+This header should not have been empty, since in
+
+commit 412dc7f368bf10a8049a8a4c41abbfd0108742e7
+Author: Randy Dunlap <randy.dunlap@oracle.com>
+Date:   Fri Nov 19 09:30:18 2010 -0800
+    staging: fix winbond build, needs delay.h
+
+I added delay.h to it.  And now we have the same build
+errors that I fixed last November:
+
+drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration of function 'msleep'
+drivers/staging/winbond/phy_calibration.c:1555: error: implicit declaration of function 'udelay'
+drivers/staging/winbond/reg.c:893: error: implicit declaration of function 'msleep'
+drivers/staging/winbond/reg.c:1169: error: implicit declaration of function 'udelay'
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
