@@ -1,36 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab1CAOQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 09:16:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38601 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab1CAOQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 09:16:22 -0500
-Date: Tue, 1 Mar 2011 15:16:20 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
-        davem@davemloft.net, greg@kroah.com, rdunlap@xenotime.net
-Subject: Re: [PATCH]Maintain Chinese Documentations
-In-Reply-To: <20110216102801.GA10961@gmail.com>
-Message-ID: <alpine.LNX.2.00.1103011515510.32580@pobox.suse.cz>
-References: <iiqti3$3b5$2@dough.gmane.org> <AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com> <20110208093020.GA2016@gmail.com> <20110208093528.GA2580@pengutronix.de> <AANLkTi=RgPS_tzBP+0=wxuh58cV=3_m+5=gYwG8ffkY0@mail.gmail.com>
- <20110208100153.GA2815@gmail.com> <20110208101328.GB2580@pengutronix.de> <AANLkTimSgeRKsAckU+2iE9oqo33uanLeLaKTQdYkpfw=@mail.gmail.com> <20110208103332.GA2932@gmail.com> <AANLkTimAAq10AzoWFBhKKSizH5pX_F8jOPsQE25w9J_E@mail.gmail.com>
- <20110216102801.GA10961@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755514Ab1CAOSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:18:42 -0500
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:39560 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab1CAOSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 09:18:40 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAG+ObE2rRN+K/2dsb2JhbACmTHSfJJwphWEEhRKHDYNA
+X-IronPort-AV: E=Sophos;i="4.62,246,1297036800"; 
+   d="scan'208";a="336978493"
+Message-ID: <4D6D004F.5010602@cisco.com>
+Date: Tue, 01 Mar 2011 07:18:55 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 4/6] perf script: dump software events too
+References: <1298865151-23656-1-git-send-email-daahern@cisco.com>	<1298865151-23656-5-git-send-email-daahern@cisco.com> <AANLkTikwsuBGVfB6uu7=H0jbL+2YbbvX=ea6rLwNP8w-@mail.gmail.com>
+In-Reply-To: <AANLkTikwsuBGVfB6uu7=H0jbL+2YbbvX=ea6rLwNP8w-@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Feb 2011, Harry Wei wrote:
 
-> 	I have translated some documentations of kernel so i want to 
-> maintain Chinese documentation in our kernel directories.
 
-I don't see this in linux-next as of today, so I have picked it up.
+On 03/01/2011 07:09 AM, Frederic Weisbecker wrote:
+> 
+> That's not on the right place. This is going to print the events even
+> when we launch scripts. We only want to print them when we launch
+> perf script without a script, which falls back to printing events
+> (look at default_scripting_ops).
+> 
+> Like I suggested you, it's better to extend struct
+> scripting_ops::process_event()
+> to take the whole event and let the handler decide what to do.
+> Python and Perl scripting engines can just extract the raw sample and
+> do like they did before.
+> But print_event(), which is the process_event() handler for the
+> default_scripting_ops,
+> can handle the new printing features.
+> 
+> That's also more flexible, this lets Python and Perl scripting engines
+> be extendable
+> to handle the rest of the event later.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I don't follow what you mean.
+
+This is the same place that tracepoints are dumped. In the
+PERF_TYPE_TRACEPOINT case process_event == print_event which dumps the
+lines to stdout.
+
+I came in added a switch that invokes a different handler for software
+events. Software events will be processed differently than tracepoint.
+The print_event function and its pretty_print function are not designed
+to dump software events (and eventually hardware events).
+
+David
