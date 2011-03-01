@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab1CAUM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:12:27 -0500
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:57833 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753415Ab1CAUMZ (ORCPT
+	id S1757396Ab1CAUM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:12:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36974 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753415Ab1CAUM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:12:25 -0500
-Message-ID: <4D6D5322.60908@example.com>
-Date: Tue, 01 Mar 2011 21:12:18 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: To Peter Zijlstra - will you please update your mmu_preempt source?
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 5990913405474992408
-X-Ovh-Remote: 178.36.158.179 (178-36-158-179.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Tue, 1 Mar 2011 15:12:27 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] mfd: Convert WM831x interrupt masking to enable/disable operations
+Date: Tue,  1 Mar 2011 20:12:44 +0000
+Message-Id: <1299010366-31453-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Peter,
+The WM831x interrupt masking support is a much better match for the genirq
+enable and disable operations than for the mask and unmask operations. The
+latter are intended to used during interrupt handling for temporary changes
+which isn't really practical on a slow bus. Convert the operations over to
+match this.
 
-I fail on merge just now.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-irq.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-Regards,
-
-Piotr Hosowicz
-
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index 2e45f60..a5cd17e 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -352,6 +352,10 @@ static void wm831x_irq_sync_unlock(struct irq_data *data)
+ 		/* If there's been a change in the mask write it back
+ 		 * to the hardware. */
+ 		if (wm831x->irq_masks_cur[i] != wm831x->irq_masks_cache[i]) {
++			dev_dbg(wm831x->dev, "IRQ mask sync: %x = %x\n",
++				WM831X_INTERRUPT_STATUS_1_MASK + i,
++				wm831x->irq_masks_cur[i]);
++
+ 			wm831x->irq_masks_cache[i] = wm831x->irq_masks_cur[i];
+ 			wm831x_reg_write(wm831x,
+ 					 WM831X_INTERRUPT_STATUS_1_MASK + i,
+@@ -362,7 +366,7 @@ static void wm831x_irq_sync_unlock(struct irq_data *data)
+ 	mutex_unlock(&wm831x->irq_lock);
+ }
+ 
+-static void wm831x_irq_unmask(struct irq_data *data)
++static void wm831x_irq_enable(struct irq_data *data)
+ {
+ 	struct wm831x *wm831x = irq_data_get_irq_chip_data(data);
+ 	struct wm831x_irq_data *irq_data = irq_to_wm831x_irq(wm831x,
+@@ -371,7 +375,7 @@ static void wm831x_irq_unmask(struct irq_data *data)
+ 	wm831x->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
+ }
+ 
+-static void wm831x_irq_mask(struct irq_data *data)
++static void wm831x_irq_disable(struct irq_data *data)
+ {
+ 	struct wm831x *wm831x = irq_data_get_irq_chip_data(data);
+ 	struct wm831x_irq_data *irq_data = irq_to_wm831x_irq(wm831x,
+@@ -417,8 +421,8 @@ static struct irq_chip wm831x_irq_chip = {
+ 	.name			= "wm831x",
+ 	.irq_bus_lock		= wm831x_irq_lock,
+ 	.irq_bus_sync_unlock	= wm831x_irq_sync_unlock,
+-	.irq_mask		= wm831x_irq_mask,
+-	.irq_unmask		= wm831x_irq_unmask,
++	.irq_disable		= wm831x_irq_disable,
++	.irq_enable		= wm831x_irq_enable,
+ 	.irq_set_type		= wm831x_irq_set_type,
+ };
+ 
 -- 
-- Czy jest cukier w kostkach ?
-- Nie ma.
-- A jakas inna tania bombonierka? Dla tesciowej.
-NP: Alice In Chains - All Secrets Known
-NB: 2.6.38-rc6-git7
+1.7.2.3
+
