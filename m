@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab1CAI7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 03:59:40 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51331 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757Ab1CAI7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 03:59:38 -0500
-Date: Tue, 1 Mar 2011 08:59:11 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Simon Glass <sjg@chromium.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
-Message-ID: <20110301085911.GB16733@n2100.arm.linux.org.uk>
-References: <1298939263-16421-1-git-send-email-sjg@chromium.org> <20110301084949.GA16733@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110301084949.GA16733@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755978Ab1CAJCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 04:02:30 -0500
+Received: from protonic.xs4all.nl ([213.84.116.84]:11736 "EHLO protonic.prtnl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755643Ab1CAJC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 04:02:27 -0500
+X-Greylist: delayed 1692 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 04:02:26 EST
+Date: Tue, 1 Mar 2011 09:35:28 +0100
+From: David Jander <david.jander@protonic.nl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andres Salomon <dilinger@queued.net>,
+        David Jander <david@protonic.nl>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: linux-next: manual merge of the mfd tree with the i.MX tree
+Message-ID: <20110301093528.00184f93@archvile>
+In-Reply-To: <20110301145436.b1ae1923.sfr@canb.auug.org.au>
+References: <20110301145436.b1ae1923.sfr@canb.auug.org.au>
+Organization: Protonic Holland
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 08:49:49AM +0000, Russell King - ARM Linux wrote:
-> On Mon, Feb 28, 2011 at 04:27:43PM -0800, Simon Glass wrote:
-> > +	asm volatile("1:\t.word %c3\n"				\
-> > +		     ".pushsection __bug_table,\"a\"\n"		\
-> > +		     "2:\t.word 1b, %c0\n"			\
-> > +		     "\t.hword %c1, 0\n"			\
-> > +		     "\t.org 2b+%c2\n"				\
+
+Hi Stephen,
+
+On Tue, 1 Mar 2011 14:54:36 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Today's linux-next merge of the mfd tree got a conflict in
+> arch/arm/mach-imx/mach-mx27_3ds.c arch/arm/mach-imx/mach-pcm038.c
+> arch/arm/mach-mx3/mach-mx31_3ds.c arch/arm/mach-mx3/mach-mx31moboard.c
+> between commit 5836372e8a0ba5cc633f61bc0484ee20c86f4b36 ("ARM: imx+mx3:
+> convert to mc13xxx MFD") from the i.MX tree and commit
+> e84e545d47d26644275a79fe5ebc1797bcb80910 ("mfd: mfd_cell is now
+> implicitly available to mc13xxx drivers") from the mfd tree.
 > 
-> %c doesn't work on lots of versions of gcc, which is why we can't use
-> the generic bug support.  There's no way to reliably generate constants
-> without many compiler versions spitting out a '#' before them.
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-gcc 4.3.2:
+Your fix seems correct, although I fear I am too dumb to understand why commit
+e84e545d47d26644275a79fe5ebc1797bcb80910 introduces this extra struct
+nesting.... AFAICS gcc will end up doing the same as without the extra nest.
 
-asm(".word %c0" : : "i" (0));
+Btw, include/linux/mfd/mc13783.h should end up disappearing after you're done
+merging... I hope so.
 
-produces:
+Best regards,
 
-        .word #0
-
-which gas chokes on:
-
-/tmp/cc2hGOHd.s:12: Error: bad expression
-/tmp/cc2hGOHd.s:12: Error: junk at end of line, first unrecognized character is `0'
-
-So what this means is that it's impossible to generate constants in
-assembly with GCC targetting ARM without having them prefixed by '#',
-which in turn makes it impossible to use the generic BUG support.
-
-I reported this bug to gcc folk many years ago.  I've no idea which
-version it has been fixed in or if it's even been fixed.
+-- 
+David Jander
+Protonic Holland.
