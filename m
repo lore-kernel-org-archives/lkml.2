@@ -1,122 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab1CAFAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 00:00:18 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62386 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab1CAFAQ (ORCPT
+	id S1751810Ab1CAFBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 00:01:31 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47122 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab1CAFB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 00:00:16 -0500
+	Tue, 1 Mar 2011 00:01:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=TT/2f2H4vIFFWTyC7Ze4EB4Mj8ZRpZHdOWFQELVE9ypreJY9fbmfBN8V8QVDZw5+Hl
-         7Jj8eIKnn2sZM9QakF5ncFkVhFM6VNZE4V/8zQJ9pLZUYj46q2Sm/DKCI9eHhdj2p+6m
-         XDUZHn9vL0ULxTCixdixRAkX2WxqYdSvF/PGw=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH v2] memcg: clean up migration
-Date: Tue,  1 Mar 2011 13:59:06 +0900
-Message-Id: <1298955546-2450-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Pw8gewaAs2OzoDyzpHVsa6MH4RnEmVwYHA73eZF3P6ACJjw74IAlPRpyHu2vbdpM8y
+         pa+EfOX8pc95Jw44143hHfHBnbKT2Ujcr+/Rdinf6Nc63VYeIlfKj6bjUbEdfbSqrPUM
+         Z3KnY26aDsbTLiV1XrNJrjKhXOTvSSsfKl5Lk=
+Subject: Re: txqueuelen has wrong units; should be time
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Albert Cahalan <acahalan@gmail.com>
+Cc: John Heffner <johnwheffner@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Mikael Abrahamsson <swmike@swm.pp.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+In-Reply-To: <AANLkTinFZu5AgfhO6PoA7C1NTGSfD8HH0KXq_o-mHEJF@mail.gmail.com>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+	 <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+	 <1298793252.8726.45.camel@edumazet-laptop>
+	 <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+	 <20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+	 <1298837273.8726.128.camel@edumazet-laptop>
+	 <20110228161115.GB2515@tuxdriver.com>
+	 <1298911694.2941.639.camel@edumazet-laptop>
+	 <20110228165501.GC2515@tuxdriver.com>
+	 <AANLkTinj5szpStmA+fZ1xggdyTS+sd8Y9jXaYquDNEjs@mail.gmail.com>
+	 <AANLkTinFZu5AgfhO6PoA7C1NTGSfD8HH0KXq_o-mHEJF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Mar 2011 06:01:23 +0100
+Message-ID: <1298955683.2676.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up unncessary BUG_ON check and confusing
-charge variable.
+Le lundi 28 février 2011 à 23:11 -0500, Albert Cahalan a écrit :
 
-That's because memcg charge/uncharge could be handled by
-mem_cgroup_[prepare/end] migration itself so charge local variable
-in unmap_and_move lost the role since we introduced 
-[01b1ae6 memcg: simple migration handling]
+> It sounds like you need a callback or similar, so that TCP can be
+> informed later that the drop has occurred.
 
-And mem_cgroup_prepare_migration return 0 if only it is successful.
-Otherwise, it jumps to unlock label to clean up so BUG_ON(charge)
-isn't meaningless.
+There is the thing called skb destructor / skb_orphan() mess, that is
+not stackable... Might extend this to something more clever, and be able
+to call functions (into TCP stack for example) giving a status of skb :
+Sent, or dropped somewhere in the stack...
 
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-* Change from v1
-  - add acked-by/reviewed-by
-  - change typo
-
----
- mm/memcontrol.c |    1 +
- mm/migrate.c    |   14 ++++----------
- 2 files changed, 5 insertions(+), 10 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2fc97fc..6832926 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2872,6 +2872,7 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
- /*
-  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
-  * page belongs to.
-+ * Return 0 if charge is successful. Otherwise return -errno.
-  */
- int mem_cgroup_prepare_migration(struct page *page,
- 	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask)
-diff --git a/mm/migrate.c b/mm/migrate.c
-index eb083a6..737c2e5 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -622,7 +622,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	int *result = NULL;
- 	struct page *newpage = get_new_page(page, private, &result);
- 	int remap_swapcache = 1;
--	int charge = 0;
- 	struct mem_cgroup *mem;
- 	struct anon_vma *anon_vma = NULL;
- 
-@@ -637,9 +636,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 		if (unlikely(split_huge_page(page)))
- 			goto move_newpage;
- 
--	/* prepare cgroup just returns 0 or -ENOMEM */
- 	rc = -EAGAIN;
--
- 	if (!trylock_page(page)) {
- 		if (!force)
- 			goto move_newpage;
-@@ -678,13 +675,11 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	}
- 
- 	/* charge against new page */
--	charge = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
--	if (charge == -ENOMEM) {
--		rc = -ENOMEM;
-+	rc = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
-+	if (rc)
- 		goto unlock;
--	}
--	BUG_ON(charge);
- 
-+	rc = -EAGAIN;
- 	if (PageWriteback(page)) {
- 		if (!force || !sync)
- 			goto uncharge;
-@@ -767,8 +762,7 @@ skip_unmap:
- 		drop_anon_vma(anon_vma);
- 
- uncharge:
--	if (!charge)
--		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-+	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
- unlock:
- 	unlock_page(page);
- 
--- 
-1.7.1
 
