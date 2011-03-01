@@ -1,145 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab1CAWPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 17:15:53 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53480 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752148Ab1CAWPw (ORCPT
+	id S1756328Ab1CAWQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 17:16:00 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:53872 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab1CAWP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 17:15:52 -0500
-Date: Tue, 1 Mar 2011 14:15:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
-        Clemens Ladisch <cladisch@googlemail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled
- while isolating pages for migration
-Message-Id: <20110301141510.64691f9d.akpm@linux-foundation.org>
-In-Reply-To: <1298664299-10270-3-git-send-email-mel@csn.ul.ie>
-References: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
-	<1298664299-10270-3-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 1 Mar 2011 17:15:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Max Vozeler <max@vozeler.com>
+Subject: Re: [PATCH 03/20] staging/usbip: convert to kthread
+Date: Tue, 1 Mar 2011 23:15:55 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de> <1295993854-4971-4-git-send-email-arnd@arndb.de> <4D4302AC.3050903@vozeler.com>
+In-Reply-To: <4D4302AC.3050903@vozeler.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103012315.55188.arnd@arndb.de>
+X-Provags-ID: V02:K0:wgX9L+hFt3/8IYlQsqKlwVTIfrRh/TpOrMkOHK/yIQ7
+ n9ZsfV4Jv6gUOvU9cGfg42Ju/7/Hi8P5GkQGF/itE/jUQgxDXu
+ JDLRx8l+j5nI9lIXVvhechZb5fd5oia9X3OKT+MQz5LFXxHOFu
+ Bwk8vtp0ggz/ZgwOuBD1owcqThf3YGHrj+sd9Y0zgXqQ/Qc8dA
+ BMNGDMP2o+K0PiQ5xeUMA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Feb 2011 20:04:59 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
+On Friday 28 January 2011 18:53:48 Max Vozeler wrote:
+> I need to leave now for the next couple of days,
+> so this is a bit rushed.
+> 
+> I can take a closer look and do tests in different
+> setups during the next week.
+> 
 
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> compaction_alloc() isolates pages for migration in isolate_migratepages. While
-> it's scanning, IRQs are disabled on the mistaken assumption the scanning
-> should be short. Tests show this to be true for the most part but
-> contention times on the LRU lock can be increased. Before this patch,
-> the IRQ disabled times for a simple test looked like
-> 
-> Total sampled time IRQs off (not real total time): 5493
-> Event shrink_inactive_list..shrink_zone                  1596 us count 1
-> Event shrink_inactive_list..shrink_zone                  1530 us count 1
-> Event shrink_inactive_list..shrink_zone                   956 us count 1
-> Event shrink_inactive_list..shrink_zone                   541 us count 1
-> Event shrink_inactive_list..shrink_zone                   531 us count 1
-> Event split_huge_page..add_to_swap                        232 us count 1
-> Event save_args..call_softirq                              36 us count 1
-> Event save_args..call_softirq                              35 us count 2
-> Event __wake_up..__wake_up                                  1 us count 1
-> 
-> This patch reduces the worst-case IRQs-disabled latencies by releasing the
-> lock every SWAP_CLUSTER_MAX pages that are scanned and releasing the CPU if
-> necessary. The cost of this is that the processing performing compaction will
-> be slower but IRQs being disabled for too long a time has worse consequences
-> as the following report shows;
-> 
-> Total sampled time IRQs off (not real total time): 4367
-> Event shrink_inactive_list..shrink_zone                   881 us count 1
-> Event shrink_inactive_list..shrink_zone                   875 us count 1
-> Event shrink_inactive_list..shrink_zone                   868 us count 1
-> Event shrink_inactive_list..shrink_zone                   555 us count 1
-> Event split_huge_page..add_to_swap                        495 us count 1
-> Event compact_zone..compact_zone_order                    269 us count 1
-> Event split_huge_page..add_to_swap                        266 us count 1
-> Event shrink_inactive_list..shrink_zone                    85 us count 1
-> Event save_args..call_softirq                              36 us count 2
-> Event __wake_up..__wake_up                                  1 us count 1
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  mm/compaction.c |   18 ++++++++++++++++++
->  1 files changed, 18 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 11d88a2..ec9eb0f 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -279,9 +279,27 @@ static unsigned long isolate_migratepages(struct zone *zone,
->  	}
->  
->  	/* Time to isolate some pages for migration */
-> +	cond_resched();
->  	spin_lock_irq(&zone->lru_lock);
->  	for (; low_pfn < end_pfn; low_pfn++) {
->  		struct page *page;
-> +		bool unlocked = false;
-> +
-> +		/* give a chance to irqs before checking need_resched() */
-> +		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-> +			spin_unlock_irq(&zone->lru_lock);
-> +			unlocked = true;
-> +		}
-> +		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
-> +			if (!unlocked)
-> +				spin_unlock_irq(&zone->lru_lock);
-> +			cond_resched();
-> +			spin_lock_irq(&zone->lru_lock);
-> +			if (fatal_signal_pending(current))
-> +				break;
-> +		} else if (unlocked)
-> +			spin_lock_irq(&zone->lru_lock);
-> +
->  		if (!pfn_valid_within(low_pfn))
->  			continue;
->  		nr_scanned++;
+It seems we both forgot about this. This is what I now added to my tree.
+Greg, I'll resubmit a folded version with the original patch.
 
-That was somewhat ghastly.
+	Arnd
+8<------
 
-I think it can be made only 99% as ghastly by renaming "unlocked" to
-"locked" and eliminating the double-negative logic.
+staging/usbip: fix breakage from BKL removal
+    
+wait_event_interruptible() in a kthread needs
+to check if the kthread should stop.
+    
+Thread creation was racy, calling kthread_run
+instead of wake_up on an existing kthread
+fixes this.
+    
+Reported-by: Max Vozeler <max@vozeler.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
 
---- a/mm/compaction.c~mm-compaction-minimise-the-time-irqs-are-disabled-while-isolating-pages-for-migration
-+++ a/mm/compaction.c
-@@ -279,9 +279,27 @@ static unsigned long isolate_migratepage
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index f2c6148..8214c35 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -139,8 +139,8 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
+ 
+ 		spin_unlock(&sdev->ud.lock);
+ 
+-		wake_up_process(sdev->ud.tcp_rx);
+-		wake_up_process(sdev->ud.tcp_tx);
++		sdev->ud.tcp_rx = kthread_run(stub_rx_loop, &sdev->ud, "stub_rx");
++		sdev->ud.tcp_tx = kthread_run(stub_tx_loop, &sdev->ud, "stub_tx");
+ 
+ 		spin_lock(&sdev->ud.lock);
+ 		sdev->ud.status = SDEV_ST_USED;
+@@ -339,9 +339,6 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
+ 	 */
+ 	sdev->devid     = (busnum << 16) | devnum;
+ 
+-	sdev->ud.tcp_rx = kthread_create(stub_rx_loop, &sdev->ud, "stub_rx");
+-	sdev->ud.tcp_tx = kthread_create(stub_tx_loop, &sdev->ud, "stub_tx");
+-
+ 	sdev->ud.side = USBIP_STUB;
+ 	sdev->ud.status = SDEV_ST_AVAILABLE;
+ 	/* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
+diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
+index 2477481..5523f25 100644
+--- a/drivers/staging/usbip/stub_tx.c
++++ b/drivers/staging/usbip/stub_tx.c
+@@ -365,7 +365,8 @@ int stub_tx_loop(void *data)
+ 
+ 		wait_event_interruptible(sdev->tx_waitq,
+ 				(!list_empty(&sdev->priv_tx) ||
+-				 !list_empty(&sdev->unlink_tx)));
++				 !list_empty(&sdev->unlink_tx) ||
++				 kthread_should_stop()));
  	}
  
- 	/* Time to isolate some pages for migration */
-+	cond_resched();
- 	spin_lock_irq(&zone->lru_lock);
- 	for (; low_pfn < end_pfn; low_pfn++) {
- 		struct page *page;
-+		bool locked = true;
+ 	return 0;
+diff --git a/drivers/staging/usbip/usbip_event.c b/drivers/staging/usbip/usbip_event.c
+index 89aecec..f4b287e 100644
+--- a/drivers/staging/usbip/usbip_event.c
++++ b/drivers/staging/usbip/usbip_event.c
+@@ -67,12 +67,13 @@ static int event_handler_loop(void *data)
+ 	struct usbip_device *ud = data;
+ 
+ 	while (!kthread_should_stop()) {
+-		if (event_handler(ud) < 0)
+-			break;
+-
+ 		wait_event_interruptible(ud->eh_waitq,
+-					usbip_event_happened(ud));
++					usbip_event_happened(ud) ||
++					kthread_should_stop());
+ 		usbip_dbg_eh("wakeup\n");
 +
-+		/* give a chance to irqs before checking need_resched() */
-+		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			locked = false;
-+		}
-+		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
-+			if (locked)
-+				spin_unlock_irq(&zone->lru_lock);
-+			cond_resched();
-+			spin_lock_irq(&zone->lru_lock);
-+			if (fatal_signal_pending(current))
-+				break;
-+		} else if (!locked)
-+			spin_lock_irq(&zone->lru_lock);
-+
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
- 		nr_scanned++;
-
++		if (event_handler(ud) < 0)
++			break;
+ 	}
+ 	return 0;
+ }
+diff --git a/drivers/staging/usbip/vhci_tx.c b/drivers/staging/usbip/vhci_tx.c
+index 6d065b9..d9ab49d 100644
+--- a/drivers/staging/usbip/vhci_tx.c
++++ b/drivers/staging/usbip/vhci_tx.c
+@@ -230,7 +230,8 @@ int vhci_tx_loop(void *data)
+ 
+ 		wait_event_interruptible(vdev->waitq_tx,
+ 				(!list_empty(&vdev->priv_tx) ||
+-				 !list_empty(&vdev->unlink_tx)));
++				 !list_empty(&vdev->unlink_tx) ||
++				 kthread_should_stop()));
+ 
+ 		usbip_dbg_vhci_tx("pending urbs ?, now wake up\n");
+ 	}
