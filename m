@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab1CAPnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 10:43:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37663 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756636Ab1CAPny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 10:43:54 -0500
-From: Abhilash K V <abhilash.kv@ti.com>
-To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Cc: Abhilash K V <abhilash.kv@ti.com>
-Subject: [PATCH] audio:am3517evm support for AIC23
-Date: Tue,  1 Mar 2011 21:13:38 +0530
-Message-Id: <1298994218-30610-1-git-send-email-abhilash.kv@ti.com>
-X-Mailer: git-send-email 1.6.2.4
+	id S1756762Ab1CAPoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 10:44:07 -0500
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:57811 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756728Ab1CAPoE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 10:44:04 -0500
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 10:44:03 EST
+X-AuditID: 12074423-b7bd0ae000000a00-1a-4d6d1315f93b
+Subject: Re: [REGRESSION] tpm_tis on Lenovo T410 broken in 2.6.38-rc6
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <4D6CFA80.3020505@linux.vnet.ibm.com>
+Date: Tue, 1 Mar 2011 10:38:49 -0500
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BD305A55-A581-4779-B5EA-084B186C903D@mit.edu>
+References: <E1PuKHL-0000lw-RM@tytso-glaptop> <4D6CFA80.3020505@linux.vnet.ibm.com>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+X-Mailer: Apple Mail (2.1082)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch aims to fix the registration of the AIC23-based audio
-module on the AM3517-EVM, with the following two changes:
 
-1. The i2c_board_info entry supporting aic23 codec was added into
-   the i2c2 bus.
-2. The i2c client device name (".2-001a" in this case, including
-   the separator period) was appended to the codec_name member of
-   am3517evm_dai to resolve the names mismatch happening in
-   soc_bind_dai_link().
+On Mar 1, 2011, at 8:54 AM, Rajiv Andrade wrote:
 
-Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
----
- arch/arm/mach-omap2/board-am3517evm.c |    3 +++
- sound/soc/omap/am3517evm.c            |    2 +-
- 2 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> The previously reverted commit makes the TPM device driver get the returned timeouts correctly. However, some TPMs return such values in msecs instead of usecs, causing some commands to timeout (e.g the TPM_SaveState, sent at suspend). There's a reworked version of the tpm_tis: Use timeouts returned from TPM patch that adjusts these short timeouts automatically, can you check if it works for you?
+> 
+>        git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+> 
+> 
 
-diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
-index ad71cbf..8da8d20 100644
---- a/arch/arm/mach-omap2/board-am3517evm.c
-+++ b/arch/arm/mach-omap2/board-am3517evm.c
-@@ -358,6 +358,9 @@ static struct pca953x_platform_data am3517evm_gpio_expander_info_0 = {
- };
- static struct i2c_board_info __initdata am3517evm_i2c2_boardinfo[] = {
- 	{
-+		I2C_BOARD_INFO("tlv320aic23", 0x1A),
-+	},
-+	{
- 		I2C_BOARD_INFO("tca6416", 0x21),
- 		.platform_data = &am3517evm_gpio_expander_info_0,
- 	},
-diff --git a/sound/soc/omap/am3517evm.c b/sound/soc/omap/am3517evm.c
-index 979dd50..ddbd2a1 100644
---- a/sound/soc/omap/am3517evm.c
-+++ b/sound/soc/omap/am3517evm.c
-@@ -139,7 +139,7 @@ static struct snd_soc_dai_link am3517evm_dai = {
- 	.cpu_dai_name ="omap-mcbsp-dai.0",
- 	.codec_dai_name = "tlv320aic23-hifi",
- 	.platform_name = "omap-pcm-audio",
--	.codec_name = "tlv320aic23-codec",
-+	.codec_name = "tlv320aic23-codec.2-001a",
- 	.init = am3517evm_aic23_init,
- 	.ops = &am3517evm_ops,
- };
--- 
-1.6.2.4
+Just to clarify, I'm using a version of Linus's upstream that already had the first commit ("Use timeouts returned fromTPM") disabled.   However, when things broke, I saw that reverting the "Long default timeouts  fix" caused me to no longer get "timeout" errors, and my TPM software started working again, so I could connect to the intranet.
+
+> I don't know however why the second commit you reverted still caused the timeouts, I have the same machine here. Did you test both patches with TPM interrupts disabled? (with tpm_tis interrupts option set to 0)
+
+I tested with no options;  until you mentioned it, I didn't even know that this module parameter existed, and it was something I should try toggling.  I was just a normal schlub who tried pulling the latest Linus tree, tried using it, and got a broken TPM.
+
+So tell me what to test, and exactly how to test it, and I'm happy to run experiments for you.   Do you want me to take Linus's latest upstream (which has one TPM patch reverted), apply your for-james patch, and then try with and without tpm_tis's interrupts option set to zero?   I assume that means adding modprobe options parameter interrupts=0?
+
+-- Ted
+
 
