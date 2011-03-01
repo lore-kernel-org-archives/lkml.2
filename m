@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab1CAREH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 12:04:07 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:58313 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab1CAREC (ORCPT
+	id S1757013Ab1CAREZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 12:04:25 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49689 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756998Ab1CAREW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 12:04:02 -0500
+	Tue, 1 Mar 2011 12:04:22 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 5/6] perf top: Fix reporting of invalid --vmlinux
-Date: Tue,  1 Mar 2011 14:03:46 -0300
-Message-Id: <1298999027-30673-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 4/6] perf tui: Make ui__warning modal
+Date: Tue,  1 Mar 2011 14:03:45 -0300
+Message-Id: <1298999027-30673-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1298999027-30673-1-git-send-email-acme@infradead.org>
 References: <1298999027-30673-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,10 +29,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Using ui__warning, that will, in --tui, show a window with the message,
-waiting for the user to press Ok.
+By taking the ui__lock so that no other screen updates take place while
+waiting for the user.
 
-Also run exit_browser() to let newt do its final cleaning of the screen.
+That was happening when handling an invalid --vmlinux parameter in 'perf
+top --tui', with the screen refresh routine repainting the screen and
+removing the warning window.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -44,25 +46,36 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ tools/perf/util/ui/util.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index f88a263..0b07cc3 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -740,8 +740,9 @@ static void perf_event__process_sample(const union perf_event *event,
- 		 */
- 		if (al.map == machine->vmlinux_maps[MAP__FUNCTION] &&
- 		    RB_EMPTY_ROOT(&al.map->dso->symbols[MAP__FUNCTION])) {
--			pr_err("The %s file can't be used\n",
--			       symbol_conf.vmlinux_name);
-+			ui__warning("The %s file can't be used\n",
-+				    symbol_conf.vmlinux_name);
-+			exit_browser(0);
- 			exit(1);
- 		}
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+index 7b5a892..fdf1fc8 100644
+--- a/tools/perf/util/ui/util.c
++++ b/tools/perf/util/ui/util.c
+@@ -9,6 +9,7 @@
+ #include "../debug.h"
+ #include "browser.h"
+ #include "helpline.h"
++#include "ui.h"
+ #include "util.h"
  
+ static void newt_form__set_exit_keys(newtComponent self)
+@@ -118,10 +119,12 @@ void ui__warning(const char *format, ...)
+ 	va_list args;
+ 
+ 	va_start(args, format);
+-	if (use_browser > 0)
++	if (use_browser > 0) {
++		pthread_mutex_lock(&ui__lock);
+ 		newtWinMessagev((char *)warning_str, (char *)ok,
+ 				(char *)format, args);
+-	else
++		pthread_mutex_unlock(&ui__lock);
++	} else
+ 		vfprintf(stderr, format, args);
+ 	va_end(args);
+ }
 -- 
 1.6.2.5
 
