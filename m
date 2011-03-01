@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab1CAQ2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:28:41 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37026 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab1CAQ2k convert rfc822-to-8bit (ORCPT
+	id S1756758Ab1CAQem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:34:42 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:15368 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab1CAQel convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:28:40 -0500
+	Tue, 1 Mar 2011 11:34:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bMg3g3miNlfOdeqy6KueKjEx97x7W5M1L8Hlex6sDT0j0QNEixDutKf8we/Hzs4Hok
-         F7C2Xpm8d9CHGxxoikwa4bFY7frw4NC/f/9RLv9ARLqdkac/z1VVIVZUaJf+b1s7tLFy
-         /mDFqmwsDa2AtF64qZxaAtdyaQCarbb06tswA=
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NG4cLOVJscAP0B8eLmmD5qWe6nfiqP1trFXz/cTXXdT3qUz1vg6llG/Gj0whljageF
+         Lu4F6GdJTyxLfEYDKzCA==
 MIME-Version: 1.0
-In-Reply-To: <4D6D1AA8.4060809@cisco.com>
-References: <1298865151-23656-1-git-send-email-daahern@cisco.com>
-	<1298865151-23656-5-git-send-email-daahern@cisco.com>
-	<AANLkTikwsuBGVfB6uu7=H0jbL+2YbbvX=ea6rLwNP8w-@mail.gmail.com>
-	<4D6D004F.5010602@cisco.com>
-	<AANLkTi=jmS80Rs13QiTmdA5iUXvNaSKxQ9Gpp2P2nqRU@mail.gmail.com>
-	<4D6D1AA8.4060809@cisco.com>
-Date: Tue, 1 Mar 2011 17:24:44 +0100
-Message-ID: <AANLkTin_ShM+OA3QPxJ1Tc-EGf6enHg-d84Cdpg00=Op@mail.gmail.com>
-Subject: Re: [PATCH 4/6] perf script: dump software events too
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
+In-Reply-To: <20110301100306.GA18007@n2100.arm.linux.org.uk>
+References: <1298939263-16421-1-git-send-email-sjg@chromium.org>
+	<20110301084949.GA16733@n2100.arm.linux.org.uk>
+	<20110301085911.GB16733@n2100.arm.linux.org.uk>
+	<19820.47240.801312.507393@pilspetsen.it.uu.se>
+	<20110301100306.GA18007@n2100.arm.linux.org.uk>
+Date: Tue, 1 Mar 2011 08:34:37 -0800
+X-Google-Sender-Auth: -OWrbqcrPkKAQpL90LGpXTH14YY
+Message-ID: <AANLkTinMnZAupxn7oYFhqkN1Y0OD-eyN=UeRpw96no9r@mail.gmail.com>
+Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
+From: Simon Glass <sjg@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mikael Pettersson <mikpe@it.uu.se>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/1 David Ahern <daahern@cisco.com>:
->
->
-> On 03/01/2011 08:11 AM, Frederic Weisbecker wrote:
+On Tue, Mar 1, 2011 at 2:03 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Mar 01, 2011 at 10:12:40AM +0100, Mikael Pettersson wrote:
+>> Russell King - ARM Linux writes:
+>>  > On Tue, Mar 01, 2011 at 08:49:49AM +0000, Russell King - ARM Linux wrote:
+>>  > > On Mon, Feb 28, 2011 at 04:27:43PM -0800, Simon Glass wrote:
+>>  > > > +      asm volatile("1:\t.word %c3\n"                          \
+>>  > > > +                   ".pushsection __bug_table,\"a\"\n"         \
+>>  > > > +                   "2:\t.word 1b, %c0\n"                      \
+>>  > > > +                   "\t.hword %c1, 0\n"                        \
+>>  > > > +                   "\t.org 2b+%c2\n"                          \
+>>  > >
+>>  > > %c doesn't work on lots of versions of gcc, which is why we can't use
+>>  > > the generic bug support.  There's no way to reliably generate constants
+>>  > > without many compiler versions spitting out a '#' before them.
+>>  >
+>>  > gcc 4.3.2:
+>>  >
+>>  > asm(".word %c0" : : "i" (0));
+>>  >
+>>  > produces:
+>>  >
+>>  >         .word #0
+>>  >
+>>  > which gas chokes on:
+>>  >
+>>  > /tmp/cc2hGOHd.s:12: Error: bad expression
+>>  > /tmp/cc2hGOHd.s:12: Error: junk at end of line, first unrecognized character is `0'
+>>  >
+>>  > So what this means is that it's impossible to generate constants in
+>>  > assembly with GCC targetting ARM without having them prefixed by '#',
+>>  > which in turn makes it impossible to use the generic BUG support.
+>>  >
+>>  > I reported this bug to gcc folk many years ago.  I've no idea which
+>>  > version it has been fixed in or if it's even been fixed.
 >>
->> Why shouldn't it be designed to dump software events? It's called print_event().
->> Its current version is rather something I would call "limited". But it
->> was not designed
->> to be limited.
+>> What's the gcc bugzilla bug number?
 >
-> That's because its origins are trace specific. Per last week's thread,
-> perf-script was perf-trace until Nov 2010. perf-script deals with
-> tracepoints.
+> No idea off hand - I'll have to search for that.
+>
 
-Right it has been first created to support tracing events. Now why
-should it stay limited to them?
+It seems I am lucky with the gcc I am using. I would have thought this
+would be a pretty fundamental feature, but yes I did notice that %c
+wasn't used anywhere.
 
->> Ideally, we should have print_tracepoint_event() in
->> trace-event-parse.c, print_software_event()
->> where you want, and have print_event() in builtin-script.c that wraps on those.
->
->
-> process_event does not take the event sample, it takes elements of it:
->
-> struct scripting_ops {
-> ...
->    void (*process_event) (int cpu, void *data, int size,
->                   unsigned long long nsecs, char *comm);
-> ...
-> };
+Would this kernel feature be acceptable as a selectable config option
+on ARM then?
 
-What is the problem with changing a function prototype?
+Thanks,
+Simon
