@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab1CAQ7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:59:41 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56731 "EHLO
+	id S1756625Ab1CARDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 12:03:19 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33026 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab1CAQ7b (ORCPT
+	with ESMTP id S1752466Ab1CARDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:59:31 -0500
+	Tue, 1 Mar 2011 12:03:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=WoOSC7BiWfOM3V0mhtuMhM2nJ4Fl1Srdumqtz0D69/XZlXaHcT0EuRYYnZGN1swxUJ
-         l0vUrrPYLTXklxZiTmpSbKs5vEk/EFy/zUzCh7UbsgSHvYXlAph1BTaGSAyuAr4LFWov
-         E7lIyrCxUCp4PDBDC+QJUfEjlLH4hPRagipUo=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] Proposal for ptrace improvements
-Date: Tue, 1 Mar 2011 17:57:48 +0100
-User-Agent: KMail/1.8.2
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-References: <20110301152457.GE26074@htj.dyndns.org>
-In-Reply-To: <20110301152457.GE26074@htj.dyndns.org>
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ohUdlx04eCiqowCUrwL/QYeypUPYJClpWv4GQ7nN5PdFo4Eo2BsfLSh2fHXSP85lYe
+         sklI4FcoOYotHyq2hppWuj6wbuTB2WHvkpASYnSQnM/EX9j54F7q4oTTvSI5kEVESqtf
+         l0Lnx82mNM/7S8wyrYxkzjN4l+A0fhhRAmLpY=
+Message-ID: <4D6D26CE.6020303@gmail.com>
+Date: Tue, 01 Mar 2011 20:03:10 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: denys@visp.net.lb
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NMI received for unknown reason, 2.6.38-rc6 regression?
+References: <950d04b27ce43565cdef24e4072d7e71@visp.net.lb> <4D6D1A0B.3050903@gmail.com> <9f4d7fae5845b91debc86a65d51bf96a@visp.net.lb>
+In-Reply-To: <9f4d7fae5845b91debc86a65d51bf96a@visp.net.lb>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201103011757.48593.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 March 2011 16:24, Tejun Heo wrote:
-> PROPOSAL
-> --------
-> ...
-> P3. Keep ptrace resume separate from and beneath jctl stop
-> 
-> As written above, I think the current ptrace behavior, despite a lot
-> of rough edges, is in the right direction in that ptrace operates
-> beneath jctl.  Therefore, keep the basic operation principles but
-> clearly define how jctl and ptrace interacts, or rather, how they
-> don't.  The following two rules clearly separate jctl and ptrace.
-> 
-> * jctl stop initiates when one of the stop signals is received and
->   completes when all the member tasks participate in the group stop,
->   where participation preciesly means that a member task stops in
->   do_signal_stop().  Any member task can only participate once in any
->   given group stop.  ptrace does NOT make any difference in this
->   regard.
+On 03/01/2011 07:42 PM, denys@visp.net.lb wrote:
+...
+>>
+>> nmi_watchdog=0 should help here, actually a nit was fixed by
+>> https://patchwork.kernel.org/patch/566611/
+>> which is not in 2.6.38-rc6 but I rather suspect it'll be in -rc7 or
+>> final .38. If you have an ability
+>> to pickup it and test -- this would be great!
+ >
+> I test it, and it seems helps. At least on one host, and yes, seems all of them P4.
+>
 
-This proposal adds a new rule for handling of stop notification
-by debuggers. Let's spell it out, because currently strace
-doesn't act according to this new rule:
-
-
-"When waitpid indicates stop on a *stop* signal, then it may be either:
-* a signal delivery (strace will inject this signal with PTRACE_SYSCALL(sig));
-* or it may be a stop notification, in which case strace *must not*
-  try to inject this signal (this would be a bug, it'd make task running).
-  Instead, strace should just go back to waiting in waitpid().
-
-These two possibilities can be distinquished by querying
-PTRACE_GETSIGINFO. On stop notifications, PTRACE_GETSIGINFO
-errors out - stop notification is not a signal delivery
-and therefore it has no siginfo."
-
-
-This is easy to implement (in strace at least).
-
-> * However, PTRACE_DETACH should maintain the integrity of group stop.
->   After a tracee is detached, it should be in a state which is
->   conformant to the current jctl state.  If jctl stop is in effect,
->   the task should be put into TASK_STOPPED; otherwise, TASK_RUNNING.
-
-This means that without changes to gdb, this:
-
-# gdb -p pid_of_application_currently_in_jctl_stop
-(gdb) print getpid()
-(gdb) print show_me_your_internal_debug_dump()
-(gdb) continue
-
-will make application run, whereas this:
-
-# gdb -p pid_of_application_currently_in_jctl_stop
-(gdb) print getpid()
-(gdb) print show_me_your_internal_debug_dump()
-(gdb) quit
-
-will leave application stopped. This looks a bit inconsistent to me.
-
-Do you propose gdb to be chaged so that "continue" command
-issues PTRACE_CONT only if gdb knows that application is not
-in jctl stop?
+ok, thanks! ping me if any :)
 
 -- 
-vda
+     Cyrill
