@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab1CAXPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:15:19 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:6665 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757353Ab1CAXPQ (ORCPT
+	id S932094Ab1CAXPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:15:47 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59553
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757353Ab1CAXPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:15:16 -0500
-From: David Daney <ddaney@caviumnetworks.com>
-To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH] of: Make of_find_node_by_path() traverse /aliases for relative paths.
-Date: Tue,  1 Mar 2011 15:15:04 -0800
-Message-Id: <1299021304-4703-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 01 Mar 2011 23:15:15.0974 (UTC) FILETIME=[862FE260:01CBD866]
+	Tue, 1 Mar 2011 18:15:45 -0500
+Date: Tue, 01 Mar 2011 15:16:22 -0800 (PST)
+Message-Id: <20110301.151622.200374696.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, andrew.hendry@gmail.com,
+        linux-x25@vger.kernel.org, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com
+Subject: Re: [PATCH 5/7] x25: remove the BKL
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1299021191-17961-6-git-send-email-arnd@arndb.de>
+References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
+	<1299021191-17961-6-git-send-email-arnd@arndb.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all paths passed to of_find_node_by_path() must begin with a
-'/', indicating a full path to the desired node.
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Wed,  2 Mar 2011 00:13:09 +0100
 
-Augment the look-up code so that if a path does *not* begin with '/',
-the path is used as the name of an /aliases property.  The value of
-this alias is then used as the full node path to be found.
+> This replaces all instances of lock_kernel in x25
+> with lock_sock, taking care to release the socket
+> lock around sleeping functions (sock_alloc_send_skb
+> and skb_recv_datagram). It is not clear whether
+> this is a correct solution, but it seem to be what
+> other protocols do in the same situation.
+> 
+> Includes a fix suggested by Eric Dumazet.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- drivers/of/base.c |   24 +++++++++++++++++++++++-
- 1 files changed, 23 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 710b53b..e63da9c 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -340,7 +340,10 @@ EXPORT_SYMBOL(of_get_next_child);
- 
- /**
-  *	of_find_node_by_path - Find a node matching a full OF path
-- *	@path:	The full path to match
-+ *	@path: Either the full path to match, or if the path does not
-+ *	       start with '/', the name of a property of the /aliases
-+ *	       node (an alias).  In the case of an alias, the node
-+ *	       matching the alias' value will be returned.
-  *
-  *	Returns a node pointer with refcount incremented, use
-  *	of_node_put() on it when done.
-@@ -348,13 +351,32 @@ EXPORT_SYMBOL(of_get_next_child);
- struct device_node *of_find_node_by_path(const char *path)
- {
- 	struct device_node *np = allnodes;
-+	struct device_node *aliases = NULL;
- 
- 	read_lock(&devtree_lock);
-+
-+	if (path[0] != '/') {
-+		aliases = of_find_node_by_path("/aliases");
-+		if (!aliases)
-+			goto out;
-+		path = of_get_property(aliases, path, NULL);
-+		/*
-+		 * The alias must begin with '/', otherwise we could
-+		 * get stuck in an endless loop and blow out the
-+		 * stack.
-+		 */
-+		if (!path || path[0] != '/')
-+			goto out;
-+	}
-+
- 	for (; np; np = np->allnext) {
- 		if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
- 		    && of_node_get(np))
- 			break;
- 	}
-+out:
-+	if (aliases)
-+		of_node_put(aliases);
- 	read_unlock(&devtree_lock);
- 	return np;
- }
--- 
-1.7.2.3
-
+Acked-by: David S. Miller <davem@davemloft.net>
