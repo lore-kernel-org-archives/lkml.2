@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab1CAKDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 05:03:44 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47301 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab1CAKDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 05:03:42 -0500
-Date: Tue, 1 Mar 2011 10:03:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Simon Glass <sjg@chromium.org>, linux-kernel@vger.kernel.org,
-        Rabin Vincent <rabin@rab.in>, Alexander Shishkin <virtuoso@slind.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] ARM: Use generic BUG() handler
-Message-ID: <20110301100306.GA18007@n2100.arm.linux.org.uk>
-References: <1298939263-16421-1-git-send-email-sjg@chromium.org> <20110301084949.GA16733@n2100.arm.linux.org.uk> <20110301085911.GB16733@n2100.arm.linux.org.uk> <19820.47240.801312.507393@pilspetsen.it.uu.se>
+	id S1756104Ab1CAKWF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 05:22:05 -0500
+Received: from cantor.suse.de ([195.135.220.2]:40390 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753071Ab1CAKWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 05:22:03 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: btusb autosuspend (was Re: Linux 2.6.38-rc6)
+Date: Tue, 1 Mar 2011 11:22:13 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <AANLkTimTzjHkVQGPBRXrcb6M1_xaDY_==pB5ZyB9CJpR@mail.gmail.com> <20110224004333.GA22698@srcf.ucam.org>
+In-Reply-To: <20110224004333.GA22698@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19820.47240.801312.507393@pilspetsen.it.uu.se>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103011122.13759.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 10:12:40AM +0100, Mikael Pettersson wrote:
-> Russell King - ARM Linux writes:
->  > On Tue, Mar 01, 2011 at 08:49:49AM +0000, Russell King - ARM Linux wrote:
->  > > On Mon, Feb 28, 2011 at 04:27:43PM -0800, Simon Glass wrote:
->  > > > +	asm volatile("1:\t.word %c3\n"				\
->  > > > +		     ".pushsection __bug_table,\"a\"\n"		\
->  > > > +		     "2:\t.word 1b, %c0\n"			\
->  > > > +		     "\t.hword %c1, 0\n"			\
->  > > > +		     "\t.org 2b+%c2\n"				\
->  > > 
->  > > %c doesn't work on lots of versions of gcc, which is why we can't use
->  > > the generic bug support.  There's no way to reliably generate constants
->  > > without many compiler versions spitting out a '#' before them.
->  > 
->  > gcc 4.3.2:
->  > 
->  > asm(".word %c0" : : "i" (0));
->  > 
->  > produces:
->  > 
->  >         .word #0
->  > 
->  > which gas chokes on:
->  > 
->  > /tmp/cc2hGOHd.s:12: Error: bad expression
->  > /tmp/cc2hGOHd.s:12: Error: junk at end of line, first unrecognized character is `0'
->  > 
->  > So what this means is that it's impossible to generate constants in
->  > assembly with GCC targetting ARM without having them prefixed by '#',
->  > which in turn makes it impossible to use the generic BUG support.
->  > 
->  > I reported this bug to gcc folk many years ago.  I've no idea which
->  > version it has been fixed in or if it's even been fixed.
-> 
-> What's the gcc bugzilla bug number?
+Am Donnerstag, 24. Februar 2011, 01:43:33 schrieb Matthew Garrett:
+> On Wed, Feb 23, 2011 at 04:25:23PM -0800, Linus Torvalds wrote:
 
-No idea off hand - I'll have to search for that.
+> > It apparently had problems before too, and caused autosuspend to be
+> > disabled entirely, judging at least by
+> > 
+> >   https://bugzilla.redhat.com/show_bug.cgi?id=528744
+> > 
+> > but there's obviously the comment about "those should be fixed now".
+> > Apparently there are more issues.
+> 
+> Right, we were autosuspending even when there were active connections. 
+> Marcel told me that ought to be fixed and my testing seemed to agree...
+
+It kind of negates any advantage of autosuspend while the device is actually
+used. My tests showed that autosuspend on btusb either works well with
+active connections or not at all.
+
+> > I have no idea whether this is a USB-level issue, or a driver-level
+> > one. There are no comments about exactly what fixed the input device
+> > issues. So I'm adding both BT and USB people to the discussion.
+> 
+> I'll try to get time to look at this this week. Marcel, any ideas?
+
+Matthew, you can set the RESET_RESUME quirk for your test
+device. If it works after that, it cansupport only a limited form
+of autosuspend.
+
+	HTH
+		Oliver
