@@ -1,117 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab1CAQOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 11:14:01 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:37943 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab1CAQN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 11:13:59 -0500
+	id S1756830Ab1CAQUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 11:20:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24383 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756468Ab1CAQUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 11:20:04 -0500
+Date: Tue, 1 Mar 2011 17:19:00 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are
+ disabled while isolating pages for migration
+Message-ID: <20110301161900.GA21860@random.random>
+References: <20110301153558.GA2031@barrios-desktop>
 MIME-Version: 1.0
-Date: Tue, 1 Mar 2011 17:06:26 +0100
-Message-ID: <AANLkTi=WRo41JprvcEH0Lgc_-j_bTX1MULgJFShV6W9g@mail.gmail.com>
-Subject: [PATCH V6 2/2] tracing, perf: add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, amit.kucheria@linaro.org,
-        mingo@elte.hu, rusty@rustcorp.com.au, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110301153558.GA2031@barrios-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace the cpu state and the time spent in core and arch code
+On Wed, Mar 02, 2011 at 12:35:58AM +0900, Minchan Kim wrote:
+> On Tue, Mar 01, 2011 at 01:49:25PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Tue, 1 Mar 2011 13:11:46 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > 
+> > > On Tue, Mar 01, 2011 at 08:42:09AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > On Mon, 28 Feb 2011 10:18:27 +0000
+> > > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > > 
+> > > > > > BTW, can't we drop disable_irq() from all lru_lock related codes ?
+> > > > > > 
+> > > > > 
+> > > > > I don't think so - at least not right now. Some LRU operations such as LRU
+> > > > > pagevec draining are run from IPI which is running from an interrupt so
+> > > > > minimally spin_lock_irq is necessary.
+> > > > > 
+> > > > 
+> > > > pagevec draining is done by workqueue(schedule_on_each_cpu()). 
+> > > > I think only racy case is just lru rotation after writeback.
+> > > 
+> > > put_page still need irq disable.
+> > > 
+> > 
+> > Aha..ok. put_page() removes a page from LRU via __page_cache_release().
+> > Then, we may need to remove a page from LRU under irq context.
+> > Hmm...
+> 
+> But as __page_cache_release's comment said, normally vm doesn't release page in
+> irq context. so it would be rare.
+> If we can remove it, could we change all of spin_lock_irqsave with spin_lock?
+> If it is right, I think it's very desirable to reduce irq latency.
+> 
+> How about this? It's totally a quick implementation and untested. 
+> I just want to hear opinions of you guys if the work is valuable or not before
+> going ahead.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/cpu.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+pages freed from irq shouldn't be PageLRU.
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 156cc55..8abb84b 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -16,6 +16,9 @@
- #include <linux/mutex.h>
- #include <linux/gfp.h>
-
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/cpu_hotplug.h>
-+
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
- static DEFINE_MUTEX(cpu_add_remove_lock);
-@@ -197,10 +200,13 @@ struct take_cpu_down_param {
- static int __ref take_cpu_down(void *_param)
- {
- 	struct take_cpu_down_param *param = _param;
-+	unsigned int cpu = (unsigned int)(param->hcpu);
- 	int err;
-
- 	/* Ensure this CPU doesn't handle any more interrupts. */
-+	trace_cpu_hotplug_disable_start(cpu);
- 	err = __cpu_disable();
-+	trace_cpu_hotplug_disable_end(cpu);
- 	if (err < 0)
- 		return err;
-
-@@ -256,7 +262,9 @@ static int __ref _cpu_down(unsigned int cpu, int
-tasks_frozen)
- 		cpu_relax();
-
- 	/* This actually kills the CPU. */
-+	trace_cpu_hotplug_die_start(cpu);
- 	__cpu_die(cpu);
-+	trace_cpu_hotplug_die_end(cpu);
-
- 	/* CPU is completely dead: tell everyone.  Too late to complain. */
- 	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
-@@ -276,6 +284,8 @@ int __ref cpu_down(unsigned int cpu)
-
- 	cpu_maps_update_begin();
-
-+	trace_cpu_hotplug_down_start(cpu);
-+
- 	if (cpu_hotplug_disabled) {
- 		err = -EBUSY;
- 		goto out;
-@@ -284,6 +294,8 @@ int __ref cpu_down(unsigned int cpu)
- 	err = _cpu_down(cpu, 0);
-
- out:
-+	trace_cpu_hotplug_down_end(cpu);
-+
- 	cpu_maps_update_done();
- 	return err;
- }
-@@ -310,7 +322,9 @@ static int __cpuinit _cpu_up(unsigned int cpu, int
-tasks_frozen)
- 	}
-
- 	/* Arch-specific enabling code. */
-+	trace_cpu_hotplug_arch_up_start(cpu);
- 	ret = __cpu_up(cpu);
-+	trace_cpu_hotplug_arch_up_end(cpu);
- 	if (ret != 0)
- 		goto out_notify;
- 	BUG_ON(!cpu_online(cpu));
-@@ -369,6 +383,8 @@ int __cpuinit cpu_up(unsigned int cpu)
-
- 	cpu_maps_update_begin();
-
-+	trace_cpu_hotplug_up_start(cpu);
-+
- 	if (cpu_hotplug_disabled) {
- 		err = -EBUSY;
- 		goto out;
-@@ -377,6 +393,8 @@ int __cpuinit cpu_up(unsigned int cpu)
- 	err = _cpu_up(cpu, 0);
-
- out:
-+	trace_cpu_hotplug_up_end(cpu);
-+
- 	cpu_maps_update_done();
- 	return err;
- }
--- 
-1.7.1
+deferring freeing to workqueue doesn't look ok. firewall loads runs
+only from irq and this will cause some more work and a delay in the
+freeing. I doubt it's worhwhile especially for the lru_lock.
