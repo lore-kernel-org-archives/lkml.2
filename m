@@ -1,68 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab1CAWOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 17:14:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37597 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab1CAWOf convert rfc822-to-8bit (ORCPT
+	id S1755640Ab1CAWPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 17:15:53 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53480 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752148Ab1CAWPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 17:14:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=TmsHNen11EYIwnxayIqWLEx2tM6eYDcyLmPyUEw2dMnBd4tlrt9tPQ/PXP5EynQRX7
-         KQMcCzXLNOcpWhUNoQHQvAVLobX5rQSFRNLdvaZm/KikCyKA1sOE6uMeDSLURQmwhDcN
-         tfH6CT3QkB1fUZob4Ox4orl0fQEQ4jaPlbN70=
-MIME-Version: 1.0
-In-Reply-To: <20110301190638.GA12196@host1.dyn.jankratochvil.net>
-References: <20110301152457.GE26074@htj.dyndns.org> <20110301190638.GA12196@host1.dyn.jankratochvil.net>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Tue, 1 Mar 2011 23:14:14 +0100
-Message-ID: <AANLkTiknaHNADRa3R4Tefg2TGuFmKPZY-_08_krFiNFF@mail.gmail.com>
-Subject: Re: [RFC] Proposal for ptrace improvements
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Mar 2011 17:15:52 -0500
+Date: Tue, 1 Mar 2011 14:15:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
+        Clemens Ladisch <cladisch@googlemail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] mm: compaction: Minimise the time IRQs are disabled
+ while isolating pages for migration
+Message-Id: <20110301141510.64691f9d.akpm@linux-foundation.org>
+In-Reply-To: <1298664299-10270-3-git-send-email-mel@csn.ul.ie>
+References: <1298664299-10270-1-git-send-email-mel@csn.ul.ie>
+	<1298664299-10270-3-git-send-email-mel@csn.ul.ie>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 8:06 PM, Jan Kratochvil
-<jan.kratochvil@redhat.com> wrote:
-> On Tue, 01 Mar 2011 16:24:57 +0100, Tejun Heo wrote:
->> P4. PTRACE_SEIZE
-> [...]
->> Completion notification is delivered in the usual way via wait(2).  If
->> the task was in jctl stop, it would report the stop signal with the
->> matching siginfo.  If the task hits an existing ptrace trap condition,
->> the matching SIGTRAP will be reported; otherwise, SIGTRAP will be
->> reported with siginfo indicating PTRACE_SEIZE trap.
->
-> This is a change from the Roland's proposed PTRACE_ATTACH_NOSTOP.
+On Fri, 25 Feb 2011 20:04:59 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-As I see it, Tejun's PTRACE_SEIZE looks almost identical to the sequence of
-PTRACE_ATTACH_NOSTOP ("attach, but don't affect current state of the
-tracee. In particular, if it runs normally, let it continue to run")
-plus
-PTRACE_INTERRUPT ("if tracee isn't stopped yet, stop it with magic SIGTRAP").
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> compaction_alloc() isolates pages for migration in isolate_migratepages. While
+> it's scanning, IRQs are disabled on the mistaken assumption the scanning
+> should be short. Tests show this to be true for the most part but
+> contention times on the LRU lock can be increased. Before this patch,
+> the IRQ disabled times for a simple test looked like
+> 
+> Total sampled time IRQs off (not real total time): 5493
+> Event shrink_inactive_list..shrink_zone                  1596 us count 1
+> Event shrink_inactive_list..shrink_zone                  1530 us count 1
+> Event shrink_inactive_list..shrink_zone                   956 us count 1
+> Event shrink_inactive_list..shrink_zone                   541 us count 1
+> Event shrink_inactive_list..shrink_zone                   531 us count 1
+> Event split_huge_page..add_to_swap                        232 us count 1
+> Event save_args..call_softirq                              36 us count 1
+> Event save_args..call_softirq                              35 us count 2
+> Event __wake_up..__wake_up                                  1 us count 1
+> 
+> This patch reduces the worst-case IRQs-disabled latencies by releasing the
+> lock every SWAP_CLUSTER_MAX pages that are scanned and releasing the CPU if
+> necessary. The cost of this is that the processing performing compaction will
+> be slower but IRQs being disabled for too long a time has worse consequences
+> as the following report shows;
+> 
+> Total sampled time IRQs off (not real total time): 4367
+> Event shrink_inactive_list..shrink_zone                   881 us count 1
+> Event shrink_inactive_list..shrink_zone                   875 us count 1
+> Event shrink_inactive_list..shrink_zone                   868 us count 1
+> Event shrink_inactive_list..shrink_zone                   555 us count 1
+> Event split_huge_page..add_to_swap                        495 us count 1
+> Event compact_zone..compact_zone_order                    269 us count 1
+> Event split_huge_page..add_to_swap                        266 us count 1
+> Event shrink_inactive_list..shrink_zone                    85 us count 1
+> Event save_args..call_softirq                              36 us count 2
+> Event __wake_up..__wake_up                                  1 us count 1
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  mm/compaction.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 11d88a2..ec9eb0f 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -279,9 +279,27 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  	}
+>  
+>  	/* Time to isolate some pages for migration */
+> +	cond_resched();
+>  	spin_lock_irq(&zone->lru_lock);
+>  	for (; low_pfn < end_pfn; low_pfn++) {
+>  		struct page *page;
+> +		bool unlocked = false;
+> +
+> +		/* give a chance to irqs before checking need_resched() */
+> +		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
+> +			spin_unlock_irq(&zone->lru_lock);
+> +			unlocked = true;
+> +		}
+> +		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
+> +			if (!unlocked)
+> +				spin_unlock_irq(&zone->lru_lock);
+> +			cond_resched();
+> +			spin_lock_irq(&zone->lru_lock);
+> +			if (fatal_signal_pending(current))
+> +				break;
+> +		} else if (unlocked)
+> +			spin_lock_irq(&zone->lru_lock);
+> +
+>  		if (!pfn_valid_within(low_pfn))
+>  			continue;
+>  		nr_scanned++;
 
-There may be reasons to have PTRACE_SEIZE operation split like that.
-For one, this allows debugger to do PTRACE_CONT, and later issue
-PTRACE_INTERRUPT to stop the tracee again. PTRACE_INTERRUPT stop may
-be better for some scenarios where debugger wants to make the stop
-invisible to the parent, or when debugger wants to stop just one
-thread of the process.
+That was somewhat ghastly.
 
+I think it can be made only 99% as ghastly by renaming "unlocked" to
+"locked" and eliminating the double-negative logic.
 
-> Currently it is already a problem that apps did not / do not expect the first
-> waitpid after PTRACE_ATTACH may not be SIGSTOP.
+--- a/mm/compaction.c~mm-compaction-minimise-the-time-irqs-are-disabled-while-isolating-pages-for-migration
++++ a/mm/compaction.c
+@@ -279,9 +279,27 @@ static unsigned long isolate_migratepage
+ 	}
+ 
+ 	/* Time to isolate some pages for migration */
++	cond_resched();
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		struct page *page;
++		bool locked = true;
++
++		/* give a chance to irqs before checking need_resched() */
++		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
++			spin_unlock_irq(&zone->lru_lock);
++			locked = false;
++		}
++		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
++			if (locked)
++				spin_unlock_irq(&zone->lru_lock);
++			cond_resched();
++			spin_lock_irq(&zone->lru_lock);
++			if (fatal_signal_pending(current))
++				break;
++		} else if (!locked)
++			spin_lock_irq(&zone->lru_lock);
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
 
-That's exactly why we want to add a better alternative, which doesn't
-insert that blasted SIGSTOP.
-
--- 
-vda
