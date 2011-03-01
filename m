@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab1CALe3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 06:34:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38009 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756218Ab1CALe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 06:34:27 -0500
-Date: Tue, 1 Mar 2011 11:33:58 GMT
-From: tip-bot for Jan Beulich <JBeulich@novell.com>
-Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com, hpa@zytor.com,
-        mingo@redhat.com, jbeulich@novell.com, JBeulich@novell.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, jdike@addtoit.com,
-        linux-kernel@vger.kernel.org, jbeulich@novell.com, JBeulich@novell.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4D6CE3400200007800034498@vpn.id2.novell.com>
-References: <4D6CE3400200007800034498@vpn.id2.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] um, x86-64: Fix UML build after adding CFI annotations to lib/rwsem_64.S
-Message-ID: <tip-bfc39061d3dbf812e6a78f9529a548e5f0050c64@git.kernel.org>
-Git-Commit-ID: bfc39061d3dbf812e6a78f9529a548e5f0050c64
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756235Ab1CALfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 06:35:54 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58812 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755822Ab1CALfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 06:35:53 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH -v4] kbuild: Add extra gcc checks
+Date: Tue, 1 Mar 2011 12:35:00 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        torvalds@linux-foundation.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        linux-kbuild@vger.kernel.org, bp@amd64.org
+References: <20110221110322.GA9819@liondog.tnic> <201102282207.33489.arnd@arndb.de> <20110228213134.GA10825@liondog.tnic>
+In-Reply-To: <20110228213134.GA10825@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Mar 2011 11:33:59 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103011235.00389.arnd@arndb.de>
+X-Provags-ID: V02:K0:aLAURatUf9Rdf9hhaP9BhgfX9qCWXbnhChxMxKDFOb6
+ gbM5927s0qYR3215QcDCbRmrCRvuJ+fTHF/2Yusspk8MCmPW1o
+ FQTVUx6FsW4cEU68pIVqSvfLuDAb7mTx5oY9XkttJGbKKp7f95
+ kCN6i7f9MdxIwfXGJj+8zt4YNp1zRfkbJPi4SY4eMgWoH3VC51
+ d5DzVGYFDpFY9zZvCe+ww==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bfc39061d3dbf812e6a78f9529a548e5f0050c64
-Gitweb:     http://git.kernel.org/tip/bfc39061d3dbf812e6a78f9529a548e5f0050c64
-Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Tue, 1 Mar 2011 11:14:55 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 1 Mar 2011 12:19:44 +0100
+On Monday 28 February 2011, Borislav Petkov wrote:
+> My intention was not to have multiple levels of warnings because then
+> you have to go and enable the different levels and have to remember
+> which level you used last, etc, etc.
 
-um, x86-64: Fix UML build after adding CFI annotations to lib/rwsem_64.S
+I wasn't suggesting more than two, so the two would have very distinct
+definitions:
 
-arch/um/Kconfig.x86 has X86_32 but not X86_64 - that's resulting in
-asm/dwarf2.h producing the 32-bit (pushl_cfi & Co) macros instead of
-the 64-bit ones.
+W=1: Warnings that we would like to fix all over the tree, patches to
+     remove these are always welcome and you can build the entire kernel
+     with it. Once they are all fixed, we can make the warnings the default.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-LKML-Reference: <4D6CE3400200007800034498@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/um/Kconfig.x86 |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+W=2: Warnings that we know we don't always want to fix, meant for what
+     you describe here -- you build a single file and decide what to
+     do based on common sense. 
 
-diff --git a/arch/um/Kconfig.x86 b/arch/um/Kconfig.x86
-index 5ee3280..62f2115 100644
---- a/arch/um/Kconfig.x86
-+++ b/arch/um/Kconfig.x86
-@@ -19,6 +19,9 @@ config X86_32
- 	def_bool !64BIT
- 	select HAVE_AOUT
- 
-+config X86_64
-+	def_bool 64BIT
-+
- config RWSEM_XCHGADD_ALGORITHM
- 	def_bool X86_XADD
- 
+> Instead I am thinking along with the following lines:
+> 
+> make W=1 [path/to/kernel/file.o] 2>w.log
+> 
+> and then take a look at w.log and start fixing warnings.
+> 
+> You can selectively ignore some of the warnings since, as you say
+> yourself above, some simply make you write ugly code like enforcing
+> casts just for the sake of shutting up the compiler. A great deal of the
+> warnings come from includes which are hard to fix or gcc is issuing the
+> warning wrong since we do sick sh*t with C in the kernel and that's OK
+> :).
+
+Yes, I understand that.
+
+> But in all cases you have all the warnings in one single file and that's
+> it. If a certain -W option is useless, we should rather remove it since
+> it doesn't help anyway. The selection above is clearly not complete so
+> I'd rather drop some instead of including different W=x levels.
+> 
+> Hmm... ?
+
+I'd have to see the output myself. My feeling is that a lot of the
+-Wextra warnings are not that useful, but I don't know which ones
+are included in -Wextra these days.
+
+	Arnd
