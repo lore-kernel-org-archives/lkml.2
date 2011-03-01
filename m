@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab1CARui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 12:50:38 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:54216 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab1CARug (ORCPT
+	id S1755011Ab1CARyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 12:54:33 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48144 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab1CARyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 12:50:36 -0500
-Date: Tue, 1 Mar 2011 09:50:26 -0800
-From: Gary Hade <garyhade@us.ibm.com>
-To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Krzysztof Helt <krzysztof.h1@wp.pl>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Gary Hade <garyhade@us.ibm.com>
-Subject: matroxfb: remove incorrect Matrox G200eV support
-Message-ID: <20110301175026.GA18770@us.ibm.com>
+	Tue, 1 Mar 2011 12:54:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vYfskrcvxfu6JolyrhxZA2Z/075Tnv/1uKb6tUqMs98UKzm0WP6hQimGCPKh5CmIgt
+         AjnVXCzia/8r1b9uptDGAr5RJCU1uuP6eNQS2F29+tJxl4oHN9dVvk4qLrIVEwE7hJhT
+         YxtDJ/Uip+IZ7qGlFHTpjjmfvKhNAMDYg5cBc=
+Date: Tue, 1 Mar 2011 09:54:23 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Jiri Kosina <jkosina@suse.cz>,
+        =?iso-8859-1?Q?St=E9phane?= Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: Do not create input devices for feature reports
+Message-ID: <20110301175423.GC27560@core.coreip.homeip.net>
+References: <1298572259-18173-1-git-send-email-rydberg@euromail.se>
+ <AANLkTi=VfSbbV5xwpacC+8yDUfjR3-S8OW47YPvtZwFX@mail.gmail.com>
+ <20110224204300.GA2423@polaris.bitmath.org>
+ <AANLkTi=YBYrgf66Md_G2Cas7t__BDD2nozvidYDj0p9W@mail.gmail.com>
+ <20110225171911.GA22592@polaris.bitmath.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20110225171911.GA22592@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 25, 2011 at 06:19:11PM +0100, Henrik Rydberg wrote:
+> Hi Benjamin,
+> 
+> > after some quick tests, I can deal with our two options (changing
+> > feature_mapping signature or not, and so calling feature_mapping
+> > before or after input_mapping).
+> 
+> Good, good.
+> 
+> > So, my questions are:
+> > - do we really need to change feature_mapping signature?
+> > - is feature_mapping tied to an input or to a device?
+> 
+> The input, output and feature reports are all found on the same level
+> in the HID protocol, so it makes sense to associate all reports with
+> the device itself, without any assumed association between different
+> reports. From a practical point of view, we may assign different input
+> nodes (input devices) to different input reports, so it is clear that
+> the mapping between hid device and input device is not 1-to-1.
+> 
+> For output devices, the only supported case is EV_LED, which passes
+> events to the input device. It is probably assumed that
+> HID_QUIRK_MULTI_INPUT is false for those devices. Jiri?
+> 
 
-From: Gary Hade <garyhade@us.ibm.com>
+I am probably late to the party fut the above is not true. Here is an
+example of an USB keyboard (wih LEDs) that is split into two:
 
-Remove incorrect Matrox G200eV support that was previously added
-by commit e3a1938805d2e81b27d3d348788644f3bad004f2
+I: Bus=0003 Vendor=046d Product=c30e Version=0110
+N: Name="Logitech HID compliant keyboard"
+P: Phys=usb-0000:00:1d.0-1.2/input0
+S:
+Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/input/input3
+U: Uniq=
+H: Handlers=sysrq kbd event3
+B: PROP=0
+B: EV=120013
+B: KEY=1000000000007 ff800000000007ff febeffdff3cfffff fffffffffffffffe
+B: MSC=10
+B: LED=7
 
-One serious issue with the G200eV support that I have reproduced
-on a Matrox G200eV equipped IBM x3650 M2 is the lack of text (login
-banner, login prompt, etc) on the console when X not running and
-lack of text on all of the virtual consoles after X is started.
+I: Bus=0003 Vendor=046d Product=c30e Version=0110
+N: Name="Logitech HID compliant keyboard"
+P: Phys=usb-0000:00:1d.0-1.2/input1
+S:
+Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.1/input/input4
+U: Uniq=
+H: Handlers=kbd event4
+B: PROP=0
+B: EV=13
+B: KEY=fff ffffffffffffffff 2000000 387ad800d001 1e000000000000 0
+B: MSC=10
 
-Signed-off-by: Gary Hade <garyhade@us.ibm.com>
-Cc: Darrick J. Wong <djwong@us.ibm.com>
-Cc: Krzysztof Helt <krzysztof.h1@wp.pl>
-Cc: Petr Vandrovec <vandrove@vc.cvut.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+This was done, most likely, because Logitech decided to reuse usage codes
+for different keys.
 
----
- drivers/video/matrox/matroxfb_base.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+Thanks.
 
-diff --git a/drivers/video/matrox/matroxfb_base.c b/drivers/video/matrox/matroxfb_base.c
-index a082deb..a74439a 100644
---- a/drivers/video/matrox/matroxfb_base.c
-+++ b/drivers/video/matrox/matroxfb_base.c
-@@ -1461,13 +1461,6 @@ static struct board {
- 		MGA_G100,
- 		&vbG100,
- 		"MGA-G100 (AGP)"},
--	{PCI_VENDOR_ID_MATROX,	PCI_DEVICE_ID_MATROX_G200EV_PCI,	0xFF,
--		0,			0,
--		DEVF_G200,
--		230000,
--		MGA_G200,
--		&vbG200,
--		"MGA-G200eV (PCI)"},
- 	{PCI_VENDOR_ID_MATROX,	PCI_DEVICE_ID_MATROX_G200_PCI,	0xFF,
- 		0,			0,
- 		DEVF_G200,
-@@ -2119,8 +2112,6 @@ static struct pci_device_id matroxfb_devices[] = {
- 		PCI_ANY_ID,	PCI_ANY_ID,	0, 0, 0},
- 	{PCI_VENDOR_ID_MATROX,	PCI_DEVICE_ID_MATROX_G100_AGP,
- 		PCI_ANY_ID,	PCI_ANY_ID,	0, 0, 0},
--	{PCI_VENDOR_ID_MATROX,	PCI_DEVICE_ID_MATROX_G200EV_PCI,
--		PCI_ANY_ID,	PCI_ANY_ID,	0, 0, 0},
- 	{PCI_VENDOR_ID_MATROX,	PCI_DEVICE_ID_MATROX_G200_PCI,
- 		PCI_ANY_ID,	PCI_ANY_ID,	0, 0, 0},
- 	{PCI_VENDOR_ID_MATROX,	PCI_DEVICE_ID_MATROX_G200_AGP,
+-- 
+Dmitry
