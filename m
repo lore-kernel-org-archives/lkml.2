@@ -1,75 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab1CAIvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 03:51:38 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55090 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755915Ab1CAIve (ORCPT
+	id S1756022Ab1CAIvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 03:51:52 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:50986 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755936Ab1CAIvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 03:51:34 -0500
+	Tue, 1 Mar 2011 03:51:49 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: v9fs-developer@lists.sourceforge.net
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 1/6] fs/9p: Properly update inode attributes on link
-Date: Tue,  1 Mar 2011 14:21:19 +0530
-Message-Id: <1298969484-16199-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 4/6] fs/9p: Make the writeback_fid owned by root
+Date: Tue,  1 Mar 2011 14:21:22 +0530
+Message-Id: <1298969484-16199-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1298969484-16199-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1298969484-16199-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With caching enabled, we need to make sure we don't
-update inode->i_size via stat2inode because we could
-have dirty data which is not yet written to the server
+Changes to make sure writeback fid is owned by root
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/9p/vfs_inode.c      |    4 +++-
- fs/9p/vfs_inode_dotl.c |   10 +---------
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ fs/9p/fid.c |   92 ++++++++++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 56 insertions(+), 36 deletions(-)
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index e5cd2c4..64f2e4e 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -1295,8 +1295,10 @@ v9fs_vfs_link(struct dentry *old_dentry, struct inode *dir,
- 	sprintf(name, "%d\n", oldfid->fid);
- 	retval = v9fs_vfs_mkspecial(dir, dentry, P9_DMLINK, name);
- 	__putname(name);
--	if (!retval)
-+	if (!retval) {
-+		v9fs_refresh_inode(oldfid, old_dentry->d_inode);
- 		v9fs_invalidate_inode_attr(dir);
-+	}
- clunk_fid:
- 	p9_client_clunk(oldfid);
- 	return retval;
-diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-index 5d66a21..2826026 100644
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -674,19 +674,11 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct inode *dir,
- 	if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE) {
- 		/* Get the latest stat info from server. */
- 		struct p9_fid *fid;
--		struct p9_stat_dotl *st;
--
- 		fid = v9fs_fid_lookup(old_dentry);
- 		if (IS_ERR(fid))
- 			return PTR_ERR(fid);
+diff --git a/fs/9p/fid.c b/fs/9p/fid.c
+index 9d6a5d3..cd63e00 100644
+--- a/fs/9p/fid.c
++++ b/fs/9p/fid.c
+@@ -125,46 +125,17 @@ err_out:
+ 	return -ENOMEM;
+ }
  
--		st = p9_client_getattr_dotl(fid, P9_STATS_BASIC);
--		if (IS_ERR(st))
--			return PTR_ERR(st);
+-/**
+- * v9fs_fid_lookup - lookup for a fid, try to walk if not found
+- * @dentry: dentry to look for fid in
+- *
+- * Look for a fid in the specified dentry for the current user.
+- * If no fid is found, try to create one walking from a fid from the parent
+- * dentry (if it has one), or the root dentry. If the user haven't accessed
+- * the fs yet, attach now and walk from the root.
+- */
 -
--		v9fs_stat2inode_dotl(st, old_dentry->d_inode);
+-struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
++static struct p9_fid *v9fs_fid_lookup_with_uid(struct dentry *dentry,
++					       uid_t uid, int any)
+ {
+-	int i, n, l, clone, any, access;
+-	u32 uid;
+-	struct p9_fid *fid, *old_fid = NULL;
+ 	struct dentry *ds;
+-	struct v9fs_session_info *v9ses;
+ 	char **wnames, *uname;
++	int i, n, l, clone, access;
++	struct v9fs_session_info *v9ses;
++	struct p9_fid *fid, *old_fid = NULL;
+ 
+ 	v9ses = v9fs_inode2v9ses(dentry->d_inode);
+ 	access = v9ses->flags & V9FS_ACCESS_MASK;
+-	switch (access) {
+-	case V9FS_ACCESS_SINGLE:
+-	case V9FS_ACCESS_USER:
+-	case V9FS_ACCESS_CLIENT:
+-		uid = current_fsuid();
+-		any = 0;
+-		break;
 -
--		kfree(st);
-+		v9fs_refresh_inode_dotl(fid, old_dentry->d_inode);
- 	}
- 	ihold(old_dentry->d_inode);
- 	d_instantiate(dentry, old_dentry->d_inode);
+-	case V9FS_ACCESS_ANY:
+-		uid = v9ses->uid;
+-		any = 1;
+-		break;
+-
+-	default:
+-		uid = ~0;
+-		any = 0;
+-		break;
+-	}
+-
+ 	fid = v9fs_fid_find(dentry, uid, any);
+ 	if (fid)
+ 		return fid;
+@@ -250,6 +221,45 @@ err_out:
+ 	return fid;
+ }
+ 
++/**
++ * v9fs_fid_lookup - lookup for a fid, try to walk if not found
++ * @dentry: dentry to look for fid in
++ *
++ * Look for a fid in the specified dentry for the current user.
++ * If no fid is found, try to create one walking from a fid from the parent
++ * dentry (if it has one), or the root dentry. If the user haven't accessed
++ * the fs yet, attach now and walk from the root.
++ */
++
++struct p9_fid *v9fs_fid_lookup(struct dentry *dentry)
++{
++	uid_t uid;
++	int  any, access;
++	struct v9fs_session_info *v9ses;
++
++	v9ses = v9fs_inode2v9ses(dentry->d_inode);
++	access = v9ses->flags & V9FS_ACCESS_MASK;
++	switch (access) {
++	case V9FS_ACCESS_SINGLE:
++	case V9FS_ACCESS_USER:
++	case V9FS_ACCESS_CLIENT:
++		uid = current_fsuid();
++		any = 0;
++		break;
++
++	case V9FS_ACCESS_ANY:
++		uid = v9ses->uid;
++		any = 1;
++		break;
++
++	default:
++		uid = ~0;
++		any = 0;
++		break;
++	}
++	return v9fs_fid_lookup_with_uid(dentry, uid, any);
++}
++
+ struct p9_fid *v9fs_fid_clone(struct dentry *dentry)
+ {
+ 	struct p9_fid *fid, *ret;
+@@ -262,13 +272,24 @@ struct p9_fid *v9fs_fid_clone(struct dentry *dentry)
+ 	return ret;
+ }
+ 
++static struct p9_fid *v9fs_fid_clone_with_uid(struct dentry *dentry, uid_t uid)
++{
++	struct p9_fid *fid, *ret;
++
++	fid = v9fs_fid_lookup_with_uid(dentry, uid, 0);
++	if (IS_ERR(fid))
++		return fid;
++
++	ret = p9_client_walk(fid, 0, NULL, 1);
++	return ret;
++}
+ 
+ struct p9_fid *v9fs_writeback_fid(struct dentry *dentry)
+ {
+ 	int err;
+ 	struct p9_fid *fid;
+ 
+-	fid = v9fs_fid_clone(dentry);
++	fid = v9fs_fid_clone_with_uid(dentry, 0);
+ 	if (IS_ERR(fid))
+ 		goto error_out;
+ 	/*
+@@ -276,7 +297,6 @@ struct p9_fid *v9fs_writeback_fid(struct dentry *dentry)
+ 	 * dirty pages. We always request for the open fid in read-write
+ 	 * mode so that a partial page write which result in page
+ 	 * read can work.
+-	 * FIXME!!: we should make the fid owned by uid = 0
+ 	 */
+ 	err = p9_client_open(fid, O_RDWR);
+ 	if (err < 0) {
 -- 
 1.7.1
 
