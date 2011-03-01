@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab1CAAjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 19:39:52 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:40169 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab1CAAjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 19:39:51 -0500
-Subject: Re: [PATCH 0/5] target updates for scsi-post-merge .39 (round one,
-	v2)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Joel Becker <jlbec@evilplan.org>,
-        Douglas Gilbert <dgilbert@interlog.com>
-In-Reply-To: <1298938784.2487.72.camel@mulgrave.site>
-References: <1298938651-18784-1-git-send-email-nab@linux-iscsi.org>
-	 <1298938784.2487.72.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Mon, 28 Feb 2011 16:33:05 -0800
-Message-Id: <1298939585.5401.270.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1755300Ab1CAAqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 19:46:54 -0500
+Received: from swm.pp.se ([212.247.200.143]:47374 "EHLO uplift.swm.pp.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab1CAAqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 19:46:53 -0500
+Date: Tue, 1 Mar 2011 01:46:51 +0100 (CET)
+From: Mikael Abrahamsson <swmike@swm.pp.se>
+To: John Heffner <johnwheffner@gmail.com>
+cc: Bill Sommerfeld <wsommerfeld@google.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        Albert Cahalan <acahalan@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+In-Reply-To: <AANLkTin_jY_J7tJseMLVmrQVVRezOVQTGCgB_6tefgXJ@mail.gmail.com>
+Message-ID: <alpine.DEB.1.10.1103010137400.7942@uplift.swm.pp.se>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com> <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se> <1298793252.8726.45.camel@edumazet-laptop> <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+ <20110227125540.40754c5y78j9u2m8@hayate.sektori.org> <AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com> <cbb9e1113901f1a324359b6ed3f1a611@localhost> <AANLkTikje6rvjSfEA3CvUjdgFwzk-SBZDdO5kQvi6LZy@mail.gmail.com>
+ <AANLkTin_jY_J7tJseMLVmrQVVRezOVQTGCgB_6tefgXJ@mail.gmail.com>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+Organization: People's Front Against WWW
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 18:19 -0600, James Bottomley wrote:
-> On Mon, 2011-02-28 at 16:17 -0800, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Hi James and Co,
-> > 
-> > The following is the first round (v2) of target patches intended for .39
-> > scsi-post-merge tree that introduces new target functionality and the
-> > first mainline TCM fabric module (TCM_Loop).
-> 
-> OK, what postmerge tree?  There haven't been any conflicts this merge
-> cycle that necessitate running one.  Do you mean you want these after
-> the merge window for some reason?
-> 
+On Mon, 28 Feb 2011, John Heffner wrote:
 
-Not really.  What I meant here is that this series needs to be applied
-after the original 14 part series 'for .39 scsi-misc' fixes held over
-for .38..
+> Right... while I generally agree that a fixed-length drop-tail queue 
+> isn't optimal, isn't this problem what the various AQM schemes try to 
+> solve?
 
-I was not sure if scsi-misc was for fixes only now, and if new target
-code (like this series) should be going into scsi-post-merge or what..
-So it sounds like this series for configfs statistics infrastructure and
-initial TCM_Loop merge should be going through scsi-misc as well for
-mainline .39, yes..?
+I am not an expert on exactly how Linux does this, but for Cisco and for 
+instance ATM interfaces, there are two stages of queuing. One is the 
+"hardware queue", which is a FIFO queue going into the ATM framer. If one 
+wants low CPU usage, then this needs to be high so multiple packets can be 
+put there per interrupt. Since AQM is working before this, it also means 
+the low-latency-queue will have a higher latency as it ends up behind 
+larger packets in the hw queue.
 
-Also, just another heads up in TCM fabric module land.  At this point in
-lio-core-2.6.git/lio-4.1, drivers/target/iscsi/ has been fully converted
-to use mainline libiscsi -> include/scsi/iscsi_proto.h definitions with
-a few small additions/corrections.  This also includes a new set of
-iSCSI fabric dependent ConfigFS statistics groups, and include the
-removal of legacy ProcFS code from iscsi_target_mod.
+So on what level does the AQM work in Linux? Does it work similarily, that 
+txqueuelen is a FIFO queue to the hardware that AQM feeds packets into?
 
-The full iscsi_target_mod series will be posted in the next days for
-review and comments.
+Also, when one uses WRED the thinking is generally to keep the average 
+queue len down, but still allow for bursts by dynamically changing the 
+drop probability and where it happens. When there is no queuing, allow for 
+big queue (so it can fill up if needed), but if the queue is large for 
+several seconds, start to apply WRED to bring it down.
 
-Best Regards,
+There is generally no need at all to constantly buffer > 50 ms of data, 
+then it's better to just start selectively dropping it. In time of 
+burstyness (perhaps when re-routing traffic) there is need to buffer 
+200-500ms of during perhaps 1-2 seconds before things stabilize.
 
---nab
+So one queuing scheme and one queue limit isn't going to solve this, there 
+need to be some dynamic built into the system for it to work well.
 
+AQM needs to feed into a relatively short hw queue and AQM needs to exist 
+on output also when the traffic is sourced from the box itself, no tonly 
+routed. It would also help if the default would be to use let's say 25% of 
+the bandwidth for smaller packets (< 200 bytes or so) which generally are 
+for interactive uses or are ACKs.
 
-
+-- 
+Mikael Abrahamsson    email: swmike@swm.pp.se
