@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab1CAVi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 16:38:28 -0500
-Received: from www.tglx.de ([62.245.132.106]:43721 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755534Ab1CAVi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 16:38:28 -0500
-Date: Tue, 1 Mar 2011 22:38:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
-cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v6 1/1] PRUSS UIO driver support
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BF36683@dbde02.ent.ti.com>
-Message-ID: <alpine.LFD.2.00.1103012232220.2701@localhost6.localdomain6>
-References: <1298926895-5294-1-git-send-email-pratheesh@ti.com> <1298926895-5294-2-git-send-email-pratheesh@ti.com> <20110228212638.GB16806@local> <B85A65D85D7EB246BE421B3FB0FBB593024BF3601C@dbde02.ent.ti.com> <20110301183334.GC20497@local>
- <B85A65D85D7EB246BE421B3FB0FBB593024BF36683@dbde02.ent.ti.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755870Ab1CAVk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 16:40:27 -0500
+Received: from legolas.restena.lu ([158.64.1.34]:36254 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab1CAVk0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 16:40:26 -0500
+Date: Tue, 1 Mar 2011 22:39:32 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, dmitry.torokhov@gmail.com
+Subject: Re: 2.6.38-rc6: SysRq broken?
+Message-ID: <20110301223932.609a4a59@neptune.home>
+In-Reply-To: <20110228225003.2cb4f62d@neptune.home>
+References: <20110228214054.GA18538@p183.telecom.by>
+	<20110228225003.2cb4f62d@neptune.home>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011, TK, Pratheesh Gangadhar wrote:
-
-> Hi,
-> > -----Original Message-----
-> > From: Hans J. Koch [mailto:hjk@hansjkoch.de]
-> > Sent: Wednesday, March 02, 2011 12:04 AM
-> > To: TK, Pratheesh Gangadhar
-> > Cc: Hans J. Koch; linux-kernel@vger.kernel.org; gregkh@suse.de;
-> > tglx@linutronix.de; sshtylyov@mvista.com; arnd@arndb.de; Chatterjee, Amit;
-> > davinci-linux-open-source@linux.davincidsp.com; linux-arm-
-> > kernel@lists.infradead.org
-> > Subject: Re: [PATCH v6 1/1] PRUSS UIO driver support
-
-Sigh, can you please use a mailer which does not repeat the headers
-for no value and just has a single line like this:
-
-> > On Tue, Mar 01, 2011 at 10:15:27AM +0530, TK, Pratheesh Gangadhar wrote:
-> > Anyway, please don't use that kind of argumentation. The next newbie
-> > developer might copy your work as a basis for his new driver, and there
-> > it probably won't work.
+On Mon, 28 February 2011 Bruno Prémont <bonbons@linux-vserver.org> wrote:
+> On Mon, 28 February 2011 Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> > It just strikes me that SysRq is broken here:
+> > Alt+SysRq+h doesn't print anything
 > > 
-> > Simply put the spin_lock_init before the loop.
+> > CONFIG_MAGIC_SYSRQ=y
+> > CONFIG_INPUT_EVDEV=y
+> > kernel.sysrq=1
+> > echo h >/proc/sysrq-trigger works
 > > 
-> Agree, will fix this in next version.
+> > Keyboard is USB one, "Logitech HID compliant keyboard".
+> 
+> I've seen same kind of issue with built-in keybaord (PS2) of my laptop.
+> 
+> Sysrq-Sync, Sysrq-Umount, Sysrq-Help didn't work but Sysrq-reBoot did.
+> 
+> In my case it was during "stuck" shutdown process, caps key was still
+> working and toggled caps LED anything else didn't trigger anything visible.
+> 
+> Bruno
 
-As I said before, we want stuff initialized when it is possibly
-used. But first of all we ant people to use the proper mechanisms to
-achive that.
+Well it worked (half way?) though fb was probably frozen (vt-deadlock?)
+as I have traces in my log:
 
-If that's a module global lock then it needs to be instantiated by
+[14382.063476] pcmanfm[28117]: segfault at 8 ip b772e5b5 sp bfcfba30 error 4 in libfm-gtk.so.0.0.0[b7700000+34000]
+[43437.896858] SysRq : Emergency Sync
+[43572.221361] SysRq : Keyboard mode set to system default
+[43575.574551] SysRq : Emergency Sync
+[43590.513441] SysRq : Emergency Remount R/O
+[43605.923769] SysRq : Emergency Sync
+[43607.320324] SysRq : Emergency Remount R/O
+[43627.329605] SysRq : HELP : loglevel(0-9) reBoot Crash terminate-all-tasks(E) memory-full-oom-kill(F) kill-all-tasks(I) 
+thaw-filesystems(J) saK show-memory-usage(M) nice-all-RT-tasks(N) powerOff show-registers(P) show-all-timers(Q) unRaw Sync show-task-states(T) Unmount force-fb
+(V) show-blocked-tasks(W) 
+[43676.561306] SysRq : Emergency Sync
+[43690.319213] SysRq : SAK
+[43690.319245] SAK: killed process 1926 (Xorg): task_session(p)==tty->session
+[43690.319313] SAK: killed process 1926 (Xorg): task_session(p)==tty->session
+[43690.319345] SAK: killed process 2801 (rc): fd#0 opened to the tty
+[43690.319358] SAK: killed process 2802 (rc): fd#0 opened to the tty
+[43690.319368] SAK: killed process 2890 (ntpd): fd#0 opened to the tty
+[43690.319378] SAK: killed process 2891 (runscript.sh): fd#0 opened to the tty
+[43690.319387] SAK: killed process 2898 (start-stop-daem): fd#0 opened to the tty
+[43694.809374] SysRq : Keyboard mode set to system default
+[43797.368728] SysRq : SAK
+[43797.368768] SAK: killed process 1926 (Xorg): task_session(p)==tty->session
+[43797.368829] SAK: killed process 1926 (Xorg): task_session(p)==tty->session
+[43797.368864] SAK: killed process 2898 (start-stop-daem): fd#0 opened to the tty
 
-static DEFINE_SPINLOCK(lock);
+But then, "Emergency Remount R/O" should have prevented anything further
+from hitting the disk. (and after sysrq-reboot filesystems were dirty)
 
-which implies the initialization of the lock.
-
-If it's a lock which is in allocated memory then the
-
-   spin_lock_init(&lock);
-
-wants to be before it can be possibly used.
-
-So in your case DEFINE_SPINLOCK is the correct solution.
-
-Thanks,
-
-	tglx
+Bruno
