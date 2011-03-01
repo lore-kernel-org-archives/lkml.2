@@ -1,631 +1,718 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab1CAXNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:13:32 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63308 "EHLO
+	id S1757391Ab1CAXOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 18:14:07 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64053 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756971Ab1CAXN3 (ORCPT
+	with ESMTP id S1757216Ab1CAXN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:13:29 -0500
+	Tue, 1 Mar 2011 18:13:27 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>,
-        Max Vozeler <max@vozeler.com>
-Subject: [PATCH 1/7] staging/usbip: convert to kthread
-Date: Wed,  2 Mar 2011 00:13:05 +0100
-Message-Id: <1299021191-17961-2-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nick Bowler <nbowler@elliptictech.com>,
+        Evgeniy Dushistov <dushistov@mail.ru>, Nick Piggin <npiggin@gmail.com>
+Subject: [PATCH 4/7] ufs: remove the BKL
+Date: Wed,  2 Mar 2011 00:13:08 +0100
+Message-Id: <1299021191-17961-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299021191-17961-1-git-send-email-arnd@arndb.de>
 References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:cGn/f6+0YWuAoRd70G8EYtweBz1BWP9XrgZAUURL+ES
- YcLE2uiTgc1D686Oyc2Szom4am1NCHRrva/6s3Xf1i3YqqSnZk
- 7BanOjn8oCWiBrO3F5BCn0NtE0mNgN0/vl8wBg2jPW9l8EVVYO
- afTpKOOjOXdW62KKLIm8fvC4DUuOyQCN+bbKrMPfJv7eYvY4mF
- iwqIHoXA92BPfUk/rxoJw==
+X-Provags-ID: V02:K0:NEdD4bOLlokyt3peU3Ib3L/fJebUKhabWcrY9Az9OG8
+ d4syk7cH9jhGFXkeTwFueC73nltKlXh9bTbjQLzU+eIYiYLrex
+ SrrImNR/YAPNLoQKyi/VsRSdWXVO9DEjFS6V8a2yKS3u6YEL6W
+ aNn2RNlYyYphOtBY9prhIjrcykM+H2TN/JA8RNHpD+WhOfMSFS
+ WSV4h/JdiPFqWQPAiclBQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usbip has its own infrastructure for managing kernel
-threads, similar to kthread. By changing it to use
-the standard functions, we can simplify the code
-and get rid of one of the last BKL users at the
-same time.
+This introduces a new per-superblock mutex in UFS to replace
+the big kernel lock. I have been careful to avoid nested
+calls to lock_ufs and to get the lock order right with
+respect to other mutexes, in particular lock_super.
 
-Includes changes suggested by Max Vozeler.
+I did not make any attempt to prove that the big kernel
+lock is not needed in a particular place in the code,
+which is very possible.
+
+The code is still only compile-tested, but it should
+at least be harmless on non-SMP systems, since the
+new mutex is not taken on those.
+
+As Nick Piggin noticed, any allocation inside of the lock
+may end up deadlocking when we get to ufs_getfrag_block
+in the reclaim task, so we now use GFP_NOFS.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
-Cc: Max Vozeler <max@vozeler.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Cc: Evgeniy Dushistov <dushistov@mail.ru>
+Cc: Nick Piggin <npiggin@gmail.com>
 ---
- drivers/staging/usbip/Kconfig        |    2 +-
- drivers/staging/usbip/stub.h         |    4 +-
- drivers/staging/usbip/stub_dev.c     |   12 ++--
- drivers/staging/usbip/stub_rx.c      |   13 ++---
- drivers/staging/usbip/stub_tx.c      |   17 +++---
- drivers/staging/usbip/usbip_common.c |  105 ----------------------------------
- drivers/staging/usbip/usbip_common.h |   20 +------
- drivers/staging/usbip/usbip_event.c  |   38 ++++--------
- drivers/staging/usbip/vhci.h         |    4 +-
- drivers/staging/usbip/vhci_hcd.c     |   10 ++-
- drivers/staging/usbip/vhci_rx.c      |   16 ++---
- drivers/staging/usbip/vhci_sysfs.c   |    9 +--
- drivers/staging/usbip/vhci_tx.c      |   17 +++---
- 13 files changed, 64 insertions(+), 203 deletions(-)
+ fs/ufs/Kconfig    |    1 -
+ fs/ufs/inode.c    |   78 ++++++++++++++--------------------------------------
+ fs/ufs/namei.c    |   35 +++++++++++------------
+ fs/ufs/super.c    |   64 +++++++++++++++++++++++++------------------
+ fs/ufs/truncate.c |    5 +--
+ fs/ufs/ufs.h      |    6 +++-
+ fs/ufs/util.c     |    2 +-
+ 7 files changed, 83 insertions(+), 108 deletions(-)
 
-diff --git a/drivers/staging/usbip/Kconfig b/drivers/staging/usbip/Kconfig
-index b11ec37..2c1d10a 100644
---- a/drivers/staging/usbip/Kconfig
-+++ b/drivers/staging/usbip/Kconfig
-@@ -1,6 +1,6 @@
- config USB_IP_COMMON
- 	tristate "USB IP support (EXPERIMENTAL)"
--	depends on USB && NET && EXPERIMENTAL && BKL
-+	depends on USB && NET && EXPERIMENTAL
- 	default N
- 	---help---
- 	  This enables pushing USB packets over IP to allow remote
-diff --git a/drivers/staging/usbip/stub.h b/drivers/staging/usbip/stub.h
-index d732679..6004fcd 100644
---- a/drivers/staging/usbip/stub.h
-+++ b/drivers/staging/usbip/stub.h
-@@ -95,13 +95,13 @@ extern struct kmem_cache *stub_priv_cache;
- 
- /* stub_tx.c */
- void stub_complete(struct urb *);
--void stub_tx_loop(struct usbip_task *);
-+int stub_tx_loop(void *data);
- 
- /* stub_dev.c */
- extern struct usb_driver stub_driver;
- 
- /* stub_rx.c */
--void stub_rx_loop(struct usbip_task *);
-+int stub_rx_loop(void *data);
- void stub_enqueue_ret_unlink(struct stub_device *, __u32, __u32);
- 
- /* stub_main.c */
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index a7ce51c..8214c35 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/kthread.h>
- 
- #include "usbip_common.h"
- #include "stub.h"
-@@ -138,7 +139,8 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
- 
- 		spin_unlock(&sdev->ud.lock);
- 
--		usbip_start_threads(&sdev->ud);
-+		sdev->ud.tcp_rx = kthread_run(stub_rx_loop, &sdev->ud, "stub_rx");
-+		sdev->ud.tcp_tx = kthread_run(stub_tx_loop, &sdev->ud, "stub_tx");
- 
- 		spin_lock(&sdev->ud.lock);
- 		sdev->ud.status = SDEV_ST_USED;
-@@ -218,7 +220,8 @@ static void stub_shutdown_connection(struct usbip_device *ud)
- 	}
- 
- 	/* 1. stop threads */
--	usbip_stop_threads(ud);
-+	kthread_stop(ud->tcp_rx);
-+	kthread_stop(ud->tcp_tx);
- 
- 	/* 2. close the socket */
- 	/*
-@@ -336,9 +339,6 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
- 	 */
- 	sdev->devid     = (busnum << 16) | devnum;
- 
--	usbip_task_init(&sdev->ud.tcp_rx, "stub_rx", stub_rx_loop);
--	usbip_task_init(&sdev->ud.tcp_tx, "stub_tx", stub_tx_loop);
--
- 	sdev->ud.side = USBIP_STUB;
- 	sdev->ud.status = SDEV_ST_AVAILABLE;
- 	/* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
-@@ -543,7 +543,7 @@ static void stub_disconnect(struct usb_interface *interface)
- 	stub_remove_files(&interface->dev);
- 
- 	/*If usb reset called from event handler*/
--	if (busid_priv->sdev->ud.eh.thread == current) {
-+	if (busid_priv->sdev->ud.eh == current) {
- 		busid_priv->interf_count--;
- 		return;
- 	}
-diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
-index ae6ac82..6445f12 100644
---- a/drivers/staging/usbip/stub_rx.c
-+++ b/drivers/staging/usbip/stub_rx.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/kthread.h>
- 
- #include "usbip_common.h"
- #include "stub.h"
-@@ -616,19 +617,15 @@ static void stub_rx_pdu(struct usbip_device *ud)
- 
- }
- 
--void stub_rx_loop(struct usbip_task *ut)
-+int stub_rx_loop(void *data)
- {
--	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_rx);
--
--	while (1) {
--		if (signal_pending(current)) {
--			usbip_dbg_stub_rx("signal caught!\n");
--			break;
--		}
-+	struct usbip_device *ud = data;
- 
-+	while (!kthread_should_stop()) {
- 		if (usbip_event_happened(ud))
- 			break;
- 
- 		stub_rx_pdu(ud);
- 	}
-+	return 0;
- }
-diff --git a/drivers/staging/usbip/stub_tx.c b/drivers/staging/usbip/stub_tx.c
-index d7136e2..5523f25 100644
---- a/drivers/staging/usbip/stub_tx.c
-+++ b/drivers/staging/usbip/stub_tx.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/kthread.h>
- 
- #include "usbip_common.h"
- #include "stub.h"
-@@ -333,17 +334,12 @@ static int stub_send_ret_unlink(struct stub_device *sdev)
- 
- /*-------------------------------------------------------------------------*/
- 
--void stub_tx_loop(struct usbip_task *ut)
-+int stub_tx_loop(void *data)
- {
--	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_tx);
-+	struct usbip_device *ud = data;
- 	struct stub_device *sdev = container_of(ud, struct stub_device, ud);
- 
--	while (1) {
--		if (signal_pending(current)) {
--			usbip_dbg_stub_tx("signal catched\n");
--			break;
--		}
--
-+	while (!kthread_should_stop()) {
- 		if (usbip_event_happened(ud))
- 			break;
- 
-@@ -369,6 +365,9 @@ void stub_tx_loop(struct usbip_task *ut)
- 
- 		wait_event_interruptible(sdev->tx_waitq,
- 				(!list_empty(&sdev->priv_tx) ||
--				 !list_empty(&sdev->unlink_tx)));
-+				 !list_empty(&sdev->unlink_tx) ||
-+				 kthread_should_stop()));
- 	}
-+
-+	return 0;
- }
-diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
-index 210ef16..337abc4 100644
---- a/drivers/staging/usbip/usbip_common.c
-+++ b/drivers/staging/usbip/usbip_common.c
-@@ -18,7 +18,6 @@
-  */
- 
- #include <linux/kernel.h>
+diff --git a/fs/ufs/Kconfig b/fs/ufs/Kconfig
+index 30c8f22..e4f10a4 100644
+--- a/fs/ufs/Kconfig
++++ b/fs/ufs/Kconfig
+@@ -1,7 +1,6 @@
+ config UFS_FS
+ 	tristate "UFS file system support (read only)"
+ 	depends on BLOCK
+-	depends on BKL # probably fixable
+ 	help
+ 	  BSD and derivate versions of Unix (such as SunOS, FreeBSD, NetBSD,
+ 	  OpenBSD and NeXTstep) use a file system called UFS. Some System V
+diff --git a/fs/ufs/inode.c b/fs/ufs/inode.c
+index 2b251f2..03c255f 100644
+--- a/fs/ufs/inode.c
++++ b/fs/ufs/inode.c
+@@ -34,7 +34,6 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/mm.h>
 -#include <linux/smp_lock.h>
- #include <linux/file.h>
- #include <linux/tcp.h>
- #include <linux/in.h>
-@@ -349,110 +348,6 @@ void usbip_dump_header(struct usbip_header *pdu)
- }
- EXPORT_SYMBOL_GPL(usbip_dump_header);
+ #include <linux/buffer_head.h>
+ #include <linux/writeback.h>
  
--
--/*-------------------------------------------------------------------------*/
--/* thread routines */
--
--int usbip_thread(void *param)
--{
--	struct usbip_task *ut = param;
--
--	if (!ut)
--		return -EINVAL;
--
+@@ -43,7 +42,7 @@
+ #include "swab.h"
+ #include "util.h"
+ 
+-static u64 ufs_frag_map(struct inode *inode, sector_t frag);
++static u64 ufs_frag_map(struct inode *inode, sector_t frag, bool needs_lock);
+ 
+ static int ufs_block_to_path(struct inode *inode, sector_t i_block, sector_t offsets[4])
+ {
+@@ -82,7 +81,7 @@ static int ufs_block_to_path(struct inode *inode, sector_t i_block, sector_t off
+  * the begining of the filesystem.
+  */
+ 
+-static u64 ufs_frag_map(struct inode *inode, sector_t frag)
++static u64 ufs_frag_map(struct inode *inode, sector_t frag, bool needs_lock)
+ {
+ 	struct ufs_inode_info *ufsi = UFS_I(inode);
+ 	struct super_block *sb = inode->i_sb;
+@@ -107,7 +106,8 @@ static u64 ufs_frag_map(struct inode *inode, sector_t frag)
+ 
+ 	p = offsets;
+ 
 -	lock_kernel();
--	daemonize(ut->name);
--	allow_signal(SIGKILL);
--	ut->thread = current;
++	if (needs_lock)
++		lock_ufs(sb);
+ 	if ((flags & UFS_TYPE_MASK) == UFS_TYPE_UFS2)
+ 		goto ufs2;
+ 
+@@ -152,7 +152,8 @@ ufs2:
+ 	ret = temp + (u64) (frag & uspi->s_fpbmask);
+ 
+ out:
+-	unlock_kernel();
++	if (needs_lock)
++		unlock_ufs(sb);
+ 	return ret;
+ }
+ 
+@@ -415,14 +416,16 @@ out:
+ int ufs_getfrag_block(struct inode *inode, sector_t fragment, struct buffer_head *bh_result, int create)
+ {
+ 	struct super_block * sb = inode->i_sb;
+-	struct ufs_sb_private_info * uspi = UFS_SB(sb)->s_uspi;
++	struct ufs_sb_info * sbi = UFS_SB(sb);
++	struct ufs_sb_private_info * uspi = sbi->s_uspi;
+ 	struct buffer_head * bh;
+ 	int ret, err, new;
+ 	unsigned long ptr,phys;
+ 	u64 phys64 = 0;
++	bool needs_lock = (sbi->mutex_owner != current);
+ 	
+ 	if (!create) {
+-		phys64 = ufs_frag_map(inode, fragment);
++		phys64 = ufs_frag_map(inode, fragment, needs_lock);
+ 		UFSD("phys64 = %llu\n", (unsigned long long)phys64);
+ 		if (phys64)
+ 			map_bh(bh_result, sb, phys64);
+@@ -436,7 +439,8 @@ int ufs_getfrag_block(struct inode *inode, sector_t fragment, struct buffer_head
+ 	ret = 0;
+ 	bh = NULL;
+ 
+-	lock_kernel();
++	if (needs_lock)
++		lock_ufs(sb);
+ 
+ 	UFSD("ENTER, ino %lu, fragment %llu\n", inode->i_ino, (unsigned long long)fragment);
+ 	if (fragment >
+@@ -498,7 +502,9 @@ out:
+ 		set_buffer_new(bh_result);
+ 	map_bh(bh_result, sb, phys);
+ abort:
+-	unlock_kernel();
++	if (needs_lock)
++		unlock_ufs(sb);
++
+ 	return err;
+ 
+ abort_too_big:
+@@ -506,48 +512,6 @@ abort_too_big:
+ 	goto abort;
+ }
+ 
+-static struct buffer_head *ufs_getfrag(struct inode *inode,
+-				       unsigned int fragment,
+-				       int create, int *err)
+-{
+-	struct buffer_head dummy;
+-	int error;
+-
+-	dummy.b_state = 0;
+-	dummy.b_blocknr = -1000;
+-	error = ufs_getfrag_block(inode, fragment, &dummy, create);
+-	*err = error;
+-	if (!error && buffer_mapped(&dummy)) {
+-		struct buffer_head *bh;
+-		bh = sb_getblk(inode->i_sb, dummy.b_blocknr);
+-		if (buffer_new(&dummy)) {
+-			memset(bh->b_data, 0, inode->i_sb->s_blocksize);
+-			set_buffer_uptodate(bh);
+-			mark_buffer_dirty(bh);
+-		}
+-		return bh;
+-	}
+-	return NULL;
+-}
+-
+-struct buffer_head * ufs_bread (struct inode * inode, unsigned fragment,
+-	int create, int * err)
+-{
+-	struct buffer_head * bh;
+-
+-	UFSD("ENTER, ino %lu, fragment %u\n", inode->i_ino, fragment);
+-	bh = ufs_getfrag (inode, fragment, create, err);
+-	if (!bh || buffer_uptodate(bh)) 		
+-		return bh;
+-	ll_rw_block (READ, 1, &bh);
+-	wait_on_buffer (bh);
+-	if (buffer_uptodate(bh))
+-		return bh;
+-	brelse (bh);
+-	*err = -EIO;
+-	return NULL;
+-}
+-
+ static int ufs_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	return block_write_full_page(page,ufs_getfrag_block,wbc);
+@@ -900,9 +864,9 @@ static int ufs_update_inode(struct inode * inode, int do_sync)
+ int ufs_write_inode(struct inode *inode, struct writeback_control *wbc)
+ {
+ 	int ret;
+-	lock_kernel();
++	lock_ufs(inode->i_sb);
+ 	ret = ufs_update_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
+-	unlock_kernel();
++	unlock_ufs(inode->i_sb);
+ 	return ret;
+ }
+ 
+@@ -922,22 +886,22 @@ void ufs_evict_inode(struct inode * inode)
+ 	if (want_delete) {
+ 		loff_t old_i_size;
+ 		/*UFS_I(inode)->i_dtime = CURRENT_TIME;*/
+-		lock_kernel();
++		lock_ufs(inode->i_sb);
+ 		mark_inode_dirty(inode);
+ 		ufs_update_inode(inode, IS_SYNC(inode));
+ 		old_i_size = inode->i_size;
+ 		inode->i_size = 0;
+ 		if (inode->i_blocks && ufs_truncate(inode, old_i_size))
+ 			ufs_warning(inode->i_sb, __func__, "ufs_truncate failed\n");
+-		unlock_kernel();
++		unlock_ufs(inode->i_sb);
+ 	}
+ 
+ 	invalidate_inode_buffers(inode);
+ 	end_writeback(inode);
+ 
+ 	if (want_delete) {
+-		lock_kernel();
++		lock_ufs(inode->i_sb);
+ 		ufs_free_inode (inode);
+-		unlock_kernel();
++		unlock_ufs(inode->i_sb);
+ 	}
+ }
+diff --git a/fs/ufs/namei.c b/fs/ufs/namei.c
+index 12f39b9..205030a 100644
+--- a/fs/ufs/namei.c
++++ b/fs/ufs/namei.c
+@@ -29,7 +29,6 @@
+ 
+ #include <linux/time.h>
+ #include <linux/fs.h>
+-#include <linux/smp_lock.h>
+ 
+ #include "ufs_fs.h"
+ #include "ufs.h"
+@@ -55,16 +54,16 @@ static struct dentry *ufs_lookup(struct inode * dir, struct dentry *dentry, stru
+ 	if (dentry->d_name.len > UFS_MAXNAMLEN)
+ 		return ERR_PTR(-ENAMETOOLONG);
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	ino = ufs_inode_by_name(dir, &dentry->d_name);
+ 	if (ino) {
+ 		inode = ufs_iget(dir->i_sb, ino);
+ 		if (IS_ERR(inode)) {
+-			unlock_kernel();
++			unlock_ufs(dir->i_sb);
+ 			return ERR_CAST(inode);
+ 		}
+ 	}
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 	d_add(dentry, inode);
+ 	return NULL;
+ }
+@@ -93,9 +92,9 @@ static int ufs_create (struct inode * dir, struct dentry * dentry, int mode,
+ 		inode->i_fop = &ufs_file_operations;
+ 		inode->i_mapping->a_ops = &ufs_aops;
+ 		mark_inode_dirty(inode);
+-		lock_kernel();
++		lock_ufs(dir->i_sb);
+ 		err = ufs_add_nondir(dentry, inode);
+-		unlock_kernel();
++		unlock_ufs(dir->i_sb);
+ 	}
+ 	UFSD("END: err=%d\n", err);
+ 	return err;
+@@ -115,9 +114,9 @@ static int ufs_mknod (struct inode * dir, struct dentry *dentry, int mode, dev_t
+ 		init_special_inode(inode, mode, rdev);
+ 		ufs_set_inode_dev(inode->i_sb, UFS_I(inode), rdev);
+ 		mark_inode_dirty(inode);
+-		lock_kernel();
++		lock_ufs(dir->i_sb);
+ 		err = ufs_add_nondir(dentry, inode);
+-		unlock_kernel();
++		unlock_ufs(dir->i_sb);
+ 	}
+ 	return err;
+ }
+@@ -133,7 +132,7 @@ static int ufs_symlink (struct inode * dir, struct dentry * dentry,
+ 	if (l > sb->s_blocksize)
+ 		goto out_notlocked;
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	inode = ufs_new_inode(dir, S_IFLNK | S_IRWXUGO);
+ 	err = PTR_ERR(inode);
+ 	if (IS_ERR(inode))
+@@ -156,7 +155,7 @@ static int ufs_symlink (struct inode * dir, struct dentry * dentry,
+ 
+ 	err = ufs_add_nondir(dentry, inode);
+ out:
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ out_notlocked:
+ 	return err;
+ 
+@@ -172,9 +171,9 @@ static int ufs_link (struct dentry * old_dentry, struct inode * dir,
+ 	struct inode *inode = old_dentry->d_inode;
+ 	int error;
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	if (inode->i_nlink >= UFS_LINK_MAX) {
+-		unlock_kernel();
++		unlock_ufs(dir->i_sb);
+ 		return -EMLINK;
+ 	}
+ 
+@@ -183,7 +182,7 @@ static int ufs_link (struct dentry * old_dentry, struct inode * dir,
+ 	ihold(inode);
+ 
+ 	error = ufs_add_nondir(dentry, inode);
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 	return error;
+ }
+ 
+@@ -195,7 +194,7 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, int mode)
+ 	if (dir->i_nlink >= UFS_LINK_MAX)
+ 		goto out;
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	inode_inc_link_count(dir);
+ 
+ 	inode = ufs_new_inode(dir, S_IFDIR|mode);
+@@ -216,7 +215,7 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, int mode)
+ 	err = ufs_add_link(dentry, inode);
+ 	if (err)
+ 		goto out_fail;
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 
+ 	d_instantiate(dentry, inode);
+ out:
+@@ -228,7 +227,7 @@ out_fail:
+ 	iput (inode);
+ out_dir:
+ 	inode_dec_link_count(dir);
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 	goto out;
+ }
+ 
+@@ -259,7 +258,7 @@ static int ufs_rmdir (struct inode * dir, struct dentry *dentry)
+ 	struct inode * inode = dentry->d_inode;
+ 	int err= -ENOTEMPTY;
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	if (ufs_empty_dir (inode)) {
+ 		err = ufs_unlink(dir, dentry);
+ 		if (!err) {
+@@ -268,7 +267,7 @@ static int ufs_rmdir (struct inode * dir, struct dentry *dentry)
+ 			inode_dec_link_count(dir);
+ 		}
+ 	}
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 	return err;
+ }
+ 
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index 2c61ac5..7693d62 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -84,7 +84,6 @@
+ #include <linux/blkdev.h>
+ #include <linux/init.h>
+ #include <linux/parser.h>
+-#include <linux/smp_lock.h>
+ #include <linux/buffer_head.h>
+ #include <linux/vfs.h>
+ #include <linux/log2.h>
+@@ -96,6 +95,26 @@
+ #include "swab.h"
+ #include "util.h"
+ 
++void lock_ufs(struct super_block *sb)
++{
++#if defined(CONFIG_SMP) || defined (CONFIG_PREEMPT)
++	struct ufs_sb_info *sbi = UFS_SB(sb);
++
++	mutex_lock(&sbi->mutex);
++	sbi->mutex_owner = current;
++#endif
++}
++
++void unlock_ufs(struct super_block *sb)
++{
++#if defined(CONFIG_SMP) || defined (CONFIG_PREEMPT)
++	struct ufs_sb_info *sbi = UFS_SB(sb);
++
++	sbi->mutex_owner = NULL;
++	mutex_unlock(&sbi->mutex);
++#endif
++}
++
+ static struct inode *ufs_nfs_get_inode(struct super_block *sb, u64 ino, u32 generation)
+ {
+ 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
+@@ -313,7 +332,6 @@ void ufs_panic (struct super_block * sb, const char * function,
+ 	struct ufs_super_block_first * usb1;
+ 	va_list args;
+ 	
+-	lock_kernel();
+ 	uspi = UFS_SB(sb)->s_uspi;
+ 	usb1 = ubh_get_usb_first(uspi);
+ 	
+@@ -521,7 +539,7 @@ static int ufs_read_cylinder_structures(struct super_block *sb)
+ 	 */
+ 	size = uspi->s_cssize;
+ 	blks = (size + uspi->s_fsize - 1) >> uspi->s_fshift;
+-	base = space = kmalloc(size, GFP_KERNEL);
++	base = space = kmalloc(size, GFP_NOFS);
+ 	if (!base)
+ 		goto failed; 
+ 	sbi->s_csp = (struct ufs_csum *)space;
+@@ -546,7 +564,7 @@ static int ufs_read_cylinder_structures(struct super_block *sb)
+ 	 * Read cylinder group (we read only first fragment from block
+ 	 * at this time) and prepare internal data structures for cg caching.
+ 	 */
+-	if (!(sbi->s_ucg = kmalloc (sizeof(struct buffer_head *) * uspi->s_ncg, GFP_KERNEL)))
++	if (!(sbi->s_ucg = kmalloc (sizeof(struct buffer_head *) * uspi->s_ncg, GFP_NOFS)))
+ 		goto failed;
+ 	for (i = 0; i < uspi->s_ncg; i++) 
+ 		sbi->s_ucg[i] = NULL;
+@@ -564,7 +582,7 @@ static int ufs_read_cylinder_structures(struct super_block *sb)
+ 		ufs_print_cylinder_stuff(sb, (struct ufs_cylinder_group *) sbi->s_ucg[i]->b_data);
+ 	}
+ 	for (i = 0; i < UFS_MAX_GROUP_LOADED; i++) {
+-		if (!(sbi->s_ucpi[i] = kmalloc (sizeof(struct ufs_cg_private_info), GFP_KERNEL)))
++		if (!(sbi->s_ucpi[i] = kmalloc (sizeof(struct ufs_cg_private_info), GFP_NOFS)))
+ 			goto failed;
+ 		sbi->s_cgno[i] = UFS_CGNO_EMPTY;
+ 	}
+@@ -646,8 +664,6 @@ static void ufs_put_super_internal(struct super_block *sb)
+ 	
+ 	UFSD("ENTER\n");
+ 
+-	lock_kernel();
+-
+ 	ufs_put_cstotal(sb);
+ 	size = uspi->s_cssize;
+ 	blks = (size + uspi->s_fsize - 1) >> uspi->s_fshift;
+@@ -676,8 +692,6 @@ static void ufs_put_super_internal(struct super_block *sb)
+ 	kfree (sbi->s_ucg);
+ 	kfree (base);
+ 
 -	unlock_kernel();
 -
--	/* srv.rb must wait for rx_thread starting */
--	complete(&ut->thread_done);
--
--	/* start of while loop */
--	ut->loop_ops(ut);
--
--	/* end of loop */
--	ut->thread = NULL;
--
--	complete_and_exit(&ut->thread_done, 0);
--}
--
--static void stop_rx_thread(struct usbip_device *ud)
--{
--	if (ud->tcp_rx.thread != NULL) {
--		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
--		wait_for_completion(&ud->tcp_rx.thread_done);
--		usbip_udbg("rx_thread for ud %p has finished\n", ud);
--	}
--}
--
--static void stop_tx_thread(struct usbip_device *ud)
--{
--	if (ud->tcp_tx.thread != NULL) {
--		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
--		wait_for_completion(&ud->tcp_tx.thread_done);
--		usbip_udbg("tx_thread for ud %p has finished\n", ud);
--	}
--}
--
--int usbip_start_threads(struct usbip_device *ud)
--{
--	/*
--	 * threads are invoked per one device (per one connection).
--	 */
--	struct task_struct *th;
--	int err = 0;
--
--	th = kthread_run(usbip_thread, (void *)&ud->tcp_rx, "usbip");
--	if (IS_ERR(th)) {
--		printk(KERN_WARNING
--			"Unable to start control thread\n");
--		err = PTR_ERR(th);
--		goto ust_exit;
--	}
--
--	th = kthread_run(usbip_thread, (void *)&ud->tcp_tx, "usbip");
--	if (IS_ERR(th)) {
--		printk(KERN_WARNING
--			"Unable to start control thread\n");
--		err = PTR_ERR(th);
--		goto tx_thread_err;
--	}
--
--	/* confirm threads are starting */
--	wait_for_completion(&ud->tcp_rx.thread_done);
--	wait_for_completion(&ud->tcp_tx.thread_done);
--
--	return 0;
--
--tx_thread_err:
--	stop_rx_thread(ud);
--
--ust_exit:
--	return err;
--}
--EXPORT_SYMBOL_GPL(usbip_start_threads);
--
--void usbip_stop_threads(struct usbip_device *ud)
--{
--	/* kill threads related to this sdev, if v.c. exists */
--	stop_rx_thread(ud);
--	stop_tx_thread(ud);
--}
--EXPORT_SYMBOL_GPL(usbip_stop_threads);
--
--void usbip_task_init(struct usbip_task *ut, char *name,
--		void (*loop_ops)(struct usbip_task *))
--{
--	ut->thread = NULL;
--	init_completion(&ut->thread_done);
--	ut->name = name;
--	ut->loop_ops = loop_ops;
--}
--EXPORT_SYMBOL_GPL(usbip_task_init);
--
--
- /*-------------------------------------------------------------------------*/
- /* socket routines */
+ 	UFSD("EXIT\n");
+ }
  
-diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
-index d280e23..9f809c3 100644
---- a/drivers/staging/usbip/usbip_common.h
-+++ b/drivers/staging/usbip/usbip_common.h
-@@ -307,13 +307,6 @@ void usbip_dump_header(struct usbip_header *pdu);
+@@ -696,8 +710,6 @@ static int ufs_fill_super(struct super_block *sb, void *data, int silent)
+ 	unsigned maxsymlen;
+ 	int ret = -EINVAL;
  
- struct usbip_device;
- 
--struct usbip_task {
--	struct task_struct *thread;
--	struct completion thread_done;
--	char *name;
--	void (*loop_ops)(struct usbip_task *);
--};
+-	lock_kernel();
 -
- enum usbip_side {
- 	USBIP_VHCI,
- 	USBIP_STUB,
-@@ -346,8 +339,8 @@ struct usbip_device {
+ 	uspi = NULL;
+ 	ubh = NULL;
+ 	flags = 0;
+@@ -718,6 +730,7 @@ static int ufs_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto failed;
+ 	}
+ #endif
++	mutex_init(&sbi->mutex);
+ 	/*
+ 	 * Set default mount options
+ 	 * Parse mount options
+@@ -1165,7 +1178,6 @@ magic_found:
+ 			goto failed;
  
- 	struct socket *tcp_socket;
+ 	UFSD("EXIT\n");
+-	unlock_kernel();
+ 	return 0;
  
--	struct usbip_task tcp_rx;
--	struct usbip_task tcp_tx;
-+	struct task_struct *tcp_rx;
-+	struct task_struct *tcp_tx;
+ dalloc_failed:
+@@ -1177,12 +1189,10 @@ failed:
+ 	kfree(sbi);
+ 	sb->s_fs_info = NULL;
+ 	UFSD("EXIT (FAILED)\n");
+-	unlock_kernel();
+ 	return ret;
  
- 	/* event handler */
- #define USBIP_EH_SHUTDOWN	(1 << 0)
-@@ -367,7 +360,7 @@ struct usbip_device {
- #define	VDEV_EVENT_ERROR_MALLOC	(USBIP_EH_SHUTDOWN | USBIP_EH_UNUSABLE)
+ failed_nomem:
+ 	UFSD("EXIT (NOMEM)\n");
+-	unlock_kernel();
+ 	return -ENOMEM;
+ }
  
- 	unsigned long event;
--	struct usbip_task eh;
-+	struct task_struct *eh;
- 	wait_queue_head_t eh_waitq;
+@@ -1193,8 +1203,8 @@ static int ufs_sync_fs(struct super_block *sb, int wait)
+ 	struct ufs_super_block_third * usb3;
+ 	unsigned flags;
  
- 	struct eh_ops {
-@@ -378,13 +371,6 @@ struct usbip_device {
++	lock_ufs(sb);
+ 	lock_super(sb);
+-	lock_kernel();
+ 
+ 	UFSD("ENTER\n");
+ 
+@@ -1213,8 +1223,8 @@ static int ufs_sync_fs(struct super_block *sb, int wait)
+ 	sb->s_dirt = 0;
+ 
+ 	UFSD("EXIT\n");
+-	unlock_kernel();
+ 	unlock_super(sb);
++	unlock_ufs(sb);
+ 
+ 	return 0;
+ }
+@@ -1256,7 +1266,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	unsigned new_mount_opt, ufstype;
+ 	unsigned flags;
+ 
+-	lock_kernel();
++	lock_ufs(sb);
+ 	lock_super(sb);
+ 	uspi = UFS_SB(sb)->s_uspi;
+ 	flags = UFS_SB(sb)->s_flags;
+@@ -1272,7 +1282,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	ufs_set_opt (new_mount_opt, ONERROR_LOCK);
+ 	if (!ufs_parse_options (data, &new_mount_opt)) {
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return -EINVAL;
+ 	}
+ 	if (!(new_mount_opt & UFS_MOUNT_UFSTYPE)) {
+@@ -1280,14 +1290,14 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	} else if ((new_mount_opt & UFS_MOUNT_UFSTYPE) != ufstype) {
+ 		printk("ufstype can't be changed during remount\n");
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if ((*mount_flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
+ 		UFS_SB(sb)->s_mount_opt = new_mount_opt;
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return 0;
+ 	}
+ 	
+@@ -1313,7 +1323,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 		printk("ufs was compiled with read-only support, "
+ 		"can't be mounted as read-write\n");
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return -EINVAL;
+ #else
+ 		if (ufstype != UFS_MOUNT_UFSTYPE_SUN && 
+@@ -1323,13 +1333,13 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 		    ufstype != UFS_MOUNT_UFSTYPE_UFS2) {
+ 			printk("this ufstype is read-only supported\n");
+ 			unlock_super(sb);
+-			unlock_kernel();
++			unlock_ufs(sb);
+ 			return -EINVAL;
+ 		}
+ 		if (!ufs_read_cylinder_structures(sb)) {
+ 			printk("failed during remounting\n");
+ 			unlock_super(sb);
+-			unlock_kernel();
++			unlock_ufs(sb);
+ 			return -EPERM;
+ 		}
+ 		sb->s_flags &= ~MS_RDONLY;
+@@ -1337,7 +1347,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	}
+ 	UFS_SB(sb)->s_mount_opt = new_mount_opt;
+ 	unlock_super(sb);
+-	unlock_kernel();
++	unlock_ufs(sb);
+ 	return 0;
+ }
+ 
+@@ -1371,7 +1381,7 @@ static int ufs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	struct ufs_super_block_third *usb3;
+ 	u64 id = huge_encode_dev(sb->s_bdev->bd_dev);
+ 
+-	lock_kernel();
++	lock_ufs(sb);
+ 
+ 	usb1 = ubh_get_usb_first(uspi);
+ 	usb2 = ubh_get_usb_second(uspi);
+@@ -1395,7 +1405,7 @@ static int ufs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	buf->f_fsid.val[0] = (u32)id;
+ 	buf->f_fsid.val[1] = (u32)(id >> 32);
+ 
+-	unlock_kernel();
++	unlock_ufs(sb);
+ 
+ 	return 0;
+ }
+@@ -1405,7 +1415,7 @@ static struct kmem_cache * ufs_inode_cachep;
+ static struct inode *ufs_alloc_inode(struct super_block *sb)
+ {
+ 	struct ufs_inode_info *ei;
+-	ei = (struct ufs_inode_info *)kmem_cache_alloc(ufs_inode_cachep, GFP_KERNEL);
++	ei = (struct ufs_inode_info *)kmem_cache_alloc(ufs_inode_cachep, GFP_NOFS);
+ 	if (!ei)
+ 		return NULL;
+ 	ei->vfs_inode.i_version = 1;
+diff --git a/fs/ufs/truncate.c b/fs/ufs/truncate.c
+index a58f915..e56a4f5 100644
+--- a/fs/ufs/truncate.c
++++ b/fs/ufs/truncate.c
+@@ -40,7 +40,6 @@
+ #include <linux/time.h>
+ #include <linux/stat.h>
+ #include <linux/string.h>
+-#include <linux/smp_lock.h>
+ #include <linux/buffer_head.h>
+ #include <linux/blkdev.h>
+ #include <linux/sched.h>
+@@ -467,7 +466,6 @@ int ufs_truncate(struct inode *inode, loff_t old_i_size)
+ 
+ 	block_truncate_page(inode->i_mapping, inode->i_size, ufs_getfrag_block);
+ 
+-	lock_kernel();
+ 	while (1) {
+ 		retry = ufs_trunc_direct(inode);
+ 		retry |= ufs_trunc_indirect(inode, UFS_IND_BLOCK,
+@@ -487,7 +485,6 @@ int ufs_truncate(struct inode *inode, loff_t old_i_size)
+ 
+ 	inode->i_mtime = inode->i_ctime = CURRENT_TIME_SEC;
+ 	ufsi->i_lastfrag = DIRECT_FRAGMENT;
+-	unlock_kernel();
+ 	mark_inode_dirty(inode);
+ out:
+ 	UFSD("EXIT: err %d\n", err);
+@@ -510,7 +507,9 @@ int ufs_setattr(struct dentry *dentry, struct iattr *attr)
+ 		/* XXX(truncate): truncate_setsize should be called last */
+ 		truncate_setsize(inode, attr->ia_size);
+ 
++		lock_ufs(inode->i_sb);
+ 		error = ufs_truncate(inode, old_i_size);
++		unlock_ufs(inode->i_sb);
+ 		if (error)
+ 			return error;
+ 	}
+diff --git a/fs/ufs/ufs.h b/fs/ufs/ufs.h
+index c08782e..5be2755 100644
+--- a/fs/ufs/ufs.h
++++ b/fs/ufs/ufs.h
+@@ -18,6 +18,8 @@ struct ufs_sb_info {
+ 	unsigned s_cgno[UFS_MAX_GROUP_LOADED];
+ 	unsigned short s_cg_loaded;
+ 	unsigned s_mount_opt;
++	struct mutex mutex;
++	struct task_struct *mutex_owner;
  };
  
+ struct ufs_inode_info {
+@@ -109,7 +111,6 @@ extern struct inode *ufs_iget(struct super_block *, unsigned long);
+ extern int ufs_write_inode (struct inode *, struct writeback_control *);
+ extern int ufs_sync_inode (struct inode *);
+ extern void ufs_evict_inode (struct inode *);
+-extern struct buffer_head * ufs_bread (struct inode *, unsigned, int, int *);
+ extern int ufs_getfrag_block (struct inode *inode, sector_t fragment, struct buffer_head *bh_result, int create);
  
--void usbip_task_init(struct usbip_task *ut, char *,
--				void (*loop_ops)(struct usbip_task *));
--
--int usbip_start_threads(struct usbip_device *ud);
--void usbip_stop_threads(struct usbip_device *ud);
--int usbip_thread(void *param);
--
- void usbip_pack_pdu(struct usbip_header *pdu, struct urb *urb, int cmd,
- 								int pack);
- 
-diff --git a/drivers/staging/usbip/usbip_event.c b/drivers/staging/usbip/usbip_event.c
-index af3832b..f4b287e 100644
---- a/drivers/staging/usbip/usbip_event.c
-+++ b/drivers/staging/usbip/usbip_event.c
-@@ -62,55 +62,43 @@ static int event_handler(struct usbip_device *ud)
- 	return 0;
+ /* namei.c */
+@@ -154,4 +155,7 @@ static inline u32 ufs_dtogd(struct ufs_sb_private_info * uspi, u64 b)
+ 	return do_div(b, uspi->s_fpg);
  }
  
--static void event_handler_loop(struct usbip_task *ut)
-+static int event_handler_loop(void *data)
- {
--	struct usbip_device *ud = container_of(ut, struct usbip_device, eh);
-+	struct usbip_device *ud = data;
- 
--	while (1) {
--		if (signal_pending(current)) {
--			usbip_dbg_eh("signal catched!\n");
--			break;
--		}
-+	while (!kthread_should_stop()) {
-+		wait_event_interruptible(ud->eh_waitq,
-+					usbip_event_happened(ud) ||
-+					kthread_should_stop());
-+		usbip_dbg_eh("wakeup\n");
- 
- 		if (event_handler(ud) < 0)
- 			break;
--
--		wait_event_interruptible(ud->eh_waitq,
--					usbip_event_happened(ud));
--		usbip_dbg_eh("wakeup\n");
- 	}
-+	return 0;
- }
- 
- int usbip_start_eh(struct usbip_device *ud)
- {
--	struct usbip_task *eh = &ud->eh;
--	struct task_struct *th;
--
- 	init_waitqueue_head(&ud->eh_waitq);
- 	ud->event = 0;
- 
--	usbip_task_init(eh, "usbip_eh", event_handler_loop);
--
--	th = kthread_run(usbip_thread, (void *)eh, "usbip");
--	if (IS_ERR(th)) {
-+	ud->eh = kthread_run(event_handler_loop, ud, "usbip_eh");
-+	if (IS_ERR(ud->eh)) {
- 		printk(KERN_WARNING
- 			"Unable to start control thread\n");
--		return PTR_ERR(th);
-+		return PTR_ERR(ud->eh);
- 	}
--
--	wait_for_completion(&eh->thread_done);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(usbip_start_eh);
- 
- void usbip_stop_eh(struct usbip_device *ud)
- {
--	struct usbip_task *eh = &ud->eh;
--
--	if (eh->thread == current)
-+	if (ud->eh == current)
- 		return; /* do not wait for myself */
- 
--	wait_for_completion(&eh->thread_done);
-+	kthread_stop(ud->eh);
- 	usbip_dbg_eh("usbip_eh has finished\n");
- }
- EXPORT_SYMBOL_GPL(usbip_stop_eh);
-diff --git a/drivers/staging/usbip/vhci.h b/drivers/staging/usbip/vhci.h
-index afc3b1a..d3f1e5f 100644
---- a/drivers/staging/usbip/vhci.h
-+++ b/drivers/staging/usbip/vhci.h
-@@ -113,8 +113,8 @@ extern struct attribute_group dev_attr_group;
- /* vhci_hcd.c */
- void rh_port_connect(int rhport, enum usb_device_speed speed);
- void rh_port_disconnect(int rhport);
--void vhci_rx_loop(struct usbip_task *ut);
--void vhci_tx_loop(struct usbip_task *ut);
-+int vhci_rx_loop(void *data);
-+int vhci_tx_loop(void *data);
- 
- struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
- 					    __u32 seqnum);
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index a35fe61..36ae9fb 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/kthread.h>
- 
- #include "usbip_common.h"
- #include "vhci.h"
-@@ -874,7 +875,10 @@ static void vhci_shutdown_connection(struct usbip_device *ud)
- 		kernel_sock_shutdown(ud->tcp_socket, SHUT_RDWR);
- 	}
- 
--	usbip_stop_threads(&vdev->ud);
-+	/* kill threads related to this sdev, if v.c. exists */
-+	kthread_stop(vdev->ud.tcp_rx);
-+	kthread_stop(vdev->ud.tcp_tx);
++extern void lock_ufs(struct super_block *sb);
++extern void unlock_ufs(struct super_block *sb);
 +
- 	usbip_uinfo("stop threads\n");
- 
- 	/* active connection is closed */
-@@ -945,8 +949,8 @@ static void vhci_device_init(struct vhci_device *vdev)
- {
- 	memset(vdev, 0, sizeof(*vdev));
- 
--	usbip_task_init(&vdev->ud.tcp_rx, "vhci_rx", vhci_rx_loop);
--	usbip_task_init(&vdev->ud.tcp_tx, "vhci_tx", vhci_tx_loop);
-+	vdev->ud.tcp_rx = kthread_create(vhci_rx_loop, &vdev->ud, "vhci_rx");
-+	vdev->ud.tcp_tx = kthread_create(vhci_tx_loop, &vdev->ud, "vhci_tx");
- 
- 	vdev->ud.side   = USBIP_VHCI;
- 	vdev->ud.status = VDEV_ST_NULL;
-diff --git a/drivers/staging/usbip/vhci_rx.c b/drivers/staging/usbip/vhci_rx.c
-index bf69914..09bf235 100644
---- a/drivers/staging/usbip/vhci_rx.c
-+++ b/drivers/staging/usbip/vhci_rx.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/kthread.h>
- 
- #include "usbip_common.h"
- #include "vhci.h"
-@@ -269,22 +270,17 @@ static void vhci_rx_pdu(struct usbip_device *ud)
- 
- /*-------------------------------------------------------------------------*/
- 
--void vhci_rx_loop(struct usbip_task *ut)
-+int vhci_rx_loop(void *data)
- {
--	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_rx);
--
--
--	while (1) {
--		if (signal_pending(current)) {
--			usbip_dbg_vhci_rx("signal catched!\n");
--			break;
--		}
-+	struct usbip_device *ud = data;
- 
- 
-+	while (!kthread_should_stop()) {
- 		if (usbip_event_happened(ud))
- 			break;
- 
- 		vhci_rx_pdu(ud);
- 	}
--}
- 
-+	return 0;
-+}
-diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
-index f6e34e0..3f2459f 100644
---- a/drivers/staging/usbip/vhci_sysfs.c
-+++ b/drivers/staging/usbip/vhci_sysfs.c
-@@ -220,16 +220,13 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
- 	vdev->ud.tcp_socket = socket;
- 	vdev->ud.status     = VDEV_ST_NOTASSIGNED;
- 
-+	wake_up_process(vdev->ud.tcp_rx);
-+	wake_up_process(vdev->ud.tcp_tx);
-+
- 	spin_unlock(&vdev->ud.lock);
- 	spin_unlock(&the_controller->lock);
- 	/* end the lock */
- 
--	/*
--	 * this function will sleep, so should be out of the lock. but, it's ok
--	 * because we already marked vdev as being used. really?
--	 */
--	usbip_start_threads(&vdev->ud);
--
- 	rh_port_connect(rhport, speed);
- 
- 	return count;
-diff --git a/drivers/staging/usbip/vhci_tx.c b/drivers/staging/usbip/vhci_tx.c
-index e1c1f71..d9ab49d 100644
---- a/drivers/staging/usbip/vhci_tx.c
-+++ b/drivers/staging/usbip/vhci_tx.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/kthread.h>
- 
- #include "usbip_common.h"
- #include "vhci.h"
-@@ -215,17 +216,12 @@ static int vhci_send_cmd_unlink(struct vhci_device *vdev)
- 
- /*-------------------------------------------------------------------------*/
- 
--void vhci_tx_loop(struct usbip_task *ut)
-+int vhci_tx_loop(void *data)
- {
--	struct usbip_device *ud = container_of(ut, struct usbip_device, tcp_tx);
-+	struct usbip_device *ud = data;
- 	struct vhci_device *vdev = container_of(ud, struct vhci_device, ud);
- 
--	while (1) {
--		if (signal_pending(current)) {
--			usbip_uinfo("vhci_tx signal catched\n");
--			break;
--		}
--
-+	while (!kthread_should_stop()) {
- 		if (vhci_send_cmd_submit(vdev) < 0)
- 			break;
- 
-@@ -234,8 +230,11 @@ void vhci_tx_loop(struct usbip_task *ut)
- 
- 		wait_event_interruptible(vdev->waitq_tx,
- 				(!list_empty(&vdev->priv_tx) ||
--				 !list_empty(&vdev->unlink_tx)));
-+				 !list_empty(&vdev->unlink_tx) ||
-+				 kthread_should_stop()));
- 
- 		usbip_dbg_vhci_tx("pending urbs ?, now wake up\n");
- 	}
-+
-+	return 0;
- }
+ #endif /* _UFS_UFS_H */
+diff --git a/fs/ufs/util.c b/fs/ufs/util.c
+index d2c36d5..95425b5 100644
+--- a/fs/ufs/util.c
++++ b/fs/ufs/util.c
+@@ -27,7 +27,7 @@ struct ufs_buffer_head * _ubh_bread_ (struct ufs_sb_private_info * uspi,
+ 	if (count > UFS_MAXFRAG)
+ 		return NULL;
+ 	ubh = (struct ufs_buffer_head *)
+-		kmalloc (sizeof (struct ufs_buffer_head), GFP_KERNEL);
++		kmalloc (sizeof (struct ufs_buffer_head), GFP_NOFS);
+ 	if (!ubh)
+ 		return NULL;
+ 	ubh->fragment = fragment;
 -- 
 1.7.1
 
