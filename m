@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab1CABLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 20:11:44 -0500
+	id S1755327Ab1CABLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 20:11:47 -0500
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:4838 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab1CABLm (ORCPT
+	with ESMTP id S1755239Ab1CABLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 20:11:42 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6271"; a="77024111"
+	Mon, 28 Feb 2011 20:11:45 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6271"; a="77024118"
 From: Kenneth Heitke <kheitke@codeaurora.org>
 To: davidb@codeaurora.org, bryanh@codeaurora.org, dwalker@fifo99.com
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.intradead.org,
@@ -16,9 +16,9 @@ Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.intradead.org,
         Kenneth Heitke <kheitke@codeaurora.org>,
         linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
         linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH 1/5] RFC: msm: sps: Bus Access Manager (BAM) Hardware driver
-Date: Mon, 28 Feb 2011 18:11:28 -0700
-Message-Id: <1298941892-25173-2-git-send-email-kheitke@codeaurora.org>
+Subject: [RFC PATCH 4/5] RFC: msm: sps: Smart Peripheral Subsystem (SPS) Resource Manager
+Date: Mon, 28 Feb 2011 18:11:31 -0700
+Message-Id: <1298941892-25173-5-git-send-email-kheitke@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1298941892-25173-1-git-send-email-kheitke@codeaurora.org>
 References: <1298941892-25173-1-git-send-email-kheitke@codeaurora.org>
@@ -28,31 +28,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Amir Samuelovi <amirs@codeaurora.org>
 
-A primary component of the Smart Peripheral Subsytem (SPS) is the Bus
-Access Manager (BAM).  The BAM serves as a DMA engine for a peripheral
-core.  A BAM can provide multiple DMA channels, referred to as "pipes",
-which can perform DMA between other BAM pipes or to system memory under
-control of a host CPU.
-
-The BAM driver handles the following:
-- BAM and endpoint hardware configuration
-- BAM interrupt routing and dispatching
+Resource management for the SPS device driver.
 
 Signed-off-by: Amir Samuelov <amirs@codeaurora.org>
 Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
 ---
- arch/arm/mach-msm/sps/bam.c |  588 +++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/sps/bam.h |  375 +++++++++++++++++++++++++++
- 2 files changed, 963 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/sps/bam.c
- create mode 100644 arch/arm/mach-msm/sps/bam.h
+ arch/arm/mach-msm/sps/sps_rm.c |  806 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 806 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/sps/sps_rm.c
 
-diff --git a/arch/arm/mach-msm/sps/bam.c b/arch/arm/mach-msm/sps/bam.c
+diff --git a/arch/arm/mach-msm/sps/sps_rm.c b/arch/arm/mach-msm/sps/sps_rm.c
 new file mode 100644
-index 0000000..be6b038
+index 0000000..ec36b25
 --- /dev/null
-+++ b/arch/arm/mach-msm/sps/bam.c
-@@ -0,0 +1,588 @@
++++ b/arch/arm/mach-msm/sps/sps_rm.c
+@@ -0,0 +1,806 @@
 +/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -65,963 +55,800 @@ index 0000000..be6b038
 + * GNU General Public License for more details.
 + */
 +
-+/* Bus-Access-Manager (BAM) Hardware manager. */
++/* Resource management for the SPS device driver. */
 +
 +#include <linux/types.h>	/* u32 */
 +#include <linux/kernel.h>	/* pr_info() */
-+#include <linux/io.h>		/* ioread32() */
-+#include <linux/bitops.h>	/* find_first_bit() */
-+#include <linux/errno.h>	/* ENODEV */
++#include <linux/mutex.h>	/* mutex */
++#include <linux/list.h>		/* list_head */
++#include <linux/slab.h>		/* kzalloc() */
++#include <linux/memory.h>	/* memset */
 +
-+#include "bam.h"
++#include "spsi.h"
++#include "sps_core.h"
 +
-+/**
-+ *  Valid BAM Hardware version.
-+ *
-+ */
-+#define BAM_MIN_VERSION 2
-+#define BAM_MAX_VERSION 2
++/* "Clear" value for the connection parameter struct */
++#define SPSRM_CLEAR     0xcccccccc
 +
-+/**
-+ *  BAM Hardware registers.
-+ *
-+ */
-+#define CTRL                        (0xf80)
-+#define REVISION                    (0xf84)
-+#define NUM_PIPES                   (0xfbc)
-+#define DESC_CNT_TRSHLD             (0xf88)
-+#define IRQ_SRCS                    (0xf8c)
-+#define IRQ_SRCS_MSK                (0xf90)
-+#define IRQ_SRCS_UNMASKED           (0xfb0)
-+#define IRQ_STTS                    (0xf94)
-+#define IRQ_CLR                     (0xf98)
-+#define IRQ_EN                      (0xf9c)
-+#define IRQ_SIC_SEL                 (0xfa0)
-+#define AHB_MASTER_ERR_CTRLS        (0xfa4)
-+#define AHB_MASTER_ERR_ADDR         (0xfa8)
-+#define AHB_MASTER_ERR_DATA         (0xfac)
-+#define IRQ_DEST                    (0xfb4)
-+#define PERIPH_IRQ_DEST             (0xfb8)
-+#define TEST_BUS_REG                (0xff8)
-+#define CNFG_BITS                   (0xffc)
++/* Max BAM FIFO sizes */
++#define SPSRM_MAX_DESC_FIFO_SIZE    0xffff
++#define SPSRM_MAX_DATA_FIFO_SIZE    0xffff
 +
-+#define P_CTRL(n)                  (0x0000 + 128 * (n))
-+#define P_RST(n)                   (0x0004 + 128 * (n))
-+#define P_HALT(n)                  (0x0008 + 128 * (n))
-+#define P_IRQ_STTS(n)              (0x0010 + 128 * (n))
-+#define P_IRQ_CLR(n)               (0x0014 + 128 * (n))
-+#define P_IRQ_EN(n)                (0x0018 + 128 * (n))
-+#define P_TIMER(n)                 (0x001c + 128 * (n))
-+#define P_TIMER_CTRL(n)            (0x0020 + 128 * (n))
-+#define P_EVNT_DEST_ADDR(n)        (0x102c + 64 * (n))
-+#define P_EVNT_REG(n)              (0x1018 + 64 * (n))
-+#define P_SW_OFSTS(n)              (0x1000 + 64 * (n))
-+#define P_DATA_FIFO_ADDR(n)        (0x1024 + 64 * (n))
-+#define P_DESC_FIFO_ADDR(n)        (0x101c + 64 * (n))
-+#define P_EVNT_GEN_TRSHLD(n)       (0x1028 + 64 * (n))
-+#define P_FIFO_SIZES(n)            (0x1020 + 64 * (n))
-+#define P_IRQ_DEST_ADDR(n)         (0x103c + 64 * (n))
-+#define P_RETR_CNTXT(n)           (0x1034 + 64 * (n))
-+#define P_SI_CNTXT(n)             (0x1038 + 64 * (n))
-+#define P_AU_PSM_CNTXT_1(n)       (0x1004 + 64 * (n))
-+#define P_PSM_CNTXT_2(n)          (0x1008 + 64 * (n))
-+#define P_PSM_CNTXT_3(n)          (0x100c + 64 * (n))
-+#define P_PSM_CNTXT_4(n)          (0x1010 + 64 * (n))
-+#define P_PSM_CNTXT_5(n)          (0x1014 + 64 * (n))
++/* Connection control struct pointer */
++static struct sps_rm *sps_rm;
 +
 +/**
-+ *  BAM Hardware registers bitmask.
-+ *  format: <register>_<field>
-+ *
++ * Initialize resource manager module
 + */
-+/* CTRL */
-+#define BAM_CACHED_DESC_STORE                   0x8000
-+#define BAM_DESC_CACHE_SEL                      0x6000
-+#define BAM_PERIPH_IRQ_SIC_SEL                  0x1000
-+#define BAM_TESTBUS_SEL                          0xfe0
-+#define BAM_EN_ACCUM                              0x10
-+#define BAM_EN                                     0x2
-+#define BAM_SW_RST                                 0x1
-+
-+/* IRQ_SRCS */
-+#define BAM_IRQ                         0x80000000
-+#define P_IRQ                           0x7fffffff
-+
-+#define IRQ_STTS_BAM_ERROR_IRQ                          0x4
-+#define IRQ_STTS_BAM_HRESP_ERR_IRQ                      0x2
-+#define IRQ_CLR_BAM_ERROR_CLR                           0x4
-+#define IRQ_CLR_BAM_HRESP_ERR_CLR                       0x2
-+#define IRQ_EN_BAM_ERROR_EN                             0x4
-+#define IRQ_EN_BAM_HRESP_ERR_EN                         0x2
-+#define IRQ_SIC_SEL_BAM_IRQ_SIC_SEL              0x80000000
-+#define IRQ_SIC_SEL_P_IRQ_SIC_SEL                0x7fffffff
-+#define AHB_MASTER_ERR_CTRLS_BAM_ERR_DIRECT_MODE    0x10000
-+#define AHB_MASTER_ERR_CTRLS_BAM_ERR_HCID            0xf000
-+#define AHB_MASTER_ERR_CTRLS_BAM_ERR_HPROT            0xf00
-+#define AHB_MASTER_ERR_CTRLS_BAM_ERR_HBURST            0xe0
-+#define AHB_MASTER_ERR_CTRLS_BAM_ERR_HSIZE             0x18
-+#define AHB_MASTER_ERR_CTRLS_BAM_ERR_HWRITE             0x4
-+#define AHB_MASTER_ERR_CTRLS_BAM_ERR_HTRANS             0x3
-+#define CNFG_BITS_BAM_FULL_PIPE                       0x800
-+#define CNFG_BITS_BAM_PIPE_CNFG                         0x4
-+
-+/* P_ctrln */
-+#define P_SYS_MODE                             0x20
-+#define P_SYS_STRM                             0x10
-+#define P_DIRECTION                             0x8
-+#define P_EN                                    0x2
-+
-+#define P_RST_P_SW_RST                                 0x1
-+
-+#define P_HALT_P_PROD_HALTED                           0x2
-+#define P_HALT_P_HALT                                  0x1
-+
-+#define P_IRQ_STTS_P_TRNSFR_END_IRQ                   0x20
-+#define P_IRQ_STTS_P_ERR_IRQ                          0x10
-+#define P_IRQ_STTS_P_OUT_OF_DESC_IRQ                   0x8
-+#define P_IRQ_STTS_P_WAKE_IRQ                          0x4
-+#define P_IRQ_STTS_P_TIMER_IRQ                         0x2
-+#define P_IRQ_STTS_P_PRCSD_DESC_IRQ                    0x1
-+
-+#define P_IRQ_CLR_P_TRNSFR_END_CLR                    0x20
-+#define P_IRQ_CLR_P_ERR_CLR                           0x10
-+#define P_IRQ_CLR_P_OUT_OF_DESC_CLR                    0x8
-+#define P_IRQ_CLR_P_WAKE_CLR                           0x4
-+#define P_IRQ_CLR_P_TIMER_CLR                          0x2
-+#define P_IRQ_CLR_P_PRCSD_DESC_CLR                     0x1
-+
-+#define P_IRQ_EN_P_TRNSFR_END_EN                      0x20
-+#define P_IRQ_EN_P_ERR_EN                             0x10
-+#define P_IRQ_EN_P_OUT_OF_DESC_EN                      0x8
-+#define P_IRQ_EN_P_WAKE_EN                             0x4
-+#define P_IRQ_EN_P_TIMER_EN                            0x2
-+#define P_IRQ_EN_P_PRCSD_DESC_EN                       0x1
-+
-+#define P_TIMER_P_TIMER                             0xffff
-+
-+/* P_TIMER_ctrln */
-+#define P_TIMER_RST                0x80000000
-+#define P_TIMER_RUN                0x40000000
-+#define P_TIMER_MODE               0x20000000
-+#define P_TIMER_TRSHLD                 0xffff
-+
-+/* P_EVNT_regn */
-+#define P_BYTES_CONSUMED             0xffff0000
-+#define P_DESC_FIFO_PEER_OFST            0xffff
-+
-+/* P_SW_ofstsn */
-+#define SW_OFST_IN_DESC              0xffff0000
-+#define SW_DESC_OFST                     0xffff
-+
-+#define P_EVNT_GEN_TRSHLD_P_TRSHLD                  0xffff
-+
-+/* P_FIFO_sizesn */
-+#define P_DATA_FIFO_SIZE           0xffff0000
-+#define P_DESC_FIFO_SIZE               0xffff
-+
-+#define P_RETR_CNTXT_RETR_DESC_OFST            0xffff0000
-+#define P_RETR_CNTXT_RETR_OFST_IN_DESC             0xffff
-+#define P_SI_CNTXT_SI_DESC_OFST                    0xffff
-+#define P_AU_PSM_CNTXT_1_AU_PSM_ACCUMED        0xffff0000
-+#define P_AU_PSM_CNTXT_1_AU_ACKED                  0xffff
-+#define P_PSM_CNTXT_2_PSM_DESC_VALID           0x80000000
-+#define P_PSM_CNTXT_2_PSM_DESC_IRQ             0x40000000
-+#define P_PSM_CNTXT_2_PSM_DESC_IRQ_DONE        0x20000000
-+#define P_PSM_CNTXT_2_PSM_GENERAL_BITS         0x1e000000
-+#define P_PSM_CNTXT_2_PSM_CONS_STATE            0x1c00000
-+#define P_PSM_CNTXT_2_PSM_PROD_SYS_STATE         0x380000
-+#define P_PSM_CNTXT_2_PSM_PROD_B2B_STATE          0x70000
-+#define P_PSM_CNTXT_2_PSM_DESC_SIZE                0xffff
-+#define P_PSM_CNTXT_4_PSM_DESC_OFST            0xffff0000
-+#define P_PSM_CNTXT_4_PSM_SAVED_ACCUMED_SIZE       0xffff
-+#define P_PSM_CNTXT_5_PSM_BLOCK_BYTE_CNT       0xffff0000
-+#define P_PSM_CNTXT_5_PSM_OFST_IN_DESC             0xffff
-+
-+#define BAM_ERROR   (-1)
-+
-+/**
-+ *
-+ * Read register with debug info.
-+ *
-+ * @base - bam base virtual address.
-+ * @offset - register offset.
-+ *
-+ * @return u32
-+ */
-+static inline u32 bam_read_reg(void *base, u32 offset)
++int sps_rm_init(struct sps_rm *rm, u32 options)
 +{
-+	u32 val = ioread32(base + offset);
-+	pr_debug("bam: read reg 0x%x r_val 0x%x.\n", offset, val);
-+	return val;
-+}
++	/* Set the resource manager state struct pointer */
++	sps_rm = rm;
 +
-+/**
-+ * Read register masked field with debug info.
-+ *
-+ * @base - bam base virtual address.
-+ * @offset - register offset.
-+ * @mask - register bitmask.
-+ *
-+ * @return u32
-+ */
-+static inline u32 bam_read_reg_field(void *base, u32 offset, const u32 mask)
-+{
-+	u32 shift = find_first_bit((void *)&mask, 32);
-+	u32 val = ioread32(base + offset);
-+	val &= mask;		/* clear other bits */
-+	val >>= shift;
-+	pr_debug("bam: read reg 0x%x mask 0x%x r_val 0x%x.\n",
-+		offset, mask, val);
-+	return val;
-+}
-+
-+/**
-+ *
-+ * Write register with debug info.
-+ *
-+ * @base - bam base virtual address.
-+ * @offset - register offset.
-+ * @val - value to write.
-+ *
-+ */
-+static inline void bam_write_reg(void *base, u32 offset, u32 val)
-+{
-+	iowrite32(val, base + offset);
-+	pr_debug("bam: write reg 0x%x w_val 0x%x.\n", offset, val);
-+}
-+
-+/**
-+ * Write register masked field with debug info.
-+ *
-+ * @base - bam base virtual address.
-+ * @offset - register offset.
-+ * @mask - register bitmask.
-+ * @val - value to write.
-+ *
-+ */
-+static inline void bam_write_reg_field(void *base, u32 offset,
-+				       const u32 mask, u32 val)
-+{
-+	u32 shift = find_first_bit((void *)&mask, 32);
-+	u32 tmp = ioread32(base + offset);
-+
-+	tmp &= ~mask;		/* clear written bits */
-+	val = tmp | (val << shift);
-+	iowrite32(val, base + offset);
-+	pr_debug("bam: write reg 0x%x w_val 0x%x.\n", offset, val);
-+}
-+
-+/**
-+ * Initialize a BAM device
-+ *
-+ */
-+int bam_init(void *base, u32 ee,
-+		u16 summing_threshold,
-+		u32 irq_mask, u32 *version, u32 *num_pipes)
-+{
-+	/* disable bit#11 because of HW bug */
-+	u32 cfg_bits = 0xffffffff & ~(1 << 11);
-+	u32 ver = 0;
-+
-+	ver = bam_read_reg(base, REVISION);
-+
-+	if ((ver < BAM_MIN_VERSION) || (ver > BAM_MAX_VERSION)) {
-+		pr_err("bam:Invalid BAM version 0x%x.\n", ver);
-+		return -ENODEV;
-+	}
-+
-+	if (summing_threshold == 0) {
-+		summing_threshold = 4;
-+		pr_err("bam:summing_threshold is zero , use default 4.\n");
-+	}
-+
-+	bam_write_reg_field(base, CTRL, BAM_SW_RST, 1);
-+	/* No delay needed */
-+	bam_write_reg_field(base, CTRL, BAM_SW_RST, 0);
-+
-+	bam_write_reg_field(base, CTRL, BAM_EN, 1);
-+
-+	bam_write_reg(base, DESC_CNT_TRSHLD, summing_threshold);
-+
-+	bam_write_reg(base, CNFG_BITS, cfg_bits);
-+
-+	/*
-+	 *  Enable Global BAM Interrupt - for error reasons ,
-+	 *  filter with mask.
-+	 *  Note: Pipes interrupts are disabled until BAM_P_IRQ_enn is set
-+	 */
-+	bam_write_reg_field(base, IRQ_SRCS_MSK, BAM_IRQ, 1);
-+
-+	bam_write_reg(base, IRQ_EN, irq_mask);
-+
-+	*num_pipes = bam_read_reg(base, NUM_PIPES);
-+	*version = ver;
++	/* Initialize the state struct */
++	INIT_LIST_HEAD(&sps_rm->connections_q);
++	mutex_init(&sps_rm->lock);
 +
 +	return 0;
 +}
 +
 +/**
-+ * Verify that a BAM device is enabled and gathers the hardware
-+ * configuration.
++ * Initialize client state context
 + *
 + */
-+int bam_check(void *base, u32 *version, u32 *num_pipes)
++void sps_rm_config_init(struct sps_connect *connect)
 +{
-+	u32 ver = 0;
++	memset(connect, SPSRM_CLEAR, sizeof(*connect));
++}
 +
-+	if (!bam_read_reg_field(base, CTRL, BAM_EN))
-+		return -ENODEV;
++/**
++ * Remove reference to connection mapping
++ *
++ * This function removes a reference from a connection mapping struct.
++ *
++ * @map - pointer to connection mapping struct
++ *
++ */
++static void sps_rm_remove_ref(struct sps_connection *map)
++{
++	/* Free this connection */
++	map->refs--;
++	if (map->refs <= 0) {
++		if (map->client_src != NULL || map->client_dest != NULL)
++			SPS_ERR("Failed to allocate connection struct");
 +
-+	ver = bam_read_reg(base, REVISION);
-+
-+	/*
-+	 *  Discover the hardware version number and the number of pipes
-+	 *  supported by this BAM
-+	 */
-+	*num_pipes = bam_read_reg(base, NUM_PIPES);
-+	*version = ver;
-+
-+	/* Check BAM version */
-+	if ((ver < BAM_MIN_VERSION) || (ver > BAM_MAX_VERSION)) {
-+		pr_err("bam:Invalid BAM version 0x%x.\n", ver);
-+		return -ENODEV;
++		list_del(&map->list);
++		kfree(map);
 +	}
++}
++
++/**
++ * Compare map to connect parameters
++ *
++ * This function compares client connect parameters to an allocated
++ * connection mapping.
++ *
++ * @pipe - client context for SPS connection end point
++ *
++ * @return - true if match, false otherwise
++ *
++ */
++static int sps_rm_map_match(const struct sps_connect *cfg,
++			    const struct sps_connection *map)
++{
++	if (cfg->source != map->src.dev ||
++	    cfg->destination != map->dest.dev)
++		return false;
++
++	if (cfg->src_pipe_index != SPSRM_CLEAR &&
++	    cfg->src_pipe_index != map->src.pipe_index)
++		return false;
++
++	if (cfg->dest_pipe_index != SPSRM_CLEAR &&
++	    cfg->dest_pipe_index != map->dest.pipe_index)
++		return false;
++
++	if (cfg->config != map->config)
++		return false;
++
++	if (cfg->desc.size != SPSRM_CLEAR) {
++		if (cfg->desc.size != map->desc.size)
++			return false;
++
++		if (cfg->desc.phys_base != SPSRM_CLEAR &&
++		    cfg->desc.base != (void *)SPSRM_CLEAR &&
++		    (cfg->desc.phys_base != map->desc.phys_base ||
++		     cfg->desc.base != map->desc.base)) {
++			return false;
++		}
++	}
++
++	if (cfg->data.size != SPSRM_CLEAR) {
++		if (cfg->data.size != map->data.size)
++			return false;
++
++		if (cfg->data.phys_base != SPSRM_CLEAR &&
++		    cfg->data.base != (void *)SPSRM_CLEAR &&
++		    (cfg->data.phys_base != map->data.phys_base ||
++		     cfg->data.base != map->data.base))
++			return false;
++	}
++
++	return true;
++}
++
++/**
++ * Find unconnected mapping
++ *
++ * This function finds an allocated a connection mapping.
++ *
++ * @pipe - client context for SPS connection end point
++ *
++ * @return - pointer to allocated connection mapping, or NULL if not found
++ *
++ */
++static struct sps_connection *find_unconnected(struct sps_pipe *pipe)
++{
++	struct sps_connect *cfg = &pipe->connect;
++	struct sps_connection *map;
++
++	/* Has this connection already been allocated? */
++	list_for_each_entry(map, &sps_rm->connections_q, list) {
++		if (sps_rm_map_match(cfg, map))
++			if ((cfg->mode == SPS_MODE_SRC
++			     && map->client_src == NULL)
++			    || (cfg->mode != SPS_MODE_SRC
++				&& map->client_dest == NULL))
++				return map;	/* Found */
++	}
++
++	return NULL;		/* Not Found */
++}
++
++/**
++ * Assign connection to client
++ *
++ * This function assigns a connection to a client.
++ *
++ * @pipe - client context for SPS connection end point
++ *
++ * @map - connection mapping
++ *
++ * @return 0 on success, negative value on error
++ *
++ */
++static int sps_rm_assign(struct sps_pipe *pipe,
++			 struct sps_connection *map)
++{
++	struct sps_connect *cfg = &pipe->connect;
++
++	/* Check ownership and BAM */
++	if ((cfg->mode == SPS_MODE_SRC && map->client_src != NULL) ||
++	    (cfg->mode != SPS_MODE_SRC && map->client_dest != NULL))
++		/* The end point is already connected */
++		return SPS_ERROR;
++
++	/* Check whether this end point is a BAM (not memory) */
++	if ((cfg->mode == SPS_MODE_SRC && map->src.bam == NULL) ||
++	    (cfg->mode != SPS_MODE_SRC && map->dest.bam == NULL))
++		return SPS_ERROR;
++
++	/* Record the connection assignment */
++	if (cfg->mode == SPS_MODE_SRC) {
++		map->client_src = pipe;
++		pipe->bam = map->src.bam;
++		pipe->pipe_index = map->src.pipe_index;
++		if (pipe->connect.event_thresh != SPSRM_CLEAR)
++			map->src.event_threshold = pipe->connect.event_thresh;
++	} else {
++		map->client_dest = pipe;
++		pipe->bam = map->dest.bam;
++		pipe->pipe_index = map->dest.pipe_index;
++		if (pipe->connect.event_thresh != SPSRM_CLEAR)
++			map->dest.event_threshold =
++			pipe->connect.event_thresh;
++	}
++	pipe->map = map;
++
++	SPS_DBG("sps:sps_rm_assign.pipe_index=%d\n", pipe->pipe_index);
++
++	/* Copy parameters to client connect state */
++	pipe->connect.src_pipe_index = map->src.pipe_index;
++	pipe->connect.dest_pipe_index = map->dest.pipe_index;
++	pipe->connect.desc = map->desc;
++	pipe->connect.data = map->data;
++
++	pipe->client_state = SPS_STATE_ALLOCATE;
 +
 +	return 0;
 +}
 +
 +/**
-+ * Disable a BAM device
++ * Free connection mapping resources
++ *
++ * This function frees a connection mapping resources.
++ *
++ * @pipe - client context for SPS connection end point
 + *
 + */
-+void bam_exit(void *base, u32 ee)
++static void sps_rm_free_map_rsrc(struct sps_connection *map)
 +{
-+	bam_write_reg_field(base, IRQ_SRCS_MSK, BAM_IRQ, 0);
++	struct sps_bam *bam;
 +
-+	bam_write_reg(base, IRQ_EN, 0);
++	if (map->client_src != NULL || map->client_dest != NULL)
++		return;
 +
-+	/* Disable the BAM */
-+	bam_write_reg_field(base, CTRL, BAM_EN, 0);
++	if (map->alloc_src_pipe != SPS_BAM_PIPE_INVALID) {
++		bam = map->src.bam;
++		sps_bam_pipe_free(bam, map->src.pipe_index);
++
++		/* Is this a BAM-DMA pipe? */
++#ifdef CONFIG_SPS_SUPPORT_BAMDMA
++		if ((bam->props.options & SPS_BAM_OPT_BAMDMA))
++			/* Deallocate and free the BAM-DMA channel */
++			sps_dma_pipe_free(bam, map->src.pipe_index);
++#endif
++		map->alloc_src_pipe = SPS_BAM_PIPE_INVALID;
++		map->src.pipe_index = SPS_BAM_PIPE_INVALID;
++	}
++	if (map->alloc_dest_pipe != SPS_BAM_PIPE_INVALID) {
++		bam = map->dest.bam;
++		sps_bam_pipe_free(bam, map->dest.pipe_index);
++
++		/* Is this a BAM-DMA pipe? */
++#ifdef CONFIG_SPS_SUPPORT_BAMDMA
++		if ((bam->props.options & SPS_BAM_OPT_BAMDMA)) {
++			/* Deallocate the BAM-DMA channel */
++			sps_dma_pipe_free(bam, map->dest.pipe_index);
++		}
++#endif
++		map->alloc_dest_pipe = SPS_BAM_PIPE_INVALID;
++		map->dest.pipe_index = SPS_BAM_PIPE_INVALID;
++	}
++	if (map->alloc_desc_base != SPS_ADDR_INVALID) {
++		sps_mem_free_io(map->alloc_desc_base, map->desc.size);
++
++		map->alloc_desc_base = SPS_ADDR_INVALID;
++		map->desc.phys_base = SPS_ADDR_INVALID;
++	}
++	if (map->alloc_data_base != SPS_ADDR_INVALID) {
++		sps_mem_free_io(map->alloc_data_base, map->data.size);
++
++		map->alloc_data_base = SPS_ADDR_INVALID;
++		map->data.phys_base = SPS_ADDR_INVALID;
++	}
 +}
 +
 +/**
-+ * Get and Clear BAM global IRQ status
++ * Init connection mapping from client connect
 + *
-+ * note: clear status only for pipes controlled by this
-+ * processor
++ * This function initializes a connection mapping from the client's
++ * connect parameters.
++ *
++ * @map - connection mapping struct
++ *
++ * @cfg - client connect parameters
++ *
++ * @return - pointer to allocated connection mapping, or NULL on error
++ *
 + */
-+u32 bam_get_and_clear_irq_status(void *base, u32 ee, u32 mask)
++static void sps_rm_init_map(struct sps_connection *map,
++			    const struct sps_connect *cfg)
 +{
-+	u32 status = bam_read_reg(base, IRQ_SRCS);
-+	u32 clr = status &= mask;
++	/* Clear the connection mapping struct */
++	memset(map, 0, sizeof(*map));
++	map->desc.phys_base = SPS_ADDR_INVALID;
++	map->data.phys_base = SPS_ADDR_INVALID;
++	map->alloc_desc_base = SPS_ADDR_INVALID;
++	map->alloc_data_base = SPS_ADDR_INVALID;
++	map->alloc_src_pipe = SPS_BAM_PIPE_INVALID;
++	map->alloc_dest_pipe = SPS_BAM_PIPE_INVALID;
 +
-+	bam_write_reg(base, IRQ_CLR, clr);
++	/* Copy client required parameters */
++	map->src.dev = cfg->source;
++	map->dest.dev = cfg->destination;
++	map->desc.size = cfg->desc.size;
++	map->data.size = cfg->data.size;
++	map->config = cfg->config;
 +
-+	return status;
++	/* Did client specify descriptor FIFO? */
++	if (map->desc.size != SPSRM_CLEAR &&
++	    cfg->desc.phys_base != SPSRM_CLEAR &&
++	    cfg->desc.base != (void *)SPSRM_CLEAR)
++		map->desc = cfg->desc;
++
++	/* Did client specify data FIFO? */
++	if (map->data.size != SPSRM_CLEAR &&
++	    cfg->data.phys_base != SPSRM_CLEAR &&
++	    cfg->data.base != (void *)SPSRM_CLEAR)
++		map->data = cfg->data;
++
++	/* Did client specify source pipe? */
++	if (cfg->src_pipe_index != SPSRM_CLEAR)
++		map->src.pipe_index = cfg->src_pipe_index;
++	else
++		map->src.pipe_index = SPS_BAM_PIPE_INVALID;
++
++
++	/* Did client specify destination pipe? */
++	if (cfg->dest_pipe_index != SPSRM_CLEAR)
++		map->dest.pipe_index = cfg->dest_pipe_index;
++	else
++		map->dest.pipe_index = SPS_BAM_PIPE_INVALID;
 +}
 +
 +/**
-+ * Initialize a BAM pipe
++ * Create a new connection mapping
++ *
++ * This function creates a new connection mapping.
++ *
++ * @pipe - client context for SPS connection end point
++ *
++ * @return - pointer to allocated connection mapping, or NULL on error
++ *
 + */
-+int bam_pipe_init(void *base, u32 pipe,	struct bam_pipe_parameters *param)
++static struct sps_connection *sps_rm_create(struct sps_pipe *pipe)
 +{
-+	/* Reset the BAM pipe */
-+	bam_write_reg(base, P_RST(pipe), 1);
-+	/* No delay needed */
-+	bam_write_reg(base, P_RST(pipe), 0);
++	struct sps_connection *map;
++	struct sps_bam *bam;
++	u32 desc_size;
++	u32 data_size;
++	enum sps_mode dir;
++	int success = false;
 +
-+	/* Enable the Pipe Interrupt at the BAM level */
-+	bam_write_reg_field(base, IRQ_SRCS_MSK, (1 << pipe), 1);
-+
-+	bam_write_reg(base, P_IRQ_EN(pipe), param->pipe_irq_mask);
-+
-+	bam_write_reg_field(base, P_CTRL(pipe), P_DIRECTION, param->dir);
-+	bam_write_reg_field(base, P_CTRL(pipe), P_SYS_MODE, param->mode);
-+
-+	bam_write_reg(base, P_EVNT_GEN_TRSHLD(pipe), param->event_threshold);
-+
-+	bam_write_reg(base, P_DESC_FIFO_ADDR(pipe), param->desc_base);
-+	bam_write_reg_field(base, P_FIFO_SIZES(pipe), P_DESC_FIFO_SIZE,
-+			    param->desc_size);
-+
-+	bam_write_reg_field(base, P_CTRL(pipe), P_SYS_STRM,
-+			    param->stream_mode);
-+
-+	if (param->mode == BAM_PIPE_MODE_BAM2BAM) {
-+		u32 peer_dest_addr = param->peer_phys_addr +
-+				      P_EVNT_REG(param->peer_pipe);
-+
-+		bam_write_reg(base, P_DATA_FIFO_ADDR(pipe),
-+			      param->data_base);
-+		bam_write_reg_field(base, P_FIFO_SIZES(pipe),
-+				    P_DATA_FIFO_SIZE, param->data_size);
-+
-+		bam_write_reg(base, P_EVNT_DEST_ADDR(pipe), peer_dest_addr);
-+
-+		pr_debug("bam:Bam=0x%x.Pipe=%d.peer_bam=0x%x.peer_pipe=%d.\n",
-+			(u32) base, pipe,
-+			(u32) param->peer_phys_addr,
-+			param->peer_pipe);
++	/* Allocate new connection */
++	map = kzalloc(sizeof(*map), GFP_KERNEL);
++	if (map == NULL) {
++		SPS_ERR("Failed to allocate connection struct");
++		return NULL;
 +	}
 +
-+	/* Pipe Enable - at last */
-+	bam_write_reg_field(base, P_CTRL(pipe), P_EN, 1);
++	/* Initialize connection struct */
++	sps_rm_init_map(map, &pipe->connect);
++	dir = pipe->connect.mode;
++
++	/* Use a do/while() loop to avoid a "goto" */
++	success = false;
++	/* Get BAMs */
++	map->src.bam = sps_h2bam(map->src.dev);
++	if (map->src.bam == NULL) {
++		if (map->src.dev != SPS_DEV_HANDLE_MEM) {
++			SPS_ERR("Invalid BAM handle: 0x%x", map->src.dev);
++			goto exit_err;
++		}
++		map->src.pipe_index = SPS_BAM_PIPE_INVALID;
++	}
++	map->dest.bam = sps_h2bam(map->dest.dev);
++	if (map->dest.bam == NULL) {
++		if (map->dest.dev != SPS_DEV_HANDLE_MEM) {
++			SPS_ERR("Invalid BAM handle: 0x%x", map->dest.dev);
++			goto exit_err;
++		}
++		map->dest.pipe_index = SPS_BAM_PIPE_INVALID;
++	}
++
++	/* Check the BAM device for the pipe */
++	if ((dir == SPS_MODE_SRC && map->src.bam == NULL) ||
++	    (dir != SPS_MODE_SRC && map->dest.bam == NULL)) {
++		SPS_ERR("Invalid BAM endpt: dir %d src 0x%x dest 0x%x",
++			dir, map->src.dev, map->dest.dev);
++		goto exit_err;
++	}
++
++	/* Allocate pipes and copy BAM parameters */
++	if (map->src.bam != NULL) {
++		/* Allocate the pipe */
++		bam = map->src.bam;
++		map->alloc_src_pipe = sps_bam_pipe_alloc(bam,
++							map->src.pipe_index);
++		if (map->alloc_src_pipe == SPS_BAM_PIPE_INVALID)
++			goto exit_err;
++		map->src.pipe_index = map->alloc_src_pipe;
++
++		/* Is this a BAM-DMA pipe? */
++#ifdef CONFIG_SPS_SUPPORT_BAMDMA
++		if ((bam->props.options & SPS_BAM_OPT_BAMDMA)) {
++			int rc;
++			/* Allocate the BAM-DMA channel */
++			rc = sps_dma_pipe_alloc(bam, map->src.pipe_index,
++						 SPS_MODE_SRC);
++			if (rc) {
++				SPS_ERR("Failed to alloc BAM-DMA pipe: %d",
++					map->src.pipe_index);
++				goto exit_err;
++			}
++		}
++#endif
++		map->src.bam_phys = bam->props.phys_addr;
++		map->src.event_threshold = bam->props.event_threshold;
++	}
++	if (map->dest.bam != NULL) {
++		/* Allocate the pipe */
++		bam = map->dest.bam;
++		map->alloc_dest_pipe = sps_bam_pipe_alloc(bam,
++							 map->dest.pipe_index);
++		if (map->alloc_dest_pipe == SPS_BAM_PIPE_INVALID)
++			goto exit_err;
++
++		map->dest.pipe_index = map->alloc_dest_pipe;
++
++		/* Is this a BAM-DMA pipe? */
++#ifdef CONFIG_SPS_SUPPORT_BAMDMA
++		if ((bam->props.options & SPS_BAM_OPT_BAMDMA)) {
++			int rc;
++			/* Allocate the BAM-DMA channel */
++			rc = sps_dma_pipe_alloc(bam, map->dest.pipe_index,
++					       SPS_MODE_DEST);
++			if (rc) {
++				SPS_ERR("Failed to alloc BAM-DMA pipe: %d",
++					map->dest.pipe_index);
++				goto exit_err;
++			}
++		}
++#endif
++		map->dest.bam_phys = bam->props.phys_addr;
++		map->dest.event_threshold =
++		bam->props.event_threshold;
++	}
++
++	/* Get default FIFO sizes */
++	desc_size = 0;
++	data_size = 0;
++	if (map->src.bam != NULL) {
++		bam = map->src.bam;
++		desc_size = bam->props.desc_size;
++		data_size = bam->props.data_size;
++	}
++	if (map->dest.bam != NULL) {
++		bam = map->dest.bam;
++		if (bam->props.desc_size > desc_size)
++			desc_size = bam->props.desc_size;
++		if (bam->props.data_size > data_size)
++			data_size = bam->props.data_size;
++	}
++
++	/* Set FIFO sizes */
++	if (map->desc.size == SPSRM_CLEAR)
++		map->desc.size = desc_size;
++	if (map->src.bam != NULL && map->dest.bam != NULL) {
++		/* BAM-to-BAM requires data FIFO */
++		if (map->data.size == SPSRM_CLEAR)
++			map->data.size = data_size;
++	} else {
++		map->data.size = 0;
++	}
++	if (map->desc.size > SPSRM_MAX_DESC_FIFO_SIZE) {
++		SPS_ERR("Invalid desc FIFO size: 0x%x",	map->desc.size);
++		goto exit_err;
++	}
++	if (map->src.bam != NULL && map->dest.bam != NULL &&
++	    map->data.size > SPSRM_MAX_DATA_FIFO_SIZE) {
++		SPS_ERR("Invalid data FIFO size: 0x%x",	map->data.size);
++		goto exit_err;
++	}
++
++	/* Allocate descriptor FIFO if necessary */
++	if (map->desc.size && map->desc.phys_base == SPS_ADDR_INVALID) {
++		map->alloc_desc_base = sps_mem_alloc_io(map->desc.size);
++		if (map->alloc_desc_base == SPS_ADDR_INVALID) {
++			SPS_ERR("I/O memory allocation failure: 0x%x",
++				map->desc.size);
++			goto exit_err;
++		}
++		map->desc.phys_base = map->alloc_desc_base;
++		map->desc.base = spsi_get_mem_ptr(map->desc.phys_base);
++		if (map->desc.base == NULL) {
++			SPS_ERR("Cannot get virt addr for I/O buffer: 0x%x",
++				map->desc.phys_base);
++			goto exit_err;
++		}
++	}
++
++	/* Allocate data FIFO if necessary */
++	if (map->data.size && map->data.phys_base == SPS_ADDR_INVALID) {
++		map->alloc_data_base = sps_mem_alloc_io(map->data.size);
++		if (map->alloc_data_base == SPS_ADDR_INVALID) {
++			SPS_ERR("I/O memory allocation failure: 0x%x",
++				map->data.size);
++			goto exit_err;
++		}
++		map->data.phys_base = map->alloc_data_base;
++		map->data.base = spsi_get_mem_ptr(map->data.phys_base);
++		if (map->data.base == NULL) {
++			SPS_ERR("Cannot get virt addr for I/O buffer: 0x%x",
++				map->data.phys_base);
++			goto exit_err;
++		}
++	}
++
++	/* Attempt to assign this connection to the client */
++	if (sps_rm_assign(pipe, map))
++		goto exit_err;
++
++	/* Initialization was successful */
++	success = true;
++exit_err:
++
++	/* If initialization failed, free resources */
++	if (!success) {
++		sps_rm_free_map_rsrc(map);
++		kfree(map);
++		return NULL;
++	}
++
++	return map;
++}
++
++/**
++ * Free connection mapping
++ *
++ * This function frees a connection mapping.
++ *
++ * @pipe - client context for SPS connection end point
++ *
++ * @return 0 on success, negative value on error
++ *
++ */
++static int sps_rm_free(struct sps_pipe *pipe)
++{
++	struct sps_connection *map = (void *)pipe->map;
++	struct sps_connect *cfg = &pipe->connect;
++
++	mutex_lock(&sps_rm->lock);
++
++	/* Free this connection */
++	if (cfg->mode == SPS_MODE_SRC)
++		map->client_src = NULL;
++	else
++		map->client_dest = NULL;
++
++	pipe->map = NULL;
++	pipe->client_state = SPS_STATE_DISCONNECT;
++	sps_rm_free_map_rsrc(map);
++
++	sps_rm_remove_ref(map);
++
++	mutex_unlock(&sps_rm->lock);
 +
 +	return 0;
 +}
 +
 +/**
-+ * Reset the BAM pipe
++ * Allocate an SPS connection end point
++ *
++ * This function allocates resources and initializes a BAM connection.
++ *
++ * @pipe - client context for SPS connection end point
++ *
++ * @return 0 on success, negative value on error
 + *
 + */
-+void bam_pipe_exit(void *base, u32 pipe, u32 ee)
++static int sps_rm_alloc(struct sps_pipe *pipe)
 +{
-+	bam_write_reg(base, P_IRQ_EN(pipe), 0);
++	struct sps_connection *map;
++	int result = SPS_ERROR;
 +
-+	/* Disable the Pipe Interrupt at the BAM level */
-+	bam_write_reg_field(base, IRQ_SRCS_MSK, (1 << pipe), 0);
++	if (pipe->connect.sps_reserved != SPSRM_CLEAR) {
++		/*
++		 * Client did not call sps_get_config()	to init
++		 * struct sps_connect, so only use legacy members.
++		 */
++		u32 source = pipe->connect.source;
++		u32 destination = pipe->connect.destination;
++		enum sps_mode mode = pipe->connect.mode;
++		u32 config = pipe->connect.config;
++		memset(&pipe->connect, SPSRM_CLEAR,
++			      sizeof(pipe->connect));
++		pipe->connect.source = source;
++		pipe->connect.destination = destination;
++		pipe->connect.mode = mode;
++		pipe->connect.config = config;
++	}
++	if (pipe->connect.config == SPSRM_CLEAR)
++		pipe->connect.config = SPS_CONFIG_DEFAULT;
 +
-+	/* Pipe Disable */
-+	bam_write_reg_field(base, P_CTRL(pipe), P_EN, 0);
-+}
-+
-+/**
-+ * Enable a BAM pipe
-+ *
-+ */
-+void bam_pipe_enable(void *base, u32 pipe)
-+{
-+	bam_write_reg_field(base, P_CTRL(pipe), P_EN, 1);
-+}
-+
-+/**
-+ * Diasble a BAM pipe
-+ *
-+ */
-+void bam_pipe_disable(void *base, u32 pipe)
-+{
-+	bam_write_reg_field(base, P_CTRL(pipe), P_EN, 0);
-+}
-+
-+/**
-+ * Check if a BAM pipe is enabled.
-+ *
-+ */
-+int bam_pipe_is_enabled(void *base, u32 pipe)
-+{
-+	return bam_read_reg_field(base, P_CTRL(pipe), P_EN);
-+}
-+
-+/**
-+ * Configure interrupt for a BAM pipe
-+ *
-+ */
-+void bam_pipe_set_irq(void *base, u32 pipe, enum bam_enable irq_en,
-+		      u32 src_mask, u32 ee)
-+{
-+	bam_write_reg(base, P_IRQ_EN(pipe), src_mask);
-+	bam_write_reg_field(base, IRQ_SRCS_MSK, (1 << pipe), irq_en);
-+}
-+
-+/**
-+ * Configure a BAM pipe for satellite MTI use
-+ *
-+ */
-+void bam_pipe_satellite_mti(void *base, u32 pipe, u32 irq_gen_addr, u32 ee)
-+{
-+	bam_write_reg(base, P_IRQ_EN(pipe), 0);
-+	bam_write_reg(base, P_IRQ_DEST_ADDR(pipe), irq_gen_addr);
-+
-+	bam_write_reg_field(base, IRQ_SIC_SEL, (1 << pipe), 1);
-+	bam_write_reg_field(base, IRQ_SRCS_MSK, (1 << pipe), 1);
-+}
-+
-+/**
-+ * Configure MTI for a BAM pipe
-+ *
-+ */
-+void bam_pipe_set_mti(void *base, u32 pipe, enum bam_enable irq_en,
-+		      u32 src_mask, u32 irq_gen_addr)
-+{
 +	/*
-+	 * MTI use is only supported on BAMs when global config is controlled
-+	 * by a remote processor.
-+	 * Consequently, the global configuration register to enable SIC (MTI)
-+	 * support cannot be accessed.
-+	 * The remote processor must be relied upon to enable the SIC and the
-+	 * interrupt. Since the remote processor enable both SIC and interrupt,
-+	 * the interrupt enable mask must be set to zero for polling mode.
++	 *  If configuration is not default, then client is specifying a
++	 * connection mapping.  Find a matching mapping, or fail.
++	 * If a match is found, the client's Connect struct will be updated
++	 * with all the mapping's values.
 +	 */
++	if (pipe->connect.config != SPS_CONFIG_DEFAULT) {
++		if (sps_map_find(&pipe->connect)) {
++			SPS_ERR("Failed to find connection mapping");
++			return SPS_ERROR;
++		}
++	}
 +
-+	bam_write_reg(base, P_IRQ_DEST_ADDR(pipe), irq_gen_addr);
++	mutex_lock(&sps_rm->lock);
++	/* Check client state */
++	if (IS_SPS_STATE_OK(pipe)) {
++		SPS_ERR("Client connection already allocated");
++		goto exit_err;
++	}
 +
-+	if (!irq_en)
-+		src_mask = 0;
++	/* Are the connection resources already allocated? */
++	map = find_unconnected(pipe);
++	if (map != NULL) {
++		/* Attempt to assign this connection to the client */
++		if (sps_rm_assign(pipe, map))
++			/* Assignment failed, so must allocate new */
++			map = NULL;
++	}
 +
-+	bam_write_reg(base, P_IRQ_EN(pipe), src_mask);
++	/* Allocate a new connection if necessary */
++	if (map == NULL) {
++		map = sps_rm_create(pipe);
++		if (map == NULL) {
++			SPS_ERR("Failed to allocate connection");
++			goto exit_err;
++		}
++		list_add_tail(&map->list, &sps_rm->connections_q);
++	}
++
++	/* Add the connection to the allocated queue */
++	map->refs++;
++
++	/* Initialization was successful */
++	result = 0;
++exit_err:
++	mutex_unlock(&sps_rm->lock);
++
++	if (result)
++		return SPS_ERROR;
++
++	return 0;
 +}
 +
 +/**
-+ * Get and Clear BAM pipe IRQ status
++ * Disconnect an SPS connection end point
 + *
-+ */
-+u32 bam_pipe_get_and_clear_irq_status(void *base, u32 pipe)
-+{
-+	u32 status = 0;
-+
-+	status = bam_read_reg(base, P_IRQ_STTS(pipe));
-+	bam_write_reg(base, P_IRQ_CLR(pipe), status);
-+
-+	return status;
-+}
-+
-+/**
-+ * Set write offset for a BAM pipe
++ * This function frees resources and de-initializes a BAM connection.
 + *
-+ */
-+void bam_pipe_set_desc_write_offset(void *base, u32 pipe, u32 next_write)
-+{
-+	/*
-+	 * It is not necessary to perform a read-modify-write masking to write
-+	 * the P_DESC_FIFO_PEER_OFST value, since the other field in the
-+	 * register (P_BYTES_CONSUMED) is read-only.
-+	 */
-+	bam_write_reg_field(base, P_EVNT_REG(pipe), P_DESC_FIFO_PEER_OFST,
-+			    next_write);
-+}
-+
-+/**
-+ * Get write offset for a BAM pipe
-+ *
-+ */
-+u32 bam_pipe_get_desc_write_offset(void *base, u32 pipe)
-+{
-+	return bam_read_reg_field(base, P_EVNT_REG(pipe),
-+				  P_DESC_FIFO_PEER_OFST);
-+}
-+
-+/**
-+ * Get read offset for a BAM pipe
-+ *
-+ */
-+u32 bam_pipe_get_desc_read_offset(void *base, u32 pipe)
-+{
-+	return bam_read_reg_field(base, P_SW_OFSTS(pipe), SW_DESC_OFST);
-+}
-+
-+/**
-+ * Configure inactivity timer count for a BAM pipe
-+ *
-+ */
-+void bam_pipe_timer_config(void *base, u32 pipe, enum bam_pipe_timer_mode mode,
-+			 u32 timeout_count)
-+{
-+	bam_write_reg_field(base, P_TIMER_CTRL(pipe), P_TIMER_MODE, mode);
-+	bam_write_reg_field(base, P_TIMER_CTRL(pipe), P_TIMER_TRSHLD,
-+			    timeout_count);
-+}
-+
-+/**
-+ * Reset inactivity timer for a BAM pipe
-+ *
-+ */
-+void bam_pipe_timer_reset(void *base, u32 pipe)
-+{
-+	/* reset */
-+	bam_write_reg_field(base, P_TIMER_CTRL(pipe), P_TIMER_RST, 0);
-+	/* active */
-+	bam_write_reg_field(base, P_TIMER_CTRL(pipe), P_TIMER_RST, 1);
-+}
-+
-+/**
-+ * Get inactivity timer count for a BAM pipe
-+ *
-+ */
-+u32 bam_pipe_timer_get_count(void *base, u32 pipe)
-+{
-+	return bam_read_reg(base, P_TIMER(pipe));
-+}
-diff --git a/arch/arm/mach-msm/sps/bam.h b/arch/arm/mach-msm/sps/bam.h
-new file mode 100644
-index 0000000..5681f96
---- /dev/null
-+++ b/arch/arm/mach-msm/sps/bam.h
-@@ -0,0 +1,375 @@
-+/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/* Bus-Access-Manager (BAM) Hardware manager functions API. */
-+
-+#ifndef _BAM_H_
-+#define _BAM_H_
-+
-+#include <linux/types.h>	/* u32 */
-+#include <linux/io.h>		/* ioread32() */
-+#include <linux/bitops.h>	/* find_first_bit() */
-+
-+/* Pipe mode */
-+enum bam_pipe_mode {
-+	BAM_PIPE_MODE_BAM2BAM = 0,	/* BAM to BAM */
-+	BAM_PIPE_MODE_SYSTEM = 1,	/* BAM to/from System Memory */
-+};
-+
-+/* Pipe direction */
-+enum bam_pipe_dir {
-+	/* The Pipe Reads data from data-fifo or system-memory */
-+	BAM_PIPE_CONSUMER = 0,
-+	/* The Pipe Writes data to data-fifo or system-memory */
-+	BAM_PIPE_PRODUCER = 1,
-+};
-+
-+/* Stream mode Type */
-+enum bam_stream_mode {
-+	BAM_STREAM_MODE_DISABLE = 0,
-+	BAM_STREAM_MODE_ENABLE = 1,
-+};
-+
-+/* Enable Type */
-+enum bam_enable {
-+	BAM_DISABLE = 0,
-+	BAM_ENABLE = 1,
-+};
-+
-+/* Pipe timer mode */
-+enum bam_pipe_timer_mode {
-+	BAM_PIPE_TIMER_ONESHOT = 0,
-+	BAM_PIPE_TIMER_PERIODIC = 1,
-+};
-+
-+struct transfer_descriptor {
-+	u32 addr;	/* Buffer physical address */
-+	u32 size:16;	/* Buffer size in bytes */
-+	u32 flags:16;	/* Flag bitmask (see SPS_IOVEC_FLAG_ #defines) */
-+}  __packed;
-+
-+/* BAM pipe initialization parameters */
-+struct bam_pipe_parameters {
-+	u16 event_threshold;
-+	u32 pipe_irq_mask;
-+	enum bam_pipe_dir dir;
-+	enum bam_pipe_mode mode;
-+	u32 desc_base;	/* Physical address of descriptor FIFO */
-+	u32 desc_size;	/* Size (bytes) of descriptor FIFO */
-+	enum bam_stream_mode stream_mode;
-+	u32 ee;		/* BAM execution environment index */
-+
-+	/* The following are only valid if mode is BAM2BAM */
-+	u32 peer_phys_addr;
-+	u32 peer_pipe;
-+	u32 data_base;	/* Physical address of data FIFO */
-+	u32 data_size;	/* Size (bytes) of data FIFO */
-+};
-+
-+/**
-+ * Initialize a BAM device
-+ *
-+ * This function initializes a BAM device.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @ee - BAM execution environment index
-+ *
-+ * @summing_threshold - summing threshold (global for all pipes)
-+ *
-+ * @irq_mask - error interrupts mask
-+ *
-+ * @version - return BAM hardware version
-+ *
-+ * @num_pipes - return number of pipes
++ * @pipe - client context for SPS connection end point
 + *
 + * @return 0 on success, negative value on error
 + *
 + */
-+int bam_init(void *base,
-+		u32 ee,
-+		u16 summing_threshold,
-+		u32 irq_mask, u32 *version, u32 *num_pipes);
++static int sps_rm_disconnect(struct sps_pipe *pipe)
++{
++	sps_rm_free(pipe);
++	return 0;
++}
 +
 +/**
-+ * Check a BAM device
++ * Process connection state change
 + *
-+ * This function verifies that a BAM device is enabled and gathers
-+ *    the hardware configuration.
++ * This function processes a connection state change.
 + *
-+ * @base - BAM virtual base address.
++ * @pipe - pointer to client context
 + *
-+ * @version - return BAM hardware version
-+ *
-+ * @num_pipes - return number of pipes
++ * @state - new state for connection
 + *
 + * @return 0 on success, negative value on error
 + *
 + */
-+int bam_check(void *base, u32 *version, u32 *num_pipes);
++int sps_rm_state_change(struct sps_pipe *pipe, u32 state)
++{
++	int auto_enable = false;
++	int result;
 +
-+/**
-+ * Disable a BAM device
-+ *
-+ * This function disables a BAM device.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @ee - BAM execution environment index
-+ *
-+ */
-+void bam_exit(void *base, u32 ee);
++	/* Allocate the pipe */
++	if (pipe->client_state == SPS_STATE_DISCONNECT &&
++	    state == SPS_STATE_ALLOCATE) {
++		if (sps_rm_alloc(pipe))
++			return SPS_ERROR;
++	}
 +
-+/**
-+ * Get and Clear BAM global IRQ status
-+ *
-+ * This function gets and clears BAM global IRQ status.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @ee - BAM execution environment index
-+ *
-+ * @mask - active pipes mask.
-+ *
-+ * @return IRQ status
-+ *
-+ */
-+u32 bam_get_and_clear_irq_status(void *base, u32 ee, u32 mask);
++	/* Configure the pipe */
++	if (pipe->client_state == SPS_STATE_ALLOCATE &&
++	    state == SPS_STATE_CONNECT) {
++		/* Connect the BAM pipe */
++		struct sps_bam_connect_param params;
++		memset(&params, 0, sizeof(params));
++		params.mode = pipe->connect.mode;
++		if (pipe->connect.options != SPSRM_CLEAR) {
++			params.options = pipe->connect.options;
++			params.irq_gen_addr = pipe->connect.irq_gen_addr;
++			params.irq_gen_data = pipe->connect.irq_gen_data;
++		}
++		result = sps_bam_pipe_connect(pipe, &params);
++		if (result) {
++			SPS_ERR("Failed to connect BAM 0x%x pipe %d",
++				(u32) pipe->bam, pipe->pipe_index);
++			return SPS_ERROR;
++		}
++		pipe->client_state = SPS_STATE_CONNECT;
 +
-+/**
-+ * Initialize a BAM pipe
-+ *
-+ * This function initializes a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @param - bam pipe parameters.
-+ *
-+ * @return 0 on success, negative value on error
-+ *
-+ */
-+int bam_pipe_init(void *base, u32 pipe, struct bam_pipe_parameters *param);
++		/* Set auto-enable for system-mode connections */
++		if (pipe->connect.source == SPS_DEV_HANDLE_MEM ||
++		    pipe->connect.destination == SPS_DEV_HANDLE_MEM) {
++			if (pipe->map->desc.size != 0 &&
++			    pipe->map->desc.phys_base != SPS_ADDR_INVALID)
++				auto_enable = true;
++		}
++	}
 +
-+/**
-+ * Reset the BAM pipe
-+ *
-+ * This function resets the BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @ee - BAM execution environment index
-+ *
-+ */
-+void bam_pipe_exit(void *base, u32 pipe, u32 ee);
++	/* Enable the pipe data flow */
++	if (pipe->client_state == SPS_STATE_CONNECT &&
++	    !(state == SPS_STATE_DISABLE
++	      || state == SPS_STATE_DISCONNECT)
++	    && (state == SPS_STATE_ENABLE || auto_enable
++		|| (pipe->connect.options & SPS_O_AUTO_ENABLE))) {
++		result = sps_bam_pipe_enable(pipe->bam, pipe->pipe_index);
++		if (result) {
++			SPS_ERR("Failed to set BAM 0x%x pipe %d flow on",
++				pipe->bam->props.phys_addr,
++				pipe->pipe_index);
++			return SPS_ERROR;
++		}
 +
-+/**
-+ * Enable a BAM pipe
-+ *
-+ * This function enables a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ */
-+void bam_pipe_enable(void *base, u32 pipe);
++		/* Is this a BAM-DMA pipe? */
++#ifdef CONFIG_SPS_SUPPORT_BAMDMA
++		if ((pipe->bam->props.options & SPS_BAM_OPT_BAMDMA)) {
++			/* Activate the BAM-DMA channel */
++			result = sps_dma_pipe_enable(pipe->bam,
++						     pipe->pipe_index);
++			if (result) {
++				SPS_ERR("Failed to activate BAM-DMA pipe: %d",
++					pipe->pipe_index);
++				return SPS_ERROR;
++			}
++		}
++#endif
++		pipe->client_state = SPS_STATE_ENABLE;
++	}
 +
-+/**
-+ * Disable a BAM pipe
-+ *
-+ * This function disables a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ */
-+void bam_pipe_disable(void *base, u32 pipe);
++	/* Disable the pipe data flow */
++	if (pipe->client_state == SPS_STATE_ENABLE &&
++	    (state == SPS_STATE_DISABLE	|| state == SPS_STATE_DISCONNECT)) {
++		result = sps_bam_pipe_disable(pipe->bam, pipe->pipe_index);
++		if (result) {
++			SPS_ERR("Failed to set BAM 0x%x pipe %d flow off",
++				pipe->bam->props.phys_addr,
++				pipe->pipe_index);
++			return SPS_ERROR;
++		}
++		pipe->client_state = SPS_STATE_CONNECT;
++	}
 +
-+/**
-+ * Get a BAM pipe enable state
-+ *
-+ * This function determines if a BAM pipe is enabled.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @return true if enabled, false if disabled
-+ *
-+ */
-+int bam_pipe_is_enabled(void *base, u32 pipe);
++	/* Disconnect the BAM pipe */
++	if (pipe->client_state == SPS_STATE_CONNECT &&
++	    state == SPS_STATE_DISCONNECT) {
++		struct sps_connection *map;
++		u32 pipe_index;
 +
-+/**
-+ * Configure interrupt for a BAM pipe
-+ *
-+ * This function configures the interrupt for a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @irq_en - enable or disable interrupt
-+ *
-+ * @src_mask - interrupt source mask, set regardless of whether
-+ *    interrupt is disabled
-+ *
-+ * @ee - BAM execution environment index
-+ *
-+ */
-+void bam_pipe_set_irq(void *base, u32 pipe, enum bam_enable irq_en,
-+		      u32 src_mask, u32 ee);
++		if (pipe->connect.mode == SPS_MODE_SRC)
++			pipe_index = pipe->map->src.pipe_index;
++		else
++			pipe_index = pipe->map->dest.pipe_index;
 +
-+/**
-+ * Configure a BAM pipe for satellite MTI use
-+ *
-+ * This function configures a BAM pipe for satellite MTI use.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @irq_gen_addr - physical address written to generate MTI
-+ *
-+ * @ee - BAM execution environment index
-+ *
-+ */
-+void bam_pipe_satellite_mti(void *base, u32 pipe, u32 irq_gen_addr, u32 ee);
 +
-+/**
-+ * Configure MTI for a BAM pipe
-+ *
-+ * This function configures the interrupt for a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @irq_en - enable or disable interrupt
-+ *
-+ * @src_mask - interrupt source mask, set regardless of whether
-+ *    interrupt is disabled
-+ *
-+ * @irq_gen_addr - physical address written to generate MTI
-+ *
-+ */
-+void bam_pipe_set_mti(void *base, u32 pipe, enum bam_enable irq_en,
-+		      u32 src_mask, u32 irq_gen_addr);
++		result = sps_bam_pipe_disconnect(pipe->bam, pipe_index);
++		if (result) {
++			SPS_ERR("Failed to disconnect BAM 0x%x pipe %d",
++				pipe->bam->props.phys_addr,
++				pipe->pipe_index);
++			return SPS_ERROR;
++		}
 +
-+/**
-+ * Get and Clear BAM pipe IRQ status
-+ *
-+ * This function gets and clears BAM pipe IRQ status.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @return IRQ status
-+ *
-+ */
-+u32 bam_pipe_get_and_clear_irq_status(void *base, u32 pipe);
++		/* Clear map state */
++		map = (void *)pipe->map;
++		if (pipe->connect.mode == SPS_MODE_SRC)
++			map->client_src = NULL;
++		else if (pipe->connect.mode == SPS_MODE_DEST)
++			map->client_dest = NULL;
 +
-+/**
-+ * Set write offset for a BAM pipe
-+ *
-+ * This function sets the write offset for a BAM pipe.  This is
-+ *    the offset that is maintained by software in system mode.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @next_write - descriptor FIFO write offset
-+ *
-+ */
-+void bam_pipe_set_desc_write_offset(void *base, u32 pipe, u32 next_write);
++		sps_rm_disconnect(pipe);
 +
-+/**
-+ * Get write offset for a BAM pipe
-+ *
-+ * This function gets the write offset for a BAM pipe.  This is
-+ *    the offset that is maintained by the pipe's peer pipe or by software.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @return descriptor FIFO write offset
-+ *
-+ */
-+u32 bam_pipe_get_desc_write_offset(void *base, u32 pipe);
++		/* Clear the client state */
++		pipe->map = NULL;
++		pipe->bam = NULL;
++		pipe->client_state = SPS_STATE_DISCONNECT;
++	}
 +
-+/**
-+ * Get read offset for a BAM pipe
-+ *
-+ * This function gets the read offset for a BAM pipe.  This is
-+ *    the offset that is maintained by the pipe in system mode.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @return descriptor FIFO read offset
-+ *
-+ */
-+u32 bam_pipe_get_desc_read_offset(void *base, u32 pipe);
-+
-+/**
-+ * Configure inactivity timer count for a BAM pipe
-+ *
-+ * This function configures the inactivity timer count for a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @mode - timer operating mode
-+ *
-+ * @timeout_count - timeout count
-+ *
-+ */
-+void bam_pipe_timer_config(void *base, u32 pipe,
-+			   enum bam_pipe_timer_mode mode,
-+			   u32 timeout_count);
-+
-+/**
-+ * Reset inactivity timer for a BAM pipe
-+ *
-+ * This function resets the inactivity timer count for a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ */
-+void bam_pipe_timer_reset(void *base, u32 pipe);
-+
-+/**
-+ * Get inactivity timer count for a BAM pipe
-+ *
-+ * This function gets the inactivity timer count for a BAM pipe.
-+ *
-+ * @base - BAM virtual base address.
-+ *
-+ * @pipe - pipe index
-+ *
-+ * @return inactivity timer count
-+ *
-+ */
-+u32 bam_pipe_timer_get_count(void *base, u32 pipe);
-+
-+#endif				/* _BAM_H_ */
++	return 0;
++}
 -- 
 1.7.3.3
 
