@@ -1,113 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab1CATr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:47:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45199 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757171Ab1CATr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:47:56 -0500
-Date: Tue, 1 Mar 2011 16:47:03 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, xiaoguangrong@cn.fujitsu.com
-Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable
- memory slots using wbtree
-Message-ID: <20110301194703.GA7736@amt.cnet>
-References: <1298386481.5764.60.camel@x201>
- <20110222183822.22026.62832.stgit@s20.home>
- <4D6507C9.1000906@redhat.com>
- <1298484395.18387.28.camel@x201>
- <1298489332.18387.56.camel@x201>
- <4D662DBF.2020706@redhat.com>
- <1298568944.6140.21.camel@x201>
- <4D6A1F55.7080804@redhat.com>
+	id S1757302Ab1CATsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:48:54 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55536 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498Ab1CATsx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 14:48:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mHrLY1VcnaD7E6tObSyXuf2ULhjevrkva9RibhaKi1QiFLREQeGFVbHgYVrippvRdD
+         uVWcja6HBFN3RFJC7Z2tMchJ7nC1CP51aVbCLsMfWNYoc7EfF7vdBekaZjhePm8bCLWt
+         H6MB8a1hCHoSUzAdGtuMWaz4QenP6Mm6iGO7M=
+Date: Tue, 1 Mar 2011 22:48:45 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: mjt@tls.msk.ru, arnd@arndb.de, mirqus@gmail.com, bhutchings@solarflare.com,
+        netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        therbert@google.com, xiaosuo@gmail.com, jesse@nicira.com,
+        kees.cook@canonical.com, eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+Subject: [PATCH] net: don't allow CAP_NET_ADMIN to load non-netdev kernel
+ modules
+Message-ID: <20110301194845.GA3533@albatros>
+References: <201102272122.52643.arnd@arndb.de>
+ <4D6B6AE7.2050202@msgid.tls.msk.ru>
+ <20110228095133.GA4351@albatros>
+ <20110228.112349.104067277.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6A1F55.7080804@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110228.112349.104067277.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 27, 2011 at 11:54:29AM +0200, Avi Kivity wrote:
-> On 02/24/2011 07:35 PM, Alex Williamson wrote:
-> >On Thu, 2011-02-24 at 12:06 +0200, Avi Kivity wrote:
-> >>  On 02/23/2011 09:28 PM, Alex Williamson wrote:
-> >>  >  I had forgotten about<1M mem, so actually the slot configuration was:
-> >>  >
-> >>  >  0:<1M
-> >>  >  1: 1M - 3.5G
-> >>  >  2: 4G+
-> >>  >
-> >>  >  I stacked the deck in favor of the static array (0: 4G+, 1: 1M-3.5G, 2:
-> >>  >  <1M), and got these kernbench results:
-> >>  >
-> >>  >               base (stdev)    reorder (stdev)   wbtree (stdev)
-> >>  >  --------+-----------------+----------------+----------------+
-> >>  >  Elapsed |  42.809 (0.19)  |  42.160 (0.22) |  42.305 (0.23) |
-> >>  >  User    | 115.709 (0.22)  | 114.358 (0.40) | 114.720 (0.31) |
-> >>  >  System  |  41.605 (0.14)  |  40.741 (0.22) |  40.924 (0.20) |
-> >>  >  %cpu    |   366.9 (1.45)  |   367.4 (1.17) |   367.6 (1.51) |
-> >>  >  context |  7272.3 (68.6)  |  7248.1 (89.7) |  7249.5 (97.8) |
-> >>  >  sleeps  | 14826.2 (110.6) | 14780.7 (86.9) | 14798.5 (63.0) |
-> >>  >
-> >>  >  So, wbtree is only slightly behind reordering, and the standard
-> >>  >  deviation suggests the runs are mostly within the noise of each other.
-> >>  >  Thanks,
-> >>
-> >>  Doesn't this indicate we should use reordering, instead of a new data
-> >>  structure?
-> >
-> >The original problem that brought this on was scaling.  The re-ordered
-> >array still has O(N) scaling while the tree should have ~O(logN) (note
-> >that it currently doesn't because it needs a compaction algorithm added
-> >after insert and remove).  So yes, it's hard to beat the results of a
-> >test that hammers on the first couple entries of a sorted array, but I
-> >think the tree has better than current performance and more predictable
-> >when scaled performance.
-> 
-> Scaling doesn't matter, only actual performance.  Even a guest with
-> 512 slots would still hammer only on the first few slots, since
-> these will contain the bulk of memory.
-> 
-> >If we knew when we were searching for which type of data, it would
-> >perhaps be nice if we could use a sorted array for guest memory (since
-> >it's nicely bounded into a small number of large chunks), and a tree for
-> >mmio (where we expect the scaling to be a factor).  Thanks,
-> 
-> We have three types of memory:
-> 
-> - RAM - a few large slots
-> - mapped mmio (for device assignment) - possible many small slots
-> - non-mapped mmio (for emulated devices) - no slots
->
-> The first two are handled in exactly the same way - they're just
-> memory slots.  We expect a lot more hits into the RAM slots, since
-> they're much bigger.  But by far the majority of faults will be for
-> the third category - mapped memory will be hit once per page, then
-> handled by hardware until Linux memory management does something
-> about the page, which should hopefully be rare (with device
-> assignment, rare == never, since those pages are pinned).
-> 
-> Therefore our optimization priorities should be
-> - complete miss into the slot list
-> - hit into the RAM slots
-> - hit into the other slots (trailing far behind)
+Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
+CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
+that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are
+limited to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't
+allow anybody load any module not related to networking.
 
-Whatever ordering considered optimal in one workload can be suboptimal
-in another. The binary search reduces the number of slots inspected
-in the average case. Using slot size as weight favours probability.
+This patch restricts an ability of autoloading modules to netdev modules
+with explicit aliases.  This fixes CVE-2011-1019.
 
-> Of course worst-case performance matters.  For example, we might
-> (not sure) be searching the list with the mmu spinlock held.
-> 
-> I think we still have a bit to go before we can justify the new data
-> structure.
+Arnd Bergmann suggested to leave untouched the old pre-v2.6.32 behavior
+of loading netdev modules by name (without any prefix) for processes
+with CAP_SYS_MODULE to maintain the compatibility with network scripts
+that use autoloading netdev modules by aliases like "eth0", "wlan0".
 
-Intensive IDE disk IO on guest with lots of assigned network devices, 3%
-improvement on netperf with rtl8139, 1% improvement on kernbench?
+Currently there are only three users of the feature in the upstream
+kernel: ipip, ip_gre and sit.
 
-Fail to see justification for not using it.
+    root@albatros:~# capsh --drop=$(seq -s, 0 11),$(seq -s, 13 34) -- 
+    root@albatros:~# grep Cap /proc/$$/status
+    CapInh:	0000000000000000
+    CapPrm:	fffffff800001000
+    CapEff:	fffffff800001000
+    CapBnd:	fffffff800001000
+    root@albatros:~# modprobe xfs
+    FATAL: Error inserting xfs
+    (/lib/modules/2.6.38-rc6-00001-g2bf4ca3/kernel/fs/xfs/xfs.ko): Operation not permitted
+    root@albatros:~# lsmod | grep xfs
+    root@albatros:~# ifconfig xfs
+    xfs: error fetching interface information: Device not found
+    root@albatros:~# lsmod | grep xfs
+    root@albatros:~# lsmod | grep sit
+    root@albatros:~# ifconfig sit
+    sit: error fetching interface information: Device not found
+    root@albatros:~# lsmod | grep sit
+    root@albatros:~# ifconfig sit0
+    sit0      Link encap:IPv6-in-IPv4  
+    	      NOARP  MTU:1480  Metric:1
 
+    root@albatros:~# lsmod | grep sit
+    sit                    10457  0 
+    tunnel4                 2957  1 sit
+
+For CAP_SYS_MODULE module loading is still relaxed:
+
+    root@albatros:~# grep Cap /proc/$$/status
+    CapInh:	0000000000000000
+    CapPrm:	ffffffffffffffff
+    CapEff:	ffffffffffffffff
+    CapBnd:	ffffffffffffffff
+    root@albatros:~# ifconfig xfs
+    xfs: error fetching interface information: Device not found
+    root@albatros:~# lsmod | grep xfs
+    xfs                   745319  0 
+
+Reference: https://lkml.org/lkml/2011/2/24/203 
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ include/linux/netdevice.h |    3 +++
+ net/core/dev.c            |   12 ++++++++++--
+ net/ipv4/ip_gre.c         |    2 +-
+ net/ipv4/ipip.c           |    2 +-
+ net/ipv6/sit.c            |    2 +-
+ 5 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index d971346..71caf7a 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2392,6 +2392,9 @@ extern int netdev_notice(const struct net_device *dev, const char *format, ...)
+ extern int netdev_info(const struct net_device *dev, const char *format, ...)
+ 	__attribute__ ((format (printf, 2, 3)));
+ 
++#define MODULE_ALIAS_NETDEV(device) \
++	MODULE_ALIAS("netdev-" device)
++
+ #if defined(DEBUG)
+ #define netdev_dbg(__dev, format, args...)			\
+ 	netdev_printk(KERN_DEBUG, __dev, format, ##args)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 8ae6631..fc6f037 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1119,8 +1119,16 @@ void dev_load(struct net *net, const char *name)
+ 	dev = dev_get_by_name_rcu(net, name);
+ 	rcu_read_unlock();
+ 
+-	if (!dev && capable(CAP_NET_ADMIN))
+-		request_module("%s", name);
++	if (!dev) {
++		if (capable(CAP_NET_ADMIN))
++			request_module("netdev-%s", name);
++		if (capable(CAP_SYS_MODULE)) {
++			if (!request_module("%s", name))
++				WARN_ONCE(1, "Loading kernel module for a "
++"network device with CAP_SYS_MODULE (deprecated).  Use CAP_NET_ADMIN and alias "
++"netdev-%s instead\n", name);
++		}
++	}
+ }
+ EXPORT_SYMBOL(dev_load);
+ 
+diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
+index 6613edf..d1d0e2c 100644
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -1765,4 +1765,4 @@ module_exit(ipgre_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS_RTNL_LINK("gre");
+ MODULE_ALIAS_RTNL_LINK("gretap");
+-MODULE_ALIAS("gre0");
++MODULE_ALIAS_NETDEV("gre0");
+diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
+index 988f52f..a5f58e7 100644
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -913,4 +913,4 @@ static void __exit ipip_fini(void)
+ module_init(ipip_init);
+ module_exit(ipip_fini);
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("tunl0");
++MODULE_ALIAS_NETDEV("tunl0");
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index 8ce38f1..d2c16e1 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1290,4 +1290,4 @@ static int __init sit_init(void)
+ module_init(sit_init);
+ module_exit(sit_cleanup);
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("sit0");
++MODULE_ALIAS_NETDEV("sit0");
+-- 
+1.7.0.4
