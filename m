@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1CADhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 22:37:46 -0500
-Received: from qmta15.westchester.pa.mail.comcast.net ([76.96.59.228]:45270
-	"EHLO qmta15.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752800Ab1CADhp (ORCPT
+	id S1753325Ab1CADkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 22:40:40 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33897 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab1CADkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 22:37:45 -0500
-X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Feb 2011 22:37:45 EST
-Message-ID: <4D6C68A4.3020306@gentoo.org>
-Date: Mon, 28 Feb 2011 22:31:48 -0500
-From: Kumba <kumba@gentoo.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	Mon, 28 Feb 2011 22:40:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=joDeswIPjl9ahP34IFTIvxpR+dbV82+KlsYvDZcU7LXtmqdANKvfCxDGmqh0e36B0W
+         pi2gBQrWd/5DmF0ZvK1T4wjKHoo1uDPwBGx+dkhvZhLP5cSJvo9YUcBQdyuUAWtF6Ktm
+         Q14Tzdo+7QNGKxBqygT/1H1QgDjqgJSUkd4Mk=
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Can I nest kobjects to create directories under parent directories
- for my driver?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110224121042.6fa3fe37@lxorguk.ukuu.org.uk>
+References: <20110222121704.19437.4650.stgit@localhost.localdomain>
+	<AANLkTimPpr+OugTiPpYxNyS78vqActuURw-tnxJVxi18@mail.gmail.com>
+	<20110224121042.6fa3fe37@lxorguk.ukuu.org.uk>
+Date: Tue, 1 Mar 2011 13:40:38 +1000
+Message-ID: <AANLkTikXwLSpO2WNKpC=7y7g13qx1cmyCOG7HSrOUgzt@mail.gmail.com>
+Subject: Re: [PATCH] gma500: Intel GMA500 staging driver
+From: Dave Airlie <airlied@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I'm attempting to write my first kernel driver for an RTC chip (Dallas/Maxim 
-DS1685/DS1687), and running into a problem with using sysfs properly.  First 
-off, a patch for this specific RTC was sent int to rtc-linux about two years 
-ago, but never made it anywhere.  I based off of that and have pretty much 
-re-written the thing since then.  It's undergoing a second re-write after some 
-initial feedback from the rtc-linux folks.
+On Thu, Feb 24, 2011 at 10:10 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> So where do we want to go my opinion is
+>>
+>> a) remove all userspace interfaces and simplify ttm memory management usage.
+>
+> Some of them appear to be valid/sensible ones for querying mode data and
+> config bits. I'm slowly pruning out the rest
+>
+>> b) add support to hook this up to the dumb ioctl so we can do trivial
+>> generic front buffer allocation, so then a libkms + dumb kms
+>> modesetting driver can work on it.
+>
+> What sort of dumb ioctl do you have in mind ?
 
-What I'm trying to do, is, in sysfs, create individual attributes for the bits 
-in each control register.  DS1685 defines 6 control registers (4 are the 
-standard DS1286-style, and 2 are "extended" in another address bank).
+Its already in my drm-next tree,
+http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;a=commit;h=ff72145badb834e8051719ea66e024784d000cb4
 
-I want to organize it such that:
+the idea being we can allocate and map a buffer that we can use for
+doing dumb operations in an fbdev like manner,
+the handles can be passed to the normal generic drm KMS ioctls. It
+avoids simple userspaces having to know about the
+per-driver GEM accel interfaces. Of course to add acceleration you
+need to get off this interface but it at least means
+getting something simple up and running with full KMS output control.
 
-# ls /sys/devices/platform/rtc-ds1685/
-driver@  misc/  modalias  nvram  regs/  rtc/  subsystem@  uevent
+>
+>> c) figure out how to add interface for acceleration users. Whether TTM
+>> fence interfaces are required etc.
+>
+> The fencing seems to be solely for the various capture/acceleration bits
+> for video as far as I can tell.
+>
+> It seems we need two things - issue a 2D command and stuff for
+> transferring objects, although it's not clear that the latter is needed.
+>
+> The old X 2D code is at:
+> http://git.moblin.org/cgit.cgi/deprecated/xf86-video-psb/
 
-And in regs/:
-ctrla/  ctrlb/  ctrlc/  ctrld/  ctrl4a/  ctrl4b/
+Okay I'll try and have a look at that and see whats its doing.
 
-And under each register folder, the available bits for that register.  When 
-read, each bit returns either a 0 or a 1, and certain bits can be made writable 
-to change their values.
-
-So I started investigating how to do this.  I first got it setup such that the 
-ctrla through ctrl4b folders appeared in the top-level folder 
-(/sys/devices/platform/rtc-ds1685).  Reading/writing to those worked fine.  But 
-when I changed my code to nest those attribute groups under a "regs" kobject, 
-any attempt to read or write the registers resulted in an Oops (or unaligned 
-access, page fault, etc).
-
-So far, I've determined that by attaching the "regs" kobject to the parent 
-dev->kobj, and then attaching each attribute group kobject to the "regs" 
-kobject, I lose the reference to the device structure holding all the relevant 
-data for the RTC.  Thus, when I try to readb() or writeb() the RTC registers, I 
-hit a NULL pointer and its lights out.
-
-So I know I'm doing it wrong.  Question is, how can I do it right?  I've already 
-looked into (and tried) ksets.  I'm not setting those up properly because I run 
-into the same issue in the custom "show" function I have to write out where I 
-don't have a valid reference to the live device structure.
-
-I've gone through the kobject and kset examples, polled through quite a few 
-drivers (some in drivers/rtc, some elsewhere), and looked over the sysfs, 
-kobject, and device headers.  But because I'm still learning, I'm not 100% what 
-I need to look for to accomplish this.  Everything else in the driver mostly 
-works.  All this kobject debugging pointed out a few improper uses of spinlocks, 
-and I optimized some other bits, but by and large, this thing is about ready to 
-ship to rtc-linux for review (again).
-
-I should add, I'm developing this on an SGI O2 (mips), which actually uses one 
-of these RTCs.  The O2 currently taps into the rtc-cmos driver, which appears to 
-provide baseline functionality.  None of my debugging points at flaws in the 
-mips base or in the RTC system, so I'm directing my inquiry here to see if 
-anyone has advice I can use to get this working.
-
-Are ksets what I need to use, or can I nest kobjects together to accomplish 
-things?  Or is there another way that I need to study up on?
-
-
-Thanks!
-
--- 
-Joshua Kinard
-Gentoo/MIPS
-kumba@gentoo.org
-
-"The past tempts us, the present confuses us, the future frightens us.  And our 
-lives slip away, moment by moment, lost in that vast, terrible in-between."
-
---Emperor Turhan, Centauri Republic
+Dave.
