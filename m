@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab1CATji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:39:38 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48124 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757324Ab1CATje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:39:34 -0500
+	id S1757338Ab1CATjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 14:39:49 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22642 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234Ab1CATjq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 14:39:46 -0500
 Date: Tue, 1 Mar 2011 11:39:30 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: David Jander <david.jander@protonic.nl>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Jander <david@protonic.nl>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: linux-next: manual merge of the mfd tree with the i.MX tree
-Message-ID: <20110301113930.4743a13c@debxo>
-In-Reply-To: <20110301093528.00184f93@archvile>
-References: <20110301145436.b1ae1923.sfr@canb.auug.org.au>
-	<20110301093528.00184f93@archvile>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Subject: Re: linux-next: Tree for March 1 (staging/winbond)
+Message-Id: <20110301113930.69d7d992.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTimayi4tSe=r1HOPgpcSucBWC7SoBV1ocmV5LEs4@mail.gmail.com>
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+	<20110301104924.071044ef.randy.dunlap@oracle.com>
+	<AANLkTimX0zvBEMxedXnhXiaxwEKHmm_Tu6fiZQkahZrC@mail.gmail.com>
+	<20110301111922.69b0d8c1.randy.dunlap@oracle.com>
+	<AANLkTimayi4tSe=r1HOPgpcSucBWC7SoBV1ocmV5LEs4@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4D6D4B79.00C1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Mar 2011 09:35:28 +0100
-David Jander <david.jander@protonic.nl> wrote:
+On Tue, 1 Mar 2011 21:35:59 +0200 Pekka Enberg wrote:
 
+> On Tue, Mar 1, 2011 at 9:19 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > On Tue, 1 Mar 2011 21:10:23 +0200 Pekka Enberg wrote:
+> >
+> >> On Tue, Mar 1, 2011 at 8:49 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> >> > On Tue, 1 Mar 2011 18:11:19 +1100 Stephen Rothwell wrote:
+> >> >
+> >> >> Hi all,
+> >> >>
+> >> >> Changes since 20110228:
+> >> >
+> >> >
+> >> > commit ddee7e28e7d5e4ba2b8537c6a59b035745c250bb
+> >> > Author: Pekka Enberg <penberg@kernel.org>
+> >> > Date:   Sun Nov 28 23:00:01 2010 +0200
+> >> >    Staging: w35und: Remove empty sysdef.h header
+> >> >
+> >> >
+> >> > This header should not have been empty, since in
+> >> >
+> >> > commit 412dc7f368bf10a8049a8a4c41abbfd0108742e7
+> >> > Author: Randy Dunlap <randy.dunlap@oracle.com>
+> >> > Date:   Fri Nov 19 09:30:18 2010 -0800
+> >> >    staging: fix winbond build, needs delay.h
+> >> >
+> >> > I added delay.h to it.  And now we have the same build
+> >> > errors that I fixed last November:
+> >> >
+> >> > drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration of function 'msleep'
+> >> > drivers/staging/winbond/phy_calibration.c:1555: error: implicit declaration of function 'udelay'
+> >> > drivers/staging/winbond/reg.c:893: error: implicit declaration of function 'msleep'
+> >> > drivers/staging/winbond/reg.c:1169: error: implicit declaration of function 'udelay'
+> >>
+> >> Strange. I didn't see the problem. We should add delay.h to
+> >> phy_calibration.c and reg.c instead. Care to make a patch?
+> >> --
+> >
+> > No thanks, I'll let the staging people do that.
 > 
-> Hi Stephen,
-> 
-> On Tue, 1 Mar 2011 14:54:36 +1100
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Today's linux-next merge of the mfd tree got a conflict in
-> > arch/arm/mach-imx/mach-mx27_3ds.c arch/arm/mach-imx/mach-pcm038.c
-> > arch/arm/mach-mx3/mach-mx31_3ds.c
-> > arch/arm/mach-mx3/mach-mx31moboard.c between commit
-> > 5836372e8a0ba5cc633f61bc0484ee20c86f4b36 ("ARM: imx+mx3: convert to
-> > mc13xxx MFD") from the i.MX tree and commit
-> > e84e545d47d26644275a79fe5ebc1797bcb80910 ("mfd: mfd_cell is now
-> > implicitly available to mc13xxx drivers") from the mfd tree.
-> > 
-> > I fixed it up (I think - see below) and can carry the fix as
-> > necessary.
-> 
-> Your fix seems correct, although I fear I am too dumb to understand
-> why commit e84e545d47d26644275a79fe5ebc1797bcb80910 introduces this
-> extra struct nesting.... AFAICS gcc will end up doing the same as
-> without the extra nest.
+> Hmm, commit cecf826df8648c843ea8db63b1f82c154a74db36 ("staging:
+> winbond: needs <linux/delay.h> for msleep and friends") should fix it.
+> Isn't it in linux-next yet?
 
-It was requested in this thread:
-https://patchwork.kernel.org/patch/551441/
+I'll have to let GregKH answer that.
 
+Where is the commit ID from?
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
