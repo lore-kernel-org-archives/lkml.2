@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab1CABLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 20:11:47 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4838 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab1CABLp (ORCPT
+	id S1755047Ab1CABLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 20:11:43 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:52651 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab1CABLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 20:11:45 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6271"; a="77024118"
+	Mon, 28 Feb 2011 20:11:42 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6271"; a="77226127"
 From: Kenneth Heitke <kheitke@codeaurora.org>
 To: davidb@codeaurora.org, bryanh@codeaurora.org, dwalker@fifo99.com
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.intradead.org,
@@ -16,9 +16,9 @@ Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.intradead.org,
         Kenneth Heitke <kheitke@codeaurora.org>,
         linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
         linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH 4/5] RFC: msm: sps: Smart Peripheral Subsystem (SPS) Resource Manager
-Date: Mon, 28 Feb 2011 18:11:31 -0700
-Message-Id: <1298941892-25173-5-git-send-email-kheitke@codeaurora.org>
+Subject: [RFC PATCH 2/5] RFC: msm: sps: BAM-DMA driver
+Date: Mon, 28 Feb 2011 18:11:29 -0700
+Message-Id: <1298941892-25173-3-git-send-email-kheitke@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1298941892-25173-1-git-send-email-kheitke@codeaurora.org>
 References: <1298941892-25173-1-git-send-email-kheitke@codeaurora.org>
@@ -28,21 +28,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Amir Samuelovi <amirs@codeaurora.org>
 
-Resource management for the SPS device driver.
+The BAM-DMA is a Bus Access Manager (BAM) hardware block specifically
+for data transfers from memory to memory rather than being associated
+with a peripheral core (like other BAMs).
 
 Signed-off-by: Amir Samuelov <amirs@codeaurora.org>
 Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
 ---
- arch/arm/mach-msm/sps/sps_rm.c |  806 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 806 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/sps/sps_rm.c
+ arch/arm/mach-msm/sps/sps_dma.c |  896 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 896 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/sps/sps_dma.c
 
-diff --git a/arch/arm/mach-msm/sps/sps_rm.c b/arch/arm/mach-msm/sps/sps_rm.c
+diff --git a/arch/arm/mach-msm/sps/sps_dma.c b/arch/arm/mach-msm/sps/sps_dma.c
 new file mode 100644
-index 0000000..ec36b25
+index 0000000..9179ed9
 --- /dev/null
-+++ b/arch/arm/mach-msm/sps/sps_rm.c
-@@ -0,0 +1,806 @@
++++ b/arch/arm/mach-msm/sps/sps_dma.c
+@@ -0,0 +1,896 @@
 +/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -55,800 +57,890 @@ index 0000000..ec36b25
 + * GNU General Public License for more details.
 + */
 +
-+/* Resource management for the SPS device driver. */
++/* BAM-DMA Manager. */
 +
-+#include <linux/types.h>	/* u32 */
-+#include <linux/kernel.h>	/* pr_info() */
-+#include <linux/mutex.h>	/* mutex */
-+#include <linux/list.h>		/* list_head */
-+#include <linux/slab.h>		/* kzalloc() */
++#ifdef CONFIG_SPS_SUPPORT_BAMDMA
++
 +#include <linux/memory.h>	/* memset */
 +
 +#include "spsi.h"
-+#include "sps_core.h"
-+
-+/* "Clear" value for the connection parameter struct */
-+#define SPSRM_CLEAR     0xcccccccc
-+
-+/* Max BAM FIFO sizes */
-+#define SPSRM_MAX_DESC_FIFO_SIZE    0xffff
-+#define SPSRM_MAX_DATA_FIFO_SIZE    0xffff
-+
-+/* Connection control struct pointer */
-+static struct sps_rm *sps_rm;
++#include "bam.h"
++#include "sps_bam.h"		/* bam_dma_thresh_dma */
++#include "sps_core.h"		/* sps_h2bam() */
 +
 +/**
-+ * Initialize resource manager module
++ * registers
 + */
-+int sps_rm_init(struct sps_rm *rm, u32 options)
++
++#define DMA_ENBL			(0x00000000)
++#define DMA_CHNL_CONFIG(n)		(0x00000004 + 4 * (n))
++#define DMA_CONFIG			(0x00000040)
++
++/**
++ * masks
++ */
++
++/* DMA_CHNL_confign */
++#define DMA_CHNL_HALT_DONE		0x10000
++#define DMA_CHNL_HALT			0x1000
++#define DMA_CHNL_ENABLE                 0x100
++#define DMA_CHNL_ACT_THRESH             0x30
++#define DMA_CHNL_WEIGHT                 0x7
++
++/* DMA_CONFIG */
++#define TESTBUS_SELECT                  0x3
++
++/**
++ *
++ * Write register with debug info.
++ *
++ * @base - bam base virtual address.
++ * @offset - register offset.
++ * @val - value to write.
++ *
++ */
++static inline void dma_write_reg(void *base, u32 offset, u32 val)
 +{
-+	/* Set the resource manager state struct pointer */
-+	sps_rm = rm;
-+
-+	/* Initialize the state struct */
-+	INIT_LIST_HEAD(&sps_rm->connections_q);
-+	mutex_init(&sps_rm->lock);
-+
-+	return 0;
++	iowrite32(val, base + offset);
++	SPS_DBG("bamdma: write reg 0x%x w_val 0x%x.", offset, val);
 +}
 +
 +/**
-+ * Initialize client state context
++ * Write register masked field with debug info.
++ *
++ * @base - bam base virtual address.
++ * @offset - register offset.
++ * @mask - register bitmask.
++ * @val - value to write.
 + *
 + */
-+void sps_rm_config_init(struct sps_connect *connect)
++static inline void dma_write_reg_field(void *base, u32 offset,
++				       const u32 mask, u32 val)
 +{
-+	memset(connect, SPSRM_CLEAR, sizeof(*connect));
++	u32 shift = find_first_bit((void *)&mask, 32);
++	u32 tmp = ioread32(base + offset);
++
++	tmp &= ~mask;		/* clear written bits */
++	val = tmp | (val << shift);
++	iowrite32(val, base + offset);
++	SPS_DBG("bamdma: write reg 0x%x w_val 0x%x.", offset, val);
 +}
 +
-+/**
-+ * Remove reference to connection mapping
-+ *
-+ * This function removes a reference from a connection mapping struct.
-+ *
-+ * @map - pointer to connection mapping struct
-+ *
-+ */
-+static void sps_rm_remove_ref(struct sps_connection *map)
-+{
-+	/* Free this connection */
-+	map->refs--;
-+	if (map->refs <= 0) {
-+		if (map->client_src != NULL || map->client_dest != NULL)
-+			SPS_ERR("Failed to allocate connection struct");
++/* Round max number of pipes to nearest multiple of 2 */
++#define DMA_MAX_PIPES         ((BAM_MAX_PIPES / 2) * 2)
 +
-+		list_del(&map->list);
-+		kfree(map);
-+	}
-+}
++/* Maximum number of BAM-DMAs supported */
++#define MAX_BAM_DMA_DEVICES   1
 +
-+/**
-+ * Compare map to connect parameters
-+ *
-+ * This function compares client connect parameters to an allocated
-+ * connection mapping.
-+ *
-+ * @pipe - client context for SPS connection end point
-+ *
-+ * @return - true if match, false otherwise
-+ *
-+ */
-+static int sps_rm_map_match(const struct sps_connect *cfg,
-+			    const struct sps_connection *map)
-+{
-+	if (cfg->source != map->src.dev ||
-+	    cfg->destination != map->dest.dev)
-+		return false;
++/* Maximum number of BAMs that will be registered */
++#define MAX_BAM_DMA_BAMS      1
 +
-+	if (cfg->src_pipe_index != SPSRM_CLEAR &&
-+	    cfg->src_pipe_index != map->src.pipe_index)
-+		return false;
++/* Pipe enable check values */
++#define DMA_PIPES_STATE_DIFF     0
++#define DMA_PIPES_BOTH_DISABLED  1
++#define DMA_PIPES_BOTH_ENABLED   2
 +
-+	if (cfg->dest_pipe_index != SPSRM_CLEAR &&
-+	    cfg->dest_pipe_index != map->dest.pipe_index)
-+		return false;
++/* Even pipe is tx/dest/input/write, odd pipe is rx/src/output/read */
++#define DMA_PIPE_IS_DEST(p)   (((p) & 1) == 0)
++#define DMA_PIPE_IS_SRC(p)    (((p) & 1) != 0)
 +
-+	if (cfg->config != map->config)
-+		return false;
++/* BAM DMA pipe state */
++enum bamdma_pipe_state {
++	PIPE_INACTIVE = 0,
++	PIPE_ACTIVE
++};
 +
-+	if (cfg->desc.size != SPSRM_CLEAR) {
-+		if (cfg->desc.size != map->desc.size)
-+			return false;
++/* BAM DMA channel state */
++enum bamdma_chan_state {
++	DMA_CHAN_STATE_FREE = 0,
++	DMA_CHAN_STATE_ALLOC_EXT,	/* Client allocation */
++	DMA_CHAN_STATE_ALLOC_INT	/* Internal (resource mgr) allocation */
++};
 +
-+		if (cfg->desc.phys_base != SPSRM_CLEAR &&
-+		    cfg->desc.base != (void *)SPSRM_CLEAR &&
-+		    (cfg->desc.phys_base != map->desc.phys_base ||
-+		     cfg->desc.base != map->desc.base)) {
-+			return false;
-+		}
-+	}
++struct bamdma_chan {
++	/* Allocation state */
++	enum bamdma_chan_state state;
 +
-+	if (cfg->data.size != SPSRM_CLEAR) {
-+		if (cfg->data.size != map->data.size)
-+			return false;
++	/* BAM DMA channel configuration parameters */
++	u32 threshold;
++	enum sps_dma_priority priority;
 +
-+		if (cfg->data.phys_base != SPSRM_CLEAR &&
-+		    cfg->data.base != (void *)SPSRM_CLEAR &&
-+		    (cfg->data.phys_base != map->data.phys_base ||
-+		     cfg->data.base != map->data.base))
-+			return false;
-+	}
++	/* HWIO channel configuration parameters */
++	enum bam_dma_thresh_dma thresh;
++	enum bam_dma_weight_dma weight;
 +
-+	return true;
-+}
++};
 +
-+/**
-+ * Find unconnected mapping
-+ *
-+ * This function finds an allocated a connection mapping.
-+ *
-+ * @pipe - client context for SPS connection end point
-+ *
-+ * @return - pointer to allocated connection mapping, or NULL if not found
-+ *
-+ */
-+static struct sps_connection *find_unconnected(struct sps_pipe *pipe)
-+{
-+	struct sps_connect *cfg = &pipe->connect;
-+	struct sps_connection *map;
++/* BAM DMA device state */
++struct bamdma_device {
++	/* BAM-DMA device state */
++	int enabled;
++	int local;
 +
-+	/* Has this connection already been allocated? */
-+	list_for_each_entry(map, &sps_rm->connections_q, list) {
-+		if (sps_rm_map_match(cfg, map))
-+			if ((cfg->mode == SPS_MODE_SRC
-+			     && map->client_src == NULL)
-+			    || (cfg->mode != SPS_MODE_SRC
-+				&& map->client_dest == NULL))
-+				return map;	/* Found */
-+	}
-+
-+	return NULL;		/* Not Found */
-+}
-+
-+/**
-+ * Assign connection to client
-+ *
-+ * This function assigns a connection to a client.
-+ *
-+ * @pipe - client context for SPS connection end point
-+ *
-+ * @map - connection mapping
-+ *
-+ * @return 0 on success, negative value on error
-+ *
-+ */
-+static int sps_rm_assign(struct sps_pipe *pipe,
-+			 struct sps_connection *map)
-+{
-+	struct sps_connect *cfg = &pipe->connect;
-+
-+	/* Check ownership and BAM */
-+	if ((cfg->mode == SPS_MODE_SRC && map->client_src != NULL) ||
-+	    (cfg->mode != SPS_MODE_SRC && map->client_dest != NULL))
-+		/* The end point is already connected */
-+		return SPS_ERROR;
-+
-+	/* Check whether this end point is a BAM (not memory) */
-+	if ((cfg->mode == SPS_MODE_SRC && map->src.bam == NULL) ||
-+	    (cfg->mode != SPS_MODE_SRC && map->dest.bam == NULL))
-+		return SPS_ERROR;
-+
-+	/* Record the connection assignment */
-+	if (cfg->mode == SPS_MODE_SRC) {
-+		map->client_src = pipe;
-+		pipe->bam = map->src.bam;
-+		pipe->pipe_index = map->src.pipe_index;
-+		if (pipe->connect.event_thresh != SPSRM_CLEAR)
-+			map->src.event_threshold = pipe->connect.event_thresh;
-+	} else {
-+		map->client_dest = pipe;
-+		pipe->bam = map->dest.bam;
-+		pipe->pipe_index = map->dest.pipe_index;
-+		if (pipe->connect.event_thresh != SPSRM_CLEAR)
-+			map->dest.event_threshold =
-+			pipe->connect.event_thresh;
-+	}
-+	pipe->map = map;
-+
-+	SPS_DBG("sps:sps_rm_assign.pipe_index=%d\n", pipe->pipe_index);
-+
-+	/* Copy parameters to client connect state */
-+	pipe->connect.src_pipe_index = map->src.pipe_index;
-+	pipe->connect.dest_pipe_index = map->dest.pipe_index;
-+	pipe->connect.desc = map->desc;
-+	pipe->connect.data = map->data;
-+
-+	pipe->client_state = SPS_STATE_ALLOCATE;
-+
-+	return 0;
-+}
-+
-+/**
-+ * Free connection mapping resources
-+ *
-+ * This function frees a connection mapping resources.
-+ *
-+ * @pipe - client context for SPS connection end point
-+ *
-+ */
-+static void sps_rm_free_map_rsrc(struct sps_connection *map)
-+{
++	/* BAM device state */
 +	struct sps_bam *bam;
 +
-+	if (map->client_src != NULL || map->client_dest != NULL)
-+		return;
++	/* BAM handle, for deregistration */
++	u32 h;
 +
-+	if (map->alloc_src_pipe != SPS_BAM_PIPE_INVALID) {
-+		bam = map->src.bam;
-+		sps_bam_pipe_free(bam, map->src.pipe_index);
++	/* BAM DMA device virtual mapping */
++	void *virt_addr;
++	int virtual_mapped;
++	u32 phys_addr;
++	void *hwio;
 +
-+		/* Is this a BAM-DMA pipe? */
-+#ifdef CONFIG_SPS_SUPPORT_BAMDMA
-+		if ((bam->props.options & SPS_BAM_OPT_BAMDMA))
-+			/* Deallocate and free the BAM-DMA channel */
-+			sps_dma_pipe_free(bam, map->src.pipe_index);
-+#endif
-+		map->alloc_src_pipe = SPS_BAM_PIPE_INVALID;
-+		map->src.pipe_index = SPS_BAM_PIPE_INVALID;
-+	}
-+	if (map->alloc_dest_pipe != SPS_BAM_PIPE_INVALID) {
-+		bam = map->dest.bam;
-+		sps_bam_pipe_free(bam, map->dest.pipe_index);
++	/* BAM DMA pipe/channel state */
++	u32 num_pipes;
++	enum bamdma_pipe_state pipes[DMA_MAX_PIPES];
++	struct bamdma_chan chans[DMA_MAX_PIPES / 2];
 +
-+		/* Is this a BAM-DMA pipe? */
-+#ifdef CONFIG_SPS_SUPPORT_BAMDMA
-+		if ((bam->props.options & SPS_BAM_OPT_BAMDMA)) {
-+			/* Deallocate the BAM-DMA channel */
-+			sps_dma_pipe_free(bam, map->dest.pipe_index);
-+		}
-+#endif
-+		map->alloc_dest_pipe = SPS_BAM_PIPE_INVALID;
-+		map->dest.pipe_index = SPS_BAM_PIPE_INVALID;
-+	}
-+	if (map->alloc_desc_base != SPS_ADDR_INVALID) {
-+		sps_mem_free_io(map->alloc_desc_base, map->desc.size);
++};
 +
-+		map->alloc_desc_base = SPS_ADDR_INVALID;
-+		map->desc.phys_base = SPS_ADDR_INVALID;
-+	}
-+	if (map->alloc_data_base != SPS_ADDR_INVALID) {
-+		sps_mem_free_io(map->alloc_data_base, map->data.size);
++/* BAM-DMA devices */
++static struct bamdma_device bam_dma_dev[MAX_BAM_DMA_DEVICES];
++static struct mutex bam_dma_lock;
 +
-+		map->alloc_data_base = SPS_ADDR_INVALID;
-+		map->data.phys_base = SPS_ADDR_INVALID;
-+	}
-+}
++/*
++ * The BAM DMA module registers all BAMs in the BSP properties, but only
++ * uses the first BAM-DMA device for allocations.  References to the others
++ * are stored in the following data array.
++ */
++static int num_bams;
++static u32 bam_handles[MAX_BAM_DMA_BAMS];
 +
 +/**
-+ * Init connection mapping from client connect
++ * Find BAM-DMA device
 + *
-+ * This function initializes a connection mapping from the client's
-+ * connect parameters.
++ * This function finds the BAM-DMA device associated with the BAM handle.
 + *
-+ * @map - connection mapping struct
++ * @h - BAM handle
 + *
-+ * @cfg - client connect parameters
-+ *
-+ * @return - pointer to allocated connection mapping, or NULL on error
++ * @return - pointer to BAM-DMA device, or NULL on error
 + *
 + */
-+static void sps_rm_init_map(struct sps_connection *map,
-+			    const struct sps_connect *cfg)
++static struct bamdma_device *sps_dma_find_device(u32 h)
 +{
-+	/* Clear the connection mapping struct */
-+	memset(map, 0, sizeof(*map));
-+	map->desc.phys_base = SPS_ADDR_INVALID;
-+	map->data.phys_base = SPS_ADDR_INVALID;
-+	map->alloc_desc_base = SPS_ADDR_INVALID;
-+	map->alloc_data_base = SPS_ADDR_INVALID;
-+	map->alloc_src_pipe = SPS_BAM_PIPE_INVALID;
-+	map->alloc_dest_pipe = SPS_BAM_PIPE_INVALID;
-+
-+	/* Copy client required parameters */
-+	map->src.dev = cfg->source;
-+	map->dest.dev = cfg->destination;
-+	map->desc.size = cfg->desc.size;
-+	map->data.size = cfg->data.size;
-+	map->config = cfg->config;
-+
-+	/* Did client specify descriptor FIFO? */
-+	if (map->desc.size != SPSRM_CLEAR &&
-+	    cfg->desc.phys_base != SPSRM_CLEAR &&
-+	    cfg->desc.base != (void *)SPSRM_CLEAR)
-+		map->desc = cfg->desc;
-+
-+	/* Did client specify data FIFO? */
-+	if (map->data.size != SPSRM_CLEAR &&
-+	    cfg->data.phys_base != SPSRM_CLEAR &&
-+	    cfg->data.base != (void *)SPSRM_CLEAR)
-+		map->data = cfg->data;
-+
-+	/* Did client specify source pipe? */
-+	if (cfg->src_pipe_index != SPSRM_CLEAR)
-+		map->src.pipe_index = cfg->src_pipe_index;
-+	else
-+		map->src.pipe_index = SPS_BAM_PIPE_INVALID;
-+
-+
-+	/* Did client specify destination pipe? */
-+	if (cfg->dest_pipe_index != SPSRM_CLEAR)
-+		map->dest.pipe_index = cfg->dest_pipe_index;
-+	else
-+		map->dest.pipe_index = SPS_BAM_PIPE_INVALID;
++	return &bam_dma_dev[0];
 +}
 +
 +/**
-+ * Create a new connection mapping
++ * BAM DMA device enable
 + *
-+ * This function creates a new connection mapping.
++ * This function enables a BAM DMA device and the associated BAM.
 + *
-+ * @pipe - client context for SPS connection end point
-+ *
-+ * @return - pointer to allocated connection mapping, or NULL on error
-+ *
-+ */
-+static struct sps_connection *sps_rm_create(struct sps_pipe *pipe)
-+{
-+	struct sps_connection *map;
-+	struct sps_bam *bam;
-+	u32 desc_size;
-+	u32 data_size;
-+	enum sps_mode dir;
-+	int success = false;
-+
-+	/* Allocate new connection */
-+	map = kzalloc(sizeof(*map), GFP_KERNEL);
-+	if (map == NULL) {
-+		SPS_ERR("Failed to allocate connection struct");
-+		return NULL;
-+	}
-+
-+	/* Initialize connection struct */
-+	sps_rm_init_map(map, &pipe->connect);
-+	dir = pipe->connect.mode;
-+
-+	/* Use a do/while() loop to avoid a "goto" */
-+	success = false;
-+	/* Get BAMs */
-+	map->src.bam = sps_h2bam(map->src.dev);
-+	if (map->src.bam == NULL) {
-+		if (map->src.dev != SPS_DEV_HANDLE_MEM) {
-+			SPS_ERR("Invalid BAM handle: 0x%x", map->src.dev);
-+			goto exit_err;
-+		}
-+		map->src.pipe_index = SPS_BAM_PIPE_INVALID;
-+	}
-+	map->dest.bam = sps_h2bam(map->dest.dev);
-+	if (map->dest.bam == NULL) {
-+		if (map->dest.dev != SPS_DEV_HANDLE_MEM) {
-+			SPS_ERR("Invalid BAM handle: 0x%x", map->dest.dev);
-+			goto exit_err;
-+		}
-+		map->dest.pipe_index = SPS_BAM_PIPE_INVALID;
-+	}
-+
-+	/* Check the BAM device for the pipe */
-+	if ((dir == SPS_MODE_SRC && map->src.bam == NULL) ||
-+	    (dir != SPS_MODE_SRC && map->dest.bam == NULL)) {
-+		SPS_ERR("Invalid BAM endpt: dir %d src 0x%x dest 0x%x",
-+			dir, map->src.dev, map->dest.dev);
-+		goto exit_err;
-+	}
-+
-+	/* Allocate pipes and copy BAM parameters */
-+	if (map->src.bam != NULL) {
-+		/* Allocate the pipe */
-+		bam = map->src.bam;
-+		map->alloc_src_pipe = sps_bam_pipe_alloc(bam,
-+							map->src.pipe_index);
-+		if (map->alloc_src_pipe == SPS_BAM_PIPE_INVALID)
-+			goto exit_err;
-+		map->src.pipe_index = map->alloc_src_pipe;
-+
-+		/* Is this a BAM-DMA pipe? */
-+#ifdef CONFIG_SPS_SUPPORT_BAMDMA
-+		if ((bam->props.options & SPS_BAM_OPT_BAMDMA)) {
-+			int rc;
-+			/* Allocate the BAM-DMA channel */
-+			rc = sps_dma_pipe_alloc(bam, map->src.pipe_index,
-+						 SPS_MODE_SRC);
-+			if (rc) {
-+				SPS_ERR("Failed to alloc BAM-DMA pipe: %d",
-+					map->src.pipe_index);
-+				goto exit_err;
-+			}
-+		}
-+#endif
-+		map->src.bam_phys = bam->props.phys_addr;
-+		map->src.event_threshold = bam->props.event_threshold;
-+	}
-+	if (map->dest.bam != NULL) {
-+		/* Allocate the pipe */
-+		bam = map->dest.bam;
-+		map->alloc_dest_pipe = sps_bam_pipe_alloc(bam,
-+							 map->dest.pipe_index);
-+		if (map->alloc_dest_pipe == SPS_BAM_PIPE_INVALID)
-+			goto exit_err;
-+
-+		map->dest.pipe_index = map->alloc_dest_pipe;
-+
-+		/* Is this a BAM-DMA pipe? */
-+#ifdef CONFIG_SPS_SUPPORT_BAMDMA
-+		if ((bam->props.options & SPS_BAM_OPT_BAMDMA)) {
-+			int rc;
-+			/* Allocate the BAM-DMA channel */
-+			rc = sps_dma_pipe_alloc(bam, map->dest.pipe_index,
-+					       SPS_MODE_DEST);
-+			if (rc) {
-+				SPS_ERR("Failed to alloc BAM-DMA pipe: %d",
-+					map->dest.pipe_index);
-+				goto exit_err;
-+			}
-+		}
-+#endif
-+		map->dest.bam_phys = bam->props.phys_addr;
-+		map->dest.event_threshold =
-+		bam->props.event_threshold;
-+	}
-+
-+	/* Get default FIFO sizes */
-+	desc_size = 0;
-+	data_size = 0;
-+	if (map->src.bam != NULL) {
-+		bam = map->src.bam;
-+		desc_size = bam->props.desc_size;
-+		data_size = bam->props.data_size;
-+	}
-+	if (map->dest.bam != NULL) {
-+		bam = map->dest.bam;
-+		if (bam->props.desc_size > desc_size)
-+			desc_size = bam->props.desc_size;
-+		if (bam->props.data_size > data_size)
-+			data_size = bam->props.data_size;
-+	}
-+
-+	/* Set FIFO sizes */
-+	if (map->desc.size == SPSRM_CLEAR)
-+		map->desc.size = desc_size;
-+	if (map->src.bam != NULL && map->dest.bam != NULL) {
-+		/* BAM-to-BAM requires data FIFO */
-+		if (map->data.size == SPSRM_CLEAR)
-+			map->data.size = data_size;
-+	} else {
-+		map->data.size = 0;
-+	}
-+	if (map->desc.size > SPSRM_MAX_DESC_FIFO_SIZE) {
-+		SPS_ERR("Invalid desc FIFO size: 0x%x",	map->desc.size);
-+		goto exit_err;
-+	}
-+	if (map->src.bam != NULL && map->dest.bam != NULL &&
-+	    map->data.size > SPSRM_MAX_DATA_FIFO_SIZE) {
-+		SPS_ERR("Invalid data FIFO size: 0x%x",	map->data.size);
-+		goto exit_err;
-+	}
-+
-+	/* Allocate descriptor FIFO if necessary */
-+	if (map->desc.size && map->desc.phys_base == SPS_ADDR_INVALID) {
-+		map->alloc_desc_base = sps_mem_alloc_io(map->desc.size);
-+		if (map->alloc_desc_base == SPS_ADDR_INVALID) {
-+			SPS_ERR("I/O memory allocation failure: 0x%x",
-+				map->desc.size);
-+			goto exit_err;
-+		}
-+		map->desc.phys_base = map->alloc_desc_base;
-+		map->desc.base = spsi_get_mem_ptr(map->desc.phys_base);
-+		if (map->desc.base == NULL) {
-+			SPS_ERR("Cannot get virt addr for I/O buffer: 0x%x",
-+				map->desc.phys_base);
-+			goto exit_err;
-+		}
-+	}
-+
-+	/* Allocate data FIFO if necessary */
-+	if (map->data.size && map->data.phys_base == SPS_ADDR_INVALID) {
-+		map->alloc_data_base = sps_mem_alloc_io(map->data.size);
-+		if (map->alloc_data_base == SPS_ADDR_INVALID) {
-+			SPS_ERR("I/O memory allocation failure: 0x%x",
-+				map->data.size);
-+			goto exit_err;
-+		}
-+		map->data.phys_base = map->alloc_data_base;
-+		map->data.base = spsi_get_mem_ptr(map->data.phys_base);
-+		if (map->data.base == NULL) {
-+			SPS_ERR("Cannot get virt addr for I/O buffer: 0x%x",
-+				map->data.phys_base);
-+			goto exit_err;
-+		}
-+	}
-+
-+	/* Attempt to assign this connection to the client */
-+	if (sps_rm_assign(pipe, map))
-+		goto exit_err;
-+
-+	/* Initialization was successful */
-+	success = true;
-+exit_err:
-+
-+	/* If initialization failed, free resources */
-+	if (!success) {
-+		sps_rm_free_map_rsrc(map);
-+		kfree(map);
-+		return NULL;
-+	}
-+
-+	return map;
-+}
-+
-+/**
-+ * Free connection mapping
-+ *
-+ * This function frees a connection mapping.
-+ *
-+ * @pipe - client context for SPS connection end point
++ * @dev - pointer to BAM DMA device context
 + *
 + * @return 0 on success, negative value on error
 + *
 + */
-+static int sps_rm_free(struct sps_pipe *pipe)
++static int sps_dma_device_enable(struct bamdma_device *dev)
 +{
-+	struct sps_connection *map = (void *)pipe->map;
-+	struct sps_connect *cfg = &pipe->connect;
-+
-+	mutex_lock(&sps_rm->lock);
-+
-+	/* Free this connection */
-+	if (cfg->mode == SPS_MODE_SRC)
-+		map->client_src = NULL;
-+	else
-+		map->client_dest = NULL;
-+
-+	pipe->map = NULL;
-+	pipe->client_state = SPS_STATE_DISCONNECT;
-+	sps_rm_free_map_rsrc(map);
-+
-+	sps_rm_remove_ref(map);
-+
-+	mutex_unlock(&sps_rm->lock);
-+
-+	return 0;
-+}
-+
-+/**
-+ * Allocate an SPS connection end point
-+ *
-+ * This function allocates resources and initializes a BAM connection.
-+ *
-+ * @pipe - client context for SPS connection end point
-+ *
-+ * @return 0 on success, negative value on error
-+ *
-+ */
-+static int sps_rm_alloc(struct sps_pipe *pipe)
-+{
-+	struct sps_connection *map;
-+	int result = SPS_ERROR;
-+
-+	if (pipe->connect.sps_reserved != SPSRM_CLEAR) {
-+		/*
-+		 * Client did not call sps_get_config()	to init
-+		 * struct sps_connect, so only use legacy members.
-+		 */
-+		u32 source = pipe->connect.source;
-+		u32 destination = pipe->connect.destination;
-+		enum sps_mode mode = pipe->connect.mode;
-+		u32 config = pipe->connect.config;
-+		memset(&pipe->connect, SPSRM_CLEAR,
-+			      sizeof(pipe->connect));
-+		pipe->connect.source = source;
-+		pipe->connect.destination = destination;
-+		pipe->connect.mode = mode;
-+		pipe->connect.config = config;
-+	}
-+	if (pipe->connect.config == SPSRM_CLEAR)
-+		pipe->connect.config = SPS_CONFIG_DEFAULT;
++	if (dev->enabled)
++		return 0;
 +
 +	/*
-+	 *  If configuration is not default, then client is specifying a
-+	 * connection mapping.  Find a matching mapping, or fail.
-+	 * If a match is found, the client's Connect struct will be updated
-+	 * with all the mapping's values.
++	 *  If the BAM-DMA device is locally controlled then enable BAM-DMA
++	 *  device
 +	 */
-+	if (pipe->connect.config != SPS_CONFIG_DEFAULT) {
-+		if (sps_map_find(&pipe->connect)) {
-+			SPS_ERR("Failed to find connection mapping");
-+			return SPS_ERROR;
++	if (dev->local)
++		dma_write_reg(dev->virt_addr, DMA_ENBL, 1);
++
++	/* Enable BAM device */
++	if (sps_bam_enable(dev->bam)) {
++		SPS_ERR("Failed to enable BAM DMA's BAM: %x", dev->phys_addr);
++		return SPS_ERROR;
++	}
++
++	dev->enabled = true;
++
++	return 0;
++}
++
++/**
++ * BAM DMA device enable
++ *
++ * This function initializes a BAM DMA device.
++ *
++ * @dev - pointer to BAM DMA device context
++ *
++ * @return 0 on success, negative value on error
++ *
++ */
++static int sps_dma_device_disable(struct bamdma_device *dev)
++{
++	u32 pipe_index;
++
++	if (!dev->enabled)
++		return 0;
++
++	/* Do not disable if channels active */
++	for (pipe_index = 0; pipe_index < dev->num_pipes; pipe_index++) {
++		if (dev->pipes[pipe_index] != PIPE_INACTIVE)
++			break;
++	}
++
++	if (pipe_index < dev->num_pipes) {
++		SPS_ERR("Failed to disable BAM-DMA %x: channels are active",
++			dev->phys_addr);
++		return SPS_ERROR;
++	}
++
++	dev->enabled = false;
++
++	/* Disable BAM device */
++	if (sps_bam_disable(dev->bam)) {
++		SPS_ERR("Failed to disable BAM-DMA %x BAM", dev->phys_addr);
++		return SPS_ERROR;
++	}
++
++	/* Is the BAM-DMA device locally controlled? */
++	if (dev->local)
++		/* Disable BAM-DMA device */
++		dma_write_reg(dev->virt_addr, DMA_ENBL, 0);
++
++	return 0;
++}
++
++/**
++ * Initialize BAM DMA device
++ *
++ */
++int sps_dma_device_init(u32 h)
++{
++	struct bamdma_device *dev;
++	struct sps_bam_props *props;
++	u32 chan;
++	int result = SPS_ERROR;
++
++	mutex_lock(&bam_dma_lock);
++
++	/* Find a free BAM-DMA device slot */
++	dev = NULL;
++	if (bam_dma_dev[0].bam != NULL) {
++		SPS_ERR("BAM-DMA BAM device already initialized.");
++		goto exit_err;
++	} else {
++		dev = &bam_dma_dev[0];
++	}
++
++	/* Record BAM */
++	memset(dev, 0, sizeof(*dev));
++	dev->h = h;
++	dev->bam = sps_h2bam(h);
++
++	/* Map the BAM DMA device into virtual space, if necessary */
++	props = &dev->bam->props;
++	dev->phys_addr = props->periph_phys_addr;
++	if (props->periph_virt_addr != NULL) {
++		dev->virt_addr = props->periph_virt_addr;
++		dev->virtual_mapped = false;
++	} else {
++		if (props->periph_virt_size == 0) {
++			SPS_ERR("Unable to map BAM DMA IO memory: %x %x",
++			 dev->phys_addr, props->periph_virt_size);
++			goto exit_err;
++		}
++
++		dev->virt_addr = ioremap(dev->phys_addr,
++					  props->periph_virt_size);
++		if (dev->virt_addr == NULL) {
++			SPS_ERR("Unable to map BAM DMA IO memory: %x %x",
++				dev->phys_addr, props->periph_virt_size);
++			goto exit_err;
++		}
++		dev->virtual_mapped = true;
++	}
++	dev->hwio = (void *) dev->virt_addr;
++
++	/* Is the BAM-DMA device locally controlled? */
++	if ((props->manage & SPS_BAM_MGR_DEVICE_REMOTE) == 0) {
++		SPS_DBG("BAM-DMA is controlled locally: %x",
++			dev->phys_addr);
++		dev->local = true;
++	} else {
++		SPS_DBG("BAM-DMA is controlled remotely: %x",
++			dev->phys_addr);
++		dev->local = false;
++	}
++
++	/*
++	 * Enable the BAM DMA and determine the number of pipes/channels.
++	 * Leave the BAM-DMA enabled, since it is always a shared device.
++	 */
++	if (sps_dma_device_enable(dev))
++		goto exit_err;
++
++	dev->num_pipes = dev->bam->props.num_pipes;
++
++	/* Disable all channels */
++	if (dev->local)
++		for (chan = 0; chan < (dev->num_pipes / 2); chan++) {
++			dma_write_reg_field(dev->virt_addr,
++					    DMA_CHNL_CONFIG(chan),
++					    DMA_CHNL_ENABLE, 0);
++		}
++
++	result = 0;
++exit_err:
++	if (result) {
++		if (dev != NULL) {
++			if (dev->virtual_mapped)
++				iounmap(dev->virt_addr);
++
++			dev->bam = NULL;
 +		}
 +	}
 +
-+	mutex_lock(&sps_rm->lock);
-+	/* Check client state */
-+	if (IS_SPS_STATE_OK(pipe)) {
-+		SPS_ERR("Client connection already allocated");
++	mutex_unlock(&bam_dma_lock);
++
++	return result;
++}
++
++/**
++ * De-initialize BAM DMA device
++ *
++ */
++int sps_dma_device_de_init(u32 h)
++{
++	struct bamdma_device *dev;
++	u32 pipe_index;
++	u32 chan;
++	int result = 0;
++
++	mutex_lock(&bam_dma_lock);
++
++	dev = sps_dma_find_device(h);
++	if (dev == NULL) {
++		SPS_ERR("BAM-DMA: not registered: %x", h);
++		result = SPS_ERROR;
 +		goto exit_err;
 +	}
 +
-+	/* Are the connection resources already allocated? */
-+	map = find_unconnected(pipe);
-+	if (map != NULL) {
-+		/* Attempt to assign this connection to the client */
-+		if (sps_rm_assign(pipe, map))
-+			/* Assignment failed, so must allocate new */
-+			map = NULL;
-+	}
-+
-+	/* Allocate a new connection if necessary */
-+	if (map == NULL) {
-+		map = sps_rm_create(pipe);
-+		if (map == NULL) {
-+			SPS_ERR("Failed to allocate connection");
-+			goto exit_err;
++	/* Check for channel leaks */
++	for (chan = 0; chan < dev->num_pipes / 2; chan++) {
++		if (dev->chans[chan].state != DMA_CHAN_STATE_FREE) {
++			SPS_ERR("BAM-DMA: channel not free: %d", chan);
++			result = SPS_ERROR;
++			dev->chans[chan].state = DMA_CHAN_STATE_FREE;
 +		}
-+		list_add_tail(&map->list, &sps_rm->connections_q);
++	}
++	for (pipe_index = 0; pipe_index < dev->num_pipes; pipe_index++) {
++		if (dev->pipes[pipe_index] != PIPE_INACTIVE) {
++			SPS_ERR("BAM-DMA: pipe not inactive: %d", pipe_index);
++			result = SPS_ERROR;
++			dev->pipes[pipe_index] = PIPE_INACTIVE;
++		}
 +	}
 +
-+	/* Add the connection to the allocated queue */
-+	map->refs++;
++	/* Disable BAM and BAM-DMA */
++	if (sps_dma_device_disable(dev))
++		result = SPS_ERROR;
 +
-+	/* Initialization was successful */
++	dev->h = BAM_HANDLE_INVALID;
++	dev->bam = NULL;
++	if (dev->virtual_mapped)
++		iounmap(dev->virt_addr);
++
++exit_err:
++	mutex_unlock(&bam_dma_lock);
++
++	return result;
++}
++
++/**
++ * Initialize BAM DMA module
++ *
++ */
++int sps_dma_init(const struct sps_bam_props *bam_props)
++{
++	struct sps_bam_props props;
++	const struct sps_bam_props *bam_reg;
++	u32 h;
++
++	/* Init local data */
++	memset(&bam_dma_dev, 0, sizeof(bam_dma_dev));
++	num_bams = 0;
++	memset(bam_handles, 0, sizeof(bam_handles));
++
++	/* Create a mutex to control access to the BAM-DMA devices */
++	mutex_init(&bam_dma_lock);
++
++	/* Are there any BAM DMA devices? */
++	if (bam_props == NULL)
++		return 0;
++
++	/*
++	 * Registers all BAMs in the BSP properties, but only uses the first
++	 * BAM-DMA device for allocations.
++	 */
++	if (bam_props->phys_addr) {
++		/* Force multi-EE option for all BAM-DMAs */
++		bam_reg = bam_props;
++		if ((bam_props->options & SPS_BAM_OPT_BAMDMA) &&
++		    (bam_props->manage & SPS_BAM_MGR_MULTI_EE) == 0) {
++			SPS_DBG("Setting multi-EE options for BAM-DMA: %x",
++				bam_props->phys_addr);
++			props = *bam_props;
++			props.manage |= SPS_BAM_MGR_MULTI_EE;
++			bam_reg = &props;
++		}
++
++		/* Register the BAM */
++		if (sps_register_bam_device(bam_reg, &h)) {
++			SPS_ERR("Failed to register BAM-DMA BAM device: "
++				"phys 0x%0x", bam_props->phys_addr);
++			return SPS_ERROR;
++		}
++
++		/* Record the BAM so that it may be deregistered later */
++		if (num_bams < MAX_BAM_DMA_BAMS) {
++			bam_handles[num_bams] = h;
++			num_bams++;
++		} else {
++			SPS_ERR("BAM-DMA: BAM limit exceeded: %d", num_bams);
++			return SPS_ERROR;
++		}
++	} else {
++		SPS_ERR("BAM-DMA phys_addr is zero.");
++		return SPS_ERROR;
++	}
++
++
++	return 0;
++}
++
++/**
++ * De-initialize BAM DMA module
++ *
++ */
++void sps_dma_de_init(void)
++{
++	int n;
++
++	/* De-initialize the BAM devices */
++	for (n = 0; n < num_bams; n++)
++		sps_deregister_bam_device(bam_handles[n]);
++
++	/* Clear local data */
++	memset(&bam_dma_dev, 0, sizeof(bam_dma_dev));
++	num_bams = 0;
++	memset(bam_handles, 0, sizeof(bam_handles));
++}
++
++/**
++ * Allocate a BAM DMA channel
++ *
++ */
++int sps_alloc_dma_chan(const struct sps_alloc_dma_chan *alloc,
++		       struct sps_dma_chan *chan_info)
++{
++	struct bamdma_device *dev;
++	struct bamdma_chan *chan;
++	u32 pipe_index;
++	enum bam_dma_thresh_dma thresh = (enum bam_dma_thresh_dma) 0;
++	enum bam_dma_weight_dma weight = (enum bam_dma_weight_dma) 0;
++	int result = SPS_ERROR;
++
++	if (alloc == NULL || chan_info == NULL) {
++		SPS_ERR("sps_alloc_dma_chan. invalid parameters");
++		return SPS_ERROR;
++	}
++
++	/* Translate threshold and priority to hwio values */
++	if (alloc->threshold != SPS_DMA_THRESHOLD_DEFAULT) {
++		if (alloc->threshold >= 512)
++			thresh = BAM_DMA_THRESH_512;
++		else if (alloc->threshold >= 256)
++			thresh = BAM_DMA_THRESH_256;
++		else if (alloc->threshold >= 128)
++			thresh = BAM_DMA_THRESH_128;
++		else
++			thresh = BAM_DMA_THRESH_64;
++	}
++
++	weight = alloc->priority;
++
++	if (alloc->priority > BAM_DMA_WEIGHT_HIGH) {
++		SPS_ERR("BAM-DMA: invalid priority: %x", alloc->priority);
++		return SPS_ERROR;
++	}
++
++	mutex_lock(&bam_dma_lock);
++
++	dev = sps_dma_find_device(alloc->dev);
++	if (dev == NULL) {
++		SPS_ERR("BAM-DMA: invalid BAM handle: %x", alloc->dev);
++		goto exit_err;
++	}
++
++	/* Search for a free set of pipes */
++	for (pipe_index = 0, chan = dev->chans;
++	      pipe_index < dev->num_pipes; pipe_index += 2, chan++) {
++		if (chan->state == DMA_CHAN_STATE_FREE) {
++			/* Just check pipes for safety */
++			if (dev->pipes[pipe_index] != PIPE_INACTIVE ||
++			    dev->pipes[pipe_index + 1] != PIPE_INACTIVE) {
++				SPS_ERR("BAM-DMA: channel %d state error:%d %d",
++					pipe_index / 2, dev->pipes[pipe_index],
++				 dev->pipes[pipe_index + 1]);
++				goto exit_err;
++			}
++			break; /* Found free pipe */
++		}
++	}
++
++	if (pipe_index >= dev->num_pipes) {
++		SPS_ERR("BAM-DMA: no free channel. num_pipes = %d",
++			dev->num_pipes);
++		goto exit_err;
++	}
++
++	chan->state = DMA_CHAN_STATE_ALLOC_EXT;
++
++	/* Store config values for use when pipes are activated */
++	chan = &dev->chans[pipe_index / 2];
++	chan->threshold = alloc->threshold;
++	chan->thresh = thresh;
++	chan->priority = alloc->priority;
++	chan->weight = weight;
++
++	SPS_DBG("sps_alloc_dma_chan. pipe %d.\n", pipe_index);
++
++	/* Report allocated pipes to client */
++	chan_info->dev = dev->h;
++	/* Dest/input/write pipex */
++	chan_info->dest_pipe_index = pipe_index;
++	/* Source/output/read pipe */
++	chan_info->src_pipe_index = pipe_index + 1;
++
 +	result = 0;
 +exit_err:
-+	mutex_unlock(&sps_rm->lock);
++	mutex_unlock(&bam_dma_lock);
 +
-+	if (result)
++	return result;
++}
++EXPORT_SYMBOL(sps_alloc_dma_chan);
++
++/**
++ * Free a BAM DMA channel
++ *
++ */
++int sps_free_dma_chan(struct sps_dma_chan *chan)
++{
++	struct bamdma_device *dev;
++	u32 pipe_index;
++	int result = 0;
++
++	if (chan == NULL) {
++		SPS_ERR("sps_free_dma_chan. chan is NULL");
 +		return SPS_ERROR;
++	}
++
++	mutex_lock(&bam_dma_lock);
++
++	dev = sps_dma_find_device(chan->dev);
++	if (dev == NULL) {
++		SPS_ERR("BAM-DMA: invalid BAM handle: %x", chan->dev);
++		result = SPS_ERROR;
++		goto exit_err;
++	}
++
++	/* Verify the pipe indices */
++	pipe_index = chan->dest_pipe_index;
++	if (pipe_index >= dev->num_pipes || ((pipe_index & 1)) ||
++	    (pipe_index + 1) != chan->src_pipe_index) {
++		SPS_ERR("sps_free_dma_chan. Invalid pipe indices");
++		SPS_DBG("num_pipes=%d.dest=%d.src=%d.",
++			dev->num_pipes,
++			chan->dest_pipe_index,
++			chan->src_pipe_index);
++		result = SPS_ERROR;
++		goto exit_err;
++	}
++
++	/* Are both pipes inactive? */
++	if (dev->chans[pipe_index / 2].state != DMA_CHAN_STATE_ALLOC_EXT ||
++	    dev->pipes[pipe_index] != PIPE_INACTIVE ||
++	    dev->pipes[pipe_index + 1] != PIPE_INACTIVE) {
++		SPS_ERR("BAM-DMA: attempt to free active chan %d: %d %d",
++			pipe_index / 2, dev->pipes[pipe_index],
++			dev->pipes[pipe_index + 1]);
++		result = SPS_ERROR;
++		goto exit_err;
++	}
++
++	/* Free the channel */
++	dev->chans[pipe_index / 2].state = DMA_CHAN_STATE_FREE;
++
++exit_err:
++	mutex_unlock(&bam_dma_lock);
++
++	return result;
++}
++EXPORT_SYMBOL(sps_free_dma_chan);
++
++/**
++ * Activate a BAM DMA pipe
++ *
++ * This function activates a BAM DMA pipe.
++ *
++ * @dev - pointer to BAM-DMA device descriptor
++ *
++ * @pipe_index - pipe index
++ *
++ * @return 0 on success, negative value on error
++ *
++ */
++static u32 sps_dma_check_pipes(struct bamdma_device *dev, u32 pipe_index)
++{
++	u32 pipe_in;
++	u32 pipe_out;
++	int enabled_in;
++	int enabled_out;
++	u32 check;
++
++	pipe_in = pipe_index & ~1;
++	pipe_out = pipe_in + 1;
++	enabled_in = bam_pipe_is_enabled(dev->bam->base, pipe_in);
++	enabled_out = bam_pipe_is_enabled(dev->bam->base, pipe_out);
++
++	if (!enabled_in && !enabled_out)
++		check = DMA_PIPES_BOTH_DISABLED;
++	else if (enabled_in && enabled_out)
++		check = DMA_PIPES_BOTH_ENABLED;
++	else
++		check = DMA_PIPES_STATE_DIFF;
++
++	return check;
++}
++
++/**
++ * Allocate a BAM DMA pipe
++ *
++ */
++int sps_dma_pipe_alloc(void *bam_arg, u32 pipe_index, enum sps_mode dir)
++{
++	struct sps_bam *bam = bam_arg;
++	struct bamdma_device *dev;
++	struct bamdma_chan *chan;
++	u32 channel;
++	int result = SPS_ERROR;
++
++	if (bam == NULL) {
++		SPS_ERR("BAM context is NULL");
++		return SPS_ERROR;
++	}
++
++	/* Check pipe direction */
++	if ((DMA_PIPE_IS_DEST(pipe_index) && dir != SPS_MODE_DEST) ||
++	    (DMA_PIPE_IS_SRC(pipe_index) && dir != SPS_MODE_SRC)) {
++		SPS_ERR("BAM-DMA: wrong direction for BAM %x pipe %d",
++			bam->props.phys_addr, pipe_index);
++		return SPS_ERROR;
++	}
++
++	mutex_lock(&bam_dma_lock);
++
++	dev = sps_dma_find_device((u32) bam);
++	if (dev == NULL) {
++		SPS_ERR("BAM-DMA: invalid BAM: %x",
++			bam->props.phys_addr);
++		goto exit_err;
++	}
++	if (pipe_index >= dev->num_pipes) {
++		SPS_ERR("BAM-DMA: BAM %x invalid pipe: %d",
++			bam->props.phys_addr, pipe_index);
++		goto exit_err;
++	}
++	if (dev->pipes[pipe_index] != PIPE_INACTIVE) {
++		SPS_ERR("BAM-DMA: BAM %x pipe %d already active",
++			bam->props.phys_addr, pipe_index);
++		goto exit_err;
++	}
++
++	/* Mark pipe active */
++	dev->pipes[pipe_index] = PIPE_ACTIVE;
++
++	/* If channel is not allocated, make an internal allocation */
++	channel = pipe_index / 2;
++	chan = &dev->chans[channel];
++	if (chan->state != DMA_CHAN_STATE_ALLOC_EXT &&
++	    chan->state != DMA_CHAN_STATE_ALLOC_INT) {
++		chan->state = DMA_CHAN_STATE_ALLOC_INT;
++	}
++
++	result = 0;
++exit_err:
++	mutex_unlock(&bam_dma_lock);
++
++	return result;
++}
++
++/**
++ * Enable a BAM DMA pipe
++ *
++ */
++int sps_dma_pipe_enable(void *bam_arg, u32 pipe_index)
++{
++	struct sps_bam *bam = bam_arg;
++	struct bamdma_device *dev;
++	struct bamdma_chan *chan;
++	u32 channel;
++	int result = SPS_ERROR;
++
++	SPS_DBG("sps_dma_pipe_enable.pipe %d", pipe_index);
++
++	mutex_lock(&bam_dma_lock);
++
++	dev = sps_dma_find_device((u32) bam);
++	if (dev == NULL) {
++		SPS_ERR("BAM-DMA: invalid BAM");
++		goto exit_err;
++	}
++	if (pipe_index >= dev->num_pipes) {
++		SPS_ERR("BAM-DMA: BAM %x invalid pipe: %d",
++			bam->props.phys_addr, pipe_index);
++		goto exit_err;
++	}
++	if (dev->pipes[pipe_index] != PIPE_ACTIVE) {
++		SPS_ERR("BAM-DMA: BAM %x pipe %d not active",
++			bam->props.phys_addr, pipe_index);
++		goto exit_err;
++	}
++
++      /*
++       * The channel must be enabled when the dest/input/write pipe
++       * is enabled
++       */
++	if (DMA_PIPE_IS_DEST(pipe_index)) {
++		/* Configure and enable the channel */
++		channel = pipe_index / 2;
++		chan = &dev->chans[channel];
++
++		if (chan->threshold != SPS_DMA_THRESHOLD_DEFAULT)
++			dma_write_reg_field(dev->virt_addr,
++					    DMA_CHNL_CONFIG(channel),
++					    DMA_CHNL_ACT_THRESH,
++					    chan->thresh);
++
++		if (chan->priority != SPS_DMA_PRI_DEFAULT)
++			dma_write_reg_field(dev->virt_addr,
++					    DMA_CHNL_CONFIG(channel),
++					    DMA_CHNL_WEIGHT,
++					    chan->weight);
++
++		dma_write_reg_field(dev->virt_addr,
++				    DMA_CHNL_CONFIG(channel),
++				    DMA_CHNL_ENABLE, 1);
++	}
++
++	result = 0;
++exit_err:
++	mutex_unlock(&bam_dma_lock);
++
++	return result;
++}
++
++/**
++ * Deactivate a BAM DMA pipe
++ *
++ * This function deactivates a BAM DMA pipe.
++ *
++ * @dev - pointer to BAM-DMA device descriptor
++ *
++ * @bam - pointer to BAM device descriptor
++ *
++ * @pipe_index - pipe index
++ *
++ * @return 0 on success, negative value on error
++ *
++ */
++static int sps_dma_deactivate_pipe_atomic(struct bamdma_device *dev,
++					  struct sps_bam *bam,
++					  u32 pipe_index)
++{
++	u32 channel;
++
++	if (dev->bam != bam)
++		return SPS_ERROR;
++	if (pipe_index >= dev->num_pipes)
++		return SPS_ERROR;
++	if (dev->pipes[pipe_index] != PIPE_ACTIVE)
++		return SPS_ERROR;	/* Pipe is not active */
++
++	SPS_DBG("BAM-DMA: deactivate pipe %d", pipe_index);
++
++	/* Mark pipe inactive */
++	dev->pipes[pipe_index] = PIPE_INACTIVE;
++
++	/*
++	 * Channel must be reset when either pipe is disabled, so just always
++	 * reset regardless of other pipe's state
++	 */
++	channel = pipe_index / 2;
++	dma_write_reg_field(dev->virt_addr, DMA_CHNL_CONFIG(channel),
++			    DMA_CHNL_ENABLE, 0);
++
++	/* If the peer pipe is also inactive, reset the channel */
++	if (sps_dma_check_pipes(dev, pipe_index) == DMA_PIPES_BOTH_DISABLED) {
++		/* Free channel if allocated internally */
++		if (dev->chans[channel].state == DMA_CHAN_STATE_ALLOC_INT)
++			dev->chans[channel].state = DMA_CHAN_STATE_FREE;
++	}
 +
 +	return 0;
 +}
 +
 +/**
-+ * Disconnect an SPS connection end point
-+ *
-+ * This function frees resources and de-initializes a BAM connection.
-+ *
-+ * @pipe - client context for SPS connection end point
-+ *
-+ * @return 0 on success, negative value on error
++ * Free a BAM DMA pipe
 + *
 + */
-+static int sps_rm_disconnect(struct sps_pipe *pipe)
++int sps_dma_pipe_free(void *bam_arg, u32 pipe_index)
 +{
-+	sps_rm_free(pipe);
-+	return 0;
-+}
-+
-+/**
-+ * Process connection state change
-+ *
-+ * This function processes a connection state change.
-+ *
-+ * @pipe - pointer to client context
-+ *
-+ * @state - new state for connection
-+ *
-+ * @return 0 on success, negative value on error
-+ *
-+ */
-+int sps_rm_state_change(struct sps_pipe *pipe, u32 state)
-+{
-+	int auto_enable = false;
++	struct bamdma_device *dev;
++	struct sps_bam *bam = bam_arg;
 +	int result;
 +
-+	/* Allocate the pipe */
-+	if (pipe->client_state == SPS_STATE_DISCONNECT &&
-+	    state == SPS_STATE_ALLOCATE) {
-+		if (sps_rm_alloc(pipe))
-+			return SPS_ERROR;
++	mutex_lock(&bam_dma_lock);
++
++	dev = sps_dma_find_device((u32) bam);
++	if (dev == NULL) {
++		SPS_ERR("BAM-DMA: invalid BAM");
++		result = SPS_ERROR;
++		goto exit_err;
 +	}
 +
-+	/* Configure the pipe */
-+	if (pipe->client_state == SPS_STATE_ALLOCATE &&
-+	    state == SPS_STATE_CONNECT) {
-+		/* Connect the BAM pipe */
-+		struct sps_bam_connect_param params;
-+		memset(&params, 0, sizeof(params));
-+		params.mode = pipe->connect.mode;
-+		if (pipe->connect.options != SPSRM_CLEAR) {
-+			params.options = pipe->connect.options;
-+			params.irq_gen_addr = pipe->connect.irq_gen_addr;
-+			params.irq_gen_data = pipe->connect.irq_gen_data;
-+		}
-+		result = sps_bam_pipe_connect(pipe, &params);
-+		if (result) {
-+			SPS_ERR("Failed to connect BAM 0x%x pipe %d",
-+				(u32) pipe->bam, pipe->pipe_index);
-+			return SPS_ERROR;
-+		}
-+		pipe->client_state = SPS_STATE_CONNECT;
++	result = sps_dma_deactivate_pipe_atomic(dev, bam, pipe_index);
 +
-+		/* Set auto-enable for system-mode connections */
-+		if (pipe->connect.source == SPS_DEV_HANDLE_MEM ||
-+		    pipe->connect.destination == SPS_DEV_HANDLE_MEM) {
-+			if (pipe->map->desc.size != 0 &&
-+			    pipe->map->desc.phys_base != SPS_ADDR_INVALID)
-+				auto_enable = true;
-+		}
-+	}
++exit_err:
++	mutex_unlock(&bam_dma_lock);
 +
-+	/* Enable the pipe data flow */
-+	if (pipe->client_state == SPS_STATE_CONNECT &&
-+	    !(state == SPS_STATE_DISABLE
-+	      || state == SPS_STATE_DISCONNECT)
-+	    && (state == SPS_STATE_ENABLE || auto_enable
-+		|| (pipe->connect.options & SPS_O_AUTO_ENABLE))) {
-+		result = sps_bam_pipe_enable(pipe->bam, pipe->pipe_index);
-+		if (result) {
-+			SPS_ERR("Failed to set BAM 0x%x pipe %d flow on",
-+				pipe->bam->props.phys_addr,
-+				pipe->pipe_index);
-+			return SPS_ERROR;
-+		}
-+
-+		/* Is this a BAM-DMA pipe? */
-+#ifdef CONFIG_SPS_SUPPORT_BAMDMA
-+		if ((pipe->bam->props.options & SPS_BAM_OPT_BAMDMA)) {
-+			/* Activate the BAM-DMA channel */
-+			result = sps_dma_pipe_enable(pipe->bam,
-+						     pipe->pipe_index);
-+			if (result) {
-+				SPS_ERR("Failed to activate BAM-DMA pipe: %d",
-+					pipe->pipe_index);
-+				return SPS_ERROR;
-+			}
-+		}
-+#endif
-+		pipe->client_state = SPS_STATE_ENABLE;
-+	}
-+
-+	/* Disable the pipe data flow */
-+	if (pipe->client_state == SPS_STATE_ENABLE &&
-+	    (state == SPS_STATE_DISABLE	|| state == SPS_STATE_DISCONNECT)) {
-+		result = sps_bam_pipe_disable(pipe->bam, pipe->pipe_index);
-+		if (result) {
-+			SPS_ERR("Failed to set BAM 0x%x pipe %d flow off",
-+				pipe->bam->props.phys_addr,
-+				pipe->pipe_index);
-+			return SPS_ERROR;
-+		}
-+		pipe->client_state = SPS_STATE_CONNECT;
-+	}
-+
-+	/* Disconnect the BAM pipe */
-+	if (pipe->client_state == SPS_STATE_CONNECT &&
-+	    state == SPS_STATE_DISCONNECT) {
-+		struct sps_connection *map;
-+		u32 pipe_index;
-+
-+		if (pipe->connect.mode == SPS_MODE_SRC)
-+			pipe_index = pipe->map->src.pipe_index;
-+		else
-+			pipe_index = pipe->map->dest.pipe_index;
-+
-+
-+		result = sps_bam_pipe_disconnect(pipe->bam, pipe_index);
-+		if (result) {
-+			SPS_ERR("Failed to disconnect BAM 0x%x pipe %d",
-+				pipe->bam->props.phys_addr,
-+				pipe->pipe_index);
-+			return SPS_ERROR;
-+		}
-+
-+		/* Clear map state */
-+		map = (void *)pipe->map;
-+		if (pipe->connect.mode == SPS_MODE_SRC)
-+			map->client_src = NULL;
-+		else if (pipe->connect.mode == SPS_MODE_DEST)
-+			map->client_dest = NULL;
-+
-+		sps_rm_disconnect(pipe);
-+
-+		/* Clear the client state */
-+		pipe->map = NULL;
-+		pipe->bam = NULL;
-+		pipe->client_state = SPS_STATE_DISCONNECT;
-+	}
-+
-+	return 0;
++	return result;
 +}
++
++/**
++ * Get the BAM handle for BAM-DMA.
++ *
++ * The BAM handle should be use as source/destination in the sps_connect().
++ *
++ * @return bam handle on success, zero on error
++ */
++u32 sps_dma_get_bam_handle(void)
++{
++	return (u32) bam_dma_dev[0].bam;
++}
++EXPORT_SYMBOL(sps_dma_get_bam_handle);
++
++/**
++ * Free the BAM handle for BAM-DMA.
++ *
++ */
++void sps_dma_free_bam_handle(u32 h)
++{
++}
++EXPORT_SYMBOL(sps_dma_free_bam_handle);
++
++#endif /* CONFIG_SPS_SUPPORT_BAMDMA */
 -- 
 1.7.3.3
 
