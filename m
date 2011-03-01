@@ -1,226 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab1CAEpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 23:45:13 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40038 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab1CAEpL (ORCPT
+	id S1754413Ab1CAEqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 23:46:01 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55278 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab1CAEqA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 23:45:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=daTKlNYdWhV/2YdD/JUcPp16U/dXYEBW8H7eEvSjjFDpFgJ4kngPmuVfuk25Ma0Bgc
-         NqwzAzDBQIMyzQPHPp41Eb/6fKkHZvOr5+xLeHtvOS5DeYdV3FgBryeUvQBZDiTF+gHU
-         Om8RlZFm3CmA82X+IKjOV9K7/8bk+WGdb59hc=
-Date: Tue, 1 Mar 2011 13:44:55 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Chad Talbott <ctalbott@google.com>,
-        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v5 9/9] memcg: check memcg dirty limits in page
- writeback
-Message-ID: <20110301044455.GB2107@barrios-desktop>
-References: <1298669760-26344-1-git-send-email-gthelen@google.com>
- <1298669760-26344-10-git-send-email-gthelen@google.com>
+	Mon, 28 Feb 2011 23:46:00 -0500
+From: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 1 Mar 2011 10:15:27 +0530
+Subject: RE: [PATCH v6 1/1] PRUSS UIO driver support
+Thread-Topic: [PATCH v6 1/1] PRUSS UIO driver support
+Thread-Index: AcvXjlUD82p26xnYSRyGgeDQRmX72gAPG1oQ
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BF3601C@dbde02.ent.ti.com>
+References: <1298926895-5294-1-git-send-email-pratheesh@ti.com>
+ <1298926895-5294-2-git-send-email-pratheesh@ti.com>
+ <20110228212638.GB16806@local>
+In-Reply-To: <20110228212638.GB16806@local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298669760-26344-10-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 25, 2011 at 01:36:00PM -0800, Greg Thelen wrote:
-> If the current process is in a non-root memcg, then
-> balance_dirty_pages() will consider the memcg dirty limits as well as
-> the system-wide limits.  This allows different cgroups to have distinct
-> dirty limits which trigger direct and background writeback at different
-> levels.
+Hi,
+
+> -----Original Message-----
+> From: Hans J. Koch [mailto:hjk@hansjkoch.de]
+> Sent: Tuesday, March 01, 2011 2:57 AM
+> To: TK, Pratheesh Gangadhar
+> Cc: linux-kernel@vger.kernel.org; hjk@hansjkoch.de; gregkh@suse.de;
+> tglx@linutronix.de; sshtylyov@mvista.com; arnd@arndb.de; Chatterjee, Amit;
+> davinci-linux-open-source@linux.davincidsp.com; linux-arm-
+> kernel@lists.infradead.org
+> Subject: Re: [PATCH v6 1/1] PRUSS UIO driver support
 > 
-> If called with a mem_cgroup, then throttle_vm_writeout() should query
-> the given cgroup for its dirty memory usage limits.
+> On Tue, Mar 01, 2011 at 02:31:35AM +0530, Pratheesh Gangadhar wrote:
+> > +
+> > +		/* Register PRUSS IRQ lines */
+> > +		p->irq = IRQ_DA8XX_EVTOUT0 + cnt;
+> > +		p->handler = pruss_handler;
+> > +
+> > +		ret = uio_register_device(&dev->dev, p);
+> > +
+> > +		if (ret < 0)
+> > +			goto out_free;
+> > +	}
+> > +
+> > +	spin_lock_init(&lock);
 > 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
-  
-<snip>
+> That's too late. uio_register_device() enables the irq, and your spin_lock
+> is not ready at that time.
 
->  /*
-> @@ -477,12 +502,14 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
->   * data.  It looks at the number of dirty pages in the machine and will force
->   * the caller to perform writeback if the system is over `vm_dirty_ratio'.
->   * If we're over `background_thresh' then the writeback threads are woken to
-> - * perform some writeout.
-> + * perform some writeout.  The current task may have per-memcg dirty
-> + * limits, which are also checked.
->   */
->  static void balance_dirty_pages(struct address_space *mapping,
->  				unsigned long write_chunk)
->  {
->  	struct dirty_info sys_info;
-> +	struct dirty_info memcg_info;
->  	long bdi_nr_reclaimable;
->  	long bdi_nr_writeback;
->  	unsigned long bdi_thresh;
-> @@ -500,18 +527,27 @@ static void balance_dirty_pages(struct address_space *mapping,
->  		};
->  
->  		global_dirty_info(&sys_info);
-> +		if (!memcg_dirty_info(NULL, &memcg_info))
-> +			memcg_info = sys_info;
+This is ok in this context as "modprobe uio_pruss" is pre-requisite for
+running PRUSS firmware and without firmware running PRUSS won't
+generate interrupts. Actually PRUSS INTC is not setup till we start
+user application.
 
+Thanks,
+Pratheesh
 
-Sigh.
-
-I don't like dobule check in case of no-memcg configuration or root memcgroup.
-"Dobule check" means 1) sys_info check and 2) memcg_info check but it's same so
-second check is redundant. 
-In addition, we always need same logic between global and memcg.
-It adds binary bloating.
-
->  
->  		/*
->  		 * Throttle it only when the background writeback cannot
->  		 * catch-up. This avoids (excessively) small writeouts
->  		 * when the bdi limits are ramping up.
->  		 */
-> -		if (dirty_info_reclaimable(&sys_info) + sys_info.nr_writeback <=
-> +		if ((dirty_info_reclaimable(&sys_info) +
-> +		     sys_info.nr_writeback <=
->  				(sys_info.background_thresh +
-> -				 sys_info.dirty_thresh) / 2)
-> +				 sys_info.dirty_thresh) / 2) &&
-> +		    (dirty_info_reclaimable(&memcg_info) +
-> +		     memcg_info.nr_writeback <=
-> +				(memcg_info.background_thresh +
-> +				 memcg_info.dirty_thresh) / 2))
->  			break;
->  
-> -		bdi_thresh = bdi_dirty_limit(bdi, sys_info.dirty_thresh);
-> +		bdi_thresh = bdi_dirty_limit(bdi,
-> +				min(sys_info.dirty_thresh,
-> +				    memcg_info.dirty_thresh));
->  		bdi_thresh = task_dirty_limit(current, bdi_thresh);
->  
->  		/*
-> @@ -541,7 +577,9 @@ static void balance_dirty_pages(struct address_space *mapping,
->  		dirty_exceeded =
->  			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
->  			|| (dirty_info_reclaimable(&sys_info) +
-> -			     sys_info.nr_writeback > sys_info.dirty_thresh);
-> +			    sys_info.nr_writeback > sys_info.dirty_thresh)
-> +			|| (dirty_info_reclaimable(&memcg_info) +
-> +			    memcg_info.nr_writeback > memcg_info.dirty_thresh);
->  
->  		if (!dirty_exceeded)
->  			break;
-> @@ -559,7 +597,9 @@ static void balance_dirty_pages(struct address_space *mapping,
->  		 * up.
->  		 */
->  		trace_wbc_balance_dirty_start(&wbc, bdi);
-> -		if (bdi_nr_reclaimable > bdi_thresh) {
-> +		if ((bdi_nr_reclaimable > bdi_thresh) ||
-> +		    (dirty_info_reclaimable(&memcg_info) >
-> +		     memcg_info.dirty_thresh)) {
-
-Why does memcg need this check?
-I guess bdi_thresh is the f(x), x = dirty_thresh and dirty_thresh is already memcg's one.
-So isn't it enough?
-I don't know the logic well but as I look at the comment, at least you change the behavior.
-Please write down why you need it and if you need it, please change comment, too.
-
-"
- * Only move pages to writeback if this bdi is over its
- * threshold otherwise wait until the disk writes catch
- * up.
-"
-
->  			writeback_inodes_wb(&bdi->wb, &wbc);
->  			pages_written += write_chunk - wbc.nr_to_write;
->  			trace_wbc_balance_dirty_written(&wbc, bdi);
-> @@ -594,8 +634,10 @@ static void balance_dirty_pages(struct address_space *mapping,
->  	 * background_thresh, to keep the amount of dirty memory low.
->  	 */
->  	if ((laptop_mode && pages_written) ||
-> -	    (!laptop_mode && (dirty_info_reclaimable(&sys_info) >
-> -			      sys_info.background_thresh)))
-> +	    (!laptop_mode && ((dirty_info_reclaimable(&sys_info) >
-> +			       sys_info.background_thresh) ||
-> +			      (dirty_info_reclaimable(&memcg_info) >
-> +			       memcg_info.background_thresh))))
->  		bdi_start_background_writeback(bdi);
->  }
->  
-> @@ -653,12 +695,20 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
->  }
->  EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
->  
-> -void throttle_vm_writeout(gfp_t gfp_mask)
-> +/*
-> + * Throttle the current task if it is near dirty memory usage limits.
-> + * If @mem_cgroup is NULL or the root_cgroup, then use global dirty memory
-> + * information; otherwise use the per-memcg dirty limits.
-> + */
-> +void throttle_vm_writeout(gfp_t gfp_mask, struct mem_cgroup *mem_cgroup)
->  {
->  	struct dirty_info sys_info;
-> +	struct dirty_info memcg_info;
->  
->          for ( ; ; ) {
->  		global_dirty_info(&sys_info);
-> +		if (!memcg_dirty_info(mem_cgroup, &memcg_info))
-> +			memcg_info = sys_info;
->  
->                  /*
->                   * Boost the allowable dirty threshold a bit for page
-> @@ -666,9 +716,13 @@ void throttle_vm_writeout(gfp_t gfp_mask)
->                   */
->  		sys_info.dirty_thresh +=
->  			sys_info.dirty_thresh / 10;      /* wheeee... */
-> +		memcg_info.dirty_thresh +=
-> +			memcg_info.dirty_thresh / 10;    /* wheeee... */
->  
-> -		if (sys_info.nr_unstable_nfs +
-> -		    sys_info.nr_writeback <= sys_info.dirty_thresh)
-> +		if ((sys_info.nr_unstable_nfs +
-> +		     sys_info.nr_writeback <= sys_info.dirty_thresh) &&
-> +		    (memcg_info.nr_unstable_nfs +
-> +		     memcg_info.nr_writeback <= memcg_info.dirty_thresh))
->  			break;
->                  congestion_wait(BLK_RW_ASYNC, HZ/10);
->  
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index ba11e28..f723242 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1927,7 +1927,7 @@ restart:
->  					sc->nr_scanned - nr_scanned, sc))
->  		goto restart;
->  
-> -	throttle_vm_writeout(sc->gfp_mask);
-> +	throttle_vm_writeout(sc->gfp_mask, sc->mem_cgroup);
->  }
->  
->  /*
-> -- 
-> 1.7.3.1
-> 
-
--- 
-Kind regards,
-Minchan Kim
