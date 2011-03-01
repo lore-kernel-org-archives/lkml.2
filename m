@@ -1,173 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab1CAVWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 16:22:19 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:18408 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab1CAVWS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 16:22:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:from:date:to:reply-to:cc:subject;
-        b=ibrKYS/E1xmsEc3VgzNHVxAyaY4fJaMUP+ZV6Yz2xo2Of0vSMh9akn1+InhHRgF5j6
-         cWhOa1ASY3xlGayn4i9A==
-Message-ID: <4d6d636b.98a1df0a.15d8.57d1@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Tue, 1 Mar 2011 22:20:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, ming.m.lin@intel.com,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, eranian@google.com,
-        robert.richter@amd.com, acme@redhat.com
-Subject: [PATCH] perf_events: update PEBS event constraints (v2)
-X-System-Of-Record: true
+	id S1755359Ab1CAVXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 16:23:25 -0500
+Received: from kroah.org ([198.145.64.141]:39347 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754479Ab1CAVXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 16:23:24 -0500
+Date: Tue, 1 Mar 2011 16:23:50 -0500
+From: Greg KH <greg@kroah.com>
+To: "Allyn, Mark A" <mark.a.allyn@intel.com>
+Cc: "Mangalampalli, Jayant" <jayant.mangalampalli@intel.com>,
+        "Gokulrangan, Venkat R" <venkat.r.gokulrangan@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: RFC: [PATCH 0/5] staging: sep: Enable kernel crypto
+Message-ID: <20110301212350.GA22953@kroah.com>
+References: <1298869824-4246-1-git-send-email-mark.a.allyn@intel.com>
+ <20110228212018.GE8851@kroah.com>
+ <8A0E4C92AE2D6D40AF99653191DA3231614A0A654E@rrsmsx501.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8A0E4C92AE2D6D40AF99653191DA3231614A0A654E@rrsmsx501.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates PEBS event constraints for Intel Atom, Nehalem, Westmere.
+On Tue, Mar 01, 2011 at 02:10:09PM -0700, Allyn, Mark A wrote:
+> Greg writes:
+> 
+> Why?  What does this mean to me?  To users?  You need to sell this new
+> feature to me a LOT before I will take it as I really want and need to
+> see this driver fixed up first before you can add new features to it.
+> 
+> thanks,
+> 
+> greg k-h
+> 
+> 
+> =================
+> 
+> Greg:
+> 
+> I agree; I will work on getting the current core driver out of staging prior to making the kernel crypto changes.
 
-This patch also reorganizes the PEBS format/constraint detection code. It is
-now based on processor model and not PEBS format. Two processors may use the
-same PEBS format without have the same list of PEBS events.
+First off, please fix your email client to do proper quoting and wrap
+lines at 72 columns.  Even Outlook can do this so there really is no
+excuse anymore...
 
-In this second version, we simplified the initialization of the PEBS constraints
-by leveraging the existing switch() statement in perf_event_intel.c. We also
-renamed the constraint tables to be more consistent with regular constraints.
+> 
+> What are the major issues with the core driver? I know about the current items in the TODO list having to do with the unused ioctl calls and structures.
+> 
+> What other issues are there?
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+That's a good place to start, fix those up and when you feel you have
+addressed everything, ask for a review of the code and we can go from
+there.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 084b383..ddf6c4f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1024,6 +1024,7 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_core();
- 
- 		x86_pmu.event_constraints = intel_core2_event_constraints;
-+		x86_pmu.pebs_constraints = intel_core2_pebs_event_constraints;
- 		pr_cont("Core2 events, ");
- 		break;
- 
-@@ -1036,6 +1037,7 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_nhm();
- 
- 		x86_pmu.event_constraints = intel_nehalem_event_constraints;
-+		x86_pmu.pebs_constraints = intel_nehalem_pebs_event_constraints;
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
- 		pr_cont("Nehalem events, ");
- 		break;
-@@ -1047,6 +1049,7 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_atom();
- 
- 		x86_pmu.event_constraints = intel_gen_event_constraints;
-+		x86_pmu.pebs_constraints = intel_atom_pebs_event_constraints;
- 		pr_cont("Atom events, ");
- 		break;
- 
-@@ -1059,6 +1062,8 @@ static __init int intel_pmu_init(void)
- 
- 		x86_pmu.event_constraints = intel_westmere_event_constraints;
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
-+		x86_pmu.pebs_constraints =
-+				intel_westmere_pebs_event_constraints;
- 		pr_cont("Westmere events, ");
- 		break;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index b7dcd9f..916e6c7 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -361,30 +361,49 @@ static int intel_pmu_drain_bts_buffer(void)
- /*
-  * PEBS
-  */
--
--static struct event_constraint intel_core_pebs_events[] = {
-+static struct event_constraint intel_core2_pebs_event_constraints[] = {
- 	PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INSTR_RETIRED.ANY */
- 	PEBS_EVENT_CONSTRAINT(0xfec1, 0x1), /* X87_OPS_RETIRED.ANY */
- 	PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
- 	PEBS_EVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
--	PEBS_EVENT_CONSTRAINT(0x01cb, 0x1), /* MEM_LOAD_RETIRED.L1D_MISS */
--	PEBS_EVENT_CONSTRAINT(0x02cb, 0x1), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x04cb, 0x1), /* MEM_LOAD_RETIRED.L2_MISS */
--	PEBS_EVENT_CONSTRAINT(0x08cb, 0x1), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x10cb, 0x1), /* MEM_LOAD_RETIRED.DTLB_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct event_constraint intel_atom_pebs_event_constraints[] = {
-+	PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INSTR_RETIRED.ANY */
-+	PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
-+	PEBS_EVENT_CONSTRAINT(0x0ac4, 0x1), /* BR_INST_RETIRED.MISPRED */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
- 	EVENT_CONSTRAINT_END
- };
- 
--static struct event_constraint intel_nehalem_pebs_events[] = {
--	PEBS_EVENT_CONSTRAINT(0x00c0, 0xf), /* INSTR_RETIRED.ANY */
--	PEBS_EVENT_CONSTRAINT(0xfec1, 0xf), /* X87_OPS_RETIRED.ANY */
--	PEBS_EVENT_CONSTRAINT(0x00c5, 0xf), /* BR_INST_RETIRED.MISPRED */
--	PEBS_EVENT_CONSTRAINT(0x1fc7, 0xf), /* SIMD_INST_RETURED.ANY */
--	PEBS_EVENT_CONSTRAINT(0x01cb, 0xf), /* MEM_LOAD_RETIRED.L1D_MISS */
--	PEBS_EVENT_CONSTRAINT(0x02cb, 0xf), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x04cb, 0xf), /* MEM_LOAD_RETIRED.L2_MISS */
--	PEBS_EVENT_CONSTRAINT(0x08cb, 0xf), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x10cb, 0xf), /* MEM_LOAD_RETIRED.DTLB_MISS */
-+static struct event_constraint intel_nehalem_pebs_event_constraints[] = {
-+	INTEL_EVENT_CONSTRAINT(0x0b, 0xf),  /* MEM_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),  /* MEM_UNCORE_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INST_RETIRED.ANY */
-+	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0x00c4, 0xf),/* BR_INST_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
-+	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct event_constraint intel_westmere_pebs_event_constraints[] = {
-+	INTEL_EVENT_CONSTRAINT(0x0b, 0xf), /* MEM_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0x0f, 0xf), /* MEM_UNCORE_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INSTR_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
-+
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),  /* BR_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),  /* BR_MISP_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
- 	EVENT_CONSTRAINT_END
- };
- 
-@@ -695,20 +714,18 @@ static void intel_ds_init(void)
- 			printk(KERN_CONT "PEBS fmt0%c, ", pebs_type);
- 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_core);
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_core;
--			x86_pmu.pebs_constraints = intel_core_pebs_events;
- 			break;
- 
- 		case 1:
- 			printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
- 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
--			x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
- 			break;
- 
- 		default:
--			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
-+			printk(KERN_CONT "no PEBS fmt%d%c, ",
-+			       format, pebs_type);
- 			x86_pmu.pebs = 0;
--			break;
- 		}
- 	}
- }
+thanks,
+
+greg k-h
