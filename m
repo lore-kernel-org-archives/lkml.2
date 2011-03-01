@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1CAA7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 19:59:36 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:42558 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753143Ab1CAA7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 19:59:35 -0500
-Message-ID: <4D6C44F2.9050800@linux.vnet.ibm.com>
-Date: Mon, 28 Feb 2011 17:59:30 -0700
-From: Allison Henderson <achender@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Josef Bacik <josef@redhat.com>
-CC: Dave Young <hidave.darkstar@gmail.com>, josef@redhat.com,
-        linux-ext4@vger.kernel.org, linux-ext4-owner@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Theodore Tso <tytso@mit.edu>
-Subject: Re: ext2/3/4: punch support?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1754517Ab1CABAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 20:00:07 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4218 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753645Ab1CABAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 20:00:05 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Mon, 28 Feb 2011 17:00:03 -0800
+From: rklein@nvidia.com
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: olof@lixom.net, linux-kernel@vger.kernel.org,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH 2/4] power: bq20z75: add i2c retry mechanism
+Date: Mon, 28 Feb 2011 16:55:29 -0800
+Message-Id: <1298940931-17552-3-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1298940931-17552-1-git-send-email-rklein@nvidia.com>
+References: <1298940931-17552-1-git-send-email-rklein@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Rhyland Klein <rklein@nvidia.com>
 
-I've actually already started on a patch set for punch hole support in ext4.  I've sent them out on the ltc-fsdev mailing list for review.  I had planned to spend another week or two running it through some more debug cases before sending it to the ext4 mailing list though.
+With the support of platform data, now adding support for option i2c retries
+on read/write failures. Ths is specified through the optional platform data.
 
-Allison Henderson
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+ drivers/power/bq20z75.c       |   37 +++++++++++++++++++++++++++++++------
+ include/linux/power/bq20z75.h |    2 ++
+ 2 files changed, 33 insertions(+), 6 deletions(-)
 
-linux-ext4-owner@vger.kernel.org wrote on 02/28/2011 06:11:18 AM:
-
-> Josef Bacik <josef@redhat.com> 
-> Sent by: linux-ext4-owner@vger.kernel.org
-> 
-> 02/28/2011 06:11 AM
-> 
-> To
-> 
-> Dave Young <hidave.darkstar@gmail.com>
-> 
-> cc
-> 
-> josef@redhat.com, Theodore Tso <tytso@mit.edu>, linux-
-> ext4@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-> 
-> Subject
-> 
-> Re: ext2/3/4: punch support?
-> 
-> On Mon, Feb 28, 2011 at 03:03:40PM +0800, Dave Young wrote:
-> > Hi, josef and ext guys
-> > 
-> > Do you have any plan with ext4 hole punching support? And the
-> > fallocate for ext2/3?
-> > 
-> > What's the obstacle to work on this? could someone tell the status of
-> > this issue?
-> 
-> There is no obstacle, just nobody has bothered to do it.  If you want to do it
-> go for it.  Thanks,
-> 
-> Josef
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+index a51e98d..e82d10e 100644
+--- a/drivers/power/bq20z75.c
++++ b/drivers/power/bq20z75.c
+@@ -156,30 +156,55 @@ struct bq20z75_info {
+ 
+ static int bq20z75_read_word_data(struct i2c_client *client, u8 address)
+ {
+-	s32 ret;
++	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
++	s32 ret = 0;
++	int retries = 1;
++
++	if (bq20z75_device->pdata)
++		retries = max(bq20z75_device->pdata->i2c_retry_count + 1, 1);
++
++	while (retries > 0) {
++		ret = i2c_smbus_read_word_data(client, address);
++		if (ret >= 0)
++			break;
++		retries--;
++	}
+ 
+-	ret = i2c_smbus_read_word_data(client, address);
+ 	if (ret < 0) {
+-		dev_err(&client->dev,
++		dev_warn(&client->dev,
+ 			"%s: i2c read at address 0x%x failed\n",
+ 			__func__, address);
+ 		return ret;
+ 	}
++
+ 	return le16_to_cpu(ret);
+ }
+ 
+ static int bq20z75_write_word_data(struct i2c_client *client, u8 address,
+ 	u16 value)
+ {
+-	s32 ret;
++	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
++	s32 ret = 0;
++	int retries = 1;
++
++	if (bq20z75_device->pdata)
++		retries = max(bq20z75_device->pdata->i2c_retry_count + 1, 1);
++
++	while (retries > 0) {
++		ret = i2c_smbus_write_word_data(client, address,
++			le16_to_cpu(value));
++		if (ret >= 0)
++			break;
++		retries--;
++	}
+ 
+-	ret = i2c_smbus_write_word_data(client, address, le16_to_cpu(value));
+ 	if (ret < 0) {
+-		dev_err(&client->dev,
++		dev_warn(&client->dev,
+ 			"%s: i2c write to address 0x%x failed\n",
+ 			__func__, address);
+ 		return ret;
+ 	}
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/power/bq20z75.h b/include/linux/power/bq20z75.h
+index 0e1b8a2..b0843b6 100644
+--- a/include/linux/power/bq20z75.h
++++ b/include/linux/power/bq20z75.h
+@@ -28,10 +28,12 @@
+  * struct bq20z75_platform_data - platform data for bq20z75 devices
+  * @battery_detect:		GPIO which is used to detect battery presence
+  * @battery_detect_present:	gpio state when battery is present (0 / 1)
++ * @i2c_retry_count:		# of times to retry on i2c IO failure
+  */
+ struct bq20z75_platform_data {
+ 	int battery_detect;
+ 	int battery_detect_present;
++	int i2c_retry_count;
+ };
+ 
+ #endif
+-- 
+1.7.0.4
 
