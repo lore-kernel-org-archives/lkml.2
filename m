@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab1CAUPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:15:05 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:52046 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756285Ab1CAUPD (ORCPT
+	id S1757406Ab1CAUQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:16:34 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43732 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab1CAUQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:15:03 -0500
-Message-ID: <4D6D53C5.7020906@bluewatersys.com>
-Date: Wed, 02 Mar 2011 09:15:01 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: [PATCH 2/3] power: ds2782_battery: add MODULE_DEVICE_TABLE
-References: <1298971353.17825.1.camel@mola> <1298971414.17825.2.camel@mola>
-In-Reply-To: <1298971414.17825.2.camel@mola>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Mar 2011 15:16:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=VxmyRrbW+h8U3sz2gq4a1DnVOU00czE1GJMt+4YB/OzFlH0BQXDF5u3UoxwMRd26dJ
+         QAYpwg/e1RjS4IWupr0E5t1R22yEVM/k0LpCvE7A3DvVmhu/eV7AEZagZOOeoX8KEyUs
+         lb3nZDXY6AhF5zfUGvRe3brTt4lQORXP9BGWU=
+Subject: Re: txqueuelen has wrong units; should be time
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Albert Cahalan <acahalan@gmail.com>
+Cc: David Miller <davem@davemloft.net>, johnwheffner@gmail.com,
+        linville@tuxdriver.com, jussi.kivilinna@mbnet.fi, swmike@swm.pp.se,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <1299010479.2930.1.camel@edumazet-laptop>
+References: <20110228165501.GC2515@tuxdriver.com>
+	 <AANLkTinj5szpStmA+fZ1xggdyTS+sd8Y9jXaYquDNEjs@mail.gmail.com>
+	 <AANLkTinFZu5AgfhO6PoA7C1NTGSfD8HH0KXq_o-mHEJF@mail.gmail.com>
+	 <20110228.201852.193726064.davem@davemloft.net>
+	 <AANLkTi=eDQh9Kvr9N_dTC5Cnbcfb+DbO-6tLxkZiEp9v@mail.gmail.com>
+	 <1298964381.2676.58.camel@edumazet-laptop>
+	 <AANLkTimWMZHVQSHEUPuQgFXxNg85dEOesqhZE=e6x8kb@mail.gmail.com>
+	 <1299010479.2930.1.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Mar 2011 21:16:27 +0100
+Message-ID: <1299010587.2930.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2011 10:23 PM, Axel Lin wrote:
-> The device table is required to load modules based on modaliases.
-> After adding the MODULE_DEVICE_TABLE, below entries will be added to
-> modules.alias:
-> alias i2c:ds2786 ds2782_battery
-> alias i2c:ds2782 ds2782_battery
+Le mardi 01 mars 2011 à 21:14 +0100, Eric Dumazet a écrit :
+> Le mardi 01 mars 2011 à 14:37 -0500, Albert Cahalan a écrit :
+> > 
+> > We certainly should allow some traffic spikes. 1 to 10 ms of
+> > traffic ought to do nicely. Hundreds or thousands of ms is
+> > getting way beyond "spike".
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> OK.
 
-Thanks Axel,
-
-Acked-by: Ryan Mallon <ryan@bluewatersys.com>
-
-> ---
->  drivers/power/ds2782_battery.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-> index 6957e8a..4d2dc4f 100644
-> --- a/drivers/power/ds2782_battery.c
-> +++ b/drivers/power/ds2782_battery.c
-> @@ -393,6 +393,7 @@ static const struct i2c_device_id ds278x_id[] = {
->  	{"ds2786", DS2786},
->  	{},
->  };
-> +MODULE_DEVICE_TABLE(i2c, ds278x_id);
->  
->  static struct i2c_driver ds278x_battery_driver = {
->  	.driver 	= {
+Hmm, user error, hit wrong button, sorry.
 
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
