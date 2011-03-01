@@ -1,261 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab1CAA3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 19:29:15 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:8036 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab1CAA3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 19:29:14 -0500
-From: Simon Glass <sjg@chromium.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        Simon Glass <sjg@chromium.org>
-Subject: [RFC PATCH] ARM: Use generic BUG() handler
-Date: Mon, 28 Feb 2011 16:27:43 -0800
-Message-Id: <1298939263-16421-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	id S1754918Ab1CAAcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 19:32:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33343 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753489Ab1CAAcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Feb 2011 19:32:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,244,1297065600"; 
+   d="scan'208";a="714380033"
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1298905892.5226.849.camel@laptop>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	 <1298884559.2428.10083.camel@twins>  <1298904994.2169.60.camel@localhost>
+	 <1298905892.5226.849.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Mar 2011 08:32:23 +0800
+Message-ID: <1298939543.4937.44.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am looking for comments please on this patch.
+On Mon, 2011-02-28 at 23:11 +0800, Peter Zijlstra wrote:
+> On Mon, 2011-02-28 at 22:56 +0800, Lin Ming wrote:
+> > @@ -740,13 +740,6 @@ static void intel_ds_init(void)
+> >                         printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+> >                         x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+> >                         x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+> > -                       switch (boot_cpu_data.x86_model) {
+> > -                       case 42: /* SandyBridge */
+> > -                               x86_pmu.pebs_constraints = intel_snb_pebs_events;
+> > -                               break;
+> > -                       default:
+> > -                               x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+> > -                       }
+> >                         break; 
+> 
+> it looks like you lost the nhm table assignment
 
-ARM uses its own BUG() handler which makes its output slightly different
-from other archtectures.
+Ah, yes. Will update all in v3 patch.
 
-One of the problems is that the ARM implementation doesn't report the function
-with the BUG() in it, but always reports the PC being in __bug(). The generic
-implementation doesn't have this problem.
-
-Currently we get something like:
-
-kernel BUG at fs/proc/breakme.c:35!
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-...
-PC is at __bug+0x20/0x2c
-
-With this patch it displays:
-
-kernel BUG at fs/proc/breakme.c:35!
-Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
-...
-PC is at write_breakme+0xd0/0x1b4
-
-This implementation uses an undefined instruction to implement BUG, and sets up
-a bug table containing the relevant information.
-
-Also backtraces were reported slightly differently - so I have added a newline
-after the backtrace message, a space before the address, and ensured that the
-message appears even when CONFIG_ARM_UNWIND is defined. These are aimed at
-consistency between architectures, and may or may not be acceptable for ARM.
-In any case they may be best as a separate patch.
-
-Change-Id: I515db9a04e98084e6bbb21c4a1d13579568a0904
-
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- arch/arm/Kconfig              |    4 ++++
- arch/arm/include/asm/bug.h    |   40 +++++++++++++++++++++++++++++++++++++++-
- arch/arm/kernel/traps.c       |   21 +++++++++++++++++++--
- arch/arm/kernel/unwind.c      |    1 +
- arch/arm/kernel/vmlinux.lds.S |   15 +++++++++++++--
- 5 files changed, 76 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 26d45e5..d4fb0fb 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -191,6 +191,10 @@ config VECTORS_BASE
- 	help
- 	  The base address of exception vectors.
- 
-+config GENERIC_BUG
-+	def_bool y
-+	depends on BUG
-+
- source "init/Kconfig"
- 
- source "kernel/Kconfig.freezer"
-diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
-index 4d88425..bbbebe4 100644
---- a/arch/arm/include/asm/bug.h
-+++ b/arch/arm/include/asm/bug.h
-@@ -3,6 +3,40 @@
- 
- 
- #ifdef CONFIG_BUG
-+
-+#ifdef CONFIG_GENERIC_BUG
-+
-+
-+/* A suitable undefined instruction to use for ARM bug handling */
-+#define BUG_INSTR_ARM 0xec000000
-+
-+
-+#ifdef CONFIG_DEBUG_BUGVERBOSE
-+#define BUG()							\
-+do {								\
-+	asm volatile("1:\t.word %c3\n"				\
-+		     ".pushsection __bug_table,\"a\"\n"		\
-+		     "2:\t.word 1b, %c0\n"			\
-+		     "\t.hword %c1, 0\n"			\
-+		     "\t.org 2b+%c2\n"				\
-+		     ".popsection"				\
-+		     :						\
-+		     : "i" (__FILE__), "i" (__LINE__),		\
-+		     "i" (sizeof(struct bug_entry)),		\
-+		     "i" (BUG_INSTR_ARM));			\
-+	unreachable();						\
-+} while (0)
-+
-+#else
-+#define BUG()							\
-+do {								\
-+	asm volatile("ud2");					\
-+	unreachable();						\
-+} while (0)
-+#endif
-+
-+#else  /* not CONFIG_GENERIC_BUG */
-+
- #ifdef CONFIG_DEBUG_BUGVERBOSE
- extern void __bug(const char *file, int line) __attribute__((noreturn));
- 
-@@ -16,8 +50,12 @@ extern void __bug(const char *file, int line) __attribute__((noreturn));
- 
- #endif
- 
-+#endif  /* CONFIG_GENERIC_BUG */
-+
- #define HAVE_ARCH_BUG
--#endif
-+
-+#endif /* CONFIG_BUG */
-+
- 
- #include <asm-generic/bug.h>
- 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index ee57640..d5e5df9 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -21,6 +21,7 @@
- #include <linux/kdebug.h>
- #include <linux/module.h>
- #include <linux/kexec.h>
-+#include <linux/bug.h>
- #include <linux/delay.h>
- #include <linux/init.h>
- 
-@@ -55,7 +56,8 @@ static void dump_mem(const char *, const char *, unsigned long, unsigned long);
- void dump_backtrace_entry(unsigned long where, unsigned long from, unsigned long frame)
- {
- #ifdef CONFIG_KALLSYMS
--	printk("[<%08lx>] (%pS) from [<%08lx>] (%pS)\n", where, (void *)where, from, (void *)from);
-+	printk(" [<%08lx>] (%pS) from [<%08lx>] (%pS)\n", where, (void *)where,
-+	       from, (void *)from);
- #else
- 	printk("Function entered at [<%08lx>] from [<%08lx>]\n", where, from);
- #endif
-@@ -171,7 +173,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
- 	unsigned int fp, mode;
- 	int ok = 1;
- 
--	printk("Backtrace: ");
-+	printk("Backtrace:\n");
- 
- 	if (!tsk)
- 		tsk = current;
-@@ -271,6 +273,8 @@ void die(const char *str, struct pt_regs *regs, int err)
- 	spin_lock_irq(&die_lock);
- 	console_verbose();
- 	bust_spinlocks(1);
-+	if (!user_mode(regs))
-+		report_bug(regs->ARM_pc, regs);
- 	ret = __die(str, err, thread, regs);
- 
- 	if (regs && kexec_should_crash(thread->task))
-@@ -302,6 +306,19 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
- 	}
- }
- 
-+int is_valid_bugaddr(unsigned long pc)
-+{
-+	unsigned bkpt;
-+
-+	if (pc < PAGE_OFFSET)
-+		return 0;
-+	if (probe_kernel_address((unsigned *)pc, bkpt))
-+		return 0;
-+
-+	return bkpt == BUG_INSTR_ARM;
-+}
-+
-+
- static LIST_HEAD(undef_hook);
- static DEFINE_SPINLOCK(undef_lock);
- 
-diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index d2cb0b3..3f065bd 100644
---- a/arch/arm/kernel/unwind.c
-+++ b/arch/arm/kernel/unwind.c
-@@ -355,6 +355,7 @@ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
- 	register unsigned long current_sp asm ("sp");
- 
- 	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
-+	printk("Backtrace:\n");
- 
- 	if (!tsk)
- 		tsk = current;
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index 86b66f3..591ab50 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -72,6 +72,18 @@ SECTIONS
- 
- 	PERCPU(PAGE_SIZE)
- 
-+	/*
-+	 * .exit.text is discarded at runtime, not link time, to deal with
-+	 *  references from bug_table
-+	 */
-+	.exit.text : AT(ADDR(.exit.text)) {
-+		EXIT_TEXT
-+	}
-+
-+	.exit.data : AT(ADDR(.exit.data)) {
-+		EXIT_DATA
-+	}
-+
- #ifndef CONFIG_XIP_KERNEL
- 	. = ALIGN(PAGE_SIZE);
- 	__init_end = .;
-@@ -246,7 +258,6 @@ SECTIONS
- 		__tcm_end = .;
- 	}
- #endif
--
- 	BSS_SECTION(0, 0, 0)
- 	_end = .;
- 
-@@ -254,7 +265,7 @@ SECTIONS
- 	.comment 0 : { *(.comment) }
- 
- 	/* Default discards */
--	DISCARDS
-+	/*DISCARDS*/
- 
- #ifndef CONFIG_SMP_ON_UP
- 	/DISCARD/ : {
--- 
-1.7.3.1
 
