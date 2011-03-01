@@ -1,97 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab1CAJiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 04:38:12 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:40245 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab1CAJiK convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Tue, 1 Mar 2011 04:38:10 -0500
-Message-Id: <4D6CCC8D020000780003442F@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 01 Mar 2011 09:38:05 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeff Dike" <jdike@addtoit.com>, "Ingo Molnar" <mingo@elte.hu>
-Cc: <heukelum@fastmail.fm>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [tip:x86/asm] x86-64: Add CFI annotations to
-	 lib/rwsem_64.S
-References: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
- <tip-39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c@git.kernel.org>
- <20110228182642.GA7041@elte.hu>
- <4D6CBBD502000078000343DF@vpn.id2.novell.com>
- <20110301085630.GA16050@elte.hu>
-In-Reply-To: <20110301085630.GA16050@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756109Ab1CAJjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 04:39:31 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:56968 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab1CAJj3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 04:39:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=g+ELuwE7FqVv0gh+/TQuDy23C8sVxzhN62C/JRr3phen7YQgsUuTfvXwtp/3AN3HHV
+         gst17NZOJK7y0qMSDApA==
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinP9zdHEoq96nf-eBektNc6g9fPRmjoQHTK1jKY@mail.gmail.com>
+References: <1298877772.4937.25.camel@minggr.sh.intel.com>
+	<1298884559.2428.10083.camel@twins>
+	<AANLkTi=eUnZqT3MF7Y8ONrnGh-7MoZJsefisWFR10p7d@mail.gmail.com>
+	<1298969141.4937.94.camel@minggr.sh.intel.com>
+	<AANLkTinP9zdHEoq96nf-eBektNc6g9fPRmjoQHTK1jKY@mail.gmail.com>
+Date: Tue, 1 Mar 2011 10:39:26 +0100
+Message-ID: <AANLkTikEUPRjFT2a4dt7J7F7WwAXM7Dgk-wM_gLNMFKB@mail.gmail.com>
+Subject: Re: [PATCH v2 -tip] perf: x86, add SandyBridge support
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 01.03.11 at 09:56, Ingo Molnar <mingo@elte.hu> wrote:
+On Tue, Mar 1, 2011 at 9:57 AM, Stephane Eranian <eranian@google.com> wrote:
+> On Tue, Mar 1, 2011 at 9:45 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> On Tue, 2011-03-01 at 15:43 +0800, Stephane Eranian wrote:
+>>> On Mon, Feb 28, 2011 at 10:15 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>>> > On Mon, 2011-02-28 at 15:22 +0800, Lin Ming wrote:
+>>> >> This patch adds basic SandyBridge support, including hardware cache
+>>> >> events and PEBS events support.
+>>> >>
+>>> >> LLC-* hareware cache events don't work for now, it depends on the
+>>> >> offcore patches.
+>>> >
+>>> > What's the status of those, Stephane reported some problems last I
+>>> > remember?
+>>> >
+>>> I tried the trick I mentioned and it seems to work.
+>>>
+>>> Something like below with hwc->extra_alloc.
+>>> Could probably find a better name for that field.
+>>
+>> Stephane,
+>>
+>> I'll integrate below changes to the offcore patches, OK?
+>>
+> Let me try one more test on this.
+> I want to show the case the caused the problem in the first place.
+>
 
-> * Jan Beulich <JBeulich@novell.com> wrote:
-> 
->> >>> On 28.02.11 at 19:26, Ingo Molnar <mingo@elte.hu> wrote:
->> 
->> > * tip-bot for Jan Beulich <JBeulich@novell.com> wrote:
->> > 
->> >> Commit-ID:  39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c
->> >> Gitweb:     
->> > http://git.kernel.org/tip/39f2205e1abd1b6fffdaf45e1f1c3049a5f8999c 
->> >> Author:     Jan Beulich <JBeulich@novell.com>
->> >> AuthorDate: Mon, 28 Feb 2011 15:31:59 +0000
->> >> Committer:  Ingo Molnar <mingo@elte.hu>
->> >> CommitDate: Mon, 28 Feb 2011 18:06:21 +0100
->> >> 
->> >> x86-64: Add CFI annotations to lib/rwsem_64.S
->> >> 
->> >> These weren't part of the initial commit of this code.
->> >> 
->> >> Signed-off-by: Jan Beulich <jbeulich@novell.com>
->> >> Cc: Alexander van Heukelum <heukelum@fastmail.fm>
->> >> LKML-Reference: <4D6BCDFF02000078000341B0@vpn.id2.novell.com>
->> >> Signed-off-by: Ingo Molnar <mingo@elte.hu>
->> >> ---
->> >>  arch/x86/lib/rwsem_64.S |   56 ++++++++++++++++++++++++++++------------------
->> >>  1 files changed, 34 insertions(+), 22 deletions(-)
->> > 
->> > this change breaks the UML build:
->> > 
->> >  tip/arch/um/sys-x86_64/../../x86/lib/rwsem_64.S:46: Error: no such 
->> > instruction: `pushq_cfi %rdi'
->> 
->> Any reason why arch/um/Kconfig.x86 has X86_32 but not
->> X86_64? That's resulting in asm/dwarf2.h producing the 32-bit
->> (pushl_cfi & Co) macros instead of the 64-bit ones. And I
->> wonder what other inconsistencies this may cause...
-> 
-> No idea - UML seems stale. I've Cc:-ed Jeff Dike just in case.
-> 
->> If this is on purpose (i.e. simply adding X86_64 as a new config
->> option there isn't the right solution), what would be the preferred
->> way of fixing this in asm/dwarf2.h:
->> - #ifndef CONFIG_X86_32,
->> - #ifdef CONFIG_64BIT,
->> - yet something else?
-> 
-> You could try it out - UML isnt that hard to build: "make ARCH=um" and then 
-> run the 
-> resulting binary. It will produce bootup messages then fails when mounting 
-> root. 
-> That's enough of a build & functionality test.
+There you go:
 
-That wasn't my question. What I wanted to know was, if adding
-X86_64 to UML's Kconfig.x86 isn't acceptable for some reason,
-whether any of the possible alternative forms would be preferred
-(all of them should work).
+$ task -e offcore_response_0:DMND_DATA_RD:local_dram -e
+offcore_response_0:DMND_DATA_RD:local_dram noploop 1
 
-Anyway, I'll wait for Jeff's response on whether adjusting the
-UML file is going to be acceptable.
+Here the two instances of offcore_response are in two different event groups.
+I instrumented get/put percore constraint routines. get1 is where you do the
+first allocation, get2 is where you do ref++.
 
-Will you want a re-submission or an incremental fix?
+The scheduling algorithm will do:
+  - submit 1st group
+  - schedule 1st group
+  - submit 2nd group
+  - schedule 1st + 2nd group
 
-Jan
+Which results in the following trace:
 
+[  109.855713] CPU0 get1 cfg=1301b7 ref=1
+[  109.855717] CPU0 get2 cfg=1301b7 ref=2
+[  109.855718] CPU0 get2 cfg=1301b7 ref=3 <-- this one is bogus
+[  109.856606] CPU0 put cfg=1301b7 ref=2
+[  109.856609] CPU0 put cfg=1301b7 ref=1  <- don't free the resource
+
+[  109.856616] CPU0 get2 cfg=1301b7 ref=2
+[  109.856619] CPU0 get2 cfg=1301b7 ref=3
+[  109.856622] CPU0 get2 cfg=1301b7 ref=4
+[  110.742151] CPU0 put cfg=1301b7 ref=3
+[  110.742154] CPU0 put cfg=1301b7 ref=2
+
+[  110.742160] CPU0 get2 cfg=1301b7 ref=3
+[  110.742161] CPU0 get2 cfg=1301b7 ref=4
+[  110.742163] CPU0 get2 cfg=1301b7 ref=5
+[  110.854448] CPU0 put cfg=1301b7 ref=4
+[  110.854450] CPU0 put cfg=1301b7 ref=3
