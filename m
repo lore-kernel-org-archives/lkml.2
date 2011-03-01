@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab1CAMfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 07:35:31 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:51462 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab1CAMfa (ORCPT
+	id S1755373Ab1CAMhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 07:37:07 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:57933 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050Ab1CAMhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 07:35:30 -0500
-Date: Tue, 1 Mar 2011 12:35:20 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Pedro Ribeiro <pedrib@gmail.com>, ibm-acpi-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: ThinkPad T400 : should kernel option "reboot=pci" be hard
-	coded ?
-Message-ID: <20110301123520.GA30115@srcf.ucam.org>
-References: <201006071122.21925.toralf.foerster@gmx.de> <201006091343.48924.toralf.foerster@gmx.de> <AANLkTimkWN5tU88J-M3Q4aq9pq-WljyyPAUPfnf9cuhf@mail.gmail.com> <201103010940.13647.toralf.foerster@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201103010940.13647.toralf.foerster@gmx.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 1 Mar 2011 07:37:05 -0500
+Message-Id: <20110301123701.955702964@szeredi.hu>
+References: <20110301123645.189703316@szeredi.hu>
+User-Agent: quilt/0.46-1
+Date: Tue, 01 Mar 2011 13:36:47 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: apw@canonical.com
+Subject: [PATCH 2/6 v6] vfs: export do_splice_direct() to modules
+Content-Disposition: inline; filename=vfs-export-do_splice_direct.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 09:40:13AM +0100, Toralf Förster wrote:
-> I'd like to point to this after a half year of lthe last email. Shouldn't it 
-> be hard coded ?
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Windows appears to have exactly the same behaviour, so it seems that 
-this is working like designed.
+Export do_splice_direct() to modules.  Needed by overlay filesystem.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/splice.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/fs/splice.c
+===================================================================
+--- linux-2.6.orig/fs/splice.c	2011-02-22 11:04:39.000000000 +0100
++++ linux-2.6/fs/splice.c	2011-03-01 12:18:16.000000000 +0100
+@@ -1296,6 +1296,7 @@ long do_splice_direct(struct file *in, l
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(do_splice_direct);
+ 
+ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+ 			       struct pipe_inode_info *opipe,
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
