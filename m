@@ -1,33 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1CABVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 20:21:23 -0500
-Received: from mailfilter1.ihug.co.nz ([203.109.136.1]:41010 "EHLO
-	mailfilter65.ihug.co.nz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753498Ab1CABVW (ORCPT
+	id S1755160Ab1CAB1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Feb 2011 20:27:43 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41250 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab1CAB1m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 20:21:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsgSAAfZa03LbYkf/2dsb2JhbACEKJQhjTmBOQGGNaQhh1WJDoEng0R2BI9dTYUkgmcC
-X-IronPort-AV: E=Sophos;i="4.62,244,1296990000"; 
-   d="scan'208";a="100571067"
+	Mon, 28 Feb 2011 20:27:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NX0LVajE4LpNAYPsETyP29q33fbq9fkrV9c533rQ2RmHSx1GpJaGcL6FSNY7O9hDT4
+         z2UBRZf+AL8C37D2GaY1Xym47dvy/2xSWgUZQPYK0YjqEGovnw/ereWi5dDBCo8H5/xj
+         4mrGK3GftsptTMJrZ/fwi8eo7j6cJX6RtErcU=
 MIME-Version: 1.0
-Date: Tue, 01 Mar 2011 14:21:17 +1300
-From: "japgh40@ihug.co.nz" <japgh40@ihug.co.nz>
-To: undisclosed-recipients:;
-Subject: Good Start
-Reply-To: gladestone2011@live.com
-Message-ID: <76cd6c050d09225a9957fb7eb6e083d9@vodafone.co.nz>
-SenderIP: 74.115.0.29
-User-Agent: Vodafone Webmail
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+In-Reply-To: <4D6BBCA2.8030104@redhat.com>
+References: <AANLkTimyu6A=LgF8pit6So6JkPrScFLB42U3NwBJq7mv@mail.gmail.com>
+	<20110228131118.GA18193@dhcp231-156.rdu.redhat.com>
+	<AANLkTimwpoi6agwO4q8qhOcohhSnYFrKhFOCnk0BuTEC@mail.gmail.com>
+	<4D6BBCA2.8030104@redhat.com>
+Date: Tue, 1 Mar 2011 09:27:40 +0800
+Message-ID: <AANLkTimntcYVCyVo3-GRhFKd2eCbBpRan4G8+hLSRyLZ@mail.gmail.com>
+Subject: Re: ext2/3/4: punch support?
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Josef Bacik <josef@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GLADESTONE FINANCIAL LIMITED
-Complement of the day, Are you looking for low rate Loans? We offer Loans @
-2% over a long period. If interested contact Mr Thomas Gary
-Email:rmloans88@admin.in.th
-Thanks
+On Mon, Feb 28, 2011 at 11:17 PM, Eric Sandeen <sandeen@redhat.com> wrote:
+> On 2/28/11 8:29 AM, Dave Young wrote:
+>> On Mon, Feb 28, 2011 at 9:11 PM, Josef Bacik <josef@redhat.com> wrote:
+>>> On Mon, Feb 28, 2011 at 03:03:40PM +0800, Dave Young wrote:
+>>>> Hi, josef and ext guys
+>>>>
+>>>> Do you have any plan with ext4 hole punching support? And the
+>>>> fallocate for ext2/3?
+>>>>
+>>>> What's the obstacle to work on this? could someone tell the status of
+>>>> this issue?
+>>>
+>>> There is no obstacle, just nobody has bothered to do it.  If you want to do it
+>>> go for it.  Thanks,
+>>
+>> Yes, I want to do some kvm image space discard stuff,
+>> I use ext4 as my filesystem, but currently only xfs support something
+>> like trim/discard.
+>
+> As Lukas said, ext4 & ext3 support various forms of trim/discard already.
+>
+> But that's different from punch...
+
+Lukas and Eric, thanks for pointing out, I think I means punch,
+although trim/discard is
+useful as well in guest side.
+
+>
+> And as for fallocate on ext3, you need somewhere to put the metadata to indicate a block is allocated but not written.  This was a lot more straightforward for ext4, since it describes a large range of blocks with a single extent structure.
+
+As for ext3 fallocate, I found some interesting discuss:
+http://www.mail-archive.com/linux-ext4@vger.kernel.org/msg02371.html
+
+Andrew, do you know what's the status of above issue?
+
+>
+> -Eric
+>
+>> I know general knowledge about ext filesystem, but nearly new to ext4 code,
+>> could you give some hint where to start?
+>>
+>> --
+>> Thanks
+>> dave
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+
+
+
+-- 
+Regards
+dave
