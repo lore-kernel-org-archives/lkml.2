@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab1CAPxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 10:53:34 -0500
-Received: from web121802.mail.ne1.yahoo.com ([98.138.90.132]:44845 "HELO
-	web121802.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756420Ab1CAPxd (ORCPT
+	id S1756693Ab1CAPyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 10:54:04 -0500
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:49447 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab1CAPyD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 10:53:33 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 10:53:33 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=u31BK2D9OYSA0PCqIHQTKuEqDwbN3vVg6tXeI7NMR42ZOGUVkFFvonFJCLPFyxqXhQAFwsLdBSwhT2YeiwsvLlBErXyjHW4Bt5ZAiNyBHEgME4sxLj1Psx+CG/3ChfC8JHJSNyKxjXX0iic7N3NVcxr4R5FWCAd6Ob7XeXvo2kE=;
-Message-ID: <733721.6560.qm@web121802.mail.ne1.yahoo.com>
-X-YMail-OSG: k9gH_pUVM1nxU0mRYCYbejA5cGFfwLN7cD64xXzPDlGAx7l
- 9IedI0q6TuvpwQy.r05dT88X2KeuRLuTfarbtDf_7FRzjN2p0kVpGjWNnEjL
- 65x0n7UO9myHc9HdNjw4Id3AfHOYmpqAO6G0vzeWVOVpmC.CDDXKt6CTZ3MQ
- JhXK1o1bW0Yh1rDaIHEDrSjyZXZePXYFkNKGFylUV0E9JZkXotqaglHjScId
- uc0nnP4NH3edj56FkLGvTESqSD.uz4GmANXMuk8ct6_1e4QSX4pYqqrVKp1J
- QH.Xd
-X-Mailer: YahooMailWebService/0.8.109.292656
-Date: Tue, 1 Mar 2011 07:46:51 -0800 (PST)
-From: GAURAV YADAV <gaurav_christmas@yahoo.com>
-To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
-        ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
-        preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com
+	Tue, 1 Mar 2011 10:54:03 -0500
+X-Loopcount0: from 10.170.28.41
+From: <Douglas_Warzecha@Dell.com>
+To: <stuart_hayes@yahoo.com>, <linux-kernel@vger.kernel.org>
+CC: <Shyam_Iyer@Dell.com>
+Date: Tue, 1 Mar 2011 09:53:57 -0600
+Subject: Re: [PATCH v2] dcdbas: force SMI to happen when expected
+Thread-Topic: [PATCH v2] dcdbas: force SMI to happen when expected
+Thread-Index: AcvUlKNoIc2xKIfORX2Po4At4CRJPwDk4t0Q
+Message-ID: <CC13D7E3DE58AE4096779C4F1D272C8E27D8EFA445@AUSX7MCPS308.AMER.DELL.COM>
+References: <518456.82543.qm@web38004.mail.mud.yahoo.com>
+In-Reply-To: <518456.82543.qm@web38004.mail.mud.yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://musicspot.gr/gift.php?page=6579
+On 02/24/2011 8:35 PM, Stuart Hayes wrote:
+> This is a reworked version of a very similar patch I sent about three
+> weeks ago... a flaw was pointed out with the original.  That patch
+> didn't make it into the kernel, though, so I'm just sending this one as
+> a new patch.
+> 
+> The dcdbas driver can do an I/O write to cause a SMI to occur.  The SMI
+> handler looks at certain registers and memory locations, so the SMI
+> needs to happen immediately.  On some systems I/O writes are posted,
+> though, causing the SMI to happen well after the "outb" occurred, which
+> causes random failures.  Following the "outb" with an "inb" forces the
+> write to go through even if it is posted.
+> 
+> This patch is against the 2.6.37.1 kernel.
+> 
+> Signed-off-by: Stuart Hayes <stuart_hayes@yahoo.com>
+> ---
+> 
+> --- linux-2.6.37/drivers/firmware/dcdbas.c	2011-01-18
+> 10:44:44.869882461 -0500
+> +++ linux-2.6.37_test/drivers/firmware/dcdbas.c	2011-02-24
+> 13:23:58.663771596 -0500
+> @@ -268,8 +268,10 @@ int dcdbas_smi_request(struct smi_cmd *s
+>  	}
+> 
+>  	/* generate SMI */
+> +	/* inb to force posted write through and make SMI happen now */
+>  	asm volatile (
+> -		"outb %b0,%w1"
+> +		"outb %b0,%w1\n"
+> +		"inb %w1"
+>  		: /* no output args */
+>  		: "a" (smi_cmd->command_code),
+>  		  "d" (smi_cmd->command_address),
+> 
 
+Acked-by: Doug Warzecha <douglas_warzecha@dell.com>
 
-      
