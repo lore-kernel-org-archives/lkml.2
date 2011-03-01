@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab1CAT5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 14:57:06 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:51100 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757176Ab1CAT5F (ORCPT
+	id S1757248Ab1CAUA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:00:27 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43754 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755721Ab1CAUA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 14:57:05 -0500
-Date: Tue, 1 Mar 2011 14:57:04 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Pierre Tardy <tardyp@gmail.com>
-cc: linux-kernel@vger.kernel.org, <linux-pm@lists.linux-foundation.org>,
-        <linux-mmc@vger.kernel.org>
-Subject: Re: [linux-pm] [RFC,PATCHv3 0/3] sdhci runtime_pm implementation
-In-Reply-To: <AANLkTi=ogThxB_2bxANV4hUsLGZs04gzHSCyH90Bm87U@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1103011454250.2034-100000@iolanthe.rowland.org>
+	Tue, 1 Mar 2011 15:00:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=FcAZLCUhb6Sf8LIUEL1gMlia7L52K7PgeqJkkqTbaFNasTmzr3V1JZ9F9SIvjoGlPU
+         TgKPqugTiOcCKJk2pjM1/e16OL1IS97xuM/oUXhTxoB+yQAJdSK/+uWswJRdZBK2iZqt
+         8316cij0bDkr4AOuyG7IRwbOhaX5gBWm8fDxc=
+Date: Tue, 1 Mar 2011 23:00:06 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Roel Van Nyen <roel.vannyen@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        acho@novell.com
+Subject: Re: [PATCH] Staging: keucr: Remove all type defines
+Message-ID: <20110301200006.GX18043@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Roel Van Nyen <roel.vannyen@gmail.com>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	acho@novell.com
+References: <1299007790-5315-1-git-send-email-roel.vannyen@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299007790-5315-1-git-send-email-roel.vannyen@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Mar 2011, Pierre Tardy wrote:
+On Tue, Mar 01, 2011 at 08:29:50PM +0100, Roel Van Nyen wrote:
+> Remove all type defines from driver and replace them with kernel built-in types.
+> 
+> Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
 
-> On Tue, Mar 1, 2011 at 8:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Tue, 1 Mar 2011, Pierre Tardy wrote:
-> >
-> >> Please find sdhci runtime_pm implementation.
-> >>
-> >> It uses clock gating fw as a tip to know when our chip is idle.
-> >> It implements wake up from card insertion/removal.
-> >>
-> >> This is RFC, please dont merge yet. I really would like to have deep review
-> >> from PCI linux-pm guys.
-> >>
-> >> Opens are:
-> >>
-> >> 1/ Not sure if the pci configs in the driver in rpm_suspend/resume flow
-> >>  are not duplicate from what the core is doing.
-> >
-> > There may be one or two small errors.
-> >
-> >> 2/ Wakeup from D3hot: I cannot find any driver that is implementing it in current upstream,
-> >
-> > Other drivers do it, but they use PCI PME# instead of interrupts.
-> Could you please elaborate?
-> My understanding is that PCI PME will generate MSI, which translate in
-> interrupt.
+Some of your other patches were merged so this doesn't apply to
+linux-next any more.
 
-It depends on the platform.  On systems with ACPI, PCI PME generates an 
-ACPI I/O event, which is handled by the ACPI and PM cores.  It does not 
-invoke the device driver's interrupt handler.
+> -typedef u8 BOOLEAN;
 
-Alan Stern
+It might be better to use bool type or int for boolean variables.  But
+that can't be done automatically, it has to be audited carefully.  I
+don't feel strongly about this, I'm just throwing it out there as food
+for thought.  You are using the remove-typedef program btw?
 
+regards,
+dan carpenter
