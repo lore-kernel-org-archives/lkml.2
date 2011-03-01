@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab1CAFsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 00:48:24 -0500
-Received: from kroah.org ([198.145.64.141]:56197 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab1CAFsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 00:48:22 -0500
-Date: Mon, 28 Feb 2011 19:18:23 -0800
-From: Greg KH <greg@kroah.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        kernel@pengutronix.de, Arjan van de Ven <arjan@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 6/6] tty/vt: add some KERN_CONT markers to continuation
- lines
-Message-ID: <20110301031823.GA14927@kroah.com>
-References: <20101124085645.GW4693@pengutronix.de>
- <1290589070-854-6-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1755332Ab1CAFwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 00:52:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36442 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab1CAFwD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 00:52:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=VzVrivqSVWSCXVWyQfW2CwC8ayLMvxxquKFYg6tlvXK4Zxn9BF1Dykls4LKEaj5ZFf
+         NcJ5K4iqCqQXP5j9PpZFIn95AOaJsu1kCHSsD7RkaM9txOm1NRkWMSe4MNqQmA3CohDb
+         2owaLmK/4fmTJQk/1i88XajCCd4BqrTY8UJ7E=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1290589070-854-6-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1298958336.2676.21.camel@edumazet-laptop>
+References: <1298539762-2242-1-git-send-email-ratbert.chuang@gmail.com>
+ <1298627845-1583-1-git-send-email-ratbert.chuang@gmail.com>
+ <1298634040.2659.32.camel@edumazet-laptop> <AANLkTimeDR27Q7fcBmB0ix7Q_pRT_GDpc7S3LO21-fh-@mail.gmail.com>
+ <1298958336.2676.21.camel@edumazet-laptop>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Tue, 1 Mar 2011 13:51:42 +0800
+Message-ID: <AANLkTi=Sp-mAV1556pZvCvHzQ=MQNHUzjo0ap2DhKwWe@mail.gmail.com>
+Subject: Re: [PATCH v6] net: add Faraday FTMAC100 10/100 Ethernet driver
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, joe@perches.com, dilinger@queued.net,
+        mirqus@gmail.com, davem@davemloft.net,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 24, 2010 at 09:57:50AM +0100, Uwe Kleine-König wrote:
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/tty/vt/vt.c |   10 +++++-----
+Hi Eric,
 
-This doesn't apply on the linux-next tree, care to refresh it and
-resend so I can apply it?
+On Tue, Mar 1, 2011 at 1:45 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mardi 01 mars 2011 Ã  13:20 +0800, Po-Yu Chuang a Ã©crit :
+>
+>> That means, since every rx buffer is large enough, it is impossible to
+>> get a multi-segment packets.
+>>
+>> So I simplified ftmac100_rx_packet().
+>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-thanks,
+Ah, I just want to submit a v7.
+Could you resign again later, please? :-)
 
-greg k-h
+> I am only wondering then if not using fragments would be faster then
+> (eventually doing copybreaks for small frames like tg3)
+
+Although not many circumstances are tested.
+iperf shows that it is a little faster to use fragments than memcpy, so...
+
+> But if you plan to get new hw soon, you have the infrastructure...
+
+best regards,
+Po-Yu Chuang
