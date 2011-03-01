@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab1CAOgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 09:36:06 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54699 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754182Ab1CAOgE (ORCPT
+	id S1753765Ab1CAOgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 09:36:52 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51084 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab1CAOgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 09:36:04 -0500
-Date: Tue, 1 Mar 2011 14:35:59 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Alan Cox <alan@linux.intel.com>, Alan Cox <alan@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: gma500: Rip out the memory manager
-Message-ID: <20110301143559.7a546401@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110301142908.GA13144@kroah.com>
-References: <20110224162440.27093.80825.stgit@localhost.localdomain>
-	<20110224162457.27093.32399.stgit@localhost.localdomain>
-	<20110301020302.GA11353@kroah.com>
-	<20110301122437.4477fa65@bob.linux.org.uk>
-	<20110301141527.GA12881@kroah.com>
-	<20110301142908.GA13144@kroah.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 1 Mar 2011 09:36:50 -0500
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+In-Reply-To: <20110301001300.GD2331@linux.vnet.ibm.com>
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+	 <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <4D6765B6.1030401@cn.fujitsu.com>
+	 <20110225203219.GD2269@linux.vnet.ibm.com>
+	 <4D6B16A8.4050405@cn.fujitsu.com> <1298886437.2428.10174.camel@twins>
+	 <20110301001300.GD2331@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Mar 2011 15:38:11 +0100
+Message-ID: <1298990291.5226.870.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Your patch removes two lines from drivers/staging/gma500/psb_drm.h with
-> the following diff:
-> --- a/drivers/staging/gma500/psb_drm.h
-> +++ b/drivers/staging/gma500/psb_drm.h
-> @@ -28,9 +28,6 @@
->  #include "drm_mode.h"
->  #endif
->  
-> -#include "psb_ttm_fence_user.h"
-> -#include "psb_ttm_placement_user.h"
-> -
->  #define DRM_PSB_SAREA_MAJOR 0
->  #define DRM_PSB_SAREA_MINOR 2
->  #define PSB_FIXED_SHIFT 16
-> 
-> 
-> Yet those #defines are not present in this file right now.  That's not a
-> whitespace change...
+On Mon, 2011-02-28 at 16:13 -0800, Paul E. McKenney wrote:
 
-Need to sort some other drivers out but I'll send you the regenerated
-patches in a bit once I'e pulled todays -next and see what is up. Makefile
-one does seem odd as nothing else should be touching that area.
+> I am OK doing the sched_setscheduler_nocheck() in UP_PREPARE, correct?
 
-Missed the spaces patch first time around dunno where it went.
+Yeah, it should be perfectly fine to call that.
 
-Alan
+> Ah, there is the rub -- I am using wait_event(), so I need to wake up the
+> kthread once before anyone uses it (or at least concurrently with anyone
+> using it).  Which I can presumably do from the CPU_STARTING notifier.
+
+Right, so your kthread is doing:
+
+static int rcu_cpu_kthread()
+{
+  for (;;) {
+    wait_event_interruptible();
+
+    /* do stuff */
+
+  }
+  return 0;
+}
+
+Which means that all folks wanting to make use of this already need to
+do a wakeup. So I don't see any reason to do that first wakeup from
+CPU_STARTING.
+
+wait_event() will only actually wait if the condition is false, in the
+start-up case above it will find the condition true and fall right
+through to do stuff.
+
+
+
