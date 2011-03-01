@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab1CAUqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 15:46:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51816 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757208Ab1CAUqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 15:46:06 -0500
-Date: Tue, 1 Mar 2011 15:46:12 -0500
-From: Greg KH <gregkh@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Milton Miller <miltonm@bga.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Anton Blanchard <anton@samba.org>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [Stable-review] [22/68] ixgbe: prevent speculative processing
- of descriptors before ready
-Message-ID: <20110301204612.GA16194@suse.de>
-References: <20110228162407.878045010@clark.kroah.org>
- <1298945674.3069.188.camel@localhost>
+	id S1757494Ab1CAUsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 15:48:40 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:52627 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757358Ab1CAUsi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 15:48:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YCz9+j9FsSHvSDZvKWs4ki754euFBjaly+1CXturjDimIN1YgtkgOZ33AITJ5mQRdc
+         0Zf+OxNpfJQXYPZTKi2Ka0WsNRJL4/HhlNZBEBe9jU/FT+9jETy+B4LZCAhXezqj4BH4
+         B1SOdDhIVZ189cgHoRx5ksypzp3IJvj8QpxcQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298945674.3069.188.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.44L0.1103011525040.2034-100000@iolanthe.rowland.org>
+References: <AANLkTikt1r3j99_ub0ce3_3snjoDXvR2+x6RxcjGfMK8@mail.gmail.com>
+	<Pine.LNX.4.44L0.1103011525040.2034-100000@iolanthe.rowland.org>
+Date: Tue, 1 Mar 2011 21:48:37 +0100
+Message-ID: <AANLkTi=nWXad7WMRYxu7cvC478qy7ptpotR4K_ATNt_J@mail.gmail.com>
+Subject: Re: [linux-pm] [RFC, PATCHv3 3/3] mmc: sdhci: handle wake-up from runtime_pm
+From: Pierre Tardy <tardyp@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 02:14:33AM +0000, Ben Hutchings wrote:
-> On Mon, 2011-02-28 at 08:22 -0800, Greg KH wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
-> > 
-> > From: Milton Miller <miltonm@bga.com>
-> > 
-> > commit 3c945e5b3719bcc18c6ddd31bbcae8ef94f3d19a upstream.
-> > 
-> > The PowerPC architecture does not require loads to independent bytes to be
-> > ordered without adding an explicit barrier.
-> > 
-> > In ixgbe_clean_rx_irq we load the status bit then load the packet data.
-> > With packet split disabled if these loads go out of order we get a
-> > stale packet, but we will notice the bad sequence numbers and drop it.
-> > 
-> > The problem occurs with packet split enabled where the TCP/IP header and data
-> > are in different descriptors. If the reads go out of order we may have data
-> > that doesn't match the TCP/IP header. Since we use hardware checksumming this
-> > bad data is never verified and it makes it all the way to the application.
-> [...]
-> 
-> Packet splitting should be completely disabled on the 82599, anyway.
-> Greg, what happened to this patch:
-> 
-> commit a124339ad28389093ed15eca990d39c51c5736cc
-> Author: Don Skidmore <donald.c.skidmore@intel.com>
-> Date:   Tue Jan 18 22:53:47 2011 +0000
-> 
->     ixgbe: fix for 82599 erratum on Header Splitting
->     
->     We have found a hardware erratum on 82599 hardware that can lead to
->     unpredictable behavior when Header Splitting mode is enabled.  So
->     we are no longer enabling this feature on affected hardware.
->     
->     Please see the 82599 Specification Update for more information.
->     
->     CC: stable@kernel.org
->     Signed-off-by: Don Skidmore <donald.c.skidmore@intel.com>
->     Tested-by: Stephen Ko <stephen.s.ko@intel.com>
->     Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+On Tue, Mar 1, 2011 at 9:27 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Tue, 1 Mar 2011, Pierre Tardy wrote:
+>
+>> >> +     if (pm_runtime_suspended()) {
+>> >> +             host->waking_up = 1;
+>> >> +             /* Note that we disable temporarly the interrupt until we do the
+>> >> +              * resume. If we don't then we'll get constantly interrupted
+>> >> +              * until we actually resume.
+>> >> +              *
+>> >> +              * as the irq is shared, this might not be very friendly to our
+>> >> +              * irq sharers but the pm_runtime workqueue should really be
+>> >> +              * called soon.
+>> >
+>> > Instead of disabling the IRQ, would it be possible to tell the device
+>> > to stop generating an interrupt request?
+>>
+>> Well, the device is power gated, so any access to it will cause a bus
+>> timeout (depending of the platform)
+>
+> But could you gate the power back on and then turn off the interrupt
+> request?
+That's the role of runtime_resume... On some platform, this may need
+up to sending some SPI commands to the PMIC, to get those power rails
+back on.
+Something that you cannot do in interrupt context.
 
-It does not apply to the .32 kernel.
+>
+> It seems like a foolish design to have an interrupt request that can't
+> be turned off by an interrupt handler.
+It's what we have for now ( looks like I need to go back to my system
+architects to see if we can change that...)
 
-Care to provide a backport if you feel it should be there?
-
-thanks,
-
-greg k-h
+Alan,
+thanks for all this feedback. I have now a much more clear view on how
+this is working on ACPI, I'll try to see how we can mimic this
+behaviour on intel_mid.
