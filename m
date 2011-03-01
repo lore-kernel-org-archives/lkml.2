@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab1CASer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 13:34:47 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:49682 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756162Ab1CASeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 13:34:46 -0500
-Date: Tue, 1 Mar 2011 19:33:35 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v6 1/1] PRUSS UIO driver support
-Message-ID: <20110301183334.GC20497@local>
-References: <1298926895-5294-1-git-send-email-pratheesh@ti.com>
- <1298926895-5294-2-git-send-email-pratheesh@ti.com>
- <20110228212638.GB16806@local>
- <B85A65D85D7EB246BE421B3FB0FBB593024BF3601C@dbde02.ent.ti.com>
+	id S1756875Ab1CASe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 13:34:58 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47828 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756575Ab1CASe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 13:34:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=vnSoLHZ/JC52fskVGfbZQBTY4NvaO228rUPEpaCuTO1XoyQ1rf24HRWGLGNFVP9Te3
+         LSd1VvOK7a7hPCa5WKlI9BpOjoXEnyddBBdoKJDzjmyDZKr1TyeQhuyOJPdCTlGUGACu
+         ADzJ6T0jeep95tYDIqLXRM3a82Tm24cMpO2lA=
+Date: Tue, 1 Mar 2011 19:34:54 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110301183454.GC23527@mtj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+ <201103011757.48593.vda.linux@googlemail.com>
+ <20110301170953.GB17933@htj.dyndns.org>
+ <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024BF3601C@dbde02.ent.ti.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 10:15:27AM +0530, TK, Pratheesh Gangadhar wrote:
-> Hi,
+On Tue, Mar 01, 2011 at 06:21:49PM +0100, Denys Vlasenko wrote:
+> I'm not saying that I like that other proposal more -
+> I am saying that your proposal needs to specify whether strace
+> needs to be changed, and how exactly, to correctly handle
+> SIGSTOPs under this proposal.
+
+Yeah, definitely.
+
+> > gdb can do whatever it wants to do but I don't think the above needs
+> > fixing.  In the first case, the user is explicitly telling gdb to
+> > continue the tracee, so it continues as it always has.
 > 
-> > -----Original Message-----
-> > From: Hans J. Koch [mailto:hjk@hansjkoch.de]
-> > Sent: Tuesday, March 01, 2011 2:57 AM
-> > To: TK, Pratheesh Gangadhar
-> > Cc: linux-kernel@vger.kernel.org; hjk@hansjkoch.de; gregkh@suse.de;
-> > tglx@linutronix.de; sshtylyov@mvista.com; arnd@arndb.de; Chatterjee, Amit;
-> > davinci-linux-open-source@linux.davincidsp.com; linux-arm-
-> > kernel@lists.infradead.org
-> > Subject: Re: [PATCH v6 1/1] PRUSS UIO driver support
-> > 
-> > On Tue, Mar 01, 2011 at 02:31:35AM +0530, Pratheesh Gangadhar wrote:
-> > > +
-> > > +		/* Register PRUSS IRQ lines */
-> > > +		p->irq = IRQ_DA8XX_EVTOUT0 + cnt;
-> > > +		p->handler = pruss_handler;
-> > > +
-> > > +		ret = uio_register_device(&dev->dev, p);
-> > > +
-> > > +		if (ret < 0)
-> > > +			goto out_free;
-> > > +	}
-> > > +
-> > > +	spin_lock_init(&lock);
-> > 
-> > That's too late. uio_register_device() enables the irq, and your spin_lock
-> > is not ready at that time.
+> It does not look like that to me.
 > 
-> This is ok in this context as "modprobe uio_pruss" is pre-requisite for
-> running PRUSS firmware and without firmware running PRUSS won't
-> generate interrupts. Actually PRUSS INTC is not setup till we start
-> user application.
+> User attached to some process. User might be unaware that
+> the process is currently stopped (imagine a group of processes
+> which use SIGSTOP/SIGCONT in their normal interactions).
+> 
+> User peeked some state, and then wants to let process
+> continue whatever process was doing, but remain in the debugger.
+> 
+> What user did not know is that "whatever process was doing" =
+> "being stopped by SIGSTOP, waiting to be woken up".
+> Therefore, if "continue" makes process run, it does not
+> return process to whatever process was doing.
+>
+> > In the latter
+> > case, the debugging session is over.  The tracee now should do
+> > whatever it's supposed to do.
+> 
+> It should do that in both cases.
 
-What if the user application is stopped, UIO driver module unloaded
-and loaded again?
+Maybe it should, maybe not, but that's mostly irrelevant because the
+described behavior is the current behavior.  There is no
+continue-if-not-job-control-stopped operation and we shouldn't change
+that beneath gdb because otherwise not only the behavior changes
+unexpectedly but also the user doesn't have a way to resume the tracee
+from within gdb.  The user has to go to another terminal and send
+SIGCONT explicitly.  If gdb wants to improve the behavior, it sure can
+implement proper job control behavior using the proposed changes.
 
-Anyway, please don't use that kind of argumentation. The next newbie
-developer might copy your work as a basis for his new driver, and there
-it probably won't work.
+Thanks.
 
-Simply put the spin_lock_init before the loop.
-
-Thanks,
-Hans
+-- 
+tejun
