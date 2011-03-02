@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab1CBTsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:48:54 -0500
-Received: from 110-197-170-69.skybeam.com ([69.170.197.110]:41732 "EHLO
-	chukar.localdomain" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756516Ab1CBTsw (ORCPT
+	id S1757409Ab1CBTs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:48:57 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43015 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757394Ab1CBTsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:48:52 -0500
-X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 14:48:52 EST
-From: Jake Edge <jake@lwn.net>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
-        mirqus@gmail.com, netdev@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
-        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
-        eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev kernel modules
-References: <201102272122.52643.arnd@arndb.de>
-	<4D6B6AE7.2050202@msgid.tls.msk.ru> <20110228095133.GA4351@albatros>
-	<20110228.112349.104067277.davem@davemloft.net>
-	<20110301194845.GA3533@albatros>
-	<1299010390.2529.30.camel@bwh-desktop>
-	<20110301213313.GA6507@albatros>
-Date: Wed, 02 Mar 2011 12:39:53 -0700
-In-Reply-To: <20110301213313.GA6507@albatros> (Vasiliy Kulikov's message of
-	"Wed, 2 Mar 2011 00:33:13 +0300")
-Message-ID: <m34o7ltipi.fsf@lwn.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 2 Mar 2011 14:48:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110302.114018.104077586.davem@davemloft.net>
+References: <20110302162650.GA26810@redhat.com> <20110302164428.GF26810@redhat.com>
+ <AANLkTinzQmprg+XHKjTj7bA+jFf_N4hta3_09M+SEfRt@mail.gmail.com> <20110302.114018.104077586.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 2 Mar 2011 11:48:03 -0800
+Message-ID: <AANLkTi=e7n63cCTUe1T+C0d6Ni1VVBFZZ6y_rj-2RQwu@mail.gmail.com>
+Subject: Re: [PATCH v3 0/4] exec: unify native/compat code
+To: David Miller <davem@davemloft.net>
+Cc: oleg@redhat.com, akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, pageexec@freemail.hu,
+        solar@openwall.com, eteo@redhat.com, spender@grsecurity.net,
+        roland@redhat.com, miltonm@bga.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 2, 2011 at 11:40 AM, David Miller <davem@davemloft.net> wrote:
+>
+> We purposely don't do that "page table entry typedef'd to aggregate" stuff
+> on sparc32 because otherwise such values get passed on the stack.
+>
+> Architectures can currently avoid this bad code generation for the
+> page table case, but with this new code they won't be able to avoid
+> pass-by-value.
 
-I am probably missing something, but shouldn't the existing
-MODULE_ALIASes stay?
+Well, the thing is, on architectures that _can_ pass by value, it
+avoids one indirection.
 
-Vasiliy Kulikov <segoon@openwall.com> writes:
+And if you do pass it on stack, then the code generated will be the
+same as if we passed a pointer. So sparc may not be able to take
+advantage of the optimization, but I don't think the code generation
+would be worse.
 
-> diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-> index 6613edf..d1d0e2c 100644
-> --- a/net/ipv4/ip_gre.c
-> +++ b/net/ipv4/ip_gre.c
-> @@ -1765,4 +1765,4 @@ module_exit(ipgre_fini);
->  MODULE_LICENSE("GPL");
->  MODULE_ALIAS_RTNL_LINK("gre");
->  MODULE_ALIAS_RTNL_LINK("gretap");
-> -MODULE_ALIAS("gre0");
-> +MODULE_ALIAS_NETDEV("gre0");
+For the page table case, we don't have that kind of trade-off: the
+trade-off there is literally just between "pass in registers, or pass
+on stack". Here the trade-off is "pass as an aggregate value or pass
+as a pointer to an aggregate value".
 
-that is, instead of replacing MODULE_ALIAS("gre0") with the NETDEV
-version, don't you want both for backward compatibility?
+That said, since I suspect that the main user will always just get
+inlined (ie the helper function that actually fetches the pointers), I
+suspect even sparc will see the advantage of the pass-by-value model.
 
-(if so, same goes for the other two)
+But you might want to actually test the difference and look at the
+code generation.
 
-jake
-
--- 
-Jake Edge - jake@lwn.net - http://lwn.net
+                      Linus
