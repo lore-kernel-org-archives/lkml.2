@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1CBPsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 10:48:52 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:35069 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750959Ab1CBPsv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 10:48:51 -0500
-Date: Wed, 2 Mar 2011 10:48:42 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Nick Piggin <npiggin@gmail.com>
-Subject: Re: [PATCH 4/7] ufs: remove the BKL
-Message-ID: <20110302154842.GA32314@elliptictech.com>
-References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
- <1299021191-17961-5-git-send-email-arnd@arndb.de>
- <20110302144705.GA15482@elliptictech.com>
- <201103021608.31875.arnd@arndb.de>
+	id S1754265Ab1CBPuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 10:50:01 -0500
+Received: from fieldses.org ([174.143.236.118]:42835 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959Ab1CBPt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 10:49:59 -0500
+Date: Wed, 2 Mar 2011 10:49:43 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, sfrench@us.ibm.com, agruen@linbit.com,
+        dilger.kernel@dilger.ca, sandeen@redhat.com, jlayton@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20110302154943.GB29136@fieldses.org>
+References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20110228211145.GG28617@thunk.org>
+ <87oc5vgwqr.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201103021608.31875.arnd@arndb.de>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87oc5vgwqr.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-02 16:08 +0100, Arnd Bergmann wrote:
-> On Wednesday 02 March 2011, Nick Bowler wrote:
-> > On 2011-03-02 00:13 +0100, Arnd Bergmann wrote:
-> > > The code is still only compile-tested,
+On Tue, Mar 01, 2011 at 12:20:36PM +0530, Aneesh Kumar K. V wrote:
+> On Mon, 28 Feb 2011 16:11:45 -0500, "Ted Ts'o" <tytso@mit.edu> wrote:
+> > Hi Aneesh,
 > > 
-> > This isn't true anymore; I've been running with this patch (well, the
-> > previous versions thereof) for some time now.  On the other hand, I
-> > don't use all of this driver's features.
+> > What is the current status of this patch series?  I seem to remember
+> > that Christoph and Al Viro had some objections; have those been
+> > cleared yet?  If not, can you summarize what their objections are?
 > 
-> I'll updated the comment. Can I add your Tested-by tag?
-
-Sure.
-
-> > > but it should at least be harmless on non-SMP systems, since the new
-> > > mutex is not taken on those.
+> The main objection raised was the use of may_delete and may_create inode
+> operations callback. They are gone now and we have MAY_* flags as
+> favoured by Al Viro.  The new MAY_* flags added are 
+> 
+> #define MAY_CREATE_FILE 128
+> #define MAY_CREATE_DIR 256
+> #define MAY_DELETE_CHILD 512
+> #define MAY_DELETE_SELF 1024
+> #define MAY_TAKE_OWNERSHIP 2048
+> #define MAY_CHMOD 4096
+> #define MAY_SET_TIMES 8192
+> 
+> 
 > > 
-> > I think this part of the patch is strange.  It seems like a gratuitous
-> > difference between SMP/preempt and other systems to #if out the code
-> > that takes the mutex.  This might make problems with the conversion fly
-> > under the radar longer because people with older systems won't encounter
-> > them.
+> > To be honest I haven't been paying super close attention to this patch
+> > series, and I'm curious what needs to happen with it one way or
+> > another.
+> > 
 > 
-> I agree it is strange, but the mutex has some serious performance impact
-> that I wanted to minimize on the systems where we know it is not needed.
-> The BKL was only active on those systems, so we know that non-SMP
-> non-preempt kernels don't need the mutex.
+> IMHO we are ready to get first 11 patches upstream in the next merge
+> window. ie the below set of patches.
 
-Fair enough.  If it hurts too much to run this code when it's not
-needed, then I guess it makes sense to leave it out.
+Why aren't all of them ready?
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+--b.
+
+> 
+> vfs: Make acl_permission_check() work for richacls
+> vfs: Add permission flags for setting file attributes
+> vfs: Make the inode passed to inode_change_ok non-const
+> vfs: Add delete child and delete self permission flags
+> vfs: Add new file and directory create permission flags
+> vfs: Optimize out IS_RICHACL() if CONFIG_FS_RICHACL is not defined
+> vfs: Add IS_RICHACL() test for richacl support
+> vfs: Add generic IS_ACL() test for acl support
+> vfs: Add a comment to inode_permission()
+> vfs: Pass all mask flags down to iop->check_acl
+> vfs: Indicate that the permission functions take all the MAY_* flags
+> 
+> -aneesh
