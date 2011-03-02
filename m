@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab1CBUYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:24:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59451 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754997Ab1CBUYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:24:51 -0500
-Date: Wed, 2 Mar 2011 15:25:15 -0500
-From: Greg KH <gregkh@suse.de>
-To: "Nadolski, Edmund" <edmund.nadolski@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "mel@csn.ul.ie" <mel@csn.ul.ie>
-Subject: Re: inconsistent lock state message on 2.6.36.4 stable release
-Message-ID: <20110302202515.GA16963@suse.de>
-References: <9EECC02A4CC333418C00A85D21E893261498F45872@azsmsx502.amr.corp.intel.com>
+	id S1757505Ab1CBUZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:25:53 -0500
+Received: from pfepb.post.tele.dk ([195.41.46.236]:47524 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab1CBUZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:25:52 -0500
+Date: Wed, 2 Mar 2011 21:25:51 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Vegard Nossum <vegard@kernel.org>
+Subject: Re: RFC: x86: kill binutils 2.16.x?
+Message-ID: <20110302202551.GA7191@merkur.ravnborg.org>
+References: <4D6E8932.1010405@zytor.com> <20110302120339.efd60504.akpm@linux-foundation.org> <4D6EA473.9000001@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9EECC02A4CC333418C00A85D21E893261498F45872@azsmsx502.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D6EA473.9000001@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 01:19:48PM -0700, Nadolski, Edmund wrote:
-> With v2.6.36.4 stable release and CONFIG_PROVE_LOCKING set, I notice
-> the below message during boot (full dmesg attached):
-
-2.6.36 is now "end of life" so there's really no need to test, debug, or
-report problems here as there's nothing we can do about it.
-
-> Per git bisect, it seems to have originated with this commit:
+On Wed, Mar 02, 2011 at 12:11:31PM -0800, H. Peter Anvin wrote:
+> On 03/02/2011 12:03 PM, Andrew Morton wrote:
+> > On Wed, 02 Mar 2011 10:15:14 -0800
+> > "H. Peter Anvin" <hpa@zytor.com> wrote:
+> > 
+> >> binutils 2.16 (and presumably its prereleases, binutils 2.15.9x) appears
+> >> to have more bugs than any other version of binutils released in modern
+> >> history, *before or after*.
+> >>
+> >> We chronically run into problems because that particular binutils
+> >> version breaks code that works fine elsewhere.
+> >>
+> >> I would like to know who would suffer from formally discontinuing
+> >> support for that version.  I understand some version of SLES shipped it,
+> >> but I don't know for sure.
+> >>
+> > 
+> > I gave up and became a customer of
+> > http://www.kernel.org/pub/tools/crosstool/index_old.shtml
 > 
-> $ git bisect good
-> c04eb9683fbb6374275309b859fcbf02e1db2c78 is the first bad commit
-> commit c04eb9683fbb6374275309b859fcbf02e1db2c78
-> Author: Mel Gorman <mel@csn.ul.ie>
-> Date:   Thu Jan 13 15:45:41 2011 -0800
+> Vegard,
 > 
->     mm: page allocator: adjust the per-cpu counter threshold when memory is low
+> The source directory in the above doesn't seem to match the binary
+> directories, and is stuck at binutils 2.16.1.  At the very best this is
+> iffy from a GPL perspective, and very confusing to users.
 > 
->     commit 88f5acf88ae6a9778f6d25d0d5d7ec2d57764a97 upstream.
-> 
-> The message goes away after I do a git revert on this commit. I've
-> also seen this message on 2.6.37.2, but not on 2.6.38-rc7.
+> This is obviously a highly useful project, can we straighten out the
+> source situation?
 
-Care to figure out what commit fixed this so that we can backport it to
-the .37-stable kernel?
+The binaries has never worked for me (on my Intel Atom 32 bit box).
+Today I use crosstool-ng - which works great.
+[Need to polish my patch to add saprc support...]
 
-git bisect can be used to do this as well.
+URL: http://ymorin.is-a-geek.org/projects/crosstool
 
-thanks,
-
-greg k-h
+	Sam
