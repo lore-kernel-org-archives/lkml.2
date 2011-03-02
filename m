@@ -1,88 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab1CBVrV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:47:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7402 "EHLO mx1.redhat.com"
+	id S1757716Ab1CBVsg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:48:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5080 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757598Ab1CBVrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:47:20 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, jaxboe@fusionio.com, czoccolo@gmail.com,
-        guijianfeng@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: cfq-iosched preempt issues
-References: <20110302124341.GA23940@sli10-conroe.sh.intel.com>
-	<20110302202118.GA2547@redhat.com>
-	<x49bp1t2pyd.fsf@segfault.boston.devel.redhat.com>
-	<20110302212733.GA7824@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 02 Mar 2011 16:47:14 -0500
-In-Reply-To: <20110302212733.GA7824@redhat.com> (Vivek Goyal's message of
-	"Wed, 2 Mar 2011 16:27:34 -0500")
-Message-ID: <x4939n52o0t.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753067Ab1CBVsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 16:48:35 -0500
+Date: Wed, 2 Mar 2011 16:47:05 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
+Message-ID: <20110302214705.GD2547@redhat.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+ <20110228230114.GB20845@redhat.com>
+ <20110302132830.GB2061@linux.develer.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110302132830.GB2061@linux.develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Wed, Mar 02, 2011 at 02:28:30PM +0100, Andrea Righi wrote:
+> On Mon, Feb 28, 2011 at 06:01:14PM -0500, Vivek Goyal wrote:
+> > On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
+> > > Overview
+> > > ========
+> > > Currently the blkio.throttle controller only support synchronous IO requests.
+> > > This means that we always look at the current task to identify the "owner" of
+> > > each IO request.
+> > > 
+> > > However dirty pages in the page cache can be wrote to disk asynchronously by
+> > > the per-bdi flusher kernel threads or by any other thread in the system,
+> > > according to the writeback policy.
+> > > 
+> > > For this reason the real writes to the underlying block devices may
+> > > occur in a different IO context respect to the task that originally
+> > > generated the dirty pages involved in the IO operation. This makes the
+> > > tracking and throttling of writeback IO more complicate respect to the
+> > > synchronous IO from the blkio controller's perspective.
+> > > 
+> > > Proposed solution
+> > > =================
+> > > In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
+> > > the problem of the buffered writes limitation by tracking the ownership of all
+> > > the dirty pages in the system.
+> > > 
+> > > This would allow to always identify the owner of each IO operation at the block
+> > > layer and apply the appropriate throttling policy implemented by the
+> > > blkio.throttle controller.
+> > > 
+> > > This solution makes the blkio.throttle controller to work as expected also for
+> > > writeback IO, but it does not resolve the problem of faster cgroups getting
+> > > blocked by slower cgroups (that would expose a potential way to create DoS in
+> > > the system).
+> > > 
+> > > In fact, at the moment critical IO requests (that have dependency with other IO
+> > > requests made by other cgroups) and non-critical requests are mixed together at
+> > > the filesystem layer in a way that throttling a single write request may stop
+> > > also other requests in the system, and at the block layer it's not possible to
+> > > retrieve such informations to make the right decision.
+> > > 
+> > > A simple solution to this problem could be to just limit the rate of async
+> > > writes at the time a task is generating dirty pages in the page cache. The
+> > > big advantage of this approach is that it does not need the overhead of
+> > > tracking the ownership of the dirty pages, because in this way from the blkio
+> > > controller perspective all the IO operations will happen from the process
+> > > context: writes in memory and synchronous reads from the block device.
+> > > 
+> > > The drawback of this approach is that the blkio.throttle controller becomes a
+> > > little bit leaky, because with this solution the controller is still affected
+> > > by the IO spikes during the writeback of dirty pages executed by the kernel
+> > > threads.
+> > > 
+> > > Probably an even better approach would be to introduce the tracking of the
+> > > dirty page ownership to properly account the cost of each IO operation at the
+> > > block layer and apply the throttling of async writes in memory only when IO
+> > > limits are exceeded.
+> > 
+> > Andrea, I am curious to know more about it third option. Can you give more
+> > details about accouting in block layer but throttling in memory. So say 
+> > a process starts IO, then it will still be in throttle limits at block
+> > layer (because no writeback has started), then the process will write
+> > bunch of pages in cache. By the time throttle limits are crossed at
+> > block layer, we already have lots of dirty data in page cache and
+> > throttling process now is already late?
+> 
+> Charging the cost of each IO operation at the block layer would allow
+> tasks to write in memory at the maximum speed. Instead, with the 3rd
+> approach, tasks are forced to write in memory at the rate defined by the
+> blkio.throttle.write_*_device (or blkio.throttle.async.write_*_device).
+> 
+> When we'll have the per-cgroup dirty memory accounting and limiting
+> feature, with this approach each cgroup could write to its dirty memory
+> quota at the maximum rate.
 
-> On Wed, Mar 02, 2011 at 04:05:30PM -0500, Jeff Moyer wrote:
->> Vivek Goyal <vgoyal@redhat.com> writes:
->> 
->> > On Wed, Mar 02, 2011 at 08:43:41PM +0800, Shaohua Li wrote:
->> >> queue preemption is good for some workloads and not for others. With commit
->> >> f8ae6e3eb825, the impact is amplified. I currently have two issues with it:
->> >> 1. In a multi-threaded workload, each thread runs a random read/write (for
->> >> example, mmap write) with iodepth 1. I found the queue depth gets smaller
->> >> with commit f8ae6e3eb825. The reason is write gets preempted, so more threads
->> >> are waitting for write, and on the other hand, there are less threads doing
->> >> read. This will make the queue depth small, so performance drops a little.
->> >> So in this case, speed up write can speed up read too, but we can't detect
->> >> it.
->> >> 2. cfq_may_dispatch doesn't limit queue depth if the queue is the sole queue.
->> >> What about if there are two queues, one sync and one async? If the sync queue's
->> >> think time is small, we can treat it as the sole queue, because the sync queue
->> >> will preempt async queue, so we don't need care about the async queue's latency.
->> >> The issue exists before, but f8ae6e3eb825 amplifies it. Below is a patch for it.
->> >> 
->> >> Any idea?
->> >
->> > CFQ is already very complicated, lets try to keep it simple. Because it
->> > is complicated, making it hierarchical for cgroup becomes even harder.
->> >
->> > IIUC, you are saying that cfqd->busy_queues check is not sufficient as
->> > it takes async queues also in account.
->> >
->> > So we can keep another count say, cfqd->busy_sync_queues and if there
->> > are no busy_sync_queues, allow unlimited depth and that should be
->> > a really simple few lines change.
->> 
->> That covers workload 2, but what about 1?  I'm really not sure what the
->> workload there is.
->
-> But CFQ can't track that if reads are stuck behind peding writes. And the
-> whole philosophy is that give READS the importance and not WRITES. So I
-> am not sure what we can do about first case.
+Ok, so this is option 3 which you have already implemented in this
+patchset. 
 
-OK, I suspected it might be reads backed up behind writes, but wasn't
-sure.  I agree that we can't tell that's happening, and it's less clear
-whether we'd even want to do anything about it.
+I guess then I am confused with option 2. Can you elaborate a little
+more there.
 
-> If we are really worried about performance and willing to loose isolation
-> in the process (read vs write isolation, or isolation across groups), then
-> may be we can think of implementing another tunables say min_queue_depth.
-> That tells CFQ that don't idle if you are not driving min_queue_depth.
+> 
+> BTW, another thing that we probably need is that any cgroup should be
+> forced to write their own inodes when the limit defined by dirty_ratio
+> is exceeded. I mean, avoid to select inodes from the list of dirty
+> inodes in a FIFO way, but provides a better logic to "assign" the
+> ownership of each inode to a cgroup (maybe that one that had generated
+> most of the dirty pages in the inodes) and use for example a list of
+> dirty inodes per cgroup or something similar.
+> 
+> In this way we should really be able to provide a good quality of
+> service for the most part of the cases IMHO.
+> 
+> I also plan to write down another patch set to implement this logic.
 
-Hm, I think that would break a lot of things.  ;-)
+Yes, triggering writeout of inodes of a cgroup once it crosses dirty
+ratio is desirable. A patch like that can go on top of Greg's per cgroup
+dirty ratio patacehes.
 
-> But again, this should be backed by some real workloads.
-
-I agree, and said as much in my initial response to Shaohua.
-
-Cheers,
-Jeff
+Thanks
+Vivek
