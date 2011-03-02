@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab1CBTs5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:48:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43015 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757394Ab1CBTsz (ORCPT
+	id S1757430Ab1CBTtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:49:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38956 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757394Ab1CBTtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:48:55 -0500
+	Wed, 2 Mar 2011 14:49:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=m+UC5X+DSLMaQAAkUcoPROEcpi+W9XITRiyvPJNL+7oLxWu4WmjfjR2ujxwsgRxBka
+         /IHe7AfgX85CNZysfKx0iCVBjn9j3cKtPfLKKWi0XQPsc5VywjPfbB5qfVruN3nukETr
+         HYNDDhBR7tj9S79/GPLnTzVs3kQyULlzXFT9M=
+Message-ID: <4D6E9F3F.5020708@openvz.org>
+Date: Wed, 02 Mar 2011 22:49:19 +0300
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110302.114018.104077586.davem@davemloft.net>
-References: <20110302162650.GA26810@redhat.com> <20110302164428.GF26810@redhat.com>
- <AANLkTinzQmprg+XHKjTj7bA+jFf_N4hta3_09M+SEfRt@mail.gmail.com> <20110302.114018.104077586.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 2 Mar 2011 11:48:03 -0800
-Message-ID: <AANLkTi=e7n63cCTUe1T+C0d6Ni1VVBFZZ6y_rj-2RQwu@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] exec: unify native/compat code
-To: David Miller <davem@davemloft.net>
-Cc: oleg@redhat.com, akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, pageexec@freemail.hu,
-        solar@openwall.com, eteo@redhat.com, spender@grsecurity.net,
-        roland@redhat.com, miltonm@bga.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip 1/2 resend] x86, nmi: Define a name for NMI control
+ port
+References: <4D6E630E.1070107@openvz.org> <20110302193533.GY11359@redhat.com>
+In-Reply-To: <20110302193533.GY11359@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 11:40 AM, David Miller <davem@davemloft.net> wrote:
->
-> We purposely don't do that "page table entry typedef'd to aggregate" stuff
-> on sparc32 because otherwise such values get passed on the stack.
->
-> Architectures can currently avoid this bad code generation for the
-> page table case, but with this new code they won't be able to avoid
-> pass-by-value.
+On 03/02/2011 10:35 PM, Don Zickus wrote:
+> On Wed, Mar 02, 2011 at 06:32:30PM +0300, Cyrill Gorcunov wrote:
+>> Also add a comment anout why we need in-out operations.
+>>
+>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>> ---
+>>
+>> Ingo I hope this time I've resolved MUA space injection.
+>>
+>>  arch/x86/include/asm/mach_traps.h |   18 +++++++++++++-----
+>>  1 file changed, 13 insertions(+), 5 deletions(-)
+>>
+>> Index: linux-2.6.git/arch/x86/include/asm/mach_traps.h
+>> =====================================================================
+>> --- linux-2.6.git.orig/arch/x86/include/asm/mach_traps.h
+>> +++ linux-2.6.git/arch/x86/include/asm/mach_traps.h
+>> @@ -8,6 +8,7 @@
+>>  #include <asm/mc146818rtc.h>
+>>
+>>  #define NMI_REASON_PORT		0x61
+>> +#define NMI_ENABLE_PORT		0x70 /* Real-Time Clock Address Register as well */
+>>
+>>  #define NMI_REASON_SERR		0x80
+>>  #define NMI_REASON_IOCHK	0x40
+>> @@ -30,12 +31,19 @@ static inline void reassert_nmi(void)
+>>  		old_reg = current_lock_cmos_reg();
+>>  	else
+>>  		lock_cmos(0); /* register doesn't matter here */
+>> -	outb(0x8f, 0x70);
+>> -	inb(0x71);		/* dummy */
+> 
+> I was wondering if 0x71 should get a name change too.  Then again I can't
+> find the Intel doc that tells me what 0x70 is either (I remember seeing it
+> somewhere).
+> 
+> Cheers,
+> Don
 
-Well, the thing is, on architectures that _can_ pass by value, it
-avoids one indirection.
+  Well, me specs are on another machine (which I didn't copied back yet :) but
+if my memory doesn't betray me it can be found in ICH specification. For 0x71 i
+simply don't remember how it's named in spec but it stands for RTC ram target
+register iirc.
 
-And if you do pass it on stack, then the code generated will be the
-same as if we passed a pointer. So sparc may not be able to take
-advantage of the optimization, but I don't think the code generation
-would be worse.
-
-For the page table case, we don't have that kind of trade-off: the
-trade-off there is literally just between "pass in registers, or pass
-on stack". Here the trade-off is "pass as an aggregate value or pass
-as a pointer to an aggregate value".
-
-That said, since I suspect that the main user will always just get
-inlined (ie the helper function that actually fetches the pointers), I
-suspect even sparc will see the advantage of the pass-by-value model.
-
-But you might want to actually test the difference and look at the
-code generation.
-
-                      Linus
+-- 
+    Cyrill
