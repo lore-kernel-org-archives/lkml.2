@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab1CBSq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 13:46:27 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34931 "EHLO hera.kernel.org"
+	id S1756539Ab1CBSuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 13:50:16 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38236 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002Ab1CBSq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 13:46:26 -0500
-Date: Wed, 2 Mar 2011 18:46:03 GMT
-From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        gorcunov@openvz.org, ying.huang@intel.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gorcunov@openvz.org, ying.huang@intel.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <4D6E630E.1070107@openvz.org>
-References: <4D6E630E.1070107@openvz.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, nmi: Define a name for NMI control port
-Message-ID: <tip-0f5dbad5ecab0921911966e857eab408ef32163c@git.kernel.org>
-Git-Commit-ID: 0f5dbad5ecab0921911966e857eab408ef32163c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754902Ab1CBSuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 13:50:12 -0500
+Date: Wed, 2 Mar 2011 19:49:53 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Liu Yuan <namei.unix@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, jaxboe@fusionio.com, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [RFC PATCH 4/5] mm: Add hit/miss accounting for Page Cache
+Message-ID: <20110302184953.GH13693@elte.hu>
+References: <no>
+ <1299055090-23976-4-git-send-email-namei.unix@gmail.com>
+ <20110302084542.GA20795@elte.hu>
+ <1299085326.8493.820.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Mar 2011 18:46:05 +0000 (UTC)
+In-Reply-To: <1299085326.8493.820.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0f5dbad5ecab0921911966e857eab408ef32163c
-Gitweb:     http://git.kernel.org/tip/0f5dbad5ecab0921911966e857eab408ef32163c
-Author:     Cyrill Gorcunov <gorcunov@openvz.org>
-AuthorDate: Wed, 2 Mar 2011 18:32:30 +0300
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 2 Mar 2011 16:44:44 +0100
 
-x86, nmi: Define a name for NMI control port
+* Dave Hansen <dave@linux.vnet.ibm.com> wrote:
 
-Also add a comment about why we need in/out operations.
+> On Wed, 2011-03-02 at 09:45 +0100, Ingo Molnar wrote:
+> > But, instead of trying to improve those aspects of our existing instrumentation 
+> > frameworks, mm/* is gradually growing its own special instrumentation hacks, missing 
+> > the big picture and fragmenting the instrumentation space some more.
+> > 
+> > That trend is somewhat sad. 
+> 
+> Go any handy examples of how you'd like to see these done?
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Huang Ying <ying.huang@intel.com>
-LKML-Reference: <4D6E630E.1070107@openvz.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/mach_traps.h |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+There's a very, very old branch in tip:tracing/mm (by Steve) that shows off some of 
+the concepts that could be introduced, to 'dump' current MM state via an extension 
+to the tracepoints APIs:
 
-diff --git a/arch/x86/include/asm/mach_traps.h b/arch/x86/include/asm/mach_traps.h
-index 72a8b52..7775deb 100644
---- a/arch/x86/include/asm/mach_traps.h
-+++ b/arch/x86/include/asm/mach_traps.h
-@@ -8,6 +8,7 @@
- #include <asm/mc146818rtc.h>
- 
- #define NMI_REASON_PORT		0x61
-+#define NMI_ENABLE_PORT		0x70 /* Real-Time Clock Address Register as well */
- 
- #define NMI_REASON_SERR		0x80
- #define NMI_REASON_IOCHK	0x40
-@@ -30,12 +31,19 @@ static inline void reassert_nmi(void)
- 		old_reg = current_lock_cmos_reg();
- 	else
- 		lock_cmos(0); /* register doesn't matter here */
--	outb(0x8f, 0x70);
--	inb(0x71);		/* dummy */
--	outb(0x0f, 0x70);
--	inb(0x71);		/* dummy */
-+
-+	/*
-+	 * This will cause the NMI output to transition low
-+	 * then high if there are any pending NMI sources. The
-+	 * CPU's NMI input logic will then register a new NMI.
-+	 */
-+	outb(0x8f, NMI_ENABLE_PORT);
-+	inb(0x71);	/* dummy */
-+	outb(0x0f, NMI_ENABLE_PORT);
-+	inb(0x71);	/* dummy */
-+
- 	if (old_reg >= 0)
--		outb(old_reg, 0x70);
-+		outb(old_reg, NMI_ENABLE_PORT);
- 	else
- 		unlock_cmos();
- }
+3383e37ea796: tracing, page-allocator: Add a postprocessing script for page-allocator-related ftrace events
+c33b3596bc38: tracing, page-allocator: Add trace event for page traffic related to the buddy lists
+0d524fb734bc: tracing, mm: Add trace events for anti-fragmentation falling back to other migratetypes
+b9a28177eedf: tracing, page-allocator: Add trace events for page allocation and page freeing
+807243eb20b2: Merge branch 'perfcounters/urgent' into tracing/mm
+08b6cb88eeb5: perf_counter tools: Provide default bfd_demangle() function in case it's not around
+eb4671011887: tracing/mm: rename 'trigger' file to 'dump_range'
+1487a7a1ff99: tracing/mm: fix mapcount trace record field
+dcac8cdac1d4: tracing/mm: add page frame snapshot trace
+
+That's just a demo in essence - showing what things could be done in this area.
+
+You can pick those commits up via running:
+
+  http://people.redhat.com/mingo/tip.git/README
+
+Thanks,
+
+	Ingo
