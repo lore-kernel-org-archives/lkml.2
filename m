@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab1CBVrD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:47:03 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55561
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753067Ab1CBVq7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:46:59 -0500
-Date: Wed, 02 Mar 2011 13:47:35 -0800 (PST)
-Message-Id: <20110302.134735.260066220.davem@davemloft.net>
-To: a.p.zijlstra@chello.nl
-Cc: torvalds@linux-foundation.org, aarcange@redhat.com, tglx@linutronix.de,
-        riel@redhat.com, mingo@elte.hu, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, benh@kernel.crashing.org,
-        hugh.dickins@tiscali.co.uk, mel@csn.ul.ie, npiggin@kernel.dk,
-        rmk@arm.linux.org.uk, cmetcalf@tilera.com, schwidefsky@de.ibm.com
-Subject: Re: [RFC][PATCH 2/6] mm: Change flush_tlb_range() to take an
- mm_struct
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1299102027.1310.39.camel@laptop>
-References: <20110302180258.956518392@chello.nl>
-	<AANLkTimhWKhHojZ-9XZGSh3OzfPhvo__Dib9VfeMWoBQ@mail.gmail.com>
-	<1299102027.1310.39.camel@laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1757760Ab1CBVrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:47:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757598Ab1CBVrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 16:47:20 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, jaxboe@fusionio.com, czoccolo@gmail.com,
+        guijianfeng@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: cfq-iosched preempt issues
+References: <20110302124341.GA23940@sli10-conroe.sh.intel.com>
+	<20110302202118.GA2547@redhat.com>
+	<x49bp1t2pyd.fsf@segfault.boston.devel.redhat.com>
+	<20110302212733.GA7824@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 02 Mar 2011 16:47:14 -0500
+In-Reply-To: <20110302212733.GA7824@redhat.com> (Vivek Goyal's message of
+	"Wed, 2 Mar 2011 16:27:34 -0500")
+Message-ID: <x4939n52o0t.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed, 02 Mar 2011 22:40:27 +0100
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-> On Wed, 2011-03-02 at 11:19 -0800, Linus Torvalds wrote:
->> On Wed, Mar 2, 2011 at 9:59 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > In order to be able to properly support architecture that want/need to
->> > support TLB range invalidation, we need to change the
->> > flush_tlb_range() argument from a vm_area_struct to an mm_struct
->> > because the range might very well extend past one VMA, or not have a
->> > VMA at all.
+> On Wed, Mar 02, 2011 at 04:05:30PM -0500, Jeff Moyer wrote:
+>> Vivek Goyal <vgoyal@redhat.com> writes:
 >> 
->> I really don't think this is right. The whole "drop the icache
->> information" thing is a total anti-optimization, since for some
->> architectures, the icache flush is the _big_ deal. 
-> 
-> Right, so Tile has the I-cache flush from flush_tlb_range(), I'm not
-> sure if that's the right thing to do, Documentation/cachetlb.txt seems
-> to suggest doing it from update_mmu_cache() like things.
+>> > On Wed, Mar 02, 2011 at 08:43:41PM +0800, Shaohua Li wrote:
+>> >> queue preemption is good for some workloads and not for others. With commit
+>> >> f8ae6e3eb825, the impact is amplified. I currently have two issues with it:
+>> >> 1. In a multi-threaded workload, each thread runs a random read/write (for
+>> >> example, mmap write) with iodepth 1. I found the queue depth gets smaller
+>> >> with commit f8ae6e3eb825. The reason is write gets preempted, so more threads
+>> >> are waitting for write, and on the other hand, there are less threads doing
+>> >> read. This will make the queue depth small, so performance drops a little.
+>> >> So in this case, speed up write can speed up read too, but we can't detect
+>> >> it.
+>> >> 2. cfq_may_dispatch doesn't limit queue depth if the queue is the sole queue.
+>> >> What about if there are two queues, one sync and one async? If the sync queue's
+>> >> think time is small, we can treat it as the sole queue, because the sync queue
+>> >> will preempt async queue, so we don't need care about the async queue's latency.
+>> >> The issue exists before, but f8ae6e3eb825 amplifies it. Below is a patch for it.
+>> >> 
+>> >> Any idea?
+>> >
+>> > CFQ is already very complicated, lets try to keep it simple. Because it
+>> > is complicated, making it hierarchical for cgroup becomes even harder.
+>> >
+>> > IIUC, you are saying that cfqd->busy_queues check is not sufficient as
+>> > it takes async queues also in account.
+>> >
+>> > So we can keep another count say, cfqd->busy_sync_queues and if there
+>> > are no busy_sync_queues, allow unlimited depth and that should be
+>> > a really simple few lines change.
+>> 
+>> That covers workload 2, but what about 1?  I'm really not sure what the
+>> workload there is.
+>
+> But CFQ can't track that if reads are stuck behind peding writes. And the
+> whole philosophy is that give READS the importance and not WRITES. So I
+> am not sure what we can do about first case.
 
-Sparc32 chips that require a valid TLB entry for I-cache flushes do
-the flush from flush_cache_range() and similar.
+OK, I suspected it might be reads backed up behind writes, but wasn't
+sure.  I agree that we can't tell that's happening, and it's less clear
+whether we'd even want to do anything about it.
 
-Sparc64 does not have the "present TLB entry" requirement (since I-cache
-is physical), and we handle it in update_mmu_cache() but only as an
-optimization.  This scheme works in concert with flush_dcache_page().
+> If we are really worried about performance and willing to loose isolation
+> in the process (read vs write isolation, or isolation across groups), then
+> may be we can think of implementing another tunables say min_queue_depth.
+> That tells CFQ that don't idle if you are not driving min_queue_depth.
 
-Either scheme is valid, the former is best when flushing is based upon
-virtual addresses.
+Hm, I think that would break a lot of things.  ;-)
 
-But I'll be the first to admit that the interfaces we have for doing
-this stuff is basically nothing more than a set of hooks, with
-assurances that the hooks will be called in specific situations.  Like
-anything else, it's evolved over time based upon architectural needs.
+> But again, this should be backed by some real workloads.
 
+I agree, and said as much in my initial response to Shaohua.
+
+Cheers,
+Jeff
