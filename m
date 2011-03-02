@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab1CBGT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 01:19:26 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:58416 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab1CBGTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 01:19:25 -0500
-Date: Wed, 2 Mar 2011 00:19:10 -0600
-From: David Fries <david@fries.net>
-To: Liang Bao <tim.bao@gmail.com>, Andrei Warkentin <andreiw@motorola.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH] work around for l2cap NULL dereference in
- l2cap_conn_start
-Message-ID: <20110302061910.GE22204@spacedout.fries.net>
-References: <20110211035309.GA22204@spacedout.fries.net>
- <20110214145649.GE2597@joana>
- <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
- <20110221043601.GB22204@spacedout.fries.net>
- <AANLkTi=b5UCdyc3ZtUFCx23uYygM7eRyGu-y_wdJ5JXi@mail.gmail.com>
- <20110227191545.GB2166@joana>
- <20110228050340.GC22204@spacedout.fries.net>
- <20110228173022.GC2165@joana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110228173022.GC2165@joana>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Wed, 02 Mar 2011 00:19:12 -0600 (CST)
+	id S1753377Ab1CBGZg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 01:25:36 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:41849 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154Ab1CBGZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 01:25:34 -0500
+Date: Tue, 1 Mar 2011 22:25:31 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Mikael Abrahamsson <swmike@swm.pp.se>
+Cc: John Heffner <johnwheffner@gmail.com>,
+        Bill Sommerfeld <wsommerfeld@google.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        Albert Cahalan <acahalan@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+Message-ID: <20110301222531.24832a93@nehalam>
+In-Reply-To: <alpine.DEB.1.10.1103010137400.7942@uplift.swm.pp.se>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+	<alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+	<1298793252.8726.45.camel@edumazet-laptop>
+	<AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+	<20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+	<AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
+	<cbb9e1113901f1a324359b6ed3f1a611@localhost>
+	<AANLkTikje6rvjSfEA3CvUjdgFwzk-SBZDdO5kQvi6LZy@mail.gmail.com>
+	<AANLkTin_jY_J7tJseMLVmrQVVRezOVQTGCgB_6tefgXJ@mail.gmail.com>
+	<alpine.DEB.1.10.1103010137400.7942@uplift.swm.pp.se>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 02:30:22PM -0300, Gustavo F. Padovan wrote:
-> Hi David,
-> 
-> * David Fries <david@fries.net> [2011-02-27 23:03:40 -0600]:
-> 
-> > On Sun, Feb 27, 2011 at 04:15:45PM -0300, Gustavo F. Padovan wrote:
-> > > I pushed the following patch to bluetooth-2.6 tree. It should fix the problem
-> > > by avoiding connections to be accepted before a L2CAP info response comes:
-> > 
-> > Is
-> > git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
-> > the bluetooth-2.6 tree you mentioned?  I don't see your patch there.
-> > As a side note, the inline patch in your e-mail has the tabs replaced by
-> > spaces, once I changed them, it applied cleanly.
-> > 
-> > I first reverted to the base N900 kernel-power-2.6.28 46 (none of my
-> > changes or debugging), it crashed as expected.  I then applied your
-> > patch 743400e0, and it still crashed.  I added back the
-> > l2cap_conn_start parent check and some debugging in af_bluetooth.c
-> > dmesg debug output and patches follow.
-> 
-> I want to see a test with this patch and a recent kernel. We added many fixes
-> to stack in the last two years. Can you test this scenario?
+On Tue, 1 Mar 2011 01:46:51 +0100 (CET)
+Mikael Abrahamsson <swmike@swm.pp.se> wrote:
 
-I'm sorry, but apparently not, at least this post says 2.6.37 isn't
-going to happen for the N900 and Maemo.
-http://forums.internettablettalk.com/showthread.php?t=70082
+> On Mon, 28 Feb 2011, John Heffner wrote:
+> 
+> > Right... while I generally agree that a fixed-length drop-tail queue 
+> > isn't optimal, isn't this problem what the various AQM schemes try to 
+> > solve?
+> 
+> I am not an expert on exactly how Linux does this, but for Cisco and for 
+> instance ATM interfaces, there are two stages of queuing. One is the 
+> "hardware queue", which is a FIFO queue going into the ATM framer. If one 
+> wants low CPU usage, then this needs to be high so multiple packets can be 
+> put there per interrupt. Since AQM is working before this, it also means 
+> the low-latency-queue will have a higher latency as it ends up behind 
+> larger packets in the hw queue.
+> 
+> So on what level does the AQM work in Linux? Does it work similarily, that 
+> txqueuelen is a FIFO queue to the hardware that AQM feeds packets into?
+> 
+> Also, when one uses WRED the thinking is generally to keep the average 
+> queue len down, but still allow for bursts by dynamically changing the 
+> drop probability and where it happens. When there is no queuing, allow for 
+> big queue (so it can fill up if needed), but if the queue is large for 
+> several seconds, start to apply WRED to bring it down.
+> 
+> There is generally no need at all to constantly buffer > 50 ms of data, 
+> then it's better to just start selectively dropping it. In time of 
+> burstyness (perhaps when re-routing traffic) there is need to buffer 
+> 200-500ms of during perhaps 1-2 seconds before things stabilize.
+> 
+> So one queuing scheme and one queue limit isn't going to solve this, there 
+> need to be some dynamic built into the system for it to work well.
+> 
+> AQM needs to feed into a relatively short hw queue and AQM needs to exist 
+> on output also when the traffic is sourced from the box itself, no tonly 
+> routed. It would also help if the default would be to use let's say 25% of 
+> the bandwidth for smaller packets (< 200 bytes or so) which generally are 
+> for interactive uses or are ACKs.
+> 
 
-I tried 2.6.37-n900 from
-git://gitorious.org/nokia-n900-kernel/nokia-n900-kernel.git anyway,
-but the display visibly degrades like it isn't being updated and
-doesn't apparently get any further.  I don't have anyway to debug it
-further.
+It is possible to build an equivalent to WRED out existing GRED queuing
+discipline but it does require a lot of tc knowledge to get right.
+The inventor of RED (Van Jacobsen) has issues with WRED because of
+the added complexity of queue selection. RED requires some parameters
+which the average user has no idea how to set.
+
+There are several problems with RED that prevent prevent VJ from
+recommending it in the current form.
+
+  http://gettys.wordpress.com/2010/12/17/red-in-a-different-light/
+
 
 -- 
-David Fries <david@fries.net>
-http://fries.net/~david/ (PGP encryption key available)
