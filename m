@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab1CBIig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:38:36 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51025 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab1CBIid (ORCPT
+	id S1756168Ab1CBIij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:38:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65510 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903Ab1CBIih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:38:33 -0500
+	Wed, 2 Mar 2011 03:38:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BGng6jx/ki54VNOWcySi4xZZNLjgJ/0qBSHepy7JEg+Bqf4QegABHsB98gdUu9M8/j
-         Vg19vg1vIqPbanIUWOOLExIgM1k9JLG51n8dituvg+JkcIpR8+MbgWCH3M9QFDHj2t2N
-         4HnboDv9+aM4X8j4meWdGPri/AAqcJC3gxFqo=
+        b=SqfU/rBFLrUWBjjSg+nDu2KKXbwTZQ754KVTgtZ9kj+Q6Xj6SxQKaKm7C6fX6HzQzp
+         5kZI3OiAqp8hYKhOMf2mSRD0rqC6i6Sx5pLXFpIiklsABBuQFTUCS8gSKEcgdSAIEfcR
+         zKiItCNToVXbEuMPgOlF/S2XGrTqS18ENsOjQ=
 From: Liu Yuan <namei.unix@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jaxboe@fusionio.com,
         akpm@linux-foundation.org, fengguang.wu@intel.com
-Subject: [RFC PATCH 4/5] mm: Add hit/miss accounting for Page Cache
-Date: Wed,  2 Mar 2011 16:38:09 +0800
-Message-Id: <1299055090-23976-4-git-send-email-namei.unix@gmail.com>
+Subject: [RFC PATCH 5/5] mm: Add readpages accounting
+Date: Wed,  2 Mar 2011 16:38:10 +0800
+Message-Id: <1299055090-23976-5-git-send-email-namei.unix@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <no>
 References: <no>
@@ -28,112 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Liu Yuan <tailai.ly@taobao.com>
 
-Hit/Miss accountings are request-centric: that is, single request
-would either cause one hit or one miss to be accounted for the very
-first time that kernel query the page cache. In some rare error
-conditions, kernel would re-query the page cache, but we donnot
-account for it and ignore it for simplicity.
+The _readpages_ counter simply counts how many pages the kernel
+really request from the disk, either by readahead module or
+aop->readpage() when readahead window equals 0.
+
+This counter is request-centric and doesnot check read errors
+since the read requests are issued to the block layer already.
 
 Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
 ---
- mm/filemap.c |   26 ++++++++++++++++++++++----
- 1 files changed, 22 insertions(+), 4 deletions(-)
+ mm/filemap.c   |    1 +
+ mm/readahead.c |    2 ++
+ 2 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/mm/filemap.c b/mm/filemap.c
-index 83a45d3..5388b2a 100644
+index 5388b2a..d638391 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -1009,10 +1009,15 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
- 		pgoff_t end_index;
- 		loff_t isize;
- 		unsigned long nr, ret;
-+		int retry_find = 0;
+@@ -1137,6 +1137,7 @@ readpage:
+ 		 */
+ 		ClearPageError(page);
+ 		/* Start the actual read. The read will unlock the page. */
++		page_cache_acct_readpages(mapping->host->i_sb, 1);
+ 		error = mapping->a_ops->readpage(filp, page);
  
- 		cond_resched();
- find_page:
- 		page = find_get_page(mapping, index);
-+		if (likely(!retry_find) && page && PageUptodate(page))
-+			page_cache_acct_hit(inode->i_sb, READ);
-+		else
-+			page_cache_acct_missed(inode->i_sb, READ);
- 		if (!page) {
- 			page_cache_sync_readahead(mapping,
- 					ra, filp,
-@@ -1137,6 +1142,7 @@ readpage:
  		if (unlikely(error)) {
- 			if (error == AOP_TRUNCATED_PAGE) {
- 				page_cache_release(page);
-+				retry_find = 1;
- 				goto find_page;
- 			}
- 			goto readpage_error;
-@@ -1153,6 +1159,7 @@ readpage:
- 					 */
- 					unlock_page(page);
- 					page_cache_release(page);
-+					retry_find = 1;
- 					goto find_page;
- 				}
- 				unlock_page(page);
-@@ -1185,8 +1192,10 @@ no_cached_page:
- 						index, GFP_KERNEL);
- 		if (error) {
- 			page_cache_release(page);
--			if (error == -EEXIST)
-+			if (error == -EEXIST) {
-+				retry_find = 1;
- 				goto find_page;
-+			}
- 			desc->error = error;
- 			goto out;
- 		}
-@@ -1543,6 +1552,7 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	struct page *page;
- 	pgoff_t size;
- 	int ret = 0;
-+	int rw = !!(vmf->flags & FAULT_FLAG_WRITE);
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 77506a2..483acb8 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -112,6 +112,8 @@ static int read_pages(struct address_space *mapping, struct file *filp,
+ 	unsigned page_idx;
+ 	int ret;
  
- 	size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
- 	if (offset >= size)
-@@ -1552,6 +1562,10 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	 * Do we have something in the page cache already?
- 	 */
- 	page = find_get_page(mapping, offset);
-+	if (page && page->mapping && PageUptodate(page))
-+		page_cache_acct_hit(inode->i_sb, rw);
-+	else
-+		page_cache_acct_missed(inode->i_sb, rw);
- 	if (likely(page)) {
- 		/*
- 		 * We found the page, so try async readahead before
-@@ -2227,20 +2241,24 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
- 		gfp_notmask = __GFP_FS;
- repeat:
- 	page = find_lock_page(mapping, index);
--	if (page)
-+	if (page) {
-+		page_cache_acct_hit(mapping->host->i_sb, WRITE);
- 		return page;
-+	}
- 
- 	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
- 	if (!page)
--		return NULL;
-+		goto out;
- 	status = add_to_page_cache_lru(page, mapping, index,
- 						GFP_KERNEL & ~gfp_notmask);
- 	if (unlikely(status)) {
- 		page_cache_release(page);
- 		if (status == -EEXIST)
- 			goto repeat;
--		return NULL;
-+		page = NULL;
- 	}
-+out:
-+	page_cache_acct_missed(mapping->host->i_sb, WRITE);
- 	return page;
- }
- EXPORT_SYMBOL(grab_cache_page_write_begin);
++	page_cache_acct_readpages(mapping->host->i_sb, nr_pages);
++
+ 	if (mapping->a_ops->readpages) {
+ 		ret = mapping->a_ops->readpages(filp, mapping, pages, nr_pages);
+ 		/* Clean up the remaining pages */
 -- 
 1.7.0.4
 
