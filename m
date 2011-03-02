@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1CBO2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 09:28:37 -0500
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:50835 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab1CBO2V (ORCPT
+	id S1752826Ab1CBObJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 09:31:09 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:48790 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab1CBObH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 09:28:21 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPribU2rR7H+/2dsb2JhbACmV3ShZpt2hWEEhReHD4NA
-X-IronPort-AV: E=Sophos;i="4.62,253,1297036800"; 
-   d="scan'208";a="665106789"
-Message-ID: <4D6E5413.6060500@cisco.com>
-Date: Wed, 02 Mar 2011 07:28:35 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Wed, 2 Mar 2011 09:31:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=fZBZwPk8JfjmFpFskHWEj1KEPQwG2uh3fwVa/K8SQLFSg1zRydyAFH6nyQ3ZDMAz+r
+         zOQnmlEZGDJbZqBjohOQ==
+Date: Wed, 2 Mar 2011 06:30:59 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tejun Heo <tj@kernel.org>
+cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
+ handling
+In-Reply-To: <20110302102530.GB3319@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1103020628210.31626@chino.kir.corp.google.com>
+References: <20110224145128.GM7840@htj.dyndns.org> <4D66AC9C.6080500@kernel.org> <20110224192305.GB15498@elte.hu> <4D66B176.9030300@kernel.org> <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com> <20110302100400.GK19669@htj.dyndns.org>
+ <20110302102530.GB3319@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-perf-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        acme@ghostprotocols.net, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 3/6] perf record: add time-of-day option
-References: <1298865151-23656-1-git-send-email-daahern@cisco.com> <1298865151-23656-4-git-send-email-daahern@cisco.com> <alpine.LFD.2.00.1103012359460.2701@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103012359460.2701@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 Mar 2011, Tejun Heo wrote:
 
-
-On 03/02/2011 07:16 AM, Thomas Gleixner wrote:
-> On Sun, 27 Feb 2011, David Ahern wrote:
+> From d968be2ff381c667bfd09795f82248558902a1ae Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Wed, 2 Mar 2011 11:22:14 +0100
 > 
->> Enable data collection for generating time-of-day strings when
->> printing individual perf samples. This is done by sampling the
->> realtime clock event with the perf_clock time stamps.
->>
->> If the realtime-clock event is not available (e.g, older kernels)
->> fallback to a synthesized event. (I realize there is resistance
->> to new synthesized events, but it is a simple way to gain this
->> feature on older kernels without the need to modify the kernel
->> code).
+> NUMA distance table handling has the following problems.
 > 
-> ...
->   
->> +/* add a sample to the event stream based on user request */
->> +static int perf_event_generate_sample(struct perf_event *event)
->> +{
->> +	struct perf_sample_data data;
->> +	struct pt_regs regs;
->> +
->> +	perf_fetch_caller_regs(&regs);
->> +	event->pmu->read(event);
->> +	perf_sample_data_init(&data, 0);
->> +	data.period = event->hw.last_period;
->> +	perf_event_output(event, 0, &data, &regs);
->> +
->> +	return 0;
->> +}
+> * numa_reset_distance() uses numa_distance * sizeof(numa_distance[0])
+>   as the table size when it should be using the square of
+>   numa_distance.
 > 
-> Errm. This is a generic ioctl to inject random events from user space.
+> * The same size miscalculation when allocation space for phys_dist in
+>   numa_emulation().
 > 
-> First of all this wants to be a separate patch and not burried into
-> some 100 lines of changes to tools/perf.
+> * In numa_emulation(), phys_dist must be reserved; otherwise, the new
+>   emulated distance table may overlap it.
 > 
-> Secondly adding such an ioctl needs a pretty good reason, and the use
-> case at hand is not really one.
-
-Peter has made it clear he objects to the ioctl.
-
+> Fix them and, while at it, take numa_distance_cnt resetting in
+> numa_reset_distance() out of the if block to simplify the code a bit.
 > 
-> Reading through the other patches, your goal is to correlate
-> CLOCK_REALTIME based logs to CLOCK_PERF based events.
+> David Rientjes reported incorrect handling of distance table during
+> emulation and Yinghai identified the above problems and wrote the
+> original patch to fix the problems.  This patch is based on Yinghai's
+> patch.
 > 
-> To achieve that you inject cyclic clock_realtime samples into the
-> event stream and want to have this initial event inserted via the
-> ioctl.
-
-I still need a solution. There is no means for requesting a sample
-immediately when a counter is opened, and there is a desire not to add
-any more synthesized events. How then do I get the initial correlation
-without scanning a potentially large file looking for a single event
-type occurrence.
-
+> -v2: Ingo was unhappy with 80-column limit induced linebreaks.  Let
+>      lines run over 80-column.
 > 
-> How does all that deal with CLOCK_REALTIME being affected by NTP and
-> settimeofday? Not really, as far as I can tell. It somehow works, but
-> that depends on the frequency of your event injection.
+> Reported-by: David Rientjes <rientjes@google.com>
+> Patch-originally-from: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
 
-It is sampled at some periodic rate to get NTP changes. Right now it is
-hardcoded at once an hour. The frequency option can be added to the
---tod parameter.
+Acked-by: David Rientjes <rientjes@google.com>
 
-> 
-> To be honest, that's just too much churn for a feature which is single
-> purpose and questionable functionality.
-> 
-> It would be far more interesting to have trace points in the
-> timekeeping code, which are useful for other things as well
-> (e.g. precise monitoring of NTP) and provide always a correct
-> association with the trace clock. That would cover everything from
-> frequency adjustments, clock setting including the information about
-> the relation to clock monotonic.
+There's also this in numa_emulation() that isn't a safe assumption:
 
-I'm not looking to track ntp changes. I want time-of-day strings on
-sample dumps. That is not a questionable feature request; it is a
-usability enhancement.
+        /* make sure all emulated nodes are mapped to a physical node */
+        for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
+                if (emu_nid_to_phys[i] == NUMA_NO_NODE)
+                        emu_nid_to_phys[i] = 0;
 
-We are users of perf. Fantastic tool, but of limited functionality to
-the engineers on the team if they cannot correlate event samples with
-application logs.
-
-David
-
-
-> 
-> Thanks,
-> 
-> 	tglx
+Node id 0 is not always online depending on how you setup your SRAT.  I'm 
+not sure why emu_nid_to_phys[] would ever map a fake node id that doesn't 
+exist to a physical node id rather than NUMA_NO_NODE, so I think it can 
+just be removed.  Otherwise, it should be mapped to a physical node id 
+that is known to be online.
