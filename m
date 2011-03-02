@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1CBTHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:07:38 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21602 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab1CBTHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:07:37 -0500
-Message-ID: <4D6E9541.2040201@kernel.org>
-Date: Wed, 02 Mar 2011 11:06:41 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1756593Ab1CBTLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:11:51 -0500
+Received: from web31802.mail.mud.yahoo.com ([68.142.207.65]:36729 "HELO
+	web31802.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756288Ab1CBTLt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 14:11:49 -0500
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 14:11:48 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Sz8Ifl4B9YJ5Phw3BZ8iSoALQ/Kfkhtm5CwuCL9BGZzd5UT/6RWu1GQkHNcSNK172HPY/pUGaZg5ioIGzHYwpSEe18eru/ubSTeYMM6K0GDPiJPUaRLivrfj64YxezEYKhwpDynI3BFo5Nfg4+4TtnzZL4dWM2pO9H5fPfncXt8=;
+Message-ID: <147799.16314.qm@web31802.mail.mud.yahoo.com>
+X-YMail-OSG: uwORaicVM1lOpmxCxpkYFa4d45Ceq0LoIy3SuhLK2Ao712Z
+ FQvbBOagnNf9E5nKso10faPyGOjNmXHW2p8ELTeUBFJ8LNx1pI6dtjdBWFEh
+ OpjeOel4PeFSVf2rqmyi5fXzHBAVT38E2Im9lDzvDj4w8zR0aNVuCZeoc2ZU
+ C9UwlHskEA7gucUy8NNvudm4YwQ7V3wm8cMKSsjABW9OP2crfoDnYDUaF_II
+ 6pKqBjemHJsAPR7a0sDCFg0doKW1MJGmkLHahkzykzAa48QGUHkbXKX_6O_I
+ UtfGAv1fzxnICAzhfPUutj_BXGk8_US9au1VI_pCTRjm2CNn6r7FkUy5Hrab
+ nllQBQX6Y9agWMVr97YumC_OqSQhi2u97EqVKoDBgCp4_iUHk4L.kQLazwV4
+ r
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.295617
+Date: Wed, 2 Mar 2011 11:05:05 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: UASP: updates and merges
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
-References: <20110224192305.GB15498@elte.hu> <4D66B176.9030300@kernel.org> <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com> <20110302100400.GK19669@htj.dyndns.org> <20110302102530.GB3319@htj.dyndns.org> <4D6E6D52.8030901@kernel.org> <20110302163729.GQ3319@htj.dyndns.org> <4D6E7459.6050706@kernel.org> <20110302165545.GR3319@htj.dyndns.org> <4D6E91EC.6040906@kernel.org> <20110302190208.GD28266@mtj.dyndns.org>
-In-Reply-To: <20110302190208.GD28266@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4D6E9566.0021,ss=1,fgs=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2011 11:02 AM, Tejun Heo wrote:
-> Hey, Yinghai.
-> 
-> On Wed, Mar 02, 2011 at 10:52:28AM -0800, Yinghai Lu wrote:
->>> Complexity of a solution should match the benefit of the complexity.
->>> Code complexity is one of the most important metrics that we need to
->>> keep an eye on.  If you don't do that, the code base becomes very ugly
->>> and difficult to maintain very quickly.  So, yes, some amount of
->>> execution inefficiency is acceptable depending on circumstances.
->>> Efficiency too is something which should be traded off against other
->>> benefits.
->>
->> No. it is not acceptable in your case.
->>
->> We can accept that something like: during init stage, do some probe
->> and call pathes to be happy.  like subarch.
-> 
-> Hmmm?  I can't really follow your sentence.  This is init stage.
-> Anyways, why can't it just walk over the enabled nodes?  What would be
-> the difference?
+I've merged the latest master (dd9c154). The UASP driver saw the following update:
 
-my point is that we really not need to go over it if original is not there.
+    [USB] UASP: Unlock device after reset; EP updates
+    
+    * Unlock the device after reset.
+    
+    * Initialize urb->ep directly. struct
+      uasp_tport_info already records the struct
+      usb_host_endpoint which makes it easy to
+      directly initialize urb->ep. This anticipates
+      when drivers would have to initialize the ep in
+      the urb directly as opposed to the USB core
+      having to use pipes.
+    
+    * Use the UAS pipe macros throughout the code for
+      endpoint indexes.
 
+The branch can be found here off of master:
+https://github.com/ltuikov/linux-2.6
+
+Original posting of the UASP driver can be found here:
+http://marc.info/?l=linux-usb&m=129165511732388&w=2
+
+    Luben
+
+
+--- On Thu, 1/13/11, Luben Tuikov <ltuikov@yahoo.com> wrote:
+
+> From: Luben Tuikov <ltuikov@yahoo.com>
+> Subject: UASP: updates and merges
+> To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, "Greg KH" <greg@kroah.com>
+> Date: Thursday, January 13, 2011, 2:45 AM
+> The UASP driver allows you to connect
+> to UAS devices and use them
+> as SCSI devices.
 > 
->> Also why did you omit my first question?
+> I've merged latest master (f87813) and resolved a conflict
+> in drivers/scsi/sd.c by adding back the truncation of the
+> mode sense data.
 > 
-> Yeah, well, because that wasn't completely consistent with what I said
-> earlier.  I wanted to tell you to take the assignments out of if () on
-> your earlier patch but I just let it pass and now I had this another
-> patch touching the same code, so I just had to do it.
+> The UASP driver saw the following update:
 > 
-> I know it's a petty style thing but it's my pet peeve and I can't help
-> it when related change goes through me, so there it is.  I'm sorry but
-> I'll probaly do it again.  I beg your understanding.
-
-never mind.
-
-Thanks
-
-Yinghai
+>     [USB] UASP: factor out GFP flags and make
+> them GFP_ATOMIC
+>     
+>     Factor out the GFP flags and make them
+> atomic:
+>     1) The SCSI subsystem uses GFP_ATOMIC, e.g.
+> before
+>     calling the host's slave_alloc callback (at
+> the
+>     time of this commit).
+>     2) As we are a storage driver doing I/O, we
+> should
+>     use the lowest denominator (highest
+> priority)
+>     allocation, and of course we shouldn't sleep,
+> thus
+>     use GFP_ATOMIC.
+> 
+> The branch can be found here (off of master):
+> https://github.com/ltuikov/linux-2.6
+> 
+> Original posting of the UASP driver can be found here:
+> http://marc.info/?l=linux-usb&m=129165511732388&w=2
+> 
+>    Luben
+> 
+> 
