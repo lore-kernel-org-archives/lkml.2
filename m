@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab1CBGfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 01:35:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61820 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab1CBGfX (ORCPT
+	id S1754536Ab1CBGiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 01:38:16 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:16632 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750950Ab1CBGiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 01:35:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=ReiNewhq7B3Fdh3lDZSh++mufKRJrNSZewvPGLDodbEG7kxquxigCvU/KkyMjJpDB6
-         uQQl4h8dUNBSmA89dmzmPQt5ktoFKYF4zaeJV2aXjHM089QG4Kuw5wVfHuU/ZYivGIBE
-         RrC9QO3wmbDqT7l3i5J70Kz7EfjHboG+uY1gw=
-Date: Wed, 2 Mar 2011 09:35:02 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
-Message-ID: <20110302063502.GD18043@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	KY Srinivasan <kys@microsoft.com>, Greg KH <greg@kroah.com>,
-	"gregkh@suse.de" <gregkh@suse.de>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-References: <1298685930-30806-1-git-send-email-kys@microsoft.com>
- <20110301023449.GC1663@kroah.com>
- <6E21E5352C11B742B20C142EB499E0480165E6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+	Wed, 2 Mar 2011 01:38:15 -0500
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: <linux-kernel@vger.kernel.org>, "'Ewe, Kok Howg'" <kok.howg.ewe@intel.com>,
+        "'Lai, Mee Sim'" <mee.sim.lai@intel.com>,
+        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
+References: <F5323EE7947C4C1CB0868F843FB4F917@hacdom.okisemi.com> <AANLkTim4z7vfyNceLYZhGzpYaECeSfLOYjzEhT9JFvJH@mail.gmail.com>
+Subject: RE: About GPIO interrupt function with sysfs
+Date: Wed, 2 Mar 2011 15:38:13 +0900
+Message-ID: <BF5CB373A5A948A2976AE727EA3F6B70@hacdom.okisemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0480165E6@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Thread-Index: AcvPBM8B3yxMotRjTs+zCREt+zhMmQJnV41A
+In-Reply-To: <AANLkTim4z7vfyNceLYZhGzpYaECeSfLOYjzEhT9JFvJH@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem is that everyone reading [patch 1/6] thinks you're renaming
-hv_device to vm_device or introducing a new struct vm_device.  That
-makes people annoyed.  If you had written the patch description like this:
+Hi Grant,
 
-    In the original code, the structs vm_device included a struct
-    hv_device.  This patch moves the members from hv_device directly
-    into struct vm_device.
+On Friday, February 18, 2011 9:43 AM, Grant Likely wrote:
+> > Can our GPIO driver (pch_gpio) have interrupt function?
+> 
+> yes.
+Need your help.
 
-    The members ->dev_type and ->dev_instance from hv_device were
-    the same as ->class_id and ->device_id in vm_device so those
-    were not copied over.
+I try to add interrupt function to GPIO driver of Intel EG20T PCH(pch_gpio.c).
 
-    Now that everything is included into vm_device directly, 
-    hv_device is unused and we can delete the definition.
+However, executing "echo xxx > export", there is not "edge" file in /sys/class/gpio/gpioxxx/.
 
-There still might be issues with the patch, but at least you would be
-talking about the same thing.
+Seeing source code in gpio_export@gpiolib.c, like below
 
-regards,
-dan carpenter
+int gpio_export(unsigned gpio, bool direction_may_change)
+{
+snip...
+
+	if (!status && gpio_to_irq(gpio) >= 0
+			&& (direction_may_change
+				|| !test_bit(FLAG_IS_OUT,
+					&desc->flags))) {
+		status = device_create_file(dev,
+				&dev_attr_edge);
+		printk("%s:device_create_file!!! status=0x%x\n", __func__, status);
+	}
+
+snip...
+}
+
+The above "device_create_file(dev, &dev_attr_edge);" is not executed.
+
+Seeing gpio_to_irq@arch/x86/include/asm/gpio.h, like below.
+
+static inline int gpio_to_irq(unsigned int gpio)
+{
+	return -ENOSYS;
+}
+
+Thus,  device_create_file for "edge" is never executed.
+
+Could you tell me how to create "edge" file ?
+
+With Best Regards,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
+
