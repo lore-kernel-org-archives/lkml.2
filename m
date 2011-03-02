@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab1CBIlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:41:13 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45246 "EHLO hera.kernel.org"
+	id S1756127Ab1CBIll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:41:41 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45268 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756046Ab1CBIlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:41:11 -0500
-Date: Wed, 2 Mar 2011 08:40:47 GMT
+	id S1754765Ab1CBIlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 03:41:40 -0500
+Date: Wed, 2 Mar 2011 08:41:13 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
@@ -19,31 +19,35 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top browser: Handle empty active symbols list
-Message-ID: <tip-3166fc8fb6a2f52273d545e970297524e02c3e39@git.kernel.org>
-Git-Commit-ID: 3166fc8fb6a2f52273d545e970297524e02c3e39
+Subject: [tip:perf/core] perf tui: Make ui__warning modal
+Message-ID: <tip-a1ceb741cf86ef433006379742db81c00b450bae@git.kernel.org>
+Git-Commit-ID: a1ceb741cf86ef433006379742db81c00b450bae
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Mar 2011 08:40:47 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Mar 2011 08:41:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3166fc8fb6a2f52273d545e970297524e02c3e39
-Gitweb:     http://git.kernel.org/tip/3166fc8fb6a2f52273d545e970297524e02c3e39
+Commit-ID:  a1ceb741cf86ef433006379742db81c00b450bae
+Gitweb:     http://git.kernel.org/tip/a1ceb741cf86ef433006379742db81c00b450bae
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 1 Mar 2011 10:21:44 -0300
+AuthorDate: Tue, 1 Mar 2011 10:24:43 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 1 Mar 2011 10:21:44 -0300
+CommitDate: Tue, 1 Mar 2011 10:24:43 -0300
 
-perf top browser: Handle empty active symbols list
+perf tui: Make ui__warning modal
 
-Fixing a SEGV. An empty list could happen when not being able to resolve
-symbols, for instance when --vmlinux invalid-file is used.
+By taking the ui__lock so that no other screen updates take place while
+waiting for the user.
+
+That was happening when handling an invalid --vmlinux parameter in 'perf
+top --tui', with the screen refresh routine repainting the screen and
+removing the warning window.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -55,23 +59,33 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browsers/top.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ tools/perf/util/ui/util.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
-index e9381ec..5a06538 100644
---- a/tools/perf/util/ui/browsers/top.c
-+++ b/tools/perf/util/ui/browsers/top.c
-@@ -76,6 +76,12 @@ static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
- 	browser->root = RB_ROOT;
- 	browser->b.top = NULL;
- 	browser->sum_ksamples = perf_top__decay_samples(top, &browser->root);
-+	/*
-+ 	 * No active symbols
-+ 	 */
-+	if (top->rb_entries == 0)
-+		return;
-+
- 	perf_top__find_widths(top, &browser->root, &browser->dso_width,
- 			      &browser->dso_short_width,
-                               &browser->sym_width);
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+index 7b5a892..fdf1fc8 100644
+--- a/tools/perf/util/ui/util.c
++++ b/tools/perf/util/ui/util.c
+@@ -9,6 +9,7 @@
+ #include "../debug.h"
+ #include "browser.h"
+ #include "helpline.h"
++#include "ui.h"
+ #include "util.h"
+ 
+ static void newt_form__set_exit_keys(newtComponent self)
+@@ -118,10 +119,12 @@ void ui__warning(const char *format, ...)
+ 	va_list args;
+ 
+ 	va_start(args, format);
+-	if (use_browser > 0)
++	if (use_browser > 0) {
++		pthread_mutex_lock(&ui__lock);
+ 		newtWinMessagev((char *)warning_str, (char *)ok,
+ 				(char *)format, args);
+-	else
++		pthread_mutex_unlock(&ui__lock);
++	} else
+ 		vfprintf(stderr, format, args);
+ 	va_end(args);
+ }
