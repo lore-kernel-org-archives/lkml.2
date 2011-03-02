@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab1CBVS3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:18:29 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:20108 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757598Ab1CBVS0 (ORCPT
+	id S1757651Ab1CBVVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:21:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26042 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755096Ab1CBVVG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:18:26 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6273"; a="77438423"
-X-IronPort-AV: E=Sophos;i="4.62,253,1297065600"; 
-   d="scan'208";a="56219555"
-From: Carl Vanderlip <carlv@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Dima Zavin <dima@android.com>, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Carl Vanderlip <carlv@codeaurora.org>,
-        linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
-Subject: [PATCH 4/4] [ARM] msm: mdp: Set the correct pack pattern for XRGB/ARGB
-Date: Wed,  2 Mar 2011 13:18:19 -0800
-Message-Id: <1299100699-11705-1-git-send-email-carlv@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <1299100542-11120-1-git-send-email-carlv@codeaurora.org>
-References: <1299100542-11120-1-git-send-email-carlv@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
+	Wed, 2 Mar 2011 16:21:06 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, "Alex\,Shi" <alex.shi@intel.com>,
+        "Li\, Shaohua" <shaohua.li@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "tytso\@mit.edu" <tytso@mit.edu>,
+        "jaxboe\@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen\, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
+References: <AANLkTi=B6kabp+NvRJC_g-AqQO0ZOvnEDYpVFmScttR6@mail.gmail.com>
+	<1297650318.29573.2482.camel@debian>
+	<1297732201.24560.2.camel@sli10-conroe>
+	<20110221164909.GG6584@quack.suse.cz>
+	<1298449487.14712.1064.camel@debian>
+	<20110224121339.GE23042@quack.suse.cz>
+	<AANLkTinAeQMy-OoYYpbYeX=EjZ_-uT=67Ktk1PbE=A7_@mail.gmail.com>
+	<x49hbbmpqbo.fsf@segfault.boston.devel.redhat.com>
+	<20110302094246.GA7496@quack.suse.cz>
+	<x491v2p4i0u.fsf@segfault.boston.devel.redhat.com>
+	<20110302211748.GF7496@quack.suse.cz>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 02 Mar 2011 16:20:53 -0500
+In-Reply-To: <20110302211748.GF7496@quack.suse.cz> (Jan Kara's message of
+	"Wed, 2 Mar 2011 22:17:48 +0100")
+Message-ID: <x497hch2p8q.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dima Zavin <dima@android.com>
+Jan Kara <jack@suse.cz> writes:
 
-Signed-off-by: Dima Zavin <dima@android.com>
-Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
----
- drivers/video/msm/mdp_hw.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Wed 02-03-11 11:13:53, Jeff Moyer wrote:
+>> Jan Kara <jack@suse.cz> writes:
+>> > On Tue 01-03-11 14:56:43, Jeff Moyer wrote:
+>> >> Corrado Zoccolo <czoccolo@gmail.com> writes:
+>> >> 
+>> >> > On Thu, Feb 24, 2011 at 1:13 PM, Jan Kara <jack@suse.cz> wrote:
+>> >> >> On Wed 23-02-11 16:24:47, Alex,Shi wrote:
+>> >> >>> Though these patches can not totally recovered the problem, but they are
+>> >> >>> quite helpful with ccache enabled situation. It increase 10% performance
+>> >> >>> on 38-rc1 kernel.
+>> >> >>  OK and what was the original performance drop with WRITE_SYNC change?
+>> >> >>
+>> >> >>> I have tried to enabled they to latest rc6 kernel but failed. the vmstat output is here:
+>> >> >>> with patches:
+>> >> >>  I'm attaching patches rebased on top of latest Linus's tree.
+>> >> >> Corrado, could you possibly run your fsync-heavy tests so that we see
+>> >> >> whether there isn't negative impact of my patches on your fsync-heavy
+>> >> >> workload? Thanks.
+>> >> > The workload was actually Jeff's, and the stalls that my change tried
+>> >> > to mitigate showed up on his enterprise class storage. Adding him so
+>> >> > he can test it.
+>> >> 
+>> >> Sorry for the late reply.  You can use either fs_mark or iozone to
+>> >> generate an fsync-heavy workload.  The test I did was to mix this with a
+>> >> sequential reader.  If you can point me at patches, I should be able to
+>> >> test this.
+>> >   The latest version of patches is attached to:
+>> > https://lkml.org/lkml/2011/2/24/125
+>> 
+>> Perhaps you should fix up the merge conflicts, first?  ;-)
+>> 
+>> +<<<<<<< HEAD
+>>         tid = transaction->t_tid;
+>>         need_to_start = !tid_geq(journal->j_commit_request, tid);
+>> +=======
+>> +       __jbd2_log_start_commit(journal, transaction->t_tid, false);
+>> +>>>>>>> jbd2: Refine commit writeout logic
+>   Doh, how embarrassing ;). Attached is a new version which compiles and
+> seems to run OK.
+>
+> 								Honza
 
-diff --git a/drivers/video/msm/mdp_hw.h b/drivers/video/msm/mdp_hw.h
-index 9e1e92e..d804774 100644
---- a/drivers/video/msm/mdp_hw.h
-+++ b/drivers/video/msm/mdp_hw.h
-@@ -489,7 +489,7 @@ int mdp_ppp_blit(const struct mdp_info *mdp, struct mdp_blit_req *req,
- 	MDP_GET_PACK_PATTERN(0, CLR_R, CLR_G, CLR_B, 8)
- #define PPP_PACK_PATTERN_MDP_RGB_888 PPP_PACK_PATTERN_MDP_RGB_565
- #define PPP_PACK_PATTERN_MDP_XRGB_8888 \
--	MDP_GET_PACK_PATTERN(CLR_ALPHA, CLR_R, CLR_G, CLR_B, 8)
-+	MDP_GET_PACK_PATTERN(CLR_B, CLR_G, CLR_R, CLR_ALPHA, 8)
- #define PPP_PACK_PATTERN_MDP_ARGB_8888 PPP_PACK_PATTERN_MDP_XRGB_8888
- #define PPP_PACK_PATTERN_MDP_RGBA_8888 \
- 	MDP_GET_PACK_PATTERN(CLR_ALPHA, CLR_B, CLR_G, CLR_R, 8)
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks, Jan.  I should have results for you tomorrow.
 
+Cheers,
+Jeff
