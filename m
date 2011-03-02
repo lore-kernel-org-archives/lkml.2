@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab1CBLdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 06:33:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035Ab1CBLdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 06:33:01 -0500
-Message-ID: <4D6E2ABF.5040500@redhat.com>
-Date: Wed, 02 Mar 2011 08:32:15 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Evgeniy Dushistov <dushistov@mail.ru>, linux-fsdevel@vger.kernel.org,
-        linux-x25@vger.kernel.org, Max Vozeler <max@vozeler.com>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        netdev@vger.kernel.org, Nick Bowler <nbowler@elliptictech.com>,
-        Nick Piggin <npiggin@gmail.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
-Subject: Re: [PATCH 0/7] Final BKL removal, take 2
-References: <1299021191-17961-1-git-send-email-arnd@arndb.de> <20110302045923.GA28214@suse.de>
-In-Reply-To: <20110302045923.GA28214@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756386Ab1CBLex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 06:34:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44244 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab1CBLew (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 06:34:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=KgJDK2yN6MNHDE6DTXIwWs5a8TQb4h6DnLnPiXgek4AqGwcFIrCVmByjBSgTuySVFD
+         2phPWjpFaN/pYGo/7kQkQ/Ftv7p6AjDcmZJ+/XsS1KDWdqVrXOAbZEto7NR4ODPZo5S1
+         dZ23XFQjpbwzBiy47k8VGDu7So7Z91jltKtOk=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] wusb: fix find_first_zero_bit() return value check
+Date: Wed,  2 Mar 2011 20:35:28 +0900
+Message-Id: <1299065728-6124-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 02-03-2011 01:59, Greg KH escreveu:
-> On Wed, Mar 02, 2011 at 12:13:04AM +0100, Arnd Bergmann wrote:
->> This is the set of patches that remain from
->> my previous submission one month ago. I've
->> dropped the ones that have either gone into
->> linux-next or got a sufficient number of
->> Acked-by:s so I put them into my own tree.
->>
->> I've updated the usbip, hpfs, ufs and appletalk
->> patches according to the feedback I got.
->>
->> If possible, I'd like the three networking patches
->> to go through the net-next tree, and the two
->> staging patches through the staging tree. I'll
->> add the other ones to my own series if I hear
->> no objections.
-> 
-> I'll queue up the staging patches in the staging-next tree in a day or
-> so, thanks for digging them up.
+In wusb_cluster_id_get(), if no zero bits exist in wusb_cluster_id_table,
+find_first_zero_bit() returns CLUSTER_IDS.
 
-Greg,
+But it is impossible to detect that the bitmap is full because there
+is an off-by-one error in the return value check.  It will cause
+unexpected memory access by setting bit out of wusb_cluster_id_table
+bitmap, and caller will get wrong cluster id.
 
-It is probably better to queue the staging/cx25821 patch via my tree, as this is one
-of those staging files that it is handled via media tree. So, if it is ok
-for you both, I'll get patch 2/7.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-usb@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/usb/wusbcore/wusbhc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
-Mauro
+diff --git a/drivers/usb/wusbcore/wusbhc.c b/drivers/usb/wusbcore/wusbhc.c
+index 2054d4e..0faca16 100644
+--- a/drivers/usb/wusbcore/wusbhc.c
++++ b/drivers/usb/wusbcore/wusbhc.c
+@@ -320,7 +320,7 @@ u8 wusb_cluster_id_get(void)
+ 	u8 id;
+ 	spin_lock(&wusb_cluster_ids_lock);
+ 	id = find_first_zero_bit(wusb_cluster_id_table, CLUSTER_IDS);
+-	if (id > CLUSTER_IDS) {
++	if (id >= CLUSTER_IDS) {
+ 		id = 0;
+ 		goto out;
+ 	}
+-- 
+1.7.4
+
