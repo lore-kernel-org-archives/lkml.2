@@ -1,308 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab1CBSL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 13:11:29 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:47991 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1CBSL0 (ORCPT
+	id S1757273Ab1CBSM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 13:12:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36250 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab1CBSM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 13:11:26 -0500
-Message-Id: <20110302180259.185304666@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Wed, 02 Mar 2011 18:59:33 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [RFC][PATCH 5/6] ia64, mm: Convert ia64 to generic tlb
-References: <20110302175928.022902359@chello.nl>
-Content-Disposition: inline; filename=mm-ia64-tlb-range.patch
+	Wed, 2 Mar 2011 13:12:26 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=nZ6mVOVMA-0A:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=CjDJIO3gzgOIPYHx6TkA:9 a=lvnZLYfDRnO9JwEY-54A:7 a=YVg9Ox3Ww-XZ34ujO3iNUdPUQ2sA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Wed, 2 Mar 2011 13:12:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: (WARNING) possible deadlock in del_timer_sync, called from
+ fbcon_del_cursor_timer
+Message-ID: <20110302181223.GD9288@home.goodmis.org>
+References: <4D6BB403.9000908@ladisch.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6BB403.9000908@ladisch.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/ia64/Kconfig           |    1 
- arch/ia64/include/asm/tlb.h |  216 ++++----------------------------------------
- 2 files changed, 24 insertions(+), 193 deletions(-)
+On Mon, Feb 28, 2011 at 03:41:07PM +0100, Clemens Ladisch wrote:
+> While using the FB console, I tried to change the console log level
+> with SysRq, and got this warning that del_timer_sync() is used in
+> an interrupt handler:
 
-Index: linux-2.6/arch/ia64/Kconfig
-===================================================================
---- linux-2.6.orig/arch/ia64/Kconfig
-+++ linux-2.6/arch/ia64/Kconfig
-@@ -25,6 +25,7 @@ config IA64
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
-+	select HAVE_MMU_GATHER_RANGE
- 	select IRQ_PER_CPU
- 	default y
- 	help
-Index: linux-2.6/arch/ia64/include/asm/tlb.h
-===================================================================
---- linux-2.6.orig/arch/ia64/include/asm/tlb.h
-+++ linux-2.6/arch/ia64/include/asm/tlb.h
-@@ -46,77 +46,48 @@
- #include <asm/tlbflush.h>
- #include <asm/machvec.h>
- 
--#ifdef CONFIG_SMP
--# define tlb_fast_mode(tlb)	((tlb)->nr == ~0U)
--#else
--# define tlb_fast_mode(tlb)	(1)
--#endif
--
--/*
-- * If we can't allocate a page to make a big batch of page pointers
-- * to work on, then just handle a few from the on-stack structure.
-- */
--#define	IA64_GATHER_BUNDLE	8
--
--struct mmu_gather {
--	struct mm_struct	*mm;
--	unsigned int		nr;		/* == ~0U => fast mode */
--	unsigned int		max;
--	unsigned char		fullmm;		/* non-zero means full mm flush */
--	unsigned char		need_flush;	/* really unmapped some PTEs? */
--	unsigned long		start_addr;
--	unsigned long		end_addr;
--	struct page		**pages;
--	struct page		*local[IA64_GATHER_BUNDLE];
--};
--
- struct ia64_tr_entry {
--	u64 ifa;
--	u64 itir;
--	u64 pte;
--	u64 rr;
-+       u64 ifa;
-+       u64 itir;
-+       u64 pte;
-+       u64 rr;
- }; /*Record for tr entry!*/
- 
- extern int ia64_itr_entry(u64 target_mask, u64 va, u64 pte, u64 log_size);
- extern void ia64_ptr_entry(u64 target_mask, int slot);
--
- extern struct ia64_tr_entry *ia64_idtrs[NR_CPUS];
- 
- /*
-  region register macros
- */
- #define RR_TO_VE(val)   (((val) >> 0) & 0x0000000000000001)
--#define RR_VE(val)	(((val) & 0x0000000000000001) << 0)
--#define RR_VE_MASK	0x0000000000000001L
--#define RR_VE_SHIFT	0
--#define RR_TO_PS(val)	(((val) >> 2) & 0x000000000000003f)
--#define RR_PS(val)	(((val) & 0x000000000000003f) << 2)
--#define RR_PS_MASK	0x00000000000000fcL
--#define RR_PS_SHIFT	2
--#define RR_RID_MASK	0x00000000ffffff00L
--#define RR_TO_RID(val) 	((val >> 8) & 0xffffff)
-+#define RR_VE(val)     (((val) & 0x0000000000000001) << 0)
-+#define RR_VE_MASK     0x0000000000000001L
-+#define RR_VE_SHIFT    0
-+#define RR_TO_PS(val)  (((val) >> 2) & 0x000000000000003f)
-+#define RR_PS(val)     (((val) & 0x000000000000003f) << 2)
-+#define RR_PS_MASK     0x00000000000000fcL
-+#define RR_PS_SHIFT    2
-+#define RR_RID_MASK    0x00000000ffffff00L
-+#define RR_TO_RID(val)         ((val >> 8) & 0xffffff)
-+
-+static inline void tlb_flush(struct mmu_gather *tlb);
-+
-+#define __tlb_remove_tlb_entry(tlb, ptep, addr) do { } while (0)
-+#define tlb_migrate_finish(mm)	platform_tlb_migrate_finish(mm)
-+
-+#include <asm-generic/tlb.h>
- 
- /*
-  * Flush the TLB for address range START to END and, if not in fast mode, release the
-  * freed pages that where gathered up to this point.
-  */
- static inline void
--ia64_tlb_flush_mmu (struct mmu_gather *tlb, unsigned long start, unsigned long end)
-+tlb_flush(struct mmu_gather *tlb)
- {
--	unsigned int nr;
-+	unsigned long start = tlb->start, end = tlb->end;
- 
--	if (!tlb->need_flush)
--		return;
--	tlb->need_flush = 0;
--
--	if (tlb->fullmm) {
--		/*
--		 * Tearing down the entire address space.  This happens both as a result
--		 * of exit() and execve().  The latter case necessitates the call to
--		 * flush_tlb_mm() here.
--		 */
--		flush_tlb_mm(tlb->mm);
--	} else if (unlikely (end - start >= 1024*1024*1024*1024UL
-+	if (unlikely (end - start >= 1024*1024*1024*1024UL
- 			     || REGION_NUMBER(start) != REGION_NUMBER(end - 1)))
- 	{
- 		/*
-@@ -131,147 +102,6 @@ ia64_tlb_flush_mmu (struct mmu_gather *t
- 		/* now flush the virt. page-table area mapping the address range: */
- 		flush_tlb_range(tlb->mm, ia64_thash(start), ia64_thash(end));
- 	}
--
--	/* lastly, release the freed pages */
--	nr = tlb->nr;
--	if (!tlb_fast_mode(tlb)) {
--		unsigned long i;
--		tlb->nr = 0;
--		tlb->start_addr = ~0UL;
--		for (i = 0; i < nr; ++i)
--			free_page_and_swap_cache(tlb->pages[i]);
--	}
- }
- 
--static inline void __tlb_alloc_page(struct mmu_gather *tlb)
--{
--	unsigned long addr = __get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
--
--	if (addr) {
--		tlb->pages = (void *)addr;
--		tlb->max = PAGE_SIZE / sizeof(void *);
--	}
--}
--
--
--static inline void
--tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
--{
--	tlb->mm = mm;
--	tlb->max = ARRAY_SIZE(tlb->local);
--	tlb->pages = tlb->local;
--	/*
--	 * Use fast mode if only 1 CPU is online.
--	 *
--	 * It would be tempting to turn on fast-mode for full_mm_flush as well.  But this
--	 * doesn't work because of speculative accesses and software prefetching: the page
--	 * table of "mm" may (and usually is) the currently active page table and even
--	 * though the kernel won't do any user-space accesses during the TLB shoot down, a
--	 * compiler might use speculation or lfetch.fault on what happens to be a valid
--	 * user-space address.  This in turn could trigger a TLB miss fault (or a VHPT
--	 * walk) and re-insert a TLB entry we just removed.  Slow mode avoids such
--	 * problems.  (We could make fast-mode work by switching the current task to a
--	 * different "mm" during the shootdown.) --davidm 08/02/2002
--	 */
--	tlb->nr = (num_online_cpus() == 1) ? ~0U : 0;
--	tlb->fullmm = full_mm_flush;
--	tlb->start_addr = ~0UL;
--}
--
--/*
-- * Called at the end of the shootdown operation to free up any resources that were
-- * collected.
-- */
--static inline void
--tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
--{
--	/*
--	 * Note: tlb->nr may be 0 at this point, so we can't rely on tlb->start_addr and
--	 * tlb->end_addr.
--	 */
--	ia64_tlb_flush_mmu(tlb, start, end);
--
--	/* keep the page table cache within bounds */
--	check_pgt_cache();
--
--	if (tlb->pages != tlb->local)
--		free_pages((unsigned long)tlb->pages, 0);
--}
--
--/*
-- * Logically, this routine frees PAGE.  On MP machines, the actual freeing of the page
-- * must be delayed until after the TLB has been flushed (see comments at the beginning of
-- * this file).
-- */
--static inline int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
--{
--	tlb->need_flush = 1;
--
--	if (tlb_fast_mode(tlb)) {
--		free_page_and_swap_cache(page);
--		return 0;
--	}
--
--	if (!tlb->nr && tlb->pages == tlb->local)
--		__tlb_alloc_page(tlb);
--
--	tlb->pages[tlb->nr++] = page;
--	if (tlb->nr >= tlb->max)
--		return 1;
--
--	return 0;
--}
--
--static inline void tlb_flush_mmu(struct mmu_gather *tlb)
--{
--	ia64_tlb_flush_mmu(tlb, tlb->start_addr, tlb->end_addr);
--}
--
--static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
--{
--	if (__tlb_remove_page(tlb, page))
--		tlb_flush_mmu(tlb);
--}
--
--/*
-- * Remove TLB entry for PTE mapped at virtual address ADDRESS.  This is called for any
-- * PTE, not just those pointing to (normal) physical memory.
-- */
--static inline void
--__tlb_remove_tlb_entry (struct mmu_gather *tlb, pte_t *ptep, unsigned long address)
--{
--	if (tlb->start_addr == ~0UL)
--		tlb->start_addr = address;
--	tlb->end_addr = address + PAGE_SIZE;
--}
--
--#define tlb_migrate_finish(mm)	platform_tlb_migrate_finish(mm)
--
--#define tlb_start_vma(tlb, vma)			do { } while (0)
--#define tlb_end_vma(tlb, vma)			do { } while (0)
--
--#define tlb_remove_tlb_entry(tlb, ptep, addr)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__tlb_remove_tlb_entry(tlb, ptep, addr);	\
--} while (0)
--
--#define pte_free_tlb(tlb, ptep, address)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__pte_free_tlb(tlb, ptep, address);		\
--} while (0)
--
--#define pmd_free_tlb(tlb, ptep, address)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__pmd_free_tlb(tlb, ptep, address);		\
--} while (0)
--
--#define pud_free_tlb(tlb, pudp, address)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__pud_free_tlb(tlb, pudp, address);		\
--} while (0)
--
- #endif /* _ASM_IA64_TLB_H */
+Ug, del_timer_sync() can be called from interrupt context:
 
+printk -> vt_console_print -> hide_cursor -> fbcon_cursor
+-> fbcon_del_cursor_time -> del_timer_sync()
 
+printk is allowed to be called from interrupt context. This is indeed a
+true bug.
+
+-- Steve
+
+> 
+> SysRq :
+> ------------[ cut here ]------------
+> WARNING: at kernel/timer.c:983 del_timer_sync+0x93/0xae()
+> Hardware name: System Product Name
+> Modules linked in: soundcore firewire_ohci firewire_core ohci_hcd ehci_hcd
+> Pid: 0, comm: kworker/0:1 Not tainted 2.6.38-rc6+ #235
+> Call Trace:
+>  <IRQ>  [<ffffffff8103a6df>] ? warn_slowpath_common+0x80/0x98
+>  [<ffffffff8103a70c>] ? warn_slowpath_null+0x15/0x17
+>  [<ffffffff810452a7>] ? del_timer_sync+0x93/0xae
+>  [<ffffffff81045214>] ? del_timer_sync+0x0/0xae
+>  [<ffffffff8120725a>] ? fbcon_del_cursor_timer+0x32/0x3d
+>  [<ffffffff812077f0>] ? fbcon_cursor+0x9a/0x152
+>  [<ffffffff8125fd84>] ? hide_cursor+0x2c/0x7d
+>  [<ffffffff8126022b>] ? vt_console_print+0xd9/0x2f7
+>  [<ffffffff8103a891>] ? __call_console_drivers+0x67/0x79
+>  [<ffffffff8103a8fc>] ? _call_console_drivers+0x59/0x5d
+>  [<ffffffff8103ae3e>] ? console_unlock+0x160/0x1ce
+>  [<ffffffff8103b44a>] ? vprintk+0x358/0x38e
+>  [<ffffffff81466199>] ? printk+0x3c/0x3e
+>  [<ffffffff812594ce>] ? __handle_sysrq+0x23/0x157
+>  [<ffffffff812594f0>] ? __handle_sysrq+0x45/0x157
+>  [<ffffffff81259758>] ? sysrq_filter+0x116/0x17b
+>  [<ffffffff8139b9c5>] ? input_pass_event+0xbe/0x111
+>  [<ffffffff8139b907>] ? input_pass_event+0x0/0x111
+>  [<ffffffff8139cfb4>] ? input_handle_event+0x42a/0x439
+>  [<ffffffff8139d0e9>] ? input_event+0x5b/0x7a
+>  [<ffffffff813a37f3>] ? atkbd_interrupt+0x50f/0x5e0
+>  [<ffffffff8139735c>] ? serio_interrupt+0x40/0x7c
+>  [<ffffffff81398647>] ? i8042_interrupt+0x289/0x2a3
+>  [<ffffffff8107ae98>] ? handle_IRQ_event+0x20/0xa8
+>  [<ffffffff8107cd68>] ? handle_edge_irq+0x103/0x14f
+>  [<ffffffff81004a2b>] ? handle_irq+0x83/0x8c
+>  [<ffffffff81004067>] ? do_IRQ+0x48/0xaf
+>  [<ffffffff81469a93>] ? ret_from_intr+0x0/0x13
+>  <EOI>  [<ffffffff8105d49e>] ? tick_broadcast_oneshot_control+0x1a/0xfb
+>  [<ffffffff810098cc>] ? default_idle+0x27/0x43
+>  [<ffffffff810098ce>] ? default_idle+0x29/0x43
+>  [<ffffffff810098cc>] ? default_idle+0x27/0x43
+>  [<ffffffff81009a33>] ? c1e_idle+0xcd/0xf4
+>  [<ffffffff810012e5>] ? cpu_idle+0x5f/0x96
+>  [<ffffffff81462b7c>] ? start_secondary+0x1e3/0x1e5
+> ---[ end trace 80565a42945fc993 ]---
+> Changing Loglevel
+> Loglevel set to 3
+> 
+> 
+> To add insult to injury, my cursor is configured not to blink.
+> 
+> 
+> Regards,
+> Clemens
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
