@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1CBXXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 18:23:22 -0500
-Received: from vms173001pub.verizon.net ([206.46.173.1]:54345 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab1CBXXU (ORCPT
+	id S1754587Ab1CBXZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 18:25:04 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:57554 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab1CBXZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 18:23:20 -0500
-Date: Wed, 02 Mar 2011 18:22:56 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] ACPI patches for 2.6.38-rc7
-Message-id: <alpine.LFD.2.02.1103021821240.12344@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 2 Mar 2011 18:25:02 -0500
+Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM 
+	top level
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>
+In-Reply-To: <41502.137.254.4.9.1299105929.squirrel@xenotime.net>
+References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
+	 <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
+	 <20110301223251.11c95eed.rdunlap@xenotime.net>
+	 <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
+	 <41502.137.254.4.9.1299105929.squirrel@xenotime.net>
+Content-Type: text/plain
+Date: Wed, 02 Mar 2011 15:18:16 -0800
+Message-Id: <1299107896.5401.333.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 2011-03-02 at 14:45 -0800, Randy Dunlap wrote:
+> On Wed, March 2, 2011 1:32 pm, Nicholas A. Bellinger wrote:
+> > On Tue, 2011-03-01 at 22:32 -0800, Randy Dunlap wrote:
+> >> On Tue,  1 Mar 2011 19:34:01 -0800 Nicholas A. Bellinger wrote:
+> >>> From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-please pull from: 
+<SNIP>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
+> >>> --- /dev/null
+> >>> +++ b/drivers/target/iscsi/Kconfig
+> >>> @@ -0,0 +1,17 @@
+> >>> +config ISCSI_TARGET
+> >>> +	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
+> >>> +	select CRYPTO
+> >>> +	select CRYPTO_CRC32C
+> >>> +	select CRYPTO_CRC32C_INTEL
+> >>>
+> >>
+> >> CRYPTO_CRC32C_INTEL depends on X86.  so is ISCSI_TARGET only for X86,
+> >> or is this kconfig just mucked up?
+> >>
+> >>
+> >
+> > Hi Randy,
+> >
+> >
+> > The kernel code itself that is specific to using the SSE v4.2
+> > instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
+> > iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
+> > default to using the unoptimized 1x8 slicing soft CRC32C code.  This
+> > particular piece of logic has been tested on powerpc and arm and is
+> > funcitoning as expected from the kernel level using the arch independent
+> > soft code.
+> >
+> > On the kbuild side, I do see the following warning on !CONFIG_X86:
+> >
+> >
+> > warning: (LIO_TARGET) selects CRYPTO_CRC32C_INTEL which has unmet direct
+> > dependencies (CRYPTO && X86)
+> 
+> Ah, good.
+> 
+> > I looking at trying to fix this at one point, but was unable to
+> > determine a method for adding a CONFIG_$ARCH condition to an individual
+> > 'select BAR' section of 'config FOO'..
+> >
+> >
+> > How would you recommend handling this case..?
+> 
+> How about
+> 
+>         select CRYPTO_CRC32C_INTEL if X86
+> 
+> (with s/spaces/tab/)
 
-This will update the files shown below.
+Perfect, this resolves the kconfig warning on a nearby powerpc machine
+running LIO upstream .38-rcX iSCSI target code..
 
-thanks!
-Len Brown
-Intel Open Source Technology Center
+Committed as c8bc93f107b into lio-core-2.6.git/lio-4.1, and I will make
+sure this is included for the next iscsi-target RFC series rev.
 
- drivers/acpi/acpica/aclocal.h |    7 +++++-
- drivers/acpi/acpica/evgpe.c   |   17 ++++++++++++---
- drivers/acpi/acpica/evxfgpe.c |   42 ++++++++++++++++++++++++++++++++--------
- drivers/acpi/debugfs.c        |   20 +++++++++++++-----
- 4 files changed, 66 insertions(+), 20 deletions(-)
+Thanks for your review Randy!
 
-through these commits:
+--nab
 
-Rafael J. Wysocki (1):
-      ACPI / ACPICA: Implicit notify for multiple devices
 
-Vasiliy Kulikov (1):
-      ACPI / debugfs: Fix buffer overflows, double free
 
-with this log:
-
-commit 981858bd7a401aa9607d9f430d5de920025fc3ea
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Thu Feb 24 19:59:21 2011 +0100
-
-    ACPI / ACPICA: Implicit notify for multiple devices
-    
-    Commit bba63a2 (ACPICA: Implicit notify support) introduced a
-    mechanism that causes a notify request of type
-    ACPI_NOTIFY_DEVICE_WAKE to be queued automatically by
-    acpi_ev_asynch_execute_gpe_method() for the device whose _PRW points
-    to the GPE being handled if that GPE is not associated with an
-    _Lxx/_Exx method.  However, it turns out that on some systems there
-    are multiple devices with _PRW pointing to the same GPE without
-    _Lxx/_Exx and the mechanism introduced by commit bba63a2 needs to be
-    extended so that "implicit" notify requests of type
-    ACPI_NOTIFY_DEVICE_WAKE can be queued automatically for all those
-    devices at the same time.
-    
-    Reported-and-tested-by: Matthew Garrett <mjg@redhat.com>
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-commit 2949ad50711cc161721cf788711722eeeca33764
-Author: Vasiliy Kulikov <segoon@openwall.com>
-Date:   Sat Feb 19 14:18:08 2011 +0100
-
-    ACPI / debugfs: Fix buffer overflows, double free
-    
-    File position is not controlled, it may lead to overwrites of arbitrary
-    kernel memory.  Also the code may kfree() the same pointer multiple
-    times.
-    
-    One more flaw is still present: if multiple processes open the file then
-    all 3 static variables are shared, leading to various race conditions.
-    They should be moved to file->private_data.
-    
-    Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-    Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-    Reviewed-by: Eugene Teo <eugeneteo@kernel.org>
-    Cc: stable@kernel.org
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
