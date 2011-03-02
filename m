@@ -1,154 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1CBFoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 00:44:32 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:40899 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab1CBFoW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 00:44:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=bECA0UHJrycyIcllz4uEjIfLhKmvm1WEdyixmXhU5wU8BDAyy7OvS4jpQR85vv7fWQ
-         EHeFOtCkc0Ca+/gjsyEg==
+	id S1752907Ab1CBFre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 00:47:34 -0500
+Received: from kroah.org ([198.145.64.141]:35695 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752052Ab1CBFrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 00:47:33 -0500
+Date: Wed, 2 Mar 2011 00:39:20 -0500
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 3/6] Staging: hv: Cleanup hyperv_device variable names
+Message-ID: <20110302053920.GA28382@kroah.com>
+References: <1298685992-30864-1-git-send-email-kys@microsoft.com>
+ <20110301024403.GD1663@kroah.com>
+ <6E21E5352C11B742B20C142EB499E04801660E@TK5EX14MBXC128.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <1299022433-17233-1-git-send-email-venki@google.com>
-References: <1299022433-17233-1-git-send-email-venki@google.com>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 1 Mar 2011 21:43:48 -0800
-Message-ID: <AANLkTinyAyXCH6sh9pOe36dCeTO_C8wbtmZriKanGtt3@mail.gmail.com>
-Subject: Re: [PATCH] sched: next buddy hint on sleep and preempt path
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E04801660E@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 3:33 PM, Venkatesh Pallipadi <venki@google.com> wrote:
-> When a task in a taskgroup sleeps, pick_next_task starts all the way back at
-> the root and picks the task/taskgroup with the min vruntime across all
-> runnable tasks. But, when there are many frequently sleeping tasks
-> across different taskgroups, it makes better sense to stay with same taskgroup
-> for its slice period (or until all tasks in the taskgroup sleeps) instead of
-> switching cross taskgroup on each sleep after a short runtime.
-> This helps specifically where taskgroups corresponds to a process with
-> multiple threads. The change reduces the number of CR3 switches in this case.
->
-> Example:
-> Two taskgroups with 2 threads each which are running for 2ms and
-> sleeping for 1ms. Looking at sched:sched_switch shows -
->
-> BEFORE: taskgroup_1 threads [5004, 5005], taskgroup_2 threads [5016, 5017]
->      cpu-soaker-5004  [003]  3683.391089
->      cpu-soaker-5016  [003]  3683.393106
->      cpu-soaker-5005  [003]  3683.395119
->      cpu-soaker-5017  [003]  3683.397130
->      cpu-soaker-5004  [003]  3683.399143
->      cpu-soaker-5016  [003]  3683.401155
->      cpu-soaker-5005  [003]  3683.403168
->      cpu-soaker-5017  [003]  3683.405170
->
-> AFTER: taskgroup_1 threads [21890, 21891], taskgroup_2 threads [21934, 21935]
->      cpu-soaker-21890 [003]   865.895494
->      cpu-soaker-21935 [003]   865.897506
->      cpu-soaker-21934 [003]   865.899520
->      cpu-soaker-21935 [003]   865.901532
->      cpu-soaker-21934 [003]   865.903543
->      cpu-soaker-21935 [003]   865.905546
->      cpu-soaker-21891 [003]   865.907548
->      cpu-soaker-21890 [003]   865.909560
->      cpu-soaker-21891 [003]   865.911571
->      cpu-soaker-21890 [003]   865.913582
->      cpu-soaker-21891 [003]   865.915594
->      cpu-soaker-21934 [003]   865.917606
->
-> Similar problem is there when there are multiple taskgroups and say a task A
-> preempts currently running task B of taskgroup_1. On schedule, pick_next_task
-> can pick an unrelated task on taskgroup_2. Here it would be better to give some
-> preference to task B on pick_next_task.
->
-> A simple (may be extreme case) benchmark I tried was tbench with 2 tbench
-> client processes with 2 threads each running on a single CPU. Avg throughput
-> across 5 50 sec runs was -
-> BEFORE: 105.84 MB/sec
-> AFTER: 112.42 MB/sec
->
-> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-> ---
->  kernel/sched_fair.c |   20 ++++++++++++++++++--
->  1 files changed, 18 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 3a88dee..36e8f02 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -1339,6 +1339,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->        hrtick_update(rq);
->  }
->
-> +static void set_next_buddy(struct sched_entity *se);
-> +
->  /*
->  * The dequeue_task method is called before nr_running is
->  * decreased. We remove the task from the rbtree and
-> @@ -1348,14 +1350,22 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->  {
->        struct cfs_rq *cfs_rq;
->        struct sched_entity *se = &p->se;
-> +       int task_flags = flags;
+On Wed, Mar 02, 2011 at 01:42:37AM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Monday, February 28, 2011 9:44 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
+> > Janssen
+> > Subject: Re: [PATCH 3/6] Staging: hv: Cleanup hyperv_device variable names
+> > 
+> > On Fri, Feb 25, 2011 at 06:06:32PM -0800, K. Y. Srinivasan wrote:
+> > > Cleanup the names of variables that refer to the
+> > > hyperv_device abstraction.
+> > 
+> > Clean them up to be what?  Shorter?  Nice?  Full of rounded edges so
+> > that when we bump into them in the dark they don't poke us and cause us
+> > to shreak in pain?
+> > 
+> > >
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > 
+> > Sweet, you cloned yourself, I thought only Alan Cox had achieved that
+> > goal...
+> > 
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > >
+> > > ---
+> > >  drivers/staging/hv/blkvsc_drv.c  |   12 ++--
+> > >  drivers/staging/hv/netvsc.c      |    4 +-
+> > >  drivers/staging/hv/netvsc_drv.c  |   36 ++++----
+> > >  drivers/staging/hv/storvsc_drv.c |   44 +++++-----
+> > >  drivers/staging/hv/vmbus_drv.c   |  164 +++++++++++++++++++-----------------
+> > --
+> > >  5 files changed, 130 insertions(+), 130 deletions(-)
+> > >
+> > > diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+> > > index 58ab0e8..305a665 100644
+> > > --- a/drivers/staging/hv/blkvsc_drv.c
+> > > +++ b/drivers/staging/hv/blkvsc_drv.c
+> > > @@ -95,7 +95,7 @@ struct blkvsc_request {
+> > >  /* Per device structure */
+> > >  struct block_device_context {
+> > >  	/* point back to our device context */
+> > > -	struct hyperv_device *device_ctx;
+> > > +	struct hyperv_device *device_obj;
+> > 
+> > Hey, I was right, it does have more rounded edges, nicely done.
+> > 
+> > 
+> > > -static int netvsc_device_add(struct hyperv_device *device,
+> > > -			void *additional_info);
+> > > +static int
+> > > +netvsc_device_add(struct hyperv_device *device, void *additional_info);
+> > 
+> > Again with the function return value hiding.  Please don't.
+> > 
+> > > --- a/drivers/staging/hv/storvsc_drv.c
+> > > +++ b/drivers/staging/hv/storvsc_drv.c
+> > > @@ -43,7 +43,7 @@ struct host_device_context {
+> > >  	/* must be 1st field
+> > >  	 * FIXME this is a bug */
+> > >  	/* point back to our device context */
+> > > -	struct hyperv_device *device_ctx;
+> > > +	struct hyperv_device *device_obj;
+> > 
+> > I really don't understand this change at all.  "obj" is just as vapid
+> > and clueless as "ctx" is, and it seems very gratuitous to change this.
+> > And I should know, I have made a lot of gratuitous renames in my time in
+> > the kernel...
+> 
+> Greg, there are not that many options here. As I recall there was universal
+> objection to the use of  *context/*ctx to refer to device or driver objects.
+> The name I chose is fairly descriptive of what it represents. If there is consensus 
+> on a better name, I will  use it. 
 
-simpler: int voluntary = flags & DEQUEUE_SLEEP;
->
->        for_each_sched_entity(se) {
->                cfs_rq = cfs_rq_of(se);
->                dequeue_entity(cfs_rq, se, flags);
->
->                /* Don't dequeue parent if it has other entities besides us */
-> -               if (cfs_rq->load.weight)
-> +               if (cfs_rq->load.weight) {
-> +                       /*
-> +                        * Bias pick_next to pick a task from this cfs_rq, as
-> +                        * p is sleeping when it is within its sched_slice.
-> +                        */
-> +                       if (task_flags & DEQUEUE_SLEEP && se->parent)
-> +                               set_next_buddy(se->parent);
+Do it like other subsystems, call it a device with the prefix for the
+type.  So for this one, it would be:
+	struct hyperv_device *hyperv_device;
+or
+	struct hyperv_device *hyperv_dev;
 
-re-using the last_buddy would seem like a more natural fit here; also
-doesn't have a clobber race with a wakeup
+> > Come on, global search-and-replace needs to be done in a sane manner,
+> > other wise you can just send me a vi macro to run on the code, it would
+> > be the same thing in the end (hint, don't do that, only one person has
+> > ever gotten away with doing that in the history of the kernel, in an act
+> > never to be ever repeated again.)
+> 
+> Greg, apart from your objection to the name I picked to refer to variable 
+> referring to struct hyperv_device; what else is the problem here. 
 
->                        break;
-> +               }
->                flags |= DEQUEUE_SLEEP;
->        }
->
-> @@ -1887,8 +1897,14 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
->        update_curr(cfs_rq);
->        find_matching_se(&se, &pse);
->        BUG_ON(!pse);
-> -       if (wakeup_preempt_entity(se, pse) == 1)
-> +       if (wakeup_preempt_entity(se, pse) == 1) {
-> +               /*
-> +                * Bias pick_next to pick the sched entity that is
-> +                * triggering this preemption.
-> +                */
-> +               set_next_buddy(pse);
+Changing the comment that should be removed instead.
 
-this probably wants some sort of unification with the scale-based next
-buddy above
+thanks,
 
->                goto preempt;
-> +       }
->
->        return;
->
-> --
-> 1.7.3.1
->
->
+greg k-h
