@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1CBF2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 00:28:05 -0500
-Received: from mail.perches.com ([173.55.12.10]:4035 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab1CBF2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 00:28:04 -0500
-Subject: Re: [PATCH 5/6] mm: add some KERN_CONT markers to continuation
- lines
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        kernel@pengutronix.de, Arjan van de Ven <arjan@infradead.org>,
-        linux-mm@kvack.org
-In-Reply-To: <AANLkTi=VB5po9Yt2oCcCq01UNQxXNY+_6RBpjWRFkvxN@mail.gmail.com>
-References: <20101124085645.GW4693@pengutronix.de>
-	 <1290589070-854-5-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <20110228151736.GO22310@pengutronix.de>
-	 <AANLkTi=VB5po9Yt2oCcCq01UNQxXNY+_6RBpjWRFkvxN@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Mar 2011 21:28:00 -0800
-Message-ID: <1299043680.4208.97.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752307Ab1CBF25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 00:28:57 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52100 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab1CBF24 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 00:28:56 -0500
+MIME-Version: 1.0
+X-Originating-IP: [76.195.162.181]
+Date: Tue, 1 Mar 2011 21:28:55 -0800
+Message-ID: <AANLkTikcP6CKmpTrx160vV446z6kWL65ahPAyx-MOqqB@mail.gmail.com>
+Subject: [ANNOUNCE] Upstart 1.0 released
+From: Scott James Remnant <scott@netsplit.com>
+To: Upstart Dev List <upstart-devel@lists.ubuntu.com>,
+        upstart-devel@upstart.at, upstart-release@upstart.at
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 13:46 -0800, Linus Torvalds wrote:
-> the concept of
->     printk(KERN_CONT "\n")
-> is just crazy: you're saying "I want to continue the line, in order to
-> print a newline". Whaa?
+The trouble with a "1.0" release is that the temptation is for that
+version to be the one with all the features you want when your users
+want it to be stable. This is a 1.0 release of the latter kind, based
+on the 0.6.x code that was shipped in both the most recent Ubuntu LTS
+and RedHat Enterprise Linux releases. If you're running Upstart
+anywhere right now, it's highly recommended that you update to this
+version, there shouldn't be any surprises!
 
-It's a trivially useful "end of collected printk" mark,
-which was made a bit superfluous by the code that added
-any necessary newline before every KERN_<level>.
 
-There are a thousand or so of them today.
+1.0  2011-03-01  "This is a fertile land, and we will thrive"
 
-$ grep -rP --include=*.[ch] "\b(printk\s*\(\s*KERN_CONT|pr_cont\s*\(|printk\s*\()\s*\"\\\n\"" * | wc -l
-1061
+	* Fixed an assertion when a file named /etc/init/.conf is created.
+	  Discovered by Коренберг Марк (Bug: #720573)
 
-That code made all message terminating newlines a bit
-obsolete.  I won't be submitting any patches to remove
-those EOM newlines any time soon.
+	* utmp entries will be replaced with DEAD_PROCESS ones when a
+	  pid supervised by Upstart terminates.  (Bug: #183729)
 
-I hope no one does that.
+	* shutdown now correctly returns error code if it fails to shutdown
+	  the system.
 
-It would be actually useful to have some form like:
+	* Included bash completion script in contrib directory.
+          (Bug: #672067)
 
-	cookie = collected_printk_start()
-loop:
-		collected_printk(cookie, ...) (...)
-	collected_printk_end(cookie)
 
-so that interleaved messages from multiple
-concurrent streams could be sensibly collected
-either post processed or buffered.
+The tarball can be found here:
 
+       https://launchpad.net/upstart/1.x/1.0
+
+For more information on upstart:
+
+       http://upstart.at/
+
+
+Scott
