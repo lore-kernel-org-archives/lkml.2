@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1CBPN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 10:13:59 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:55754 "EHLO
+	id S1753816Ab1CBPQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 10:16:29 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:52871 "EHLO
 	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab1CBPN6 (ORCPT
+	with ESMTP id S1751384Ab1CBPQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 10:13:58 -0500
+	Wed, 2 Mar 2011 10:16:28 -0500
 From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 To: Karel Zak <kzak@redhat.com>
 Cc: linux-kernel@vger.kernel.org, t.artem@mailcity.com,
@@ -15,10 +15,11 @@ Subject: Re: MS_SILENT vs. vfat and hfs
 References: <20110302114517.GA496@nb.net.home>
 	<87d3m9r4mz.fsf@devron.myhome.or.jp>
 	<20110302144303.GC14636@nb.net.home>
-Date: Thu, 03 Mar 2011 00:13:54 +0900
-In-Reply-To: <20110302144303.GC14636@nb.net.home> (Karel Zak's message of
-	"Wed, 2 Mar 2011 15:43:03 +0100")
-Message-ID: <87zkpdpnbh.fsf@devron.myhome.or.jp>
+	<20110302150607.GD14636@nb.net.home>
+Date: Thu, 03 Mar 2011 00:16:25 +0900
+In-Reply-To: <20110302150607.GD14636@nb.net.home> (Karel Zak's message of
+	"Wed, 2 Mar 2011 16:06:07 +0100")
+Message-ID: <87vd01pn7a.fsf@devron.myhome.or.jp>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,55 +29,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Karel Zak <kzak@redhat.com> writes:
 
-> On Wed, Mar 02, 2011 at 11:14:28PM +0900, OGAWA Hirofumi wrote:
->> Karel Zak <kzak@redhat.com> writes:
->> 
->> >  The mount(8) command uses "quiet" mount option as a synonym to the
->> >  MS_SILENT mount flag (since util-linux 2.7, Aug 1997).
->> >
->> >  It means than on systems where is properly defined the MS_SILENT
->> >  mount flags in headers is the "quiet" mount option always translated
->> >  to the MS_SILENT mount flags and "quiet" string is never send to FS
->> >  drivers.
->> >
->> >    $ strace -e mount mount -o quiet /dev/sdb1 /mnt/test
->> >    mount("/dev/sdb1", "/mnt/test", "vfat", MS_MGC_VAL|MS_SILENT, NULL) = 0
->> >                                                       ^^^^^^^^^
->> >
->> >  Unfortunately, 
->> >  
->> >    $ grep -r \"quiet\" *
->> >
->> >    fat/inode.c:    {Opt_quiet, "quiet"},
->> >    hfs/super.c:    { opt_quiet, "quiet" },
->> >
->> >  vfat and hfs drivers use "quiet" as a mount option. That's bug.
->> >
->> >  There should not be a collision between mount(8) mount options and
->> >  filesystem specific mount options.
->> >
->> >  My suggestion is to fix the fat and hfs code to use something other
->> >  than "quiet" (shutup, noisless, ...). I think you don't have to care
->> >  about backward compatibility, because it's probably broken for years.
->> 
->> No. Actually the _new_ option is MS_SILENT. In history, there was no
->> MS_SILENT (it was called MS_VERBOSE) in kernel, then _added_ newly, and
->> never be enabled MS_SILENT in mount command until that.
->
->  I know, but I don't care which option is newer. I'd like to found a
->  solution with minimal impact to users.
+>  I'll probably add an exception for vfat and hfs to mount(8), "silent"
+>  as MS_SILENT and mark "quiet" as deprecated for non-fat filesystems.
 
-Sounds good.
-
->> So, my suggestion is use "silent" (or something) as MS_SILENT for
->> backward compatibility. Because the "quiet" is already hardcoded by some
->> userland apps for vfat.
->
->  Then all people who use "quiet" in their fstab will see problems...
-
-I don't know how to know the minimal impact though. I'll bet to change
-MS_SILENT, because at least the mount command in debian/testing doesn't
-provide "quiet" as MS_SILENT.
+Sounds really good to me.
 
 Thanks.
 -- 
