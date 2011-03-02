@@ -1,89 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab1CBWYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 17:24:16 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:32842 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757987Ab1CBWYM (ORCPT
+	id S1758038Ab1CBWYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:24:33 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:54646 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757910Ab1CBWXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 17:24:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HQm38lbxSc7OC5wBOKNqMOOXXAlp2c5qkEAWtMnWCUSV0a1teEhDbkceZBC+PCcd2R
-         3P0YvYcBh/PqdWuedweGCRfYyWVA7vTTjbw6WqJCLRHSoZ7gY2kmMQCFaZ7lFt/JcuoL
-         eoOB2EHogZI3Hs2hYKeZHx5nn3gt9u2tcNBaM=
-Date: Wed, 2 Mar 2011 16:24:03 -0600
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Stefan Bader <stefan.bader@canonical.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.30
-Message-ID: <20110302222403.GA7159@BohrerMBP.rgmadvisors.com>
-References: <20110302145828.GA4999@kroah.com>
- <4D6E7548.807@canonical.com>
- <20110302204202.GB19022@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302204202.GB19022@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Mar 2011 17:23:35 -0500
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, leoli@freescale.com,
+        dan.j.williams@intel.com, "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: [PATCH v2 7/9] fsldma: support async_tx dependencies and automatic unmapping
+Date: Wed,  2 Mar 2011 14:23:19 -0800
+Message-Id: <1299104601-15447-8-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1299104601-15447-1-git-send-email-iws@ovro.caltech.edu>
+References: <1299104601-15447-1-git-send-email-iws@ovro.caltech.edu>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Wed, 02 Mar 2011 14:23:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 03:42:02PM -0500, Greg KH wrote:
-> On Wed, Mar 02, 2011 at 05:50:16PM +0100, Stefan Bader wrote:
-> > > FUJITA Tomonori (1):
-> > >       swiotlb: fix wrong panic
-> > >
-> > 
-> > This one breaks compilation of 64bit for me as swiotlb_tbl_unmap_single() does
-> > not exist. It does not look like it is a simple single patch that would get it
-> > back to 2.6.32.
-> 
-> I don't understand.  Is this patch somehow broken?  Is there an
-> additional patch I need to apply to fix the build issue?  I need more
-> information here.
+Previous to this patch, the dma_run_dependencies() function has been
+called while holding desc_lock. This function can call tx_submit() for
+other descriptors, which may try to re-grab the lock. Avoid this by
+moving the descriptors to be cleaned up to a temporary list, and
+dropping the lock before cleanup.
 
-Same problem here, not sure what the fix is.  With this patch applied
-on 64-bit I get:
+At the same time, add support for automatic unmapping of src and dst
+buffers, as offered by the DMAEngine API.
 
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+---
+ drivers/dma/fsldma.c |  132 ++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 95 insertions(+), 37 deletions(-)
 
-$ make lib/swiotlb.o
-  CHK     include/linux/version.h
-  CHK     include/linux/utsrelease.h
-  SYMLINK include/asm -> include/asm-x86
-  HOSTCC  scripts/basic/fixdep
-  HOSTCC  scripts/basic/docproc
-  HOSTCC  scripts/basic/hash
-  CC      kernel/bounds.s
-  GEN     include/linux/bounds.h
-  CC      arch/x86/kernel/asm-offsets.s
-  GEN     include/asm/asm-offsets.h
-  CALL    scripts/checksyscalls.sh
-  HOSTCC  scripts/genksyms/genksyms.o
-  HOSTCC  scripts/genksyms/lex.o
-  HOSTCC  scripts/genksyms/parse.o
-  HOSTLD  scripts/genksyms/genksyms
-  CC      scripts/mod/empty.o
-  HOSTCC  scripts/mod/mk_elfconfig
-  MKELF   scripts/mod/elfconfig.h
-  HOSTCC  scripts/mod/file2alias.o
-  HOSTCC  scripts/mod/modpost.o
-  HOSTCC  scripts/mod/sumversion.o
-  HOSTLD  scripts/mod/modpost
-  HOSTCC  scripts/kallsyms
-  HOSTCC  scripts/pnmtologo
-  HOSTCC  scripts/conmakehash
-  HOSTCC  scripts/bin2c
-  CC      lib/swiotlb.o
-lib/swiotlb.c: In function 'swiotlb_map_page':
-lib/swiotlb.c:635: error: implicit declaration of function 'swiotlb_tbl_unmap_single'
-make[1]: *** [lib/swiotlb.o] Error 1
-make: *** [lib/swiotlb.o] Error 2
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index e9bb51e..48e48c7 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -78,6 +78,11 @@ static void set_desc_cnt(struct fsldma_chan *chan,
+ 	hw->count = CPU_TO_DMA(chan, count, 32);
+ }
+ 
++static u32 get_desc_cnt(struct fsldma_chan *chan, struct fsl_desc_sw *desc)
++{
++	return DMA_TO_CPU(chan, desc->hw.count, 32);
++}
++
+ static void set_desc_src(struct fsldma_chan *chan,
+ 			 struct fsl_dma_ld_hw *hw, dma_addr_t src)
+ {
+@@ -88,6 +93,16 @@ static void set_desc_src(struct fsldma_chan *chan,
+ 	hw->src_addr = CPU_TO_DMA(chan, snoop_bits | src, 64);
+ }
+ 
++static dma_addr_t get_desc_src(struct fsldma_chan *chan,
++			       struct fsl_desc_sw *desc)
++{
++	u64 snoop_bits;
++
++	snoop_bits = ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_85XX)
++		? ((u64)FSL_DMA_SATR_SREADTYPE_SNOOP_READ << 32) : 0;
++	return DMA_TO_CPU(chan, desc->hw.src_addr, 64) & ~snoop_bits;
++}
++
+ static void set_desc_dst(struct fsldma_chan *chan,
+ 			 struct fsl_dma_ld_hw *hw, dma_addr_t dst)
+ {
+@@ -98,6 +113,16 @@ static void set_desc_dst(struct fsldma_chan *chan,
+ 	hw->dst_addr = CPU_TO_DMA(chan, snoop_bits | dst, 64);
+ }
+ 
++static dma_addr_t get_desc_dst(struct fsldma_chan *chan,
++			       struct fsl_desc_sw *desc)
++{
++	u64 snoop_bits;
++
++	snoop_bits = ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_85XX)
++		? ((u64)FSL_DMA_DATR_DWRITETYPE_SNOOP_WRITE << 32) : 0;
++	return DMA_TO_CPU(chan, desc->hw.dst_addr, 64) & ~snoop_bits;
++}
++
+ static void set_desc_next(struct fsldma_chan *chan,
+ 			  struct fsl_dma_ld_hw *hw, dma_addr_t next)
+ {
+@@ -803,6 +828,57 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+ }
+ 
+ /**
++ * fsldma_cleanup_descriptor - cleanup and free a single link descriptor
++ * @chan: Freescale DMA channel
++ * @desc: descriptor to cleanup and free
++ *
++ * This function is used on a descriptor which has been executed by the DMA
++ * controller. It will run any callbacks, submit any dependencies, and then
++ * free the descriptor.
++ */
++static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
++				      struct fsl_desc_sw *desc)
++{
++	struct dma_async_tx_descriptor *txd = &desc->async_tx;
++	struct device *dev = chan->common.device->dev;
++	dma_addr_t src = get_desc_src(chan, desc);
++	dma_addr_t dst = get_desc_dst(chan, desc);
++	u32 len = get_desc_cnt(chan, desc);
++
++	/* Run the link descriptor callback function */
++	if (txd->callback) {
++#ifdef FSL_DMA_LD_DEBUG
++		dev_dbg(chan->dev, "%s: LD %p callback\n", chan->name, desc);
++#endif
++		txd->callback(txd->callback_param);
++	}
++
++	/* Run any dependencies */
++	dma_run_dependencies(txd);
++
++	/* Unmap the dst buffer, if requested */
++	if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
++		if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
++			dma_unmap_single(dev, dst, len, DMA_FROM_DEVICE);
++		else
++			dma_unmap_page(dev, dst, len, DMA_FROM_DEVICE);
++	}
++
++	/* Unmap the src buffer, if requested */
++	if (!(txd->flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
++		if (txd->flags & DMA_COMPL_SRC_UNMAP_SINGLE)
++			dma_unmap_single(dev, src, len, DMA_TO_DEVICE);
++		else
++			dma_unmap_page(dev, src, len, DMA_TO_DEVICE);
++	}
++
++#ifdef FSL_DMA_LD_DEBUG
++	dev_dbg(chan->dev, "%s: LD %p free\n", chan->name, desc);
++#endif
++	dma_pool_free(chan->desc_pool, desc, txd->phys);
++}
++
++/**
+  * fsl_chan_ld_cleanup - Clean up link descriptors
+  * @chan : Freescale DMA channel
+  *
+@@ -816,57 +892,39 @@ static void fsl_chan_ld_cleanup(struct fsldma_chan *chan)
+ {
+ 	struct fsl_desc_sw *desc, *_desc;
+ 	const char *name = chan->name;
++	LIST_HEAD(ld_cleanup);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chan->desc_lock, flags);
+ 
+-	/* if the ld_running list is empty, there is nothing to do */
+-	if (list_empty(&chan->ld_running)) {
+-		dev_dbg(chan->dev, "%s: no descriptors to cleanup\n", name);
+-		goto out_unlock;
++	/* update the cookie if we have some descriptors to cleanup */
++	if (!list_empty(&chan->ld_running)) {
++		dma_cookie_t cookie;
++
++		desc = to_fsl_desc(chan->ld_running.prev);
++		cookie = desc->async_tx.cookie;
++
++		chan->completed_cookie = cookie;
++		dev_dbg(chan->dev, "%s: completed_cookie=%d\n", name, cookie);
+ 	}
+ 
+ 	/*
+-	 * Get the last descriptor, update the cookie to it
+-	 *
+-	 * This is done before callbacks run so that clients can check the
+-	 * status of their DMA transfer inside the callback.
++	 * move the descriptors to a temporary list so we can drop the lock
++	 * during the entire cleanup operation
+ 	 */
+-	desc = to_fsl_desc(chan->ld_running.prev);
+-	chan->completed_cookie = desc->async_tx.cookie;
+-	dev_dbg(chan->dev, "%s: completed_cookie = %d\n",
+-			   name, chan->completed_cookie);
++	list_splice_tail_init(&chan->ld_running, &ld_cleanup);
++
++	spin_unlock_irqrestore(&chan->desc_lock, flags);
+ 
+ 	/* Run the callback for each descriptor, in order */
+-	list_for_each_entry_safe(desc, _desc, &chan->ld_running, node) {
+-		dma_async_tx_callback callback;
+-		void *callback_param;
++	list_for_each_entry_safe(desc, _desc, &ld_cleanup, node) {
+ 
+-		/* Remove from the list of running transactions */
++		/* Remove from the list of transactions */
+ 		list_del(&desc->node);
+ 
+-		/* Run the link descriptor callback function */
+-		callback = desc->async_tx.callback;
+-		callback_param = desc->async_tx.callback_param;
+-		if (callback) {
+-			spin_unlock_irqrestore(&chan->desc_lock, flags);
+-#ifdef FSL_DMA_LD_DEBUG
+-			dev_dbg(chan->dev, "%s: LD %p callback\n", name, desc);
+-#endif
+-			callback(callback_param);
+-			spin_lock_irqsave(&chan->desc_lock, flags);
+-		}
+-
+-		/* Run any dependencies, then free the descriptor */
+-		dma_run_dependencies(&desc->async_tx);
+-#ifdef FSL_DMA_LD_DEBUG
+-		dev_dbg(chan->dev, "%s: LD %p free\n", name, desc);
+-#endif
+-		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
++		/* Run all cleanup for this descriptor */
++		fsldma_cleanup_descriptor(chan, desc);
+ 	}
+-
+-out_unlock:
+-	spin_unlock_irqrestore(&chan->desc_lock, flags);
+ }
+ 
+ /**
+-- 
+1.7.3.4
 
---
-Shawn
