@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1CBLVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 06:21:14 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:43698 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989Ab1CBLVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 06:21:13 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: 2.6.38 regression caused by commit 415e12b
-Date: Wed, 2 Mar 2011 12:21:06 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ozan Caglayan <ozan@pardus.org.tr>
-References: <20110228014218.GA11083@xanatos> <201103020117.04251.rjw@sisk.pl> <20110302034140.GA2205@xanatos>
-In-Reply-To: <20110302034140.GA2205@xanatos>
+	id S1755847Ab1CBLVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 06:21:50 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40047 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab1CBLVt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 06:21:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=jFqFpR6EDynHOoP0pQ24HggvjUdnAihTmsJwsPfFdJTpbBCGLiN5oK6r/OWl08YOgk
+         F2HvHD+P3vkl0PFOtj0JcFdZgZkiGGIamOQcD+oEDtHnY3dAbnHsMWrKMrN9MtJAkLNM
+         G9uL3BoBkETPvoWWnMo0SUL+eItfKM9DHICwM=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103021221.06312.rjw@sisk.pl>
+In-Reply-To: <20110302073727.GD19669@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org> <AANLkTi=cUM9S5M7h0unMfbQ88CzqhoDN9CUEVf_9HrdS@mail.gmail.com>
+ <20110302073727.GD19669@htj.dyndns.org>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Wed, 2 Mar 2011 12:21:28 +0100
+Message-ID: <AANLkTimA8wtM4sJu1SMVuOaNXyxEtLcfaj7kJf2NovAd@mail.gmail.com>
+Subject: Re: [RFC] Proposal for ptrace improvements
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 02, 2011, Sarah Sharp wrote:
-> On Wed, Mar 02, 2011 at 01:17:04AM +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, March 02, 2011, Sarah Sharp wrote:
-> > > On Wed, Mar 02, 2011 at 12:30:16AM +0100, Rafael J. Wysocki wrote:
-> > > > On Tuesday, March 01, 2011, Sarah Sharp wrote:
-> > > > > On Tue, Mar 01, 2011 at 09:55:33PM +0100, Rafael J. Wysocki wrote:
-> > > > > > Please check if the appended patch (on top of the Linus' current) helps.
-> > > > > 
-> > > > > Sorry, it doesn't help.  Same message as before.
-> > > > 
-> > > > Can you send dmesg with the patch applied, please?
-> > > 
-> > > Attached.
-> > 
-> > Something's fishy.  Evidently, _OSC is not executed on your system
-> > although it should be with the patch.
-> > 
-> > Please try the patch below instead and send dmesg (either way).
-> 
-> The host controller works with that patch.  dmesg is attached.
+On Wed, Mar 2, 2011 at 8:37 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Wed, Mar 02, 2011 at 12:16:23AM +0100, Denys Vlasenko wrote:
+>> Let's spell this out in detail. Please correct me if
+>> I misunderstood your proposal:
+>>
+>> We have a stopped task under ptrace.
+>> (More precisely: debugger got a WSTOPPED notification via waitpid.
+>> Debugger decided to emulate the job control stop, therefore it
+>> keeps tracee stopped, therefore it just waits on waitpid
+>> without doing any PTRACE_CONTs).
+>>
+>> Another task sends SIGCONT to the tracee.
+>>
+>> Debugger gets waitpid notification of the
+>> WSTOPPED, WSTOPSIG == SIGCONT form.
+>
+> I think WSTOPSIG should be SIGTRAP as the tracee left group stop and
+> entered ptrace trap.
 
-OK, thanks.
+This would be, by my count, 13th kind of SIGTRAP use by ptrace.
+Which makes multi-level if's in debuggers even more complex
+and more error-prone.
 
-There are two problems.  First, your BIOS says that ASPM is not supported
-by it, so we don't call _OSC, which should be fixed by the previous patch.
-Second, pci_msi_enabled() returns 0 on your system, which is kind of strange,
-because it evidently uses MSIs (as visible in the dmesg).
+Why not SIGCONT? This event is, after all, caused by SIGCONT.
+It would be so much nicer to be able to detect it with single if()
+in the debugger...
 
-While I think we can safely request _OSC control even if ASPM is not supported
-by the hardware (according to the BIOS), which is done after the first patch,
-we need to figure out why 0 is returned by pci_msi_enabled() on your system
-and try to work around that.
 
-Thanks,
-Rafael
+>> Debugger can check PTRACE_GETSIGINFO, which succeeds.
+>> Debugger now knows it's a signal delivery notification.
+>
+> No, it's not a signal delivery notification.  It's a ptrace trap
+> notification.  SIGCONT may not be delivered to this task.  Please
+> remember that it's the emission of SIGCONT which ends a group stop,
+> not delivery.
 
- 
-> > ---
-> >  drivers/acpi/pci_root.c |   11 +++++------
-> >  1 file changed, 5 insertions(+), 6 deletions(-)
-> > 
-> > Index: linux-2.6/drivers/acpi/pci_root.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/acpi/pci_root.c
-> > +++ linux-2.6/drivers/acpi/pci_root.c
-> > @@ -48,10 +48,7 @@ static int acpi_pci_root_add(struct acpi
-> >  static int acpi_pci_root_remove(struct acpi_device *device, int type);
-> >  static int acpi_pci_root_start(struct acpi_device *device);
-> >  
-> > -#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
-> > -				| OSC_ACTIVE_STATE_PWR_SUPPORT \
-> > -				| OSC_CLOCK_PWR_CAPABILITY_SUPPORT \
-> > -				| OSC_MSI_SUPPORT)
-> > +#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT | OSC_MSI_SUPPORT)
-> >  
-> >  static const struct acpi_device_id root_device_ids[] = {
-> >  	{"PNP0A03", 0},
-> > @@ -572,8 +569,10 @@ static int __devinit acpi_pci_root_add(s
-> >  	if (flags != base_flags)
-> >  		acpi_pci_osc_support(root, flags);
-> >  
-> > -	if (!pcie_ports_disabled
-> > -	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
-> > +	if (!pcie_ports_disabled) {
-> > +		dev_info(root->bus->bridge,
-> > +			"ACPI _OSC support set (0x%02x)\n", flags);
-> > +
-> >  		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
-> >  			| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
-> >  			| OSC_PCI_EXPRESS_PME_CONTROL;
-> 
+>From userspace POV it's really a kernel's implementation detail.
 
+
+>> Debugger performs PTRACE_CONT(SIGCONT) - it injects the signal.
+>> [Question: what if debugger doesn't? IOW: is it possible
+>> for debugger to suppress SIGCONTs, or not?
+>
+> SIGCONT shouldn't be used here and wouldn't make any difference.
+> We're not in signal delivery path.
+>
+>> IOW2: what should happen if debugger
+>> (a) does not do any PTRACE_CONT at all? or
+>
+> The tracee stays stopped.
+>
+>> (b) does PTRACE_CONT(<other_sig>)? or
+>> (c) does PTRACE_CONT(0)?
+>
+> See above.
+
+This means that SIGCONT handler will be executed in the tracee
+after debugger does PTRACE_CONT(<any_signo>) at this point.
+
+Which makes SIGCONT special: debugger can suppress execution
+of other signal handlers in tracee, but not SIGCONT handler.
+Another special case. Can we avoid having it?
+
+
+>> Debugger gets WCONTINUED waitpid notification.
+>> [question: do we need this?]
+>
+> I don't think we need this.  The tracer needs all the stopped
+> notifications but it doesn't need the continued notification because a
+> tracee is never continued without the tracer saying so.
+
+Yes, I think it's ok.
+
+-- 
+vda
