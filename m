@@ -1,60 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757859Ab1CBV4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:56:53 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53214 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756306Ab1CBV4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:56:52 -0500
-From: Armando Uribe <x0095078@ti.com>
-To: <hiroshi.doyu@nokia.com>
-Cc: <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Armando Uribe <x0095078@ti.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>
-Subject: [PATCHv2] omap:mailbox: resolve hang issue
-Date: Wed,  2 Mar 2011 16:14:18 -0600
-Message-Id: <1299104058-28565-1-git-send-email-x0095078@ti.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1757888Ab1CBWAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:00:36 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:30235 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757122Ab1CBWAf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 17:00:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=kNeC/lUAVXN32Fu2t0IfIFvqexACQw2ADOj6H8tv3APMr5JedCXQMtz1f2GmNwqc/u
+         mV+mQ/1+6B6jxpQLuXUA==
+MIME-Version: 1.0
+In-Reply-To: <20110302132830.GB2061@linux.develer.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+ <20110228230114.GB20845@redhat.com> <20110302132830.GB2061@linux.develer.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Wed, 2 Mar 2011 14:00:10 -0800
+Message-ID: <AANLkTin1H2Xip=S1W2_Eh0Y153adsP2s9fSr+WDYqax=@mail.gmail.com>
+Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
+To: Andrea Righi <arighi@develer.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hari Kanigeri <h-kanigeri2@ti.com>
+On Wed, Mar 2, 2011 at 5:28 AM, Andrea Righi <arighi@develer.com> wrote:
+> On Mon, Feb 28, 2011 at 06:01:14PM -0500, Vivek Goyal wrote:
+>> On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
+>> > Overview
+>> > ========
+>> > Currently the blkio.throttle controller only support synchronous IO requests.
+>> > This means that we always look at the current task to identify the "owner" of
+>> > each IO request.
+>> >
+>> > However dirty pages in the page cache can be wrote to disk asynchronously by
+>> > the per-bdi flusher kernel threads or by any other thread in the system,
+>> > according to the writeback policy.
+>> >
+>> > For this reason the real writes to the underlying block devices may
+>> > occur in a different IO context respect to the task that originally
+>> > generated the dirty pages involved in the IO operation. This makes the
+>> > tracking and throttling of writeback IO more complicate respect to the
+>> > synchronous IO from the blkio controller's perspective.
+>> >
+>> > Proposed solution
+>> > =================
+>> > In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
+>> > the problem of the buffered writes limitation by tracking the ownership of all
+>> > the dirty pages in the system.
+>> >
+>> > This would allow to always identify the owner of each IO operation at the block
+>> > layer and apply the appropriate throttling policy implemented by the
+>> > blkio.throttle controller.
+>> >
+>> > This solution makes the blkio.throttle controller to work as expected also for
+>> > writeback IO, but it does not resolve the problem of faster cgroups getting
+>> > blocked by slower cgroups (that would expose a potential way to create DoS in
+>> > the system).
+>> >
+>> > In fact, at the moment critical IO requests (that have dependency with other IO
+>> > requests made by other cgroups) and non-critical requests are mixed together at
+>> > the filesystem layer in a way that throttling a single write request may stop
+>> > also other requests in the system, and at the block layer it's not possible to
+>> > retrieve such informations to make the right decision.
+>> >
+>> > A simple solution to this problem could be to just limit the rate of async
+>> > writes at the time a task is generating dirty pages in the page cache. The
+>> > big advantage of this approach is that it does not need the overhead of
+>> > tracking the ownership of the dirty pages, because in this way from the blkio
+>> > controller perspective all the IO operations will happen from the process
+>> > context: writes in memory and synchronous reads from the block device.
+>> >
+>> > The drawback of this approach is that the blkio.throttle controller becomes a
+>> > little bit leaky, because with this solution the controller is still affected
+>> > by the IO spikes during the writeback of dirty pages executed by the kernel
+>> > threads.
+>> >
+>> > Probably an even better approach would be to introduce the tracking of the
+>> > dirty page ownership to properly account the cost of each IO operation at the
+>> > block layer and apply the throttling of async writes in memory only when IO
+>> > limits are exceeded.
+>>
+>> Andrea, I am curious to know more about it third option. Can you give more
+>> details about accouting in block layer but throttling in memory. So say
+>> a process starts IO, then it will still be in throttle limits at block
+>> layer (because no writeback has started), then the process will write
+>> bunch of pages in cache. By the time throttle limits are crossed at
+>> block layer, we already have lots of dirty data in page cache and
+>> throttling process now is already late?
+>
+> Charging the cost of each IO operation at the block layer would allow
+> tasks to write in memory at the maximum speed. Instead, with the 3rd
+> approach, tasks are forced to write in memory at the rate defined by the
+> blkio.throttle.write_*_device (or blkio.throttle.async.write_*_device).
+>
+> When we'll have the per-cgroup dirty memory accounting and limiting
+> feature, with this approach each cgroup could write to its dirty memory
+> quota at the maximum rate.
+>
+> BTW, another thing that we probably need is that any cgroup should be
+> forced to write their own inodes when the limit defined by dirty_ratio
+> is exceeded. I mean, avoid to select inodes from the list of dirty
+> inodes in a FIFO way, but provides a better logic to "assign" the
+> ownership of each inode to a cgroup (maybe that one that had generated
+> most of the dirty pages in the inodes) and use for example a list of
+> dirty inodes per cgroup or something similar.
+>
+> In this way we should really be able to provide a good quality of
+> service for the most part of the cases IMHO.
+>
+> I also plan to write down another patch set to implement this logic.
 
-omap4 interrupt disable bits is different. On rx kfifo full, the mbox rx
-interrupts wasn't getting disabled, and this is causing the rcm stress tests
-to hang.
+I have also been thinking about this problem.  I had assumed that the
+per-bdi inode list would be retained, but a memcg_inode filter
+function would be used to determine which dirty inodes contribute any
+dirty pages to the over-dirty-limit memcg.
 
-Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
-Signed-off-by: Armando Uribe <x0095078@ti.com>
-Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
----
- arch/arm/mach-omap2/mailbox.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+To efficiently determine if an inode contributes dirty pages to a
+memcg, I was thinking about implementing a shallow memcg identifier
+cache within the inode's address space.  Here is a summary of what I
+am thinking about:
 
-diff --git a/arch/arm/mach-omap2/mailbox.c b/arch/arm/mach-omap2/mailbox.c
-index 394413d..011ca50 100644
---- a/arch/arm/mach-omap2/mailbox.c
-+++ b/arch/arm/mach-omap2/mailbox.c
-@@ -193,10 +193,12 @@ static void omap2_mbox_disable_irq(struct omap_mbox *mbox,
- 		omap_mbox_type_t irq)
- {
- 	struct omap_mbox2_priv *p = mbox->priv;
--	u32 l, bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
--	l = mbox_read_reg(p->irqdisable);
--	l &= ~bit;
--	mbox_write_reg(l, p->irqdisable);
-+	u32 bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
-+
-+	if (!cpu_is_omap44xx())
-+		bit = mbox_read_reg(p->irqdisable) & ~bit;
-+
-+	mbox_write_reg(bit, p->irqdisable);
- }
- 
- static void omap2_mbox_ack_irq(struct omap_mbox *mbox,
--- 
-1.7.0.4
+This approach adds an N deep cache of dirtying cgroups into struct
+address_space.  N would likely be 1.  Each address_space would have an
+array of N as_memcg identifiers and an as_memcg_overflow bit.  The
+memcg identifier may be a memcg pointer or a small integer (maybe
+css_id).   Unset cache entries would be NULL if using pointers, 0 if
+using css_id (an illegal css_id value).  The memcg identifier would
+not be dereferenced - it would only be used as a fuzzy comparison
+value.  So a reference to the memcg is not needed.  Modifications to
+as_memcg[] and as_memcg_overflow are protected by the mapping
+tree_lock.
 
+The kernel integration with this approach involves:
+
+1. When an address_space created in inode_init_always():
+1.1 Set as_memcg[*]=NULL and as_memcg_overflow=0.
+
+2. When a mapping page is dirtied in __set_page_dirty():
+2.1 The tree lock is already held
+2.2 If any of as_memcg[*] == current_memcg, then do nothing.  The
+dirtying memcg is already associated with the address space.
+2.3 If any of as_memcg[x] is NULL, then set as_memcg[x] =
+current_memcg.  This associates the dirtying memcg with the address
+space.
+2.4 Otherwise, set as_memcg_overflow=1 indicating that more than N
+memcg have dirtied the address space since it was last cleaned.
+
+3. When an inode is completely clean - this is a case within
+writeback_single_inode():
+3.1 Grab the tree_lock
+3.2 Set as_memcg[*]=NULL and as_memcg_overflow=0.  These are the same
+steps as inode creation.
+3.3 Release the tree_lock
+
+4. When per-cgroup inode writeback is performed, walk the list of
+dirty inodes only matching inodes contributing dirty pages to
+cmp_memcg.  For each dirty inode:
+4.1 Tree locking is not needed here.  Races are allowed.
+4.2 If as_memcg_overflow is set, then schedule inode for writeback.
+Assume it contains dirty pages for cmp_memcg.  This is the case where
+there are more than N memcg that have dirtied the address space since
+it was completely clean.
+4.3 If any of as_memcg[*] == cmp_memcg, then schedule the inode for writeback.
+4.4 Otherwise, do not schedule the inode for writeback because the
+current memcg has not contributed dirty pages to the inode.
+
+Weaknesses:
+
+1. If the N deep cache is not sufficiently large then inodes will be
+written back more than is ideal.  Example: if more than N cgroups are
+dirty an inode, then as_memcg_overflow is set and remains set until
+the inode is fully clean.  Until the inode is fully cleaned, any
+per-memcg writeback will writeback the inode.  This will unfairly
+affect writeback of cgroups that have never touched or dirtied the
+overflowing inode.  If this is a significant problem, then increasing
+the value of N will solve the problem.  Theoretically each inode, or
+filesystem could have a different value of N.  But the preferred
+implementation has a compile time constant value of N.
+
+2. If any cgroup continually dirties an inode, then no other cgroups
+that have ever dirtied the inode will ever be expired from the N deep
+as_memcg[] cache because the "when an inode is completely clean" logic
+is never run.  If the past set of dirtying cgroups is greater than N,
+then every cgroup writeback will writeback the inode.  If this is a
+problem, then a dirty_page counter could be added to each as_memcg[]
+record to keep track of the number of dirty pages each memcg
+contributes to an inode.  When the per-memcg count reaches zero then
+the particular as_memcg entry could be removed.  This would allow for
+memcg expiration from as_memcg[] before the inode becomes completely
+clean.
+
+3. There is no way to cheaply identify the set of inodes contributing
+dirty pages to a memcg that has exceeded its dirty memory limit.  When
+a memcg blows its limit, what list of dirty inodes is traversed?  The
+bdi that was last being written to which, in the worst case, will have
+very little dirty data from the current memcg.  If this is an issue,
+we could walk all bdi looking for inodes that contribute dirty pages
+to the over-limit memcg.
+
+>> > To summarize, we can identify three possible solutions to properly throttle the
+>> > buffered writes:
+>> >
+>> > 1) account & throttle everything at block IO layer (bad for "priority
+>> >    inversion" problems, needs page tracking for blkio)
+>> >
+>> > 2) account at block IO layer and throttle in memory (needs page tracking for
+>> >    blkio)
+>> >
+>> > 3) account & throttle in memory (affected by IO spikes, depending on
+>> >    dirty_ratio / dirty_background_ratio settings)
+>> >
+>> > For now we start with the solution 3) that seems to be the simplest way to
+>> > proceed.
+>>
+>> Yes, IO spikes is the weakness of this 3rd solution. But it should be
+>> simple too. Also as you said problem can be reduced up to some extent
+>> by changing reducing dirty_ratio and background dirty ratio But that
+>> will have other trade offs, I guess.
+>
+> Agreed.
+>
+> -Andrea
+>
