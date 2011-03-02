@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1CBRq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:46:28 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59239 "EHLO
+	id S1756642Ab1CBRqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:46:54 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45935 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756310Ab1CBRq0 (ORCPT
+	with ESMTP id S1756493Ab1CBRqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:46:26 -0500
-Message-Id: <20110302174120.384811493@chello.nl>
+	Wed, 2 Mar 2011 12:46:50 -0500
+Message-Id: <20110302174121.270015003@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Wed, 02 Mar 2011 18:38:33 +0100
+Date: Wed, 02 Mar 2011 18:38:45 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,144 +17,66 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 02/22] sched: Always provide p->on_cpu
+Subject: [PATCH 14/22] sched: Drop rq->lock from first part of wake_up_new_task()
 References: <20110302173831.295031866@chello.nl>
-Content-Disposition: inline; filename=sched-on_cpu.patch
+Content-Disposition: inline; filename=sched-wunt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always provide p->on_cpu so that we can determine if its on a cpu
-without having to lock the rq.
+Since p->pi_lock now protects all things needed to call
+select_task_rq() avoid the double remote rq->lock acquisition and rely
+on p->pi_lock.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 LKML-Reference: <new-submission>
 ---
- include/linux/sched.h |    4 +---
- kernel/sched.c        |   46 +++++++++++++++++++++++++++++-----------------
- 2 files changed, 30 insertions(+), 20 deletions(-)
+ kernel/sched.c |   17 +++--------------
+ 1 file changed, 3 insertions(+), 14 deletions(-)
 
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -845,18 +845,39 @@ static inline int task_current(struct rq
- 	return rq->curr == p;
- }
- 
--#ifndef __ARCH_WANT_UNLOCKED_CTXSW
- static inline int task_running(struct rq *rq, struct task_struct *p)
+@@ -2726,28 +2726,18 @@ void wake_up_new_task(struct task_struct
  {
-+#ifdef CONFIG_SMP
-+	return p->on_cpu;
-+#else
- 	return task_current(rq, p);
-+#endif
- }
+ 	unsigned long flags;
+ 	struct rq *rq;
+-	int cpu __maybe_unused = get_cpu();
  
-+#ifndef __ARCH_WANT_UNLOCKED_CTXSW
- static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
- {
-+#ifdef CONFIG_SMP
-+	/*
-+	 * We can optimise this out completely for !SMP, because the
-+	 * SMP rebalancing from interrupt is the only thing that cares
-+	 * here.
-+	 */
-+	next->on_cpu = 1;
-+#endif
- }
- 
- static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- {
-+#ifdef CONFIG_SMP
-+	/*
-+	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
-+	 * We must ensure this doesn't happen until the switch is completely
-+	 * finished.
-+	 */
-+	smp_wmb();
-+	prev->on_cpu = 0;
-+#endif
- #ifdef CONFIG_DEBUG_SPINLOCK
- 	/* this is a valid case when another task releases the spinlock */
- 	rq->lock.owner = current;
-@@ -872,15 +893,6 @@ static inline void finish_lock_switch(st
- }
- 
- #else /* __ARCH_WANT_UNLOCKED_CTXSW */
--static inline int task_running(struct rq *rq, struct task_struct *p)
--{
--#ifdef CONFIG_SMP
--	return p->oncpu;
--#else
--	return task_current(rq, p);
--#endif
--}
++	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ #ifdef CONFIG_SMP
+-	rq = task_rq_lock(p, &flags);
+-	p->state = TASK_WAKING;
 -
- static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
- {
- #ifdef CONFIG_SMP
-@@ -889,7 +901,7 @@ static inline void prepare_lock_switch(s
- 	 * SMP rebalancing from interrupt is the only thing that cares
- 	 * here.
- 	 */
--	next->oncpu = 1;
-+	next->on_cpu = 1;
- #endif
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	raw_spin_unlock_irq(&rq->lock);
-@@ -902,12 +914,12 @@ static inline void finish_lock_switch(st
- {
- #ifdef CONFIG_SMP
  	/*
--	 * After ->oncpu is cleared, the task can be moved to a different CPU.
-+	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
- 	 * We must ensure this doesn't happen until the switch is completely
- 	 * finished.
+ 	 * Fork balancing, do it here and not earlier because:
+ 	 *  - cpus_allowed can change in the fork path
+ 	 *  - any previously selected cpu might disappear through hotplug
+-	 *
+-	 * We set TASK_WAKING so that select_task_rq() can drop rq->lock
+-	 * without people poking at ->cpus_allowed.
  	 */
- 	smp_wmb();
--	prev->oncpu = 0;
-+	prev->on_cpu = 0;
- #endif
- #ifndef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	local_irq_enable();
-@@ -2645,8 +2657,8 @@ void sched_fork(struct task_struct *p, i
- 	if (likely(sched_info_on()))
- 		memset(&p->sched_info, 0, sizeof(p->sched_info));
- #endif
--#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
--	p->oncpu = 0;
-+#if defined(CONFIG_SMP)
-+	p->on_cpu = 0;
- #endif
- #ifdef CONFIG_PREEMPT
- 	/* Want to start with kernel preemption disabled. */
-@@ -5557,8 +5569,8 @@ void __cpuinit init_idle(struct task_str
- 	rcu_read_unlock();
- 
- 	rq->curr = rq->idle = idle;
--#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
--	idle->oncpu = 1;
-+#if defined(CONFIG_SMP)
-+	idle->on_cpu = 1;
- #endif
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
- 
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1198,9 +1198,7 @@ struct task_struct {
- 	int lock_depth;		/* BKL lock depth */
- 
- #ifdef CONFIG_SMP
--#ifdef __ARCH_WANT_UNLOCKED_CTXSW
--	int oncpu;
--#endif
-+	int on_cpu;
+-	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
+-	set_task_cpu(p, cpu);
+-
+-	p->state = TASK_RUNNING;
+-	task_rq_unlock(rq, p, &flags);
++	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
  #endif
  
- 	int prio, static_prio, normal_prio;
+-	rq = task_rq_lock(p, &flags);
++	rq = __task_rq_lock(p);
+ 	activate_task(rq, p, 0);
+ 	trace_sched_wakeup_new(p, true);
+ 	check_preempt_curr(rq, p, WF_FORK);
+@@ -2756,7 +2746,6 @@ void wake_up_new_task(struct task_struct
+ 		p->sched_class->task_woken(rq, p);
+ #endif
+ 	task_rq_unlock(rq, p, &flags);
+-	put_cpu();
+ }
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
 
 
