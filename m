@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1CBHPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:15:13 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:57497 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702Ab1CBHPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:15:12 -0500
-Message-ID: <4D6DEE7C.6020700@msgid.tls.msk.ru>
-Date: Wed, 02 Mar 2011 10:15:08 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	id S1753233Ab1CBHPs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:15:48 -0500
+Received: from protonic.xs4all.nl ([213.84.116.84]:18386 "EHLO protonic.prtnl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750831Ab1CBHPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 02:15:47 -0500
+X-Greylist: delayed 1806 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 02:15:46 EST
+Message-ID: <37329.84.56.74.117.1299048219.squirrel@protonic.xs4all.nl>
+In-Reply-To: <20110301113930.4743a13c@debxo>
+References: <20110301145436.b1ae1923.sfr@canb.auug.org.au>
+    <20110301093528.00184f93@archvile> <20110301113930.4743a13c@debxo>
+Date: Wed, 2 Mar 2011 07:43:39 +0100 (CET)
+Subject: Re: linux-next: manual merge of the mfd tree with the i.MX tree
+From: david@protonic.nl
+To: "Andres Salomon" <dilinger@queued.net>
+Cc: "David Jander" <david.jander@protonic.nl>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Samuel Ortiz" <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David Jander" <david@protonic.nl>,
+        "Sascha Hauer" <s.hauer@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+User-Agent: SquirrelMail/1.4.10a
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: linux-kernel@vger.kernel.org, arnd@arndb.de, mirqus@gmail.com,
-        netdev@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
-        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
-        eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
- kernel modules
-References: <201102272122.52643.arnd@arndb.de> <4D6B6AE7.2050202@msgid.tls.msk.ru> <20110228095133.GA4351@albatros> <20110228.112349.104067277.davem@davemloft.net> <20110301194845.GA3533@albatros> <1299010390.2529.30.camel@bwh-desktop> <20110301213313.GA6507@albatros>
-In-Reply-To: <20110301213313.GA6507@albatros>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-02.03.2011 00:33, Vasiliy Kulikov wrote:
-> Since a8f80e8ff94ecba629542d9b4b5f5a8ee3eb565c any process with
-> CAP_NET_ADMIN may load any module from /lib/modules/.  This doesn't mean
-> that CAP_NET_ADMIN is a superset of CAP_SYS_MODULE as modules are
-> limited to /lib/modules/**.  However, CAP_NET_ADMIN capability shouldn't
-> allow anybody load any module not related to networking.
-> 
-> This patch restricts an ability of autoloading modules to netdev modules
-> with explicit aliases.  This fixes CVE-2011-1019.
-[]
-> Reference: https://lkml.org/lkml/2011/2/24/203
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> On Tue, 1 Mar 2011 09:35:28 +0100
+> David Jander <david.jander@protonic.nl> wrote:
+>
+>>
+>> Hi Stephen,
+>>
+>> On Tue, 1 Mar 2011 14:54:36 +1100
+>> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> > Today's linux-next merge of the mfd tree got a conflict in
+>> > arch/arm/mach-imx/mach-mx27_3ds.c arch/arm/mach-imx/mach-pcm038.c
+>> > arch/arm/mach-mx3/mach-mx31_3ds.c
+>> > arch/arm/mach-mx3/mach-mx31moboard.c between commit
+>> > 5836372e8a0ba5cc633f61bc0484ee20c86f4b36 ("ARM: imx+mx3: convert to
+>> > mc13xxx MFD") from the i.MX tree and commit
+>> > e84e545d47d26644275a79fe5ebc1797bcb80910 ("mfd: mfd_cell is now
+>> > implicitly available to mc13xxx drivers") from the mfd tree.
+>> >
+>> > I fixed it up (I think - see below) and can carry the fix as
+>> > necessary.
+>>
+>> Your fix seems correct, although I fear I am too dumb to understand
+>> why commit e84e545d47d26644275a79fe5ebc1797bcb80910 introduces this
+>> extra struct nesting.... AFAICS gcc will end up doing the same as
+>> without the extra nest.
+>
+> It was requested in this thread:
+> https://patchwork.kernel.org/patch/551441/
 
-This looks much saner :)
+Ah, ok. I thought this change was somehow necessary for your patch to
+work. I would have expected a separate patch otherwise.
 
-Signed-off-by: Michael Tokarev <mjt@tls.msk.ru>
+Best regards,
 
-/mjt
+-- 
+David Jander
+
+
