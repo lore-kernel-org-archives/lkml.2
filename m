@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab1CBTLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:11:51 -0500
-Received: from web31802.mail.mud.yahoo.com ([68.142.207.65]:36729 "HELO
-	web31802.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756288Ab1CBTLt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:11:49 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 14:11:48 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Sz8Ifl4B9YJ5Phw3BZ8iSoALQ/Kfkhtm5CwuCL9BGZzd5UT/6RWu1GQkHNcSNK172HPY/pUGaZg5ioIGzHYwpSEe18eru/ubSTeYMM6K0GDPiJPUaRLivrfj64YxezEYKhwpDynI3BFo5Nfg4+4TtnzZL4dWM2pO9H5fPfncXt8=;
-Message-ID: <147799.16314.qm@web31802.mail.mud.yahoo.com>
-X-YMail-OSG: uwORaicVM1lOpmxCxpkYFa4d45Ceq0LoIy3SuhLK2Ao712Z
- FQvbBOagnNf9E5nKso10faPyGOjNmXHW2p8ELTeUBFJ8LNx1pI6dtjdBWFEh
- OpjeOel4PeFSVf2rqmyi5fXzHBAVT38E2Im9lDzvDj4w8zR0aNVuCZeoc2ZU
- C9UwlHskEA7gucUy8NNvudm4YwQ7V3wm8cMKSsjABW9OP2crfoDnYDUaF_II
- 6pKqBjemHJsAPR7a0sDCFg0doKW1MJGmkLHahkzykzAa48QGUHkbXKX_6O_I
- UtfGAv1fzxnICAzhfPUutj_BXGk8_US9au1VI_pCTRjm2CNn6r7FkUy5Hrab
- nllQBQX6Y9agWMVr97YumC_OqSQhi2u97EqVKoDBgCp4_iUHk4L.kQLazwV4
- r
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.109.295617
-Date: Wed, 2 Mar 2011 11:05:05 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: UASP: updates and merges
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
+	id S1756844Ab1CBTMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:12:07 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:52743 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756679Ab1CBTMF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 14:12:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JHKwrVqc6Tb88zlVwNAxJpt3C/JsUmJnAhV4LPcl+DaOKxP5b0Gi8V57vBAAgSxcv9
+         LG9NvL/wOCa9c5K8vSsw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <1299048447.11469.22.camel@marge.simson.net>
+References: <1299022433-17233-1-git-send-email-venki@google.com>
+	<AANLkTinyAyXCH6sh9pOe36dCeTO_C8wbtmZriKanGtt3@mail.gmail.com>
+	<1299048447.11469.22.camel@marge.simson.net>
+Date: Wed, 2 Mar 2011 11:12:02 -0800
+Message-ID: <AANLkTi=hy8mHp=RLkKbfc2nw0VGX65ZCmk89r3U-rb4-@mail.gmail.com>
+Subject: Re: [PATCH] sched: next buddy hint on sleep and preempt path
+From: Venkatesh Pallipadi <venki@google.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've merged the latest master (dd9c154). The UASP driver saw the following update:
+On Tue, Mar 1, 2011 at 10:47 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Tue, 2011-03-01 at 21:43 -0800, Paul Turner wrote:
+>> On Tue, Mar 1, 2011 at 3:33 PM, Venkatesh Pallipadi <venki@google.com> wrote:
+>
+>> >        for_each_sched_entity(se) {
+>> >                cfs_rq = cfs_rq_of(se);
+>> >                dequeue_entity(cfs_rq, se, flags);
+>> >
+>> >                /* Don't dequeue parent if it has other entities besides us */
+>> > -               if (cfs_rq->load.weight)
+>> > +               if (cfs_rq->load.weight) {
+>> > +                       /*
+>> > +                        * Bias pick_next to pick a task from this cfs_rq, as
+>> > +                        * p is sleeping when it is within its sched_slice.
+>> > +                        */
+>> > +                       if (task_flags & DEQUEUE_SLEEP && se->parent)
+>> > +                               set_next_buddy(se->parent);
+>>
+>> re-using the last_buddy would seem like a more natural fit here; also
+>> doesn't have a clobber race with a wakeup
+>
+> Hm, that would break last_buddy no?  A preempted task won't get the CPU
+> back after light preempting thread deactivates.  (it's disabled atm
+> unless heavily overloaded anyway, but..)
+>
+> This wants a tweak either way though.
+>
+> static inline struct task_struct *task_of(struct sched_entity *se)
+> {
+> #ifdef CONFIG_SCHED_DEBUG
+>        WARN_ON_ONCE(!entity_is_task(se));
+> #endif
+>        return container_of(se, struct task_struct, se);
+> }
+>
+> static void set_next_buddy(struct sched_entity *se)
+> {
+>        if (likely(task_of(se)->policy != SCHED_IDLE)) {
+>                for_each_sched_entity(se)
+>                        cfs_rq_of(se)->next = se;
+>        }
+> }
+>
 
-    [USB] UASP: Unlock device after reset; EP updates
-    
-    * Unlock the device after reset.
-    
-    * Initialize urb->ep directly. struct
-      uasp_tport_info already records the struct
-      usb_host_endpoint which makes it easy to
-      directly initialize urb->ep. This anticipates
-      when drivers would have to initialize the ep in
-      the urb directly as opposed to the USB core
-      having to use pipes.
-    
-    * Use the UAS pipe macros throughout the code for
-      endpoint indexes.
+Yes. Thanks for pointing this out. Will handle this in patch-respin.
 
-The branch can be found here off of master:
-https://github.com/ltuikov/linux-2.6
-
-Original posting of the UASP driver can be found here:
-http://marc.info/?l=linux-usb&m=129165511732388&w=2
-
-    Luben
-
-
---- On Thu, 1/13/11, Luben Tuikov <ltuikov@yahoo.com> wrote:
-
-> From: Luben Tuikov <ltuikov@yahoo.com>
-> Subject: UASP: updates and merges
-> To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, "Greg KH" <greg@kroah.com>
-> Date: Thursday, January 13, 2011, 2:45 AM
-> The UASP driver allows you to connect
-> to UAS devices and use them
-> as SCSI devices.
-> 
-> I've merged latest master (f87813) and resolved a conflict
-> in drivers/scsi/sd.c by adding back the truncation of the
-> mode sense data.
-> 
-> The UASP driver saw the following update:
-> 
->     [USB] UASP: factor out GFP flags and make
-> them GFP_ATOMIC
->     
->     Factor out the GFP flags and make them
-> atomic:
->     1) The SCSI subsystem uses GFP_ATOMIC, e.g.
-> before
->     calling the host's slave_alloc callback (at
-> the
->     time of this commit).
->     2) As we are a storage driver doing I/O, we
-> should
->     use the lowest denominator (highest
-> priority)
->     allocation, and of course we shouldn't sleep,
-> thus
->     use GFP_ATOMIC.
-> 
-> The branch can be found here (off of master):
-> https://github.com/ltuikov/linux-2.6
-> 
-> Original posting of the UASP driver can be found here:
-> http://marc.info/?l=linux-usb&m=129165511732388&w=2
-> 
->    Luben
-> 
-> 
+Thanks,
+Venki
