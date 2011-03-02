@@ -1,146 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1CBHsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:48:24 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:24085 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab1CBHsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:48:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ny12UovLHnfdsKZwJ+jydz8P4jcD7Ra06xlEqonPvA4XmrLWVH1JL5ELHndygLFscN
-         K4RRJUoaAKLVUvTpn71w==
+	id S1755766Ab1CBH4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:56:53 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36000 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755599Ab1CBH4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 02:56:45 -0500
+Date: Wed, 2 Mar 2011 08:56:25 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, amit.kucheria@linaro.org,
+        rusty@rustcorp.com.au, tglx@linutronix.de,
+        Arjan van de Ven <arjan@infradead.org>,
+        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH V6 0/2] tracing, perf: cpu hotplug trace events
+Message-ID: <20110302075625.GC15665@elte.hu>
+References: <AANLkTinbYWQxde2jTcAtyYQGvGgt2Lmtnph=voj=haXF@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1299026246.4937.99.camel@minggr.sh.intel.com>
-References: <1298998076.2170.62.camel@localhost>
-	<AANLkTimvx+MYhOw8VFsJn4V6FQutKiYO6pHxgd9xGY8A@mail.gmail.com>
-	<1299026246.4937.99.camel@minggr.sh.intel.com>
-Date: Wed, 2 Mar 2011 08:48:19 +0100
-Message-ID: <AANLkTi=a3_EE8RwdRTmhpcgGwq2fY8jXMC=s+zwh7_NE@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] perf-events: Add support for supplementary event registers
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinbYWQxde2jTcAtyYQGvGgt2Lmtnph=voj=haXF@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p227mViV018471
 
-On Wed, Mar 2, 2011 at 1:37 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Wed, 2011-03-02 at 01:09 +0800, Stephane Eranian wrote:
->> Lin,
->>
->> See comments below:
->>
->> On Tue, Mar 1, 2011 at 5:47 PM, Lin Ming <ming.m.lin@intel.com> wrote:
->> > From: Andi Kleen <ak@linux.intel.com>
->> >  static struct event_constraint *
->> > +intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
->> > +{
->> > +       struct hw_perf_event *hwc = &event->hw;
->> > +       unsigned int e = hwc->config & ARCH_PERFMON_EVENTSEL_EVENT;
->> > +       struct event_constraint *c;
->> > +       struct intel_percore *pc;
->> > +       struct er_account *era;
->> > +       int i;
->> > +       int free_slot;
->> > +       int found;
->> > +
->> > +       if (!x86_pmu.percore_constraints || hwc->extra_alloc)
->> > +               return NULL;
->> > +
->> > +       for (c = x86_pmu.percore_constraints; c->cmask; c++) {
->> > +               if (e != c->code)
->> > +                       continue;
->> > +
->> > +               /*
->> > +                * Allocate resource per core.
->> > +                */
->> > +               c = NULL;
->>
->> Not sure I understand this c = NULL, given you hardcoded return NULL
->> outside of the
->> loop. I forgot to mention this earlier.
->
-> Right, that is redundant.
-> Remove it.
->
->>
->> > +               pc = cpuc->per_core;
->> > +               if (!pc)
->> > +                       break;
->> > +               c = &emptyconstraint;
->> > +               raw_spin_lock(&pc->lock);
->> > +               free_slot = -1;
->> > +               found = 0;
->> > +               for (i = 0; i < MAX_EXTRA_REGS; i++) {
->> > +                       era = &pc->regs[i];
->> > +                       if (era->ref > 0 && hwc->extra_reg == era->extra_reg) {
->> > +                               /* Allow sharing same config */
->> > +                               if (hwc->extra_config == era->extra_config) {
->> > +                                       era->ref++;
->> > +                                       cpuc->percore_used = 1;
->> > +                                       hwc->extra_alloc = 1;
->> > +                                       c = NULL;
->> > +                               }
->> > +                               /* else conflict */
->> > +                               found = 1;
->> > +                               break;
->> > +                       } else if (era->ref == 0 && free_slot == -1)
->> > +                               free_slot = i;
->> > +               }
->> > +               if (!found && free_slot != -1) {
->> > +                       era = &pc->regs[free_slot];
->> > +                       era->ref = 1;
->> > +                       era->extra_reg = hwc->extra_reg;
->> > +                       era->extra_config = hwc->extra_config;
->> > +                       cpuc->percore_used = 1;
->> > +                       hwc->extra_alloc = 1;
->> > +                       c = NULL;
->> > +               }
->> > +               raw_spin_unlock(&pc->lock);
->> > +               return c;
->> > +       }
->> > +
->> > +       return NULL;
->> > +}
->> > +
->> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->> > index 8ceb5a6..48d966a 100644
->> > --- a/include/linux/perf_event.h
->> > +++ b/include/linux/perf_event.h
->> > @@ -225,8 +225,14 @@ struct perf_event_attr {
->> >        };
->> >
->> >        __u32                   bp_type;
->> > -       __u64                   bp_addr;
->> > -       __u64                   bp_len;
->> > +       union {
->> > +               __u64           bp_addr;
->> > +               __u64           config1; /* extension of config0 */
->> > +       };
->> > +       union {
->> > +               __u64           bp_len;
->> > +               __u64           config2; /* extension of config1 */
->> > +       };
->> >  };
->> >
->> I don't see where those config0 or config1 are coming from.
->
-> config0 means perf_event_attr::config.
->
-yes.
 
-> Peter suggested to extend the attr config space.
-> http://marc.info/?l=linux-kernel&m=129838808907525&w=2
->
-Ok, I get it, it is cascading. that's fine.
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+* Vincent Guittot <vincent.guittot@linaro.org> wrote:
+
+> This patchset adds some tracepoints for tracing cpu state and for
+> profiling the plug and unplug sequence.
+> 
+> Some SMP arm platform uses cpu hotplug feature for improving their
+> power saving because they can go into their deepest idle state only in
+> mono core mode. In addition, running into mono core mode makes the
+> cpuidle job easier and more efficient which also results in the
+> improvement of power saving of some use cases. As the plug state of a
+> cpu can impact the cpuidle behavior, it's interesting to trace this
+> state and to correlate it with cpuidle traces.
+> Then, cpu hotplug is known to be an expensive operation which also
+> takes a variable time depending of other processes' activity (from
+> hundreds ms up to few seconds). These traces have shown that the arch
+> part stays almost constant on arm platform whatever the cpu load is,
+> whereas the plug duration increases.
+> 
+> ---
+>  include/trace/events/cpu_hotplug.h |  103 ++++++++++++++++++++++++++++++++++++
+>  kernel/cpu.c                       |   18 ++++++
+>  2 files changed, 121 insertions(+), 0 deletions(-)
+>  create mode 100644 include/trace/events/cpu_hotplug.h
+
+Why not do something much simpler and fit these into the existing power:* events:
+
+     power:cpu_idle
+     power:cpu_frequency
+     power:machine_suspend
+     power:cpu_idle
+     power:cpu_frequency
+     power:machine_suspend
+
+in an intelligent way?
+
+CPU hotplug is really a 'soft' form of suspend and tools using power events could 
+thus immediately use CPU hotplug events as well.
+
+A suitable new 'state' value could be used to signal CPU hotplug events:
+
+ enum {
+        POWER_NONE = 0,
+        POWER_CSTATE = 1,
+        POWER_PSTATE = 2,
+ };
+
+POWER_HSTATE for hotplug-state, or so.
+
+This would also express the design arguments that others have pointed out in the 
+prior discussion: that CPU hotplug is really a power management variant, and that in 
+the long run it could be done via regular idle as well. When that happens, the above 
+unified event structure makes it all even simpler - analysis tools will just 
+continue to work fine.
+
+Thanks,
+
+	Ingo
