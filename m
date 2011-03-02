@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1CBHhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:37:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35505 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab1CBHhc (ORCPT
+	id S1753890Ab1CBHkt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:40:49 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:52692 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750881Ab1CBHks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:37:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Uavb6i4H1E95e5+rHeDOfYX41hGcfQOb7jXgAtM3mU0mUbbCmrOv4graRhtlVY2SGM
-         Ov+lDcKR/amFykryaUukxo3zWXWA7ex+Buu2m4osvzscq5TNZwiY72FwaqpdAY+M1/vL
-         KXoONjalqV6VQDKOnvPihcIgcQRcpLWYjOc7U=
-Date: Wed, 2 Mar 2011 08:37:27 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110302073727.GD19669@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <AANLkTi=cUM9S5M7h0unMfbQ88CzqhoDN9CUEVf_9HrdS@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=cUM9S5M7h0unMfbQ88CzqhoDN9CUEVf_9HrdS@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 2 Mar 2011 02:40:48 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19WitBfQNBWBheULa8nFtfXYkkkwv+QCOHTb5JArQ
+	LMBE8pYWkPGM/Y
+Subject: Re: [PATCH] sched: next buddy hint on sleep and preempt path
+From: Mike Galbraith <efault@gmx.de>
+To: Paul Turner <pjt@google.com>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
+In-Reply-To: <AANLkTimhfvoKWdYJtxQLWhBwfSvZ3jGy7EXX_YSn_HLr@mail.gmail.com>
+References: <1299022433-17233-1-git-send-email-venki@google.com>
+	 <AANLkTinyAyXCH6sh9pOe36dCeTO_C8wbtmZriKanGtt3@mail.gmail.com>
+	 <1299048447.11469.22.camel@marge.simson.net>
+	 <AANLkTimhfvoKWdYJtxQLWhBwfSvZ3jGy7EXX_YSn_HLr@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Mar 2011 08:40:43 +0100
+Message-ID: <1299051643.17065.11.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 12:16:23AM +0100, Denys Vlasenko wrote:
-> Let's spell this out in detail. Please correct me if
-> I misunderstood your proposal:
+On Tue, 2011-03-01 at 23:08 -0800, Paul Turner wrote:
+> On Tue, Mar 1, 2011 at 10:47 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > On Tue, 2011-03-01 at 21:43 -0800, Paul Turner wrote:
+> >> On Tue, Mar 1, 2011 at 3:33 PM, Venkatesh Pallipadi <venki@google.com> wrote:
+> >
+> >> >        for_each_sched_entity(se) {
+> >> >                cfs_rq = cfs_rq_of(se);
+> >> >                dequeue_entity(cfs_rq, se, flags);
+> >> >
+> >> >                /* Don't dequeue parent if it has other entities besides us */
+> >> > -               if (cfs_rq->load.weight)
+> >> > +               if (cfs_rq->load.weight) {
+> >> > +                       /*
+> >> > +                        * Bias pick_next to pick a task from this cfs_rq, as
+> >> > +                        * p is sleeping when it is within its sched_slice.
+> >> > +                        */
+> >> > +                       if (task_flags & DEQUEUE_SLEEP && se->parent)
+> >> > +                               set_next_buddy(se->parent);
+> >>
+> >> re-using the last_buddy would seem like a more natural fit here; also
+> >> doesn't have a clobber race with a wakeup
+> >
+> > Hm, that would break last_buddy no?  A preempted task won't get the CPU
+> > back after light preempting thread deactivates.  (it's disabled atm
+> > unless heavily overloaded anyway, but..)
 > 
-> We have a stopped task under ptrace.
-> (More precisely: debugger got a WSTOPPED notification via waitpid.
-> Debugger decided to emulate the job control stop, therefore it
-> keeps tracee stopped, therefore it just waits on waitpid
-> without doing any PTRACE_CONTs).
+> Ommm yeah.. we're actually a little snookered in this case since the
+> pre-empting thread's sleep will be voluntary which will try to return
+> time to its hierarchy.
 > 
-> Another task sends SIGCONT to the tracee.
-> 
-> Debugger gets waitpid notification of the
-> WSTOPPED, WSTOPSIG == SIGCONT form.
+> I suppose keeping the last_buddy is preferable to the occasional clobber.
 
-I think WSTOPSIG should be SIGTRAP as the tracee left group stop and
-entered ptrace trap.
+Yeah, I think we don't want to break it.  I don't know if pgsql still
+uses userland spinlocks, haven't run it in quite a while now, but with
+those nasty things, last_buddy was the only thing that kept it from
+collapsing into a quivering heap when you try to scale.  Preempting a
+userland spinlock holder gets ugly in the extreme.
 
-> Debugger can check PTRACE_GETSIGINFO, which succeeds.
-> Debugger now knows it's a signal delivery notification.
+I'm going to test this patch some more, but in light testing, I saw no
+interactivity problems with it, and it does _seem_ to be improving
+throughput when there are competing grouped loads sharing the box.  I
+haven't tested that heftily though, that's just watching the numbers and
+recalling the relative effect of mixing loads previously.
 
-No, it's not a signal delivery notification.  It's a ptrace trap
-notification.  SIGCONT may not be delivered to this task.  Please
-remember that it's the emission of SIGCONT which ends a group stop,
-not delivery.
+	-Mike
 
-> (This step looks optional, since currently
-> WSTOPPED, WSTOPSIG == SIGCONT combination is only possible
-> on signal delivery, unlike, for example,
-> WSTOPPED, WSTOPSIG == SIGSTOP, which is ambiguous).
-> 
-> Debugger performs PTRACE_CONT(SIGCONT) - it injects the signal.
-> [Question: what if debugger doesn't? IOW: is it possible
-> for debugger to suppress SIGCONTs, or not?
-
-SIGCONT shouldn't be used here and wouldn't make any difference.
-We're not in signal delivery path.
-
-> IOW2: what should happen if debugger
-> (a) does not do any PTRACE_CONT at all? or
-
-The tracee stays stopped.
-
-> (b) does PTRACE_CONT(<other_sig>)? or
-> (c) does PTRACE_CONT(0)?
-
-See above.
-
-> Debugger gets WCONTINUED waitpid notification.
-> [question: do we need this?]
-
-I don't think we need this.  The tracer needs all the stopped
-notifications but it doesn't need the continued notification because a
-tracee is never continued without the tracer saying so.
-
-Thanks.
-
--- 
-tejun
