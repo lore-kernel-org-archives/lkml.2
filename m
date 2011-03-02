@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1CBOMd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 09:12:33 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40035 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab1CBOMc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 09:12:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=VzV8C6Gg3Sms516r43ey24BpKHdxHgkwrGFPrESp9x8Q6nzXYZ3muMF3D8eaE+KQcQ
-         HAGxZEnB05brp2FQ3tBsyCSZm6ss8H0rSZjeVcEUz6JT785XZ30mKqo/GWAzbTU6G1zY
-         I1kawGvdAsduzy4XlyMy8dj7aNnZqw+E4Mq7w=
-MIME-Version: 1.0
-In-Reply-To: <20110302113448.GH16181@sortiz-mobl>
-References: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
-	<20110302113448.GH16181@sortiz-mobl>
-Date: Wed, 2 Mar 2011 15:12:31 +0100
-X-Google-Sender-Auth: VRdmJy338mRsOs832HrCoSZdgdc
-Message-ID: <AANLkTinTP5UKWeu1eGvAA08YKJzz8=iskEPyPVSFzeCM@mail.gmail.com>
-Subject: Re: [PATCH] MFD: ab8500: New ab8500_gpadc APIs and reentrance
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Daniel Willerud <daniel.willerud@stericsson.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752767Ab1CBONr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 09:13:47 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:52797 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246Ab1CBONq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 09:13:46 -0500
+Date: Thu, 3 Mar 2011 01:13:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: linux-next: build failure after merge of the arm tree
+Message-Id: <20110303011335.7a8dc21a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__3_Mar_2011_01_13_35_+1100_JgXfiWeOzq8By3Xn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/3/2 Samuel Ortiz <sameo@linux.intel.com>:
+--Signature=_Thu__3_Mar_2011_01_13_35_+1100_JgXfiWeOzq8By3Xn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> +/**
->> + * ab8500_gpadc_get() - returns a reference to the primary AB8500 GPADC
->> + * (i.e. the first GPADC in the instance list)
->> + */
->> +struct ab8500_gpadc *ab8500_gpadc_get(void)
->> +{
->> +     struct ab8500_gpadc *gpadc;
->> +     gpadc = list_first_entry(&ab8500_gpadc_list, struct ab8500_gpadc, node);
->> +
->> +     return gpadc;
->> +}
+Hi Russell,
 
-> This seems really arbitrary. We argued with Mattias about it, and giving
-> drivers access to your ADCs means they should somehow have a pointer back to
-> the right ADC. That's not the case here, and while it will just work fine
-> whenever you have one ADC on your board, you'll probably be relying on some
-> sort of device probe order otherwise.
+After merging the final tree, the linux-next 20110228 build (lots of arm
+configs) failed like this:
 
-I guess the solution is to rewrite that function to take a parameter
-then, such as:
+stat: cannot stat `arch/arm/boot/compressed/../Image': No such file or dire=
+ctory
+gcc-4.4.0-nolibc/arm-linux/bin/arm-linux-ld:--defsym _image_size=3D: syntax=
+ error
 
-struct ab8500_gpadc *ab8500_gpadc_get(char *name)
+Presumably caused by commit d239b1dc093d551046a909920b5310c1d1e308c1
+("ARM: 6746/1: remove the 4x expansion presumption while decompressing
+the kernel").
 
-If name is then just a strcmpm(dev_name(gpadc->dev), name)
-the client use will be something like:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-struct ab8500_gpadc *gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+--Signature=_Thu__3_Mar_2011_01_13_35_+1100_JgXfiWeOzq8By3Xn
+Content-Type: application/pgp-signature
 
-For the first GPDC in the system (unless .init_name is specified
-by the ab8500-core when creating the device).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Fair enough?
+iQEcBAEBAgAGBQJNblCPAAoJEDMEi1NhKgbsK08IAJ+e4xHa/imQAzzACKPGWHsU
+CBrWsSzK0KydCz+LWk6F75+phIOa+jagaElZBEjZHeipAshZLmKJTU/BmT+jJm/X
+bmW8ywo3AjUa73Nhv+oEQWQM/lDGO12qOF4qvaguoH3a1iHHBRiDaHCXS2oAuiqM
+B3TgFCePpK+X2fG0VKnprmqgjmqXiPGgj3nmfdL276XT6mCFexBUOSqEAfTD9CiC
+4qImG1UuzUv8+MunTwvRZaFPps/Y4HKe87PoHlpOQCtzX94C02TqoufDWbZm0MYr
+FdkoTYOC9pwmZA9ZBPR1anrP0N1RGW/HgLfrPKhHSB+l91XDk40HpXEqLkhcFg8=
+=HA8c
+-----END PGP SIGNATURE-----
 
-Yours,
-Linus Walleij
+--Signature=_Thu__3_Mar_2011_01_13_35_+1100_JgXfiWeOzq8By3Xn--
