@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab1CBKxc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 05:53:32 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44626 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756919Ab1CBKxb (ORCPT
+	id S1757063Ab1CBKxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 05:53:47 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:47036 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757041Ab1CBKxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 05:53:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mh/srFRh90XqVersR5g+8CllKyCiXRDS53eDUBiJXzzCaEhSY7XUHbrPk+HG9gF2jT
-         jwuDgIE4qTEUR1HX6NDbAlryJOlWfkxEUz4CnpuTn2DfCEeey36+i0EN4S46W0v4fT3J
-         5T7Cq+cAm70CGI05v2uvLWWRhXoI4qcvSIZ9M=
-Date: Wed, 2 Mar 2011 11:53:25 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm] x86-64, NUMA: Fix distance table handling
-Message-ID: <20110302105325.GE3319@htj.dyndns.org>
-References: <20110224145128.GM7840@htj.dyndns.org>
- <4D66AC9C.6080500@kernel.org>
- <20110224192305.GB15498@elte.hu>
- <4D66B176.9030300@kernel.org>
- <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
- <20110302100400.GK19669@htj.dyndns.org>
- <20110302104336.GA26381@elte.hu>
+	Wed, 2 Mar 2011 05:53:45 -0500
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Subject: [PATCH] MFD: ab8500-core switch off status added
+Date: Wed, 2 Mar 2011 11:52:36 +0100
+Message-ID: <1299063156-31972-1-git-send-email-mattias.wallin@stericsson.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302104336.GA26381@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 11:43:36AM +0100, Ingo Molnar wrote:
-> 
-> * Tejun Heo <tj@kernel.org> wrote:
-> 
-> > >From dcd414c795a28fff6e511d58e4cfd1202323c703 Mon Sep 17 00:00:00 2001
-> > From: Tejun Heo <tj@kernel.org>
-> > Date: Wed, 2 Mar 2011 10:54:10 +0100
-> 
-> Btw., given that you basically took most of Yinghai's fixes, wouldnt it be better to 
-> have this as a 'From: Yinghai' commit, with -v2 comments about minor updates you 
-> did?
+This patch adds a sysfs file with the ab8500 switch off status.
+The switch off status contains information of what caused the ab8500
+chip to power off. A print during boot is also added.
 
-Yeah, this one was on the boundary for me.  I felt that I edited too
-much of the original patch to leave Yinghai's From and S-O-B.  Please
-don't take it wrong.  I wasn't trying to emphasize my editing but
-wasn't sure whether the chain of custody can be maintained after such
-edit.  Maybe I should just ask for respin, with which I haven't had a
-lot of luck lately.  Eh well, I'll just change it this time.
+Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/ab8500-core.c |   47 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index 8d6c292..6e185b2 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -90,6 +90,7 @@
+ #define AB8500_IT_MASK24_REG		0x57
+ 
+ #define AB8500_REV_REG			0x80
++#define AB8500_SWITCH_OFF_STATUS	0x00
+ 
+ /*
+  * Map interrupt numbers to the LATCH and MASK register offsets, Interrupt
+@@ -652,10 +653,38 @@ static ssize_t show_chip_id(struct device *dev,
+ 	return sprintf(buf, "%#x\n", ab8500 ? ab8500->chip_id : -EINVAL);
+ }
+ 
++/*
++ * ab8500 has switched off due to (SWITCH_OFF_STATUS):
++ * 0x01 Swoff bit programming
++ * 0x02 Thermal protection activation
++ * 0x04 Vbat lower then BattOk falling threshold
++ * 0x08 Watchdog expired
++ * 0x10 Non presence of 32kHz clock
++ * 0x20 Battery level lower than power on reset threshold
++ * 0x40 Power on key 1 pressed longer than 10 seconds
++ * 0x80 DB8500 thermal shutdown
++ */
++static ssize_t show_switch_off_status(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	int ret;
++	u8 value;
++	struct ab8500 *ab8500;
++
++	ab8500 = dev_get_drvdata(dev);
++	ret = get_register_interruptible(ab8500, AB8500_RTC,
++		AB8500_SWITCH_OFF_STATUS, &value);
++	if (ret < 0)
++		return ret;
++	return sprintf(buf, "%#x\n", value);
++}
++
+ static DEVICE_ATTR(chip_id, S_IRUGO, show_chip_id, NULL);
++static DEVICE_ATTR(switch_off_status, S_IRUGO, show_switch_off_status, NULL);
+ 
+ static struct attribute *ab8500_sysfs_entries[] = {
+ 	&dev_attr_chip_id.attr,
++	&dev_attr_switch_off_status.attr,
+ 	NULL,
+ };
+ 
+@@ -697,6 +726,24 @@ int __devinit ab8500_init(struct ab8500 *ab8500)
+ 	}
+ 	ab8500->chip_id = value;
+ 
++	/*
++	 * ab8500 has switched off due to (SWITCH_OFF_STATUS):
++	 * 0x01 Swoff bit programming
++	 * 0x02 Thermal protection activation
++	 * 0x04 Vbat lower then BattOk falling threshold
++	 * 0x08 Watchdog expired
++	 * 0x10 Non presence of 32kHz clock
++	 * 0x20 Battery level lower than power on reset threshold
++	 * 0x40 Power on key 1 pressed longer than 10 seconds
++	 * 0x80 DB8500 thermal shutdown
++	 */
++
++	ret = get_register_interruptible(ab8500, AB8500_RTC,
++		AB8500_SWITCH_OFF_STATUS, &value);
++	if (ret < 0)
++		return ret;
++	dev_info(ab8500->dev, "switch off status: %#x", value);
++
+ 	if (plat && plat->init)
+ 		plat->init(ab8500);
+ 
 -- 
-tejun
+1.7.4.1
+
