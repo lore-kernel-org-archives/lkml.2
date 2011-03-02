@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab1CBTmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:42:44 -0500
-Received: from lebrac.rtp-net.org ([88.191.135.105]:46375 "EHLO
-	lebrac.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756339Ab1CBTmn (ORCPT
+	id S1757286Ab1CBTpC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:45:02 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43437 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab1CBTpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:42:43 -0500
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 14:42:43 EST
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: <Dinh.Nguyen@freescale.com>
-Cc: <linux-kernel@vger.kernel.org>, linux@arm.linux.org.uk,
-        s.hauer@pengutronix.de, u.kleine-koenig@pengutronix.de,
-        xiao-lizhang@freescale.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv1] ARM: imx: Add support for low power suspend on MX51.
-Organization: RtpNet
-References: <1299086278-12131-1-git-send-email-Dinh.Nguyen@freescale.com>
-Date: Wed, 02 Mar 2011 20:35:16 +0100
-In-Reply-To: <1299086278-12131-1-git-send-email-Dinh.Nguyen@freescale.com>
-	(Dinh Nguyen's message of "Wed, 2 Mar 2011 11:17:58 -0600")
-Message-ID: <8762s1xqmj.fsf@lebrac.rtp-net.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 2 Mar 2011 14:45:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=s2x0ZXsC/2WP9qRUPCAA8zxjELjDmnptAPVnIyFT/AfnE5JN7tm5VpIsK3paSzykKv
+         Ua3ZwjH7XTCBVRc4vyOmwUxU47aq7sltBkSz1zHXztFHLZQzT8Bhgd1vGt7Dd7vlI8R0
+         cbiWabT3x/j2HOVI2JdqX0ZGvpK+cz0348XTE=
+Date: Wed, 2 Mar 2011 22:43:54 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Jake Edge <jake@lwn.net>
+Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
+        mirqus@gmail.com, netdev@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
+        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
+        eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
+ kernel modules
+Message-ID: <20110302194354.GA31043@albatros>
+References: <201102272122.52643.arnd@arndb.de>
+ <4D6B6AE7.2050202@msgid.tls.msk.ru>
+ <20110228095133.GA4351@albatros>
+ <20110228.112349.104067277.davem@davemloft.net>
+ <20110301194845.GA3533@albatros>
+ <1299010390.2529.30.camel@bwh-desktop>
+ <20110301213313.GA6507@albatros>
+ <m34o7ltipi.fsf@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m34o7ltipi.fsf@lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<Dinh.Nguyen@freescale.com> writes:
+On Wed, Mar 02, 2011 at 12:39 -0700, Jake Edge wrote:
+> > @@ -1765,4 +1765,4 @@ module_exit(ipgre_fini);
+> >  MODULE_LICENSE("GPL");
+> >  MODULE_ALIAS_RTNL_LINK("gre");
+> >  MODULE_ALIAS_RTNL_LINK("gretap");
+> > -MODULE_ALIAS("gre0");
+> > +MODULE_ALIAS_NETDEV("gre0");
+> 
+> that is, instead of replacing MODULE_ALIAS("gre0") with the NETDEV
+> version, don't you want both for backward compatibility?
 
-Hi,
+The networking script will run with CAP_NET_ADMIN, this would request
+netdev-gre0 and load ip_gre.
 
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
->
-> Adds initial low power suspend functionality to MX51.
-> Supports "mem" and "standby" modes.
-
-I've very quickly tried suspend to mem on my system and despite having set
-some irq as wakeup source, it doesn't wake up. Is there some extra step
-to be done in order to test your patch ?
-
-Moreover, the code I've seen for suspend is very different. It's seems
-to handle some cpufreq stuff and seems to be copying some code into some
-special ram. Is all this stuff unneeded ?
-
-Arnaud
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
