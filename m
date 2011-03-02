@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab1CBOrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 09:47:12 -0500
-Received: from mail.elliptictech.com ([209.217.122.41]:45073 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab1CBOrL (ORCPT
+	id S1752685Ab1CBOu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 09:50:59 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45822 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab1CBOu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 09:47:11 -0500
-Date: Wed, 2 Mar 2011 09:47:05 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Nick Piggin <npiggin@gmail.com>
-Subject: Re: [PATCH 4/7] ufs: remove the BKL
-Message-ID: <20110302144705.GA15482@elliptictech.com>
-References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
- <1299021191-17961-5-git-send-email-arnd@arndb.de>
+	Wed, 2 Mar 2011 09:50:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tvCufTI05pb/tZIEo/uPuPslMbP7VNVh0+sTfAM8FoPcwE6AYdmaWrz6vmVBBi3wbs
+         N2hedlMmXJyEnj5RhMTFy8dLvrJcdL8Sl/B1ehsUgGLWVV/5Mkd8hG98GoJDEdMi9aBw
+         bEKqOv7c4+WpctaxdUKdbUfh52wnMYRgTxqtQ=
+Date: Wed, 2 Mar 2011 15:50:48 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110302145048.GK3319@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+ <201103011757.48593.vda.linux@googlemail.com>
+ <20110301170953.GB17933@htj.dyndns.org>
+ <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
+ <20110301183454.GC23527@mtj.dyndns.org>
+ <830cc1666bd4a610d5e870218f06bd2d.squirrel@webmail.greenhost.nl>
+ <20110302074447.GE19669@htj.dyndns.org>
+ <6b211a19ed02fa7f001343fbd8e3d5a9.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299021191-17961-5-git-send-email-arnd@arndb.de>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <6b211a19ed02fa7f001343fbd8e3d5a9.squirrel@webmail.greenhost.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-02 00:13 +0100, Arnd Bergmann wrote:
-> This introduces a new per-superblock mutex in UFS to replace
-> the big kernel lock. I have been careful to avoid nested
-> calls to lock_ufs and to get the lock order right with
-> respect to other mutexes, in particular lock_super.
+Hello,
+
+On Wed, Mar 02, 2011 at 12:32:36PM +0100, Indan Zupancic wrote:
+> What might happen is that, because the current code handles the traced
+> task as stopped, the new SIGSTOP signal is first added and then cleared
+> when the task continues. This doesn't explain the double SIGSTOP
+> notifications, I'd expect it to either loop indefinitely or to not
+> notify the SIGSTOP twice.
+
+That happens with any stopping signals.  They're two different
+notifications for two different events.  Please read the original
+thread referenced in the RFC for details.
+
+>  "When waitpid indicates stop on a *stop* signal, then it may be either:
+>  * a signal delivery (strace will inject this signal with PTRACE_SYSCALL(sig));
+>  * or it may be a stop notification, in which case strace *must not*
+>    try to inject this signal (this would be a bug, it'd make task running).
+>    Instead, strace should just go back to waiting in waitpid().
 > 
-> I did not make any attempt to prove that the big kernel
-> lock is not needed in a particular place in the code,
-> which is very possible.
+>  These two possibilities can be distinquished by querying
+>  PTRACE_GETSIGINFO. On stop notifications, PTRACE_GETSIGINFO
+>  errors out - stop notification is not a signal delivery
+>  and therefore it has no siginfo."
 > 
-> The code is still only compile-tested,
+> End quote.
+> 
+> You don't get the second case when not setting the WUNTRACED flag.
 
-This isn't true anymore; I've been running with this patch (well, the
-previous versions thereof) for some time now.  On the other hand, I
-don't use all of this driver's features.
+WUNTRACED is ignored while ptracing.
 
-> but it should at least be harmless on non-SMP systems, since the new
-> mutex is not taken on those.
+> > Again, not following.  In the proposal, job control and ptrace operate
+> > independently, so on that we seem to agree, but I can't understand
+> > where the STOP signal for the parent comes from?  What are you
+> > referring to?
+> 
+> What I mean is, if you have a parent P with a child C, and C is ptraced by T,
+> P shouldn't get SIGSTOP notifications when it waits for C with WUNTRACED set
+> and C is stopped because of a ptrace event.
 
-I think this part of the patch is strange.  It seems like a gratuitous
-difference between SMP/preempt and other systems to #if out the code
-that takes the mutex.  This might make problems with the conversion fly
-under the radar longer because people with older systems won't encounter
-them.
+Yeah, sure, what I'm confused about is why you're bringing that up.
+Nothing changes anything related to that.  There's no reason to bring
+it up.  Am I missing something?
+
+Thanks.
 
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+tejun
