@@ -1,206 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab1CBUVZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:21:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46199 "EHLO mx1.redhat.com"
+	id S1757489Ab1CBUXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:23:32 -0500
+Received: from tex.lwn.net ([70.33.254.29]:41190 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754997Ab1CBUVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:21:24 -0500
-Date: Wed, 2 Mar 2011 15:21:18 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: jaxboe@fusionio.com, jmoyer@redhat.com, czoccolo@gmail.com,
-        guijianfeng@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: cfq-iosched preempt issues
-Message-ID: <20110302202118.GA2547@redhat.com>
-References: <20110302124341.GA23940@sli10-conroe.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302124341.GA23940@sli10-conroe.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754997Ab1CBUXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:23:31 -0500
+X-Greylist: delayed 2031 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 15:23:31 EST
+Date: Wed, 2 Mar 2011 12:49:36 -0700
+From: Jake Edge <jake@lwn.net>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
+        mirqus@gmail.com, netdev@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
+        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
+        eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
+ kernel modules
+Message-ID: <20110302124936.289a1915@chukar>
+In-Reply-To: <20110302194354.GA31043@albatros>
+References: <201102272122.52643.arnd@arndb.de>
+	<4D6B6AE7.2050202@msgid.tls.msk.ru>
+	<20110228095133.GA4351@albatros>
+	<20110228.112349.104067277.davem@davemloft.net>
+	<20110301194845.GA3533@albatros>
+	<1299010390.2529.30.camel@bwh-desktop>
+	<20110301213313.GA6507@albatros>
+	<m34o7ltipi.fsf@lwn.net>
+	<20110302194354.GA31043@albatros>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 08:43:41PM +0800, Shaohua Li wrote:
-> queue preemption is good for some workloads and not for others. With commit
-> f8ae6e3eb825, the impact is amplified. I currently have two issues with it:
-> 1. In a multi-threaded workload, each thread runs a random read/write (for
-> example, mmap write) with iodepth 1. I found the queue depth gets smaller
-> with commit f8ae6e3eb825. The reason is write gets preempted, so more threads
-> are waitting for write, and on the other hand, there are less threads doing
-> read. This will make the queue depth small, so performance drops a little.
-> So in this case, speed up write can speed up read too, but we can't detect
-> it.
-> 2. cfq_may_dispatch doesn't limit queue depth if the queue is the sole queue.
-> What about if there are two queues, one sync and one async? If the sync queue's
-> think time is small, we can treat it as the sole queue, because the sync queue
-> will preempt async queue, so we don't need care about the async queue's latency.
-> The issue exists before, but f8ae6e3eb825 amplifies it. Below is a patch for it.
+On Wed, 2 Mar 2011 22:43:54 +0300 Vasiliy Kulikov wrote:
+> On Wed, Mar 02, 2011 at 12:39 -0700, Jake Edge wrote:
+> > > @@ -1765,4 +1765,4 @@ module_exit(ipgre_fini);
+> > >  MODULE_LICENSE("GPL");
+> > >  MODULE_ALIAS_RTNL_LINK("gre");
+> > >  MODULE_ALIAS_RTNL_LINK("gretap");
+> > > -MODULE_ALIAS("gre0");
+> > > +MODULE_ALIAS_NETDEV("gre0");
+> > 
+> > that is, instead of replacing MODULE_ALIAS("gre0") with the NETDEV
+> > version, don't you want both for backward compatibility?
 > 
-> Any idea?
+> The networking script will run with CAP_NET_ADMIN, this would request
+> netdev-gre0 and load ip_gre.
 
-CFQ is already very complicated, lets try to keep it simple. Because it
-is complicated, making it hierarchical for cgroup becomes even harder.
+and on systems that today use CAP_SYS_MODULE (or really the full set of
+capabilities cuz they are running as root)?  won't those try to load
+gre0 and fail because that alias doesn't exist?
 
-IIUC, you are saying that cfqd->busy_queues check is not sufficient as
-it takes async queues also in account.
+jake
 
-So we can keep another count say, cfqd->busy_sync_queues and if there
-are no busy_sync_queues, allow unlimited depth and that should be
-a really simple few lines change.
-
-But lets do it only if you have a real life workload. Similiarly we can
-worry about RT case when there is a real workload behind it.
-
-Thanks
-Vivek
- 
-
- 
-
-
-> 
-> Thanks,
-> Shaohua
-> -----------------------------------------------
-> Subject: cfq-iosched: don't limlit sync queue depth with only one such sync queue
-> 
-> If there are a sync and an async queue and the sync queue's think time is small,
-> we can ignore the sync queue's dispatch quantum. Because the sync queue will
-> always preempt the async queue, we don't need to care about async's latency.
-> In the same way, we can optimize a RT queue too to improve performance.
-> This can fix a performance regression of aiostress test, which is introduced by
-> commit f8ae6e3eb825. The issue should exist even without the commit, but the
-> commit amplifies the impact.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> ---
->  block/cfq-iosched.c |   91 +++++++++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 73 insertions(+), 18 deletions(-)
-> 
-> Index: linux/block/cfq-iosched.c
-> ===================================================================
-> --- linux.orig/block/cfq-iosched.c	2011-03-02 14:58:19.000000000 +0800
-> +++ linux/block/cfq-iosched.c	2011-03-02 15:48:38.000000000 +0800
-> @@ -1150,6 +1150,20 @@ void cfq_unlink_blkio_group(void *key, s
->  	spin_unlock_irqrestore(cfqd->queue->queue_lock, flags);
->  }
->  
-> +static bool cfq_have_cfqgs(struct cfq_data *cfqd)
-> +{
-> +	struct hlist_node *pos;
-> +	struct cfq_group *cfqg;
-> +	int cnt = 0;
-> +
-> +	hlist_for_each_entry(cfqg, pos, &cfqd->cfqg_list, cfqd_node) {
-> +		cnt++;
-> +		if (cnt > 1)
-> +			break;
-> +	}
-> +	return cnt > 1;
-> +}
-> +
->  #else /* GROUP_IOSCHED */
->  static struct cfq_group *cfq_get_cfqg(struct cfq_data *cfqd, int create)
->  {
-> @@ -1169,6 +1183,12 @@ cfq_link_cfqq_cfqg(struct cfq_queue *cfq
->  static void cfq_release_cfq_groups(struct cfq_data *cfqd) {}
->  static inline void cfq_put_cfqg(struct cfq_group *cfqg) {}
->  
-> +static inline bool cfq_have_cfqgs(struct cfq_data *cfqd)
-> +{
-> +	return false;
-> +}
-> +
-> +
->  #endif /* GROUP_IOSCHED */
->  
->  /*
-> @@ -2381,6 +2401,57 @@ static inline bool cfq_slice_used_soon(s
->  	return false;
->  }
->  
-> +static unsigned int cfq_queue_max_quantum(struct cfq_data *cfqd,
-> +	struct cfq_queue *cfqq)
-> +{
-> +	int sync = cfq_cfqq_sync(cfqq);
-> +	enum wl_prio_t prio = cfqq_prio(cfqq);
-> +	struct cfq_group *cfqg = cfqq->cfqg;
-> +	int sync_queues_cnt, async_queues_cnt;
-> +	struct cfq_io_context *cic = RQ_CIC(cfqq->next_rq);
-> +
-> +	/* Sole queue user, no limit */
-> +	if (cfqd->busy_queues == 1)
-> +		return -1;
-> +
-> +	if (cfq_have_cfqgs(cfqd) || (!sync && prio != RT_WORKLOAD))
-> +		goto normal;
-> +
-> +	sync_queues_cnt = cfqg->service_trees[prio][SYNC_NOIDLE_WORKLOAD].count
-> +		+ cfqg->service_trees[prio][SYNC_WORKLOAD].count;
-> +	async_queues_cnt = cfqg->service_trees[prio][ASYNC_WORKLOAD].count;
-> +	/*
-> +	 * If a queue is a sole sync queue and think time is small, we can ignore
-> +	 * async queue here and give the sync queue no dispatch limit, because a
-> +	 * sync queue can preempt async queue.
-> +	 *
-> +	 * If the queue is RT, we don't need check BE, because even the
-> +	 * queue is expired, the dispatcher will select RT queue again next time.
-> +	 *
-> +	 * If the queue is BE, we don't check RT here, because dispatcher will
-> +	 * switch to RT next time, so we at most dispatch one extra request.
-> +	 */
-> +	if (((!sync && prio == RT_WORKLOAD && sync_queues_cnt == 0 &&
-> +		async_queues_cnt == 1) || sync_queues_cnt == 1) &&
-> +		sample_valid(cic->ttime_samples) &&
-> +		cic->ttime_mean < cfqd->cfq_slice_idle)
-> +		return -1;
-> +normal:
-> +	/*
-> +	 * We have other queues, don't allow more IO from this one
-> +	 */
-> +	if (cfq_slice_used_soon(cfqd, cfqq))
-> +		return 0;
-> +	else
-> +		/*
-> +		 * Normally we start throttling cfqq when cfq_quantum/2
-> +		 * requests have been dispatched. But we can drive
-> +		 * deeper queue depths at the beginning of slice
-> +		 * subjected to upper limit of cfq_quantum.
-> +		 * */
-> +		return cfqd->cfq_quantum;
-> +}
-> +
->  static bool cfq_may_dispatch(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  {
->  	unsigned int max_dispatch;
-> @@ -2411,25 +2482,9 @@ static bool cfq_may_dispatch(struct cfq_
->  		if (cfq_class_idle(cfqq))
->  			return false;
->  
-> -		/*
-> -		 * We have other queues, don't allow more IO from this one
-> -		 */
-> -		if (cfqd->busy_queues > 1 && cfq_slice_used_soon(cfqd, cfqq))
-> +		max_dispatch = cfq_queue_max_quantum(cfqd, cfqq);
-> +		if (max_dispatch == 0)
->  			return false;
-> -
-> -		/*
-> -		 * Sole queue user, no limit
-> -		 */
-> -		if (cfqd->busy_queues == 1)
-> -			max_dispatch = -1;
-> -		else
-> -			/*
-> -			 * Normally we start throttling cfqq when cfq_quantum/2
-> -			 * requests have been dispatched. But we can drive
-> -			 * deeper queue depths at the beginning of slice
-> -			 * subjected to upper limit of cfq_quantum.
-> -			 * */
-> -			max_dispatch = cfqd->cfq_quantum;
->  	}
->  
->  	/*
+-- 
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
