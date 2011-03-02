@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab1CBKgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 05:36:42 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40123 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756562Ab1CBKgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 05:36:41 -0500
-Date: Wed, 2 Mar 2011 11:36:31 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+	id S1756883Ab1CBKjq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 05:39:46 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63999 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756799Ab1CBKjp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 05:39:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XnwnhlgZVARoWTLHW/VkvsJ0L/aJbzsVmJTA0cb9bM05+wRkRwwvKWhVHFFTiDA9al
+         ncra7mEOzzxBHFV/OJWeq31uI7ILm9G+s7ZWv/RRvPmljRCUcs440Or2vTbLh1F2oMS4
+         kOjU+goK1ELIBFL7fuq8lVGZdlX519T3bN0oM=
+Date: Wed, 2 Mar 2011 11:39:40 +0100
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
         tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm] x86-64, NUMA: Fix distance table handling
-Message-ID: <20110302103631.GA25608@elte.hu>
+Subject: [PATCH x86/mm] x86-64, NUMA: Better explain numa_distance handling
+Message-ID: <20110302103940.GC3319@htj.dyndns.org>
 References: <20110224145128.GM7840@htj.dyndns.org>
  <4D66AC9C.6080500@kernel.org>
  <20110224192305.GB15498@elte.hu>
  <4D66B176.9030300@kernel.org>
  <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
  <20110302100400.GK19669@htj.dyndns.org>
- <20110302100727.GA24692@elte.hu>
- <20110302101547.GA3319@htj.dyndns.org>
+ <20110302102530.GB3319@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110302101547.GA3319@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110302102530.GB3319@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From a168b5aa6f8f9db7d8aeda0d85a1d19ed1373981 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 2 Mar 2011 11:32:47 +0100
 
-* Tejun Heo <tj@kernel.org> wrote:
+Handling of out-of-bounds distances and allocation failure can use
+better documentation.  Add it.
 
-> FWIW, I'm not really decided about 80 vs. whatever column issue.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/mm/numa_64.c        |   10 +++++++++-
+ arch/x86/mm/numa_emulation.c |    6 +++++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-It only really matters when the underlying code structure is clearly inefficient: 
-too many indentations, etc.
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 541746f..01ab53c 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -392,11 +392,12 @@ void __init numa_reset_distance(void)
+ {
+ 	size_t size = numa_distance_cnt * numa_distance_cnt * sizeof(numa_distance[0]);
+ 
++	/* numa_distance could be 1LU marking allocation failure, test cnt */
+ 	if (numa_distance_cnt)
+ 		memblock_x86_free_range(__pa(numa_distance),
+ 					__pa(numa_distance) + size);
+ 	numa_distance_cnt = 0;
+-	numa_distance = NULL;
++	numa_distance = NULL;	/* enable table creation */
+ }
+ 
+ static int __init numa_alloc_distance(void)
+@@ -447,6 +448,13 @@ static int __init numa_alloc_distance(void)
+  * Set the distance from node @from to @to to @distance.  If distance table
+  * doesn't exist, one which is large enough to accomodate all the currently
+  * known nodes will be created.
++ *
++ * If such table cannot be allocated, a warning is printed and further
++ * calls are ignored until the distance table is reset with
++ * numa_reset_distance().
++ *
++ * If @from or @to is higher than the highest known node, the call is
++ * ignored.
+  */
+ void __init numa_set_distance(int from, int to, int distance)
+ {
+diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+index 0afa25d..aeecea9 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ b/arch/x86/mm/numa_emulation.c
+@@ -379,7 +379,11 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+ 		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
+ 			emu_nid_to_phys[i] = 0;
+ 
+-	/* transform distance table */
++	/*
++	 * Transform distance table.  numa_set_distance() ignores all
++	 * out-of-bound distances.  Just call it for every possible node
++	 * combination.
++	 */
+ 	numa_reset_distance();
+ 	for (i = 0; i < MAX_NUMNODES; i++) {
+ 		for (j = 0; j < MAX_NUMNODES; j++) {
+-- 
+1.7.1
 
-but printks or function calls that go beyond 80 cols a bit do not deserve to be 
-line-broken.
-
-> Having a common limit definitely helps a lot but it seems almost
-> impossible to agree on one - is it 90, 95, 100 or 120?  Given that, it
-> almost seems just sticking to 80 might be the only doable solution.
-
-The problem is that many sensible code structures break with a limit of 80.
-
-So i'd suggest being permissive when the code is fine (printks, function calls at 
-the first or second level of indentation, etc.) and being conservative when the 
-underlying code is not fine.
-
-Thanks,
-
-	Ingo
