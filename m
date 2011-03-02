@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab1CBVi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:38:59 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:32837 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924Ab1CBVi6 (ORCPT
+	id S932119Ab1CBVjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:39:14 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50903 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091Ab1CBVjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:38:58 -0500
-Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
-	top level
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>
-In-Reply-To: <20110301223251.11c95eed.rdunlap@xenotime.net>
-References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
-	 <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
-	 <20110301223251.11c95eed.rdunlap@xenotime.net>
-Content-Type: text/plain
-Date: Wed, 02 Mar 2011 13:32:11 -0800
-Message-Id: <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Mar 2011 16:39:12 -0500
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 2 Mar 2011 14:38:52 -0700
+X-Google-Sender-Auth: A5zu7WkVZMKZhRN9-e3kcBaWR6o
+Message-ID: <AANLkTimvaSwM0NmjWEC0S=uRCdc6MmSzB-3xqhTV7Y=y@mail.gmail.com>
+Subject: [git pull] device tree bug fixes
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Cc: Andres Salomon <dilinger@queued.net>, Michal Simek <monstr@monstr.eu>,
+        Paul Bolle <pebolle@tiscali.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 22:32 -0800, Randy Dunlap wrote:
-> On Tue,  1 Mar 2011 19:34:01 -0800 Nicholas A. Bellinger wrote:
-> 
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Add Makefile/Kconfig and update drivers/target/[Makefile,Kconfig]
-> > to include the fabric module.
-> > 
-> > igned-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > ---
-> >  drivers/target/Kconfig        |    1 +
-> >  drivers/target/Makefile       |    1 +
-> >  drivers/target/iscsi/Kconfig  |   17 +++++++++++++++++
-> >  drivers/target/iscsi/Makefile |   20 ++++++++++++++++++++
-> >  4 files changed, 39 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/target/iscsi/Kconfig
-> >  create mode 100644 drivers/target/iscsi/Makefile
-> > 
-> > diff --git a/drivers/target/Kconfig b/drivers/target/Kconfig
-> > index 387d293..798749a 100644
-> > --- a/drivers/target/Kconfig
-> > +++ b/drivers/target/Kconfig
-> > @@ -30,5 +30,6 @@ config TCM_PSCSI
-> >  	passthrough access to Linux/SCSI device
-> >  
-> >  source "drivers/target/tcm_loop/Kconfig"
-> > +source "drivers/target/iscsi/Kconfig"
-> >  
-> >  endif
-> > diff --git a/drivers/target/Makefile b/drivers/target/Makefile
-> > index 60028fe..b038b7d 100644
-> > --- a/drivers/target/Makefile
-> > +++ b/drivers/target/Makefile
-> > @@ -24,3 +24,4 @@ obj-$(CONFIG_TCM_PSCSI)		+= target_core_pscsi.o
-> >  
-> >  # Fabric modules
-> >  obj-$(CONFIG_TCM_LOOP_FABRIC)	+= tcm_loop/
-> > +obj-$(CONFIG_ISCSI_TARGET)	+= iscsi/
-> > diff --git a/drivers/target/iscsi/Kconfig b/drivers/target/iscsi/Kconfig
-> > new file mode 100644
-> > index 0000000..d1eaec4
-> > --- /dev/null
-> > +++ b/drivers/target/iscsi/Kconfig
-> > @@ -0,0 +1,17 @@
-> > +config ISCSI_TARGET
-> > +	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
-> > +	select CRYPTO
-> > +	select CRYPTO_CRC32C
-> > +	select CRYPTO_CRC32C_INTEL
-> 
->   CRYPTO_CRC32C_INTEL depends on X86.  so is ISCSI_TARGET only for X86,
-> or is this kconfig just mucked up?
-> 
-> 
+Hi Linus,
 
-Hi Randy,
+A few more patches for .28
 
-The kernel code itself that is specific to using the SSE v4.2
-instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
-iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
-default to using the unoptimized 1x8 slicing soft CRC32C code.  This
-particular piece of logic has been tested on powerpc and arm and is
-funcitoning as expected from the kernel level using the arch independent
-soft code.
+The following changes since commit dd9c1549edef02290edced639f67b54a25abbe0e:
 
-On the kbuild side, I do see the following warning on !CONFIG_X86:
+  Linux 2.6.38-rc7 (2011-03-01 13:55:12 -0800)
 
-warning: (LIO_TARGET) selects CRYPTO_CRC32C_INTEL which has unmet direct dependencies (CRYPTO && X86)
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
 
-I looking at trying to fix this at one point, but was unable to
-determine a method for adding a CONFIG_$ARCH condition to an individual
-'select BAR' section of 'config FOO'..
+Andres Salomon (2):
+      x86: OLPC: have prom_early_alloc BUG rather than return NULL
+      of/promtree: allow DT device matching by fixing 'name' brokenness (v5)
 
-How would you recommend handling this case..?
+Michal Simek (1):
+      of: Add missing of_address.h to xilinx ehci driver
 
-Thanks,
+Paul Bolle (1):
+      of/flattree: Drop an uninteresting message to pr_debug level
 
---nab
+ arch/x86/platform/olpc/olpc_dt.c  |    3 +-
+ drivers/of/pdt.c                  |  112 ++++++++++++++-----------------------
+ drivers/usb/host/ehci-xilinx-of.c |    1 +
+ fs/proc/proc_devtree.c            |    2 +-
+ 4 files changed, 45 insertions(+), 73 deletions(-)
 
 
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
