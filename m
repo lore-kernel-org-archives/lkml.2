@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab1CBXXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 18:23:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:16326 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989Ab1CBXXM convert rfc822-to-8bit (ORCPT
+	id S1753781Ab1CBXXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 18:23:22 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:54345 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab1CBXXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 18:23:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,255,1297065600"; 
-   d="scan'208";a="396622458"
-From: "Nadolski, Edmund" <edmund.nadolski@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>, Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>
-Date: Wed, 2 Mar 2011 16:22:53 -0700
-Subject: RE: inconsistent lock state message on 2.6.36.4 stable release
-Thread-Topic: inconsistent lock state message on 2.6.36.4 stable release
-Thread-Index: AcvZHWCiU7muotBTTJOElR40JXrrRgAEv+rg
-Message-ID: <9EECC02A4CC333418C00A85D21E893261498F459DF@azsmsx502.amr.corp.intel.com>
-References: <9EECC02A4CC333418C00A85D21E893261498F45872@azsmsx502.amr.corp.intel.com>
- <20110302202515.GA16963@suse.de> <20110302210338.GF14162@csn.ul.ie>
-In-Reply-To: <20110302210338.GF14162@csn.ul.ie>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 2 Mar 2011 18:23:20 -0500
+Date: Wed, 02 Mar 2011 18:22:56 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] ACPI patches for 2.6.38-rc7
+Message-id: <alpine.LFD.2.02.1103021821240.12344@x980>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mel Gorman [mailto:mel@csn.ul.ie]
-> Sent: Wednesday, March 02, 2011 2:04 PM
-> To: Greg KH
-> Cc: Nadolski, Edmund; linux-kernel@vger.kernel.org; Williams, Dan J
-> Subject: Re: inconsistent lock state message on 2.6.36.4 stable release
-> 
-> On Wed, Mar 02, 2011 at 03:25:15PM -0500, Greg KH wrote:
-> > On Wed, Mar 02, 2011 at 01:19:48PM -0700, Nadolski, Edmund wrote:
-> > > With v2.6.36.4 stable release and CONFIG_PROVE_LOCKING set, I
-> notice
-> > > the below message during boot (full dmesg attached):
-> >
-> > 2.6.36 is now "end of life" so there's really no need to test, debug,
-> or
-> > report problems here as there's nothing we can do about it.
-> >
-> > > Per git bisect, it seems to have originated with this commit:
-> > >
-> > > $ git bisect good
-> > > c04eb9683fbb6374275309b859fcbf02e1db2c78 is the first bad commit
-> > > commit c04eb9683fbb6374275309b859fcbf02e1db2c78
-> > > Author: Mel Gorman <mel@csn.ul.ie>
-> > > Date:   Thu Jan 13 15:45:41 2011 -0800
-> > >
-> > >     mm: page allocator: adjust the per-cpu counter threshold when
-> memory is low
-> > >
-> > >     commit 88f5acf88ae6a9778f6d25d0d5d7ec2d57764a97 upstream.
-> > >
-> > > The message goes away after I do a git revert on this commit. I've
-> > > also seen this message on 2.6.37.2, but not on 2.6.38-rc7.
-> >
-> > Care to figure out what commit fixed this so that we can backport it
-> to
-> > the .37-stable kernel?
-> >
-> > git bisect can be used to do this as well.
-> >
-> 
-> It looks like the call to get_online_cpus() that is causing the
-> problem. If
-> so, I believe it to be fixed by the commit [b44129b3: mm: vmstat: use a
-> single setter function and callback for adjusting percpu thresholds].
-> Edmund, care to test with that patch applied?
+Hi Linus,
 
-This patch looks good, I've applied it onto 2.6.37.2 and I no longer see the message.
+please pull from: 
 
-Thanks!
-Ed
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
 
+This will update the files shown below.
 
+thanks!
+Len Brown
+Intel Open Source Technology Center
+
+ drivers/acpi/acpica/aclocal.h |    7 +++++-
+ drivers/acpi/acpica/evgpe.c   |   17 ++++++++++++---
+ drivers/acpi/acpica/evxfgpe.c |   42 ++++++++++++++++++++++++++++++++--------
+ drivers/acpi/debugfs.c        |   20 +++++++++++++-----
+ 4 files changed, 66 insertions(+), 20 deletions(-)
+
+through these commits:
+
+Rafael J. Wysocki (1):
+      ACPI / ACPICA: Implicit notify for multiple devices
+
+Vasiliy Kulikov (1):
+      ACPI / debugfs: Fix buffer overflows, double free
+
+with this log:
+
+commit 981858bd7a401aa9607d9f430d5de920025fc3ea
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Thu Feb 24 19:59:21 2011 +0100
+
+    ACPI / ACPICA: Implicit notify for multiple devices
+    
+    Commit bba63a2 (ACPICA: Implicit notify support) introduced a
+    mechanism that causes a notify request of type
+    ACPI_NOTIFY_DEVICE_WAKE to be queued automatically by
+    acpi_ev_asynch_execute_gpe_method() for the device whose _PRW points
+    to the GPE being handled if that GPE is not associated with an
+    _Lxx/_Exx method.  However, it turns out that on some systems there
+    are multiple devices with _PRW pointing to the same GPE without
+    _Lxx/_Exx and the mechanism introduced by commit bba63a2 needs to be
+    extended so that "implicit" notify requests of type
+    ACPI_NOTIFY_DEVICE_WAKE can be queued automatically for all those
+    devices at the same time.
+    
+    Reported-and-tested-by: Matthew Garrett <mjg@redhat.com>
+    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+
+commit 2949ad50711cc161721cf788711722eeeca33764
+Author: Vasiliy Kulikov <segoon@openwall.com>
+Date:   Sat Feb 19 14:18:08 2011 +0100
+
+    ACPI / debugfs: Fix buffer overflows, double free
+    
+    File position is not controlled, it may lead to overwrites of arbitrary
+    kernel memory.  Also the code may kfree() the same pointer multiple
+    times.
+    
+    One more flaw is still present: if multiple processes open the file then
+    all 3 static variables are shared, leading to various race conditions.
+    They should be moved to file->private_data.
+    
+    Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+    Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+    Reviewed-by: Eugene Teo <eugeneteo@kernel.org>
+    Cc: stable@kernel.org
+    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
