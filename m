@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab1CBMsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 07:48:09 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:58609 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754721Ab1CBMsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 07:48:07 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-References: <1299008793-27428-1-git-send-email-fernando.lugo@ti.com>
+	id S1757077Ab1CBMtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 07:49:15 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29299 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755899Ab1CBMtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 07:49:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,253,1297065600"; 
+   d="scan'208";a="608200195"
+Date: Wed, 2 Mar 2011 20:49:12 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [tip:x86/mm] x86: Work around old gas bug
+Message-ID: <20110302124912.GB23940@sli10-conroe.sh.intel.com>
+References: <201103012352.p21NqRN1006974@imap1.linux-foundation.org>
+ <tip-253d89d3dd6b65595f317e5f1ecef43aa207a3a0@git.kernel.org>
+ <4D6E2B8B02000078000347C0@vpn.id2.novell.com>
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1299008793-27428-1-git-send-email-fernando.lugo@ti.com>
-Thread-Index: AcvYSXi8mV0UCCuaQ6ir3E7tyclDJQAjmOQA
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
-Date: Wed, 2 Mar 2011 18:18:05 +0530
-Message-ID: <1dc497a090414bf80ff588791d6db5cc@mail.gmail.com>
-Subject: RE: [PATCH] omap:iommu-added cache flushing operation for L2 cache
-To: Fernando Guzman Lugo <fernando.lugo@ti.com>, hiroshi.doyu@nokia.com
-Cc: tony@atomide.com, linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ramesh Gupta <grgupta@ti.com>, Hari Kanigeri <h-kanigeri2@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6E2B8B02000078000347C0@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-> -----Original Message-----
-> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> owner@vger.kernel.org] On Behalf Of Fernando Guzman Lugo
-> Sent: Wednesday, March 02, 2011 1:17 AM
-> To: hiroshi.doyu@nokia.com
-> Cc: tony@atomide.com; linux@arm.linux.org.uk; linux-
-> omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; Ramesh Gupta; Hari Kanigeri
-> Subject: [PATCH] omap:iommu-added cache flushing operation for L2
-> cache
->
-> From: Ramesh Gupta <grgupta@ti.com>
->
-> Signed-off-by: Ramesh Gupta <grgupta@ti.com>
-> Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
-> ---
->  arch/arm/plat-omap/iommu.c |   22 ++++++++--------------
->  1 files changed, 8 insertions(+), 14 deletions(-)
->
-> diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
-> index e3eb038..aeb2c33 100644
-> --- a/arch/arm/plat-omap/iommu.c
-> +++ b/arch/arm/plat-omap/iommu.c
-> @@ -471,22 +471,15 @@ EXPORT_SYMBOL_GPL(foreach_iommu_device);
->   */
->  static void flush_iopgd_range(u32 *first, u32 *last)
->  {
-> -	/* FIXME: L2 cache should be taken care of if it exists */
-> -	do {
-> -		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pgd"
-> -		    : : "r" (first));
-> -		first += L1_CACHE_BYTES / sizeof(*first);
-> -	} while (first <= last);
-> +	dmac_flush_range(first, last);
+On Wed, Mar 02, 2011 at 06:35:39PM +0800, Jan Beulich wrote:
+> >>> On 02.03.11 at 09:42, tip-bot for Shaohua Li <shaohua.li@intel.com> wrote:
+> > Commit-ID:  253d89d3dd6b65595f317e5f1ecef43aa207a3a0
+> > Gitweb:
+> > http://git.kernel.org/tip/253d89d3dd6b65595f317e5f1ecef43aa207a3a0
+> > Author:     Shaohua Li <shaohua.li@intel.com>
+> > AuthorDate: Tue, 1 Mar 2011 15:52:26 -0800
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Wed, 2 Mar 2011 08:16:23 +0100
+> >
+> > x86: Work around old gas bug
+> >
+> > pre-2.16 binutils works fine, post-2.16 binutils works fine, but 2.16 broke
+> > again:
+> >
+> >  > arch/x86/kernel/entry_64.S: Assembler messages:
+> >  > arch/x86/kernel/entry_64.S:984: Error: junk at end of line, first
+> > unrecognized character is `1'
+> >  > [...]
+> >
+> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: Jan Beulich <jbeulich@novell.com>
+> > LKML-Reference: <201103012352.p21NqRN1006974@imap1.linux-foundation.org>
+> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> 
+> Ingo, didn't you write yesterday that this looks unacceptable to
+> you?
+> 
+> Shaohua, did you try whether the .irpc alternative I suggested
+> works (knowing that a similar .irpc was in place previously)?
+I tried, but fails at early stage (not related to the problem). According
+to HPA, I need rebuild gcc too, which I haven't done yet.
 
-There is note just above this API.
-/*
- * These are private to the dma-mapping API.  Do not use directly.
- * Their sole purpose is to ensure that data held in the cache
- * is visible to DMA, or data written by DMA to system memory is
- * visible to the CPU.
- */
-#define dmac_map_area                   cpu_cache.dma_map_area
-#define dmac_unmap_area         cpu_cache.dma_unmap_area
-#define dmac_flush_range                cpu_cache.dma_flush_range
-
-> +	outer_flush_range(virt_to_phys(first), virt_to_phys(last));
->  }
->
+Thanks,
+Shaohua
