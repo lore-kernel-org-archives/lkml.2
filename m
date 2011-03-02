@@ -1,105 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1CBRtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:49:15 -0500
-Received: from lanfw001a.cxnet.dk ([87.72.215.196]:35296 "EHLO
-	lanfw001a.cxnet.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab1CBRtH (ORCPT
+	id S1756728Ab1CBRtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:49:06 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59236 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab1CBRqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:49:07 -0500
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 12:49:07 EST
-Subject: HP G6 hardware kernel boot issue > 2.6.37 cciss/hpsa
-From: Jesper Dangaard Brouer <hawk@comx.dk>
-To: Maximilian Attems <max@stro.at>, Michael Prokop <mika@debian.org>,
-        "Marco d'Itri" <md@linux.it>,
-        Debian kernel team <debian-kernel@lists.debian.org>,
-        Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Martin Pitt <martin.pitt@ubuntu.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain
-Organization: ComX Networks A/S
-Date: Wed, 02 Mar 2011 18:42:49 +0100
-Message-Id: <1299087769.4279.27.camel@firesoul.comx.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Mar 2011 12:46:25 -0500
+Message-Id: <20110302174121.638661917@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Wed, 02 Mar 2011 18:38:50 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 19/22] sched: Restructure ttwu some more
+References: <20110302173831.295031866@chello.nl>
+Content-Disposition: inline; filename=sched-ttwu-foo.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Google and maintainers,
+The last few changes to ttwu that allow for adding remote queues.
 
-I have a kernel booting problem with kernels above 2.6.37 on Debian
-Squeeze, on HP G6 hardware, which have the harddisk controller:
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+---
+ kernel/sched.c |   83 +++++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 55 insertions(+), 28 deletions(-)
 
- HP Smart Array P410i Controller / Smart Array G6 controllers
-
-This problem is (of cause) related to the introduction of the driver
-HPSA, which takes over from the driver CCISS (the overlapping PCI IDs
-were removed in commit 6fa977520871 see below).
-
-This driver transition causes the device names to change
-  from /dev/cciss/c0d0p1
-  to   /dev/sda1.
-
-Thus, it would be really nice if UUID / LABEL / udev worked, as it
-would make it possible to boot kernels above and below 2.6.37.
-
-== Here comes the BUG and work-around ==
-
-The BUG is that, if I compile the kernel and include the CCISS driver
-(even-though it will not be used), then initramfs will drop me into a
-shell, complaining that it cannot find /dev/disk/by-uuid/...
-
-The work-around is, either
- 1) to avoid using initrd images, or
- 2) don't compile the kernel with the CCISS driver.
-
-== Maintainers tasks ==
-
-I suspect the bug lies in initramfs-tools, or the udev version used by
-initramfs-tools.
-
-Could the maintainers of initramfs-tools and udev, please tell me
-something like its fixed in version XXX, and the Debian maintainers
-just need to compile initramfs-tools with this version to fix the
-issue? ;-)
-
- initramfs-tools Version: 0.98.8
- udev            Version: 164-3
-
-ps. I'm testing with net-next 2.6.38-rc5-02558-g07df529
--- 
-Med venlig hilsen / Best regards
-  Jesper Brouer
-  ComX Networks A/S
-  Linux Network Kernel Developer
-  Cand. Scient Datalog / MSc.CS
-  Author of http://adsl-optimizer.dk
-  LinkedIn: http://www.linkedin.com/in/brouer
-
-Keywords: driver CCISS, HPSA, HP DL G6, uuid, udev, mkinitramfs,
-initramfs-tools, debian squeeze
-
-== Commit info ==
-
-commit 6fa977520871b1fc0be64247abad02b678c13fda
-Author: Mike Miller <mike.miller@hp.com>
-Date:   Thu Oct 28 06:33:27 2010 -0600
-
-    cciss: remove overlapping PCI IDs
-    
-    This patch removes the controller overlap between cciss and hpsa. It was
-    decided that no overlap should exist. All new controllers will use the hpsa
-    SCSI based driver.
-    
-    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-
-git describe --contains 6fa977520871b1
-v2.6.37-rc1~75^2
-
-
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -2475,6 +2475,48 @@ ttwu_do_wakeup(struct rq *rq, struct tas
+ 		wq_worker_waking_up(p, cpu_of(rq));
+ }
+ 
++static void
++ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags)
++{
++#ifdef CONFIG_SMP
++	if (p->sched_contributes_to_load)
++		rq->nr_uninterruptible--;
++#endif
++
++	activate_task(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
++	ttwu_do_wakeup(rq, p, wake_flags);
++}
++
++/*
++ * Called in case the task @p isn't fully descheduled from its runqueue,
++ * in this case we must do a remote wakeup. Its a 'light' wakeup though,
++ * since all we need to do is flip p->state to TASK_RUNNING, since
++ * the task is still ->on_rq.
++ */
++static int ttwu_remote(struct task_struct *p, int wake_flags)
++{
++	struct rq *rq;
++	int ret = 0;
++
++	rq = __task_rq_lock(p);
++	if (p->on_rq) {
++		ttwu_do_wakeup(rq, p, wake_flags);
++		ret = 1;
++	}
++	__task_rq_unlock(rq);
++
++	return ret;
++}
++
++static void ttwu_queue(struct task_struct *p, int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++
++	raw_spin_lock(&rq->lock);
++	ttwu_do_activate(rq, p, 0);
++	raw_spin_unlock(&rq->lock);
++}
++
+ /**
+  * try_to_wake_up - wake up a thread
+  * @p: the thread to be awakened
+@@ -2493,27 +2535,25 @@ ttwu_do_wakeup(struct rq *rq, struct tas
+ static int
+ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ {
+-	int cpu, this_cpu, success = 0;
+ 	unsigned long flags;
+-	struct rq *rq;
+-
+-	this_cpu = get_cpu();
++	int cpu, success = 0;
+ 
+ 	smp_wmb();
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	if (!(p->state & state))
+ 		goto out;
+ 
++	success = 1; /* we're going to change ->state */
+ 	cpu = task_cpu(p);
+ 
+-	if (p->on_rq) {
+-		rq = __task_rq_lock(p);
+-		if (p->on_rq)
+-			goto out_running;
+-		__task_rq_unlock(rq);
+-	}
++	if (p->on_rq && ttwu_remote(p, wake_flags))
++		goto stat;
+ 
+ #ifdef CONFIG_SMP
++	/*
++	 * If the owning (remote) cpu is still in the middle of schedule() with
++	 * this task as prev, wait until its done referencing the task.
++	 */
+ 	while (p->on_cpu) {
+ #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ 		/*
+@@ -2539,30 +2579,17 @@ try_to_wake_up(struct task_struct *p, un
+ 		p->sched_class->task_waking(p);
+ 
+ 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+-out_activate:
+-#endif /* CONFIG_SMP */
+-
+-	rq = cpu_rq(cpu);
+-	raw_spin_lock(&rq->lock);
+-
+-#ifdef CONFIG_SMP
+-	if (cpu != task_cpu(p))
++	if (task_cpu(p) != cpu)
+ 		set_task_cpu(p, cpu);
+ 
+-	if (p->sched_contributes_to_load)
+-		rq->nr_uninterruptible--;
+-#endif
+-
+-	activate_task(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
+-out_running:
+-	ttwu_do_wakeup(rq, p, wake_flags);
+-	success = 1;
+-	__task_rq_unlock(rq);
++out_activate:
++#endif /* CONFIG_SMP */
+ 
++	ttwu_queue(p, cpu);
++stat:
+ 	ttwu_stat(p, cpu, wake_flags);
+ out:
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+-	put_cpu();
+ 
+ 	return success;
+ }
 
 
