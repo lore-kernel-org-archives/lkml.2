@@ -1,149 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab1CBKEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 05:04:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48693 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab1CBKEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 05:04:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZRkDC0rGvQDS17MkyneJQoOaZs07Opu6dG9+71aOsj8ZYQR3iKf+mGmiggqptKPw23
-         Ps41dczUB3cKxw35U4yD04shkltwL9Pcghwezb42Ug254b4kDCXyWVQCqWD0jX+oq9QY
-         DJvROiv8381Y7HEvLMlRsayuDHgqGFnK/k45U=
-Date: Wed, 2 Mar 2011 11:04:00 +0100
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH x86/mm] x86-64, NUMA: Fix distance table handling
-Message-ID: <20110302100400.GK19669@htj.dyndns.org>
-References: <20110224145128.GM7840@htj.dyndns.org>
- <4D66AC9C.6080500@kernel.org>
- <20110224192305.GB15498@elte.hu>
- <4D66B176.9030300@kernel.org>
- <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
+	id S1756690Ab1CBKEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 05:04:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40057 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756562Ab1CBKEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 05:04:22 -0500
+Date: Wed, 2 Mar 2011 11:04:18 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] page_cgroup array is never stored on reserved pages
+Message-ID: <20110302100418.GC19651@tiehlicka.suse.cz>
+References: <20110228101129.GE4648@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
+In-Reply-To: <20110228101129.GE4648@tiehlicka.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From dcd414c795a28fff6e511d58e4cfd1202323c703 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 2 Mar 2011 10:54:10 +0100
+Hi Andrew,
+here is the updated follow up patch refreshed on top of the current
+mmotm (2011-02-10-16-26) with a checkpatch cleanup:
+--- 
+>From b458b849767e41038adce81e59ff30d7d42d7321 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 28 Feb 2011 10:43:12 +0100
+Subject: [PATCH 2/2] page_cgroup array is never stored on reserved pages
 
-NUMA distance table handling has the following problems.
+KAMEZAWA Hiroyuki noted that free_pages_cgroup doesn't have to check for
+PageReserved because we never store the array on reserved pages
+(neither alloc_pages_exact nor vmalloc use those pages).
 
-* numa_reset_distance() uses numa_distance * sizeof(numa_distance[0])
-  as the table size when it should be using the square of
-  numa_distance.
+So we can replace the check by a BUG_ON.
 
-* The same size miscalculation when allocation space for phys_dist in
-  numa_emulation().
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-* In numa_emulation(), phys_dist must be reserved; otherwise, the new
-  emulated distance table may overlap it.
-
-Fix them and, while at it, take numa_distance_cnt resetting in
-numa_reset_distance() out of the if block to simplify the code a bit.
-
-David Rientjes reported incorrect handling of distance table during
-emulation and Yinghai identified the above problems and wrote the
-original patch to fix the problems.  This patch is based on Yinghai's
-patch.
-
-Reported-by: David Rientjes <rientjes@google.com>
-Patch-originally-from: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-David, can you please verify whether this patch fixes the problem?
-Thanks.
-
- arch/x86/mm/numa_64.c        |    9 ++++-----
- arch/x86/mm/numa_emulation.c |   16 ++++++++++------
- 2 files changed, 14 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index cccc01d..a94f12c 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -390,14 +390,13 @@ static void __init numa_nodemask_from_meminfo(nodemask_t *nodemask,
-  */
- void __init numa_reset_distance(void)
- {
--	size_t size;
-+	size_t size = numa_distance_cnt * numa_distance_cnt *
-+		      sizeof(numa_distance[0]);
- 
--	if (numa_distance_cnt) {
--		size = numa_distance_cnt * sizeof(numa_distance[0]);
-+	if (numa_distance_cnt)
- 		memblock_x86_free_range(__pa(numa_distance),
- 					__pa(numa_distance) + size);
--		numa_distance_cnt = 0;
--	}
-+	numa_distance_cnt = 0;
- 	numa_distance = NULL;
+Index: linux-2.6.38-rc4/mm/page_cgroup.c
+===================================================================
+--- linux-2.6.38-rc4.orig/mm/page_cgroup.c	2011-03-02 10:58:01.000000000 +0100
++++ linux-2.6.38-rc4/mm/page_cgroup.c	2011-03-02 10:58:41.000000000 +0100
+@@ -152,11 +152,11 @@ static void free_page_cgroup(void *addr)
+ 		vfree(addr);
+ 	} else {
+ 		struct page *page = virt_to_page(addr);
+-		if (!PageReserved(page)) { /* Is bootmem ? */
+-			size_t table_size =
+-				sizeof(struct page_cgroup) * PAGES_PER_SECTION;
+-			free_pages_exact(addr, table_size);
+-		}
++		size_t table_size =
++			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
++
++		BUG_ON(PageReserved(page));
++		free_pages_exact(addr, table_size);
+ 	}
  }
  
-diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
-index 607a2e8..50fda06 100644
---- a/arch/x86/mm/numa_emulation.c
-+++ b/arch/x86/mm/numa_emulation.c
-@@ -300,6 +300,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
- 	static struct numa_meminfo pi __initdata;
- 	const u64 max_addr = max_pfn << PAGE_SHIFT;
- 	u8 *phys_dist = NULL;
-+	size_t phys_size = numa_dist_cnt * numa_dist_cnt * sizeof(phys_dist[0]);
- 	int i, j, ret;
- 
- 	if (!emu_cmdline)
-@@ -336,21 +337,19 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
- 		goto no_emu;
- 	}
- 
--	/*
--	 * Copy the original distance table.  It's temporary so no need to
--	 * reserve it.
--	 */
-+	/* copy the physical distance table */
- 	if (numa_dist_cnt) {
--		size_t size = numa_dist_cnt * sizeof(phys_dist[0]);
- 		u64 phys;
- 
- 		phys = memblock_find_in_range(0,
- 					      (u64)max_pfn_mapped << PAGE_SHIFT,
--					      size, PAGE_SIZE);
-+					      phys_size, PAGE_SIZE);
- 		if (phys == MEMBLOCK_ERROR) {
- 			pr_warning("NUMA: Warning: can't allocate copy of distance table, disabling emulation\n");
- 			goto no_emu;
- 		}
-+		memblock_x86_reserve_range(phys, phys + phys_size,
-+					   "TMP NUMA DIST");
- 		phys_dist = __va(phys);
- 
- 		for (i = 0; i < numa_dist_cnt; i++)
-@@ -398,6 +397,11 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
- 			numa_set_distance(i, j, dist);
- 		}
- 	}
-+
-+	/* free the copied physical distance table */
-+	if (phys_dist)
-+		memblock_x86_free_range(__pa(phys_dist),
-+					__pa(phys_dist) + phys_size);
- 	return;
- 
- no_emu:
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
