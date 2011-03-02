@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1CBHox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:44:53 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54533 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab1CBHov (ORCPT
+	id S1754765Ab1CBHpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:45:25 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57109 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab1CBHpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:44:51 -0500
+	Wed, 2 Mar 2011 02:45:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ah5MNyIXksn/BSSNbqzjiDqtyQgBUPvciob37BD4cMwp62aScylLnPAJGUAFtNgt+N
-         QTy1fat+zfaVzLrNQVCXEKgocYYmjIaPlrLJydouvdgqTs4+c0RPgfYxpRhHqRl+K7I4
-         N1WMgIO+btLFmt4PPxwB3DTwLRMAPjRGPPz8U=
-Date: Wed, 2 Mar 2011 08:44:47 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110302074447.GE19669@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <201103011757.48593.vda.linux@googlemail.com>
- <20110301170953.GB17933@htj.dyndns.org>
- <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
- <20110301183454.GC23527@mtj.dyndns.org>
- <830cc1666bd4a610d5e870218f06bd2d.squirrel@webmail.greenhost.nl>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=sTyH4mJ3CSSGxiaN9RkBY5wd/t6uRoY/r3qCob5GEVJVR0hvH3Pvu91xAa9mQlbz0w
+         TfA/7ZNpPLck0P0bky+HSasCfOxS0S59u4wDvAOCXoMk8kAiieveg2J5glwhGlY6+861
+         OTVXWUfEm/vzwtiqlqhMO2RKtIHYY86rL4XaY=
+Message-ID: <4D6DF58D.5030905@pobox.com>
+Date: Wed, 02 Mar 2011 02:45:17 -0500
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <830cc1666bd4a610d5e870218f06bd2d.squirrel@webmail.greenhost.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        stable <stable@kernel.org>
+Subject: Re: [PATCH #upstream-fixes] libata: fix hotplug for drivers which
+ don't implement LPM
+References: <20110224183037.GS7840@htj.dyndns.org>
+In-Reply-To: <20110224183037.GS7840@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 06:07:35AM +0100, Indan Zupancic wrote:
-> I'm not sure what Denys is talking about: Currently it's impossible to
-> pass along SIGSTOP to traced processes. Quoting the ptrace manpage:
-> 
->    PTRACE_CONT
->           Restarts  the stopped child process.  If data is nonzero and not
->           SIGSTOP, it is interpreted as a signal to be  delivered  to  the
->           child;  otherwise,  no  signal is delivered.
+On 02/24/2011 01:30 PM, Tejun Heo wrote:
+> ata_eh_analyze_serror() suppresses hotplug notifications if LPM is
+> being used because LPM generates spurious hotplug events.  It compared
+> whether link->lpm_policy was different from ATA_LPM_MAX_POWER to
+> determine whether LPM is enabled; however, this is incorrect as for
+> drivers which don't implement LPM, lpm_policy is always
+> ATA_LPM_UNKNOWN.  This disabled hotplug detection for all drivers
+> which don't implement LPM.
+>
+> Fix it by comparing whether lpm_policy is greater than
+> ATA_LPM_MAX_POWER.
+>
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+> Cc: stable@kernel.org
 
-AFAICS, that's not true.  SIGSTOP isn't treated differently from other
-signals in the ptrace signal delivery path.  Maybe it was true in the
-past.
+applied, though putting this into 2.6.38.1 is preferred to changing this 
+at -rc7...  stable@ cc'd.
 
-> As for distinguishing STOP signals from stopped childs: Just don't set
-> the WUNTRACED flag in the tracer for waitpid.
-
-I'm not following.  Can you please elaborate?
-
-> To me it seems clear that job ctl state should be managed independently
-> of ptrace stopped state.  I'm not sure how that fits in with your
-> proposed changes, but my impression is that you make everything a lot
-> simpler by separating traced stopping/continuing from SIGSTOP/SIGCONT
-> job control. It's just not the same. A task stopped by a trace event
-> shouldn't generate a STOP signal for it's parent, only for real SIGSTOPS.
-
-Again, not following.  In the proposal, job control and ptrace operate
-independently, so on that we seem to agree, but I can't understand
-where the STOP signal for the parent comes from?  What are you
-referring to?
-
-Thanks.
-
--- 
-tejun
