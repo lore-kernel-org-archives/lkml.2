@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757199Ab1CBM7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 07:59:13 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:60361 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756482Ab1CBM7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 07:59:12 -0500
-Date: Wed, 2 Mar 2011 14:55:13 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-X-X-Sender: aakoskin@esdhcp041196.research.nokia.com
-To: linux-mm@kvack.org
-cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, stable@kernel.org,
-        Aaro Koskinen <aaro.koskinen@nokia.com>
-Subject: Re: [PATCH] procfs: fix /proc/<pid>/maps heap check
-In-Reply-To: <1298996813-8625-1-git-send-email-aaro.koskinen@nokia.com>
-Message-ID: <alpine.DEB.1.10.1103021449000.27610@esdhcp041196.research.nokia.com>
-References: <1298996813-8625-1-git-send-email-aaro.koskinen@nokia.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1754522Ab1CBNQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 08:16:49 -0500
+Received: from hosting.visp.net.lb ([194.146.153.11]:45984 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab1CBNQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 08:16:48 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Nokia-AV: Clean
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 02 Mar 2011 13:16:33 +0000
+From: denys@visp.net.lb
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: NMI received for unknown reason, 2.6.38-rc6
+ =?UTF-8?Q?regression=3F?=
+In-Reply-To: <20110302075931.GD15665@elte.hu>
+References: <950d04b27ce43565cdef24e4072d7e71@visp.net.lb>
+ <4D6D1A0B.3050903@gmail.com> <9f4d7fae5845b91debc86a65d51bf96a@visp.net.lb>
+ <20110302075931.GD15665@elte.hu>
+Message-ID: <39a08c25173b0abe757cde5b16e04005@visp.net.lb>
+User-Agent: VISP Webmail/0.5-beta
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 1 Mar 2011, Aaro Koskinen wrote:
-> The current check looks wrong and prints "[heap]" only if the mapping
-> matches exactly the heap. However, the heap may be merged with some
-> other mappings, and there may be also be multiple mappings.
+ On Wed, 2 Mar 2011 08:59:31 +0100, Ingo Molnar wrote:
+> * denys@visp.net.lb <denys@visp.net.lb> wrote:
 >
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
-> Cc: stable@kernel.org
+>> On Tue, 01 Mar 2011 19:08:43 +0300, Cyrill Gorcunov wrote:
+>> >On 03/01/2011 06:03 PM, denys@visp.net.lb wrote:
+>> >>I upgrade around 140 hosts (from 2.6.33 till 2.6.37), and got on
+>> >>many of them error/warining, flooding kernel log. Here is short
+>> >>snapshot:
+>> >>
+>> >>[ 1882.057474] Uhhuh. NMI received for unknown reason 3c on CPU 0.
+>> >>[ 1882.057576] Do you have a strange power saving mode enabled?
+>> >>[ 1882.057672] Dazed and confused, but trying to continue
+>> >>[ 2421.419732] Uhhuh. NMI received for unknown reason 3c on CPU 0.
+>> >>[ 2421.419835] Do you have a strange power saving mode enabled?
+>> >>[ 2421.419930] Dazed and confused, but trying to continue
+>> >>[ 2636.016831] Uhhuh. NMI received for unknown reason 2c on CPU 1.
+>> >>[ 2636.016934] Do you have a strange power saving mode enabled?
+>> >>[ 2636.017003] Dazed and confused, but trying to continue
+>> >>
+>> >>Full dmesg from 2 machines:
+>> >>http://www.nuclearcat.com/dmesg1.txt
+>> >>http://www.nuclearcat.com/dmesg2.txt
+>> >>I can provide more, if required.
+>> >>
+>> >>It seems nmi_watchdog is enabled by default, and it is causing
+>> >>issue. I am checking now with nmi_watchdog=0, but i need more
+>> >>time to confirm that.
+>> >>Also i am experiencing some problem with ppp users(all of them
+>> >>is pppoe servers), but i am not sure it is related to that, so
+>> >>maybe this NMI warning is just cosmetic regression.
+>> >>
+>> >>All systems is x86, same kernel config.
+>> >>If you need more information - let me know.
+>> >>
+>> >
+>> >nmi_watchdog=0 should help here, actually a nit was fixed by
+>> >https://patchwork.kernel.org/patch/566611/
+>> >which is not in 2.6.38-rc6 but I rather suspect it'll be in -rc7 or
+>> >final .38. If you have an ability
+>> >to pickup it and test -- this would be great!
+>> I test it, and it seems helps. At least on one host, and yes, seems
+>> all of them P4.
+>
+> Mind checking -rc7, does it work 'out of box', without requiring any
+> workarounds?
+> -rc7 already has this fix included:
+>
+>  7d44ec193d95: perf, x86: P4 PMU: Fix spurious NMI messages
+>
+> -rc6 did not have it yet.
 
-Below is a test program and an example output showing the problem,
-and the correct output with the patch:
+ Yes, rc7 fine too, tested it now.
 
-Without the patch:
+>
+> Thanks,
+>
+> 	Ingo
 
- 	# ./a.out &
- 	# cat /proc/$!/maps | head -4
- 	00008000-00009000 r-xp 00000000 01:00 9224       /a.out
- 	00010000-00011000 rw-p 00000000 01:00 9224       /a.out
- 	00011000-00012000 rw-p 00000000 00:00 0
- 	00012000-00013000 rw-p 00000000 00:00 0
-
-With the patch:
-
- 	# ./a.out &
- 	# cat /proc/$!/maps | head -4
- 	00008000-00009000 r-xp 00000000 01:00 9228       /a.out
- 	00010000-00011000 rw-p 00000000 01:00 9228       /a.out
- 	00011000-00012000 rw-p 00000000 00:00 0          [heap]
- 	00012000-00013000 rw-p 00000000 00:00 0          [heap]
-
-The test program:
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/mman.h>
-
-int main (void)
-{
- 	if (sbrk(4096) == (void *)-1) {
- 		perror("first sbrk(): ");
- 		return EXIT_FAILURE;
- 	}
-
- 	if (mlockall(MCL_FUTURE)) {
- 		perror("mlockall(): ");
- 		return EXIT_FAILURE;
- 	}
-
- 	if (sbrk(4096) == (void *)-1) {
- 		perror("second sbrk(): ");
- 		return EXIT_FAILURE;
- 	}
-
- 	while (1)
- 		sleep(1);
-}
