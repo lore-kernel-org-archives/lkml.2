@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab1CBHIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:08:00 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:51156 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853Ab1CBHH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:07:58 -0500
-Date: Tue, 1 Mar 2011 23:07:54 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Mikael Abrahamsson <swmike@swm.pp.se>
-Cc: John Heffner <johnwheffner@gmail.com>,
-        Bill Sommerfeld <wsommerfeld@google.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>,
-        Albert Cahalan <acahalan@gmail.com>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: Re: txqueuelen has wrong units; should be time
-Message-ID: <20110301230754.5ef4ab35@nehalam>
-In-Reply-To: <alpine.DEB.1.10.1103020736260.7942@uplift.swm.pp.se>
-References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
-	<alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
-	<1298793252.8726.45.camel@edumazet-laptop>
-	<AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
-	<20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
-	<AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
-	<cbb9e1113901f1a324359b6ed3f1a611@localhost>
-	<AANLkTikje6rvjSfEA3CvUjdgFwzk-SBZDdO5kQvi6LZy@mail.gmail.com>
-	<AANLkTin_jY_J7tJseMLVmrQVVRezOVQTGCgB_6tefgXJ@mail.gmail.com>
-	<alpine.DEB.1.10.1103010137400.7942@uplift.swm.pp.se>
-	<20110301222531.24832a93@nehalam>
-	<alpine.DEB.1.10.1103020736260.7942@uplift.swm.pp.se>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754914Ab1CBHIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:08:38 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:6459 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab1CBHIh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 02:08:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hiJ5uT1W5X8Sw5UnKiz47CKy7BB0xNKbCj1DsHLmuXWjr+du0hlOPoU+yHYUAVnsgT
+         b04hG6H4y0WMzmOxcvEA==
+MIME-Version: 1.0
+In-Reply-To: <1299048447.11469.22.camel@marge.simson.net>
+References: <1299022433-17233-1-git-send-email-venki@google.com>
+ <AANLkTinyAyXCH6sh9pOe36dCeTO_C8wbtmZriKanGtt3@mail.gmail.com> <1299048447.11469.22.camel@marge.simson.net>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 1 Mar 2011 23:08:05 -0800
+Message-ID: <AANLkTimhfvoKWdYJtxQLWhBwfSvZ3jGy7EXX_YSn_HLr@mail.gmail.com>
+Subject: Re: [PATCH] sched: next buddy hint on sleep and preempt path
+To: Mike Galbraith <efault@gmx.de>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011 07:41:30 +0100 (CET)
-Mikael Abrahamsson <swmike@swm.pp.se> wrote:
+On Tue, Mar 1, 2011 at 10:47 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Tue, 2011-03-01 at 21:43 -0800, Paul Turner wrote:
+>> On Tue, Mar 1, 2011 at 3:33 PM, Venkatesh Pallipadi <venki@google.com> wrote:
+>
+>> >        for_each_sched_entity(se) {
+>> >                cfs_rq = cfs_rq_of(se);
+>> >                dequeue_entity(cfs_rq, se, flags);
+>> >
+>> >                /* Don't dequeue parent if it has other entities besides us */
+>> > -               if (cfs_rq->load.weight)
+>> > +               if (cfs_rq->load.weight) {
+>> > +                       /*
+>> > +                        * Bias pick_next to pick a task from this cfs_rq, as
+>> > +                        * p is sleeping when it is within its sched_slice.
+>> > +                        */
+>> > +                       if (task_flags & DEQUEUE_SLEEP && se->parent)
+>> > +                               set_next_buddy(se->parent);
+>>
+>> re-using the last_buddy would seem like a more natural fit here; also
+>> doesn't have a clobber race with a wakeup
+>
+> Hm, that would break last_buddy no?  A preempted task won't get the CPU
+> back after light preempting thread deactivates.  (it's disabled atm
+> unless heavily overloaded anyway, but..)
 
-> On Tue, 1 Mar 2011, Stephen Hemminger wrote:
-> 
-> > It is possible to build an equivalent to WRED out existing GRED queuing
-> > discipline but it does require a lot of tc knowledge to get right.  
-> 
-> To me who has worked with cisco routers for 10+ years and who is used to 
-> the different variants Cisco use, tc is just weird. It must come from a 
-> completely different school of thinking compared to what router people are 
-> used to, because I have tried and failed twice to do anything sensible 
-> with it.
+Ommm yeah.. we're actually a little snookered in this case since the
+pre-empting thread's sleep will be voluntary which will try to return
+time to its hierarchy.
 
-Vyatta has scripting that handles all that:
+I suppose keeping the last_buddy is preferable to the occasional clobber.
 
-vyatta@napa:~$ configure
-[edit]
-yatta@napa# set traffic-policy random-detect MyWFQ bandwidth 1gbps
-[edit]
-vyatta@napa# set interfaces ethernet eth0 traffic-policy out MyWFQ 
-[edit]
-vyatta@napa# commit
-[edit]
-vyatta@napa# exit
-vyatta@napa:~$ show queueing ethernet eth0
+>
+> This wants a tweak either way though.
+>
+> static inline struct task_struct *task_of(struct sched_entity *se)
+> {
+> #ifdef CONFIG_SCHED_DEBUG
+>        WARN_ON_ONCE(!entity_is_task(se));
+> #endif
+>        return container_of(se, struct task_struct, se);
+> }
+>
+> static void set_next_buddy(struct sched_entity *se)
+> {
+>        if (likely(task_of(se)->policy != SCHED_IDLE)) {
+>                for_each_sched_entity(se)
+>                        cfs_rq_of(se)->next = se;
+>        }
+> }
+>
 
-eth0 Queueing:
-Class      Policy               Sent     Rate  Dropped Overlimit  Backlog
-root       weighted-random     16550                 0        0        0
+yeah good catch, the if's do need to be broken out so that setting
+buddies it works properly with non-task entities
 
-vyatta@napa:~$ /sbin/tc qdisc show dev eth0
-qdisc dsmark 1: root refcnt 2 indices 0x0008 set_tc_index 
-qdisc gred 2: parent 1: 
- DP:0 (prio 8) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 82 (bytes 9540)  ewma 3 Plog 17 Scell_log 3
- DP:1 (prio 7) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 0 (bytes 0)  ewma 2 Plog 17 Scell_log 2
- DP:2 (prio 6) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 0 (bytes 0)  ewma 2 Plog 17 Scell_log 2
- DP:3 (prio 5) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 0 (bytes 0)  ewma 2 Plog 16 Scell_log 2
- DP:4 (prio 4) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 0 (bytes 0)  ewma 2 Plog 16 Scell_log 2
- DP:5 (prio 3) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 0 (bytes 0)  ewma 2 Plog 16 Scell_log 2
- DP:6 (prio 2) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 0 (bytes 0)  ewma 2 Plog 15 Scell_log 2
- DP:7 (prio 1) Average Queue 0b Measured Queue 0b  
-	 Packet drops: 0 (forced 0 early 0)  
-	 Packet totals: 0 (bytes 0)  ewma 1 Plog 15 Scell_log 1
-
-
-
-QoS on Cisco has different/other problems mostly because various groups
-tried to fix the QoS problem over time and never got it quite right.
-Also WRED is not default on faster links because it can't be done
-fast enough.
-
+>
