@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab1CBLex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 06:34:53 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44244 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755668Ab1CBLew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 06:34:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=KgJDK2yN6MNHDE6DTXIwWs5a8TQb4h6DnLnPiXgek4AqGwcFIrCVmByjBSgTuySVFD
-         2phPWjpFaN/pYGo/7kQkQ/Ftv7p6AjDcmZJ+/XsS1KDWdqVrXOAbZEto7NR4ODPZo5S1
-         dZ23XFQjpbwzBiy47k8VGDu7So7Z91jltKtOk=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] wusb: fix find_first_zero_bit() return value check
-Date: Wed,  2 Mar 2011 20:35:28 +0900
-Message-Id: <1299065728-6124-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4
+	id S1756488Ab1CBLfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 06:35:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8190 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754485Ab1CBLfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 06:35:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,252,1297065600"; 
+   d="scan'208";a="608181120"
+Date: Wed, 2 Mar 2011 12:34:48 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Daniel Willerud <daniel.willerud@stericsson.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MFD: ab8500: New ab8500_gpadc APIs and reentrance
+Message-ID: <20110302113448.GH16181@sortiz-mobl>
+References: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In wusb_cluster_id_get(), if no zero bits exist in wusb_cluster_id_table,
-find_first_zero_bit() returns CLUSTER_IDS.
+Hi Daniel,
 
-But it is impossible to detect that the bitmap is full because there
-is an off-by-one error in the return value check.  It will cause
-unexpected memory access by setting bit out of wusb_cluster_id_table
-bitmap, and caller will get wrong cluster id.
+On Tue, Feb 22, 2011 at 01:24:00PM +0100, Daniel Willerud wrote:
+> Added ab8500_gpadc_get() API: A client do not need to be a ab8500 sub-device
+> Added ab8500_gpadc_convert() API
+> Added support for multiple ab8500-gpadc instances, driver is now reentrant
+> 
+> Corrected regulator naming according to ste-next
+This patch is fixing/improving several things at the same time, please split
+it up.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-usb@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/usb/wusbcore/wusbhc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Also, one additional comment:
 
-diff --git a/drivers/usb/wusbcore/wusbhc.c b/drivers/usb/wusbcore/wusbhc.c
-index 2054d4e..0faca16 100644
---- a/drivers/usb/wusbcore/wusbhc.c
-+++ b/drivers/usb/wusbcore/wusbhc.c
-@@ -320,7 +320,7 @@ u8 wusb_cluster_id_get(void)
- 	u8 id;
- 	spin_lock(&wusb_cluster_ids_lock);
- 	id = find_first_zero_bit(wusb_cluster_id_table, CLUSTER_IDS);
--	if (id > CLUSTER_IDS) {
-+	if (id >= CLUSTER_IDS) {
- 		id = 0;
- 		goto out;
- 	}
+> +/**
+> + * ab8500_gpadc_get() - returns a reference to the primary AB8500 GPADC
+> + * (i.e. the first GPADC in the instance list)
+> + */
+> +struct ab8500_gpadc *ab8500_gpadc_get(void)
+> +{
+> +	struct ab8500_gpadc *gpadc;
+> +	gpadc = list_first_entry(&ab8500_gpadc_list, struct ab8500_gpadc, node);
+> +
+> +	return gpadc;
+> +}
+This seems really arbitrary. We argued with Mattias about it, and giving
+drivers access to your ADCs means they should somehow have a pointer back to
+the right ADC. That's not the case here, and while it will just work fine
+whenever you have one ADC on your board, you'll probably be relying on some
+sort of device probe order otherwise.
+
+Cheers,
+Samuel.
+
 -- 
-1.7.4
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
