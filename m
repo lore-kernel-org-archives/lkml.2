@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab1CBUa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:30:56 -0500
-Received: from xenotime.net ([184.105.210.51]:35776 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756310Ab1CBUaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:30:55 -0500
-Date: Wed, 2 Mar 2011 12:30:50 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Vegard Nossum <vegard@kernel.org>
-Subject: Re: RFC: x86: kill binutils 2.16.x?
-Message-Id: <20110302123050.a322a8da.rdunlap@xenotime.net>
-In-Reply-To: <20110302202551.GA7191@merkur.ravnborg.org>
-References: <4D6E8932.1010405@zytor.com>
-	<20110302120339.efd60504.akpm@linux-foundation.org>
-	<4D6EA473.9000001@zytor.com>
-	<20110302202551.GA7191@merkur.ravnborg.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757520Ab1CBUdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:33:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26589 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755400Ab1CBUdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:33:07 -0500
+Message-ID: <4D6EA965.9050709@redhat.com>
+Date: Wed, 02 Mar 2011 17:32:37 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrew Hendry <andrew.hendry@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Evgeniy Dushistov <dushistov@mail.ru>, linux-fsdevel@vger.kernel.org,
+        linux-x25@vger.kernel.org, Max Vozeler <max@vozeler.com>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        netdev@vger.kernel.org, Nick Bowler <nbowler@elliptictech.com>,
+        Nick Piggin <npiggin@gmail.com>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+Subject: Re: [PATCH 0/7] Final BKL removal, take 2
+References: <1299021191-17961-1-git-send-email-arnd@arndb.de> <20110302045923.GA28214@suse.de> <4D6E2ABF.5040500@redhat.com> <20110302140428.GA630@suse.de>
+In-Reply-To: <20110302140428.GA630@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011 21:25:51 +0100 Sam Ravnborg wrote:
-
-> On Wed, Mar 02, 2011 at 12:11:31PM -0800, H. Peter Anvin wrote:
-> > On 03/02/2011 12:03 PM, Andrew Morton wrote:
-> > > On Wed, 02 Mar 2011 10:15:14 -0800
-> > > "H. Peter Anvin" <hpa@zytor.com> wrote:
-> > > 
-> > >> binutils 2.16 (and presumably its prereleases, binutils 2.15.9x) appears
-> > >> to have more bugs than any other version of binutils released in modern
-> > >> history, *before or after*.
-> > >>
-> > >> We chronically run into problems because that particular binutils
-> > >> version breaks code that works fine elsewhere.
-> > >>
-> > >> I would like to know who would suffer from formally discontinuing
-> > >> support for that version.  I understand some version of SLES shipped it,
-> > >> but I don't know for sure.
-> > >>
-> > > 
-> > > I gave up and became a customer of
-> > > http://www.kernel.org/pub/tools/crosstool/index_old.shtml
-> > 
-> > Vegard,
-> > 
-> > The source directory in the above doesn't seem to match the binary
-> > directories, and is stuck at binutils 2.16.1.  At the very best this is
-> > iffy from a GPL perspective, and very confusing to users.
-> > 
-> > This is obviously a highly useful project, can we straighten out the
-> > source situation?
+Em 02-03-2011 11:04, Greg KH escreveu:
+> On Wed, Mar 02, 2011 at 08:32:15AM -0300, Mauro Carvalho Chehab wrote:
+>> Em 02-03-2011 01:59, Greg KH escreveu:
+>>> On Wed, Mar 02, 2011 at 12:13:04AM +0100, Arnd Bergmann wrote:
+>>>> This is the set of patches that remain from
+>>>> my previous submission one month ago. I've
+>>>> dropped the ones that have either gone into
+>>>> linux-next or got a sufficient number of
+>>>> Acked-by:s so I put them into my own tree.
+>>>>
+>>>> I've updated the usbip, hpfs, ufs and appletalk
+>>>> patches according to the feedback I got.
+>>>>
+>>>> If possible, I'd like the three networking patches
+>>>> to go through the net-next tree, and the two
+>>>> staging patches through the staging tree. I'll
+>>>> add the other ones to my own series if I hear
+>>>> no objections.
+>>>
+>>> I'll queue up the staging patches in the staging-next tree in a day or
+>>> so, thanks for digging them up.
+>>
+>> Greg,
+>>
+>> It is probably better to queue the staging/cx25821 patch via my tree, as this is one
+>> of those staging files that it is handled via media tree. So, if it is ok
+>> for you both, I'll get patch 2/7.
 > 
-> The binaries has never worked for me (on my Intel Atom 32 bit box).
-> Today I use crosstool-ng - which works great.
-> [Need to polish my patch to add saprc support...]
-> 
-> URL: http://ymorin.is-a-geek.org/projects/crosstool
+> Yes, you are right, please take it through your tree.
 
-Hm, thanks, I'll try that.  I was also having problems with the kernel.org
-crosstools...
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Patch applied on my tree, thanks!
+Mauro
