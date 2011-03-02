@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab1CBSBQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 13:01:16 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:43191 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756741Ab1CBSAY (ORCPT
+	id S1757246Ab1CBSBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 13:01:43 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35278 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752077Ab1CBSBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 13:00:24 -0500
-Message-Id: <20110302175726.199569489@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Wed, 02 Mar 2011 18:55:03 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH 5/8] mm: Improve page_lock_anon_vma() comment
-References: <20110302175458.726109015@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-mm-improve_page_lock_anon_vma_comment.patch
+	Wed, 2 Mar 2011 13:01:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110302164428.GF26810@redhat.com>
+References: <20101201182747.GB6143@redhat.com> <20110225175202.GA19059@redhat.com>
+ <20110225175314.GD19059@redhat.com> <AANLkTik8epq5cx8n=k6ocMUfbg9kkUAZ8KL7ZiG4UuoU@mail.gmail.com>
+ <20110226123731.GC4416@redhat.com> <AANLkTinFVCR_znYtyVuJcjFQq_fgMp+ozbSz54UKzvQ_@mail.gmail.com>
+ <20110226174408.GA17442@redhat.com> <20110301204739.GA30406@redhat.com>
+ <AANLkTikVecxcGoZ9a4hmkoi4wynrNfH9_AU7Vb+hOvbH@mail.gmail.com>
+ <20110302162650.GA26810@redhat.com> <20110302164428.GF26810@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 2 Mar 2011 10:00:23 -0800
+Message-ID: <AANLkTinzQmprg+XHKjTj7bA+jFf_N4hta3_09M+SEfRt@mail.gmail.com>
+Subject: Re: [PATCH v3 0/4] exec: unify native/compat code
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A slightly more verbose comment to go along with the trickery in
-page_lock_anon_vma().
+On Wed, Mar 2, 2011 at 8:44 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> forgot to mention...
+>
+> And probably you meant we should pass "struct conditional_ptr*", not
+> by value. I can redo again.
 
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- mm/rmap.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+No, I think we're ok with passing the structure by value - it's a
+small structure that would generally be passed in registers (at least
+on some architectures, I guess it will depend on the ABI), and we do
+the "struct-by-value" thing for other things too (notably the page
+table entries), so it's not a new thing in the kernel.
 
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -315,8 +315,22 @@ void __init anon_vma_init(void)
- }
- 
- /*
-- * Getting a lock on a stable anon_vma from a page off the LRU is
-- * tricky: page_lock_anon_vma rely on RCU to guard against the races.
-+ * Getting a lock on a stable anon_vma from a page off the LRU is tricky!
-+ *
-+ * Since there is no serialization what so ever against page_remove_rmap()
-+ * the best this function can do is return a locked anon_vma that might
-+ * have been relevant to this page.
-+ *
-+ * The page might have been remapped to a different anon_vma or the anon_vma
-+ * returned may already be freed (and even reused).
-+ *
-+ * All users of this function must be very careful when walking the anon_vma
-+ * chain and verify that the page in question is indeed mapped in it
-+ * [ something equivalent to page_mapped_in_vma() ].
-+ *
-+ * Since anon_vma's slab is DESTROY_BY_RCU and we know from page_remove_rmap()
-+ * that the anon_vma pointer from page->mapping is valid if there is a
-+ * mapcount, we can dereference the anon_vma after observing those.
-  */
- struct anon_vma *page_lock_anon_vma(struct page *page)
- {
+So I think I finally have no complaints. Of course, I didn't actually
+check whether it _works_, but I assume it does.
 
+If the s390 people (who actually do special things with compat
+pointers) can test, that would be ok, but I'm certainly happily going
+to apply this series when the next merge window opens.
 
+                            Linus
