@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab1CBHkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:40:49 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:52692 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750881Ab1CBHks (ORCPT
+	id S1752982Ab1CBHox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:44:53 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54533 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab1CBHov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:40:48 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19WitBfQNBWBheULa8nFtfXYkkkwv+QCOHTb5JArQ
-	LMBE8pYWkPGM/Y
-Subject: Re: [PATCH] sched: next buddy hint on sleep and preempt path
-From: Mike Galbraith <efault@gmx.de>
-To: Paul Turner <pjt@google.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
-In-Reply-To: <AANLkTimhfvoKWdYJtxQLWhBwfSvZ3jGy7EXX_YSn_HLr@mail.gmail.com>
-References: <1299022433-17233-1-git-send-email-venki@google.com>
-	 <AANLkTinyAyXCH6sh9pOe36dCeTO_C8wbtmZriKanGtt3@mail.gmail.com>
-	 <1299048447.11469.22.camel@marge.simson.net>
-	 <AANLkTimhfvoKWdYJtxQLWhBwfSvZ3jGy7EXX_YSn_HLr@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Mar 2011 08:40:43 +0100
-Message-ID: <1299051643.17065.11.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 2 Mar 2011 02:44:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ah5MNyIXksn/BSSNbqzjiDqtyQgBUPvciob37BD4cMwp62aScylLnPAJGUAFtNgt+N
+         QTy1fat+zfaVzLrNQVCXEKgocYYmjIaPlrLJydouvdgqTs4+c0RPgfYxpRhHqRl+K7I4
+         N1WMgIO+btLFmt4PPxwB3DTwLRMAPjRGPPz8U=
+Date: Wed, 2 Mar 2011 08:44:47 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110302074447.GE19669@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+ <201103011757.48593.vda.linux@googlemail.com>
+ <20110301170953.GB17933@htj.dyndns.org>
+ <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
+ <20110301183454.GC23527@mtj.dyndns.org>
+ <830cc1666bd4a610d5e870218f06bd2d.squirrel@webmail.greenhost.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <830cc1666bd4a610d5e870218f06bd2d.squirrel@webmail.greenhost.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-03-01 at 23:08 -0800, Paul Turner wrote:
-> On Tue, Mar 1, 2011 at 10:47 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > On Tue, 2011-03-01 at 21:43 -0800, Paul Turner wrote:
-> >> On Tue, Mar 1, 2011 at 3:33 PM, Venkatesh Pallipadi <venki@google.com> wrote:
-> >
-> >> >        for_each_sched_entity(se) {
-> >> >                cfs_rq = cfs_rq_of(se);
-> >> >                dequeue_entity(cfs_rq, se, flags);
-> >> >
-> >> >                /* Don't dequeue parent if it has other entities besides us */
-> >> > -               if (cfs_rq->load.weight)
-> >> > +               if (cfs_rq->load.weight) {
-> >> > +                       /*
-> >> > +                        * Bias pick_next to pick a task from this cfs_rq, as
-> >> > +                        * p is sleeping when it is within its sched_slice.
-> >> > +                        */
-> >> > +                       if (task_flags & DEQUEUE_SLEEP && se->parent)
-> >> > +                               set_next_buddy(se->parent);
-> >>
-> >> re-using the last_buddy would seem like a more natural fit here; also
-> >> doesn't have a clobber race with a wakeup
-> >
-> > Hm, that would break last_buddy no?  A preempted task won't get the CPU
-> > back after light preempting thread deactivates.  (it's disabled atm
-> > unless heavily overloaded anyway, but..)
+On Wed, Mar 02, 2011 at 06:07:35AM +0100, Indan Zupancic wrote:
+> I'm not sure what Denys is talking about: Currently it's impossible to
+> pass along SIGSTOP to traced processes. Quoting the ptrace manpage:
 > 
-> Ommm yeah.. we're actually a little snookered in this case since the
-> pre-empting thread's sleep will be voluntary which will try to return
-> time to its hierarchy.
-> 
-> I suppose keeping the last_buddy is preferable to the occasional clobber.
+>    PTRACE_CONT
+>           Restarts  the stopped child process.  If data is nonzero and not
+>           SIGSTOP, it is interpreted as a signal to be  delivered  to  the
+>           child;  otherwise,  no  signal is delivered.
 
-Yeah, I think we don't want to break it.  I don't know if pgsql still
-uses userland spinlocks, haven't run it in quite a while now, but with
-those nasty things, last_buddy was the only thing that kept it from
-collapsing into a quivering heap when you try to scale.  Preempting a
-userland spinlock holder gets ugly in the extreme.
+AFAICS, that's not true.  SIGSTOP isn't treated differently from other
+signals in the ptrace signal delivery path.  Maybe it was true in the
+past.
 
-I'm going to test this patch some more, but in light testing, I saw no
-interactivity problems with it, and it does _seem_ to be improving
-throughput when there are competing grouped loads sharing the box.  I
-haven't tested that heftily though, that's just watching the numbers and
-recalling the relative effect of mixing loads previously.
+> As for distinguishing STOP signals from stopped childs: Just don't set
+> the WUNTRACED flag in the tracer for waitpid.
 
-	-Mike
+I'm not following.  Can you please elaborate?
 
+> To me it seems clear that job ctl state should be managed independently
+> of ptrace stopped state.  I'm not sure how that fits in with your
+> proposed changes, but my impression is that you make everything a lot
+> simpler by separating traced stopping/continuing from SIGSTOP/SIGCONT
+> job control. It's just not the same. A task stopped by a trace event
+> shouldn't generate a STOP signal for it's parent, only for real SIGSTOPS.
+
+Again, not following.  In the proposal, job control and ptrace operate
+independently, so on that we seem to agree, but I can't understand
+where the STOP signal for the parent comes from?  What are you
+referring to?
+
+Thanks.
+
+-- 
+tejun
