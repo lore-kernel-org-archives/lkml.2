@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab1CBFrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 00:47:43 -0500
-Received: from kroah.org ([198.145.64.141]:35705 "EHLO coco.kroah.org"
+	id S1753333Ab1CBFy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 00:54:58 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:46237 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058Ab1CBFrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 00:47:41 -0500
-Date: Wed, 2 Mar 2011 00:42:49 -0500
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 6/6] Staging: hv: Cleanup hyperv_driver variable names
-Message-ID: <20110302054249.GC28382@kroah.com>
-References: <1298686078-30945-1-git-send-email-kys@microsoft.com>
- <20110301025859.GG1663@kroah.com>
- <6E21E5352C11B742B20C142EB499E048016633@TK5EX14MBXC128.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E048016633@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751526Ab1CBFy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 00:54:57 -0500
+Date: Wed, 2 Mar 2011 16:54:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Joe Perches <joe@perches.com>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, users@kernel.org
+Subject: Re: RFC: Removing old tags, reducing the git size of -next.
+Message-Id: <20110302165447.f47fd4b2.sfr@canb.auug.org.au>
+In-Reply-To: <1299039746.4208.28.camel@Joe-Laptop>
+References: <1299039746.4208.28.camel@Joe-Laptop>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__2_Mar_2011_16_54_47_+1100_2zG=GXfy1khGFtK."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 01:44:11AM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Monday, February 28, 2011 9:59 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
-> > Janssen
-> > Subject: Re: [PATCH 6/6] Staging: hv: Cleanup hyperv_driver variable names
-> > 
-> > On Fri, Feb 25, 2011 at 06:07:58PM -0800, K. Y. Srinivasan wrote:
-> > > The title says it all.
-> > 
-> > That's a horrible changelog comment.  So bad that I would rather see an
-> > empty message than this one.  Seriously, it give no description, and
-> > makes us think that the whole patch is obvious, when it really isn't.
-> > 
-> > What did you change them to?
-> > What did you change them from?
-> > What was your motivation in changing them?
-> > How were you feeling when the names changed?
-> > 
-> > Ok, maybe not the last one, but you get the idea.
-> 
-> Greg, these changes (patches 1 through 6) change so much in this
-> sub-system that until these changes go in, our cleanup efforts are
-> stalled.
+--Signature=_Wed__2_Mar_2011_16_54_47_+1100_2zG=GXfy1khGFtK.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, but that's not my issue, it's yours :)
+Hi Joe,
 
-And what's the rush?
+On Tue, 01 Mar 2011 20:22:26 -0800 Joe Perches <joe@perches.com> wrote:
+>
+> I personally do not find git history to be very useful
+> for the next tree.  The collected next tree history
+> also makes the repository fairly large and unwieldy to
+> use on smaller development systems.
 
-> That is the main reason I was so hasty in submitting these patches.
-> Clearly, I need to provide a better changelog comment; and I will.
-> Looking at your other comments, I am wondering if the granularity I
-> chose for breaking up the changes that had to be done  is also a
-> significant part of the problem. If it is ok with you, I could
-> generate a  patch that deals with all device related issues and a
-> patch that deals with all driver related issues. These patches
-> obviously will  do more than one thing (however they will all be
-> related); but at least they won't have intermediate state that would
-> be objectionable. Let me know.
+Yeah, I have been thinking about this again recently.
 
-Ick, no, you need to break these up into smaller pieces than just the 6
-you did here, as you were still doing more than one thing per patch.
+> Would it be reasonable to create a separate history tree
+> for -next every once in awhile and have say a maximum of
+> a few weeks of next history in the current tree?
 
-Please make them simpler, not more complex.
+I could easily have a tree that is historical and contains what the
+current linux-next tree contains while also removing old stuff from the
+normal linux-next tree (I could push into both each day).  The only
+connection between the daily releases is the "history" branch which,
+frankly, does not serve any purpose and I will remove.
 
-thanks,
+The main thing stopping me from doing this right now is that there are
+several git repositories on master.kernel.org that use the linux-next
+tree as an alternate.   They should not be doing this, but it has been
+safe up until now since nothing has ever been removed from the linux-next
+tree.  If I did the clean up right now, those trees would be severely
+broken.
 
-greg k-h
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__2_Mar_2011_16_54_47_+1100_2zG=GXfy1khGFtK.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNbdunAAoJEDMEi1NhKgbsKZ4H/0UYWgHj7bWUDjUX4XhvOCOW
+O/AiNwd21E6gXwOJMzYFKo6I5Uscii4t1E1jpF16P/+lYsMeOMkojnx0anoPlOsW
+crYNr8eGcam+NqppbRFlBqCBg/JVry2gHp07EMAcWkUpGrXhpzQuh07U/hCq0nqX
+NVHy5k2ZDBQntG2mvlbuqZxqizu5SODO8l/OHvCJOp2YdkDfkKNLR4rEtZf7AXtr
+qgyKBqzG+SeWsoQrs0v8hTxg3Pf61e4NrvbR7TbS1PVpiIxJVZztcLQS3McL0Htw
+RIcG44IHBIgmXIf6Vu3KxcRD0crIBJ+f5D6Lfc/8oKCflFaBYluZLwygWRyPiDI=
+=x5uy
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__2_Mar_2011_16_54_47_+1100_2zG=GXfy1khGFtK.--
