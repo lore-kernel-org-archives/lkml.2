@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1CBHHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:07:43 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49811 "EHLO mx2.mail.elte.hu"
+	id S1755599Ab1CBHIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:08:00 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:51156 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab1CBHHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:07:42 -0500
-Date: Wed, 2 Mar 2011 08:07:23 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/6] perf/core top tui fixes and improvements
-Message-ID: <20110302070723.GA11361@elte.hu>
-References: <1298999027-30673-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298999027-30673-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751853Ab1CBHH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 02:07:58 -0500
+Date: Tue, 1 Mar 2011 23:07:54 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Mikael Abrahamsson <swmike@swm.pp.se>
+Cc: John Heffner <johnwheffner@gmail.com>,
+        Bill Sommerfeld <wsommerfeld@google.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        Albert Cahalan <acahalan@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+Message-ID: <20110301230754.5ef4ab35@nehalam>
+In-Reply-To: <alpine.DEB.1.10.1103020736260.7942@uplift.swm.pp.se>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com>
+	<alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se>
+	<1298793252.8726.45.camel@edumazet-laptop>
+	<AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+	<20110227125540.40754c5y78j9u2m8@hayate.sektori.org>
+	<AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com>
+	<cbb9e1113901f1a324359b6ed3f1a611@localhost>
+	<AANLkTikje6rvjSfEA3CvUjdgFwzk-SBZDdO5kQvi6LZy@mail.gmail.com>
+	<AANLkTin_jY_J7tJseMLVmrQVVRezOVQTGCgB_6tefgXJ@mail.gmail.com>
+	<alpine.DEB.1.10.1103010137400.7942@uplift.swm.pp.se>
+	<20110301222531.24832a93@nehalam>
+	<alpine.DEB.1.10.1103020736260.7942@uplift.swm.pp.se>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 Mar 2011 07:41:30 +0100 (CET)
+Mikael Abrahamsson <swmike@swm.pp.se> wrote:
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> On Tue, 1 Mar 2011, Stephen Hemminger wrote:
+> 
+> > It is possible to build an equivalent to WRED out existing GRED queuing
+> > discipline but it does require a lot of tc knowledge to get right.  
+> 
+> To me who has worked with cisco routers for 10+ years and who is used to 
+> the different variants Cisco use, tc is just weird. It must come from a 
+> completely different school of thinking compared to what router people are 
+> used to, because I have tried and failed twice to do anything sensible 
+> with it.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (6):
->   perf top browser: Fix up exit keys
->   perf ui browser: Introduce ui_browser__show_title
->   perf top browser: Handle empty active symbols list
->   perf tui: Make ui__warning modal
->   perf top: Fix reporting of invalid --vmlinux
->   perf top tui: Wait till the first sample to refresh the screen.
-> 
->  tools/perf/builtin-top.c          |   26 ++++++++++++++++++++++----
->  tools/perf/util/top.h             |    1 +
->  tools/perf/util/ui/browser.c      |   18 +++++++++++++++---
->  tools/perf/util/ui/browser.h      |    3 ++-
->  tools/perf/util/ui/browsers/top.c |   13 +++++++++++++
->  tools/perf/util/ui/util.c         |    7 +++++--
->  6 files changed, 58 insertions(+), 10 deletions(-)
+Vyatta has scripting that handles all that:
 
-Pulled, thanks a lot Arnaldo!
+vyatta@napa:~$ configure
+[edit]
+yatta@napa# set traffic-policy random-detect MyWFQ bandwidth 1gbps
+[edit]
+vyatta@napa# set interfaces ethernet eth0 traffic-policy out MyWFQ 
+[edit]
+vyatta@napa# commit
+[edit]
+vyatta@napa# exit
+vyatta@napa:~$ show queueing ethernet eth0
 
-	Ingo
+eth0 Queueing:
+Class      Policy               Sent     Rate  Dropped Overlimit  Backlog
+root       weighted-random     16550                 0        0        0
+
+vyatta@napa:~$ /sbin/tc qdisc show dev eth0
+qdisc dsmark 1: root refcnt 2 indices 0x0008 set_tc_index 
+qdisc gred 2: parent 1: 
+ DP:0 (prio 8) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 82 (bytes 9540)  ewma 3 Plog 17 Scell_log 3
+ DP:1 (prio 7) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 0 (bytes 0)  ewma 2 Plog 17 Scell_log 2
+ DP:2 (prio 6) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 0 (bytes 0)  ewma 2 Plog 17 Scell_log 2
+ DP:3 (prio 5) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 0 (bytes 0)  ewma 2 Plog 16 Scell_log 2
+ DP:4 (prio 4) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 0 (bytes 0)  ewma 2 Plog 16 Scell_log 2
+ DP:5 (prio 3) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 0 (bytes 0)  ewma 2 Plog 16 Scell_log 2
+ DP:6 (prio 2) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 0 (bytes 0)  ewma 2 Plog 15 Scell_log 2
+ DP:7 (prio 1) Average Queue 0b Measured Queue 0b  
+	 Packet drops: 0 (forced 0 early 0)  
+	 Packet totals: 0 (bytes 0)  ewma 1 Plog 15 Scell_log 1
+
+
+
+QoS on Cisco has different/other problems mostly because various groups
+tried to fix the QoS problem over time and never got it quite right.
+Also WRED is not default on faster links because it can't be done
+fast enough.
+
