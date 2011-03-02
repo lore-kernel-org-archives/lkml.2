@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab1CBORs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 09:17:48 -0500
-Received: from cantor.suse.de ([195.135.220.2]:59923 "EHLO mx1.suse.de"
+	id S1752344Ab1CBO2R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 09:28:17 -0500
+Received: from kroah.org ([198.145.64.141]:35981 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1CBORq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 09:17:46 -0500
-Date: Wed, 2 Mar 2011 09:04:28 -0500
-From: Greg KH <gregkh@suse.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Evgeniy Dushistov <dushistov@mail.ru>, linux-fsdevel@vger.kernel.org,
-        linux-x25@vger.kernel.org, Max Vozeler <max@vozeler.com>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        netdev@vger.kernel.org, Nick Bowler <nbowler@elliptictech.com>,
-        Nick Piggin <npiggin@gmail.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
-Subject: Re: [PATCH 0/7] Final BKL removal, take 2
-Message-ID: <20110302140428.GA630@suse.de>
-References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
- <20110302045923.GA28214@suse.de>
- <4D6E2ABF.5040500@redhat.com>
+	id S1750956Ab1CBO2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 09:28:15 -0500
+Date: Wed, 2 Mar 2011 09:23:22 -0500
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hema HK <hemahk@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        Thomas Weber <weber@corscience.de>
+Subject: Re: linux-next: manual merge of the usb tree with the omap tree
+Message-ID: <20110302142322.GA2889@kroah.com>
+References: <20110302165746.814a45a3.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6E2ABF.5040500@redhat.com>
+In-Reply-To: <20110302165746.814a45a3.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 08:32:15AM -0300, Mauro Carvalho Chehab wrote:
-> Em 02-03-2011 01:59, Greg KH escreveu:
-> > On Wed, Mar 02, 2011 at 12:13:04AM +0100, Arnd Bergmann wrote:
-> >> This is the set of patches that remain from
-> >> my previous submission one month ago. I've
-> >> dropped the ones that have either gone into
-> >> linux-next or got a sufficient number of
-> >> Acked-by:s so I put them into my own tree.
-> >>
-> >> I've updated the usbip, hpfs, ufs and appletalk
-> >> patches according to the feedback I got.
-> >>
-> >> If possible, I'd like the three networking patches
-> >> to go through the net-next tree, and the two
-> >> staging patches through the staging tree. I'll
-> >> add the other ones to my own series if I hear
-> >> no objections.
-> > 
-> > I'll queue up the staging patches in the staging-next tree in a day or
-> > so, thanks for digging them up.
+On Wed, Mar 02, 2011 at 04:57:46PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Greg,
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/musb/musb_core.h between commit
+> 59b479e0985f0b795d68331d6443a7f89c47768d ("omap: Start using
+> CONFIG_SOC_OMAP") from the omap tree and commit
+> da68ccec210c45eb99e461ad31b499b4e7043c41 ("usb: musb: Remove platform
+> context save/restore API") from the usb tree.
 > 
-> It is probably better to queue the staging/cx25821 patch via my tree, as this is one
-> of those staging files that it is handled via media tree. So, if it is ok
-> for you both, I'll get patch 2/7.
+> The latter removed the code modified by the former, so I did that.
 
-Yes, you are right, please take it through your tree.
-
-thanks,
+Thanks.  I'll let Felipe handle all of these omap merge issues, as I
+thought the reason I was going to take these patches from him was to
+prevent issues like this from happening :)
 
 greg k-h
