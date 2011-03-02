@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab1CBIO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:14:59 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46873 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab1CBIO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:14:58 -0500
-Date: Wed, 2 Mar 2011 09:14:30 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "perfmon2-devel@lists.sf.net" <perfmon2-devel@lists.sf.net>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "acme@redhat.com" <acme@redhat.com>
-Subject: Re: [PATCH] perf_events: update PEBS event constraints (v2)
-Message-ID: <20110302081430.GE15665@elte.hu>
-References: <4d6d636b.98a1df0a.15d8.57d1@mx.google.com>
- <1299027401.4937.106.camel@minggr.sh.intel.com>
- <AANLkTimkAuDQOW8J=vqcz-7r9gaN_=qq1=guBh6n6A7u@mail.gmail.com>
+	id S1755867Ab1CBIXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:23:49 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:55227 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755774Ab1CBIXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 03:23:48 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: CONFIG_ARM_DMA_MEM_BUFFERABLE and readl/writel weirdness
+Date: Wed, 2 Mar 2011 09:23:36 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4D6D9C03.2080906@codeaurora.org>
+In-Reply-To: <4D6D9C03.2080906@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimkAuDQOW8J=vqcz-7r9gaN_=qq1=guBh6n6A7u@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103020923.36796.arnd@arndb.de>
+X-Provags-ID: V02:K0:0PIDxaVGDmYvjcVYV0wfHjwk4DZ35y/7hy2SY66qaVS
+ 15Gq8U8BeenvUJZ+uAATNeQvi/Wz4BIrvhAc8tNvcwk+2qFf3K
+ 8sOb29XVZHNTgpM2yCNkEXkFVikUcPoBjcY9xxkzBTUbdC9ass
+ WTv8Ausq2RWUsY4cHIxuk0HIf4QrWbbrp4vzTEhQLphYqmUPei
+ fQ+GcfdT+j3FI8nfjGuPQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 02 March 2011 02:23:15 Saravana Kannan wrote:
+> There are so many other drivers that don't use or care about DMA and 
+> might still want to ensure some ordering constraints between their 
+> readl(s)/writel(s). They can't depend on readl/writel taking care of it 
+> for them since their code could be used in a kernel configuration that 
+> doesn't enable this config.
 
-* Stephane Eranian <eranian@google.com> wrote:
+What exactly are the ordering constraints, do you need the full
+dmb() for readl() and dsb() for writel(), or just a compiler barrier?
 
-> On Wed, Mar 2, 2011 at 1:56 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > On Wed, 2011-03-02 at 04:20 +0800, Stephane Eranian wrote:
-> >> This patch updates PEBS event constraints for Intel Atom, Nehalem, Westmere.
-> >>
-> >> This patch also reorganizes the PEBS format/constraint detection code. It is
-> >> now based on processor model and not PEBS format. Two processors may use the
-> >> same PEBS format without have the same list of PEBS events.
-> >>
-> >> In this second version, we simplified the initialization of the PEBS constraints
-> >> by leveraging the existing switch() statement in perf_event_intel.c. We also
-> >> renamed the constraint tables to be more consistent with regular constraints.
-> >
-> > Hi, Stephane
-> >
-> > Nice updates.
-> > Wondering where did you get these PEBS event constraints? I didn't find
-> > these in the latest manual.
-> >
-> Yeah, the manual is lacking some information. The other source of information
-> is the PTU event files (whatif.intel.com).
+I think we need the barrier() even for the relaxed variant, but 
+that is fairly lightweight. What would be a reason to have more?
 
-Plus i suspect you have performed testing on affected CPUs as well?
+> Firstly, I don't know how many people noticed this and realize they 
+> can't depend on readl/writel to take care of the mb()s for them. Seems 
+> like an unnecessary encouragement to make mistakes when it didn't need 
+> to be so.
+> 
+> Secondly, even if they realize they have to take care of it, they will 
+> have to continue using mb()s in to force ordering between their 
+> reads/writes. So, are we depending on the compiler to optimize these 
+> extra mb() out in the case where the config is enabled? I'm not sure it 
+> will be able to optimize out the extra mb()s in all cases.
 
-If yes then i think we want to push these fixes via perf/urgent - they seem to 
-nicely round up the constraints.
+The compiler certainly won't merge multiple inline assembly statements,
+but multiple barrier() statements don't make it worse than just one.
+barrier() just forces accessing variables from memory that could otherwise
+be kept in registers.
 
-Thanks,
+The other problems we still need to fix are the complete absence of
+barriers in inb()/outb() style accessors, which are meant to be stricter
+than readl()/writel(), and the fact that we rely on undefined behavior
+in gcc regarding the atomicity of multi-byte accesses, as we recently
+found out when a new gcc turned a readl into byte accesses.
 
-	Ingo
+	Arnd
