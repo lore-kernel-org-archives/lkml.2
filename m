@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab1CBAHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 19:07:19 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52082 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab1CBAHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 19:07:17 -0500
-Date: Tue, 1 Mar 2011 16:07:03 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110302000703.GK2218@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D6765B6.1030401@cn.fujitsu.com>
- <20110225203219.GD2269@linux.vnet.ibm.com>
- <4D6B16A8.4050405@cn.fujitsu.com>
- <1298886437.2428.10174.camel@twins>
- <20110301001300.GD2331@linux.vnet.ibm.com>
- <1298990291.5226.870.camel@laptop>
+	id S1757606Ab1CBAR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 19:17:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:41294 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757485Ab1CBARZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 19:17:25 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: 2.6.38 regression caused by commit 415e12b
+Date: Wed, 2 Mar 2011 01:17:04 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ozan Caglayan <ozan@pardus.org.tr>
+References: <20110228014218.GA11083@xanatos> <201103020030.16494.rjw@sisk.pl> <20110302000445.GA2621@xanatos>
+In-Reply-To: <20110302000445.GA2621@xanatos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298990291.5226.870.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103020117.04251.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 03:38:11PM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-02-28 at 16:13 -0800, Paul E. McKenney wrote:
+On Wednesday, March 02, 2011, Sarah Sharp wrote:
+> On Wed, Mar 02, 2011 at 12:30:16AM +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, March 01, 2011, Sarah Sharp wrote:
+> > > On Tue, Mar 01, 2011 at 09:55:33PM +0100, Rafael J. Wysocki wrote:
+> > > > Please check if the appended patch (on top of the Linus' current) helps.
+> > > 
+> > > Sorry, it doesn't help.  Same message as before.
+> > 
+> > Can you send dmesg with the patch applied, please?
 > 
-> > I am OK doing the sched_setscheduler_nocheck() in UP_PREPARE, correct?
-> 
-> Yeah, it should be perfectly fine to call that.
+> Attached.
 
-Cool!
+Something's fishy.  Evidently, _OSC is not executed on your system
+although it should be with the patch.
 
-> > Ah, there is the rub -- I am using wait_event(), so I need to wake up the
-> > kthread once before anyone uses it (or at least concurrently with anyone
-> > using it).  Which I can presumably do from the CPU_STARTING notifier.
-> 
-> Right, so your kthread is doing:
-> 
-> static int rcu_cpu_kthread()
-> {
->   for (;;) {
->     wait_event_interruptible();
-> 
->     /* do stuff */
-> 
->   }
->   return 0;
-> }
-> 
-> Which means that all folks wanting to make use of this already need to
-> do a wakeup. So I don't see any reason to do that first wakeup from
-> CPU_STARTING.
+Please try the patch below instead and send dmesg (either way).
 
-That is good to hear, because doing so seems to result in abject failure.
+Thanks,
+Rafael
 
-> wait_event() will only actually wait if the condition is false, in the
-> start-up case above it will find the condition true and fall right
-> through to do stuff.
+---
+ drivers/acpi/pci_root.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-So as long as it is OK to call sched_setscheduler_nocheck() before
-the kthread is first awakened, we should be OK.
-
-							Thanx, Paul
+Index: linux-2.6/drivers/acpi/pci_root.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/pci_root.c
++++ linux-2.6/drivers/acpi/pci_root.c
+@@ -48,10 +48,7 @@ static int acpi_pci_root_add(struct acpi
+ static int acpi_pci_root_remove(struct acpi_device *device, int type);
+ static int acpi_pci_root_start(struct acpi_device *device);
+ 
+-#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
+-				| OSC_ACTIVE_STATE_PWR_SUPPORT \
+-				| OSC_CLOCK_PWR_CAPABILITY_SUPPORT \
+-				| OSC_MSI_SUPPORT)
++#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT | OSC_MSI_SUPPORT)
+ 
+ static const struct acpi_device_id root_device_ids[] = {
+ 	{"PNP0A03", 0},
+@@ -572,8 +569,10 @@ static int __devinit acpi_pci_root_add(s
+ 	if (flags != base_flags)
+ 		acpi_pci_osc_support(root, flags);
+ 
+-	if (!pcie_ports_disabled
+-	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
++	if (!pcie_ports_disabled) {
++		dev_info(root->bus->bridge,
++			"ACPI _OSC support set (0x%02x)\n", flags);
++
+ 		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
+ 			| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
+ 			| OSC_PCI_EXPRESS_PME_CONTROL;
