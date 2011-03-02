@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab1CBPIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 10:08:34 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:55477 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab1CBPId (ORCPT
+	id S1753611Ab1CBPMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 10:12:25 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:36672 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750831Ab1CBPMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 10:08:33 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [PATCH 4/7] ufs: remove the BKL
-Date: Wed, 2 Mar 2011 16:08:31 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Nick Piggin <npiggin@gmail.com>
-References: <1299021191-17961-1-git-send-email-arnd@arndb.de> <1299021191-17961-5-git-send-email-arnd@arndb.de> <20110302144705.GA15482@elliptictech.com>
-In-Reply-To: <20110302144705.GA15482@elliptictech.com>
+	Wed, 2 Mar 2011 10:12:23 -0500
+Date: Wed, 2 Mar 2011 10:12:22 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Pierre Tardy <tardyp@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@lists.linux-foundation.org>, <linux-mmc@vger.kernel.org>
+Subject: Re: [linux-pm] [RFC,PATCHv3 0/3] sdhci runtime_pm implementation
+In-Reply-To: <201103020049.36902.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1103021010050.2015-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103021608.31875.arnd@arndb.de>
-X-Provags-ID: V02:K0:fq+XjXqJ5UXCneEA5IQKIxog+EdtZKh73KJkcqM7W7Y
- gg1lh3S96B+uldZi04rC4OJsY0OTeCN0iVTfjIgak6+zckL+mQ
- KSQqPTHG04OsRfppTq9oLicMEfE3XWmSEjRlMMtKfXzeDCvxFt
- 2xEBWfiO6P4xwAZ9QKCluJSTAlgBSef6QG7vAyoGAqUXoeRrP1
- W1/p+qcL6MdGI+ecvJnlg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 March 2011, Nick Bowler wrote:
-> On 2011-03-02 00:13 +0100, Arnd Bergmann wrote:
-> > This introduces a new per-superblock mutex in UFS to replace
-> > the big kernel lock. I have been careful to avoid nested
-> > calls to lock_ufs and to get the lock order right with
-> > respect to other mutexes, in particular lock_super.
-> > 
-> > I did not make any attempt to prove that the big kernel
-> > lock is not needed in a particular place in the code,
-> > which is very possible.
-> > 
-> > The code is still only compile-tested,
+On Wed, 2 Mar 2011, Rafael J. Wysocki wrote:
+
+> > > How it works is, basically, that when the device signals wakeup, it either
+> > > causes a PME# signal to be raised (parallel PCI), or a PME Message to be
+> > > sent upstream (PCIe).  In the first case it will cause a platform event
+> > > (eg. ACPI GPE) to occur and the handle of that event will resume your
+> > > device (using pm_request_resume()).  In the second case it will cause the PCIe
+> > > root port handling the PME Message to generate an interrupt and the handler of
+> > > that interrupt will resume your device.
+> > Thanks, that explain a lot how it works.
+> > What I still dont understand is that the wake source I'll have (e.g.
+> > sd card insert) is still an interrupt source.
+> > So it is supposed to generate interrupt until the interrupt source is
+> > acknowledged.
+> > Are we supposed to mask that interrupt source while suspended to make
+> > sure we have either wake or interrupt?
 > 
-> This isn't true anymore; I've been running with this patch (well, the
-> previous versions thereof) for some time now.  On the other hand, I
-> don't use all of this driver's features.
+> I think the interrupt should be masked while suspended and the driver's resume
+> routine should unmask it.
 
-I'll updated the comment. Can I add your Tested-by tag?
+Right.  That's how the PCI-based USB host controller drivers work.  
+The suspend routine disables interrupt generation and enables PME
+wakeup signals, and the resume routine does the reverse.
 
-> > but it should at least be harmless on non-SMP systems, since the new
-> > mutex is not taken on those.
-> 
-> I think this part of the patch is strange.  It seems like a gratuitous
-> difference between SMP/preempt and other systems to #if out the code
-> that takes the mutex.  This might make problems with the conversion fly
-> under the radar longer because people with older systems won't encounter
-> them.
+Alan Stern
 
-I agree it is strange, but the mutex has some serious performance impact
-that I wanted to minimize on the systems where we know it is not needed.
-The BKL was only active on those systems, so we know that non-SMP
-non-preempt kernels don't need the mutex.
-
-	Arnd
