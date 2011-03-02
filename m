@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab1CBUl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:41:27 -0500
-Received: from cantor.suse.de ([195.135.220.2]:43914 "EHLO mx1.suse.de"
+	id S1756371Ab1CBUym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:54:42 -0500
+Received: from www.tglx.de ([62.245.132.106]:54485 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754777Ab1CBUl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:41:26 -0500
-Date: Wed, 2 Mar 2011 15:42:02 -0500
-From: Greg KH <gregkh@suse.de>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.30
-Message-ID: <20110302204202.GB19022@suse.de>
-References: <20110302145828.GA4999@kroah.com>
- <4D6E7548.807@canonical.com>
+	id S1755400Ab1CBUyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:54:41 -0500
+Date: Wed, 2 Mar 2011 21:54:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: RFC: x86: kill binutils 2.16.x?
+In-Reply-To: <4D6E8932.1010405@zytor.com>
+Message-ID: <alpine.LFD.2.00.1103022152420.2701@localhost6.localdomain6>
+References: <4D6E8932.1010405@zytor.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6E7548.807@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 05:50:16PM +0100, Stefan Bader wrote:
-> > FUJITA Tomonori (1):
-> >       swiotlb: fix wrong panic
-> >
+On Wed, 2 Mar 2011, H. Peter Anvin wrote:
+
+> binutils 2.16 (and presumably its prereleases, binutils 2.15.9x) appears
+> to have more bugs than any other version of binutils released in modern
+> history, *before or after*.
 > 
-> This one breaks compilation of 64bit for me as swiotlb_tbl_unmap_single() does
-> not exist. It does not look like it is a simple single patch that would get it
-> back to 2.6.32.
+> We chronically run into problems because that particular binutils
+> version breaks code that works fine elsewhere.
 
-I don't understand.  Is this patch somehow broken?  Is there an
-additional patch I need to apply to fix the build issue?  I need more
-information here.
+Please lets get rid of known to be broken shite instead of trying to
+work around it for no good reasons. How old is that crap again ?
 
-thanks,
+> I would like to know who would suffer from formally discontinuing
+> support for that version.  I understand some version of SLES shipped it,
+> but I don't know for sure.
 
-greg k-h
+You missed to mention that akpm insists on using them :)
+
+Thanks,
+
+	tglx
