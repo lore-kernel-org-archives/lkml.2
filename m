@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab1CBMGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 07:06:41 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:53778 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab1CBMGk (ORCPT
+	id S1757133Ab1CBMHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 07:07:46 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:31484 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755446Ab1CBMHp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 07:06:40 -0500
+	Wed, 2 Mar 2011 07:07:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=i7Grh5bRJmEBC+S1cqlZej826nWMQZU9iR8KB7qoHfZbe+Cro3O2yCx/9PnftuSxFA
-         KdZdprs2F99dITAaVQ0Bx5bY2V4oatSyzsf3LUEWI/fRdTE1d4VW0eOX2P7HC9Fq2e+E
-         Fl1HAs2PqX48yCweXV5nEuKJJC6avGeZ24Suw=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nDvqVffPXF6Do6BSrS38G2x/1hs8nybf21ULG50uMo4mYZkdxQNQwYRcpNvZzclEPo
+         gL8FZ5eLE8NSaTzh3svQ==
 MIME-Version: 1.0
-In-Reply-To: <4D6E2C9C.1060404@linux.vnet.ibm.com>
-References: <4D6E2C9C.1060404@linux.vnet.ibm.com>
-From: Paolo Ciarrocchi <paolo.ciarrocchi@gmail.com>
-Date: Wed, 2 Mar 2011 13:06:19 +0100
-Message-ID: <AANLkTikTM7wv0ogVPueLjK391sqaUyekquMXBea0ayFc@mail.gmail.com>
-Subject: Re: [ANNOUNCE] The Linux Test Project has been released for FEBRUARY 2011.
-To: Shubham Goyal <shubham@linux.vnet.ibm.com>
-Cc: ltp-list@lists.sf.net, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        yanegomi@gmail.com, vapier@gentoo.org, subrata@linux.vnet.ibm.com,
-        chrubis@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1299062041.1310.3.camel@laptop>
+References: <1298998076.2170.62.camel@localhost>
+	<AANLkTimvx+MYhOw8VFsJn4V6FQutKiYO6pHxgd9xGY8A@mail.gmail.com>
+	<1299026246.4937.99.camel@minggr.sh.intel.com>
+	<AANLkTi=a3_EE8RwdRTmhpcgGwq2fY8jXMC=s+zwh7_NE@mail.gmail.com>
+	<1299062041.1310.3.camel@laptop>
+Date: Wed, 2 Mar 2011 13:07:42 +0100
+Message-ID: <AANLkTimBgKukb+aWP7supmTkF0RbTjmj-E49RtCnjUt7@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] perf-events: Add support for supplementary event registers
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 12:40 PM, Shubham Goyal
-<shubham@linux.vnet.ibm.com> wrote:
-> Hi,
+On Wed, Mar 2, 2011 at 11:34 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2011-03-02 at 08:48 +0100, Stephane Eranian wrote:
+>> >> >        __u32                   bp_type;
+>> >> > -       __u64                   bp_addr;
+>> >> > -       __u64                   bp_len;
+>> >> > +       union {
+>> >> > +               __u64           bp_addr;
+>> >> > +               __u64           config1; /* extension of config0 */
+>> >> > +       };
+>> >> > +       union {
+>> >> > +               __u64           bp_len;
+>> >> > +               __u64           config2; /* extension of config1 */
+>> >> > +       };
+>> >> >  };
+>> >> >
+>> >> I don't see where those config0 or config1 are coming from.
+>> >
+>> > config0 means perf_event_attr::config.
+>> >
+>> yes.
+>>
+>> > Peter suggested to extend the attr config space.
+>> > http://marc.info/?l=linux-kernel&m=129838808907525&w=2
+>> >
+>> Ok, I get it, it is cascading. that's fine.
 >
-> The Linux Test Project test suite has been released for the month of
-> FEBRUARY 2011. Please see ltp/INSTALL file carefully, as there has
-> been multiple changes for building/installing the test suite after the
-> recent changes in Makefile infrastructure.
-
-Wouldn't make sense to integrate this test suite in the kernel source tree?
-
-Regards,
-       Paolo
+> I initially put config and config0 in a union, but that made compilation
+> fail and fixing that up vs the benefit of actually having a config0,
+> which seemed near 0, led me to drop that part. Forgot to update the
+> comment though ;-)
+>
+Ok, but that's not committed yet, isn't it?
