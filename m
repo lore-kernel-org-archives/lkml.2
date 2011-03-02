@@ -1,109 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab1CBWZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 17:25:33 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:54628 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757873Ab1CBWXd (ORCPT
+	id S932091Ab1CBW0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:26:35 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:33888 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757886Ab1CBW0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 17:23:33 -0500
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, leoli@freescale.com,
-        dan.j.williams@intel.com, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH v2 4/9] fsldma: improve link descriptor debugging
-Date: Wed,  2 Mar 2011 14:23:16 -0800
-Message-Id: <1299104601-15447-5-git-send-email-iws@ovro.caltech.edu>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1299104601-15447-1-git-send-email-iws@ovro.caltech.edu>
-References: <1299104601-15447-1-git-send-email-iws@ovro.caltech.edu>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Wed, 02 Mar 2011 14:23:33 -0800 (PST)
+	Wed, 2 Mar 2011 17:26:34 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        arnaud.patard@rtp-net.org
+Subject: [PATCH] staging: xgifb: remove private ioctls
+Date: Thu,  3 Mar 2011 00:26:35 +0200
+Message-Id: <1299104795-20262-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds better tracking to link descriptor allocations, callbacks, and
-frees. This makes it much easier to track errors with link descriptors.
+Drop the badly defined and broken private ioctl interface. Since the
+driver is in staging, and some of the ioctls are clearly unsafe or not
+even working, it's unlikely that there are any users.
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/dma/fsldma.c |   21 +++++++++++++++------
- 1 files changed, 15 insertions(+), 6 deletions(-)
+ drivers/staging/xgifb/XGI_main.h    |    9 --
+ drivers/staging/xgifb/XGI_main_26.c |  178 -----------------------------------
+ drivers/staging/xgifb/XGIfb.h       |   72 --------------
+ 3 files changed, 0 insertions(+), 259 deletions(-)
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 6e3d3d7..851993c 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -416,6 +416,10 @@ static struct fsl_desc_sw *fsl_dma_alloc_descriptor(
- 	desc->async_tx.tx_submit = fsl_dma_tx_submit;
- 	desc->async_tx.phys = pdesc;
+diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
+index eb0f79a..37f77ee 100644
+--- a/drivers/staging/xgifb/XGI_main.h
++++ b/drivers/staging/xgifb/XGI_main.h
+@@ -794,9 +794,6 @@ static int      XGIfb_blank(int blank,
+ 		           struct vm_area_struct *vma);
+ */
  
-+#ifdef FSL_DMA_LD_DEBUG
-+	dev_dbg(chan->dev, "%s: LD %p allocated\n", chan->name, desc);
-+#endif
-+
- 	return desc;
- }
+-static int XGIfb_ioctl(struct fb_info *info, unsigned int cmd,
+-			    unsigned long arg);
+-
+ /*
+ extern int	XGIfb_mode_rate_to_dclock(VB_DEVICE_INFO *XGI_Pr,
+ 			      struct xgi_hw_device_info *HwDeviceExtension,
+@@ -826,18 +823,12 @@ static int      XGIfb_do_set_var(struct fb_var_screeninfo *var, int isactive,
+ static void     XGIfb_pre_setmode(void);
+ static void     XGIfb_post_setmode(void);
  
-@@ -467,6 +471,9 @@ static void fsldma_free_desc_list(struct fsldma_chan *chan,
+-static unsigned char  XGIfb_CheckVBRetrace(void);
+-static unsigned char  XGIfbcheckvretracecrt2(void);
+-static unsigned char  XGIfbcheckvretracecrt1(void);
+-static unsigned char  XGIfb_bridgeisslave(void);
+-
+ struct XGI_memreq {
+ 	unsigned long offset;
+ 	unsigned long size;
+ };
  
- 	list_for_each_entry_safe(desc, _desc, list, node) {
- 		list_del(&desc->node);
-+#ifdef FSL_DMA_LD_DEBUG
-+		dev_dbg(chan->dev, "%s: LD %p free\n", chan->name, desc);
-+#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
+ /* XGI-specific Export functions */
+-void            XGI_dispinfo(struct ap_data *rec);
+ void            XGI_malloc(struct XGI_memreq *req);
+ void            XGI_free(unsigned long base);
+ 
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index c569d97..faf7106 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -982,61 +982,6 @@ static void XGIfb_search_tvstd(const char *name)
  	}
  }
-@@ -478,6 +485,9 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
  
- 	list_for_each_entry_safe_reverse(desc, _desc, list, node) {
- 		list_del(&desc->node);
-+#ifdef FSL_DMA_LD_DEBUG
-+		dev_dbg(chan->dev, "%s: LD %p free\n", chan->name, desc);
-+#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
- 	}
+-static unsigned char XGIfb_bridgeisslave(void)
+-{
+-	unsigned char usScratchP1_00;
+-
+-	if (xgi_video_info.hasVB == HASVB_NONE)
+-		return 0;
+-
+-	inXGIIDXREG(XGIPART1, 0x00, usScratchP1_00);
+-	if ((usScratchP1_00 & 0x50) == 0x10)
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static unsigned char XGIfbcheckvretracecrt1(void)
+-{
+-	unsigned char temp;
+-
+-	inXGIIDXREG(XGICR, 0x17, temp);
+-	if (!(temp & 0x80))
+-		return 0;
+-
+-	inXGIIDXREG(XGISR, 0x1f, temp);
+-	if (temp & 0xc0)
+-		return 0;
+-
+-	if (inXGIREG(XGIINPSTAT) & 0x08)
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static unsigned char XGIfbcheckvretracecrt2(void)
+-{
+-	unsigned char temp;
+-	if (xgi_video_info.hasVB == HASVB_NONE)
+-		return 0;
+-	inXGIIDXREG(XGIPART1, 0x30, temp);
+-	if (temp & 0x02)
+-		return 0;
+-	else
+-		return 1;
+-}
+-
+-static unsigned char XGIfb_CheckVBRetrace(void)
+-{
+-	if (xgi_video_info.disp_state & DISPTYPE_DISP2) {
+-		if (XGIfb_bridgeisslave())
+-			return XGIfbcheckvretracecrt1();
+-		else
+-			return XGIfbcheckvretracecrt2();
+-	}
+-	return XGIfbcheckvretracecrt1();
+-}
+-
+ /* ----------- FBDev related routines for all series ----------- */
+ 
+ static void XGIfb_bpp_to_var(struct fb_var_screeninfo *var)
+@@ -1280,26 +1225,6 @@ static int XGIfb_pan_var(struct fb_var_screeninfo *var)
  }
-@@ -554,9 +564,6 @@ static struct dma_async_tx_descriptor *fsl_dma_prep_memcpy(
- 			dev_err(chan->dev, "%s: %s\n", chan->name, msg_ld_oom);
- 			goto fail;
- 		}
--#ifdef FSL_DMA_LD_DEBUG
--		dev_dbg(chan->dev, "%s: new link desc alloc %p\n", chan->name, new);
--#endif
+ #endif
  
- 		copy = min(len, (size_t)FSL_DMA_BCR_MAX_CNT);
+-void XGI_dispinfo(struct ap_data *rec)
+-{
+-	rec->minfo.bpp = xgi_video_info.video_bpp;
+-	rec->minfo.xres = xgi_video_info.video_width;
+-	rec->minfo.yres = xgi_video_info.video_height;
+-	rec->minfo.v_xres = xgi_video_info.video_vwidth;
+-	rec->minfo.v_yres = xgi_video_info.video_vheight;
+-	rec->minfo.org_x = xgi_video_info.org_x;
+-	rec->minfo.org_y = xgi_video_info.org_y;
+-	rec->minfo.vrate = xgi_video_info.refresh_rate;
+-	rec->iobase = xgi_video_info.vga_base - 0x30;
+-	rec->mem_size = xgi_video_info.video_size;
+-	rec->disp_state = xgi_video_info.disp_state;
+-	rec->version = (VER_MAJOR << 24) | (VER_MINOR << 16) | VER_LEVEL;
+-	rec->hasVB = xgi_video_info.hasVB;
+-	rec->TV_type = xgi_video_info.TV_type;
+-	rec->TV_plug = xgi_video_info.TV_plug;
+-	rec->chip = xgi_video_info.chip;
+-}
+-
+ static int XGIfb_open(struct fb_info *info, int user)
+ {
+ 	return 0;
+@@ -1574,108 +1499,6 @@ static int XGIfb_blank(int blank, struct fb_info *info)
+ 	return 0;
+ }
  
-@@ -642,9 +649,6 @@ static struct dma_async_tx_descriptor *fsl_dma_prep_sg(struct dma_chan *dchan,
- 			dev_err(chan->dev, "%s: %s\n", chan->name, msg_ld_oom);
- 			goto fail;
- 		}
--#ifdef FSL_DMA_LD_DEBUG
--		dev_dbg(chan->dev, "%s: new link desc alloc %p\n", chan->name, new);
--#endif
+-static int XGIfb_ioctl(struct fb_info *info, unsigned int cmd,
+-		unsigned long arg)
+-{
+-	DEBUGPRN("inside ioctl");
+-	switch (cmd) {
+-	case FBIO_ALLOC:
+-		if (!capable(CAP_SYS_RAWIO))
+-			return -EPERM;
+-		XGI_malloc((struct XGI_memreq *) arg);
+-		break;
+-	case FBIO_FREE:
+-		if (!capable(CAP_SYS_RAWIO))
+-			return -EPERM;
+-		XGI_free(*(unsigned long *) arg);
+-		break;
+-	case FBIOGET_HWCINFO: {
+-		unsigned long *hwc_offset = (unsigned long *) arg;
+-
+-		if (XGIfb_caps & HW_CURSOR_CAP)
+-			*hwc_offset
+-					= XGIfb_hwcursor_vbase
+-							- (unsigned long) xgi_video_info.video_vbase;
+-		else
+-			*hwc_offset = 0;
+-
+-		break;
+-	}
+-	case FBIOPUT_MODEINFO: {
+-		struct mode_info *x = (struct mode_info *) arg;
+-
+-		xgi_video_info.video_bpp = x->bpp;
+-		xgi_video_info.video_width = x->xres;
+-		xgi_video_info.video_height = x->yres;
+-		xgi_video_info.video_vwidth = x->v_xres;
+-		xgi_video_info.video_vheight = x->v_yres;
+-		xgi_video_info.org_x = x->org_x;
+-		xgi_video_info.org_y = x->org_y;
+-		xgi_video_info.refresh_rate = x->vrate;
+-		xgi_video_info.video_linelength = xgi_video_info.video_vwidth
+-				* (xgi_video_info.video_bpp >> 3);
+-		switch (xgi_video_info.video_bpp) {
+-		case 8:
+-			xgi_video_info.DstColor = 0x0000;
+-			xgi_video_info.XGI310_AccelDepth = 0x00000000;
+-			xgi_video_info.video_cmap_len = 256;
+-			break;
+-		case 16:
+-			xgi_video_info.DstColor = 0x8000;
+-			xgi_video_info.XGI310_AccelDepth = 0x00010000;
+-			xgi_video_info.video_cmap_len = 16;
+-			break;
+-		case 32:
+-			xgi_video_info.DstColor = 0xC000;
+-			xgi_video_info.XGI310_AccelDepth = 0x00020000;
+-			xgi_video_info.video_cmap_len = 16;
+-			break;
+-		default:
+-			xgi_video_info.video_cmap_len = 16;
+-			printk(KERN_ERR "XGIfb: Unsupported accel depth %d", xgi_video_info.video_bpp);
+-			break;
+-		}
+-
+-		break;
+-	}
+-	case FBIOGET_DISPINFO:
+-		XGI_dispinfo((struct ap_data *) arg);
+-		break;
+-	case XGIFB_GET_INFO: /* TW: New for communication with X driver */
+-	{
+-		struct XGIfb_info *x = (struct XGIfb_info *) arg;
+-
+-		/* x->XGIfb_id = XGIFB_ID; */
+-		x->XGIfb_version = VER_MAJOR;
+-		x->XGIfb_revision = VER_MINOR;
+-		x->XGIfb_patchlevel = VER_LEVEL;
+-		x->chip_id = xgi_video_info.chip_id;
+-		x->memory = xgi_video_info.video_size / 1024;
+-		x->heapstart = xgi_video_info.heapstart / 1024;
+-		x->fbvidmode = XGIfb_mode_no;
+-		x->XGIfb_caps = XGIfb_caps;
+-		x->XGIfb_tqlen = 512; /* yet unused */
+-		x->XGIfb_pcibus = xgi_video_info.pcibus;
+-		x->XGIfb_pcislot = xgi_video_info.pcislot;
+-		x->XGIfb_pcifunc = xgi_video_info.pcifunc;
+-		x->XGIfb_lcdpdc = XGIfb_detectedpdc;
+-		x->XGIfb_lcda = XGIfb_detectedlcda;
+-		break;
+-	}
+-	case XGIFB_GET_VBRSTATUS: {
+-		unsigned long *vbrstatus = (unsigned long *) arg;
+-		if (XGIfb_CheckVBRetrace())
+-			*vbrstatus = 1;
+-		else
+-			*vbrstatus = 0;
+-	}
+-	default:
+-		return -EINVAL;
+-	} DEBUGPRN("end of ioctl");
+-	return 0;
+-
+-}
+-
+ /* ----------- FBDev related routines for all series ---------- */
  
- 		set_desc_cnt(chan, &new->hw, len);
- 		set_desc_src(chan, &new->hw, src);
-@@ -881,13 +885,18 @@ static void fsl_chan_ld_cleanup(struct fsldma_chan *chan)
- 		callback_param = desc->async_tx.callback_param;
- 		if (callback) {
- 			spin_unlock_irqrestore(&chan->desc_lock, flags);
-+#ifdef FSL_DMA_LD_DEBUG
- 			dev_dbg(chan->dev, "%s: LD %p callback\n", name, desc);
-+#endif
- 			callback(callback_param);
- 			spin_lock_irqsave(&chan->desc_lock, flags);
- 		}
+ static int XGIfb_get_fix(struct fb_fix_screeninfo *fix, int con,
+@@ -1738,7 +1561,6 @@ static struct fb_ops XGIfb_ops = {
+ 	.fb_fillrect = cfb_fillrect,
+ 	.fb_copyarea = cfb_copyarea,
+ 	.fb_imageblit = cfb_imageblit,
+-	.fb_ioctl = XGIfb_ioctl,
+ 	/* .fb_mmap = XGIfb_mmap, */
+ };
  
- 		/* Run any dependencies, then free the descriptor */
- 		dma_run_dependencies(&desc->async_tx);
-+#ifdef FSL_DMA_LD_DEBUG
-+		dev_dbg(chan->dev, "%s: LD %p free\n", name, desc);
-+#endif
- 		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
- 	}
+diff --git a/drivers/staging/xgifb/XGIfb.h b/drivers/staging/xgifb/XGIfb.h
+index 8e59e15..d6c3139 100644
+--- a/drivers/staging/xgifb/XGIfb.h
++++ b/drivers/staging/xgifb/XGIfb.h
+@@ -64,36 +64,6 @@ enum xgi_tvtype {
+ 	TVMODE_TOTAL
+ };
  
+-
+-struct XGIfb_info {
+-	unsigned long XGIfb_id;
+- 	int    chip_id;			/* PCI ID of detected chip */
+-	int    memory;			/* video memory in KB which XGIfb manages */
+-	int    heapstart;               /* heap start (= XGIfb "mem" argument) in KB */
+-	unsigned char fbvidmode;	/* current XGIfb mode */
+-
+-	unsigned char XGIfb_version;
+-	unsigned char XGIfb_revision;
+-	unsigned char XGIfb_patchlevel;
+-
+-	unsigned char XGIfb_caps;	/* XGIfb capabilities */
+-
+-	int    XGIfb_tqlen;		/* turbo queue length (in KB) */
+-
+-	unsigned int XGIfb_pcibus;      /* The card's PCI ID */
+-	unsigned int XGIfb_pcislot;
+-	unsigned int XGIfb_pcifunc;
+-
+-	unsigned char XGIfb_lcdpdc;	/* PanelDelayCompensation */
+-
+-	unsigned char XGIfb_lcda;	/* Detected status of LCDA for low res/text modes */
+-
+-	char reserved[235]; 		/* for future use */
+-};
+-
+-
+-
+-
+ enum xgi_tv_plug {	/* vicki@030226 */
+ //	TVPLUG_Legacy = 0,
+ //	TVPLUG_COMPOSITE,
+@@ -112,48 +82,6 @@ enum xgi_tv_plug {	/* vicki@030226 */
+ 	TVPLUG_TOTAL
+ };
+ 
+-
+-struct mode_info {
+-	int    bpp;
+-	int    xres;
+-	int    yres;
+-	int    v_xres;
+-	int    v_yres;
+-	int    org_x;
+-	int    org_y;
+-	unsigned int  vrate;
+-};
+-
+-struct ap_data {
+-	struct mode_info minfo;
+-	unsigned long iobase;
+-	unsigned int  mem_size;
+-	unsigned long disp_state;
+-	enum XGI_CHIP_TYPE chip;
+-	unsigned char hasVB;
+-	enum xgi_tvtype TV_type;
+-	enum xgi_tv_plug TV_plug;
+-	unsigned long version;
+-	char reserved[256];
+-};
+-
+-
+-
+-/*     If changing this, vgatypes.h must also be changed (for X driver)    */
+-
+-
+-/*
+- * NOTE! The ioctl types used to be "size_t" by mistake, but were
+- * really meant to be __u32. Changed to "__u32" even though that
+- * changes the value on 64-bit architectures, because the value
+- * (with a 4-byte size) is also hardwired in vgatypes.h for user
+- * space exports. So "__u32" is actually more compatible, duh!
+- */
+-#define XGIFB_GET_INFO	  	_IOR('n',0xF8,__u32)
+-#define XGIFB_GET_VBRSTATUS  	_IOR('n',0xF9,__u32)
+-
+-
+-
+ struct video_info{
+         int           chip_id;
+         unsigned int  video_size;
 -- 
-1.7.3.4
+1.5.6.5
 
