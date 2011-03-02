@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab1CBSxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 13:53:16 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16859 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065Ab1CBSxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 13:53:15 -0500
-Message-ID: <4D6E91EC.6040906@kernel.org>
-Date: Wed, 02 Mar 2011 10:52:28 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1756679Ab1CBS6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 13:58:53 -0500
+Received: from fieldses.org ([174.143.236.118]:45875 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab1CBS6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 13:58:52 -0500
+Date: Wed, 2 Mar 2011 13:58:47 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, sfrench@us.ibm.com, agruen@linbit.com,
+        dilger.kernel@dilger.ca, sandeen@redhat.com, jlayton@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20110302185847.GA3524@fieldses.org>
+References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20110228211145.GG28617@thunk.org>
+ <87oc5vgwqr.fsf@linux.vnet.ibm.com>
+ <20110302154943.GB29136@fieldses.org>
+ <87ei6pza5v.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
-References: <20110224145128.GM7840@htj.dyndns.org> <4D66AC9C.6080500@kernel.org> <20110224192305.GB15498@elte.hu> <4D66B176.9030300@kernel.org> <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com> <20110302100400.GK19669@htj.dyndns.org> <20110302102530.GB3319@htj.dyndns.org> <4D6E6D52.8030901@kernel.org> <20110302163729.GQ3319@htj.dyndns.org> <4D6E7459.6050706@kernel.org> <20110302165545.GR3319@htj.dyndns.org>
-In-Reply-To: <20110302165545.GR3319@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D6E9205.00BA,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ei6pza5v.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2011 08:55 AM, Tejun Heo wrote:
-> On Wed, Mar 02, 2011 at 08:46:17AM -0800, Yinghai Lu wrote:
->>> * I don't think it's gonna matter all that much.  It's one time and
->>>   only used if emulation is enabled, but then again yeap MAX_NUMNODES
->>>   * MAX_NUMNODES can get quite high, but it looks way too complicated
->>>   for what it achieves.  Just looping over enabled nodes should
->>>   achieve about the same thing in much simpler way, right?
->>
->> what kind of excuse to put inefficiency code there!
-> 
-> Complexity of a solution should match the benefit of the complexity.
-> Code complexity is one of the most important metrics that we need to
-> keep an eye on.  If you don't do that, the code base becomes very ugly
-> and difficult to maintain very quickly.  So, yes, some amount of
-> execution inefficiency is acceptable depending on circumstances.
-> Efficiency too is something which should be traded off against other
-> benefits.
-
-No. it is not acceptable in your case.
-
-We can accept that something like: during init stage, do some probe and call pathes to be happy.
-like subarch.
-
-Also why did you omit my first question?
-
->>>>diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
->>>>> index 7757d22..541746f 100644
->>>>> --- a/arch/x86/mm/numa_64.c
->>>>> +++ b/arch/x86/mm/numa_64.c
->>>>> @@ -390,14 +390,12 @@ static void __init numa_nodemask_from_meminfo(nodemask_t *nodemask,
->>>>>   */
->>>>>  void __init numa_reset_distance(void)
->>>>>  {
->>>>> -	size_t size;
->>>>> +	size_t size = numa_distance_cnt * numa_distance_cnt * sizeof(numa_distance[0]);
->>>>>  
->>>>> -	if (numa_distance_cnt) {
->>>>> -		size = numa_distance_cnt * sizeof(numa_distance[0]);
->>>>> +	if (numa_distance_cnt)
->>>>>  		memblock_x86_free_range(__pa(numa_distance),
->>>>>  					__pa(numa_distance) + size);
->>>>> -		numa_distance_cnt = 0;
->>>>> -	}
->>>>> +	numa_distance_cnt = 0;
->>>>>  	numa_distance = NULL;
->>>>>  }
-
->> my original part:
->> >>
->> >> @@ -393,7 +393,7 @@ void __init numa_reset_distance(void)
->> >>         size_t size;
->> >>  
->> >>         if (numa_distance_cnt) {
->> >> -               size = numa_distance_cnt * sizeof(numa_distance[0]);
->> >> +               size = numa_distance_cnt * numa_distance_cnt * sizeof(numa_distance[0]);
->> >>                 memblock_x86_free_range(__pa(numa_distance),
->> >>                                         __pa(numa_distance) + size);
->> >>                 numa_distance_cnt = 0;
->> >>
->> >> So can you tell me why you need to make those change?
->> >> 	move out assigning or numa_distance_cnt and size of the the IF
+On Wed, Mar 02, 2011 at 11:17:56PM +0530, Aneesh Kumar K. V wrote:
+> On Wed, 2 Mar 2011 10:49:43 -0500, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > On Tue, Mar 01, 2011 at 12:20:36PM +0530, Aneesh Kumar K. V wrote:
+> > > On Mon, 28 Feb 2011 16:11:45 -0500, "Ted Ts'o" <tytso@mit.edu> wrote:
+> > > > Hi Aneesh,
+> > > > 
+> > > > What is the current status of this patch series?  I seem to remember
+> > > > that Christoph and Al Viro had some objections; have those been
+> > > > cleared yet?  If not, can you summarize what their objections are?
+> > > 
+> > > The main objection raised was the use of may_delete and may_create inode
+> > > operations callback. They are gone now and we have MAY_* flags as
+> > > favoured by Al Viro.  The new MAY_* flags added are 
+> > > 
+> > > #define MAY_CREATE_FILE 128
+> > > #define MAY_CREATE_DIR 256
+> > > #define MAY_DELETE_CHILD 512
+> > > #define MAY_DELETE_SELF 1024
+> > > #define MAY_TAKE_OWNERSHIP 2048
+> > > #define MAY_CHMOD 4096
+> > > #define MAY_SET_TIMES 8192
+> > > 
+> > > 
+> > > > 
+> > > > To be honest I haven't been paying super close attention to this patch
+> > > > series, and I'm curious what needs to happen with it one way or
+> > > > another.
+> > > > 
+> > > 
+> > > IMHO we are ready to get first 11 patches upstream in the next merge
+> > > window. ie the below set of patches.
 > > 
-> > Please read the patch description.  I actually wrote that down.  :-)
-well you said:
-> > while at it, take numa_distance_cnt resetting in
-> > numa_reset_distance() out of the if block to simplify the code a bit.
-what are you talking about? what do you mean "simplify the code a bit" ?
+> > Why aren't all of them ready?
+> > 
+> 
+> All except how to enable richacl in local file system is ready. I
+> actually floated two ideas in the patch series
+> 
+> 1) mount option
+> 2) Ext4 compat flags.
 
+The choice of ACL format is a persistant property of the filesystem, not
+of a single mount of the filesystem: for example, people can't try out
+richacls for one mount and then decide to revert bacak to posix acls.
+
+(Right?)  So I'm assuming we should use the latter--but I don't
+understand what ext4 compat flags are.... Is there some disadvantage to
+using them?
+
+--b.
+
+> 
+> If we can get to decide which one, then the entire set can go in. We also
+> want others to review the richacl format. If that cannot be completed by
+> next merge window there is no reason to prevent the vfs changes from
+> going in. VFS changes are independent of richacl format.
