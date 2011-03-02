@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab1CBIll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:41:41 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45268 "EHLO hera.kernel.org"
+	id S1756201Ab1CBImG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:42:06 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45291 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab1CBIlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:41:40 -0500
-Date: Wed, 2 Mar 2011 08:41:13 GMT
+	id S1755634Ab1CBImD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 03:42:03 -0500
+Date: Wed, 2 Mar 2011 08:41:39 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
@@ -19,35 +19,33 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tui: Make ui__warning modal
-Message-ID: <tip-a1ceb741cf86ef433006379742db81c00b450bae@git.kernel.org>
-Git-Commit-ID: a1ceb741cf86ef433006379742db81c00b450bae
+Subject: [tip:perf/core] perf top: Fix reporting of invalid --vmlinux
+Message-ID: <tip-374cfe56892701f062586d6a6de6cb71777a4184@git.kernel.org>
+Git-Commit-ID: 374cfe56892701f062586d6a6de6cb71777a4184
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Mar 2011 08:41:14 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Mar 2011 08:41:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a1ceb741cf86ef433006379742db81c00b450bae
-Gitweb:     http://git.kernel.org/tip/a1ceb741cf86ef433006379742db81c00b450bae
+Commit-ID:  374cfe56892701f062586d6a6de6cb71777a4184
+Gitweb:     http://git.kernel.org/tip/374cfe56892701f062586d6a6de6cb71777a4184
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 1 Mar 2011 10:24:43 -0300
+AuthorDate: Tue, 1 Mar 2011 10:27:27 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 1 Mar 2011 10:24:43 -0300
+CommitDate: Tue, 1 Mar 2011 10:27:27 -0300
 
-perf tui: Make ui__warning modal
+perf top: Fix reporting of invalid --vmlinux
 
-By taking the ui__lock so that no other screen updates take place while
-waiting for the user.
+Using ui__warning, that will, in --tui, show a window with the message,
+waiting for the user to press Ok.
 
-That was happening when handling an invalid --vmlinux parameter in 'perf
-top --tui', with the screen refresh routine repainting the screen and
-removing the warning window.
+Also run exit_browser() to let newt do its final cleaning of the screen.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -59,33 +57,22 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/util.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ tools/perf/builtin-top.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
-index 7b5a892..fdf1fc8 100644
---- a/tools/perf/util/ui/util.c
-+++ b/tools/perf/util/ui/util.c
-@@ -9,6 +9,7 @@
- #include "../debug.h"
- #include "browser.h"
- #include "helpline.h"
-+#include "ui.h"
- #include "util.h"
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index f88a263..0b07cc3 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -740,8 +740,9 @@ static void perf_event__process_sample(const union perf_event *event,
+ 		 */
+ 		if (al.map == machine->vmlinux_maps[MAP__FUNCTION] &&
+ 		    RB_EMPTY_ROOT(&al.map->dso->symbols[MAP__FUNCTION])) {
+-			pr_err("The %s file can't be used\n",
+-			       symbol_conf.vmlinux_name);
++			ui__warning("The %s file can't be used\n",
++				    symbol_conf.vmlinux_name);
++			exit_browser(0);
+ 			exit(1);
+ 		}
  
- static void newt_form__set_exit_keys(newtComponent self)
-@@ -118,10 +119,12 @@ void ui__warning(const char *format, ...)
- 	va_list args;
- 
- 	va_start(args, format);
--	if (use_browser > 0)
-+	if (use_browser > 0) {
-+		pthread_mutex_lock(&ui__lock);
- 		newtWinMessagev((char *)warning_str, (char *)ok,
- 				(char *)format, args);
--	else
-+		pthread_mutex_unlock(&ui__lock);
-+	} else
- 		vfprintf(stderr, format, args);
- 	va_end(args);
- }
