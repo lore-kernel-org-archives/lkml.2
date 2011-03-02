@@ -1,237 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab1CBN25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 08:28:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60311 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab1CBN2z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 08:28:55 -0500
-Date: Wed, 2 Mar 2011 14:28:33 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Fabien Marteau <fabien.marteau@armadeus.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        =?iso-8859-15?Q?=22Uwe_Kleine-K=F6nig=22?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Arnaud Patard <apatard@mandriva.com>, Tejun Heo <tj@kernel.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: Adding mangling capability to i2c imx bus
- controller.
-Message-ID: <20110302132833.GA2207@pengutronix.de>
-References: <4D46D571.5010907@armadeus.com>
+	id S1755607Ab1CBNbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 08:31:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12918 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116Ab1CBNbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 08:31:40 -0500
+Message-ID: <4D6E46B4.7030909@redhat.com>
+Date: Wed, 02 Mar 2011 15:31:32 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-In-Reply-To: <4D46D571.5010907@armadeus.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        xiaoguangrong@cn.fujitsu.com
+Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable memory
+ slots using wbtree
+References: <1298386481.5764.60.camel@x201>	 <20110222183822.22026.62832.stgit@s20.home>  <4D6507C9.1000906@redhat.com>	 <1298484395.18387.28.camel@x201> <1298489332.18387.56.camel@x201>	 <4D662DBF.2020706@redhat.com> <1298568944.6140.21.camel@x201>	 <4D6A1F55.7080804@redhat.com> <1298934271.4177.19.camel@x201>	 <4D6D0ADF.1050107@redhat.com> <1299003632.4177.66.camel@x201>
+In-Reply-To: <1299003632.4177.66.camel@x201>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/01/2011 08:20 PM, Alex Williamson wrote:
+> >  >  It seems like we need a good mixed workload benchmark.  So far we've
+> >  >  only tested worst case, with a pure emulated I/O test, and best case,
+> >  >  with a pure memory test.  Ordering an array only helps the latter, and
+> >  >  only barely beats the tree, so I suspect overall performance would be
+> >  >  better with a tree.
+> >
+> >  But if we cache the missed-all-memslots result in the spte, we eliminate
+> >  the worst case, and are left with just the best case.
+>
+> There's potentially a lot of entries between best case and worst case.
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The mid case is where we have a lot of small slots which are 
+continuously flushed.  That would be (ept=0 && new mappings continuously 
+established) || (lots of small mappings && lots of host paging 
+activity).  I don't know of any guests that continuously reestablish BAR 
+mappings; and host paging activity doesn't apply to device assignment.  
+What are we left with?
 
-Hi Fabien,
+> >
+> >  The problem here is that all workloads will cache all memslots very
+> >  quickly into sptes and all lookups will be misses.  There are two cases
+> >  where we have lookups that hit the memslots structure: ept=0, and host
+> >  swap.  Neither are things we want to optimize too heavily.
+>
+> Which seems to suggest that:
+>
+>       A. making those misses fast = win
+>       B. making those misses fast + caching misses = win++
+>       C. we don't care if the sorted array is subtly faster for ept=0
+>
+> Sound right?  So is the question whether cached misses alone gets us 99%
+> of the improvement since hits are already getting cached in sptes for
+> cases we care about?
 
-thanks for your patch. Nice addition.
+Yes, that's my feeling.  Caching those misses is a lot more important 
+than speeding them up, since the cache will stay valid for long periods, 
+and since the hit rate will be very high.
 
-On Mon, Jan 31, 2011 at 04:29:53PM +0100, Fabien Marteau wrote:
-> Adding Mangling capability to i2c imx bus controller.
+Cache+anything=O(1)
+no-cache+tree=O(log(n))
+no-cache+array=O(n)
 
-Can you give a rough description how you tested it?
+-- 
+error compiling committee.c: too many arguments to function
 
-> Signed-off-by: Fabien Marteau <fabien.marteau@armadeus.com>
-> ---
-> Index: linux-2.6.36/drivers/i2c/busses/i2c-imx.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-2.6.36.orig/drivers/i2c/busses/i2c-imx.c	2010-10-20 22:30:22.00=
-0000000 +0200
-> +++ linux-2.6.36/drivers/i2c/busses/i2c-imx.c	2011-01-31 16:23:34.0000000=
-00 +0100
-> @@ -300,17 +300,28 @@
-
-Please use "--show-c-function" for diff/quilt. This makes reviewing a
-tad easier.
-
->  {
->  	int i, result;
->=20
-> -	dev_dbg(&i2c_imx->adapter.dev, "<%s> write slave address: addr=3D0x%x\n=
-",
-> -		__func__, msgs->addr << 1);
-> +	if ((msgs->flags & I2C_M_NOSTART) =3D=3D 0) {
-
-Please use !flag instead of =3D=3D 0 as it is done in the rest of the
-driver.
-
-> +		/* write slave address */
-> +		if (msgs->flags & I2C_M_REV_DIR_ADDR) {
-> +			dev_dbg(&i2c_imx->adapter.dev,
-> +				"<%s> write slave address: addr=3D0x%x\n",
-> +				__func__, msgs->addr << 1 | 0x01);
-> +			writeb((msgs->addr << 1) | 0x01,
-> +			       i2c_imx->base + IMX_I2C_I2DR);
-> +		} else {
-> +			dev_dbg(&i2c_imx->adapter.dev,
-> +				"<%s> write slave address: addr=3D0x%x\n",
-> +				__func__, msgs->addr << 1);
-> +			writeb((msgs->addr << 1), i2c_imx->base + IMX_I2C_I2DR);
-> +		}
-
-What about:
-
-	dev_dbg();
-	writeb(msgs->addr << 1 | !!(msg->flags & I2C_M_REV_DIR_ADDR));
-
-Hmm, probably more readable would be
-
-	write_flag =3D (msg->flags & I2C_M_REV_DIR_ADDR) ? I2C_SMBUS_READ : I2C_SM=
-BUS_WRITE
-
-and use that? Also, not sure about the additional dev_dbg.
-
-> +		result =3D i2c_imx_trx_complete(i2c_imx);
-> +		if (result)
-> +			return result;
-> +		result =3D i2c_imx_acked(i2c_imx);
-> +		if (result !=3D 0)
-
-if (result)
-
-> +			return result;
-> +	}
->=20
-> -	/* write slave address */
-> -	writeb(msgs->addr << 1, i2c_imx->base + IMX_I2C_I2DR);
-> -	result =3D i2c_imx_trx_complete(i2c_imx);
-> -	if (result)
-> -		return result;
-> -	result =3D i2c_imx_acked(i2c_imx);
-> -	if (result)
-> -		return result;
->  	dev_dbg(&i2c_imx->adapter.dev, "<%s> write data\n", __func__);
->=20
->  	/* write data */
-> @@ -323,7 +334,7 @@
->  		if (result)
->  			return result;
->  		result =3D i2c_imx_acked(i2c_imx);
-> -		if (result)
-> +		if ((result !=3D 0) && ((msgs[0].flags & I2C_M_IGNORE_NAK) =3D=3D 0))
-
-if (result && !(msgs[0].flags & I2C_M_IGNORE_NAK))
-
->  			return result;
->  	}
->  	return 0;
-> @@ -334,18 +345,27 @@
->  	int i, result;
->  	unsigned int temp;
->=20
-> -	dev_dbg(&i2c_imx->adapter.dev,
-> -		"<%s> write slave address: addr=3D0x%x\n",
-> -		__func__, (msgs->addr << 1) | 0x01);
-> -
-> -	/* write slave address */
-> -	writeb((msgs->addr << 1) | 0x01, i2c_imx->base + IMX_I2C_I2DR);
-> -	result =3D i2c_imx_trx_complete(i2c_imx);
-> -	if (result)
-> -		return result;
-> -	result =3D i2c_imx_acked(i2c_imx);
-> -	if (result)
-> -		return result;
-> +	if ((msgs->flags & I2C_M_NOSTART) =3D=3D 0) {
-
-!flag
-
-> +		/* write slave address */
-> +		if (msgs->flags & I2C_M_REV_DIR_ADDR) {
-> +			dev_dbg(&i2c_imx->adapter.dev,
-> +			"<%s> write slave address: addr=3D0x%x\n",
-> +			__func__, (msgs->addr << 1));
-> +			writeb((msgs->addr << 1), i2c_imx->base + IMX_I2C_I2DR);
-> +		} else {
-> +			dev_dbg(&i2c_imx->adapter.dev,
-> +			"<%s> write slave address: addr=3D0x%x\n",
-> +			__func__, (msgs->addr << 1) | 0x01);
-> +			writeb((msgs->addr << 1) | 0x01,
-> +			       i2c_imx->base + IMX_I2C_I2DR);
-> +		}
-
-Please fix similar to above.
-
-> +		result =3D i2c_imx_trx_complete(i2c_imx);
-> +		if (result)
-> +			return result;
-> +		result =3D i2c_imx_acked(i2c_imx);
-> +		if (result !=3D 0)
-
-if (result)
-
-> +			return result;
-> +	}
->=20
->  	dev_dbg(&i2c_imx->adapter.dev, "<%s> setup bus\n", __func__);
->=20
-> @@ -405,7 +425,7 @@
->=20
->  	/* read/write data */
->  	for (i =3D 0; i < num; i++) {
-> -		if (i) {
-> +		if (i && ((msgs[i].flags & I2C_M_NOSTART) =3D=3D 0)) {
-
-if (i && !(flag))
-
-(Please check for other occasions, I might have missed one)
-
->  			dev_dbg(&i2c_imx->adapter.dev,
->  				"<%s> repeated start\n", __func__);
->  			temp =3D readb(i2c_imx->base + IMX_I2C_I2CR);
-> @@ -454,7 +474,7 @@
->=20
->  static u32 i2c_imx_func(struct i2c_adapter *adapter)
->  {
-> -	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_PROTOCOL_MANGLING;
->  }
->=20
->  static struct i2c_algorithm i2c_imx_algo =3D {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk1uRgEACgkQD27XaX1/VRvEUwCgiFUIbs69N2n6lXePUWKzIRgQ
-PIgAniN4TJOpGjzIEgAlKovm5UhyjbY6
-=r07f
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
