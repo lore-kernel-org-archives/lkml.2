@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab1CBV1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:27:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63534 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756058Ab1CBV1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:27:38 -0500
-Date: Wed, 2 Mar 2011 16:27:34 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, jaxboe@fusionio.com, czoccolo@gmail.com,
-        guijianfeng@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: cfq-iosched preempt issues
-Message-ID: <20110302212733.GA7824@redhat.com>
-References: <20110302124341.GA23940@sli10-conroe.sh.intel.com>
- <20110302202118.GA2547@redhat.com>
- <x49bp1t2pyd.fsf@segfault.boston.devel.redhat.com>
+	id S1757537Ab1CBV2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:28:14 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34813 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756679Ab1CBV2M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 16:28:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pjZTElXX7aTDLK/PpJTk6zwVqy2amHNeZ02DB8TMZGIiIRAAqf2cavsJMfSfTMZYMg
+         32wf+okc/149mL1KXdLH0uTKPD5E46qKxdRhO8SIpYzdqPO+VntOmv1Im/HoL6fukExR
+         8BmGyiQ13AgXG5adP74JIa0aRZn7dLW6P954U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49bp1t2pyd.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D6EA473.9000001@zytor.com>
+References: <4D6E8932.1010405@zytor.com>
+	<20110302120339.efd60504.akpm@linux-foundation.org>
+	<4D6EA473.9000001@zytor.com>
+Date: Wed, 2 Mar 2011 22:28:12 +0100
+Message-ID: <AANLkTi=5C3-DkOGFZ3nWCgkQMWC=Va9ZoFRjyV2vxdg7@mail.gmail.com>
+Subject: Re: RFC: x86: kill binutils 2.16.x?
+From: Vegard Nossum <vegard.nossum@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Breeds <tony@bakeyournoodle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 04:05:30PM -0500, Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > On Wed, Mar 02, 2011 at 08:43:41PM +0800, Shaohua Li wrote:
-> >> queue preemption is good for some workloads and not for others. With commit
-> >> f8ae6e3eb825, the impact is amplified. I currently have two issues with it:
-> >> 1. In a multi-threaded workload, each thread runs a random read/write (for
-> >> example, mmap write) with iodepth 1. I found the queue depth gets smaller
-> >> with commit f8ae6e3eb825. The reason is write gets preempted, so more threads
-> >> are waitting for write, and on the other hand, there are less threads doing
-> >> read. This will make the queue depth small, so performance drops a little.
-> >> So in this case, speed up write can speed up read too, but we can't detect
-> >> it.
-> >> 2. cfq_may_dispatch doesn't limit queue depth if the queue is the sole queue.
-> >> What about if there are two queues, one sync and one async? If the sync queue's
-> >> think time is small, we can treat it as the sole queue, because the sync queue
-> >> will preempt async queue, so we don't need care about the async queue's latency.
-> >> The issue exists before, but f8ae6e3eb825 amplifies it. Below is a patch for it.
-> >> 
-> >> Any idea?
-> >
-> > CFQ is already very complicated, lets try to keep it simple. Because it
-> > is complicated, making it hierarchical for cgroup becomes even harder.
-> >
-> > IIUC, you are saying that cfqd->busy_queues check is not sufficient as
-> > it takes async queues also in account.
-> >
-> > So we can keep another count say, cfqd->busy_sync_queues and if there
-> > are no busy_sync_queues, allow unlimited depth and that should be
-> > a really simple few lines change.
-> 
-> That covers workload 2, but what about 1?  I'm really not sure what the
-> workload there is.
+On 2 March 2011 21:11, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 03/02/2011 12:03 PM, Andrew Morton wrote:
+>> On Wed, 02 Mar 2011 10:15:14 -0800
+>> "H. Peter Anvin" <hpa@zytor.com> wrote:
+>>
+>>> binutils 2.16 (and presumably its prereleases, binutils 2.15.9x) appears
+>>> to have more bugs than any other version of binutils released in modern
+>>> history, *before or after*.
+>>>
+>>> We chronically run into problems because that particular binutils
+>>> version breaks code that works fine elsewhere.
+>>>
+>>> I would like to know who would suffer from formally discontinuing
+>>> support for that version.  I understand some version of SLES shipped it,
+>>> but I don't know for sure.
+>>>
+>>
+>> I gave up and became a customer of
+>> http://www.kernel.org/pub/tools/crosstool/index_old.shtml
+>
+> Vegard,
+>
+> The source directory in the above doesn't seem to match the binary
+> directories, and is stuck at binutils 2.16.1.  At the very best this is
+> iffy from a GPL perspective, and very confusing to users.
+>
+> This is obviously a highly useful project, can we straighten out the
+> source situation?
 
-But CFQ can't track that if reads are stuck behind peding writes. And the
-whole philosophy is that give READS the importance and not WRITES. So I
-am not sure what we can do about first case.
+I only uploaded the binaries in
 
-If we are really worried about performance and willing to loose isolation
-in the process (read vs write isolation, or isolation across groups), then
-may be we can think of implementing another tunables say min_queue_depth.
-That tells CFQ that don't idle if you are not driving min_queue_depth.
+    http://www.kernel.org/pub/tools/crosstool/files/bin/old/
 
-But again, this should be backed by some real workloads.
+which should match the sources in
 
-Thanks
-Vivek
+    http://www.kernel.org/pub/tools/crosstool/files/src/
+
+The binaries outside old/ are not made by me, but Tony (added to Cc).
+
+I assume you're talking about the binaries _outside_ bin/old/, but let
+me know if I'm mistaken :-)
+
+
+Vegard
