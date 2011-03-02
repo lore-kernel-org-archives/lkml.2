@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab1CBBXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 20:23:17 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49651 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757592Ab1CBBXQ (ORCPT
+	id S1757696Ab1CBBhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 20:37:46 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48054 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757369Ab1CBBhp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 20:23:16 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6272"; a="77249486"
-Message-ID: <4D6D9C03.2080906@codeaurora.org>
-Date: Tue, 01 Mar 2011 17:23:15 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Tue, 1 Mar 2011 20:37:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=IF03Odi22yOjUdm8x5NnFgncrtqwoTpXjEklbSdovhdxuN6oiNetsf9bdtgWx0TjL5
+         jF8DUH4dj8BxS6xyPVU1JYGHbb8BpmOmREClI7kCnNP+GYNo/NR50l5SF7Mf4qeCgAjb
+         I206gy0Gdjjjx3IkK8kBVbF7liNPp7z//Z3bo=
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: CONFIG_ARM_DMA_MEM_BUFFERABLE and readl/writel weirdness
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20090110155720.GA10954@redhat.com>
+References: <49639EB8.40204@redhat.com> <4963ABF0.6070400@redhat.com>
+ <20090107123457.GB16268@elte.hu> <20090107205322.5F8C7FC3E0@magilla.sf.frob.com>
+ <1231598714.11642.53.camel@quest> <20090110155720.GA10954@redhat.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Wed, 2 Mar 2011 02:37:13 +0100
+Message-ID: <AANLkTimw5Z00uVsWYP0KGiQ8jDex9yYGNc61SG=9GsGj@mail.gmail.com>
+Subject: Re: [RESEND][RFC PATCH v2] waitfd
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Scott James Remnant <scott@canonical.com>,
+        Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Casey Dahlin <cdahlin@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell, Catalin,
+On Sat, Jan 10, 2009 at 4:57 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/10, Scott James Remnant wrote:
+>> On Wed, 2009-01-07 at 12:53 -0800, Roland McGrath wrote:
+>> > Do we really need another one for this?  How about using signalfd plus
+>> > setting the child's exit_signal to a queuing (SIGRTMIN+n) signal instead of
+>> > SIGCHLD?  It's slightly more magical for the userland process to know to do
+>> > that (fork -> clone SIGRTMIN).  But compared to adding a syscall we don't
+>> > really have to add, maybe better.
+>> >
+>> This wouldn't help the init daemon case:
+>>
+>> - the exit_signal is set on the child, not on the parent.
+>>
+>>   While the init daemon could clone() every new process and set
+>>   exit_signal, this would not be set for processes reparented to init.
+>>
+>>   Even if we had a new syscall to change the exit_signal of a given
+>>   process, *and* had the init reparent notification patch, this still
+>>   wouldn't be sufficient; you'd have a race condition between the time
+>>   you were notified of the reparent, and the time you set exit_signal,
+>>   in which the child could die.
+>>
+>>   Since exit_signal is always reset to SIGCHLD before reparenting, this
+>>   could be done by resetting it to a different signal; but at this point
+>>   we're getting into a rather twisty method full of traps.
+>>
+>> - exit_signal is reset to SIGCHLD on exec().
+>>
+>>   Pretty much a plan-killer ;)
+>
+> I can't understand why should we change ->exit_signal if we want to
+> use signalfd. Yes, SIGCHLD is not rt. So what?
+>
+> We do not need multiple signals in queue if we want to reap multiple
+> zombies. Once we have a single SIGCHLD (reported by signalfd or
+> whatever) we can do do_wait(WNOHANG) in a loop.
+>
+> Confused.
 
-In arch/arm/include/asm/io.h, we have the following piece of code:
+I know I am terribly late for the party :)
 
-#ifdef CONFIG_ARM_DMA_MEM_BUFFERABLE
-#define __iormb()               rmb()
-#define __iowmb()               wmb()
-#else
-#define __iormb()               do { } while (0)
-#define __iowmb()               do { } while (0)
-#endif
+"do_wait(WNOHANG) in a loop" is a performance problem.
 
-#define readb(c)                ({ u8  __v = readb_relaxed(c); 
-__iormb(); __v; })
-#define readw(c)                ({ u16 __v = readw_relaxed(c); 
-__iormb(); __v; })
-#define readl(c)                ({ u32 __v = readl_relaxed(c); 
-__iormb(); __v; })
+Oleg, do you remember that strace bug when it was swamped
+with gazillions of stop notifications from a multithreaded
+task, then by dealing with them one-by-one it was causing
+unfairness and ultimately "this program never finishes
+when run under strace" bug?
 
-#define writeb(v,c)             ({ __iowmb(); writeb_relaxed(v,c); })
-#define writew(v,c)             ({ __iowmb(); writew_relaxed(v,c); })
-#define writel(v,c)             ({ __iowmb(); writel_relaxed(v,c); })
+And another typical nuisance that running multithreaded
+stuff under strace is much slower, even with -e option
+which limits the set of decoded syscalls?
 
-If I'm not missing some magic, this would mean that 
-"CONFIG_ARM_DMA_MEM_BUFFERABLE" determines if readl(s)/writel(s) get to 
-have a built in mb() or not.
+Having waitfd would help both cases: strace can gulp
+a lot of waitpid notifications in one go, and
+batch process them.
 
-The rest of the emails is under the assumption that my statement above 
-is true.
-
-This seems like a real bad thing to do.
-
-There are so many other drivers that don't use or care about DMA and 
-might still want to ensure some ordering constraints between their 
-readl(s)/writel(s). They can't depend on readl/writel taking care of it 
-for them since their code could be used in a kernel configuration that 
-doesn't enable this config.
-
-Firstly, I don't know how many people noticed this and realize they 
-can't depend on readl/writel to take care of the mb()s for them. Seems 
-like an unnecessary encouragement to make mistakes when it didn't need 
-to be so.
-
-Secondly, even if they realize they have to take care of it, they will 
-have to continue using mb()s in to force ordering between their 
-reads/writes. So, are we depending on the compiler to optimize these 
-extra mb() out in the case where the config is enabled? I'm not sure it 
-will be able to optimize out the extra mb()s in all cases.
-
-Please let me know if I'm missing something and there is a good reason 
-for writing the code as it is today. If there is not much of a reason 
-for this, do you have any objections if I send a patch to split out the 
-"readl/writel with built in mb()" as a separate config and 'select'ing 
-it in ARM_DMA_MEM_BUFFERABLE?
-
-Thanks,
-Saravana
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+vda
