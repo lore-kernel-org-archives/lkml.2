@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab1CBRNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:13:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:11731 "EHLO mga09.intel.com"
+	id S1755828Ab1CBRNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:13:05 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:36642 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab1CBRNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:13:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,254,1297065600"; 
-   d="scan'208";a="608284021"
-Subject: Re: [PATCH 1/8 resend] dw_dmac: Remove compilation dependency from
- AVR32
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: dan.j.williams@intel.com, linus.walleij@stericsson.com, amit.goel@st.com,
-        linux-kernel@vger.kernel.org, armando.visconti@st.com,
-        shiraz.hashim@st.com, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <d41145ce4d5e3d870f720709f68d5b1dbf34d6a0.1298889267.git.viresh.kumar@st.com>
-References: <cover.1298889267.git.viresh.kumar@st.com>
-	 <d41145ce4d5e3d870f720709f68d5b1dbf34d6a0.1298889267.git.viresh.kumar@st.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Mar 2011 22:16:12 +0530
-Message-ID: <1299084372.6974.91.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753457Ab1CBRND convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 12:13:03 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michael Williamson <michael.williamson@criticallink.com>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Wed, 2 Mar 2011 22:42:43 +0530
+Subject: RE: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+Thread-Topic: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
+Thread-Index: AcvVrk3sdDgHpSlTSLiwuUzwIJ5gbwDTgBmQ
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C0082E3@dbde02.ent.ti.com>
+References: <1297434088-27995-1-git-send-email-subhasish@mistralsolutions.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com>
+ <886E26C48DE446C3937D89ECF86030B2@subhasishg>
+ <B85A65D85D7EB246BE421B3FB0FBB593024BE49711@dbde02.ent.ti.com>
+ <25DBF349769A4CF7B883D6D7FF01AD70@subhasishg>
+In-Reply-To: <25DBF349769A4CF7B883D6D7FF01AD70@subhasishg>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-28 at 16:11 +0530, Viresh Kumar wrote:
-> This will be used in SPEAr, ARM family.
-Does this mean it can be used on AVR32 now? Did you implay it will
-*also* be....
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> ---
->  drivers/dma/Kconfig |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> index 1c28816..95c7db7 100644
-> --- a/drivers/dma/Kconfig
-> +++ b/drivers/dma/Kconfig
-> @@ -82,7 +82,6 @@ config INTEL_IOP_ADMA
->  
->  config DW_DMAC
->  	tristate "Synopsys DesignWare AHB DMA support"
-> -	depends on AVR32
-Shouldn't you be adding a corresponding depends on new arch? And since
-this supports old arch as well, it should say depends on both...
->  	select DMA_ENGINE
->  	default y if CPU_AT32AP7000
->  	help
+Hi Subhasish,
 
+On Sat, Feb 26, 2011 at 17:42:39, Subhasish Ghosh wrote:
+> Hi Sekhar,
+> 
+> I tried this using MMC and Kelvin's suggestions, but it never came back. 
+> Here is a log:
 
--- 
-~Vinod
+Was this result with or without this patch applied?
+
+> 
+> root@arago:~# rtcwake -d /dev/rtc0 -s 20 -m mem
+> wakeup from "mem" at Tue Apr 21 14:31:13 2009
+> PM: Syncing filesystems ... done.
+> Freezing user space processes ... (elapsed 0.01 seconds) done.
+> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> Suspending console(s) (use no_console_suspend to debug)
+> 
+> From the Kconfig I had enabled RTC_DRV_OMAP, CONFIG_PM, CONFIG_SUSPEND.
+
+Nothing stands out from these logs. One thing to
+verify is if the RTC Alarm interrupt is really
+working by using the test program present in the
+Documentation/ folder.
+
+Anyway, the easiest way for you to move quickly is
+to use ramdisk so you can bypass all driver specific
+issues.
+
+Thanks,
+Sekhar
 
