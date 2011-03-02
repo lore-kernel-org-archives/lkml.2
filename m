@@ -1,115 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab1CBB7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 20:59:20 -0500
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:53357 "EHLO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757771Ab1CBB7T convert rfc822-to-8bit (ORCPT
+	id S1757847Ab1CBCHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 21:07:12 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44811 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757786Ab1CBCHK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 20:59:19 -0500
-X-Greylist: delayed 1653 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 20:59:18 EST
+	Tue, 1 Mar 2011 21:07:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=GzEL1SJ7SvXCgjfxahFE+w5iSiqenW8SzTCXDkPwhoBA2/VpapPn9F/9g/TPpUBE4p
+         m/OMZbiF2s0wK4RqQa96tJB0vnMENfsiyBf+88262S6pQ6SKR/MoN+WprAfAY88ogbiQ
+         UAQSMPyN8FRUqK++et1lnwfULS6hpaFTP0ByM=
 MIME-Version: 1.0
-In-Reply-To: <20110221043601.GB22204@spacedout.fries.net>
-References: <20110211035309.GA22204@spacedout.fries.net>
-	<20110214145649.GE2597@joana>
-	<AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
-	<20110221043601.GB22204@spacedout.fries.net>
-Date: Tue, 1 Mar 2011 19:31:42 -0600
-Message-ID: <AANLkTin+NDruj7c5r_pQxWZWEsMqiWpnkCptKFq2mfps@mail.gmail.com>
-Subject: Re: [PATCH] work around for l2cap NULL dereference in l2cap_conn_start
-From: Andrei Warkentin <andreiw@motorola.com>
-To: David Fries <david@fries.net>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LFD.2.00.1102281334080.3297@dhcp-27-109.brq.redhat.com>
+References: <20110225010346.GA9019@july>
+	<alpine.LFD.2.00.1102251114580.3316@dhcp-27-109.brq.redhat.com>
+	<AANLkTikBOk=gJ70fO4zQTYJ5=bdWAmjVfuNiVaMt-atW@mail.gmail.com>
+	<alpine.LFD.2.00.1102281334080.3297@dhcp-27-109.brq.redhat.com>
+Date: Wed, 2 Mar 2011 11:07:09 +0900
+X-Google-Sender-Auth: pgYAU7-Ca5Wy9_Sl2NtYuE4J998
+Message-ID: <AANLkTi=L_3-_orw8_mkdvR-55z0iKWGR6=7OKgSf8QR2@mail.gmail.com>
+Subject: Re: [PATCH v3] fat: Batched discard support for fat
+From: Kyungmin Park <kmpark@infradead.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-I don't have an S305 headset at the moment to play with this, but, our
-tree (2.6.36) has
-a fix like this for this issue.
-
-
- 				if (bt_sk(sk)->defer_setup) {
- 					struct sock *parent = bt_sk(sk)->parent;
- 					rsp.result = cpu_to_le16(L2CAP_CR_PEND);
- 					rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
--					parent->sk_data_ready(parent, 0);
-+					if (parent)
-+						parent->sk_data_ready(parent, 0);
-
- 				} else {
- 					sk->sk_state = BT_CONFIG;
- 					rsp.result = cpu_to_le16(L2CAP_CR_SUCCESS);
-
-The comment is:
-
-    Bluetooth: Hack: Don't dereference null pointer.
-
-    This avoids the S305 panic during incoming connection.
-
-    S305 sends PSM 25 L2CAP connection request before the L2CAP info response.
-    When we receive that info response we crash on null pointer here.
-
-Sorry for the wait,
-A
-
-On Sun, Feb 20, 2011 at 10:36 PM, David Fries <david@fries.net> wrote:
-> bt_sk(sk)->parent can be NULL in l2cap_conn_start in state BT_CONNECT2
-> at least when a headset device pairs and the play button was pressed
-> right before pairing.
+On Mon, Feb 28, 2011 at 9:51 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> On Mon, 28 Feb 2011, Kyungmin Park wrote:
 >
-> Signed-off-by: David Fries <david@fries.net>
-> ---
-> I removed the printk, can this be merged to the bluetooth next tree?
->
-> On Mon, Feb 14, 2011 at 03:40:46PM -0600, Andrei Warkentin wrote:
->> FWIW still need it in 2.6.36.
->
-> Andrei, I'm curious, what's your hardware hardware and bluetooth
-> device that's trigginer the crash?
->
->> On Mon, Feb 14, 2011 at 8:56 AM, Gustavo F. Padovan
->> <padovan@profusion.mobi> wrote:
->> > Hi David,
+>> On Fri, Feb 25, 2011 at 8:17 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+>> > On Fri, 25 Feb 2011, Kyungmin Park wrote:
 >> >
->> > * David Fries <david@fries.net> [2011-02-10 21:53:09 -0600]:
+>> >> From: Kyungmin Park <kyungmin.park@samsung.com>
+>> >>
+>> >> FAT supports batched discard as ext4.
+>> >>
+>> >> Cited from Lukas words.
+>> >> "The current solution is not ideal because of its bad performance impact.
+>> >> So basic idea to improve things is to avoid discarding every time some
+>> >> blocks are freed. and instead batching is together into bigger trims,
+>> >> which tends to be more effective."
+>> >>
+>> >> You can find an information in detail at following URLs.
+>> >> http://lwn.net/Articles/397538/
+>> >> http://lwn.net/Articles/383933/
+>> >>
+>> >> Clearify the meaning of "len" (Cited form Lukas mail)
+>> >>
+>> >> Let the "O" be free (bytes, blocks, whatever), and "=" be used.
+>> >> Now, we have a filesystem like this.
+>> >>
+>> >>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>> >>   ^                                      ^
+>> >>   0                                      40
+>> >>
+>> >> This is how it supposed to wotk if you have called FITIRM with parameters:
+>> >>
+>> >> start = 0
+>> >> minlen = 2
+>> >> len = 20
+>> >>
+>> >> So you will go through (blocks, bytes...) 0 -> 20
+>> >>
+>> >>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
+>> >>   ^                   ^
+>> >>   0                   20
+>> >>
+>> >> So, you will call discard on extents:
+>> >>
+>> >> 0-3
+>> >> You'll skip 6 because is smaller than minlen
+>> >> 10-11
+>> >> 15-19
+>> >>
+>> >> instead of
+>> >>
+>> >> 0-3
+>> >> 10-11
+>> >> 15-19
+>> >> 30-36
 >> >
->> >> Here's a patch to avoid a very repeatable crash in the N900.  If I
->> >> take a Motorola S305 bluetooth headset that was previously paried with
->> >> the N900, turn it on, and press the play button before the headphones
->> >> automatically pair with the cell phone, the N900 will crash (and
->> >> reboot) in pairing.  If I wait until after they have paired there
->> >> isn't any problem.  The patch is against the kernel-power
->> >> 2.6.28-maemo46 by Thomas Tanner, the stock Nokia PR1.2 oops looked
->> >> the same, I just haven't gone back to that kernel.
+>> > Hi thanks for the next version. And again I have to ask: Did you test it
+>> > ? and how ? Did you tried xfstest No. 251 ? Couple of comments bellow.
+>>
+>> I tested it with your test program. Of course I modified for our
+>> environment (eMMC).
+>
+> Ok, good.
+>
+>>
+>> #include <errno.h>
+>> #include <fcntl.h>
+>> #include <stdio.h>
+>> #include <stdint.h>
+>> #include <sys/ioctl.h>
+>>
+>> struct fstrim_range {
+>>         uint64_t start;
+>>         uint64_t len;
+>>         uint64_t minlen;
+>> };
+>>
+>> #define FITRIM          _IOWR('X', 121, struct fstrim_range)
+>>
+>> int main(int argc, char **argv)
+>> {
+>>         struct fstrim_range range;
+>>         uint64_t len;
+>>         int fd;
+>>
+>>         if (argc < 2) {
+>>                 fprintf(stderr, "usage: %s mountpoint [size]\n", argv[0]);
+>>                 return 1;
+>>         }
+>>
+>>         if (argc == 3)
+>>                 len = atoll(argv[1]);
+>>         else
+>>                 len = ((1UL<<31) - 1);
+>>
+>>         range.start = 0;
+>>         range.len = len;
+>>         range.minlen = 256 * 1024;      /* Minimum is 256KiB */
+>
+> Why exactly you need to set this ? What will happen if the minlen is 0 ?
+
+It's dependent on eMMC chip. it's for our environment. If it passed
+with 0, the code is working but the less than 256KiB trim command is
+meaningless.
+
+>
+>>
+>>         fd = open(argv[1], O_RDONLY);
+>>         if (fd < 0) {
+>>                 perror("open");
+>>                 return 1;
+>>         }
+>>
+>>         if (ioctl(fd, FITRIM, &range)) {
+>>                 if (errno == EOPNOTSUPP)
+>>                         fprintf(stderr, "TRIM not supported\n");
+>>                 else
+>>                         perror("FITRIM");
+>>                 return 1;
+>>         }
+>>
+>>         fprintf(stderr, "Trimmed size %llu\n", range.len);
+>>
+>>         return 0;
+>> }
+>>
 >> >
->> > This is a very old kernel. You need to check this issue against
->> > bluetooth-next-2.6.
+>> > Thanks!
+>> > -Lukas
+>> >
+>> >>
+>> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> >> ---
+>> >> Changelog v3:
+>> >>       Adjust the minlen from queue discard_granularity
+>> >>       Use the corrent len usage
+>> >> Changelog v2:
+>> >>       Use the given start and len as Lukas comments
+>> >>       Check the queue supports discard feature
+>> >> ---
+>> >> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+>> >> index f504089..08b53e1 100644
+>> >> --- a/fs/fat/fat.h
+>> >> +++ b/fs/fat/fat.h
+>> >> @@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
+>> >>                             int nr_cluster);
+>> >>  extern int fat_free_clusters(struct inode *inode, int cluster);
+>> >>  extern int fat_count_free_clusters(struct super_block *sb);
+>> >> +extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
+>> >>
+>> >>  /* fat/file.c */
+>> >>  extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
+>> >> diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
+>> >> index b47d2c9..a8e3837 100644
+>> >> --- a/fs/fat/fatent.c
+>> >> +++ b/fs/fat/fatent.c
+>> >> @@ -1,6 +1,8 @@
+>> >>  /*
+>> >>   * Copyright (C) 2004, OGAWA Hirofumi
+>> >>   * Released under GPL v2.
+>> >> + *
+>> >> + * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
+>> >>   */
+>> >>
+>> >>  #include <linux/module.h>
+>> >> @@ -541,6 +543,16 @@ out:
+>> >>       return err;
+>> >>  }
+>> >>
+>> >> +static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
+>> >> +{
+>> >> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> >> +     sector_t block, nr_blocks;
+>> >> +
+>> >> +     block = fat_clus_to_blknr(sbi, cluster);
+>> >> +     nr_blocks = nr_clus * sbi->sec_per_clus;
+>> >> +     return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
+>> >> +}
+>> >> +
+>> >>  int fat_free_clusters(struct inode *inode, int cluster)
+>> >>  {
+>> >>       struct super_block *sb = inode->i_sb;
+>> >> @@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
+>> >>                       if (cluster != fatent.entry + 1) {
+>> >>                               int nr_clus = fatent.entry - first_cl + 1;
+>> >>
+>> >> -                             sb_issue_discard(sb,
+>> >> -                                     fat_clus_to_blknr(sbi, first_cl),
+>> >> -                                     nr_clus * sbi->sec_per_clus,
+>> >> -                                     GFP_NOFS, 0);
+>> >> -
+>> >> +                             fat_issue_discard(sb, first_cl, nr_clus);
+>> >>                               first_cl = cluster;
+>> >>                       }
+>> >>               }
+>> >> @@ -683,3 +691,88 @@ out:
+>> >>       unlock_fat(sbi);
+>> >>       return err;
+>> >>  }
+>> >> +
+>> >> +int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
+>> >> +{
+>> >> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>> >> +     struct fatent_operations *ops = sbi->fatent_ops;
+>> >> +     struct fat_entry fatent;
+>> >> +     unsigned long reada_blocks, reada_mask, cur_block;
+>> >> +     int err = 0, free, count, entry;
+>> >> +     int start, len, minlen, trimmed;
+>> >> +
+>> >> +     start = range->start >> sb->s_blocksize_bits;
+>> >> +     start = start / sbi->sec_per_clus;
+>> >> +     len = range->len >> sb->s_blocksize_bits;
+>> >> +     len = len / sbi->sec_per_clus;
+>> >> +     minlen = range->minlen >> sb->s_blocksize_bits;
+>> >> +     minlen = minlen / sbi->sec_per_clus;
+>> >> +     trimmed = 0;
+>> >> +     count = 0;
+>> >> +
+>> >> +     lock_fat(sbi);
+>> >> +     if (sbi->free_clusters != -1 && sbi->free_clus_valid)
+>> >> +             goto out;
+>> >> +
+>> >> +     reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
+>> >> +     reada_mask = reada_blocks - 1;
+>> >> +     cur_block = 0;
+>> >> +
+>> >> +     entry = 0;
+>> >> +     free = 0;
+>> >> +     fatent_init(&fatent);
+>> >> +
+>> >> +     if (start < FAT_START_ENT)
+>> >> +             start = FAT_START_ENT;
+>> >> +
+>> >> +     fatent_set_entry(&fatent, start);
+>> >> +
+>> >> +     while (count < sbi->max_cluster) {
+>> >> +             if (fatent.entry >= sbi->max_cluster)
+>> >> +                     fatent.entry = FAT_START_ENT;
+>> >> +             /* readahead of fat blocks */
+>> >> +             if ((cur_block & reada_mask) == 0) {
+>> >> +                     unsigned long rest = sbi->fat_length - cur_block;
+>> >> +                     fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
+>> >
+>> > You really do not need new variable "rest" just for passing it into one
+>> > function. Get rid of it.
+>>
+>> Umm. I don't want to modify it since it's routine is same as
+>> free_count codes. I just borrowed it from FAT codes.
+>> >
+>> >> +             }
+>> >> +             cur_block++;
+>> >> +
+>> >> +             err = fat_ent_read_block(sb, &fatent);
+>> >> +             if (err)
+>> >> +                     goto out;
+>> >> +
+>> >> +             do {
+>> >> +                     if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
+>> >> +                             free++;
+>> >> +                             if (!entry)
+>> >> +                                     entry = fatent.entry;
+>> >> +                             if (count >= len && free >= minlen) {
+>> >> +                                     fat_issue_discard(sb, entry, free);
+>> >> +                                     trimmed += free;
 >
->  net/bluetooth/l2cap.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> I think you can remove this condition completely is you move "done"
+> label befor the if (free >= minlen) condition.
 >
-> diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-> index ed83c1f..a7aa4d9 100644
-> --- a/net/bluetooth/l2cap.c
-> +++ b/net/bluetooth/l2cap.c
-> @@ -408,7 +408,8 @@ static void l2cap_conn_start(struct l2cap_conn *conn)
->                                        struct sock *parent = bt_sk(sk)->parent;
->                                        rsp.result = cpu_to_le16(L2CAP_CR_PEND);
->                                        rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
-> -                                       parent->sk_data_ready(parent, 0);
-> +                                       if(parent)
-> +                                               parent->sk_data_ready(parent,0);
+>> > I really do not understand FAT code very much, but is this right ?
+>> > Should not you be setting free = 0 ?
+>> Right but count is larger then "len". it will exit at next if (count
+>> >= len) goto done statement.
 >
->                                } else {
->                                        sk->sk_state = BT_CONFIG;
+> Oh, ok I see. But it proves my point that this code is not very well
+> readable.
+>
+>>
+>> > What will happen if you'll end up
+>> > in the same branch in next iteration ? -- free will be still set to
+>> > previous value+1, bu you'll be discarding next entry. I am sorry but
+>> > this whole thing is not very readable.
+>>
+>> >
+>> >> +                             }
+>> >> +                             if (count >= len)
+>> >> +                                     goto done;
+>                                   ^^^^^^^^^^^^^^^^^^
+> this
+
+Okay I will fix it.
+>
+>> >> +                     } else if (entry) {
+>> >> +                             if (free >= minlen) {
+>> >> +                                     fat_issue_discard(sb, entry, free);
+>> >> +                                     trimmed += free;
+>> >> +                             }
+>> >> +                             if (count >= len)
+>> >> +                                     goto done;
+>                                   ^^^^^^^^^^^^^^^^^^
+> and this
+>
+>> >> +                             free = 0;
+>> >> +                             entry = 0;
+>> >> +                     }
+>> >
+>> > I don't not see why you are testing count all the time since it has not been
+>> > changed since the "if" condition started. how about doing one test
+>> > before the "if" condition ?
+>>
+>> For looping the whole fat max_cluster size. now start can be any
+>> address and if start is a middle point and len is max, then it will
+>> search from middle -> end -> start -> middle. The "count" is used for
+>> this purpose.
+>>
+>> Thank you,
+>> Kyungmin Park
+>> >
+> can go here -->>
+>                            if (count >= len)
+>                                    goto done;
+>
+>> >> +                     count++;
+>> >> +             } while (fat_ent_next(sbi, &fatent));
+>> >> +     }
+>> >> +     if (free >= minlen) {
+>> >> +             fat_issue_discard(sb, entry, free);
+>> >> +             trimmed += free;
+>> >> +     }
+>> >> +done:
+>> >> +     range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
+>> >> +     fatent_brelse(&fatent);
+>> >> +out:
+>> >> +     unlock_fat(sbi);
+>> >> +     return err;
+>> >> +}
+>> >> diff --git a/fs/fat/file.c b/fs/fat/file.c
+>> >> index 7257752..9910aba 100644
+>> >> --- a/fs/fat/file.c
+>> >> +++ b/fs/fat/file.c
+>> >> @@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>> >>               return fat_ioctl_get_attributes(inode, user_attr);
+>> >>       case FAT_IOCTL_SET_ATTRIBUTES:
+>> >>               return fat_ioctl_set_attributes(filp, user_attr);
+>> >> +     case FITRIM:
+>> >> +     {
+>> >> +             struct super_block *sb = inode->i_sb;
+>> >> +             struct request_queue *q = bdev_get_queue(sb->s_bdev);
+>> >> +             struct fstrim_range range;
+>> >> +             int ret = 0;
+>> >> +
+>> >> +             if (!capable(CAP_SYS_ADMIN))
+>> >> +                     return -EPERM;
+>> >> +
+>> >> +             if (!blk_queue_discard(q))
+>> >> +                     return -EOPNOTSUPP;
+>> >> +
+>> >> +             if (copy_from_user(&range, (struct fstrim_range *)arg,
+>> >> +                                     sizeof(range)))
+>> >> +                     return -EFAULT;
+>> >> +
+>> >> +             range.minlen = max((unsigned int)range.minlen,
+>> >> +                                     q->limits.discard_granularity);
+>> >> +             ret = fat_trim_fs(sb, &range);
+>> >> +             if (ret < 0)
+>> >> +                     return ret;
+>> >> +
+>> >> +             if (copy_to_user((struct fstrim_range *)arg, &range,
+>> >> +                                     sizeof(range)))
+>> >> +                     return -EFAULT;
+>> >> +
+>> >> +             return 0;
+>> >> +     }
+>> >> +
+>> >>       default:
+>> >>               return -ENOTTY; /* Inappropriate ioctl for device */
+>> >>       }
+>> >>
+>> >
+>> > --
+>> >
+>>
+>
 > --
-> 1.7.2.3
->
->
