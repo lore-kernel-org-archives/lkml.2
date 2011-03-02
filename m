@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab1CBUEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:04:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757375Ab1CBUE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:04:28 -0500
-Date: Wed, 2 Mar 2011 22:04:18 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kvm: eventfd comment fixup
-Message-ID: <20110302200418.GA5479@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-To: unlisted-recipients:; (no To-header on input)
+	id S1757362Ab1CBUE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:04:26 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48744 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754516Ab1CBUEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:04:25 -0500
+Date: Wed, 2 Mar 2011 12:03:39 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: x86: kill binutils 2.16.x?
+Message-Id: <20110302120339.efd60504.akpm@linux-foundation.org>
+In-Reply-To: <4D6E8932.1010405@zytor.com>
+References: <4D6E8932.1010405@zytor.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clarify a comment in kvm/eventfd.c: we do
-rcu_assign_pointer without explicit synchronize_rcu
-afterwards, and the reason this works is because we
-use a spinlock to synch against another place
-which does call synchronize_rcu.
+On Wed, 02 Mar 2011 10:15:14 -0800
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> binutils 2.16 (and presumably its prereleases, binutils 2.15.9x) appears
+> to have more bugs than any other version of binutils released in modern
+> history, *before or after*.
+> 
+> We chronically run into problems because that particular binutils
+> version breaks code that works fine elsewhere.
+> 
+> I would like to know who would suffer from formally discontinuing
+> support for that version.  I understand some version of SLES shipped it,
+> but I don't know for sure.
+> 
 
----
-
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 2ca4535..e347b53 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -313,8 +313,9 @@ kvm_irqfd_deassign(struct kvm *kvm, int fd, int gsi)
- 		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi) {
- 			/*
- 			 * This rcu_assign_pointer is needed for when
--			 * another thread calls kvm_irqfd_update before
--			 * we flush workqueue below.
-+			 * another thread calls kvm_irq_routing_update before
-+			 * we flush workqueue below (we synchronize with
-+			 * kvm_irq_routing_update using irqfds.lock).
- 			 * It is paired with synchronize_rcu done by caller
- 			 * of that function.
- 			 */
-
--- 
-MST
+I gave up and became a customer of
+http://www.kernel.org/pub/tools/crosstool/index_old.shtml
