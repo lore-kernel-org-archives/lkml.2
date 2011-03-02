@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab1CBU5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:57:18 -0500
-Received: from www.tglx.de ([62.245.132.106]:56761 "EHLO www.tglx.de"
+	id S1756620Ab1CBU7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:59:49 -0500
+Received: from kroah.org ([198.145.64.141]:33955 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756796Ab1CBU5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:57:16 -0500
-Date: Wed, 2 Mar 2011 21:56:37 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: "Hans J. Koch" <hjk@hansjkoch.de>, Pratheesh Gangadhar <pratheesh@ti.com>,
-        linux-kernel@vger.kernel.org, gregkh@suse.de, sshtylyov@mvista.com,
-        amit.chatterjee@ti.com, davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 1/1] PRUSS UIO driver support
-In-Reply-To: <201103022123.38050.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.00.1103022155030.2701@localhost6.localdomain6>
-References: <1299065886-30099-1-git-send-email-pratheesh@ti.com> <1299065886-30099-2-git-send-email-pratheesh@ti.com> <20110302200956.GB23818@local> <201103022123.38050.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755535Ab1CBU7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:59:48 -0500
+Date: Wed, 2 Mar 2011 16:00:20 -0500
+From: Greg KH <greg@kroah.com>
+To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: gregkh@suse.de, haiyangz@microsoft.com, hjanssen@microsoft.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: Staging: hv: netvsc_drv.c: no assignment within if +
+ whitespace clean up
+Message-ID: <20110302210020.GA20485@kroah.com>
+References: <1299087367-7580-1-git-send-email-toralf.foerster@gmx.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1299087367-7580-1-git-send-email-toralf.foerster@gmx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011, Arnd Bergmann wrote:
-
-> On Wednesday 02 March 2011 21:09:56 Hans J. Koch wrote:
-> > > +static struct uio_info *info;
-> > > +static dma_addr_t sram_paddr, ddr_paddr;
-> > > +static void *prussio_vaddr, *sram_vaddr, *ddr_vaddr;
-> > 
-> > So the correct thing would be
-> > 
-> > static void __iomem *prussio_vaddr;
-> > static void *sram_vaddr, *ddr_vaddr;
+On Wed, Mar 02, 2011 at 06:36:07PM +0100, Toralf Förster wrote:
+> This patch fixes all complaints of checkpatch.pl.
 > 
-> I also commented that it should not be a global variable at
-> all, but a dynamic data structure referenced from the device.
+> Signed-off-by: Toralf Förster <toralf.foerster@gmx.de>
+> ---
+>  drivers/staging/hv/netvsc_drv.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
 > 
-> Not important, but Pratheesh said he'd change it. If it stays
-> a global variable, I'd at least expect an explanation why
-> the static variable is considered better in this case.
+> diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+> index b41c964..2f3a9e9 100644
+> --- a/drivers/staging/hv/netvsc_drv.c
+> +++ b/drivers/staging/hv/netvsc_drv.c
+> @@ -126,8 +126,9 @@ static void netvsc_xmit_completion(void *context)
+>  
+>  		dev_kfree_skb_any(skb);
+>  
+> -		if ((net_device_ctx->avail += num_pages) >= PACKET_PAGES_HIWATER)
+> -			netif_wake_queue(net);
+> +		net_device_ctx->avail += num_pages;
+> +		if (net_device_ctx->avail >= PACKET_PAGES_HIWATER)
+> +			netif_wake_queue(net);
 
-I did not pick at that, because there is no indicator that we'll see
-more than one PRUSS unit per SoC in the forseeable future.
+This fix is already in the linux-next tree, what tree did you diff this
+against?
 
-Thanks,
+You can't make staging tree cleanups against Linus's tree, sorry, they
+need to be against linux-next in order to properly get all of the
+pending patches already queued up.
 
-	tglx
+thanks,
+
+greg k-h
