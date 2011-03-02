@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab1CBQkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 11:40:07 -0500
-Received: from shutemov.name ([188.40.19.243]:37842 "EHLO shutemov.name"
+	id S1755972Ab1CBQle (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 11:41:34 -0500
+Received: from swm.pp.se ([212.247.200.143]:42862 "EHLO uplift.swm.pp.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab1CBQkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 11:40:05 -0500
-From: "Kirill A. Shutsemov" <kirill@shutemov.name>
-To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH, v7] Introduce timer slack controller
-Date: Wed,  2 Mar 2011 18:40:00 +0200
-Message-Id: <1299084001-3916-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.2.3
+	id S1754924Ab1CBQld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 11:41:33 -0500
+Date: Wed, 2 Mar 2011 17:41:32 +0100 (CET)
+From: Mikael Abrahamsson <swmike@swm.pp.se>
+To: Stephen Hemminger <shemminger@vyatta.com>
+cc: John Heffner <johnwheffner@gmail.com>,
+        Bill Sommerfeld <wsommerfeld@google.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        Albert Cahalan <acahalan@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: txqueuelen has wrong units; should be time
+In-Reply-To: <20110301230754.5ef4ab35@nehalam>
+Message-ID: <alpine.DEB.1.10.1103021739550.7942@uplift.swm.pp.se>
+References: <AANLkTimd5GQwtUFP2fD_An=M8ajBD8DJpzxQJezv8fB8@mail.gmail.com> <alpine.DEB.1.10.1102270758580.11974@uplift.swm.pp.se> <1298793252.8726.45.camel@edumazet-laptop> <AANLkTinyE10wtM_xJsufT_3s3hvti7CN+9nyqScWa6SA@mail.gmail.com>
+ <20110227125540.40754c5y78j9u2m8@hayate.sektori.org> <AANLkTimofhhH5omyk=HhkyaNG+MGqoac4rDf=dPuR7K-@mail.gmail.com> <cbb9e1113901f1a324359b6ed3f1a611@localhost> <AANLkTikje6rvjSfEA3CvUjdgFwzk-SBZDdO5kQvi6LZy@mail.gmail.com> <AANLkTin_jY_J7tJseMLVmrQVVRezOVQTGCgB_6tefgXJ@mail.gmail.com>
+ <alpine.DEB.1.10.1103010137400.7942@uplift.swm.pp.se> <20110301222531.24832a93@nehalam> <alpine.DEB.1.10.1103020736260.7942@uplift.swm.pp.se> <20110301230754.5ef4ab35@nehalam>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+Organization: People's Front Against WWW
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill A. Shutemov <kirill@shutemov.name>
+On Tue, 1 Mar 2011, Stephen Hemminger wrote:
 
-Changelog:
+> Also WRED is not default on faster links because it can't be done fast 
+> enough.
 
-v7:
- - totally reworked interface and rewritten from scratch
-   (See Documentation/cgroups/timer_slack.txt for more information)
-v6:
- - add documentation
- - use notifier_call_chain() instead of check hook
- - fix validate_change()
- - cleanup
-v5:
- - -EBUSY on writing to timer_slack.min_slack_ns/max_slack_ns if a child has
-   wider min-max range
-v4:
- - hierarchy support
- - drop dummy_timer_slack_check()
- - workaround lockdep false (?) positive
- - allow 0 as timer slack value
-v3:
- - rework interface
- - s/EXPORT_SYMBOL/EXPORT_SYMBOL_GPL/
-v2:
- - fixed with CONFIG_CGROUP_TIMER_SLACK=y
-v1:
- - initial revision
-
-Kirill A. Shutemov (1):
-  cgroups: introduce timer slack controller
-
- Documentation/cgroups/timer_slack.txt |   66 ++++++++++++++++++++
- fs/select.c                           |    7 +--
- include/linux/cgroup_subsys.h         |    6 ++
- include/linux/sched.h                 |    9 +++
- init/Kconfig                          |    8 +++
- kernel/Makefile                       |    1 +
- kernel/cgroup_timer_slack.c           |  107 +++++++++++++++++++++++++++++++++
- kernel/futex.c                        |    4 +-
- kernel/hrtimer.c                      |    2 +-
- 9 files changed, 202 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/cgroups/timer_slack.txt
- create mode 100644 kernel/cgroup_timer_slack.c
+Before this propagates as some kind of truth. Cisco modern core routers 
+have no problems doing WRED at wirespeed, the above statement is not true.
 
 -- 
-1.7.4.1
-
+Mikael Abrahamsson    email: swmike@swm.pp.se
