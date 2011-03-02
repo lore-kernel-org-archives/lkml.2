@@ -1,137 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab1CBTjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:39:07 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45457 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab1CBTjG (ORCPT
+	id S1757175Ab1CBTjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:39:42 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39938
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756515Ab1CBTjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:39:06 -0500
-Date: Wed, 2 Mar 2011 20:38:55 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] x86, amd-nb: Misc correctness fixes
-Message-ID: <20110302193855.GA3840@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 2 Mar 2011 14:39:41 -0500
+Date: Wed, 02 Mar 2011 11:40:18 -0800 (PST)
+Message-Id: <20110302.114018.104077586.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: oleg@redhat.com, akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, pageexec@freemail.hu,
+        solar@openwall.com, eteo@redhat.com, spender@grsecurity.net,
+        roland@redhat.com, miltonm@bga.com
+Subject: Re: [PATCH v3 0/4] exec: unify native/compat code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTinzQmprg+XHKjTj7bA+jFf_N4hta3_09M+SEfRt@mail.gmail.com>
+References: <20110302162650.GA26810@redhat.com>
+	<20110302164428.GF26810@redhat.com>
+	<AANLkTinzQmprg+XHKjTj7bA+jFf_N4hta3_09M+SEfRt@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make functions used strictly in bool context return bool. Also, fixup
-used types and comments, and make a local function static, while at it.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 2 Mar 2011 10:00:23 -0800
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
+> No, I think we're ok with passing the structure by value - it's a
+> small structure that would generally be passed in registers (at least
+> on some architectures, I guess it will depend on the ABI), and we do
+> the "struct-by-value" thing for other things too (notably the page
+> table entries), so it's not a new thing in the kernel.
 
-Against tip/x86/amd_nb.
+We purposely don't do that "page table entry typedef'd to aggregate" stuff
+on sparc32 because otherwise such values get passed on the stack.
 
- arch/x86/include/asm/amd_nb.h |   12 ++++++------
- arch/x86/kernel/amd_nb.c      |   18 ++++++++++--------
- 2 files changed, 16 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index 2b33c4d..527fb96 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -13,7 +13,7 @@ extern const struct pci_device_id amd_nb_misc_ids[];
- extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
- struct bootnode;
- 
--extern int early_is_amd_nb(u32 value);
-+extern bool early_is_amd_nb(u32 value);
- extern int amd_cache_northbridges(void);
- extern void amd_flush_garts(void);
- extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
-@@ -38,18 +38,18 @@ struct amd_northbridge_info {
- };
- extern struct amd_northbridge_info amd_northbridges;
- 
--#define AMD_NB_GART			0x1
--#define AMD_NB_L3_INDEX_DISABLE		0x2
--#define AMD_NB_L3_PARTITIONING		0x4
-+#define AMD_NB_GART			BIT(0)
-+#define AMD_NB_L3_INDEX_DISABLE		BIT(1)
-+#define AMD_NB_L3_PARTITIONING		BIT(2)
- 
- #ifdef CONFIG_AMD_NB
- 
--static inline int amd_nb_num(void)
-+static inline u16 amd_nb_num(void)
- {
- 	return amd_northbridges.num;
- }
- 
--static inline int amd_nb_has_feature(int feature)
-+static inline bool amd_nb_has_feature(unsigned feature)
- {
- 	return ((amd_northbridges.flags & feature) == feature);
- }
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index ed3c2e5..b57ade1 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -48,7 +48,7 @@ static struct pci_dev *next_northbridge(struct pci_dev *dev,
- 
- int amd_cache_northbridges(void)
- {
--	int i = 0;
-+	u16 i = 0;
- 	struct amd_northbridge *nb;
- 	struct pci_dev *misc, *link;
- 
-@@ -103,9 +103,11 @@ int amd_cache_northbridges(void)
- }
- EXPORT_SYMBOL_GPL(amd_cache_northbridges);
- 
--/* Ignores subdevice/subvendor but as far as I can figure out
--   they're useless anyways */
--int __init early_is_amd_nb(u32 device)
-+/*
-+ * Ignores subdevice/subvendor but as far as I can figure out
-+ * they're useless anyways
-+ */
-+bool __init early_is_amd_nb(u32 device)
- {
- 	const struct pci_device_id *id;
- 	u32 vendor = device & 0xffff;
-@@ -113,8 +115,8 @@ int __init early_is_amd_nb(u32 device)
- 	device >>= 16;
- 	for (id = amd_nb_misc_ids; id->vendor; id++)
- 		if (vendor == id->vendor && device == id->device)
--			return 1;
--	return 0;
-+			return true;
-+	return false;
- }
- 
- int amd_get_subcaches(int cpu)
-@@ -176,9 +178,9 @@ int amd_set_subcaches(int cpu, int mask)
- 	return 0;
- }
- 
--int amd_cache_gart(void)
-+static int amd_cache_gart(void)
- {
--       int i;
-+       u16 i;
- 
-        if (!amd_nb_has_feature(AMD_NB_GART))
-                return 0;
--- 
-1.7.4.rc2
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Architectures can currently avoid this bad code generation for the
+page table case, but with this new code they won't be able to avoid
+pass-by-value.
