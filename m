@@ -1,181 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab1CBQHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 11:07:11 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:43572 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315Ab1CBQHH (ORCPT
+	id S1755190Ab1CBQKO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 11:10:14 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:55197 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab1CBQKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 11:07:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:from:date:to:reply-to:cc:subject;
-        b=tJvdVA9yFnlMlvjvmqQCv8EQd+By+r9jc9za1IdY1e6yPtiwU9cw2OVqa4Ok3cBnvv
-         rVZppNx6oOm+zwTtH+IQ==
-Message-ID: <4d6e6b02.815bdf0a.637b.07a7@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Wed, 2 Mar 2011 17:05:01 +0200
+	Wed, 2 Mar 2011 11:10:12 -0500
+From: Stefan Bader <stefan.bader@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: [2.6.32+drm33-longterm] Linux 2.6.32.29+drm33.14
+Date: Wed,  2 Mar 2011 17:10:09 +0100
+Message-Id: <1299082209-28610-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, ming.m.lin@intel.com,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, eranian@google.com,
-        robert.richter@amd.com, acme@redhat.com
-Subject: [PATCH] perf_events: update PEBS event constraints (v3)
-X-System-Of-Record: true
+To: stable@kernel.org
+To: kernel-team@lists.ubuntu.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates PEBS event constraints for Intel Atom, Nehalem, Westmere.
+I am announcing the release of the 2.6.32.29+drm33.14 longterm tree.
 
-This patch also reorganizes the PEBS format/constraint detection code. It is
-now based on processor model and not PEBS format. Two processors may use the
-same PEBS format without have the same list of PEBS events.
+This tree is based on 2.6.32 and generally has all of the stable updates
+applied. Except those to the DRM subsystem, which was based on 2.6.33 and
+took updates from that upstream stable as long as that existed. It will
+continue to add patches to the DRM subsystem as long as they are valid
+according to the stable update rules (Documentation/stable_kernel_rules.txt).
+DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
-In this second version, we simplified the initialization of the PEBS
-constraints by leveraging the existing switch() statement in perf_event_intel.c.
-We also renamed the constraint tables to be more consistent with regular
-constraints.
+This release updates the DRM subsystem only.
 
-In this 3rd version, we drop BR_INST_RETIRED.MISPRED from Intel Atom as it does
-not seem to work. Use MISPREDICTED_BRANCH_RETIRED instead. Also add FP_ASSIST.*
-o both Intel Nehalem and Westmere. I misssed those in the earlier patches.
-Events were tested using libpfm4 perf_examples.
+The updated 2.6.32.y-drm33.z tree can be found at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
+and can be browsed through git web via:
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+-Stefan
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 084b383..ddf6c4f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1024,6 +1024,7 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_core();
- 
- 		x86_pmu.event_constraints = intel_core2_event_constraints;
-+		x86_pmu.pebs_constraints = intel_core2_pebs_event_constraints;
- 		pr_cont("Core2 events, ");
- 		break;
- 
-@@ -1036,6 +1037,7 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_nhm();
- 
- 		x86_pmu.event_constraints = intel_nehalem_event_constraints;
-+		x86_pmu.pebs_constraints = intel_nehalem_pebs_event_constraints;
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
- 		pr_cont("Nehalem events, ");
- 		break;
-@@ -1047,6 +1049,7 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_atom();
- 
- 		x86_pmu.event_constraints = intel_gen_event_constraints;
-+		x86_pmu.pebs_constraints = intel_atom_pebs_event_constraints;
- 		pr_cont("Atom events, ");
- 		break;
- 
-@@ -1059,6 +1062,8 @@ static __init int intel_pmu_init(void)
- 
- 		x86_pmu.event_constraints = intel_westmere_event_constraints;
- 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
-+		x86_pmu.pebs_constraints =
-+				intel_westmere_pebs_event_constraints;
- 		pr_cont("Westmere events, ");
- 		break;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index b7dcd9f..287044d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -361,30 +361,50 @@ static int intel_pmu_drain_bts_buffer(void)
- /*
-  * PEBS
-  */
--
--static struct event_constraint intel_core_pebs_events[] = {
--	PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INSTR_RETIRED.ANY */
-+static struct event_constraint intel_core2_pebs_event_constraints[] = {
-+	PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY */
- 	PEBS_EVENT_CONSTRAINT(0xfec1, 0x1), /* X87_OPS_RETIRED.ANY */
- 	PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
- 	PEBS_EVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
--	PEBS_EVENT_CONSTRAINT(0x01cb, 0x1), /* MEM_LOAD_RETIRED.L1D_MISS */
--	PEBS_EVENT_CONSTRAINT(0x02cb, 0x1), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x04cb, 0x1), /* MEM_LOAD_RETIRED.L2_MISS */
--	PEBS_EVENT_CONSTRAINT(0x08cb, 0x1), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x10cb, 0x1), /* MEM_LOAD_RETIRED.DTLB_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct event_constraint intel_atom_pebs_event_constraints[] = {
-+	PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY */
-+	PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* MISPREDICTED_BRANCH_RETIRED */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
- 	EVENT_CONSTRAINT_END
- };
- 
--static struct event_constraint intel_nehalem_pebs_events[] = {
--	PEBS_EVENT_CONSTRAINT(0x00c0, 0xf), /* INSTR_RETIRED.ANY */
--	PEBS_EVENT_CONSTRAINT(0xfec1, 0xf), /* X87_OPS_RETIRED.ANY */
--	PEBS_EVENT_CONSTRAINT(0x00c5, 0xf), /* BR_INST_RETIRED.MISPRED */
--	PEBS_EVENT_CONSTRAINT(0x1fc7, 0xf), /* SIMD_INST_RETURED.ANY */
--	PEBS_EVENT_CONSTRAINT(0x01cb, 0xf), /* MEM_LOAD_RETIRED.L1D_MISS */
--	PEBS_EVENT_CONSTRAINT(0x02cb, 0xf), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x04cb, 0xf), /* MEM_LOAD_RETIRED.L2_MISS */
--	PEBS_EVENT_CONSTRAINT(0x08cb, 0xf), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
--	PEBS_EVENT_CONSTRAINT(0x10cb, 0xf), /* MEM_LOAD_RETIRED.DTLB_MISS */
-+static struct event_constraint intel_nehalem_pebs_event_constraints[] = {
-+	INTEL_EVENT_CONSTRAINT(0x0b, 0xf),  /* MEM_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),  /* MEM_UNCORE_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INST_RETIRED.ANY */
-+	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),  /* BR_INST_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
-+	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xf7, 0xf),  /* FP_ASSIST.* */
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct event_constraint intel_westmere_pebs_event_constraints[] = {
-+	INTEL_EVENT_CONSTRAINT(0x0b, 0xf),  /* MEM_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),  /* MEM_UNCORE_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INSTR_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
-+
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),  /* BR_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),  /* BR_MISP_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
-+	PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xf7, 0xf),  /* FP_ASSIST.* */
- 	EVENT_CONSTRAINT_END
- };
- 
-@@ -695,20 +715,18 @@ static void intel_ds_init(void)
- 			printk(KERN_CONT "PEBS fmt0%c, ", pebs_type);
- 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_core);
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_core;
--			x86_pmu.pebs_constraints = intel_core_pebs_events;
- 			break;
- 
- 		case 1:
- 			printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
- 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
--			x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
- 			break;
- 
- 		default:
--			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
-+			printk(KERN_CONT "no PEBS fmt%d%c, ",
-+			       format, pebs_type);
- 			x86_pmu.pebs = 0;
--			break;
- 		}
+------
+
+* drm/radeon/kms: add quirk for Mac Radeon HD 2600 card
+* drm/radeon/kms: make the mac rv630 quirk generic
+* drm/radeon/kms: add pll debugging output
+* drm/radeon: remove 0x4243 pci id
+* drm/radeon/kms: fix s/r issues with bios scratch regs
+* drm/i915/lvds: Add AOpen i915GMm-HFS to the list of false-positive LVDS
+* drm/i915: Add dependency on CONFIG_TMPFS
+* Linux 2.6.32.29+drm33.14
+
+ Makefile                                 |    2 +-
+ drivers/gpu/drm/Kconfig                  |    3 +++
+ drivers/gpu/drm/i915/intel_lvds.c        |    8 ++++++++
+ drivers/gpu/drm/radeon/radeon_atombios.c |   16 +++++++++++++---
+ drivers/gpu/drm/radeon/radeon_display.c  |    4 ++++
+ include/drm/drm_pciids.h                 |    1 -
+ 6 files changed, 29 insertions(+), 5 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 1453b38..0b9e821 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .29+drm33.13
++EXTRAVERSION = .29+drm33.14
+ NAME = Man-Eating Seals of Antiquity
+
+ # *DOCUMENTATION*
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 305c590..7bb111b 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -94,7 +94,10 @@ config DRM_I830
+ config DRM_I915
+ 	tristate "i915 driver"
+ 	depends on AGP_INTEL
++	# we need shmfs for the swappable backing store, and in particular
++	# the shmem_readpage() which depends upon tmpfs
+ 	select SHMEM
++	select TMPFS
+ 	select DRM_KMS_HELPER
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 66df0c3..49c724e 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -894,6 +894,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
++		.ident = "AOpen i915GMm-HFS",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
++			DMI_MATCH(DMI_BOARD_NAME, "i915GMm-HFS"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Aopen i945GTt-VFA",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "AO00001JW"),
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index b57e4a8..7c9b013 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -262,6 +262,13 @@ static bool radeon_atom_apply_quirks(struct drm_device *dev,
+ 			*line_mux = 0x90;
  	}
+
++	/* mac rv630, rv730, others */
++	if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
++	    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
++		*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
++		*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
++	}
++
+ 	/* ASUS HD 3600 XT board lists the DVI port as HDMI */
+ 	if ((dev->pdev->device == 0x9598) &&
+ 	    (dev->pdev->subsystem_vendor == 0x1043) &&
+@@ -1489,7 +1496,7 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
+ 	bios_2_scratch &= ~ATOM_S2_VRI_BRIGHT_ENABLE;
+
+ 	/* tell the bios not to handle mode switching */
+-	bios_6_scratch |= (ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH | ATOM_S6_ACC_MODE);
++	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
+
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+@@ -1540,10 +1547,13 @@ void radeon_atom_output_lock(struct drm_encoder *encoder, bool lock)
+ 	else
+ 		bios_6_scratch = RREG32(RADEON_BIOS_6_SCRATCH);
+
+-	if (lock)
++	if (lock) {
+ 		bios_6_scratch |= ATOM_S6_CRITICAL_STATE;
+-	else
++		bios_6_scratch &= ~ATOM_S6_ACC_MODE;
++	} else {
+ 		bios_6_scratch &= ~ATOM_S6_CRITICAL_STATE;
++		bios_6_scratch |= ATOM_S6_ACC_MODE;
++	}
+
+ 	if (rdev->family >= CHIP_R600)
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
+diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
+index 7e17a36..567bd8e 100644
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -578,6 +578,10 @@ void radeon_compute_pll(struct radeon_pll *pll,
+ 	*frac_fb_div_p = best_frac_feedback_div;
+ 	*ref_div_p = best_ref_div;
+ 	*post_div_p = best_post_div;
++	DRM_DEBUG_KMS("%d %d, pll dividers - fb: %d.%d ref: %d, post %d\n",
++		      freq, best_freq / 1000, best_feedback_div, best_frac_feedback_div,
++		      best_ref_div, best_post_div);
++
  }
+
+ void radeon_compute_pll_avivo(struct radeon_pll *pll,
+diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
+index 3d016e9..d2674f9 100644
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -28,7 +28,6 @@
+ 	{0x1002, 0x4156, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV350}, \
+ 	{0x1002, 0x4237, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP}, \
+ 	{0x1002, 0x4242, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R200}, \
+-	{0x1002, 0x4243, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R200}, \
+ 	{0x1002, 0x4336, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS100|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
+ 	{0x1002, 0x4337, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
+ 	{0x1002, 0x4437, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
