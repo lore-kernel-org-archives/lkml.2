@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab1CBXQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 18:16:09 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53437 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab1CBXQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 18:16:07 -0500
-Message-ID: <4D6ECF72.5010308@kernel.org>
-Date: Wed, 02 Mar 2011 15:14:58 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH for.38] x86, numa: Fix numa_emulation code with node0 without
- RAM
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757965Ab1CBXRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 18:17:38 -0500
+Received: from mail.perches.com ([173.55.12.10]:4061 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754587Ab1CBXRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 18:17:38 -0500
+Subject: Re: [PATCH v2 3/9] fsldma: use channel name in printk output
+From: Joe Perches <joe@perches.com>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        leoli@freescale.com, dan.j.williams@intel.com
+In-Reply-To: <1299104601-15447-4-git-send-email-iws@ovro.caltech.edu>
+References: <1299104601-15447-1-git-send-email-iws@ovro.caltech.edu>
+	 <1299104601-15447-4-git-send-email-iws@ovro.caltech.edu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Mar 2011 15:17:36 -0800
+Message-ID: <1299107856.4208.120.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D6ECF85.00DC,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-03-02 at 14:23 -0800, Ira W. Snyder wrote:
+> This makes debugging the driver much easier when multiple channels are
+> running concurrently. In addition, you can see how much descriptor
+> memory each channel has allocated via the dmapool API in sysfs.
+> 
+> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+> ---
+>  drivers/dma/fsldma.c |   60 +++++++++++++++++++++++++++----------------------
+>  drivers/dma/fsldma.h |    1 +
+>  2 files changed, 34 insertions(+), 27 deletions(-)
+> 
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index 2e1af45..6e3d3d7 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -37,7 +37,7 @@
+>  
+>  #include "fsldma.h"
+>  
+> -static const char msg_ld_oom[] = "No free memory for link descriptor\n";
+> +static const char msg_ld_oom[] = "No free memory for link descriptor";
+>  
+>  /*
+>   * Register Helpers
+> @@ -207,7 +207,7 @@ static void dma_halt(struct fsldma_chan *chan)
+>  	}
+>  
+>  	if (!dma_is_idle(chan))
+> -		dev_err(chan->dev, "DMA halt timeout!\n");
+> +		dev_err(chan->dev, "%s: DMA halt timeout!\n", chan->name);
 
-On one system that does not have RAM on node0.
+I suggest instead you add:
 
-when numa_emulation is compiled in, and
-1. boot system without numa=fake...
-2. or boot system with numa=fake=128 to make emulation fail
+#define chan_err(chan, fmt, arg...) 				\
+	dev_err(chan->dev, "%s: " fmt, chan->name, ##arg);
+#define chan_info(chan, fmt, arg...)				\
+	dev_info(chan->dev, "%s: " fmt, chan->name, ##arg);
+#define chan_dbg(chan, fmt, arg...)				\
+	dev_dbg(chan->dev, "%s: " fmt, chan->name, ##arg);
 
-will get:
+and change the uses to be similar to:
 
-[    0.076025] ------------[ cut here ]------------
-[    0.080004] kernel BUG at arch/x86/mm/numa_64.c:788!
-[    0.080004] invalid opcode: 0000 [#1] SMP 
-[    0.080004] last sysfs file: 
-[    0.080004] CPU 0 
-[    0.080004] Modules linked in:
-[    0.080004] 
-[    0.080004] Pid: 0, comm: swapper Not tainted 2.6.38-rc6-yh-00212-g3e1f235 #1 Sun Microsystems     Sun Fire X4240/Sun Fire X4240
-[    0.080004] RIP: 0010:[<ffffffff81cd1d8c>]  [<ffffffff81cd1d8c>] numa_add_cpu+0x8a/0x156
-...
-[    0.080004] Call Trace:
-[    0.080004]  [<ffffffff81ccd1cd>] identify_cpu+0x2d7/0x2df
-[    0.080004]  [<ffffffff827e13e9>] identify_boot_cpu+0x10/0x30
-[    0.080004]  [<ffffffff827e15f3>] check_bugs+0x9/0x2d
-[    0.080004]  [<ffffffff827d9bcb>] start_kernel+0x3bf/0x3d9
-[    0.080004]  [<ffffffff827d92a6>] x86_64_start_reservations+0xb6/0xba
-[    0.080004]  [<ffffffff827d93a1>] x86_64_start_kernel+0xf7/0xfe
-[    0.080004] Code: 74 06 48 8d 04 90 eb 0f 48 c7 c0 10 d9 00 00 48 03 04 d5 50 e1 5f 82 8b 00 83 f8 ff 74 0d 0f a3 05 7a f9 92 00 19 d2 85 d2 75 02 <0f> 0b 48 98 31 db 48 8b 04 c5 d0 ec 5f 82 48 8b 90 90 af 00 00 
+	if (!dma_is_idle(chan))
+		chan_err(chan, "DMA halt timeout!\n");
 
-need to used early_cpu_to_node directly, because cpu_to_apicid and apicid_to_node
- will return node0 that is not onlined.
+etc...
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
----
- arch/x86/mm/numa_64.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/numa_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/numa_64.c
-+++ linux-2.6/arch/x86/mm/numa_64.c
-@@ -780,11 +780,7 @@ void __cpuinit numa_add_cpu(int cpu)
- 	int physnid;
- 	int nid = NUMA_NO_NODE;
- 
--	apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
--	if (apicid != BAD_APICID)
--		nid = apicid_to_node[apicid];
--	if (nid == NUMA_NO_NODE)
--		nid = early_cpu_to_node(cpu);
-+	nid = early_cpu_to_node(cpu);
- 	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
- 
- 	/*
