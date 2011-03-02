@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab1CBIj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:39:59 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59768 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab1CBIj6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:39:58 -0500
-Date: Wed, 2 Mar 2011 08:39:04 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_ARM_DMA_MEM_BUFFERABLE and readl/writel weirdness
-Message-ID: <20110302083904.GA4493@n2100.arm.linux.org.uk>
-References: <4D6D9C03.2080906@codeaurora.org>
+	id S1756072Ab1CBIkZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:40:25 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45207 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755687Ab1CBIkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 03:40:23 -0500
+Date: Wed, 2 Mar 2011 08:39:54 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf top browser: Fix up exit keys
+Message-ID: <tip-c16bfe9ac389b13a37ff617a09682ecc0685960f@git.kernel.org>
+Git-Commit-ID: c16bfe9ac389b13a37ff617a09682ecc0685960f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4D6D9C03.2080906@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Mar 2011 08:39:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 05:23:15PM -0800, Saravana Kannan wrote:
-> If I'm not missing some magic, this would mean that  
-> "CONFIG_ARM_DMA_MEM_BUFFERABLE" determines if readl(s)/writel(s) get to  
-> have a built in mb() or not.
+Commit-ID:  c16bfe9ac389b13a37ff617a09682ecc0685960f
+Gitweb:     http://git.kernel.org/tip/c16bfe9ac389b13a37ff617a09682ecc0685960f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 25 Feb 2011 09:30:29 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 25 Feb 2011 09:30:29 -0300
 
-You're missing that CONFIG_ARM_DMA_MEM_BUFFERABLE not only changes
-readl/writel but also the type for DMA coherent memory from strongly
-ordered to memory, non-cacheable.
+perf top browser: Fix up exit keys
 
-The barriers are required to ensure that reads and writes to DMA
-coherent memory are visible to the DMA device before the write
-completes, and any value read from DMA coherent memory will not
-bypass a read from a DMA device.
+The left key was exiting 'perf top --tui' when it really shouldn't, it
+was too easy to leave the live annotation window and then press one too
+many <- and get out of the tool altogether.
 
-The barriers in the IO macros have nothing to do with whether reads/writes
-to normal cacheable memory are visible to DMA devices.  That is what the
-streaming DMA API is for.
+Do just like the report TUI does, ignore the left key for exit and also
+ask the user when pressing ESC if that is really what is wanted.
 
-In any case, the IO macros are always ordered with respect to other
-device writes irrespective of CONFIG_ARM_DMA_MEM_BUFFERABLE.
+Reported-by: Mike Galbraith <efault@gmx.de>
+Suggested-by: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/top.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-> There are so many other drivers that don't use or care about DMA and  
-> might still want to ensure some ordering constraints between their  
-> readl(s)/writel(s). They can't depend on readl/writel taking care of it  
-> for them since their code could be used in a kernel configuration that  
-> doesn't enable this config.
-
-The majority of device drivers don't need ordering on their IO macros.
-However, Linus refuses to introduce relaxed IO ordering to the kernel,
-saying that architectures must reflect the x86 behaviour as much as
-possible.
-
-So, we're stuck with device drivers which use readl/writel both where
-they don't need the ordering constraints _and_ where they do need the
-ordering constraints.  That means we must provide the ordering in these
-macros to ensure proper system functioning.
-
-> Firstly, I don't know how many people noticed this and realize they  
-> can't depend on readl/writel to take care of the mb()s for them. Seems  
-> like an unnecessary encouragement to make mistakes when it didn't need  
-> to be so.
-
-I think you misunderstand what's going on.  IO accesses are always ordered
-with respect to themselves.  The barriers are there to ensure ordering
-between DMA coherent memory (normal non-cached memory) and IO accesses
-(device).
+diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
+index 2f47224..e9381ec 100644
+--- a/tools/perf/util/ui/browsers/top.c
++++ b/tools/perf/util/ui/browsers/top.c
+@@ -10,6 +10,7 @@
+ #include "../../annotate.h"
+ #include "../helpline.h"
+ #include "../libslang.h"
++#include "../util.h"
+ #include "../../evlist.h"
+ #include "../../hist.h"
+ #include "../../sort.h"
+@@ -174,6 +175,12 @@ static int perf_top_browser__run(struct perf_top_browser *browser)
+ 			if (browser->selection)
+ 				perf_top_browser__annotate(browser);
+ 			break;
++		case NEWT_KEY_LEFT:
++			continue;
++		case NEWT_KEY_ESCAPE:
++			if (!ui__dialog_yesno("Do you really want to exit?"))
++				continue;
++			/* Fall thru */
+ 		default:
+ 			goto out;
+ 		}
