@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1CBIic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:38:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51874 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab1CBIia (ORCPT
+	id S1756103Ab1CBIig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:38:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51025 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903Ab1CBIid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:38:30 -0500
+	Wed, 2 Mar 2011 03:38:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=mdAIwYS+WHgGBvyFuLb0MdcANN3SCfXf7QMB/JVrXFwHf+q+5ygEs7bLfW0J9aMkFa
-         CJ610kG/2W/WpRBq/5BIA53VdCql+Kz+9M8mXA3+KvI43gNjF46w8EFmNHxjAvfUbquW
-         tRzL2S9irUIZgBRS+i3+2oh4KAm9hIjQE7lBs=
+        b=BGng6jx/ki54VNOWcySi4xZZNLjgJ/0qBSHepy7JEg+Bqf4QegABHsB98gdUu9M8/j
+         Vg19vg1vIqPbanIUWOOLExIgM1k9JLG51n8dituvg+JkcIpR8+MbgWCH3M9QFDHj2t2N
+         4HnboDv9+aM4X8j4meWdGPri/AAqcJC3gxFqo=
 From: Liu Yuan <namei.unix@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jaxboe@fusionio.com,
         akpm@linux-foundation.org, fengguang.wu@intel.com
-Subject: [RFC PATCH 3/5] block: Make Page Cache counters work with sysfs
-Date: Wed,  2 Mar 2011 16:38:08 +0800
-Message-Id: <1299055090-23976-3-git-send-email-namei.unix@gmail.com>
+Subject: [RFC PATCH 4/5] mm: Add hit/miss accounting for Page Cache
+Date: Wed,  2 Mar 2011 16:38:09 +0800
+Message-Id: <1299055090-23976-4-git-send-email-namei.unix@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <no>
 References: <no>
@@ -28,103 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Liu Yuan <tailai.ly@taobao.com>
 
-Three counters are exported to the userspace from
-/sys/block/sdx/{,sdxx}/page_cache_stats.
+Hit/Miss accountings are request-centric: that is, single request
+would either cause one hit or one miss to be accounted for the very
+first time that kernel query the page cache. In some rare error
+conditions, kernel would re-query the page cache, but we donnot
+account for it and ignore it for simplicity.
 
 Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
 ---
- block/genhd.c         |    6 ++++++
- fs/partitions/check.c |   23 +++++++++++++++++++++++
- include/linux/genhd.h |    4 ++++
- 3 files changed, 33 insertions(+), 0 deletions(-)
+ mm/filemap.c |   26 ++++++++++++++++++++++----
+ 1 files changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index cbf1112..af9e7f8 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -988,6 +988,9 @@ static struct device_attribute dev_attr_fail_timeout =
- 	__ATTR(io-timeout-fail,  S_IRUGO|S_IWUSR, part_timeout_show,
- 		part_timeout_store);
- #endif
-+#ifdef CONFIG_PAGE_CACHE_ACCT
-+static DEVICE_ATTR(page_cache_stats, S_IRUGO, part_page_cache_stats_show, NULL);
-+#endif
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83a45d3..5388b2a 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1009,10 +1009,15 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+ 		pgoff_t end_index;
+ 		loff_t isize;
+ 		unsigned long nr, ret;
++		int retry_find = 0;
  
- static struct attribute *disk_attrs[] = {
- 	&dev_attr_range.attr,
-@@ -1006,6 +1009,9 @@ static struct attribute *disk_attrs[] = {
- #ifdef CONFIG_FAIL_IO_TIMEOUT
- 	&dev_attr_fail_timeout.attr,
- #endif
-+#ifdef CONFIG_PAGE_CACHE_ACCT
-+	&dev_attr_page_cache_stats.attr,
-+#endif
- 	NULL
- };
+ 		cond_resched();
+ find_page:
+ 		page = find_get_page(mapping, index);
++		if (likely(!retry_find) && page && PageUptodate(page))
++			page_cache_acct_hit(inode->i_sb, READ);
++		else
++			page_cache_acct_missed(inode->i_sb, READ);
+ 		if (!page) {
+ 			page_cache_sync_readahead(mapping,
+ 					ra, filp,
+@@ -1137,6 +1142,7 @@ readpage:
+ 		if (unlikely(error)) {
+ 			if (error == AOP_TRUNCATED_PAGE) {
+ 				page_cache_release(page);
++				retry_find = 1;
+ 				goto find_page;
+ 			}
+ 			goto readpage_error;
+@@ -1153,6 +1159,7 @@ readpage:
+ 					 */
+ 					unlock_page(page);
+ 					page_cache_release(page);
++					retry_find = 1;
+ 					goto find_page;
+ 				}
+ 				unlock_page(page);
+@@ -1185,8 +1192,10 @@ no_cached_page:
+ 						index, GFP_KERNEL);
+ 		if (error) {
+ 			page_cache_release(page);
+-			if (error == -EEXIST)
++			if (error == -EEXIST) {
++				retry_find = 1;
+ 				goto find_page;
++			}
+ 			desc->error = error;
+ 			goto out;
+ 		}
+@@ -1543,6 +1552,7 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	struct page *page;
+ 	pgoff_t size;
+ 	int ret = 0;
++	int rw = !!(vmf->flags & FAULT_FLAG_WRITE);
  
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index 9c21119..e882e95 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -316,6 +316,23 @@ ssize_t part_fail_store(struct device *dev,
+ 	size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+ 	if (offset >= size)
+@@ -1552,6 +1562,10 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	 * Do we have something in the page cache already?
+ 	 */
+ 	page = find_get_page(mapping, offset);
++	if (page && page->mapping && PageUptodate(page))
++		page_cache_acct_hit(inode->i_sb, rw);
++	else
++		page_cache_acct_missed(inode->i_sb, rw);
+ 	if (likely(page)) {
+ 		/*
+ 		 * We found the page, so try async readahead before
+@@ -2227,20 +2241,24 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 		gfp_notmask = __GFP_FS;
+ repeat:
+ 	page = find_lock_page(mapping, index);
+-	if (page)
++	if (page) {
++		page_cache_acct_hit(mapping->host->i_sb, WRITE);
+ 		return page;
++	}
+ 
+ 	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
+ 	if (!page)
+-		return NULL;
++		goto out;
+ 	status = add_to_page_cache_lru(page, mapping, index,
+ 						GFP_KERNEL & ~gfp_notmask);
+ 	if (unlikely(status)) {
+ 		page_cache_release(page);
+ 		if (status == -EEXIST)
+ 			goto repeat;
+-		return NULL;
++		page = NULL;
+ 	}
++out:
++	page_cache_acct_missed(mapping->host->i_sb, WRITE);
+ 	return page;
  }
- #endif
- 
-+#ifdef CONFIG_PAGE_CACHE_ACCT
-+ssize_t part_page_cache_stats_show(struct device *dev,
-+					  struct device_attribute * attr,
-+					  char *buf)
-+{
-+	struct hd_struct  *p = dev_to_part(dev);
-+
-+	return sprintf(buf,
-+			"%8lu %8lu %8lu %8lu %8lu\n ",
-+			part_stat_read(p, page_cache_readpages),
-+			part_stat_read(p, page_cache_missed[READ]),
-+			part_stat_read(p, page_cache_hit[READ]),
-+			part_stat_read(p, page_cache_missed[WRITE]),
-+			part_stat_read(p, page_cache_hit[WRITE]));
-+}
-+#endif
-+
- static DEVICE_ATTR(partition, S_IRUGO, part_partition_show, NULL);
- static DEVICE_ATTR(start, S_IRUGO, part_start_show, NULL);
- static DEVICE_ATTR(size, S_IRUGO, part_size_show, NULL);
-@@ -329,6 +346,9 @@ static DEVICE_ATTR(inflight, S_IRUGO, part_inflight_show, NULL);
- static struct device_attribute dev_attr_fail =
- 	__ATTR(make-it-fail, S_IRUGO|S_IWUSR, part_fail_show, part_fail_store);
- #endif
-+#ifdef CONFIG_PAGE_CACHE_ACCT
-+static DEVICE_ATTR(page_cache_stats, S_IRUGO, part_page_cache_stats_show, NULL);
-+#endif
- 
- static struct attribute *part_attrs[] = {
- 	&dev_attr_partition.attr,
-@@ -342,6 +362,9 @@ static struct attribute *part_attrs[] = {
- #ifdef CONFIG_FAIL_MAKE_REQUEST
- 	&dev_attr_fail.attr,
- #endif
-+#ifdef CONFIG_PAGE_CACHE_ACCT
-+	&dev_attr_page_cache_stats.attr,
-+#endif
- 	NULL
- };
- 
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 4f0257c..0ecd165 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -682,6 +682,10 @@ extern ssize_t part_fail_store(struct device *dev,
- 			       struct device_attribute *attr,
- 			       const char *buf, size_t count);
- #endif /* CONFIG_FAIL_MAKE_REQUEST */
-+#ifdef CONFIG_PAGE_CACHE_ACCT
-+extern ssize_t part_page_cache_stats_show(struct device *dev,
-+					  struct device_attribute *attr, char *buf);
-+#endif /*  CONFIG_PAGE_CACHE_ACCT */
- 
- static inline void hd_ref_init(struct hd_struct *part)
- {
+ EXPORT_SYMBOL(grab_cache_page_write_begin);
 -- 
 1.7.0.4
 
