@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab1CBIij (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:38:39 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65510 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab1CBIih (ORCPT
+	id S1755793Ab1CBIj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:39:59 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59768 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab1CBIj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:38:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=SqfU/rBFLrUWBjjSg+nDu2KKXbwTZQ754KVTgtZ9kj+Q6Xj6SxQKaKm7C6fX6HzQzp
-         5kZI3OiAqp8hYKhOMf2mSRD0rqC6i6Sx5pLXFpIiklsABBuQFTUCS8gSKEcgdSAIEfcR
-         zKiItCNToVXbEuMPgOlF/S2XGrTqS18ENsOjQ=
-From: Liu Yuan <namei.unix@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jaxboe@fusionio.com,
-        akpm@linux-foundation.org, fengguang.wu@intel.com
-Subject: [RFC PATCH 5/5] mm: Add readpages accounting
-Date: Wed,  2 Mar 2011 16:38:10 +0800
-Message-Id: <1299055090-23976-5-git-send-email-namei.unix@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <no>
-References: <no>
+	Wed, 2 Mar 2011 03:39:58 -0500
+Date: Wed, 2 Mar 2011 08:39:04 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: CONFIG_ARM_DMA_MEM_BUFFERABLE and readl/writel weirdness
+Message-ID: <20110302083904.GA4493@n2100.arm.linux.org.uk>
+References: <4D6D9C03.2080906@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6D9C03.2080906@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Yuan <tailai.ly@taobao.com>
+On Tue, Mar 01, 2011 at 05:23:15PM -0800, Saravana Kannan wrote:
+> If I'm not missing some magic, this would mean that  
+> "CONFIG_ARM_DMA_MEM_BUFFERABLE" determines if readl(s)/writel(s) get to  
+> have a built in mb() or not.
 
-The _readpages_ counter simply counts how many pages the kernel
-really request from the disk, either by readahead module or
-aop->readpage() when readahead window equals 0.
+You're missing that CONFIG_ARM_DMA_MEM_BUFFERABLE not only changes
+readl/writel but also the type for DMA coherent memory from strongly
+ordered to memory, non-cacheable.
 
-This counter is request-centric and doesnot check read errors
-since the read requests are issued to the block layer already.
+The barriers are required to ensure that reads and writes to DMA
+coherent memory are visible to the DMA device before the write
+completes, and any value read from DMA coherent memory will not
+bypass a read from a DMA device.
 
-Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
----
- mm/filemap.c   |    1 +
- mm/readahead.c |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+The barriers in the IO macros have nothing to do with whether reads/writes
+to normal cacheable memory are visible to DMA devices.  That is what the
+streaming DMA API is for.
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 5388b2a..d638391 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1137,6 +1137,7 @@ readpage:
- 		 */
- 		ClearPageError(page);
- 		/* Start the actual read. The read will unlock the page. */
-+		page_cache_acct_readpages(mapping->host->i_sb, 1);
- 		error = mapping->a_ops->readpage(filp, page);
- 
- 		if (unlikely(error)) {
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 77506a2..483acb8 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -112,6 +112,8 @@ static int read_pages(struct address_space *mapping, struct file *filp,
- 	unsigned page_idx;
- 	int ret;
- 
-+	page_cache_acct_readpages(mapping->host->i_sb, nr_pages);
-+
- 	if (mapping->a_ops->readpages) {
- 		ret = mapping->a_ops->readpages(filp, mapping, pages, nr_pages);
- 		/* Clean up the remaining pages */
--- 
-1.7.0.4
+In any case, the IO macros are always ordered with respect to other
+device writes irrespective of CONFIG_ARM_DMA_MEM_BUFFERABLE.
 
+> There are so many other drivers that don't use or care about DMA and  
+> might still want to ensure some ordering constraints between their  
+> readl(s)/writel(s). They can't depend on readl/writel taking care of it  
+> for them since their code could be used in a kernel configuration that  
+> doesn't enable this config.
+
+The majority of device drivers don't need ordering on their IO macros.
+However, Linus refuses to introduce relaxed IO ordering to the kernel,
+saying that architectures must reflect the x86 behaviour as much as
+possible.
+
+So, we're stuck with device drivers which use readl/writel both where
+they don't need the ordering constraints _and_ where they do need the
+ordering constraints.  That means we must provide the ordering in these
+macros to ensure proper system functioning.
+
+> Firstly, I don't know how many people noticed this and realize they  
+> can't depend on readl/writel to take care of the mb()s for them. Seems  
+> like an unnecessary encouragement to make mistakes when it didn't need  
+> to be so.
+
+I think you misunderstand what's going on.  IO accesses are always ordered
+with respect to themselves.  The barriers are there to ensure ordering
+between DMA coherent memory (normal non-cached memory) and IO accesses
+(device).
