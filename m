@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab1CBF25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 00:28:57 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52100 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab1CBF24 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 00:28:56 -0500
+	id S1752530Ab1CBFcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 00:32:33 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:40343 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384Ab1CBFcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 00:32:31 -0500
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Greg Schnorr <gschnorr@cisco.com>,
+        <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH] hwmon: (pmbus) More stringent checking of VOUT_MODE register
+Date: Tue, 1 Mar 2011 21:32:20 -0800
+Message-ID: <1299043940-22798-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-X-Originating-IP: [76.195.162.181]
-Date: Tue, 1 Mar 2011 21:28:55 -0800
-Message-ID: <AANLkTikcP6CKmpTrx160vV446z6kWL65ahPAyx-MOqqB@mail.gmail.com>
-Subject: [ANNOUNCE] Upstart 1.0 released
-From: Scott James Remnant <scott@netsplit.com>
-To: Upstart Dev List <upstart-devel@lists.ubuntu.com>,
-        upstart-devel@upstart.at, upstart-release@upstart.at
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The trouble with a "1.0" release is that the temptation is for that
-version to be the one with all the features you want when your users
-want it to be stable. This is a 1.0 release of the latter kind, based
-on the 0.6.x code that was shipped in both the most recent Ubuntu LTS
-and RedHat Enterprise Linux releases. If you're running Upstart
-anywhere right now, it's highly recommended that you update to this
-version, there shouldn't be any surprises!
+Some PMBus chips do not support the VOUT_MODE register. To make matters worse,
+such chips may not return an error when reading the register either, but instead
+return 0xff.
 
+Check if the register exists using pmbus_check_byte_register() before reading
+its value. In addition, validate the returned value and ignore it if it is 0xff
+(which is invalid).
 
-1.0  2011-03-01  "This is a fertile land, and we will thrive"
+Reported-by: Greg Schnorr <gschnorr@cisco.com>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ drivers/hwmon/pmbus_core.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-	* Fixed an assertion when a file named /etc/init/.conf is created.
-	  Discovered by Коренберг Марк (Bug: #720573)
+diff --git a/drivers/hwmon/pmbus_core.c b/drivers/hwmon/pmbus_core.c
+index 0edab1c..b7c64ba 100644
+--- a/drivers/hwmon/pmbus_core.c
++++ b/drivers/hwmon/pmbus_core.c
+@@ -1426,10 +1426,11 @@ static void pmbus_find_attributes(struct i2c_client *client,
+ static int pmbus_identify_common(struct i2c_client *client,
+ 				 struct pmbus_data *data)
+ {
+-	int vout_mode, exponent;
++	int vout_mode = -1, exponent;
+ 
+-	vout_mode = pmbus_read_byte_data(client, 0, PMBUS_VOUT_MODE);
+-	if (vout_mode >= 0) {
++	if (pmbus_check_byte_register(client, 0, PMBUS_VOUT_MODE))
++		vout_mode = pmbus_read_byte_data(client, 0, PMBUS_VOUT_MODE);
++	if (vout_mode >= 0 && vout_mode != 0xff) {
+ 		/*
+ 		 * Not all chips support the VOUT_MODE command,
+ 		 * so a failure to read it is not an error.
+-- 
+1.7.3.1
 
-	* utmp entries will be replaced with DEAD_PROCESS ones when a
-	  pid supervised by Upstart terminates.  (Bug: #183729)
-
-	* shutdown now correctly returns error code if it fails to shutdown
-	  the system.
-
-	* Included bash completion script in contrib directory.
-          (Bug: #672067)
-
-
-The tarball can be found here:
-
-       https://launchpad.net/upstart/1.x/1.0
-
-For more information on upstart:
-
-       http://upstart.at/
-
-
-Scott
