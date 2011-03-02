@@ -1,72 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab1CBNbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 08:31:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754116Ab1CBNbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 08:31:40 -0500
-Message-ID: <4D6E46B4.7030909@redhat.com>
-Date: Wed, 02 Mar 2011 15:31:32 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1755863Ab1CBNbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 08:31:53 -0500
+Received: from trinity.develer.com ([83.149.158.210]:38422 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755764Ab1CBNbv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 08:31:51 -0500
+Date: Wed, 2 Mar 2011 14:31:48 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] blkio-throttle: infrastructure to throttle async io
+Message-ID: <20110302133148.GC2061@linux.develer.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+ <1298888105-3778-3-git-send-email-arighi@develer.com>
+ <20110301160627.GA2539@redhat.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        xiaoguangrong@cn.fujitsu.com
-Subject: Re: [RFC PATCH 0/3] Weight-balanced binary tree + KVM growable memory
- slots using wbtree
-References: <1298386481.5764.60.camel@x201>	 <20110222183822.22026.62832.stgit@s20.home>  <4D6507C9.1000906@redhat.com>	 <1298484395.18387.28.camel@x201> <1298489332.18387.56.camel@x201>	 <4D662DBF.2020706@redhat.com> <1298568944.6140.21.camel@x201>	 <4D6A1F55.7080804@redhat.com> <1298934271.4177.19.camel@x201>	 <4D6D0ADF.1050107@redhat.com> <1299003632.4177.66.camel@x201>
-In-Reply-To: <1299003632.4177.66.camel@x201>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110301160627.GA2539@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2011 08:20 PM, Alex Williamson wrote:
-> >  >  It seems like we need a good mixed workload benchmark.  So far we've
-> >  >  only tested worst case, with a pure emulated I/O test, and best case,
-> >  >  with a pure memory test.  Ordering an array only helps the latter, and
-> >  >  only barely beats the tree, so I suspect overall performance would be
-> >  >  better with a tree.
-> >
-> >  But if we cache the missed-all-memslots result in the spte, we eliminate
-> >  the worst case, and are left with just the best case.
->
-> There's potentially a lot of entries between best case and worst case.
+On Tue, Mar 01, 2011 at 11:06:27AM -0500, Vivek Goyal wrote:
+> On Mon, Feb 28, 2011 at 11:15:04AM +0100, Andrea Righi wrote:
+> > Add blk_throtl_async() to throttle async io writes.
+> > 
+> > The idea is to stop applications before they can generate too much dirty
+> > pages in the page cache. Each time a chunk of pages is wrote in memory
+> > we charge the current task / cgroup for the size of the pages dirtied.
+> > 
+> > If blkio limit are exceeded we also enforce throttling at this layer,
+> > instead of throttling writes at the block IO layer, where it's not
+> > possible to associate the pages with the process that dirtied them.
+> > 
+> > In this case throttling can be simply enforced via a
+> > schedule_timeout_killable().
+> > 
+> > Also change some internal blkio function to make them more generic, and
+> > allow to get the size and type of the IO operation without extracting
+> > these information directly from a struct bio. In this way the same
+> > functions can be used also in the contextes where a struct bio is not
+> > yet created (e.g., writes in the page cache).
+> > 
+> > Signed-off-by: Andrea Righi <arighi@develer.com>
+> > ---
+> >  block/blk-throttle.c   |  106 ++++++++++++++++++++++++++++++++----------------
+> >  include/linux/blkdev.h |    6 +++
+> >  2 files changed, 77 insertions(+), 35 deletions(-)
+> > 
+> > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> > index a89043a..07ef429 100644
+> > --- a/block/blk-throttle.c
+> > +++ b/block/blk-throttle.c
+> > @@ -449,9 +449,8 @@ throtl_trim_slice(struct throtl_data *td, struct throtl_grp *tg, bool rw)
+> >  }
+> >  
+> >  static bool tg_with_in_iops_limit(struct throtl_data *td, struct throtl_grp *tg,
+> > -		struct bio *bio, unsigned long *wait)
+> > +		bool rw, size_t size, unsigned long *wait)
+> >  {
+> > -	bool rw = bio_data_dir(bio);
+> >  	unsigned int io_allowed;
+> >  	unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
+> >  	u64 tmp;
+> > @@ -499,9 +498,8 @@ static bool tg_with_in_iops_limit(struct throtl_data *td, struct throtl_grp *tg,
+> >  }
+> >  
+> >  static bool tg_with_in_bps_limit(struct throtl_data *td, struct throtl_grp *tg,
+> > -		struct bio *bio, unsigned long *wait)
+> > +		bool rw, size_t size, unsigned long *wait)
+> >  {
+> > -	bool rw = bio_data_dir(bio);
+> >  	u64 bytes_allowed, extra_bytes, tmp;
+> >  	unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
+> >  
+> > @@ -517,14 +515,14 @@ static bool tg_with_in_bps_limit(struct throtl_data *td, struct throtl_grp *tg,
+> >  	do_div(tmp, HZ);
+> >  	bytes_allowed = tmp;
+> >  
+> > -	if (tg->bytes_disp[rw] + bio->bi_size <= bytes_allowed) {
+> > +	if (tg->bytes_disp[rw] + size <= bytes_allowed) {
+> >  		if (wait)
+> >  			*wait = 0;
+> >  		return 1;
+> >  	}
+> >  
+> >  	/* Calc approx time to dispatch */
+> > -	extra_bytes = tg->bytes_disp[rw] + bio->bi_size - bytes_allowed;
+> > +	extra_bytes = tg->bytes_disp[rw] + size - bytes_allowed;
+> >  	jiffy_wait = div64_u64(extra_bytes * HZ, tg->bps[rw]);
+> >  
+> >  	if (!jiffy_wait)
+> > @@ -540,24 +538,11 @@ static bool tg_with_in_bps_limit(struct throtl_data *td, struct throtl_grp *tg,
+> >  	return 0;
+> >  }
+> >  
+> > -/*
+> > - * Returns whether one can dispatch a bio or not. Also returns approx number
+> > - * of jiffies to wait before this bio is with-in IO rate and can be dispatched
+> > - */
+> >  static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+> > -				struct bio *bio, unsigned long *wait)
+> > +				bool rw, size_t size, unsigned long *wait)
+> >  {
+> > -	bool rw = bio_data_dir(bio);
+> >  	unsigned long bps_wait = 0, iops_wait = 0, max_wait = 0;
+> >  
+> > -	/*
+> > - 	 * Currently whole state machine of group depends on first bio
+> > -	 * queued in the group bio list. So one should not be calling
+> > -	 * this function with a different bio if there are other bios
+> > -	 * queued.
+> > -	 */
+> > -	BUG_ON(tg->nr_queued[rw] && bio != bio_list_peek(&tg->bio_lists[rw]));
+> > -
+> >  	/* If tg->bps = -1, then BW is unlimited */
+> >  	if (tg->bps[rw] == -1 && tg->iops[rw] == -1) {
+> >  		if (wait)
+> > @@ -577,8 +562,8 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+> >  			throtl_extend_slice(td, tg, rw, jiffies + throtl_slice);
+> >  	}
+> >  
+> > -	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
+> > -	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
+> > +	if (tg_with_in_bps_limit(td, tg, rw, size, &bps_wait) &&
+> > +			tg_with_in_iops_limit(td, tg, rw, size, &iops_wait)) {
+> >  		if (wait)
+> >  			*wait = 0;
+> >  		return 1;
+> > @@ -595,20 +580,37 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+> >  	return 0;
+> >  }
+> >  
+> > -static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+> > +/*
+> > + * Returns whether one can dispatch a bio or not. Also returns approx number
+> > + * of jiffies to wait before this bio is with-in IO rate and can be dispatched
+> > + */
+> > +static bool tg_may_dispatch_bio(struct throtl_data *td, struct throtl_grp *tg,
+> > +				struct bio *bio, unsigned long *wait)
+> >  {
+> >  	bool rw = bio_data_dir(bio);
+> > -	bool sync = bio->bi_rw & REQ_SYNC;
+> >  
+> > +	/*
+> > +	 * Currently whole state machine of group depends on first bio queued
+> > +	 * in the group bio list. So one should not be calling this function
+> > +	 * with a different bio if there are other bios queued.
+> > +	 */
+> > +	BUG_ON(tg->nr_queued[rw] && bio != bio_list_peek(&tg->bio_lists[rw]));
+> > +
+> > +	return tg_may_dispatch(td, tg, rw, bio->bi_size, wait);
+> > +}
+> > +
+> > +static void
+> > +throtl_charge_io(struct throtl_grp *tg, bool rw, bool sync, size_t size)
+> > +{
+> >  	/* Charge the bio to the group */
+> > -	tg->bytes_disp[rw] += bio->bi_size;
+> > +	tg->bytes_disp[rw] += size;
+> >  	tg->io_disp[rw]++;
+> >  
+> >  	/*
+> >  	 * TODO: This will take blkg->stats_lock. Figure out a way
+> >  	 * to avoid this cost.
+> >  	 */
+> > -	blkiocg_update_dispatch_stats(&tg->blkg, bio->bi_size, rw, sync);
+> > +	blkiocg_update_dispatch_stats(&tg->blkg, size, rw, sync);
+> >  }
+> >  
+> >  static void throtl_add_bio_tg(struct throtl_data *td, struct throtl_grp *tg,
+> > @@ -630,10 +632,10 @@ static void tg_update_disptime(struct throtl_data *td, struct throtl_grp *tg)
+> >  	struct bio *bio;
+> >  
+> >  	if ((bio = bio_list_peek(&tg->bio_lists[READ])))
+> > -		tg_may_dispatch(td, tg, bio, &read_wait);
+> > +		tg_may_dispatch_bio(td, tg, bio, &read_wait);
+> >  
+> >  	if ((bio = bio_list_peek(&tg->bio_lists[WRITE])))
+> > -		tg_may_dispatch(td, tg, bio, &write_wait);
+> > +		tg_may_dispatch_bio(td, tg, bio, &write_wait);
+> >  
+> >  	min_wait = min(read_wait, write_wait);
+> >  	disptime = jiffies + min_wait;
+> > @@ -657,7 +659,8 @@ static void tg_dispatch_one_bio(struct throtl_data *td, struct throtl_grp *tg,
+> >  	BUG_ON(td->nr_queued[rw] <= 0);
+> >  	td->nr_queued[rw]--;
+> >  
+> > -	throtl_charge_bio(tg, bio);
+> > +	throtl_charge_io(tg, bio_data_dir(bio),
+> > +				bio->bi_rw & REQ_SYNC, bio->bi_size);
+> >  	bio_list_add(bl, bio);
+> >  	bio->bi_rw |= REQ_THROTTLED;
+> >  
+> > @@ -674,8 +677,8 @@ static int throtl_dispatch_tg(struct throtl_data *td, struct throtl_grp *tg,
+> >  
+> >  	/* Try to dispatch 75% READS and 25% WRITES */
+> >  
+> > -	while ((bio = bio_list_peek(&tg->bio_lists[READ]))
+> > -		&& tg_may_dispatch(td, tg, bio, NULL)) {
+> > +	while ((bio = bio_list_peek(&tg->bio_lists[READ])) &&
+> > +			tg_may_dispatch_bio(td, tg, bio, NULL)) {
+> >  
+> >  		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+> >  		nr_reads++;
+> > @@ -684,8 +687,8 @@ static int throtl_dispatch_tg(struct throtl_data *td, struct throtl_grp *tg,
+> >  			break;
+> >  	}
+> >  
+> > -	while ((bio = bio_list_peek(&tg->bio_lists[WRITE]))
+> > -		&& tg_may_dispatch(td, tg, bio, NULL)) {
+> > +	while ((bio = bio_list_peek(&tg->bio_lists[WRITE])) &&
+> > +			tg_may_dispatch_bio(td, tg, bio, NULL)) {
+> >  
+> >  		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+> >  		nr_writes++;
+> > @@ -998,6 +1001,9 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
+> >  		bio->bi_rw &= ~REQ_THROTTLED;
+> >  		return 0;
+> >  	}
+> > +	/* Async writes are ratelimited in blk_throtl_async() */
+> > +	if (rw == WRITE && !(bio->bi_rw & REQ_DIRECT))
+> > +		return 0;
+> >  
+> >  	spin_lock_irq(q->queue_lock);
+> >  	tg = throtl_get_tg(td);
+> > @@ -1018,8 +1024,9 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
+> >  	}
+> >  
+> >  	/* Bio is with-in rate limit of group */
+> > -	if (tg_may_dispatch(td, tg, bio, NULL)) {
+> > -		throtl_charge_bio(tg, bio);
+> > +	if (tg_may_dispatch_bio(td, tg, bio, NULL)) {
+> > +		throtl_charge_io(tg, bio_data_dir(bio),
+> > +				bio->bi_rw & REQ_SYNC, bio->bi_size);
+> >  		goto out;
+> >  	}
+> >  
+> > @@ -1044,6 +1051,35 @@ out:
+> >  	return 0;
+> >  }
+> >  
+> > +/*
+> > + * Enforce throttling on async i/o writes
+> > + */
+> > +int blk_throtl_async(struct request_queue *q, size_t size)
+> > +{
+> > +	struct throtl_data *td = q->td;
+> > +	struct throtl_grp *tg;
+> > +	bool rw = 1;
+> > +	unsigned long wait = 0;
+> > +
+> > +	spin_lock_irq(q->queue_lock);
+> > +	tg = throtl_get_tg(td);
+> > +	if (tg_may_dispatch(td, tg, rw, size, &wait))
+> > +		throtl_charge_io(tg, rw, false, size);
+> > +	else
+> > +		throtl_log_tg(td, tg, "[%c] async. bdisp=%u sz=%u bps=%llu"
+> > +				" iodisp=%u iops=%u queued=%d/%d",
+> > +				rw == READ ? 'R' : 'W',
+> > +				tg->bytes_disp[rw], size, tg->bps[rw],
+> > +				tg->io_disp[rw], tg->iops[rw],
+> > +				tg->nr_queued[READ], tg->nr_queued[WRITE]);
+> > +	spin_unlock_irq(q->queue_lock);
+> > +
+> > +	if (wait >= throtl_slice)
+> > +		schedule_timeout_killable(wait);
+> > +
+> > +	return 0;
+> > +}
+> 
+> I think above is not correct. 
+> 
+> We have this notion of stretching/renewing the throtl_slice if bio
+> is big and can not be dispatched in one slice and one bio has been
+> dispatched, we trim the slice.
+> 
+> So first of all, above code does not take care of other IO going on
+> in same group. We might be extending a slice for a bigger queued bio
+> say 1MB, and suddenly a write happens saying oh, i can dispatch
+> and startving dispatch of that bio.
+> 
+> Similiarly, if there are more than 1 tasks in a group doing write, they
+> all will wait for certain time and after that time start dispatching.
+> I think we might have to have a wait queue per group and put async
+> tasks there and start the time slice on behalf of the task at the
+> front of the queue and wake it up once that task meets its quota.
+> 
+> Keeping track of for which bio the current slice is operating, we
+> reduce the number of wakeups for throtl work. A work is woken up
+> only when bio is ready to be dispatched. So if a bio is queued
+> that means a slice of that direction is already on, any new IO
+> in that group is simply queued instead of trying to check again
+> whether we can dispatch it or not.
 
-The mid case is where we have a lot of small slots which are 
-continuously flushed.  That would be (ept=0 && new mappings continuously 
-established) || (lots of small mappings && lots of host paging 
-activity).  I don't know of any guests that continuously reestablish BAR 
-mappings; and host paging activity doesn't apply to device assignment.  
-What are we left with?
+OK, I understand. I'll try to apply this logic in the next version of
+the patch set.
 
-> >
-> >  The problem here is that all workloads will cache all memslots very
-> >  quickly into sptes and all lookups will be misses.  There are two cases
-> >  where we have lookups that hit the memslots structure: ept=0, and host
-> >  swap.  Neither are things we want to optimize too heavily.
->
-> Which seems to suggest that:
->
->       A. making those misses fast = win
->       B. making those misses fast + caching misses = win++
->       C. we don't care if the sorted array is subtly faster for ept=0
->
-> Sound right?  So is the question whether cached misses alone gets us 99%
-> of the improvement since hits are already getting cached in sptes for
-> cases we care about?
+Thanks for the clarification and the review.
 
-Yes, that's my feeling.  Caching those misses is a lot more important 
-than speeding them up, since the cache will stay valid for long periods, 
-and since the hit rate will be very high.
-
-Cache+anything=O(1)
-no-cache+tree=O(log(n))
-no-cache+array=O(n)
-
--- 
-error compiling committee.c: too many arguments to function
-
+-Andrea
