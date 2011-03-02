@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab1CBRNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:13:05 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36642 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab1CBRND convert rfc822-to-8bit (ORCPT
+	id S1755869Ab1CBROv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:14:51 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:51778 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755280Ab1CBROu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:13:03 -0500
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>,
-        "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Williamson <michael.williamson@criticallink.com>,
-        "Chemparathy, Cyril" <cyril@ti.com>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Wed, 2 Mar 2011 22:42:43 +0530
-Subject: RE: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
-Thread-Topic: [PATCH 1/1] davinci: changed SRAM allocator to shared ram.
-Thread-Index: AcvVrk3sdDgHpSlTSLiwuUzwIJ5gbwDTgBmQ
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C0082E3@dbde02.ent.ti.com>
-References: <1297434088-27995-1-git-send-email-subhasish@mistralsolutions.com>
- <B85A65D85D7EB246BE421B3FB0FBB593024BE49175@dbde02.ent.ti.com>
- <886E26C48DE446C3937D89ECF86030B2@subhasishg>
- <B85A65D85D7EB246BE421B3FB0FBB593024BE49711@dbde02.ent.ti.com>
- <25DBF349769A4CF7B883D6D7FF01AD70@subhasishg>
-In-Reply-To: <25DBF349769A4CF7B883D6D7FF01AD70@subhasishg>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Mar 2011 12:14:50 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX19j/3wbhwRjm4ans1EIwy1Qve3UYGXstotetUEJwR
+	RvwoBvo0ZW6jlq
+From: =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: gregkh@suse.de
+Cc: haiyangz@microsoft.com, hjanssen@microsoft.com,
+        linux-kernel@vger.kernel.org, toralf.foerster@gmx.de
+Subject: [PATCH] ./drivers/staging/hv/netvsc_drv.c: no assignment within if + whitespace clean up
+Date: Wed,  2 Mar 2011 18:14:47 +0100
+Message-Id: <1299086087-20928-1-git-send-email-toralf.foerster@gmx.de>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Subhasish,
+This patch fixes all complaints of checkpatch.pl.
 
-On Sat, Feb 26, 2011 at 17:42:39, Subhasish Ghosh wrote:
-> Hi Sekhar,
-> 
-> I tried this using MMC and Kelvin's suggestions, but it never came back. 
-> Here is a log:
+Signed-off-by: Toralf Förster <toralf.foerster@gmx.de>
+---
+ drivers/staging/hv/netvsc_drv.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Was this result with or without this patch applied?
-
-> 
-> root@arago:~# rtcwake -d /dev/rtc0 -s 20 -m mem
-> wakeup from "mem" at Tue Apr 21 14:31:13 2009
-> PM: Syncing filesystems ... done.
-> Freezing user space processes ... (elapsed 0.01 seconds) done.
-> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> Suspending console(s) (use no_console_suspend to debug)
-> 
-> From the Kconfig I had enabled RTC_DRV_OMAP, CONFIG_PM, CONFIG_SUSPEND.
-
-Nothing stands out from these logs. One thing to
-verify is if the RTC Alarm interrupt is really
-working by using the test program present in the
-Documentation/ folder.
-
-Anyway, the easiest way for you to move quickly is
-to use ramdisk so you can bypass all driver specific
-issues.
-
-Thanks,
-Sekhar
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index b41c964..c531e08 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -126,8 +126,9 @@ static void netvsc_xmit_completion(void *context)
+ 
+ 		dev_kfree_skb_any(skb);
+ 
+-		if ((net_device_ctx->avail += num_pages) >= PACKET_PAGES_HIWATER)
+- 			netif_wake_queue(net);
++		net_device_ctx->avail += num_pages
++		if (net_device_ctx->avail >= PACKET_PAGES_HIWATER)
++			netif_wake_queue(net);
+ 	}
+ }
+ 
+@@ -207,7 +208,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 			   net->stats.tx_packets,
+ 			   net->stats.tx_bytes);
+ 
+-		if ((net_device_ctx->avail -= num_pages) < PACKET_PAGES_LOWATER)
++		net_device_ctx->avail -= num_pages;
++		if (net_device_ctx->avail < PACKET_PAGES_LOWATER)
+ 			netif_stop_queue(net);
+ 	} else {
+ 		/* we are shutting down or bus overloaded, just drop packet */
+-- 
+1.7.4.1
 
