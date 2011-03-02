@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1CEI0f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 03:26:35 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42933 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1CEI0d (ORCPT
+	id S1752392Ab1CEI25 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 03:28:57 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44326 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab1CEI24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 03:26:33 -0500
+	Sat, 5 Mar 2011 03:28:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=I7Oz56tT1IaExtvFdzT9S7t4vKvZtqcOEczowk49z+4fm0nm85p5KFTRx/BYwts4CK
-         B3EDh0CFny+0BjnKThj9ex/8jfGDgb190DIMUZCMJtQNjpgO39CgrieXaNNNp0v2g6G1
-         7WhR8fTxi8M4HSYvYsrek0qzW80c3Y4LEdX58=
-Message-ID: <4D71F3B5.7080803@suse.cz>
-Date: Sat, 05 Mar 2011 09:26:29 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        netdev@vger.kernel.org, maxk@qualcomm.com
-Subject: Re: tun routing is broken
-References: <20110304.010603.104076956.davem@davemloft.net>	<4D70B2DC.2000005@gmail.com>	<4D71EE86.6030309@suse.cz> <20110305.001022.183044112.davem@davemloft.net> <4D71F194.9010402@suse.cz>
-In-Reply-To: <4D71F194.9010402@suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=EvBa1fND5ZqzG6CfGjL7D50DMsV+zhk8K0XAtidIHgwk+kuttwyL0HdlOwT5qg9/K0
+         XCaosplcrku4N400q1uzZh74Qb06u1xP3QQZlyX9ZKpVUZV9my6qHQCH4mGZL+6HC3Ab
+         0UWr9oAdePkapmPrCmjli3XMtyVT0YUJ1yLMg=
+From: bookjovi@gmail.com
+To: bookjovi@gmail.com
+Cc: Andrew Morton <akpm@linux-foundation.org> (commit_signer:17/41=41%),
+        Al Viro <viro@zeniv.linux.org.uk> (commit_signer:7/41=17%),
+        David Rientjes <rientjes@google.com> (commit_signer:7/41=17%),
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> (commit_signer:4/41=10%),
+        Nick Piggin <npiggin@kernel.dk> (commit_signer:4/41=10%),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 2/2] proc: fix some wrong error code usage
+Date: Wed,  2 Mar 2011 17:20:22 -0500
+Message-Id: <1299104422-2620-1-git-send-email-bookjovi@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2011 09:17 AM, Jiri Slaby wrote:
->> ipv4: Fix __ip_dev_find() to use ifa_local instead of ifa_address.
-> 
-> It would be great to have a References: tag or better changelog. Then I
-> would give the commit a shot. The way it is I ignored it when looking at
-> next/master inside net/ipv4/ changes for commits to test.
-> 
-> Going to boot with this change.
+From: Jovi Zhang <bookjovi@gmail.com>
 
-Yes, it works.
+[root@wei 1]# cat /proc/1/mem
+cat: /proc/1/mem: No such process
 
-thanks,
+error code -ESRCH is wrong in this situation
+
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+---
+ fs/proc/base.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 9d096e8..9c23db0 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -775,7 +775,8 @@ static ssize_t mem_read(struct file * file, char __user * buf,
+ 	if (!task)
+ 		goto out_no_task;
+ 
+-	if (check_mem_permission(task))
++	ret = check_mem_permission(task);
++	if (ret)
+ 		goto out;
+ 
+ 	ret = -ENOMEM;
+@@ -845,7 +846,8 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 	if (!task)
+ 		goto out_no_task;
+ 
+-	if (check_mem_permission(task))
++	copied = check_mem_permission(task);
++	if (copied)
+ 		goto out;
+ 
+ 	copied = -ENOMEM;
+@@ -917,6 +919,7 @@ static ssize_t environ_read(struct file *file, char __user *buf,
+ 	if (!task)
+ 		goto out_no_task;
+ 
++	ret = -EPERM;
+ 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+ 		goto out;
+ 
 -- 
-js
-suse labs
+1.7.2.3
+
