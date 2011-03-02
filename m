@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623Ab1CBWRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 17:17:52 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:37060 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756919Ab1CBWRv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 17:17:51 -0500
-Message-ID: <4D6EC20B.5090007@canonical.com>
-Date: Wed, 02 Mar 2011 23:17:47 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1757810Ab1CBWSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:18:13 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46929 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754924Ab1CBWSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 17:18:11 -0500
+Date: Wed, 2 Mar 2011 23:18:08 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] Fix mapping->writeback_index to point to the last
+ written page
+Message-ID: <20110302221808.GG7496@quack.suse.cz>
+References: <4D676067.8050200@ce.jp.nec.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.30
-References: <20110302145828.GA4999@kroah.com> <4D6E7548.807@canonical.com> <20110302204202.GB19022@suse.de>
-In-Reply-To: <20110302204202.GB19022@suse.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D676067.8050200@ce.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2011 09:42 PM, Greg KH wrote:
-> On Wed, Mar 02, 2011 at 05:50:16PM +0100, Stefan Bader wrote:
->>> FUJITA Tomonori (1):
->>>       swiotlb: fix wrong panic
->>>
->>
->> This one breaks compilation of 64bit for me as swiotlb_tbl_unmap_single() does
->> not exist. It does not look like it is a simple single patch that would get it
->> back to 2.6.32.
+  Hello,
+
+On Fri 25-02-11 16:55:19, Jun'ichi Nomura wrote:
+> For range-cyclic writeback (e.g. kupdate), the writeback code sets
+> a continuation point of the next writeback to mapping->writeback_index.
 > 
-> I don't understand.  Is this patch somehow broken?  Is there an
-> additional patch I need to apply to fix the build issue?  I need more
-> information here.
+> Current code sets the page next to the last written page.
+> I think it's intended for sequential writer.
+  Not exactly. The code is meant so that background writeback gets to
+writing the end of a file which gets continuously dirtied (if we always
+started at the beginning, nr_to_write could always get to 0 before we reach
+end of the file).
+
+> However, in many cases, sequential writer is writing in the middle of the page
+> and it just redirties the last written page by continuing from that.
 > 
-
-This is a patch included in your 2.6.32.30 release and it is broken because it
-uses a function that does not exist in 2.6.32. When I looked at the git blame of
-the function in Linus tree it consists of multiple shas. So it would be more
-than one single patch needed from there.
-
--Stefan
-
-> thanks,
+> So the next writeback should try to continue from the last written page,
+> not the next one.
+> (If it's clean because the writer was on the page boundary,
+>  pagevec_lookup_tag just skips it. So no problem.)
 > 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Otherwise, the last written page was left dirty until the writeback
+> wraps around.
+> 
+> I.e. if the sequential dirtier has written on pagecache as '*'s below:
+> 
+>    |*******|*******|****---|-------|-------|     ( |---| is a page )
+> 
+> then, writeback happens:
+> 
+>    |-------|-------|-------|-------|-------|
+> 
+> and the dirtier continues:
+> 
+>    |-------|-------|----***|*******|*****--|
+>                    A       B
+> 
+> Next writeback should start from page A, not B.
+  Yes, this is downside of our current scheme. Have you actually observed
+it in practice or is it mostly a theoretic concern?
+ 
+But as I'm thinking about it, it wouldn't harm our original aim to do
+what you propose and it can help this relatively common case. So I think
+it's a good idea. Fengguang, what do you think?
 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
