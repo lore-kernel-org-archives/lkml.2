@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab1CBWeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 17:34:09 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:46203 "EHLO ogre.sisk.pl"
+	id S1757446Ab1CBWlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:41:15 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:57130 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757860Ab1CBWeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 17:34:07 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 0/2] Re: 2.6.38 regression caused by commit 415e12b
-Date: Wed, 2 Mar 2011 23:30:49 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ozan Caglayan <ozan@pardus.org.tr>
-References: <20110228014218.GA11083@xanatos> <20110302034140.GA2205@xanatos> <201103021221.06312.rjw@sisk.pl>
-In-Reply-To: <201103021221.06312.rjw@sisk.pl>
+	id S1754516Ab1CBWlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 17:41:14 -0500
+Date: Wed, 2 Mar 2011 14:41:08 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
+ to kthread
+Message-ID: <20110302224108.GA23194@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110223013917.GA20996@linux.vnet.ibm.com>
+ <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <4D6765B6.1030401@cn.fujitsu.com>
+ <20110225203219.GD2269@linux.vnet.ibm.com>
+ <4D6B16A8.4050405@cn.fujitsu.com>
+ <1298886437.2428.10174.camel@twins>
+ <20110301001300.GD2331@linux.vnet.ibm.com>
+ <1298990291.5226.870.camel@laptop>
+ <20110302000703.GK2218@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Message-Id: <201103022330.49297.rjw@sisk.pl>
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110302000703.GK2218@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 02, 2011, Rafael J. Wysocki wrote:
-> On Wednesday, March 02, 2011, Sarah Sharp wrote:
-> > On Wed, Mar 02, 2011 at 01:17:04AM +0100, Rafael J. Wysocki wrote:
-> > > On Wednesday, March 02, 2011, Sarah Sharp wrote:
-> > > > On Wed, Mar 02, 2011 at 12:30:16AM +0100, Rafael J. Wysocki wrote:
-> > > > > On Tuesday, March 01, 2011, Sarah Sharp wrote:
-> > > > > > On Tue, Mar 01, 2011 at 09:55:33PM +0100, Rafael J. Wysocki wrote:
-> > > > > > > Please check if the appended patch (on top of the Linus' current) helps.
-> > > > > > 
-> > > > > > Sorry, it doesn't help.  Same message as before.
-> > > > > 
-> > > > > Can you send dmesg with the patch applied, please?
-> > > > 
-> > > > Attached.
-> > > 
-> > > Something's fishy.  Evidently, _OSC is not executed on your system
-> > > although it should be with the patch.
-> > > 
-> > > Please try the patch below instead and send dmesg (either way).
-> > 
-> > The host controller works with that patch.  dmesg is attached.
+On Tue, Mar 01, 2011 at 04:07:03PM -0800, Paul E. McKenney wrote:
+> On Tue, Mar 01, 2011 at 03:38:11PM +0100, Peter Zijlstra wrote:
+> > On Mon, 2011-02-28 at 16:13 -0800, Paul E. McKenney wrote:
+
+[ . . . ]
+
+> > wait_event() will only actually wait if the condition is false, in the
+> > start-up case above it will find the condition true and fall right
+> > through to do stuff.
 > 
-> OK, thanks.
-> 
-> There are two problems.  First, your BIOS says that ASPM is not supported
-> by it, so we don't call _OSC, which should be fixed by the previous patch.
-> Second, pci_msi_enabled() returns 0 on your system, which is kind of strange,
-> because it evidently uses MSIs (as visible in the dmesg).
-> 
-> While I think we can safely request _OSC control even if ASPM is not supported
-> by the hardware (according to the BIOS), which is done after the first patch,
-> we need to figure out why 0 is returned by pci_msi_enabled() on your system
-> and try to work around that.
+> So as long as it is OK to call sched_setscheduler_nocheck() before
+> the kthread is first awakened, we should be OK.
 
-Regardless, I think we should report MSI and ASPM support to the BIOS unless
-directly disabled via the kernel command line or .config.
+So the softlockup code kills me when I do it this way.  Or can kill me.
+>From what I can se the problem is that it might be the case that no one
+needs a particular RCU kthread for some time.  In addition, if the kthread
+has not yet done the wait_event(), wake_up() won't know to wake it up.
+The flag gets set, and all zero of the tasks blocked on the event's
+queue are awakened, but the not-yet-awakened task still sleeps because
+it has not yet done the wait_event().
 
-I'm going to send two patches in replies to this message.  Please apply them
-both on top of 2.6.38-rc7 and report back.
+So I am falling back to waking each thread up just after creation so
+that they can be safely parked regardless of who needs which kthread at
+what time in the future.
 
-Thanks,
-Rafael
+On the other hand, making these changes and testing them helped me find
+and fix a number of subtle and not-so-subtle bugs in the TREE_RCU priority
+boosting code, so I most certainly cannot argue with the outcome!  ;-)
 
+							Thanx, Paul
