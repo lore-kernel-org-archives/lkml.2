@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab1CBVyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:54:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51261 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757365Ab1CBVyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:54:16 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [PATCH 0/7] Final BKL removal, take 2
-Date: Wed, 2 Mar 2011 22:54:09 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Evgeniy Dushistov <dushistov@mail.ru>, linux-fsdevel@vger.kernel.org,
-        linux-x25@vger.kernel.org, Max Vozeler <max@vozeler.com>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        netdev@vger.kernel.org, Nick Bowler <nbowler@elliptictech.com>,
-        Nick Piggin <npiggin@gmail.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
-References: <1299021191-17961-1-git-send-email-arnd@arndb.de> <20110302140428.GA630@suse.de> <4D6EA965.9050709@redhat.com>
-In-Reply-To: <4D6EA965.9050709@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103022254.10078.arnd@arndb.de>
-X-Provags-ID: V02:K0:/32bqq42jvmEghowr5HWOILsnNIJNmCtoK3W5PXpjn4
- 18HocFqynt9d8ydYzZnNz81o9JPv7rtOz8MBAWCcuHm5KaweZh
- mYBBUepzV4u049BFNbymXOwfAXNOX1zqmLlaaHqjR7jrLmzE7g
- WsPfK7uHRS1jOtP4sMR27VA8V/TGVjZ33TMbc1BYkjmlJEOhRM
- +MXayjlKrI55KFovqaEGw==
+	id S1757859Ab1CBV4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:56:53 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53214 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756306Ab1CBV4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 16:56:52 -0500
+From: Armando Uribe <x0095078@ti.com>
+To: <hiroshi.doyu@nokia.com>
+Cc: <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Armando Uribe <x0095078@ti.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: [PATCHv2] omap:mailbox: resolve hang issue
+Date: Wed,  2 Mar 2011 16:14:18 -0600
+Message-Id: <1299104058-28565-1-git-send-email-x0095078@ti.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 March 2011 21:32:37 Mauro Carvalho Chehab wrote:
-> >>
-> >> It is probably better to queue the staging/cx25821 patch via my tree, as this is one
-> >> of those staging files that it is handled via media tree. So, if it is ok
-> >> for you both, I'll get patch 2/7.
-> > 
-> > Yes, you are right, please take it through your tree.
-> 
-> Patch applied on my tree, thanks!
+From: Hari Kanigeri <h-kanigeri2@ti.com>
 
-I've pushed out everything to my git tree, except for the two staging
-patches that go through the other trees.
+omap4 interrupt disable bits is different. On rx kfifo full, the mbox rx
+interrupts wasn't getting disabled, and this is causing the rcm stress tests
+to hang.
 
-Once everything is in -next, I'll add the last patch to remove the
-infrastructure.
+Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
+Signed-off-by: Armando Uribe <x0095078@ti.com>
+Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+---
+ arch/arm/mach-omap2/mailbox.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-Thanks for the feedback!
+diff --git a/arch/arm/mach-omap2/mailbox.c b/arch/arm/mach-omap2/mailbox.c
+index 394413d..011ca50 100644
+--- a/arch/arm/mach-omap2/mailbox.c
++++ b/arch/arm/mach-omap2/mailbox.c
+@@ -193,10 +193,12 @@ static void omap2_mbox_disable_irq(struct omap_mbox *mbox,
+ 		omap_mbox_type_t irq)
+ {
+ 	struct omap_mbox2_priv *p = mbox->priv;
+-	u32 l, bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
+-	l = mbox_read_reg(p->irqdisable);
+-	l &= ~bit;
+-	mbox_write_reg(l, p->irqdisable);
++	u32 bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
++
++	if (!cpu_is_omap44xx())
++		bit = mbox_read_reg(p->irqdisable) & ~bit;
++
++	mbox_write_reg(bit, p->irqdisable);
+ }
+ 
+ static void omap2_mbox_ack_irq(struct omap_mbox *mbox,
+-- 
+1.7.0.4
 
-	Arnd
