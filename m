@@ -1,177 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab1CBQKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 11:10:14 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:55197 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab1CBQKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 11:10:12 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.29+drm33.14
-Date: Wed,  2 Mar 2011 17:10:09 +0100
-Message-Id: <1299082209-28610-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-To: linux-kernel@vger.kernel.org
-To: stable@kernel.org
-To: kernel-team@lists.ubuntu.com
+	id S1754726Ab1CBQM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 11:12:56 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:52192 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752588Ab1CBQMy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 11:12:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <1dc497a090414bf80ff588791d6db5cc@mail.gmail.com>
+References: <1299008793-27428-1-git-send-email-fernando.lugo@ti.com>
+	<1dc497a090414bf80ff588791d6db5cc@mail.gmail.com>
+Date: Wed, 2 Mar 2011 10:12:53 -0600
+Message-ID: <AANLkTimiYogk7Ceon==L3q=FQrySgq51JYzbVyiY5XD=@mail.gmail.com>
+Subject: Re: [PATCH] omap:iommu-added cache flushing operation for L2 cache
+From: "Gupta, Ramesh" <grgupta@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>, hiroshi.doyu@nokia.com,
+        tony@atomide.com, linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.29+drm33.14 longterm tree.
+Hi Santosh,
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
+On Wed, Mar 2, 2011 at 6:48 AM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> Hello,
+>> -----Original Message-----
+>> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
+>> owner@vger.kernel.org] On Behalf Of Fernando Guzman Lugo
+>> Sent: Wednesday, March 02, 2011 1:17 AM
+>> To: hiroshi.doyu@nokia.com
+>> Cc: tony@atomide.com; linux@arm.linux.org.uk; linux-
+>> omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+>> kernel@vger.kernel.org; Ramesh Gupta; Hari Kanigeri
+>> Subject: [PATCH] omap:iommu-added cache flushing operation for L2
+>> cache
+>>
+>> From: Ramesh Gupta <grgupta@ti.com>
+>>
+>> Signed-off-by: Ramesh Gupta <grgupta@ti.com>
+>> Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
+>> ---
+>>  arch/arm/plat-omap/iommu.c |   22 ++++++++--------------
+>>  1 files changed, 8 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
+>> index e3eb038..aeb2c33 100644
+>> --- a/arch/arm/plat-omap/iommu.c
+>> +++ b/arch/arm/plat-omap/iommu.c
+>> @@ -471,22 +471,15 @@ EXPORT_SYMBOL_GPL(foreach_iommu_device);
+>>   */
+>>  static void flush_iopgd_range(u32 *first, u32 *last)
+>>  {
+>> -     /* FIXME: L2 cache should be taken care of if it exists */
+>> -     do {
+>> -             asm("mcr        p15, 0, %0, c7, c10, 1 @ flush_pgd"
+>> -                 : : "r" (first));
+>> -             first += L1_CACHE_BYTES / sizeof(*first);
+>> -     } while (first <= last);
+>> +     dmac_flush_range(first, last);
+>
+> There is note just above this API.
 
-This release updates the DRM subsystem only.
+Thank you for your inputs. I agree, I will send an updated patch with
+proper apis.
 
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-
--Stefan
-
-------
-
-* drm/radeon/kms: add quirk for Mac Radeon HD 2600 card
-* drm/radeon/kms: make the mac rv630 quirk generic
-* drm/radeon/kms: add pll debugging output
-* drm/radeon: remove 0x4243 pci id
-* drm/radeon/kms: fix s/r issues with bios scratch regs
-* drm/i915/lvds: Add AOpen i915GMm-HFS to the list of false-positive LVDS
-* drm/i915: Add dependency on CONFIG_TMPFS
-* Linux 2.6.32.29+drm33.14
-
- Makefile                                 |    2 +-
- drivers/gpu/drm/Kconfig                  |    3 +++
- drivers/gpu/drm/i915/intel_lvds.c        |    8 ++++++++
- drivers/gpu/drm/radeon/radeon_atombios.c |   16 +++++++++++++---
- drivers/gpu/drm/radeon/radeon_display.c  |    4 ++++
- include/drm/drm_pciids.h                 |    1 -
- 6 files changed, 29 insertions(+), 5 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 1453b38..0b9e821 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .29+drm33.13
-+EXTRAVERSION = .29+drm33.14
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index 305c590..7bb111b 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -94,7 +94,10 @@ config DRM_I830
- config DRM_I915
- 	tristate "i915 driver"
- 	depends on AGP_INTEL
-+	# we need shmfs for the swappable backing store, and in particular
-+	# the shmem_readpage() which depends upon tmpfs
- 	select SHMEM
-+	select TMPFS
- 	select DRM_KMS_HELPER
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 66df0c3..49c724e 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -894,6 +894,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "AOpen i915GMm-HFS",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
-+			DMI_MATCH(DMI_BOARD_NAME, "i915GMm-HFS"),
-+		},
-+	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Aopen i945GTt-VFA",
- 		.matches = {
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "AO00001JW"),
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index b57e4a8..7c9b013 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -262,6 +262,13 @@ static bool radeon_atom_apply_quirks(struct drm_device *dev,
- 			*line_mux = 0x90;
- 	}
-
-+	/* mac rv630, rv730, others */
-+	if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
-+	    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
-+		*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
-+		*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
-+	}
-+
- 	/* ASUS HD 3600 XT board lists the DVI port as HDMI */
- 	if ((dev->pdev->device == 0x9598) &&
- 	    (dev->pdev->subsystem_vendor == 0x1043) &&
-@@ -1489,7 +1496,7 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
- 	bios_2_scratch &= ~ATOM_S2_VRI_BRIGHT_ENABLE;
-
- 	/* tell the bios not to handle mode switching */
--	bios_6_scratch |= (ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH | ATOM_S6_ACC_MODE);
-+	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
-
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
-@@ -1540,10 +1547,13 @@ void radeon_atom_output_lock(struct drm_encoder *encoder, bool lock)
- 	else
- 		bios_6_scratch = RREG32(RADEON_BIOS_6_SCRATCH);
-
--	if (lock)
-+	if (lock) {
- 		bios_6_scratch |= ATOM_S6_CRITICAL_STATE;
--	else
-+		bios_6_scratch &= ~ATOM_S6_ACC_MODE;
-+	} else {
- 		bios_6_scratch &= ~ATOM_S6_CRITICAL_STATE;
-+		bios_6_scratch |= ATOM_S6_ACC_MODE;
-+	}
-
- 	if (rdev->family >= CHIP_R600)
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index 7e17a36..567bd8e 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -578,6 +578,10 @@ void radeon_compute_pll(struct radeon_pll *pll,
- 	*frac_fb_div_p = best_frac_feedback_div;
- 	*ref_div_p = best_ref_div;
- 	*post_div_p = best_post_div;
-+	DRM_DEBUG_KMS("%d %d, pll dividers - fb: %d.%d ref: %d, post %d\n",
-+		      freq, best_freq / 1000, best_feedback_div, best_frac_feedback_div,
-+		      best_ref_div, best_post_div);
-+
- }
-
- void radeon_compute_pll_avivo(struct radeon_pll *pll,
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index 3d016e9..d2674f9 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -28,7 +28,6 @@
- 	{0x1002, 0x4156, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV350}, \
- 	{0x1002, 0x4237, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP}, \
- 	{0x1002, 0x4242, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R200}, \
--	{0x1002, 0x4243, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R200}, \
- 	{0x1002, 0x4336, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS100|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x4337, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x4437, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
+regards
+Ramesh Gupta G
