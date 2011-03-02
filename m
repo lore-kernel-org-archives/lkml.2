@@ -1,128 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1CBR5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:57:31 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:6258 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab1CBR53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:57:29 -0500
-Date: Wed, 2 Mar 2011 18:57:18 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Dirk Eibach <eibach@gdsys.de>
-Cc: linux-kernel@vger.kernel.org, guenter.roeck@ericsson.com,
-        lm-sensors@lm-sensors.org, rdunlap@xenotime.net,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4] hwmon: Add support for Texas Instruments ADS1015
-Message-ID: <20110302185718.3c0e06dc@endymion.delvare>
-In-Reply-To: <1298639897-26856-1-git-send-email-eibach@gdsys.de>
-References: <20110224174807.41c7597f@endymion.delvare>
-	<1298639897-26856-1-git-send-email-eibach@gdsys.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	id S1756665Ab1CBR6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:58:09 -0500
+Received: from protonic.xs4all.nl ([213.84.116.84]:21094 "EHLO protonic.prtnl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756065Ab1CBR6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 12:58:07 -0500
+Message-ID: <33012.84.56.74.117.1299088565.squirrel@protonic.xs4all.nl>
+In-Reply-To: <20110302183143.c52ecc00.sfr@canb.auug.org.au>
+References: <20110301145436.b1ae1923.sfr@canb.auug.org.au>
+    <20110301093528.00184f93@archvile>
+    <20110302183143.c52ecc00.sfr@canb.auug.org.au>
+Date: Wed, 2 Mar 2011 18:56:05 +0100 (CET)
+Subject: Re: linux-next: manual merge of the mfd tree with the i.MX tree
+From: david@protonic.nl
+To: "Stephen Rothwell" <sfr@canb.auug.org.au>
+Cc: "David Jander" <david.jander@protonic.nl>,
+        "Samuel Ortiz" <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Andres Salomon" <dilinger@queued.net>,
+        "David Jander" <david@protonic.nl>,
+        "Sascha Hauer" <s.hauer@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+User-Agent: SquirrelMail/1.4.10a
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dirk,
+> Hi David,
+>
+> On Tue, 1 Mar 2011 09:35:28 +0100 David Jander <david.jander@protonic.nl>
+> wrote:
+>>
+>> Your fix seems correct, although I fear I am too dumb to understand why
+>> commit
+>> e84e545d47d26644275a79fe5ebc1797bcb80910 introduces this extra struct
+>> nesting.... AFAICS gcc will end up doing the same as without the extra
+>> nest.
+>
+> Thanks.
+>
+>> Btw, include/linux/mfd/mc13783.h should end up disappearing after you're
+>> done
+>> merging... I hope so.
+>
+> That file is still included by several others:
+>
+> $ git grep -w mfd/mc13783.h
+> arch/arm/mach-imx/mach-mx27_3ds.c:#include <linux/mfd/mc13783.h>
+> arch/arm/mach-imx/mach-pcm038.c:#include <linux/mfd/mc13783.h>
+> arch/arm/mach-mx3/mach-mx31_3ds.c:#include <linux/mfd/mc13783.h>
+> arch/arm/mach-mx3/mach-mx31lilly.c:#include <linux/mfd/mc13783.h>
+> arch/arm/mach-mx3/mach-mx31lite.c:#include <linux/mfd/mc13783.h>
+> arch/arm/mach-mx3/mach-mx31moboard.c:#include <linux/mfd/mc13783.h>
+> drivers/hwmon/mc13783-adc.c:#include <linux/mfd/mc13783.h>
+> drivers/input/touchscreen/mc13783_ts.c:#include <linux/mfd/mc13783.h>
+> drivers/leds/leds-mc13783.c:#include <linux/mfd/mc13783.h>
+> drivers/mfd/mc13xxx-core.c:#include <linux/mfd/mc13783.h>
+> drivers/regulator/mc13783-regulator.c:#include <linux/mfd/mc13783.h>
 
-On Fri, 25 Feb 2011 14:18:17 +0100, Dirk Eibach wrote:
-> Signed-off-by: Dirk Eibach <eibach@gdsys.de>
-> ---
-> Changes since v1:
-> - fixed/extended Documentation
-> - removed unused register definitions
-> - hardcoded PGA fullscale table size
-> - made sure patch applies against v2.6.38-rc4
-> - reordered functions to avoid forward declaration
-> - results from i2c_smbus_read_word_data() are handled correctly
-> - moved locking into ads1015_read_value()
-> - removed unnecessray clearing of bit
-> - proper error handling in ads1015_read_value()
-> - use DIV_ROUND_CLOSEST for scaling result
-> - removed detect()
-> 
-> Changes since v2:
-> - removed *all* leftovers from detect()
-> - fixed return with mutex held
-> - made sysfs representation configurable
->   (hope this will be the reference implementation for generations to come ;)
-> 
-> Changes since v3:
-> - included linux/of.h
-> - remove linux/types.h from header file
-> - sysfs is now configured with a bitmask
-> - assume big-endian of-properties
+These should all be either removed or changed to mc13xxx.h by subsequent
+patches.
+Sascha, where is the rest?
+AFAICR, I already fixed all of these...
 
-Patch applied. Two things I'd still like to comment on:
-
-> (...)
-> +static unsigned int ads1015_get_exported_channels(struct i2c_client *client)
-> +{
-> +	struct ads1015_platform_data *pdata = dev_get_platdata(&client->dev);
-> +#ifdef CONFIG_OF
-> +	struct device_node *np = client->dev.of_node;
-> +	const __be32 *of_channels;
-> +	int of_channels_size;
-> +#endif
-> +
-> +	/* prefer platform data */
-> +	if (pdata)
-> +		return pdata->exported_channels;
-> +
-> +#ifdef CONFIG_OF
-> +	/* fallback on OF */
-> +	of_channels = of_get_property(np, "exported-channels",
-> +				      &of_channels_size);
-> +	if (of_channels && (of_channels_size == sizeof(*of_channels)))
-> +		return be32_to_cpup(of_channels);
-> +#endif
-
-The be32 thing looks odd. I don't get the idea, but as I don't know
-much about devicetree, I'll trust you.
-
-> +
-> +	/* fallback on default configuration */
-> +	return ADS1015_DEFAULT_CHANNELS;
-> +}
-> +
-> +static int ads1015_probe(struct i2c_client *client,
-> +			 const struct i2c_device_id *id)
-> +{
-> +	struct ads1015_data *data;
-> +	int err;
-> +	unsigned int exported_channels;
-> +	unsigned int k;
-> +	unsigned int n = 0;
-> +
-> +	data = kzalloc(sizeof(struct ads1015_data), GFP_KERNEL);
-> +	if (!data) {
-> +		err = -ENOMEM;
-> +		goto exit;
-> +	}
-> +
-> +	i2c_set_clientdata(client, data);
-> +	mutex_init(&data->update_lock);
-> +
-> +	/* build sysfs attribute group */
-> +	data->attr_group.attrs = data->attr_table;
-> +	exported_channels = ads1015_get_exported_channels(client);
-> +	for (k = 0; k < ADS1015_CONFIG_CHANNELS; ++k) {
-> +		if (!(exported_channels & (1<<k)))
-> +			continue;
-> +		data->attr_table[n++] =
-> +			all_attributes[k];
-
-There was no reason to split this statement, so I've put it back on a
-single line.
-
-> +	}
-
-Besides this, there is still more dynamic attribute handling than I
-expected. It looks OK, but I'll propose a patch making it more static.
-You'll tell me what you think.
+Best Regards,
 
 -- 
-Jean Delvare
+David Jander
+
+
