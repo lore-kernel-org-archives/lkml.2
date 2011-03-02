@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab1CBO2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 09:28:17 -0500
-Received: from kroah.org ([198.145.64.141]:35981 "EHLO coco.kroah.org"
+	id S1752980Ab1CBO2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 09:28:23 -0500
+Received: from kroah.org ([198.145.64.141]:35988 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956Ab1CBO2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 09:28:15 -0500
-Date: Wed, 2 Mar 2011 09:23:22 -0500
+	id S1751366Ab1CBO2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 09:28:19 -0500
+Date: Wed, 2 Mar 2011 09:26:26 -0500
 From: Greg KH <greg@kroah.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hema HK <hemahk@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Thomas Weber <weber@corscience.de>
-Subject: Re: linux-next: manual merge of the usb tree with the omap tree
-Message-ID: <20110302142322.GA2889@kroah.com>
-References: <20110302165746.814a45a3.sfr@canb.auug.org.au>
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Roland Vossen <rvossen@broadcom.com>
+Subject: Re: linux-next: manual merge of the staging tree with the wireless
+ tree
+Message-ID: <20110302142626.GC2889@kroah.com>
+References: <20110302172754.412dca34.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110302165746.814a45a3.sfr@canb.auug.org.au>
+In-Reply-To: <20110302172754.412dca34.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 04:57:46PM +1100, Stephen Rothwell wrote:
+On Wed, Mar 02, 2011 at 05:27:54PM +1100, Stephen Rothwell wrote:
 > Hi Greg,
 > 
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/musb/musb_core.h between commit
-> 59b479e0985f0b795d68331d6443a7f89c47768d ("omap: Start using
-> CONFIG_SOC_OMAP") from the omap tree and commit
-> da68ccec210c45eb99e461ad31b499b4e7043c41 ("usb: musb: Remove platform
-> context save/restore API") from the usb tree.
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/brcm80211/brcmsmac/wl_mac80211.c between commit
+> 7bb4568372856688bc070917265bce0b88bb7d4d ("mac80211: make tx() operation
+> return void") from the wireless tree (where this file is called
+> drivers/staging/brcm80211/sys/wl_mac80211.c) and commits
+> 62b54dca17ef40116491b0ca27ca35fbe9daedc6 ("staging: brcm80211: cleanup
+> function prototypes in header files") and
+> 55182a10063c40eda4dc5afecff712e5c3617ffc ("staging: brcm80211: cosmetic
+> changes") from the staging tree.
 > 
-> The latter removed the code modified by the former, so I did that.
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Thanks.  I'll let Felipe handle all of these omap merge issues, as I
-thought the reason I was going to take these patches from him was to
-prevent issues like this from happening :)
+Thanks, that looks good to me.
 
 greg k-h
