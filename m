@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab1CBRZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:25:27 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64419 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab1CBRZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:25:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=A1pPCkqaNgEw1wojseTu6JhoWpPHHP2oyy6AtutqyoExbHMwPh54PmFS8snz7IQLcn
-         M2GNss6UEPJiFlr4cSYD3EN1g91+Juerjt/te8Ag477h5ElQ8U94wMP+hx5Dny3/h9i+
-         b2uUxD5sDfjUKicQZ8o/0l/gs4PDORMbeR2xA=
-Date: Wed, 2 Mar 2011 18:24:46 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL tip:x86/mm] fixes for memblock build warning and
- numa_distance handling
-Message-ID: <20110302172446.GT3319@htj.dyndns.org>
+	id S1756232Ab1CBR2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:28:41 -0500
+Received: from www.tglx.de ([62.245.132.106]:32910 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617Ab1CBR2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 12:28:40 -0500
+Date: Wed, 2 Mar 2011 18:28:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Ahern <daahern@cisco.com>
+cc: linux-perf-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        acme@ghostprotocols.net, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 3/6] perf record: add time-of-day option
+In-Reply-To: <4D6E5413.6060500@cisco.com>
+Message-ID: <alpine.LFD.2.00.1103021821080.2701@localhost6.localdomain6>
+References: <1298865151-23656-1-git-send-email-daahern@cisco.com> <1298865151-23656-4-git-send-email-daahern@cisco.com> <alpine.LFD.2.00.1103012359460.2701@localhost6.localdomain6> <4D6E5413.6060500@cisco.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Ingo.
+On Wed, 2 Mar 2011, David Ahern wrote:
+> On 03/02/2011 07:16 AM, Thomas Gleixner wrote:
+> > How does all that deal with CLOCK_REALTIME being affected by NTP and
+> > settimeofday? Not really, as far as I can tell. It somehow works, but
+> > that depends on the frequency of your event injection.
+> 
+> It is sampled at some periodic rate to get NTP changes. Right now it is
+> hardcoded at once an hour. The frequency option can be added to the
+> --tod parameter.
 
-Please pull from the following git branch to receive two fix patches
-for memblock build warning and numa_distance handling and a patch
-adding comments to numa_distance code.  HEAD is eb8c1e2c83 (x86-64,
-NUMA: Better explain numa_distance handling).
+Once an hour. Brilliant. And how do you correlated that when
+settimeofday was called 5 times in between the samples. Not at all.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+> > 
+> > To be honest, that's just too much churn for a feature which is single
+> > purpose and questionable functionality.
+> > 
+> > It would be far more interesting to have trace points in the
+> > timekeeping code, which are useful for other things as well
+> > (e.g. precise monitoring of NTP) and provide always a correct
+> > association with the trace clock. That would cover everything from
+> > frequency adjustments, clock setting including the information about
+> > the relation to clock monotonic.
+> 
+> I'm not looking to track ntp changes. I want time-of-day strings on
+> sample dumps. That is not a questionable feature request; it is a
+> usability enhancement.
 
-As usual, if HEAD doesn't appear, please pull from master.
+Sigh, did you even read what I wrote? 
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+I did not say, that YOU have to track NTP changes.
 
-Thanks.
+And I fully understood that you want to correlate perf time
+stamps with CLOCK_REALTIME.
 
-Tejun Heo (1):
-      x86-64, NUMA: Better explain numa_distance handling
+Neither did I say, that this is a questionable feature request.
 
-Yinghai Lu (2):
-      mm: Move early_node_map[] reverse scan helpers under HAVE_MEMBLOCK
-      x86-64, NUMA: Fix distance table handling
+I merily objected to add functionality which is half baken and only
+particular useful.
 
- arch/x86/mm/numa_64.c        |   19 ++++++++----
- arch/x86/mm/numa_emulation.c |   20 ++++++++----
- mm/page_alloc.c              |   64 +++++++++++++++++++++---------------------
- 3 files changed, 58 insertions(+), 45 deletions(-)
+Further I made a suggestion to add trace points to the time keeping
+code instead, which
 
--- 
-tejun
+      - solve your problem
+      - are useful for other purposes
+      - do not require ioctls, timer driven sw events
+
+Thanks,
+
+	tglx
