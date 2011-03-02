@@ -1,65 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab1CBTiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:38:04 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54142 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab1CBTiC (ORCPT
+	id S1756919Ab1CBTjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:39:07 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45457 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409Ab1CBTjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:38:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=WKQ+wt0e88/2ASjOH2sWLA07HyY19LW0YyqrqGi2d3hClpp5+ShypbjqA4jJHd7tyn
-         g8B9XvwqGS/XGSPvRSQND4sIV+nzCF9IvxoMgkBMLvo1Q6KgY7oyjDFfvbMYPWqDzCrQ
-         NBltaejK99DhJ1yh9CeL9nqAy9y5N/vuhm9cc=
-Date: Wed, 2 Mar 2011 22:37:41 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Roel Van Nyen <roel.vannyen@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        acho@novell.com
-Subject: Re: [PATCH] Staging: keucr: Remove all type defines
-Message-ID: <20110302193741.GO18043@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Roel Van Nyen <roel.vannyen@gmail.com>, gregkh@suse.de,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-	acho@novell.com
-References: <1299007790-5315-1-git-send-email-roel.vannyen@gmail.com>
- <20110301200006.GX18043@bicker>
- <20110302192023.GA2112@roel-laptop>
+	Wed, 2 Mar 2011 14:39:06 -0500
+Date: Wed, 2 Mar 2011 20:38:55 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND] x86, amd-nb: Misc correctness fixes
+Message-ID: <20110302193855.GA3840@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110302192023.GA2112@roel-laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 08:20:23PM +0100, Roel Van Nyen wrote:
-> On Tue, Mar 01, 2011 at 11:00:06PM +0300, Dan Carpenter wrote:
-> > On Tue, Mar 01, 2011 at 08:29:50PM +0100, Roel Van Nyen wrote:
-> > > -typedef u8 BOOLEAN;
-> > 
-> > It might be better to use bool type or int for boolean variables.  But
-> > that can't be done automatically, it has to be audited carefully.  I
-> > don't feel strongly about this, I'm just throwing it out there as food
-> > for thought.  You are using the remove-typedef program btw?
-> 
-> I did not use the remove-typedef program, I used perl regex. (btw: where is that, i could not find it)
+Make functions used strictly in bool context return bool. Also, fixup
+used types and comments, and make a local function static, while at it.
 
-I just saw Luis R. Rodriguez mention it.  I hadn't heard of it before.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
 
-http://www.kernel.org/pub/linux/kernel/people/mcgrof/scripts/remove-typedef
+Against tip/x86/amd_nb.
 
-> I will post a patchset later tonight wich contains the removal of all the types from this driver.
-> The first patch will contain the removal of all types except the BOOLEAN.
-> In the second one I will remove the boolean and check where to make it an integer and where a bool.
+ arch/x86/include/asm/amd_nb.h |   12 ++++++------
+ arch/x86/kernel/amd_nb.c      |   18 ++++++++++--------
+ 2 files changed, 16 insertions(+), 14 deletions(-)
 
-Sounds good.
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index 2b33c4d..527fb96 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -13,7 +13,7 @@ extern const struct pci_device_id amd_nb_misc_ids[];
+ extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
+ struct bootnode;
+ 
+-extern int early_is_amd_nb(u32 value);
++extern bool early_is_amd_nb(u32 value);
+ extern int amd_cache_northbridges(void);
+ extern void amd_flush_garts(void);
+ extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
+@@ -38,18 +38,18 @@ struct amd_northbridge_info {
+ };
+ extern struct amd_northbridge_info amd_northbridges;
+ 
+-#define AMD_NB_GART			0x1
+-#define AMD_NB_L3_INDEX_DISABLE		0x2
+-#define AMD_NB_L3_PARTITIONING		0x4
++#define AMD_NB_GART			BIT(0)
++#define AMD_NB_L3_INDEX_DISABLE		BIT(1)
++#define AMD_NB_L3_PARTITIONING		BIT(2)
+ 
+ #ifdef CONFIG_AMD_NB
+ 
+-static inline int amd_nb_num(void)
++static inline u16 amd_nb_num(void)
+ {
+ 	return amd_northbridges.num;
+ }
+ 
+-static inline int amd_nb_has_feature(int feature)
++static inline bool amd_nb_has_feature(unsigned feature)
+ {
+ 	return ((amd_northbridges.flags & feature) == feature);
+ }
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index ed3c2e5..b57ade1 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -48,7 +48,7 @@ static struct pci_dev *next_northbridge(struct pci_dev *dev,
+ 
+ int amd_cache_northbridges(void)
+ {
+-	int i = 0;
++	u16 i = 0;
+ 	struct amd_northbridge *nb;
+ 	struct pci_dev *misc, *link;
+ 
+@@ -103,9 +103,11 @@ int amd_cache_northbridges(void)
+ }
+ EXPORT_SYMBOL_GPL(amd_cache_northbridges);
+ 
+-/* Ignores subdevice/subvendor but as far as I can figure out
+-   they're useless anyways */
+-int __init early_is_amd_nb(u32 device)
++/*
++ * Ignores subdevice/subvendor but as far as I can figure out
++ * they're useless anyways
++ */
++bool __init early_is_amd_nb(u32 device)
+ {
+ 	const struct pci_device_id *id;
+ 	u32 vendor = device & 0xffff;
+@@ -113,8 +115,8 @@ int __init early_is_amd_nb(u32 device)
+ 	device >>= 16;
+ 	for (id = amd_nb_misc_ids; id->vendor; id++)
+ 		if (vendor == id->vendor && device == id->device)
+-			return 1;
+-	return 0;
++			return true;
++	return false;
+ }
+ 
+ int amd_get_subcaches(int cpu)
+@@ -176,9 +178,9 @@ int amd_set_subcaches(int cpu, int mask)
+ 	return 0;
+ }
+ 
+-int amd_cache_gart(void)
++static int amd_cache_gart(void)
+ {
+-       int i;
++       u16 i;
+ 
+        if (!amd_nb_has_feature(AMD_NB_GART))
+                return 0;
+-- 
+1.7.4.rc2
 
-regards,
-dan carpenter
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
