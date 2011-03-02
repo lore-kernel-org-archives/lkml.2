@@ -1,86 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab1CBSIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 13:08:39 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42978 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755636Ab1CBSIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 13:08:38 -0500
-Date: Wed, 2 Mar 2011 19:08:27 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Reverting NUMA-affine page table allocation
-Message-ID: <20110302180827.GA13693@elte.hu>
-References: <20110226143730.GA26864@htj.dyndns.org>
- <AANLkTinW-nQV4tL-_PicOb-N6imv3gtWuG-J69-6VUQd@mail.gmail.com>
- <20110302161900.GP3319@htj.dyndns.org>
- <AANLkTi=SYRK+iKT-Zwuyv=e6dLqmoL4cUts2Xoyq-M=1@mail.gmail.com>
- <20110302170702.GS3319@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302170702.GS3319@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756887Ab1CBSLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 13:11:31 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:47993 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756453Ab1CBSL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 13:11:29 -0500
+Message-Id: <20110302180259.036399167@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Wed, 02 Mar 2011 18:59:31 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [RFC][PATCH 3/6] mm: Provide generic range tracking and flushing
+References: <20110302175928.022902359@chello.nl>
+Content-Disposition: inline; filename=mm-generic-tlb-range.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In order to convert ia64, arm and sh to generic tlb we need to provide
+some extra infrastructure to track the range of the flushed page
+tables.
 
-* Tejun Heo <tj@kernel.org> wrote:
+There are two mmu_gather cases to consider:
 
-> Hello,
-> 
-> On Wed, Mar 02, 2011 at 08:47:54AM -0800, Yinghai Lu wrote:
-> > > > Yeah, it's a pretty interesting piece of code in need of some cleanup.
-> > No, i mean second one is not causing any problem.
-> > 
-> > that only take end is intentionally. that will make sure we can get
-> > space for page table even in extreme case.
-> 
-> Hmmm... it seems like it only took @end because it always allocated
-> the whole page table in one go.  Always from the bottom to top.  Am I
-> missing something?
-> 
-> > > > If you're interested in doing the above, please go ahead and let me
-> > > > know.
-> > 
-> > No. please don't revert it.
-> > 
-> > Ingo, please get patches that will align to 1G ... from
-> > 
-> > 	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git memblock
-> 
-> If you were gonna do that, you could have just said that you objected
-> to the reverting.  The message was Request for Comments - soliciting
-> responses.
-> 
-> As I wrote multiple times, I think the code as implemented is a bit
-> heavy handed for the problem.  And a bigger problem for me is that it
-> kind of just piles on the existing messiness and worsens it.  I really
-> hope we wouldn't be doing that anymore.
-> 
-> I tried to clean up the page table allocation code but the necessary
-> changes felt a bit too large at this stage, so IMO that's best left to
-> the next cycle.
+  unmap_region()
+    tlb_gather_mmu()
+    unmap_vmas()
+      for (; vma; vma = vma->vm_next)
+        unmao_page_range()
+          tlb_start_vma() -> flush cache range
+          zap_*_range()
+            ptep_get_and_clear_full() -> batch/track external tlbs
+            tlb_remove_tlb_entry() -> batch/track external tlbs
+            tlb_remove_page() -> track range/batch page
+          tlb_end_vma()
+    free_pgtables()
+      while (vma)
+        unlink_*_vma()
+        free_*_range()
+          *_free_tlb() -> track tlb range
+    tlb_finish_mmu() -> flush everything
+  free vmas
 
-Do you plan to implement it more cleanly?
+and:
 
-> To me, it seems complicated for not good enough reasons.  I'll defer
-> the decision to x86 maintainers.  Ingo, hpa, Thomas, what do you guys
-> think?
+  shift_arg_pages()
+    tlb_gather_mmu()
+    free_*_range()
+      *_free_tlb() -> track tlb range
+    tlb_finish_mmu() -> flush things
 
-Would be nice to see an actual patch that does the revert.
+There are various reasons that we need to flush TLBs _after_ freeing
+the page-tables themselves. For some architectures (x86 among others)
+this serializes against (both hardware and software) page table
+walkers like gup_fast().  
 
-Thanks,
+For others (ARM) this is (also) needed to evict stale page-table
+caches - ARM LPAE mode apparently caches page tables and concurrent
+hardware walkers could re-populate these caches if the final tlb flush
+were to be from tlb_end_vma() since an concurrent walk could still be
+in progress.
 
-	Ingo
+Now that we fixed flush_tlb_range() to take an mm_struct argument we
+can implement the needed range tracking as outlined above.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/Kconfig              |    3 +
+ include/asm-generic/tlb.h |   93 ++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 77 insertions(+), 19 deletions(-)
+
+Index: linux-2.6/arch/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/Kconfig
++++ linux-2.6/arch/Kconfig
+@@ -184,4 +184,7 @@ config HAVE_ARCH_MUTEX_CPU_RELAX
+ config HAVE_RCU_TABLE_FREE
+ 	bool
+ 
++config HAVE_MMU_GATHER_RANGE
++	bool
++
+ source "kernel/gcov/Kconfig"
+Index: linux-2.6/include/asm-generic/tlb.h
+===================================================================
+--- linux-2.6.orig/include/asm-generic/tlb.h
++++ linux-2.6/include/asm-generic/tlb.h
+@@ -78,11 +78,15 @@ struct mmu_gather_batch {
+ #define MAX_GATHER_BATCH	\
+ 	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
+ 
+-/* struct mmu_gather is an opaque type used by the mm code for passing around
++/*
++ * struct mmu_gather is an opaque type used by the mm code for passing around
+  * any data needed by arch specific code for tlb_remove_page.
+  */
+ struct mmu_gather {
+ 	struct mm_struct	*mm;
++#ifdef CONFIG_HAVE_MMU_GATHER_RANGE
++	unsigned long		start, end;
++#endif
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	struct mmu_table_batch	*batch;
+ #endif
+@@ -106,6 +110,48 @@ struct mmu_gather {
+   #define tlb_fast_mode(tlb) 1
+ #endif
+ 
++#ifdef CONFIG_HAVE_MMU_GATHER_RANGE
++
++static inline void tlb_init_range(struct mmu_gather *tlb)
++{
++	tlb->start = TASK_SIZE;
++	tlb->end = 0;
++}
++
++static inline void
++tlb_track_range(struct mmu_gather *tlb, unsigned long addr, unsigned long end)
++{
++	if (!tlb->fullmm) {
++		tlb->start = min(tlb->start, addr);
++		tlb->end = max(tlb->end, end);
++	}
++}
++
++static inline void
++tlb_start_vma(struct mmu_gather *tlb, struct vm_area_struct *vma)
++{
++	if (!tlb->fullmm)
++		flush_cache_range(vma, vma->vm_start, vma->vm_end);
++}
++
++static inline void
++tlb_end_vma(struct mmu_gather *tlb, struct vm_area_struct *vma)
++{
++}
++
++#else /* CONFIG_HAVE_MMU_GATHER_RANGE */
++
++static inline void tlb_init_range(struct mmu_gather *tlb)
++{
++}
++
++/*
++ * Macro avoids argument evaluation.
++ */
++#define tlb_track_range(tlb, addr, end) do { } while (0)
++
++#endif /* CONFIG_HAVE_MMU_GATHER_RANGE */
++
+ static inline int tlb_next_batch(struct mmu_gather *tlb)
+ {
+ 	struct mmu_gather_batch *batch;
+@@ -146,6 +192,8 @@ tlb_gather_mmu(struct mmu_gather *tlb, s
+ 	tlb->local.max  = ARRAY_SIZE(tlb->__pages);
+ 	tlb->active     = &tlb->local;
+ 
++	tlb_init_range(tlb);
++
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb->batch = NULL;
+ #endif
+@@ -164,6 +212,7 @@ tlb_flush_mmu(struct mmu_gather *tlb)
+ 	if (!tlb->fullmm && tlb->need_flush) {
+ 		tlb->need_flush = 0;
+ 		tlb_flush(tlb);
++		tlb_init_range(tlb);
+ 	}
+ 
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+@@ -240,32 +289,38 @@ static inline void tlb_remove_page(struc
+  * later optimise away the tlb invalidate.   This helps when userspace is
+  * unmapping already-unmapped pages, which happens quite a lot.
+  */
+-#define tlb_remove_tlb_entry(tlb, ptep, address)		\
+-	do {							\
+-		tlb->need_flush = 1;				\
+-		__tlb_remove_tlb_entry(tlb, ptep, address);	\
++#define tlb_remove_tlb_entry(tlb, ptep, address)			\
++	do {								\
++		tlb->need_flush = 1;					\
++		tlb_track_range(tlb, address, address + PAGE_SIZE);	\
++		__tlb_remove_tlb_entry(tlb, ptep, address);		\
+ 	} while (0)
+ 
+-#define pte_free_tlb(tlb, ptep, address)			\
+-	do {							\
+-		tlb->need_flush = 1;				\
+-		__pte_free_tlb(tlb, ptep, address);		\
++#define pte_free_tlb(tlb, ptep, address)					\
++	do {									\
++		tlb->need_flush = 1;						\
++		tlb_track_range(tlb, address, pmd_addr_end(address, TASK_SIZE));\
++		__pte_free_tlb(tlb, ptep, address);				\
+ 	} while (0)
+ 
+-#ifndef __ARCH_HAS_4LEVEL_HACK
+-#define pud_free_tlb(tlb, pudp, address)			\
+-	do {							\
+-		tlb->need_flush = 1;				\
+-		__pud_free_tlb(tlb, pudp, address);		\
++#define pmd_free_tlb(tlb, pmdp, address)					\
++	do {									\
++		tlb->need_flush = 1;						\
++		tlb_track_range(tlb, address, pud_addr_end(address, TASK_SIZE));\
++		__pmd_free_tlb(tlb, pmdp, address);				\
+ 	} while (0)
+-#endif
+ 
+-#define pmd_free_tlb(tlb, pmdp, address)			\
+-	do {							\
+-		tlb->need_flush = 1;				\
+-		__pmd_free_tlb(tlb, pmdp, address);		\
++#ifndef __ARCH_HAS_4LEVEL_HACK
++#define pud_free_tlb(tlb, pudp, address)					\
++	do {									\
++		tlb->need_flush = 1;						\
++		tlb_track_range(tlb, address, pgd_addr_end(address, TASK_SIZE));\
++		__pud_free_tlb(tlb, pudp, address);				\
+ 	} while (0)
++#endif
+ 
++#ifndef tlb_migrate_finish
+ #define tlb_migrate_finish(mm) do {} while (0)
++#endif
+ 
+ #endif /* _ASM_GENERIC__TLB_H */
+
+
