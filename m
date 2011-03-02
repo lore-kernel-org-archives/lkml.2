@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab1CBKxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 05:53:47 -0500
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:47036 "EHLO
+	id S1757030Ab1CBKym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 05:54:42 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:47975 "EHLO
 	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757041Ab1CBKxp (ORCPT
+	by vger.kernel.org with ESMTP id S1756723Ab1CBKyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 05:53:45 -0500
+	Wed, 2 Mar 2011 05:54:41 -0500
 From: Mattias Wallin <mattias.wallin@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: <linux-kernel@vger.kernel.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: [PATCH] MFD: ab8500-core switch off status added
-Date: Wed, 2 Mar 2011 11:52:36 +0100
-Message-ID: <1299063156-31972-1-git-send-email-mattias.wallin@stericsson.com>
+Subject: [PATCH] MFD: pm poweroff moved to ab8500-sysctrl
+Date: Wed, 2 Mar 2011 11:54:30 +0100
+Message-ID: <1299063270-4096-1-git-send-email-mattias.wallin@stericsson.com>
 X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,92 +22,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a sysfs file with the ab8500 switch off status.
-The switch off status contains information of what caused the ab8500
-chip to power off. A print during boot is also added.
+This patch moves the machine pm power off hook from the platform
+code to the ab8500-sysctrl driver.
 
 Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/ab8500-core.c |   47 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+ drivers/mfd/ab8500-sysctrl.c |   22 ++++++++++++++++++++++
+ include/linux/mfd/ab8500.h   |    2 ++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-index 8d6c292..6e185b2 100644
---- a/drivers/mfd/ab8500-core.c
-+++ b/drivers/mfd/ab8500-core.c
-@@ -90,6 +90,7 @@
- #define AB8500_IT_MASK24_REG		0x57
+diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+index 3921859..e6de6a2 100644
+--- a/drivers/mfd/ab8500-sysctrl.c
++++ b/drivers/mfd/ab8500-sysctrl.c
+@@ -6,12 +6,29 @@
  
- #define AB8500_REV_REG			0x80
-+#define AB8500_SWITCH_OFF_STATUS	0x00
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
++#include <linux/pm.h>
++#include <linux/signal.h>
+ #include <linux/mfd/ab8500.h>
+ #include <linux/mfd/abx500.h>
+ #include <linux/mfd/ab8500/sysctrl.h>
  
- /*
-  * Map interrupt numbers to the LATCH and MASK register offsets, Interrupt
-@@ -652,10 +653,38 @@ static ssize_t show_chip_id(struct device *dev,
- 	return sprintf(buf, "%#x\n", ab8500 ? ab8500->chip_id : -EINVAL);
- }
+ static struct device *sysctrl_dev;
  
-+/*
-+ * ab8500 has switched off due to (SWITCH_OFF_STATUS):
-+ * 0x01 Swoff bit programming
-+ * 0x02 Thermal protection activation
-+ * 0x04 Vbat lower then BattOk falling threshold
-+ * 0x08 Watchdog expired
-+ * 0x10 Non presence of 32kHz clock
-+ * 0x20 Battery level lower than power on reset threshold
-+ * 0x40 Power on key 1 pressed longer than 10 seconds
-+ * 0x80 DB8500 thermal shutdown
-+ */
-+static ssize_t show_switch_off_status(struct device *dev,
-+				struct device_attribute *attr, char *buf)
++void ab8500_power_off(void)
 +{
-+	int ret;
-+	u8 value;
-+	struct ab8500 *ab8500;
++	sigset_t old;
++	sigset_t all;
 +
-+	ab8500 = dev_get_drvdata(dev);
-+	ret = get_register_interruptible(ab8500, AB8500_RTC,
-+		AB8500_SWITCH_OFF_STATUS, &value);
-+	if (ret < 0)
-+		return ret;
-+	return sprintf(buf, "%#x\n", value);
++	sigfillset(&all);
++
++	if (!sigprocmask(SIG_BLOCK, &all, &old)) {
++		(void)ab8500_sysctrl_set(AB8500_STW4500CTRL1,
++					 AB8500_STW4500CTRL1_SWOFF |
++					 AB8500_STW4500CTRL1_SWRESET4500N);
++		(void)sigprocmask(SIG_SETMASK, &old, NULL);
++	}
 +}
 +
- static DEVICE_ATTR(chip_id, S_IRUGO, show_chip_id, NULL);
-+static DEVICE_ATTR(switch_off_status, S_IRUGO, show_switch_off_status, NULL);
+ static inline bool valid_bank(u8 bank)
+ {
+ 	return ((bank == AB8500_SYS_CTRL1_BLOCK) ||
+@@ -50,7 +67,12 @@ int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value)
  
- static struct attribute *ab8500_sysfs_entries[] = {
- 	&dev_attr_chip_id.attr,
-+	&dev_attr_switch_off_status.attr,
- 	NULL,
- };
- 
-@@ -697,6 +726,24 @@ int __devinit ab8500_init(struct ab8500 *ab8500)
- 	}
- 	ab8500->chip_id = value;
- 
-+	/*
-+	 * ab8500 has switched off due to (SWITCH_OFF_STATUS):
-+	 * 0x01 Swoff bit programming
-+	 * 0x02 Thermal protection activation
-+	 * 0x04 Vbat lower then BattOk falling threshold
-+	 * 0x08 Watchdog expired
-+	 * 0x10 Non presence of 32kHz clock
-+	 * 0x20 Battery level lower than power on reset threshold
-+	 * 0x40 Power on key 1 pressed longer than 10 seconds
-+	 * 0x80 DB8500 thermal shutdown
-+	 */
+ static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
+ {
++	struct ab8500_platform_data *plat;
 +
-+	ret = get_register_interruptible(ab8500, AB8500_RTC,
-+		AB8500_SWITCH_OFF_STATUS, &value);
-+	if (ret < 0)
-+		return ret;
-+	dev_info(ab8500->dev, "switch off status: %#x", value);
-+
- 	if (plat && plat->init)
- 		plat->init(ab8500);
+ 	sysctrl_dev = &pdev->dev;
++	plat = dev_get_platdata(pdev->dev.parent);
++	if (plat->pm_power_off)
++		pm_power_off = ab8500_power_off;
+ 	return 0;
+ }
  
+diff --git a/include/linux/mfd/ab8500.h b/include/linux/mfd/ab8500.h
+index 56f8dea..279f9f3 100644
+--- a/include/linux/mfd/ab8500.h
++++ b/include/linux/mfd/ab8500.h
+@@ -144,11 +144,13 @@ struct regulator_init_data;
+ /**
+  * struct ab8500_platform_data - AB8500 platform data
+  * @irq_base: start of AB8500 IRQs, AB8500_NR_IRQS will be used
++ * @pm_power_off: Should machine pm power off hook be registered or not
+  * @init: board-specific initialization after detection of ab8500
+  * @regulator: machine-specific constraints for regulators
+  */
+ struct ab8500_platform_data {
+ 	int irq_base;
++	bool pm_power_off;
+ 	void (*init) (struct ab8500 *);
+ 	int num_regulator;
+ 	struct regulator_init_data *regulator;
 -- 
 1.7.4.1
 
