@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1CBPMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 10:12:25 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:36672 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750831Ab1CBPMX (ORCPT
+	id S1753859Ab1CBPN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 10:13:59 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:55754 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab1CBPN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 10:12:23 -0500
-Date: Wed, 2 Mar 2011 10:12:22 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Pierre Tardy <tardyp@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-mmc@vger.kernel.org>
-Subject: Re: [linux-pm] [RFC,PATCHv3 0/3] sdhci runtime_pm implementation
-In-Reply-To: <201103020049.36902.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1103021010050.2015-100000@iolanthe.rowland.org>
+	Wed, 2 Mar 2011 10:13:58 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Karel Zak <kzak@redhat.com>
+Cc: linux-kernel@vger.kernel.org, t.artem@mailcity.com,
+        Roman Zippel <zippel@linux-m68k.org>
+Subject: Re: MS_SILENT vs. vfat and hfs
+References: <20110302114517.GA496@nb.net.home>
+	<87d3m9r4mz.fsf@devron.myhome.or.jp>
+	<20110302144303.GC14636@nb.net.home>
+Date: Thu, 03 Mar 2011 00:13:54 +0900
+In-Reply-To: <20110302144303.GC14636@nb.net.home> (Karel Zak's message of
+	"Wed, 2 Mar 2011 15:43:03 +0100")
+Message-ID: <87zkpdpnbh.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011, Rafael J. Wysocki wrote:
+Karel Zak <kzak@redhat.com> writes:
 
-> > > How it works is, basically, that when the device signals wakeup, it either
-> > > causes a PME# signal to be raised (parallel PCI), or a PME Message to be
-> > > sent upstream (PCIe).  In the first case it will cause a platform event
-> > > (eg. ACPI GPE) to occur and the handle of that event will resume your
-> > > device (using pm_request_resume()).  In the second case it will cause the PCIe
-> > > root port handling the PME Message to generate an interrupt and the handler of
-> > > that interrupt will resume your device.
-> > Thanks, that explain a lot how it works.
-> > What I still dont understand is that the wake source I'll have (e.g.
-> > sd card insert) is still an interrupt source.
-> > So it is supposed to generate interrupt until the interrupt source is
-> > acknowledged.
-> > Are we supposed to mask that interrupt source while suspended to make
-> > sure we have either wake or interrupt?
-> 
-> I think the interrupt should be masked while suspended and the driver's resume
-> routine should unmask it.
+> On Wed, Mar 02, 2011 at 11:14:28PM +0900, OGAWA Hirofumi wrote:
+>> Karel Zak <kzak@redhat.com> writes:
+>> 
+>> >  The mount(8) command uses "quiet" mount option as a synonym to the
+>> >  MS_SILENT mount flag (since util-linux 2.7, Aug 1997).
+>> >
+>> >  It means than on systems where is properly defined the MS_SILENT
+>> >  mount flags in headers is the "quiet" mount option always translated
+>> >  to the MS_SILENT mount flags and "quiet" string is never send to FS
+>> >  drivers.
+>> >
+>> >    $ strace -e mount mount -o quiet /dev/sdb1 /mnt/test
+>> >    mount("/dev/sdb1", "/mnt/test", "vfat", MS_MGC_VAL|MS_SILENT, NULL) = 0
+>> >                                                       ^^^^^^^^^
+>> >
+>> >  Unfortunately, 
+>> >  
+>> >    $ grep -r \"quiet\" *
+>> >
+>> >    fat/inode.c:    {Opt_quiet, "quiet"},
+>> >    hfs/super.c:    { opt_quiet, "quiet" },
+>> >
+>> >  vfat and hfs drivers use "quiet" as a mount option. That's bug.
+>> >
+>> >  There should not be a collision between mount(8) mount options and
+>> >  filesystem specific mount options.
+>> >
+>> >  My suggestion is to fix the fat and hfs code to use something other
+>> >  than "quiet" (shutup, noisless, ...). I think you don't have to care
+>> >  about backward compatibility, because it's probably broken for years.
+>> 
+>> No. Actually the _new_ option is MS_SILENT. In history, there was no
+>> MS_SILENT (it was called MS_VERBOSE) in kernel, then _added_ newly, and
+>> never be enabled MS_SILENT in mount command until that.
+>
+>  I know, but I don't care which option is newer. I'd like to found a
+>  solution with minimal impact to users.
 
-Right.  That's how the PCI-based USB host controller drivers work.  
-The suspend routine disables interrupt generation and enables PME
-wakeup signals, and the resume routine does the reverse.
+Sounds good.
 
-Alan Stern
+>> So, my suggestion is use "silent" (or something) as MS_SILENT for
+>> backward compatibility. Because the "quiet" is already hardcoded by some
+>> userland apps for vfat.
+>
+>  Then all people who use "quiet" in their fstab will see problems...
 
+I don't know how to know the minimal impact though. I'll bet to change
+MS_SILENT, because at least the mount command in debian/testing doesn't
+provide "quiet" as MS_SILENT.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
