@@ -1,146 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab1CBRRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:17:17 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61221 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756022Ab1CBRRQ (ORCPT
+	id S1756152Ab1CBRSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:18:06 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52678 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab1CBRSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:17:16 -0500
+	Wed, 2 Mar 2011 12:18:04 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=nli8zYIt1Yuh1tYNZzX1PHOsELYCwbOCiTqs5XHbt/e9fPMjjg5nq1S61VQWVrWLDy
-         sNBeMAzz2qyvooIW4SaWQBFkYovg7GhexVT6jR3hC6SC65c4a4UxV0A5LgjDkT9D63fw
-         c/c9RdaezBglG1d3x3OFsRAgxunvqdsBcHWcU=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -tip] x86: correct stack dump info when CONFIG_FRAME_POINTER=y
-Date: Thu,  3 Mar 2011 02:17:12 +0900
-Message-Id: <1299086232-29639-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Xhhs69zHhLU08zTQuBhCIust1ptwKmlIqpp3LSxk0ZEqngQ7aSu5hCUb4AhrdZNB4K
+         /2/2vCCftgSsbvffE1kmT05TeXVc2khp/NayN5X02a5Uy8+dnDofZe2/Fa3o+2lB+vVR
+         qmv9Ln76XIiKKufWmx8KxtlEgoYSW1o1ap8xw=
+Date: Wed, 2 Mar 2011 18:07:02 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Reverting NUMA-affine page table allocation
+Message-ID: <20110302170702.GS3319@htj.dyndns.org>
+References: <20110226143730.GA26864@htj.dyndns.org>
+ <AANLkTinW-nQV4tL-_PicOb-N6imv3gtWuG-J69-6VUQd@mail.gmail.com>
+ <20110302161900.GP3319@htj.dyndns.org>
+ <AANLkTi=SYRK+iKT-Zwuyv=e6dLqmoL4cUts2Xoyq-M=1@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=SYRK+iKT-Zwuyv=e6dLqmoL4cUts2Xoyq-M=1@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current stack dump code scans entire stack and check each entry
-contains a pointer to kernel code. If CONFIG_FRAME_POINTER=y it
-could mark whether the pointer is valid or not based on value of
-the frame pointer. A invalid entry could be preceded by '?' sign.
+Hello,
 
-However this was not going to happen because scan start point was
-always higher than the frame pointer so that they could not meet.
-So all of the entries were marked invalid.
+On Wed, Mar 02, 2011 at 08:47:54AM -0800, Yinghai Lu wrote:
+> > > Yeah, it's a pretty interesting piece of code in need of some cleanup.
+> No, i mean second one is not causing any problem.
+> 
+> that only take end is intentionally. that will make sure we can get
+> space for page table even in extreme case.
 
-This patch fixes this by winding up the frame pointer to desired
-stack frame. End result looks like below.
+Hmmm... it seems like it only took @end because it always allocated
+the whole page table in one go.  Always from the bottom to top.  Am I
+missing something?
 
-before:
-[    3.508329] Call Trace:
-[    3.508551]  [<ffffffff814f35c9>] ? panic+0x91/0x199
-[    3.508662]  [<ffffffff814f3739>] ? printk+0x68/0x6a
-[    3.508770]  [<ffffffff81a981b2>] ? mount_block_root+0x257/0x26e
-[    3.508876]  [<ffffffff81a9821f>] ? mount_root+0x56/0x5a
-[    3.508975]  [<ffffffff81a98393>] ? prepare_namespace+0x170/0x1a9
-[    3.509216]  [<ffffffff81a9772b>] ? kernel_init+0x1d2/0x1e2
-[    3.509335]  [<ffffffff81003894>] ? kernel_thread_helper+0x4/0x10
-[    3.509442]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-[    3.509542]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-[    3.509641]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+> > > If you're interested in doing the above, please go ahead and let me
+> > > know.
+> 
+> No. please don't revert it.
+> 
+> Ingo, please get patches that will align to 1G ... from
+> 
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git memblock
 
-after:
-[    3.522991] Call Trace:
-[    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
-[    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
-[    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
-[    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
-[    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
-[    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
-[    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
-[    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-[    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-[    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
+If you were gonna do that, you could have just said that you objected
+to the reverting.  The message was Request for Comments - soliciting
+responses.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/x86/include/asm/stacktrace.h |   24 +++++++++++++++---------
- arch/x86/kernel/dumpstack_32.c    |    2 +-
- arch/x86/kernel/dumpstack_64.c    |    2 +-
- 3 files changed, 17 insertions(+), 11 deletions(-)
+As I wrote multiple times, I think the code as implemented is a bit
+heavy handed for the problem.  And a bigger problem for me is that it
+kind of just piles on the existing messiness and worsens it.  I really
+hope we wouldn't be doing that anymore.
 
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index 52b5c7ed3608..7fef7b27418c 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -60,25 +60,31 @@ void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
- 
- #ifdef CONFIG_FRAME_POINTER
- static inline unsigned long
--stack_frame(struct task_struct *task, struct pt_regs *regs)
-+stack_frame(struct task_struct *task, struct pt_regs *regs,
-+	    unsigned long *stack)
- {
- 	unsigned long bp;
- 
--	if (regs)
--		return regs->bp;
--
--	if (task == current) {
-+	if (regs) {
-+		bp = regs->bp;
-+	} else if (task == current) {
- 		/* Grab bp right from our regs */
- 		get_bp(bp);
--		return bp;
-+	} else {
-+		/* bp is the last reg pushed by switch_to */
-+		bp = *(unsigned long *)task->thread.sp;
- 	}
- 
--	/* bp is the last reg pushed by switch_to */
--	return *(unsigned long *)task->thread.sp;
-+	/* wind up to desired stack frame */
-+	while (bp < (unsigned long) stack)
-+		bp = *(unsigned long *) bp;
-+
-+	return bp;
- }
- #else
- static inline unsigned long
--stack_frame(struct task_struct *task, struct pt_regs *regs)
-+stack_frame(struct task_struct *task, struct pt_regs *regs,
-+	    unsigned long *stack)
- {
- 	return 0;
- }
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 74cc1eda384b..b0b96dc11d00 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -35,7 +35,7 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
- 
--	bp = stack_frame(task, regs);
-+	bp = stack_frame(task, regs, stack);
- 	for (;;) {
- 		struct thread_info *context;
- 
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index a6b6fcf7f0ae..19a36deb8db8 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -161,7 +161,7 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
- 
--	bp = stack_frame(task, regs);
-+	bp = stack_frame(task, regs, stack);
- 	/*
- 	 * Print function call entries in all stacks, starting at the
- 	 * current stack address. If the stacks consist of nested
+I tried to clean up the page table allocation code but the necessary
+changes felt a bit too large at this stage, so IMO that's best left to
+the next cycle.
+
+To me, it seems complicated for not good enough reasons.  I'll defer
+the decision to x86 maintainers.  Ingo, hpa, Thomas, what do you guys
+think?
+
+Thanks.
+
 -- 
-1.7.4
-
+tejun
