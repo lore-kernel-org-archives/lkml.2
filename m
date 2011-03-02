@@ -1,52 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1CBHpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:45:25 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57109 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab1CBHpX (ORCPT
+	id S1755488Ab1CBHpn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:45:43 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:23138 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857Ab1CBHpl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:45:23 -0500
+	Wed, 2 Mar 2011 02:45:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=sTyH4mJ3CSSGxiaN9RkBY5wd/t6uRoY/r3qCob5GEVJVR0hvH3Pvu91xAa9mQlbz0w
-         TfA/7ZNpPLck0P0bky+HSasCfOxS0S59u4wDvAOCXoMk8kAiieveg2J5glwhGlY6+861
-         OTVXWUfEm/vzwtiqlqhMO2RKtIHYY86rL4XaY=
-Message-ID: <4D6DF58D.5030905@pobox.com>
-Date: Wed, 02 Mar 2011 02:45:17 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SIjeJ4wiMZCe8tCTqCW9bARY2T/l1DaRgslolAkaMaqsRIcGMI8Tm43kmYEV9c+Zk1
+         4poqwLXobLmbb2vHb5xA==
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        stable <stable@kernel.org>
-Subject: Re: [PATCH #upstream-fixes] libata: fix hotplug for drivers which
- don't implement LPM
-References: <20110224183037.GS7840@htj.dyndns.org>
-In-Reply-To: <20110224183037.GS7840@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1299027401.4937.106.camel@minggr.sh.intel.com>
+References: <4d6d636b.98a1df0a.15d8.57d1@mx.google.com>
+	<1299027401.4937.106.camel@minggr.sh.intel.com>
+Date: Wed, 2 Mar 2011 08:45:37 +0100
+Message-ID: <AANLkTimkAuDQOW8J=vqcz-7r9gaN_=qq1=guBh6n6A7u@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: update PEBS event constraints (v2)
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "paulus@samba.org" <paulus@samba.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "perfmon2-devel@lists.sf.net" <perfmon2-devel@lists.sf.net>,
+        "eranian@gmail.com" <eranian@gmail.com>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "acme@redhat.com" <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2011 01:30 PM, Tejun Heo wrote:
-> ata_eh_analyze_serror() suppresses hotplug notifications if LPM is
-> being used because LPM generates spurious hotplug events.  It compared
-> whether link->lpm_policy was different from ATA_LPM_MAX_POWER to
-> determine whether LPM is enabled; however, this is incorrect as for
-> drivers which don't implement LPM, lpm_policy is always
-> ATA_LPM_UNKNOWN.  This disabled hotplug detection for all drivers
-> which don't implement LPM.
+On Wed, Mar 2, 2011 at 1:56 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Wed, 2011-03-02 at 04:20 +0800, Stephane Eranian wrote:
+>> This patch updates PEBS event constraints for Intel Atom, Nehalem, Westmere.
+>>
+>> This patch also reorganizes the PEBS format/constraint detection code. It is
+>> now based on processor model and not PEBS format. Two processors may use the
+>> same PEBS format without have the same list of PEBS events.
+>>
+>> In this second version, we simplified the initialization of the PEBS constraints
+>> by leveraging the existing switch() statement in perf_event_intel.c. We also
+>> renamed the constraint tables to be more consistent with regular constraints.
 >
-> Fix it by comparing whether lpm_policy is greater than
-> ATA_LPM_MAX_POWER.
+> Hi, Stephane
 >
-> Signed-off-by: Tejun Heo<tj@kernel.org>
-> Cc: stable@kernel.org
+> Nice updates.
+> Wondering where did you get these PEBS event constraints? I didn't find
+> these in the latest manual.
+>
+Yeah, the manual is lacking some information. The other source of information
+is the PTU event files (whatif.intel.com).
 
-applied, though putting this into 2.6.38.1 is preferred to changing this 
-at -rc7...  stable@ cc'd.
+> And some small things, see below.
+>
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>> ---
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+>> index 084b383..ddf6c4f 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>> @@ -1024,6 +1024,7 @@ static __init int intel_pmu_init(void)
+>>               intel_pmu_lbr_init_core();
+>>
+>>               x86_pmu.event_constraints = intel_core2_event_constraints;
+>> +             x86_pmu.pebs_constraints = intel_core2_pebs_event_constraints;
+>>               pr_cont("Core2 events, ");
+>>               break;
+>>
+>> @@ -1036,6 +1037,7 @@ static __init int intel_pmu_init(void)
+>>               intel_pmu_lbr_init_nhm();
+>>
+>>               x86_pmu.event_constraints = intel_nehalem_event_constraints;
+>> +             x86_pmu.pebs_constraints = intel_nehalem_pebs_event_constraints;
+>>               x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+>>               pr_cont("Nehalem events, ");
+>>               break;
+>> @@ -1047,6 +1049,7 @@ static __init int intel_pmu_init(void)
+>>               intel_pmu_lbr_init_atom();
+>>
+>>               x86_pmu.event_constraints = intel_gen_event_constraints;
+>> +             x86_pmu.pebs_constraints = intel_atom_pebs_event_constraints;
+>>               pr_cont("Atom events, ");
+>>               break;
+>>
+>> @@ -1059,6 +1062,8 @@ static __init int intel_pmu_init(void)
+>>
+>>               x86_pmu.event_constraints = intel_westmere_event_constraints;
+>>               x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+>> +             x86_pmu.pebs_constraints =
+>> +                             intel_westmere_pebs_event_constraints;
+>>               pr_cont("Westmere events, ");
+>>               break;
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> index b7dcd9f..916e6c7 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+>> @@ -361,30 +361,49 @@ static int intel_pmu_drain_bts_buffer(void)
+>>  /*
+>>   * PEBS
+>>   */
+>> -
+>> -static struct event_constraint intel_core_pebs_events[] = {
+>> +static struct event_constraint intel_core2_pebs_event_constraints[] = {
+>>       PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INSTR_RETIRED.ANY */
+>>       PEBS_EVENT_CONSTRAINT(0xfec1, 0x1), /* X87_OPS_RETIRED.ANY */
+>>       PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
+>>       PEBS_EVENT_CONSTRAINT(0x1fc7, 0x1), /* SIMD_INST_RETURED.ANY */
+>> -     PEBS_EVENT_CONSTRAINT(0x01cb, 0x1), /* MEM_LOAD_RETIRED.L1D_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x02cb, 0x1), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x04cb, 0x1), /* MEM_LOAD_RETIRED.L2_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x08cb, 0x1), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x10cb, 0x1), /* MEM_LOAD_RETIRED.DTLB_MISS */
+>> +     INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
+>> +     EVENT_CONSTRAINT_END
+>> +};
+>> +
+>> +static struct event_constraint intel_atom_pebs_event_constraints[] = {
+>> +     PEBS_EVENT_CONSTRAINT(0x00c0, 0x1), /* INSTR_RETIRED.ANY */
+>> +     PEBS_EVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_RETIRED.MISPRED */
+>> +     PEBS_EVENT_CONSTRAINT(0x0ac4, 0x1), /* BR_INST_RETIRED.MISPRED */
+>> +     INTEL_EVENT_CONSTRAINT(0xcb, 0x1),  /* MEM_LOAD_RETIRED.* */
+>>       EVENT_CONSTRAINT_END
+>>  };
+>>
+>> -static struct event_constraint intel_nehalem_pebs_events[] = {
+>> -     PEBS_EVENT_CONSTRAINT(0x00c0, 0xf), /* INSTR_RETIRED.ANY */
+>> -     PEBS_EVENT_CONSTRAINT(0xfec1, 0xf), /* X87_OPS_RETIRED.ANY */
+>> -     PEBS_EVENT_CONSTRAINT(0x00c5, 0xf), /* BR_INST_RETIRED.MISPRED */
+>> -     PEBS_EVENT_CONSTRAINT(0x1fc7, 0xf), /* SIMD_INST_RETURED.ANY */
+>> -     PEBS_EVENT_CONSTRAINT(0x01cb, 0xf), /* MEM_LOAD_RETIRED.L1D_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x02cb, 0xf), /* MEM_LOAD_RETIRED.L1D_LINE_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x04cb, 0xf), /* MEM_LOAD_RETIRED.L2_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x08cb, 0xf), /* MEM_LOAD_RETIRED.L2_LINE_MISS */
+>> -     PEBS_EVENT_CONSTRAINT(0x10cb, 0xf), /* MEM_LOAD_RETIRED.DTLB_MISS */
+>> +static struct event_constraint intel_nehalem_pebs_event_constraints[] = {
+>> +     INTEL_EVENT_CONSTRAINT(0x0b, 0xf),  /* MEM_INST_RETIRED.* */
+>> +     INTEL_EVENT_CONSTRAINT(0x0f, 0xf),  /* MEM_UNCORE_RETIRED.* */
+>> +     PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
+>> +     INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INST_RETIRED.ANY */
+>> +     INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
+>> +     INTEL_EVENT_CONSTRAINT(0x00c4, 0xf),/* BR_INST_RETIRED.* */
+>
+> - INTEL_EVENT_CONSTRAINT(0x00c4, 0xf)
+> + INTEL_EVENT_CONSTRAINT(0xc4, 0xf)
+>
+yep.
 
+>> +     PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
+>> +     INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
+>> +     PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
+>> +     INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
+>> +     EVENT_CONSTRAINT_END
+>> +};
+>> +
+>> +static struct event_constraint intel_westmere_pebs_event_constraints[] = {
+>> +     INTEL_EVENT_CONSTRAINT(0x0b, 0xf), /* MEM_INST_RETIRED.* */
+>> +     INTEL_EVENT_CONSTRAINT(0x0f, 0xf), /* MEM_UNCORE_RETIRED.* */
+>> +     PEBS_EVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
+>> +     INTEL_EVENT_CONSTRAINT(0xc0, 0xf),  /* INSTR_RETIRED.* */
+>> +     INTEL_EVENT_CONSTRAINT(0xc2, 0xf),  /* UOPS_RETIRED.* */
+>> +
+>> +     INTEL_EVENT_CONSTRAINT(0xc4, 0xf),  /* BR_INST_RETIRED.* */
+>> +     INTEL_EVENT_CONSTRAINT(0xc5, 0xf),  /* BR_MISP_RETIRED.* */
+>> +     INTEL_EVENT_CONSTRAINT(0xc7, 0xf),  /* SSEX_UOPS_RETIRED.* */
+>> +     PEBS_EVENT_CONSTRAINT(0x20c8, 0xf), /* ITLB_MISS_RETIRED */
+>> +     INTEL_EVENT_CONSTRAINT(0xcb, 0xf),  /* MEM_LOAD_RETIRED.* */
+>>       EVENT_CONSTRAINT_END
+>>  };
+>>
+>> @@ -695,20 +714,18 @@ static void intel_ds_init(void)
+>>                       printk(KERN_CONT "PEBS fmt0%c, ", pebs_type);
+>>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_core);
+>>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_core;
+>> -                     x86_pmu.pebs_constraints = intel_core_pebs_events;
+>>                       break;
+>>
+>>               case 1:
+>>                       printk(KERN_CONT "PEBS fmt1%c, ", pebs_type);
+>>                       x86_pmu.pebs_record_size = sizeof(struct pebs_record_nhm);
+>>                       x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+>> -                     x86_pmu.pebs_constraints = intel_nehalem_pebs_events;
+>>                       break;
+>>
+>>               default:
+>> -                     printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
+>> +                     printk(KERN_CONT "no PEBS fmt%d%c, ",
+>> +                            format, pebs_type);
+>
+> No changes?
+>
+>>                       x86_pmu.pebs = 0;
+>> -                     break;
+>>               }
+>>       }
+>>  }
+>
+>
+>
