@@ -1,98 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab1CBBhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 20:37:46 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48054 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757369Ab1CBBhp convert rfc822-to-8bit (ORCPT
+	id S1757752Ab1CBBkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 20:40:21 -0500
+Received: from mailb.microsoft.com ([131.107.115.215]:41398 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757631Ab1CBBkT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 20:37:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=IF03Odi22yOjUdm8x5NnFgncrtqwoTpXjEklbSdovhdxuN6oiNetsf9bdtgWx0TjL5
-         jF8DUH4dj8BxS6xyPVU1JYGHbb8BpmOmREClI7kCnNP+GYNo/NR50l5SF7Mf4qeCgAjb
-         I206gy0Gdjjjx3IkK8kBVbF7liNPp7z//Z3bo=
-MIME-Version: 1.0
-In-Reply-To: <20090110155720.GA10954@redhat.com>
-References: <49639EB8.40204@redhat.com> <4963ABF0.6070400@redhat.com>
- <20090107123457.GB16268@elte.hu> <20090107205322.5F8C7FC3E0@magilla.sf.frob.com>
- <1231598714.11642.53.camel@quest> <20090110155720.GA10954@redhat.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 2 Mar 2011 02:37:13 +0100
-Message-ID: <AANLkTimw5Z00uVsWYP0KGiQ8jDex9yYGNc61SG=9GsGj@mail.gmail.com>
-Subject: Re: [RESEND][RFC PATCH v2] waitfd
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Scott James Remnant <scott@canonical.com>,
-        Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Casey Dahlin <cdahlin@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Mar 2011 20:40:19 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
+Thread-Topic: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
+Thread-Index: AQHL1VhrHb+LNqEePk278h0j8A42rZQYTeOAgADhvzA=
+Date: Wed, 2 Mar 2011 01:40:17 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480165E6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1298685930-30806-1-git-send-email-kys@microsoft.com>
+ <20110301023449.GC1663@kroah.com>
+In-Reply-To: <20110301023449.GC1663@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.72]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2009 at 4:57 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 01/10, Scott James Remnant wrote:
->> On Wed, 2009-01-07 at 12:53 -0800, Roland McGrath wrote:
->> > Do we really need another one for this?  How about using signalfd plus
->> > setting the child's exit_signal to a queuing (SIGRTMIN+n) signal instead of
->> > SIGCHLD?  It's slightly more magical for the userland process to know to do
->> > that (fork -> clone SIGRTMIN).  But compared to adding a syscall we don't
->> > really have to add, maybe better.
->> >
->> This wouldn't help the init daemon case:
->>
->> - the exit_signal is set on the child, not on the parent.
->>
->>   While the init daemon could clone() every new process and set
->>   exit_signal, this would not be set for processes reparented to init.
->>
->>   Even if we had a new syscall to change the exit_signal of a given
->>   process, *and* had the init reparent notification patch, this still
->>   wouldn't be sufficient; you'd have a race condition between the time
->>   you were notified of the reparent, and the time you set exit_signal,
->>   in which the child could die.
->>
->>   Since exit_signal is always reset to SIGCHLD before reparenting, this
->>   could be done by resetting it to a different signal; but at this point
->>   we're getting into a rather twisty method full of traps.
->>
->> - exit_signal is reset to SIGCHLD on exec().
->>
->>   Pretty much a plan-killer ;)
->
-> I can't understand why should we change ->exit_signal if we want to
-> use signalfd. Yes, SIGCHLD is not rt. So what?
->
-> We do not need multiple signals in queue if we want to reap multiple
-> zombies. Once we have a single SIGCHLD (reported by signalfd or
-> whatever) we can do do_wait(WNOHANG) in a loop.
->
-> Confused.
 
-I know I am terribly late for the party :)
 
-"do_wait(WNOHANG) in a loop" is a performance problem.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Monday, February 28, 2011 9:35 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
+> Janssen
+> Subject: Re: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
+> 
+> On Fri, Feb 25, 2011 at 06:05:30PM -0800, K. Y. Srinivasan wrote:
+> > Hyper-V drivers have supported two device abstractions.
+> > This patch implements a single device abstraction.
+> 
+> "This patch" or "This patch series"?
 
-Oleg, do you remember that strace bug when it was swamped
-with gazillions of stop notifications from a multithreaded
-task, then by dealing with them one-by-one it was causing
-unfairness and ultimately "this program never finishes
-when run under strace" bug?
+Greg, If you recall, last week I had sent a single patch that did what these 6 patches do.
+While I agree, the description could have been more informative; I have tried to 
+follow the guidelines I got in terms of what should  go into each patch:
 
-And another typical nuisance that running multithreaded
-stuff under strace is much slower, even with -e option
-which limits the set of decoded syscalls?
+The first set of 3 patches (1 through 3) deal with the device related issues:
+Patch 1: Combines the state in hv_device into vm_device to create a 
+single device abstraction called vm_device.
+Patch 2: Changes the name of vm_device to hyperv_device.
+Patch 3: Cleanup the names of variables that refer to hyperv_device
+ 
+  
+Next set of 3 patches (4 through 6) deal with the driver related issues:
 
-Having waitfd would help both cases: strace can gulp
-a lot of waitpid notifications in one go, and
-batch process them.
+Patch 4: Combines the state maintained in  hv_driver into driver_context to
+Create a single driver abstraction called driver_context.
 
--- 
-vda
+Patch 5: Renames the driver context to hyperv_driver.
+
+Patch 6: Cleanup the names of variables that refer to hyperv_driver.
+
+I am beginning to wonder if perhaps I chose the wrong granularity in splitting
+up these patches.
+
+Regards,
+
+K. Y 
+
+> 
+> > This simplifies the code and avoids duplication
+> > of state.
+> 
+> This patch is confusing, you are renaming structures (from hv_ to vm_)
+> which I didn't think you wanted to do.
+> 
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> >
+> > ---
+> >  drivers/staging/hv/blkvsc.c        |   17 ++++---
+> >  drivers/staging/hv/blkvsc_drv.c    |   14 +++---
+> >  drivers/staging/hv/channel_mgmt.c  |    1 +
+> >  drivers/staging/hv/channel_mgmt.h  |    2 +-
+> >  drivers/staging/hv/netvsc.c        |   55 ++++++++++++-----------
+> >  drivers/staging/hv/netvsc.h        |    2 +-
+> >  drivers/staging/hv/netvsc_api.h    |   12 +++---
+> >  drivers/staging/hv/netvsc_drv.c    |   28 +++++-------
+> >  drivers/staging/hv/rndis_filter.c  |   19 ++++----
+> >  drivers/staging/hv/storvsc.c       |   37 ++++++++--------
+> >  drivers/staging/hv/storvsc_api.h   |    4 +-
+> >  drivers/staging/hv/storvsc_drv.c   |   21 ++++-----
+> >  drivers/staging/hv/vmbus.h         |   13 +++---
+> >  drivers/staging/hv/vmbus_api.h     |   29 ++----------
+> >  drivers/staging/hv/vmbus_drv.c     |   84 +++++++++++++++---------------------
+> >  drivers/staging/hv/vmbus_private.h |   12 +++---
+> >  16 files changed, 157 insertions(+), 193 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/blkvsc.c b/drivers/staging/hv/blkvsc.c
+> > index 7c8729b..ecface3 100644
+> > --- a/drivers/staging/hv/blkvsc.c
+> > +++ b/drivers/staging/hv/blkvsc.c
+> > @@ -35,7 +35,8 @@ static const struct hv_guid g_blk_device_type = {
+> >  	}
+> >  };
+> >
+> > -static int blk_vsc_on_device_add(struct hv_device *device, void
+> *additional_info)
+> > +static int blk_vsc_on_device_add(struct vm_device *device,
+> > +				void *additional_info)
+> 
+> Huh?  What was this change for?  80 column issues for function
+> definitions is not a big deal, if any, and should not be burried in a
+> patch that claims to do something else.
+> 
+> Still totally confused,
+> 
+> greg k-h
+
