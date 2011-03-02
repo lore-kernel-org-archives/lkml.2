@@ -1,114 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab1CBItw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:49:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756235Ab1CBItu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:49:50 -0500
-Date: Wed, 2 Mar 2011 16:53:55 +0800
-From: Han Pingtian <phan@redhat.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: perf archive warning
-Message-ID: <20110302085355.GA9857@hpt.nay.redhat.com>
-Mail-Followup-To: Lin Ming <ming.m.lin@intel.com>,
-	linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Arnaldo Carvalho de Melo <acme@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>
-References: <20110302042354.GB5186@hpt.nay.redhat.com>
- <AANLkTim+Ls+_cbHnMzdfWAWUj0Wx2rQtnoTCjZJ8Cnro@mail.gmail.com>
- <1299054581.8642.36.camel@minggr.sh.intel.com>
+	id S1756233Ab1CBJNp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 04:13:45 -0500
+Received: from nm24.bullet.mail.ne1.yahoo.com ([98.138.90.87]:36863 "HELO
+	nm24.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755132Ab1CBJNn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 04:13:43 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 31047.96919.bm@omp1034.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
+  b=4Ou25AGI9skSINLhSXW11OMsYdVjJ8oQnRqCavoqK3GukWBjbESpaFkTGBG+zPBx/jUvyaXvc6KdH0vAlzck8xe9bj7J43XHydwdPrMvdYiJjoO33Jwmz+pu08Bp48eMYKc8j8yFnyp7RmwQnVnScONH0F5Rv8WlNkqcy+geheU=;
+Message-ID: <848226.70728.qm@web121814.mail.ne1.yahoo.com>
+X-YMail-OSG: CQrOhqcVM1mGSJeIWhmjk00VvsSMDgt2e0gC3Kz9hxIEpnn
+ 4bukPsHrtugR00.FfWeLruCoTuELpLpW28VFeOWVYIuBwFUOLeyAWCHu7MX8
+ Xj_kJ4mNMglcQ6aOVczgNSO0YgIKutVSc_7kuANIbdUhkJMGRLqWa0.00d6c
+ l8oeoVRV4iwGXFPh0ayd06QPy.WWVqU3cPFC90qhGLoMaZwVb0qoYj7Eblyh
+ n2aNl9cpKB_5_WCqDiVyUIzfAxaLvlTg17VT.KWU29n8xFy2ksxYtoza0Inn
+ fkc.1uhaGmmoGj0kjkTJGHwYzut1l
+X-Mailer: YahooMailWebService/0.8.109.292656
+Date: Wed, 2 Mar 2011 01:13:12 -0800 (PST)
+From: GAURAV YADAV <gaurav_christmas@yahoo.com>
+To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
+        ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
+        preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299054581.8642.36.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 04:29:41PM +0800, Lin Ming wrote:
-> > 
-> > root@intel-s3e36-01 perf]# ./perf-archive
-> > tar: .build-id/b2/370e39ea2898c6e11c188e2f3879e4e3d6d1ef: Cannot stat:
-> > No such file or directory
-> > tar: .build-id/b2/370e39ea2898c6e11c188e2f3879e4e3d6d1ef: Cannot stat:
-> > No such file or directory
-> > tar: Exiting with failure status due to previous errors
-> 
-> kernel.kallsyms is not created successfully in the buildid-cache.
-> Could you have a try below patch?
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 72c124d..d3b5062 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -271,11 +271,16 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
->  			  const char *name, bool is_kallsyms)
->  {
->  	const size_t size = PATH_MAX;
-> -	char *realname = realpath(name, NULL),
-> +	char *realname,
->  	     *filename = malloc(size),
->  	     *linkname = malloc(size), *targetname;
->  	int len, err = -1;
->  
-> +	if (is_kallsyms)
-> +		realname = (char *)name;
-> +	else
-> +		realname = realpath(name, NULL);
-> +
->  	if (realname == NULL || filename == NULL || linkname == NULL)
->  		goto out_free;
->  
-> @@ -307,7 +312,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
->  	if (symlink(targetname, linkname) == 0)
->  		err = 0;
->  out_free:
-> -	free(realname);
-> +	if (!is_kallsyms)
-> +		free(realname);
->  	free(filename);
->  	free(linkname);
->  	return err;
-> 
-The patch didn't fix this problem. 
-> 
-> > Now please run:
-> > 
-> > $ tar xvf perf.data.tar.bz2 -C ~/.debug
-> > 
-> > wherever you need to run 'perf report' on.
-> > [root@intel-s3e36-01 perf]# ./perf --version
-> > perf version 2.6.38.rc6.166.g493f33
-> > [root@intel-s3e36-01 perf]# ./perf buildid-list
-> > b2370e39ea2898c6e11c188e2f3879e4e3d6d1ef [kernel.kallsyms]
-> > dd95cb496ebc4ed922eeb5640965f1243fcfcd9a
-> > /lib/modules/2.6.32-118.el6.x86_64/kernel/fs/ext4/ext4.ko
-> > 9e1aca88b83308cec7574d74975fa6f7d654c96e /lib64/libc-2.12.so
-> > d880be15bf992b5fbcc629e6bbf1c747a928ddd5 /lib64/libglib-2.0.so.0.2200.5
-> > d1b2ca4e1ec8f81ba820e5f1375d960107ac7e50 /usr/lib64/libstdc++.so.6.0.13
-> > [root@intel-s3e36-01 perf]#
-> > 
-> > --
-> > Han Pingtian
-> > Quality Engineer
-> > hpt @ #kernel-qe
-> > Red Hat, Inc
-> > Freedom ... courage ... Commitment ... ACCOUNTABILITY
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+http://www.powergrid.ru/gift.php?yahoo=3671
 
--- 
-Han Pingtian
-Quality Engineer
-hpt @ #kernel-qe
-Red Hat, Inc
-Freedom ... courage ... Commitment ... ACCOUNTABILITY
+
+      
