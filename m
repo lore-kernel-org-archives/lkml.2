@@ -1,132 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1CBGc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 01:32:57 -0500
-Received: from xenotime.net ([184.105.210.51]:49809 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751035Ab1CBGc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 01:32:56 -0500
-Date: Tue, 1 Mar 2011 22:32:51 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
- top level
-Message-Id: <20110301223251.11c95eed.rdunlap@xenotime.net>
-In-Reply-To: <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
-References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
-	<1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753890Ab1CBGfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 01:35:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61820 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab1CBGfX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 01:35:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=ReiNewhq7B3Fdh3lDZSh++mufKRJrNSZewvPGLDodbEG7kxquxigCvU/KkyMjJpDB6
+         uQQl4h8dUNBSmA89dmzmPQt5ktoFKYF4zaeJV2aXjHM089QG4Kuw5wVfHuU/ZYivGIBE
+         RrC9QO3wmbDqT7l3i5J70Kz7EfjHboG+uY1gw=
+Date: Wed, 2 Mar 2011 09:35:02 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/6] Staging: hv: Unify hyper-v device abstractions
+Message-ID: <20110302063502.GD18043@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	KY Srinivasan <kys@microsoft.com>, Greg KH <greg@kroah.com>,
+	"gregkh@suse.de" <gregkh@suse.de>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+References: <1298685930-30806-1-git-send-email-kys@microsoft.com>
+ <20110301023449.GC1663@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480165E6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0480165E6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Mar 2011 19:34:01 -0800 Nicholas A. Bellinger wrote:
+The problem is that everyone reading [patch 1/6] thinks you're renaming
+hv_device to vm_device or introducing a new struct vm_device.  That
+makes people annoyed.  If you had written the patch description like this:
 
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> Add Makefile/Kconfig and update drivers/target/[Makefile,Kconfig]
-> to include the fabric module.
-> 
-> igned-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/target/Kconfig        |    1 +
->  drivers/target/Makefile       |    1 +
->  drivers/target/iscsi/Kconfig  |   17 +++++++++++++++++
->  drivers/target/iscsi/Makefile |   20 ++++++++++++++++++++
->  4 files changed, 39 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/target/iscsi/Kconfig
->  create mode 100644 drivers/target/iscsi/Makefile
-> 
-> diff --git a/drivers/target/Kconfig b/drivers/target/Kconfig
-> index 387d293..798749a 100644
-> --- a/drivers/target/Kconfig
-> +++ b/drivers/target/Kconfig
-> @@ -30,5 +30,6 @@ config TCM_PSCSI
->  	passthrough access to Linux/SCSI device
->  
->  source "drivers/target/tcm_loop/Kconfig"
-> +source "drivers/target/iscsi/Kconfig"
->  
->  endif
-> diff --git a/drivers/target/Makefile b/drivers/target/Makefile
-> index 60028fe..b038b7d 100644
-> --- a/drivers/target/Makefile
-> +++ b/drivers/target/Makefile
-> @@ -24,3 +24,4 @@ obj-$(CONFIG_TCM_PSCSI)		+= target_core_pscsi.o
->  
->  # Fabric modules
->  obj-$(CONFIG_TCM_LOOP_FABRIC)	+= tcm_loop/
-> +obj-$(CONFIG_ISCSI_TARGET)	+= iscsi/
-> diff --git a/drivers/target/iscsi/Kconfig b/drivers/target/iscsi/Kconfig
-> new file mode 100644
-> index 0000000..d1eaec4
-> --- /dev/null
-> +++ b/drivers/target/iscsi/Kconfig
-> @@ -0,0 +1,17 @@
-> +config ISCSI_TARGET
-> +	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
-> +	select CRYPTO
-> +	select CRYPTO_CRC32C
-> +	select CRYPTO_CRC32C_INTEL
+    In the original code, the structs vm_device included a struct
+    hv_device.  This patch moves the members from hv_device directly
+    into struct vm_device.
 
-  CRYPTO_CRC32C_INTEL depends on X86.  so is ISCSI_TARGET only for X86,
-or is this kconfig just mucked up?
+    The members ->dev_type and ->dev_instance from hv_device were
+    the same as ->class_id and ->device_id in vm_device so those
+    were not copied over.
 
+    Now that everything is included into vm_device directly, 
+    hv_device is unused and we can delete the definition.
 
-> +	help
-> +	Say Y here to enable the ConfigFS enabled Linux-iSCSI.org iSCSI
-> +	Target Mode Stack.
-> +
-> +if ISCSI_TARGET
-> +
-> +config ISCSI_TARGET_DEBUG
-> +	bool "LIO-Target iscsi_debug.h ring buffer messages"
-> +	help
-> +	Say Y here to enable the legacy DEBUG_ISCSI macros in iscsi_debug.h
-> +
-> +endif
-> diff --git a/drivers/target/iscsi/Makefile b/drivers/target/iscsi/Makefile
-> new file mode 100644
-> index 0000000..5ca883d
-> --- /dev/null
-> +++ b/drivers/target/iscsi/Makefile
-> @@ -0,0 +1,20 @@
-> +iscsi_target_mod-y +=		iscsi_auth_chap.o \
-> +				iscsi_parameters.o \
-> +				iscsi_seq_and_pdu_list.o \
-> +				iscsi_thread_queue.o \
-> +				iscsi_target_datain_values.o \
-> +				iscsi_target_device.o \
-> +				iscsi_target_erl0.o \
-> +				iscsi_target_erl1.o \
-> +				iscsi_target_erl2.o \
-> +				iscsi_target_login.o \
-> +				iscsi_target_nego.o \
-> +				iscsi_target_nodeattrib.o \
-> +				iscsi_target_tmr.o \
-> +				iscsi_target_tpg.o \
-> +				iscsi_target_util.o \
-> +				iscsi_target.o \
-> +				iscsi_target_configfs.o \
-> +				iscsi_target_stat.o
-> +
-> +obj-$(CONFIG_ISCSI_TARGET)	+= iscsi_target_mod.o
-> -- 
+There still might be issues with the patch, but at least you would be
+talking about the same thing.
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+regards,
+dan carpenter
