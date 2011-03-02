@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab1CBItl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:49:41 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60168 "EHLO mx2.mail.elte.hu"
+	id S1756268Ab1CBItw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:49:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15389 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755634Ab1CBItk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:49:40 -0500
-Date: Wed, 2 Mar 2011 09:49:25 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf: Set filters before mmaping events
-Message-ID: <20110302084925.GA21204@elte.hu>
-References: <1298693021-23500-1-git-send-email-fweisbec@gmail.com>
+	id S1756235Ab1CBItu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 03:49:50 -0500
+Date: Wed, 2 Mar 2011 16:53:55 +0800
+From: Han Pingtian <phan@redhat.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: perf archive warning
+Message-ID: <20110302085355.GA9857@hpt.nay.redhat.com>
+Mail-Followup-To: Lin Ming <ming.m.lin@intel.com>,
+	linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <20110302042354.GB5186@hpt.nay.redhat.com>
+ <AANLkTim+Ls+_cbHnMzdfWAWUj0Wx2rQtnoTCjZJ8Cnro@mail.gmail.com>
+ <1299054581.8642.36.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298693021-23500-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1299054581.8642.36.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> We currently set the filters after we mmap the events, this is a
-> race that let undesired events record themselves in the buffer before
-> we had the time to set the filters.
+On Wed, Mar 02, 2011 at 04:29:41PM +0800, Lin Ming wrote:
+> > 
+> > root@intel-s3e36-01 perf]# ./perf-archive
+> > tar: .build-id/b2/370e39ea2898c6e11c188e2f3879e4e3d6d1ef: Cannot stat:
+> > No such file or directory
+> > tar: .build-id/b2/370e39ea2898c6e11c188e2f3879e4e3d6d1ef: Cannot stat:
+> > No such file or directory
+> > tar: Exiting with failure status due to previous errors
 > 
-> So set the filters before they can be recorded. That also librarizes
-> the filters setting so that filtering can be done more easily
-> from other tools than perf record later.
+> kernel.kallsyms is not created successfully in the buildid-cache.
+> Could you have a try below patch?
 > 
-> (PS: This should fix most of the bugs Ingo has reported
-> about filters that weren't working with perf).
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 72c124d..d3b5062 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -271,11 +271,16 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+>  			  const char *name, bool is_kallsyms)
+>  {
+>  	const size_t size = PATH_MAX;
+> -	char *realname = realpath(name, NULL),
+> +	char *realname,
+>  	     *filename = malloc(size),
+>  	     *linkname = malloc(size), *targetname;
+>  	int len, err = -1;
+>  
+> +	if (is_kallsyms)
+> +		realname = (char *)name;
+> +	else
+> +		realname = realpath(name, NULL);
+> +
+>  	if (realname == NULL || filename == NULL || linkname == NULL)
+>  		goto out_free;
+>  
+> @@ -307,7 +312,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+>  	if (symlink(targetname, linkname) == 0)
+>  		err = 0;
+>  out_free:
+> -	free(realname);
+> +	if (!is_kallsyms)
+> +		free(realname);
+>  	free(filename);
+>  	free(linkname);
+>  	return err;
+> 
+The patch didn't fix this problem. 
+> 
+> > Now please run:
+> > 
+> > $ tar xvf perf.data.tar.bz2 -C ~/.debug
+> > 
+> > wherever you need to run 'perf report' on.
+> > [root@intel-s3e36-01 perf]# ./perf --version
+> > perf version 2.6.38.rc6.166.g493f33
+> > [root@intel-s3e36-01 perf]# ./perf buildid-list
+> > b2370e39ea2898c6e11c188e2f3879e4e3d6d1ef [kernel.kallsyms]
+> > dd95cb496ebc4ed922eeb5640965f1243fcfcd9a
+> > /lib/modules/2.6.32-118.el6.x86_64/kernel/fs/ext4/ext4.ko
+> > 9e1aca88b83308cec7574d74975fa6f7d654c96e /lib64/libc-2.12.so
+> > d880be15bf992b5fbcc629e6bbf1c747a928ddd5 /lib64/libglib-2.0.so.0.2200.5
+> > d1b2ca4e1ec8f81ba820e5f1375d960107ac7e50 /usr/lib64/libstdc++.so.6.0.13
+> > [root@intel-s3e36-01 perf]#
+> > 
+> > --
+> > Han Pingtian
+> > Quality Engineer
+> > hpt @ #kernel-qe
+> > Red Hat, Inc
+> > Freedom ... courage ... Commitment ... ACCOUNTABILITY
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Nice!
-
-Mind pulling Steve's filter-enhancements branch and sending a pull request for the 
-whole thing? Steve's branch was:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git tip/perf/filter
-
-( Or your fixes could be applied to Steve's branch as well - whichever direction you 
-  guys prefer - the important thing is to have filtering tested and validated as a 
-  whole. )
-
-Thanks,
-
-	Ingo
+-- 
+Han Pingtian
+Quality Engineer
+hpt @ #kernel-qe
+Red Hat, Inc
+Freedom ... courage ... Commitment ... ACCOUNTABILITY
