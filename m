@@ -1,73 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab1CBW3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 17:29:40 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.121]:58497 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab1CBW3j (ORCPT
+	id S1757989Ab1CBWcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:32:08 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36588 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757718Ab1CBWcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 17:29:39 -0500
-X-Authority-Analysis: v=1.1 cv=tLsyj04/L/SH/N6p42ldY6jXDYWe4pX5hAm6uRA1LKo= c=1 sm=0 a=JDAbMbolm0kA:10 a=kj9zAlcOel0A:10 a=ntrFZrGEjHmDqAtCeN43kw==:17 a=qchdqvvUAAAA:8 a=ndjMHKGSrlYcP69dyBcA:9 a=oysiHdlgE47gq-YT76oA:7 a=_k2dwgCeBIZ2HcxqVTvRDUIYDLYA:4 a=CjuIK1q_8ugA:10 a=7G_UksIX704A:10 a=ntrFZrGEjHmDqAtCeN43kw==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 76.187.29.95
-Date: Wed, 2 Mar 2011 16:29:35 -0600
-From: David Engel <david@istwok.net>
-To: Greg KH <gregkh@suse.de>
-Cc: Stefan Bader <stefan.bader@canonical.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.30
-Message-ID: <20110302222935.GA21539@opus.istwok.net>
-References: <20110302145828.GA4999@kroah.com>
- <4D6E7548.807@canonical.com>
- <20110302204202.GB19022@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302204202.GB19022@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 2 Mar 2011 17:32:05 -0500
+Date: Wed, 2 Mar 2011 14:31:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: nai.xia@gmail.com
+Cc: Izik Eidus <ieidus@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ksm: add vm_stat and meminfo entry to reflect pte
+ mapping to ksm pages
+Message-Id: <20110302143142.a3c0002b.akpm@linux-foundation.org>
+In-Reply-To: <201102262256.31565.nai.xia@gmail.com>
+References: <201102262256.31565.nai.xia@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 03:42:02PM -0500, Greg KH wrote:
-> On Wed, Mar 02, 2011 at 05:50:16PM +0100, Stefan Bader wrote:
-> > > FUJITA Tomonori (1):
-> > >       swiotlb: fix wrong panic
-> > >
-> > 
-> > This one breaks compilation of 64bit for me as swiotlb_tbl_unmap_single() does
-> > not exist. It does not look like it is a simple single patch that would get it
-> > back to 2.6.32.
+On Sat, 26 Feb 2011 22:56:31 +0800
+Nai Xia <nai.xia@gmail.com> wrote:
+
+> ksm_pages_sharing is updated by ksmd periodically.  In some cases, it cannot 
+> reflect the actual savings and makes the benchmarks on volatile VMAs very 
+> inaccurate.
 > 
-> I don't understand.  Is this patch somehow broken?  Is there an
-> additional patch I need to apply to fix the build issue?  I need more
-> information here.
+> This patch add a vm_stat entry and let the /proc/meminfo show information 
+> about how much virutal address pte is being mapped to ksm pages.  With default 
+> ksm paramters (pages_to_scan==100 && sleep_millisecs==20), this can result in 
+> 50% more accurate averaged savings result for the following test program. 
+> Bigger sleep_millisecs values will increase this deviation. 
+> 
+> ...
+>
+> --- a/fs/proc/meminfo.c
+> +++ b/fs/proc/meminfo.c
+> @@ -87,6 +87,9 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>  		"SUnreclaim:     %8lu kB\n"
+>  		"KernelStack:    %8lu kB\n"
+>  		"PageTables:     %8lu kB\n"
+> +#ifdef CONFIG_KSM
+> +		"KsmSharing:     %8lu kB\n"
+> +#endif
+>  #ifdef CONFIG_QUICKLIST
+>  		"Quicklists:     %8lu kB\n"
+>  #endif
+>
+> ...
+>
+> @@ -904,6 +905,10 @@ static int try_to_merge_one_page(struct vm_area_struct 
+> *vma,
+>  			 */
+>  			set_page_stable_node(page, NULL);
+>  			mark_page_accessed(page);
+> +			if (mapcount)
+> +				add_zone_page_state(page_zone(page),
+> +						    NR_KSM_PAGES_SHARING,
+> +						    mapcount);
+>  			err = 0;
+>  		} else if (pages_identical(page, kpage))
+>  			err = replace_page(vma, page, kpage, orig_pte);
 
-I think this will fix it.
+This patch obviously wasn't tested with CONFIG_KSM=n, which was a
+pretty basic patch-testing failure :(
 
-Fix compilation error introduced in 484d82b6.
+I fixed up my tree with the below, but really the amount of ifdeffing
+is unacceptable - please find a cleaner way to fix up this patch.
 
-do_unmap_single() was renamed to swiotlb_tbl_unmap_single() in
-bfc5501f.  Use the old name unless/until that change is also
-backported.
-
-Signed-off-by: David Engel <david@istwok.net>
-
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 7740ee8..0d0df11 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -632,7 +632,7 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
- 	 * Ensure that the address returned is DMA'ble
+--- a/mm/ksm.c~ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix
++++ a/mm/ksm.c
+@@ -883,7 +883,6 @@ static int try_to_merge_one_page(struct 
  	 */
- 	if (!dma_capable(dev, dev_addr, size)) {
--		swiotlb_tbl_unmap_single(dev, map, size, dir);
-+		do_unmap_single(dev, map, size, dir);
- 		dev_addr = swiotlb_virt_to_bus(dev, io_tlb_overflow_buffer);
+ 	if (write_protect_page(vma, page, &orig_pte) == 0) {
+ 		if (!kpage) {
+-			long mapcount = page_mapcount(page);
+ 			/*
+ 			 * While we hold page lock, upgrade page from
+ 			 * PageAnon+anon_vma to PageKsm+NULL stable_node:
+@@ -891,10 +890,12 @@ static int try_to_merge_one_page(struct 
+ 			 */
+ 			set_page_stable_node(page, NULL);
+ 			mark_page_accessed(page);
+-			if (mapcount)
++#ifdef CONFIG_KSM
++			if (page_mapcount(page))
+ 				add_zone_page_state(page_zone(page),
+ 						    NR_KSM_PAGES_SHARING,
+ 						    mapcount);
++#endif
+ 			err = 0;
+ 		} else if (pages_identical(page, kpage))
+ 			err = replace_page(vma, page, kpage, orig_pte);
+--- a/mm/memory.c~ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix
++++ a/mm/memory.c
+@@ -719,8 +719,10 @@ copy_one_pte(struct mm_struct *dst_mm, s
+ 			rss[MM_ANONPAGES]++;
+ 		else
+ 			rss[MM_FILEPAGES]++;
++#ifdef CONFIG_KSM
+ 		if (PageKsm(page)) /* follows page_dup_rmap() */
+ 			inc_zone_page_state(page, NR_KSM_PAGES_SHARING);
++#endif
  	}
  
-David
--- 
-David Engel
-david@istwok.net
+ out_set_pte:
+--- a/mm/rmap.c~ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix
++++ a/mm/rmap.c
+@@ -893,11 +893,12 @@ void do_page_add_anon_rmap(struct page *
+ 			__inc_zone_page_state(page,
+ 					      NR_ANON_TRANSPARENT_HUGEPAGES);
+ 	}
++#ifdef CONFIG_KSM
+ 	if (unlikely(PageKsm(page))) {
+ 		__inc_zone_page_state(page, NR_KSM_PAGES_SHARING);
+ 		return;
+ 	}
+-
++#endif
+ 	VM_BUG_ON(!PageLocked(page));
+ 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+ 	if (first)
+@@ -955,9 +956,10 @@ void page_add_file_rmap(struct page *pag
+  */
+ void page_remove_rmap(struct page *page)
+ {
++#ifdef CONFIG_KSM
+ 	if (PageKsm(page))
+ 		__dec_zone_page_state(page, NR_KSM_PAGES_SHARING);
+-
++#endif
+ 	/* page still mapped by someone else? */
+ 	if (!atomic_add_negative(-1, &page->_mapcount))
+ 		return;
+_
+
