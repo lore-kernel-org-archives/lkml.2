@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab1CBTpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:45:41 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39500 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756919Ab1CBTpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:45:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=XjbeYXkV7XYT7CpUw8TPAI9pQ87SUDCwduV0mntEg2hyzkiG8ktnQK9FrDe4wmhopt
-         06QcKeOjoFmsHcfQui2M3Nc1+xvl5XlLHvegD9/MdM4bOgiUZvX5AHR+mNwWAr3FL2ns
-         /bcpfkyV13CljSZxxPoma9Ex0uocY3kGOe4UQ=
+	id S1757375Ab1CBTq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:46:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752980Ab1CBTqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 14:46:25 -0500
+Date: Wed, 2 Mar 2011 14:46:11 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip 2/2 resend] x86, traps: Drop nmi_reason_lock until
+ it is really needed
+Message-ID: <20110302194611.GZ11359@redhat.com>
+References: <4D6E631B.6040701@openvz.org>
+ <20110302154645.GA11827@elte.hu>
+ <4D6E6886.2060707@openvz.org>
+ <20110302160315.GA12620@elte.hu>
+ <4D6E6CB6.7000700@openvz.org>
+ <20110302184053.GW11359@redhat.com>
+ <4D6E9700.50501@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <1299068635.4463.1.camel@subratamodak.linux.ibm.com>
-References: <4D6E2C9C.1060404@linux.vnet.ibm.com>
-	<AANLkTikTM7wv0ogVPueLjK391sqaUyekquMXBea0ayFc@mail.gmail.com>
-	<1299068635.4463.1.camel@subratamodak.linux.ibm.com>
-Date: Wed, 2 Mar 2011 11:45:38 -0800
-Message-ID: <AANLkTim+pyy=Dr7-kMrSiG=5RHqY2L6P01m9hH171D8G@mail.gmail.com>
-Subject: Re: [ANNOUNCE] The Linux Test Project has been released for FEBRUARY 2011.
-From: Garrett Cooper <yanegomi@gmail.com>
-To: subrata@linux.vnet.ibm.com
-Cc: Paolo Ciarrocchi <paolo.ciarrocchi@gmail.com>,
-        Shubham Goyal <shubham@linux.vnet.ibm.com>, ltp-list@lists.sf.net,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, vapier@gentoo.org, chrubis@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6E9700.50501@openvz.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 4:23 AM, Subrata Modak
-<subrata@linux.vnet.ibm.com> wrote:
-> On Wed, 2011-03-02 at 13:06 +0100, Paolo Ciarrocchi wrote:
->> On Wed, Mar 2, 2011 at 12:40 PM, Shubham Goyal
->> <shubham@linux.vnet.ibm.com> wrote:
->> > Hi,
->> >
->> > The Linux Test Project test suite has been released for the month of
->> > FEBRUARY 2011. Please see ltp/INSTALL file carefully, as there has
->> > been multiple changes for building/installing the test suite after the
->> > recent changes in Makefile infrastructure.
->>
->> Wouldn't make sense to integrate this test suite in the kernel source tree?
->
-> There was discussion like this some few years back. The idea was to get
-> some core tests from LTP to the kernel source tree. But then the idea
-> was dropped probably to avoid maintenance overhead ;-)
+On Wed, Mar 02, 2011 at 10:14:08PM +0300, Cyrill Gorcunov wrote:
+> > 
+> > Now this spinlock doesn't affect them, because they registered an nmi
+> > handler to catch it and dump their stack (I modified the code to use
+> > DIE_NMIUNKNOWN instead of DIE_NMI to avoid conflict with the
+> > nmi_watchdog).  But I don't know what the affect is, if that spinlock is
+> > not there (I sent a private email to SGI inquiring, their guy wasn't
+> > around this week).
+> 
+>   Don, do you know -- was new nmi-watchdog system tested with UV machine
+> somewhere?
 
-Putting LTP in the kernel.org sources really doesn't make sense for
-the following reasons:
+They are testing it now, I am working through the issues with them.
 
-1. LTP isn't really tied to a single kernel release.
-2. LTP isn't the only test project out there for Linux.
-3. LTP has more stuff than it needs to have for testing out the kernel
-(well, it did more in the past before I started cleaning it up in the
-past couple of months).
-4. Maintaining it will become a political bloodbath for both parties
-as Linux is loosely managed by Linus et all, and LTP has been largely
-developed by SGI and maintained by IBM and a few other parties like
-Fujitsu, Nokia, Redhat, etc.
-5. Integrating LTP into Kbuild, etc would probably be non-trivial due
-to the size of LTP (but it might be easier after the Makefile
-restructuring I did a year and a half ago).
-
-That being said, if Linux devs took the initiative and submitted
-testcases that either illustrated past regressions in the kernel,
-feature tested enhancements, and submitted documentation that actually
-described their changes to the Linux kernel and the manpages project,
-I would take this over having LTP in the linux sources because right
-now things largely work because the Linux sources haven't really been
-rototilled since 2.4 -> 2.6, but they are somewhat bitrotted and when
-Linux rototills its sources again, we'll have to go through
-rototilling our stuff as well.
-
-Right now multiple QA engineers are sort of playing whack-a-mole
-trying to figure out requirements and submit tests to LTP, and since
-they don't have 100% context into the actual problem, some information
-is lost in translation when the tests are submitted. This isn't
-desirable.
-
-Thanks,
--Garrett
+Cheers,
+Don
