@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab1CBTqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:46:46 -0500
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:34727 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab1CBTqp (ORCPT
+	id S1757386Ab1CBTsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:48:54 -0500
+Received: from 110-197-170-69.skybeam.com ([69.170.197.110]:41732 "EHLO
+	chukar.localdomain" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756516Ab1CBTsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:46:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
-	:cc:in-reply-to:references:content-type:date:message-id
-	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=O0p9iy
-	eCRSjNEUdm9aidIHL+kLSmOYTmH+iRTiSxEB8/oVpshygWJ14GzyAYU73r5lhcxp
-	Ns6z0RZaiGwSIwY4R9bxnZfI8OXwJPGuXeQh+XFCoFsclPw/zDLPZ0oz2XTmCk5n
-	KSEr3Q7/Vi2oI8f5Hj9VOn7+f3LkwSgYAeGa4=
-Subject: Re: [PATCH] bloat-o-meter: Include read-only data section in report
-From: Nathan Lynch <ntl@pobox.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110302181544.2f1b3be9@endymion.delvare>
-References: <20110302181544.2f1b3be9@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Mar 2011 13:46:30 -0600
-Message-ID: <1299095190.27127.76.camel@tp-t61>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: FA76BE1C-4505-11E0-BBFB-AF401E47CF6F-04752483!a-pb-sasl-sd.pobox.com
+	Wed, 2 Mar 2011 14:48:52 -0500
+X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Mar 2011 14:48:52 EST
+From: Jake Edge <jake@lwn.net>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
+        mirqus@gmail.com, netdev@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
+        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
+        eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev kernel modules
+References: <201102272122.52643.arnd@arndb.de>
+	<4D6B6AE7.2050202@msgid.tls.msk.ru> <20110228095133.GA4351@albatros>
+	<20110228.112349.104067277.davem@davemloft.net>
+	<20110301194845.GA3533@albatros>
+	<1299010390.2529.30.camel@bwh-desktop>
+	<20110301213313.GA6507@albatros>
+Date: Wed, 02 Mar 2011 12:39:53 -0700
+In-Reply-To: <20110301213313.GA6507@albatros> (Vasiliy Kulikov's message of
+	"Wed, 2 Mar 2011 00:33:13 +0300")
+Message-ID: <m34o7ltipi.fsf@lwn.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-02 at 18:15 +0100, Jean Delvare wrote:
-> I'm not sure why the read-only data section is excluded from the
-> report, it seems as relevant as the other data sections (b and d).
-> 
-> I've stripped the symbols starting with __mod_ as they can have their
-> names dynamically generated and thus comparison between binaries is
-> not possible.
-> 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
 
-Seems to do the right thing here.
+I am probably missing something, but shouldn't the existing
+MODULE_ALIASes stay?
 
-Acked-by: Nathan Lynch <ntl@pobox.com>
+Vasiliy Kulikov <segoon@openwall.com> writes:
 
+> diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
+> index 6613edf..d1d0e2c 100644
+> --- a/net/ipv4/ip_gre.c
+> +++ b/net/ipv4/ip_gre.c
+> @@ -1765,4 +1765,4 @@ module_exit(ipgre_fini);
+>  MODULE_LICENSE("GPL");
+>  MODULE_ALIAS_RTNL_LINK("gre");
+>  MODULE_ALIAS_RTNL_LINK("gretap");
+> -MODULE_ALIAS("gre0");
+> +MODULE_ALIAS_NETDEV("gre0");
 
+that is, instead of replacing MODULE_ALIAS("gre0") with the NETDEV
+version, don't you want both for backward compatibility?
+
+(if so, same goes for the other two)
+
+jake
+
+-- 
+Jake Edge - jake@lwn.net - http://lwn.net
