@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab1CBQrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 11:47:00 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38950 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429Ab1CBQq7 (ORCPT
+	id S1756022Ab1CBQr5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 11:47:57 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36587 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1CBQr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 11:46:59 -0500
-Message-ID: <4D6E7459.6050706@kernel.org>
-Date: Wed, 02 Mar 2011 08:46:17 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Wed, 2 Mar 2011 11:47:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=cDzY/D+wc0yHYLdQ+r5zAJ5crkgtv0wXcixrfWfdmSAo2ydB6BImOfiumGSyEQlWQw
+         3KNKCetQzQ6XAFh8RobmivpDCZrV6JP1hSf5IR9EeoX3UpDEJ0gUYPfWClPrpvNUKN8+
+         zbHaYcLhYWrVf2Acmr127qqnwArE4nwJdjJ9I=
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
-References: <20110224145128.GM7840@htj.dyndns.org> <4D66AC9C.6080500@kernel.org> <20110224192305.GB15498@elte.hu> <4D66B176.9030300@kernel.org> <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com> <20110302100400.GK19669@htj.dyndns.org> <20110302102530.GB3319@htj.dyndns.org> <4D6E6D52.8030901@kernel.org> <20110302163729.GQ3319@htj.dyndns.org>
-In-Reply-To: <20110302163729.GQ3319@htj.dyndns.org>
+In-Reply-To: <20110302161900.GP3319@htj.dyndns.org>
+References: <20110226143730.GA26864@htj.dyndns.org>
+	<AANLkTinW-nQV4tL-_PicOb-N6imv3gtWuG-J69-6VUQd@mail.gmail.com>
+	<20110302161900.GP3319@htj.dyndns.org>
+Date: Wed, 2 Mar 2011 08:47:54 -0800
+X-Google-Sender-Auth: t7ZG0Ca5GkDEf2pR9SdntuSOzBI
+Message-ID: <AANLkTi=SYRK+iKT-Zwuyv=e6dLqmoL4cUts2Xoyq-M=1@mail.gmail.com>
+Subject: Re: [RFC] Reverting NUMA-affine page table allocation
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D6E746F.01A3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2011 08:37 AM, Tejun Heo wrote:
-> Hey, Yinghai.
-> 
-> On Wed, Mar 02, 2011 at 08:16:18AM -0800, Yinghai Lu wrote:
->> my original part:
->>
->> @@ -393,7 +393,7 @@ void __init numa_reset_distance(void)
->>         size_t size;
->>  
->>         if (numa_distance_cnt) {
->> -               size = numa_distance_cnt * sizeof(numa_distance[0]);
->> +               size = numa_distance_cnt * numa_distance_cnt * sizeof(numa_distance[0]);
->>                 memblock_x86_free_range(__pa(numa_distance),
->>                                         __pa(numa_distance) + size);
->>                 numa_distance_cnt = 0;
->>
->> So can you tell me why you need to make those change?
->> 	move out assigning or numa_distance_cnt and size of the the IF
-> 
-> Please read the patch description.  I actually wrote that down.  :-)
+On 03/02/2011 08:19 AM, Tejun Heo wrote:
+> > Hey, Yinghai.
+> >
+> > On Tue, Mar 01, 2011 at 02:41:55PM -0800, Yinghai Lu wrote:
+>>> >>> 2. find_early_table_space() always calculates the amount of the needed
+>>> >>>   space from 0 to the specified @end.  As nodes are registered, each
+>>> >>>   node would try to allocate accumulative amount of space for page
+>>> >>>   table.  This probably wouldn't cause any actual problem (may affect
+>>> >>>   emulated configurations a bit tho).
+>> >>
+>> >> interesting.
+> >
+> > Yeah, it's a pretty interesting piece of code in need of some cleanup.
+No, i mean second one is not causing any problem.
 
-well you said:
-> while at it, take numa_distance_cnt resetting in
-> numa_reset_distance() out of the if block to simplify the code a bit.
+that only take end is intentionally. that will make sure we can get
+space for page table even in extreme case.
 
-what are you talking about? what do you mean "simplify the code a bit" ?
+> >
+> > I'm reverting the NUMA-affine page table allocation for now.  I wish
+> > something like the following happens during the next devel cycle.
+> >
+> > * General cleanup of page table allocation code.  I'm not talking
+> >   about major rewrite or anything major.  Just making the code sane(r)
+> >   so that they take parameters instead of doing subtle stuff with
+> >   internal #ifdef's.  And hopefully proper documentation.
+> >
+> > * Redo the NUMA-affine page table allocation in simpler way using
+> >   cleaned up allocation functions.  As suggested before, IMO, just
+> >   taking top and bottom of nodes is enough.  Again, hopefully, with
+> >   enough documentation on both what and why.
+> >
+> > If you're interested in doing the above, please go ahead and let me
+> > know.
 
-> 
->> the change include:
->> 1. you only need to go over new_nr*new_nr instead huge MAX_NUMNODES * MAX_NUMNODES
->> 2. you do NOT need to go over it if you don't have phys_dist assigned before.
->>    numa_alloc_distance already have that default set.
->> 3. do need to check if phys_dist is assigned before referring phys_dist.
-> 
-> * If you wanted to make that change, split it into a separate patch.
->   Don't mix it with changes which actually fix the bug.
-> 
-> * I don't think it's gonna matter all that much.  It's one time and
->   only used if emulation is enabled, but then again yeap MAX_NUMNODES
->   * MAX_NUMNODES can get quite high, but it looks way too complicated
->   for what it achieves.  Just looping over enabled nodes should
->   achieve about the same thing in much simpler way, right?
+No. please don't revert it.
 
-what kind of excuse to put inefficiency code there!
+Ingo, please get patches that will align to 1G ... from
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git
+memblock
+
+Thanks
 
 Yinghai
