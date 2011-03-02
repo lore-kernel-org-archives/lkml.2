@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab1CBSuQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 13:50:16 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38236 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754902Ab1CBSuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 13:50:12 -0500
-Date: Wed, 2 Mar 2011 19:49:53 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Liu Yuan <namei.unix@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jaxboe@fusionio.com, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC PATCH 4/5] mm: Add hit/miss accounting for Page Cache
-Message-ID: <20110302184953.GH13693@elte.hu>
-References: <no>
- <1299055090-23976-4-git-send-email-namei.unix@gmail.com>
- <20110302084542.GA20795@elte.hu>
- <1299085326.8493.820.camel@nimitz>
+	id S1756658Ab1CBSxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 13:53:16 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16859 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756065Ab1CBSxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 13:53:15 -0500
+Message-ID: <4D6E91EC.6040906@kernel.org>
+Date: Wed, 02 Mar 2011 10:52:28 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299085326.8493.820.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Tejun Heo <tj@kernel.org>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
+References: <20110224145128.GM7840@htj.dyndns.org> <4D66AC9C.6080500@kernel.org> <20110224192305.GB15498@elte.hu> <4D66B176.9030300@kernel.org> <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com> <20110302100400.GK19669@htj.dyndns.org> <20110302102530.GB3319@htj.dyndns.org> <4D6E6D52.8030901@kernel.org> <20110302163729.GQ3319@htj.dyndns.org> <4D6E7459.6050706@kernel.org> <20110302165545.GR3319@htj.dyndns.org>
+In-Reply-To: <20110302165545.GR3319@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D6E9205.00BA,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-
-> On Wed, 2011-03-02 at 09:45 +0100, Ingo Molnar wrote:
-> > But, instead of trying to improve those aspects of our existing instrumentation 
-> > frameworks, mm/* is gradually growing its own special instrumentation hacks, missing 
-> > the big picture and fragmenting the instrumentation space some more.
-> > 
-> > That trend is somewhat sad. 
+On 03/02/2011 08:55 AM, Tejun Heo wrote:
+> On Wed, Mar 02, 2011 at 08:46:17AM -0800, Yinghai Lu wrote:
+>>> * I don't think it's gonna matter all that much.  It's one time and
+>>>   only used if emulation is enabled, but then again yeap MAX_NUMNODES
+>>>   * MAX_NUMNODES can get quite high, but it looks way too complicated
+>>>   for what it achieves.  Just looping over enabled nodes should
+>>>   achieve about the same thing in much simpler way, right?
+>>
+>> what kind of excuse to put inefficiency code there!
 > 
-> Go any handy examples of how you'd like to see these done?
+> Complexity of a solution should match the benefit of the complexity.
+> Code complexity is one of the most important metrics that we need to
+> keep an eye on.  If you don't do that, the code base becomes very ugly
+> and difficult to maintain very quickly.  So, yes, some amount of
+> execution inefficiency is acceptable depending on circumstances.
+> Efficiency too is something which should be traded off against other
+> benefits.
 
-There's a very, very old branch in tip:tracing/mm (by Steve) that shows off some of 
-the concepts that could be introduced, to 'dump' current MM state via an extension 
-to the tracepoints APIs:
+No. it is not acceptable in your case.
 
-3383e37ea796: tracing, page-allocator: Add a postprocessing script for page-allocator-related ftrace events
-c33b3596bc38: tracing, page-allocator: Add trace event for page traffic related to the buddy lists
-0d524fb734bc: tracing, mm: Add trace events for anti-fragmentation falling back to other migratetypes
-b9a28177eedf: tracing, page-allocator: Add trace events for page allocation and page freeing
-807243eb20b2: Merge branch 'perfcounters/urgent' into tracing/mm
-08b6cb88eeb5: perf_counter tools: Provide default bfd_demangle() function in case it's not around
-eb4671011887: tracing/mm: rename 'trigger' file to 'dump_range'
-1487a7a1ff99: tracing/mm: fix mapcount trace record field
-dcac8cdac1d4: tracing/mm: add page frame snapshot trace
+We can accept that something like: during init stage, do some probe and call pathes to be happy.
+like subarch.
 
-That's just a demo in essence - showing what things could be done in this area.
+Also why did you omit my first question?
 
-You can pick those commits up via running:
+>>>>diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+>>>>> index 7757d22..541746f 100644
+>>>>> --- a/arch/x86/mm/numa_64.c
+>>>>> +++ b/arch/x86/mm/numa_64.c
+>>>>> @@ -390,14 +390,12 @@ static void __init numa_nodemask_from_meminfo(nodemask_t *nodemask,
+>>>>>   */
+>>>>>  void __init numa_reset_distance(void)
+>>>>>  {
+>>>>> -	size_t size;
+>>>>> +	size_t size = numa_distance_cnt * numa_distance_cnt * sizeof(numa_distance[0]);
+>>>>>  
+>>>>> -	if (numa_distance_cnt) {
+>>>>> -		size = numa_distance_cnt * sizeof(numa_distance[0]);
+>>>>> +	if (numa_distance_cnt)
+>>>>>  		memblock_x86_free_range(__pa(numa_distance),
+>>>>>  					__pa(numa_distance) + size);
+>>>>> -		numa_distance_cnt = 0;
+>>>>> -	}
+>>>>> +	numa_distance_cnt = 0;
+>>>>>  	numa_distance = NULL;
+>>>>>  }
 
-  http://people.redhat.com/mingo/tip.git/README
+>> my original part:
+>> >>
+>> >> @@ -393,7 +393,7 @@ void __init numa_reset_distance(void)
+>> >>         size_t size;
+>> >>  
+>> >>         if (numa_distance_cnt) {
+>> >> -               size = numa_distance_cnt * sizeof(numa_distance[0]);
+>> >> +               size = numa_distance_cnt * numa_distance_cnt * sizeof(numa_distance[0]);
+>> >>                 memblock_x86_free_range(__pa(numa_distance),
+>> >>                                         __pa(numa_distance) + size);
+>> >>                 numa_distance_cnt = 0;
+>> >>
+>> >> So can you tell me why you need to make those change?
+>> >> 	move out assigning or numa_distance_cnt and size of the the IF
+> > 
+> > Please read the patch description.  I actually wrote that down.  :-)
+well you said:
+> > while at it, take numa_distance_cnt resetting in
+> > numa_reset_distance() out of the if block to simplify the code a bit.
+what are you talking about? what do you mean "simplify the code a bit" ?
 
-Thanks,
-
-	Ingo
