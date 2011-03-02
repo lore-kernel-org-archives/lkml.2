@@ -1,97 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab1CBRHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:07:35 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28809 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab1CBRHe (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 2 Mar 2011 12:07:34 -0500
-Date: Wed, 2 Mar 2011 12:06:28 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: "x86-64, mm: Put early page table high" causes crash on Xen
-Message-ID: <20110302170628.GA9268@dumpdata.com>
-References: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop>
- <4D6D6980.7060304@kernel.org>
- <alpine.DEB.2.00.1103021123140.2968@kaball-desktop>
+	id S1755647Ab1CBRKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:10:19 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43701 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab1CBRKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 12:10:17 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=owA0imprsKQA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=zqI2FTgMvshtYQsv4DYA:9 a=v5IhPhKkLlbm2_PKrALWfyaEGsUA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Wed, 2 Mar 2011 12:10:15 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alvaro Aguilera <alvaro.aguilera@mailbox.tu-dresden.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Question about the vmlinuz file
+Message-ID: <20110302171015.GA8960@home.goodmis.org>
+References: <AANLkTimtj=8ikdzgUiaT+y1MsjfGNU3LcyaUMPU0wMEh@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103021123140.2968@kaball-desktop>
+In-Reply-To: <AANLkTimtj=8ikdzgUiaT+y1MsjfGNU3LcyaUMPU0wMEh@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D6E7922.005C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 03:23:48PM +0000, Stefano Stabellini wrote:
-> On Tue, 1 Mar 2011, Yinghai Lu wrote:
-> > We do need map_low_page ( BTW, that name is totally misleading...)
-> > 
-> > the reason is we put page_table high and at that time is not under max_pfn_mapped. (aka not mapped).
-> > 
-> > So have to use 
-> > 	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
-> > to early map it and Read/Write to it.
->  
-> I think I have figured out a way to update the logic of mask_rw_pte to
-> account for the new way of allocating kernel pagetables.
-> The appended patch fix the boot crash for me.
+On Sat, Feb 26, 2011 at 01:25:24PM +0100, Alvaro Aguilera wrote:
+> Hello,
 > 
-> ---
-> 
-> xen: update mask_rw_pte after kernel page tables init changes
-> 
-> Already existing kernel page table pages can now be mapped using
-> early_ioremap too so we need to update mask_rw_pte to make sure these
-> pages are still mapped RO.
-> We do that by mapping RO all the pages mapped using early_ioremap apart
-> from the last one that has been allocated because it is not a page table
-> page yet (it has been hooked into the page tables yet).
-                  ^- has not?
+> perhaps someone here has a couple of minutes to explain me the
+> difference between these two vmlinuz files from different
+> distributions:
 
-..this is b/c the initial_kernel_mapping and its family of calls update
-the pgt_buf_end (used to be called e820_table_end), _before__
-it calls the Xen MMU to set the PTE entries and then after it is done
-update the PMD?. Hence the simple check to see if the PFN is the _old_
-value of the pgt_buf_end and if so skip altering the mapping from RW to RO
-and leave them be?
+What distributions?
 
-On subsequent passes we fall within the first conditional
-and update the PTE to RO? When is that pass done?
+On my Fedora 12 laptop:
 
+$ file /boot/vmlinuz-2.6.32.23-170.fc12.x86_64 
+/boot/vmlinuz-2.6.32.23-170.fc12.x86_64: Linux kernel x86 boot executable bzImage, version 2.6.32.23-170.fc12.x86_64 (mock, RO-rootFS, root_dev 0x902, swap_dev 0x3, Normal VGA
 
-You also might want to mention the git commits that inspired this patch
-and include the nice description you provided in the first email of this
-thread.
+On my debian box:
 
+$ file /boot/vmlinuz-2.6.32-trunk-amd64 
+/boot/vmlinuz-2.6.32-trunk-amd64: Linux kernel x86 boot executable bzImage, version 2.6.32-trunk-amd64 (unknown@Deb, RO-rootFS, swap_dev 0x2, Normal VGA
 
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> $file /boot/vmlinuz
+> /boot/vmlinuz-2.6.37-40-desktop: Linux/x86 Kernel, Setup Version
+> 0x20a, bzImage, Version 2.6.37, Version 2.6.37-40, RO-rootFS, root_dev
+> 0x301, swap_dev 0x4, Normal VGA
+
+This seems to match my two boxes.
+
 > 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 62192cd..2ff68be 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1440,10 +1440,12 @@ static __init pte_t mask_rw_pte(pte_t *ptep, pte_t pte)
->  	/*
->  	 * If the new pfn is within the range of the newly allocated
->  	 * kernel pagetable, and it isn't being mapped into an
-> -	 * early_ioremap fixmap slot, make sure it is RO.
-> +	 * early_ioremap fixmap slot as a freshly allocated page, make sure
-> +	 * it is RO.
->  	 */
-> -	if (!is_early_ioremap_ptep(ptep) &&
-> -	    pfn >= pgt_buf_start && pfn < pgt_buf_end)
-> +	if (((!is_early_ioremap_ptep(ptep) &&
-> +			pfn >= pgt_buf_start && pfn < pgt_buf_end)) ||
-> +			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
->  		pte = pte_wrprotect(pte);
->  
->  	return pte;
+> $file /boot/vmlinuz
+> vmlinuz: ELF 64-bit LSB shared object, AMD x86-64, version 1, stripped
+> 
+> the second file seems to be in ELF format and I cannot use it with my
+> cluster management software.
+
+What distro is it?
+
+> 
+> Is there a parameter I can use to compile the kernel image in one
+> format or the other? or a tool to convert them?
+
+When I build my own kernel on Debian I have:
+
+$ file /boot/vmlinuz-2.6.37.1+ 
+/boot/vmlinuz-2.6.37.1+: Linux kernel x86 boot executable bzImage, version 2.6.37.1+ (rostedt@gandalf) #23, RO-rootFS, root_dev 0x900, swap_dev 0x2, Normal VGA
+
+Your second file looks more like a vmlinux than a vmlinuz file.
+
+$ file vmlinux
+vmlinux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, not stripped
+
+-- Steve
