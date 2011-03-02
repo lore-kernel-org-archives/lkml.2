@@ -1,151 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab1CBRSa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:18:30 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:39661
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755898Ab1CBRS3 (ORCPT
+	id S1756201Ab1CBRV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:21:58 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:12787 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab1CBRV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:18:29 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <xiao-lizhang@freescale.com>, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv1] ARM: imx: Add support for low power suspend on MX51.
-Date: Wed, 2 Mar 2011 11:17:58 -0600
-Message-ID: <1299086278-12131-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	Wed, 2 Mar 2011 12:21:57 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+U1dHDWaJZV4IqIM9gRl+S
+Date: Wed, 2 Mar 2011 09:21:44 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Ilkka Koskinen <ilkka.koskinen@nokia.com>, peter.ujfalusi@nokia.com,
+        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 0/2] twl4030_codec cleanup
+Message-ID: <20110302172144.GT20560@atomide.com>
+References: <1299072246-26402-1-git-send-email-ilkka.koskinen@nokia.com>
+ <20110302143433.GM16181@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110302143433.GM16181@sortiz-mobl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Hi Samuel,
 
-Adds initial low power suspend functionality to MX51.
-Supports "mem" and "standby" modes.
+* Samuel Ortiz <sameo@linux.intel.com> [110302 06:32]:
+> Hi Ilkka,
+> 
+> On Wed, Mar 02, 2011 at 03:24:04PM +0200, Ilkka Koskinen wrote:
+> > This series of patches removes duplicate audio_mclk fields from
+> > twl4030_codec driver.
+> > 
+> > The patches have been compiled on sound-2.6/for-2.6.39 branch.
+> > I haven't tested them on any target board though.
+> I'm fine with the twl.h changes, but I think it would make sense for Tony to
+> take this patchset. Tony, is that ok with you ?
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/Makefile           |    1 +
- arch/arm/mach-mx5/pm.c               |   75 ++++++++++++++++++++++++++++++++++
- arch/arm/plat-mxc/include/mach/mxc.h |    1 +
- 3 files changed, 77 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-mx5/pm.c
+Sure if you prefer that.
 
-diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
-index 4f63048..7f9435d 100644
---- a/arch/arm/mach-mx5/Makefile
-+++ b/arch/arm/mach-mx5/Makefile
-@@ -6,6 +6,7 @@
- obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o ehci.o
- obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
- 
-+obj-$(CONFIG_PM) += pm.o
- obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
- obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
- obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
-diff --git a/arch/arm/mach-mx5/pm.c b/arch/arm/mach-mx5/pm.c
-new file mode 100644
-index 0000000..137d204
---- /dev/null
-+++ b/arch/arm/mach-mx5/pm.c
-@@ -0,0 +1,75 @@
-+/*
-+ *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+#include <linux/suspend.h>
-+#include <asm/mach/map.h>
-+#include <mach/system.h>
-+#include "crm_regs.h"
-+
-+static int mx5_suspend_enter(suspend_state_t state)
-+{
-+	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
-+
-+	/* always allow platform to issue a deep sleep mode request */
-+	plat_lpc = __raw_readl(MXC_CORTEXA8_PLAT_LPC) &
-+	    ~(MXC_CORTEXA8_PLAT_LPC_DSM);
-+	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
-+	arm_srpgcr = __raw_readl(MXC_SRPG_ARM_SRPGCR) & ~(MXC_SRPGCR_PCR);
-+
-+	switch (state) {
-+	case PM_SUSPEND_MEM:
-+		ccm_clpcr |= (0x2 << MXC_CCM_CLPCR_LPM_OFFSET);
-+		ccm_clpcr |= (0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET);
-+		ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
-+		ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
-+		break;
-+	case PM_SUSPEND_STANDBY:
-+		ccm_clpcr |= (0x1 << MXC_CCM_CLPCR_LPM_OFFSET);
-+		ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
-+		ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
-+		    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
-+	arm_srpgcr |= MXC_SRPGCR_PCR;
-+
-+	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
-+	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
-+	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
-+	__raw_writel(arm_srpgcr, MXC_SRPG_NEON_SRPGCR);
-+
-+	if (tzic_enable_wake(0) != 0)
-+		return -EAGAIN;
-+
-+	cpu_do_idle();
-+	return 0;
-+}
-+
-+static int mx5_pm_valid(suspend_state_t state)
-+{
-+	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
-+}
-+
-+static const struct platform_suspend_ops mx5_suspend_ops = {
-+	.valid = mx5_pm_valid,
-+	.enter = mx5_suspend_enter,
-+};
-+
-+static int __init mx5_pm_init(void)
-+{
-+	if (cpu_is_mx51())
-+		suspend_set_ops(&mx5_suspend_ops);
-+
-+	return 0;
-+}
-+device_initcall(mx5_pm_init);
-diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
-index 04c7a26..a72839f 100644
---- a/arch/arm/plat-mxc/include/mach/mxc.h
-+++ b/arch/arm/plat-mxc/include/mach/mxc.h
-@@ -53,6 +53,7 @@
- 
- #ifndef __ASSEMBLY__
- extern unsigned int __mxc_cpu_type;
-+int tzic_enable_wake(int is_idle);
- #endif
- 
- #ifdef CONFIG_ARCH_MX1
--- 
-1.6.0.4
-
-
+Tony
