@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab1CBMHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 07:07:46 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:31484 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755446Ab1CBMHp convert rfc822-to-8bit (ORCPT
+	id S1757198Ab1CBMJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 07:09:05 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41205 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab1CBMJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 07:07:45 -0500
+	Wed, 2 Mar 2011 07:09:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nDvqVffPXF6Do6BSrS38G2x/1hs8nybf21ULG50uMo4mYZkdxQNQwYRcpNvZzclEPo
-         gL8FZ5eLE8NSaTzh3svQ==
-MIME-Version: 1.0
-In-Reply-To: <1299062041.1310.3.camel@laptop>
-References: <1298998076.2170.62.camel@localhost>
-	<AANLkTimvx+MYhOw8VFsJn4V6FQutKiYO6pHxgd9xGY8A@mail.gmail.com>
-	<1299026246.4937.99.camel@minggr.sh.intel.com>
-	<AANLkTi=a3_EE8RwdRTmhpcgGwq2fY8jXMC=s+zwh7_NE@mail.gmail.com>
-	<1299062041.1310.3.camel@laptop>
-Date: Wed, 2 Mar 2011 13:07:42 +0100
-Message-ID: <AANLkTimBgKukb+aWP7supmTkF0RbTjmj-E49RtCnjUt7@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] perf-events: Add support for supplementary event registers
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=P4KYlctU9llLOlTtYIhFstIIIaQCJ1+ym2UIXfXpSrwQYw1JUSkXxmq6yIiCtWuy5L
+         +vDABT+C0lL90DfE2KV+2l+oI9qlHG5LghIsxvuk5kSev3e2G/JT5S8AsoD4qbGueFjL
+         GPtfXLVFpQsyCis9j7AHMosqc3060VJLhGY+M=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] kdb: add usage string of 'per_cpu' command
+Date: Wed,  2 Mar 2011 21:08:58 +0900
+Message-Id: <1299067738-25680-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 11:34 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2011-03-02 at 08:48 +0100, Stephane Eranian wrote:
->> >> >        __u32                   bp_type;
->> >> > -       __u64                   bp_addr;
->> >> > -       __u64                   bp_len;
->> >> > +       union {
->> >> > +               __u64           bp_addr;
->> >> > +               __u64           config1; /* extension of config0 */
->> >> > +       };
->> >> > +       union {
->> >> > +               __u64           bp_len;
->> >> > +               __u64           config2; /* extension of config1 */
->> >> > +       };
->> >> >  };
->> >> >
->> >> I don't see where those config0 or config1 are coming from.
->> >
->> > config0 means perf_event_attr::config.
->> >
->> yes.
->>
->> > Peter suggested to extend the attr config space.
->> > http://marc.info/?l=linux-kernel&m=129838808907525&w=2
->> >
->> Ok, I get it, it is cascading. that's fine.
->
-> I initially put config and config0 in a union, but that made compilation
-> fail and fixing that up vs the benefit of actually having a config0,
-> which seemed near 0, led me to drop that part. Forgot to update the
-> comment though ;-)
->
-Ok, but that's not committed yet, isn't it?
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ kernel/debug/kdb/kdb_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index bd3e8e29caa3..2486021ff5d9 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2892,7 +2892,7 @@ static void __init kdb_inittab(void)
+ 	  "Send a signal to a process", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("summary", kdb_summary, "",
+ 	  "Summarize the system", 4, KDB_REPEAT_NONE);
+-	kdb_register_repeat("per_cpu", kdb_per_cpu, "",
++	kdb_register_repeat("per_cpu", kdb_per_cpu, "<sym> [<bytes>] [<cpu>]",
+ 	  "Display per_cpu variables", 3, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("grephelp", kdb_grep_help, "",
+ 	  "Display help on | grep", 0, KDB_REPEAT_NONE);
+-- 
+1.7.4
+
