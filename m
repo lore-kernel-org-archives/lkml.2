@@ -1,121 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab1CBBTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 20:19:17 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:2442 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757596Ab1CBBTP (ORCPT
+	id S1757660Ab1CBBV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 20:21:27 -0500
+Received: from dakia2.marvell.com ([65.219.4.35]:52231 "EHLO
+	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755732Ab1CBBVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 20:19:15 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6272"; a="77249148"
-Message-ID: <4D6D9B10.9000606@codeaurora.org>
-Date: Tue, 01 Mar 2011 17:19:12 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Andrei Warkentin <andreiw@motorola.com>
-CC: Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>,
-        ext Nishanth Menon <nm@ti.com>, ext Tony Lindgren <tony@atomide.com>,
-        Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
-        ext Linus Walleij <linus.walleij@linaro.org>,
-        Ambresh <a0393775@ti.com>,
-        "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>,
-        Lee Jones <Lee.Jones@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas ABERG <jonas.aberg@stericsson.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        loic.pallardy@stericsson.com,
-        "eduardo.valentin@nokia.com" <eduardo.valentin@nokia.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jouni Hogander <jouni.hogander@nokia.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
- OMAP data
-References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>	<AANLkTin7vRMreG3hOAk95MYZUCV-Kr6ac7gD7jgvX6Gf@mail.gmail.com>	<20110216115729.GA29817@besouro.research.nokia.com>	<4D6B78BF.1020102@stericsson.com>	<4D6C7B56.9060109@codeaurora.org> <AANLkTikvhj49DftS9c_NouASY9_MbYPCfmSUdJg6pf-5@mail.gmail.com>
-In-Reply-To: <AANLkTikvhj49DftS9c_NouASY9_MbYPCfmSUdJg6pf-5@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Mar 2011 20:21:25 -0500
+X-ASG-Debug-ID: 1299028884-082c657e0001-xx1T2L
+X-Barracuda-Envelope-From: bzhao@marvell.com
+From: Bing Zhao <bzhao@marvell.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless@vger.kernel.org, Joe Perches <joe@perches.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        Kiran Divekar <dkiran@marvell.com>, Frank Huang <frankh@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>
+X-ASG-Orig-Subj: [RFC v3 1/2] dynamic debug: add dynamic_hexdump_debug macro
+Subject: [RFC v3 1/2] dynamic debug: add dynamic_hexdump_debug macro
+Date: Tue,  1 Mar 2011 17:24:09 -0800
+X-ASG-Orig-Subj: [RFC v3 1/2] dynamic debug: add dynamic_hexdump_debug macro
+Message-Id: <1299029050-32242-1-git-send-email-bzhao@marvell.com>
+X-Mailer: git-send-email 1.7.0.2
+X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
+X-Barracuda-Start-Time: 1299028884
+X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2011 05:13 PM, Andrei Warkentin wrote:
-> On Mon, Feb 28, 2011 at 10:51 PM, Saravana Kannan
-> <skannan@codeaurora.org>  wrote:
->> On 02/28/2011 02:28 AM, Maxime Coquelin wrote:
->>>
->>> Hello Eduardo,
->>>
->>> On 02/16/2011 12:57 PM, Eduardo Valentin wrote:
->>>>>
->>>>> Eduardo, what has happened to this patchset?
->>>>
->>>> Got forgotten :-(. Unfortunately I didn't pushed it hard enough.
->>>
->>> I propose to refactor your patchset, moving from procfs to sysfs.
->>
->>>>> Do you want help in picking it up and try to polish it up?
->>>>
->>>> Yeah, but it would need a refactoring. IIRC, result of last discussion
->>>> was that we should not mess with /proc. So, maybe moving back
->>
->>>> to something under sysfs. Perhaps /sys/devices/soc or so?
->>>
->>> About the location of this new sysfs entry, where do you think it should
->>> be?
->>> I propose to create a new directory named "soc" in /sys/devices/system/.
->>>
->>> As platform vendors have several/different kind of IDs to export to
->>> sysfs, I propose each vendor to create file entries related to their IDs
->>> (eg. /sys/devices/system/soc/idcode for OMAP platforms).
->>
->> I think the path /sys/devices/system/soc/ will work for the MSM too. I would
->> have ideally liked it to be /sys/devices/system/soc/msm,
->> /sys/devices/system/soc/omap, etc, but we can't get to pick names for
->> devices under a class. So, we can make do with /sys/devices/system/soc/.
->>
->>> However, I think we should have a common file entry to export the unique
->>> ID of the platforms. Indeed, user-space applications should have a
->>> unified way to get this kind of ID, regardless of the platform (eg.
->>> /sys/devices/system/soc/unique_id).
->>
->> I like the idea of have a common file across all implementations that will
->> let user space identify what implementation is exporting the other files and
->> how to interpret them.
->>
->> I would like to propose an "arch" file to identify the arch the soc info
->> file are for. I'm guessing within an arch, the soc files would mostly be the
->> same? If there are other minor differences, we can let the arch specific
->> code deal with how the files are interpreted.
->>
->> Does "arch" work for everyone?
->>
->
-> Sorry to butt in, but what kind of info are you guys talking about?
+dynamic_hexdump_debug(str, buf, len)
 
-Please do butt in :-), that's what a community discussion is for.
+str: "prefix string"
+buf: buffer pointer
+len: length of the buffer being printed
 
-> Like SOC revision, serial numbers, etc...?
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+---
+v3: use "str" as prefix string (Joe Perches)
+v2: rebase against linux-next.git tree and split into 2 patches
 
-Like SOC type (to identify different chipsets), revision, etc.
+ include/linux/dynamic_debug.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-> What would an "arch" file mean? The name of the soc platform?
-
-The arch file would pretty much be the "xxxx" from arch/arm/mach-xxxx or 
-similar paths. If that info is already available elsewhere, then that 
-file is not needed. I proposed using the arch since that will remove the 
-need to maintain some database of unique/reserved names/numbers for each 
-implementation of socinfo (like the machinetypes list we have).
-
--Saravana
-
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 0c9653f..06a7fed 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -70,6 +70,17 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ 		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
+ 	} while (0)
+ 
++#define dynamic_hexdump_debug(str, buf, len)				\
++do {									\
++	static struct _ddebug descriptor				\
++	__used								\
++	__attribute__((section("__verbose"), aligned(8))) =		\
++	{ KBUILD_MODNAME, __func__, __FILE__, str, __LINE__,		\
++		_DPRINTK_FLAGS_DEFAULT };				\
++	if (unlikely(descriptor.enabled))				\
++		print_hex_dump_bytes(str, DUMP_PREFIX_OFFSET, buf, len);\
++} while (0)
++
+ #else
+ 
+ static inline int ddebug_remove_module(const char *mod)
+@@ -81,6 +92,9 @@ static inline int ddebug_remove_module(const char *mod)
+ 	do { if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); } while (0)
+ #define dynamic_dev_dbg(dev, fmt, ...)					\
+ 	do { if (0) dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__); } while (0)
++#define dynamic_hexdump_debug(str, buf, len)				\
++	do { if (0) print_hex_dump_bytes(str, DUMP_PREFIX_OFFSET,	\
++						buf, len); } while (0)
+ #endif
+ 
+ #endif
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.6.2.5
+
