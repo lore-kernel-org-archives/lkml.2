@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab1CEI60 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 03:58:26 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58431 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab1CEI6Z convert rfc822-to-8bit (ORCPT
+	id S1751861Ab1CEJ14 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 04:27:56 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50123 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab1CEJ1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 03:58:25 -0500
+	Sat, 5 Mar 2011 04:27:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=xJ+T93dSp4qrWy8MGnb+tBt9nWbvHXhL/8Tb5WbyxjMVKQC8sDjFJ/aAivORJ/+Bbw
-         30QOyCvHdVdpr/NLzyV5cr/Qq/DPOyqR9V9Ax1WtzqeVny/vVmo+3wi4U2L7zELthb07
-         XKaA/L2/tXs8/LDefE36fQKVwuEZK6xCb6Zn0=
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: File/memory corruption in 2.6.37?
-Date: Sat, 5 Mar 2011 09:58:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-trunk-amd64; KDE/4.4.5; x86_64; ; )
-Cc: thomas@fjellstrom.ca, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-References: <201102251457.51476.thomas@fjellstrom.ca> <201102251531.00363.thomas@fjellstrom.ca> <20110302155226.05fbe993.akpm@linux-foundation.org>
-In-Reply-To: <20110302155226.05fbe993.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103050958.22167.roucaries.bastien@gmail.com>
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=C8IAEA3Q5pAxtIx+UixYe6OBm0nhi9LhqZco093mwCgEo59BtpE/c/sbdV5iVLdMRL
+         AoA+wJaCwQ4Pp31E0pxgdIfq6S0gHighGAlwSw677qhsjoHTi5+WbrfszUzXHUNj5mhd
+         VD0n9O61ODJ2nyyteZmR++Lo2P+dg6Km++p1g=
+From: bookjovi@gmail.com
+To: bookjovi@gmail.com
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com> (maintainer:NFS,
+	SUNRPC, AND...),
+        linux-nfs@vger.kernel.org (open list:NFS, SUNRPC, AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] nfs: fix compilation warning
+Date: Wed,  2 Mar 2011 18:19:37 -0500
+Message-Id: <1299107978-3248-1-git-send-email-bookjovi@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 3 mars 2011 00:52:26, Andrew Morton a écrit :
-> On Fri, 25 Feb 2011 15:31:00 -0700
-> 
-> Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
-> > On February 25, 2011, Thomas Gleixner wrote:
-> > > On Fri, 25 Feb 2011, Thomas Fjellstrom wrote:
-> > > > On February 25, 2011, you wrote:
-> > > > > Ever since I upgraded to 2.6.37 from 2.6.36, that kmail's folder
-> > > > > indexes are being corrupted fairly regularly. Far more often than
-> > > > > is usual (almost never). Several a day in fact are being
-> > > > > corrupted. I can only imagine that this isn't the only corruption
-> > > > > happening and it is worrying.
-> > > > 
-> > > > Forgot to give any kind of useful info:
-> > > > 
-> > > > System: Lenovo SL500 laptop, intel core2duo T9400 cpu, 4G ram, gm45
-> > > > intel gfx
-> > > > 
-> > > > running debian sid, with the current debian 2.6.37 kernel, was
-> > > > running a hand rolled 2.6.36 kernel with autogroup applied and
-> > > > didn't have these issues.
-> > > 
-> > > Could you verify that with an hand rolled 2.6.37.2 ?
-> > > 
-> > > Thanks,
-> > > 
-> > > 	tglx
-> > 
-> > I suppose it won't hurt to give it a try.
-> 
-> Any results yet?
-> 
-> Which filesystem is being used?  I've seen at least one similar report
-> for reiserfs.
+From: Jovi Zhang <bookjovi@gmail.com>
 
-Yes in my case kmail+git over reiserfs eat my data quite fast
+this commit fix compilation warning as following:
+linux-2.6/fs/nfs/nfs4proc.c:3265: warning: comparison of distinct pointer types lacks a cast
 
-That is really strange is a simple shell loop : while true; do sync; sleep 1; done; reduce the problem.
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+---
+ fs/nfs/nfs4proc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Bastien
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 1ff76ac..c7eb4ee 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3262,7 +3262,7 @@ static int buf_to_pages_noslab(const void *buf, size_t buflen,
+ 	spages = pages;
  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ 	do {
+-		len = min(PAGE_CACHE_SIZE, buflen);
++		len = min((size_t)PAGE_CACHE_SIZE, buflen);
+ 		newpage = alloc_page(GFP_KERNEL);
+ 
+ 		if (newpage == NULL)
+-- 
+1.7.2.3
+
