@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab1CBOHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 09:07:35 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2449 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138Ab1CBOHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 09:07:34 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4D6E4F18.4060505@broadcom.com>
-Date: Wed, 2 Mar 2011 15:07:20 +0100
-From: "Roland Vossen" <rvossen@broadcom.com>
-Organization: Broadcom
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13)
- Gecko/20101208 Thunderbird/3.1.7
+	id S1752657Ab1CBOMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 09:12:33 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:40035 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246Ab1CBOMc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 09:12:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VzV8C6Gg3Sms516r43ey24BpKHdxHgkwrGFPrESp9x8Q6nzXYZ3muMF3D8eaE+KQcQ
+         HAGxZEnB05brp2FQ3tBsyCSZm6ss8H0rSZjeVcEUz6JT785XZ30mKqo/GWAzbTU6G1zY
+         I1kawGvdAsduzy4XlyMy8dj7aNnZqw+E4Mq7w=
 MIME-Version: 1.0
-To: "Randy Dunlap" <randy.dunlap@oracle.com>
-cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Arend Van Spriel" <arend@broadcom.com>
-Subject: Re: [PATCH -next] staging/brcm80211: fix printk format warnings
-References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
- <20110301162948.34c28d6e.randy.dunlap@oracle.com>
-In-Reply-To: <20110301162948.34c28d6e.randy.dunlap@oracle.com>
-X-WSS-ID: 6170902D68G244196-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110302113448.GH16181@sortiz-mobl>
+References: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
+	<20110302113448.GH16181@sortiz-mobl>
+Date: Wed, 2 Mar 2011 15:12:31 +0100
+X-Google-Sender-Auth: VRdmJy338mRsOs832HrCoSZdgdc
+Message-ID: <AANLkTinTP5UKWeu1eGvAA08YKJzz8=iskEPyPVSFzeCM@mail.gmail.com>
+Subject: Re: [PATCH] MFD: ab8500: New ab8500_gpadc APIs and reentrance
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Willerud <daniel.willerud@stericsson.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c:1379: warning: format '%d' expects type 'int', but argument 3 has type 'size_t'
-> drivers/staging/brcm80211/sys/wl_mac80211.c:1827: warning: format '%d' expects type 'int', but argument 3 has type 'size_t'
-> drivers/staging/brcm80211/sys/wl_mac80211.c:1832: warning: format '%d' expects type 'int', but argument 3 has type 'size_t'
->
-> Signed-off-by: Randy Dunlap<randy.dunlap@oracle.com>
+2011/3/2 Samuel Ortiz <sameo@linux.intel.com>:
 
-Acked-by: Roland Vossen<rvossen@broadcom.com>
+>> +/**
+>> + * ab8500_gpadc_get() - returns a reference to the primary AB8500 GPADC
+>> + * (i.e. the first GPADC in the instance list)
+>> + */
+>> +struct ab8500_gpadc *ab8500_gpadc_get(void)
+>> +{
+>> +     struct ab8500_gpadc *gpadc;
+>> +     gpadc = list_first_entry(&ab8500_gpadc_list, struct ab8500_gpadc, node);
+>> +
+>> +     return gpadc;
+>> +}
 
-Thanks Randy.
+> This seems really arbitrary. We argued with Mattias about it, and giving
+> drivers access to your ADCs means they should somehow have a pointer back to
+> the right ADC. That's not the case here, and while it will just work fine
+> whenever you have one ADC on your board, you'll probably be relying on some
+> sort of device probe order otherwise.
 
+I guess the solution is to rewrite that function to take a parameter
+then, such as:
+
+struct ab8500_gpadc *ab8500_gpadc_get(char *name)
+
+If name is then just a strcmpm(dev_name(gpadc->dev), name)
+the client use will be something like:
+
+struct ab8500_gpadc *gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+
+For the first GPDC in the system (unless .init_name is specified
+by the ab8500-core when creating the device).
+
+Fair enough?
+
+Yours,
+Linus Walleij
