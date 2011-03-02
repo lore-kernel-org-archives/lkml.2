@@ -1,59 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1CBHr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:47:27 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60697 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1CBHr0 (ORCPT
+	id S1755192Ab1CBHsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:48:24 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:24085 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab1CBHsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:47:26 -0500
+	Wed, 2 Mar 2011 02:48:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AVXoLC5ALs/X2mO5R05bCj1uZmyoaegB/SnZCxvRfa/HJt7o6UnetyywBxK8tbOlL7
-         wdlcMGF+YRGjGpV6Hkc+wrsYh2gz2W4kiLoT+6zMTe1mx3r7Z52osFdsPqqpDncwgB7+
-         Q7oxXZgH5TV8L7FdgvUmEiDbmWtasKT1VT5dU=
-Date: Wed, 2 Mar 2011 08:47:21 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        stable <stable@kernel.org>
-Subject: Re: [PATCH #upstream-fixes] libata: fix hotplug for drivers which
- don't implement LPM
-Message-ID: <20110302074721.GF19669@htj.dyndns.org>
-References: <20110224183037.GS7840@htj.dyndns.org>
- <4D6DF58D.5030905@pobox.com>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ny12UovLHnfdsKZwJ+jydz8P4jcD7Ra06xlEqonPvA4XmrLWVH1JL5ELHndygLFscN
+         K4RRJUoaAKLVUvTpn71w==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6DF58D.5030905@pobox.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1299026246.4937.99.camel@minggr.sh.intel.com>
+References: <1298998076.2170.62.camel@localhost>
+	<AANLkTimvx+MYhOw8VFsJn4V6FQutKiYO6pHxgd9xGY8A@mail.gmail.com>
+	<1299026246.4937.99.camel@minggr.sh.intel.com>
+Date: Wed, 2 Mar 2011 08:48:19 +0100
+Message-ID: <AANLkTi=a3_EE8RwdRTmhpcgGwq2fY8jXMC=s+zwh7_NE@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] perf-events: Add support for supplementary event registers
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p227mViV018471
 
-On Wed, Mar 02, 2011 at 02:45:17AM -0500, Jeff Garzik wrote:
-> On 02/24/2011 01:30 PM, Tejun Heo wrote:
-> >ata_eh_analyze_serror() suppresses hotplug notifications if LPM is
-> >being used because LPM generates spurious hotplug events.  It compared
-> >whether link->lpm_policy was different from ATA_LPM_MAX_POWER to
-> >determine whether LPM is enabled; however, this is incorrect as for
-> >drivers which don't implement LPM, lpm_policy is always
-> >ATA_LPM_UNKNOWN.  This disabled hotplug detection for all drivers
-> >which don't implement LPM.
-> >
-> >Fix it by comparing whether lpm_policy is greater than
-> >ATA_LPM_MAX_POWER.
-> >
-> >Signed-off-by: Tejun Heo<tj@kernel.org>
-> >Cc: stable@kernel.org
-> 
-> applied, though putting this into 2.6.38.1 is preferred to changing
-> this at -rc7...  stable@ cc'd.
+On Wed, Mar 2, 2011 at 1:37 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Wed, 2011-03-02 at 01:09 +0800, Stephane Eranian wrote:
+>> Lin,
+>>
+>> See comments below:
+>>
+>> On Tue, Mar 1, 2011 at 5:47 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> > From: Andi Kleen <ak@linux.intel.com>
+>> >  static struct event_constraint *
+>> > +intel_percore_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+>> > +{
+>> > +       struct hw_perf_event *hwc = &event->hw;
+>> > +       unsigned int e = hwc->config & ARCH_PERFMON_EVENTSEL_EVENT;
+>> > +       struct event_constraint *c;
+>> > +       struct intel_percore *pc;
+>> > +       struct er_account *era;
+>> > +       int i;
+>> > +       int free_slot;
+>> > +       int found;
+>> > +
+>> > +       if (!x86_pmu.percore_constraints || hwc->extra_alloc)
+>> > +               return NULL;
+>> > +
+>> > +       for (c = x86_pmu.percore_constraints; c->cmask; c++) {
+>> > +               if (e != c->code)
+>> > +                       continue;
+>> > +
+>> > +               /*
+>> > +                * Allocate resource per core.
+>> > +                */
+>> > +               c = NULL;
+>>
+>> Not sure I understand this c = NULL, given you hardcoded return NULL
+>> outside of the
+>> loop. I forgot to mention this earlier.
+>
+> Right, that is redundant.
+> Remove it.
+>
+>>
+>> > +               pc = cpuc->per_core;
+>> > +               if (!pc)
+>> > +                       break;
+>> > +               c = &emptyconstraint;
+>> > +               raw_spin_lock(&pc->lock);
+>> > +               free_slot = -1;
+>> > +               found = 0;
+>> > +               for (i = 0; i < MAX_EXTRA_REGS; i++) {
+>> > +                       era = &pc->regs[i];
+>> > +                       if (era->ref > 0 && hwc->extra_reg == era->extra_reg) {
+>> > +                               /* Allow sharing same config */
+>> > +                               if (hwc->extra_config == era->extra_config) {
+>> > +                                       era->ref++;
+>> > +                                       cpuc->percore_used = 1;
+>> > +                                       hwc->extra_alloc = 1;
+>> > +                                       c = NULL;
+>> > +                               }
+>> > +                               /* else conflict */
+>> > +                               found = 1;
+>> > +                               break;
+>> > +                       } else if (era->ref == 0 && free_slot == -1)
+>> > +                               free_slot = i;
+>> > +               }
+>> > +               if (!found && free_slot != -1) {
+>> > +                       era = &pc->regs[free_slot];
+>> > +                       era->ref = 1;
+>> > +                       era->extra_reg = hwc->extra_reg;
+>> > +                       era->extra_config = hwc->extra_config;
+>> > +                       cpuc->percore_used = 1;
+>> > +                       hwc->extra_alloc = 1;
+>> > +                       c = NULL;
+>> > +               }
+>> > +               raw_spin_unlock(&pc->lock);
+>> > +               return c;
+>> > +       }
+>> > +
+>> > +       return NULL;
+>> > +}
+>> > +
+>> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>> > index 8ceb5a6..48d966a 100644
+>> > --- a/include/linux/perf_event.h
+>> > +++ b/include/linux/perf_event.h
+>> > @@ -225,8 +225,14 @@ struct perf_event_attr {
+>> >        };
+>> >
+>> >        __u32                   bp_type;
+>> > -       __u64                   bp_addr;
+>> > -       __u64                   bp_len;
+>> > +       union {
+>> > +               __u64           bp_addr;
+>> > +               __u64           config1; /* extension of config0 */
+>> > +       };
+>> > +       union {
+>> > +               __u64           bp_len;
+>> > +               __u64           config2; /* extension of config1 */
+>> > +       };
+>> >  };
+>> >
+>> I don't see where those config0 or config1 are coming from.
+>
+> config0 means perf_event_attr::config.
+>
+yes.
 
-Understood.  As long as it ends up in stable@, either way is okay with
-me.  Thank you.
-
--- 
-tejun
+> Peter suggested to extend the attr config space.
+> http://marc.info/?l=linux-kernel&m=129838808907525&w=2
+>
+Ok, I get it, it is cascading. that's fine.
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
