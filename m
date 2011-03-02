@@ -1,117 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab1CBVhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:37:11 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32217 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab1CBVhJ (ORCPT
+	id S932084Ab1CBVjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:39:03 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46404 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab1CBVjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:37:09 -0500
-Message-ID: <4D6EB856.1010004@kernel.org>
-Date: Wed, 02 Mar 2011 13:36:22 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
-References: <20110224145128.GM7840@htj.dyndns.org> <4D66AC9C.6080500@kernel.org> <20110224192305.GB15498@elte.hu> <4D66B176.9030300@kernel.org> <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com> <20110302100400.GK19669@htj.dyndns.org> <20110302102530.GB3319@htj.dyndns.org> <alpine.DEB.2.00.1103020628210.31626@chino.kir.corp.google.com> <20110302154215.GN3319@htj.dyndns.org> <4D6EB2C3.7040704@kernel.org>
-In-Reply-To: <4D6EB2C3.7040704@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Mar 2011 16:39:00 -0500
+Subject: Re: [RFC][PATCH 2/6] mm: Change flush_tlb_range() to take an
+ mm_struct
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>, Russell King <rmk@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+In-Reply-To: <AANLkTimhWKhHojZ-9XZGSh3OzfPhvo__Dib9VfeMWoBQ@mail.gmail.com>
+References: <20110302175928.022902359@chello.nl>
+	 <20110302180258.956518392@chello.nl>
+	 <AANLkTimhWKhHojZ-9XZGSh3OzfPhvo__Dib9VfeMWoBQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Mar 2011 22:40:27 +0100
+Message-ID: <1299102027.1310.39.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D6EB86E.0106,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2011 01:12 PM, Yinghai Lu wrote:
-> On 03/02/2011 07:42 AM, Tejun Heo wrote:
->> Hey,
->>
->> On Wed, Mar 02, 2011 at 06:30:59AM -0800, David Rientjes wrote:
->>> Acked-by: David Rientjes <rientjes@google.com>
->>>
->>> There's also this in numa_emulation() that isn't a safe assumption:
->>>
->>>         /* make sure all emulated nodes are mapped to a physical node */
->>>         for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
->>>                 if (emu_nid_to_phys[i] == NUMA_NO_NODE)
->>>                         emu_nid_to_phys[i] = 0;
->>>
->>> Node id 0 is not always online depending on how you setup your SRAT.  I'm 
->>> not sure why emu_nid_to_phys[] would ever map a fake node id that doesn't 
->>> exist to a physical node id rather than NUMA_NO_NODE, so I think it can 
->>> just be removed.  Otherwise, it should be mapped to a physical node id 
->>> that is known to be online.
->>
->> Unless I screwed up, that behavior isn't new.  It just put in a
->> different form.  Looking through the code... Okay, I think node 0
->> always exists.  SRAT PXM isn't used as node number directly.  It goes
->> through acpi_map_pxm_to_node() which allocates nids from 0 up.
->> amdtopology also guarantees the existence of node 0, so I think we're
->> in the safe and that probably is the reason why we had the above
->> behavior in the first place.
->>
->> IIRC, there are other places which assume the existence of node 0.
->> Whether it's a good idea or not, I'm not sure but requring node 0 to
->> be always allocated doesn't sound too wrong to me.  Maybe we can add
->> BUG_ON() if node 0 is offline somewhere.
+On Wed, 2011-03-02 at 11:19 -0800, Linus Torvalds wrote:
+> On Wed, Mar 2, 2011 at 9:59 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > In order to be able to properly support architecture that want/need to
+> > support TLB range invalidation, we need to change the
+> > flush_tlb_range() argument from a vm_area_struct to an mm_struct
+> > because the range might very well extend past one VMA, or not have a
+> > VMA at all.
 > 
-> 
-> When first socket does not have memory, we will not node 0 online.
-> and cpu_to_node() will have those cpus round to near node like node1 or node7.
-> 
-> BTW: this conf get broken several times, and get fixed several times.
+> I really don't think this is right. The whole "drop the icache
+> information" thing is a total anti-optimization, since for some
+> architectures, the icache flush is the _big_ deal. 
 
-david,
+Right, so Tile has the I-cache flush from flush_tlb_range(), I'm not
+sure if that's the right thing to do, Documentation/cachetlb.txt seems
+to suggest doing it from update_mmu_cache() like things.
 
-it looks like numa emu does not support that conf already.
+However, I really don't know, and would happily be explained how these
+things are supposed to work. Also:
 
-old code:
-void __cpuinit numa_add_cpu(int cpu)
+> Possibly much
+> bigger than the TLB flush itself. Doing an icache flush was much more
+> expensive than the TLB flush on alpha, for example (the tlb had ASI's
+> etc, the icache did not).
+
+Right, but the problem remains that we do page-table teardown without
+having a vma.
+
+Now we can re-introduce I/D variants again by assuming D-only and using
+tlb_start_vma() to set a I-too bit on VM_EXEC. (this assumes the vm_args
+range is non-executable -- which it had better be).
+
+How about I do something like:
+
+enum {
+  TLB_FLUSH_I = 1,
+  TLB_FLUSH_D = 2,
+  TLB_FLUSH_PAGE = 4,
+  TLB_FLUSH_HPAGE = 8,
+};
+
+void flush_tlb_range(struct mm_struct *mm, unsigned long start,
+		     unsigned long end, unsigned int flags);
+
+And we then do:
+
+tlb_gather_mmu(struct mmu_gather *tlb, ...)
 {
-        unsigned long addr;
-        u16 apicid;
-        int physnid;
-        int nid = NUMA_NO_NODE;
-
-        apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
-        if (apicid != BAD_APICID)
-                nid = apicid_to_node[apicid];
-        if (nid == NUMA_NO_NODE)
-                nid = early_cpu_to_node(cpu);
-        BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
-
-
-current code:
-void __cpuinit numa_add_cpu(int cpu)
-{
-        int physnid, nid;
-
-        nid = numa_cpu_node(cpu);
-        if (nid == NUMA_NO_NODE)
-                nid = early_cpu_to_node(cpu);
-        BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
-
-        physnid = emu_nid_to_phys[nid];
-
-        /*
-         * Map the cpu to each emulated node that is allocated on the physical
-         * node of the cpu's apic id.
-         */
-        for_each_online_node(nid)
-                if (emu_nid_to_phys[nid] == physnid)
-                        cpumask_set_cpu(cpu, node_to_cpumask_map[nid]);
+  ...
+  tlb->flush_type = TLB_FLUSH_D | TLB_FLUSH_PAGE;
 }
 
+tlb_start_vma(struct mmu_gather *tlb, struct vm_area_struct *vma)
+{
+  if (!tlb->fullmm)
+    flush_cache_range(vma, vma->vm_start, vma->vm_end);
 
-please note numa_cpu_node or old code will return nid that is node 0, and even node0 does not mem and not onlined.
+  if (vma->vm_flags & VM_EXEC)
+    tlb->flush_type |= TLB_FLUSH_I;
 
-maybe we can just change to nid = cpu_to_node() to get nodeid that is onlined.
+  if (vma->vm_flags & VM_HUGEPAGE)
+    tlb->flush_type |= TLB_FLUSH_HPAGE;
+}
 
-Thanks
+tlb_flush_mmu(struct mmu_gather *tlb)
+{
+  if (!tlb->fullmm && tlb->need_flush) {
+    flush_tlb_range(tlb->mm, tlb->start, tlb->end, tlb->flush_type);	
+    tlb->start = TASK_SIZE;
+    tlb->end = 0;
+  }
+  ...
+}
 
-Yinghai
+> > There are various reasons that we need to flush TLBs _after_ freeing
+> > the page-tables themselves. For some architectures (x86 among others)
+> > this serializes against (both hardware and software) page table
+> > walkers like gup_fast().
+> 
+> This part of the changelog also makes no sense what-so-ever. It's
+> actively wrong.
+> 
+> On x86, we absolutely *must* do the TLB flush _before_ we release the
+> page tables. So your commentary is actively wrong and misleading.
+> 
+> The order has to be:
+>  - clear the page table entry, queue the page to be free'd
+>  - flush the TLB
+>  - free the page (and page tables)
+> 
+> and nothing else is correct, afaik. So the changelog is pure and utter
+> garbage. I didn't look at what the patch actually changed.
+
+OK, so I use the wrong terms, I meant page-table tear-down, where we
+remove the pte page pointer from the pmd, remove the pmd page from the
+pud etc.
+
+We then flush the TLBs and only then actually free the pages. I think
+the confusion stems from the fact that we call tear-down free_pgtables()
+
+The point was that we need to TLB flush _after_ tear-down (before actual
+free), not before tear-down. The problem is that currently we either end
+up doing too many TLB flushes or one too few.
+
+
+
