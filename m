@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab1CBF6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 00:58:08 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:51997 "EHLO smtps.tip.net.au"
+	id S1758011Ab1CBF6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 00:58:15 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:52007 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052Ab1CBF6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 00:58:04 -0500
-Date: Wed, 2 Mar 2011 16:58:02 +1100
+	id S1758000Ab1CBF6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 00:58:11 -0500
+Date: Wed, 2 Mar 2011 16:58:09 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Senthilvadivu Guruswamy <svadivu@ti.com>,
-        Sumit Semwal <sumit.semwal@ti.com>, Tony Lindgren <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: linux-next: manual merge of the usb tree with the omap and
- omap_dss2 trees
-Message-Id: <20110302165802.8fb72a8b.sfr@canb.auug.org.au>
+        Hema HK <hemahk@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>
+Subject: linux-next: manual merge of the usb tree with the omap tree
+Message-Id: <20110302165809.583a12a9.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,43 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Greg,
 
 Today's linux-next merge of the usb tree got a conflict in
-arch/arm/mach-omap2/board-omap3evm.c between commit
-d5e13227c32f12de3afb2e26a86bc9f3e5aaf7b6 ("OMAP2, 3: DSS2: board files:
-replace platform_device_register with omap_display_init()") from the omap
-and omap_dss2 trees and commit 181b250cf53233a7a7c6d7e1e9df402506712e93
-("arm: omap: usb: create common enums and structures for ehci and ohci")
-from the usb tree.
+arch/arm/mach-omap2/usb-musb.c between commit
+18a26892d62d2786c2b259ba4605ee10bba0ba13 ("OMAP2+: musb: hwmod adaptation
+for musb registration") from the omap tree and commit
+fb91cde49c327ff957c55d91805bc6abda59b311 ("usb: musb: OMAP4430: Power
+down the PHY during board init") from the usb tree.
 
-Just context changes. I fixed it up (see below) and can carry the fix as
+Just context changes.  I fixed it up (see below) and can carry the fix as
 necessary.
+
+Interestingly, the patch in the usb tree looks as though it would have
+been broken as the "dev" variable passed to omap4430_phy_init() does not
+exist in the version of that file in the usb tree.
+
 -- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-omap2/board-omap3evm.c
-index 730e297,38a2d91..0000000
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@@ -735,13 -631,18 +735,13 @@@ static void __init omap3_evm_init_early
-  	omap_board_config_size = ARRAY_SIZE(omap3_evm_config);
-  	omap2_init_common_infrastructure();
-  	omap2_init_common_devices(mt46h32m32lf6_sdrc_params, NULL);
- -	omap_init_irq();
+diff --cc arch/arm/mach-omap2/usb-musb.c
+index a9d4d14,241fc94..0000000
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@@ -132,35 -212,12 +132,39 @@@ void __init usb_musb_init(struct omap_m
+  	musb_plat.mode = board_data->mode;
+  	musb_plat.extvbus = board_data->extvbus;
+  
+ -	if (platform_device_register(&musb_device) < 0)
+ -		printk(KERN_ERR "Unable to register HS-USB (MUSB) device\n");
+ +	if (cpu_is_omap3517() || cpu_is_omap3505()) {
+ +		oh_name = "am35x_otg_hs";
+ +		name = "musb-am35x";
+ +	} else {
+ +		oh_name = "usb_otg_hs";
+ +		name = "musb-omap2430";
+ +	}
+ +
+ +	oh = omap_hwmod_lookup(oh_name);
+ +	if (!oh) {
+ +		pr_err("Could not look up %s\n", oh_name);
+ +		return;
+ +	}
+ +
+ +	od = omap_device_build(name, bus_id, oh, &musb_plat,
+ +			       sizeof(musb_plat), omap_musb_latency,
+ +			       ARRAY_SIZE(omap_musb_latency), false);
+ +	if (IS_ERR(od)) {
+ +		pr_err("Could not build omap_device for %s %s\n",
+ +						name, oh_name);
+ +		return;
+ +	}
+ +
+ +	pdev = &od->pdev;
+ +	dev = &pdev->dev;
+ +	get_device(dev);
+ +	dev->dma_mask = &musb_dmamask;
+ +	dev->coherent_dma_mask = musb_dmamask;
+ +	put_device(dev);
++ 
++ 	if (cpu_is_omap44xx())
++ 		omap4430_phy_init(dev);
++ 
   }
   
-- static struct ehci_hcd_omap_platform_data ehci_pdata __initdata = {
- -static struct platform_device *omap3_evm_devices[] __initdata = {
- -	&omap3_evm_dss_device,
- -};
- -
-+ static struct usbhs_omap_board_data usbhs_bdata __initdata = {
-  
-- 	.port_mode[0] = EHCI_HCD_OMAP_MODE_UNKNOWN,
-- 	.port_mode[1] = EHCI_HCD_OMAP_MODE_PHY,
-- 	.port_mode[2] = EHCI_HCD_OMAP_MODE_UNKNOWN,
-+ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
-+ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
-+ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
-  
-  	.phy_reset  = true,
-  	/* PHY reset GPIO will be runtime programmed based on EVM version */
+  #else
