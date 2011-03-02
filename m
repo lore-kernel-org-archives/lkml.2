@@ -1,146 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab1CBVMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:12:19 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58478 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab1CBVMR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:12:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AYW/yG9TS0UCsgTr6zYTdnwOpmoFQ7qlVtcFrw9nOSfWpgUKnEwm1KqukCb5jxV/r1
-         eqcT8/agXhvDjW/bO1ysUHXp+O24eiQDQMUVMVwilhLHf3yJc4jvlxrHivfzbsFir3Ia
-         sO7+u0wUIrdbfnbLsq249ghnH71rUMBMTerw4=
+	id S1757742Ab1CBVNL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:13:11 -0500
+Received: from www.tglx.de ([62.245.132.106]:46567 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757686Ab1CBVNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 16:13:09 -0500
+Date: Wed, 2 Mar 2011 22:12:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
+In-Reply-To: <AANLkTikqp9=w+2r+Swe_4O9v=MiD=1tjCGrOQc9grHxk@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1103022201440.2701@localhost6.localdomain6>
+References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com> <alpine.LFD.2.00.1102241900540.2701@localhost6.localdomain6> <AANLkTik1Aqt8qJ62h4k0PbLOU7qu3TtA=fWn=LJ6tQjc@mail.gmail.com> <alpine.LFD.2.00.1103021056460.2701@localhost6.localdomain6>
+ <AANLkTikqp9=w+2r+Swe_4O9v=MiD=1tjCGrOQc9grHxk@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1299099845-1451-1-git-send-email-roel.vannyen@gmail.com>
-References: <1299099845-1451-1-git-send-email-roel.vannyen@gmail.com>
-Date: Wed, 2 Mar 2011 22:12:15 +0100
-Message-ID: <AANLkTikQ3oBO78swv8ByBqZJjQg7jnjPJrS56W8_aWxC@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Staging: keucr: Remove BOOLEAN type from driver.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Roel Van Nyen <roel.vannyen@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        acho@novell.com, error27@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 10:04 PM, Roel Van Nyen <roel.vannyen@gmail.com> wrote:
-> Remove BOOLEAN type, replacing it with bool and removing some that were not in use.
->
-> Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
-> ---
->  drivers/staging/keucr/common.h   |    2 --
->  drivers/staging/keucr/smil.h     |    4 ++--
->  drivers/staging/keucr/smilmain.c |    4 ++--
->  drivers/staging/keucr/usb.h      |    4 +---
->  4 files changed, 5 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/staging/keucr/common.h b/drivers/staging/keucr/common.h
-> index 07aabf4..5dda691 100644
-> --- a/drivers/staging/keucr/common.h
-> +++ b/drivers/staging/keucr/common.h
-> @@ -1,8 +1,6 @@
->  #ifndef COMMON_INCD
->  #define COMMON_INCD
->
-> -typedef u8 BOOLEAN;
-> -
->  #define swapWORD(w)    ((((unsigned short)(w) << 8) & 0xff00) |        \
->                         (((unsigned short)(w) >> 8) & 0x00ff))
->  #define swapDWORD(dw)  ((((unsigned long)(dw) << 24) & 0xff000000) |   \
-> diff --git a/drivers/staging/keucr/smil.h b/drivers/staging/keucr/smil.h
-> index c108545..a3addff 100644
-> --- a/drivers/staging/keucr/smil.h
-> +++ b/drivers/staging/keucr/smil.h
-> @@ -223,11 +223,11 @@ int         Media_D_OneSectWriteNext    (struct us_data *,u8 *);
->  int         Media_D_OneSectWriteFlush   (struct us_data *);
->
->  /******************************************/
-> -void        SM_EnableLED                (struct us_data *,BOOLEAN);
-> +void        SM_EnableLED                (struct us_data *, bool enabled);
->  void        Led_D_TernOn                (void);
->  void        Led_D_TernOff               (void);
->
-> -int         Media_D_EraseAllRedtData    (u32 Index, BOOLEAN CheckBlock);
-> +int         Media_D_EraseAllRedtData    (u32 Index);
-Shouldn't there be something like:
-int         Media_D_EraseAllRedtData    (u32 Index, bool CheckBlock); ???
+Vincent,
 
->  //u32       Media_D_GetMediaInfo        (struct us_data * fdoExt, PIOCTL_MEDIA_INFO_IN pParamIn, PIOCTL_MEDIA_INFO_OUT pParamOut);
->
->  //----- SMILSub.c ----------------------------------------------------
-> diff --git a/drivers/staging/keucr/smilmain.c b/drivers/staging/keucr/smilmain.c
-> index 64f2d51..3c035d2 100644
-> --- a/drivers/staging/keucr/smilmain.c
-> +++ b/drivers/staging/keucr/smilmain.c
-> @@ -527,7 +527,7 @@ int Media_D_OneSectWriteFlush(PFDO_DEVICE_EXTENSION fdoExt)
->  //
->  ////LED Tern On/Off Subroutine
->  ////----- SM_EnableLED() -----------------------------------------------
-> -//void SM_EnableLED(PFDO_DEVICE_EXTENSION fdoExt, BOOLEAN enable)
-> +//void SM_EnableLED(PFDO_DEVICE_EXTENSION fdoExt)
->  //{
->  //    if (fdoExt->Drive_IsSWLED)
->  //    {
-> @@ -1778,7 +1778,7 @@ int MarkFail_D_PhyOneBlock(struct us_data *us)
->  //}
->  //
->  ////----- Media_D_EraseAllRedtData() -----------------------------------
-> -//int Media_D_EraseAllRedtData(u32 Index, BOOLEAN CheckBlock)
-> +//int Media_D_EraseAllRedtData(u32 Index, bool CheckBlock)
->  //{
->  //    u8    i;
->  //
-> diff --git a/drivers/staging/keucr/usb.h b/drivers/staging/keucr/usb.h
-> index 154ec9e..a85b20f 100644
-> --- a/drivers/staging/keucr/usb.h
-> +++ b/drivers/staging/keucr/usb.h
-> @@ -199,10 +199,8 @@ struct us_data {
->        u8        MMC_HIGH_CAPACITY;
->
->        //----- MS Control Data ----------------
-> -       BOOLEAN             MS_SWWP;
->        u32               MSP_TotalBlock;
->        MS_LibControl       MS_Lib;
-> -       BOOLEAN             MS_IsRWPage;
->        u16                MS_Model;
->
->        //----- SM Control Data ----------------
-> @@ -215,7 +213,7 @@ struct us_data {
->        int             SrbStatus;
->
->        //------Power Managerment ---------------
-> -       BOOLEAN         Power_IsResum;
-> +       bool         Power_IsResum;
->  };
->
->  /* Convert between us_data and the corresponding Scsi_Host */
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On Wed, 2 Mar 2011, Vincent Guittot wrote:
+> On 2 March 2011 11:08, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Mon, 28 Feb 2011, Vincent Guittot wrote:
+> >> The goal is to monitor the cpu hotplug activity and duration. I want
+> >> to detect 2 kind of cpu_down/cpu_up call, ones which succeed to
+> >> unplug/plug a core and ones which don't. But I'm not sure that we need
+> >> to sort the failed calls into to the trace. We trace them because too
+> >> much fails could point out a bug or a wrong use of cpu hotplug.
+> >
+> > This does not make sense at all. You want to see the failures, then
+> > recording the error code makes even more sense. Your way of decoding
+> > the error case by checking whether the next trace entry is there or
+> > missing is just sloppy.
+> >
+> 
+> The 1st goal was to focus on profiling and to make trace events as
+> simple as possible but I agree that having all information is a better
+> option. We can add a parameter in the trace which gets the return code
+> or some test result like the value of cpu_hotplug_disabled.
 
+That's neither a question of focus nor of better options.
 
+The main point is correctness and usefulness. When we add new
+facilities or infrastructure we want to make sure that they are
+general useful and correct for all possible use cases we can imagine
+at that point in time.
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+So yes, I understand your reasoning and your focus on your primary
+interest, but I also want you to understand that this kind of review
+has a very practical background (i.e. maintainability) and is not just
+the annoying bullying people around conducted by grumpy old men.
+ 
+Thanks,
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+	tglx
