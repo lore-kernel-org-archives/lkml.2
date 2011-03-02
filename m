@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab1CBR7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:59:35 -0500
-Received: from casper.infradead.org ([85.118.1.10]:48739 "EHLO
+	id S1757175Ab1CBSAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 13:00:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:48644 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757002Ab1CBR7c (ORCPT
+	with ESMTP id S1756741Ab1CBR6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:59:32 -0500
-Message-Id: <20110302175004.222724818@chello.nl>
+	Wed, 2 Mar 2011 12:58:51 -0500
+Message-Id: <20110302175726.275598375@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Wed, 02 Mar 2011 18:50:04 +0100
+Date: Wed, 02 Mar 2011 18:55:04 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -22,30 +22,140 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Nick Piggin <npiggin@kernel.dk>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: [PATCH 00/13] mm: mmu_gather rework -v2
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH 6/8] mm: Use refcounts for page_lock_anon_vma()
+References: <20110302175458.726109015@chello.nl>
+Content-Disposition: inline; filename=peter_zijlstra-mm-use_refcounts_for_page_lock_anon_vma.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rework the existing mmu_gather infrastructure.
+Convert page_lock_anon_vma() over to use refcounts. This is done to
+prepare for the conversion of anon_vma from spinlock to mutex.
 
-The direct purpose of these patches was to allow preemptible mmu_gather,
-but even without that I think these patches provide an improvement to the
-status quo.
+Sadly this inceases the cost of page_lock_anon_vma() from one to two
+atomics, a follow up patch addresses this, lets keep that simple for
+now.
 
-The first 10 patches rework the mmu_gather infrastructure. For review purpose
-I've split them into generic and per-arch patches with the last of those a
-generic cleanup.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ mm/migrate.c |   17 ++++-------------
+ mm/rmap.c    |   42 +++++++++++++++++++++++++++---------------
+ 2 files changed, 31 insertions(+), 28 deletions(-)
 
-For the final commit I would provide a roll-up of these patches so as not
-to wreck bisectability of non generic archs.
-
-The next patch provides generic RCU page-table freeing, and the follow up
-is a patch converting s390 to use this. I've also got 4 patches from
-DaveM lined up (not included in this series) that uses this to implement
-gup_fast() for sparc64.
-
-Then there is one patch that extends the generic mmu_gather batching.
+Index: linux-2.6/mm/rmap.c
+===================================================================
+--- linux-2.6.orig/mm/rmap.c
++++ linux-2.6/mm/rmap.c
+@@ -336,9 +336,9 @@ void __init anon_vma_init(void)
+  * that the anon_vma pointer from page->mapping is valid if there is a
+  * mapcount, we can dereference the anon_vma after observing those.
+  */
+-struct anon_vma *page_lock_anon_vma(struct page *page)
++struct anon_vma *page_get_anon_vma(struct page *page)
+ {
+-	struct anon_vma *anon_vma, *root_anon_vma;
++	struct anon_vma *anon_vma = NULL;
+ 	unsigned long anon_mapping;
+ 
+ 	rcu_read_lock();
+@@ -349,30 +349,42 @@ struct anon_vma *page_lock_anon_vma(stru
+ 		goto out;
+ 
+ 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+-	root_anon_vma = ACCESS_ONCE(anon_vma->root);
+-	spin_lock(&root_anon_vma->lock);
++	if (!atomic_inc_not_zero(&anon_vma->refcount)) {
++		anon_vma = NULL;
++		goto out;
++	}
+ 
+ 	/*
+ 	 * If this page is still mapped, then its anon_vma cannot have been
+-	 * freed.  But if it has been unmapped, we have no security against
+-	 * the anon_vma structure being freed and reused (for another anon_vma:
+-	 * SLAB_DESTROY_BY_RCU guarantees that - so the spin_lock above cannot
+-	 * corrupt): with anon_vma_prepare() or anon_vma_fork() redirecting
+-	 * anon_vma->root before page_unlock_anon_vma() is called to unlock.
++	 * freed.  But if it has been unmapped, we have no security against the
++	 * anon_vma structure being freed and reused (for another anon_vma:
++	 * SLAB_DESTROY_BY_RCU guarantees that - so the atomic_inc_not_zero()
++	 * above cannot corrupt).
+ 	 */
+-	if (page_mapped(page))
+-		return anon_vma;
+-
+-	spin_unlock(&root_anon_vma->lock);
++	if (!page_mapped(page)) {
++		put_anon_vma(anon_vma);
++		anon_vma = NULL;
++	}
+ out:
+ 	rcu_read_unlock();
+-	return NULL;
++
++	return anon_vma;
++}
++
++struct anon_vma *page_lock_anon_vma(struct page *page)
++{
++	struct anon_vma *anon_vma = page_get_anon_vma(page);
++
++	if (anon_vma)
++		anon_vma_lock(anon_vma);
++
++	return anon_vma;
+ }
+ 
+ void page_unlock_anon_vma(struct anon_vma *anon_vma)
+ {
+ 	anon_vma_unlock(anon_vma);
+-	rcu_read_unlock();
++	put_anon_vma(anon_vma);
+ }
+ 
+ /*
+Index: linux-2.6/mm/migrate.c
+===================================================================
+--- linux-2.6.orig/mm/migrate.c
++++ linux-2.6/mm/migrate.c
+@@ -703,15 +703,11 @@ static int unmap_and_move(new_page_t get
+ 		 * Only page_lock_anon_vma() understands the subtleties of
+ 		 * getting a hold on an anon_vma from outside one of its mms.
+ 		 */
+-		anon_vma = page_lock_anon_vma(page);
++		anon_vma = page_get_anon_vma(page);
+ 		if (anon_vma) {
+ 			/*
+-			 * Take a reference count on the anon_vma if the
+-			 * page is mapped so that it is guaranteed to
+-			 * exist when the page is remapped later
++			 * Anon page
+ 			 */
+-			get_anon_vma(anon_vma);
+-			page_unlock_anon_vma(anon_vma);
+ 		} else if (PageSwapCache(page)) {
+ 			/*
+ 			 * We cannot be sure that the anon_vma of an unmapped
+@@ -840,13 +836,8 @@ static int unmap_and_move_huge_page(new_
+ 		lock_page(hpage);
+ 	}
+ 
+-	if (PageAnon(hpage)) {
+-		anon_vma = page_lock_anon_vma(hpage);
+-		if (anon_vma) {
+-			get_anon_vma(anon_vma);
+-			page_unlock_anon_vma(anon_vma);
+-		}
+-	}
++	if (PageAnon(hpage))
++		anon_vma = page_get_anon_vma(hpage);
+ 
+ 	try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+ 
 
 
