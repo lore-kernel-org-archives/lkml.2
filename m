@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab1CBTCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 14:02:19 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54067 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756338Ab1CBTCQ (ORCPT
+	id S1757055Ab1CBTCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 14:02:43 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37518 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab1CBTCm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 14:02:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DAMmWk5Q3Ox6gWHJIQa6qb3b5VEPRr35Q8/AbcHhGUPPwlCxSO0vUu4Vs8elhZLXU+
-         OygGmYr/6WYDSo/7K1J51JCYx8bnTzsUGO8i9/ZmSBZgGxj16k/PxhmgMOExG/7aj55E
-         aRvQgF51+JIcOOn+bK+3ZX15WZ8a81Rzu0hOQ=
-Date: Wed, 2 Mar 2011 20:02:08 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
- handling
-Message-ID: <20110302190208.GD28266@mtj.dyndns.org>
-References: <20110224192305.GB15498@elte.hu>
- <4D66B176.9030300@kernel.org>
- <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
- <20110302100400.GK19669@htj.dyndns.org>
- <20110302102530.GB3319@htj.dyndns.org>
- <4D6E6D52.8030901@kernel.org>
- <20110302163729.GQ3319@htj.dyndns.org>
- <4D6E7459.6050706@kernel.org>
- <20110302165545.GR3319@htj.dyndns.org>
- <4D6E91EC.6040906@kernel.org>
+	Wed, 2 Mar 2011 14:02:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6E91EC.6040906@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1103021056460.2701@localhost6.localdomain6>
+References: <AANLkTinkctQ6Nek98JV7vaos34gD4Qn8nsuBzt=_Jj6T@mail.gmail.com>
+	<alpine.LFD.2.00.1102241900540.2701@localhost6.localdomain6>
+	<AANLkTik1Aqt8qJ62h4k0PbLOU7qu3TtA=fWn=LJ6tQjc@mail.gmail.com>
+	<alpine.LFD.2.00.1103021056460.2701@localhost6.localdomain6>
+Date: Wed, 2 Mar 2011 20:02:41 +0100
+Message-ID: <AANLkTikqp9=w+2r+Swe_4O9v=MiD=1tjCGrOQc9grHxk@mail.gmail.com>
+Subject: Re: [PATCH V5 2/2] tracing, perf : add cpu hotplug trace events
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, amit.kucheria@linaro.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Yinghai.
+On 2 March 2011 11:08, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Vincent,
+>
+> On Mon, 28 Feb 2011, Vincent Guittot wrote:
+>> On 24 February 2011 19:40, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Thu, 24 Feb 2011, Vincent Guittot wrote:
+>
+> Sorry, this mail got eaten somehow, but I got it from my archive.
+>
+>> >>  #ifdef CONFIG_SMP
+>> >>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+>> >>  static DEFINE_MUTEX(cpu_add_remove_lock);
+>> >> @@ -197,10 +200,13 @@ struct take_cpu_down_param {
+>> >>  static int __ref take_cpu_down(void *_param)
+>> >>  {
+>> >>       struct take_cpu_down_param *param = _param;
+>> >> +     unsigned int cpu = (unsigned int)(param->hcpu);
+>> >>       int err;
+>> >>
+>> >>       /* Ensure this CPU doesn't handle any more interrupts. */
+>> >> +     trace_cpu_hotplug_disable_start(cpu);
+>> >>       err = __cpu_disable();
+>> >> +     trace_cpu_hotplug_disable_end(cpu);
+>> >
+>> > How useful. What about recording the return code of __cpu_disable()?
+>> >
+>>
+>> The goal is to monitor the cpu hotplug activity and duration. I want
+>> to detect 2 kind of cpu_down/cpu_up call, ones which succeed to
+>> unplug/plug a core and ones which don't. But I'm not sure that we need
+>> to sort the failed calls into to the trace. We trace them because too
+>> much fails could point out a bug or a wrong use of cpu hotplug.
+>
+> This does not make sense at all. You want to see the failures, then
+> recording the error code makes even more sense. Your way of decoding
+> the error case by checking whether the next trace entry is there or
+> missing is just sloppy.
+>
 
-On Wed, Mar 02, 2011 at 10:52:28AM -0800, Yinghai Lu wrote:
-> > Complexity of a solution should match the benefit of the complexity.
-> > Code complexity is one of the most important metrics that we need to
-> > keep an eye on.  If you don't do that, the code base becomes very ugly
-> > and difficult to maintain very quickly.  So, yes, some amount of
-> > execution inefficiency is acceptable depending on circumstances.
-> > Efficiency too is something which should be traded off against other
-> > benefits.
-> 
-> No. it is not acceptable in your case.
-> 
-> We can accept that something like: during init stage, do some probe
-> and call pathes to be happy.  like subarch.
+The 1st goal was to focus on profiling and to make trace events as
+simple as possible but I agree that having all information is a better
+option. We can add a parameter in the trace which gets the return code
+or some test result like the value of cpu_hotplug_disabled.
 
-Hmmm?  I can't really follow your sentence.  This is init stage.
-Anyways, why can't it just walk over the enabled nodes?  What would be
-the difference?
+>> >>       if (err < 0)
+>> >>               return err;
+>> >
+>> >> +     trace_cpu_hotplug_down_start(cpu);
+>> >> +
+>> >
+>> > What's the point of this tracepoint _BEFORE_ the cpu_hotplug_disabled
+>> > check without recording cpu_hotplug_disabled ?
+>> >
+>>
+>> I want to trace all cpu_down call even those which returns immediately
+>> which will be part of the failed calls.
+>
+> Decoding failure from missing entries is simply wrong.
+>
+>> >>       if (cpu_hotplug_disabled) {
+>> >>               err = -EBUSY;
+>> >>               goto out;
+>> >> @@ -284,6 +294,8 @@ int __ref cpu_down(unsigned int cpu)
+>> >>       err = _cpu_down(cpu, 0);
+>> >>
+>> >>  out:
+>> >> +     trace_cpu_hotplug_down_end(cpu);
+>> >
+>> > And this one is misplaced as well. It wants to be only called when we
+>> > actually called _cpu_down() and it wants to record the return code as
+>> > well.
+>> >
+>>
+>> It has been placed here to be called each time
+>> trace_cpu_hotplug_down_start is called.
+>
+> That does not make sense at all. You cannot distinguish between
+> cpu_hotplug_disabled set and the _cpu_down() being called case. Or do
+> you want to tell me that you decode that from the time stamps? Hell
+> no. We want traces which are readable w/o crystal balls.
+>
+> Thanks,
+>
+>        tglx
 
-> Also why did you omit my first question?
-
-Yeah, well, because that wasn't completely consistent with what I said
-earlier.  I wanted to tell you to take the assignments out of if () on
-your earlier patch but I just let it pass and now I had this another
-patch touching the same code, so I just had to do it.
-
-I know it's a petty style thing but it's my pet peeve and I can't help
-it when related change goes through me, so there it is.  I'm sorry but
-I'll probaly do it again.  I beg your understanding.
-
-Thank you.
-
--- 
-tejun
+Thanks,
+Vincent
