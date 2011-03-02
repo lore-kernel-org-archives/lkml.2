@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab1CBRV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:21:58 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:12787 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab1CBRV5 (ORCPT
+	id S1756166Ab1CBRZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:25:27 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64419 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab1CBRZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:21:57 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+U1dHDWaJZV4IqIM9gRl+S
-Date: Wed, 2 Mar 2011 09:21:44 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Ilkka Koskinen <ilkka.koskinen@nokia.com>, peter.ujfalusi@nokia.com,
-        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 0/2] twl4030_codec cleanup
-Message-ID: <20110302172144.GT20560@atomide.com>
-References: <1299072246-26402-1-git-send-email-ilkka.koskinen@nokia.com>
- <20110302143433.GM16181@sortiz-mobl>
+	Wed, 2 Mar 2011 12:25:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=A1pPCkqaNgEw1wojseTu6JhoWpPHHP2oyy6AtutqyoExbHMwPh54PmFS8snz7IQLcn
+         M2GNss6UEPJiFlr4cSYD3EN1g91+Juerjt/te8Ag477h5ElQ8U94wMP+hx5Dny3/h9i+
+         b2uUxD5sDfjUKicQZ8o/0l/gs4PDORMbeR2xA=
+Date: Wed, 2 Mar 2011 18:24:46 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL tip:x86/mm] fixes for memblock build warning and
+ numa_distance handling
+Message-ID: <20110302172446.GT3319@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110302143433.GM16181@sortiz-mobl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Hey, Ingo.
 
-* Samuel Ortiz <sameo@linux.intel.com> [110302 06:32]:
-> Hi Ilkka,
-> 
-> On Wed, Mar 02, 2011 at 03:24:04PM +0200, Ilkka Koskinen wrote:
-> > This series of patches removes duplicate audio_mclk fields from
-> > twl4030_codec driver.
-> > 
-> > The patches have been compiled on sound-2.6/for-2.6.39 branch.
-> > I haven't tested them on any target board though.
-> I'm fine with the twl.h changes, but I think it would make sense for Tony to
-> take this patchset. Tony, is that ok with you ?
+Please pull from the following git branch to receive two fix patches
+for memblock build warning and numa_distance handling and a patch
+adding comments to numa_distance code.  HEAD is eb8c1e2c83 (x86-64,
+NUMA: Better explain numa_distance handling).
 
-Sure if you prefer that.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
 
-Tony
+As usual, if HEAD doesn't appear, please pull from master.
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+
+Thanks.
+
+Tejun Heo (1):
+      x86-64, NUMA: Better explain numa_distance handling
+
+Yinghai Lu (2):
+      mm: Move early_node_map[] reverse scan helpers under HAVE_MEMBLOCK
+      x86-64, NUMA: Fix distance table handling
+
+ arch/x86/mm/numa_64.c        |   19 ++++++++----
+ arch/x86/mm/numa_emulation.c |   20 ++++++++----
+ mm/page_alloc.c              |   64 +++++++++++++++++++++---------------------
+ 3 files changed, 58 insertions(+), 45 deletions(-)
+
+-- 
+tejun
