@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab1CBWlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 17:41:15 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:57130 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab1CBWlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 17:41:14 -0500
-Date: Wed, 2 Mar 2011 14:41:08 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-Message-ID: <20110302224108.GA23194@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110223013917.GA20996@linux.vnet.ibm.com>
- <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D6765B6.1030401@cn.fujitsu.com>
- <20110225203219.GD2269@linux.vnet.ibm.com>
- <4D6B16A8.4050405@cn.fujitsu.com>
- <1298886437.2428.10174.camel@twins>
- <20110301001300.GD2331@linux.vnet.ibm.com>
- <1298990291.5226.870.camel@laptop>
- <20110302000703.GK2218@linux.vnet.ibm.com>
+	id S1757928Ab1CBWpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:45:33 -0500
+Received: from xenotime.net ([184.105.210.51]:44743 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755955Ab1CBWpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 17:45:31 -0500
+Message-ID: <41502.137.254.4.9.1299105929.squirrel@xenotime.net>
+In-Reply-To: <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
+References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org> 
+    <1299036841-23677-13-git-send-email-nab@linux-iscsi.org> 
+    <20110301223251.11c95eed.rdunlap@xenotime.net>
+    <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
+Date: Wed, 2 Mar 2011 14:45:29 -0800 (PST)
+Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM 
+     top level
+From: "Randy Dunlap" <rdunlap@xenotime.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: "Randy Dunlap" <rdunlap@xenotime.net>,
+        "linux-scsi" <linux-scsi@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Christoph Hellwig" <hch@lst.de>,
+        "Mike Christie" <michaelc@cs.wisc.edu>,
+        "Hannes Reinecke" <hare@suse.de>,
+        "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>,
+        "James Bottomley" <james.bottomley@hansenpartnership.com>,
+        "Boaz Harrosh" <bharrosh@panasas.com>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Douglas Gilbert" <dgilbert@interlog.com>
+User-Agent: SquirrelMail/1.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302000703.GK2218@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 04:07:03PM -0800, Paul E. McKenney wrote:
-> On Tue, Mar 01, 2011 at 03:38:11PM +0100, Peter Zijlstra wrote:
-> > On Mon, 2011-02-28 at 16:13 -0800, Paul E. McKenney wrote:
 
-[ . . . ]
+On Wed, March 2, 2011 1:32 pm, Nicholas A. Bellinger wrote:
+> On Tue, 2011-03-01 at 22:32 -0800, Randy Dunlap wrote:
+>
+>> On Tue,  1 Mar 2011 19:34:01 -0800 Nicholas A. Bellinger wrote:
+>>
+>>
+>>> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>>>
+>>>
+>>> Add Makefile/Kconfig and update drivers/target/[Makefile,Kconfig]
+>>> to include the fabric module.
+>>>
+>>> igned-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+>>> ---
+>>> drivers/target/Kconfig        |    1 + drivers/target/Makefile       |
+>>> 1 +
+>>> drivers/target/iscsi/Kconfig  |   17 +++++++++++++++++
+>>> drivers/target/iscsi/Makefile |   20 ++++++++++++++++++++ 4 files
+>>> changed, 39 insertions(+), 0 deletions(-) create mode 100644
+>>> drivers/target/iscsi/Kconfig create mode 100644
+>>> drivers/target/iscsi/Makefile
+>>>
+>>> diff --git a/drivers/target/Kconfig b/drivers/target/Kconfig index
+>>> 387d293..798749a 100644
+>>> --- a/drivers/target/Kconfig
+>>> +++ b/drivers/target/Kconfig
+>>> @@ -30,5 +30,6 @@ config TCM_PSCSI
+>>> passthrough access to Linux/SCSI device
+>>>
+>>> source "drivers/target/tcm_loop/Kconfig" +source
+>>> "drivers/target/iscsi/Kconfig"
+>>>
+>>>
+>>> endif diff --git a/drivers/target/Makefile b/drivers/target/Makefile
+>>> index 60028fe..b038b7d 100644 --- a/drivers/target/Makefile
+>>> +++ b/drivers/target/Makefile
+>>> @@ -24,3 +24,4 @@ obj-$(CONFIG_TCM_PSCSI)		+= target_core_pscsi.o
+>>>
+>>>
+>>> # Fabric modules
+>>> obj-$(CONFIG_TCM_LOOP_FABRIC)	+= tcm_loop/ +obj-$(CONFIG_ISCSI_TARGET)
+>>> += iscsi/
+>>> diff --git a/drivers/target/iscsi/Kconfig
+>>> b/drivers/target/iscsi/Kconfig new file mode 100644 index
+>>> 0000000..d1eaec4
+>>> --- /dev/null
+>>> +++ b/drivers/target/iscsi/Kconfig
+>>> @@ -0,0 +1,17 @@
+>>> +config ISCSI_TARGET
+>>> +	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
+>>> +	select CRYPTO
+>>> +	select CRYPTO_CRC32C
+>>> +	select CRYPTO_CRC32C_INTEL
+>>>
+>>
+>> CRYPTO_CRC32C_INTEL depends on X86.  so is ISCSI_TARGET only for X86,
+>> or is this kconfig just mucked up?
+>>
+>>
+>
+> Hi Randy,
+>
+>
+> The kernel code itself that is specific to using the SSE v4.2
+> instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
+> iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
+> default to using the unoptimized 1x8 slicing soft CRC32C code.  This
+> particular piece of logic has been tested on powerpc and arm and is
+> funcitoning as expected from the kernel level using the arch independent
+> soft code.
+>
+> On the kbuild side, I do see the following warning on !CONFIG_X86:
+>
+>
+> warning: (LIO_TARGET) selects CRYPTO_CRC32C_INTEL which has unmet direct
+> dependencies (CRYPTO && X86)
 
-> > wait_event() will only actually wait if the condition is false, in the
-> > start-up case above it will find the condition true and fall right
-> > through to do stuff.
-> 
-> So as long as it is OK to call sched_setscheduler_nocheck() before
-> the kthread is first awakened, we should be OK.
+Ah, good.
 
-So the softlockup code kills me when I do it this way.  Or can kill me.
->From what I can se the problem is that it might be the case that no one
-needs a particular RCU kthread for some time.  In addition, if the kthread
-has not yet done the wait_event(), wake_up() won't know to wake it up.
-The flag gets set, and all zero of the tasks blocked on the event's
-queue are awakened, but the not-yet-awakened task still sleeps because
-it has not yet done the wait_event().
+> I looking at trying to fix this at one point, but was unable to
+> determine a method for adding a CONFIG_$ARCH condition to an individual
+> 'select BAR' section of 'config FOO'..
+>
+>
+> How would you recommend handling this case..?
 
-So I am falling back to waking each thread up just after creation so
-that they can be safely parked regardless of who needs which kthread at
-what time in the future.
+How about
 
-On the other hand, making these changes and testing them helped me find
-and fix a number of subtle and not-so-subtle bugs in the TREE_RCU priority
-boosting code, so I most certainly cannot argue with the outcome!  ;-)
+        select CRYPTO_CRC32C_INTEL if X86
 
-							Thanx, Paul
+(with s/spaces/tab/)
+
+
+-- 
+~Randy
+
