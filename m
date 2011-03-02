@@ -1,419 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757847Ab1CBCHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 21:07:12 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44811 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786Ab1CBCHK convert rfc822-to-8bit (ORCPT
+	id S1757284Ab1CBCZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 21:25:41 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:44019 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab1CBCZk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 21:07:10 -0500
+	Tue, 1 Mar 2011 21:25:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=google.com; s=beta;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=GzEL1SJ7SvXCgjfxahFE+w5iSiqenW8SzTCXDkPwhoBA2/VpapPn9F/9g/TPpUBE4p
-         m/OMZbiF2s0wK4RqQa96tJB0vnMENfsiyBf+88262S6pQ6SKR/MoN+WprAfAY88ogbiQ
-         UAQSMPyN8FRUqK++et1lnwfULS6hpaFTP0ByM=
+        b=QsNbqdyYuZA8ND4HJSjKpy2W994062NohhJlUAK3Bwlo43x+7airJDfZiEX4UXPuMj
+         dqUtTU3ejZkYcs4WZXuw==
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1102281334080.3297@dhcp-27-109.brq.redhat.com>
-References: <20110225010346.GA9019@july>
-	<alpine.LFD.2.00.1102251114580.3316@dhcp-27-109.brq.redhat.com>
-	<AANLkTikBOk=gJ70fO4zQTYJ5=bdWAmjVfuNiVaMt-atW@mail.gmail.com>
-	<alpine.LFD.2.00.1102281334080.3297@dhcp-27-109.brq.redhat.com>
-Date: Wed, 2 Mar 2011 11:07:09 +0900
-X-Google-Sender-Auth: pgYAU7-Ca5Wy9_Sl2NtYuE4J998
-Message-ID: <AANLkTi=L_3-_orw8_mkdvR-55z0iKWGR6=7OKgSf8QR2@mail.gmail.com>
-Subject: Re: [PATCH v3] fat: Batched discard support for fat
-From: Kyungmin Park <kmpark@infradead.org>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+In-Reply-To: <4D689230.7020704@codeaurora.org>
+References: <4D680EEE.1070706@codeaurora.org>
+	<AANLkTinZCtbQnAk_OX92jqbW_GjH5wpxvbeoMkHV1inn@mail.gmail.com>
+	<4D689230.7020704@codeaurora.org>
+Date: Tue, 1 Mar 2011 18:25:36 -0800
+X-Google-Sender-Auth: 1oEQjfVd60yDROTHaYxSEeGDg_Y
+Message-ID: <AANLkTi=ePu9hTeecOfKoxKEXd6VZ6tJBN2XphDO5suOA@mail.gmail.com>
+Subject: Re: [PATCH] msm: gpiomux: Remove GPIOMUX_VALID and merge config enums
+From: Dima Zavin <dima@android.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>, dwalker@fifo99.com,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 9:51 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> On Mon, 28 Feb 2011, Kyungmin Park wrote:
->
->> On Fri, Feb 25, 2011 at 8:17 PM, Lukas Czerner <lczerner@redhat.com> wrote:
->> > On Fri, 25 Feb 2011, Kyungmin Park wrote:
->> >
->> >> From: Kyungmin Park <kyungmin.park@samsung.com>
->> >>
->> >> FAT supports batched discard as ext4.
->> >>
->> >> Cited from Lukas words.
->> >> "The current solution is not ideal because of its bad performance impact.
->> >> So basic idea to improve things is to avoid discarding every time some
->> >> blocks are freed. and instead batching is together into bigger trims,
->> >> which tends to be more effective."
->> >>
->> >> You can find an information in detail at following URLs.
->> >> http://lwn.net/Articles/397538/
->> >> http://lwn.net/Articles/383933/
->> >>
->> >> Clearify the meaning of "len" (Cited form Lukas mail)
->> >>
->> >> Let the "O" be free (bytes, blocks, whatever), and "=" be used.
->> >> Now, we have a filesystem like this.
->> >>
->> >>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
->> >>   ^                                      ^
->> >>   0                                      40
->> >>
->> >> This is how it supposed to wotk if you have called FITIRM with parameters:
->> >>
->> >> start = 0
->> >> minlen = 2
->> >> len = 20
->> >>
->> >> So you will go through (blocks, bytes...) 0 -> 20
->> >>
->> >>   OOOO==O===OO===OOOOO==O===O===OOOOOOO===
->> >>   ^                   ^
->> >>   0                   20
->> >>
->> >> So, you will call discard on extents:
->> >>
->> >> 0-3
->> >> You'll skip 6 because is smaller than minlen
->> >> 10-11
->> >> 15-19
->> >>
->> >> instead of
->> >>
->> >> 0-3
->> >> 10-11
->> >> 15-19
->> >> 30-36
->> >
->> > Hi thanks for the next version. And again I have to ask: Did you test it
->> > ? and how ? Did you tried xfstest No. 251 ? Couple of comments bellow.
+Good point, ptr to anon struct would work.
+
+I would still very much like to see the helper macros be added though
+as it really would be very helpful in keeping the pinmuxing tidy in
+the board files. Doing it as a separate patch is fine.
+
+Other than the addition of helper macros, ack.
+
+--Dima
+
+On Fri, Feb 25, 2011 at 9:40 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 02/25/2011 05:20 PM, Dima Zavin wrote:
 >>
->> I tested it with your test program. Of course I modified for our
->> environment (eMMC).
->
-> Ok, good.
->
+>> On Fri, Feb 25, 2011 at 12:19 PM, Rohit Vaswani<rvaswani@codeaurora.org>
+>>  wrote:
+>>>
+>>> diff --git a/arch/arm/mach-msm/board-qsd8x50.c
+>>> b/arch/arm/mach-msm/board-qsd8x50.c
+>>> index 33ab1fe..d665b0e 100644
+>>> --- a/arch/arm/mach-msm/board-qsd8x50.c
+>>> +++ b/arch/arm/mach-msm/board-qsd8x50.c
+>>> @@ -38,19 +38,26 @@
+>>>  #include "devices.h"
+>>>  #include "gpiomux.h"
+>>>
+>>> -#define UART3_SUSPENDED (GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |\
+>>> -            GPIOMUX_FUNC_1 | GPIOMUX_VALID)
+>>> +static struct gpiomux_setting uart3_suspended = {
+>>> +    .drv = GPIOMUX_DRV_2MA,
+>>> +    .pull = GPIOMUX_PULL_DOWN,
+>>> +    .func = GPIOMUX_FUNC_1,
+>>> +};
+>>>
+>>>  extern struct sys_timer msm_timer;
+>>>
+>>> -struct msm_gpiomux_config qsd8x50_uart3_configs[] __initdata = {
+>>> +struct msm_gpiomux_config qsd8x50_uart3_configs[] = {
+>>>     {
+>>>         .gpio = 86, /* UART3 RX */
+>>> -        .suspended = UART3_SUSPENDED,
+>>> +        .settings = {
+>>> +            [GPIOMUX_SUSPENDED] =&uart3_suspended,
+>>> +        },
+>>>     },
+>>>     {
+>>>         .gpio = 87, /* UART3 TX */
+>>> -        .suspended = UART3_SUSPENDED,
+>>> +        .settings = {
+>>> +            [GPIOMUX_SUSPENDED] =&uart3_suspended,
+>>> +        },
+>>>     },
+>>>  };
 >>
->> #include <errno.h>
->> #include <fcntl.h>
->> #include <stdio.h>
->> #include <stdint.h>
->> #include <sys/ioctl.h>
+>> I think this new interface is way too verbose and will quickly get
+>> unwieldy for configurations that have more than a few pins. For
+>> instance, imagine what the above would look like when muxing a 24bit
+>> LCD pin list...
 >>
->> struct fstrim_range {
->>         uint64_t start;
->>         uint64_t len;
->>         uint64_t minlen;
+>> How about adding a "bool valid" to gpiomux_setting, and convert the
+>> "sets" array to an array of settings and not pointers to settings.
+>> This will allow us to do (in gpiomux.h):
+>>
+>> struct msm_gpiomux_rec {
+>>     struct gpiomux_setting sets[GPIOMUX_NSETTINGS];
+>>     int ref;
 >> };
 >>
->> #define FITRIM          _IOWR('X', 121, struct fstrim_range)
+>> struct gpiomux_setting {
+>>     enum gpiomux_func func;
+>>     enum gpiomux_drv  drv;
+>>     enum gpiomux_pull pull;
+>>     bool valid;
+>> };
 >>
->> int main(int argc, char **argv)
->> {
->>         struct fstrim_range range;
->>         uint64_t len;
->>         int fd;
+>> This way, I can do something like (very rough):
 >>
->>         if (argc < 2) {
->>                 fprintf(stderr, "usage: %s mountpoint [size]\n", argv[0]);
->>                 return 1;
->>         }
+>> #define GPIOMUX_SET(func,drv,pull) { \
+>>     .func = GPIOMUX_##func, \
+>>     .drv = GPIOMUX_##drv, \
+>>     .pull = GPIOMUX_##pull, \
+>>     .valid = true, \
+>>   }
 >>
->>         if (argc == 3)
->>                 len = atoll(argv[1]);
->>         else
->>                 len = ((1UL<<31) - 1);
+>> #define GPIOMUX_SET_NONE { .valid = false, }
 >>
->>         range.start = 0;
->>         range.len = len;
->>         range.minlen = 256 * 1024;      /* Minimum is 256KiB */
+>> #define GPIOMUX_CFG(g, active, suspended) { \
+>>      .gpio = g, \
+>>      .sets = { \
+>>          [GPIOMUX_ACTIVE] = active, \
+>>          [GPIOMUX_SUSPENDED] = suspended, \
+>>       }, \
+>>  }
+>>
+>> This will then allow me to define the uart3 pinmuxing in my board file
+>> as follows:
+>>
+>> struct msm_gpiomux_rec uart3_mux_cfg[] = {
+>>     GPIOMUX_CFG(86, GPIOMUX_SET_NONE,
+>>                            GPIOMUX_SET(FUNC_1, DRV_2MA, PULL_DOWN)),
+>>     GPIOMUX_CFG(87, GPIOMUX_SET_NONE,
+>>                            GPIOMUX_SET(FUNC_1, DRV_2MA, PULL_DOWN)),
+>> };
+>>
+>> Thoughts?
+>>
 >
-> Why exactly you need to set this ? What will happen if the minlen is 0 ?
-
-It's dependent on eMMC chip. it's for our environment. If it passed
-with 0, the code is working but the less than 256KiB trim command is
-meaningless.
-
+> I haven't read this GPIO code thoroughly, but by looking just at the diff, I
+> think you can still have these type of macros with the structure definition
+> Rohit chose. I have no opinion one which struct definition is better (not
+> enough context). Just trying to help with writing helper macros.
 >
->>
->>         fd = open(argv[1], O_RDONLY);
->>         if (fd < 0) {
->>                 perror("open");
->>                 return 1;
->>         }
->>
->>         if (ioctl(fd, FITRIM, &range)) {
->>                 if (errno == EOPNOTSUPP)
->>                         fprintf(stderr, "TRIM not supported\n");
->>                 else
->>                         perror("FITRIM");
->>                 return 1;
->>         }
->>
->>         fprintf(stderr, "Trimmed size %llu\n", range.len);
->>
->>         return 0;
->> }
->>
->> >
->> > Thanks!
->> > -Lukas
->> >
->> >>
->> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> >> ---
->> >> Changelog v3:
->> >>       Adjust the minlen from queue discard_granularity
->> >>       Use the corrent len usage
->> >> Changelog v2:
->> >>       Use the given start and len as Lukas comments
->> >>       Check the queue supports discard feature
->> >> ---
->> >> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
->> >> index f504089..08b53e1 100644
->> >> --- a/fs/fat/fat.h
->> >> +++ b/fs/fat/fat.h
->> >> @@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
->> >>                             int nr_cluster);
->> >>  extern int fat_free_clusters(struct inode *inode, int cluster);
->> >>  extern int fat_count_free_clusters(struct super_block *sb);
->> >> +extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
->> >>
->> >>  /* fat/file.c */
->> >>  extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
->> >> diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
->> >> index b47d2c9..a8e3837 100644
->> >> --- a/fs/fat/fatent.c
->> >> +++ b/fs/fat/fatent.c
->> >> @@ -1,6 +1,8 @@
->> >>  /*
->> >>   * Copyright (C) 2004, OGAWA Hirofumi
->> >>   * Released under GPL v2.
->> >> + *
->> >> + * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
->> >>   */
->> >>
->> >>  #include <linux/module.h>
->> >> @@ -541,6 +543,16 @@ out:
->> >>       return err;
->> >>  }
->> >>
->> >> +static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
->> >> +{
->> >> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
->> >> +     sector_t block, nr_blocks;
->> >> +
->> >> +     block = fat_clus_to_blknr(sbi, cluster);
->> >> +     nr_blocks = nr_clus * sbi->sec_per_clus;
->> >> +     return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
->> >> +}
->> >> +
->> >>  int fat_free_clusters(struct inode *inode, int cluster)
->> >>  {
->> >>       struct super_block *sb = inode->i_sb;
->> >> @@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
->> >>                       if (cluster != fatent.entry + 1) {
->> >>                               int nr_clus = fatent.entry - first_cl + 1;
->> >>
->> >> -                             sb_issue_discard(sb,
->> >> -                                     fat_clus_to_blknr(sbi, first_cl),
->> >> -                                     nr_clus * sbi->sec_per_clus,
->> >> -                                     GFP_NOFS, 0);
->> >> -
->> >> +                             fat_issue_discard(sb, first_cl, nr_clus);
->> >>                               first_cl = cluster;
->> >>                       }
->> >>               }
->> >> @@ -683,3 +691,88 @@ out:
->> >>       unlock_fat(sbi);
->> >>       return err;
->> >>  }
->> >> +
->> >> +int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
->> >> +{
->> >> +     struct msdos_sb_info *sbi = MSDOS_SB(sb);
->> >> +     struct fatent_operations *ops = sbi->fatent_ops;
->> >> +     struct fat_entry fatent;
->> >> +     unsigned long reada_blocks, reada_mask, cur_block;
->> >> +     int err = 0, free, count, entry;
->> >> +     int start, len, minlen, trimmed;
->> >> +
->> >> +     start = range->start >> sb->s_blocksize_bits;
->> >> +     start = start / sbi->sec_per_clus;
->> >> +     len = range->len >> sb->s_blocksize_bits;
->> >> +     len = len / sbi->sec_per_clus;
->> >> +     minlen = range->minlen >> sb->s_blocksize_bits;
->> >> +     minlen = minlen / sbi->sec_per_clus;
->> >> +     trimmed = 0;
->> >> +     count = 0;
->> >> +
->> >> +     lock_fat(sbi);
->> >> +     if (sbi->free_clusters != -1 && sbi->free_clus_valid)
->> >> +             goto out;
->> >> +
->> >> +     reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
->> >> +     reada_mask = reada_blocks - 1;
->> >> +     cur_block = 0;
->> >> +
->> >> +     entry = 0;
->> >> +     free = 0;
->> >> +     fatent_init(&fatent);
->> >> +
->> >> +     if (start < FAT_START_ENT)
->> >> +             start = FAT_START_ENT;
->> >> +
->> >> +     fatent_set_entry(&fatent, start);
->> >> +
->> >> +     while (count < sbi->max_cluster) {
->> >> +             if (fatent.entry >= sbi->max_cluster)
->> >> +                     fatent.entry = FAT_START_ENT;
->> >> +             /* readahead of fat blocks */
->> >> +             if ((cur_block & reada_mask) == 0) {
->> >> +                     unsigned long rest = sbi->fat_length - cur_block;
->> >> +                     fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
->> >
->> > You really do not need new variable "rest" just for passing it into one
->> > function. Get rid of it.
->>
->> Umm. I don't want to modify it since it's routine is same as
->> free_count codes. I just borrowed it from FAT codes.
->> >
->> >> +             }
->> >> +             cur_block++;
->> >> +
->> >> +             err = fat_ent_read_block(sb, &fatent);
->> >> +             if (err)
->> >> +                     goto out;
->> >> +
->> >> +             do {
->> >> +                     if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
->> >> +                             free++;
->> >> +                             if (!entry)
->> >> +                                     entry = fatent.entry;
->> >> +                             if (count >= len && free >= minlen) {
->> >> +                                     fat_issue_discard(sb, entry, free);
->> >> +                                     trimmed += free;
+> The trick is to use pointers to anonymous struct. A very rough macro:
 >
-> I think you can remove this condition completely is you move "done"
-> label befor the if (free >= minlen) condition.
+> #define GPIOMUX_SET(f, d, p) \
+> &(struct gpiomux_setting) {
+>        .func = f,
+>        .drv = d,
+>        .pull = p,
+> }
 >
->> > I really do not understand FAT code very much, but is this right ?
->> > Should not you be setting free = 0 ?
->> Right but count is larger then "len". it will exit at next if (count
->> >= len) goto done statement.
+> #define GPIOMUX_CFG(g, active, suspended) { \
+>        .gpio = g,
+>        .settings = {
+>                [ACTIVE] = active,
+>                [SUSPENDED] = suspended,
+>        }
+> }
 >
-> Oh, ok I see. But it proves my point that this code is not very well
-> readable.
+> struct msm_gpiomux_config foo_bar[] = {
+>        GPIOMUX_CFG(10, GPIOMUX_SET(FUNC, 2MA, PULL_UP), NULL),
+>        GPIOMUX_CFG(11, GPIOMUX_SET(FUNC, 2MA, PULL_UP), NULL),
+> };
 >
->>
->> > What will happen if you'll end up
->> > in the same branch in next iteration ? -- free will be still set to
->> > previous value+1, bu you'll be discarding next entry. I am sorry but
->> > this whole thing is not very readable.
->>
->> >
->> >> +                             }
->> >> +                             if (count >= len)
->> >> +                                     goto done;
->                                   ^^^^^^^^^^^^^^^^^^
-> this
-
-Okay I will fix it.
+> I'm certain the pointer to anonymous struct stuff works. You might have to
+> tweak the macros a bit though. Hope this help.
 >
->> >> +                     } else if (entry) {
->> >> +                             if (free >= minlen) {
->> >> +                                     fat_issue_discard(sb, entry, free);
->> >> +                                     trimmed += free;
->> >> +                             }
->> >> +                             if (count >= len)
->> >> +                                     goto done;
->                                   ^^^^^^^^^^^^^^^^^^
-> and this
->
->> >> +                             free = 0;
->> >> +                             entry = 0;
->> >> +                     }
->> >
->> > I don't not see why you are testing count all the time since it has not been
->> > changed since the "if" condition started. how about doing one test
->> > before the "if" condition ?
->>
->> For looping the whole fat max_cluster size. now start can be any
->> address and if start is a middle point and len is max, then it will
->> search from middle -> end -> start -> middle. The "count" is used for
->> this purpose.
->>
->> Thank you,
->> Kyungmin Park
->> >
-> can go here -->>
->                            if (count >= len)
->                                    goto done;
->
->> >> +                     count++;
->> >> +             } while (fat_ent_next(sbi, &fatent));
->> >> +     }
->> >> +     if (free >= minlen) {
->> >> +             fat_issue_discard(sb, entry, free);
->> >> +             trimmed += free;
->> >> +     }
->> >> +done:
->> >> +     range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
->> >> +     fatent_brelse(&fatent);
->> >> +out:
->> >> +     unlock_fat(sbi);
->> >> +     return err;
->> >> +}
->> >> diff --git a/fs/fat/file.c b/fs/fat/file.c
->> >> index 7257752..9910aba 100644
->> >> --- a/fs/fat/file.c
->> >> +++ b/fs/fat/file.c
->> >> @@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->> >>               return fat_ioctl_get_attributes(inode, user_attr);
->> >>       case FAT_IOCTL_SET_ATTRIBUTES:
->> >>               return fat_ioctl_set_attributes(filp, user_attr);
->> >> +     case FITRIM:
->> >> +     {
->> >> +             struct super_block *sb = inode->i_sb;
->> >> +             struct request_queue *q = bdev_get_queue(sb->s_bdev);
->> >> +             struct fstrim_range range;
->> >> +             int ret = 0;
->> >> +
->> >> +             if (!capable(CAP_SYS_ADMIN))
->> >> +                     return -EPERM;
->> >> +
->> >> +             if (!blk_queue_discard(q))
->> >> +                     return -EOPNOTSUPP;
->> >> +
->> >> +             if (copy_from_user(&range, (struct fstrim_range *)arg,
->> >> +                                     sizeof(range)))
->> >> +                     return -EFAULT;
->> >> +
->> >> +             range.minlen = max((unsigned int)range.minlen,
->> >> +                                     q->limits.discard_granularity);
->> >> +             ret = fat_trim_fs(sb, &range);
->> >> +             if (ret < 0)
->> >> +                     return ret;
->> >> +
->> >> +             if (copy_to_user((struct fstrim_range *)arg, &range,
->> >> +                                     sizeof(range)))
->> >> +                     return -EFAULT;
->> >> +
->> >> +             return 0;
->> >> +     }
->> >> +
->> >>       default:
->> >>               return -ENOTTY; /* Inappropriate ioctl for device */
->> >>       }
->> >>
->> >
->> > --
->> >
->>
+> -Saravana
 >
 > --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>
