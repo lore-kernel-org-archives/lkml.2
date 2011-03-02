@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab1CBKKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 05:10:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:39535 "EHLO mga14.intel.com"
+	id S1756781Ab1CBKNT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 05:13:19 -0500
+Received: from cantor.suse.de ([195.135.220.2]:52146 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756534Ab1CBKKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 05:10:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,252,1297065600"; 
-   d="scan'208";a="396255551"
-Date: Wed, 2 Mar 2011 11:10:46 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/3] mfd: mc13xxx-core: add MODULE_DEVICE_TABLE
-Message-ID: <20110302101045.GB16181@sortiz-mobl>
-References: <1298874735.5562.3.camel@mola>
+	id S1756355Ab1CBKNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 05:13:18 -0500
+Date: Wed, 2 Mar 2011 11:13:17 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PULL REQUEST] Fix for ext2 fs corruption under rename load
+Message-ID: <20110302101317.GB7496@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298874735.5562.3.camel@mola>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+  Hello Linus,
 
-On Mon, Feb 28, 2011 at 02:32:15PM +0800, Axel Lin wrote:
-> The device table is required to load modules based on modaliases.
-> After adding the MODULE_DEVICE_TABLE, below entries will be added to
-> modules.alias:
-> alias spi:mc13892 mc13xxx_core
-> alias spi:mc13783 mc13xxx_core
-Thanks, all 3 patches applied.
+  could you please pull from
 
-Cheers,
-Samuel.
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git
+for_linus
 
+to get a fix for a long-standing ext2 bug causing fs corruption. The
+corruption isn't severe (only i_nlink gets corrupted) but still it isn't
+nice thus I push the fix this late in the cycle.
+
+The full shortlog is:
+
+Josh Hunt (1):
+      ext2: Fix link count corruption under heavy link+rename load
+
+The diffstat is
+
+ fs/ext2/namei.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+							Thanks
+								Honza
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
