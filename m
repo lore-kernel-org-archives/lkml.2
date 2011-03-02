@@ -1,63 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1CBIp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:45:58 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38461 "EHLO mx3.mail.elte.hu"
+	id S1756229Ab1CBIsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:48:18 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37171 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755820Ab1CBIp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:45:57 -0500
-Date: Wed, 2 Mar 2011 09:45:42 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Liu Yuan <namei.unix@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jaxboe@fusionio.com,
-        akpm@linux-foundation.org, fengguang.wu@intel.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC PATCH 4/5] mm: Add hit/miss accounting for Page Cache
-Message-ID: <20110302084542.GA20795@elte.hu>
-References: <no>
- <1299055090-23976-4-git-send-email-namei.unix@gmail.com>
+	id S1755634Ab1CBIsQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 03:48:16 -0500
+From: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 2 Mar 2011 14:17:42 +0530
+Subject: RE: [PATCH v7 1/1] PRUSS UIO driver support
+Thread-Topic: [PATCH v7 1/1] PRUSS UIO driver support
+Thread-Index: AcvYWgOumzf0JrIaSf6AYgJtHISiUgAV67uQ
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BF36776@dbde02.ent.ti.com>
+References: <1299014895-2022-1-git-send-email-pratheesh@ti.com>
+ <1299014895-2022-2-git-send-email-pratheesh@ti.com>
+ <alpine.LFD.2.00.1103012238360.2701@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103012238360.2701@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299055090-23976-4-git-send-email-namei.unix@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Liu Yuan <namei.unix@gmail.com> wrote:
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Wednesday, March 02, 2011 3:15 AM
+> > +
+> > +static DEFINE_SPINLOCK(lock);
+> > +static struct clk *pruss_clk;
+> > +static struct uio_info *info;
+> > +static dma_addr_t sram_paddr, ddr_paddr;
+> > +static void *prussio_vaddr, *sram_vaddr, *ddr_vaddr;
+> > +
+> > +static irqreturn_t pruss_handler(int irq, struct uio_info *info)
+> > +{
+> > +	int intr_bit = (irq - IRQ_DA8XX_EVTOUT0 + 2);
+> > +	int val, intr_mask = (1 << intr_bit);
+> > +	void __iomem *base = info->mem[0].internal_addr;
+> > +	void __iomem *intren_reg = base + PINTC_HIER;
+> > +	void __iomem *intrstat_reg = base + PINTC_HIPIR + (intr_bit << 2);
+> > +
+> > +	spin_lock_irq(&lock);
+> 
+> No, I said: spin_lock() is sufficient.
+Ok. 
+> > +	val = ioread32(intren_reg);
+> > +	/* Is interrupt enabled and active ? */
+> > +	if (!(val & intr_mask) && (ioread32(intrstat_reg) & HIPIR_NOPEND)) {
+> > +		spin_unlock_irq(&lock);
+> 
+> You unconditinally enable interrupts here where you are not supposed
+> to do so.
+> 
+Ok.
+> > +		return IRQ_NONE;
+> > +	}
+> > +
+> > +	/* Disable interrupt */
+> > +	iowrite32((val & ~intr_mask), intren_reg);
 
-> +		if (likely(!retry_find) && page && PageUptodate(page))
-> +			page_cache_acct_hit(inode->i_sb, READ);
-> +		else
-> +			page_cache_acct_missed(inode->i_sb, READ);
+I checked more on this and actually INTC h/w has Host Interrupt
+Enable Indexed Set Register (HIEISR) and Host Interrupt Enable Indexed
+Clear Register(HIEICR) which I can use to enable/disable interrupts
+without doing RMW. I will use these registers and then we don't need
+all the spinlock and irqcontrol stuff. So I need to do
 
-Sigh.
+iowrite32((intr_bit, HIEICR);// This disable the interrupt bit
+in intern_reg.
 
-This would make such a nice tracepoint or sw perf event. It could be collected in a 
-'count' form, equivalent to the stats you are aiming for here, or it could even be 
-traced, if someone is interested in such details.
+Userspace can use HIEISR to re-enable the interrupt.
 
-It could be mixed with other events, enriching multiple apps at once.
+> > +	spin_unlock_irq(&lock);
+> > +	return IRQ_HANDLED;
+> > +}
+> > +
+> > +static int pruss_irqcontrol(struct uio_info *info, s32 irq_on)
+> > +{
+> > +	int intr_bit = info->irq - IRQ_DA8XX_EVTOUT0 + 2;
+> > +	int val, intr_mask = (1 << intr_bit);
+> > +	void __iomem *base = info->mem[0].internal_addr;
+> > +	void __iomem *intren_reg = base + PINTC_HIER;
+> > +
+> > +	spin_lock_irq(&lock);
+> 
+> This one is correct, as this is always called from non interrupt
+> disabled context.
+> 
+> > +	val = ioread32(intren_reg);
+> > +	if (irq_on)
+> > +		iowrite32((val | intr_mask), intren_reg);
+> > +	else
+> > +		iowrite32((val & ~intr_mask), intren_reg);
+> > +	spin_unlock_irq(&lock);
+> > +
+> > +	return 0;
+> > +}
+> 
+> 
+> > +
+> > +	spin_lock_init(&lock);
+> 
+> Sigh. DEFINE_SPINLOCK(lock); already initializes the lock.
+> 
+> It's not the purpose of a review to tell you what you need to change
+> mechanically. Reviewers hint to a correct solution and you are
+> supposed to lookup what that solution means and act accordingly. If
+> you do not understand the hint or its implications please ask _before_
+> sending a new patch set.
 
-But, instead of trying to improve those aspects of our existing instrumentation 
-frameworks, mm/* is gradually growing its own special instrumentation hacks, missing 
-the big picture and fragmenting the instrumentation space some more.
+Seriously, I went to "fix the comments" mode. Sorry about that. Anyway
+I learnt more about things by making mistakes i.e. the positive side.
+Thanks a lot for helping us improve on this. 
 
-That trend is somewhat sad.
-
-Thanks,
-
-	Ingo
+Pratheesh
