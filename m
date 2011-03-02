@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab1CBUhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:37:41 -0500
-Received: from kroah.org ([198.145.64.141]:47615 "EHLO coco.kroah.org"
+	id S1756922Ab1CBUik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:38:40 -0500
+Received: from tex.lwn.net ([70.33.254.29]:49052 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002Ab1CBUhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:37:40 -0500
-Date: Wed, 2 Mar 2011 15:38:23 -0500
-From: Greg KH <greg@kroah.com>
-To: Kumba <kumba@gentoo.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Can I nest kobjects to create directories under parent
- directories for my driver?
-Message-ID: <20110302203823.GA18879@kroah.com>
-References: <4D6C68A4.3020306@gentoo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6C68A4.3020306@gentoo.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754696Ab1CBUij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:38:39 -0500
+Date: Wed, 2 Mar 2011 13:38:35 -0700
+From: Jake Edge <jake@lwn.net>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
+        mirqus@gmail.com, netdev@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
+        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
+        eugene@redhat.com, dan.j.rosenberg@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
+ kernel modules
+Message-ID: <20110302133835.5e267e9e@chukar>
+In-Reply-To: <20110302201807.GA31965@albatros>
+References: <201102272122.52643.arnd@arndb.de>
+	<4D6B6AE7.2050202@msgid.tls.msk.ru>
+	<20110228095133.GA4351@albatros>
+	<20110228.112349.104067277.davem@davemloft.net>
+	<20110301194845.GA3533@albatros>
+	<1299010390.2529.30.camel@bwh-desktop>
+	<20110301213313.GA6507@albatros>
+	<m34o7ltipi.fsf@lwn.net>
+	<20110302194354.GA31043@albatros>
+	<20110302124936.289a1915@chukar>
+	<20110302201807.GA31965@albatros>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 28, 2011 at 10:31:48PM -0500, Kumba wrote:
-> So I'm attempting to write my first kernel driver for an RTC chip
-> (Dallas/Maxim DS1685/DS1687), and running into a problem with using
-> sysfs properly.  First off, a patch for this specific RTC was sent
-> int to rtc-linux about two years ago, but never made it anywhere.  I
-> based off of that and have pretty much re-written the thing since
-> then.  It's undergoing a second re-write after some initial feedback
-> from the rtc-linux folks.
+On Wed, 2 Mar 2011 23:18:07 +0300 Vasiliy Kulikov wrote:
+
+> > and on systems that today use CAP_SYS_MODULE
 > 
-> What I'm trying to do, is, in sysfs, create individual attributes
-> for the bits in each control register.  DS1685 defines 6 control
-> registers (4 are the standard DS1286-style, and 2 are "extended" in
-> another address bank).
+> Since Linux 2.6.32 CAP_SYS_MODULE may not load modules via "ifconfig
+> gre0".  It was changed to CAP_NET_ADMIN.  So nothing is broken here.
 > 
-> I want to organize it such that:
+> > (or really the full set of
+> > capabilities cuz they are running as root)?
 > 
-> # ls /sys/devices/platform/rtc-ds1685/
-> driver@  misc/  modalias  nvram  regs/  rtc/  subsystem@  uevent
-> 
-> And in regs/:
-> ctrla/  ctrlb/  ctrlc/  ctrld/  ctrl4a/  ctrl4b/
+> As root has CAP_NET_ADMIN, the alias netdev-gre0 is tried and it
+> succeeds.
 
-That's nice, but it really isn't a good idea to do things this deep.
-Userspace tools will not be able to find things properly (like libudev)
-and your kernel code will get very messy (as you have found out.)
+(I feel like I'm beating a dead horse here, sorry if so ...)
 
-Why not look at how the other rtc drivers work, they don't nest things
-this deep and you need to sick with the standard userspace api and not
-invent a new one if at all possible.
+If I have a setuid-root program today that loads ip_gre by using the
+alias "gre0", and I run that program on a kernel with this change,
+won't it fail because the "gre0" alias is missing?  That program
+doesn't know to try "netdev-gre0". i.e. won't backward compatibility be
+affected by this change?
 
-But to answer your question, you can do this, but I strongly discourage
-it.
+jake
 
-good luck,
-
-greg k-h
+-- 
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
