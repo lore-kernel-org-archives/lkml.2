@@ -1,88 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1CBORB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 09:17:01 -0500
-Received: from www.tglx.de ([62.245.132.106]:36911 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab1CBORA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 09:17:00 -0500
-Date: Wed, 2 Mar 2011 15:16:34 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Ahern <daahern@cisco.com>
-cc: linux-perf-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        acme@ghostprotocols.net, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 3/6] perf record: add time-of-day option
-In-Reply-To: <1298865151-23656-4-git-send-email-daahern@cisco.com>
-Message-ID: <alpine.LFD.2.00.1103012359460.2701@localhost6.localdomain6>
-References: <1298865151-23656-1-git-send-email-daahern@cisco.com> <1298865151-23656-4-git-send-email-daahern@cisco.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752767Ab1CBORa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 09:17:30 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:36980 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab1CBOR3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 09:17:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=isahNcmNc2QMsfEsvvFjHY6HASfEaj3DO7uS0A8/lzL3boVbMC2hqi/GW0E+vCfx3A
+         LcqbQ/guamcLtCiWgxQA==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1299072424.2175.24.camel@localhost>
+References: <1299072424.2175.24.camel@localhost>
+Date: Wed, 2 Mar 2011 15:17:24 +0100
+Message-ID: <AANLkTinGUyQCS-T=jTSyr7uv_wGT9JBpvNLs7VH=-Gax@mail.gmail.com>
+Subject: Re: [PATCH v3 -tip/perf/urgent] perf: x86, add SandyBridge support
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Feb 2011, David Ahern wrote:
-
-> Enable data collection for generating time-of-day strings when
-> printing individual perf samples. This is done by sampling the
-> realtime clock event with the perf_clock time stamps.
-> 
-> If the realtime-clock event is not available (e.g, older kernels)
-> fallback to a synthesized event. (I realize there is resistance
-> to new synthesized events, but it is a simple way to gain this
-> feature on older kernels without the need to modify the kernel
-> code).
-
-...
-  
-> +/* add a sample to the event stream based on user request */
-> +static int perf_event_generate_sample(struct perf_event *event)
+On Wed, Mar 2, 2011 at 2:27 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> This patch adds basic SandyBridge support, including hardware cache
+> events and PEBS events support.
+>
+> v2 -> v3:
+> - fix PEBS event 0xd0 with right umask combinations
+> - move snb pebs constraint assignment to intel_pmu_init
+>
+> v1 -> v2:
+> - add more raw and PEBS events constraints
+> - use offcore events for LLC-* cache events
+> - remove the call to Nehalem workaround enable_all function
+>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c          |    4 +-
+>  arch/x86/kernel/cpu/perf_event_intel.c    |  124 +++++++++++++++++++++++++++++
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c |   38 +++++++++
+>  3 files changed, 165 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 9d977a2..390fa6d 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -166,8 +166,10 @@ struct cpu_hw_events {
+>  /*
+>  * Constraint on the Event code + UMask
+>  */
+> -#define PEBS_EVENT_CONSTRAINT(c, n)    \
+> +#define INTEL_UEVENT_CONSTRAINT(c, n)  \
+>        EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+> +#define PEBS_EVENT_CONSTRAINT(c, n)    \
+> +       INTEL_UEVENT_CONSTRAINT(c, n)
+>
+>  #define EVENT_CONSTRAINT_END           \
+>        EVENT_CONSTRAINT(0, 0, 0)
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 008835c..d00f386 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -76,6 +76,19 @@ static struct event_constraint intel_westmere_event_constraints[] =
+>        EVENT_CONSTRAINT_END
+>  };
+>
+> +static struct event_constraint intel_snb_event_constraints[] =
 > +{
-> +	struct perf_sample_data data;
-> +	struct pt_regs regs;
+> +       FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+> +       FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+> +       /* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
+> +       INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+> +       INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* OFF_CORE_RESPONSE_0 */
+> +       INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* OFF_CORE_RESPONSE_1 */
+> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+> +       EVENT_CONSTRAINT_END
+> +};
 > +
-> +	perf_fetch_caller_regs(&regs);
-> +	event->pmu->read(event);
-> +	perf_sample_data_init(&data, 0);
-> +	data.period = event->hw.last_period;
-> +	perf_event_output(event, 0, &data, &regs);
+>  static struct event_constraint intel_gen_event_constraints[] =
+>  {
+>        FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+> @@ -89,6 +102,106 @@ static u64 intel_pmu_event_map(int hw_event)
+>        return intel_perfmon_event_map[hw_event];
+>  }
+>
+> +static __initconst const u64 snb_hw_cache_event_ids
+> +                               [PERF_COUNT_HW_CACHE_MAX]
+> +                               [PERF_COUNT_HW_CACHE_OP_MAX]
+> +                               [PERF_COUNT_HW_CACHE_RESULT_MAX] =
+> +{
+> + [ C(L1D) ] = {
+> +       [ C(OP_READ) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0xf1d0, /* MEM_UOP_RETIRED.LOADS        */
+> +               [ C(RESULT_MISS)   ] = 0x0151, /* L1D.REPLACEMENT              */
+> +       },
+> +       [ C(OP_WRITE) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0xf2d0, /* MEM_UOP_RETIRED.STORES       */
+> +               [ C(RESULT_MISS)   ] = 0x0851, /* L1D.ALL_M_REPLACEMENT        */
+> +       },
+> +       [ C(OP_PREFETCH) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x0,
+> +               [ C(RESULT_MISS)   ] = 0x024e, /* HW_PRE_REQ.DL1_MISS          */
+> +       },
+> + },
+> + [ C(L1I ) ] = {
+> +       [ C(OP_READ) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x0,
+> +               [ C(RESULT_MISS)   ] = 0x0280, /* ICACHE.MISSES */
+> +       },
+> +       [ C(OP_WRITE) ] = {
+> +               [ C(RESULT_ACCESS) ] = -1,
+> +               [ C(RESULT_MISS)   ] = -1,
+> +       },
+> +       [ C(OP_PREFETCH) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x0,
+> +               [ C(RESULT_MISS)   ] = 0x0,
+> +       },
+> + },
+> + [ C(LL  ) ] = {
+> +       /*
+> +        * TBD: Need Off-core Response Performance Monitoring support
+> +        */
+> +       [ C(OP_READ) ] = {
+> +               /* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
+> +               [ C(RESULT_ACCESS) ] = 0x01b7,
+> +               /* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
+> +               [ C(RESULT_MISS)   ] = 0x01bb,
+> +       },
+> +       [ C(OP_WRITE) ] = {
+> +               /* OFFCORE_RESPONSE_0.ANY_RFO.LOCAL_CACHE */
+> +               [ C(RESULT_ACCESS) ] = 0x01b7,
+> +               /* OFFCORE_RESPONSE_1.ANY_RFO.ANY_LLC_MISS */
+> +               [ C(RESULT_MISS)   ] = 0x01bb,
+> +       },
+> +       [ C(OP_PREFETCH) ] = {
+> +               /* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
+> +               [ C(RESULT_ACCESS) ] = 0x01b7,
+> +               /* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
+> +               [ C(RESULT_MISS)   ] = 0x01bb,
+> +       },
+> + },
+> + [ C(DTLB) ] = {
+> +       [ C(OP_READ) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x81d0, /* MEM_UOP_RETIRED.ALL_LOADS */
+> +               [ C(RESULT_MISS)   ] = 0x0108, /* DTLB_LOAD_MISSES.CAUSES_A_WALK */
+> +       },
+> +       [ C(OP_WRITE) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x82d0, /* MEM_UOP_RETIRED.ALL_STORES */
+> +               [ C(RESULT_MISS)   ] = 0x0149, /* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
+> +       },
+> +       [ C(OP_PREFETCH) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x0,
+> +               [ C(RESULT_MISS)   ] = 0x0,
+> +       },
+> + },
+> + [ C(ITLB) ] = {
+> +       [ C(OP_READ) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x1085, /* ITLB_MISSES.STLB_HIT         */
+> +               [ C(RESULT_MISS)   ] = 0x0185, /* ITLB_MISSES.CAUSES_A_WALK    */
+> +       },
+> +       [ C(OP_WRITE) ] = {
+> +               [ C(RESULT_ACCESS) ] = -1,
+> +               [ C(RESULT_MISS)   ] = -1,
+> +       },
+> +       [ C(OP_PREFETCH) ] = {
+> +               [ C(RESULT_ACCESS) ] = -1,
+> +               [ C(RESULT_MISS)   ] = -1,
+> +       },
+> + },
+> + [ C(BPU ) ] = {
+> +       [ C(OP_READ) ] = {
+> +               [ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ALL_BRANCHES */
+> +               [ C(RESULT_MISS)   ] = 0x00c5, /* BR_MISP_RETIRED.ALL_BRANCHES */
+> +       },
+> +       [ C(OP_WRITE) ] = {
+> +               [ C(RESULT_ACCESS) ] = -1,
+> +               [ C(RESULT_MISS)   ] = -1,
+> +       },
+> +       [ C(OP_PREFETCH) ] = {
+> +               [ C(RESULT_ACCESS) ] = -1,
+> +               [ C(RESULT_MISS)   ] = -1,
+> +       },
+> + },
+> +};
 > +
-> +	return 0;
-> +}
-
-Errm. This is a generic ioctl to inject random events from user space.
-
-First of all this wants to be a separate patch and not burried into
-some 100 lines of changes to tools/perf.
-
-Secondly adding such an ioctl needs a pretty good reason, and the use
-case at hand is not really one.
-
-Reading through the other patches, your goal is to correlate
-CLOCK_REALTIME based logs to CLOCK_PERF based events.
-
-To achieve that you inject cyclic clock_realtime samples into the
-event stream and want to have this initial event inserted via the
-ioctl.
-
-How does all that deal with CLOCK_REALTIME being affected by NTP and
-settimeofday? Not really, as far as I can tell. It somehow works, but
-that depends on the frequency of your event injection.
-
-To be honest, that's just too much churn for a feature which is single
-purpose and questionable functionality.
-
-It would be far more interesting to have trace points in the
-timekeeping code, which are useful for other things as well
-(e.g. precise monitoring of NTP) and provide always a correct
-association with the trace clock. That would cover everything from
-frequency adjustments, clock setting including the information about
-the relation to clock monotonic.
-
-Thanks,
-
-	tglx
+>  static __initconst const u64 westmere_hw_cache_event_ids
+>                                [PERF_COUNT_HW_CACHE_MAX]
+>                                [PERF_COUNT_HW_CACHE_OP_MAX]
+> @@ -1062,6 +1175,17 @@ static __init int intel_pmu_init(void)
+>                pr_cont("Westmere events, ");
+>                break;
+>
+> +       case 42: /* SandyBridge */
+> +               memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+> +                      sizeof(hw_cache_event_ids));
+> +
+> +               intel_pmu_lbr_init_nhm();
+> +
+> +               x86_pmu.event_constraints = intel_snb_event_constraints;
+> +               x86_pmu.pebs_constraints = intel_snb_pebs_events;
+> +               pr_cont("SandyBridge events, ");
+> +               break;
+> +
+>        default:
+>                /*
+>                 * default constraints for v2 and up
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index b7dcd9f..8251998 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -388,6 +388,44 @@ static struct event_constraint intel_nehalem_pebs_events[] = {
+>        EVENT_CONSTRAINT_END
+>  };
+>
+> +static struct event_constraint intel_snb_pebs_events[] = {
+> +       PEBS_EVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> +       PEBS_EVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> +       PEBS_EVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> +       PEBS_EVENT_CONSTRAINT(0x01c4, 0xf), /* BR_INST_RETIRED.CONDITIONAL */
+> +       PEBS_EVENT_CONSTRAINT(0x02c4, 0xf), /* BR_INST_RETIRED.NEAR_CALL */
+> +       PEBS_EVENT_CONSTRAINT(0x04c4, 0xf), /* BR_INST_RETIRED.ALL_BRANCHES */
+> +       PEBS_EVENT_CONSTRAINT(0x08c4, 0xf), /* BR_INST_RETIRED.NEAR_RETURN */
+> +       PEBS_EVENT_CONSTRAINT(0x10c4, 0xf), /* BR_INST_RETIRED.NOT_TAKEN */
+> +       PEBS_EVENT_CONSTRAINT(0x20c4, 0xf), /* BR_INST_RETIRED.NEAR_TAKEN */
+> +       PEBS_EVENT_CONSTRAINT(0x40c4, 0xf), /* BR_INST_RETIRED.FAR_BRANCH */
+> +       PEBS_EVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+> +       PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
+> +       PEBS_EVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+> +       PEBS_EVENT_CONSTRAINT(0x10c5, 0xf), /* BR_MISP_RETIRED.NOT_TAKEN */
+> +       PEBS_EVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.TAKEN */
+> +       PEBS_EVENT_CONSTRAINT(0x01cd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+> +       PEBS_EVENT_CONSTRAINT(0x02cd, 0x8), /* MEM_TRANS_RETIRED.PRECISE_STORE */
+> +       PEBS_EVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_LOADS */
+> +       PEBS_EVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_STORES */
+> +       PEBS_EVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOP_RETIRED.LOCK_LOADS */
+> +       PEBS_EVENT_CONSTRAINT(0x22d0, 0xf), /* MEM_UOP_RETIRED.LOCK_STORES */
+> +       PEBS_EVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOP_RETIRED.SPLIT_LOADS */
+> +       PEBS_EVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOP_RETIRED.SPLIT_STORES */
+> +       PEBS_EVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOP_RETIRED.ANY_LOADS */
+> +       PEBS_EVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOP_RETIRED.ANY_STORES */
+> +       PEBS_EVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+> +       PEBS_EVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+> +       PEBS_EVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
+> +       PEBS_EVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
+> +       PEBS_EVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
+> +       PEBS_EVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
+> +       PEBS_EVENT_CONSTRAINT(0x04d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HITM */
+> +       PEBS_EVENT_CONSTRAINT(0x08d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_NONE */
+> +       PEBS_EVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
+> +       EVENT_CONSTRAINT_END
+> +};
+> +
+Why didn't you use INTEL_EVENT_CONSTRAINT() for the events where all
+umasks support
+PEBS? This is what I did in my PEBS patch.
