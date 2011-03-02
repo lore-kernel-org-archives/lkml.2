@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1CBHIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 02:08:38 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:6459 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab1CBHIh convert rfc822-to-8bit (ORCPT
+	id S1753470Ab1CBHK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 02:10:59 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49936 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab1CBHK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 02:08:37 -0500
+	Wed, 2 Mar 2011 02:10:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hiJ5uT1W5X8Sw5UnKiz47CKy7BB0xNKbCj1DsHLmuXWjr+du0hlOPoU+yHYUAVnsgT
-         b04hG6H4y0WMzmOxcvEA==
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=G7QQM4Qu55rKAbJt8EedIfYqjpfN3b6Bui3hN1jD8mP2zF4V1GTjH3uuPEW7nG+AG6
+         styAppyBnPHZcVL/XDiAuiI02/U6r0ApKgoyQC6bevUeUQqlKTpKPgcozXlrb3fi3F6z
+         6pqTyimufUDMh+2ksEClsEXUGryvz3gNt6Ixg=
+Date: Wed, 2 Mar 2011 08:10:52 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110302071052.GA19669@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+ <201103011757.48593.vda.linux@googlemail.com>
+ <20110301170953.GB17933@htj.dyndns.org>
+ <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
+ <20110301183454.GC23527@mtj.dyndns.org>
+ <AANLkTikC=EETfwN+Se+KyETP12nxDGmWSQth_UFS36tJ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1299048447.11469.22.camel@marge.simson.net>
-References: <1299022433-17233-1-git-send-email-venki@google.com>
- <AANLkTinyAyXCH6sh9pOe36dCeTO_C8wbtmZriKanGtt3@mail.gmail.com> <1299048447.11469.22.camel@marge.simson.net>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 1 Mar 2011 23:08:05 -0800
-Message-ID: <AANLkTimhfvoKWdYJtxQLWhBwfSvZ3jGy7EXX_YSn_HLr@mail.gmail.com>
-Subject: Re: [PATCH] sched: next buddy hint on sleep and preempt path
-To: Mike Galbraith <efault@gmx.de>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikC=EETfwN+Se+KyETP12nxDGmWSQth_UFS36tJ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 1, 2011 at 10:47 PM, Mike Galbraith <efault@gmx.de> wrote:
-> On Tue, 2011-03-01 at 21:43 -0800, Paul Turner wrote:
->> On Tue, Mar 1, 2011 at 3:33 PM, Venkatesh Pallipadi <venki@google.com> wrote:
->
->> >        for_each_sched_entity(se) {
->> >                cfs_rq = cfs_rq_of(se);
->> >                dequeue_entity(cfs_rq, se, flags);
->> >
->> >                /* Don't dequeue parent if it has other entities besides us */
->> > -               if (cfs_rq->load.weight)
->> > +               if (cfs_rq->load.weight) {
->> > +                       /*
->> > +                        * Bias pick_next to pick a task from this cfs_rq, as
->> > +                        * p is sleeping when it is within its sched_slice.
->> > +                        */
->> > +                       if (task_flags & DEQUEUE_SLEEP && se->parent)
->> > +                               set_next_buddy(se->parent);
->>
->> re-using the last_buddy would seem like a more natural fit here; also
->> doesn't have a clobber race with a wakeup
->
-> Hm, that would break last_buddy no?  A preempted task won't get the CPU
-> back after light preempting thread deactivates.  (it's disabled atm
-> unless heavily overloaded anyway, but..)
+Hello, Denys.
 
-Ommm yeah.. we're actually a little snookered in this case since the
-pre-empting thread's sleep will be voluntary which will try to return
-time to its hierarchy.
+On Wed, Mar 02, 2011 at 12:51:24AM +0100, Denys Vlasenko wrote:
+> > Maybe it should, maybe not, but that's mostly irrelevant because the
+> > described behavior is the current behavior.
+> 
+> This is not a good argument. We are in this discussion exactly because
+> there are cases of current behavior in strace and gdb which are clearly
+> wrong and which we want to change. Therefore, "it's the current
+> behavior" does not automatically mean it is desired behavior.
 
-I suppose keeping the last_buddy is preferable to the occasional clobber.
+That actually is the whole point of the proposal and the only viable
+way to proceed.  We shouldn't change the kernel so that gdb somehow
+magically changes its behavior to fit someone's "should"s.  We fix the
+bugs and provide new features which future versions of strace and gdb
+can take advantage of to implement better behavior.
 
->
-> This wants a tweak either way though.
->
-> static inline struct task_struct *task_of(struct sched_entity *se)
-> {
-> #ifdef CONFIG_SCHED_DEBUG
->        WARN_ON_ONCE(!entity_is_task(se));
-> #endif
->        return container_of(se, struct task_struct, se);
-> }
->
-> static void set_next_buddy(struct sched_entity *se)
-> {
->        if (likely(task_of(se)->policy != SCHED_IDLE)) {
->                for_each_sched_entity(se)
->                        cfs_rq_of(se)->next = se;
->        }
-> }
->
+So, _NO_, we don't want to make things work magically.
 
-yeah good catch, the if's do need to be broken out so that setting
-buddies it works properly with non-task entities
+> > There is no
+> > continue-if-not-job-control-stopped operation and we shouldn't change
+> > that beneath gdb
+> 
+> I feel that "continue" is meant to be such operation. Currently
+> it is not merely because ptrace is buggy.
 
->
+Again, that's _YOUR_ feeling.  I feel differently and what you or I
+feel ultimately is irrelevant because that's a very user-visible
+behavior.  We CAN'T change that.  What we can do is providing
+mechanisms to userland so that they can implement what they think is
+appropriate.
+
+If gdb maintainers think cont should obey job control, fine, but
+that's gdb's decision to make.  e.g. gdb can be updated to inform the
+user that the tracee entered job control stop instead and ask what the
+user wants to do - wait, resume the tracee or send SIGCONT, but these
+decisions don't belong in the kernel and we definitely can't and
+shouldn't make that happen beneath gdb.
+
+> There is already continue-no-matter-what command in gdb:
+> 
+> (gdb) signal SIGCONT
+
+Whatever, it doesn't matter.  That's not the current mode of operation
+people are used to.  People expect the tracee to resume execution no
+matter which condition it was in when they type cont and press enter.
+That's it.
+
+> > because otherwise not only the behavior changes
+> > unexpectedly
+> 
+> "strace no longer breaks ^Z" is also an unexpected
+> change in behavior. This doesn't mean we should avoid it,
+> right?
+
+The proposal doen't change that either.  It _PROVIDES_ ways to
+implement better behavior.  It doesn't magically change the existing
+behaviors.  That's the whole frigging point.
+
+> Bottom line is: I am not trying to shoot your proposal down.
+> It looks good to me.
+> 
+> I am only discussing it in more detail from the userspace API
+> POV and from "what changes will be needed in strace and gdb?"
+> and "what improvements in strace and gdb are becoming possible
+> with this proposal, and how exactly to implement them there?"
+> POVs.
+
+If you were arguing "what change will be needed in userland", we
+wouldn't be arguing at all.  You're arguing about changing existing
+behavior beneath the current users.  If you're trying to do the
+former, I gotta pull a SJ here, you're doing it wrong.
+
+Thanks.
+
+-- 
+tejun
