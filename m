@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab1CAXyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 18:54:44 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:59664 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757059Ab1CAXym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 18:54:42 -0500
-Date: Tue, 1 Mar 2011 18:54:33 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: dj@deadhat.com, linux-kernel@vger.kernel.org, gregkh@suse.de
-Subject: Re: Why is my copyright code in the linux kernel?
-Message-ID: <20110301235433.GD2959@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	richard -rw- weinberger <richard.weinberger@gmail.com>,
-	dj@deadhat.com, linux-kernel@vger.kernel.org, gregkh@suse.de
-References: <ded07e5c09d72da478c6218658095f5a.squirrel@deadhat.com>
- <AANLkTimg1x56B4Yu=Zsd0VEci2i4jRKaMU+gxv3oFVr8@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimg1x56B4Yu=Zsd0VEci2i4jRKaMU+gxv3oFVr8@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1756983Ab1CBACa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 19:02:30 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:45055 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756799Ab1CBAC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 19:02:28 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Tue, 01 Mar 2011 19:02:27 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Will Deacon <will.deacon@arm.com>, David Brown <davidb@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/4] msm: scm: Fix improper register assignment
+In-reply-to: <4D6D652A.5050502@codeaurora.org>
+Message-id: <alpine.LFD.2.00.1103011858370.6799@xanadu.home>
+References: <1298573085-23217-1-git-send-email-sboyd@codeaurora.org>
+ <1298573085-23217-3-git-send-email-sboyd@codeaurora.org>
+ <1298640219.958.74.camel@e102144-lin.cambridge.arm.com>
+ <4D688AF1.1090607@codeaurora.org>
+ <20110226084736.GB3640@n2100.arm.linux.org.uk>
+ <8yazkpi3cfa.fsf@huya.qualcomm.com>
+ <alpine.LFD.2.00.1102261452340.22034@xanadu.home>
+ <1298975837.7828.9.camel@e102144-lin.cambridge.arm.com>
+ <4D6D652A.5050502@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 12:30:45AM +0100, richard -rw- weinberger wrote:
-> > You will see a remarkable resemblance to parts of
-> > linux-2.6.36.2/drivers/staging/rt2860/common/cmm_aes.c. E.G. the AES code,
+On Tue, 1 Mar 2011, Saravana Kannan wrote:
+
+> On 03/01/2011 02:37 AM, Will Deacon wrote:
+> > Perhaps a more robust fix would be to remove the register int
+> > declarations and handle the parameter marshalling in the same asm block
+> > that contains the smc?
 > 
-> please note, this is a staging driver.
+> I was thinking the same, but the opposing idea I heard was that not doing it
+> inside the asm block would allow GCC to be make better use of the registers.
 
-It's not even the primary driver.  Is there anything that this driver
-provides that isn't provided by the upstream supported, mainline
-rt2x00 project?  I.e., can we just delete the staging driver?
+Indeed.  And a significant body of code out there does rely on this gcc 
+feature, so it has to minimally work.
 
-If we are going to keep the staging driver for some reason, one of the
-things that should be added to the TODO list would be delete its
-driver-specific AES code and replace it with calls to the kernel's
-generic AES code, which among other things, has the advantage that it
-can take advantage of the AES-NI instructions provided on more modern
-x86 CPU's.
+> Didn't have a strong opinion either way, so we went with the implementation
+> that was sent out.
 
-> > I'd like to know who is an appropriate person to discuss this with.
-> 
-> the code is from ralink.
+ACK.
 
-David, you might want to contact ralink directly, since it's likely
-they are distributing that driver with your AES code in other places
-besides just in the mainstream kernel sources.  Even if we delete the
-code in the staging tree, they might be distributing that driver still
-via other means.
 
-Regards,
-
-						- Ted
+Nicolas
