@@ -1,129 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab1CBRfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 12:35:33 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:55368 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751940Ab1CBRfb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 12:35:31 -0500
-From: Peppe CAVALLARO <peppe.cavallaro@st.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Stuart MENEFY <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Date: Wed, 2 Mar 2011 18:35:19 +0100
-Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Thread-Topic: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Thread-Index: AcvZADN037X4YYXhT8mam3GtFiM/xQ==
-Message-ID: <4D6E7FD7.1060408@st.com>
-References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com>
- <1298369864-24429-2-git-send-email-peppe.cavallaro@st.com>
- <201102241820.55873.arnd@arndb.de> <4D6D0EA3.9000504@st.com>
- <alpine.LFD.2.00.1103011630080.2701@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1103011630080.2701@localhost6.localdomain6>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-enigmail-version: 1.1.1
-user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13)
- Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-openpgp: url=wwwkeys.bri.st.com
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1756281Ab1CBRgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 12:36:14 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:33371 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751940Ab1CBRgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 12:36:13 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18OIbZM8QYOEUsf4Djk6Oe51Pvs5nEOiHLHsEwgQZ
+	PFHTac1hF4Ns0n
+From: =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: gregkh@suse.de
+Cc: haiyangz@microsoft.com, hjanssen@microsoft.com,
+        linux-kernel@vger.kernel.org, toralf.foerster@gmx.de
+Subject: [PATCH] ./drivers/staging/hv/netvsc_drv.c: no assignment within if + whitespace clean up
+Date: Wed,  2 Mar 2011 18:36:07 +0100
+Message-Id: <1299087367-7580-1-git-send-email-toralf.foerster@gmx.de>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello and many thanks to All for your feedback.
+This patch fixes all complaints of checkpatch.pl.
 
-On 3/1/2011 5:48 PM, Thomas Gleixner wrote:
->
-> On Tue, 1 Mar 2011, Stuart Menefy wrote:
-> > On 24/02/11 17:20, Arnd Bergmann wrote:
-> > > On Tuesday 22 February 2011, Peppe CAVALLARO wrote:
-> > >> From: Stuart Menefy <stuart.menefy@st.com>
-> > >>
-> > >> Many devices targeted at the embedded market provide a number of
-> > >> generic timers which are capable of generating interrupts at a
-> > >> requested rate. These can then be used in the implementation of
-> drivers
-> > >> for other peripherals which require a timer interrupt, without having
-> > >> to provide an additional timer as part of that peripheral.
->
-> Why can't you just use an hrtimer and be done with it? Just because
-> there is some extra hardware in the chip?
->
-> > If anything this duplicates clockevents. The main reason for not using
-> > clockevents was that nobody else does! Currently clockevents are
-> > used strictly for time keeping within the kernel, and most architectures
-> > only register those which are intended to be used for this purpose.
-> > We felt a bit nervous about adding code to register all the device's
-> timers
-> > as clockevents, and having the network device driver pick up one of
-> those
-> > for its own use.
->
-> We had this discussion before and there was never an real outcome as
-> it turned out that hrtimers provide enough abstraction for this kind
-> of problems.
->
-> > True. The intent was that this would be a third interface onto timer
-> > hardware, alongside clocksources and clockevents.
-> >
-> > > I don't know if this could also be merged with the clocksource
-> infrastructure,
-> > > but your code currently doesn't do that.
-> >
-> > It would probably be clockevent rather than clocksource, but it
-> could be if
-> > people felt that was a better way to go.
->
-> If we get some reasonable explanation why an extra timer interrupt is
-> solving a specific problem better than hrtimers we can do that, but
-> that needs more thought than picking the first available clockevent
-> from a list. If we come to the conclusion, that we want/need this kind
-> of functionality then I really prefer not to create yet another piece
-> of infrastructure which deals with timer devices.
->
+A typo slipped in in the 1st attempt of this patch.
+This patch corrects it.
 
-The initial/main usage of this code was to provide
-an interrupt timer to handle the rx/tx processes in
-the stmmac Ethernet d.d.
+Signed-off-by: Toralf Förster <toralf.foerster@gmx.de>
+---
+ drivers/staging/hv/netvsc_drv.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Some Ethernet devices have embedded timer
-used for mitigating the number of their DMA interrupts.
-So, to be frankly, my first idea was to use an
-extra HW (SH4 TMU channel 2), unused on our platforms,
-because our MAC hadn't something like that.
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index b41c964..2f3a9e9 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -126,8 +126,9 @@ static void netvsc_xmit_completion(void *context)
+ 
+ 		dev_kfree_skb_any(skb);
+ 
+-		if ((net_device_ctx->avail += num_pages) >= PACKET_PAGES_HIWATER)
+- 			netif_wake_queue(net);
++		net_device_ctx->avail += num_pages;
++		if (net_device_ctx->avail >= PACKET_PAGES_HIWATER)
++			netif_wake_queue(net);
+ 	}
+ }
+ 
+@@ -207,7 +208,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 			   net->stats.tx_packets,
+ 			   net->stats.tx_bytes);
+ 
+-		if ((net_device_ctx->avail -= num_pages) < PACKET_PAGES_LOWATER)
++		net_device_ctx->avail -= num_pages;
++		if (net_device_ctx->avail < PACKET_PAGES_LOWATER)
+ 			netif_stop_queue(net);
+ 	} else {
+ 		/* we are shutting down or bus overloaded, just drop packet */
+-- 
+1.7.4.1
 
-I'm not sure if other Ethernet drivers use hrtimer for
-handling the whole rx/tx processes (on CC the net-2.6 ML:
-please correct me if I'm wrong) and if this could have
-impact on the performances or reliability of the network
-activity (pkt loss%).
-
-At any rate, I am happy to use the stmmac as experimental
-driver to do this kind tests.
-Indeed, in the past, on old Kernel (IIRC 2.6.23), I tried to use
-the kernel timers but I removed the code from it because
-I had noticed packets loss and a strange phenomenon with cyclesoak
-(that showed broken sysload % during the heavy network activities).
-
-Let me know how to proceed:
-
-1) experiment with stmmac and hrtimer for handling rx/tx?
-2) rework the patches for the Generic Timer Infra?
-
-Best Regards,
-Peppe
-
-> Thanks,
->
->         tglx
->
