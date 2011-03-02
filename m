@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab1CBPzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 10:55:36 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52357 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab1CBPzf (ORCPT
+	id S1754756Ab1CBPzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 10:55:55 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46722 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1CBPzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 10:55:35 -0500
-Date: Wed, 2 Mar 2011 10:55:30 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the arm tree
-In-Reply-To: <20110303011335.7a8dc21a.sfr@canb.auug.org.au>
-Message-ID: <alpine.LFD.2.00.1103021049480.13483@xanadu.home>
-References: <20110303011335.7a8dc21a.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 2 Mar 2011 10:55:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=LuxMehg9vasT0ZByQ6O3R7CZWTxWY0wSwtwKAFLgS0kmSUDybGydqCZZ2njqmIlt8i
+         /ALK45EuVchx6twx0XAQSIBkwYFsK1CsoSpMezWIlFsHEliDIjCwbeloSHL/9IbhKf9R
+         QwFHSJ448wFMIyy293nVEccYyVhwtrf7Enbrg=
+Message-ID: <4D6E6886.2060707@openvz.org>
+Date: Wed, 02 Mar 2011 18:55:50 +0300
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ingo Molnar <mingo@elte.hu>
+CC: Don Zickus <dzickus@redhat.com>, "Huang, Ying" <ying.huang@intel.com>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip 2/2 resend] x86, traps: Drop nmi_reason_lock until
+ it is really needed
+References: <4D6E631B.6040701@openvz.org> <20110302154645.GA11827@elte.hu>
+In-Reply-To: <20110302154645.GA11827@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Mar 2011, Stephen Rothwell wrote:
-
-> Hi Russell,
+On 03/02/2011 06:46 PM, Ingo Molnar wrote:
 > 
-> After merging the final tree, the linux-next 20110228 build (lots of arm
-> configs) failed like this:
+> * Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 > 
-> stat: cannot stat `arch/arm/boot/compressed/../Image': No such file or directory
-> gcc-4.4.0-nolibc/arm-linux/bin/arm-linux-ld:--defsym _image_size=: syntax error
+>> At moment we have only BSP apic configured to listen
+>> for external NMIs. So there is no reason for additional
+>> spinlock since only BSP will receive them.
+>>
+>> Though we still have UV chips which do enable external NMIs
+>> on all cpus, but since an approach to allow retrieving
+>> NMI reason on BSP only was working pretty fine before --
+>> I assume it still remains valid.
 > 
-> Presumably caused by commit d239b1dc093d551046a909920b5310c1d1e308c1
-> ("ARM: 6746/1: remove the 4x expansion presumption while decompressing
-> the kernel").
+> I'm not sure I get the point here: we might get NMIs on non-BSP on UV
+> systems ... so we want to remove the spinlock?
+> 
+> If UV systems can get NMIs on any CPU then the lock is needed.
+> 
+> It might have worked before - but UV systems are rare and relatively
+> new - plus the race window is small, so it might not have been triggered
+> in practice.
 
-The fix would be this:
+  Well, it is incomplete anyway. As far as I can tell even ordering such
+NMIs with spinlock would not make situation better 'cause other cpu might
+obtain unknown nmi (ie two or more cpu's gets NMI then handing started on
+first found that it was say MCE error, handle it, unlock spinlock and then
+the second cpu gets this nmi (the reason for which was already handled by
+first cpu) and sees unknown NMI. So this lock might simply hiding a bug.
+Of course I might be missing something.
 
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index 9d328be..3c0c68f 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -84,7 +84,7 @@ EXTRA_CFLAGS  := -fpic -fno-builtin
- EXTRA_AFLAGS  := -Wa,-march=all
- 
- # Provide size of uncompressed kernel to the decompressor via a linker symbol.
--LDFLAGS_vmlinux := --defsym _image_size=$(shell stat -c "%s" $(obj)/../Image)
-+LDFLAGS_vmlinux = --defsym _image_size=$(shell stat -c "%s" $(obj)/../Image)
- # Supply ZRELADDR to the decompressor via a linker symbol.
- ifneq ($(CONFIG_AUTO_ZRELADDR),y)
- LDFLAGS_vmlinux += --defsym zreladdr=$(ZRELADDR)
+> 
+>> Also it's worth to mention that an initial idea of all this
+>> NMI code-path changes was to make BSP hot-unpluggable but
+>> until all other parts of kernel is prepared for it (which
+>> might consume quite a time to implement) I believe we should
+>> not lock/unlock for nothing.
+> 
+> That would be another argument in favor of keeping the lock, right?
 
-Russell: can you fold this fix in the original patch, or do you prefer I 
-send you this fix separately?
+Yes, but I think this lock should be the last thing which is introduced,
+after all other parts of kernel are ready for bsp unplug.
+
+> 
+> Thanks,
+> 
+> 	Ingo
 
 
-Nicolas
+-- 
+    Cyrill
