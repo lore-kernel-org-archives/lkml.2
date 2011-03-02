@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1CBQYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 11:24:20 -0500
-Received: from xenotime.net ([184.105.210.51]:53557 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752077Ab1CBQYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 11:24:18 -0500
-Date: Wed, 2 Mar 2011 08:24:12 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Liu Yuan <namei.unix@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jaxboe@fusionio.com,
-        akpm@linux-foundation.org, fengguang.wu@intel.com
-Subject: Re: [RFC PATCH 1/5] x86/Kconfig: Add Page Cache Accounting entry
-Message-Id: <20110302082412.87f153ba.rdunlap@xenotime.net>
-In-Reply-To: <1299055090-23976-1-git-send-email-namei.unix@gmail.com>
-References: <no>
-	<1299055090-23976-1-git-send-email-namei.unix@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754816Ab1CBQZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 11:25:49 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56850 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752077Ab1CBQZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 11:25:48 -0500
+Date: Wed, 2 Mar 2011 08:24:53 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jan Beulich <JBeulich@novell.com>, shaohua.li@intel.com,
+        tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [tip:x86/mm] x86: Work around old gas bug
+Message-Id: <20110302082453.934f2033.akpm@linux-foundation.org>
+In-Reply-To: <20110302104144.GB25608@elte.hu>
+References: <201103012352.p21NqRN1006974@imap1.linux-foundation.org>
+	<tip-253d89d3dd6b65595f317e5f1ecef43aa207a3a0@git.kernel.org>
+	<4D6E2B8B02000078000347C0@vpn.id2.novell.com>
+	<20110302104144.GB25608@elte.hu>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,46 +28,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Mar 2011 16:38:06 +0800 Liu Yuan wrote:
+On Wed, 2 Mar 2011 11:41:44 +0100 Ingo Molnar <mingo@elte.hu> wrote:
 
-> From: Liu Yuan <tailai.ly@taobao.com>
-> 
-> Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
-> ---
->  arch/x86/Kconfig.debug |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-> index 615e188..f29e32d 100644
-> --- a/arch/x86/Kconfig.debug
-> +++ b/arch/x86/Kconfig.debug
-> @@ -304,4 +304,13 @@ config DEBUG_STRICT_USER_COPY_CHECKS
->  
->  	  If unsure, or if you run an older (pre 4.4) gcc, say N.
->  
-> +config PAGE_CACHE_ACCT
-> +	bool "Page cache accounting"
-> +	---help---
-> +	  Enabling this options to account for page cache hit/missed number of
-> +	  times. This would allow user space applications get better knowledge
-> +	  of underlying page cache system by reading virtual file. The statitics
-> +	  per partition are collected.
-> +
-> +	  If unsure, say N.
->  endmenu
-> -- 
+> Meanwhile, what i hate more than ugly code repetition is code that does not build at 
+> all on akpm's test environment ;-)
 
-rewrite:
+I hadn't got around to testing it.  Bad news :(
 
-	  Enable this option to provide for page cache hit/miss counters.
-	  This allows userspace applications to obtain better knowledge of the
-	  underlying page cache subsystem by reading a virtual file.
-	  Statistics are collect per partition.
+x86_64 allmodconfig:
 
-questions:
-	what virtual file?
-	what kind of partition?
+arch/x86/kernel/entry_64.S: Assembler messages:
+arch/x86/kernel/entry_64.S:979: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:983: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:987: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:991: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:995: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:999: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1003: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1007: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1011: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1015: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1019: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1023: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1027: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1031: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1035: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1039: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1043: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1047: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1051: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1055: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1059: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1063: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1067: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1071: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1075: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1079: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1083: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1087: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1091: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1095: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1099: Error: too many positional arguments
+arch/x86/kernel/entry_64.S:1103: Error: too many positional arguments
+make[1]: *** [arch/x86/kernel/entry_64.o] Error 1
+make: *** [arch/x86/kernel/entry_64.o] Error 2
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+There much be some magic workaround for this within apicinterrupt but I
+didn't find it.
