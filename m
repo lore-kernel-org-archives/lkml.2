@@ -1,262 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab1CBN1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 08:27:11 -0500
-Received: from mga14.intel.com ([143.182.124.37]:55914 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab1CBN1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 08:27:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,253,1297065600"; 
-   d="scan'208";a="396326776"
-Subject: [PATCH v3 -tip/perf/urgent] perf: x86, add SandyBridge support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Mar 2011 21:27:04 +0800
-Message-Id: <1299072424.2175.24.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754006Ab1CBN2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 08:28:34 -0500
+Received: from trinity.develer.com ([83.149.158.210]:38340 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab1CBN2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 08:28:33 -0500
+Date: Wed, 2 Mar 2011 14:28:30 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
+Message-ID: <20110302132830.GB2061@linux.develer.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+ <20110228230114.GB20845@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110228230114.GB20845@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic SandyBridge support, including hardware cache
-events and PEBS events support.
+On Mon, Feb 28, 2011 at 06:01:14PM -0500, Vivek Goyal wrote:
+> On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
+> > Overview
+> > ========
+> > Currently the blkio.throttle controller only support synchronous IO requests.
+> > This means that we always look at the current task to identify the "owner" of
+> > each IO request.
+> > 
+> > However dirty pages in the page cache can be wrote to disk asynchronously by
+> > the per-bdi flusher kernel threads or by any other thread in the system,
+> > according to the writeback policy.
+> > 
+> > For this reason the real writes to the underlying block devices may
+> > occur in a different IO context respect to the task that originally
+> > generated the dirty pages involved in the IO operation. This makes the
+> > tracking and throttling of writeback IO more complicate respect to the
+> > synchronous IO from the blkio controller's perspective.
+> > 
+> > Proposed solution
+> > =================
+> > In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
+> > the problem of the buffered writes limitation by tracking the ownership of all
+> > the dirty pages in the system.
+> > 
+> > This would allow to always identify the owner of each IO operation at the block
+> > layer and apply the appropriate throttling policy implemented by the
+> > blkio.throttle controller.
+> > 
+> > This solution makes the blkio.throttle controller to work as expected also for
+> > writeback IO, but it does not resolve the problem of faster cgroups getting
+> > blocked by slower cgroups (that would expose a potential way to create DoS in
+> > the system).
+> > 
+> > In fact, at the moment critical IO requests (that have dependency with other IO
+> > requests made by other cgroups) and non-critical requests are mixed together at
+> > the filesystem layer in a way that throttling a single write request may stop
+> > also other requests in the system, and at the block layer it's not possible to
+> > retrieve such informations to make the right decision.
+> > 
+> > A simple solution to this problem could be to just limit the rate of async
+> > writes at the time a task is generating dirty pages in the page cache. The
+> > big advantage of this approach is that it does not need the overhead of
+> > tracking the ownership of the dirty pages, because in this way from the blkio
+> > controller perspective all the IO operations will happen from the process
+> > context: writes in memory and synchronous reads from the block device.
+> > 
+> > The drawback of this approach is that the blkio.throttle controller becomes a
+> > little bit leaky, because with this solution the controller is still affected
+> > by the IO spikes during the writeback of dirty pages executed by the kernel
+> > threads.
+> > 
+> > Probably an even better approach would be to introduce the tracking of the
+> > dirty page ownership to properly account the cost of each IO operation at the
+> > block layer and apply the throttling of async writes in memory only when IO
+> > limits are exceeded.
+> 
+> Andrea, I am curious to know more about it third option. Can you give more
+> details about accouting in block layer but throttling in memory. So say 
+> a process starts IO, then it will still be in throttle limits at block
+> layer (because no writeback has started), then the process will write
+> bunch of pages in cache. By the time throttle limits are crossed at
+> block layer, we already have lots of dirty data in page cache and
+> throttling process now is already late?
 
-v2 -> v3:
-- fix PEBS event 0xd0 with right umask combinations
-- move snb pebs constraint assignment to intel_pmu_init
+Charging the cost of each IO operation at the block layer would allow
+tasks to write in memory at the maximum speed. Instead, with the 3rd
+approach, tasks are forced to write in memory at the rate defined by the
+blkio.throttle.write_*_device (or blkio.throttle.async.write_*_device).
 
-v1 -> v2:
-- add more raw and PEBS events constraints
-- use offcore events for LLC-* cache events
-- remove the call to Nehalem workaround enable_all function
+When we'll have the per-cgroup dirty memory accounting and limiting
+feature, with this approach each cgroup could write to its dirty memory
+quota at the maximum rate.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- arch/x86/kernel/cpu/perf_event.c          |    4 +-
- arch/x86/kernel/cpu/perf_event_intel.c    |  124 +++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   38 +++++++++
- 3 files changed, 165 insertions(+), 1 deletions(-)
+BTW, another thing that we probably need is that any cgroup should be
+forced to write their own inodes when the limit defined by dirty_ratio
+is exceeded. I mean, avoid to select inodes from the list of dirty
+inodes in a FIFO way, but provides a better logic to "assign" the
+ownership of each inode to a cgroup (maybe that one that had generated
+most of the dirty pages in the inodes) and use for example a list of
+dirty inodes per cgroup or something similar.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 9d977a2..390fa6d 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -166,8 +166,10 @@ struct cpu_hw_events {
- /*
-  * Constraint on the Event code + UMask
-  */
--#define PEBS_EVENT_CONSTRAINT(c, n)	\
-+#define INTEL_UEVENT_CONSTRAINT(c, n)	\
- 	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
-+#define PEBS_EVENT_CONSTRAINT(c, n)	\
-+	INTEL_UEVENT_CONSTRAINT(c, n)
- 
- #define EVENT_CONSTRAINT_END		\
- 	EVENT_CONSTRAINT(0, 0, 0)
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 008835c..d00f386 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -76,6 +76,19 @@ static struct event_constraint intel_westmere_event_constraints[] =
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct event_constraint intel_snb_event_constraints[] =
-+{
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-+	/* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
-+	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
-+	INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* OFF_CORE_RESPONSE_0 */
-+	INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* OFF_CORE_RESPONSE_1 */
-+	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct event_constraint intel_gen_event_constraints[] =
- {
- 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-@@ -89,6 +102,106 @@ static u64 intel_pmu_event_map(int hw_event)
- 	return intel_perfmon_event_map[hw_event];
- }
- 
-+static __initconst const u64 snb_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xf1d0, /* MEM_UOP_RETIRED.LOADS        */
-+		[ C(RESULT_MISS)   ] = 0x0151, /* L1D.REPLACEMENT              */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0xf2d0, /* MEM_UOP_RETIRED.STORES       */
-+		[ C(RESULT_MISS)   ] = 0x0851, /* L1D.ALL_M_REPLACEMENT        */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x024e, /* HW_PRE_REQ.DL1_MISS          */
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0280, /* ICACHE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	/*
-+	 * TBD: Need Off-core Response Performance Monitoring support
-+	 */
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01bb,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		/* OFFCORE_RESPONSE_0.ANY_RFO.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE_1.ANY_RFO.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01bb,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		/* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01bb,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x81d0, /* MEM_UOP_RETIRED.ALL_LOADS */
-+		[ C(RESULT_MISS)   ] = 0x0108, /* DTLB_LOAD_MISSES.CAUSES_A_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x82d0, /* MEM_UOP_RETIRED.ALL_STORES */
-+		[ C(RESULT_MISS)   ] = 0x0149, /* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x1085, /* ITLB_MISSES.STLB_HIT         */
-+		[ C(RESULT_MISS)   ] = 0x0185, /* ITLB_MISSES.CAUSES_A_WALK    */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ALL_BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0x00c5, /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
- static __initconst const u64 westmere_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -1062,6 +1175,17 @@ static __init int intel_pmu_init(void)
- 		pr_cont("Westmere events, ");
- 		break;
- 
-+	case 42: /* SandyBridge */
-+		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-+		       sizeof(hw_cache_event_ids));
-+
-+		intel_pmu_lbr_init_nhm();
-+
-+		x86_pmu.event_constraints = intel_snb_event_constraints;
-+		x86_pmu.pebs_constraints = intel_snb_pebs_events;
-+		pr_cont("SandyBridge events, ");
-+		break;
-+
- 	default:
- 		/*
- 		 * default constraints for v2 and up
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index b7dcd9f..8251998 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -388,6 +388,44 @@ static struct event_constraint intel_nehalem_pebs_events[] = {
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct event_constraint intel_snb_pebs_events[] = {
-+	PEBS_EVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	PEBS_EVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-+	PEBS_EVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-+	PEBS_EVENT_CONSTRAINT(0x01c4, 0xf), /* BR_INST_RETIRED.CONDITIONAL */
-+	PEBS_EVENT_CONSTRAINT(0x02c4, 0xf), /* BR_INST_RETIRED.NEAR_CALL */
-+	PEBS_EVENT_CONSTRAINT(0x04c4, 0xf), /* BR_INST_RETIRED.ALL_BRANCHES */
-+	PEBS_EVENT_CONSTRAINT(0x08c4, 0xf), /* BR_INST_RETIRED.NEAR_RETURN */
-+	PEBS_EVENT_CONSTRAINT(0x10c4, 0xf), /* BR_INST_RETIRED.NOT_TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x20c4, 0xf), /* BR_INST_RETIRED.NEAR_TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x40c4, 0xf), /* BR_INST_RETIRED.FAR_BRANCH */
-+	PEBS_EVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-+	PEBS_EVENT_CONSTRAINT(0x02c5, 0xf), /* BR_MISP_RETIRED.NEAR_CALL */
-+	PEBS_EVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	PEBS_EVENT_CONSTRAINT(0x10c5, 0xf), /* BR_MISP_RETIRED.NOT_TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.TAKEN */
-+	PEBS_EVENT_CONSTRAINT(0x01cd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-+	PEBS_EVENT_CONSTRAINT(0x02cd, 0x8), /* MEM_TRANS_RETIRED.PRECISE_STORE */
-+	PEBS_EVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_LOADS */
-+	PEBS_EVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOP_RETIRED.STLB_MISS_STORES */
-+	PEBS_EVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOP_RETIRED.LOCK_LOADS */
-+	PEBS_EVENT_CONSTRAINT(0x22d0, 0xf), /* MEM_UOP_RETIRED.LOCK_STORES */
-+	PEBS_EVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOP_RETIRED.SPLIT_LOADS */
-+	PEBS_EVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOP_RETIRED.SPLIT_STORES */
-+	PEBS_EVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOP_RETIRED.ANY_LOADS */
-+	PEBS_EVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOP_RETIRED.ANY_STORES */
-+	PEBS_EVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.LLC_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-+	PEBS_EVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-+	PEBS_EVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-+	PEBS_EVENT_CONSTRAINT(0x04d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HITM */
-+	PEBS_EVENT_CONSTRAINT(0x08d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_NONE */
-+	PEBS_EVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct event_constraint *
- intel_pebs_constraints(struct perf_event *event)
- {
+In this way we should really be able to provide a good quality of
+service for the most part of the cases IMHO.
 
+I also plan to write down another patch set to implement this logic.
 
+> 
+> > 
+> > To summarize, we can identify three possible solutions to properly throttle the
+> > buffered writes:
+> > 
+> > 1) account & throttle everything at block IO layer (bad for "priority
+> >    inversion" problems, needs page tracking for blkio)
+> > 
+> > 2) account at block IO layer and throttle in memory (needs page tracking for
+> >    blkio)
+> > 
+> > 3) account & throttle in memory (affected by IO spikes, depending on
+> >    dirty_ratio / dirty_background_ratio settings)
+> > 
+> > For now we start with the solution 3) that seems to be the simplest way to
+> > proceed.
+> 
+> Yes, IO spikes is the weakness of this 3rd solution. But it should be
+> simple too. Also as you said problem can be reduced up to some extent
+> by changing reducing dirty_ratio and background dirty ratio But that
+> will have other trade offs, I guess.
+
+Agreed.
+
+-Andrea
