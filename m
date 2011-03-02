@@ -1,421 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab1CBWDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 17:03:52 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63998 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757280Ab1CBWDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 17:03:51 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Alessio Igor Bogani <abogani@texware.it>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
+	id S1757941Ab1CBWHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 17:07:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34129 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757555Ab1CBWHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 17:07:50 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [PATCH V6 0/2] tracing, perf: cpu hotplug trace events
+Date: Wed, 2 Mar 2011 23:07:45 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        amit.kucheria@linaro.org, rusty@rustcorp.com.au, tglx@linutronix.de,
+        Arjan van de Ven <arjan@infradead.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jan Blunck <jblunck@infradead.org>,
-        John Kacur <jkacur@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, Oliver Neukum <oliver@neukum.org>,
-        Paul Menage <menage@google.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH v2] BKL: That's all, folks
-Date: Wed,  2 Mar 2011 23:00:58 +0100
-Message-Id: <1299103258-8582-1-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <201103022254.10078.arnd@arndb.de>
-References: <201103022254.10078.arnd@arndb.de>
-X-Provags-ID: V02:K0:Hi00NcCWwLJNR9uxZb0JN7vc1Adi1yiJrmEUWQeCpvE
- 9HiRxG39OjNspoj/a9LlnizW6jkPElLCaxCStEEnTRkVLPaWYG
- 0m4CcFttDRsW8xJIwY7tNn1eUSaBus2nB+J5DUkQ+utakMqQtW
- d2rZTZl71nZSOvIxB8GS6BAu8n60DwkfFIx5SrwJTDmwFE6Nuc
- tPfSzvmlbpcIxsZKTzaCQ==
+        linux-perf-users@vger.kernel.org
+References: <AANLkTinbYWQxde2jTcAtyYQGvGgt2Lmtnph=voj=haXF@mail.gmail.com> <201103021157.08260.trenn@suse.de> <AANLkTi=dht7+bPrBqmt6shHefBxSB3yOUu4OcSvcd0am@mail.gmail.com>
+In-Reply-To: <AANLkTi=dht7+bPrBqmt6shHefBxSB3yOUu4OcSvcd0am@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103022307.46694.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the implementation of the big kernel lock,
-at last. A lot of people have worked on this in the
-past, I so the credit for this patch should be with
-everyone who participated in the hunt.
+On Wednesday 02 March 2011 20:02:00 Vincent Guittot wrote:
+> On 2 March 2011 11:57, Thomas Renninger <trenn@suse.de> wrote:
+> > On Wednesday, March 02, 2011 08:56:25 AM Ingo Molnar wrote:
+> >>
+> >> * Vincent Guittot <vincent.guittot@linaro.org> wrote:
+> >>
+> >> > This patchset adds some tracepoints for tracing cpu state and for
+> >> > profiling the plug and unplug sequence.
+> >> >
+> >> > Some SMP arm platform uses cpu hotplug feature for improving their
+> >> > power saving because they can go into their deepest idle state only in
+> >> > mono core mode. In addition, running into mono core mode makes the
+> >> > cpuidle job easier and more efficient which also results in the
+> >> > improvement of power saving of some use cases. As the plug state of a
+> >> > cpu can impact the cpuidle behavior, it's interesting to trace this
+> >> > state and to correlate it with cpuidle traces.
+> >> > Then, cpu hotplug is known to be an expensive operation which also
+> >> > takes a variable time depending of other processes' activity (from
+> >> > hundreds ms up to few seconds). These traces have shown that the arch
+> >> > part stays almost constant on arm platform whatever the cpu load is,
+> >> > whereas the plug duration increases.
+> >> >
+> >> > ---
+> >> >  include/trace/events/cpu_hotplug.h |  103
+> >> >  ++++++++++++++++++++++++++++++++++++
+> >> >  kernel/cpu.c                       |   18 ++++++
+> >> >  2 files changed, 121 insertions(+), 0 deletions(-)
+> >> >  create mode 100644 include/trace/events/cpu_hotplug.h
+> >>
+> >> Why not do something much simpler and fit these into the existing
+> >> power:* events:
+> >>
+> >>      power:cpu_idle
+> >>      power:cpu_frequency
+> >>      power:machine_suspend
+> >>      power:cpu_idle
+> >>      power:cpu_frequency
+> >>      power:machine_suspend
+> >>
+> >> in an intelligent way?
+> >>
+> >> CPU hotplug is really a 'soft' form of suspend and tools using power
+> >> events could
+> >> thus immediately use CPU hotplug events as well.
+> >>
+> >> A suitable new 'state' value could be used to signal CPU hotplug events:
+> >>
+> >>  enum {
+> >>         POWER_NONE = 0,
+> >>         POWER_CSTATE = 1,
+> >>         POWER_PSTATE = 2,
+> >>  };
+> >>
+> >> POWER_HSTATE for hotplug-state, or so.
+> > Be careful, these are obsolete!
+> > This information is in the name of the event itself:
+> > PSTATE -> CPU frequency     -> power:cpu_frequency
+> > CSTATE -> sleep/idle states -> power:cpu_idle
+> >
+> >> This would also express the design arguments that others have pointed
+> >> out in the prior discussion: that CPU hotplug is really a power
+> >> management variant, and that in the long run it could be done via
+> >> regular idle as well. When that happens, the above unified event
+> >> structure makes it all even simpler - analysis tools will just
+> >> continue to work fine.
+> >
+> > About the patch:
+> > You create:
+> > cpu_hotplug:cpu_hotplug_down_start
+> > cpu_hotplug:cpu_hotplug_down_end
+> > cpu_hotplug:cpu_hotplug_up_start
+> > cpu_hotplug:cpu_hotplug_up_end
+> > cpu_hotplug:cpu_hotplug_disable_start
+> > cpu_hotplug:cpu_hotplug_disable_end
+> > cpu_hotplug:cpu_hotplug_die_start
+> > cpu_hotplug:cpu_hotplug_die_end
+> > cpu_hotplug:cpu_hotplug_arch_up_start
+> > cpu_hotplug:cpu_hotplug_arch_up_end
+> >
+> > quite some events for cpu hotplugging...
+> > You mix up two things you want to trace:
+> >  1) The cpu hotplugging itself which you might want to compare
+> >     with system activity, other idle states, etc. and check whether
+> >     removing/adding CPUs works in respect of your power saving
+> >     algorithms
+> >  2) You want to trace the time __cpu_down and friends take to
+> >     optimize them
+> >
+> > For 1. I agree that it would be worth (mostly for arm now as long as
+> > it's the only arch using this as a power saving feature, but it may show
+> > up on other archs as well) to create an event which looks like:
+> >
+> > power:cpu_hotplug(unsigned int state, unsigned int cpu_id)
+> >
+> 
+> If it's possible to add such cpu_hotplug event in the power event
+> class, that's should be fine for me.
+> 
+> > Define a state:
+> > CPU_HOT_PLUG 1
+> > CPU_HOT_UNPLUG 2
+> > This would be consistent with other power:* events. One idea of having
+> > one event passing the state is, that it does not make sense to track an:
+> > power:cpu_hotunplug or power:cpu_hotplug
+> > standalone.
+> >
+> > Theoretically this could get enhanced with further states:
+> > CPU_HOT_PLUG_DISABLE_IRQS 3
+> > CPU_HOT_PLUG_ENABLE_IRQS  4
+> > CPU_HOT_PLUG_ACTIVATE     5
+> > CPU_HOT_PLUG_DISABLE      6
+> > ...
+> > if it should be possible at some point to only disable IRQs or to
+> > only disable code processing or to only disable whatever to achieve
+> > better power savings.
+> > But as long as there only is the general cpu_hotplug interface
+> > bringing the cpu totally up or down, above should be enough in
+> > respect of power saving tracings.
+> >
+> >
+> > For 2. you should use more appropriate tools to optimize the code
+> > processed in __cpu_{,up,down,enable,disable,die} functions and friends.
+> > If you simply need the time, system tab or kprobes might work out for you.
+> > There is preloadtrace.ko based on a system tab script which instruments
+> > functions called at boot up and measures their time.
+> >
+> > Or probably better are perf profiling facilities. It should be possible
+> > to profile __cpu_down and subsequent calls in detail. Like that you
+> > should get a good picture which functions you have to look at and
+> > optimize. People in CC should better be able to tell you the exact perf
+> > commands and parameters you are looking for.
+> >
+> 
+> I had tried to get such kind of information with function or
+> function_graph tracer but some functions like _cpu_down, are not
+> available in "available_filter_functions". Then, we don't have the
+> cpuid information with function trace what is not so bad on a dual
+> core but becomes more important on a quad cores. That's why I have
+> added some cpu_hotplug traces but I'm not a trace expert and I could
+> have missed the solution.
+Best you ask here:
+linux-perf-users@vger.kernel.org
+Make sure CONFIG_DEBUG_INFO is set.
+We (suse) do strip debuginfo from our kernels and provide them via a kernel-xy-debuginfo.rpm
 
-The names on the Cc list are the people that were the
-most active in this, according to the recorded git
-history, in alphabetical order.
+> > Hm, have you tried/thought about registering an extra cpuidle state with
+> > long latency doing the cpu_down? For CPU 0 it could call the deepest
+> > "normal" sleep state, but could decide to shut other cpus down. Like that
+> > you might be able to get rid of some extra code (interfering with cpuidle
+> > driver?) and you get all the statistics, etc. for free.
+> >
+> 
+> No I haven't  tried such mechanism but are you sure that we could call
+> cpu_down in cpuidle function ?
+> I'm still looking for relevant triggers for pluging/unpluging the cpu
+> : current cpu load and loadavg are some interesting ones.
+Entering shouldn't be a problem, but waking them up again...
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Cc: Alessio Igor Bogani <abogani@texware.it>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Hendry <andrew.hendry@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
-Acked-by: Ingo Molnar <mingo@elte.hu>
-Cc: Jan Blunck <jblunck@infradead.org>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Oliver Neukum <oliver@neukum.org>
-Cc: Paul Menage <menage@google.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
----
+I doubt cpu offlining is the proper instrument to save power.
+You want to prevent the CPU of being used by ripping it out from scheduler decisions and
+make sure it doesn't get interrupts by offlining. But the (latency) price is high.
 
-This is the version I'm adding to linux-next once
-the all the other patches have made it in there
-through the maintainer trees.
+On the one hand there may be quite some unnecessary hardware accesses to re-set it up again.
 
-Changes from previous version:
-* Remove CONFIG_BKL Kconfig symbol
-* Fix remaining user of PREEMPT_INATOMIC_BASE
+On the other hand drivers are notified to not use CPUx anymore, e.g. cpufreq will unload
+for this cpu, this might need locks and waiting for sysfs access to finish, etc.
+-> also not necessary overhead.
 
- include/linux/hardirq.h  |    9 +---
- include/linux/smp_lock.h |   65 ----------------------
- init/Kconfig             |    5 --
- kernel/sched.c           |    9 +---
- lib/Kconfig.debug        |    9 ---
- lib/Makefile             |    1 -
- lib/kernel_lock.c        |  136 ----------------------------------------------
- 7 files changed, 2 insertions(+), 232 deletions(-)
- delete mode 100644 include/linux/smp_lock.h
- delete mode 100644 lib/kernel_lock.c
+Maybe what you search for is something like sched_mc (kernel/sched.c) for single socket systems.
+Something like:
+Tell the scheduler to first utilize core0 and/or only use other cores for high prio tasks, or ...
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 32f9fd6..ba36217 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -93,13 +93,6 @@
-  */
- #define in_nmi()	(preempt_count() & NMI_MASK)
- 
--#if defined(CONFIG_PREEMPT) && defined(CONFIG_BKL)
--# include <linux/sched.h>
--# define PREEMPT_INATOMIC_BASE (current->lock_depth >= 0)
--#else
--# define PREEMPT_INATOMIC_BASE 0
--#endif
--
- #if defined(CONFIG_PREEMPT)
- # define PREEMPT_CHECK_OFFSET 1
- #else
-@@ -113,7 +106,7 @@
-  * used in the general case to determine whether sleeping is possible.
-  * Do not use in_atomic() in driver code.
-  */
--#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_INATOMIC_BASE)
-+#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != 0)
- 
- /*
-  * Check whether we were atomic before we did preempt_disable():
-diff --git a/include/linux/smp_lock.h b/include/linux/smp_lock.h
-deleted file mode 100644
-index 3a19882..0000000
---- a/include/linux/smp_lock.h
-+++ /dev/null
-@@ -1,65 +0,0 @@
--#ifndef __LINUX_SMPLOCK_H
--#define __LINUX_SMPLOCK_H
--
--#ifdef CONFIG_LOCK_KERNEL
--#include <linux/sched.h>
--
--extern int __lockfunc __reacquire_kernel_lock(void);
--extern void __lockfunc __release_kernel_lock(void);
--
--/*
-- * Release/re-acquire global kernel lock for the scheduler
-- */
--#define release_kernel_lock(tsk) do { 		\
--	if (unlikely((tsk)->lock_depth >= 0))	\
--		__release_kernel_lock();	\
--} while (0)
--
--static inline int reacquire_kernel_lock(struct task_struct *task)
--{
--	if (unlikely(task->lock_depth >= 0))
--		return __reacquire_kernel_lock();
--	return 0;
--}
--
--extern void __lockfunc
--_lock_kernel(const char *func, const char *file, int line)
--__acquires(kernel_lock);
--
--extern void __lockfunc
--_unlock_kernel(const char *func, const char *file, int line)
--__releases(kernel_lock);
--
--#define lock_kernel() do {					\
--	_lock_kernel(__func__, __FILE__, __LINE__);		\
--} while (0)
--
--#define unlock_kernel()	do {					\
--	_unlock_kernel(__func__, __FILE__, __LINE__);		\
--} while (0)
--
--/*
-- * Various legacy drivers don't really need the BKL in a specific
-- * function, but they *do* need to know that the BKL became available.
-- * This function just avoids wrapping a bunch of lock/unlock pairs
-- * around code which doesn't really need it.
-- */
--static inline void cycle_kernel_lock(void)
--{
--	lock_kernel();
--	unlock_kernel();
--}
--
--#else
--
--#ifdef CONFIG_BKL /* provoke build bug if not set */
--#define lock_kernel()
--#define unlock_kernel()
--#define cycle_kernel_lock()			do { } while(0)
--#endif /* CONFIG_BKL */
--
--#define release_kernel_lock(task)		do { } while(0)
--#define reacquire_kernel_lock(task)		0
--
--#endif /* CONFIG_LOCK_KERNEL */
--#endif /* __LINUX_SMPLOCK_H */
-diff --git a/init/Kconfig b/init/Kconfig
-index be788c0..a88d1c9 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -69,11 +69,6 @@ config BROKEN_ON_SMP
- 	depends on BROKEN || !SMP
- 	default y
- 
--config LOCK_KERNEL
--	bool
--	depends on (SMP || PREEMPT) && BKL
--	default y
--
- config INIT_ENV_ARG_LIMIT
- 	int
- 	default 32 if !UML
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 18d38e4..827c170 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -32,7 +32,6 @@
- #include <linux/init.h>
- #include <linux/uaccess.h>
- #include <linux/highmem.h>
--#include <linux/smp_lock.h>
- #include <asm/mmu_context.h>
- #include <linux/interrupt.h>
- #include <linux/capability.h>
-@@ -3945,9 +3944,6 @@ need_resched:
- 	rcu_note_context_switch(cpu);
- 	prev = rq->curr;
- 
--	release_kernel_lock(prev);
--need_resched_nonpreemptible:
--
- 	schedule_debug(prev);
- 
- 	if (sched_feat(HRTICK))
-@@ -4010,9 +4006,6 @@ need_resched_nonpreemptible:
- 
- 	post_schedule(rq);
- 
--	if (unlikely(reacquire_kernel_lock(prev)))
--		goto need_resched_nonpreemptible;
--
- 	preempt_enable_no_resched();
- 	if (need_resched())
- 		goto need_resched;
-@@ -8074,7 +8067,7 @@ static inline int preempt_count_equals(int preempt_offset)
- {
- 	int nested = (preempt_count() & ~PREEMPT_ACTIVE) + rcu_preempt_depth();
- 
--	return (nested == PREEMPT_INATOMIC_BASE + preempt_offset);
-+	return (nested == preempt_offset);
- }
- 
- void __might_sleep(const char *file, int line, int preempt_offset)
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 2b97418..6f440d8 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -470,15 +470,6 @@ config DEBUG_MUTEXES
- 	 This feature allows mutex semantics violations to be detected and
- 	 reported.
- 
--config BKL
--	bool "Big Kernel Lock" if (SMP || PREEMPT)
--	default y
--	help
--	  This is the traditional lock that is used in old code instead
--	  of proper locking. All drivers that use the BKL should depend
--	  on this symbol.
--	  Say Y here unless you are working on removing the BKL.
--
- config DEBUG_LOCK_ALLOC
- 	bool "Lock debugging: detect incorrect freeing of live locks"
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
-diff --git a/lib/Makefile b/lib/Makefile
-index cbb774f..de6c609 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -43,7 +43,6 @@ obj-$(CONFIG_GENERIC_FIND_LAST_BIT) += find_last_bit.o
- CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
- obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
- 
--obj-$(CONFIG_LOCK_KERNEL) += kernel_lock.o
- obj-$(CONFIG_BTREE) += btree.o
- obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
- obj-$(CONFIG_DEBUG_LIST) += list_debug.o
-diff --git a/lib/kernel_lock.c b/lib/kernel_lock.c
-deleted file mode 100644
-index d80e122..0000000
---- a/lib/kernel_lock.c
-+++ /dev/null
-@@ -1,136 +0,0 @@
--/*
-- * lib/kernel_lock.c
-- *
-- * This is the traditional BKL - big kernel lock. Largely
-- * relegated to obsolescence, but used by various less
-- * important (or lazy) subsystems.
-- */
--#include <linux/module.h>
--#include <linux/kallsyms.h>
--#include <linux/semaphore.h>
--#include <linux/smp_lock.h>
--
--/*
-- * The 'big kernel lock'
-- *
-- * This spinlock is taken and released recursively by lock_kernel()
-- * and unlock_kernel().  It is transparently dropped and reacquired
-- * over schedule().  It is used to protect legacy code that hasn't
-- * been migrated to a proper locking design yet.
-- *
-- * Don't use in new code.
-- */
--static  __cacheline_aligned_in_smp DEFINE_RAW_SPINLOCK(kernel_flag);
--
--
--/*
-- * Acquire/release the underlying lock from the scheduler.
-- *
-- * This is called with preemption disabled, and should
-- * return an error value if it cannot get the lock and
-- * TIF_NEED_RESCHED gets set.
-- *
-- * If it successfully gets the lock, it should increment
-- * the preemption count like any spinlock does.
-- *
-- * (This works on UP too - do_raw_spin_trylock will never
-- * return false in that case)
-- */
--int __lockfunc __reacquire_kernel_lock(void)
--{
--	while (!do_raw_spin_trylock(&kernel_flag)) {
--		if (need_resched())
--			return -EAGAIN;
--		cpu_relax();
--	}
--	preempt_disable();
--	return 0;
--}
--
--void __lockfunc __release_kernel_lock(void)
--{
--	do_raw_spin_unlock(&kernel_flag);
--	preempt_enable_no_resched();
--}
--
--/*
-- * These are the BKL spinlocks - we try to be polite about preemption.
-- * If SMP is not on (ie UP preemption), this all goes away because the
-- * do_raw_spin_trylock() will always succeed.
-- */
--#ifdef CONFIG_PREEMPT
--static inline void __lock_kernel(void)
--{
--	preempt_disable();
--	if (unlikely(!do_raw_spin_trylock(&kernel_flag))) {
--		/*
--		 * If preemption was disabled even before this
--		 * was called, there's nothing we can be polite
--		 * about - just spin.
--		 */
--		if (preempt_count() > 1) {
--			do_raw_spin_lock(&kernel_flag);
--			return;
--		}
--
--		/*
--		 * Otherwise, let's wait for the kernel lock
--		 * with preemption enabled..
--		 */
--		do {
--			preempt_enable();
--			while (raw_spin_is_locked(&kernel_flag))
--				cpu_relax();
--			preempt_disable();
--		} while (!do_raw_spin_trylock(&kernel_flag));
--	}
--}
--
--#else
--
--/*
-- * Non-preemption case - just get the spinlock
-- */
--static inline void __lock_kernel(void)
--{
--	do_raw_spin_lock(&kernel_flag);
--}
--#endif
--
--static inline void __unlock_kernel(void)
--{
--	/*
--	 * the BKL is not covered by lockdep, so we open-code the
--	 * unlocking sequence (and thus avoid the dep-chain ops):
--	 */
--	do_raw_spin_unlock(&kernel_flag);
--	preempt_enable();
--}
--
--/*
-- * Getting the big kernel lock.
-- *
-- * This cannot happen asynchronously, so we only need to
-- * worry about other CPU's.
-- */
--void __lockfunc _lock_kernel(const char *func, const char *file, int line)
--{
--	int depth = current->lock_depth + 1;
--
--	if (likely(!depth)) {
--		might_sleep();
--		__lock_kernel();
--	}
--	current->lock_depth = depth;
--}
--
--void __lockfunc _unlock_kernel(const char *func, const char *file, int line)
--{
--	BUG_ON(current->lock_depth < 0);
--	if (likely(--current->lock_depth < 0))
--		__unlock_kernel();
--}
--
--EXPORT_SYMBOL(_lock_kernel);
--EXPORT_SYMBOL(_unlock_kernel);
--
--- 
-1.7.1
+On x86 irqs can be bound to CPUs from userspace via /proc/irq/*/smp_affinity
+No idea how this looks like on arm, but this is another knob you could play with to achieve longer
+residencies in deepest sleep states.
 
+    Thomas
