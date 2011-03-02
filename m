@@ -1,90 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791Ab1CBBvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 20:51:43 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54668 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757768Ab1CBBvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 20:51:42 -0500
-Message-ID: <4D6DA2F2.5080100@cn.fujitsu.com>
-Date: Wed, 02 Mar 2011 09:52:50 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1757823Ab1CBB7U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 20:59:20 -0500
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:53357 "EHLO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757771Ab1CBB7T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Mar 2011 20:59:19 -0500
+X-Greylist: delayed 1653 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Mar 2011 20:59:18 EST
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 11/11] rcu: move TREE_RCU from softirq
- to kthread
-References: <20110223013917.GA20996@linux.vnet.ibm.com> <1298425183-21265-11-git-send-email-paulmck@linux.vnet.ibm.com> <4D6765B6.1030401@cn.fujitsu.com> <20110225203219.GD2269@linux.vnet.ibm.com> <4D6B16A8.4050405@cn.fujitsu.com> <20110228235136.GC2331@linux.vnet.ibm.com>
-In-Reply-To: <20110228235136.GC2331@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-02 09:50:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-02 09:50:32,
-	Serialize complete at 2011-03-02 09:50:32
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110221043601.GB22204@spacedout.fries.net>
+References: <20110211035309.GA22204@spacedout.fries.net>
+	<20110214145649.GE2597@joana>
+	<AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
+	<20110221043601.GB22204@spacedout.fries.net>
+Date: Tue, 1 Mar 2011 19:31:42 -0600
+Message-ID: <AANLkTin+NDruj7c5r_pQxWZWEsMqiWpnkCptKFq2mfps@mail.gmail.com>
+Subject: Re: [PATCH] work around for l2cap NULL dereference in l2cap_conn_start
+From: Andrei Warkentin <andreiw@motorola.com>
+To: David Fries <david@fries.net>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2011 07:51 AM, Paul E. McKenney wrote:
-> On Mon, Feb 28, 2011 at 11:29:44AM +0800, Lai Jiangshan wrote:
->> On 02/26/2011 04:32 AM, Paul E. McKenney wrote:
->>>>> +/*
->>>>> + * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
->>>>> + * This can happen while the corresponding CPU is either coming online
->>>>> + * or going offline.  We cannot wait until the CPU is fully online
->>>>> + * before starting the kthread, because the various notifier functions
->>>>> + * can wait for RCU grace periods.  So we park rcu_cpu_kthread() until
->>>>> + * the corresponding CPU is online.
->>>>> + *
->>>>> + * Return 1 if the kthread needs to stop, 0 otherwise.
->>>>> + *
->>>>> + * Caller must disable bh.  This function can momentarily enable it.
->>>>> + */
->>>>> +static int rcu_cpu_kthread_should_stop(int cpu)
->>>>> +{
->>>>> +	while (cpu_is_offline(cpu) || smp_processor_id() != cpu) {
->>>>> +		if (kthread_should_stop())
->>>>> +			return 1;
->>>>> +		local_bh_enable();
->>>>> +		schedule_timeout_uninterruptible(1);
->>>>> +		if (smp_processor_id() != cpu)
->>>>> +			set_cpus_allowed_ptr(current, cpumask_of(cpu));
->>>>
->>>> The current task is PF_THREAD_BOUND,
->>>> Why do "set_cpus_allowed_ptr(current, cpumask_of(cpu));" ?
->>>
->>> Because I have seen CPU hotplug operations unbind PF_THREAD_BOUND threads.
->>> In addition, I end up having to spawn the kthread at CPU_UP_PREPARE time,
->>> at which point the thread must run unbound because its CPU isn't online
->>> yet.  I cannot invoke kthread_create() within the stop-machine handler
->>> (right?).  I cannot wait until CPU_ONLINE time because that results in
->>> hangs when other CPU notifiers wait for grace periods.
->>>
->>> Yes, I did find out about the hangs the hard way.  Why do you ask?  ;-)
->>
->> The current task is PF_THREAD_BOUND, "set_cpus_allowed_ptr(current, cpumask_of(cpu))"
->> will do nothing even it runs on the wrong CPU.
-> 
-> You lost me on this one.
-> 
-> Looking at set_cpus_allowed_ptr()...
-> 
-> The "again" loop won't happen because the task is already running.
-> The CPU is online, so the cpumask_intersects() check won't kick
-> us out.  We are working with the current task, so the check for
-> PF_THREAD_BOUND, current, and cpumask_equal() won't kick us out.
-> If the old and new cpumasks had been the same, we would not have called
-> set_cpus_allowed_ptr() in the first place.  So we should get to
-> the call to migrate_task().
-> 
-> What am I missing here?
+Hi all,
 
-You right. I forgot current tasks can change its cpumask even PF_THREAD_BOUND.
+I don't have an S305 headset at the moment to play with this, but, our
+tree (2.6.36) has
+a fix like this for this issue.
+
+
+ 				if (bt_sk(sk)->defer_setup) {
+ 					struct sock *parent = bt_sk(sk)->parent;
+ 					rsp.result = cpu_to_le16(L2CAP_CR_PEND);
+ 					rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
+-					parent->sk_data_ready(parent, 0);
++					if (parent)
++						parent->sk_data_ready(parent, 0);
+
+ 				} else {
+ 					sk->sk_state = BT_CONFIG;
+ 					rsp.result = cpu_to_le16(L2CAP_CR_SUCCESS);
+
+The comment is:
+
+    Bluetooth: Hack: Don't dereference null pointer.
+
+    This avoids the S305 panic during incoming connection.
+
+    S305 sends PSM 25 L2CAP connection request before the L2CAP info response.
+    When we receive that info response we crash on null pointer here.
+
+Sorry for the wait,
+A
+
+On Sun, Feb 20, 2011 at 10:36 PM, David Fries <david@fries.net> wrote:
+> bt_sk(sk)->parent can be NULL in l2cap_conn_start in state BT_CONNECT2
+> at least when a headset device pairs and the play button was pressed
+> right before pairing.
+>
+> Signed-off-by: David Fries <david@fries.net>
+> ---
+> I removed the printk, can this be merged to the bluetooth next tree?
+>
+> On Mon, Feb 14, 2011 at 03:40:46PM -0600, Andrei Warkentin wrote:
+>> FWIW still need it in 2.6.36.
+>
+> Andrei, I'm curious, what's your hardware hardware and bluetooth
+> device that's trigginer the crash?
+>
+>> On Mon, Feb 14, 2011 at 8:56 AM, Gustavo F. Padovan
+>> <padovan@profusion.mobi> wrote:
+>> > Hi David,
+>> >
+>> > * David Fries <david@fries.net> [2011-02-10 21:53:09 -0600]:
+>> >
+>> >> Here's a patch to avoid a very repeatable crash in the N900.  If I
+>> >> take a Motorola S305 bluetooth headset that was previously paried with
+>> >> the N900, turn it on, and press the play button before the headphones
+>> >> automatically pair with the cell phone, the N900 will crash (and
+>> >> reboot) in pairing.  If I wait until after they have paired there
+>> >> isn't any problem.  The patch is against the kernel-power
+>> >> 2.6.28-maemo46 by Thomas Tanner, the stock Nokia PR1.2 oops looked
+>> >> the same, I just haven't gone back to that kernel.
+>> >
+>> > This is a very old kernel. You need to check this issue against
+>> > bluetooth-next-2.6.
+>
+>  net/bluetooth/l2cap.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
+> index ed83c1f..a7aa4d9 100644
+> --- a/net/bluetooth/l2cap.c
+> +++ b/net/bluetooth/l2cap.c
+> @@ -408,7 +408,8 @@ static void l2cap_conn_start(struct l2cap_conn *conn)
+>                                        struct sock *parent = bt_sk(sk)->parent;
+>                                        rsp.result = cpu_to_le16(L2CAP_CR_PEND);
+>                                        rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
+> -                                       parent->sk_data_ready(parent, 0);
+> +                                       if(parent)
+> +                                               parent->sk_data_ready(parent,0);
+>
+>                                } else {
+>                                        sk->sk_state = BT_CONFIG;
+> --
+> 1.7.2.3
+>
+>
