@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab1CBF6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 00:58:34 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52002 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757987Ab1CBF6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 00:58:07 -0500
-Date: Wed, 2 Mar 2011 16:58:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>
-Subject: linux-next: manual merge of the usb tree with the omap tree
-Message-Id: <20110302165805.65d55351.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757980Ab1CBGT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 01:19:26 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:58416 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab1CBGTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 01:19:25 -0500
+Date: Wed, 2 Mar 2011 00:19:10 -0600
+From: David Fries <david@fries.net>
+To: Liang Bao <tim.bao@gmail.com>, Andrei Warkentin <andreiw@motorola.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Feng Tang <feng.tang@intel.com>
+Subject: Re: [PATCH] work around for l2cap NULL dereference in
+ l2cap_conn_start
+Message-ID: <20110302061910.GE22204@spacedout.fries.net>
+References: <20110211035309.GA22204@spacedout.fries.net>
+ <20110214145649.GE2597@joana>
+ <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
+ <20110221043601.GB22204@spacedout.fries.net>
+ <AANLkTi=b5UCdyc3ZtUFCx23uYygM7eRyGu-y_wdJ5JXi@mail.gmail.com>
+ <20110227191545.GB2166@joana>
+ <20110228050340.GC22204@spacedout.fries.net>
+ <20110228173022.GC2165@joana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110228173022.GC2165@joana>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Wed, 02 Mar 2011 00:19:12 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Mon, Feb 28, 2011 at 02:30:22PM -0300, Gustavo F. Padovan wrote:
+> Hi David,
+> 
+> * David Fries <david@fries.net> [2011-02-27 23:03:40 -0600]:
+> 
+> > On Sun, Feb 27, 2011 at 04:15:45PM -0300, Gustavo F. Padovan wrote:
+> > > I pushed the following patch to bluetooth-2.6 tree. It should fix the problem
+> > > by avoiding connections to be accepted before a L2CAP info response comes:
+> > 
+> > Is
+> > git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
+> > the bluetooth-2.6 tree you mentioned?  I don't see your patch there.
+> > As a side note, the inline patch in your e-mail has the tabs replaced by
+> > spaces, once I changed them, it applied cleanly.
+> > 
+> > I first reverted to the base N900 kernel-power-2.6.28 46 (none of my
+> > changes or debugging), it crashed as expected.  I then applied your
+> > patch 743400e0, and it still crashed.  I added back the
+> > l2cap_conn_start parent check and some debugging in af_bluetooth.c
+> > dmesg debug output and patches follow.
+> 
+> I want to see a test with this patch and a recent kernel. We added many fixes
+> to stack in the last two years. Can you test this scenario?
 
-Today's linux-next merge of the usb tree got a conflict in
-arch/arm/mach-omap2/clock3xxx_data.c between commit
-0005ae73cfe44ee42d0be12a12cc82bf982f518e ("OMAP: hsmmc: Rename the device
-and driver") from the omap tree and commit
-53689ac1b677532be666a779e24b0ac9bd266354 ("arm: omap: usb: clock entries
-for omap3 and omap4") from the usb tree.
+I'm sorry, but apparently not, at least this post says 2.6.37 isn't
+going to happen for the N900 and Maemo.
+http://forums.internettablettalk.com/showthread.php?t=70082
 
-Just context changes.  I have fixed it up (see below) and can carry the
-fix as necessary.
+I tried 2.6.37-n900 from
+git://gitorious.org/nokia-n900-kernel/nokia-n900-kernel.git anyway,
+but the display visibly degrades like it isn't being updated and
+doesn't apparently get any further.  I don't have anyway to debug it
+further.
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-omap2/clock3xxx_data.c
-index f43e7ec,fbb1e30..0000000
---- a/arch/arm/mach-omap2/clock3xxx_data.c
-+++ b/arch/arm/mach-omap2/clock3xxx_data.c
-@@@ -3322,8 -3322,8 +3322,8 @@@ static struct omap_clk omap3xxx_clks[] 
-  	CLK(NULL,	"pka_ick",	&pka_ick,	CK_34XX | CK_36XX),
-  	CLK(NULL,	"core_l4_ick",	&core_l4_ick,	CK_3XXX),
-  	CLK(NULL,	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-- 	CLK("ehci-omap.0",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-+ 	CLK("usbhs-omap.0",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- -	CLK("mmci-omap-hs.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- +	CLK("omap_hsmmc.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-  	CLK(NULL,	"icr_ick",	&icr_ick,	CK_34XX | CK_36XX),
-  	CLK("omap-aes",	"ick",	&aes2_ick,	CK_34XX | CK_36XX),
-  	CLK("omap-sham",	"ick",	&sha12_ick,	CK_34XX | CK_36XX),
+David Fries <david@fries.net>
+http://fries.net/~david/ (PGP encryption key available)
