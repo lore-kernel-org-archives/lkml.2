@@ -1,76 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab1CBDpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Mar 2011 22:45:53 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50686 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757860Ab1CBDpv (ORCPT
+	id S1757938Ab1CBDqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Mar 2011 22:46:31 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:15100 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757860Ab1CBDq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Mar 2011 22:45:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=la/u6nsOw0SkWUF4u7CDo32F+LbB0/CTw/rIYQS6pNrvAifM3G+Rs9UCQSF3QgD3Nx
-         1a97DdZxsbJG7YokUTS51c/FbT76d9F+8cBpNvLqVNFMRWaRx2I+dsJf0KVjBnyCLuZv
-         6u/stCKkzCj8PVhYSVE7a+9L+1QAhZ+eRWqTs=
-Subject: [PATCH] watchdog: hpwdt: eliminate section mismatch warning
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Mingarelli <Thomas.Mingarelli@hp.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Content-Type: text/plain
-Date: Wed, 02 Mar 2011 11:49:44 +0800
-Message-Id: <1299037784.16464.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Tue, 1 Mar 2011 22:46:29 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6272"; a="77266470"
+Message-ID: <4D6DBD8C.70904@codeaurora.org>
+Date: Tue, 01 Mar 2011 19:46:20 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Ryan Mallon <ryan@bluewatersys.com>
+CC: ext Nishanth Menon <nm@ti.com>, ext Tony Lindgren <tony@atomide.com>,
+        Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
+        ext Linus Walleij <linus.walleij@linaro.org>,
+        Ambresh <a0393775@ti.com>, Andrei Warkentin <andreiw@motorola.com>,
+        Lee Jones <Lee.Jones@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas ABERG <jonas.aberg@stericsson.com>,
+        ext Kevin Hilman <khilman@deeprootsystems.com>,
+        David Brown <davidb@codeaurora.org>,
+        Maxime Coquelin <maxime.coquelin-nonst@stericsson.com>,
+        linux-arm-msm@vger.kernel.org, loic.pallardy@stericsson.com,
+        "eduardo.valentin@nokia.com" <eduardo.valentin@nokia.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jouni Hogander <jouni.hogander@nokia.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
+ OMAP data
+References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>	<AANLkTin7vRMreG3hOAk95MYZUCV-Kr6ac7gD7jgvX6Gf@mail.gmail.com>	<20110216115729.GA29817@besouro.research.nokia.com>	<4D6B78BF.1020102@stericsson.com>	<4D6C7B56.9060109@codeaurora.org>	<AANLkTikvhj49DftS9c_NouASY9_MbYPCfmSUdJg6pf-5@mail.gmail.com>	<4D6D9B10.9000606@codeaurora.org>	<4D6D9D06.2020204@bluewatersys.com>	<4D6D9FC7.1090206@codeaurora.org>	<4D6DA290.2010607@bluewatersys.com>	<4D6DAA24.3000204@codeaurora.org>	<4D6DAE6E.4030701@bluewatersys.com>	<4D6DB1B1.4060908@codeaurora.org>	<4D6DB566.4090908@bluewatersys.com>	<4D6DB7CB.7070701@codeaurora.org> <4D6DBAED.7070805@bluewatersys.com>
+In-Reply-To: <4D6DBAED.7070805@bluewatersys.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hpwdt_init_nmi_decoding() is called in hpwdt_init_one error handling,
-thus remove the  __devexit annotation of hpwdt_exit_nmi_decoding().
+On 03/01/2011 07:35 PM, Ryan Mallon wrote:
+> On 03/02/2011 04:21 PM, Saravana Kannan wrote:
+>> On 03/01/2011 07:11 PM, Ryan Mallon wrote:
+>>> On 03/02/2011 03:55 PM, Saravana Kannan wrote:
+>>>> On 03/01/2011 06:41 PM, Ryan Mallon wrote:
+>>>>> On 03/02/2011 03:23 PM, Saravana Kannan wrote:
+>>>>>> I don't have any attachment to the "arch" file suggestion. If there
+>>>>>> is a
+>>>>>> better solution to identify the different implementations of socinfo
+>>>>>> without having to maintain some "unique id" list in the kernel,
+>>>>>> then I'm
+>>>>>> all for it. But cpuinfo is not it.
+>>>>>
+>>>>> Sorry I am confusing the 'arch' and 'mach' bits here. I definitely have
+>>>>> an objection to having an 'arch' file (i.e. ARM). A 'mach' (i.e. omap)
+>>>>> file makes a bit more sense, but should probably be called 'mach'
+>>>>> rather
+>>>>> than 'arch' to avoid this confusion :-).
+>>>>
+>>>> Sorry for the confusion. Sure, I don't care much for the filename as
+>>>> long as we can all agree on it. I care more about the content of the
+>>>> file (using names very close to xxxx in mach-xxxx). I like "soc-family"
+>>>> better since it's generic enough to not force, say omap3 and omap4, to
+>>>> report different values.
+>>>>
+>>>> Linus Walleij, Eduardo, Maxime, Andrei,
+>>>>
+>>>> Would like to hear your opinion on the file name (soc-family vs. mach vs
+>>>> <somethingelse>) and the path /sys/devices/system/soc/.
+>>>
+>>> 'family' sounds good. I don't think we need the 'soc-' prefix on
+>>> filenames if they are already in /sys/devices/system/soc/.
+>>
+>> Makes sense. We can drop the soc- prefix. So the contenders left: family
+>> vs<somethingelse>. Would still be nice if the other folks chime in.
+>>
+>>>> If we settle on this, may be it would be easier to get this through.
+>>>>
+>>>>> I still think it is a solution in search of a problem though. What
+>>>>> userspace programs need to know what specific SoC they are on? My
+>>>>> feeling is that if userspace needs to know this information, then it is
+>>>>> probably dicking around with things that should be managed by the
+>>>>> kernel. Differences in available peripherals, etc can be determined by
+>>>>> looking at existing sysfs files.
+>>>>
+>>>> I certainly have seen several use cases. Couple of easy examples:
+>>>>
+>>>> * A lot of test scripts would find this very useful. For example, some
+>>>> clock (present is all/most MSMs) shouldn't be tested on some SOCs as it
+>>>> would lock up the system if you try to turn it off while the CPU is
+>>>> running.
+>>>
+>>> I don't follow here. Do you mean a struct clk clock or something else?
+>>> Why is userspace allowed to disable a clock which will effectively hang
+>>> the system? :-).
+>>
+>> Ah, sorry. Didn't give enough details. To give some context, I manage
+>> the clock stuff for MSM. The MSM clock driver exports clock control thru
+>> debugfs. We have test scripts that bang the clocks to test them. Each
+>> SoC has a different set of "touch me and you die" clocks that the test
+>> script shouldn't mess with. This socinfo would be useful for those test
+>> cases.
+>
+> Ah, okay. This is still within a single SoC family though since we don't
+> yet (AFAIK) support mutliple SoCs in a single kernel.
 
-This patch fixes below warning:
+Yes, my example was within a single SoC family. But since this is user 
+space example, it doesn't matter if a single kernel can support multiple 
+SoCs/SoC families. We could still have one userspace code that might 
+want to support multiple SoC families.
 
-WARNING: drivers/watchdog/hpwdt.o(.devinit.text+0x36f): Section mismatch in reference from the function hpwdt_init_one() to the function .devexit.text:hpwdt_exit_nmi_decoding()
-The function __devinit hpwdt_init_one() references
-a function __devexit hpwdt_exit_nmi_decoding().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __devexit annotation of
-hpwdt_exit_nmi_decoding() so it may be used outside an exit section.
+Anyway, I think we are in agreement here. So, will stop discussing this 
+point.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/watchdog/hpwdt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+>>>> * Some of the user space tools might want to report different "product
+>>>> id/type" (nothing to do with USB, etc) depending on what SOC it is
+>>>> running on.
+>>>
+>>> This makes more sense. It would actually be useful for custom USB
+>>> devices (gadget) which can be done from user space.
+>>
+>> Hmm... didn't know USB devices/gadgets could be handled from userspace.
+>
+> The gadgetfs driver allows for writing custom usb device
+> implementations. The SoC info could be used to set the USB
+> vendor/product id. Again, I see this more useful within the SoC family
+> (ie at91sam9260 vs at91sam9263) rather than between families. From an
+> embedded perspective at least, I think it is unlikely for an application
+> to need to work on multiple SoC families.
+>
+> The only real objection I have to adding the SoC family information is
+> basically to discourage it being abused by userspace. I can see it being
+> useful in debug situations, but I can also see stupid userspace
+> applications explicitly testing for some particular SoC, rather than
+> more correctly (IMHO) checking for presence of certain drivers etc.
 
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index d54d4ba..8cb2685 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -710,7 +710,7 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
- 	return 0;
- }
- 
--static void __devexit hpwdt_exit_nmi_decoding(void)
-+static void hpwdt_exit_nmi_decoding(void)
- {
- 	unregister_die_notifier(&die_notifier);
- 	if (cru_rom_addr)
-@@ -726,7 +726,7 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
- 	return 0;
- }
- 
--static void __devexit hpwdt_exit_nmi_decoding(void)
-+static void hpwdt_exit_nmi_decoding(void)
- {
- }
- #endif /* CONFIG_HPWDT_NMI_DECODING */
+True, but so many other things could be misused by stupid userspace 
+programs. When there are legitimate usecases, I think we shouldn't 
+prevent them just because we think a stupid userspace program could 
+misuse it.
+
+Again, although you might not be gung-ho about this, I think I have at 
+least made you indifferent/mildly supportive to adding socinfo. If you 
+don't mind, I would like to wait for others to chime in before 
+continuing this discussion.
+
+-Saravana
 -- 
-1.7.2
-
-
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
