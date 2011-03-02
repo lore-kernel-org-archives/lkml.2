@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab1CBULZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:11:25 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:57540 "EHLO www.hansjkoch.de"
+	id S1757447Ab1CBUN1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:13:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43451 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755982Ab1CBULY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:11:24 -0500
-Date: Wed, 2 Mar 2011 21:09:56 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Pratheesh Gangadhar <pratheesh@ti.com>
-Cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de, gregkh@suse.de,
-        tglx@linutronix.de, sshtylyov@mvista.com, arnd@arndb.de,
-        amit.chatterjee@ti.com, davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 1/1] PRUSS UIO driver support
-Message-ID: <20110302200956.GB23818@local>
-References: <1299065886-30099-1-git-send-email-pratheesh@ti.com>
- <1299065886-30099-2-git-send-email-pratheesh@ti.com>
+	id S1756936Ab1CBUN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:13:26 -0500
+Message-ID: <4D6EA473.9000001@zytor.com>
+Date: Wed, 02 Mar 2011 12:11:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299065886-30099-2-git-send-email-pratheesh@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Vegard Nossum <vegard@kernel.org>
+Subject: Re: RFC: x86: kill binutils 2.16.x?
+References: <4D6E8932.1010405@zytor.com> <20110302120339.efd60504.akpm@linux-foundation.org>
+In-Reply-To: <20110302120339.efd60504.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 05:08:06PM +0530, Pratheesh Gangadhar wrote:
-> This patch implements PRUSS (Programmable Real-time Unit Sub System)
-> UIO driver which exports SOC resources associated with PRUSS like
-> I/O, memories and IRQs to user space. PRUSS is dual 32-bit RISC
-> processors which is efficient in performing embedded tasks that
-> require manipulation of packed memory mapped data structures and
-> handling system events that have tight real time constraints. This
-> driver is currently supported on Texas Instruments DA850, AM18xx and
-> OMAP-L138 devices.
-> For example, PRUSS runs firmware for real-time critical industrial
-> communication data link layer and communicates with application stack
-> running in user space via shared memory and IRQs.
+On 03/02/2011 12:03 PM, Andrew Morton wrote:
+> On Wed, 02 Mar 2011 10:15:14 -0800
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
 > 
-> Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
-> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  drivers/uio/Kconfig     |   17 ++++
->  drivers/uio/Makefile    |    1 +
->  drivers/uio/uio_pruss.c |  226 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 244 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/uio/uio_pruss.c
+>> binutils 2.16 (and presumably its prereleases, binutils 2.15.9x) appears
+>> to have more bugs than any other version of binutils released in modern
+>> history, *before or after*.
+>>
+>> We chronically run into problems because that particular binutils
+>> version breaks code that works fine elsewhere.
+>>
+>> I would like to know who would suffer from formally discontinuing
+>> support for that version.  I understand some version of SLES shipped it,
+>> but I don't know for sure.
+>>
+> 
+> I gave up and became a customer of
+> http://www.kernel.org/pub/tools/crosstool/index_old.shtml
 
-That looks good now, I don't see any further issues. But you should
-address Arnd's comment about that __iomem stuff. It's a bit nit-picking,
-but he's right, ioremap() returns void __iomem *, and uio_mem.internal_addr
-also has that type.
+Vegard,
 
-> +static struct uio_info *info;
-> +static dma_addr_t sram_paddr, ddr_paddr;
-> +static void *prussio_vaddr, *sram_vaddr, *ddr_vaddr;
+The source directory in the above doesn't seem to match the binary
+directories, and is stuck at binutils 2.16.1.  At the very best this is
+iffy from a GPL perspective, and very confusing to users.
 
-So the correct thing would be
+This is obviously a highly useful project, can we straighten out the
+source situation?
 
-static void __iomem *prussio_vaddr;
-static void *sram_vaddr, *ddr_vaddr;
-
-Thanks,
-Hans
-
+	-hpa
