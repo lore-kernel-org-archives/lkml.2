@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab1CBLfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 06:35:46 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:48503 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232Ab1CBLfo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 06:35:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=H0dTDJfMt1ml/P9Kvtt7Ylp9GXWDMzWyZExsVpQlfsIp8ZG5Wo3ckoB/kcE4EkfXj7
-         yyGrlNt+HcEs+cTb5sYU5kasLcsbTm1retNsxxdN50fPscNOoKQYl2LkwIZMNIG/G+VH
-         N1RrefDQgCuxM/nusY4w1MFzpbvebN+7TT0co=
-From: Akinobu Mita <akinobu.mita@gmail.com>
+	id S1756774Ab1CBLik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 06:38:40 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45026 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756420Ab1CBLii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 06:38:38 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
 To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] bfs: fix bitmap size argument to find_first_zero_bit()
-Date: Wed,  2 Mar 2011 20:36:39 +0900
-Message-Id: <1299065799-6289-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4
+Cc: hjk@hansjkoch.de, gregkh@suse.de, tglx@linutronix.de, sshtylyov@mvista.com,
+        arnd@arndb.de, pratheesh@ti.com, amit.chatterjee@ti.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v8 0/1] Add PRUSS UIO driver support
+Date: Wed,  2 Mar 2011 17:08:05 +0530
+Message-Id: <1299065886-30099-1-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usage of find_first_zero_bit() in bfs_create() is wrong for
-two reasons.
+This patch series add support for PRUSS (Programmable Real-time Unit Sub
+System) UIO driver in Texas Instruments DA850, AM18xx and OMAP-L138 processors.
+PRUSS is programmable RISC core which can be used to implement Soft IPs
+(eg:- DMA, CAN, UART,SmartCard) and Industrial communications data link layers
+(eg:- PROFIBUS). UIO driver exposes PRUSS resources like memory and interrupts
+to user space application.PRUSS UIO application API can be used to control PRUs
+in PRUSS, setup PRU INTC, load firmware to PRUs and implement IPC between Host
+processor and PRUs. More information on PRUSS and UIO linux user space API
+available in the links below
 
-The bitmap size argument to find_first_zero_bit() is info->si_lasti
-but the correct bitmap size is info->si_lasti + 1 as info->si_lasti
-is the last valid index in info->si_imap bitmap.
+http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader_API_Guide
 
-Another problem is that it is impossible to detect that info->si_imap
-bitmap is full because there is an off-by-one bug in the return value
-check for find_first_zero_bit().  If no zero bits exist in info->si_imap,
-find_first_zero_bit() returns info->si_lasti. But the check can't catch it
-due to the off-by-one.
+Platform/board specific portion of this patch depends on Mistral patches below
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>
-Cc: linux-fsdevel@vger.kernel.org
----
- fs/bfs/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+[PATCH 1/1] davinci: changed SRAM allocator to shared ram :
+				https://patchwork.kernel.org/patch/549351/
+[PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS :
+				 https://patchwork.kernel.org/patch/549331/
+[PATCH v2 01/13] mfd: pruss mfd driver :
+				https://patchwork.kernel.org/patch/549531/
+[PATCH v2 02/13] da850: pruss platform specific additions :
+				https://patchwork.kernel.org/patch/549521/
 
-diff --git a/fs/bfs/dir.c b/fs/bfs/dir.c
-index 685ecff..b14cebf 100644
---- a/fs/bfs/dir.c
-+++ b/fs/bfs/dir.c
-@@ -97,7 +97,7 @@ static int bfs_create(struct inode *dir, struct dentry *dentry, int mode,
- 	if (!inode)
- 		return -ENOSPC;
- 	mutex_lock(&info->bfs_lock);
--	ino = find_first_zero_bit(info->si_imap, info->si_lasti);
-+	ino = find_first_zero_bit(info->si_imap, info->si_lasti + 1);
- 	if (ino > info->si_lasti) {
- 		mutex_unlock(&info->bfs_lock);
- 		iput(inode);
--- 
-1.7.4
+I will submit a seperate patch set on top of these patches to support PRUSS
+UIO driver.
+
+Pratheesh Gangadhar (1):
+  PRUSS UIO driver support
+
+ drivers/uio/Kconfig     |   17 ++++
+ drivers/uio/Makefile    |    1 +
+ drivers/uio/uio_pruss.c |  226 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 244 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/uio/uio_pruss.c
 
