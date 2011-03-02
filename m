@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab1CBVQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 16:16:40 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23070 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757737Ab1CBVQj (ORCPT
+	id S1757838Ab1CBVQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 16:16:51 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63913 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757818Ab1CBVQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 16:16:39 -0500
-Message-ID: <4D6EB335.8000306@kernel.org>
-Date: Wed, 02 Mar 2011 13:14:29 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table handling
-References: <20110302102530.GB3319@htj.dyndns.org> <4D6E6D52.8030901@kernel.org> <20110302163729.GQ3319@htj.dyndns.org> <4D6E7459.6050706@kernel.org> <20110302165545.GR3319@htj.dyndns.org> <4D6E91EC.6040906@kernel.org> <20110302190208.GD28266@mtj.dyndns.org> <4D6E9541.2040201@kernel.org> <20110302191338.GE28266@mtj.dyndns.org> <4D6EA975.8070200@kernel.org> <20110302205704.GF28266@mtj.dyndns.org>
-In-Reply-To: <20110302205704.GF28266@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D6EB3A1.00B9,ss=1,fgs=0
+	Wed, 2 Mar 2011 16:16:48 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6273"; a="77638259"
+X-IronPort-AV: E=Sophos;i="4.62,253,1297065600"; 
+   d="scan'208";a="56219172"
+From: Carl Vanderlip <carlv@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Dima Zavin <dima@android.com>, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Carl Vanderlip <carlv@codeaurora.org>,
+        linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
+Subject: [PATCH 1/4] video: msmfb: Put the partial update magic value into the fix_screen struct.
+Date: Wed,  2 Mar 2011 13:16:36 -0800
+Message-Id: <1299100596-11157-1-git-send-email-carlv@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1299100542-11120-1-git-send-email-carlv@codeaurora.org>
+References: <1299100542-11120-1-git-send-email-carlv@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2011 12:57 PM, Tejun Heo wrote:
-> On Wed, Mar 02, 2011 at 12:32:53PM -0800, Yinghai Lu wrote:
->> why use enabled nodes?
->>
->> numa_alloc_distance already have calculated. with numa_nodes_parsed and numa_meminfo
-> 
-> Because it's simpler that way.
-> 
-what do you mean "enabled nodes"? numa_nodes_parsed? or from new numa_meminfo?
+From: Dima Zavin <dima@android.com>
 
+This can then be tested by userspace to see if the capability is supported.
+Userspace cannot rely on that value being left in var_screen, since userspace
+itself can change it.
 
+Signed-off-by: Dima Zavin <dima@android.com>
+Signed-off-by: Carl Vanderlip <carlv@codeaurora.org>
+---
+ drivers/video/msm/msm_fb.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
+index 5436aeb..fe5efe5 100644
+--- a/drivers/video/msm/msm_fb.c
++++ b/drivers/video/msm/msm_fb.c
+@@ -469,6 +469,18 @@ static void setup_fb_info(struct msmfb_info *msmfb)
+ 	fb_info->var.yoffset = 0;
+ 
+ 	if (msmfb->panel->caps & MSMFB_CAP_PARTIAL_UPDATES) {
++		/*
++		 * Set the param in the fixed screen, so userspace can't
++		 * change it. This will be used to check for the
++		 * capability.
++		 */
++		fb_info->fix.reserved[0] = 0x5444;
++		fb_info->fix.reserved[1] = 0x5055;
++
++		/*
++		 * This preloads the value so that if userspace doesn't
++		 * change it, it will be a full update
++		 */
+ 		fb_info->var.reserved[0] = 0x54445055;
+ 		fb_info->var.reserved[1] = 0;
+ 		fb_info->var.reserved[2] = (uint16_t)msmfb->xres |
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
