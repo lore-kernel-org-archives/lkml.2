@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab1CBKbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 05:31:10 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:46031 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab1CBKbI convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Wed, 2 Mar 2011 05:31:08 -0500
-Message-Id: <4D6E2A7802000078000347B7@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 02 Mar 2011 10:31:04 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: x86's rwlock scalability and fairness
+	id S1756793Ab1CBKce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 05:32:34 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:44348 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755687Ab1CBKcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 05:32:32 -0500
+Subject: Re: [PATCH v2 1/4] perf-events: Add support for supplementary
+ event registers
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTi=a3_EE8RwdRTmhpcgGwq2fY8jXMC=s+zwh7_NE@mail.gmail.com>
+References: <1298998076.2170.62.camel@localhost>
+	 <AANLkTimvx+MYhOw8VFsJn4V6FQutKiYO6pHxgd9xGY8A@mail.gmail.com>
+	 <1299026246.4937.99.camel@minggr.sh.intel.com>
+	 <AANLkTi=a3_EE8RwdRTmhpcgGwq2fY8jXMC=s+zwh7_NE@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Mar 2011 11:34:01 +0100
+Message-ID: <1299062041.1310.3.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With RW_LOCK_BIAS being 0x01000000 and with (significantly) more
-than 128 CPUs in a system, there is a non-zero probability for 129 or
-more CPUs to simultaneously attempt to acquire an rwlock in write
-mode, and if sufficiently many (129) of them manage to subtract the
-bias from the counter subsequent attempts to acquire the lock for
-reading will succeed independent of whether the lock is already being
-held in write mode. The probability of this happening is obviously
-larger in a virtual environment (i.e. when the time window between
-the execution of two consecutive instructions can be unbounded).
+On Wed, 2011-03-02 at 08:48 +0100, Stephane Eranian wrote:
+> >> >        __u32                   bp_type;
+> >> > -       __u64                   bp_addr;
+> >> > -       __u64                   bp_len;
+> >> > +       union {
+> >> > +               __u64           bp_addr;
+> >> > +               __u64           config1; /* extension of config0 */
+> >> > +       };
+> >> > +       union {
+> >> > +               __u64           bp_len;
+> >> > +               __u64           config2; /* extension of config1 */
+> >> > +       };
+> >> >  };
+> >> >
+> >> I don't see where those config0 or config1 are coming from.
+> >
+> > config0 means perf_event_attr::config.
+> >
+> yes.
+> 
+> > Peter suggested to extend the attr config space.
+> > http://marc.info/?l=linux-kernel&m=129838808907525&w=2
+> >
+> Ok, I get it, it is cascading. that's fine. 
 
-Consequently I think RW_LOCK_BIAS needs to be adjusted such
-that RW_LOCK_BIAS * NR_CPUS * 2 - 1 fits into the lock counter.
-
-For 32-bits (with a limit of 512 CPUs) this can be achieved without
-widening the counter (as even with a bias of 0x00400000 there's
-still room for 0x2000 nested read acquires on each CPU).
-
-For 64-bits, the counter would need to be widened at least for the
-MAXSMP case - the question is whether it should be widened
-unconditionally.
-
-There's also a fairness concern (again, likely more of a problem
-when running virtualized): Writers can get delayed unboundedly
-as long as new readers trickle in, since all writers undo their
-subtraction of the bias in __write_lock_failed. Simply blocking all
-future readers can't be done with the nesting semantics Linux
-uses for rwlocks, so the question is whether another scheme
-could be created (or had already been proposed - I did find a
-number of references, like the model sketched out by Linus at
-http://lkml.indiana.edu/hypermail/linux/kernel/0808.2/2861.html,
-which admittedly I'm not sure meets the nesting requirement -,
-but there must be reasons none of them made it into the kernel
-so far) that would allow nested acquires but disallows new CPUs
-to acquire the first instance of a lock when there's a waiting writer.
-
-One possible scheme would involve per-CPU lists of rwlocks held
-in read mode - if acquiring fails, the CPU would walk that list and
-decrement the counter anyway if it finds the lock already present
-on that list. The first writer to come in would then no longer undo
-its subtraction of the bias, thus forcing all future readers into the
-__read_lock_failed path. This, however, would require changes
-to all users of rwlocks as the linked list elements would need to
-live on the stack (in the scope of the top-most function common
-between lock and unlock), which doesn't look very nice.
-
-Similarly of concern (for virtualization again, but presumably also
-for rt) is the lack of interrupt re-enabling in the acquire-failed
-paths of arch_{read,write}_lock_flags().
-
-Jan
+I initially put config and config0 in a union, but that made compilation
+fail and fixing that up vs the benefit of actually having a config0,
+which seemed near 0, led me to drop that part. Forgot to update the
+comment though ;-)
 
