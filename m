@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab1CBJNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 04:13:45 -0500
-Received: from nm24.bullet.mail.ne1.yahoo.com ([98.138.90.87]:36863 "HELO
-	nm24.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755132Ab1CBJNn (ORCPT
+	id S1756259Ab1CBJRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 04:17:38 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48933 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779Ab1CBJRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 04:13:43 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 31047.96919.bm@omp1034.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=4Ou25AGI9skSINLhSXW11OMsYdVjJ8oQnRqCavoqK3GukWBjbESpaFkTGBG+zPBx/jUvyaXvc6KdH0vAlzck8xe9bj7J43XHydwdPrMvdYiJjoO33Jwmz+pu08Bp48eMYKc8j8yFnyp7RmwQnVnScONH0F5Rv8WlNkqcy+geheU=;
-Message-ID: <848226.70728.qm@web121814.mail.ne1.yahoo.com>
-X-YMail-OSG: CQrOhqcVM1mGSJeIWhmjk00VvsSMDgt2e0gC3Kz9hxIEpnn
- 4bukPsHrtugR00.FfWeLruCoTuELpLpW28VFeOWVYIuBwFUOLeyAWCHu7MX8
- Xj_kJ4mNMglcQ6aOVczgNSO0YgIKutVSc_7kuANIbdUhkJMGRLqWa0.00d6c
- l8oeoVRV4iwGXFPh0ayd06QPy.WWVqU3cPFC90qhGLoMaZwVb0qoYj7Eblyh
- n2aNl9cpKB_5_WCqDiVyUIzfAxaLvlTg17VT.KWU29n8xFy2ksxYtoza0Inn
- fkc.1uhaGmmoGj0kjkTJGHwYzut1l
-X-Mailer: YahooMailWebService/0.8.109.292656
-Date: Wed, 2 Mar 2011 01:13:12 -0800 (PST)
-From: GAURAV YADAV <gaurav_christmas@yahoo.com>
-To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
-        ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
-        preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com
+	Wed, 2 Mar 2011 04:17:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IcUpkRbp4TPcbu1U80vFp8/4SHkXbJTODE9vlPAZiWYgAqxo1bCQvSg8CtTE//TRzu
+         6wV8OatWqa3dCITIuBxPt5PVolCINgDPFqfECMmhBwLOgjKgVZOcaggOkvvUYCfjy9/W
+         b5tT0n2OQ5n3DBX0IFkxkZCTrZI9ZHl/Cg17c=
+Date: Wed, 2 Mar 2011 10:17:31 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL tip:x86/mm]
+Message-ID: <20110302091731.GJ19669@htj.dyndns.org>
+References: <20110224145128.GM7840@htj.dyndns.org>
+ <4D66AC9C.6080500@kernel.org>
+ <20110224192305.GB15498@elte.hu>
+ <4D66B176.9030300@kernel.org>
+ <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
+ <4D6D70E1.40808@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6D70E1.40808@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.powergrid.ru/gift.php?yahoo=3671
+Hello, Yinghai.
 
+On Tue, Mar 01, 2011 at 02:19:13PM -0800, Yinghai Lu wrote:
+> after looking at the code, it seems the cleanup does have several problems:
+> 1. need to reserve temp numa dist.
+> 	We only can use find_...without_reserve tricks when we are done with
+> 	 the old one before get another new one.
 
-      
+Indeed, thanks for catching this.
+
+> 2. during copying should only copy with NEW numa_dist_cnt size.
+> 	so need to call numa_alloc_dist at first before copy.
+
+It doesn't matter.  numa_set_distance() ignores distances for nodes
+which are out of scope.
+
+> 3. phys_dist whould numa_dist_cnt square size
+> 4. numa_reset_distance should free numa_dist_cnt square size
+
+Yeah, I seem to have completely forgotten about the square thing.
+Stupid.
+
+I'll regenerate patches with changes for 1, 3 and 4.  For 2, I'll add
+comments explaining why it's okay.
+
+Thanks.
+
+-- 
+tejun
