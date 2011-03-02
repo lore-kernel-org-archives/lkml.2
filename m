@@ -1,39 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab1CBNhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 08:37:48 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58297 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab1CBNhr (ORCPT
+	id S1755483Ab1CBNiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 08:38:01 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:47084 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab1CBNiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 08:37:47 -0500
-Date: Wed, 2 Mar 2011 13:37:40 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-Cc: peter.ujfalusi@nokia.com, tony@atomide.com, sameo@linux.intel.com,
-        lrg@slimlogic.co.uk, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 0/2] twl4030_codec cleanup
-Message-ID: <20110302133739.GB21424@sirena.org.uk>
-References: <1299072246-26402-1-git-send-email-ilkka.koskinen@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299072246-26402-1-git-send-email-ilkka.koskinen@nokia.com>
-X-Cookie: Have at you!
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Wed, 2 Mar 2011 08:38:00 -0500
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, apw@canonical.com
+In-reply-to: <20110301102546.11b98682.rdunlap@xenotime.net> (message from
+	Randy Dunlap on Tue, 1 Mar 2011 10:25:46 -0800)
+Subject: Re: [PATCH 6/6 v6] overlay: overlay filesystem documentation
+References: <20110301123645.189703316@szeredi.hu>
+	<20110301123711.818662770@szeredi.hu> <20110301102546.11b98682.rdunlap@xenotime.net>
+Message-Id: <E1PumFZ-000114-4d@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 02 Mar 2011 14:37:57 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 03:24:04PM +0200, Ilkka Koskinen wrote:
+Randy,
 
-> Ilkka Koskinen (2):
->   omap: Remove unnecessary twl4030_codec_audio settings from board
->     files
->   mfd: twl4030_codec: Remove unused and duplicate audio_mclk fields
+Thanks for the review.  I've incorporated your suggestions.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Thanks,
+Miklos
