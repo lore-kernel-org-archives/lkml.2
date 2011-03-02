@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab1CBIiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 03:38:24 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:57049 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab1CBIiX (ORCPT
+	id S1755867Ab1CBIi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 03:38:29 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51180 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab1CBIi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 03:38:23 -0500
+	Wed, 2 Mar 2011 03:38:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=jovOcNPoKqqJ9HWzJkFHlB4w9zf8sOJviA8+1KBFOYFLOFvDQrYVoLQtDEYiPaNXXL
-         yl+8RN28Fuvg2tAKD8YHxVWWRSu2HvmbnEBhUj5SoGCrBs2phkYxgN8/OX6SzZCt8IU/
-         B0GNKrI7EPFywgSwzNIkpHddjsLJ96QceMfRo=
+        b=rk/hGuq5+5MbP7HUjhMb9WiICWh7IDvmZ7R+HWbduINBBVUKn+q5DtMNSt8qjg3MUb
+         yh7F5cBa1WbEDJD95cWQAtQD61/0IJQIC/NaxhCXHqGWIX14gMhthiNhCkdpat+L5kYq
+         c2qCujlxNr4rqh8NSxsM7Bp5prh7OlMxqhemk=
 From: Liu Yuan <namei.unix@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jaxboe@fusionio.com,
         akpm@linux-foundation.org, fengguang.wu@intel.com
-Subject: [RFC PATCH 1/5] x86/Kconfig: Add Page Cache Accounting entry
-Date: Wed,  2 Mar 2011 16:38:06 +0800
-Message-Id: <1299055090-23976-1-git-send-email-namei.unix@gmail.com>
+Subject: [RFC PATCH 2/5] block: Add functions and data types for Page Cache Accounting
+Date: Wed,  2 Mar 2011 16:38:07 +0800
+Message-Id: <1299055090-23976-2-git-send-email-namei.unix@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <no>
 References: <no>
@@ -28,29 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Liu Yuan <tailai.ly@taobao.com>
 
+These functions and data types are based on the percpu
+disk stats infrastructure.
+
 Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
 ---
- arch/x86/Kconfig.debug |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ include/linux/genhd.h |   56 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 56 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 615e188..f29e32d 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -304,4 +304,13 @@ config DEBUG_STRICT_USER_COPY_CHECKS
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index c0d5f69..4f0257c 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -86,6 +86,11 @@ struct disk_stats {
+ 	unsigned long ticks[2];
+ 	unsigned long io_ticks;
+ 	unsigned long time_in_queue;
++#ifdef CONFIG_PAGE_CACHE_ACCT
++	unsigned long page_cache_readpages;
++	unsigned long page_cache_hit[2];
++	unsigned long page_cache_missed[2];
++#endif
+ };
  
- 	  If unsure, or if you run an older (pre 4.4) gcc, say N.
+ #define PARTITION_META_INFO_VOLNAMELTH	64
+@@ -400,6 +405,57 @@ static inline void free_part_info(struct hd_struct *part)
+ 	kfree(part->info);
+ }
  
-+config PAGE_CACHE_ACCT
-+	bool "Page cache accounting"
-+	---help---
-+	  Enabling this options to account for page cache hit/missed number of
-+	  times. This would allow user space applications get better knowledge
-+	  of underlying page cache system by reading virtual file. The statitics
-+	  per partition are collected.
++#ifdef CONFIG_PAGE_CACHE_ACCT
++static inline void page_cache_acct_readpages(struct super_block *sb, int nr_pages)
++{
++	struct block_device *bdev = sb->s_bdev;
++	struct hd_struct *part;
++	int cpu;
++	if (likely(bdev) && likely(part = bdev->bd_part)) {
++		cpu = part_stat_lock();
++		part_stat_add(cpu, part, page_cache_readpages, nr_pages);
++		part_stat_unlock();
++	}
++}
++static inline void page_cache_acct_hit(struct super_block *sb, int rw)
++{
++	struct block_device *bdev = sb->s_bdev;
++	struct hd_struct *part;
++	int cpu;
++	if (likely(bdev) && likely(part = bdev->bd_part)) {
++		cpu = part_stat_lock();
++		part_stat_inc(cpu, part, page_cache_hit[rw]);
++		part_stat_unlock();
++	}
++}
 +
-+	  If unsure, say N.
- endmenu
++static inline void page_cache_acct_missed(struct super_block *sb, int rw)
++{
++	struct block_device *bdev = sb->s_bdev;
++	struct hd_struct *part;
++	int cpu;
++	if (likely(bdev) && likely(part = bdev->bd_part)) {
++		cpu = part_stat_lock();
++		part_stat_inc(cpu, part, page_cache_missed[rw]);
++		part_stat_unlock();
++	}
++}
++
++#else /* !CONFIG_PAGE_CACHE_ACCT */
++static inline void page_cache_acct_readpages(struct super_block *sb, int nr_pages)
++{
++}
++
++static inline void page_cache_acct_hit(struct super_block *sb, int rw)
++{
++}
++
++static inline void page_cache_acct_missed(struct super_block *sb, int rw)
++{
++}
++
++#endif /* CONFIG_PAGE_CACHE_ACCT */
++
+ /* block/blk-core.c */
+ extern void part_round_stats(int cpu, struct hd_struct *part);
+ 
 -- 
 1.7.0.4
 
