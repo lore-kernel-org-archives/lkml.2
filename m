@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab1CBXZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 18:25:04 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:57554 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab1CBXZC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 18:25:02 -0500
-Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM 
-	top level
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>
-In-Reply-To: <41502.137.254.4.9.1299105929.squirrel@xenotime.net>
-References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
-	 <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
-	 <20110301223251.11c95eed.rdunlap@xenotime.net>
-	 <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
-	 <41502.137.254.4.9.1299105929.squirrel@xenotime.net>
-Content-Type: text/plain
-Date: Wed, 02 Mar 2011 15:18:16 -0800
-Message-Id: <1299107896.5401.333.camel@haakon2.linux-iscsi.org>
+	id S1755436Ab1CBXgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 18:36:33 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60431 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755036Ab1CBXgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 18:36:31 -0500
+Date: Thu, 3 Mar 2011 10:36:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, gregkh@suse.de,
+        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] staging/brcm80211: fix printk format warnings
+Message-Id: <20110303103620.6b3c463f.sfr@canb.auug.org.au>
+In-Reply-To: <20110302210511.GA20798@kroah.com>
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au>
+	<20110301162948.34c28d6e.randy.dunlap@oracle.com>
+	<20110302210511.GA20798@kroah.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__3_Mar_2011_10_36_20_+1100_rp904KFcoJYszMJm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-03-02 at 14:45 -0800, Randy Dunlap wrote:
-> On Wed, March 2, 2011 1:32 pm, Nicholas A. Bellinger wrote:
-> > On Tue, 2011-03-01 at 22:32 -0800, Randy Dunlap wrote:
-> >> On Tue,  1 Mar 2011 19:34:01 -0800 Nicholas A. Bellinger wrote:
-> >>> From: Nicholas Bellinger <nab@linux-iscsi.org>
+--Signature=_Thu__3_Mar_2011_10_36_20_+1100_rp904KFcoJYszMJm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-<SNIP>
+Hi Greg,
 
-> >>> --- /dev/null
-> >>> +++ b/drivers/target/iscsi/Kconfig
-> >>> @@ -0,0 +1,17 @@
-> >>> +config ISCSI_TARGET
-> >>> +	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
-> >>> +	select CRYPTO
-> >>> +	select CRYPTO_CRC32C
-> >>> +	select CRYPTO_CRC32C_INTEL
-> >>>
-> >>
-> >> CRYPTO_CRC32C_INTEL depends on X86.  so is ISCSI_TARGET only for X86,
-> >> or is this kconfig just mucked up?
-> >>
-> >>
-> >
-> > Hi Randy,
-> >
-> >
-> > The kernel code itself that is specific to using the SSE v4.2
-> > instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
-> > iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
-> > default to using the unoptimized 1x8 slicing soft CRC32C code.  This
-> > particular piece of logic has been tested on powerpc and arm and is
-> > funcitoning as expected from the kernel level using the arch independent
-> > soft code.
-> >
-> > On the kbuild side, I do see the following warning on !CONFIG_X86:
-> >
-> >
-> > warning: (LIO_TARGET) selects CRYPTO_CRC32C_INTEL which has unmet direct
-> > dependencies (CRYPTO && X86)
-> 
-> Ah, good.
-> 
-> > I looking at trying to fix this at one point, but was unable to
-> > determine a method for adding a CONFIG_$ARCH condition to an individual
-> > 'select BAR' section of 'config FOO'..
-> >
-> >
-> > How would you recommend handling this case..?
-> 
-> How about
-> 
->         select CRYPTO_CRC32C_INTEL if X86
-> 
-> (with s/spaces/tab/)
+On Wed, 2 Mar 2011 16:05:11 -0500 Greg KH <greg@kroah.com> wrote:
+>
+> On Tue, Mar 01, 2011 at 04:29:48PM -0800, Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> >=20
+> > drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c:1379: warning: format =
+'%d' expects type 'int', but argument 3 has type 'size_t'
+> > drivers/staging/brcm80211/sys/wl_mac80211.c:1827: warning: format '%d' =
+expects type 'int', but argument 3 has type 'size_t'
+> > drivers/staging/brcm80211/sys/wl_mac80211.c:1832: warning: format '%d' =
+expects type 'int', but argument 3 has type 'size_t'
+> >=20
+> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > Acked-by: Roland Vossen <rvossen@broadcom.com>
+> > ---
+> >  drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |    2 +-
+> >  drivers/staging/brcm80211/sys/wl_mac80211.c      |    4 ++--
+>=20
+> This file doesn't apply to my tree at all.
 
-Perfect, this resolves the kconfig warning on a nearby powerpc machine
-running LIO upstream .38-rcX iSCSI target code..
+Maybe due to conflict resolutions in my tree (assuming that Randy based
+his patch in linux-next).
 
-Committed as c8bc93f107b into lio-core-2.6.git/lio-4.1, and I will make
-sure this is included for the next iscsi-target RFC series rev.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks for your review Randy!
+--Signature=_Thu__3_Mar_2011_10_36_20_+1100_rp904KFcoJYszMJm
+Content-Type: application/pgp-signature
 
---nab
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJNbtR0AAoJEDMEi1NhKgbsayYH/Rtm68FxFeFTVcS7KLmn1NC4
+BgH6yp+a+rVc7n2GshhILwBASCBrgGzDkATW2QqZ6zcfrP2JUQQuxxUXPsRaAqEe
+RSNb2AIx3XOJr5KhcYxuC8Vg/bUNs/xrLqSpXAMmaXOTX0A0YrjksUJc4xMSIjal
+E1sCtWwpuiBaQTxWHzhFJhShcwEuHP1vPPYUgK7xUbm7l8f8MP2m2+rI7IHJJH0X
+l84SECQVrwfM+8Au2WvequGRnVBwhK4Wg6dOvVmZFGMvHUKj1aFmGqG4jqlv8S4W
+SHU1folv0T6ejmmY0JXqD2jyFY+hTVWpZeaJx03Ep1RlK0TsGs/6TA7wwc0d8ng=
+=ob/J
+-----END PGP SIGNATURE-----
 
-
+--Signature=_Thu__3_Mar_2011_10_36_20_+1100_rp904KFcoJYszMJm--
