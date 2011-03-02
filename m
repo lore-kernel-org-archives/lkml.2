@@ -1,89 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab1CBL2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 06:28:41 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35162 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab1CBL2k (ORCPT
+	id S1755899Ab1CBLcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 06:32:41 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:32928 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab1CBLcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 06:28:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=d5DGQUUVcDkmSJ5U5l63UEGa1Vdcsr7MU5g/DylU/fVIk7vPVQAm8M+gadvSUNsJ2G
-         5G2S5/aTQWivD4DmwQfSvtKxKcVVQNn8E0mlniVdprbBpQDzHqEVTWbJ6pEfrlHJIakl
-         pZ7O1W8bhIS0Mg6tgByyN53ooaEagpAVgqOrk=
-Date: Wed, 2 Mar 2011 12:27:56 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110302112756.GI3319@htj.dyndns.org>
+	Wed, 2 Mar 2011 06:32:39 -0500
+Message-ID: <6b211a19ed02fa7f001343fbd8e3d5a9.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20110302074447.GE19669@htj.dyndns.org>
 References: <20110301152457.GE26074@htj.dyndns.org>
- <AANLkTi=cUM9S5M7h0unMfbQ88CzqhoDN9CUEVf_9HrdS@mail.gmail.com>
- <20110302073727.GD19669@htj.dyndns.org>
- <AANLkTimA8wtM4sJu1SMVuOaNXyxEtLcfaj7kJf2NovAd@mail.gmail.com>
+    <201103011757.48593.vda.linux@googlemail.com>
+    <20110301170953.GB17933@htj.dyndns.org>
+    <AANLkTi=8=Tw2aYzvwM_s8dsMmw3W_tYjsYkqTHS9moUW@mail.gmail.com>
+    <20110301183454.GC23527@mtj.dyndns.org>
+    <830cc1666bd4a610d5e870218f06bd2d.squirrel@webmail.greenhost.nl>
+    <20110302074447.GE19669@htj.dyndns.org>
+Date: Wed, 2 Mar 2011 12:32:36 +0100 (CET)
+Subject: Re: [RFC] Proposal for ptrace improvements
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Tejun Heo" <tj@kernel.org>
+Cc: "Denys Vlasenko" <vda.linux@googlemail.com>,
+        "Oleg Nesterov" <oleg@redhat.com>,
+        "Roland McGrath" <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain;charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimA8wtM4sJu1SMVuOaNXyxEtLcfaj7kJf2NovAd@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 4c6e9116b9ad1e3c2304ae6adbe1e50f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 12:21:28PM +0100, Denys Vlasenko wrote:
-> > I think WSTOPSIG should be SIGTRAP as the tracee left group stop and
-> > entered ptrace trap.
-> 
-> This would be, by my count, 13th kind of SIGTRAP use by ptrace.
-> Which makes multi-level if's in debuggers even more complex
-> and more error-prone.
+On Wed, March 2, 2011 08:44, Tejun Heo wrote:
+> On Wed, Mar 02, 2011 at 06:07:35AM +0100, Indan Zupancic wrote:
+>> I'm not sure what Denys is talking about: Currently it's impossible to
+>> pass along SIGSTOP to traced processes. Quoting the ptrace manpage:
+>>
+>>    PTRACE_CONT
+>>           Restarts  the stopped child process.  If data is nonzero and not
+>>           SIGSTOP, it is interpreted as a signal to be  delivered  to  the
+>>           child;  otherwise,  no  signal is delivered.
+>
+> AFAICS, that's not true.  SIGSTOP isn't treated differently from other
+> signals in the ptrace signal delivery path.  Maybe it was true in the
+> past.
 
-Of course, all ptrace traps are SIGTRAPs.
+Well, I can't find it in the code either, but it's probably a side-effect
+of how ptrace is currently implemented. Test program code below, see for
+yourself. I hope it's a program bug, but perhaps it's a kernel bug, as I
+seem to get two SIGSTOP events when I allow the SIGSTOP, but only one when
+denying it. In both cases the traced process isn't actually stopped.
 
-> Why not SIGCONT? This event is, after all, caused by SIGCONT.
-> It would be so much nicer to be able to detect it with single if()
-> in the debugger...
+What might happen is that, because the current code handles the traced
+task as stopped, the new SIGSTOP signal is first added and then cleared
+when the task continues. This doesn't explain the double SIGSTOP
+notifications, I'd expect it to either loop indefinitely or to not
+notify the SIGSTOP twice.
 
-I disagree.  It's a ptrace trap.  It should use SIGTRAP.  We just need
-well defined siginfo output to distinguish between them.  It's not
-like we can avoid siginfo anyway.
+>> As for distinguishing STOP signals from stopped childs: Just don't set
+>> the WUNTRACED flag in the tracer for waitpid.
+>
+> I'm not following.  Can you please elaborate?
 
-> > No, it's not a signal delivery notification.  It's a ptrace trap
-> > notification.  SIGCONT may not be delivered to this task.  Please
-> > remember that it's the emission of SIGCONT which ends a group stop,
-> > not delivery.
-> 
-> From userspace POV it's really a kernel's implementation detail.
+Sorry, should have quoted Denys:
 
-Not really.  This is actually a visible difference.  Roland wrote in
-the previous discussion.  One visible difference is that ptrace can
-veto job control stop but it can't veto the end of job control.  Job
-control actions happen before SIGCONT hits the signal delivery path
-which is visible through ptrace.
+ This proposal adds a new rule for handling of stop notification
+ by debuggers. Let's spell it out, because currently strace
+ doesn't act according to this new rule:
 
-> >> (b) does PTRACE_CONT(<other_sig>)? or
-> >> (c) does PTRACE_CONT(0)?
-> >
-> > See above.
-> 
-> This means that SIGCONT handler will be executed in the tracee
-> after debugger does PTRACE_CONT(<any_signo>) at this point.
-> 
-> Which makes SIGCONT special: debugger can suppress execution
-> of other signal handlers in tracee, but not SIGCONT handler.
-> Another special case. Can we avoid having it?
 
-Hmmm.... I think you're confused about how SIGCONT is handled or maybe
-I am.  Either way, please elaborate.  I can't really follow.
+ "When waitpid indicates stop on a *stop* signal, then it may be either:
+ * a signal delivery (strace will inject this signal with PTRACE_SYSCALL(sig));
+ * or it may be a stop notification, in which case strace *must not*
+   try to inject this signal (this would be a bug, it'd make task running).
+   Instead, strace should just go back to waiting in waitpid().
 
-Thanks.
+ These two possibilities can be distinquished by querying
+ PTRACE_GETSIGINFO. On stop notifications, PTRACE_GETSIGINFO
+ errors out - stop notification is not a signal delivery
+ and therefore it has no siginfo."
 
--- 
-tejun
+End quote.
+
+You don't get the second case when not setting the WUNTRACED flag.
+
+>> To me it seems clear that job ctl state should be managed independently
+>> of ptrace stopped state.  I'm not sure how that fits in with your
+>> proposed changes, but my impression is that you make everything a lot
+>> simpler by separating traced stopping/continuing from SIGSTOP/SIGCONT
+>> job control. It's just not the same. A task stopped by a trace event
+>> shouldn't generate a STOP signal for it's parent, only for real SIGSTOPS.
+>
+> Again, not following.  In the proposal, job control and ptrace operate
+> independently, so on that we seem to agree, but I can't understand
+> where the STOP signal for the parent comes from?  What are you
+> referring to?
+
+What I mean is, if you have a parent P with a child C, and C is ptraced by T,
+P shouldn't get SIGSTOP notifications when it waits for C with WUNTRACED set
+and C is stopped because of a ptrace event.
+
+Greetings,
+
+Indan
+
+---
+
+Test program:
+
+#include <errno.h>
+#include <sched.h> /* clone */
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ptrace.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/stat.h>
+
+typedef enum event_type
+{
+	EVENT_NONE,
+	EVENT_INTR,
+	EVENT_SIG,
+	EVENT_EXIT,
+} event_t;
+
+struct event
+{
+	event_t type;
+	int pid;
+	int num;
+};
+
+int trace_fork(void);
+event_t trace_event(struct event* e);
+void event_allow(struct event* e);
+void event_deny(struct event* e);
+static void event_end(struct event* e, int deny);
+
+int trace_fork(void)
+{
+	int pid;
+	int ret;
+
+	fflush(NULL);
+	pid = fork();
+
+	/* child */
+	if (pid == 0){
+		ret = ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+		if (ret)
+			perror("ptrace");
+		return 0;
+	}
+	/* parent process */
+	return pid;
+}
+
+static void event_end(struct event* e, int deny)
+{
+	int ret;
+	event_t type = e->type;
+	long sig = 0;
+
+	switch (type) {
+	case EVENT_NONE:
+	case EVENT_INTR:
+	case EVENT_EXIT:
+		return;
+	case EVENT_SIG:
+		if (!deny)
+			sig = e->num;
+		break;
+	}
+	/* continue the stopped child, sending signal 'sig' */
+	ret = ptrace(PTRACE_SYSCALL, e->pid, NULL, (void*)sig);
+	if (ret)
+		perror("event_end");
+}
+
+void event_allow(struct event* e)
+{
+	event_end(e, 0);
+}
+
+void event_deny(struct event* e)
+{
+	event_end(e, 1);
+}
+
+
+event_t trace_event(struct event* e)
+{
+	long pid;
+	int status, sig;
+retry:
+	memset(e, 0, sizeof(*e));
+//	pid = waitpid(-1, &status, __WALL);
+	pid = wait(&status);
+	if (pid == -1){
+		if (errno == EINTR){
+			e->type = EVENT_INTR;
+			return EVENT_INTR;
+		}
+		/* We've no child processes left */
+		return EVENT_NONE;
+	}
+	e->pid = pid;
+	if (!WIFSTOPPED(status)){
+		e->type = EVENT_EXIT;
+		if (WIFEXITED(status)){
+			e->num = WEXITSTATUS(status);
+		} else if (WIFSIGNALED(status)){
+			e->num = WTERMSIG(status) + 128;
+		} else {
+			/* Don't send SIGCHLD signals up */
+			goto retry;
+		}
+		return EVENT_EXIT;
+	}
+	e->type = EVENT_SIG;
+	sig = WSTOPSIG(status);
+	switch (sig){
+	case SIGTRAP:
+		/* Don't kill the prisoner by sending it SIGTRAP */
+		event_deny(e);
+		/* Don't sent SIGTRAP events up */
+		goto retry;
+	default:
+		/* Signal */
+		e->num = sig;
+	}
+	return e->type;
+}
+
+int main(int argc, char* argv[])
+{
+	struct event e;
+	int pid;
+
+	pid = trace_fork();
+	if (pid < 0){
+		perror("trace_fork");
+		return errno;
+	} else if (pid == 0){
+		/* Child */
+		while (1){
+			sleep(2);
+			printf("Still running!\n");
+		}
+		return 0;
+	}
+	/* Tracer */
+	printf("New child %d\n", pid);
+	while (1){
+		int event = trace_event(&e);
+
+		if (event == EVENT_NONE)
+			return 0;
+		if (event == EVENT_SIG)
+			printf("Got signal %d\n", e.num);
+		event_allow(&e);
+	}
+	return 0;
+}
+
+
