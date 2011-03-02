@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab1CBLfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 06:35:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8190 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754485Ab1CBLfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 06:35:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,252,1297065600"; 
-   d="scan'208";a="608181120"
-Date: Wed, 2 Mar 2011 12:34:48 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Daniel Willerud <daniel.willerud@stericsson.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MFD: ab8500: New ab8500_gpadc APIs and reentrance
-Message-ID: <20110302113448.GH16181@sortiz-mobl>
-References: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298377440-13032-1-git-send-email-daniel.willerud@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756723Ab1CBLfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 06:35:46 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:48503 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232Ab1CBLfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 06:35:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=H0dTDJfMt1ml/P9Kvtt7Ylp9GXWDMzWyZExsVpQlfsIp8ZG5Wo3ckoB/kcE4EkfXj7
+         yyGrlNt+HcEs+cTb5sYU5kasLcsbTm1retNsxxdN50fPscNOoKQYl2LkwIZMNIG/G+VH
+         N1RrefDQgCuxM/nusY4w1MFzpbvebN+7TT0co=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] bfs: fix bitmap size argument to find_first_zero_bit()
+Date: Wed,  2 Mar 2011 20:36:39 +0900
+Message-Id: <1299065799-6289-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+The usage of find_first_zero_bit() in bfs_create() is wrong for
+two reasons.
 
-On Tue, Feb 22, 2011 at 01:24:00PM +0100, Daniel Willerud wrote:
-> Added ab8500_gpadc_get() API: A client do not need to be a ab8500 sub-device
-> Added ab8500_gpadc_convert() API
-> Added support for multiple ab8500-gpadc instances, driver is now reentrant
-> 
-> Corrected regulator naming according to ste-next
-This patch is fixing/improving several things at the same time, please split
-it up.
+The bitmap size argument to find_first_zero_bit() is info->si_lasti
+but the correct bitmap size is info->si_lasti + 1 as info->si_lasti
+is the last valid index in info->si_imap bitmap.
 
-Also, one additional comment:
+Another problem is that it is impossible to detect that info->si_imap
+bitmap is full because there is an off-by-one bug in the return value
+check for find_first_zero_bit().  If no zero bits exist in info->si_imap,
+find_first_zero_bit() returns info->si_lasti. But the check can't catch it
+due to the off-by-one.
 
-> +/**
-> + * ab8500_gpadc_get() - returns a reference to the primary AB8500 GPADC
-> + * (i.e. the first GPADC in the instance list)
-> + */
-> +struct ab8500_gpadc *ab8500_gpadc_get(void)
-> +{
-> +	struct ab8500_gpadc *gpadc;
-> +	gpadc = list_first_entry(&ab8500_gpadc_list, struct ab8500_gpadc, node);
-> +
-> +	return gpadc;
-> +}
-This seems really arbitrary. We argued with Mattias about it, and giving
-drivers access to your ADCs means they should somehow have a pointer back to
-the right ADC. That's not the case here, and while it will just work fine
-whenever you have one ADC on your board, you'll probably be relying on some
-sort of device probe order otherwise.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>
+Cc: linux-fsdevel@vger.kernel.org
+---
+ fs/bfs/dir.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Cheers,
-Samuel.
-
+diff --git a/fs/bfs/dir.c b/fs/bfs/dir.c
+index 685ecff..b14cebf 100644
+--- a/fs/bfs/dir.c
++++ b/fs/bfs/dir.c
+@@ -97,7 +97,7 @@ static int bfs_create(struct inode *dir, struct dentry *dentry, int mode,
+ 	if (!inode)
+ 		return -ENOSPC;
+ 	mutex_lock(&info->bfs_lock);
+-	ino = find_first_zero_bit(info->si_imap, info->si_lasti);
++	ino = find_first_zero_bit(info->si_imap, info->si_lasti + 1);
+ 	if (ino > info->si_lasti) {
+ 		mutex_unlock(&info->bfs_lock);
+ 		iput(inode);
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.4
+
