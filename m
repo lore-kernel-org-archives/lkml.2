@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab1CBUkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 15:40:12 -0500
-Received: from tex.lwn.net ([70.33.254.29]:49077 "EHLO vena.lwn.net"
+	id S1757190Ab1CBUl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 15:41:27 -0500
+Received: from cantor.suse.de ([195.135.220.2]:43914 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754696Ab1CBUkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 15:40:10 -0500
-Date: Wed, 2 Mar 2011 13:40:06 -0700
-From: Jake Edge <jake@lwn.net>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, mjt@tls.msk.ru, arnd@arndb.de,
-        mirqus@gmail.com, netdev@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com, therbert@google.com,
-        xiaosuo@gmail.com, jesse@nicira.com, kees.cook@canonical.com,
-        eugene@redhat.com, dan.j.rosenberg@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v2] net: don't allow CAP_NET_ADMIN to load non-netdev
- kernel modules
-Message-ID: <20110302134006.2a2e7c61@chukar>
-In-Reply-To: <20110302201807.GA31965@albatros>
-References: <201102272122.52643.arnd@arndb.de>
-	<4D6B6AE7.2050202@msgid.tls.msk.ru>
-	<20110228095133.GA4351@albatros>
-	<20110228.112349.104067277.davem@davemloft.net>
-	<20110301194845.GA3533@albatros>
-	<1299010390.2529.30.camel@bwh-desktop>
-	<20110301213313.GA6507@albatros>
-	<m34o7ltipi.fsf@lwn.net>
-	<20110302194354.GA31043@albatros>
-	<20110302124936.289a1915@chukar>
-	<20110302201807.GA31965@albatros>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754777Ab1CBUl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 15:41:26 -0500
+Date: Wed, 2 Mar 2011 15:42:02 -0500
+From: Greg KH <gregkh@suse.de>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.32.30
+Message-ID: <20110302204202.GB19022@suse.de>
+References: <20110302145828.GA4999@kroah.com>
+ <4D6E7548.807@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6E7548.807@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011 23:18:07 +0300 Vasiliy Kulikov wrote:
+On Wed, Mar 02, 2011 at 05:50:16PM +0100, Stefan Bader wrote:
+> > FUJITA Tomonori (1):
+> >       swiotlb: fix wrong panic
+> >
+> 
+> This one breaks compilation of 64bit for me as swiotlb_tbl_unmap_single() does
+> not exist. It does not look like it is a simple single patch that would get it
+> back to 2.6.32.
 
-> As root has CAP_NET_ADMIN, the alias netdev-gre0 is tried and it
-> succeeds.
+I don't understand.  Is this patch somehow broken?  Is there an
+additional patch I need to apply to fix the build issue?  I need more
+information here.
 
-Never mind, my apologies for the noise ... one always reads replies
-most carefully just *after* hitting send ...
+thanks,
 
-jake
-
--- 
-Jake Edge - LWN - jake@lwn.net - http://lwn.net
+greg k-h
