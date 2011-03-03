@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751239Ab1CCFBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 00:01:30 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:51770 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750742Ab1CCFB3 (ORCPT
+	id S1751271Ab1CCFRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 00:17:16 -0500
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:47343 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750769Ab1CCFRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 00:01:29 -0500
-Message-ID: <4D6F205F.5080209@st.com>
-Date: Thu, 3 Mar 2011 10:30:15 +0530
-From: pratyush <pratyush.anand@st.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Thu, 3 Mar 2011 00:17:14 -0500
+From: Pratyush Anand <pratyush.anand@st.com>
+To: <akpm@linux-foundation.org>
+Cc: <rdunlap@xenotime.net>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <gregkh@suse.de>, <jbarnes@virtuousgeek.org>, <viresh.kumar@st.com>,
+        <shiraz.hashim@st.com>, Pratyush Anand <pratyush.anand@st.com>
+Subject: [PATCH] ST SPEAr: PCIe Gadget: Documentation for support of multiple device
+Date: Thu, 3 Mar 2011 10:46:52 +0530
+Message-ID: <1299129412-9632-1-git-send-email-pratyush.anand@st.com>
+X-Mailer: git-send-email 1.6.0.2
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        Viresh KUMAR <viresh.kumar@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>
-Subject: Re: [PATCH V5 Resend] ST SPEAr: PCIE gadget suppport
-References: <1298276455-23989-1-git-send-email-pratyush.anand@st.com> <20110223160632.0b21c550.akpm@linux-foundation.org>
-In-Reply-To: <20110223160632.0b21c550.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/24/2011 5:36 AM, Andrew Morton wrote:
-> On Mon, 21 Feb 2011 13:50:55 +0530
-> Pratyush Anand <pratyush.anand@st.com> wrote:
-> 
->> This is a configurable gadget. can be configured by configfs interface. Any
->> IP available at PCIE bus can be programmed to be used by host
->> controller.It supoorts both INTX and MSI.
->> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
->> with size 0x1000
->>
->> Changes since V4:
->> - All documentation related comments incorporated
->>
->> Changes since V3:
->> - support for multiple instances of such device
-> 
-> ^^ This doesn't seem to agree with the documentation.
-> 
+Directory naming scheme for multiple PCIe device has been mentioned.
 
-Will add a line in documentation for it.
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+---
+ .../ABI/testing/configfs-spear-pcie-gadget         |    5 +++--
+ Documentation/misc-devices/spear-pcie-gadget.txt   |    3 ++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
->> ...
->>
->> --- /dev/null
->> +++ b/Documentation/ABI/testing/configfs-spear-pcie-gadget
->> @@ -0,0 +1,30 @@
->> +What:		/config/pcie-gadget
->> +Date:		Feb 2011
->> +KernelVersion:	2.6.37
->> +Contact:	Pratyush Anand <pratyush.anand@st.com>
->> +Description:
->> +
->> +	Interface is used to configure selected dual mode PCIe controller
->> +	as device and then program its various registers to configure it
->> +	as a particular device type.
->> +	This interfaces can be used to show spear's PCIe device capability.
->> +
->> +	Nodes are only visible when configfs is mounted. To mount configfs
->> +	in /config directory use:
->> +	# mount -t configfs none /config/
->> +
->> +	/config/pcie-gadget/
->> +		link ... used to enable ltssm and read its status.
->> +		int_type ...used to configure and read type of supported
->> +			interrupt
->> +		no_of_msi ... used to configure number of MSI vector needed and
->> +			to read no of MSI granted.
->> +		inta ... write 1 to assert INTA and 0 to de-assert.
->> +		send_msi ... write MSI vector to be sent.
->> +		vendor_id ... used to write and read vendor id (hex)
->> +		device_id ... used to write and read device id (hex)
->> +		bar0_size ... used to write and read bar0_size
->> +		bar0_address ... used to write and read bar0 mapped area in hex.
->> +		bar0_rw_offset ... used to write and read offset of bar0 where
->> +			bar0_data will be written or read.
->> +		bar0_data ... used to write and read data at bar0_rw_offset.
-> 
-> What's the configfs naming scheme for the second and later devices?
-> 
-
-there would be pcie-gadget.n directory under /config for
-nth PCIe Device Controller.
-
-Regards
-Pratyush
-
-> 
-> .
-> 
+diff --git a/Documentation/ABI/testing/configfs-spear-pcie-gadget b/Documentation/ABI/testing/configfs-spear-pcie-gadget
+index 29593d0..7c02b32 100644
+--- a/Documentation/ABI/testing/configfs-spear-pcie-gadget
++++ b/Documentation/ABI/testing/configfs-spear-pcie-gadget
+@@ -12,8 +12,9 @@ Description:
+ 	Nodes are only visible when configfs is mounted. To mount configfs
+ 	in /config directory use:
+ 	# mount -t configfs none /config/
+-
+-	/config/pcie-gadget/
++	
++	For nth PCIe Device Controller
++	/config/pcie-gadget.n/
+ 		link ... used to enable ltssm and read its status.
+ 		int_type ...used to configure and read type of supported
+ 			interrupt
+diff --git a/Documentation/misc-devices/spear-pcie-gadget.txt b/Documentation/misc-devices/spear-pcie-gadget.txt
+index 7b86b80..02c13ef 100644
+--- a/Documentation/misc-devices/spear-pcie-gadget.txt
++++ b/Documentation/misc-devices/spear-pcie-gadget.txt
+@@ -66,7 +66,8 @@ Node programming example
+ Program all PCIe registers in such a way that when this device is connected
+ to the PCIe host, then host sees this device as 1MB RAM.
+ #mount -t configfs none /Config
+-# cd /config/pcie_gadget/
++For nth PCIe Device Controller
++# cd /config/pcie_gadget.n/
+ Now you have all the nodes in this directory.
+ program vendor id as 0x104a
+ # echo 104A >> vendor_id
+-- 
+1.6.0.2
 
