@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab1CCBaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 20:30:24 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49758 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab1CCBaX (ORCPT
+	id S1757024Ab1CCBaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 20:30:35 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33571 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756790Ab1CCBae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 20:30:23 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Aaro Koskinen <aaro.koskinen@nokia.com>
-Subject: Re: [PATCH] procfs: fix /proc/<pid>/maps heap check
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        stable@kernel.org
-In-Reply-To: <alpine.DEB.1.10.1103021449000.27610@esdhcp041196.research.nokia.com>
-References: <1298996813-8625-1-git-send-email-aaro.koskinen@nokia.com> <alpine.DEB.1.10.1103021449000.27610@esdhcp041196.research.nokia.com>
-Message-Id: <20110303102631.B939.A69D9226@jp.fujitsu.com>
+	Wed, 2 Mar 2011 20:30:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=cxIrI2W6GFv+Api6DWgWnyDpivW2mdT+ylXQejp5Bl48e+jVncPTrvrA1AjJWFkscZ
+         x2j4MB4buMrXiPn4uifHzx+/vWWb1Yg1B5ZODPgKGpqJ8fbnRH19OGCNzlrFFDichZRw
+         42ZxgePLij9wqusC6n9RBeBFPx+GYvglE+ikw=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: "Indan Zupancic" <indan@nul.nu>
+Subject: Re: [RFC] Proposal for ptrace improvements
+Date: Thu, 3 Mar 2011 02:30:27 +0100
+User-Agent: KMail/1.8.2
+Cc: "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
+        "Roland McGrath" <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org,
+        "Michael Kerrisk" <mtk.manpages@googlemail.com>
+References: <20110301152457.GE26074@htj.dyndns.org> <20110302133206.GA9838@redhat.com> <0a2c2dfb67198c5bd2cfc6e6c1896f23.squirrel@webmail.greenhost.nl>
+In-Reply-To: <0a2c2dfb67198c5bd2cfc6e6c1896f23.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  3 Mar 2011 10:30:19 +0900 (JST)
+Content-Disposition: inline
+Message-Id: <201103030230.27363.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi,
-> 
-> On Tue, 1 Mar 2011, Aaro Koskinen wrote:
-> > The current check looks wrong and prints "[heap]" only if the mapping
-> > matches exactly the heap. However, the heap may be merged with some
-> > other mappings, and there may be also be multiple mappings.
+On Thursday 03 March 2011 01:47, Indan Zupancic wrote:
+> On Wed, March 2, 2011 14:32, Oleg Nesterov wrote:
+> > On 03/02, Tejun Heo wrote:
+> >> On Wed, Mar 02, 2011 at 06:07:35AM +0100, Indan Zupancic wrote:
+> >> > I'm not sure what Denys is talking about: Currently it's impossible to
+> >> > pass along SIGSTOP to traced processes. Quoting the ptrace manpage:
+> >> >
+> >> >    PTRACE_CONT
+> >> >           Restarts  the stopped child process.  If data is nonzero and not
+> >> >           SIGSTOP, it is interpreted as a signal to be  delivered  to  the
+> >> >           child;  otherwise,  no  signal is delivered.
+> >>
+> >> AFAICS, that's not true.  SIGSTOP isn't treated differently from other
+> >> signals in the ptrace signal delivery path.  Maybe it was true in the
+> >> past.
 > >
-> > Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
-> > Cc: stable@kernel.org
+> > Yes, this is not true. And it seems this was never true.
+> >
+> > This is the second time this manpage confuses people in this discussion,
+> > probably it should be fixed...
 > 
-> Below is a test program and an example output showing the problem,
-> and the correct output with the patch:
-> 
-> Without the patch:
-> 
->  	# ./a.out &
->  	# cat /proc/$!/maps | head -4
->  	00008000-00009000 r-xp 00000000 01:00 9224       /a.out
->  	00010000-00011000 rw-p 00000000 01:00 9224       /a.out
->  	00011000-00012000 rw-p 00000000 00:00 0
->  	00012000-00013000 rw-p 00000000 00:00 0
-> 
-> With the patch:
-> 
->  	# ./a.out &
->  	# cat /proc/$!/maps | head -4
->  	00008000-00009000 r-xp 00000000 01:00 9228       /a.out
->  	00010000-00011000 rw-p 00000000 01:00 9228       /a.out
->  	00011000-00012000 rw-p 00000000 00:00 0          [heap]
->  	00012000-00013000 rw-p 00000000 00:00 0          [heap]
-> 
-> The test program:
-> 
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <unistd.h>
-> #include <sys/mman.h>
-> 
-> int main (void)
-> {
->  	if (sbrk(4096) == (void *)-1) {
->  		perror("first sbrk(): ");
->  		return EXIT_FAILURE;
->  	}
-> 
->  	if (mlockall(MCL_FUTURE)) {
->  		perror("mlockall(): ");
->  		return EXIT_FAILURE;
->  	}
-> 
->  	if (sbrk(4096) == (void *)-1) {
->  		perror("second sbrk(): ");
->  		return EXIT_FAILURE;
->  	}
+> Passing SIGSTOP does not actually stop the traced task, which is in line
+> with what the manpage says. All it does is generating that second SIGSTOP
+> notification, but when the task is continued it's running, not stopped.
 
-Your description said, 
-	the heap may be merged with some other mappings,
-                        ^^^^^^
-but your example is splitting case. not merge. In other words, your
-patch care splitting case but break merge case.
+It can be argued that after this the task is running _precisely_
+because it was continued by the debugger.
 
-Ok, we have no obvious correct behavior. This is debatable. So,
-Why do you think vma splitting case is important than merge?
+> So ptraced tasks can't be stopped with SIGSTOP and continued with SIGCONT.
 
+It can be stopped - just do not PTRACE_CONT it after second SIGSTOP
+notification.
 
+The bug is that it can't be continued with SIGCONT after that.
+
+That's the gist of Tejun Heo's proposal.
+
+Oleg's proposal is a bit different. It proposes that we do need
+to do PTRACE_CONT after second SIGSTOP notification too,
+but task will be indeed stopped after this, and resumed
+when SIGCONT arrives.
+
+-- 
+vda
