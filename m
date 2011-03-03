@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab1CCDox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 22:44:53 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56389 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757891Ab1CCDow convert rfc822-to-8bit (ORCPT
+	id S1758138Ab1CCDpB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 22:45:01 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:38597 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757891Ab1CCDo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 22:44:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=W3hSLuyP3kFsnLVP/BjPQi3C3RWsz62vK0KDf7ltNEJtNbAvAvQQO8V07lq/1T9X2+
-         1aOM616rbDGl7a7b8UqdAuFjMCLqX3E3bI1EXEczTJpb7ooQjwBwOP8j5Re4o9cNO11E
-         krLNugNBlCnequhTyFS7M7a/R+sT8FHLpm9gc=
+	Wed, 2 Mar 2011 22:44:59 -0500
+Message-ID: <4D6F0EAE.1080104@st.com>
+Date: Thu, 3 Mar 2011 09:14:46 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimB4bO0d+Kumg_AYuxQUZuECfWN6MCP=_-6oWjc@mail.gmail.com>
-References: <1298082321-8519-1-git-send-email-asharma@fb.com>
-	<AANLkTimB4bO0d+Kumg_AYuxQUZuECfWN6MCP=_-6oWjc@mail.gmail.com>
-Date: Wed, 2 Mar 2011 19:44:51 -0800
-X-Google-Sender-Auth: zIU4FjNmuHNNH_eqDwzNNODv_1s
-Message-ID: <AANLkTimaULacASp7vtgo_RFexUyKH1ZEUVyNy-EXZ1hE@mail.gmail.com>
-Subject: Re: [perfmon2] [PATCH] Add libpfm4 support (v2).
-From: Arun Sharma <arun@sharma-home.net>
-To: Lin Ming <minggr@gmail.com>
-Cc: Arun Sharma <asharma@fb.com>, acme@infradead.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, ming.m.lin@intel.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        perfmon2-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, amitgoel <amit.goel@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>
+Subject: Re: [PATCH 4/8 resend] dw_dmac: calling dwc_scan_descriptors from
+ dwc_tx_status() after taking lock
+References: <cover.1298889267.git.viresh.kumar@st.com>	 <725d9e629bce9f79d87bdab4596a5088b70ea416.1298889267.git.viresh.kumar@st.com> <1299089633.6974.93.camel@vkoul-udesk3>
+In-Reply-To: <1299089633.6974.93.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 7:20 PM, Lin Ming <minggr@gmail.com> wrote:
->> +#ifdef LIBPFM4
->> +       printf("\n");
->> +       pfm_for_all_pmus(i) {
->> +               int ret;
->> +               pfm_pmu_info_t pinfo;
->> +               int count;
->> +               int k;
->> +
->
-> Need to initialize pinfo before passing it to pfm_get_pmu_info
-> +               memset(&pinfo, 0, sizeof(pinfo));
->
->> +               ret = pfm_get_pmu_info(i, &pinfo);
+On 03/02/2011 11:43 PM, Koul, Vinod wrote:
+> On Mon, 2011-02-28 at 16:11 +0530, Viresh Kumar wrote:
+>> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+>> ---
+>>  drivers/dma/dw_dmac.c |    2 ++
+>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+>> index 3bf4772..5cc5abf 100644
+>> --- a/drivers/dma/dw_dmac.c
+>> +++ b/drivers/dma/dw_dmac.c
+>> @@ -830,7 +830,9 @@ dwc_tx_status(struct dma_chan *chan,
+>>  
+>>  	ret = dma_async_is_complete(cookie, last_complete, last_used);
+>>  	if (ret != DMA_SUCCESS) {
+>> +		spin_lock_bh(&dwc->lock);
+>>  		dwc_scan_descriptors(to_dw_dma(chan->device), dwc);
+>> +		spin_unlock_bh(&dwc->lock);
+>>  
+>>  		last_complete = dwc->completed;
+>>  		last_used = chan->cookie;
+> 
+> Please always add a short description in the patch, helps in long run
+> 
 
-You can get by using my next patch which initializes pinfo.size, but
-zero'ing the entire structure is a better idea (needs to be done for
-attr too). I'll get this into -v3.
+Sure.
 
- -Arun
+> Shouldnt you be doing this for dwc_handle_error() as well? I see thats
+> called without taking the lock....
+> 
+
+dwc_handle_error is called from dw_dma_tasklet with lock held. So its not
+required there.
+
+-- 
+viresh
