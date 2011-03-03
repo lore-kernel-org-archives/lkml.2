@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab1CCC0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 21:26:51 -0500
-Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:36244 "EHLO
-	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932203Ab1CCC0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 21:26:49 -0500
-Message-ID: <4D6EFC80.6060600@lougher.demon.co.uk>
-Date: Thu, 03 Mar 2011 02:27:12 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [ANN] Squashfs tools 4.2 released
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758064Ab1CCC0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 21:26:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:26958 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756058Ab1CCC0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 21:26:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,256,1297065600"; 
+   d="scan'208";a="663266673"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 0/4] perf: offcore event monitoring patches
+Date: Thu,  3 Mar 2011 10:34:46 +0800
+Message-Id: <1299119690-13991-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
 Hi,
 
-I'm pleased to announce the release of Squashfs tools 4.2.  This release
-adds support for XZ compression, and filesystem support for compression
-specific options (needed for XZ -dict-size and -Xbcj options).  There's
-also the usual minor extra features and bug fixes.
+v2 -> v3:
+- Remove redundant "c = NULL" in intel_percore_constraints
+- Fix comment of perf_event_attr::config1
 
-The release can be downloaded from http://sourceforge.net/projects/squashfs.
+v2:
+Here is the updated offcore patches. I merged small changes and fixes
+into the first patch, see the change logs.
 
-1. Filesystem improvements:
+Change logs against Andi's original version:
+- Extends perf_event_attr:config to config{,1,2} (Peter Zijlstra)
+- Fixed a major event scheduling issue. There cannot be a ref++ on an
+event that has already done ref++ once and without calling
+put_constraint() in between. (Stephane Eranian)
+- Use thread_cpumask for percore allocation. (Lin Ming)
+- Use MSR names in the extra reg lists. (Lin Ming)
 
-	1.1 Added XZ compression.
-	1.2 Added compression options support
+Peter,
+The event scheduling issue was fixed, could you please consider merging
+this series?
 
-2. Miscellaneous improvements/bug fixes.
-
-	2.1 Add missing NO_XATTR filesystem flag to indicate no-xattrs
-	    option was specified and no xattrs should be stored when
-	    appending.
-	2.2 Add suppport in Unquashfs -stat option for displaying
-	    NO_XATTR flag.
-	2.3 Remove checkdata entry from Unsquashfs -stat option if a 4.0
-	    filesystem - checkdata is no longer supported.
-	2.4 Fix appending bug when appending to an empty filesystem - this
-	    would be incorrectly treated as an error.
-	2.5 Use glibc sys/xattr.h include rather than using attr/xattr.h
-	    which isn't present by default on some distributions.
-	2.6 Unsquashfs, fix block calculation error with regular files when
-	    file size is between 2^32-block_size+1 and 2^32-1.
-	2.7 Unsquashfs, fix sparse file writing when holes are larger than
-	    2^31-1.
-	2.8 Add external CFLAGS and LDFLAGS support to Makefile, and allow
-	    build options to be specified on command line.  Also don't
-	    over-write passed in CFLAGS definition.
-	
-Phillip
-
+Thanks,
+Lin Ming
