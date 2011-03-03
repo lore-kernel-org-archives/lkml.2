@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab1CCI7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:59:14 -0500
-Received: from smtp1.kolej.mff.cuni.cz ([78.128.192.10]:50782 "EHLO
-	smtp1.kolej.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab1CCI7M (ORCPT
-	<RFC822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:59:12 -0500
-X-Greylist: delayed 1309 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Mar 2011 03:59:12 EST
-X-Envelope-From: santiago@crfreenet.org
-Date: Thu, 3 Mar 2011 09:49:02 +0100
-From: Ondrej Zajicek <santiago@crfreenet.org>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] s3fb: maximize virtual vertical size for fast
-	scrolling
-Message-ID: <20110303084902.GA8363@localhost>
-References: <201103012018.11283.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-In-Reply-To: <201103012018.11283.linux@rainbow-software.org>
-X-Operating-System: Debian GNU/Linux 4.0 (Etch)
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757661Ab1CCJAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 04:00:30 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33136 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab1CCJA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 04:00:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=QLamKRGjethHRoV55mF4ujFhCB/Hg+Q+QXk1taXi33alsTF1E1eMxaRpTJxyh75aMl
+         lSM7fF0DVA2IAy85QIC7yE7+PMjz+VpaP7hsZMeMTnZ3rJSeWk6B6YryoEyZAf4g0OuE
+         Ewfmbgs0Bba47vacp5+MwyPVdWINbrSIEMwGA=
+From: Alexandre Courbot <gnurou@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: [PATCH] Documentation/power/states.txt: fix repetition
+Date: Thu,  3 Mar 2011 17:57:40 +0900
+Message-Id: <1299142660-5859-1-git-send-email-gnurou@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove repetition of "called swsusp".
 
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Alexandre Courbot <gnurou@gmail.com>
+---
+ Documentation/power/states.txt |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-On Tue, Mar 01, 2011 at 08:18:08PM +0100, Ondrej Zary wrote:
-> Maximize virtual vertical framebuffer size during init to allow fast scro=
-lling=20
-> (accelerated by panning).
->=20
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+diff --git a/Documentation/power/states.txt b/Documentation/power/states.txt
+index 34800cc..4416b28 100644
+--- a/Documentation/power/states.txt
++++ b/Documentation/power/states.txt
+@@ -62,12 +62,12 @@ setup via another operating system for it to use. Despite the
+ inconvenience, this method requires minimal work by the kernel, since
+ the firmware will also handle restoring memory contents on resume. 
+ 
+-For suspend-to-disk, a mechanism called swsusp called 'swsusp' (Swap
+-Suspend) is used to write memory contents to free swap space.
+-swsusp has some restrictive requirements, but should work in most
+-cases. Some, albeit outdated, documentation can be found in
+-Documentation/power/swsusp.txt. Alternatively, userspace can do most
+-of the actual suspend to disk work, see userland-swsusp.txt.
++For suspend-to-disk, a mechanism called 'swsusp' (Swap Suspend) is used
++to write memory contents to free swap space. swsusp has some restrictive
++requirements, but should work in most cases. Some, albeit outdated,
++documentation can be found in Documentation/power/swsusp.txt.
++Alternatively, userspace can do most of the actual suspend to disk work,
++see userland-swsusp.txt.
+ 
+ Once memory state is written to disk, the system may either enter a
+ low-power state (like ACPI S4), or it may simply power down. Powering
+-- 
+1.7.4.1
 
-Acked-by: Ondrej Zajicek <santiago@crfreenet.org>
-
---=20
-Elen sila lumenn' omentielvo
-
-Ondrej 'SanTiago' Zajicek (email: santiago@crfreenet.org)
-OpenPGP encrypted e-mails preferred (KeyID 0x11DEADC3, wwwkeys.pgp.net)
-"To err is human -- to blame it on a computer is even more so."
-
---AhhlLboLdkugWU4S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk1vVf4ACgkQw1GB2RHercPJmwCfc85Uw/DM9pt7/mTZnR7CLElk
-xsYAn3wpPJUadCxQ/KXFbQs62mmkrQZH
-=KyOz
------END PGP SIGNATURE-----
-
---AhhlLboLdkugWU4S--
