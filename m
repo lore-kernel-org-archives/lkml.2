@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab1CCKTt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 05:19:49 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:53967 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758008Ab1CCKSl (ORCPT
+	id S1758194Ab1CCKUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 05:20:05 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:47000 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757886Ab1CCKSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 05:18:41 -0500
+	Thu, 3 Mar 2011 05:18:33 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
 Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <jamie@jamieiles.com>, <armando.visconti@st.com>,
         <shiraz.hashim@st.com>, <amit.goel@st.com>,
         <hans-christian.egtvedt@atmel.com>
-Subject: [PATCH V2 08/13] dw_dmac: Pass Channel Allocation Order from platform_data
-Date: Thu, 3 Mar 2011 15:47:21 +0530
-Message-ID: <ae9ffb45b87e19aabeba9321ffffb8ec2b5f5056.1299146382.git.viresh.kumar@st.com>
+Subject: [PATCH V2 06/13] dw_dmac: Change value of DWC_MAX_COUNT to 4095.
+Date: Thu, 3 Mar 2011 15:47:19 +0530
+Message-ID: <0e767d5a3f538e476b72c7d5ccac88e2f5fcdf1a.1299146382.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1299146382.git.viresh.kumar@st.com>
 References: <cover.1299146382.git.viresh.kumar@st.com>
@@ -26,48 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In SPEAr Platform channels 4-7 have more Fifo depth. So we must get better
-channel first. This patch introduces concept of channel allocation order in
-dw_dmac. If user doesn't pass anything or 0, than normal (ascending) channel
-allocation will follow, else channels will be allocated in descending order.
+Every descriptor can transfer a maximum count of 4095 (12 bits, in control reg),
+So we must have DWC_MAX_COUNT as 4095 instead of 2048 for better performance.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dw_dmac.c   |    6 +++++-
- include/linux/dw_dmac.h |    3 +++
- 2 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/dma/dw_dmac.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 836c299..076a2fa 100644
+index e5d97bf..734829f 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -1319,7 +1319,11 @@ static int __init dw_probe(struct platform_device *pdev)
- 		dwc->chan.device = &dw->dma;
- 		dwc->chan.cookie = dwc->completed = 1;
- 		dwc->chan.chan_id = i;
--		list_add_tail(&dwc->chan.device_node, &dw->dma.channels);
-+		if (pdata->chan_allocation_order == CHAN_ALLOCATION_ASCENDING)
-+			list_add_tail(&dwc->chan.device_node,
-+					&dw->dma.channels);
-+		else
-+			list_add(&dwc->chan.device_node, &dw->dma.channels);
+@@ -47,14 +47,13 @@
  
- 		dwc->ch_regs = &__dw_regs(dw)->CHAN[i];
- 		spin_lock_init(&dwc->lock);
-diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
-index deec66b..a18c498 100644
---- a/include/linux/dw_dmac.h
-+++ b/include/linux/dw_dmac.h
-@@ -22,6 +22,9 @@
- struct dw_dma_platform_data {
- 	unsigned int	nr_channels;
- 	bool		is_private;
-+#define CHAN_ALLOCATION_ASCENDING	0	/* zero to seven */
-+#define CHAN_ALLOCATION_DESCENDING	1	/* seven to zero */
-+	unsigned char	chan_allocation_order;
- };
+ /*
+  * This is configuration-dependent and usually a funny size like 4095.
+- * Let's round it down to the nearest power of two.
+  *
+  * Note that this is a transfer count, i.e. if we transfer 32-bit
+- * words, we can do 8192 bytes per descriptor.
++ * words, we can do 16480 bytes per descriptor.
+  *
+  * This parameter is also system-specific.
+  */
+-#define DWC_MAX_COUNT	2048U
++#define DWC_MAX_COUNT	4095U
  
- /**
+ /*
+  * Number of descriptors to allocate for each channel. This should be
 -- 
 1.7.2.2
 
