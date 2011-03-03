@@ -1,174 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab1CCITH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:19:07 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55215 "EHLO mx3.mail.elte.hu"
+	id S1756920Ab1CCISp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:18:45 -0500
+Received: from mga03.intel.com ([143.182.124.21]:18624 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756310Ab1CCITE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:19:04 -0500
-Date: Thu, 3 Mar 2011 09:18:41 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Ken Sumrall <ksumrall@android.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
-        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
- remount filesystems ro
-Message-ID: <20110303081841.GA14854@elte.hu>
-References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299137483-10975-1-git-send-email-ksumrall@android.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755657Ab1CCIR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 03:17:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
+   d="scan'208";a="396816543"
+Message-Id: <20110303074951.568969627@intel.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 03 Mar 2011 14:45:27 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Rik van Riel <riel@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Greg Thelen <gthelen@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+CC: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 22/27] writeback: trace dirty_throttle_bandwidth
+References: <20110303064505.718671603@intel.com>
+Content-Disposition: inline; filename=writeback-trace-throttle-bandwidth.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It provides critical information to understand how various throttle
+bandwidths are updated.
 
-* Ken Sumrall <ksumrall@android.com> wrote:
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/trace/events/writeback.h |   49 +++++++++++++++++++++++++++++
+ mm/page-writeback.c              |    1 
+ 2 files changed, 50 insertions(+)
 
-> Add 4 new commands to the reboot system call, that do the same thing as the
-> RESTART, HALT, POWER_OFF, and RESTART2 commands, but also remount writable
-> filesystems as read-only just before doing what the command normally does.
-> Now that Android is using EXT4, and since we don't have a standard init
-> setup to unmount filesystems before rebooting, this allows the system to
-> reboot with clean filesystems, and also improves boot time as the journal
-> does not need to be replayed when mounting the filesystem.
-> 
-> Signed-off-by: Ken Sumrall <ksumrall@android.com>
-> ---
->  fs/super.c             |    9 +++++++++
->  include/linux/fs.h     |    1 +
->  include/linux/reboot.h |    4 ++++
->  kernel/sys.c           |   12 ++++++++++++
->  4 files changed, 26 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/super.c b/fs/super.c
-> index 8819e3a..3f39a16 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -638,6 +638,15 @@ void emergency_remount(void)
->  	}
->  }
->  
-> +void emergency_remount_synchronous(void)
-> +{
-> +	struct work_struct *work;
-> +
-> +	work = kmalloc(sizeof(*work), GFP_ATOMIC);
-> +	if (work)
-> +		do_emergency_remount(work);
-> +}
-> +
->  /*
->   * Unnamed block devices are dummy devices used by virtual
->   * filesystems which don't use real block-devices.  -- jrs
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 63d069b..e48ef0d 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2110,6 +2110,7 @@ extern int generic_write_sync(struct file *file, loff_t pos, loff_t count);
->  extern void sync_supers(void);
->  extern void emergency_sync(void);
->  extern void emergency_remount(void);
-> +extern void emergency_remount_synchronous(void);
->  #ifdef CONFIG_BLOCK
->  extern sector_t bmap(struct inode *, sector_t);
->  #endif
-> diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-> index 3005d5a..24b185d 100644
-> --- a/include/linux/reboot.h
-> +++ b/include/linux/reboot.h
-> @@ -26,11 +26,15 @@
->   */
->  
->  #define	LINUX_REBOOT_CMD_RESTART	0x01234567
-> +#define	LINUX_REBOOT_CMD_RMNT_RESTART	0x12345670
->  #define	LINUX_REBOOT_CMD_HALT		0xCDEF0123
-> +#define	LINUX_REBOOT_CMD_RMNT_HALT	0xDEF0123C
->  #define	LINUX_REBOOT_CMD_CAD_ON		0x89ABCDEF
->  #define	LINUX_REBOOT_CMD_CAD_OFF	0x00000000
->  #define	LINUX_REBOOT_CMD_POWER_OFF	0x4321FEDC
-> +#define	LINUX_REBOOT_CMD_RMNT_POWER_OFF	0x321FEDC4
->  #define	LINUX_REBOOT_CMD_RESTART2	0xA1B2C3D4
-> +#define	LINUX_REBOOT_CMD_RMNT_RESTART2	0x1B2C3D4A
->  #define	LINUX_REBOOT_CMD_SW_SUSPEND	0xD000FCE2
->  #define	LINUX_REBOOT_CMD_KEXEC		0x45584543
->  
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 7f5a0cd..3f474e6 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -392,6 +392,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->  	mutex_lock(&reboot_mutex);
->  	switch (cmd) {
->  	case LINUX_REBOOT_CMD_RESTART:
-> +	case LINUX_REBOOT_CMD_RMNT_RESTART:
-> +		if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART)
-> +			emergency_remount_synchronous();
->  		kernel_restart(NULL);
->  		break;
->  
-> @@ -404,22 +407,31 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->  		break;
->  
->  	case LINUX_REBOOT_CMD_HALT:
-> +	case LINUX_REBOOT_CMD_RMNT_HALT:
-> +		if (cmd == LINUX_REBOOT_CMD_RMNT_HALT)
-> +			emergency_remount_synchronous();
->  		kernel_halt();
->  		do_exit(0);
->  		panic("cannot halt");
->  
->  	case LINUX_REBOOT_CMD_POWER_OFF:
-> +	case LINUX_REBOOT_CMD_RMNT_POWER_OFF:
-> +		if (cmd == LINUX_REBOOT_CMD_RMNT_POWER_OFF)
-> +			emergency_remount_synchronous();
->  		kernel_power_off();
->  		do_exit(0);
->  		break;
->  
->  	case LINUX_REBOOT_CMD_RESTART2:
-> +	case LINUX_REBOOT_CMD_RMNT_RESTART2:
->  		if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
->  			ret = -EFAULT;
->  			break;
->  		}
->  		buffer[sizeof(buffer) - 1] = '\0';
->  
-> +		if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART2)
-> +			emergency_remount_synchronous();
->  		kernel_restart(buffer);
->  		break;
+--- linux-next.orig/mm/page-writeback.c	2011-03-03 14:44:31.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-03-03 14:44:38.000000000 +0800
+@@ -1068,6 +1068,7 @@ adjust:
+ 	bdi->throttle_bandwidth = bw;
+ out:
+ 	bdi_update_reference_bandwidth(bdi, ref_bw);
++	trace_dirty_throttle_bandwidth(bdi, dirty_bw, pos_bw, ref_bw);
+ }
+ 
+ void bdi_update_bandwidth(struct backing_dev_info *bdi,
+--- linux-next.orig/include/trace/events/writeback.h	2011-03-03 14:43:49.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-03-03 14:44:38.000000000 +0800
+@@ -152,6 +152,55 @@ DEFINE_WBC_EVENT(wbc_balance_dirty_writt
+ DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
+ DEFINE_WBC_EVENT(wbc_writepage);
+ 
++#define KBps(x)			((x) << (PAGE_SHIFT - 10))
++#define Bps(x)			((x) >> (BASE_BW_SHIFT - PAGE_SHIFT))
++
++TRACE_EVENT(dirty_throttle_bandwidth,
++
++	TP_PROTO(struct backing_dev_info *bdi,
++		 unsigned long dirty_bw,
++		 unsigned long long pos_bw,
++		 unsigned long long ref_bw),
++
++	TP_ARGS(bdi, dirty_bw, pos_bw, ref_bw),
++
++	TP_STRUCT__entry(
++		__array(char,			bdi, 32)
++		__field(unsigned long,		write_bw)
++		__field(unsigned long,		avg_bw)
++		__field(unsigned long,		dirty_bw)
++		__field(unsigned long long,	base_bw)
++		__field(unsigned long long,	pos_bw)
++		__field(unsigned long long,	ref_bw)
++		__field(unsigned long long,	avg_ref_bw)
++	),
++
++	TP_fast_assign(
++		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
++		__entry->write_bw	= KBps(bdi->write_bandwidth);
++		__entry->avg_bw		= KBps(bdi->avg_bandwidth);
++		__entry->dirty_bw	= KBps(dirty_bw);
++		__entry->base_bw	= Bps(bdi->throttle_bandwidth);
++		__entry->pos_bw		= Bps(pos_bw);
++		__entry->ref_bw		= Bps(ref_bw);
++		__entry->avg_ref_bw	= Bps(bdi->reference_bandwidth);
++	),
++
++
++	TP_printk("bdi %s: "
++		  "write_bw=%lu avg_bw=%lu dirty_bw=%lu "
++		  "base_bw=%llu pos_bw=%llu ref_bw=%llu aref_bw=%llu",
++		  __entry->bdi,
++		  __entry->write_bw,	/* bdi write bandwidth */
++		  __entry->avg_bw,	/* bdi avg write bandwidth */
++		  __entry->dirty_bw,	/* bdi dirty bandwidth */
++		  __entry->base_bw,	/* base throttle bandwidth */
++		  __entry->pos_bw,	/* position control bandwidth */
++		  __entry->ref_bw,	/* reference throttle bandwidth */
++		  __entry->avg_ref_bw	/* smoothed reference bandwidth */
++	)
++);
++
+ DECLARE_EVENT_CLASS(writeback_congest_waited_template,
+ 
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
 
-Wouldnt it be *much* simpler to add it as a magic1 variant:
 
- #define LINUX_REBOOT_UMOUNT_RO   0xfee1deaf
-
-Used as a 'also remount ro please' flag?
-
-That way the whole patch would literally be 2 lines:
-
-	if (magic1 == LINUX_REBOOT_UMOUNT_RO)
-		emergency_remount_synchronous();
-
-Note that this also has the advantage that both kexec and suspend reboots could be 
-done with emergency umounts, if so desired - and any future reboot variant would be 
-supported as well. Your patch left out those other reboot methods.
-
-Thanks,
-
-	Ingo
