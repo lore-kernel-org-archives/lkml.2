@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab1CCIMB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:12:01 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39338 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab1CCIMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:12:00 -0500
-Date: Thu, 3 Mar 2011 09:11:56 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Jinqiu <crindy646@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch] Fix bug #13853: dereference pointer 'dev' before null
- check
-Message-ID: <20110303081156.GA14163@pengutronix.de>
-References: <4D6EFAE5.4000400@gmail.com>
- <4D6F01DA.3040307@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
-Content-Disposition: inline
-In-Reply-To: <4D6F01DA.3040307@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1756021Ab1CCISA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:18:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:59999 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754327Ab1CCIR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 03:17:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
+   d="scan'208";a="893290347"
+Message-Id: <20110303074950.430258205@intel.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 03 Mar 2011 14:45:19 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, Michael Rubin <mrubin@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Rik van Riel <riel@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Greg Thelen <gthelen@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+CC: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 14/27] writeback: account per-bdi accumulated dirtied pages
+References: <20110303064505.718671603@intel.com>
+Content-Disposition: inline; filename=writeback-bdi-dirtied.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduce the BDI_DIRTIED counter. It will be used for estimating the
+bdi's dirty bandwidth.
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+CC: Jan Kara <jack@suse.cz>
+CC: Michael Rubin <mrubin@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/backing-dev.h |    1 +
+ mm/backing-dev.c            |    2 ++
+ mm/page-writeback.c         |    1 +
+ 3 files changed, 4 insertions(+)
 
-Hi,
+--- linux-next.orig/include/linux/backing-dev.h	2011-03-03 14:44:16.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2011-03-03 14:44:18.000000000 +0800
+@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
+ enum bdi_stat_item {
+ 	BDI_RECLAIMABLE,
+ 	BDI_WRITEBACK,
++	BDI_DIRTIED,
+ 	BDI_WRITTEN,
+ 	NR_BDI_STAT_ITEMS
+ };
+--- linux-next.orig/mm/page-writeback.c	2011-03-03 14:44:16.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-03-03 14:44:18.000000000 +0800
+@@ -1127,6 +1127,7 @@ void account_page_dirtied(struct page *p
+ 		__inc_zone_page_state(page, NR_FILE_DIRTY);
+ 		__inc_zone_page_state(page, NR_DIRTIED);
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
++		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+ 		task_dirty_inc(current);
+ 		task_io_account_write(PAGE_CACHE_SIZE);
+ 	}
+--- linux-next.orig/mm/backing-dev.c	2011-03-03 14:44:16.000000000 +0800
++++ linux-next/mm/backing-dev.c	2011-03-03 14:44:18.000000000 +0800
+@@ -92,6 +92,7 @@ static int bdi_debug_stats_show(struct s
+ 		   "BdiDirtyThresh:   %8lu kB\n"
+ 		   "DirtyThresh:      %8lu kB\n"
+ 		   "BackgroundThresh: %8lu kB\n"
++		   "BdiDirtied:       %8lu kB\n"
+ 		   "BdiWritten:       %8lu kB\n"
+ 		   "b_dirty:          %8lu\n"
+ 		   "b_io:             %8lu\n"
+@@ -101,6 +102,7 @@ static int bdi_debug_stats_show(struct s
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+ 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
++		   (unsigned long) K(bdi_stat(bdi, BDI_DIRTIED)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
+ 		   nr_dirty, nr_io, nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
 
-> Don't ever mention "bug #13853", because this number makes no sense
-> for everyone except you. A proper subject may be:
->=20
-> [PATCH] ariadne: fix possible null dereference.
 
-I agree for the subject line. Still, in the body or maybe after the "---" I=
-'d
-think it makes sense, so it is known there is a bugzilla entry to close? Al=
-so,
-using search engines, one will be able to dig up the patch.
-
-> And please send your patches to proper maintainers and mailing list,
-> David Miller and netdev@vger.kernel.org in particular.
-
-Yup. Using scripts/get_maintainers.pl is the way to go here.
-
-Thanks,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk1vTUwACgkQD27XaX1/VRtL8QCbBLdYFJWdScq4NH5wfa08kOIP
-IW8Anj/zjrh2eSGxHpnT18ces1Z3fUdl
-=UV2v
------END PGP SIGNATURE-----
-
---5vNYLRcllDrimb99--
