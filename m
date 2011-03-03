@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab1CCGTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 01:19:17 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39422
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755068Ab1CCGTP (ORCPT
+	id S1755465Ab1CCGVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 01:21:36 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63766 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab1CCGVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 01:19:15 -0500
-Date: Wed, 02 Mar 2011 22:19:51 -0800 (PST)
-Message-Id: <20110302.221951.28823654.davem@davemloft.net>
-To: dhowells@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, anton@samba.org
-Subject: Re: [PATCH] RxRPC: Fix v1 keys
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110228132753.30463.24909.stgit@warthog.procyon.org.uk>
-References: <20110228132753.30463.24909.stgit@warthog.procyon.org.uk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 01:21:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SnKN5SKonC23UCVJ9kZ34AHz8Z7PLWwIgNx80HRia7BGvPgrzVeUQB4VG5gj03qL67
+         vOR+XLOZsG0nU6cnUkcxWw/qg+3k579XMpBNfoJIV36nOCCOED6IKKA1fN1Os43ItFAW
+         Ut9q502czMDFqaDhFKNqioDTIOCrf/oxMldM8=
+Date: Thu, 3 Mar 2011 07:21:30 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86, numa, emu: move size calculation into if block
+Message-ID: <20110303062130.GH28266@mtj.dyndns.org>
+References: <4D6EEDF2.6090201@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6EEDF2.6090201@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
-Date: Mon, 28 Feb 2011 13:27:53 +0000
+Hey, Yinghai.
 
-> From: Anton Blanchard <anton@au1.ibm.com>
-> 
-> commit 339412841d7 (RxRPC: Allow key payloads to be passed in XDR form)
-> broke klog for me. I notice the v1 key struct had a kif_version field
-> added:
-> 
-> -struct rxkad_key {
-> -       u16     security_index;         /* RxRPC header security index */
-> -       u16     ticket_len;             /* length of ticket[] */
-> -       u32     expiry;                 /* time at which expires */
-> -       u32     kvno;                   /* key version number */
-> -       u8      session_key[8];         /* DES session key */
-> -       u8      ticket[0];              /* the encrypted ticket */
-> -};
-> 
-> +struct rxrpc_key_data_v1 {
-> +       u32             kif_version;            /* 1 */
-> +       u16             security_index;
-> +       u16             ticket_length;
-> +       u32             expiry;                 /* time_t */
-> +       u32             kvno;
-> +       u8              session_key[8];
-> +       u8              ticket[0];
-> +};
-> 
-> However the code in rxrpc_instantiate strips it away:
-> 
-> 	data += sizeof(kver);
-> 	datalen -= sizeof(kver);
-> 
-> Removing kif_version fixes my problem.
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Signed-off-by: David Howells <dhowells@redhat.com>
+On Wed, Mar 02, 2011 at 05:25:06PM -0800, Yinghai Lu wrote:
+> don't need to assign them that early.
 
-Applied.
+You know I'm not gonna take this, right?  Don't make it uglier.
+
+Thanks.
+
+-- 
+tejun
