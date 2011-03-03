@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab1CCHqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 02:46:18 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:41469 "EHLO e5.ny.us.ibm.com"
+	id S1758165Ab1CCHtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 02:49:23 -0500
+Received: from sputnik.urmx.de ([88.198.51.18]:54233 "EHLO sputnik.urmx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab1CCHqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 02:46:17 -0500
-Date: Wed, 2 Mar 2011 23:46:09 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Kirill A. Shutsemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v7] cgroups: introduce timer slack controller
-Message-ID: <20110303074609.GL14893@count0.beaverton.ibm.com>
-References: <1299084001-3916-1-git-send-email-kirill@shutemov.name>
- <1299084001-3916-2-git-send-email-kirill@shutemov.name>
- <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
+	id S1754456Ab1CCHtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 02:49:21 -0500
+X-Spam-Processed: srv201.gdsys.de, Thu, 03 Mar 2011 08:49:17 +0100
+	(not processed: message from trusted or authenticated source)
+X-Return-Path: Eibach@gdsys.de
+X-Envelope-From: Eibach@gdsys.de
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
+Subject: RE: (WARNING!!! PGP with incorrect signature) Re: [PATCH v4] hwmon: Add support for Texas Instruments ADS1015
+Date: Thu, 3 Mar 2011 08:49:13 +0100
+Message-ID: <48D3D52125C49B43AE880038E2E5314BB5BE6B@SRV101.gdsys.de>
+Importance: normal
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: (WARNING!!! PGP with incorrect signature) Re: [PATCH v4] hwmon: Add support for Texas Instruments ADS1015
+thread-index: AcvZCGVRcrT/JR8HTFyv30apyFE0wgAblIqA
+References: <20110302181651.GA24054@pengutronix.de>
+From: "Eibach, Dirk" <Eibach@gdsys.de>
+To: "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Jean Delvare" <khali@linux-fr.org>
+Cc: <linux-kernel@vger.kernel.org>, <guenter.roeck@ericsson.com>,
+        <lm-sensors@lm-sensors.org>, <rdunlap@xenotime.net>,
+        <linux-doc@vger.kernel.org>
+X-SafeGuard_MailGateway: Version: 5.60.3.10058 SGMG Date: 20110303074920Z
+Content-Class: urn:content-classes:message
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.4.178; VDF: 7.11.4.47; host: mailrelay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 07:40:01PM +0100, Thomas Gleixner wrote:
-> On Wed, 2 Mar 2011, Kirill A. Shutsemov wrote:
+ 
 
-<snip>
-
-> > +		if (val > child->min_slack_ns)
-> > +			tslack_write_min(cur, cft, val);
-> > +	}
+> Still, there is a new property defined which _always_ needs
 > 
-> So, we can increase the value and propagate it through the groups
-> children, but decreasing it requires to go through all child groups
-> seperately. 
-
-One goal is to restrict shrinking timer slacks so that they
-cannot be less than the parent cgroup's.
-
+> a) CCing devicetree-discuss (get_maintainer helps here)
+> b) Documentation in Documentation/devicetree/bindings
 > 
-> When I'm trying to optimize something during runtime and chose a too
-> high value I need to go through hoops and loops to make it smaller
-> again.
+> because it needs to be a lot more stable than platform_data.
+
+Jean, should I supply a v5 with Documentation or should I supply a
+separate patch?
+
+> (I already lost the original mail, so I sadly can't forward it)
+
+I have forwarded it to devicetree-discuss.
+ 
+> Regards,
 > 
-> Asymetric behaviour sucks always.
+>    Wolfram
 
-Well, in this case I think the asymmetry is less sucky because I don't
-see any point in imposing the same restrictions on raising the timer
-slack *except* this symmetry argument. But I haven't played much with
-timer slacks so I don't know: Is there any case where raising the timer
-slack would be harmful?
+Cheers
+Dirk
 
-Would making the values additive solve the symmetry problem? In other words,
-the "minimum" you see in a cgroups min_slack_ns file is the minimum in
-addition to the minimum timer slack of its parent. Then, so long as negative
-values are disallowed, you can't possibly write values that violate this
-restriction. We could re-evaluate the resulting minimum timer slack internally
-during writes to the file so functions using timer slack won't have to walk
-the cgroup parents to calculate it but it couldn't result in EPERM...
 
-Cheers,
-	-Matt Helsley
