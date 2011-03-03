@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab1CCLYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 06:24:33 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40051 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754461Ab1CCLYc (ORCPT
+	id S1758009Ab1CCLcb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 06:32:31 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:55302 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754797Ab1CCLca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 06:24:32 -0500
-Date: Thu, 3 Mar 2011 03:24:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jan Beulich <JBeulich@novell.com>, tglx@linutronix.de, hpa@zytor.com,
-        Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: work around old gas bug (try 2)
-Message-Id: <20110303032419.954dab8e.akpm@linux-foundation.org>
-In-Reply-To: <20110303105755.GA24181@elte.hu>
-References: <4D6F81B10200007800034B0B@vpn.id2.novell.com>
-	<20110303105755.GA24181@elte.hu>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 06:32:30 -0500
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX186z/1xm9k69+LwYsnQDpphl7TzpJipnNBaih9H7q
+	OhTveRFLvLp19o
+Date: Thu, 3 Mar 2011 12:32:25 +0100
+From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Al Cho <acho@novell.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: keucr: use kernel byteorder functions
+Message-ID: <20110303113225.GA1341@debian.debian>
+References: <1299109694-28758-1-git-send-email-j.neuschaefer@gmx.net>
+ <1299109694-28758-2-git-send-email-j.neuschaefer@gmx.net>
+ <4D6F4A43.5050903@fastmail.fm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D6F4A43.5050903@fastmail.fm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Mar 2011 11:57:55 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+On Thu, Mar 03, 2011 at 07:58:59AM +0000, Jack Stone wrote:
+> >  
+> > -			us->MS_Lib.BytesPerSector = LittleEndianWORD(idi->wIDIbytesPerSector);
+> > +			us->MS_Lib.BytesPerSector = be16_to_cpu(idi->wIDIbytesPerSector);
+> 
+> Shouldn't this be le16_to_cpu?
 
-> 
-> * Jan Beulich <JBeulich@novell.com> wrote:
-> 
-> > Add extra parentheses around a couple of definitions introduced by
-> > "x86: Cleanup vector usage" and used in assembly macro arguments, and
-> > remove spaces. Without that old (2.16.1) gas would see more macro
-> > arguments than were actually specified.
-> > 
-> > Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Shaohua Li <shaohua.li@intel.com>
-> 
-> Wondering, have you managed to test this with 2.16, or should i wait for akpm's 
-> testing before applying it?
-> 
+Right. Thanks for pointing out.
 
-arch/x86/kernel/entry_64.S compiles successfully with that patch.
+Jonathan Neuschäfer
