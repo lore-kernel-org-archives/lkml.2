@@ -1,58 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab1CCVix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:38:53 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27438 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793Ab1CCViw (ORCPT
+	id S932375Ab1CCVjP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:39:15 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:60757 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758859Ab1CCVjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:38:52 -0500
-Message-ID: <4D700A18.8070708@kernel.org>
-Date: Thu, 03 Mar 2011 13:37:28 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Thu, 3 Mar 2011 16:39:12 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoAEAMuYb015LFEbgWdsb2JhbACmZRYBARYiJb5UDYVUBJMG
+Date: Fri, 4 Mar 2011 08:39:03 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, cluster-devel@redhat.com, xfs@oss.sgi.com,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v2] Check for immutable flag in fallocate path
+Message-ID: <20110303213903.GL15097@dastard>
+References: <4D6221B8.9040303@gmail.com>
+ <4D6F5473.2070709@gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, numa: move bootnode definition into srat_64.c
-References: <4D6EECE8.80500@kernel.org> <alpine.DEB.2.00.1103031251460.9993@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1103031251460.9993@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D700A60.0054,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6F5473.2070709@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 12:52 PM, David Rientjes wrote:
-> On Wed, 2 Mar 2011, Yinghai Lu wrote:
+On Thu, Mar 03, 2011 at 09:42:27AM +0100, Marco Stornelli wrote:
+> From: Marco Stornelli <marco.stornelli@gmail.com>
 > 
->> diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
->> index 8e9d339..7e5d0e9 100644
->> --- a/arch/x86/mm/srat_64.c
->> +++ b/arch/x86/mm/srat_64.c
->> @@ -26,6 +26,11 @@
->>  
->>  int acpi_numa __initdata;
->>  
->> +struct bootnode {
->> +	u64 start;
->> +	u64 end;
->> +};
->> +
->>  static struct bootnode nodes_add[MAX_NUMNODES];
->>  
->>  static __init int setup_node(int pxm)
+> All fs must check for the immutable flag in their fallocate callback.
+> It's possible to have a race condition in this scenario: an application
+> open a file in read/write and it does something, meanwhile root set the
+> immutable flag on the file, the application at that point can call
+> fallocate with success. Only Ocfs2 check for the immutable flag at the
+> moment.
 > 
-> Can we get rid of struct bootnode instead and simply reuse 
-> struct numa_memblk?  The latter isn't actually tied to memblock and is a 
-> generic representation of a node id and address range.
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+> Patch is against 2.6.38-rc5
+> 
+> ChangeLog
+> v2: Added the check for append-only file for XFS
+> v1: First draft
+> 
+> --- linux-2.6.38-rc5-orig/fs/ext4/extents.c	2011-02-16 04:23:45.000000000 +0100
+> +++ linux-2.6.38-rc5/fs/ext4/extents.c	2011-02-21 08:43:37.000000000 +0100
+> @@ -3670,6 +3670,12 @@ long ext4_fallocate(struct file *file, i
+>  	 */
+>  	credits = ext4_chunk_trans_blocks(inode, max_blocks);
+>  	mutex_lock(&inode->i_mutex);
+> +
+> +	if (IS_IMMUTABLE(inode)) {
+> +		mutex_unlock(&inode->i_mutex);
+> +		return -EPERM;
+> +	}
+> +
+>  	ret = inode_newsize_ok(inode, (len + offset));
+>  	if (ret) {
+>  		mutex_unlock(&inode->i_mutex);
+> --- linux-2.6.38-rc5-orig/fs/btrfs/file.c	2011-02-16 04:23:45.000000000 +0100
+> +++ linux-2.6.38-rc5/fs/btrfs/file.c	2011-02-21 08:55:58.000000000 +0100
+> @@ -1289,6 +1289,12 @@ static long btrfs_fallocate(struct file
+>  	btrfs_wait_ordered_range(inode, alloc_start, alloc_end - alloc_start);
+>  
+>  	mutex_lock(&inode->i_mutex);
+> +
+> +	if (IS_IMMUTABLE(inode)) {
+> +		ret = -EPERM;
+> +		goto out;
+> +	}
+> +
+>  	ret = inode_newsize_ok(inode, alloc_end);
+>  	if (ret)
+>  		goto out;
+> --- linux-2.6.38-rc5-orig/fs/gfs2/file.c	2011-02-16 04:23:45.000000000 +0100
+> +++ linux-2.6.38-rc5/fs/gfs2/file.c	2011-02-21 09:09:17.000000000 +0100
+> @@ -797,6 +797,11 @@ static long gfs2_fallocate(struct file *
+>  	if (unlikely(error))
+>  		goto out_uninit;
+>  
+> +	if (IS_IMMUTABLE(inode)) {
+> +		error = -EPERM;
+> +		goto out_unlock;
+> +	}
+> +
+>  	if (!gfs2_write_alloc_required(ip, offset, len))
+>  		goto out_unlock;
+>  
+> --- ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-02-16 04:23:45.000000000 +0100
+> +++ ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-03-03 09:25:32.000000000 +0100
+> @@ -906,8 +906,18 @@ xfs_file_fallocate(
+>  
+>  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+>  
+> -	if (mode & FALLOC_FL_PUNCH_HOLE)
+> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
+>  		cmd = XFS_IOC_UNRESVSP;
+> +		if (IS_APPEND(inode)) {
+> +			error = -EPERM;
+> +			goto out_unlock;
+> +		}
+> +	}
 
-Yes, could be don later esp if the hotplug mem code would support 
-more than one block add per node.
+WTF?  Why does append mode have any effect on whether we can punch
+holes in a file or not? There's no justification for adding this in
+the commit message. Why is it even in a patch that is for checking
+immutable inodes? What is the point of adding it, when all that will
+happen is people will switch to XFS_IOC_UNRESVSP which has never had
+this limitation?
 
-Yinghai
+And this asks bigger questions - why would you allow preallocate
+anywhere but at or beyond EOF on an append mode inode? You can only
+append to the file, so if you're going to add limitations based on
+the append flag, you need to think this through a bit more....
+
+> +
+> +	if (IS_IMMUTABLE(inode)) {
+> +		error = -EPERM;
+> +		goto out_unlock;
+> +	}
+
+Also, like Christoph said, these checks belong in the generic code,
+not in every filesystem. The same checks have to be made for every
+filesystem, so they should be done before calling out the
+filesystems regardless of what functionality the filesystem actually
+supports.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
