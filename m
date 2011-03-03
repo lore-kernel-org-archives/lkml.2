@@ -1,142 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab1CCCuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 21:50:04 -0500
-Received: from smtp.microsoft.com ([131.107.115.215]:12311 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163Ab1CCCuD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 21:50:03 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 4/6] Staging: hv:  Unify the hyperv driver abstractions
-Thread-Topic: [PATCH 4/6] Staging: hv:  Unify the hyperv driver abstractions
-Thread-Index: AQHL1Vij6ORT7tehDUCknwpOvivO9ZQYUtQAgADsmDCAANTvgIAAz78w
-Date: Thu, 3 Mar 2011 02:50:00 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048016A13@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1298686023-30892-1-git-send-email-kys@microsoft.com>
- <20110301025230.GE1663@kroah.com>
- <6E21E5352C11B742B20C142EB499E04801661A@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20110302054125.GB28382@kroah.com>
-In-Reply-To: <20110302054125.GB28382@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.75]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758095Ab1CCCvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 21:51:44 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:42089 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756924Ab1CCCvn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 21:51:43 -0500
 MIME-Version: 1.0
+In-Reply-To: <20110303014416.GL20560@atomide.com>
+References: <1299104058-28565-1-git-send-email-x0095078@ti.com>
+	<20110303014416.GL20560@atomide.com>
+Date: Wed, 2 Mar 2011 20:51:41 -0600
+Message-ID: <AANLkTin4LUkC=bARTaAweJ96FnVHy9dLqto=yjD=ovaL@mail.gmail.com>
+Subject: Re: [PATCHv2] omap:mailbox: resolve hang issue
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Armando Uribe <x0095078@ti.com>, hiroshi.doyu@nokia.com, ohad@wizery.com,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Hari Kanigeri <h-kanigeri2@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 2, 2011 at 7:44 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Armando Uribe <x0095078@ti.com> [110302 13:54]:
+>> From: Hari Kanigeri <h-kanigeri2@ti.com>
+>>
+>> omap4 interrupt disable bits is different. On rx kfifo full, the mbox rx
+>> interrupts wasn't getting disabled, and this is causing the rcm stress tests
+>> to hang.
+>>
+>> Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
+>> Signed-off-by: Armando Uribe <x0095078@ti.com>
+>> Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+>
+> Should we merge this as a fix for the 2.6.38 still?
 
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Wednesday, March 02, 2011 12:41 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
-> Janssen
-> Subject: Re: [PATCH 4/6] Staging: hv: Unify the hyperv driver abstractions
-> 
-> On Wed, Mar 02, 2011 at 01:43:13AM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:greg@kroah.com]
-> > > Sent: Monday, February 28, 2011 9:53 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> Hank
-> > > Janssen
-> > > Subject: Re: [PATCH 4/6] Staging: hv: Unify the hyperv driver abstractions
-> > >
-> > > On Fri, Feb 25, 2011 at 06:07:03PM -0800, K. Y. Srinivasan wrote:
-> > > > This patch combines the two driver abstractions into
-> > > > a single driver abstraction.
-> > >
-> > > Ah, how sweet.  Unfortunatly you don't say "how" you did this.
-> > >
-> > > Nor do you describe _what_ those two driver abstractions were.  Are we
-> > > talking i2c and usb abstractions?  gpio and spi?  Driver core and
-> > > platform?  We want to know exactly what is going on here.
-> >
-> > My mistake; I will have a more descriptive comment.
-> >
-> > >
-> > > Think of writing something that when you look back, in 3 years, while
-> > > staring at a Linux hyperv driver originally written for the 2.6.9
-> > > kernel, that somehow never got forward ported and you are tasked with
-> > > doing this, that you can just do a simple 'git log drivers/staging/hv/'
-> > > and instantly know just from the changelog comments exactly what you
-> > > need to do to your driver to clean it up and properly get it to work on
-> > > the new 8.2.2 kernel release.
-> > >
-> > > This changelog entry, would require you to go and dig through the guts
-> > > of the patch itself, trying to figure out what abstractions you are
-> > > talking about, and exactly how they were combined, all the while
-> > > wondering _why_ they were combined.
-> > >
-> > > Please, think of your future self, you will thank him in the years to
-> > > come by doing this properly.  Not to mention making other's lives easier
-> > > if you happen to have escaped this dire task by then.
-> > >
-> > > Oh, you have an extra space up there in the subject, please fix it next
-> > > time.
-> > >
-> > > > -int blk_vsc_initialize(struct hv_driver *driver)
-> > > > +int blk_vsc_initialize(struct driver_context *driver)
-> > >
-> > > "struct driver_context"?  Oh please no.
-> >
-> > Greg; this is the patch that consolidates the state in  struct hv_driver into
-> > struct driver_context. In the spirit of doing one thing in a patch;
-> > other relevant changes are made in:
-> > Patch[5/6]: Changes the name driver_context to hyperv_driver
-> > Patch[6/6]: Cleanup all variable names that refer to struct hyperv_driver.
-> 
-> Yes, but on its own, this patch is wrong, that is not a valid name, even
-> if it is a "temporary" name.
-
-Greg, the temporary name happens to be the name currently in use in the 
-code - this is not the name I introduced. Think of this as the surviving 
-data structure after  the hv_driver state is consolidated into 
-(the existing) driver_context data structure.  I did this in the spirit of 
-doing one thing at a time. If I am going to be
-picking a more appropriate name for the consolidated data structure; I 
-might as well pick the final name that we want this unified driver abstraction 
-to be called. 
-
-
-> 
-> > > I realize that you are hopefully going to later rename this to something
-> > > else, but remember, a few patches back you thought that the "ctx" name
-> > > wasn't nice.  And here you go resuscitating it from the graveyard of
-> > > pointy bits.
-> >
-> > As I noted in a different email, may be the granularity I chose in breaking up
-> > these patches is causing all this confusion.
-> 
-> Yes, as I think you need to go much finer as you were doing more than
-> one thing in these patches, and not describing them properly at all.
-> 
-> Please try to redo them in a simpler manner, probably breaking it into
-> more steps, so we can properly review them.
-
-Based on your comments on intermediate names, would you recommend that
-as part  of consolidating the driver abstractions, I also rename this combined 
-state. 
+yeah, if it can still be merged in 2.6.38 because it is a fix it would be great.
 
 Regards,
+Fernando.
 
-K. Y
+>
+> Tony
+>
+>> ---
+>>  arch/arm/mach-omap2/mailbox.c |   10 ++++++----
+>>  1 files changed, 6 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/mailbox.c b/arch/arm/mach-omap2/mailbox.c
+>> index 394413d..011ca50 100644
+>> --- a/arch/arm/mach-omap2/mailbox.c
+>> +++ b/arch/arm/mach-omap2/mailbox.c
+>> @@ -193,10 +193,12 @@ static void omap2_mbox_disable_irq(struct omap_mbox *mbox,
+>>               omap_mbox_type_t irq)
+>>  {
+>>       struct omap_mbox2_priv *p = mbox->priv;
+>> -     u32 l, bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
+>> -     l = mbox_read_reg(p->irqdisable);
+>> -     l &= ~bit;
+>> -     mbox_write_reg(l, p->irqdisable);
+>> +     u32 bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
+>> +
+>> +     if (!cpu_is_omap44xx())
+>> +             bit = mbox_read_reg(p->irqdisable) & ~bit;
+>> +
+>> +     mbox_write_reg(bit, p->irqdisable);
+>>  }
+>>
+>>  static void omap2_mbox_ack_irq(struct omap_mbox *mbox,
+>> --
+>> 1.7.0.4
+>>
+>
