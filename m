@@ -1,106 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab1CCK0b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 05:26:31 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:54286 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755118Ab1CCK02 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 05:26:28 -0500
-From: Peppe CAVALLARO <peppe.cavallaro@st.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Stuart MENEFY <stuart.menefy@st.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Date: Thu, 3 Mar 2011 11:25:26 +0100
-Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Thread-Topic: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Thread-Index: AcvZjU/pCNIl7pQCRI66O+Hinf8W/A==
-Message-ID: <4D6F6C96.1010303@st.com>
-References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com>
- <alpine.LFD.2.00.1103011630080.2701@localhost6.localdomain6>
- <4D6E7FD7.1060408@st.com> <201103030945.07486.arnd@arndb.de>
-In-Reply-To: <201103030945.07486.arnd@arndb.de>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-enigmail-version: 1.1.1
-user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.14)
- Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
-openpgp: url=wwwkeys.bri.st.com
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1754815Ab1CCK24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 05:28:56 -0500
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:56274 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751980Ab1CCK2z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 05:28:55 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANb6bk1R8KK1/2dsb2JhbACmdHW+ag2FVAQ
+Date: Thu, 3 Mar 2011 11:28:53 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Mingarelli <Thomas.Mingarelli@hp.com>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: hpwdt: eliminate section mismatch warning
+Message-ID: <20110303102853.GY3790@infomag.iguana.be>
+References: <1299037784.16464.1.camel@mola>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299037784.16464.1.camel@mola>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hi Axel,
 
-On 3/3/2011 9:45 AM, Arnd Bergmann wrote:
->
-> On Wednesday 02 March 2011, Peppe CAVALLARO wrote:
-> > At any rate, I am happy to use the stmmac as experimental
-> > driver to do this kind tests.
-> > Indeed, in the past, on old Kernel (IIRC 2.6.23), I tried to use
-> > the kernel timers but I removed the code from it because
-> > I had noticed packets loss and a strange phenomenon with cyclesoak
-> > (that showed broken sysload % during the heavy network activities).
-> >
-> > Let me know how to proceed:
-> >
-> > 1) experiment with stmmac and hrtimer for handling rx/tx?
-> > 2) rework the patches for the Generic Timer Infra?
->
-> I'd suggest doing the first. I'm surprised that using an unrelated
-> timer for processing interrupts even helps you on stmmac.
->
+> hpwdt_init_nmi_decoding() is called in hpwdt_init_one error handling,
+> thus remove the  __devexit annotation of hpwdt_exit_nmi_decoding().
+> 
+> This patch fixes below warning:
+> 
+> WARNING: drivers/watchdog/hpwdt.o(.devinit.text+0x36f): Section mismatch in reference from the function hpwdt_init_one() to the function .devexit.text:hpwdt_exit_nmi_decoding()
 
-Indeed, this helped especially to save the cpu usage
-on heavy IP traffic (but with Max Throughput and no pkt
-loss).
+Added to linux-2.6-watchdog-next. Will sent it over to Linus for inclusion in the mainline kernel in a couple of days.
 
-> The timers that you'd normally use for rx interrupt mitigation
-> are not periodic timers but are started when a packet arrives
-> from the outside.
->
-Yes you are right but unfortunately our mac devices have
-not this kind of HW.
->
-> Doing periodic wakeups for RX instead of just waiting for
-> packets to come in should have a significant impact on power
-> management on an otherwise idle system.
->
-To "mitigate" this issue, the driver does a fast (and extra)
-check in the rings and it does not start any rx processes
-in case there are no incoming frames.
+Kind regards,
+Wim.
 
-> For tx resource reclaim, a relatively slow oneshot timer (not
-> even hrtimer) should be good enough, since it only needs to be
-> active when there is no other way to clean up. E.g. when you
-> are in napi polling mode (interrupt disabled), you know that
-> stmmac_poll gets called soon, and you can also do the reclaim
-> from stmmac_xmit() in order to prevent the timer from triggering
-> when you are constantly transmitting.
->
-This logic is already in the driver, indeed.
-What I've seen on our embedded systems is that the
-cost of RX interrupts is very hight and NAPI partially helps.
-Typically, in an IP-STB, I receive a burst of UDP pkt
-and this  means that many interrupts occur (~99% of CPU
-usage on slow platforms).
-With the ext timer I was able to reduce the CPU usage in
-these kind of scenarios to ~50%.
-When there is no net traffic, indeed, the timer periodically
-"disturbs" the system but the impact on the CPU usage
-actually is low.
-
-Thanks
-Peppe
->
->         Arnd
->
