@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab1CCNsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 08:48:04 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44932 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab1CCNsC convert rfc822-to-8bit (ORCPT
+	id S1758273Ab1CCNxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 08:53:39 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:58501 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757974Ab1CCNxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 08:48:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kazW4iv5pLviawdC605Z5uGchwPCzUPnAU8Sdv8vb4PxmN20XCCz44Oi/eHNIJSXSG
-         KccyyL6k+8n/D6mo4TnxxLbrS/aHoNYxnNb772bibZSf7DIMVFKITdQtHsvMTcSdKPep
-         lNk0fwEIQuf9hrd3hZwe3i3+OFeKjAwfgnrzE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimqT82wR20vvunnMvNShFSs0zWtmeT66A84Nh5t@mail.gmail.com>
-References: <AANLkTimqT82wR20vvunnMvNShFSs0zWtmeT66A84Nh5t@mail.gmail.com>
-Date: Thu, 3 Mar 2011 05:48:01 -0800
-Message-ID: <AANLkTi=m_qO0=o81+Db_B-kt1DWP-Af6So+_LiZMgONF@mail.gmail.com>
-Subject: Re: [BUG] as of trunk build Linux kernel trunk entry_32.S got error
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Hui Zhu <teawater@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: binutils@sourceware.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Mar 2011 08:53:38 -0500
+Subject: Re: [RFC PATCH] net/core: fix skb handling on netif serves for
+ both bridge and vlan
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>
+In-Reply-To: <1299149713-18740-1-git-send-email-dfeng@redhat.com>
+References: <1299149713-18740-1-git-send-email-dfeng@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Thu, 03 Mar 2011 13:53:34 +0000
+Message-ID: <1299160414.4277.49.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Mar 2011 13:53:37.0513 (UTC) FILETIME=[652A4D90:01CBD9AA]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17988.004
+X-TM-AS-Result: No--12.929100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 10:16 PM, Hui Zhu <teawater@gmail.com> wrote:
-> as -version
-> GNU assembler (GNU Binutils) 2.21.51.20110303
->  AS      arch/x86/kernel/entry_32.o
-> /home/teawater/big/kernel/linux-2.6/arch/x86/kernel/entry_32.S:
-> Assembler messages:
-> /home/teawater/big/kernel/linux-2.6/arch/x86/kernel/entry_32.S:1422:
-> Error: .size expression does not evaluate to a constant
->
-> When I change back to the as of system, everything is OK.
->
-> Because I always use the as of trunk, so I think a recent PATCH caused
-> the problem.
->
+On Thu, 2011-03-03 at 18:55 +0800, Xiaotian Feng wrote:
+> Consider network topology as follows:
+> 
+> eth0  eth1
+>  |_____|
+>     |
+>   bond0 --- br0
+>     |
+>   vlan0 --- br1
+> 
+> bond0 serves for both br0 and vlan0, if a vlan tagged packet was sent
+> to br1 through bond0, bridge handling code is seeing the packet on bond0
+> and handing it off to my "legacy" bridge before vlan_tx_tag_present
+> and vlan_hwaccel_do_receive even haven't a chance to look at it.
+[...]
 
-You need
+This used to work if the underlying device (bond0 in your example)
+implemented VLAN tag extraction, because the VLAN group would be checked
+before the bridge.  But it never worked for devices without VLAN tag
+extraction.  Perhaps we should just prevent this configuration.
 
-http://git.kernel.org/?p=linux/kernel/git/hjl/linux-2.6.37.y.git;a=commitdiff;h=2c5ce9c1b8eb927c131a31d4466e24e00647e9cb
-
+Ben.
 
 -- 
-H.J.
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
