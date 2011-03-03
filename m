@@ -1,92 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab1CCUuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 15:50:12 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15448 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758665Ab1CCUuL (ORCPT
+	id S1758850Ab1CCUu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 15:50:26 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:45360 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758803Ab1CCUuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 15:50:11 -0500
-Date: Thu, 3 Mar 2011 21:49:33 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-        linux-scsi@vger.kernel.org
-cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+	Thu, 3 Mar 2011 15:50:21 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] aacraid: Remove mem leak in aac_send_raw_srb().
-In-Reply-To: <alpine.LNX.2.00.1101062120090.13988@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1103032148300.2430@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101062120090.13988@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+References: <20110303032454.GI22723@ZenIV.linux.org.uk>
+	<AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
+	<20110303060352.GK22723@ZenIV.linux.org.uk>
+	<AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com>
+	<87tyfk7x0c.fsf@devron.myhome.or.jp>
+Date: Fri, 04 Mar 2011 05:50:19 +0900
+In-Reply-To: <87tyfk7x0c.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
+	"Fri, 04 Mar 2011 05:46:27 +0900")
+Message-ID: <87pqq87wtw.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PING!
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
 
-Any chance we could get this patch merged? Any objections?
+> (IIRC, it's checking i_nlink == 2, to know empty dir or not).
 
-
-/Jesper Juhl
-
-
-On Thu, 6 Jan 2011, Jesper Juhl wrote:
-
-> 
-> We leak in drivers/scsi/aacraid/commctrl.c::aac_send_raw_srb().
-> 
-> We allocate memory:
-> 	...
-> 			struct user_sgmap* usg;
-> 			usg = kmalloc(actual_fibsize - sizeof(struct aac_srb)
-> 			  + sizeof(struct sgmap), GFP_KERNEL);
-> and then neglect to free it:
-> 	...
-> 			for (i = 0; i < usg->count; i++) {
-> 				u64 addr;
-> 				void* p;
-> 				if (usg->sg[i].count >
-> 				    ((dev->adapter_info.options &
-> 				     AAC_OPT_NEW_COMM) ?
-> 				      (dev->scsi_host_ptr->max_sectors << 9) :
-> 				      65536)) {
-> 					rcode = -EINVAL;
-> 					goto cleanup;
-> 	... this 'goto' makes 'usg' go out of scope and leak the memory we 
-> 	    allocated.
-> 	    Other exits properly kfree(usg), it's just here it is 
-> 	    neglected.
-> 
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  commctrl.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
->   Compile tested only, I don't have a way to test this properly, but I 
->   think it's fairly obvious.
-> 
-> diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
-> index 645ddd9..33370fb 100644
-> --- a/drivers/scsi/aacraid/commctrl.c
-> +++ b/drivers/scsi/aacraid/commctrl.c
-> @@ -649,6 +649,7 @@ static int aac_send_raw_srb(struct aac_dev* dev, void __user * arg)
->  				     AAC_OPT_NEW_COMM) ?
->  				      (dev->scsi_host_ptr->max_sectors << 9) :
->  				      65536)) {
-> +					kfree(usg);
->  					rcode = -EINVAL;
->  					goto cleanup;
->  				}
-> 
-> 
-> 
-> 
-
+Ah, the check would be it doesn't have sub dirs actually.
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
