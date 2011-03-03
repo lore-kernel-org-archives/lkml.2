@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab1CCDv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 22:51:29 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:57717 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757627Ab1CCDv2 (ORCPT
+	id S932221Ab1CCDwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 22:52:13 -0500
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:35200 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932106Ab1CCDwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 22:51:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xVD+k93vNd3GxNHWGO/8GrdrUYQ9+out6TH7e2p56jTpuQpxJzP0kXoMSoiMWmnTKt
-         pxvP0c+96Lapq26bXz1wLou+1uEQL+6zDU4HZn9+ZFMq42zKhitX1UIz3CxcpXGzxres
-         gFtH/LSdnYj1o8QBAryF9qPOt+yKdNKV9sZNY=
-Date: Thu, 3 Mar 2011 04:51:23 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [GIT PULL] tracepoints filtering updates
-Message-ID: <20110303035121.GA3456@nowhere>
-References: <1298693021-23500-1-git-send-email-fweisbec@gmail.com>
- <20110302084925.GA21204@elte.hu>
+	Wed, 2 Mar 2011 22:52:11 -0500
+Message-ID: <4D6F1059.4010109@st.com>
+Date: Thu, 3 Mar 2011 09:21:53 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302084925.GA21204@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        amitgoel <amit.goel@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 8/8 resend] dw_dmac.c: Pass Channel Priority from platform_data
+References: <cover.1298889267.git.viresh.kumar@st.com>	 <12a1cd2df6804fbd27adf57d73b5fb0c0fb6145c.1298889267.git.viresh.kumar@st.com> <1299091561.6974.103.camel@vkoul-udesk3>
+In-Reply-To: <1299091561.6974.103.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 09:49:25AM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > We currently set the filters after we mmap the events, this is a
-> > race that let undesired events record themselves in the buffer before
-> > we had the time to set the filters.
-> > 
-> > So set the filters before they can be recorded. That also librarizes
-> > the filters setting so that filtering can be done more easily
-> > from other tools than perf record later.
-> > 
-> > (PS: This should fix most of the bugs Ingo has reported
-> > about filters that weren't working with perf).
-> 
-> Nice!
-> 
-> Mind pulling Steve's filter-enhancements branch and sending a pull request for the 
-> whole thing? Steve's branch was:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git tip/perf/filter
-> 
-> ( Or your fixes could be applied to Steve's branch as well - whichever direction you 
->   guys prefer - the important thing is to have filtering tested and validated as a 
->   whole. )
-> 
-> Thanks,
-> 
-> 	Ingo
+On 03/03/2011 12:16 AM, Koul, Vinod wrote:
+> On Mon, 2011-02-28 at 16:11 +0530, Viresh Kumar wrote:
+>> In Synopsys designware, channel priority is programmable. This patch adds
+>> support for passing channel priority through platform data. By default Ascending
+>> channel priority will be followed, i.e. channel 0 will get highest priority and
+>> channel 7 will get lowest.
+>>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+>> ---
+>>  drivers/dma/dw_dmac.c      |   11 ++++++++++-
+>>  drivers/dma/dw_dmac_regs.h |    3 +++
+>>  include/linux/dw_dmac.h    |    4 +++-
+>>  3 files changed, 16 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+>> index 37ffd2c..edb3d3b 100644
+>> --- a/drivers/dma/dw_dmac.c
+>> +++ b/drivers/dma/dw_dmac.c
+>> @@ -896,8 +896,11 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
+>>  		BUG_ON(!dws->dma_dev || dws->dma_dev != dw->dma.dev);
+>>  
+>>  		cfghi = dws->cfg_hi;
+>> -		cfglo = dws->cfg_lo;
+>> +		cfglo = dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
+>>  	}
+>> +
+>> +	cfglo |= DWC_CFGL_CH_PRIOR(dwc->priority);
+>> +
+>>  	channel_writel(dwc, CFG_LO, cfglo);
+>>  	channel_writel(dwc, CFG_HI, cfghi);
+>>  
+>> @@ -1320,6 +1323,12 @@ static int __init dw_probe(struct platform_device *pdev)
+>>  		else
+>>  			list_add(&dwc->chan.device_node, &dw->dma.channels);
+>>  
+>> +		/* 7 is highest priority & 0 is lowest. */
+>> +		if (pdata->chan_priority == CHAN_PRIORITY_ASCENDING)
+>> +			dwc->priority = 7 - i;
+>> +		else
+>> +			dwc->priority = i;
+>> +
+>>  		dwc->ch_regs = &__dw_regs(dw)->CHAN[i];
+>>  		spin_lock_init(&dwc->lock);
+>>  		dwc->mask = 1 << i;
+>> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+>> index d9a939f..6a8e6d3 100644
+>> --- a/drivers/dma/dw_dmac_regs.h
+>> +++ b/drivers/dma/dw_dmac_regs.h
+>> @@ -101,6 +101,8 @@ struct dw_dma_regs {
+>>  #define DWC_CTLH_BLOCK_TS_MASK	0x00000fff
+>>  
+>>  /* Bitfields in CFG_LO. Platform-configurable bits are in <linux/dw_dmac.h> */
+>> +#define DWC_CFGL_CH_PRIOR_MASK	(0x7 << 5)	/* priority mask */
+>> +#define DWC_CFGL_CH_PRIOR(x)	((x) << 5)	/* priority */
+>>  #define DWC_CFGL_CH_SUSP	(1 << 8)	/* pause xfer */
+>>  #define DWC_CFGL_FIFO_EMPTY	(1 << 9)	/* pause xfer */
+>>  #define DWC_CFGL_HS_DST		(1 << 10)	/* handshake w/dst */
+>> @@ -134,6 +136,7 @@ struct dw_dma_chan {
+>>  	struct dma_chan		chan;
+>>  	void __iomem		*ch_regs;
+>>  	u8			mask;
+>> +	u8			priority;
+>>  
+>>  	spinlock_t		lock;
+>>  
+>> diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
+>> index 057e883..53072c8 100644
+>> --- a/include/linux/dw_dmac.h
+>> +++ b/include/linux/dw_dmac.h
+>> @@ -22,6 +22,9 @@ struct dw_dma_platform_data {
+>>  #define CHAN_ALLOCATION_ASCENDING	0	/* zero to seven */
+>>  #define CHAN_ALLOCATION_DESCENDING	1	/* seven to zero */
+>>  	unsigned int	chan_allocation_order;
+>> +#define CHAN_PRIORITY_ASCENDING		0	/* chan0 highest */
+>> +#define CHAN_PRIORITY_DESCENDING	1	/* chan7 highest */
+> How about generic CHAN_ORDER_ASCENDING which you can use in both?
 
-Ok, I've merged Steve's branch and tested a few common filters with perf:
-
-* irq numbers on irq tracepoints
-* fd on sys_enter_close
-* prev_comm on sched_switch (to test string)
-
-they all work well.
-
-You can pull the branch from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	perf/core
+By both, you probably mean, both for allocation and priority??
+Actually i thought of this, but realized thought, people might want
+to control them separately. They may want priority ascending (0 to 7),
+but may need allocation in reverse order (7 to 0). So kept them separate.
+What do you say??
 
 --
-Frederic Weisbecker (2):
-      perf: Set filters before mmaping events
-      Merge branch '/tip/perf/filter' of git://git.kernel.org/.../rostedt/linux-2.6-trace.git into perf/core
-
-Steven Rostedt (14):
-      tracing/filter: Have no filter return a match
-      tracing/filter: Move OR and AND logic out of fn() method
-      tracing/filter: Dynamically allocate preds
-      tracing/filter: Call synchronize_sched() just once for system filters
-      tracing/filter: Allocate the preds in an array
-      tracing/filter: Free pred array on disabling of filter
-      tracing/filter: Use a tree instead of stack for filter_match_preds()
-      tracing/filter: Optimize short ciruit check
-      tracing/filter: Check the created pred tree
-      tracing/filter: Optimize filter by folding the tree
-      tracing/filter: Move MAX_FILTER_PRED to local tracing directory
-      tracing/filter: Increase the max preds to 2^14
-      tracing/filter: Swap entire filter of events
-      tracing/filter: Remove synchronize_sched() from __alloc_preds()
---
- include/linux/ftrace_event.h       |    1 -
- kernel/trace/trace.h               |   38 ++-
- kernel/trace/trace_events_filter.c |  885 +++++++++++++++++++++++++++++-------
- tools/perf/builtin-record.c        |   18 +-
- tools/perf/util/evlist.c           |   28 ++
- tools/perf/util/evlist.h           |    1 +
- 6 files changed, 789 insertions(+), 182 deletions(-)
+viresh
