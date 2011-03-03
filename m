@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab1CCVFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:05:12 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39917 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758665Ab1CCVFK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:05:10 -0500
-Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
-	top level
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-In-Reply-To: <20110303141928.GA25256@infradead.org>
-References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
-	 <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
-	 <20110301223251.11c95eed.rdunlap@xenotime.net>
-	 <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
-	 <20110303141928.GA25256@infradead.org>
-Content-Type: text/plain
-Date: Thu, 03 Mar 2011 12:58:25 -0800
-Message-Id: <1299185905.5401.405.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1758847Ab1CCVGy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:06:54 -0500
+Received: from cantor.suse.de ([195.135.220.2]:52831 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758665Ab1CCVGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 16:06:53 -0500
+Date: Thu, 3 Mar 2011 13:06:26 -0800
+From: Greg KH <gregkh@suse.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2011-03-02-16-52 uploaded (linux-next:
+ drivers/staging/epca - missing header files)
+Message-ID: <20110303210626.GA32441@suse.de>
+References: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
+ <20110303125012.2a7218d4.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110303125012.2a7218d4.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 09:19 -0500, Christoph Hellwig wrote:
-> On Wed, Mar 02, 2011 at 01:32:11PM -0800, Nicholas A. Bellinger wrote:
-> > The kernel code itself that is specific to using the SSE v4.2
-> > instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
-> > iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
-> > default to using the unoptimized 1x8 slicing soft CRC32C code.  This
-> > particular piece of logic has been tested on powerpc and arm and is
-> > funcitoning as expected from the kernel level using the arch independent
-> > soft code.
+On Thu, Mar 03, 2011 at 12:50:12PM -0800, Randy Dunlap wrote:
+> On Wed, 02 Mar 2011 16:52:55 -0800 akpm@linux-foundation.org wrote:
 > 
-> I don't think you need that code at all.  The crypto code is structured
-> to prefer the optimized implementation if it is present.  Just stripping
-> the x86-specific code out and always requesting the plain crc32c
-> algorithm should give you the optimized one if it is present on your
-> system.
+> > The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > and will soon be available at
+> > 
+> >    git://zen-kernel.org/kernel/mmotm.git
+> > 
+> > It contains the following patches against 2.6.38-rc7:
 > 
-> Please give it a try.
 > 
+> Who did the (incomplete) move of some tty drivers to staging? (in linux-next)
 
-This is what I originally thought as well, but this ended up not being
-the case when the logic was originally coded up.   I just tried again
-with .38-rc7 on a 5500 series machine and simply stubbing out the
-CONFIG_X86 part from iscsi_login_setup_crypto() and calling:
+That would be me :)
 
-   crypto_alloc_hash("crc32c", 0, CRYPTO_ALG_ASYNC)
+> Please also move drivers/char/digi*.h
+> 
+> #include "digiPCI.h"
+> #include "digi1.h"
+> #include "digiFep1.h"
+> =>
+> drivers/staging/tty/epca.c:46:21: error: digiPCI.h: No such file or directory
+> drivers/staging/tty/epca.c:49:19: error: digi1.h: No such file or directory
+> drivers/staging/tty/epca.c:50:22: error: digiFep1.h: No such file or directory
+> 
+> causes over 100 build errors.
 
-does not automatically load and use crc32c_intel.ko when only requesting
-plain crc32c.
+Crap, sorry, thanks for pointing it out, will go fix this right now.
 
-The reason for the extra crypto_alloc_hash("crc32c-intel", ...) call in
-iscsi_login_setup_crypto() is to load crc32c_intel.ko on-demand for
-cpu_has_xmm4_2 capable machines.
-
-I should mention this is with the following .config:
-
-CONFIG_CRYPTO_CRC32C=y
-CONFIG_CRYPTO_CRC32C_INTEL=m
-
-This would seem to indicate that CRC32C_INTEL needs to be compiled in
-(or at least manually loaded) for libcypto to use the optimized
-instructions when the plain crc32c is called, correct..?
-
---nab
-
+greg k-h
