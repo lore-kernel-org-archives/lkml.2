@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab1CCQJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 11:09:15 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40523 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab1CCQJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 11:09:12 -0500
-Message-ID: <4D6FBD04.6090702@oracle.com>
-Date: Thu, 03 Mar 2011 08:08:36 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1758384Ab1CCQSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 11:18:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752257Ab1CCQSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 11:18:11 -0500
+From: Andreas Schwab <schwab@redhat.com>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+References: <20110303032454.GI22723@ZenIV.linux.org.uk>
+	<406B4874-D3D8-4C05-9FA5-8A7A18ABF89C@mit.edu>
+X-Yow: Send your questions to ``ASK ZIPPY'', Box 40474,
+ San Francisco, CA 94140, USA
+Date: Thu, 03 Mar 2011 17:17:32 +0100
+In-Reply-To: <406B4874-D3D8-4C05-9FA5-8A7A18ABF89C@mit.edu> (Theodore Tso's
+	message of "Thu, 3 Mar 2011 09:34:08 -0500")
+Message-ID: <m3y64wyy8z.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        driverdevel <devel@driverdev.osuosl.org>, gregkh@suse.de,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] staging/brcm80211: fix printk format warnings
-References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au> <20110301162948.34c28d6e.randy.dunlap@oracle.com> <20110302210511.GA20798@kroah.com> <20110303103620.6b3c463f.sfr@canb.auug.org.au> <20110303072028.GA21427@sdf-MacBook>
-In-Reply-To: <20110303072028.GA21427@sdf-MacBook>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D6FBD0C.0114,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/11 23:20, Stanislav Fomichev wrote:
->> Maybe due to conflict resolutions in my tree (assuming that Randy based
->> his patch in linux-next).
-> We don't have brcm80211/sys/ directory (it was renamed to
-> brcm80211/brcmsmac); so it's based on the wrong/outdated tree.
+Theodore Tso <tytso@MIT.EDU> writes:
 
-It was based on linux-next of 2011-0301, which is what the patch email
-was in reply to.
+> On Mar 2, 2011, at 10:24 PM, Al Viro wrote:
+>
+>> We have an interesting problem.  Consider the following sequence
+>> of syscalls:
+>> 	mkdir("foo", 0777);
+>> 	mkdir("bar", 0777);
+>> 	fd1 = open("foo", O_DIRECTORY);
+>> 	fd2 = open("bar", O_DIRECTORY);
+>> 	rename("foo", "bar");	/* kill old bar */
+>
+> I must be missing something.  I didn't think you could rename on
+> top of a directory and have the directory disappear.  Don't you get
+> an error in that case?
 
-> And I suppose these errors are already fixed.
+rename is required to be able to move a directory over an empty
+directory, atomically.
 
-Good to know.  Thanks.
+> What happens if bar contains files?
+
+That's an error.
+
+Andreas.
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Andreas Schwab, schwab@redhat.com
+GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
+"And now for something completely different."
