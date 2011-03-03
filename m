@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab1CCIUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:20:47 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55916 "EHLO mga09.intel.com"
+	id S1757661Ab1CCIVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:21:08 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61716 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793Ab1CCIR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:17:58 -0500
+	id S1755398Ab1CCIVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 03:21:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
-   d="scan'208";a="608559349"
-Message-Id: <20110303074951.713350492@intel.com>
+   d="scan'208";a="663359354"
+Message-Id: <20110303074949.287801184@intel.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 Mar 2011 14:45:28 +0800
+Date: Thu, 03 Mar 2011 14:45:10 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Chris Mason <chris.mason@oracle.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
@@ -32,235 +32,130 @@ CC: Balbir Singh <balbir@linux.vnet.ibm.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 23/27] writeback: trace balance_dirty_pages
+Subject: [PATCH 05/27] btrfs: avoid duplicate balance_dirty_pages_ratelimited() calls
 References: <20110303064505.718671603@intel.com>
-Content-Disposition: inline; filename=writeback-trace-balance_dirty_pages.patch
+Content-Disposition: inline; filename=btrfs-fix-balance-size.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It would be useful for analyzing the dynamics of the throttling
-algorithms, and helpful for debugging user reported problems.
+When doing 1KB sequential writes to the same page,
+balance_dirty_pages_ratelimited() should be called once instead of 4
+times. Failing to do so will make all tasks throttled much too heavy.
 
-Here is an interesting test to verify the theory with balance_dirty_pages()
-tracing. On a partition that can do ~60MB/s, a sparse file is created and
-4 rsync tasks with different write bandwidth started:
-
-	dd if=/dev/zero of=/mnt/1T bs=1M count=1 seek=1024000
-	echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
-
-	rsync localhost:/mnt/1T /mnt/a --bwlimit 10000&
-	rsync localhost:/mnt/1T /mnt/A --bwlimit 10000&
-	rsync localhost:/mnt/1T /mnt/b --bwlimit 20000&
-	rsync localhost:/mnt/1T /mnt/c --bwlimit 30000&
-
-Trace outputs within 0.1 second, grouped by tasks:
-
-rsync-3824  [004] 15002.076447: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130876 gap=5340 dirtied=192 pause=20
-
-rsync-3822  [003] 15002.091701: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130777 gap=5113 dirtied=192 pause=20
-
-rsync-3821  [006] 15002.004667: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129570 gap=3714 dirtied=64 pause=8
-rsync-3821  [006] 15002.012654: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129589 gap=3733 dirtied=64 pause=8
-rsync-3821  [006] 15002.021838: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129604 gap=3748 dirtied=64 pause=8
-rsync-3821  [004] 15002.091193: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129583 gap=3983 dirtied=64 pause=8
-rsync-3821  [004] 15002.102729: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129594 gap=3802 dirtied=64 pause=8
-rsync-3821  [000] 15002.109252: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129619 gap=3827 dirtied=64 pause=8
-
-rsync-3823  [002] 15002.009029: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128762 gap=2842 dirtied=64 pause=12
-rsync-3823  [002] 15002.021598: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128813 gap=3021 dirtied=64 pause=12
-rsync-3823  [003] 15002.032973: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128805 gap=2885 dirtied=64 pause=12
-rsync-3823  [003] 15002.048800: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128823 gap=2967 dirtied=64 pause=12
-rsync-3823  [003] 15002.060728: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128821 gap=3221 dirtied=64 pause=12
-rsync-3823  [000] 15002.073152: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128825 gap=3225 dirtied=64 pause=12
-rsync-3823  [005] 15002.090111: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128782 gap=3214 dirtied=64 pause=12
-rsync-3823  [004] 15002.102520: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128764 gap=3036 dirtied=64 pause=12
-
-The data vividly show that
-
-- the heaviest writer is throttled a bit (weight=39%)
-
-- the lighter writers run at full speed (weight=15%,15%,30%)
-
+CC: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/writeback.h        |    5 +
- include/trace/events/writeback.h |   92 ++++++++++++++++++++++++++++-
- mm/page-writeback.c              |   22 ++++++
- 3 files changed, 114 insertions(+), 5 deletions(-)
+ fs/btrfs/file.c       |   11 +++++++----
+ fs/btrfs/ioctl.c      |    6 ++++--
+ fs/btrfs/relocation.c |    6 ++++--
+ 3 files changed, 15 insertions(+), 8 deletions(-)
 
---- linux-next.orig/include/trace/events/writeback.h	2011-03-03 14:44:38.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-03-03 14:44:39.000000000 +0800
-@@ -147,9 +147,6 @@ DEFINE_EVENT(wbc_class, name, \
- DEFINE_WBC_EVENT(wbc_writeback_start);
- DEFINE_WBC_EVENT(wbc_writeback_written);
- DEFINE_WBC_EVENT(wbc_writeback_wait);
--DEFINE_WBC_EVENT(wbc_balance_dirty_start);
--DEFINE_WBC_EVENT(wbc_balance_dirty_written);
--DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
- DEFINE_WBC_EVENT(wbc_writepage);
- 
- #define KBps(x)			((x) << (PAGE_SHIFT - 10))
-@@ -201,6 +198,95 @@ TRACE_EVENT(dirty_throttle_bandwidth,
- 	)
- );
- 
-+TRACE_EVENT(balance_dirty_pages,
-+
-+	TP_PROTO(struct backing_dev_info *bdi,
-+		 unsigned long thresh,
-+		 unsigned long dirty,
-+		 unsigned long bdi_dirty,
-+		 unsigned long task_bw,
-+		 unsigned long dirtied,
-+		 unsigned long period,
-+		 long pause,
-+		 unsigned long start_time),
-+
-+	TP_ARGS(bdi, thresh, dirty, bdi_dirty,
-+		task_bw, dirtied, period, pause, start_time),
-+
-+	TP_STRUCT__entry(
-+		__array(	 char,	bdi, 32)
-+		__field(unsigned long,	bdi_weight)
-+		__field(unsigned long,	task_weight)
-+		__field(unsigned long,	limit)
-+		__field(unsigned long,	goal)
-+		__field(unsigned long,	dirty)
-+		__field(unsigned long,	bdi_goal)
-+		__field(unsigned long,	bdi_dirty)
-+		__field(unsigned long,	avg_dirty)
-+		__field(unsigned long,	base_bw)
-+		__field(unsigned long,	task_bw)
-+		__field(unsigned long,	dirtied)
-+		__field(unsigned long,	period)
-+		__field(	 long,	think)
-+		__field(	 long,	pause)
-+		__field(unsigned long,	paused)
-+	),
-+
-+	TP_fast_assign(
-+		long numerator;
-+		long denominator;
-+
-+		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
-+
-+		bdi_writeout_fraction(bdi, &numerator, &denominator);
-+		__entry->bdi_weight	= 1000 * numerator / denominator;
-+		task_dirties_fraction(current, &numerator, &denominator);
-+		__entry->task_weight	= 1000 * numerator / denominator;
-+
-+		__entry->limit = default_backing_dev_info.dirty_threshold;
-+		__entry->goal		= thresh - thresh / DIRTY_SCOPE;
-+		__entry->dirty		= dirty;
-+		__entry->bdi_goal	= bdi->dirty_threshold -
-+					  bdi->dirty_threshold / DIRTY_SCOPE;
-+		__entry->bdi_dirty	= bdi_dirty;
-+		__entry->avg_dirty	= bdi->avg_dirty;
-+		__entry->base_bw	= KBps(bdi->throttle_bandwidth) >>
-+								BASE_BW_SHIFT;
-+		__entry->task_bw	= KBps(task_bw);
-+		__entry->dirtied	= dirtied;
-+		__entry->think		= current->paused_when == 0 ? 0 :
-+			 (long)(jiffies - current->paused_when) * 1000 / HZ;
-+		__entry->period		= period * 1000 / HZ;
-+		__entry->pause		= pause * 1000 / HZ;
-+		__entry->paused		= (jiffies - start_time) * 1000 / HZ;
-+	),
-+
-+
-+	TP_printk("bdi %s: bdi_weight=%lu task_weight=%lu "
-+		  "limit=%lu goal=%lu dirty=%lu "
-+		  "bdi_goal=%lu bdi_dirty=%lu avg_dirty=%lu "
-+		  "base_bw=%lu task_bw=%lu "
-+		  "dirtied=%lu "
-+		  "period=%lu think=%ld pause=%ld paused=%lu",
-+		  __entry->bdi,
-+		  __entry->bdi_weight,
-+		  __entry->task_weight,
-+		  __entry->limit,
-+		  __entry->goal,
-+		  __entry->dirty,
-+		  __entry->bdi_goal,
-+		  __entry->bdi_dirty,
-+		  __entry->avg_dirty,
-+		  __entry->base_bw,	/* base throttle bandwidth */
-+		  __entry->task_bw,	/* task throttle bandwidth */
-+		  __entry->dirtied,
-+		  __entry->period,	/* ms */
-+		  __entry->think,	/* ms */
-+		  __entry->pause,	/* ms */
-+		  __entry->paused	/* ms */
-+		  )
-+);
-+
- DECLARE_EVENT_CLASS(writeback_congest_waited_template,
- 
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
---- linux-next.orig/mm/page-writeback.c	2011-03-03 14:44:38.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-03-03 14:44:39.000000000 +0800
-@@ -227,14 +227,14 @@ void task_dirty_inc(struct task_struct *
- /*
-  * Obtain an accurate fraction of the BDI's portion.
-  */
--static void bdi_writeout_fraction(struct backing_dev_info *bdi,
-+void bdi_writeout_fraction(struct backing_dev_info *bdi,
- 		long *numerator, long *denominator)
+--- linux-next.orig/fs/btrfs/file.c	2011-02-21 14:24:56.000000000 +0800
++++ linux-next/fs/btrfs/file.c	2011-02-21 14:37:34.000000000 +0800
+@@ -770,7 +770,8 @@ out:
+ static noinline int prepare_pages(struct btrfs_root *root, struct file *file,
+ 			 struct page **pages, size_t num_pages,
+ 			 loff_t pos, unsigned long first_index,
+-			 unsigned long last_index, size_t write_bytes)
++			 unsigned long last_index, size_t write_bytes,
++			 int *nr_dirtied)
  {
- 	prop_fraction_percpu(&vm_completions, &bdi->completions,
- 				numerator, denominator);
- }
+ 	struct extent_state *cached_state = NULL;
+ 	int i;
+@@ -837,7 +838,8 @@ again:
+ 				     GFP_NOFS);
+ 	}
+ 	for (i = 0; i < num_pages; i++) {
+-		clear_page_dirty_for_io(pages[i]);
++		if (!clear_page_dirty_for_io(pages[i]))
++			(*nr_dirtied)++;
+ 		set_page_extent_mapped(pages[i]);
+ 		WARN_ON(!PageLocked(pages[i]));
+ 	}
+@@ -989,6 +991,7 @@ static ssize_t btrfs_file_aio_write(stru
+ 	}
  
--static inline void task_dirties_fraction(struct task_struct *tsk,
-+void task_dirties_fraction(struct task_struct *tsk,
- 		long *numerator, long *denominator)
- {
- 	prop_fraction_single(&vm_dirties, &tsk->dirties,
-@@ -1251,6 +1251,15 @@ static void balance_dirty_pages(struct a
- 		 * it may be a light dirtier.
- 		 */
- 		if (unlikely(-pause < HZ*10)) {
-+			trace_balance_dirty_pages(bdi,
-+						  dirty_thresh,
-+						  nr_dirty,
-+						  bdi_dirty,
-+						  bw,
-+						  pages_dirtied,
-+						  period,
-+						  pause,
-+						  start_time);
- 			if (-pause > HZ/2) {
- 				current->paused_when = jiffies;
- 				current->nr_dirtied = 0;
-@@ -1267,6 +1276,15 @@ static void balance_dirty_pages(struct a
- 			pause = pause_max;
+ 	while (iov_iter_count(&i) > 0) {
++		int nr_dirtied = 0;
+ 		size_t offset = pos & (PAGE_CACHE_SIZE - 1);
+ 		size_t write_bytes = min(iov_iter_count(&i),
+ 					 nrptrs * (size_t)PAGE_CACHE_SIZE -
+@@ -1015,7 +1018,7 @@ static ssize_t btrfs_file_aio_write(stru
  
- pause:
-+		trace_balance_dirty_pages(bdi,
-+					  dirty_thresh,
-+					  nr_dirty,
-+					  bdi_dirty,
-+					  bw,
-+					  pages_dirtied,
-+					  period,
-+					  pause,
-+					  start_time);
- 		current->paused_when = jiffies;
- 		__set_current_state(TASK_UNINTERRUPTIBLE);
- 		io_schedule_timeout(pause);
---- linux-next.orig/include/linux/writeback.h	2011-03-03 14:44:38.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-03-03 14:44:39.000000000 +0800
-@@ -169,6 +169,11 @@ void global_dirty_limits(unsigned long *
- unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
- 			       unsigned long dirty);
+ 		ret = prepare_pages(root, file, pages, num_pages,
+ 				    pos, first_index, last_index,
+-				    write_bytes);
++				    write_bytes, &nr_dirtied);
+ 		if (ret) {
+ 			btrfs_delalloc_release_space(inode,
+ 					num_pages << PAGE_CACHE_SHIFT);
+@@ -1050,7 +1053,7 @@ static ssize_t btrfs_file_aio_write(stru
+ 			} else {
+ 				balance_dirty_pages_ratelimited_nr(
+ 							inode->i_mapping,
+-							dirty_pages);
++							nr_dirtied);
+ 				if (dirty_pages <
+ 				(root->leafsize >> PAGE_CACHE_SHIFT) + 1)
+ 					btrfs_btree_balance_dirty(root, 1);
+--- linux-next.orig/fs/btrfs/ioctl.c	2011-02-21 14:24:56.000000000 +0800
++++ linux-next/fs/btrfs/ioctl.c	2011-02-21 14:26:21.000000000 +0800
+@@ -654,6 +654,7 @@ static int btrfs_defrag_file(struct file
+ 	u64 skip = 0;
+ 	u64 defrag_end = 0;
+ 	unsigned long i;
++	int dirtied;
+ 	int ret;
+ 	int compress_type = BTRFS_COMPRESS_ZLIB;
  
-+void bdi_writeout_fraction(struct backing_dev_info *bdi,
-+			   long *numerator, long *denominator);
-+void task_dirties_fraction(struct task_struct *tsk,
-+			   long *numerator, long *denominator);
-+
- void bdi_update_bandwidth(struct backing_dev_info *bdi,
- 			  unsigned long thresh,
- 			  unsigned long dirty,
+@@ -766,7 +767,7 @@ again:
+ 
+ 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
+ 		ClearPageChecked(page);
+-		set_page_dirty(page);
++		dirtied = set_page_dirty(page);
+ 		unlock_extent(io_tree, page_start, page_end, GFP_NOFS);
+ 
+ loop_unlock:
+@@ -774,7 +775,8 @@ loop_unlock:
+ 		page_cache_release(page);
+ 		mutex_unlock(&inode->i_mutex);
+ 
+-		balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
++		if (dirtied)
++			balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
+ 		i++;
+ 	}
+ 
+--- linux-next.orig/fs/btrfs/relocation.c	2011-02-21 14:24:56.000000000 +0800
++++ linux-next/fs/btrfs/relocation.c	2011-02-21 14:26:21.000000000 +0800
+@@ -2902,6 +2902,7 @@ static int relocate_file_extent_cluster(
+ 	struct file_ra_state *ra;
+ 	int nr = 0;
+ 	int ret = 0;
++	int dirtied;
+ 
+ 	if (!cluster->nr)
+ 		return 0;
+@@ -2978,7 +2979,7 @@ static int relocate_file_extent_cluster(
+ 		}
+ 
+ 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
+-		set_page_dirty(page);
++		dirtied = set_page_dirty(page);
+ 
+ 		unlock_extent(&BTRFS_I(inode)->io_tree,
+ 			      page_start, page_end, GFP_NOFS);
+@@ -2986,7 +2987,8 @@ static int relocate_file_extent_cluster(
+ 		page_cache_release(page);
+ 
+ 		index++;
+-		balance_dirty_pages_ratelimited(inode->i_mapping);
++		if (dirtied)
++			balance_dirty_pages_ratelimited(inode->i_mapping);
+ 		btrfs_throttle(BTRFS_I(inode)->root);
+ 	}
+ 	WARN_ON(nr != cluster->nr);
 
 
