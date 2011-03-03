@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662Ab1CCSQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 13:16:19 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:45325 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758616Ab1CCSQQ (ORCPT
+	id S1758652Ab1CCSRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 13:17:50 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47435 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758464Ab1CCSRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 13:16:16 -0500
-Subject: Re: ANNOUNCE: debloat-testing kernel git tree
-From: Rick Jones <rick.jones2@hp.com>
-Reply-To: rick.jones2@hp.com
-To: Dave =?ISO-8859-1?Q?T=E4ht?= <d@taht.net>
-Cc: sedat.dilek@gmail.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, bloat-devel@lists.bufferbloat.net,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <87tyfph2az.fsf@cruithne.co.teklibre.org>
-References: <20110225222210.GA3618@tuxdriver.com>
-	 <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
-	 <87fwr9jxya.fsf@cruithne.co.teklibre.org>
-	 <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
-	 <8739n9ii7z.fsf@cruithne.co.teklibre.org>
-	 <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
-	 <87tyfph2az.fsf@cruithne.co.teklibre.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 10:16:08 -0800
-Message-ID: <1299176168.2157.14.camel@tardy>
+	Thu, 3 Mar 2011 13:17:49 -0500
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1299174652.2071.12.camel@dan>
+References: <1299174652.2071.12.camel@dan>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 03 Mar 2011 10:17:46 -0800
+Message-ID: <1299176266.8493.2369.camel@nimitz>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -32,15 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For wireless routers and cable home gateways especially, this research
-> shows that the total un-managed buffers in your system should be less
-> than 32.
+On Thu, 2011-03-03 at 12:50 -0500, Dan Rosenberg wrote:
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -4691,7 +4691,7 @@ static const struct file_operations proc_slabinfo_operations = {
+> 
+>  static int __init slab_proc_init(void)
+>  {
+> -       proc_create("slabinfo", S_IRUGO, NULL, &proc_slabinfo_operations);
+> +       proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
+>         return 0;
+>  }
+>  module_init(slab_proc_init); 
 
-Would it be a good thing to start describing these queues not so much in
-terms of packets but in terms of delay (or bandwidth X delay)?
+Please don't.  In reality, it'll just mean that more data collection
+things will have to get done as root, and I'll wear my keyboard out more
+often sudo'ing.
 
-Constants tend to live longer than they should, no matter how noble in
-birth.
+If you really want this on particularly pedantic systems, why not chmod?
 
-rick jones
+-- Dave
 
