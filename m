@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384Ab1CCQSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 11:18:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752257Ab1CCQSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 11:18:11 -0500
-From: Andreas Schwab <schwab@redhat.com>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] st_nlink after rmdir() and rename()
-References: <20110303032454.GI22723@ZenIV.linux.org.uk>
-	<406B4874-D3D8-4C05-9FA5-8A7A18ABF89C@mit.edu>
-X-Yow: Send your questions to ``ASK ZIPPY'', Box 40474,
- San Francisco, CA 94140, USA
-Date: Thu, 03 Mar 2011 17:17:32 +0100
-In-Reply-To: <406B4874-D3D8-4C05-9FA5-8A7A18ABF89C@mit.edu> (Theodore Tso's
-	message of "Thu, 3 Mar 2011 09:34:08 -0500")
-Message-ID: <m3y64wyy8z.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758473Ab1CCQdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 11:33:31 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:52063 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758286Ab1CCQd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 11:33:29 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Kirill A. Shutsemov" <kirill@shutemov.name>
+Subject: Re: [PATCH, v8 1/3] hrtimer: introduce effective timer slack
+Date: Thu, 3 Mar 2011 17:32:28 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <1299161947-9903-1-git-send-email-kirill@shutemov.name> <1299161947-9903-2-git-send-email-kirill@shutemov.name>
+In-Reply-To: <1299161947-9903-2-git-send-email-kirill@shutemov.name>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103031732.28964.arnd@arndb.de>
+X-Provags-ID: V02:K0:zlkwj3X77AJ50amjuUx+dQvLt7inAVIiYFe+CQnn9SB
+ H9S8Q6KEsvzVn+NPsc/oP7PPiBwP8DRqioinVKT4GingS4GxP0
+ zINgh0iR0GJwaUrV5LeqdcyuYxjvPFXW6u6zl/I/38InjLnHPe
+ 4iHutevzzwIAF+CfOlVlK2QTfujZ/wWvasVF32eh4PZB/fxw+m
+ H8FFzgTTFMQM342HJqVag==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theodore Tso <tytso@MIT.EDU> writes:
+On Thursday 03 March 2011, Kirill A. Shutsemov wrote:
+> task_get_effective_timer_slack() returns timer slack value to be used
+> to configure per-task timers. It can be equal or higher than task's
+> timer slack value.
+> 
+> For now task_get_effective_timer_slack() returns timer_slack_ns of the
+> task. Timer slack cgroup controller will implement a bit more
+> sophisticated logic.
 
-> On Mar 2, 2011, at 10:24 PM, Al Viro wrote:
->
->> We have an interesting problem.  Consider the following sequence
->> of syscalls:
->> 	mkdir("foo", 0777);
->> 	mkdir("bar", 0777);
->> 	fd1 = open("foo", O_DIRECTORY);
->> 	fd2 = open("bar", O_DIRECTORY);
->> 	rename("foo", "bar");	/* kill old bar */
->
-> I must be missing something.  I didn't think you could rename on
-> top of a directory and have the directory disappear.  Don't you get
-> an error in that case?
+Some time ago, there was a discussion about a method for automatically
+determining timer slack values, and I think nobody ever implemented it.
 
-rename is required to be able to move a directory over an empty
-directory, atomically.
+The idea was to penalize tasks that have timers expiring a lot, typically
+a sign of programs that were not written with power consumption in mind.
 
-> What happens if bar contains files?
+I think that could be nicely combined with your patch. Instead of setting
+the effective timer slack for the entire control group, you  could
+set a target value that is applied only to tasks that have their timers
+expire frequently. When a timer expires for a task, you increase the
+effective slack up to the maximum, and when you set up a timer, you
+decrease it again. The amount by which the effective slack gets changed
+can depend on how long ago the last timer expired.
 
-That's an error.
+Does this make sense to you?
 
-Andreas.
-
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+	Arnd
