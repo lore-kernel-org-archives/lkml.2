@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab1CCObA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 09:31:00 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61540 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757909Ab1CCOa7 (ORCPT
+	id S1758370Ab1CCObZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 09:31:25 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57262 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758271Ab1CCObX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 09:30:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition
-         :content-transfer-encoding:in-reply-to:user-agent;
-        b=ILa2MD2PptZXpoVnmEgVBcf50AtLr/XEt7EjtPlCfkPH/y7mYxFfXMrWs/Ysm00YnR
-         N+HTiqs6iNvphQG3R5cCpHmWBt71Wmsnf1cstdZvxelriRnU70CEYKn+qU4YmPr6/rci
-         Rl/DVsVJBgjk11Y0+AnnORXVXV8huyMUd9u6Y=
-Date: Fri, 4 Mar 2011 01:00:51 +1030
-From: Alan Modra <amodra@gmail.com>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: Hui Zhu <teawater@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, binutils@sourceware.org
-Subject: Re: [BUG] as of trunk build Linux kernel trunk entry_32.S got error
-Message-ID: <20110303143051.GI13094@bubble.grove.modra.org>
-Mail-Followup-To: "H.J. Lu" <hjl.tools@gmail.com>,
-	Hui Zhu <teawater@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-	"H. Peter Anvin" <hpa@zytor.com>, binutils@sourceware.org
-References: <AANLkTimqT82wR20vvunnMvNShFSs0zWtmeT66A84Nh5t@mail.gmail.com>
- <AANLkTi=m_qO0=o81+Db_B-kt1DWP-Af6So+_LiZMgONF@mail.gmail.com>
+	Thu, 3 Mar 2011 09:31:23 -0500
+Date: Thu, 3 Mar 2011 09:31:20 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Andrew Patterson <andrew.patterson@hp.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, James.Bottomley@suse.de
+Subject: Re: [PATCH] Fix over-zealous flush_disk when changing device size.
+Message-ID: <20110303143120.GA8134@infradead.org>
+References: <20110217165057.5c50e566@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=m_qO0=o81+Db_B-kt1DWP-Af6So+_LiZMgONF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110217165057.5c50e566@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 05:48:01AM -0800, H.J. Lu wrote:
-> On Wed, Mar 2, 2011 at 10:16 PM, Hui Zhu <teawater@gmail.com> wrote:
-> > as -version
-> > GNU assembler (GNU Binutils) 2.21.51.20110303
-> >  AS      arch/x86/kernel/entry_32.o
-> > /home/teawater/big/kernel/linux-2.6/arch/x86/kernel/entry_32.S:
-> > Assembler messages:
-> > /home/teawater/big/kernel/linux-2.6/arch/x86/kernel/entry_32.S:1422:
-> > Error: .size expression does not evaluate to a constant
-> >
-> > When I change back to the as of system, everything is OK.
-> >
-> > Because I always use the as of trunk, so I think a recent PATCH caused
-> > the problem.
-> >
+On Thu, Feb 17, 2011 at 04:50:57PM +1100, NeilBrown wrote:
 > 
-> You need
+> Hi Andrew (and others)
+>  I wonder if you would review the following for me and comment.
+
+Please send think in this area through -fsdevel next time, thanks!
+
+> There are two cases when we call flush_disk.
+> In one, the device has disappeared (check_disk_change) so any
+> data will hold becomes irrelevant.
+> In the oter, the device has changed size (check_disk_size_change)
+> so data we hold may be irrelevant.
 > 
-> http://git.kernel.org/?p=linux/kernel/git/hjl/linux-2.6.37.y.git;a=commitdiff;h=2c5ce9c1b8eb927c131a31d4466e24e00647e9cb
+> In both cases it makes sense to discard any 'clean' buffers,
+> so they will be read back from the device if needed.
 
-That doesn't fix the similar entry_32.S problem.  Here you go.
+Does it?  If the device has disappeared we can't read them back anyway.
+If the device has resized to a smaller size the same is true about
+those buffers that have gone away, and if it has resized to a larger
+size invalidating anything doesn't make sense at all.  I think this
+area needs more love than a quick kill_dirty hackjob.
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..9ca3b0e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1413,7 +1413,7 @@ ENTRY(async_page_fault)
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
--END(apf_page_fault)
-+END(async_page_fault)
- #endif
- 
- /*
+> In the former case it makes sense to discard 'dirty' buffers
+> as there will never be anywhere safe to write the data.  In the
+> second case it *does*not* make sense to discard dirty buffers
+> as that will lead to file system corruption when you simply enlarge
+> the containing devices.
 
--- 
-Alan Modra
-Australia Development Lab, IBM
+Doing anything like this at the buffer cache layer or inode cache layer
+doesn't make any sense.  If a device goes away or shrinks below the
+filesystem size the filesystem simply needs to be shut down and in te
+former size the admin needs to start a manual repair.  Trying to do
+any botch jobs in lower layer never works in practice.
+
+For now I think the best short term fix is to simply revert commit
+608aeef17a91747d6303de4df5e2c2e6899a95e8
+
+	"Call flush_disk() after detecting an online resize."
