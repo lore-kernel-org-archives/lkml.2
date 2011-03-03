@@ -1,160 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab1CCR4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 12:56:34 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:39010 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab1CCRzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 12:55:09 -0500
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, leoli@freescale.com,
-        dan.j.williams@intel.com, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH v3 5/9] fsldma: minor codingstyle and consistency fixes
-Date: Thu,  3 Mar 2011 09:54:57 -0800
-Message-Id: <1299174901-16762-6-git-send-email-iws@ovro.caltech.edu>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1299174901-16762-1-git-send-email-iws@ovro.caltech.edu>
-References: <1299174901-16762-1-git-send-email-iws@ovro.caltech.edu>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Thu, 03 Mar 2011 09:55:08 -0800 (PST)
+	id S1758559Ab1CCSAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 13:00:22 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:40559 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab1CCSAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 13:00:19 -0500
+Date: Thu, 3 Mar 2011 09:59:01 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] video via: fix iomem access
+Message-ID: <20110303095901.2a283be0@nehalam>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes some minor violations of the coding style. It also changes
-the style of the device_prep_dma_*() function definitions so they are
-identical.
+This driver is not respecting the iomem memory space restrictions
+and does direct access. This works on x86 but is non-portable and
+should not be done.  Converted memcpy() of 2 to readw.
+Last post increment of romptr was unnecessary since pointer never
+used after that.
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Found by sparse, compile tested only.
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+
 ---
- drivers/dma/fsldma.c |   29 +++++++++++++----------------
- drivers/dma/fsldma.h |    4 ++--
- 2 files changed, 15 insertions(+), 18 deletions(-)
+ drivers/video/via/lcd.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 82b8e9f..5da1a4a 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -89,7 +89,7 @@ static void set_desc_cnt(struct fsldma_chan *chan,
- }
+--- a/drivers/video/via/lcd.c	2011-03-03 09:09:10.552604209 -0800
++++ b/drivers/video/via/lcd.c	2011-03-03 09:56:12.144398571 -0800
+@@ -1064,34 +1064,33 @@ static struct display_timing lcd_centeri
  
- static void set_desc_src(struct fsldma_chan *chan,
--				struct fsl_dma_ld_hw *hw, dma_addr_t src)
-+			 struct fsl_dma_ld_hw *hw, dma_addr_t src)
+ bool viafb_lcd_get_mobile_state(bool *mobile)
  {
- 	u64 snoop_bits;
+-	unsigned char *romptr, *tableptr;
++	unsigned char __iomem *romptr, *tableptr, *biosptr;
+ 	u8 core_base;
+-	unsigned char *biosptr;
+ 	/* Rom address */
+-	u32 romaddr = 0x000C0000;
+-	u16 start_pattern = 0;
++	const u32 romaddr = 0x000C0000;
++	u16 start_pattern;
  
-@@ -99,7 +99,7 @@ static void set_desc_src(struct fsldma_chan *chan,
- }
+ 	biosptr = ioremap(romaddr, 0x10000);
++	start_pattern = readw(biosptr);
  
- static void set_desc_dst(struct fsldma_chan *chan,
--				struct fsl_dma_ld_hw *hw, dma_addr_t dst)
-+			 struct fsl_dma_ld_hw *hw, dma_addr_t dst)
- {
- 	u64 snoop_bits;
+-	memcpy(&start_pattern, biosptr, 2);
+ 	/* Compare pattern */
+ 	if (start_pattern == 0xAA55) {
+ 		/* Get the start of Table */
+ 		/* 0x1B means BIOS offset position */
+ 		romptr = biosptr + 0x1B;
+-		tableptr = biosptr + *((u16 *) romptr);
++		tableptr = biosptr + readw(romptr);
  
-@@ -109,7 +109,7 @@ static void set_desc_dst(struct fsldma_chan *chan,
- }
+ 		/* Get the start of biosver structure */
+ 		/* 18 means BIOS version position. */
+ 		romptr = tableptr + 18;
+-		romptr = biosptr + *((u16 *) romptr);
++		romptr = biosptr + readw(romptr);
  
- static void set_desc_next(struct fsldma_chan *chan,
--				struct fsl_dma_ld_hw *hw, dma_addr_t next)
-+			  struct fsl_dma_ld_hw *hw, dma_addr_t next)
- {
- 	u64 snoop_bits;
+ 		/* The offset should be 44, but the
+ 		   actual image is less three char. */
+ 		/* pRom += 44; */
+ 		romptr += 41;
  
-@@ -118,8 +118,7 @@ static void set_desc_next(struct fsldma_chan *chan,
- 	hw->next_ln_addr = CPU_TO_DMA(chan, snoop_bits | next, 64);
- }
+-		core_base = *romptr++;
++		core_base = readb(romptr);
  
--static void set_ld_eol(struct fsldma_chan *chan,
--			struct fsl_desc_sw *desc)
-+static void set_ld_eol(struct fsldma_chan *chan, struct fsl_desc_sw *desc)
- {
- 	u64 snoop_bits;
- 
-@@ -338,8 +337,7 @@ static void fsl_chan_toggle_ext_start(struct fsldma_chan *chan, int enable)
- 		chan->feature &= ~FSL_DMA_CHAN_START_EXT;
- }
- 
--static void append_ld_queue(struct fsldma_chan *chan,
--			    struct fsl_desc_sw *desc)
-+static void append_ld_queue(struct fsldma_chan *chan, struct fsl_desc_sw *desc)
- {
- 	struct fsl_desc_sw *tail = to_fsl_desc(chan->ld_pending.prev);
- 
-@@ -380,8 +378,8 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
- 	cookie = chan->common.cookie;
- 	list_for_each_entry(child, &desc->tx_list, node) {
- 		cookie++;
--		if (cookie < 0)
--			cookie = 1;
-+		if (cookie < DMA_MIN_COOKIE)
-+			cookie = DMA_MIN_COOKIE;
- 
- 		child->async_tx.cookie = cookie;
- 	}
-@@ -402,8 +400,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
-  *
-  * Return - The descriptor allocated. NULL for failed.
-  */
--static struct fsl_desc_sw *fsl_dma_alloc_descriptor(
--					struct fsldma_chan *chan)
-+static struct fsl_desc_sw *fsl_dma_alloc_descriptor(struct fsldma_chan *chan)
- {
- 	struct fsl_desc_sw *desc;
- 	dma_addr_t pdesc;
-@@ -427,7 +424,6 @@ static struct fsl_desc_sw *fsl_dma_alloc_descriptor(
- 	return desc;
- }
- 
--
- /**
-  * fsl_dma_alloc_chan_resources - Allocate resources for DMA channel.
-  * @chan : Freescale DMA channel
-@@ -537,14 +533,15 @@ fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
- 	/* Insert the link descriptor to the LD ring */
- 	list_add_tail(&new->node, &new->tx_list);
- 
--	/* Set End-of-link to the last link descriptor of new list*/
-+	/* Set End-of-link to the last link descriptor of new list */
- 	set_ld_eol(chan, new);
- 
- 	return &new->async_tx;
- }
- 
--static struct dma_async_tx_descriptor *fsl_dma_prep_memcpy(
--	struct dma_chan *dchan, dma_addr_t dma_dst, dma_addr_t dma_src,
-+static struct dma_async_tx_descriptor *
-+fsl_dma_prep_memcpy(struct dma_chan *dchan,
-+	dma_addr_t dma_dst, dma_addr_t dma_src,
- 	size_t len, unsigned long flags)
- {
- 	struct fsldma_chan *chan;
-@@ -594,7 +591,7 @@ static struct dma_async_tx_descriptor *fsl_dma_prep_memcpy(
- 	new->async_tx.flags = flags; /* client is in control of this ack */
- 	new->async_tx.cookie = -EBUSY;
- 
--	/* Set End-of-link to the last link descriptor of new list*/
-+	/* Set End-of-link to the last link descriptor of new list */
- 	set_ld_eol(chan, new);
- 
- 	return &first->async_tx;
-diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
-index 113e713..49189da 100644
---- a/drivers/dma/fsldma.h
-+++ b/drivers/dma/fsldma.h
-@@ -102,8 +102,8 @@ struct fsl_desc_sw {
- } __attribute__((aligned(32)));
- 
- struct fsldma_chan_regs {
--	u32 mr;	/* 0x00 - Mode Register */
--	u32 sr;	/* 0x04 - Status Register */
-+	u32 mr;		/* 0x00 - Mode Register */
-+	u32 sr;		/* 0x04 - Status Register */
- 	u64 cdar;	/* 0x08 - Current descriptor address register */
- 	u64 sar;	/* 0x10 - Source Address Register */
- 	u64 dar;	/* 0x18 - Destination Address Register */
--- 
-1.7.3.4
-
+ 		if (core_base & 0x8)
+ 			*mobile = false;
