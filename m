@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab1CCRqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 12:46:10 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56177 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758465Ab1CCRqI (ORCPT
+	id S932206Ab1CCRse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 12:48:34 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:14967 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130Ab1CCRsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 12:46:08 -0500
+	Thu, 3 Mar 2011 12:48:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=oN6/CKoY1SrqYaet1uewZ+PFDKeEJst0YE/OpuXhEdbSzmGX18KK6P/8jltQ/CPHZW
+         OkrM1yA4zbQNzVNxKXAQ==
 MIME-Version: 1.0
-In-Reply-To: <1299137483-10975-1-git-send-email-ksumrall@android.com>
-References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Mar 2011 09:45:38 -0800
-Message-ID: <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com>
-Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
- remount filesystems ro
-To: Ken Sumrall <ksumrall@android.com>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
-        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
-        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20110216192200.GA11980@ghc17.ghc.andrew.cmu.edu>
+References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
+ <20110208013950.GF31569@ghc17.ghc.andrew.cmu.edu> <20110216192200.GA11980@ghc17.ghc.andrew.cmu.edu>
+From: Paul Menage <menage@google.com>
+Date: Thu, 3 Mar 2011 09:48:09 -0800
+Message-ID: <AANLkTinKTqBnjLKkv93UxyWoPL-2vyXP=LUvRz8JTC2K@mail.gmail.com>
+Subject: Re: [PATCH v8 4/3] cgroups: use flex_array in attach_proc
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+        matthltc@us.ibm.com, oleg@redhat.com,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 2, 2011 at 11:31 PM, Ken Sumrall <ksumrall@android.com> wrote:
+On Wed, Feb 16, 2011 at 11:22 AM, Ben Blum <bblum@andrew.cmu.edu> wrote:
+> Convert cgroup_attach_proc to use flex_array.
 >
-> Add 4 new commands to the reboot system call, that do the same thing as the
-> RESTART, HALT, POWER_OFF, and RESTART2 commands, but also remount writable
-> filesystems as read-only just before doing what the command normally does.
+> From: Ben Blum <bblum@andrew.cmu.edu>
+>
+> The cgroup_attach_proc implementation requires a pre-allocated array to store
+> task pointers to atomically move a thread-group, but asking for a monolithic
+> array with kmalloc() may be unreliable for very large groups. Using flex_array
+> provides the same functionality with less risk of failure.
+>
+> This is a post-patch for cgroup-procs-write.patch.
+>
+> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
 
-This makes no sense.
+Reviewed-by: Paul Menage <menage@google.com>
 
-If you can change whatever user-land process that does the reboot
-system call (and clearly you can, since you're adding new commands and
-using those), then why the heck don't you just do the remount-ro from
-that same user land?
+Looks fine from a correctness point of view, but I'd be inclined to
+reduce the verbosity - rather than
 
-How many mounted filesystems do you have that it's so hard to keep track of?
+tsk = flex_array_get_ptr(group, i);
+BUG_ON(tsk == NULL);
+retval = ss->can_attach_task(cgrp, tsk);
 
-                      Linus
+I'd just have
+
+retval = ss->can_attach_task(cgrp, flex_array_get_ptr(group, i));
+
+I don't think you need to be so defensive about flex_array's behaviour.
+
+Paul
