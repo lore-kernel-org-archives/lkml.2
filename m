@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758928Ab1CCV7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:59:07 -0500
-Received: from mout.perfora.net ([74.208.4.194]:65386 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758263Ab1CCV7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:59:05 -0500
-Date: Thu, 3 Mar 2011 16:58:49 -0500
-From: Stephen Wilson <wilsons@start.ca>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Enable writing to /proc/PID/mem.
-Message-ID: <20110303215849.GA5893@fibrous.localdomain>
-References: <1299118074-13342-1-git-send-email-wilsons@start.ca> <20110303111240.B942.A69D9226@jp.fujitsu.com> <20110303193802.GA4994@fibrous.localdomain> <20110303194626.GN22723@ZenIV.linux.org.uk>
+	id S1758922Ab1CCWAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 17:00:24 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:27033 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758263Ab1CCWAW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 17:00:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=mM+NP0GeJNbmKKAVgTb6ad3ZwVPC777OfqFo/3BtlilJabYzpz6tVLryIT9AE4padg
+         eWbfdpUjDfGh2GOWJhcg==
+Date: Thu, 3 Mar 2011 14:00:16 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        yinghai@kernel.org, brgerst@gmail.com, shaohui.zheng@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] x86, mm: Clean up initmem_init
+In-Reply-To: <4D700B93.2080807@gmail.com>
+Message-ID: <alpine.DEB.2.00.1103031359070.4141@chino.kir.corp.google.com>
+References: <tip-ffe77a4605fb2588f8666850ad3e3b196241658f@git.kernel.org> <alpine.DEB.2.00.1102191906180.31263@chino.kir.corp.google.com> <20110221083511.GC31267@htj.dyndns.org> <alpine.DEB.2.00.1103031231060.9993@chino.kir.corp.google.com>
+ <4D700B93.2080807@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303194626.GN22723@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Provags-ID: V02:K0:+ixpW+GJXKfnQ0pg51JFWZX/H4WeFTG9klFGGJQbyQM
- mR6J43toJDBacJQFMGd0AypwXY4NFnqMPN9D87YaR6+C4OuJnP
- 8cDGiJ38b7chPY4sd90G4mR26/41Z6u5pm9g9mA4N9AAdUcgo/
- ZlhDccmi2Pm40Ne7dLaVY1VyoBS+XPSMPvO4VqtSKTR9u2ZG88
- lxooI5gWbpBPSOVtt3bcNyEQA8PgE4oSV/lxc6nrb0=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 07:46:26PM +0000, Al Viro wrote:
-> Think what happens if the target execs suid-root binary in the middle of your
-> call.  After you've done your check.  E.g. during copy_from_user().
+On Fri, 4 Mar 2011, Cyrill Gorcunov wrote:
+
+> > This patch cleans initmem_init() so that it is more readable and doesn't
+> > use an unnecessary array of function pointers to convolute the flow of
+> > the code.  It also makes it obvious that dummy_numa_init() will always
+> > succeed (and documents that requirement) so that the existing BUG() is
+> > never actually reached.
+> > 
+> > No functional change.
+> > 
+> > Signed-off-by: David Rientjes <rientjes@google.com>
+> > ---
+> >  arch/x86/mm/numa_64.c |   92 ++++++++++++++++++++++++++++---------------------
+> >  1 files changed, 53 insertions(+), 39 deletions(-)
+> > 
+> ...
+> > +void __init initmem_init(void)
+> > +{
+> > +	int ret;
+> >  
+> > -			if (nid == NUMA_NO_NODE)
+> > -				continue;
+> > -			if (!node_online(nid))
+> > -				numa_clear_node(j);
+> > -		}
+> > -		numa_init_array();
+> > -		return;
+> > +	if (!numa_off) {
+> > +#ifdef CONFIG_ACPI_NUMA
+> > +		ret = numa_init(x86_acpi_numa_init);
+> > +		if (!ret)
+> > +			return;
+> > +#endif
+> > +#ifdef CONFIG_AMD_NUMA
+> > +		ret = numa_init(amd_numa_init);
+> > +		if (!ret)
+> > +			return;
+> > +#endif
+> >  	}
+> > -	BUG();
+> > +
+> > +	numa_init(dummy_numa_init);
+> >  }
+> >  
+> >  unsigned long __init numa_free_all_bootmem(void)
 > 
-> On the read side we actually recheck permissions after having copied into
-> buffer and if the check fails we don't copy that buffer into userland.
-> Not feasible on the write side...
+> Divid, I suspect it's due to diff format and we still need "ret" here, right?
+> 
 
-You are right.  Looks like we would need to hold task_lock over both the
-permission check and write -- but I do not see a clean/simple way of doing
-that today.  Might be worth looking into...
-
-Thanks!
-
--- 
-steve
-
+Not sure what you mean.  "ret" is a temporary variable to test the return 
+values of numa_init() and return from initmem_init() on success.
