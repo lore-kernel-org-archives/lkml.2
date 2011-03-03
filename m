@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1CCQFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 11:05:21 -0500
-Received: from kroah.org ([198.145.64.141]:39146 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754244Ab1CCQFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 11:05:20 -0500
-Date: Thu, 3 Mar 2011 08:02:09 -0800
-From: Greg KH <greg@kroah.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Anand Gadiyar <gadiyar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Keshava Munegowda <keshava_mgowda@ti.com>
-Subject: Re: linux-next: manual merge of the usb tree with the omap tree
-Message-ID: <20110303160209.GB13709@kroah.com>
-References: <20110302165755.b45124c8.sfr@canb.auug.org.au>
- <20110303084829.GB2644@legolas.emea.dhcp.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303084829.GB2644@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932160Ab1CCQFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 11:05:37 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56423 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab1CCQFf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 11:05:35 -0500
+Subject: Re: [PATCH 09/27] nfs: writeback pages wait queue
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Chris Mason <chris.mason@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110303074949.809203319@intel.com>
+References: <20110303064505.718671603@intel.com>
+	 <20110303074949.809203319@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Mar 2011 17:07:00 +0100
+Message-ID: <1299168420.1310.55.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 10:48:29AM +0200, Felipe Balbi wrote:
-> On Wed, Mar 02, 2011 at 04:57:55PM +1100, Stephen Rothwell wrote:
-> > Hi Greg,
-> > 
-> > Today's linux-next merge of the usb tree got a conflict in
-> > arch/arm/mach-omap2/board-4430sdp.c between commit
-> > 1dbea0f5e23b6c647db72fa4a048cb7140625e13 ("arm: omap4: 4430sdp: drop ehci
-> > support") from the omap tree and commit
-> > 181b250cf53233a7a7c6d7e1e9df402506712e93 ("arm: omap: usb: create common
-> > enums and structures for ehci and ohci") from the usb tree.
-> > 
-> > The former removed the code modified by the latter, so I did that.
-> 
-> This can be fixed if Greg applies this patch:
-> 
-> commit 076bfacd5bba0f2e419474488c8f8c060c7799d8
-> Author: Anand Gadiyar <gadiyar@ti.com>
-> Date:   Wed Feb 16 16:47:19 2011 +0530
+On Thu, 2011-03-03 at 14:45 +0800, Wu Fengguang wrote:
+> +static void nfs_wait_contested(int is_sync,
+> +                              struct backing_dev_info *bdi,
+> +                              wait_queue_head_t *wqh) 
 
-Care to provide it to me in a format that I can apply it?  :)
+s/contested/congested/ ?
 
-thanks,
-
-greg k-h
