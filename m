@@ -1,84 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab1CCVhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:37:21 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:58396 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793Ab1CCVhS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758848Ab1CCVhS (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Mar 2011 16:37:18 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] st_nlink after rmdir() and rename()
-References: <20110303032454.GI22723@ZenIV.linux.org.uk>
-	<AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
-	<20110303060352.GK22723@ZenIV.linux.org.uk>
-	<AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com>
-	<87tyfk7x0c.fsf@devron.myhome.or.jp>
-	<AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com>
-Date: Fri, 04 Mar 2011 06:37:15 +0900
-In-Reply-To: <AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com>
-	(Linus Torvalds's message of "Thu, 3 Mar 2011 13:02:50 -0800")
-Message-ID: <87lj0v9984.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25204 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793Ab1CCVhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 16:37:16 -0500
+Message-ID: <4D7009BA.5030600@kernel.org>
+Date: Thu, 03 Mar 2011 13:35:54 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Rientjes <rientjes@google.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, mm: clean up setup_node_bootmem
+References: <4D6EECA1.70603@kernel.org> <alpine.DEB.2.00.1103031243020.9993@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1103031243020.9993@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D7009F8.012B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-
-> On Thu, Mar 3, 2011 at 12:46 PM, OGAWA Hirofumi
-> <hirofumi@mail.parknet.co.jp> wrote:
+On 03/03/2011 12:49 PM, David Rientjes wrote:
+> On Wed, 2 Mar 2011, Yinghai Lu wrote:
+> 
 >>
->> But, some commands see i_nlink (IIRC, it's checking i_nlink == 2, to
->> know empty dir or not).
->
-> Actually, that would be a serious bug in the application.
->
-> The traditional rule of thumb is that a directory with i_nlink==1 has
-> a "I'm not counting at all".
->
-> For example, I think that's the rule that 'find' uses to decide if a
-> directory can have subdirectories (and when it could try to stop
-> scanning early): i_nlink == 1 means that yes, it _can_ have
-> subdirectories, we just don't know how many.
+>> only one user now, so change it to static
+>>
+>> Also move validity checking into the fuction.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> ---
+>>  arch/x86/include/asm/numa_64.h |    2 --
+>>  arch/x86/mm/numa_64.c          |   10 +++-------
+>>  2 files changed, 3 insertions(+), 9 deletions(-)
+>>
+>> Index: linux-2.6/arch/x86/include/asm/numa_64.h
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/include/asm/numa_64.h
+>> +++ linux-2.6/arch/x86/include/asm/numa_64.h
+>> @@ -13,8 +13,6 @@ struct bootnode {
+>>  extern int numa_off;
+>>  
+>>  extern unsigned long numa_free_all_bootmem(void);
+>> -extern void setup_node_bootmem(int nodeid, unsigned long start,
+>> -			       unsigned long end);
+>>  
+>>  #ifdef CONFIG_NUMA
+>>  /*
+>> Index: linux-2.6/arch/x86/mm/numa_64.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/mm/numa_64.c
+>> +++ linux-2.6/arch/x86/mm/numa_64.c
+>> @@ -237,21 +237,18 @@ int __init numa_add_memblk(int nid, u64
+>>  }
+>>  
+>>  /* Initialize bootmem allocator for a node */
+>> -void __init
+>> +static void __init
+>>  setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
+>>  {
+>>  	unsigned long start_pfn, last_pfn, nodedata_phys;
+>>  	const int pgdat_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
+>>  	int nid;
+>>  
+>> -	if (!end)
+>> -		return;
+>> -
+>>  	/*
+>>  	 * Don't confuse VM with a node that doesn't have the
+>>  	 * minimum amount of memory:
+>>  	 */
+>> -	if (end && (end - start) < NODE_MIN_SIZE)
+>> +	if (end < (start +  NODE_MIN_SIZE))
+>>  		return;
+>>  
+>>  	start = roundup(start, ZONE_ALIGN);
+>> @@ -557,8 +554,7 @@ static int __init numa_register_memblks(
+>>  			end = max(mi->blk[i].end, end);
+>>  		}
+>>  
+>> -		if (start < end)
+>> -			setup_node_bootmem(nid, start, end);
+>> +		setup_node_bootmem(nid, start, end);
+>>  	}
+>>  
+>>  	return 0;
+>>
+> 
+> Good catch on finding only the one caller of setup_node_bootmem().
+> 
+> I'd actually rather see the validity checking being done in 
+> numa_register_memblks(), though, because it's a bug for a node to be set 
+> in node_possible_map without having a valid 
+> [mi->blk[i].start, mi->blk[i].end) range.
+> 
+> So could this be
+> 
+> 	BUG_ON(end < start);
 
-Yes. I think it is.
+no, it could cause crash here
 
-> So checking i_nlink==2 is actually a user-level bug.
+        /* Finally register nodes. */
+        for_each_node_mask(nid, node_possible_map) {
+                u64 start = (u64)max_pfn << PAGE_SHIFT;
+                u64 end = 0;
 
-We can call it's the user-level bug, but like you know, we will receive
-many complain if old behavior was broken. If you are saying i_nlink == 2
-is meaning the undefine, it sounds strange. (I was thinking it's why
-isofs is using i_nlink == 1 always. I.e. i_nlink >= 2 is defined
-behavior. Actually the reason would be "find" was checking i_nlink == 2
-though)
+                for (i = 0; i < mi->nr_blks; i++) {
+                        if (nid != mi->blk[i].nid)
+                                continue;
+                        start = min(mi->blk[i].start, start);
+                        end = max(mi->blk[i].end, end);
+                }
 
->> So we have to simulate some levels. I guess you
->> are not saying we don't need to care it at all though.
->
-> I'm saying that it should just work to set i_nlink=1 and not do
-> anything at all. Ever. It's a valid model for directory counts.
->
-> Seriously - that's what isofs does, for example. It does mean that
-> 'find' for certain cases gets bit more expensive, but on the other
-> hand, other operations are a lot _less_ expensive.
->
-> We might well try that as a FAT mount option, to let people decide
-> whether they really do want the "scan directories all the time" or
-> only the "let 'find' scan directories when it needs to" behavior.
+could have some node without memory. and it could be set in node_possible_map, and it will have end = 0, and start max_pfn<<page_shift.
 
-Yes. i_nlink == 1 is ok, IIRC (I checked last time at least. And I used
-i_nlink == 1 for exFAT).  And I agree with you almost all, but isofs is
-read-only, the read-only is why I was not really sure.
 
-And I can't only see is why you refuse to make consistent behavior (if
-you are saying it). It's why I said if it's _really easy_.
+> 	/*
+> 	 * Don't confuse the VM with a node that doesn't have the minimum
+> 	 * amount of memory.
+> 	 */
+> 	if (end < start + NODE_MIN_SIZE) {
+> 		node_clear(nid, node_possible_map);
+
+why touch that possible_map ?
+online_map is for that purpose that state node have ram.
+
+> 		continue;
+> 	}
+> 	setup_node_bootmem(nid, start, end);
+> 
+> instead?
 
 Thanks
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+
+Yinghai
