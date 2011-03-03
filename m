@@ -1,163 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab1CCLRq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 06:17:46 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57065 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab1CCLRo (ORCPT
+	id S1757558Ab1CCLYd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 06:24:33 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40051 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754461Ab1CCLYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 06:17:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=VOcCtSEja7HtdhXJQBI2XrMr6t8nTlE18z3xJbJdXl32EoGtoWtGsb8DyRMjFA94Ym
-         nTZaorZ9aIlhnWaRoWDb7HsL1M1egV6Z24sihj5CLASNw3fX4Y187lYYze5Y3Tyb8rNc
-         mPXSMmozLbifk9mrHKAc8nSUy9hDvQoUTEmjg=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH v2 -tip] x86: correct stack dump info when CONFIG_FRAME_POINTER=y
-Date: Thu,  3 Mar 2011 20:17:17 +0900
-Message-Id: <1299151037-5881-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1299086232-29639-1-git-send-email-namhyung@gmail.com>
-References: <1299086232-29639-1-git-send-email-namhyung@gmail.com>
+	Thu, 3 Mar 2011 06:24:32 -0500
+Date: Thu, 3 Mar 2011 03:24:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jan Beulich <JBeulich@novell.com>, tglx@linutronix.de, hpa@zytor.com,
+        Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: work around old gas bug (try 2)
+Message-Id: <20110303032419.954dab8e.akpm@linux-foundation.org>
+In-Reply-To: <20110303105755.GA24181@elte.hu>
+References: <4D6F81B10200007800034B0B@vpn.id2.novell.com>
+	<20110303105755.GA24181@elte.hu>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current stack dump code scans entire stack and check each entry
-contains a pointer to kernel code. If CONFIG_FRAME_POINTER=y it
-could mark whether the pointer is valid or not based on value of
-the frame pointer. A invalid entry could be preceded by '?' sign.
+On Thu, 3 Mar 2011 11:57:55 +0100 Ingo Molnar <mingo@elte.hu> wrote:
 
-However this was not going to happen because scan start point was
-always higher than the frame pointer so that they could not meet.
-So all of the entries were marked invalid.
+> 
+> * Jan Beulich <JBeulich@novell.com> wrote:
+> 
+> > Add extra parentheses around a couple of definitions introduced by
+> > "x86: Cleanup vector usage" and used in assembly macro arguments, and
+> > remove spaces. Without that old (2.16.1) gas would see more macro
+> > arguments than were actually specified.
+> > 
+> > Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Shaohua Li <shaohua.li@intel.com>
+> 
+> Wondering, have you managed to test this with 2.16, or should i wait for akpm's 
+> testing before applying it?
+> 
 
-This patch fixes this by unwinding the frame pointer up to desired
-stack frame. End result looks like below.
-
-before:
-[    3.508329] Call Trace:
-[    3.508551]  [<ffffffff814f35c9>] ? panic+0x91/0x199
-[    3.508662]  [<ffffffff814f3739>] ? printk+0x68/0x6a
-[    3.508770]  [<ffffffff81a981b2>] ? mount_block_root+0x257/0x26e
-[    3.508876]  [<ffffffff81a9821f>] ? mount_root+0x56/0x5a
-[    3.508975]  [<ffffffff81a98393>] ? prepare_namespace+0x170/0x1a9
-[    3.509216]  [<ffffffff81a9772b>] ? kernel_init+0x1d2/0x1e2
-[    3.509335]  [<ffffffff81003894>] ? kernel_thread_helper+0x4/0x10
-[    3.509442]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-[    3.509542]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-[    3.509641]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
-
-after:
-[    3.522991] Call Trace:
-[    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
-[    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
-[    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
-[    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
-[    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
-[    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
-[    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
-[    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
-[    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
-[    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
-v2:
- * add sanity check during unwinding
- * fix comment by s/wind/unwind/
-
- arch/x86/include/asm/stacktrace.h |   34 ++++++++++++++++++++++++----------
- arch/x86/kernel/dumpstack_32.c    |    2 +-
- arch/x86/kernel/dumpstack_64.c    |    2 +-
- 3 files changed, 26 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index 52b5c7ed3608..86146000a46d 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -60,25 +60,39 @@ void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
- 
- #ifdef CONFIG_FRAME_POINTER
- static inline unsigned long
--stack_frame(struct task_struct *task, struct pt_regs *regs)
-+stack_frame(struct task_struct *task, struct pt_regs *regs,
-+	    unsigned long *stack)
- {
--	unsigned long bp;
-+	unsigned long bp, old_bp;
- 
--	if (regs)
--		return regs->bp;
--
--	if (task == current) {
-+	if (regs) {
-+		bp = regs->bp;
-+	} else if (task == current) {
- 		/* Grab bp right from our regs */
- 		get_bp(bp);
--		return bp;
-+	} else {
-+		/* bp is the last reg pushed by switch_to */
-+		bp = *(unsigned long *)task->thread.sp;
-+	}
-+
-+	old_bp = bp;
-+	/* unwind up to desired stack frame */
-+	while (bp < (unsigned long) stack) {
-+		bp = *(unsigned long *) bp;
-+
-+		/* check the frame is corrupted */
-+		if (bp <= old_bp || (bp - old_bp) > THREAD_SIZE) {
-+			bp = old_bp;
-+			break;
-+		}
- 	}
- 
--	/* bp is the last reg pushed by switch_to */
--	return *(unsigned long *)task->thread.sp;
-+	return bp;
- }
- #else
- static inline unsigned long
--stack_frame(struct task_struct *task, struct pt_regs *regs)
-+stack_frame(struct task_struct *task, struct pt_regs *regs,
-+	    unsigned long *stack)
- {
- 	return 0;
- }
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 74cc1eda384b..b0b96dc11d00 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -35,7 +35,7 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
- 
--	bp = stack_frame(task, regs);
-+	bp = stack_frame(task, regs, stack);
- 	for (;;) {
- 		struct thread_info *context;
- 
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index a6b6fcf7f0ae..19a36deb8db8 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -161,7 +161,7 @@ void dump_trace(struct task_struct *task,
- 			stack = (unsigned long *)task->thread.sp;
- 	}
- 
--	bp = stack_frame(task, regs);
-+	bp = stack_frame(task, regs, stack);
- 	/*
- 	 * Print function call entries in all stacks, starting at the
- 	 * current stack address. If the stacks consist of nested
--- 
-1.7.4
-
+arch/x86/kernel/entry_64.S compiles successfully with that patch.
