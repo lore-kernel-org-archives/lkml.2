@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab1CCKoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 05:44:21 -0500
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:56751 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751786Ab1CCKoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 05:44:20 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAL//bk1R8KK1/2dsb2JhbACmdHW+Xw2FVAQ
-Date: Thu, 3 Mar 2011 11:44:18 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC] [PATCH 6/10] Generic Watchdog Timer Driver
-Message-ID: <20110303104418.GC3790@infomag.iguana.be>
-References: <20110223204350.GA7433@infomag.iguana.be> <20110224100204.GC15118@pulham.picochip.com>
+	id S1756711Ab1CCKyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 05:54:53 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:49244 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751832Ab1CCKyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 05:54:52 -0500
+Date: Thu, 3 Mar 2011 10:54:23 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: "Nadolski, Edmund" <edmund.nadolski@intel.com>
+Cc: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Subject: Re: inconsistent lock state message on 2.6.36.4 stable release
+Message-ID: <20110303105422.GG14162@csn.ul.ie>
+References: <9EECC02A4CC333418C00A85D21E893261498F45872@azsmsx502.amr.corp.intel.com> <20110302202515.GA16963@suse.de> <20110302210338.GF14162@csn.ul.ie> <9EECC02A4CC333418C00A85D21E893261498F459DF@azsmsx502.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110224100204.GC15118@pulham.picochip.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <9EECC02A4CC333418C00A85D21E893261498F459DF@azsmsx502.amr.corp.intel.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jamie,
-
-> I don't fully understand why the module refcounting is done in the open 
-> and release though.  If you moved it into the registration and 
-> unregistration then doesn't that remove the need for WDOG_ORPHAN?
-
-Hmm, nice suggestion. Will look into that.
-
-> > diff --git a/drivers/watchdog/core/watchdog_core.c b/drivers/watchdog/core/watchdog_core.c
-> > index 52bc520..d1a824e 100644
-> > --- a/drivers/watchdog/core/watchdog_core.c
-> > +++ b/drivers/watchdog/core/watchdog_core.c
-> > @@ -60,6 +60,10 @@ int register_watchdogdevice(struct watchdog_device *wdd)
-> >  	if (wdd == NULL || wdd->info == NULL || wdd->ops == NULL)
-> >  		return -ENODATA;
-> >  
-> > +	/* Make sure that the owner of the watchdog operations exists */
-> > +	if (wdd->ops->owner == NULL)
-> > +		return -ENODATA;
+On Wed, Mar 02, 2011 at 04:22:53PM -0700, Nadolski, Edmund wrote:
+> > 
+> > On Wed, Mar 02, 2011 at 03:25:15PM -0500, Greg KH wrote:
+> > > On Wed, Mar 02, 2011 at 01:19:48PM -0700, Nadolski, Edmund wrote:
+> > > > With v2.6.36.4 stable release and CONFIG_PROVE_LOCKING set, I
+> > notice
+> > > > the below message during boot (full dmesg attached):
+> > >
+> > > 2.6.36 is now "end of life" so there's really no need to test, debug,
+> > or
+> > > report problems here as there's nothing we can do about it.
+> > >
+> > > > Per git bisect, it seems to have originated with this commit:
+> > > >
+> > > > $ git bisect good
+> > > > c04eb9683fbb6374275309b859fcbf02e1db2c78 is the first bad commit
+> > > > commit c04eb9683fbb6374275309b859fcbf02e1db2c78
+> > > > Author: Mel Gorman <mel@csn.ul.ie>
+> > > > Date:   Thu Jan 13 15:45:41 2011 -0800
+> > > >
+> > > >     mm: page allocator: adjust the per-cpu counter threshold when
+> > > > memory is low
+> > > >
+> > > >     commit 88f5acf88ae6a9778f6d25d0d5d7ec2d57764a97 upstream.
+> > > >
+> > > > The message goes away after I do a git revert on this commit. I've
+> > > > also seen this message on 2.6.37.2, but not on 2.6.38-rc7.
+> > >
+> > > Care to figure out what commit fixed this so that we can backport it
+> > to
+> > > the .37-stable kernel?
+> > >
+> > > git bisect can be used to do this as well.
+> > >
+> > 
+> > It looks like the call to get_online_cpus() that is causing the
+> > problem. If
+> > so, I believe it to be fixed by the commit [b44129b3: mm: vmstat: use a
+> > single setter function and callback for adjusting percpu thresholds].
+> > Edmund, care to test with that patch applied?
 > 
-> Won't this be effectively NULL if the module is builtin?  It looks like 
-> if it is builtin then THIS_MODULE would be defined as (struct module 
-> *)0.
+> This patch looks good, I've applied it onto 2.6.37.2 and I no longer see the message.
+> 
 
-Same for this: I will look into this.
+Good stuff, thanks.
 
-Thanks,
-Wim.
+I'll send the patch to the original reviewers and cc stable to ask for
+it to be picked up.
 
+-- 
+Mel Gorman
+SUSE Labs
