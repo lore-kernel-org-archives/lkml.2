@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab1CCB4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 20:56:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300Ab1CCB4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 20:56:09 -0500
-Message-ID: <4D6EF536.305@redhat.com>
-Date: Wed, 02 Mar 2011 20:56:06 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757368Ab1CCCCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 21:02:05 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43914 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab1CCCCC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 21:02:02 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH 4/5] mm: Add hit/miss accounting for Page Cache
+Cc: kosaki.motohiro@jp.fujitsu.com, Liu Yuan <namei.unix@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jaxboe@fusionio.com,
+        akpm@linux-foundation.org, fengguang.wu@intel.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?ISO-2022-JP?B?RnIbJEJxRXFTGyhCaWM=?= Weisbecker 
+	<fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <20110302084542.GA20795@elte.hu>
+References: <1299055090-23976-4-git-send-email-namei.unix@gmail.com> <20110302084542.GA20795@elte.hu>
+Message-Id: <20110303103337.B93C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-References: <4D665449.4050908@redhat.com> <20110224125702.GC29840@pcnci.linuxbox.cz> <20110225104823.GD29840@pcnci.linuxbox.cz> <4D67C077.6060108@redhat.com> <20110227172052.GB2474@nik-comp.lan> <4D6BA85B.7080908@redhat.com> <20110228143247.GE29840@pcnci.linuxbox.cz> <4D6BBC84.6020408@redhat.com> <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan>
-In-Reply-To: <20110228171550.GA2173@nik-comp.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  3 Mar 2011 11:01:53 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> (resend, sorry for the mess)
->    
+> 
+> * Liu Yuan <namei.unix@gmail.com> wrote:
+> 
+> > +		if (likely(!retry_find) && page && PageUptodate(page))
+> > +			page_cache_acct_hit(inode->i_sb, READ);
+> > +		else
+> > +			page_cache_acct_missed(inode->i_sb, READ);
+> 
+> Sigh.
+> 
+> This would make such a nice tracepoint or sw perf event. It could be collected in a 
+> 'count' form, equivalent to the stats you are aiming for here, or it could even be 
+> traced, if someone is interested in such details.
+> 
+> It could be mixed with other events, enriching multiple apps at once.
 
-No worries.  What mess?
+Totally agreed.
 
-I have two things you can try:
 
-first is running a single VCPU guest, if you have not done so already.
+> But, instead of trying to improve those aspects of our existing instrumentation 
+> frameworks, mm/* is gradually growing its own special instrumentation hacks, missing 
+> the big picture and fragmenting the instrumentation space some more.
+> 
+> That trend is somewhat sad.
 
-Second is adding the bootparameter "clocksource=acpi_pm" to your guest 
-kernel.
+So, I think thing is, the stat is how much people and how frequently used.
+If it is really really really common, /proc/meminfo or similar special place
+is good idea. Another example, If the stat can help our MM debugging to
+handle LKML bug report, it is worth to have special care. But other almost
+else case are better to use generic framework.
 
-If either of those fixes the problem, it very well have to do with this 
-change and not that you may be missing later dependent patches.  This 
-change should be nearly a 1-1 transformation, and if it is not, 
-something is wrong.
 
-What branch are you bisecting on, the kvm branch or the kernel tree 
-itself?  It would be helpful to see the exact code in case any 
-surrouding logic changed.
-
-Thanks,
-
-Zach
