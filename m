@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab1CCNNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 08:13:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:36159 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab1CCNNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 08:13:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,258,1297065600"; 
-   d="scan'208";a="663440369"
-Date: Thu, 3 Mar 2011 12:52:36 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: Use generic IGD opregion code for gma500
-Message-ID: <20110303125236.1640d3b4@bob.linux.org.uk>
-In-Reply-To: <20110303130724.GB22181@srcf.ucam.org>
-References: <1298404994-2907-1-git-send-email-mjg@redhat.com>
-	<1298404994-2907-2-git-send-email-mjg@redhat.com>
-	<alpine.LFD.2.02.1103022114250.12344@x980>
-	<20110303114306.31114533@bob.linux.org.uk>
-	<20110303130724.GB22181@srcf.ucam.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757458Ab1CCNZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 08:25:49 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:44017 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751798Ab1CCNZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 08:25:48 -0500
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX18oOZA4l24oAWYEKUv3PLlDFgpfJiCcZ9s9tErPBC
+	bkSknErj3KAFbg
+From: =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Al Cho <acho@novell.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+Subject: [PATCH v3 1/2] staging: keucr: remove unused typedef VOID
+Date: Thu,  3 Mar 2011 14:25:07 +0100
+Message-Id: <1299158708-16812-1-git-send-email-j.neuschaefer@gmx.net>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <4D6F80D2.2000005@fastmail.fm>
+References: <4D6F80D2.2000005@fastmail.fm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Mar 2011 13:07:24 +0000
-Matthew Garrett <mjg@redhat.com> wrote:
+Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
+---
+Changes:
+v2 .. v3: add an "Signed-off-by:" line
+---
+ drivers/staging/keucr/common.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> On Thu, Mar 03, 2011 at 11:43:06AM +0000, Alan Cox wrote:
-> > On Wed, 02 Mar 2011 21:14:31 -0500 (EST)
-> > Len Brown <lenb@kernel.org> wrote:
-> > 
-> > > applied to acpi-test
-> > 
-> > NAK this - with it applied the GMA500 driver oopses in the opregion
-> > code
-> 
-> Awesome. Got a backtrace? I'm kind of lacking in hardware (and no,
-> this is not a plea for some gma500)
-
-I did try and pin it down a bit but didn't get anywhere useful. When I
-have a bit more time I'll trace it in full.
+diff --git a/drivers/staging/keucr/common.h b/drivers/staging/keucr/common.h
+index 8693c54..f2be045 100644
+--- a/drivers/staging/keucr/common.h
++++ b/drivers/staging/keucr/common.h
+@@ -1,7 +1,6 @@
+ #ifndef COMMON_INCD
+ #define COMMON_INCD
+ 
+-typedef void VOID;
+ typedef u8 BOOLEAN;
+ typedef u8 BYTE;
+ typedef u8 *PBYTE;
+-- 
+1.7.4.1
 
