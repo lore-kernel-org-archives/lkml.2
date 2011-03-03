@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab1CCSpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 13:45:10 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52336
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758451Ab1CCSpH (ORCPT
+	id S1758583Ab1CCSxo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 13:53:44 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46390 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257Ab1CCSxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 13:45:07 -0500
-Date: Thu, 03 Mar 2011 10:45:42 -0800 (PST)
-Message-Id: <20110303.104542.104052570.davem@davemloft.net>
-To: cmetcalf@tilera.com
-Cc: a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, aarcange@redhat.com,
-        tglx@linutronix.de, riel@redhat.com, mingo@elte.hu,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-mm@kvack.org,
-        benh@kernel.crashing.org, hugh.dickins@tiscali.co.uk, mel@csn.ul.ie,
-        npiggin@kernel.dk, rmk@arm.linux.org.uk, schwidefsky@de.ibm.com
-Subject: Re: [RFC][PATCH 2/6] mm: Change flush_tlb_range() to take an
- mm_struct
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D6FCE5D.4030904@tilera.com>
-References: <1299102027.1310.39.camel@laptop>
-	<20110302.134735.260066220.davem@davemloft.net>
-	<4D6FCE5D.4030904@tilera.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 13:53:43 -0500
+Date: Thu, 3 Mar 2011 11:53:40 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tomoya MORINAGA <morinaga526@dsn.okisemi.com>
+Cc: linux-kernel@vger.kernel.org, "'Ewe, Kok Howg'" <kok.howg.ewe@intel.com>,
+        "'Lai, Mee Sim'" <mee.sim.lai@intel.com>,
+        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
+Subject: Re: About GPIO interrupt function with sysfs
+Message-ID: <20110303185340.GK22940@angua.secretlab.ca>
+References: <F5323EE7947C4C1CB0868F843FB4F917@hacdom.okisemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F5323EE7947C4C1CB0868F843FB4F917@hacdom.okisemi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 3 Mar 2011 12:22:37 -0500
+On Fri, Feb 18, 2011 at 09:34:03AM +0900, Tomoya MORINAGA wrote:
+> Hi,
+> 
+> I have a question.
+> Can our GPIO driver (pch_gpio) have interrupt function?
 
-> I'm finding it hard to understand how the Sparc code handles icache
-> coherence.  It seems that the Spitfire MMU is the interesting one, but the
-> hard case seems to be when a process migrates around to various cores
-> during execution (thus leaving incoherent icache lines everywhere), and the
-> page is then freed and re-used for different executable code.  I'd think
-> that there would have to be xcall IPIs to flush all the cpus' icaches, or
-> to flush every core in the cpu_vm_mask plus do something at context switch,
-> but I don't see any of that.  No doubt I'm missing something :-)
+Yes, but you cannot use it from userspace via sysfs.  It is only useful for in-kernel users.
 
-flush_dcache_page() remembers the cpu that wrote to the page (in the
-page flags), and cross-calls to that specific cpu.
-
-It is only that cpu which must flush his I-cache, since all other cpus
-saw the write on the bus and updated their I-cache lines as a result.
-
-See, in the sparc64 case, the incoherency issue is purely local to the
-store.  The problem case is specifically the local I-cache not seeing
-local writes, everything else is fine.  CPU I-caches see writes done
-by other cpus, just not those done by the local cpu.
+g.
 
