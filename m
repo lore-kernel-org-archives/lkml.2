@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741Ab1CCJsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 04:48:08 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:54972 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab1CCJsG convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Thu, 3 Mar 2011 04:48:06 -0500
-Message-Id: <4D6F6C660200007800034AD2@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 03 Mar 2011 09:24:38 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Shaohua Li" <shaohua.li@intel.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [tip:x86/mm] x86: Work around old gas bug
-References: <201103012352.p21NqRN1006974@imap1.linux-foundation.org>
- <tip-253d89d3dd6b65595f317e5f1ecef43aa207a3a0@git.kernel.org>
- <4D6E2B8B02000078000347C0@vpn.id2.novell.com>
- <20110302104144.GB25608@elte.hu>
- <20110302082453.934f2033.akpm@linux-foundation.org>
- <1299130025.19589.89.camel@sli10-conroe>
- <20110302213553.88ec33cd.akpm@linux-foundation.org>
-In-Reply-To: <20110302213553.88ec33cd.akpm@linux-foundation.org>
+	id S1755118Ab1CCKE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 05:04:58 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40453 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab1CCKE5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 05:04:57 -0500
+Subject: Re: [BUG] lock issue in perf cgroup with jump label enabled
+From: Peter Zijlstra <peterz@infradead.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D6F51C9.3020800@cn.fujitsu.com>
+References: <4D6F51C9.3020800@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Mar 2011 11:06:27 +0100
+Message-ID: <1299146787.1310.41.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 03.03.11 at 06:35, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu, 03 Mar 2011 13:27:05 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
+On Thu, 2011-03-03 at 16:31 +0800, Li Zefan wrote:
+> With CONFIG_JUMP_LABEL enabled:
 > 
->> On Thu, 2011-03-03 at 00:24 +0800, Andrew Morton wrote:
->> > On Wed, 2 Mar 2011 11:41:44 +0100 Ingo Molnar <mingo@elte.hu> wrote:
->> > 
->> > > Meanwhile, what i hate more than ugly code repetition is code that does 
-> not build at 
->> > > all on akpm's test environment ;-)
->> > 
->> > I hadn't got around to testing it.  Bad news :(
->> > 
->> Andrew,
->> can you this on your side? this is what Jan proposed. I can only test a
->> latest binutils here.
+> # mount -t cgroup -o perf_event xxx /mnt
+> # mkdir /mnt/test
+> # ./perf stat -B -a -e cycles:u -G test -- sleep 1
 > 
-> Nope.
+> lockdep warning will be triggered immediately, and the machine
+> will become unresponsive.
 > 
-> arch/x86/kernel/entry_64.S: Assembler messages:
-> arch/x86/kernel/entry_64.S:985: Error: too many positional arguments
+> I guess this is the culprit?
+> 
+> In the "perf cgroup support" patch:
+> 
+> @@ -419,6 +781,17 @@ list_add_event(struct perf_event *event, struct perf_event_con
+>                 list_add_tail(&event->group_entry, list);
+>         }
+>  
+> +       if (is_cgroup_event(event)) {
+> +               ctx->nr_cgroups++;
+> +               /*
+> +                * one more event:
+> +                * - that has cgroup constraint on event->cpu
+> +                * - that may need work on context switch
+> +                */
+> +               atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
+> +               jump_label_inc(&perf_sched_events);
+> +       }
+> 
+> list_add_event() is called with spin lock ctl->lock held,  while
+> jump_label_inc() will acquire jump_label_mutex..
 
-Indeed - the problem isn't with the actual assembly construct, but
-rather with the changed definitions of *INVALIDATE_TLB_VECTOR* -
-properly parenthesizing them (as we needed to do in other places)
-and removing unnecessary spaces gets this to build for me, even 
-with the original use of .irp instead of .irpc:
+I think something like the below ought to cure that.
 
-#if NR_CPUS <= 32
-# define NUM_INVALIDATE_TLB_VECTORS (NR_CPUS)
-#else
-# define NUM_INVALIDATE_TLB_VECTORS (32)
-#endif
+---
+ kernel/perf_event.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-#define INVALIDATE_TLB_VECTOR_END	(0xee)
-#define INVALIDATE_TLB_VECTOR_START	\
-	(INVALIDATE_TLB_VECTOR_END-NUM_INVALIDATE_TLB_VECTORS+1)
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 64a018e..6bc69a4 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -817,16 +817,8 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 		list_add_tail(&event->group_entry, list);
+ 	}
+ 
+-	if (is_cgroup_event(event)) {
++	if (is_cgroup_event(event))
+ 		ctx->nr_cgroups++;
+-		/*
+-		 * one more event:
+-		 * - that has cgroup constraint on event->cpu
+-		 * - that may need work on context switch
+-		 */
+-		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
+-		jump_label_inc(&perf_sched_events);
+-	}
+ 
+ 	list_add_rcu(&event->event_entry, &ctx->event_list);
+ 	if (!ctx->nr_events)
+@@ -6553,6 +6545,16 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		goto err_context;
+ 	}
+ 
++	if (is_cgroup_event(event)) {
++		/*
++		 * one more event:
++		 * - that has cgroup constraint on event->cpu
++		 * - that may need work on context switch
++		 */
++		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
++		jump_label_inc(&perf_sched_events);
++	}
++
+ 	if (move_group) {
+ 		struct perf_event_context *gctx = group_leader->ctx;
+ 
 
-Jan
 
