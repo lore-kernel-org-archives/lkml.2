@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab1CCObZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 09:31:25 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:57262 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758271Ab1CCObX (ORCPT
+	id S1758439Ab1CCOdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 09:33:08 -0500
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:2054 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758175Ab1CCOdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 09:31:23 -0500
-Date: Thu, 3 Mar 2011 09:31:20 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Andrew Patterson <andrew.patterson@hp.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, James.Bottomley@suse.de
-Subject: Re: [PATCH] Fix over-zealous flush_disk when changing device size.
-Message-ID: <20110303143120.GA8134@infradead.org>
-References: <20110217165057.5c50e566@notabene.brown>
+	Thu, 3 Mar 2011 09:33:06 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEADk1b02rRN+J/2dsb2JhbACmZXSjEpwehWEEhRqHEoNC
+X-IronPort-AV: E=Sophos;i="4.62,258,1297036800"; 
+   d="scan'208";a="338637773"
+Message-ID: <4D6FA6B4.7060407@cisco.com>
+Date: Thu, 03 Mar 2011 07:33:24 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110217165057.5c50e566@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-perf-users@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, acme@ghostprotocols.net,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, John Stultz <johnstul@us.ibm.com>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 3/6] perf record: add time-of-day option
+References: <1298865151-23656-1-git-send-email-daahern@cisco.com> <1298865151-23656-4-git-send-email-daahern@cisco.com> <alpine.LFD.2.00.1103012359460.2701@localhost6.localdomain6> <4D6E5413.6060500@cisco.com> <20110303085148.GA16832@elte.hu>
+In-Reply-To: <20110303085148.GA16832@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 04:50:57PM +1100, NeilBrown wrote:
+
+
+On 03/03/2011 01:51 AM, Ingo Molnar wrote:
 > 
-> Hi Andrew (and others)
->  I wonder if you would review the following for me and comment.
-
-Please send think in this area through -fsdevel next time, thanks!
-
-> There are two cases when we call flush_disk.
-> In one, the device has disappeared (check_disk_change) so any
-> data will hold becomes irrelevant.
-> In the oter, the device has changed size (check_disk_size_change)
-> so data we hold may be irrelevant.
+> * David Ahern <daahern@cisco.com> wrote:
 > 
-> In both cases it makes sense to discard any 'clean' buffers,
-> so they will be read back from the device if needed.
+>>> How does all that deal with CLOCK_REALTIME being affected by NTP and
+>>> settimeofday? Not really, as far as I can tell. It somehow works, but
+>>> that depends on the frequency of your event injection.
+>>
+>> It is sampled at some periodic rate to get NTP changes. Right now it is
+>> hardcoded at once an hour. The frequency option can be added to the
+>> --tod parameter.
+> 
+> As Thomas mentioned, we probably need something more complete than that.
 
-Does it?  If the device has disappeared we can't read them back anyway.
-If the device has resized to a smaller size the same is true about
-those buffers that have gone away, and if it has resized to a larger
-size invalidating anything doesn't make sense at all.  I think this
-area needs more love than a quick kill_dirty hackjob.
+Just responded to Thomas' email with a simpler proposal than munging on
+tracepoints and trying to track time-of-day implicitly.
 
-> In the former case it makes sense to discard 'dirty' buffers
-> as there will never be anywhere safe to write the data.  In the
-> second case it *does*not* make sense to discard dirty buffers
-> as that will lead to file system corruption when you simply enlarge
-> the containing devices.
+> Still your approach is obviously useful and i'd like to stress that explicitly. Have 
 
-Doing anything like this at the buffer cache layer or inode cache layer
-doesn't make any sense.  If a device goes away or shrinks below the
-filesystem size the filesystem simply needs to be shut down and in te
-former size the admin needs to start a manual repair.  Trying to do
-any botch jobs in lower layer never works in practice.
+Thanks for stating that.
 
-For now I think the best short term fix is to simply revert commit
-608aeef17a91747d6303de4df5e2c2e6899a95e8
+> you considered another related feature, feeding printk lines as special 'string 
+> events' into the perf ringbuffer?
+> 
+> It would round up your scheme very nicely: that way you'd have a single, global, 
+> GTOD-correlated event store/flow for basically every system event you might be 
+> interested in. You could switch events (and tracepoints) on/off based on need, 
+> controlling the type and rate of information in a very finegrained way.
+> 
+> If the printk approach works out i'd even suggest that such a facility would need a 
+> separate tool within perf: 'perf syslog' or 'perf log'. It would heavily reuse 
+> perf-script and other perf internal facilities, obviously - but you would not be 
+> tied to any particular sub-tool implementation.
+> 
+> EDAC type events could feed into this as well, giving the tool a broader 'system 
+> health' aspect as well, beyond the 'system performance analysis' aspect.
 
-	"Call flush_disk() after detecting an online resize."
+I can look into it (as time allows) once I get the dumping of software
+events done.
+
+David
+
+> 
+> Thanks,
+> 
+> 	Ingo
