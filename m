@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab1CCVDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:03:39 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58541 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758665Ab1CCVDi (ORCPT
+	id S1758839Ab1CCVFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:05:12 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39917 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758665Ab1CCVFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:03:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=azf942TM51L72svnrcyIeKQdAxnS1KDqrp+UfT2dyWkwz5K0fqdoYa+eE5Ic26pMwM
-         WNjL+f8sfRW4MQ49abrktDt1Ca3nJnnmc22y4cUp0NBgUP8QA+7sDTmJkL3GQqpVJaf3
-         Ue+3az6jNAZenxeFzID95NVaQ8CC5CBZ1QqV4=
-Message-ID: <4D700223.2020700@gmail.com>
-Date: Fri, 04 Mar 2011 00:03:31 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] x86: remove ancient crufty prototype
-References: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de> <1299182701-8591-5-git-send-email-henne@nachtwindheim.de>
-In-Reply-To: <1299182701-8591-5-git-send-email-henne@nachtwindheim.de>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Mar 2011 16:05:10 -0500
+Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
+	top level
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+In-Reply-To: <20110303141928.GA25256@infradead.org>
+References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
+	 <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
+	 <20110301223251.11c95eed.rdunlap@xenotime.net>
+	 <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
+	 <20110303141928.GA25256@infradead.org>
+Content-Type: text/plain
+Date: Thu, 03 Mar 2011 12:58:25 -0800
+Message-Id: <1299185905.5401.405.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 11:04 PM, Henrik Kretzschmar wrote:
-> The function cache_APIC_registers() does not exist in
-> the whole git history, so it can be removed.
+On Thu, 2011-03-03 at 09:19 -0500, Christoph Hellwig wrote:
+> On Wed, Mar 02, 2011 at 01:32:11PM -0800, Nicholas A. Bellinger wrote:
+> > The kernel code itself that is specific to using the SSE v4.2
+> > instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
+> > iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
+> > default to using the unoptimized 1x8 slicing soft CRC32C code.  This
+> > particular piece of logic has been tested on powerpc and arm and is
+> > funcitoning as expected from the kernel level using the arch independent
+> > soft code.
 > 
-> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-> ---
+> I don't think you need that code at all.  The crypto code is structured
+> to prefer the optimized implementation if it is present.  Just stripping
+> the x86-specific code out and always requesting the plain crc32c
+> algorithm should give you the optimized one if it is present on your
+> system.
+> 
+> Please give it a try.
+> 
 
-Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+This is what I originally thought as well, but this ended up not being
+the case when the logic was originally coded up.   I just tried again
+with .38-rc7 on a 5500 series machine and simply stubbing out the
+CONFIG_X86 part from iscsi_login_setup_crypto() and calling:
 
--- 
-    Cyrill
+   crypto_alloc_hash("crc32c", 0, CRYPTO_ALG_ASYNC)
+
+does not automatically load and use crc32c_intel.ko when only requesting
+plain crc32c.
+
+The reason for the extra crypto_alloc_hash("crc32c-intel", ...) call in
+iscsi_login_setup_crypto() is to load crc32c_intel.ko on-demand for
+cpu_has_xmm4_2 capable machines.
+
+I should mention this is with the following .config:
+
+CONFIG_CRYPTO_CRC32C=y
+CONFIG_CRYPTO_CRC32C_INTEL=m
+
+This would seem to indicate that CRC32C_INTEL needs to be compiled in
+(or at least manually loaded) for libcypto to use the optimized
+instructions when the plain crc32c is called, correct..?
+
+--nab
+
