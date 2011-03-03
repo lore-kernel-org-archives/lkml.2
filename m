@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab1CCQGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 11:06:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42471 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab1CCQGu (ORCPT
+	id S1758427Ab1CCQIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 11:08:19 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35339 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758196Ab1CCQIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 11:06:50 -0500
-Subject: Re: [PATCH 09/27] nfs: writeback pages wait queue
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Chris Mason <chris.mason@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110303074949.809203319@intel.com>
-References: <20110303064505.718671603@intel.com>
-	 <20110303074949.809203319@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 17:08:01 +0100
-Message-ID: <1299168481.1310.56.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 11:08:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110303154706.GA22560@redhat.com>
+References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com>
+ <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Mar 2011 08:07:22 -0800
+Message-ID: <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] exec: introduce get_arg_ptr() helper
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 14:45 +0800, Wu Fengguang wrote:
-> +static void nfs_wakeup_congested(long nr,
-> +                                struct backing_dev_info *bdi,
-> +                                wait_queue_head_t *wqh)
-> +{
-> +       long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
-> +
-> +       if (nr < 2 * limit - min(limit / 8, NFS_WAIT_PAGES)) {
-> +               if (test_bit(BDI_sync_congested, &bdi->state)) {
-> +                       clear_bdi_congested(bdi, BLK_RW_SYNC);
-> +                       smp_mb__after_clear_bit();
-> +               }
-> +               if (waitqueue_active(&wqh[BLK_RW_SYNC]))
-> +                       wake_up(&wqh[BLK_RW_SYNC]);
-> +       }
-> +       if (nr < limit - min(limit / 8, NFS_WAIT_PAGES)) {
-> +               if (test_bit(BDI_async_congested, &bdi->state)) {
-> +                       clear_bdi_congested(bdi, BLK_RW_ASYNC);
-> +                       smp_mb__after_clear_bit();
-> +               }
-> +               if (waitqueue_active(&wqh[BLK_RW_ASYNC]))
-> +                       wake_up(&wqh[BLK_RW_ASYNC]);
-> +       }
-> +} 
+On Thu, Mar 3, 2011 at 7:47 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> I _personally_ don't like "conditional". Its name is based on code logic.
+>> It's unclear what mean "conditional". From data strucuture view, It is
+>> "opaque userland pointer".
+>
+> I agree with any naming, just suggest a better name ;)
 
-memory barriers want a comment - always - explaining what they order and
-against whoem.
+Maybe just "struct user_arg_ptr" or something?
 
+                        Linus
