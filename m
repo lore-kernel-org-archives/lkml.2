@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244Ab1CCClm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 21:41:42 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51310 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757831Ab1CCCll (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 21:41:41 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 3 Mar 2011 11:35:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, aarcange@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 7/8] Use GFP_OTHER_NODE for transparent huge pages
-Message-Id: <20110303113520.48403653.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299113128-11349-8-git-send-email-andi@firstfloor.org>
-References: <1299113128-11349-1-git-send-email-andi@firstfloor.org>
-	<1299113128-11349-8-git-send-email-andi@firstfloor.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S932251Ab1CCCoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 21:44:32 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60598 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932106Ab1CCCoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 21:44:30 -0500
+Date: Thu, 3 Mar 2011 13:44:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: linux-next: manual merge of the net tree with the acpi tree
+Message-Id: <20110303134426.5814008c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,19 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Mar 2011 16:45:27 -0800
-Andi Kleen <andi@firstfloor.org> wrote:
+Hi all,
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Pass GFP_OTHER_NODE for transparent hugepages NUMA allocations
-> done by the hugepages daemon. This way the low level accounting
-> for local versus remote pages works correctly.
-> 
-> Contains improvements from Andrea Arcangeli
-> 
-> Cc: aarcange@redhat.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Today's linux-next merge of the net tree got a conflict in lib/Makefile
+between commit 248852b614cb7713552188a9c2552ba774945733 ("lib, Add
+lock-less NULL terminated single list") from the acpi tree and commitc
+39649c331c70952700f99832b03f87e9d7f5b4b ("lib: cpu_rmap: CPU affinity
+reverse-mapping") from the net tree.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Just overlapping additions. I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc lib/Makefile
+index 7cb0608,b73ba01..0000000
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@@ -110,8 -110,8 +110,10 @@@ obj-$(CONFIG_ATOMIC64_SELFTEST) += atom
+  
+  obj-$(CONFIG_AVERAGE) += average.o
+  
+ +obj-$(CONFIG_LLIST) += llist.o
+ +
++ obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
++ 
+  hostprogs-y   := gen_crc32table
+  clean-files   := crc32table.h
+  
