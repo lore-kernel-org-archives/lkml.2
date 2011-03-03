@@ -1,672 +1,530 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758495Ab1CCQ60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 11:58:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59315 "EHLO mx1.redhat.com"
+	id S1758517Ab1CCRBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 12:01:43 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:56303 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932185Ab1CCQ6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 11:58:24 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/3] Make VFS handle mount autoexpiry
-To: viro@ZenIV.linux.org.uk, hch@infradead.org, raven@themaw.net
-Cc: linux-devel@vger.kernel.org, autofs@linux.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Thu, 03 Mar 2011 16:57:48 +0000
-Message-ID: <20110303165748.9550.25913.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20110303165738.9550.2251.stgit@warthog.procyon.org.uk>
-References: <20110303165738.9550.2251.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1751887Ab1CCRBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 12:01:42 -0500
+X-ASG-Debug-ID: 1299171695-01de280c5312f7d0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D6FC96B.5050009@fusionio.com>
+Date: Thu, 3 Mar 2011 12:01:31 -0500
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Important fixes for 2.6.38
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] Important fixes for 2.6.38
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299171695
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.50
+X-Barracuda-Spam-Status: No, SCORE=0.50 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.56948
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.50 BSF_RULE7568M          Custom Rule 7568M
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the VFS handle mount autoexpiry, rather than doing it in the filesystems
-(such as AFS, CIFS and NFS).  This simplifies the reference counting, since
-do_add_mount() once again adds mounts to the expiration list, and simplifies
-the filesystems since they no longer have to do anything barring set
-MNT_EXPIRABLE on an expirable mount before returning it.
+Hi Linus,
 
-Additionally, provide a tuning knob to set the periodicity of the reaper in
-seconds:
+This is a LOT larger than I would like at this point in time,
+but all of them are fixing important bugs. Well except the kerneldoc
+change, but that is harmless.
 
-	/proc/sys/fs/mount-expiry-period
+- The block BKL conversion introduced a deadlock in loop, since the
+  mutex isn't recursive like the BKL is. This private mutex isn't
+  needed, so get rid of it.
 
-The default is 10 minutes.
+- Fix a problem where blktrace does not detect the right request type.
+  So we miss things like a SYNC tag.
 
-The NFS sysctl (nfs_mountpoint_timeout) is removed in its favour.
+- Fix a bug triggering on IDE due to how we handle flush completions.
+  This is causing crashes.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+- Fix a deadlock in the throttling code due to using kblockd.
 
- Documentation/filesystems/vfs.txt |    7 +-
- fs/afs/internal.h                 |    1 
- fs/afs/mntpt.c                    |   60 ++-------------------
- fs/afs/super.c                    |    1 
- fs/cifs/cifs_dfs_ref.c            |   53 ++-----------------
- fs/cifs/cifsfs.c                  |    3 -
- fs/cifs/cifsproto.h               |    1 
- fs/namei.c                        |    8 +--
- fs/namespace.c                    |  106 ++++++++++++++++---------------------
- fs/nfs/client.c                   |    1 
- fs/nfs/namespace.c                |   26 ---------
- fs/nfs/sysctl.c                   |    7 --
- include/linux/mount.h             |    5 +-
- kernel/sysctl.c                   |   11 ++++
- 14 files changed, 76 insertions(+), 214 deletions(-)
+Please pull!
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index c6878a0..3a40c31 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -943,10 +943,9 @@ struct dentry_operations {
- 	ordinary directory and returned to pathwalk to continue walking.
+  git://git.kernel.dk/linux-2.6-block.git for-linus
+
+Ben Hutchings (1):
+      block: fix kernel-doc format for blkdev_issue_zeroout
+
+Petr Uzel (1):
+      block: kill loop_mutex
+
+Tao Ma (1):
+      blktrace: Remove blk_fill_rwbs_rq.
+
+Tejun Heo (2):
+      block: add @force_kblockd to __blk_run_queue()
+      block: blk-flush shouldn't call directly into q->request_fn() __blk_run_queue()
+
+Vivek Goyal (1):
+      blk-throttle: Do not use kblockd workqueue for throtl work
+
+ block/blk-core.c                 |   18 ++++++------------
+ block/blk-flush.c                |    8 +++++---
+ block/blk-lib.c                  |    2 +-
+ block/blk-throttle.c             |   29 ++++++++++++++++++-----------
+ block/cfq-iosched.c              |    6 +++---
+ block/elevator.c                 |    4 ++--
+ drivers/block/loop.c             |    5 -----
+ drivers/scsi/scsi_lib.c          |    2 +-
+ drivers/scsi/scsi_transport_fc.c |    2 +-
+ include/linux/blkdev.h           |    5 +----
+ include/linux/blktrace_api.h     |    1 -
+ include/trace/events/block.h     |    6 +++---
+ kernel/trace/blktrace.c          |   16 ----------------
+ 13 files changed, 41 insertions(+), 63 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 2f4002f..518dd42 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -352,7 +352,7 @@ void blk_start_queue(struct request_queue *q)
+ 	WARN_ON(!irqs_disabled());
  
- 	If a vfsmount is returned, the caller will attempt to mount it on the
--	mountpoint and will remove the vfsmount from its expiration list in
--	the case of failure.  The vfsmount should be returned with 2 refs on
--	it to prevent automatic expiration - the caller will clean up the
--	additional ref.
-+	mountpoint and will clean it up on failure.  If mnt_expiry_mark is set
-+	on the vfsmount, the caller will add it to the global expiration list
-+	if successfully mounted and clear the mark.
- 
- 	This function is only used if DCACHE_NEED_AUTOMOUNT is set on the
- 	dentry.  This is set by __d_instantiate() if S_AUTOMOUNT is set on the
-diff --git a/fs/afs/internal.h b/fs/afs/internal.h
-index 5a9b684..cb7d2c7 100644
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -594,7 +594,6 @@ extern const struct file_operations afs_mntpt_file_operations;
- 
- extern struct vfsmount *afs_d_automount(struct path *);
- extern int afs_mntpt_check_symlink(struct afs_vnode *, struct key *);
--extern void afs_mntpt_kill_timer(void);
- 
- /*
-  * proc.c
-diff --git a/fs/afs/mntpt.c b/fs/afs/mntpt.c
-index aa59184..74b43b9 100644
---- a/fs/afs/mntpt.c
-+++ b/fs/afs/mntpt.c
-@@ -24,7 +24,6 @@ static struct dentry *afs_mntpt_lookup(struct inode *dir,
- 				       struct dentry *dentry,
- 				       struct nameidata *nd);
- static int afs_mntpt_open(struct inode *inode, struct file *file);
--static void afs_mntpt_expiry_timed_out(struct work_struct *work);
- 
- const struct file_operations afs_mntpt_file_operations = {
- 	.open		= afs_mntpt_open,
-@@ -41,11 +40,6 @@ const struct inode_operations afs_autocell_inode_operations = {
- 	.getattr	= afs_getattr,
- };
- 
--static LIST_HEAD(afs_vfsmounts);
--static DECLARE_DELAYED_WORK(afs_mntpt_expiry_timer, afs_mntpt_expiry_timed_out);
--
--static unsigned long afs_mntpt_expiry_timeout = 10 * 60;
--
- /*
-  * check a symbolic link to see whether it actually encodes a mountpoint
-  * - sets the AFS_VNODE_MOUNTPOINT flag on the vnode appropriately
-@@ -136,11 +130,12 @@ static int afs_mntpt_open(struct inode *inode, struct file *file)
- /*
-  * create a vfsmount to be automounted
-  */
--static struct vfsmount *afs_mntpt_do_automount(struct dentry *mntpt)
-+struct vfsmount *afs_d_automount(struct path *mountpoint)
- {
- 	struct afs_super_info *super;
- 	struct vfsmount *mnt;
- 	struct afs_vnode *vnode;
-+	struct dentry *mntpt = mountpoint->dentry;
- 	struct page *page;
- 	char *devname, *options;
- 	bool rwpath = false;
-@@ -219,6 +214,9 @@ static struct vfsmount *afs_mntpt_do_automount(struct dentry *mntpt)
- 	mnt = vfs_kern_mount(&afs_fs_type, 0, devname, options);
- 	_debug("--- mount result %p ---", mnt);
- 
-+	if (!IS_ERR(mnt))
-+		mnt->mnt_expiry_mark = 1;
-+
- 	free_page((unsigned long) devname);
- 	free_page((unsigned long) options);
- 	_leave(" = %p", mnt);
-@@ -234,51 +232,3 @@ error_no_devname:
- 	_leave(" = %d", ret);
- 	return ERR_PTR(ret);
+ 	queue_flag_clear(QUEUE_FLAG_STOPPED, q);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
  }
--
--/*
-- * handle an automount point
-- */
--struct vfsmount *afs_d_automount(struct path *path)
--{
--	struct vfsmount *newmnt;
--
--	_enter("{%s,%s}", path->mnt->mnt_devname, path->dentry->d_name.name);
--
--	newmnt = afs_mntpt_do_automount(path->dentry);
--	if (IS_ERR(newmnt))
--		return newmnt;
--
--	mntget(newmnt); /* prevent immediate expiration */
--	mnt_set_expiry(newmnt, &afs_vfsmounts);
--	queue_delayed_work(afs_wq, &afs_mntpt_expiry_timer,
--			   afs_mntpt_expiry_timeout * HZ);
--	_leave(" = %p {%s}", newmnt, newmnt->mnt_devname);
--	return newmnt;
--}
--
--/*
-- * handle mountpoint expiry timer going off
-- */
--static void afs_mntpt_expiry_timed_out(struct work_struct *work)
--{
--	_enter("");
--
--	if (!list_empty(&afs_vfsmounts)) {
--		mark_mounts_for_expiry(&afs_vfsmounts);
--		queue_delayed_work(afs_wq, &afs_mntpt_expiry_timer,
--				   afs_mntpt_expiry_timeout * HZ);
--	}
--
--	_leave("");
--}
--
--/*
-- * kill the AFS mountpoint timer if it's still running
-- */
--void afs_mntpt_kill_timer(void)
--{
--	_enter("");
--
--	ASSERT(list_empty(&afs_vfsmounts));
--	cancel_delayed_work_sync(&afs_mntpt_expiry_timer);
--}
-diff --git a/fs/afs/super.c b/fs/afs/super.c
-index fb240e8..3217a42 100644
---- a/fs/afs/super.c
-+++ b/fs/afs/super.c
-@@ -115,7 +115,6 @@ void __exit afs_fs_exit(void)
- {
- 	_enter("");
+ EXPORT_SYMBOL(blk_start_queue);
  
--	afs_mntpt_kill_timer();
- 	unregister_filesystem(&afs_fs_type);
- 
- 	if (atomic_read(&afs_count_active_inodes) != 0) {
-diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
-index 0a265ad..923a92b 100644
---- a/fs/cifs/cifs_dfs_ref.c
-+++ b/fs/cifs/cifs_dfs_ref.c
-@@ -24,29 +24,6 @@
- #include "dns_resolve.h"
- #include "cifs_debug.h"
- 
--static LIST_HEAD(cifs_dfs_automount_list);
--
--static void cifs_dfs_expire_automounts(struct work_struct *work);
--static DECLARE_DELAYED_WORK(cifs_dfs_automount_task,
--			    cifs_dfs_expire_automounts);
--static int cifs_dfs_mountpoint_expiry_timeout = 500 * HZ;
--
--static void cifs_dfs_expire_automounts(struct work_struct *work)
--{
--	struct list_head *list = &cifs_dfs_automount_list;
--
--	mark_mounts_for_expiry(list);
--	if (!list_empty(list))
--		schedule_delayed_work(&cifs_dfs_automount_task,
--				      cifs_dfs_mountpoint_expiry_timeout);
--}
--
--void cifs_dfs_release_automount_timer(void)
--{
--	BUG_ON(!list_empty(&cifs_dfs_automount_list));
--	cancel_delayed_work_sync(&cifs_dfs_automount_task);
--}
--
+@@ -403,13 +403,14 @@ EXPORT_SYMBOL(blk_sync_queue);
  /**
-  * cifs_get_share_name	-	extracts share name from UNC
-  * @node_name:	pointer to UNC string
-@@ -267,8 +244,9 @@ static void dump_referral(const struct dfs_info3_param *ref)
- /*
-  * Create a vfsmount that we can automount
+  * __blk_run_queue - run a single device queue
+  * @q:	The queue to run
++ * @force_kblockd: Don't run @q->request_fn directly.  Use kblockd.
+  *
+  * Description:
+  *    See @blk_run_queue. This variant must be called with the queue lock
+  *    held and interrupts disabled.
+  *
   */
--static struct vfsmount *cifs_dfs_do_automount(struct dentry *mntpt)
-+struct vfsmount *cifs_dfs_d_automount(struct path *mountpoint)
+-void __blk_run_queue(struct request_queue *q)
++void __blk_run_queue(struct request_queue *q, bool force_kblockd)
  {
-+	struct dentry *mntpt = mountpoint->dentry;
- 	struct dfs_info3_param *referrals = NULL;
- 	unsigned int num_referrals = 0;
- 	struct cifs_sb_info *cifs_sb;
-@@ -325,8 +303,10 @@ static struct vfsmount *cifs_dfs_do_automount(struct dentry *mntpt)
- 				full_path, referrals + i);
- 		cFYI(1, "%s: cifs_dfs_do_refmount:%s , mnt:%p", __func__,
- 					referrals[i].node_name, mnt);
--		if (!IS_ERR(mnt))
-+		if (!IS_ERR(mnt)) {
-+			mnt->mnt_expiry_mark = 1;
- 			goto success;
-+		}
- 	}
+ 	blk_remove_plug(q);
  
- 	/* no valid submounts were found; return error from get_dfs_path() by
-@@ -343,28 +323,5 @@ cdda_exit:
- 	return mnt;
- }
- 
--/*
-- * Attempt to automount the referral
-- */
--struct vfsmount *cifs_dfs_d_automount(struct path *path)
--{
--	struct vfsmount *newmnt;
--
--	cFYI(1, "in %s", __func__);
--
--	newmnt = cifs_dfs_do_automount(path->dentry);
--	if (IS_ERR(newmnt)) {
--		cFYI(1, "leaving %s [automount failed]" , __func__);
--		return newmnt;
--	}
--
--	mntget(newmnt); /* prevent immediate expiration */
--	mnt_set_expiry(newmnt, &cifs_dfs_automount_list);
--	schedule_delayed_work(&cifs_dfs_automount_task,
--			      cifs_dfs_mountpoint_expiry_timeout);
--	cFYI(1, "leaving %s [ok]" , __func__);
--	return newmnt;
--}
--
- const struct inode_operations cifs_dfs_referral_inode_operations = {
- };
-diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-index f297013..c91ae83 100644
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -1067,9 +1067,6 @@ exit_cifs(void)
- 	cFYI(DBG2, "exit_cifs");
- 	cifs_proc_clean();
- 	cifs_fscache_unregister();
--#ifdef CONFIG_CIFS_DFS_UPCALL
--	cifs_dfs_release_automount_timer();
--#endif
- #ifdef CONFIG_CIFS_UPCALL
- 	unregister_key_type(&cifs_spnego_key_type);
- #endif
-diff --git a/fs/cifs/cifsproto.h b/fs/cifs/cifsproto.h
-index 8096f27..f3f8099 100644
---- a/fs/cifs/cifsproto.h
-+++ b/fs/cifs/cifsproto.h
-@@ -147,7 +147,6 @@ extern struct cifs_ntsd *get_cifs_acl(struct cifs_sb_info *, struct inode *,
- extern int cifs_mount(struct super_block *, struct cifs_sb_info *, char *,
- 			const char *);
- extern int cifs_umount(struct super_block *, struct cifs_sb_info *);
--extern void cifs_dfs_release_automount_timer(void);
- void cifs_proc_init(void);
- void cifs_proc_clean(void);
- 
-diff --git a/fs/namei.c b/fs/namei.c
-index 97c92a2..aac0375 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -923,11 +923,13 @@ static int follow_automount(struct path *path, unsigned flags,
- 		return 0;
- 
- 	err = finish_automount(mnt, path);
--
- 	switch (err) {
- 	case -EBUSY:
- 		/* Someone else made a mount here whilst we were busy */
--		return 0;
-+		err = 0;
-+	default:
-+		mntput(mnt);
-+		return err;
- 	case 0:
- 		dput(path->dentry);
- 		if (*need_mntput)
-@@ -936,8 +938,6 @@ static int follow_automount(struct path *path, unsigned flags,
- 		path->dentry = dget(mnt->mnt_root);
- 		*need_mntput = true;
- 		return 0;
--	default:
--		return err;
- 	}
- 
- }
-diff --git a/fs/namespace.c b/fs/namespace.c
-index d1edf26..b9cb274 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -50,6 +50,11 @@ static struct list_head *mount_hashtable __read_mostly;
- static struct kmem_cache *mnt_cache __read_mostly;
- static struct rw_semaphore namespace_sem;
- 
-+unsigned long mnt_expiry_period = 15;
-+static LIST_HEAD(mnt_expirable_mounts);
-+static void do_periodic_mount_expiry(struct work_struct *);
-+static DECLARE_DELAYED_WORK(periodic_mount_expiry, do_periodic_mount_expiry);
-+
- /* /sys/fs */
- struct kobject *fs_kobj;
- EXPORT_SYMBOL_GPL(fs_kobj);
-@@ -1882,7 +1887,6 @@ static int do_new_mount(struct path *path, char *type, int flags,
- 			int mnt_flags, char *name, void *data)
- {
- 	struct vfsmount *mnt;
--	int err;
- 
- 	if (!type)
- 		return -EINVAL;
-@@ -1895,45 +1899,26 @@ static int do_new_mount(struct path *path, char *type, int flags,
- 	if (IS_ERR(mnt))
- 		return PTR_ERR(mnt);
- 
--	err = do_add_mount(mnt, path, mnt_flags);
--	if (err)
--		mntput(mnt);
--	return err;
-+	return do_add_mount(mnt, path, mnt_flags);
- }
- 
-+/*
-+ * Mount the given mount on the specified mountpoint.
-+ * - does not drop the caller's ref from the mount.
-+ */
- int finish_automount(struct vfsmount *m, struct path *path)
- {
--	int err;
--	/* The new mount record should have at least 2 refs to prevent it being
--	 * expired before we get a chance to add it
--	 */
--	BUG_ON(mnt_get_count(m) < 2);
--
- 	if (m->mnt_sb == path->mnt->mnt_sb &&
--	    m->mnt_root == path->dentry) {
--		err = -ELOOP;
--		goto fail;
--	}
-+	    m->mnt_root == path->dentry)
-+		return -ELOOP;
- 
--	err = do_add_mount(m, path, path->mnt->mnt_flags | MNT_SHRINKABLE);
--	if (!err)
--		return 0;
--fail:
--	/* remove m from any expiration list it may be on */
--	if (!list_empty(&m->mnt_expire)) {
--		down_write(&namespace_sem);
--		br_write_lock(vfsmount_lock);
--		list_del_init(&m->mnt_expire);
--		br_write_unlock(vfsmount_lock);
--		up_write(&namespace_sem);
--	}
--	mntput(m);
--	mntput(m);
--	return err;
-+	mntget(m);
-+	return do_add_mount(m, path, path->mnt->mnt_flags | MNT_SHRINKABLE);
- }
- 
- /*
-- * add a mount into a namespace's mount tree
-+ * Add a mount into a namespace's mount tree.
-+ * - the caller's ref on the new mount is consumed unconditionally.
-  */
- static int do_add_mount(struct vfsmount *newmnt, struct path *path, int mnt_flags)
- {
-@@ -1942,62 +1927,59 @@ static int do_add_mount(struct vfsmount *newmnt, struct path *path, int mnt_flag
- 	mnt_flags &= ~(MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL);
- 
- 	down_write(&namespace_sem);
--	/* Something was mounted here while we slept */
-+	/* Something may have been mounted here while we slept */
- 	err = follow_down(path, true);
- 	if (err < 0)
--		goto unlock;
-+		goto error;
- 
- 	err = -EINVAL;
- 	if (!(mnt_flags & MNT_SHRINKABLE) && !check_mnt(path->mnt))
--		goto unlock;
-+		goto error;
- 
- 	/* Refuse the same filesystem on the same mount point */
- 	err = -EBUSY;
- 	if (path->mnt->mnt_sb == newmnt->mnt_sb &&
- 	    path->mnt->mnt_root == path->dentry)
--		goto unlock;
-+		goto error;
- 
- 	err = -EINVAL;
- 	if (S_ISLNK(newmnt->mnt_root->d_inode->i_mode))
--		goto unlock;
-+		goto error;
- 
- 	newmnt->mnt_flags = mnt_flags;
- 	err = graft_tree(newmnt, path);
-+	if (err < 0)
-+		goto error;
- 
--unlock:
-+	if (newmnt->mnt_expiry_mark) {
-+		newmnt->mnt_expiry_mark = 0;
-+		br_write_lock(vfsmount_lock);
-+		list_add_tail(&newmnt->mnt_expire, &mnt_expirable_mounts);
-+		br_write_unlock(vfsmount_lock);
-+		schedule_delayed_work(&periodic_mount_expiry,
-+				      mnt_expiry_period * HZ);
-+	}
- 	up_write(&namespace_sem);
--	return err;
--}
--
--/**
-- * mnt_set_expiry - Put a mount on an expiration list
-- * @mnt: The mount to list.
-- * @expiry_list: The list to add the mount to.
-- */
--void mnt_set_expiry(struct vfsmount *mnt, struct list_head *expiry_list)
--{
--	down_write(&namespace_sem);
--	br_write_lock(vfsmount_lock);
--
--	list_add_tail(&mnt->mnt_expire, expiry_list);
-+	return 0;
- 
--	br_write_unlock(vfsmount_lock);
-+error:
- 	up_write(&namespace_sem);
-+	mntput(newmnt);
-+	return err;
- }
--EXPORT_SYMBOL(mnt_set_expiry);
- 
- /*
-- * process a list of expirable mountpoints with the intent of discarding any
-- * mountpoints that aren't in use and haven't been touched since last we came
-- * here
-+ * Periodically process the list of expirable mountpoints with the intent of
-+ * discarding any mountpoints that aren't in use and haven't been touched since
-+ * last we came here.
-  */
--void mark_mounts_for_expiry(struct list_head *mounts)
-+static void do_periodic_mount_expiry(struct work_struct *work)
- {
- 	struct vfsmount *mnt, *next;
- 	LIST_HEAD(graveyard);
- 	LIST_HEAD(umounts);
- 
--	if (list_empty(mounts))
-+	if (list_empty(&mnt_expirable_mounts))
- 		return;
- 
- 	down_write(&namespace_sem);
-@@ -2009,7 +1991,7 @@ void mark_mounts_for_expiry(struct list_head *mounts)
- 	 * - still marked for expiry (marked on the last call here; marks are
- 	 *   cleared by mntput())
+@@ -423,7 +424,7 @@ void __blk_run_queue(struct request_queue *q)
+ 	 * Only recurse once to avoid overrunning the stack, let the unplug
+ 	 * handling reinvoke the handler shortly if we already got there.
  	 */
--	list_for_each_entry_safe(mnt, next, mounts, mnt_expire) {
-+	list_for_each_entry_safe(mnt, next, &mnt_expirable_mounts, mnt_expire) {
- 		if (!xchg(&mnt->mnt_expiry_mark, 1) ||
- 			propagate_mount_busy(mnt, 1))
- 			continue;
-@@ -2024,9 +2006,11 @@ void mark_mounts_for_expiry(struct list_head *mounts)
- 	up_write(&namespace_sem);
+-	if (!queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
++	if (!force_kblockd && !queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
+ 		q->request_fn(q);
+ 		queue_flag_clear(QUEUE_FLAG_REENTER, q);
+ 	} else {
+@@ -446,7 +447,7 @@ void blk_run_queue(struct request_queue *q)
+ 	unsigned long flags;
  
- 	release_mounts(&umounts);
+ 	spin_lock_irqsave(q->queue_lock, flags);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ EXPORT_SYMBOL(blk_run_queue);
+@@ -1053,7 +1054,7 @@ void blk_insert_request(struct request_queue *q, struct request *rq,
+ 
+ 	drive_stat_acct(rq, 1);
+ 	__elv_add_request(q, rq, where, 0);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ EXPORT_SYMBOL(blk_insert_request);
+@@ -2610,13 +2611,6 @@ int kblockd_schedule_work(struct request_queue *q, struct work_struct *work)
+ }
+ EXPORT_SYMBOL(kblockd_schedule_work);
+ 
+-int kblockd_schedule_delayed_work(struct request_queue *q,
+-			struct delayed_work *dwork, unsigned long delay)
+-{
+-	return queue_delayed_work(kblockd_workqueue, dwork, delay);
 -}
+-EXPORT_SYMBOL(kblockd_schedule_delayed_work);
+-
+ int __init blk_dev_init(void)
+ {
+ 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 54b123d..b27d020 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -66,10 +66,12 @@ static void blk_flush_complete_seq_end_io(struct request_queue *q,
  
--EXPORT_SYMBOL_GPL(mark_mounts_for_expiry);
-+	if (!list_empty(&mnt_expirable_mounts))
-+		schedule_delayed_work(&periodic_mount_expiry,
-+				      mnt_expiry_period * HZ);
-+}
- 
- /*
-  * Ripoff of 'select_parent()'
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index bd3ca32..5552ff2 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1083,7 +1083,6 @@ void nfs_free_server(struct nfs_server *server)
- 	nfs_free_iostats(server->io_stats);
- 	bdi_destroy(&server->backing_dev_info);
- 	kfree(server);
--	nfs_release_automount_timer();
- 	dprintk("<-- nfs_free_server()\n");
+ 	/*
+ 	 * Moving a request silently to empty queue_head may stall the
+-	 * queue.  Kick the queue in those cases.
++	 * queue.  Kick the queue in those cases.  This function is called
++	 * from request completion path and calling directly into
++	 * request_fn may confuse the driver.  Always use kblockd.
+ 	 */
+ 	if (was_empty && next_rq)
+-		__blk_run_queue(q);
++		__blk_run_queue(q, true);
  }
  
-diff --git a/fs/nfs/namespace.c b/fs/nfs/namespace.c
-index f32b860..3a4a2fa 100644
---- a/fs/nfs/namespace.c
-+++ b/fs/nfs/namespace.c
-@@ -19,12 +19,6 @@
+ static void pre_flush_end_io(struct request *rq, int error)
+@@ -130,7 +132,7 @@ static struct request *queue_next_fseq(struct request_queue *q)
+ 		BUG();
+ 	}
  
- #define NFSDBG_FACILITY		NFSDBG_VFS
+-	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
++	elv_insert(q, rq, ELEVATOR_INSERT_REQUEUE);
+ 	return rq;
+ }
  
--static void nfs_expire_automounts(struct work_struct *work);
--
--static LIST_HEAD(nfs_automount_list);
--static DECLARE_DELAYED_WORK(nfs_automount_task, nfs_expire_automounts);
--int nfs_mountpoint_expiry_timeout = 500 * HZ;
--
- static struct vfsmount *nfs_do_submount(const struct vfsmount *mnt_parent,
- 					const struct dentry *dentry,
- 					struct nfs_fh *fh,
-@@ -149,11 +143,8 @@ struct vfsmount *nfs_d_automount(struct path *path)
- 	if (IS_ERR(mnt))
- 		goto out;
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 1a320d2..eec78be 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -132,7 +132,7 @@ static void bio_batch_end_io(struct bio *bio, int err)
+ }
  
-+	mnt->mnt_expiry_mark = 1;
- 	dprintk("%s: done, success\n", __func__);
--	mntget(mnt); /* prevent immediate expiration */
--	mnt_set_expiry(mnt, &nfs_automount_list);
--	schedule_delayed_work(&nfs_automount_task, nfs_mountpoint_expiry_timeout);
--
- out:
- 	nfs_free_fattr(fattr);
- 	nfs_free_fhandle(fh);
-@@ -169,21 +160,6 @@ const struct inode_operations nfs_mountpoint_inode_operations = {
- const struct inode_operations nfs_referral_inode_operations = {
- };
+ /**
+- * blkdev_issue_zeroout generate number of zero filed write bios
++ * blkdev_issue_zeroout - generate number of zero filed write bios
+  * @bdev:	blockdev to issue
+  * @sector:	start sector
+  * @nr_sects:	number of sectors to write
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index a89043a..e36cc10 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -20,6 +20,11 @@ static int throtl_quantum = 32;
+ /* Throttling is performed over 100ms slice and after that slice is renewed */
+ static unsigned long throtl_slice = HZ/10;	/* 100 ms */
  
--static void nfs_expire_automounts(struct work_struct *work)
--{
--	struct list_head *list = &nfs_automount_list;
--
--	mark_mounts_for_expiry(list);
--	if (!list_empty(list))
--		schedule_delayed_work(&nfs_automount_task, nfs_mountpoint_expiry_timeout);
--}
--
--void nfs_release_automount_timer(void)
--{
--	if (list_empty(&nfs_automount_list))
--		cancel_delayed_work(&nfs_automount_task);
--}
--
- /*
-  * Clone a mountpoint of the appropriate type
-  */
-diff --git a/fs/nfs/sysctl.c b/fs/nfs/sysctl.c
-index 978aaeb..aa35724 100644
---- a/fs/nfs/sysctl.c
-+++ b/fs/nfs/sysctl.c
-@@ -43,13 +43,6 @@ static ctl_table nfs_cb_sysctls[] = {
- #endif /* CONFIG_NFS_USE_NEW_IDMAPPER */
- #endif
- 	{
--		.procname	= "nfs_mountpoint_timeout",
--		.data		= &nfs_mountpoint_expiry_timeout,
--		.maxlen		= sizeof(nfs_mountpoint_expiry_timeout),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec_jiffies,
--	},
--	{
- 		.procname	= "nfs_congestion_kb",
- 		.data		= &nfs_congestion_kb,
- 		.maxlen		= sizeof(nfs_congestion_kb),
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 604f122..0e46c54 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -108,9 +108,8 @@ extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
- 				      int flags, const char *name,
- 				      void *data);
- 
--extern void mnt_set_expiry(struct vfsmount *mnt, struct list_head *expiry_list);
--extern void mark_mounts_for_expiry(struct list_head *mounts);
--
- extern dev_t name_to_dev_t(char *name);
- 
-+extern unsigned long mnt_expiry_period;
++/* A workqueue to queue throttle related work */
++static struct workqueue_struct *kthrotld_workqueue;
++static void throtl_schedule_delayed_work(struct throtl_data *td,
++				unsigned long delay);
 +
- #endif /* _LINUX_MOUNT_H */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 0f1bd83..f132dbd 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -56,6 +56,7 @@
- #include <linux/kprobes.h>
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
-+#include <linux/mount.h>
+ struct throtl_rb_root {
+ 	struct rb_root rb;
+ 	struct rb_node *left;
+@@ -345,10 +350,9 @@ static void throtl_schedule_next_dispatch(struct throtl_data *td)
+ 	update_min_dispatch_time(st);
+ 
+ 	if (time_before_eq(st->min_disptime, jiffies))
+-		throtl_schedule_delayed_work(td->queue, 0);
++		throtl_schedule_delayed_work(td, 0);
+ 	else
+-		throtl_schedule_delayed_work(td->queue,
+-				(st->min_disptime - jiffies));
++		throtl_schedule_delayed_work(td, (st->min_disptime - jiffies));
+ }
+ 
+ static inline void
+@@ -815,10 +819,10 @@ void blk_throtl_work(struct work_struct *work)
+ }
+ 
+ /* Call with queue lock held */
+-void throtl_schedule_delayed_work(struct request_queue *q, unsigned long delay)
++static void
++throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
+ {
+ 
+-	struct throtl_data *td = q->td;
+ 	struct delayed_work *dwork = &td->throtl_work;
+ 
+ 	if (total_nr_queued(td) > 0) {
+@@ -827,12 +831,11 @@ void throtl_schedule_delayed_work(struct request_queue *q, unsigned long delay)
+ 		 * Cancel that and schedule a new one.
+ 		 */
+ 		__cancel_delayed_work(dwork);
+-		kblockd_schedule_delayed_work(q, dwork, delay);
++		queue_delayed_work(kthrotld_workqueue, dwork, delay);
+ 		throtl_log(td, "schedule work. delay=%lu jiffies=%lu",
+ 				delay, jiffies);
+ 	}
+ }
+-EXPORT_SYMBOL(throtl_schedule_delayed_work);
+ 
+ static void
+ throtl_destroy_tg(struct throtl_data *td, struct throtl_grp *tg)
+@@ -920,7 +923,7 @@ static void throtl_update_blkio_group_read_bps(void *key,
+ 	smp_mb__after_atomic_inc();
+ 
+ 	/* Schedule a work now to process the limit change */
+-	throtl_schedule_delayed_work(td->queue, 0);
++	throtl_schedule_delayed_work(td, 0);
+ }
+ 
+ static void throtl_update_blkio_group_write_bps(void *key,
+@@ -934,7 +937,7 @@ static void throtl_update_blkio_group_write_bps(void *key,
+ 	smp_mb__before_atomic_inc();
+ 	atomic_inc(&td->limits_changed);
+ 	smp_mb__after_atomic_inc();
+-	throtl_schedule_delayed_work(td->queue, 0);
++	throtl_schedule_delayed_work(td, 0);
+ }
+ 
+ static void throtl_update_blkio_group_read_iops(void *key,
+@@ -948,7 +951,7 @@ static void throtl_update_blkio_group_read_iops(void *key,
+ 	smp_mb__before_atomic_inc();
+ 	atomic_inc(&td->limits_changed);
+ 	smp_mb__after_atomic_inc();
+-	throtl_schedule_delayed_work(td->queue, 0);
++	throtl_schedule_delayed_work(td, 0);
+ }
+ 
+ static void throtl_update_blkio_group_write_iops(void *key,
+@@ -962,7 +965,7 @@ static void throtl_update_blkio_group_write_iops(void *key,
+ 	smp_mb__before_atomic_inc();
+ 	atomic_inc(&td->limits_changed);
+ 	smp_mb__after_atomic_inc();
+-	throtl_schedule_delayed_work(td->queue, 0);
++	throtl_schedule_delayed_work(td, 0);
+ }
+ 
+ void throtl_shutdown_timer_wq(struct request_queue *q)
+@@ -1135,6 +1138,10 @@ void blk_throtl_exit(struct request_queue *q)
+ 
+ static int __init throtl_init(void)
+ {
++	kthrotld_workqueue = alloc_workqueue("kthrotld", WQ_MEM_RECLAIM, 0);
++	if (!kthrotld_workqueue)
++		panic("Failed to create kthrotld\n");
++
+ 	blkio_policy_register(&blkio_policy_throtl);
+ 	return 0;
+ }
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 7be4c79..ea83a4f 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3355,7 +3355,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 			    cfqd->busy_queues > 1) {
+ 				cfq_del_timer(cfqd, cfqq);
+ 				cfq_clear_cfqq_wait_request(cfqq);
+-				__blk_run_queue(cfqd->queue);
++				__blk_run_queue(cfqd->queue, false);
+ 			} else {
+ 				cfq_blkiocg_update_idle_time_stats(
+ 						&cfqq->cfqg->blkg);
+@@ -3370,7 +3370,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		 * this new queue is RT and the current one is BE
+ 		 */
+ 		cfq_preempt_queue(cfqd, cfqq);
+-		__blk_run_queue(cfqd->queue);
++		__blk_run_queue(cfqd->queue, false);
+ 	}
+ }
+ 
+@@ -3731,7 +3731,7 @@ static void cfq_kick_queue(struct work_struct *work)
+ 	struct request_queue *q = cfqd->queue;
+ 
+ 	spin_lock_irq(q->queue_lock);
+-	__blk_run_queue(cfqd->queue);
++	__blk_run_queue(cfqd->queue, false);
+ 	spin_unlock_irq(q->queue_lock);
+ }
+ 
+diff --git a/block/elevator.c b/block/elevator.c
+index 2569512..236e93c 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -602,7 +602,7 @@ void elv_quiesce_start(struct request_queue *q)
+ 	 */
+ 	elv_drain_elevator(q);
+ 	while (q->rq.elvpriv) {
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ 		spin_unlock_irq(q->queue_lock);
+ 		msleep(10);
+ 		spin_lock_irq(q->queue_lock);
+@@ -651,7 +651,7 @@ void elv_insert(struct request_queue *q, struct request *rq, int where)
+ 		 *   with anything.  There's no point in delaying queue
+ 		 *   processing.
+ 		 */
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ 		break;
+ 
+ 	case ELEVATOR_INSERT_SORT:
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 49e6a54..dbf31ec 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -78,7 +78,6 @@
  
  #include <asm/uaccess.h>
- #include <asm/processor.h>
-@@ -122,6 +123,7 @@ static int one_hundred = 100;
- #ifdef CONFIG_PRINTK
- static int ten_thousand = 10000;
- #endif
-+static unsigned long max_timeout_ul = ULONG_MAX / HZ;
  
- /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
- static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
-@@ -1484,6 +1486,15 @@ static struct ctl_table fs_table[] = {
- 		.proc_handler	= &pipe_proc_fn,
- 		.extra1		= &pipe_min_size,
- 	},
-+	{
-+		.procname	= "mount-expiry-period",
-+		.data		= &mnt_expiry_period,
-+		.maxlen		= sizeof(mnt_expiry_period),
-+		.mode		= 0644,
-+		.proc_handler	= proc_doulongvec_minmax,
-+		.extra1		= &one_ul,
-+		.extra2		= &max_timeout_ul,
-+	},
- 	{ }
- };
+-static DEFINE_MUTEX(loop_mutex);
+ static LIST_HEAD(loop_devices);
+ static DEFINE_MUTEX(loop_devices_mutex);
  
+@@ -1501,11 +1500,9 @@ static int lo_open(struct block_device *bdev, fmode_t mode)
+ {
+ 	struct loop_device *lo = bdev->bd_disk->private_data;
+ 
+-	mutex_lock(&loop_mutex);
+ 	mutex_lock(&lo->lo_ctl_mutex);
+ 	lo->lo_refcnt++;
+ 	mutex_unlock(&lo->lo_ctl_mutex);
+-	mutex_unlock(&loop_mutex);
+ 
+ 	return 0;
+ }
+@@ -1515,7 +1512,6 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
+ 	struct loop_device *lo = disk->private_data;
+ 	int err;
+ 
+-	mutex_lock(&loop_mutex);
+ 	mutex_lock(&lo->lo_ctl_mutex);
+ 
+ 	if (--lo->lo_refcnt)
+@@ -1540,7 +1536,6 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
+ out:
+ 	mutex_unlock(&lo->lo_ctl_mutex);
+ out_unlocked:
+-	mutex_unlock(&loop_mutex);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 9045c52..fb2bb35 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -443,7 +443,7 @@ static void scsi_run_queue(struct request_queue *q)
+ 					&sdev->request_queue->queue_flags);
+ 		if (flagset)
+ 			queue_flag_set(QUEUE_FLAG_REENTER, sdev->request_queue);
+-		__blk_run_queue(sdev->request_queue);
++		__blk_run_queue(sdev->request_queue, false);
+ 		if (flagset)
+ 			queue_flag_clear(QUEUE_FLAG_REENTER, sdev->request_queue);
+ 		spin_unlock(sdev->request_queue->queue_lock);
+diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
+index 998c01b..5c3ccfc 100644
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -3829,7 +3829,7 @@ fc_bsg_goose_queue(struct fc_rport *rport)
+ 		  !test_bit(QUEUE_FLAG_REENTER, &rport->rqst_q->queue_flags);
+ 	if (flagset)
+ 		queue_flag_set(QUEUE_FLAG_REENTER, rport->rqst_q);
+-	__blk_run_queue(rport->rqst_q);
++	__blk_run_queue(rport->rqst_q, false);
+ 	if (flagset)
+ 		queue_flag_clear(QUEUE_FLAG_REENTER, rport->rqst_q);
+ 	spin_unlock_irqrestore(rport->rqst_q->queue_lock, flags);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 4d18ff3..d5063e1 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -699,7 +699,7 @@ extern void blk_start_queue(struct request_queue *q);
+ extern void blk_stop_queue(struct request_queue *q);
+ extern void blk_sync_queue(struct request_queue *q);
+ extern void __blk_stop_queue(struct request_queue *q);
+-extern void __blk_run_queue(struct request_queue *);
++extern void __blk_run_queue(struct request_queue *q, bool force_kblockd);
+ extern void blk_run_queue(struct request_queue *);
+ extern int blk_rq_map_user(struct request_queue *, struct request *,
+ 			   struct rq_map_data *, void __user *, unsigned long,
+@@ -1088,7 +1088,6 @@ static inline void put_dev_sector(Sector p)
+ 
+ struct work_struct;
+ int kblockd_schedule_work(struct request_queue *q, struct work_struct *work);
+-int kblockd_schedule_delayed_work(struct request_queue *q, struct delayed_work *dwork, unsigned long delay);
+ 
+ #ifdef CONFIG_BLK_CGROUP
+ /*
+@@ -1136,7 +1135,6 @@ static inline uint64_t rq_io_start_time_ns(struct request *req)
+ extern int blk_throtl_init(struct request_queue *q);
+ extern void blk_throtl_exit(struct request_queue *q);
+ extern int blk_throtl_bio(struct request_queue *q, struct bio **bio);
+-extern void throtl_schedule_delayed_work(struct request_queue *q, unsigned long delay);
+ extern void throtl_shutdown_timer_wq(struct request_queue *q);
+ #else /* CONFIG_BLK_DEV_THROTTLING */
+ static inline int blk_throtl_bio(struct request_queue *q, struct bio **bio)
+@@ -1146,7 +1144,6 @@ static inline int blk_throtl_bio(struct request_queue *q, struct bio **bio)
+ 
+ static inline int blk_throtl_init(struct request_queue *q) { return 0; }
+ static inline int blk_throtl_exit(struct request_queue *q) { return 0; }
+-static inline void throtl_schedule_delayed_work(struct request_queue *q, unsigned long delay) {}
+ static inline void throtl_shutdown_timer_wq(struct request_queue *q) {}
+ #endif /* CONFIG_BLK_DEV_THROTTLING */
+ 
+diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
+index 3395cf7..b22fb0d 100644
+--- a/include/linux/blktrace_api.h
++++ b/include/linux/blktrace_api.h
+@@ -245,7 +245,6 @@ static inline int blk_cmd_buf_len(struct request *rq)
+ 
+ extern void blk_dump_cmd(char *buf, struct request *rq);
+ extern void blk_fill_rwbs(char *rwbs, u32 rw, int bytes);
+-extern void blk_fill_rwbs_rq(char *rwbs, struct request *rq);
+ 
+ #endif /* CONFIG_EVENT_TRACING && CONFIG_BLOCK */
+ 
+diff --git a/include/trace/events/block.h b/include/trace/events/block.h
+index aba421d..78f18ad 100644
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -31,7 +31,7 @@ DECLARE_EVENT_CLASS(block_rq_with_error,
+ 					0 : blk_rq_sectors(rq);
+ 		__entry->errors    = rq->errors;
+ 
+-		blk_fill_rwbs_rq(__entry->rwbs, rq);
++		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, blk_rq_bytes(rq));
+ 		blk_dump_cmd(__get_str(cmd), rq);
+ 	),
+ 
+@@ -118,7 +118,7 @@ DECLARE_EVENT_CLASS(block_rq,
+ 		__entry->bytes     = (rq->cmd_type == REQ_TYPE_BLOCK_PC) ?
+ 					blk_rq_bytes(rq) : 0;
+ 
+-		blk_fill_rwbs_rq(__entry->rwbs, rq);
++		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, blk_rq_bytes(rq));
+ 		blk_dump_cmd(__get_str(cmd), rq);
+ 		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
+ 	),
+@@ -563,7 +563,7 @@ TRACE_EVENT(block_rq_remap,
+ 		__entry->nr_sector	= blk_rq_sectors(rq);
+ 		__entry->old_dev	= dev;
+ 		__entry->old_sector	= from;
+-		blk_fill_rwbs_rq(__entry->rwbs, rq);
++		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, blk_rq_bytes(rq));
+ 	),
+ 
+ 	TP_printk("%d,%d %s %llu + %u <- (%d,%d) %llu",
+diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+index d95721f..cbafed7 100644
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -1827,21 +1827,5 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
+ 	rwbs[i] = '\0';
+ }
+ 
+-void blk_fill_rwbs_rq(char *rwbs, struct request *rq)
+-{
+-	int rw = rq->cmd_flags & 0x03;
+-	int bytes;
+-
+-	if (rq->cmd_flags & REQ_DISCARD)
+-		rw |= REQ_DISCARD;
+-
+-	if (rq->cmd_flags & REQ_SECURE)
+-		rw |= REQ_SECURE;
+-
+-	bytes = blk_rq_bytes(rq);
+-
+-	blk_fill_rwbs(rwbs, rw, bytes);
+-}
+-
+ #endif /* CONFIG_EVENT_TRACING */
+ 
+
+-- 
+Jens Axboe
 
