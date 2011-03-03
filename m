@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab1CCKza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 05:55:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16598 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832Ab1CCKz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 05:55:28 -0500
-From: Xiaotian Feng <dfeng@redhat.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Tom Herbert <therbert@google.com>
-Subject: [RFC PATCH] net/core: fix skb handling on netif serves for both bridge and vlan
-Date: Thu,  3 Mar 2011 18:55:13 +0800
-Message-Id: <1299149713-18740-1-git-send-email-dfeng@redhat.com>
+	id S1758049Ab1CCKzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 05:55:35 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:37173 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757989Ab1CCKzd convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Thu, 3 Mar 2011 05:55:33 -0500
+Message-Id: <4D6F81B10200007800034B0B@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 03 Mar 2011 10:55:29 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Shaohua Li" <shaohua.li@intel.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: work around old gas bug (try 2)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider network topology as follows:
+Add extra parentheses around a couple of definitions introduced by
+"x86: Cleanup vector usage" and used in assembly macro arguments, and
+remove spaces. Without that old (2.16.1) gas would see more macro
+arguments than were actually specified.
 
-eth0  eth1
- |_____|
-    |
-  bond0 --- br0
-    |
-  vlan0 --- br1
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Shaohua Li <shaohua.li@intel.com>
 
-bond0 serves for both br0 and vlan0, if a vlan tagged packet was sent
-to br1 through bond0, bridge handling code is seeing the packet on bond0
-and handing it off to my "legacy" bridge before vlan_tx_tag_present
-and vlan_hwaccel_do_receive even haven't a chance to look at it.
-
-Moving the vlan_tx_tag_present before bridge/macvlan handling code could
-cure this.
-
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Tom Herbert <therbert@google.com>
 ---
- net/core/dev.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/irq_vectors.h |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 8ae6631..d2d12c2 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3079,27 +3079,27 @@ static int __netif_receive_skb(struct sk_buff *skb)
- ncls:
+--- tip-20110303.orig/arch/x86/include/asm/irq_vectors.h
++++ tip-20110303/arch/x86/include/asm/irq_vectors.h
+@@ -126,14 +126,14 @@
+ 
+ /* up to 32 vectors used for spreading out TLB flushes: */
+ #if NR_CPUS <= 32
+-# define NUM_INVALIDATE_TLB_VECTORS NR_CPUS
++# define NUM_INVALIDATE_TLB_VECTORS	(NR_CPUS)
+ #else
+-# define NUM_INVALIDATE_TLB_VECTORS 32
++# define NUM_INVALIDATE_TLB_VECTORS	(32)
  #endif
  
--	/* Handle special case of bridge or macvlan */
--	rx_handler = rcu_dereference(skb->dev->rx_handler);
--	if (rx_handler) {
-+	if (vlan_tx_tag_present(skb)) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
- 			pt_prev = NULL;
- 		}
--		skb = rx_handler(skb);
--		if (!skb)
-+		if (vlan_hwaccel_do_receive(&skb)) {
-+			ret = __netif_receive_skb(skb);
-+			goto out;
-+		} else if (unlikely(!skb))
- 			goto out;
- 	}
+-#define INVALIDATE_TLB_VECTOR_END	0xee
++#define INVALIDATE_TLB_VECTOR_END	(0xee)
+ #define INVALIDATE_TLB_VECTOR_START	\
+-	(INVALIDATE_TLB_VECTOR_END - NUM_INVALIDATE_TLB_VECTORS + 1)
++	(INVALIDATE_TLB_VECTOR_END-NUM_INVALIDATE_TLB_VECTORS+1)
  
--	if (vlan_tx_tag_present(skb)) {
-+	/* Handle special case of bridge or macvlan */
-+	rx_handler = rcu_dereference(skb->dev->rx_handler);
-+	if (rx_handler) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
- 			pt_prev = NULL;
- 		}
--		if (vlan_hwaccel_do_receive(&skb)) {
--			ret = __netif_receive_skb(skb);
--			goto out;
--		} else if (unlikely(!skb))
-+		skb = rx_handler(skb);
-+		if (!skb)
- 			goto out;
- 	}
+ #define NR_VECTORS			 256
  
--- 
-1.7.1
+
+
 
