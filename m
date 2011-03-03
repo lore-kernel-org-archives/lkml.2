@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab1CCKN2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 05:13:28 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52261 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab1CCKN0 (ORCPT
+	id S1756610Ab1CCKSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 05:18:13 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:49369 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754019Ab1CCKSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 05:13:26 -0500
-Subject: Re: [PATCH v3 0/4] perf: offcore event monitoring patches
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1299119690-13991-1-git-send-email-ming.m.lin@intel.com>
-References: <1299119690-13991-1-git-send-email-ming.m.lin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 11:14:57 +0100
-Message-ID: <1299147297.1310.50.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 05:18:12 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <viresh.linux@gmail.com>, Viresh Kumar <viresh.kumar@st.com>,
+        <jamie@jamieiles.com>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <amit.goel@st.com>,
+        <hans-christian.egtvedt@atmel.com>
+Subject: [PATCH V2 01/13] dw_dmac: Remove compilation dependency from AVR32 and put on HAVE_CLK
+Date: Thu, 3 Mar 2011 15:47:14 +0530
+Message-ID: <25131616c787e711b89733b4098cde7207b696de.1299146382.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1299146382.git.viresh.kumar@st.com>
+References: <cover.1299146382.git.viresh.kumar@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 10:34 +0800, Lin Ming wrote:
+This driver will now be used in atleast two platforms AVR32 & ARM. And there is
+no actual hardware dependency of this driver over AVR32 or ARM. So this
+dependency can be removed altogether.
 
-> Peter,
-> The event scheduling issue was fixed, could you please consider merging
-> this series?
+Also dw_dmac driver uses clk framework and must have compilation dependency on
+HAVE_CLK
 
-I'll have a look today.
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/dma/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-BTW, you managed to wreck git-send-email, you have git 1.7 which does
-the right thing by default (--no-chain-reply-to), please do use that. I
-normally ignore emails send like this.
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 1c28816..3822fe1 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -82,7 +82,7 @@ config INTEL_IOP_ADMA
+ 
+ config DW_DMAC
+ 	tristate "Synopsys DesignWare AHB DMA support"
+-	depends on AVR32
++	depends on HAVE_CLK
+ 	select DMA_ENGINE
+ 	default y if CPU_AT32AP7000
+ 	help
+-- 
+1.7.2.2
 
