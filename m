@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab1CCSGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 13:06:41 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53527 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758311Ab1CCSGk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 13:06:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LkwVGSZOWvxm770wzoroiOsFQ6L/jZ+FA9DGtQJy0AarDFjbpnC3TF/dN3HzJMIvjW
-         AqgAK1S7ulyqJ733LIsRPpBuqNzU69D6YB3IkizVnP+SaQC91PFuVR/AvQvI4QVVjrv0
-         6IfydUJtJJxAtNdQy6w72N89cP8zLqCAMV9b0=
-Date: Thu, 3 Mar 2011 19:06:27 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/3] perf script: dump software events and samples from
- hardware-based profiling
-Message-ID: <20110303180624.GD1807@nowhere>
-References: <1299086960-26964-1-git-send-email-daahern@cisco.com>
- <1299086960-26964-4-git-send-email-daahern@cisco.com>
- <20110303030515.GD1946@nowhere>
- <4D6FA39A.60203@cisco.com>
- <20110303171940.GC1807@nowhere>
- <4D6FD027.3080704@cisco.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6FD027.3080704@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758598Ab1CCSIa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 13:08:30 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56151 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758207Ab1CCSI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 13:08:29 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: hjk@hansjkoch.de, gregkh@suse.de, tglx@linutronix.de, sshtylyov@mvista.com,
+        arnd@arndb.de, pratheesh@ti.com, amit.chatterjee@ti.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v9 0/1] Add PRUSS UIO driver support
+Date: Thu,  3 Mar 2011 23:37:56 +0530
+Message-Id: <1299175677-17859-1-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 10:30:15AM -0700, David Ahern wrote:
-> On 03/03/11 10:19, Frederic Weisbecker wrote:
-> > to use perf_session__resolve_callchain() that resolves the raw struct ip_callchain
-> > (only made of raw ips) into a cursor (list of ips resolved into symbols and so) and
-> > walk through the cursor with the two accessors.
-> > 
-> > Ah I forgot, you first need to use callchain_cursor_commit() in order to initialize
-> > the position in the cursor.
-> > 
-> > So:
-> > 
-> > 1) Resolve with perf_session__resolve_callchain()
-> > 2) commit with callchain_cursor_commit()
-> > 3) iterate with callchain_cursor_current(), callchain_cursor_advance()
-> 
-> yes, I figured out the missing commit, and I changed the loop to:
-> while (1) {
->     node = callchain_cursor_current(cursor);
->     if (!node)
->         break;
-> 
->       ... (print chain)
-> 
->     callchain_cursor_advance(cursor);
-> }
+This patch series add support for PRUSS (Programmable Real-time Unit Sub
+System) UIO driver in Texas Instruments DA850, AM18xx and OMAP-L138 processors.
+PRUSS is programmable RISC core which can be used to implement Soft IPs
+(eg:- DMA, CAN, UART,SmartCard) and Industrial communications data link layers
+(eg:- PROFIBUS). UIO driver exposes PRUSS resources like memory and interrupts
+to user space application.PRUSS UIO application API can be used to control PRUs
+in PRUSS, setup PRU INTC, load firmware to PRUs and implement IPC between Host
+processor and PRUs. More information on PRUSS and UIO linux user space API
+available in the links below
 
-Yep.
+http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader_API_Guide
 
-> 
-> Thanks for the comments.
-> 
-> What about the python and perl engines? Right now they are tracepoint
-> specific. I do not have a sufficient background in either to expand to
-> other sample types.
+Platform/board specific portion of this patch depends on Mistral patches below
 
-Not a problem, the new parameters layout paves the way to make it later feasible
-if someone is interested.
+[PATCH 1/1] davinci: changed SRAM allocator to shared ram :
+				https://patchwork.kernel.org/patch/549351/
+[PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS :
+				 https://patchwork.kernel.org/patch/549331/
+[PATCH v2 01/13] mfd: pruss mfd driver :
+				https://patchwork.kernel.org/patch/549531/
+[PATCH v2 02/13] da850: pruss platform specific additions :
+				https://patchwork.kernel.org/patch/549521/
+
+I will submit a seperate patch set on top of these patches to support PRUSS
+UIO driver.
+
+Pratheesh Gangadhar (1):
+  PRUSS UIO driver support
+
+ drivers/uio/Kconfig       |   17 +++
+ drivers/uio/Makefile      |    1 +
+ drivers/uio/uio_pruss.c   |  264 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/uio_pruss.h |   29 +++++
+ 4 files changed, 311 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/uio/uio_pruss.c
+ create mode 100644 include/linux/uio_pruss.h
 
