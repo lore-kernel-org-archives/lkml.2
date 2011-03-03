@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758903Ab1CCWaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 17:30:00 -0500
-Received: from sv2.nico22.de ([62.112.144.130]:52119 "EHLO sv2.nico22.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758762Ab1CCW37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 17:29:59 -0500
-Date: Thu, 3 Mar 2011 23:29:57 +0100
-From: Nico =?iso-8859-1?Q?Sch=FCmann?= <dev@nico22.de>
-To: David Miller <davem@davemloft.net>
-Cc: chris.friesen@genband.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Network link detection
-Message-ID: <20110303222957.GA30472@svh.nico22.de>
-References: <20110303193006.GA29129@svh.nico22.de>
- <4D700A5B.2000807@genband.com>
- <20110303.140106.191399853.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303.140106.191399853.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759002Ab1CCWaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 17:30:08 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:51189 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758986Ab1CCWaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 17:30:04 -0500
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Matt Mackall <mpm@selenic.com>
+Cc: cl@linux-foundation.org, penberg@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1299188667.3062.259.camel@calx>
+References: <1299174652.2071.12.camel@dan>  <1299185882.3062.233.camel@calx>
+	 <1299186986.2071.90.camel@dan>  <1299188667.3062.259.camel@calx>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Mar 2011 17:30:00 -0500
+Message-ID: <1299191400.2071.203.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 02:01:06PM -0800, David Miller wrote:
-> From: Chris Friesen <chris.friesen@genband.com>
-> Date: Thu, 03 Mar 2011 15:38:35 -0600
+
+> Well if it were a 1000x-1000000x difficulty improvement, I would say you
+> had a point. But at 10x, it's just not a real obstacle. For instance, in
+> this exploit:
 > 
-> > You might look at whether you could write a kernel module to register
-> > for NETDEV_CHANGE notifications and pass that back to userspace.
+> http://www.exploit-db.com/exploits/14814/
 > 
-> This is the kind of responses you get when you ask networking specific
-> questions and don't CC: netdev :-/
+> ..there's already detection of successful smashing, so working around
+> not having /proc/slabinfo is as simple as putting the initial smash in a
+> loop. I can probably improve my odds of success to nearly 100% by
+> pre-allocating a ton of objects all at once to get my own private slab
+> page and tidy adjoining allocations. I'll only fail if someone does a
+> simultaneous allocation between my target objects or I happen to
+> straddle slab pages.
 > 
 
-Thank you for CC.
+For this particular exploit, the allocation and triggering of the
+vulnerability were in separate stages, so that's the case, but other
+exploits might have additional constraints.  For example, there is a
+public exploit for a two-byte SLUB overflow that relies on a partial
+overwrite into a free chunk; exploitation of vulnerabilities similar to
+this may be significantly hindered by the lack of availability of this
+interface.  Still other issues may only get one shot at exploitation
+without needing to clean up corrupted heap state to avoid panicking the
+kernel.  In short, every exploit is different, and exposure
+of /proc/slabinfo may be the thing that puts some more difficult cases
+within reach.
 
-> There is this thing called netlink, you can listen for arbitrary
-> network state change events on a socket, and get the link state
-> notifications you are looking for.  It's in use by many real
-> applications like NetworkManager and co.
+> And once an exploit writer has figured that out once, everyone else just
+> copies it (like they've copied the slabinfo technique). At which point,
+> we might as well make the file more permissive again.. 
+> 
 
-That really looks like what I'm looking for. I was already wondering 
-where NetworkManager gets the link state changes from, but I just 
-expected it to poll. So now I'll read a bit of documentation and 
-hopefully get it work.
+This may be true to some extent, but kernel vulnerabilities tend to be
+somewhat varied in terms of exploitation constraints, so I'm not
+convinced a general technique would apply to enough cases to render this
+change completely pointless.
 
-Thanks to everyone,
+Many security features, for example NX enforcement, have not proven to
+be especially significant in completely mitigating exploitation of
+userland memory corruption vulnerabilities by themselves, given the
+advent of code-reuse exploitation techniques.  They have also come at
+the cost of breaking some applications.  However, the reason we don't
+just turn them all off is because they provide SOME hurdle, however
+small, and given enough incremental improvements, we eventually get to
+the point where things are actually hard.
 
-Nico
+> > > On the other hand, I'm not convinced the contents of this file are of
+> > > much use to people without admin access.
+> > > 
+> > 
+> > Exactly.  We might as well do everything we can to make attackers' lives
+> > more difficult, especially when the cost is so low.
+> 
+> There are thousands of attackers and millions of users. Most of those
+> millions are on single-user systems with no local attackers. For every
+> attacker's life we make trivially more difficult, we're also making a
+> few real user's lives more difficult. It's not obvious that this is a
+> good trade-off.
+> 
+
+I appreciate your input on this, you've made very reasonable points.
+I'm just not convinced that those few real users are being substantially
+inconvenienced, even if there's only a small benefit for the larger
+population of users who are at risk for attacks.  Perhaps others could
+contribute their opinions to the discussion.
+
+-Dan
+
+> -- 
+> Mathematics is the supreme nostalgia of our time.
+
+
