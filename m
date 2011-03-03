@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1CCIHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:07:55 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43132 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab1CCIHx (ORCPT
+	id S1752756Ab1CCIMB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:12:01 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39338 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab1CCIMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:07:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AY/vycm0Ik4fwQ+1llLCJWQVes1PPzNdOw8o36YSW/4HPdJ/jH0YN8LKAwlI7RiMuo
-         NdeAKHxHV/HBhUgBM6QKlog1Q88QKoPZIb1DuL3QlgaXXWIb+tmNHZ0McQ/RZEVoZBYD
-         rTXswhlZyYHu7VTNZy+A7VULfDE4ZDQhU6nY0=
-Date: Thu, 3 Mar 2011 00:07:47 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>,
-        =?iso-8859-1?Q?St=E9phane?= Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: Do not create input devices for feature reports
-Message-ID: <20110303080747.GB29929@core.coreip.homeip.net>
-References: <1298572259-18173-1-git-send-email-rydberg@euromail.se>
- <AANLkTi=VfSbbV5xwpacC+8yDUfjR3-S8OW47YPvtZwFX@mail.gmail.com>
- <20110224204300.GA2423@polaris.bitmath.org>
- <AANLkTi=YBYrgf66Md_G2Cas7t__BDD2nozvidYDj0p9W@mail.gmail.com>
- <20110225171911.GA22592@polaris.bitmath.org>
- <20110301175423.GC27560@core.coreip.homeip.net>
- <20110302150227.GA1973@polaris.bitmath.org>
+	Thu, 3 Mar 2011 03:12:00 -0500
+Date: Thu, 3 Mar 2011 09:11:56 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Jinqiu <crindy646@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [patch] Fix bug #13853: dereference pointer 'dev' before null
+ check
+Message-ID: <20110303081156.GA14163@pengutronix.de>
+References: <4D6EFAE5.4000400@gmail.com>
+ <4D6F01DA.3040307@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
 Content-Disposition: inline
-In-Reply-To: <20110302150227.GA1973@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D6F01DA.3040307@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 04:02:27PM +0100, Henrik Rydberg wrote:
-> Hi Dmitry,
-> 
-> > > For output devices, the only supported case is EV_LED, which passes
-> > > events to the input device. It is probably assumed that
-> > > HID_QUIRK_MULTI_INPUT is false for those devices. Jiri?
-> > > 
-> > 
-> > I am probably late to the party fut the above is not true. Here is an
-> > example of an USB keyboard (wih LEDs) that is split into two:
-> > 
-> > I: Bus=0003 Vendor=046d Product=c30e Version=0110
-> > N: Name="Logitech HID compliant keyboard"
-> > P: Phys=usb-0000:00:1d.0-1.2/input0
-> > S:
-> > Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.0/input/input3
-> > U: Uniq=
-> > H: Handlers=sysrq kbd event3
-> > B: PROP=0
-> > B: EV=120013
-> > B: KEY=1000000000007 ff800000000007ff febeffdff3cfffff fffffffffffffffe
-> > B: MSC=10
-> > B: LED=7
-> > 
-> > I: Bus=0003 Vendor=046d Product=c30e Version=0110
-> > N: Name="Logitech HID compliant keyboard"
-> > P: Phys=usb-0000:00:1d.0-1.2/input1
-> > S:
-> > Sysfs=/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.2/2-1.2:1.1/input/input4
-> > U: Uniq=
-> > H: Handlers=kbd event4
-> > B: PROP=0
-> > B: EV=13
-> > B: KEY=fff ffffffffffffffff 2000000 387ad800d001 1e000000000000 0
-> > B: MSC=10
-> > 
-> > This was done, most likely, because Logitech decided to reuse usage codes
-> > for different keys.
-> 
-> This looks like different interfaces though, which should be fine. It
-> is only in the odd case of mixed input and output reports on the same
-> interface that the MULTI_INPUT quirk would ever have any strange
-> effect.
-> 
 
-Gah, when I looked at it before posting I could swore they were on the
-same interface. OK, just ignore me...
+--5vNYLRcllDrimb99
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+Hi,
 
--- 
-Dmitry
+> Don't ever mention "bug #13853", because this number makes no sense
+> for everyone except you. A proper subject may be:
+>=20
+> [PATCH] ariadne: fix possible null dereference.
+
+I agree for the subject line. Still, in the body or maybe after the "---" I=
+'d
+think it makes sense, so it is known there is a bugzilla entry to close? Al=
+so,
+using search engines, one will be able to dig up the patch.
+
+> And please send your patches to proper maintainers and mailing list,
+> David Miller and netdev@vger.kernel.org in particular.
+
+Yup. Using scripts/get_maintainers.pl is the way to go here.
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--5vNYLRcllDrimb99
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk1vTUwACgkQD27XaX1/VRtL8QCbBLdYFJWdScq4NH5wfa08kOIP
+IW8Anj/zjrh2eSGxHpnT18ces1Z3fUdl
+=UV2v
+-----END PGP SIGNATURE-----
+
+--5vNYLRcllDrimb99--
