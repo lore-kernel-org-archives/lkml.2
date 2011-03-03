@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758829Ab1CCVy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:54:26 -0500
-Received: from exprod7og119.obsmtp.com ([64.18.2.16]:33490 "EHLO
-	exprod7og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab1CCVyY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:54:24 -0500
-Message-ID: <4D700A5B.2000807@genband.com>
-Date: Thu, 03 Mar 2011 15:38:35 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1758916Ab1CCV6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:58:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9103 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758263Ab1CCV6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 16:58:45 -0500
+Message-ID: <4D700F09.9000002@redhat.com>
+Date: Thu, 03 Mar 2011 16:58:33 -0500
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Nico_Sch=FCmann?= <dev@nico22.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Network link detection
-References: <20110303193006.GA29129@svh.nico22.de>
-In-Reply-To: <20110303193006.GA29129@svh.nico22.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 03 Mar 2011 21:38:36.0361 (UTC) FILETIME=[5A2CAB90:01CBD9EB]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17990.002
-X-TM-AS-Result: No--9.325400-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+CC: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+ boot
+References: <20110227172052.GB2474@nik-comp.lan> <4D6BA85B.7080908@redhat.com> <20110228143247.GE29840@pcnci.linuxbox.cz> <4D6BBC84.6020408@redhat.com> <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com> <20110303070652.GG29840@pcnci.linuxbox.cz> <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan>
+In-Reply-To: <20110303210647.GA27691@nik-comp.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 01:30 PM, Nico Schümann wrote:
-> Dear kernel developers,
-> 
-> currently I'm looking for a way to find out whether a network link went 
-> down or up. Of course there is mii-tool, which can watch devices, too.
-> 
-> Unfortunately, I was not able to find out a way to be notified about 
-> link status changes asynchronously. Is there a way? I'm looking for 
-> something like "inotify for link states".
+On 03/03/2011 04:06 PM, Nikola Ciprich wrote:
+>> What is the exact kernel version you are using in the guest.
+>>      
+> It's latest centos (2.6.18-194.32.1.el5), so I guess there are a lot
+> of fixes, but it's possible the kvm-clock is broken in it.
+> I can't influence what kernel is used there (at least not on customer's
+> guests), but I guess asking for adding clocksource kernel parameter is
+> not problem.
+>
+>    
 
-You might look at whether you could write a kernel module to register
-for NETDEV_CHANGE notifications and pass that back to userspace.
+That sounds like a kernel which will be vulnerable to broken KVM clock 
+on 32-bit.  There's a kernel side fix that is needed, but why the server 
+side change triggers the problem needs more investigation.
 
-Chris
-
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+Zach
