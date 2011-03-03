@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab1CCQdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 11:33:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:52063 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758286Ab1CCQd3 (ORCPT
+	id S1758333Ab1CCQgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 11:36:18 -0500
+Received: from webbox687.server-home.net ([195.149.74.151]:36302 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab1CCQgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 11:33:29 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-Subject: Re: [PATCH, v8 1/3] hrtimer: introduce effective timer slack
-Date: Thu, 3 Mar 2011 17:32:28 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <1299161947-9903-1-git-send-email-kirill@shutemov.name> <1299161947-9903-2-git-send-email-kirill@shutemov.name>
-In-Reply-To: <1299161947-9903-2-git-send-email-kirill@shutemov.name>
+	Thu, 3 Mar 2011 11:36:16 -0500
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC] [PATCH 5/10] Generic Watchdog Timer Driver
+Date: Thu, 3 Mar 2011 17:36:13 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; x86_64; ; )
+Cc: Wim Van Sebroeck <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <20110223204330.GA7417@infomag.iguana.be> <20110303103814.GA3790@infomag.iguana.be> <20110303125317.GA23770@sirena.org.uk>
+In-Reply-To: <20110303125317.GA23770@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103031732.28964.arnd@arndb.de>
-X-Provags-ID: V02:K0:zlkwj3X77AJ50amjuUx+dQvLt7inAVIiYFe+CQnn9SB
- H9S8Q6KEsvzVn+NPsc/oP7PPiBwP8DRqioinVKT4GingS4GxP0
- zINgh0iR0GJwaUrV5LeqdcyuYxjvPFXW6u6zl/I/38InjLnHPe
- 4iHutevzzwIAF+CfOlVlK2QTfujZ/wWvasVF32eh4PZB/fxw+m
- H8FFzgTTFMQM342HJqVag==
+Message-Id: <201103031736.14560.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 March 2011, Kirill A. Shutsemov wrote:
-> task_get_effective_timer_slack() returns timer slack value to be used
-> to configure per-task timers. It can be equal or higher than task's
-> timer slack value.
+On Thursday 03 March 2011, 13:53:19 Mark Brown wrote:
+> On Thu, Mar 03, 2011 at 11:38:14AM +0100, Wim Van Sebroeck wrote:
 > 
-> For now task_get_effective_timer_slack() returns timer_slack_ns of the
-> task. Timer slack cgroup controller will implement a bit more
-> sophisticated logic.
+> Reflowed into 80 columns.
+> 
+> > 2) Is there a real need for having 500ms or 1500ms? why would 1 or 2
+> > seconds not be OK? (which are allready small timeouts for userspace
+> > anyway...)
+> 
+> Yes, in embedded cases.  There it's much easier to have good control
+> over userspace such that you can meet the scheduling requirements.
 
-Some time ago, there was a discussion about a method for automatically
-determining timer slack values, and I think nobody ever implemented it.
+Embedded devices are also the target why I'm requesting this.
 
-The idea was to penalize tasks that have timers expiring a lot, typically
-a sign of programs that were not written with power consumption in mind.
-
-I think that could be nicely combined with your patch. Instead of setting
-the effective timer slack for the entire control group, you  could
-set a target value that is applied only to tasks that have their timers
-expire frequently. When a timer expires for a task, you increase the
-effective slack up to the maximum, and when you set up a timer, you
-decrease it again. The amount by which the effective slack gets changed
-can depend on how long ago the last timer expired.
-
-Does this make sense to you?
-
-	Arnd
+Regards,
+Alexander
