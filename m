@@ -1,66 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751271Ab1CCFRQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 00:17:16 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:47343 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750769Ab1CCFRO (ORCPT
+	id S1752640Ab1CCFRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 00:17:37 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48063 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750769Ab1CCFRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 00:17:14 -0500
-From: Pratyush Anand <pratyush.anand@st.com>
-To: <akpm@linux-foundation.org>
-Cc: <rdunlap@xenotime.net>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <gregkh@suse.de>, <jbarnes@virtuousgeek.org>, <viresh.kumar@st.com>,
-        <shiraz.hashim@st.com>, Pratyush Anand <pratyush.anand@st.com>
-Subject: [PATCH] ST SPEAr: PCIe Gadget: Documentation for support of multiple device
-Date: Thu, 3 Mar 2011 10:46:52 +0530
-Message-ID: <1299129412-9632-1-git-send-email-pratyush.anand@st.com>
-X-Mailer: git-send-email 1.6.0.2
+	Thu, 3 Mar 2011 00:17:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20110303032454.GI22723@ZenIV.linux.org.uk>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 2 Mar 2011 21:17:15 -0800
+Message-ID: <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Directory naming scheme for multiple PCIe device has been mentioned.
+On Wed, Mar 2, 2011 at 7:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Surprisingly, the results are *NOT* identical wrt fstat(); for most of
+> the filesystems we will get 0 in both cases (as expected), but some will
+> leave 1 in buf2.st_nlink.
 
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
----
- .../ABI/testing/configfs-spear-pcie-gadget         |    5 +++--
- Documentation/misc-devices/spear-pcie-gadget.txt   |    3 ++-
- 2 files changed, 5 insertions(+), 3 deletions(-)
+Why do we care? Some filesystems don't support i_nlink at all, so it's
+always 1. Others won't do the real delete until later (nfs
+sillyrename), so returning 0 would be wrong and insane.
 
-diff --git a/Documentation/ABI/testing/configfs-spear-pcie-gadget b/Documentation/ABI/testing/configfs-spear-pcie-gadget
-index 29593d0..7c02b32 100644
---- a/Documentation/ABI/testing/configfs-spear-pcie-gadget
-+++ b/Documentation/ABI/testing/configfs-spear-pcie-gadget
-@@ -12,8 +12,9 @@ Description:
- 	Nodes are only visible when configfs is mounted. To mount configfs
- 	in /config directory use:
- 	# mount -t configfs none /config/
--
--	/config/pcie-gadget/
-+	
-+	For nth PCIe Device Controller
-+	/config/pcie-gadget.n/
- 		link ... used to enable ltssm and read its status.
- 		int_type ...used to configure and read type of supported
- 			interrupt
-diff --git a/Documentation/misc-devices/spear-pcie-gadget.txt b/Documentation/misc-devices/spear-pcie-gadget.txt
-index 7b86b80..02c13ef 100644
---- a/Documentation/misc-devices/spear-pcie-gadget.txt
-+++ b/Documentation/misc-devices/spear-pcie-gadget.txt
-@@ -66,7 +66,8 @@ Node programming example
- Program all PCIe registers in such a way that when this device is connected
- to the PCIe host, then host sees this device as 1MB RAM.
- #mount -t configfs none /Config
--# cd /config/pcie_gadget/
-+For nth PCIe Device Controller
-+# cd /config/pcie_gadget.n/
- Now you have all the nodes in this directory.
- program vendor id as 0x104a
- # echo 104A >> vendor_id
--- 
-1.6.0.2
+So the fact is, expecting 0,0 seems to be an incorrect expectation,
+and I don't understand why you would really care. Does it matter?
 
+                        Linus
