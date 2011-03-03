@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab1CCCFq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 21:05:46 -0500
-Received: from ozlabs.org ([203.10.76.45]:46297 "EHLO ozlabs.org"
+	id S1757571Ab1CCCJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 21:09:25 -0500
+Received: from mout.perfora.net ([74.208.4.195]:55741 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513Ab1CCCFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 21:05:45 -0500
-Date: Thu, 3 Mar 2011 13:05:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-03-02-16-52 uploaded
-Message-Id: <20110303130538.3e99f952.sfr@canb.auug.org.au>
-In-Reply-To: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
-References: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__3_Mar_2011_13_05_38_+1100_HKT7vQaDy4Tl0xod"
+	id S1757320Ab1CCCJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 21:09:24 -0500
+From: Stephen Wilson <wilsons@start.ca>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org, Stephen Wilson <wilsons@start.ca>
+Subject: [PATCH] Enable writing to /proc/PID/mem.
+Date: Wed,  2 Mar 2011 21:07:54 -0500
+Message-Id: <1299118074-13342-1-git-send-email-wilsons@start.ca>
+X-Mailer: git-send-email 1.7.3.5
+X-Provags-ID: V02:K0:E8LRVyaXk9RoiMVl68RFgXJ1oiDmF7lqcoAbHYr2j4B
+ 75ogtQeZMGQJb7FEnDLHCNPMwJpdCjRa6+lUTFkHfapLGd5Bm+
+ Yhg8PFhQvhYSAqyvO5apbRUPFYl/TPkOREBix/C1q9mCos0HI4
+ ub1/4SScYRb1Ar6R0R4JXl6PFOZf24chxeSwvnz70U7jFo/WXh
+ mo4QbcZreGz1kaiZqarCrrNKU8wH9xLn3VycXmgzrQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_Mar_2011_13_05_38_+1100_HKT7vQaDy4Tl0xod
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For a long time /proc/PID/mem has provided a read-only interface, at least since
+2.4.0.  However, a write capability has existed "forever" in tree via the
+function mem_write, disabled with an #ifdef along with the comment "this is a
+security hazard".  Charles Wright, back in 2006, gave some history on the
+subject:
 
-Hi Andrew,
+    http://lkml.org/lkml/2006/3/10/224
 
-On Wed, 02 Mar 2011 16:52:55 -0800 akpm@linux-foundation.org wrote:
->
-> The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
->=20
->    http://userweb.kernel.org/~akpm/mmotm/
+Later, in commit 638fa202c, Roland McGrath updated mem_write to call
+check_mem_permission which ensures an identical security policy for
+/proc/PID/mem as for ptrace().  IOW, the proc interface provides a simpler, more
+efficient, but otherwise equivalent mechanism for probing a processes memory as
+available via ptrace.
 
-If you create your linux-next.patch using kapm-start..kapm-end in the
-linux-next tree, you will save about 8000+ lines of patch and you won't
-need "next-remove-localversion.patch" any more.  I am keeping those
-references up to date each day.
+There is no longer a security hazard and the world can safely use read/write
+instead of ptrace PEEK/POKE's.  Remove the #ifdef.
 
-BTW, To keep "git am" happy:
+Signed-off-by: Stephen Wilson <wilsons@start.ca>
+---
+ fs/proc/base.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/broken-out/memcg-keep-only-one-charge-cancelling-function-fix.=
-patch
-index e081c43..42c45fc 100644
---- a/broken-out/memcg-keep-only-one-charge-cancelling-function-fix.patch
-+++ b/broken-out/memcg-keep-only-one-charge-cancelling-function-fix.patch
-@@ -1,3 +1,4 @@
-+From: Johannes Weiner <hannes@cmpxchg.org>
-=20
- Keep the underscore-version of the charge cancelling function which took a
- page count, rather than silently changing the semantics of the
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 9d096e8..70fc4db 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -829,10 +829,6 @@ out_no_task:
+ 	return ret;
+ }
+ 
+-#define mem_write NULL
+-
+-#ifndef mem_write
+-/* This is a security hazard */
+ static ssize_t mem_write(struct file * file, const char __user *buf,
+ 			 size_t count, loff_t *ppos)
+ {
+@@ -880,7 +876,6 @@ out:
+ out_no_task:
+ 	return copied;
+ }
+-#endif
+ 
+ loff_t mem_lseek(struct file *file, loff_t offset, int orig)
+ {
+-- 
+1.7.3.5
 
-Cheers,
-Stephen Rothwell
-
---Signature=_Thu__3_Mar_2011_13_05_38_+1100_HKT7vQaDy4Tl0xod
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNbvdyAAoJEDMEi1NhKgbsJk0H/j24InuPjfO0oNfA+YKrcEzf
-7oFKURktGEYMc4muf6y7hmEvxl8q0CODb6X+uChRfrUFB0GTVgOpHUqtePUTNNNf
-5boLVW6utxeueNTYWPpf3Mo4LAdpkqlmmQ1i1tc8RMtkWKJRdKYejFV0f1LPPQzJ
-iq9qfOOZs0aI4rxh4cRhYCPmipVA2fY2G+POq4FYPdx00mi9PahmpFtGocHXQWS+
-ghqybanFtgVeMI/iKHha74tldAXs5AcNay3xS/VKvBF551TrOQr3BxrISiGjIyK4
-9sBAYk2/5xwLOxt39FHpO7PbdtYjB6Uuppq+yGhIdN4+71xfDxKiXvtO80+04tw=
-=gUrx
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_Mar_2011_13_05_38_+1100_HKT7vQaDy4Tl0xod--
