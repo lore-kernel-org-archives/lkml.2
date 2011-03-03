@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab1CCS4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 13:56:36 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:57010 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757224Ab1CCS4f (ORCPT
+	id S1758675Ab1CCS4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 13:56:38 -0500
+Received: from usmamail.tilera.com ([206.83.70.70]:46075 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758621Ab1CCS4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 13:56:35 -0500
-Date: Thu, 3 Mar 2011 11:56:32 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: linux-kernel@vger.kernel.org, "'Ewe, Kok Howg'" <kok.howg.ewe@intel.com>,
-        "'Lai, Mee Sim'" <mee.sim.lai@intel.com>,
-        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
-Subject: Re: About GPIO interrupt function with sysfs
-Message-ID: <20110303185632.GL22940@angua.secretlab.ca>
-References: <F5323EE7947C4C1CB0868F843FB4F917@hacdom.okisemi.com>
- <AANLkTim4z7vfyNceLYZhGzpYaECeSfLOYjzEhT9JFvJH@mail.gmail.com>
- <BF5CB373A5A948A2976AE727EA3F6B70@hacdom.okisemi.com>
+	Thu, 3 Mar 2011 13:56:37 -0500
+Message-ID: <4D6FE462.4080002@tilera.com>
+Date: Thu, 3 Mar 2011 13:56:34 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.14) Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BF5CB373A5A948A2976AE727EA3F6B70@hacdom.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Miller <davem@davemloft.net>
+CC: <a.p.zijlstra@chello.nl>, <torvalds@linux-foundation.org>,
+        <aarcange@redhat.com>, <tglx@linutronix.de>, <riel@redhat.com>,
+        <mingo@elte.hu>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <linux-mm@kvack.org>, <benh@kernel.crashing.org>,
+        <hugh.dickins@tiscali.co.uk>, <mel@csn.ul.ie>, <npiggin@kernel.dk>,
+        <rmk@arm.linux.org.uk>, <schwidefsky@de.ibm.com>
+Subject: Re: [RFC][PATCH 2/6] mm: Change flush_tlb_range() to take an mm_struct
+References: <1299102027.1310.39.camel@laptop>	<20110302.134735.260066220.davem@davemloft.net>	<4D6FCE5D.4030904@tilera.com> <20110303.104542.104052570.davem@davemloft.net>
+In-Reply-To: <20110303.104542.104052570.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 03:38:13PM +0900, Tomoya MORINAGA wrote:
-> Hi Grant,
-> 
-> On Friday, February 18, 2011 9:43 AM, Grant Likely wrote:
-> > > Can our GPIO driver (pch_gpio) have interrupt function?
-> > 
-> > yes.
-> Need your help.
-> 
-> I try to add interrupt function to GPIO driver of Intel EG20T PCH(pch_gpio.c).
-> 
-> However, executing "echo xxx > export", there is not "edge" file in /sys/class/gpio/gpioxxx/.
-> 
-> Seeing source code in gpio_export@gpiolib.c, like below
-> 
-> int gpio_export(unsigned gpio, bool direction_may_change)
-> {
-> snip...
-> 
-> 	if (!status && gpio_to_irq(gpio) >= 0
-> 			&& (direction_may_change
-> 				|| !test_bit(FLAG_IS_OUT,
-> 					&desc->flags))) {
-> 		status = device_create_file(dev,
-> 				&dev_attr_edge);
-> 		printk("%s:device_create_file!!! status=0x%x\n", __func__, status);
-> 	}
-> 
-> snip...
-> }
+On 3/3/2011 1:45 PM, David Miller wrote:
+>> I'm finding it hard to understand how the Sparc code handles icache
+>> coherence.  It seems that the Spitfire MMU is the interesting one, but the
+>> hard case seems to be when a process migrates around to various cores
+>> during execution (thus leaving incoherent icache lines everywhere), and the
+>> page is then freed and re-used for different executable code.  I'd think
+>> that there would have to be xcall IPIs to flush all the cpus' icaches, or
+>> to flush every core in the cpu_vm_mask plus do something at context switch,
+>> but I don't see any of that.  No doubt I'm missing something :-)
+> flush_dcache_page() remembers the cpu that wrote to the page (in the
+> page flags), and cross-calls to that specific cpu.
+>
+> It is only that cpu which must flush his I-cache, since all other cpus
+> saw the write on the bus and updated their I-cache lines as a result.
+>
+> See, in the sparc64 case, the incoherency issue is purely local to the
+> store.  The problem case is specifically the local I-cache not seeing
+> local writes, everything else is fine.  CPU I-caches see writes done
+> by other cpus, just not those done by the local cpu.
 
-Hmmm, I haven't looked at that code yet.  I didn't realize that the
-irq data was exported to userspace (ignore my last email).
+Thanks, that makes sense.  Our architecture has no bus to snoop, so we
+couldn't take advantage of that approach.
 
-> 
-> The above "device_create_file(dev, &dev_attr_edge);" is not executed.
-> 
-> Seeing gpio_to_irq@arch/x86/include/asm/gpio.h, like below.
-> 
-> static inline int gpio_to_irq(unsigned int gpio)
-> {
-> 	return -ENOSYS;
-> }
-> 
-> Thus,  device_create_file for "edge" is never executed.
-> 
-> Could you tell me how to create "edge" file ?
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-I don't know.  I'll need to dig into that code before I can answer.  I
-suggest digging into it yourself to figure out the answer as I cannot
-promise that I'll get to it anytime soon.
-
-g.
