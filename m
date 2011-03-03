@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab1CCIXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:23:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10245 "EHLO mga02.intel.com"
+	id S1757858Ab1CCIXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:23:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:13732 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754035Ab1CCIR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754085Ab1CCIR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Mar 2011 03:17:56 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
-   d="scan'208";a="715563052"
-Message-Id: <20110303074949.543938784@intel.com>
+   d="scan'208";a="608559341"
+Message-Id: <20110303074948.803361297@intel.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 Mar 2011 14:45:12 +0800
+Date: Thu, 03 Mar 2011 14:45:06 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -32,50 +32,41 @@ CC: Balbir Singh <balbir@linux.vnet.ibm.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/27] btrfs: wait on too many nr_async_bios
+Subject: [PATCH 01/27] writeback: add bdi_dirty_limit() kernel-doc
 References: <20110303064505.718671603@intel.com>
-Content-Disposition: inline; filename=btrfs-nr_async_bios-wait.patch
+Content-Disposition: inline; filename=writeback-task_dirty_limit-comment.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tests show that btrfs is repeatedly moving _all_ PG_dirty pages into
-PG_writeback state. It's desirable to have some limit on the number of
-writeback pages.
+Clarify the bdi_dirty_limit() comment.
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/btrfs/disk-io.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ mm/page-writeback.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-before patch:
-	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-08-21-30/vmstat-dirty-300.png
-
-after patch:
-	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-08-21-14/vmstat-dirty-300.png
-
---- linux-next.orig/fs/btrfs/disk-io.c	2011-03-03 14:03:39.000000000 +0800
-+++ linux-next/fs/btrfs/disk-io.c	2011-03-03 14:03:40.000000000 +0800
-@@ -616,6 +616,7 @@ int btrfs_wq_submit_bio(struct btrfs_fs_
- 			extent_submit_bio_hook_t *submit_bio_done)
- {
- 	struct async_submit_bio *async;
-+	int limit;
+--- linux-next.orig/mm/page-writeback.c	2011-03-03 14:38:12.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-03-03 14:40:52.000000000 +0800
+@@ -437,10 +437,17 @@ void global_dirty_limits(unsigned long *
+ 	*pdirty = dirty;
+ }
  
- 	async = kmalloc(sizeof(*async), GFP_NOFS);
- 	if (!async)
-@@ -643,6 +644,12 @@ int btrfs_wq_submit_bio(struct btrfs_fs_
- 
- 	btrfs_queue_worker(&fs_info->workers, &async->work);
- 
-+	limit = btrfs_async_submit_limit(fs_info);
-+
-+	if (atomic_read(&fs_info->nr_async_bios) > limit)
-+		wait_event(fs_info->async_submit_wait,
-+			   (atomic_read(&fs_info->nr_async_bios) < limit));
-+
- 	while (atomic_read(&fs_info->async_submit_draining) &&
- 	      atomic_read(&fs_info->nr_async_submits)) {
- 		wait_event(fs_info->async_submit_wait,
+-/*
++/**
+  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
++ * @bdi: the backing_dev_info to query
++ * @dirty: global dirty limit in pages
++ *
++ * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
++ * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
++ * And the "limit" in the name is not seriously taken as hard limit in
++ * balance_dirty_pages().
+  *
+- * Allocate high/low dirty limits to fast/slow devices, in order to prevent
++ * It allocates high/low dirty limits to fast/slow devices, in order to prevent
+  * - starving fast devices
+  * - piling up dirty pages (that will take long time to sync) on slow devices
+  *
 
 
