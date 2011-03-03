@@ -1,137 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab1CCRdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 12:33:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758486Ab1CCRdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 12:33:07 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] KEYS: Add a key type op to permit the key description to be
- vetted
-To: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Thu, 03 Mar 2011 17:33:04 +0000
-Message-ID: <20110303173304.10414.2408.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1758571Ab1CCRir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 12:38:47 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:52279 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758464Ab1CCRip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 12:38:45 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: [PATCH] move cd1865.h to drivers/staging/tty/
+Date: Thu, 3 Mar 2011 18:38:22 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh <greg@kroah.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>
+References: <20110303180158.ea30ef45.sfr@canb.auug.org.au> <20110303092927.c06dbbf0.randy.dunlap@oracle.com>
+In-Reply-To: <20110303092927.c06dbbf0.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201103031838.22541.arnd@arndb.de>
+X-Provags-ID: V02:K0:2o5obFCUErXHyU1Tpq9Ynkounpz8Av2RL8Rm/e+ASGH
+ gpTn+CP188oAa28nccHLJj156NUJ5xM3jBTW31zFSa/K6wP7fl
+ RnTD5zV2S+TApV8H99mbSaT2+Qax3y34pK/KYdlaYgcMTb95ID
+ x35ZTGxEh5XEL3KUwvSjUyEIbent1J/8kF+vXGGE/z/ZjaM4Ch
+ fA4/IuftUMXKEI4Ba3K6g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a key type operation to permit the key type to vet the description of a new
-key that key_alloc() is about to allocate.  The operation may reject the
-description if it wishes with an error of its choosing.  If it does this, the
-key will not be allocated.
+The file is required by the specialix driver, which was
+moved to drivers/staging/.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
+On Thursday 03 March 2011 18:29:27 Randy Dunlap wrote:
+> On Thu, 3 Mar 2011 18:01:58 +1100 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20110302:
+> 
+> 
+> #include "cd1865.h"
+> =>
+> linux-next-20110303/drivers/staging/tty/specialix.c:99:20: error: cd1865.h: No such file or directory
+> 
+> This leads to 100 or so errors.
+> 
 
- Documentation/keys.txt   |    7 +++++++
- include/linux/key-type.h |    3 +++
- net/rxrpc/ar-key.c       |   19 +++++++++++++++++++
- security/keys/key.c      |    8 ++++++++
- 4 files changed, 37 insertions(+), 0 deletions(-)
+Please apply or fold this patch.
 
-diff --git a/Documentation/keys.txt b/Documentation/keys.txt
-index e4dbbdb..cf68d1f 100644
---- a/Documentation/keys.txt
-+++ b/Documentation/keys.txt
-@@ -1062,6 +1062,13 @@ The structure has a number of fields, some of which are mandatory:
-      viable.
- 
- 
-+ (*) int (*vet_description)(const char *description);
-+
-+     This optional method is called to vet a key description.  If the key type
-+     doesn't approve of the key description, it may return an error, otherwise
-+     it should return 0.
-+
-+
-  (*) int (*instantiate)(struct key *key, const void *data, size_t datalen);
- 
-      This method is called to attach a payload to a key during construction.
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index 65833d4..fc8525e8 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -41,6 +41,9 @@ struct key_type {
- 	 */
- 	size_t def_datalen;
- 
-+	/* vet a description */
-+	int (*vet_description)(const char *description);
-+
- 	/* instantiate a key of this type
- 	 * - this method should call key_payload_reserve() to determine if the
- 	 *   user's quota will hold the payload
-diff --git a/net/rxrpc/ar-key.c b/net/rxrpc/ar-key.c
-index d763793..43ea7de 100644
---- a/net/rxrpc/ar-key.c
-+++ b/net/rxrpc/ar-key.c
-@@ -25,6 +25,7 @@
- #include <keys/user-type.h>
- #include "ar-internal.h"
- 
-+static int rxrpc_vet_description_s(const char *);
- static int rxrpc_instantiate(struct key *, const void *, size_t);
- static int rxrpc_instantiate_s(struct key *, const void *, size_t);
- static void rxrpc_destroy(struct key *);
-@@ -52,6 +53,7 @@ EXPORT_SYMBOL(key_type_rxrpc);
-  */
- struct key_type key_type_rxrpc_s = {
- 	.name		= "rxrpc_s",
-+	.vet_description = rxrpc_vet_description_s,
- 	.instantiate	= rxrpc_instantiate_s,
- 	.match		= user_match,
- 	.destroy	= rxrpc_destroy_s,
-@@ -59,6 +61,23 @@ struct key_type key_type_rxrpc_s = {
- };
- 
- /*
-+ * Vet the description for an RxRPC server key
-+ */
-+static int rxrpc_vet_description_s(const char *desc)
-+{
-+	unsigned long num;
-+	char *p;
-+
-+	num = simple_strtoul(desc, &p, 10);
-+	if (*p != ':' || num > 65535)
-+		return -EINVAL;
-+	num = simple_strtoul(p + 1, &p, 10);
-+	if (*p || num < 1 || num > 255)
-+		return -EINVAL;
-+	return 0;
-+}
-+
-+/*
-  * parse an RxKAD type XDR format token
-  * - the caller guarantees we have at least 4 words
-  */
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 1c2d43d..8e315ef 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -249,6 +249,14 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 	if (!desc || !*desc)
- 		goto error;
- 
-+	if (type->vet_description) {
-+		ret = type->vet_description(desc);
-+		if (ret < 0) {
-+			key = ERR_PTR(ret);
-+			goto error;
-+		}
-+	}
-+
- 	desclen = strlen(desc) + 1;
- 	quotalen = desclen + type->def_datalen;
- 
+ drivers/char/cd1865.h       |  263 -------------------------------------------
+ drivers/staging/tty/cd1865.h |  263 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 263 insertions(+), 263 deletions(-)
 
+diff --git a/drivers/char/cd1865.h b/drivers/tty/serial/cd1865.h
+similarity index 100%
+rename from drivers/char/cd1865.h
+rename to drivers/staging/tty/cd1865.h
