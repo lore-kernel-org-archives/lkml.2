@@ -1,69 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab1CCIpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:45:17 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50440 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab1CCIpP (ORCPT
+	id S1757859Ab1CCIqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:46:54 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64636 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab1CCIqx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:45:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peppe CAVALLARO <peppe.cavallaro@st.com>
-Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Date: Thu, 3 Mar 2011 09:45:07 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Stuart MENEFY <stuart.menefy@st.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com> <alpine.LFD.2.00.1103011630080.2701@localhost6.localdomain6> <4D6E7FD7.1060408@st.com>
-In-Reply-To: <4D6E7FD7.1060408@st.com>
+	Thu, 3 Mar 2011 03:46:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=d5UPZW1N+SacgMo5EW7EYXjWOA2kFbUXnPk3BS8p41xih/p8ZczN7Z+S3ked3T5NFz
+         qeUrTGeyYeye3D1NonTrvPLUrJAr0URWKU0Cus+B0RQenDWdtK5bNtm+UizeHleECvkO
+         5mctRyk5ilO2iDzLMFkKwQ3axpS0dQFbNrSBs=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103030945.07486.arnd@arndb.de>
-X-Provags-ID: V02:K0:omhT1mGGQgjoc4bALXNA56KhU2YEcZoKXillQT7Y4tR
- RtOhQ+rutfUtgczX0AWSLVcIn6FKbd68rLgqML6uestunirPQM
- JY66QEUkt4sujT9YQeLCVCGsUxkdiNonBGZNAtYVS6WJHVXkV1
- O03yX73dK7Hznq+xorUWfGYJxTV4aMCioAY4J3lBCrMom1qY0w
- Tj/EG7960HX8caVvSmfgA==
+In-Reply-To: <1299137483-10975-1-git-send-email-ksumrall@android.com>
+References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
+Date: Thu, 3 Mar 2011 16:46:51 +0800
+Message-ID: <AANLkTine=Om_oTdUH9RT9J=QEtvwZnP5uMrVxVXf0gYw@mail.gmail.com>
+Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
+ remount filesystems ro
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Ken Sumrall <ksumrall@android.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
+        Eric Paris <eparis@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 March 2011, Peppe CAVALLARO wrote:
-> At any rate, I am happy to use the stmmac as experimental
-> driver to do this kind tests.
-> Indeed, in the past, on old Kernel (IIRC 2.6.23), I tried to use
-> the kernel timers but I removed the code from it because
-> I had noticed packets loss and a strange phenomenon with cyclesoak
-> (that showed broken sysload % during the heavy network activities).
-> 
-> Let me know how to proceed:
-> 
-> 1) experiment with stmmac and hrtimer for handling rx/tx?
-> 2) rework the patches for the Generic Timer Infra?
+On Thu, Mar 3, 2011 at 3:31 PM, Ken Sumrall <ksumrall@android.com> wrote:
+> Add 4 new commands to the reboot system call, that do the same thing as the
+> RESTART, HALT, POWER_OFF, and RESTART2 commands, but also remount writable
+> filesystems as read-only just before doing what the command normally does.
+> Now that Android is using EXT4, and since we don't have a standard init
+> setup to unmount filesystems before rebooting, this allows the system to
+> reboot with clean filesystems, and also improves boot time as the journal
+> does not need to be replayed when mounting the filesystem.
+>
+> Signed-off-by: Ken Sumrall <ksumrall@android.com>
+> ---
+>  fs/super.c             |    9 +++++++++
+>  include/linux/fs.h     |    1 +
+>  include/linux/reboot.h |    4 ++++
+>  kernel/sys.c           |   12 ++++++++++++
+>  4 files changed, 26 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/super.c b/fs/super.c
+> index 8819e3a..3f39a16 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -638,6 +638,15 @@ void emergency_remount(void)
+>        }
+>  }
+>
+> +void emergency_remount_synchronous(void)
+> +{
+> +       struct work_struct *work;
+> +
+> +       work = kmalloc(sizeof(*work), GFP_ATOMIC);
+> +       if (work)
+> +               do_emergency_remount(work);
 
-I'd suggest doing the first. I'm surprised that using an unrelated
-timer for processing interrupts even helps you on stmmac.
+work is not needed here? just call do_mergency_remount()
 
-The timers that you'd normally use for rx interrupt mitigation
-are not periodic timers but are started when a packet arrives
-from the outside.
+> +}
+> +
+>  /*
+>  * Unnamed block devices are dummy devices used by virtual
+>  * filesystems which don't use real block-devices.  -- jrs
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 63d069b..e48ef0d 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2110,6 +2110,7 @@ extern int generic_write_sync(struct file *file, loff_t pos, loff_t count);
+>  extern void sync_supers(void);
+>  extern void emergency_sync(void);
+>  extern void emergency_remount(void);
+> +extern void emergency_remount_synchronous(void);
+>  #ifdef CONFIG_BLOCK
+>  extern sector_t bmap(struct inode *, sector_t);
+>  #endif
+> diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+> index 3005d5a..24b185d 100644
+> --- a/include/linux/reboot.h
+> +++ b/include/linux/reboot.h
+> @@ -26,11 +26,15 @@
+>  */
+>
+>  #define        LINUX_REBOOT_CMD_RESTART        0x01234567
+> +#define        LINUX_REBOOT_CMD_RMNT_RESTART   0x12345670
+>  #define        LINUX_REBOOT_CMD_HALT           0xCDEF0123
+> +#define        LINUX_REBOOT_CMD_RMNT_HALT      0xDEF0123C
+>  #define        LINUX_REBOOT_CMD_CAD_ON         0x89ABCDEF
+>  #define        LINUX_REBOOT_CMD_CAD_OFF        0x00000000
+>  #define        LINUX_REBOOT_CMD_POWER_OFF      0x4321FEDC
+> +#define        LINUX_REBOOT_CMD_RMNT_POWER_OFF 0x321FEDC4
+>  #define        LINUX_REBOOT_CMD_RESTART2       0xA1B2C3D4
+> +#define        LINUX_REBOOT_CMD_RMNT_RESTART2  0x1B2C3D4A
+>  #define        LINUX_REBOOT_CMD_SW_SUSPEND     0xD000FCE2
+>  #define        LINUX_REBOOT_CMD_KEXEC          0x45584543
+>
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 7f5a0cd..3f474e6 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -392,6 +392,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>        mutex_lock(&reboot_mutex);
+>        switch (cmd) {
+>        case LINUX_REBOOT_CMD_RESTART:
+> +       case LINUX_REBOOT_CMD_RMNT_RESTART:
+> +               if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART)
+> +                       emergency_remount_synchronous();
+>                kernel_restart(NULL);
+>                break;
+>
+> @@ -404,22 +407,31 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>                break;
+>
+>        case LINUX_REBOOT_CMD_HALT:
+> +       case LINUX_REBOOT_CMD_RMNT_HALT:
+> +               if (cmd == LINUX_REBOOT_CMD_RMNT_HALT)
+> +                       emergency_remount_synchronous();
+>                kernel_halt();
+>                do_exit(0);
+>                panic("cannot halt");
+>
+>        case LINUX_REBOOT_CMD_POWER_OFF:
+> +       case LINUX_REBOOT_CMD_RMNT_POWER_OFF:
+> +               if (cmd == LINUX_REBOOT_CMD_RMNT_POWER_OFF)
+> +                       emergency_remount_synchronous();
+>                kernel_power_off();
+>                do_exit(0);
+>                break;
+>
+>        case LINUX_REBOOT_CMD_RESTART2:
+> +       case LINUX_REBOOT_CMD_RMNT_RESTART2:
+>                if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
+>                        ret = -EFAULT;
+>                        break;
+>                }
+>                buffer[sizeof(buffer) - 1] = '\0';
+>
+> +               if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART2)
+> +                       emergency_remount_synchronous();
+>                kernel_restart(buffer);
+>                break;
+>
+> --
+> 1.7.3.1
+>
+>
 
-Doing periodic wakeups for RX instead of just waiting for
-packets to come in should have a significant impact on power
-management on an otherwise idle system.
 
-For tx resource reclaim, a relatively slow oneshot timer (not
-even hrtimer) should be good enough, since it only needs to be
-active when there is no other way to clean up. E.g. when you
-are in napi polling mode (interrupt disabled), you know that
-stmmac_poll gets called soon, and you can also do the reclaim
-from stmmac_xmit() in order to prevent the timer from triggering
-when you are constantly transmitting.
 
-	Arnd
+-- 
+Regards
+dave
