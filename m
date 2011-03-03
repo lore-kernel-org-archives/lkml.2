@@ -1,72 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758575Ab1CCRWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 12:22:10 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46157 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758503Ab1CCRWI (ORCPT
+	id S1758588Ab1CCRWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 12:22:44 -0500
+Received: from usmamail.tilera.com ([206.83.70.70]:15996 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758503Ab1CCRWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 12:22:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ElJIELp0/xs4YEcXiXd3nKZ8saBwPjndyd0i5clfuQRBOX7QzIu7gQf6dSOQQD09Su
-         7qUqN3bb5FoGw+lOzgUCqMz4ySxCSrr4otWh8Lpx01eyycY47sFJaGFE6uyJrbAAe4nl
-         Y5GuIK7dqWV+RQOn+cdvX415ooLSAISKTNX58=
-Date: Thu, 3 Mar 2011 18:19:44 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/3] perf script: dump software events and samples from
- hardware-based profiling
-Message-ID: <20110303171940.GC1807@nowhere>
-References: <1299086960-26964-1-git-send-email-daahern@cisco.com>
- <1299086960-26964-4-git-send-email-daahern@cisco.com>
- <20110303030515.GD1946@nowhere>
- <4D6FA39A.60203@cisco.com>
+	Thu, 3 Mar 2011 12:22:41 -0500
+Message-ID: <4D6FCE5D.4030904@tilera.com>
+Date: Thu, 3 Mar 2011 12:22:37 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.14) Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6FA39A.60203@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Miller <davem@davemloft.net>
+CC: <a.p.zijlstra@chello.nl>, <torvalds@linux-foundation.org>,
+        <aarcange@redhat.com>, <tglx@linutronix.de>, <riel@redhat.com>,
+        <mingo@elte.hu>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <linux-mm@kvack.org>, <benh@kernel.crashing.org>,
+        <hugh.dickins@tiscali.co.uk>, <mel@csn.ul.ie>, <npiggin@kernel.dk>,
+        <rmk@arm.linux.org.uk>, <schwidefsky@de.ibm.com>
+Subject: Re: [RFC][PATCH 2/6] mm: Change flush_tlb_range() to take an mm_struct
+References: <20110302180258.956518392@chello.nl>	<AANLkTimhWKhHojZ-9XZGSh3OzfPhvo__Dib9VfeMWoBQ@mail.gmail.com>	<1299102027.1310.39.camel@laptop> <20110302.134735.260066220.davem@davemloft.net>
+In-Reply-To: <20110302.134735.260066220.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 07:20:10AM -0700, David Ahern wrote:
-> On 03/02/2011 08:05 PM, Frederic Weisbecker wrote:
-> > Hmm, that's a wrong way of walking through callchains. In fact it's not
-> > a classical list. node->next can be a ghost entry from a previous callchain
-> > that we kept cached in order to optimize allocations.
-> > 
-> > You need the accessors callchain_cursor_current() and callchain_cursor_advance().
-> 
-> Ok. I'll look at perf-report's callchain_append again.
+On 3/2/2011 4:47 PM, David Miller wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Wed, 02 Mar 2011 22:40:27 +0100
+>
+>> On Wed, 2011-03-02 at 11:19 -0800, Linus Torvalds wrote:
+>>> On Wed, Mar 2, 2011 at 9:59 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>>>> In order to be able to properly support architecture that want/need to
+>>>> support TLB range invalidation, we need to change the
+>>>> flush_tlb_range() argument from a vm_area_struct to an mm_struct
+>>>> because the range might very well extend past one VMA, or not have a
+>>>> VMA at all.
+>>> I really don't think this is right. The whole "drop the icache
+>>> information" thing is a total anti-optimization, since for some
+>>> architectures, the icache flush is the _big_ deal. 
+>> Right, so Tile has the I-cache flush from flush_tlb_range(), I'm not
+>> sure if that's the right thing to do, Documentation/cachetlb.txt seems
+>> to suggest doing it from update_mmu_cache() like things.
+> Sparc32 chips that require a valid TLB entry for I-cache flushes do
+> the flush from flush_cache_range() and similar.
+>
+> Sparc64 does not have the "present TLB entry" requirement (since I-cache
+> is physical), and we handle it in update_mmu_cache() but only as an
+> optimization.  This scheme works in concert with flush_dcache_page().
+>
+> Either scheme is valid, the former is best when flushing is based upon
+> virtual addresses.
+>
+> But I'll be the first to admit that the interfaces we have for doing
+> this stuff is basically nothing more than a set of hooks, with
+> assurances that the hooks will be called in specific situations.  Like
+> anything else, it's evolved over time based upon architectural needs.
 
-Yeah callchain_append() is too much a generic name for something actually
-rather specific. In fact callchain_append() adds a callchain, already
-resolved, to a histogram in order to produce that statistical tree in the end
-that you can have with perf report.
+I'm finding it hard to understand how the Sparc code handles icache
+coherence.  It seems that the Spitfire MMU is the interesting one, but the
+hard case seems to be when a process migrates around to various cores
+during execution (thus leaving incoherent icache lines everywhere), and the
+page is then freed and re-used for different executable code.  I'd think
+that there would have to be xcall IPIs to flush all the cpus' icaches, or
+to flush every core in the cpu_vm_mask plus do something at context switch,
+but I don't see any of that.  No doubt I'm missing something :-)
 
-But you don't need those statistical tree of callchains, it's only used
-by perf report for now. Instead you rather need to treat every callchains
-individually and print each of them.
+Currently on Tile I assume that we flush icaches in cpu_vm_mask at TLB
+flush time, and flush the icache on context-switch, since I'm confident I
+can reason correctly about that and prove that with this model you can
+never have stale icache data.  But the "every context-switch" is a
+nuisance, only somewhat mitigated by the fact that with 64 cores we don't
+do a lot of context-switching.
 
-So you don't even need callchain_append(). All you need in the end is
-to use perf_session__resolve_callchain() that resolves the raw struct ip_callchain
-(only made of raw ips) into a cursor (list of ips resolved into symbols and so) and
-walk through the cursor with the two accessors.
+To give some more specificity to my thinking, here's one optimization we
+could do on Tile, that would both address Peter Zijlstra's generic
+architecture in an obvious way, and also improve context switch time:
 
-Ah I forgot, you first need to use callchain_cursor_commit() in order to initialize
-the position in the cursor.
+- Add a "free time" field to struct page.  The free time field could be a
+64-bit cycle counter value, or maybe some kind of 32-bit counter that just
+increments every time we free, etc., though then we'd need to worry about
+handling wraparound.  We'd record the free time when we freed the page back
+to the buddy allocator.  Since we only care about executable page frees,
+we'd want to use a page bit to track if a given page was ever associated
+with an executable PTE, and if it wasn't, we could just record the "free
+time" as zero, for book-keeping purposes.
 
-So:
+- Keep a per-cpu "icache flush time", with the same timekeeping system as
+the page free time.  Every time we flush the whole icache on a cpu, we
+update its per-cpu timestamp.
 
-1) Resolve with perf_session__resolve_callchain()
-2) commit with callchain_cursor_commit()
-3) iterate with callchain_cursor_current(), callchain_cursor_advance()
+- When writing an executable PTE into the page table, we'd check the
+cpu_vm_mask, and any cpu that hadn't done a full icache flush since the
+page in question was previously freed would be IPI'ed and would do the
+icache flush, making it safe to start running code on the page with its new
+code.  We'd also update a per-mm "latest free" timestamp to hold the most
+recent "free time" of all the pages faulted in for that mm.
 
-Thanks.
+- When context-switching, we'd check the per-mm "latest free" timestamp,
+and if the mm held a page that was freed more recently than that cpu's
+timestamp, we'd do a full icache flush and update the per-cpu timestamp.
+
+This has several good properties:
+
+- We are unlikely to do much icache flushing, since we only do it when an
+executable page is freed back to the buddy allocator and then reused as
+executable again.
+
+- If two processes share a cpu, they don't end up having to icache flush at
+every context switch.
+
+- We never need to IPI a cpu that isn't actively involved with the process
+that is faulting in a new executable page.  (This is particularly important
+since we want to avoid disturbing "dataplane" cpus that are running
+latency-sensitive tasks.)
+
+- We don't need to worry about vma's at flush_tlb_range() time, thus making
+Peter happy :-)
+
+I'm not worrying about kernel module executable pages, since I'm happy to
+do much more heavy-weight operations for them, i.e. flush all the icaches
+on all the cores.
+
+So: does this general approach seem appropriate, or am I missing a key
+subtlety of the Sparc approach that makes this all unnecessary?
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
