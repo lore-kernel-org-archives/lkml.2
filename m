@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab1CCO7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 09:59:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31666 "EHLO mx1.redhat.com"
+	id S1758135Ab1CCPC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 10:02:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab1CCO7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 09:59:49 -0500
-Date: Thu, 3 Mar 2011 09:59:08 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/05] use proc_dointvec_minmax to check boundaries while
- needed
-Message-ID: <20110303145908.GA32154@redhat.com>
-References: <20110303135819.GA2620@darkstar>
+	id S1752886Ab1CCPC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 10:02:57 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH] blktrace: Remove blk_fill_rwbs_rq.
+References: <1299137380-4119-1-git-send-email-tm@tao.ma>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 03 Mar 2011 10:02:49 -0500
+In-Reply-To: <1299137380-4119-1-git-send-email-tm@tao.ma> (Tao Ma's message of
+	"Thu, 3 Mar 2011 15:29:40 +0800")
+Message-ID: <x49k4ggs0va.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303135819.GA2620@darkstar>
-User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 09:58:20PM +0800, Dave Young wrote:
-> proc_dointvec doesn't check extra minmax params, use proc_dointvec_minmax
-> instead of proc_dointvec for cases need boundaries check.
+Tao Ma <tm@tao.ma> writes:
 
-Is this patch needed, if you are basically changing it again in patches 3
-and 5?
+> From: Tao Ma <boyu.mt@taobao.com>
+>
+> If we enable trace events to trace block actions, We use
+> blk_fill_rwbs_rq to analyze the corresponding actions
+> in request's cmd_flags, but we only choose the minor 2 bits
+> from it, so most of other flags(e.g, REQ_SYNC) are missing.
+> For example, with a sync write we get:
+> write_test-2409  [001]   160.013869: block_rq_insert: 3,64 W 0 () 258135 + 8 [write_test]
+>
+> Since now we have integrated the flags of both bio and request,
+> it is safe to pass rq->cmd_flags directly to blk_fill_rwbs and
+> blk_fill_rwbs_rq isn't needed any more.
+>
+> With this patch, after a sync write we get:
+> write_test-2417  [000]   226.603878: block_rq_insert: 3,64 WS 0 () 258135 + 8 [write_test]
 
-Cheers,
-Don
+Looks good to me.  It looks like the limited number of flags passed
+through was simply an oversight (going back even to when the bio and
+request flags were not merged, there was still special casing for
+discard, at least).
 
-> 
-> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
-> ---
->  kernel/sysctl.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> --- linux-2.6.orig/kernel/sysctl.c	2011-03-03 10:44:53.000000000 +0800
-> +++ linux-2.6/kernel/sysctl.c	2011-03-03 11:02:43.736663258 +0800
-> @@ -374,7 +374,7 @@ static struct ctl_table kern_table[] = {
->  		.data		= &sysctl_sched_autogroup_enabled,
->  		.maxlen		= sizeof(unsigned int),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec,
-> +		.proc_handler	= proc_dointvec_minmax,
->  		.extra1		= &zero,
->  		.extra2		= &one,
->  	},
-> @@ -1204,7 +1204,7 @@ static struct ctl_table vm_table[] = {
->  		.data		= &block_dump,
->  		.maxlen		= sizeof(block_dump),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec,
-> +		.proc_handler	= proc_dointvec_minmax,
->  		.extra1		= &zero,
->  	},
->  	{
-> @@ -1212,7 +1212,7 @@ static struct ctl_table vm_table[] = {
->  		.data		= &sysctl_vfs_cache_pressure,
->  		.maxlen		= sizeof(sysctl_vfs_cache_pressure),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec,
-> +		.proc_handler	= proc_dointvec_minmax,
->  		.extra1		= &zero,
->  	},
->  #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
-> @@ -1221,7 +1221,7 @@ static struct ctl_table vm_table[] = {
->  		.data		= &sysctl_legacy_va_layout,
->  		.maxlen		= sizeof(sysctl_legacy_va_layout),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec,
-> +		.proc_handler	= proc_dointvec_minmax,
->  		.extra1		= &zero,
->  	},
->  #endif
-> @@ -1231,7 +1231,7 @@ static struct ctl_table vm_table[] = {
->  		.data		= &zone_reclaim_mode,
->  		.maxlen		= sizeof(zone_reclaim_mode),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec,
-> +		.proc_handler	= proc_dointvec_minmax,
->  		.extra1		= &zero,
->  	},
->  	{
-> @@ -1287,7 +1287,7 @@ static struct ctl_table vm_table[] = {
->  		.data		= &vdso_enabled,
->  		.maxlen		= sizeof(vdso_enabled),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_dointvec,
-> +		.proc_handler	= proc_dointvec_minmax,
->  		.extra1		= &zero,
->  	},
->  #endif
+Anywho...
+
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
