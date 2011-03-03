@@ -1,117 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab1CCIrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:47:40 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45879 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab1CCIri (ORCPT
+	id S1757954Ab1CCIsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:48:39 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:49558 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751651Ab1CCIsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:47:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Eco5Lpx+HMBTNCIWhf9yaEYPL69d+JW+PD7lQ1YhdclLzGEKQReSMcqvr2CcQtS7hN
-         skXKSrbz99g0LoD5BjwA63X6asCjrtHz8lKs5vozTH6Gi3BI4+HY9njTkPhS1CnI2+t7
-         Y6s9hL6XL3M/DLwNEz2NaLHkuODXKH1ADRCPc=
-Message-ID: <4D6F5473.2070709@gmail.com>
-Date: Thu, 03 Mar 2011 09:42:27 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Thu, 3 Mar 2011 03:48:37 -0500
+Date: Thu, 3 Mar 2011 10:48:29 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Anand Gadiyar <gadiyar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, Keshava Munegowda <keshava_mgowda@ti.com>
+Subject: Re: linux-next: manual merge of the usb tree with the omap tree
+Message-ID: <20110303084829.GB2644@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110302165755.b45124c8.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        cluster-devel@redhat.com, xfs@oss.sgi.com,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH v2] Check for immutable flag in fallocate path
-References: <4D6221B8.9040303@gmail.com>
-In-Reply-To: <4D6221B8.9040303@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110302165755.b45124c8.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+On Wed, Mar 02, 2011 at 04:57:55PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the usb tree got a conflict in
+> arch/arm/mach-omap2/board-4430sdp.c between commit
+> 1dbea0f5e23b6c647db72fa4a048cb7140625e13 ("arm: omap4: 4430sdp: drop ehci
+> support") from the omap tree and commit
+> 181b250cf53233a7a7c6d7e1e9df402506712e93 ("arm: omap: usb: create common
+> enums and structures for ehci and ohci") from the usb tree.
+> 
+> The former removed the code modified by the latter, so I did that.
 
-All fs must check for the immutable flag in their fallocate callback.
-It's possible to have a race condition in this scenario: an application
-open a file in read/write and it does something, meanwhile root set the
-immutable flag on the file, the application at that point can call
-fallocate with success. Only Ocfs2 check for the immutable flag at the
-moment.
+This can be fixed if Greg applies this patch:
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
-Patch is against 2.6.38-rc5
+commit 076bfacd5bba0f2e419474488c8f8c060c7799d8
+Author: Anand Gadiyar <gadiyar@ti.com>
+Date:   Wed Feb 16 16:47:19 2011 +0530
 
-ChangeLog
-v2: Added the check for append-only file for XFS
-v1: First draft
+    arm: omap4: 4430sdp: drop ehci support
+    
+    Most revisions of the OMAP4 Blaze/SDP platform do not have
+    the EHCI signals routed by default. The pads are routed
+    for the alternate HSI functionality instead, and explicit
+    board modifications are needed to route the signals to
+    the USB PHY on the board.
+    
+    Also, turning on the PHY connected to the EHCI port causes
+    a board reboot during bootup due to an unintended short
+    on the rails - this affects many initial revisions of the
+    board, and needs a minor board mod to fix (or as a
+    workaround, one should not attempt to power on the
+    USB PHY).
+    
+    Given that these boards need explicit board mods to even
+    get EHCI working (separate from the accidental short above),
+    we should not attempt to enable EHCI by default.
+    
+    So drop the EHCI support from the board files for the
+    Blaze/SDP platforms.
+    
+    Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+    Cc: Keshava Munegowda <keshava_mgowda@ti.com>
+    Cc: Tony Lindgren <tony@atomide.com>
+    Signed-off-by: Felipe Balbi <balbi@ti.com>
 
---- linux-2.6.38-rc5-orig/fs/ext4/extents.c	2011-02-16 04:23:45.000000000 +0100
-+++ linux-2.6.38-rc5/fs/ext4/extents.c	2011-02-21 08:43:37.000000000 +0100
-@@ -3670,6 +3670,12 @@ long ext4_fallocate(struct file *file, i
- 	 */
- 	credits = ext4_chunk_trans_blocks(inode, max_blocks);
- 	mutex_lock(&inode->i_mutex);
-+
-+	if (IS_IMMUTABLE(inode)) {
-+		mutex_unlock(&inode->i_mutex);
-+		return -EPERM;
-+	}
-+
- 	ret = inode_newsize_ok(inode, (len + offset));
- 	if (ret) {
- 		mutex_unlock(&inode->i_mutex);
---- linux-2.6.38-rc5-orig/fs/btrfs/file.c	2011-02-16 04:23:45.000000000 +0100
-+++ linux-2.6.38-rc5/fs/btrfs/file.c	2011-02-21 08:55:58.000000000 +0100
-@@ -1289,6 +1289,12 @@ static long btrfs_fallocate(struct file
- 	btrfs_wait_ordered_range(inode, alloc_start, alloc_end - alloc_start);
+diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
+index 1230121..f603f3b 100644
+--- a/arch/arm/mach-omap2/board-4430sdp.c
++++ b/arch/arm/mach-omap2/board-4430sdp.c
+@@ -44,7 +44,6 @@
+ #define ETH_KS8851_IRQ			34
+ #define ETH_KS8851_POWER_ON		48
+ #define ETH_KS8851_QUART		138
+-#define OMAP4SDP_MDM_PWR_EN_GPIO	157
+ #define OMAP4_SFH7741_SENSOR_OUTPUT_GPIO	184
+ #define OMAP4_SFH7741_ENABLE_GPIO		188
  
- 	mutex_lock(&inode->i_mutex);
-+
-+	if (IS_IMMUTABLE(inode)) {
-+		ret = -EPERM;
-+		goto out;
-+	}
-+
- 	ret = inode_newsize_ok(inode, alloc_end);
- 	if (ret)
- 		goto out;
---- linux-2.6.38-rc5-orig/fs/gfs2/file.c	2011-02-16 04:23:45.000000000 +0100
-+++ linux-2.6.38-rc5/fs/gfs2/file.c	2011-02-21 09:09:17.000000000 +0100
-@@ -797,6 +797,11 @@ static long gfs2_fallocate(struct file *
- 	if (unlikely(error))
- 		goto out_uninit;
+@@ -251,16 +250,6 @@ static void __init omap_4430sdp_init_irq(void)
+ 	gic_init_irq();
+ }
  
-+	if (IS_IMMUTABLE(inode)) {
-+		error = -EPERM;
-+		goto out_unlock;
-+	}
-+
- 	if (!gfs2_write_alloc_required(ip, offset, len))
- 		goto out_unlock;
+-static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
+-	.port_mode[0]	= OMAP_EHCI_PORT_MODE_PHY,
+-	.port_mode[1]	= OMAP_USBHS_PORT_MODE_UNUSED,
+-	.port_mode[2]	= OMAP_USBHS_PORT_MODE_UNUSED,
+-	.phy_reset	= false,
+-	.reset_gpio_port[0]  = -EINVAL,
+-	.reset_gpio_port[1]  = -EINVAL,
+-	.reset_gpio_port[2]  = -EINVAL,
+-};
+-
+ static struct omap_musb_board_data musb_board_data = {
+ 	.interface_type		= MUSB_INTERFACE_UTMI,
+ 	.mode			= MUSB_OTG,
+@@ -577,14 +566,6 @@ static void __init omap_4430sdp_init(void)
+ 	omap_serial_init();
+ 	omap4_twl6030_hsmmc_init(mmc);
  
---- ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-02-16 04:23:45.000000000 +0100
-+++ ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-03-03 09:25:32.000000000 +0100
-@@ -906,8 +906,18 @@ xfs_file_fallocate(
+-	/* Power on the ULPI PHY */
+-	status = gpio_request(OMAP4SDP_MDM_PWR_EN_GPIO, "USBB1 PHY VMDM_3V3");
+-	if (status)
+-		pr_err("%s: Could not get USBB1 PHY GPIO\n", __func__);
+-	else
+-		gpio_direction_output(OMAP4SDP_MDM_PWR_EN_GPIO, 1);
+-
+-	usbhs_init(&usbhs_bdata);
+ 	usb_musb_init(&musb_board_data);
  
- 	xfs_ilock(ip, XFS_IOLOCK_EXCL);
- 
--	if (mode & FALLOC_FL_PUNCH_HOLE)
-+	if (mode & FALLOC_FL_PUNCH_HOLE) {
- 		cmd = XFS_IOC_UNRESVSP;
-+		if (IS_APPEND(inode)) {
-+			error = -EPERM;
-+			goto out_unlock;
-+		}
-+	}
-+
-+	if (IS_IMMUTABLE(inode)) {
-+		error = -EPERM;
-+		goto out_unlock;
-+	}
- 
- 	/* check the new inode size is valid before allocating */
- 	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+ 	status = omap_ethernet_init();
+
+-- 
+balbi
