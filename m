@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab1CCITq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:19:46 -0500
-Received: from mga03.intel.com ([143.182.124.21]:22002 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755550Ab1CCIR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755465Ab1CCIR7 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Mar 2011 03:17:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:59999 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271Ab1CCIRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 03:17:55 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
-   d="scan'208";a="396816541"
-Message-Id: <20110303074950.846539981@intel.com>
+   d="scan'208";a="893290339"
+Message-Id: <20110303074949.165618203@intel.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 Mar 2011 14:45:22 +0800
+Date: Thu, 03 Mar 2011 14:45:09 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -32,192 +33,34 @@ CC: Balbir Singh <balbir@linux.vnet.ibm.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 17/27] writeback: smoothed dirty threshold and limit
+Subject: [PATCH 04/27] writeback: reduce per-bdi dirty threshold ramp up time
 References: <20110303064505.718671603@intel.com>
-Content-Disposition: inline; filename=writeback-dirty-thresh-limit.patch
+Content-Disposition: inline; filename=writeback-speedup-per-bdi-threshold-ramp-up.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both the global/bdi dirty thresholds may fluctuate undesirably.
+Reduce the dampening for the control system, yielding faster
+convergence. The change is a bit conservative, as smaller values may
+lead to noticeable bdi threshold fluctuates in low memory JBOD setup.
 
-- the start of a heavy weight application (ie. KVM) may instantly knock
-  down determine_dirtyable_memory() and hence the global/bdi dirty thresholds.
-
-- in JBOD setup, the bdi dirty thresholds are observed to fluctuate more
-
-So maintain a version of smoothed bdi dirty threshold in
-bdi->dirty_threshold and introduce the global dirty limit in
-default_backing_dev_info.dirty_threshold.
-
-The global limit can effectively mask out the impact of sudden drop of
-dirtyable memory.  Without it, the dirtier tasks may be blocked in the
-block area for 10s after someone eats 500MB memory; with the limit, the
-dirtier tasks will be throttled at eg. 1/8 => 1/4 => 1/2 => original
-dirty bandwith by the main control line and bring down the dirty pages
-at reasonable speeds.
-
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Richard Kennedy <richard@rsk.demon.co.uk>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/backing-dev.h |    3 +
- include/linux/writeback.h   |   34 +++++++++++++++++
- mm/backing-dev.c            |    1 
- mm/page-writeback.c         |   66 ++++++++++++++++++++++++++++++++++
- 4 files changed, 104 insertions(+)
+ mm/page-writeback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-next.orig/include/linux/writeback.h	2011-03-03 14:44:07.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-03-03 14:44:07.000000000 +0800
-@@ -12,6 +12,40 @@ struct backing_dev_info;
- extern spinlock_t inode_lock;
+--- linux-next.orig/mm/page-writeback.c	2011-03-02 14:52:19.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-03-02 15:00:17.000000000 +0800
+@@ -145,7 +145,7 @@ static int calc_period_shift(void)
+ 	else
+ 		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+ 				100;
+-	return 2 + ilog2(dirty_total - 1);
++	return ilog2(dirty_total - 1);
+ }
  
  /*
-+ * 4MB minimal write chunk size
-+ */
-+#define MIN_WRITEBACK_PAGES	(4096UL >> (PAGE_CACHE_SHIFT - 10))
-+
-+/*
-+ * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
-+ *
-+ *		(thresh - 2*thresh/DIRTY_SCOPE, thresh)
-+ *
-+ * The 1/32 region under the global dirty limit will be more rigidly throttled:
-+ *
-+ *		(limit - limit/DIRTY_MARGIN, limit)
-+ *
-+ * The 1/32 region above the global dirty limit will be put to maximum pauses:
-+ *
-+ *		(limit, limit + limit/DIRTY_MARGIN)
-+ *
-+ * Further beyond, the dirtier task will enter a loop waiting (possibly long
-+ * time) for the dirty pages to drop below (limit + limit/DIRTY_MARGIN).
-+ *
-+ * The last case may happen lightly when memory is very tight or at sudden
-+ * workload rampup. Or under DoS situations such as a fork bomb where every new
-+ * task dirties some more pages, or creating 10,000 tasks each writing to a USB
-+ * key slowly in 4KB/s.
-+ *
-+ * The global dirty threshold is normally equal to global dirty limit, except
-+ * when the system suddenly allocates a lot of anonymous memory and knocks down
-+ * the global dirty threshold quickly, in which case the global dirty limit
-+ * will follow down slowly to prevent livelocking all dirtier tasks.
-+ */
-+#define DIRTY_SCOPE		8
-+#define DIRTY_MARGIN		(DIRTY_SCOPE * 4)
-+
-+/*
-  * fs/fs-writeback.c
-  */
- enum writeback_sync_modes {
---- linux-next.orig/mm/page-writeback.c	2011-03-03 14:44:07.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-03-03 14:44:07.000000000 +0800
-@@ -472,6 +472,24 @@ unsigned long bdi_dirty_limit(struct bac
- 	return bdi_dirty;
- }
- 
-+/*
-+ * If we can dirty N more pages globally, honour N/8 to the bdi that runs low,
-+ * so as to help it ramp up.
-+ *
-+ * It helps the chicken and egg problem: when bdi A (eg. /pub) is heavy dirtied
-+ * and bdi B (eg. /) is light dirtied hence has 0 dirty limit, tasks writing to
-+ * B always get heavily throttled and bdi B's dirty limit might never be able
-+ * to grow up from 0.
-+ */
-+static unsigned long dirty_rampup_size(unsigned long dirty,
-+				       unsigned long thresh)
-+{
-+	if (thresh > dirty + MIN_WRITEBACK_PAGES)
-+		return min(MIN_WRITEBACK_PAGES * 2, (thresh - dirty) / 8);
-+
-+	return MIN_WRITEBACK_PAGES / 8;
-+}
-+
- static void bdi_update_dirty_smooth(struct backing_dev_info *bdi,
- 				    unsigned long dirty)
- {
-@@ -563,6 +581,50 @@ static void __bdi_update_write_bandwidth
- 	bdi->avg_bandwidth = avg;
- }
- 
-+static void update_dirty_limit(unsigned long thresh,
-+			       unsigned long dirty)
-+{
-+	unsigned long limit = default_backing_dev_info.dirty_threshold;
-+	unsigned long min = dirty + limit / DIRTY_MARGIN;
-+
-+	if (limit < thresh) {
-+		limit = thresh;
-+		goto out;
-+	}
-+
-+	/* take care not to follow into the brake area */
-+	if (limit > thresh + thresh / (DIRTY_MARGIN * 8) &&
-+	    limit > min) {
-+		limit -= (limit - max(thresh, min)) >> 3;
-+		goto out;
-+	}
-+
-+	return;
-+out:
-+	default_backing_dev_info.dirty_threshold = limit;
-+}
-+
-+static void bdi_update_dirty_threshold(struct backing_dev_info *bdi,
-+				       unsigned long thresh,
-+				       unsigned long dirty)
-+{
-+	unsigned long old = bdi->old_dirty_threshold;
-+	unsigned long avg = bdi->dirty_threshold;
-+	unsigned long min;
-+
-+	min = dirty_rampup_size(dirty, thresh);
-+	thresh = bdi_dirty_limit(bdi, thresh);
-+
-+	if (avg > old && old >= thresh)
-+		avg -= (avg - old) >> 4;
-+
-+	if (avg < old && old <= thresh)
-+		avg += (old - avg) >> 4;
-+
-+	bdi->dirty_threshold = max(avg, min);
-+	bdi->old_dirty_threshold = thresh;
-+}
-+
- void bdi_update_bandwidth(struct backing_dev_info *bdi,
- 			  unsigned long thresh,
- 			  unsigned long dirty,
-@@ -594,6 +656,10 @@ void bdi_update_bandwidth(struct backing
- 	if (elapsed <= HZ/10)
- 		goto unlock;
- 
-+	if (thresh) {
-+		update_dirty_limit(thresh, dirty);
-+		bdi_update_dirty_threshold(bdi, thresh, dirty);
-+	}
- 	__bdi_update_write_bandwidth(bdi, elapsed, written);
- 	if (thresh) {
- 		bdi_update_dirty_smooth(bdi, bdi_dirty);
---- linux-next.orig/include/linux/backing-dev.h	2011-03-03 14:44:07.000000000 +0800
-+++ linux-next/include/linux/backing-dev.h	2011-03-03 14:44:07.000000000 +0800
-@@ -81,6 +81,9 @@ struct backing_dev_info {
- 	unsigned long avg_bandwidth;
- 	unsigned long avg_dirty;
- 	unsigned long old_dirty;
-+	unsigned long dirty_threshold;
-+	unsigned long old_dirty_threshold;
-+
- 
- 	struct prop_local_percpu completions;
- 	int dirty_exceeded;
---- linux-next.orig/mm/backing-dev.c	2011-03-03 14:44:07.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2011-03-03 14:44:07.000000000 +0800
-@@ -677,6 +677,7 @@ int bdi_init(struct backing_dev_info *bd
- 
- 	bdi->avg_dirty = 0;
- 	bdi->old_dirty = 0;
-+	bdi->dirty_threshold = MIN_WRITEBACK_PAGES;
- 
- 	err = prop_local_init_percpu(&bdi->completions);
- 
 
 
