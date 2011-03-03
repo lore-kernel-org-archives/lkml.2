@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab1CCUGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 15:06:30 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:55204 "EHLO
-	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758630Ab1CCUFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 15:05:11 -0500
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: mingo@elte.hu
-Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH 2/7] x86: make some apic symbols init
-Date: Thu,  3 Mar 2011 21:04:56 +0100
-Message-Id: <1299182701-8591-2-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de>
-References: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de>
+	id S932364Ab1CCUGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 15:06:38 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56151 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932320Ab1CCUGg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 15:06:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110303060352.GK22723@ZenIV.linux.org.uk>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk> <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
+ <20110303060352.GK22723@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Mar 2011 12:05:43 -0800
+Message-ID: <AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com>
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-apic_force_enable(), apic_verify() and the variable
-force_enable_local_apic are only used by init code
-and now get marked as such.
+On Wed, Mar 2, 2011 at 10:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> IOW, it's a QoI question - sure, NFS is weird and you lose a lot of usual
+> warranties there when it comes to object removal.  But why get local
+> fs behaving strangely?  It's not like "decrement i_nlink from 2 to 1" was
+> cheaper than "assign 0 to i_nlink", after all.
+>
+> FWIW, a lot of local filesystems have no notion of links; they tend to
+> maintain zero/non-zero distinction just fine.  Including those that have
+> all directories with i_nlink == 1 for as long as directory lives.
 
-Global __initdata variables may better be initialized,
-since they are in the data section and not in the bss.
+The thing is, I don't think it's a QoI question at all - since any
+user that _depends_ on this kind of behavior is simply broken. We
+aren't going to guarantee it, exactly because some filesystems simply
+will not ever guarantee it.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
- arch/x86/include/asm/apic.h |    2 +-
- arch/x86/kernel/apic/apic.c |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Now, for FAT we do in fact try rather hard to fake the i_nlink count,
+but I'm not at all convinced that's a good idea. It makes reading
+directory inodes on FAT much more expensive (we have to basically do a
+readdir for each open). So I'd hate to make that whole "you need to
+emulate i_nlink even if you really don't care" be something that we
+actually end up thinking is a quality issue.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index dbd558c..afe69e1 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -240,7 +240,7 @@ extern void setup_boot_APIC_clock(void);
- extern void setup_secondary_APIC_clock(void);
- extern int APIC_init_uniprocessor(void);
- extern void enable_NMI_through_LVT0(void);
--extern int apic_force_enable(unsigned long addr);
-+extern int apic_force_enable(unsigned long addr) __init;
- 
- /*
-  * On 32bit this is mach-xxx local
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 6c464a3..022afb9 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -93,7 +93,7 @@ DEFINE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid, BAD_APICID);
-  *
-  * +1=force-enable
-  */
--static int force_enable_local_apic;
-+static int force_enable_local_apic __initdata = 0;
- /*
-  * APIC command line parameters
-  */
-@@ -1560,7 +1560,7 @@ static int __init detect_init_APIC(void)
- }
- #else
- 
--static int apic_verify(void)
-+static int __init apic_verify(void)
- {
- 	u32 features, h, l;
- 
-@@ -1585,7 +1585,7 @@ static int apic_verify(void)
- 	return 0;
- }
- 
--int apic_force_enable(unsigned long addr)
-+int __init apic_force_enable(unsigned long addr)
- {
- 	u32 h, l;
- 
--- 
-1.7.2.3
+There are other filesystems where i_nlink can be even _less_
+meaningful, ie if the filesystem does any kind of fancy
+content-indexing thing or lazy COW (think "union filesystem within the
+filesystem") or whatever, I could easily see i_nlink not having any
+traditional unix filesystem semantics.
 
+Seriously - how did you even notice this?
+
+I'm not opposed to fix actual bugs, but I _do_ think it is
+questionable to make this kind of nonsense semantic issue be an issue.
+
+                     Linus
