@@ -1,137 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab1CCVjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:39:15 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:60757 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758859Ab1CCVjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:39:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoAEAMuYb015LFEbgWdsb2JhbACmZRYBARYiJb5UDYVUBJMG
-Date: Fri, 4 Mar 2011 08:39:03 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, cluster-devel@redhat.com, xfs@oss.sgi.com,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2] Check for immutable flag in fallocate path
-Message-ID: <20110303213903.GL15097@dastard>
-References: <4D6221B8.9040303@gmail.com>
- <4D6F5473.2070709@gmail.com>
+	id S1758859Ab1CCVlY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:41:24 -0500
+Received: from mga03.intel.com ([143.182.124.21]:32573 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754793Ab1CCVlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 16:41:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,260,1297065600"; 
+   d="scan'208";a="397209384"
+Date: Thu, 3 Mar 2011 16:41:04 -0500
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [REVIEW] NVM Express driver
+Message-ID: <20110303214104.GZ3663@linux.intel.com>
+References: <20110303204749.GY3663@linux.intel.com>
+ <20110303211336.GA32645@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6F5473.2070709@gmail.com>
+In-Reply-To: <20110303211336.GA32645@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 09:42:27AM +0100, Marco Stornelli wrote:
-> From: Marco Stornelli <marco.stornelli@gmail.com>
+On Thu, Mar 03, 2011 at 01:13:36PM -0800, Greg KH wrote:
+> > diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+> > index 63ffd78..f8159ba 100644
+> > --- a/Documentation/ioctl/ioctl-number.txt
+> > +++ b/Documentation/ioctl/ioctl-number.txt
+> > @@ -148,6 +148,7 @@ Code  Seq#(hex)	Include File		Comments
+> >  'M'	01-03	drivers/scsi/megaraid/megaraid_sas.h
+> >  'M'	00-0F	drivers/video/fsl-diu-fb.h	conflict!
+> >  'N'	00-1F	drivers/usb/scanner.h
+> > +'N'	40-7F	drivers/block/nvme.c
 > 
-> All fs must check for the immutable flag in their fallocate callback.
-> It's possible to have a race condition in this scenario: an application
-> open a file in read/write and it does something, meanwhile root set the
-> immutable flag on the file, the application at that point can call
-> fallocate with success. Only Ocfs2 check for the immutable flag at the
-> moment.
+> I hate to ask this, but why do you have ioctls for this?  At first
+> glance, a number of the ioctls you have should just be sysfs files to
+> export the information.  What am I misunderstanding here?
+
+I don't think you're arguing for SUBMIT_IO being done through sysfs, so
+some ioctls are clearly needed.  I'll take a look at which ones can be
+moved to sysfs.
+
+> > +static int nvme_download_firmware(struct nvme_ns *ns,
+> > +						struct nvme_dlfw __user *udlfw)
+> > +{
+> > +	struct nvme_dev *dev = ns->dev;
+> > +	struct nvme_dlfw dlfw;
+> > +	struct nvme_command c;
+> > +	int nents, status;
+> > +	struct scatterlist *sg;
+> > +	struct nvme_prps *prps;
+> > +
+> > +	if (copy_from_user(&dlfw, udlfw, sizeof(dlfw)))
+> > +		return -EFAULT;
+> > +	if (dlfw.length >= (1 << 30))
+> > +		return -EINVAL;
+> > +
+> > +	nents = nvme_map_user_pages(dev, 1, dlfw.addr, dlfw.length * 4, &sg);
+> > +	if (nents < 0)
+> > +		return nents;
+> > +
+> > +	memset(&c, 0, sizeof(c));
+> > +	c.dlfw.opcode = nvme_admin_download_fw;
+> > +	c.dlfw.numd = cpu_to_le32(dlfw.length);
+> > +	c.dlfw.offset = cpu_to_le32(dlfw.offset);
+> > +	prps = nvme_setup_prps(dev, &c.common, sg, dlfw.length * 4);
+> > +
+> > +	status = nvme_submit_admin_cmd(dev, &c, NULL);
+> > +	nvme_unmap_user_pages(dev, 0, dlfw.addr, dlfw.length * 4, sg, nents);
+> > +	nvme_free_prps(dev, prps);
+> > +	return status;
+> > +}
 > 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> ---
-> Patch is against 2.6.38-rc5
-> 
-> ChangeLog
-> v2: Added the check for append-only file for XFS
-> v1: First draft
-> 
-> --- linux-2.6.38-rc5-orig/fs/ext4/extents.c	2011-02-16 04:23:45.000000000 +0100
-> +++ linux-2.6.38-rc5/fs/ext4/extents.c	2011-02-21 08:43:37.000000000 +0100
-> @@ -3670,6 +3670,12 @@ long ext4_fallocate(struct file *file, i
->  	 */
->  	credits = ext4_chunk_trans_blocks(inode, max_blocks);
->  	mutex_lock(&inode->i_mutex);
-> +
-> +	if (IS_IMMUTABLE(inode)) {
-> +		mutex_unlock(&inode->i_mutex);
-> +		return -EPERM;
-> +	}
-> +
->  	ret = inode_newsize_ok(inode, (len + offset));
->  	if (ret) {
->  		mutex_unlock(&inode->i_mutex);
-> --- linux-2.6.38-rc5-orig/fs/btrfs/file.c	2011-02-16 04:23:45.000000000 +0100
-> +++ linux-2.6.38-rc5/fs/btrfs/file.c	2011-02-21 08:55:58.000000000 +0100
-> @@ -1289,6 +1289,12 @@ static long btrfs_fallocate(struct file
->  	btrfs_wait_ordered_range(inode, alloc_start, alloc_end - alloc_start);
->  
->  	mutex_lock(&inode->i_mutex);
-> +
-> +	if (IS_IMMUTABLE(inode)) {
-> +		ret = -EPERM;
-> +		goto out;
-> +	}
-> +
->  	ret = inode_newsize_ok(inode, alloc_end);
->  	if (ret)
->  		goto out;
-> --- linux-2.6.38-rc5-orig/fs/gfs2/file.c	2011-02-16 04:23:45.000000000 +0100
-> +++ linux-2.6.38-rc5/fs/gfs2/file.c	2011-02-21 09:09:17.000000000 +0100
-> @@ -797,6 +797,11 @@ static long gfs2_fallocate(struct file *
->  	if (unlikely(error))
->  		goto out_uninit;
->  
-> +	if (IS_IMMUTABLE(inode)) {
-> +		error = -EPERM;
-> +		goto out_unlock;
-> +	}
-> +
->  	if (!gfs2_write_alloc_required(ip, offset, len))
->  		goto out_unlock;
->  
-> --- ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-02-16 04:23:45.000000000 +0100
-> +++ ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-03-03 09:25:32.000000000 +0100
-> @@ -906,8 +906,18 @@ xfs_file_fallocate(
->  
->  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
->  
-> -	if (mode & FALLOC_FL_PUNCH_HOLE)
-> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
->  		cmd = XFS_IOC_UNRESVSP;
-> +		if (IS_APPEND(inode)) {
-> +			error = -EPERM;
-> +			goto out_unlock;
-> +		}
-> +	}
+> Shouldn't you be using the build-in firmware kernel interface instead of
+> rolling your own in an ioctl?
 
-WTF?  Why does append mode have any effect on whether we can punch
-holes in a file or not? There's no justification for adding this in
-the commit message. Why is it even in a patch that is for checking
-immutable inodes? What is the point of adding it, when all that will
-happen is people will switch to XFS_IOC_UNRESVSP which has never had
-this limitation?
+There's a bit of an impedence mismatch there.  Think of this as
+being drive firmware instead of controller firmware.  This isn't for
+request_firmware() kind of uses, it's for some admin tool to come along
+and tell the drive "Oh, here's some new firmware for you".
 
-And this asks bigger questions - why would you allow preallocate
-anywhere but at or beyond EOF on an append mode inode? You can only
-append to the file, so if you're going to add limitations based on
-the append flag, you need to think this through a bit more....
+If you look at the spec [1], you'll see there are a number of firmware
+slots in the device, and it's up to the managability utility to decide
+which one to replace or activate.  I dno't think you want to pull all
+that gnarly decision making code into the kernel, do you?
 
-> +
-> +	if (IS_IMMUTABLE(inode)) {
-> +		error = -EPERM;
-> +		goto out_unlock;
-> +	}
-
-Also, like Christoph said, these checks belong in the generic code,
-not in every filesystem. The same checks have to be made for every
-filesystem, so they should be done before calling out the
-filesystems regardless of what functionality the filesystem actually
-supports.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+[1] http://download.intel.com/standards/nvmhci/NVM_Express_1_0_Gold.pdf
