@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab1CCUbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 15:31:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8237 "EHLO mx1.redhat.com"
+	id S1758737Ab1CCUeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 15:34:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22903 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758196Ab1CCUbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 15:31:19 -0500
-Date: Thu, 3 Mar 2011 21:22:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110303202246.GB32152@redhat.com>
-References: <20110301152457.GE26074@htj.dyndns.org> <20110303173422.GA27960@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303173422.GA27960@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758207Ab1CCUeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 15:34:05 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 1/2] watchdog, nmi:  Allow hardlockup to panic by default
+Date: Thu,  3 Mar 2011 15:33:58 -0500
+Message-Id: <1299184439-9215-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03, Oleg Nesterov wrote:
->
-> I'll ask the questions later.
+Add a Kconfig option to allow users to set the hardlockup to panic
+by default.  Also add in a 'nmi_watchdog=nopanic' to override this.
 
-Right now I do not see any holes (but I'll try more ;)
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-One question, to ensure I really understand you. To simplify,
-consider this particular example.
+---
+  Forgot to cc lkml, sorry for the spam
 
-Tracee:
+---
+ Documentation/kernel-parameters.txt |    5 +++--
+ kernel/watchdog.c                   |    5 ++++-
+ lib/Kconfig.debug                   |   17 +++++++++++++++++
+ 3 files changed, 24 insertions(+), 3 deletions(-)
 
-	int main(void)
-	{
-		kill(SIGSTOP, getpid());
-
-		printf("I am running\n");
-
-		for (;;)
-			;
-	}
-
-To simplify again, suppose that the debugger attaches when it is
-already stopped, then it does PTRACE_CONT(0).
-
-In this case the tracee remains SIGNAL_STOP_STOPPED but prints
-"I am running" and enters the endless loop.
-
-(the new debugger can do PTRACE_SEIZE after that and "return"
- it to the stopped state without affecting jctl state).
-
-Now, if SIGCONT comes (from anywhere) it clears SIGNAL_STOP_STOPPED,
-the tracee traps and reports this event to debugger.
-
-Correct?
-
-
-And, once again. In the mt case, I assume that SIGCONT makes
-every traced thread to report this event individually, right?
-
-(I am talking about the case when the group-stop was finished,
- iow "every" probably means the threads which participated and
- reported CLD_STOPPED to the debugger).
-
-
-In both cases, later then this SIGCONT will be reported again
-as any "normal" signal when some thread dequeues it.
-
-
-Is my understanding correct?
-
-Thanks,
-
-Oleg.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 89835a4..ae0b499 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1577,11 +1577,12 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			Format: [state][,regs][,debounce][,die]
+ 
+ 	nmi_watchdog=	[KNL,BUGS=X86] Debugging features for SMP kernels
+-			Format: [panic,][num]
++			Format: [panic,][nopanic,][num]
+ 			Valid num: 0
+ 			0 - turn nmi_watchdog off
+ 			When panic is specified, panic when an NMI watchdog
+-			timeout occurs.
++			timeout occurs (or 'nopanic' to override the opposite
++			default).
+ 			This is useful when you use a panic=... timeout and
+ 			need the box quickly up again.
+ 
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 18bb157..f7c0272 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -48,12 +48,15 @@ static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+  * Should we panic when a soft-lockup or hard-lockup occurs:
+  */
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+-static int hardlockup_panic;
++static int hardlockup_panic = 
++			CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE;
+ 
+ static int __init hardlockup_panic_setup(char *str)
+ {
+ 	if (!strncmp(str, "panic", 5))
+ 		hardlockup_panic = 1;
++	else if (!strncmp(str, "nopanic", 5))
++		hardlockup_panic = 0;
+ 	else if (!strncmp(str, "0", 1))
+ 		watchdog_enabled = 0;
+ 	return 1;
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 2b97418..80bd292 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -176,6 +176,23 @@ config HARDLOCKUP_DETECTOR
+ 	def_bool LOCKUP_DETECTOR && PERF_EVENTS && HAVE_PERF_EVENTS_NMI && \
+ 		 !ARCH_HAS_NMI_WATCHDOG
+ 
++config BOOTPARAM_HARDLOCKUP_PANIC
++	bool "Panic (Reboot) On Soft Lockups"
++	depends on LOCKUP_DETECTOR
++	help
++	  Say Y here to enable the kernel to panic on "hard lockups",
++	  which are bugs that cause the kernel to loop in kernel
++	  mode with interrupts disabled for more than 60 seconds.
++
++	  Say N if unsure.
++
++config BOOTPARAM_HARDLOCKUP_PANIC_VALUE
++	int
++	depends on LOCKUP_DETECTOR
++	range 0 1
++	default 0 if !BOOTPARAM_HARDLOCKUP_PANIC
++	default 1 if BOOTPARAM_HARDLOCKUP_PANIC
++
+ config BOOTPARAM_SOFTLOCKUP_PANIC
+ 	bool "Panic (Reboot) On Soft Lockups"
+ 	depends on LOCKUP_DETECTOR
+-- 
+1.7.3.5
 
