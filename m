@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab1CCElY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 23:41:24 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:2643 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144Ab1CCElX (ORCPT
+	id S932255Ab1CCEmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 23:42:46 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53350 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144Ab1CCEmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 23:41:23 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6273"; a="77699912"
-Message-ID: <4D6F1BF2.5080908@codeaurora.org>
-Date: Wed, 02 Mar 2011 20:41:22 -0800
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
+	Wed, 2 Mar 2011 23:42:45 -0500
+Date: Thu, 3 Mar 2011 04:42:42 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+Message-ID: <20110303044242.GJ22723@ZenIV.linux.org.uk>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: davidb@codeaurora.org, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linux.walleij@sterricsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Qualcomm PM8921 MFD 5/6] MAINTAINERS: Add pmic8921, pmic8xxx
- subdevices maintainers
-References: <1299104001-5240-1-git-send-email-adharmap@codeaurora.org>	 <1299104001-5240-6-git-send-email-adharmap@codeaurora.org> <1299106213.4208.112.camel@Joe-Laptop>
-In-Reply-To: <1299106213.4208.112.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110303032454.GI22723@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> On Wed, 2011-03-02 at 14:13 -0800, adharmap@codeaurora.org wrote:
->> diff --git a/MAINTAINERS b/MAINTAINERS
-> 
-> The patch subject is not quite correct.
-> You're adding patterns, not maintainers.
+On Thu, Mar 03, 2011 at 03:24:54AM +0000, Al Viro wrote:
+> 0 0: ext*, xfs, jfs, reiserfs, ocfs2, gfs2, nilfs, exofs, udf, ubifs,
+>      minix, sysv, ufs, msdos, vfat, hfs+
+> 0 1: ramfs, shmem, hugetlbfs, jffs2, omfs, hfs[*], apparently nfs as well
 
-Ok will fix it in the next patch series.
+> [*] yes, different from hfs+; the code is clearly broken, since it simply
+> does unlink() on target, without even verifying that it's empty.  And
+> yes, it's trivial fs corruption...
 
-> Another option is a wildcard pattern match like:
-> 
-> F:	drivers/*/pm8???-*
-> 
-> instead of:
-> 
-> F:	drivers/gpio/pm8xxx-gpio.c
-> F:	drivers/mfd/pm8921-core.c
-> F:	drivers/mfd/pm8xxx-irq.c
-> F:	drivers/mfd/pm8xxx-mpp.c
-
-Will do, thanks for this wildcard pattern
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc. is a member of the Code Aurora Forum.
+Actually, hfs turns out to be 0 0 as well; it *is* broken (lacks check
+for target being empty), but when the target is empty it's doing the
+right thing.  jffs2 and ramfs-based ones do 0 1 - confirmed by direct
+experiment.
