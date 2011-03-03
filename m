@@ -1,143 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab1CCRm5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 12:42:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756708Ab1CCRmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 12:42:55 -0500
-Date: Thu, 3 Mar 2011 18:34:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110303173422.GA27960@redhat.com>
-References: <20110301152457.GE26074@htj.dyndns.org>
+	id S1758601Ab1CCRqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 12:46:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56177 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758465Ab1CCRqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 12:46:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110301152457.GE26074@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1299137483-10975-1-git-send-email-ksumrall@android.com>
+References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Mar 2011 09:45:38 -0800
+Message-ID: <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com>
+Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
+ remount filesystems ro
+To: Ken Sumrall <ksumrall@android.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
+        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-
-I didn't read the whole thread yet... perhaps this was already
-discussed in more details. IOW, please ignore "I don't understand"
-parts, I'll ask the questions later.
-
-On 03/01, Tejun Heo wrote:
+On Wed, Mar 2, 2011 at 11:31 PM, Ken Sumrall <ksumrall@android.com> wrote:
 >
-> I3. Not well-defined job control behaviors while traced
->
-> In general, jctl behaviors while ptraced aren't well defined.
+> Add 4 new commands to the reboot system call, that do the same thing as the
+> RESTART, HALT, POWER_OFF, and RESTART2 commands, but also remount writable
+> filesystems as read-only just before doing what the command normally does.
 
-I'd say it is not defined at all ;) And to me this is the root of
-all problems.
+This makes no sense.
 
-So, many thanks for this RFC. This is the first time someone tries
-to define the rules.
+If you can change whatever user-land process that does the reboot
+system call (and clearly you can, since you're adding new commands and
+using those), then why the heck don't you just do the remount-ro from
+that same user land?
 
-> * PTRACE_CONT and other requests which resume the tracee overrides, or
->   rather works below, jctl stop.  If jctl stop takes place on the task
->   group a tracee belongs to, the tracee will eventually participate in
->   the group stop and its tracer will be notified; however, when
->   PTRACE_CONT or other resuming request is made, the tracee will
->   resume execution regardless of and without affecting the jctl stop.
->
-> I don't know whether these are by design or just happened as
-> by-products of the evolution of task group implementation in the
-> kernel, but regardless, in my opinion, both rules are sound and
-> useful.  They might not be immediately intuitive and the resulting
-> behavior might seem quirky but to me it seems to be one of those
-> things which looks awkward at first but is ultimately right in its
-> usefulness and relative simplicity.
->
-> More importantly, it doesn't matter what I or, for that matter, anyone
-> else thinks about them.  They're tightly ingrained into the
-> userland-visible behavior and actively exploited by the current users
-> - for example, dynamic evalution in tracee context in gdb(1).
-> Changing behaviors as fundamental as these would impact the current
-> applications and debugging behaviors expected by (human) users.
+How many mounted filesystems do you have that it's so hard to keep track of?
 
-OK. I have to agree. Lets forget the PTRACE_CONT-needs-SIGCONT idea.
-Nobody like it, including Jan (even if he didn't nack it explicitly).
-Forget.
-
-> PROPOSAL
-> --------
->
-> P1. Always TASK_TRACED while ptraced
-
-OK.
-
-> P2. Fix notifications to the real parent
->
-> This pleasantly proved to be the least contentious change to make.
-> The usual group stop / continued notifications should be propagated to
-> the real parent whether the children are ptraced or not.
-
-Agreed.
-
-> P3. Keep ptrace resume separate from and beneath jctl stop
-
-This is not exactly clear to me... Probably I understand what
-you mean, but I am not sure about details.
-
-> P4. PTRACE_SEIZE
-
-This is the new request. You know, I'd like to discuss the details
-later and separately. Actually, I think the user-space developers
-should participate and tell what they need. As for me, I certainly
-agree that SIGSTOP from PTRACE_ATTACH is very wrong, and it is very
-bad that gdb has to send SIGSTOP if it wants to stop the tracee.
-IOW, I agree that something like this is needed and useful. In
-particular,
-
-> In both cases, jctl state is unaffected.
-
-Agreed.
-
-> P5. "^Z" and "fg" for tracees
->
-> As proposed, when a tracee enters jctl stop, it enters TASK_TRACED
-> from which emission of SIGCONT can't resume the tracee.  This makes it
-> impossible for a tracer to become transparent with respect to jctl.
-> For example, after strace(1) is attached to a task, the task can be
-> ^Z'd but then can't be fg'd.
->
-> A better way to solve this is simply giving the tracer the capability
-> to listen for the end of jctl stop.
-
-Hmm. I don't understand what "the end of jctl stop" actually means.
-
-Since you are talking about WCONTINUED below, I guess it means that
-the process is not group-stopped any longer, say, SIGCONT comes.
-OK. If the tracer is notified about the end of jctl stop, it can
-resume the tracee if it wants. end-of-jctl-stop is per-process, but
-I guess the debugger will be notified per-thread. Looks reasonable
-to me.
-
-> WCONTINUED is the obvious candidate but I think it is
-> better to use STOPPED notification because the task is not really
-> resumed.  Only its mode of stop changes.
-
-OK.
-
-> What state the tracee is in
-> can be determined by retriving siginfo using PTRACE_GETSIGINFO.
-
-I don't understand this this details right now... But I guess this
-doesn't matter right now.
-
-Either way, debugger should have the ability to know the tracee's
-state wrt group-stop. To oversimplify, it should know the state of
-SIGNAL_STOP_STOPPED bit. Correct?
-
-Oleg.
-
+                      Linus
