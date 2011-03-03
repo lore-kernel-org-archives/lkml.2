@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758983Ab1CCWdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 17:33:01 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56591 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758800Ab1CCWc7 (ORCPT
+	id S1758999Ab1CCWdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 17:33:50 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:28772 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758868Ab1CCWds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 17:32:59 -0500
-Date: Thu, 3 Mar 2011 13:54:14 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org, Thomas Graf <tgraf@suug.ch>
-Subject: Re: linux-next: Tree for February 10 (netfilter)
-Message-Id: <20110303135414.bfcabb2a.randy.dunlap@oracle.com>
-In-Reply-To: <4D58DB20.5060401@trash.net>
-References: <20110210180525.54ec83e9.sfr@canb.auug.org.au>
-	<20110210095210.6fcf3011.randy.dunlap@oracle.com>
-	<4D58DB20.5060401@trash.net>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 3 Mar 2011 17:33:48 -0500
+Subject: Re: ANNOUNCE: debloat-testing kernel git tree
+From: Rick Jones <rick.jones2@hp.com>
+Reply-To: rick.jones2@hp.com
+To: Tianji Li <Tianji.Li@nuim.ie>
+Cc: Dave =?ISO-8859-1?Q?T=E4ht?= <d@taht.net>, sedat.dilek@gmail.com,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        bloat-devel@lists.bufferbloat.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4D6FEFD4.9010608@nuim.ie>
+References: <20110225222210.GA3618@tuxdriver.com>
+	 <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
+	 <87fwr9jxya.fsf@cruithne.co.teklibre.org>
+	 <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
+	 <8739n9ii7z.fsf@cruithne.co.teklibre.org>
+	 <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
+	 <87tyfph2az.fsf@cruithne.co.teklibre.org> <1299176168.2157.14.camel@tardy>
+	 <4D6FEFD4.9010608@nuim.ie>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Mar 2011 14:33:43 -0800
+Message-ID: <1299191623.2157.62.camel@tardy>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D70170C.01BB,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 08:34:56 +0100 Patrick McHardy wrote:
-
-> On 10.02.2011 18:52, Randy Dunlap wrote:
-> > On Thu, 10 Feb 2011 18:05:25 +1100 Stephen Rothwell wrote:
-> > 
-> >> Hi all,
-> >>
-> >> [The kernel.org mirroring is being slow ...]
-> >>
-> >> Changes since 20110209:
-> > 
-> > 
-> > xt_AUDIT.c:(.text+0x39ca9): undefined reference to `ipv6_skip_exthdr'
-> > 
-> > IPV6 is not enabled.
-> > 
-> > Full config file is attached.
+On Thu, 2011-03-03 at 13:45 -0600, Tianji Li wrote:
 > 
-> Thomas, please have a look at this.
+> On 03/03/2011 12:16 PM, Rick Jones wrote:
+> >> For wireless routers and cable home gateways especially, this research
+> >> shows that the total un-managed buffers in your system should be less
+> >> than 32.
+> >
+> > Would it be a good thing to start describing these queues not so much in
+> > terms of packets but in terms of delay (or bandwidth X delay)?
+> >
+> 
+> The unit of bandwidth is something like Mbps, that of delay can be 
+> second, so bandwidth X delay --> Mb, which is the unit of packet size. 
+> So both packets and delay should have the same effect for sizing buffers.
+
+Yet, not all packets are not created equal - in size.  So, 42, 150 byte
+packets queued is not the same as 42, 1500 byte packets.  However, 10,
+1500 byte packets is the same as 100, 150 byte packets.
+
+Had you said something like MB and delay should have the same effect I
+would have agreed with you :)
+
+rick jones
 
 
-Ping.
-This build error is still with us in linux-next 2011.0303...
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
