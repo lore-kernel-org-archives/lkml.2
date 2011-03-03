@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab1CCDY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 22:24:58 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:32785 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756830Ab1CCDY4 (ORCPT
+	id S1758104Ab1CCDi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 22:38:27 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:14100 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756830Ab1CCDiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 22:24:56 -0500
-Date: Thu, 3 Mar 2011 03:24:54 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC] st_nlink after rmdir() and rename()
-Message-ID: <20110303032454.GI22723@ZenIV.linux.org.uk>
+	Wed, 2 Mar 2011 22:38:25 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6273"; a="77495463"
+Message-ID: <4D6F0D30.1050403@codeaurora.org>
+Date: Wed, 02 Mar 2011 19:38:24 -0800
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: davidb@codeaurora.org, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Collins <collinsd@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Linus Walleij <linux.walleij@sterricsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Qualcomm PM8921 MFD 1/6] mfd: pm8921: Add PMIC 8921 core driver
+References: <1299104001-5240-1-git-send-email-adharmap@codeaurora.org> <1299104001-5240-2-git-send-email-adharmap@codeaurora.org> <20110302222850.GA32325@opensource.wolfsonmicro.com>
+In-Reply-To: <20110302222850.GA32325@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	We have an interesting problem.  Consider the following sequence
-of syscalls:
-	mkdir("foo", 0777);
-	mkdir("bar", 0777);
-	fd1 = open("foo", O_DIRECTORY);
-	fd2 = open("bar", O_DIRECTORY);
-	rename("foo", "bar");	/* kill old bar */
-	rmdir("bar"); 		/* kill old foo */
-	fstat(fd1, &buf1);
-	fstat(fd2, &buf2);
-What should be in buf1.st_nlink and buf2.st_nlink, if none of these
-syscalls fail?  Note that in both cases any lookups in victim directory
-will fail and so will readdir; as far as VFS is concerned, the effect of
-such rmdir() and rename() on their victims are identical.  In particular,
-both . and .. are gone, as explicitly required by POSIX in case of rmdir().
+Mark Brown wrote:
+> On Wed, Mar 02, 2011 at 02:13:16PM -0800, adharmap@codeaurora.org wrote:
+> 
+>> +config MFD_PM8XXX
+>> +	tristate "Support for Qualcomm PM8xxx subdevices"
+>> +	help
+>> +	  This option enables the usage of various Qualcomm PMIC 8xxx subdevice
+>> +	  drivers. This is required in order to use generic PM8xxx subdevice
+>> +	  drivers. Selecting with option will result in PM8xxx subdevice
+>> +	  drivers being compiled by default.
+> 
+> As this is selected by the driver it shouldn't have any help text -
+> there's no point in users seeing the option since it's useless by
+> itself.  If we get enough to make an option useful either a menu or
+> dependencies from the individual MFDs would be a better option.
 
-Surprisingly, the results are *NOT* identical wrt fstat(); for most of
-the filesystems we will get 0 in both cases (as expected), but some will
-leave 1 in buf2.st_nlink.  What we have is
+Agree will fix this.
+> 
+>> +static int __devinit pm8921_add_subdevices(const struct pm8921_platform_data
+>> +					   *pdata,
+>> +					   struct pm8921 *pmic)
+>> +{
+>> +	return 0;
+>> +}
+> 
+> This looks suspicious.
 
-0 0: ext*, xfs, jfs, reiserfs, ocfs2, gfs2, nilfs, exofs, udf, ubifs,
-     minix, sysv, ufs, msdos, vfat, hfs+
-0 1: ramfs, shmem, hugetlbfs, jffs2, omfs, hfs[*], apparently nfs as well
-hell knows: ncpfs, fuse, ecryptfs, coda, cifs, ceph, btrfs, affs
-1 1: (unless I'm misreading it) logfs
-completely FUBAR wrt fstat(): hostfs[**]
--EEXIST on rename(): cgroup
--EINVAL on rename(): hpfs
-server ought to fail such rename(): 9p
-apparently fails rename(): smbfs
-completely broken rename(): pohmelfs[***]
+True, the next patch fills in this function. Will remove it from here.
 
-[*] yes, different from hfs+; the code is clearly broken, since it simply
-does unlink() on target, without even verifying that it's empty.  And
-yes, it's trivial fs corruption...
-[**] even open() + unlink() + fstat() will report original st_nlink, etc.
-[***] new_dir is target's _parent_ directory and it's not required to be
-empty; it's never going to be NULL, while we are at it.  Code makes no
-sense...
+> 
+>> +static int __init pm8921_init(void)
+>> +{
+>> +	return platform_driver_register(&pm8921_driver);
+>> +}
+>> +postcore_initcall(pm8921_init);
+> 
+> Typically subsys_initcall() has been used.
 
-The variant with st_nlink getting to 0 in both cases is definitely the most
-common and at least for local filesystems I think it should be mandatory.
-I.e. ramfs and friends, jffs2, omfs and hfs should all switch to it.
+Yes will change this and others to subsys_initcall()
 
-Comments would be welcome; I really don't know the protocols of most of
-the network filesystems well enough to tell what'll happen in these
-situations.
-				Al, digging through i_nlink code audit...
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
+Innovation Center, Inc. is a member of the Code Aurora Forum.
