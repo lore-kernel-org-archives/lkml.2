@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab1CCSRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 13:17:50 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47435 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758464Ab1CCSRt (ORCPT
+	id S1758464Ab1CCSSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 13:18:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56777 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758536Ab1CCSSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 13:17:49 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1299174652.2071.12.camel@dan>
-References: <1299174652.2071.12.camel@dan>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 03 Mar 2011 10:17:46 -0800
-Message-ID: <1299176266.8493.2369.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 13:18:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com>
+References: <1299137483-10975-1-git-send-email-ksumrall@android.com> <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Mar 2011 10:17:32 -0800
+Message-ID: <AANLkTi=z0gHbrGPUZ+vvNPGrOzGowBuWjMUEZpqS+ZCc@mail.gmail.com>
+Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
+ remount filesystems ro
+To: Ken Sumrall <ksumrall@android.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
+        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 12:50 -0500, Dan Rosenberg wrote:
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -4691,7 +4691,7 @@ static const struct file_operations proc_slabinfo_operations = {
-> 
->  static int __init slab_proc_init(void)
->  {
-> -       proc_create("slabinfo", S_IRUGO, NULL, &proc_slabinfo_operations);
-> +       proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
->         return 0;
->  }
->  module_init(slab_proc_init); 
+On Thu, Mar 3, 2011 at 9:45 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> How many mounted filesystems do you have that it's so hard to keep track of?
 
-Please don't.  In reality, it'll just mean that more data collection
-things will have to get done as root, and I'll wear my keyboard out more
-often sudo'ing.
+Btw, /proc/mounts will track them for you even if you don't have a
+'mount' binary that does.
 
-If you really want this on particularly pedantic systems, why not chmod?
+Parsing that is pretty trivial. If you have spaces or special
+characters in your pathnames (you may control the mount paths, you may
+not - I have no idea), you'll need to be able to handle the escape
+format (\oct). But other than that, it's literally just
 
--- Dave
+ - read all of /proc/mounts into a buffer
 
+ - for each line, split by space, and you'll have the directory name
+right there in the second field
+
+ - do the unescaping ("\oct" -> character) if needed. It's good
+practice. Test it.
+
+ - just do a read-only remount on it.
+
+All done. No kernel changes necessary. It just works.
+
+                            Linus
