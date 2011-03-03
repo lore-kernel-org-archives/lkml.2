@@ -1,371 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab1CCB1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 20:27:48 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33149 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756557Ab1CCB1r (ORCPT
+	id S1756432Ab1CCB25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 20:28:57 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39886 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884Ab1CCB24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 20:27:47 -0500
-Message-Id: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
-Subject: mmotm 2011-03-02-16-52 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Wed, 02 Mar 2011 16:52:55 -0800
+	Wed, 2 Mar 2011 20:28:56 -0500
+Message-ID: <4D6EEEC0.3040001@kernel.org>
+Date: Wed, 02 Mar 2011 17:28:32 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] x86, numa, emu: only transform numa_distance if SLIT
+ is there
+References: <4D6EEDF2.6090201@kernel.org>
+In-Reply-To: <4D6EEDF2.6090201@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4D6EEECB.00C0,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
 
-   http://userweb.kernel.org/~akpm/mmotm/
+during copying should only copy with NEW numa_dist_cnt size.
+need to call numa_alloc_dist() at first,  and it will set default values.
 
-and will soon be available at
+So we will not need to go over the big matrix without meaning.
 
-   git://zen-kernel.org/kernel/mmotm.git
+Need to make numa_alloc_distance to return new numa_dist_cnt
 
-It contains the following patches against 2.6.38-rc7:
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/mm/numa_64.c        |    4 +--
+ arch/x86/mm/numa_emulation.c |   45 ++++++++++++++++++++++++++-----------------
+ arch/x86/mm/numa_internal.h  |    1 
+ 3 files changed, 31 insertions(+), 19 deletions(-)
 
-drivers-rtc-rtc-s3cc-fix-prototype-for-s3c_rtc_setaie.patch
-cpuset-add-a-missing-unlock-in-cpuset_write_resmask.patch
-cpuset-add-a-missing-unlock-in-cpuset_write_resmask-fix.patch
-misc-bmp085-add-module_device_table.patch
-backlight-new-driver-for-the-adp8870-backlight-devices.patch
-pps-make-pps_gen_parport-depend-on-broken.patch
-linux-next.patch
-next-remove-localversion.patch
-i-need-old-gcc.patch
-arch-alpha-kernel-systblss-remove-debug-check.patch
-include-asm-generic-vmlinuxldsh-fix-__modver-section-warnings.patch
-drivers-usb-serial-usb_wwanc-unbork.patch
-drivers-misc-apds9802alsc-put-the-device-into-runtime-suspend-after-resume-probe-is-handled.patch
-mm-vmap-area-cache.patch
-drivers-media-video-tlg2300-pd-videoc-fix-double-mutex_unlock-in-pd_vidioc_s_fmt.patch
-rxrpc-fix-v1-keys.patch
-x86-fix-pgd_lock-deadlock.patch
-acerhdf-add-support-for-aspire-1410-bios-v13314.patch
-arch-x86-kernel-microcode_corec-do-not-warn_oncpu-=-0-during-resume.patch
-arch-x86-include-asm-delayh-fix-udelay-and-ndelay-for-8-bit-args.patch
-x86-fix-mmap-random-address-range.patch
-msm-timer-migrate-to-timer-based-__delay.patch
-audit-always-follow-va_copy-with-va_end.patch
-fs-btrfs-inodec-eliminate-memory-leak.patch
-btrfs-dont-dereference-extent_mapping-if-null.patch
-drivers-dma-ipu-ipu_irqc-irq_data-conversion.patch
-drivers-gpu-drm-radeon-atomc-fix-warning.patch
-fb-fix-potential-deadlock-between-lock_fb_info-and-console_lock.patch
-cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-leds-convert-bd2802-driver-to-dev_pm_ops.patch
-leds-convert-bd2802-driver-to-dev_pm_ops-fix.patch
-leds-add-driver-for-lm3530-als.patch
-leds-add-driver-for-lm3530-als-update.patch
-drivers-leds-leds-pca9532c-add-gpio-capability.patch
-leds-make-struct-gpio_led_platform_dataleds-const.patch
-drivers-vidfeo-backlight-ld9040-amoled-driver-support.patch
-leds-route-kbd-leds-through-the-generic-leds-layer.patch
-drivers-mtd-maps-ts5500_flashc-avoid-calling-map_destroy-on-null.patch
-backlight-add-backlight-type.patch
-backlight-add-backlight-type-fix.patch
-backlight-add-backlight-type-fix-fix.patch
-i915-add-native-backlight-control.patch
-radeon-expose-backlight-class-device-for-legacy-lvds-encoder.patch
-radeon-expose-backlight-class-device-for-legacy-lvds-encoder-update.patch
-nouveau-change-the-backlight-parent-device-to-the-connector-not-the-pci-dev.patch
-acpi-tie-acpi-backlight-devices-to-pci-devices-if-possible.patch
-mbp_nvidia_bl-remove-dmi-dependency.patch
-mbp_nvidia_bl-check-that-the-backlight-control-functions.patch
-mbp_nvidia_bl-rename-to-apple_bl.patch
-backlight-apple_bl-depends-on-acpi.patch
-drivers-video-backlight-jornada720_c-make-needlessly-global-symbols-static.patch
-btusb-patch-add_apple_macbookpro62.patch
-drivers-message-fusion-mptsasc-fix-warning.patch
-scsi-fix-a-header-to-include-linux-typesh.patch
-drbd-fix-warning.patch
-block-fix-kernel-doc-format-for-blkdev_issue_zeroout.patch
-usb-yurex-recognize-generalkeys-wireless-presenter-as-generic-hid.patch
-mm.patch
-mm-compaction-check-migrate_pagess-return-value-instead-of-list_empty.patch
-mm-numa-aware-alloc_task_struct_node.patch
-mm-numa-aware-alloc_thread_info_node.patch
-kthread-numa-aware-kthread_create_on_cpu.patch
-kthread-use-kthread_create_on_cpu.patch
-oom-suppress-nodes-that-are-not-allowed-from-meminfo-on-oom-kill.patch
-oom-suppress-show_mem-for-many-nodes-in-irq-context-on-page-alloc-failure.patch
-oom-suppress-nodes-that-are-not-allowed-from-meminfo-on-page-alloc-failure.patch
-mm-notifier_from_errno-cleanup.patch
-mm-remove-unused-token-argument-from-apply_to_page_range-callback.patch
-mm-add-apply_to_page_range_batch.patch
-ioremap-use-apply_to_page_range_batch-for-ioremap_page_range.patch
-vmalloc-use-plain-pte_clear-for-unmaps.patch
-vmalloc-use-apply_to_page_range_batch-for-vunmap_page_range.patch
-vmalloc-use-apply_to_page_range_batch-for-vmap_page_range_noflush.patch
-vmalloc-use-apply_to_page_range_batch-in-alloc_vm_area.patch
-xen-mmu-use-apply_to_page_range_batch-in-xen_remap_domain_mfn_range.patch
-xen-grant-table-use-apply_to_page_range_batch.patch
-mm-allow-gup-to-fail-instead-of-waiting-on-a-page.patch
-mm-allow-gup-to-fail-instead-of-waiting-on-a-page-fix.patch
-mm-add-replace_page_cache_page-function.patch
-mm-add-replace_page_cache_page-function-add-freepage-hook.patch
-mm-introduce-delete_from_page_cache.patch
-mm-hugetlbfs-change-remove_from_page_cache.patch
-mm-shmem-change-remove_from_page_cache.patch
-mm-truncate-change-remove_from_page_cache.patch
-mm-good-bye-remove_from_page_cache.patch
-mm-change-__remove_from_page_cache.patch
-mm-batch-free-pcp-list-if-possible.patch
-mm-batch-free-pcp-list-if-possible-fix.patch
-mm-debug-pagealloc-fix-kconfig-dependency-warning.patch
-mm-rename-drop_anon_vma-to-put_anon_vma.patch
-mm-move-anon_vma-ref-out-from-under-config_foo.patch
-mm-simplify-anon_vma-refcounts.patch
-mm-remove-unused-testsetpagelocked-interface.patch
-mm-mm_struct-remove-16-bytes-of-alignment-padding-on-64-bit-builds.patch
-mm-deactivate-invalidated-pages.patch
-memcg-move-memcg-reclaimable-page-into-tail-of-inactive-list.patch
-mm-reclaim-invalidated-page-asap.patch
-pagewalk-only-split-huge-pages-when-necessary.patch
-pagewalk-only-split-huge-pages-when-necessary-checkpatch-fixes.patch
-smaps-break-out-smaps_pte_entry-from-smaps_pte_range.patch
-smaps-pass-pte-size-argument-in-to-smaps_pte_entry.patch
-smaps-teach-smaps_pte_range-about-thp-pmds.patch
-smaps-have-smaps-show-transparent-huge-pages.patch
-mempolicy-remove-redundant-check-in-__mpol_equal.patch
-mm-vmscan-kswapd-should-not-free-an-excessive-number-of-pages-when-balancing-small-zones.patch
-hugetlbfs-correct-handling-of-negative-input-to-proc-sys-vm-nr_hugepages.patch
-mm-remove-worrying-dead-code-from-find_get_pages.patch
-mm-dont-return-0-too-early-from-find_get_pages.patch
-mm-compaction-minimise-the-time-irqs-are-disabled-while-isolating-free-pages.patch
-mm-compaction-minimise-the-time-irqs-are-disabled-while-isolating-pages-for-migration.patch
-mm-compaction-minimise-the-time-irqs-are-disabled-while-isolating-pages-for-migration-fix.patch
-ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages.patch
-ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix.patch
-ksm-add-vm_stat-and-meminfo-entry-to-reflect-pte-mapping-to-ksm-pages-fix-fix.patch
-memsw-remove-noswapaccount-kernel-parameter.patch
-xattrh-expose-string-defines-to-userspace.patch
-frv-duplicate-output_buffer-of-e03.patch
-frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
-hpet-factor-timer-allocate-from-open.patch
-arch-alpha-include-asm-ioh-s-extern-inline-static-inline.patch
-uml-kernels-on-i386x86_64-produce-bad-coredumps.patch
-add-the-common-dma_addr_t-typedef-to-include-linux-typesh.patch
-fs-use-appropriate-printk-priority-level.patch
-include-linux-compiler-gcch-unify-macro-definitions.patch
-fsh-remove-8-bytes-of-padding-from-block_device-on-64bit-builds.patch
-fs-inode-fix-kernel-doc-format-for-inode_init_owner.patch
-fs-locksc-remove-stale-fixme-left-over-from-bkl-conversion.patch
-bh1780gli-convert-to-dev-pm-ops.patch
-bh1780gli-convert-to-dev-pm-ops-update.patch
-drivers-misc-bmp085c-free-initmem-memory.patch
-st-spear-pcie-gadget-suppport.patch
-move-x86-specific-oops=panic-to-generic-code.patch
-include-linux-errh-add-a-function-to-cast-error-pointers-to-a-return-value.patch
-smp-move-smp-setup-functions-to-kernel-smpc.patch
-kernel-cpuc-fix-many-errors-related-to-style.patch
-kernel-cpuc-fix-many-errors-related-to-style-fix.patch
-llist-add-kconfig-option-arch_have_nmi_safe_cmpxchg.patch
-llist-lib-add-lock-less-null-terminated-single-list.patch
-llist-irq_work-use-llist-in-irq_work.patch
-llist-net-rds-replace-xlist-in-net-rds-xlisth-with-llist.patch
-sys_unshare-remove-the-dead-clone_thread-sighand-vm-code.patch
-net-convert-%p-usage-to-%pk.patch
-vsprintf-neaten-%pk-kptr_restrict-save-a-bit-of-code-space.patch
-console-allow-to-retain-boot-console-via-boot-option-keep_bootcon.patch
-console-prevent-registered-consoles-from-dumping-old-kernel-message-over-again.patch
-printk-use-%pk-for-proc-kallsyms-and-proc-modules.patch
-printk-allow-setting-default_message_level-via-kconfig.patch
-vfs-ignore-error-on-forced-remount.patch
-vfs-keep-list-of-mounts-for-each-superblock.patch
-vfs-protect-remounting-superblock-read-only.patch
-vfs-fs_may_remount_ro-turn-unnecessary-check-into-a-warn_on.patch
-fs-ioctlc-remove-unnecessary-variable.patch
-get_maintainerpl-allow-k-pattern-tests-to-match-non-patch-text.patch
-maintainers-add-topgit-for-t.patch
-maintainers-quote-non-alphanumeric-email-addresses.patch
-maintainers-update-adp5520-pattern.patch
-maintainers-change-web-links-from-wiki-analog-to-wikianalog.patch
-maintainers-remove-asoc-codec-drivers-files-not-in-tree.patch
-maintainers-add-missing-after-hr-timers-f-tag.patch
-maintainers-remove-unnecessary-linux-kernel-vgerkernelorg-entries.patch
-maintainers-update-clkdev-location.patch
-maintainers-update-media-path.patch
-maintainers-remove-unused-clockeventsh.patch
-maintainers-remove-ieee1394-entry.patch
-maintainers-remove-unused-timekeeping-timekeepingh.patch
-maintainers-update-scx200-file-pattern.patch
-maintainers-remove-sharp-lh7a40x-section.patch
-maintainers-update-sfi-pattern.patch
-maintainers-update-tipc-patterns.patch
-maintainers-usb-se401-moved-to-staging-update-pattern.patch
-maintainers-update-winbond-cir-pattern.patch
-lib-vsprintf-optimised-put_dec-function.patch
-lib-vsprintf-optimised-put_dec-function-fix.patch
-lib-vsprintf-added-a-put_dec-test-and-benchmark-tool.patch
-kstrto-converting-strings-to-integers-done-hopefully-right.patch
-sigma-firmware-loader-for-analog-devices-sigmastudio.patch
-sigma-firmware-loader-for-analog-devices-sigmastudio-v2.patch
-drivers-mmc-host-omapc-use-resource_size.patch
-drivers-mmc-host-omap_hsmmcc-use-resource_size.patch
-scripts-checkpatchpl-reset-rpt_cleaners-warnings.patch
-crc32-add-missed-brackets-in-macro.patch
-select-remove-unused-max_select_seconds.patch
-epoll-move-ready-event-check-into-proper-inline.patch
-epoll-fix-compiler-warning-and-optimize-the-non-blocking-path.patch
-epoll-fix-compiler-warning-and-optimize-the-non-blocking-path-fix.patch
-binfmt_elf-quiet-gcc-46-set-but-not-used-warning-in-load_elf_binary.patch
-lib-hexdumpc-make-hex2bin-return-the-updated-src-address.patch
-fs-binfmt_miscc-use-kernels-hex_to_bin-method.patch
-fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix.patch
-fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix-fix.patch
-init-return-proper-error-code-in-do_mounts_rd.patch
-rtc-add-support-for-the-rtc-in-via-vt8500-and-compatibles.patch
-rtc-convert-ds1374-to-dev_pm_ops.patch
-rtc-include-information-about-uie-and-pie-in-rtc-driver-proc.patch
-rtc-add-real-time-clock-driver-for-nvidia-tegra.patch
-gpio-add-new-altera-pio-driver.patch
-gpio-add-new-altera-pio-driver-update.patch
-gpio-make-gpio_requestfree_array-gpio-array-parameter-const.patch
-pnp-only-assign-ioresource_dma-if-config_isa_dma_api-is-enabled.patch
-x86-only-compile-8237a-if-config_isa_dma_api-is-enabled.patch
-x86-only-compile-floppy-driver-if-config_isa_dma_api-is-enabled.patch
-x86-allow-config_isa_dma_api-to-be-disabled.patch
-jbd-remove-dependency-on-__gfp_nofail.patch
-documentation-codingstyle-flesh-out-if-else-examples.patch
-cgroup-remove-the-ns_cgroup.patch
-memcg-res_counter_read_u64-fix-potential-races-on-32-bit-machines.patch
-memcg-fix-ugly-initialization-of-return-value-is-in-caller.patch
-memcg-soft-limit-reclaim-should-end-at-limit-not-below.patch
-memcg-simplify-the-way-memory-limits-are-checked.patch
-memcg-remove-unused-page-flag-bitfield-defines.patch
-memcg-remove-impossible-conditional-when-committing.patch
-memcg-remove-null-check-from-lookup_page_cgroup-result.patch
-memcg-add-memcg-sanity-checks-at-allocating-and-freeing-pages.patch
-memcg-add-memcg-sanity-checks-at-allocating-and-freeing-pages-update.patch
-memcg-add-memcg-sanity-checks-at-allocating-and-freeing-pages-update-fix.patch
-memcg-no-uncharged-pages-reach-page_cgroup_zoneinfo.patch
-memcg-change-page_cgroup_zoneinfo-signature.patch
-memcg-fold-__mem_cgroup_move_account-into-caller.patch
-memcg-condense-page_cgroup-to-page-lookup-points.patch
-memcg-remove-direct-page_cgroup-to-page-pointer.patch
-memcg-remove-direct-page_cgroup-to-page-pointer-fix.patch
-memcg-remove-direct-page_cgroup-to-page-pointer-fix-fix.patch
-memcg-charged-pages-always-have-valid-per-memcg-zone-info.patch
-memcg-remove-memcg-reclaim_param_lock.patch
-memcg-keep-only-one-charge-cancelling-function.patch
-memcg-keep-only-one-charge-cancelling-function-fix.patch
-memcg-convert-per-cpu-stock-from-bytes-to-page-granularity.patch
-memcg-convert-uncharge-batching-from-bytes-to-page-granularity.patch
-memcg-unify-charge-uncharge-quantities-to-units-of-pages.patch
-memcg-break-out-event-counters-from-other-stats.patch
-memcg-use-native-word-page-statistics-counters.patch
-mm-memcontrolc-suppress-uninitializer-var-warning-with-older-gccs.patch
-cpuset-remove-unneeded-nodemask_alloc-in-cpuset_sprintf_memlist.patch
-cpuset-remove-unneeded-nodemask_alloc-in-cpuset_sprintf_memlist-v2.patch
-cpuset-remove-unneeded-nodemask_alloc-in-cpuset_attch.patch
-cpuset-fix-unchecked-calls-to-nodemask_alloc.patch
-cpuset-fix-unchecked-calls-to-nodemask_alloc-v2.patch
-cpuset-hold-callback_mutex-in-cpuset_clone.patch
-proc-hide-kernel-addresses-via-%pk-in-proc-pid-stack.patch
-char-ipmi-fix-cleanup_one_si-section-mismatch.patch
-drivers-char-add-msm-smd_pkt-driver.patch
-drivers-char-bfin_jtag_commc-avoid-calling-put_tty_driver-on-null.patch
-drivers-char-specialixc-convert-func_enter-to-func_exit.patch
-drivers-char-memc-clean-up-the-code.patch
-rapidio-add-new-sysfs-attributes.patch
-rapidio-add-new-sysfs-attributes-v2.patch
-rapidio-add-rapidio-documentation.patch
-rapidio-add-rapidio-documentation-v2.patch
-rapidio-add-architecture-specific-callbacks.patch
-rapidio-modify-configuration-to-support-pci-srio-controller.patch
-rapidio-modify-subsystem-and-driver-initialization-sequence.patch
-rapidio-modify-mport-id-assignment.patch
-rapidio-remove-mport-resource-reservation-from-common-rio-code.patch
-sysctl_check-drop-table-procname-checks.patch
-sysctl_check-drop-dead-code.patch
-pid-remove-the-child_reaper-special-case-in-init-mainc.patch
-pidns-call-pid_ns_prepare_proc-from-create_pid_namespace.patch
-procfs-kill-the-global-proc_mnt-variable.patch
-userns-add-a-user_namespace-as-creator-owner-of-uts_namespace.patch
-userns-security-make-capabilities-relative-to-the-user-namespace.patch
-userns-security-make-capabilities-relative-to-the-user-namespace-fix.patch
-userns-security-make-capabilities-relative-to-the-user-namespace-fix-fix.patch
-userns-allow-sethostname-in-a-container.patch
-userns-allow-killing-tasks-in-your-own-or-child-userns.patch
-userns-allow-ptrace-from-non-init-user-namespaces.patch
-userns-user-namespaces-convert-all-capable-checks-in-kernel-sysc.patch
-userns-add-a-user-namespace-owner-of-ipc-ns.patch
-userns-user-namespaces-convert-several-capable-calls.patch
-userns-user-namespaces-convert-several-capable-calls-checkpatch-fixes.patch
-userns-userns-check-user-namespace-for-task-file-uid-equivalence-checks.patch
-userns-userns-check-user-namespace-for-task-file-uid-equivalence-checks-checkpatch-fixes.patch
-userns-rename-is_owner_or_cap-to-inode_owner_or_capable.patch
-userns-rename-is_owner_or_cap-to-inode_owner_or_capable-fix.patch
-userns-rename-is_owner_or_cap-to-inode_owner_or_capable-fix-fix.patch
-fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
-taskstats-use-appropriate-printk-priority-level.patch
-kernel-gcov-makefile-use-proper-ccflag-flag-in-makefile.patch
-remove-dma64_addr_t.patch
-adfs-fix-e-f-dir-size-2048-crashing-kernel.patch
-adfs-improve-timestamp-precision.patch
-adfs-add-hexadecimal-filetype-suffix-option.patch
-pps-remove-unreachable-code.patch
-scatterlist-new-helper-functions.patch
-memstick-add-driver-for-ricoh-r5c592-card-reader.patch
-memstick-add-support-for-legacy-memorysticks.patch
-memstick-add-support-for-legacy-memorysticks-update.patch
-memstick-add-alex-dubov-to-maintainers-of-the-memstick-core.patch
-crash_dump-export-is_kdump_kernel-to-modules-consolidate-elfcorehdr_addr-setup_elfcorehdr-and-saved_max_pfn.patch
-crash_dump-export-is_kdump_kernel-to-modules-consolidate-elfcorehdr_addr-setup_elfcorehdr-and-saved_max_pfn-fix.patch
-crash_dump-export-is_kdump_kernel-to-modules-consolidate-elfcorehdr_addr-setup_elfcorehdr-and-saved_max_pfn-fix-fix.patch
-crash_dump-export-is_kdump_kernel-to-modules-consolidate-elfcorehdr_addr-setup_elfcorehdr-and-saved_max_pfn-fix-fix-fix.patch
-kexec-remove-kmsg_dump_kexec.patch
-fs-devpts-inodec-correctly-check-d_alloc_name-return-code-in-devpts_pty_new.patch
-fs-devpts_pty_new-return-enomem-if-dentry-allocation-failed.patch
-kvm-stop-including-asm-generic-bitops-leh-directly.patch
-rds-stop-including-asm-generic-bitops-leh-directly.patch
-bitops-merge-little-and-big-endian-definisions-in-asm-generic-bitops-leh.patch
-asm-generic-rename-generic-little-endian-bitops-functions.patch
-asm-generic-change-little-endian-bitops-to-take-any-pointer-types.patch
-asm-generic-change-little-endian-bitops-to-take-any-pointer-types-convert-little-endian-bitops-macros-to-static-inline-functions.patch
-powerpc-introduce-little-endian-bitops.patch
-powerpc-introduce-little-endian-bitops-convert-little-endian-bitops-macros-to-static-inline-functions.patch
-s390-introduce-little-endian-bitops.patch
-s390-introduce-little-endian-bitops-convert-little-endian-bitops-macros-to-static-inline-functions.patch
-arm-introduce-little-endian-bitops.patch
-arm-introduce-little-endian-bitops-convert-little-endian-bitops-macros-to-static-inline-functions.patch
-m68k-introduce-little-endian-bitops.patch
-m68k-introduce-little-endian-bitops-convert-little-endian-bitops-macros-to-static-inline-functions.patch
-bitops-introduce-config_generic_find_bit_le.patch
-m68knommu-introduce-little-endian-bitops.patch
-m68knommu-introduce-little-endian-bitops-convert-little-endian-bitops-macros-to-static-inline-functions.patch
-bitops-introduce-little-endian-bitops-for-most-architectures.patch
-asm-generic-use-little-endian-bitops.patch
-kvm-use-little-endian-bitops.patch
-rds-use-little-endian-bitops.patch
-ext3-use-little-endian-bitops.patch
-ext4-use-little-endian-bitops.patch
-ocfs2-use-little-endian-bitops.patch
-nilfs2-use-little-endian-bitops.patch
-reiserfs-use-little-endian-bitops.patch
-udf-use-little-endian-bitops.patch
-ufs-use-little-endian-bitops.patch
-md-use-little-endian-bitops.patch
-dm-use-little-endian-bitops.patch
-bitops-remove-ext2-non-atomic-bitops-from-asm-bitopsh.patch
-m68k-remove-inline-asm-from-minix_find_first_zero_bit.patch
-bitops-remove-minix-bitops-from-asm-bitopsh.patch
-make-sure-nobodys-leaking-resources.patch
-journal_add_journal_head-debug.patch
-releasing-resources-with-children.patch
-make-frame_pointer-default=y.patch
-mutex-subsystem-synchro-test-module.patch
-mutex-subsystem-synchro-test-module-add-missing-header-file.patch
-slab-leaks3-default-y.patch
-put_bh-debug.patch
-add-debugging-aid-for-memory-initialisation-problems.patch
-workaround-for-a-pci-restoring-bug.patch
-prio_tree-debugging-patch.patch
-single_open-seq_release-leak-diagnostics.patch
-add-a-refcount-check-in-dput.patch
-memblock-add-input-size-checking-to-memblock_find_region.patch
-memblock-add-input-size-checking-to-memblock_find_region-fix.patch
+Index: linux-2.6/arch/x86/mm/numa_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/numa_64.c
++++ linux-2.6/arch/x86/mm/numa_64.c
+@@ -399,7 +399,7 @@ void __init numa_reset_distance(void)
+ 	numa_distance = NULL;	/* enable table creation */
+ }
+ 
+-static int __init numa_alloc_distance(void)
++int __init numa_alloc_distance(void)
+ {
+ 	nodemask_t nodes_parsed;
+ 	size_t size;
+@@ -435,7 +435,7 @@ static int __init numa_alloc_distance(vo
+ 				LOCAL_DISTANCE : REMOTE_DISTANCE;
+ 	printk(KERN_DEBUG "NUMA: Initialized distance table, cnt=%d\n", cnt);
+ 
+-	return 0;
++	return cnt;
+ }
+ 
+ /**
+Index: linux-2.6/arch/x86/mm/numa_emulation.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/numa_emulation.c
++++ linux-2.6/arch/x86/mm/numa_emulation.c
+@@ -301,7 +301,7 @@ void __init numa_emulation(struct numa_m
+ 	const u64 max_addr = max_pfn << PAGE_SHIFT;
+ 	u8 *phys_dist = NULL;
+ 	size_t phys_size = 0;
+-	int i, j, ret;
++	int i, j, ret, new_nr;
+ 
+ 	if (!emu_cmdline)
+ 		goto no_emu;
+@@ -380,28 +380,39 @@ void __init numa_emulation(struct numa_m
+ 		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
+ 			emu_nid_to_phys[i] = 0;
+ 
++	/* Transform distance table */
++	numa_reset_distance();
+ 	/*
+-	 * Transform distance table.  numa_set_distance() ignores all
+-	 * out-of-bound distances.  Just call it for every possible node
+-	 * combination.
++	 * allocate numa_distance at first,
++	 *  it will set new numa_dist_cnt and default values
+ 	 */
+-	numa_reset_distance();
+-	for (i = 0; i < MAX_NUMNODES; i++) {
+-		for (j = 0; j < MAX_NUMNODES; j++) {
+-			int physi = emu_nid_to_phys[i];
+-			int physj = emu_nid_to_phys[j];
+-			int dist;
+-
+-			if (physi >= numa_dist_cnt || physj >= numa_dist_cnt)
+-				dist = physi == physj ?
+-					LOCAL_DISTANCE : REMOTE_DISTANCE;
+-			else
++	new_nr = numa_alloc_distance();
++	if (new_nr < 0)
++		goto free_temp_phys;
++
++	/*
++	 * only set it when we have old phys_dist,
++	 * numa_alloc_distance() already set default values
++	 */
++	if (phys_dist)
++		for (i = 0; i < new_nr; i++) {
++			for (j = 0; j < new_nr; j++) {
++				int physi = emu_nid_to_phys[i];
++				int physj = emu_nid_to_phys[j];
++				int dist;
++
++				/* really need this check ? */
++				if (physi >= numa_dist_cnt ||
++				    physj >= numa_dist_cnt)
++					continue;
++
+ 				dist = phys_dist[physi * numa_dist_cnt + physj];
+ 
+-			numa_set_distance(i, j, dist);
++				numa_set_distance(i, j, dist);
++			}
+ 		}
+-	}
+ 
++free_temp_phys:
+ 	/* free the copied physical distance table */
+ 	if (phys_dist)
+ 		memblock_x86_free_range(__pa(phys_dist), __pa(phys_dist) + phys_size);
+Index: linux-2.6/arch/x86/mm/numa_internal.h
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/numa_internal.h
++++ linux-2.6/arch/x86/mm/numa_internal.h
+@@ -18,6 +18,7 @@ struct numa_meminfo {
+ void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi);
+ int __init numa_cleanup_meminfo(struct numa_meminfo *mi);
+ void __init numa_reset_distance(void);
++int numa_alloc_distance(void);
+ 
+ #ifdef CONFIG_NUMA_EMU
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo,
