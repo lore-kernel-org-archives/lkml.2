@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab1CCJSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 04:18:40 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:38461 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab1CCJSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 04:18:38 -0500
-Date: Thu, 3 Mar 2011 10:18:27 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, aarcange@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
-Message-ID: <20110303091827.GC2245@cmpxchg.org>
-References: <1299113128-11349-1-git-send-email-andi@firstfloor.org>
- <1299113128-11349-9-git-send-email-andi@firstfloor.org>
+	id S1755657Ab1CCJ3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 04:29:46 -0500
+Received: from smtp1.kolej.mff.cuni.cz ([78.128.192.10]:64755 "EHLO
+	smtp1.kolej.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab1CCJ3n (ORCPT
+	<RFC822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 04:29:43 -0500
+X-Envelope-From: santiago@crfreenet.org
+Date: Thu, 3 Mar 2011 09:50:44 +0100
+From: Ondrej Zajicek <santiago@crfreenet.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] s3fb: use new start address register
+Message-ID: <20110303085044.GE8363@localhost>
+References: <201103012018.45635.linux@rainbow-software.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cPi+lWm09sJ+d57q"
 Content-Disposition: inline
-In-Reply-To: <1299113128-11349-9-git-send-email-andi@firstfloor.org>
+In-Reply-To: <201103012018.45635.linux@rainbow-software.org>
+X-Operating-System: Debian GNU/Linux 4.0 (Etch)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 04:45:28PM -0800, Andi Kleen wrote:
-> --- a/include/linux/vmstat.h
-> +++ b/include/linux/vmstat.h
-> @@ -58,6 +58,13 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
->  		UNEVICTABLE_PGCLEARED,	/* on COW, page truncate */
->  		UNEVICTABLE_PGSTRANDED,	/* unable to isolate on unlock */
->  		UNEVICTABLE_MLOCKFREED,
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +	        THP_FAULT_ALLOC,
-> +		THP_COLLAPSE_ALLOC,	
-> +		THP_FAULT_FALLBACK,	
 
-Wouldn't this better be named THP_FAULT_ALLOC_FAIL?  After all, it
-counts allocation failures, not what results from them.
+--cPi+lWm09sJ+d57q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Secondly, the order does not match the strings, it will report the
-THP_COLLAPSE_ALLOC item as "thp_fault_fallback" and vice versa.
+On Tue, Mar 01, 2011 at 08:18:43PM +0100, Ondrej Zary wrote:
+> Use "new" start address register 0x69 (bits 16-20) instead of "old" 0x31
+> (bits 16-17) and 0x51 (bits 18-19). This is needed for panning to work
+> correctly on Trio3D/2X cards (and does no harm on other ones).
+>=20
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-There are also odd spaces after the lines defining THP_COLLAPSE_ALLOC
-and this one.
+Acked-by: Ondrej Zajicek <santiago@crfreenet.org>
 
-> +		THP_COLLAPSE_ALLOC_FAILED,
-> +		THP_SPLIT,
-> +#endif
->  		NR_VM_EVENT_ITEMS
->  };
+--=20
+Elen sila lumenn' omentielvo
 
-> diff --git a/mm/vmstat.c b/mm/vmstat.c
-> index 2b461ed..a23f2d2 100644
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -946,6 +946,14 @@ static const char * const vmstat_text[] = {
->  	"unevictable_pgs_stranded",
->  	"unevictable_pgs_mlockfreed",
->  #endif
-> +
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +	"thp_fault_alloc",
-> +	"thp_fault_fallback",
-> +	"thp_collapse_alloc",
-> +	"thp_collapse_alloc_failure",
+Ondrej 'SanTiago' Zajicek (email: santiago@crfreenet.org)
+OpenPGP encrypted e-mails preferred (KeyID 0x11DEADC3, wwwkeys.pgp.net)
+"To err is human -- to blame it on a computer is even more so."
 
-Can you make this "_failed" instead, to match the enum symbol?  Andrea
-wasn't sure which was better, "failure" or "failed".  Right now, we
-have two instances of "fail" and two instances of "failed" in
-/proc/vmstat, it's probably best not to introduce a third one.
+--cPi+lWm09sJ+d57q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-	Hannes
+iEYEARECAAYFAk1vVmQACgkQw1GB2RHercPdIACggTIXr79xyE3TVN7unDLSkl3t
+xLsAnRY8QKDpCD+aH1cW+F9GW+r/4QWR
+=r+9+
+-----END PGP SIGNATURE-----
+
+--cPi+lWm09sJ+d57q--
