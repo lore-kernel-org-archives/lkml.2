@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab1CCBOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 20:14:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754555Ab1CCBOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 20:14:23 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, "Alex\,Shi" <alex.shi@intel.com>,
-        "Li\, Shaohua" <shaohua.li@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "tytso\@mit.edu" <tytso@mit.edu>,
-        "jaxboe\@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen\, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
-References: <AANLkTi=B6kabp+NvRJC_g-AqQO0ZOvnEDYpVFmScttR6@mail.gmail.com>
-	<1297650318.29573.2482.camel@debian>
-	<1297732201.24560.2.camel@sli10-conroe>
-	<20110221164909.GG6584@quack.suse.cz>
-	<1298449487.14712.1064.camel@debian>
-	<20110224121339.GE23042@quack.suse.cz>
-	<AANLkTinAeQMy-OoYYpbYeX=EjZ_-uT=67Ktk1PbE=A7_@mail.gmail.com>
-	<x49hbbmpqbo.fsf@segfault.boston.devel.redhat.com>
-	<20110302094246.GA7496@quack.suse.cz>
-	<x491v2p4i0u.fsf@segfault.boston.devel.redhat.com>
-	<20110302211748.GF7496@quack.suse.cz>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 02 Mar 2011 20:14:13 -0500
-In-Reply-To: <20110302211748.GF7496@quack.suse.cz> (Jan Kara's message of
-	"Wed, 2 Mar 2011 22:17:48 +0100")
-Message-ID: <x49lj0x0zve.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756193Ab1CCBPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 20:15:44 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:47915 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab1CCBPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 20:15:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:content-type:organization:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hzsswTlGOBepYjiq2ARxDbPWsQNfsU/nzjmAndmxA3dEurdm9VzDKGtipUqJ4wck4/
+         Cr21Dw4U+fgJ7ulRU5/tcb/o2Qy7bmU0WnHnY/Tz5CNaue5GqaZHwGn5p+DokrKceWnG
+         ggyNJ3V4OFmfXMuNNf3UykBhRh4AzP7xzuEpM=
+Subject: [PATCH 0/2] [TRIVIAL] cgroup:doc Update documentation of cgroup
+From: GeunSik Lim <leemgs1@gmail.com>
+Reply-To: leemgs1@gmail.com
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Organization: Private
+Date: Thu, 03 Mar 2011 10:15:34 +0900
+Message-Id: <1299114934.10998.16.camel@centos55>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.8.0 (2.8.0-40.el5_1.1) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Jan,
+Dear Jiri Kosina, 
 
-So, the results are in.  The test workload is an fs_mark process writing
-out 64k files and fsyncing each file after it's written.  Concurrently
-with this is a fio job running a buffered sequential reader (bsr).  Each
-data point is the average of 10 runs, after throwing out the first run.
-File system mount options are left at their defaults, which means that
-barriers are on.  The storage is an HP EVA, connected to the host via a
-single 4Gb FC path.
+This is a trivial patch for cgroups/cpuset feature. 
+Current document file for cgroups/cpuset is still not updated. 
+So, I made this patch based on linux-2.6.38-rc7.
 
-ext3 looks marginally better with your patches.  We get better files/sec
-AND better throughput from the buffered reader.  For ext4, the results
-are less encouraging.  We see a drop in files/sec, and an increase in
-throughput for the sequential reader.  So, the fsync-ing is being
-starved a bit more than before.
+Regards,
+Geunsik Lim. 
 
-        ||       ext3        ||       ext4        ||
-        || fs_mark | fio bsr || fs_mark | fio bsr ||
---------++---------+---------++---------+---------||
-vanilla || 517.535 | 178187  || 408.547 | 277130  ||
-patched || 540.34  | 182312  || 342.813 | 294655  ||
-====================================================
-%diff   ||  +4.4% |    +2.3% ||  -16.1% |  +6.3%  ||
+== CUT HERE ==
 
-I'm tired right now, but I'll have a look at your ext4 patch in the
-morning and see if I can come up with a good reason for this drop.
+>From c9d5de47e369a63164bb04d0c39eaee39d87e8b5 Mon Sep 17 00:00:00 2001
+From: Geunsik Lim <geunsik.lim@samsung.com>
+Date: Thu, 3 Mar 2011 09:58:11 +0900
+Subject: [PATCH 0/2] cgroup:doc Update documentation of cgroup
 
-Let me know if you have any questions.
+This patch is for updating contents of cgroup doc based on Linux-2.6.38-rc7.
+For example, 
+cpuset list, valid website according to cset(python), suitable words. 
 
-Cheers,
-Jeff
+Geunsik Lim (2):
+  Update cpuset info & webiste via cgroup.
+  Update suitable words to explain cgroups.
+
+ Documentation/cgroups/cgroups.txt |   12 ++++++------
+ Documentation/cgroups/cpusets.txt |   17 +++++++++--------
+ 2 files changed, 15 insertions(+), 14 deletions(-)
+
+
+
+
+-----------------------------------------------
+To unsubscribe from this list: send the line "unsubscribe linux-***" 
+in the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
+GeunSik Lim ( Samsung Electronics )
+e-Mail  :1) geunsik.lim@samsung.com
+         2) leemgs@gmail.com , leemgs1@gmail.com
+HomePage: http://blog.naver.com/invain/
+-----------------------------------------------
+
