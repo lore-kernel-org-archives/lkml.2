@@ -1,165 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757859Ab1CCIqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:46:54 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64636 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab1CCIqx convert rfc822-to-8bit (ORCPT
+	id S1757866Ab1CCIrk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:47:40 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45879 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab1CCIri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:46:53 -0500
+	Thu, 3 Mar 2011 03:47:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=d5UPZW1N+SacgMo5EW7EYXjWOA2kFbUXnPk3BS8p41xih/p8ZczN7Z+S3ked3T5NFz
-         qeUrTGeyYeye3D1NonTrvPLUrJAr0URWKU0Cus+B0RQenDWdtK5bNtm+UizeHleECvkO
-         5mctRyk5ilO2iDzLMFkKwQ3axpS0dQFbNrSBs=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Eco5Lpx+HMBTNCIWhf9yaEYPL69d+JW+PD7lQ1YhdclLzGEKQReSMcqvr2CcQtS7hN
+         skXKSrbz99g0LoD5BjwA63X6asCjrtHz8lKs5vozTH6Gi3BI4+HY9njTkPhS1CnI2+t7
+         Y6s9hL6XL3M/DLwNEz2NaLHkuODXKH1ADRCPc=
+Message-ID: <4D6F5473.2070709@gmail.com>
+Date: Thu, 03 Mar 2011 09:42:27 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1299137483-10975-1-git-send-email-ksumrall@android.com>
-References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
-Date: Thu, 3 Mar 2011 16:46:51 +0800
-Message-ID: <AANLkTine=Om_oTdUH9RT9J=QEtvwZnP5uMrVxVXf0gYw@mail.gmail.com>
-Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
- remount filesystems ro
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Ken Sumrall <ksumrall@android.com>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
-        Eric Paris <eparis@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        cluster-devel@redhat.com, xfs@oss.sgi.com,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH v2] Check for immutable flag in fallocate path
+References: <4D6221B8.9040303@gmail.com>
+In-Reply-To: <4D6221B8.9040303@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 3:31 PM, Ken Sumrall <ksumrall@android.com> wrote:
-> Add 4 new commands to the reboot system call, that do the same thing as the
-> RESTART, HALT, POWER_OFF, and RESTART2 commands, but also remount writable
-> filesystems as read-only just before doing what the command normally does.
-> Now that Android is using EXT4, and since we don't have a standard init
-> setup to unmount filesystems before rebooting, this allows the system to
-> reboot with clean filesystems, and also improves boot time as the journal
-> does not need to be replayed when mounting the filesystem.
->
-> Signed-off-by: Ken Sumrall <ksumrall@android.com>
-> ---
->  fs/super.c             |    9 +++++++++
->  include/linux/fs.h     |    1 +
->  include/linux/reboot.h |    4 ++++
->  kernel/sys.c           |   12 ++++++++++++
->  4 files changed, 26 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/super.c b/fs/super.c
-> index 8819e3a..3f39a16 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -638,6 +638,15 @@ void emergency_remount(void)
->        }
->  }
->
-> +void emergency_remount_synchronous(void)
-> +{
-> +       struct work_struct *work;
-> +
-> +       work = kmalloc(sizeof(*work), GFP_ATOMIC);
-> +       if (work)
-> +               do_emergency_remount(work);
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-work is not needed here? just call do_mergency_remount()
+All fs must check for the immutable flag in their fallocate callback.
+It's possible to have a race condition in this scenario: an application
+open a file in read/write and it does something, meanwhile root set the
+immutable flag on the file, the application at that point can call
+fallocate with success. Only Ocfs2 check for the immutable flag at the
+moment.
 
-> +}
-> +
->  /*
->  * Unnamed block devices are dummy devices used by virtual
->  * filesystems which don't use real block-devices.  -- jrs
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 63d069b..e48ef0d 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2110,6 +2110,7 @@ extern int generic_write_sync(struct file *file, loff_t pos, loff_t count);
->  extern void sync_supers(void);
->  extern void emergency_sync(void);
->  extern void emergency_remount(void);
-> +extern void emergency_remount_synchronous(void);
->  #ifdef CONFIG_BLOCK
->  extern sector_t bmap(struct inode *, sector_t);
->  #endif
-> diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-> index 3005d5a..24b185d 100644
-> --- a/include/linux/reboot.h
-> +++ b/include/linux/reboot.h
-> @@ -26,11 +26,15 @@
->  */
->
->  #define        LINUX_REBOOT_CMD_RESTART        0x01234567
-> +#define        LINUX_REBOOT_CMD_RMNT_RESTART   0x12345670
->  #define        LINUX_REBOOT_CMD_HALT           0xCDEF0123
-> +#define        LINUX_REBOOT_CMD_RMNT_HALT      0xDEF0123C
->  #define        LINUX_REBOOT_CMD_CAD_ON         0x89ABCDEF
->  #define        LINUX_REBOOT_CMD_CAD_OFF        0x00000000
->  #define        LINUX_REBOOT_CMD_POWER_OFF      0x4321FEDC
-> +#define        LINUX_REBOOT_CMD_RMNT_POWER_OFF 0x321FEDC4
->  #define        LINUX_REBOOT_CMD_RESTART2       0xA1B2C3D4
-> +#define        LINUX_REBOOT_CMD_RMNT_RESTART2  0x1B2C3D4A
->  #define        LINUX_REBOOT_CMD_SW_SUSPEND     0xD000FCE2
->  #define        LINUX_REBOOT_CMD_KEXEC          0x45584543
->
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 7f5a0cd..3f474e6 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -392,6 +392,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->        mutex_lock(&reboot_mutex);
->        switch (cmd) {
->        case LINUX_REBOOT_CMD_RESTART:
-> +       case LINUX_REBOOT_CMD_RMNT_RESTART:
-> +               if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART)
-> +                       emergency_remount_synchronous();
->                kernel_restart(NULL);
->                break;
->
-> @@ -404,22 +407,31 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->                break;
->
->        case LINUX_REBOOT_CMD_HALT:
-> +       case LINUX_REBOOT_CMD_RMNT_HALT:
-> +               if (cmd == LINUX_REBOOT_CMD_RMNT_HALT)
-> +                       emergency_remount_synchronous();
->                kernel_halt();
->                do_exit(0);
->                panic("cannot halt");
->
->        case LINUX_REBOOT_CMD_POWER_OFF:
-> +       case LINUX_REBOOT_CMD_RMNT_POWER_OFF:
-> +               if (cmd == LINUX_REBOOT_CMD_RMNT_POWER_OFF)
-> +                       emergency_remount_synchronous();
->                kernel_power_off();
->                do_exit(0);
->                break;
->
->        case LINUX_REBOOT_CMD_RESTART2:
-> +       case LINUX_REBOOT_CMD_RMNT_RESTART2:
->                if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
->                        ret = -EFAULT;
->                        break;
->                }
->                buffer[sizeof(buffer) - 1] = '\0';
->
-> +               if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART2)
-> +                       emergency_remount_synchronous();
->                kernel_restart(buffer);
->                break;
->
-> --
-> 1.7.3.1
->
->
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+Patch is against 2.6.38-rc5
 
+ChangeLog
+v2: Added the check for append-only file for XFS
+v1: First draft
 
-
--- 
-Regards
-dave
+--- linux-2.6.38-rc5-orig/fs/ext4/extents.c	2011-02-16 04:23:45.000000000 +0100
++++ linux-2.6.38-rc5/fs/ext4/extents.c	2011-02-21 08:43:37.000000000 +0100
+@@ -3670,6 +3670,12 @@ long ext4_fallocate(struct file *file, i
+ 	 */
+ 	credits = ext4_chunk_trans_blocks(inode, max_blocks);
+ 	mutex_lock(&inode->i_mutex);
++
++	if (IS_IMMUTABLE(inode)) {
++		mutex_unlock(&inode->i_mutex);
++		return -EPERM;
++	}
++
+ 	ret = inode_newsize_ok(inode, (len + offset));
+ 	if (ret) {
+ 		mutex_unlock(&inode->i_mutex);
+--- linux-2.6.38-rc5-orig/fs/btrfs/file.c	2011-02-16 04:23:45.000000000 +0100
++++ linux-2.6.38-rc5/fs/btrfs/file.c	2011-02-21 08:55:58.000000000 +0100
+@@ -1289,6 +1289,12 @@ static long btrfs_fallocate(struct file
+ 	btrfs_wait_ordered_range(inode, alloc_start, alloc_end - alloc_start);
+ 
+ 	mutex_lock(&inode->i_mutex);
++
++	if (IS_IMMUTABLE(inode)) {
++		ret = -EPERM;
++		goto out;
++	}
++
+ 	ret = inode_newsize_ok(inode, alloc_end);
+ 	if (ret)
+ 		goto out;
+--- linux-2.6.38-rc5-orig/fs/gfs2/file.c	2011-02-16 04:23:45.000000000 +0100
++++ linux-2.6.38-rc5/fs/gfs2/file.c	2011-02-21 09:09:17.000000000 +0100
+@@ -797,6 +797,11 @@ static long gfs2_fallocate(struct file *
+ 	if (unlikely(error))
+ 		goto out_uninit;
+ 
++	if (IS_IMMUTABLE(inode)) {
++		error = -EPERM;
++		goto out_unlock;
++	}
++
+ 	if (!gfs2_write_alloc_required(ip, offset, len))
+ 		goto out_unlock;
+ 
+--- ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-02-16 04:23:45.000000000 +0100
++++ ./linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-03-03 09:25:32.000000000 +0100
+@@ -906,8 +906,18 @@ xfs_file_fallocate(
+ 
+ 	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+ 
+-	if (mode & FALLOC_FL_PUNCH_HOLE)
++	if (mode & FALLOC_FL_PUNCH_HOLE) {
+ 		cmd = XFS_IOC_UNRESVSP;
++		if (IS_APPEND(inode)) {
++			error = -EPERM;
++			goto out_unlock;
++		}
++	}
++
++	if (IS_IMMUTABLE(inode)) {
++		error = -EPERM;
++		goto out_unlock;
++	}
+ 
+ 	/* check the new inode size is valid before allocating */
+ 	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
