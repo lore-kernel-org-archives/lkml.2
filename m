@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908Ab1CCVob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:44:31 -0500
-Received: from waste.org ([173.11.57.241]:43408 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758800Ab1CCVoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:44:30 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Matt Mackall <mpm@selenic.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, linux-mm@kvack.org,
+	id S1758875Ab1CCVxL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:53:11 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32858 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754614Ab1CCVxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 16:53:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <87lj0v9984.fsf@devron.myhome.or.jp>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk> <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
+ <20110303060352.GK22723@ZenIV.linux.org.uk> <AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com>
+ <87tyfk7x0c.fsf@devron.myhome.or.jp> <AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com>
+ <87lj0v9984.fsf@devron.myhome.or.jp>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Mar 2011 13:52:18 -0800
+Message-ID: <AANLkTinSiD3YakBTNfYXrE12YDsDREHX3GzLzCncduTV@mail.gmail.com>
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1299186986.2071.90.camel@dan>
-References: <1299174652.2071.12.camel@dan>  <1299185882.3062.233.camel@calx>
-	 <1299186986.2071.90.camel@dan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 15:44:27 -0600
-Message-ID: <1299188667.3062.259.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 16:16 -0500, Dan Rosenberg wrote:
-> > 
-> > Looking at a couple of these exploits, my suspicion is that looking at
-> > slabinfo simply improves the odds of success by a small factor (ie 10x
-> > or so) and doesn't present a real obstacle to attackers. All that
-> > appears to be required is to arrange that an overrunnable object be
-> > allocated next to one that is exploitable when overrun. And that can be
-> > arranged with fairly high probability on SLUB's merged caches.
-> > 
-> 
-> This is accurate, but the primary goal of exploit mitigation isn't
-> necessarily to completely prevent the possibility of exploitation (time
-> has shown that this is unlikely to be feasible), but rather to increase
-> the cost of investment required to develop a reliable exploit.  If
-> removing read access to /proc/slabinfo means that heap exploits are even
-> slightly more likely to fail, then that's a win as far as I'm concerned
-> and may be the thing that prevents some helpless end user from getting
-> compromised.
+On Thu, Mar 3, 2011 at 1:37 PM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+>
+> And I can't only see is why you refuse to make consistent behavior (if
+> you are saying it). It's why I said if it's _really easy_.
 
-Well if it were a 1000x-1000000x difficulty improvement, I would say you
-had a point. But at 10x, it's just not a real obstacle. For instance, in
-this exploit:
+The thing is, it really isn't really easy. As mentioned, it's actually
+impossible on NFS, and it's possibly impossible on other filesystems
+too.
 
-http://www.exploit-db.com/exploits/14814/
+So what I'm objecting to is "try to make something consistent that
+CANNOT be consistent anyway", and calling it a bug.
 
-..there's already detection of successful smashing, so working around
-not having /proc/slabinfo is as simple as putting the initial smash in a
-loop. I can probably improve my odds of success to nearly 100% by
-pre-allocating a ton of objects all at once to get my own private slab
-page and tidy adjoining allocations. I'll only fail if someone does a
-simultaneous allocation between my target objects or I happen to
-straddle slab pages.
+I'm not saying there aren't real bugs there too (the actual races in
+i_nlink handling are real bugs). But I _am_ saying that it's simply
+not true that i_nlink must be zero if you do an "fstat()" after doing
+an rmdir on an fd that you held open. Nobody can reasonably care, and
+anybody who _does_ care is better off getting a nasty surprise early
+rather than late.
 
-And once an exploit writer has figured that out once, everyone else just
-copies it (like they've copied the slabinfo technique). At which point,
-we might as well make the file more permissive again.. 
-
-> > On the other hand, I'm not convinced the contents of this file are of
-> > much use to people without admin access.
-> > 
-> 
-> Exactly.  We might as well do everything we can to make attackers' lives
-> more difficult, especially when the cost is so low.
-
-There are thousands of attackers and millions of users. Most of those
-millions are on single-user systems with no local attackers. For every
-attacker's life we make trivially more difficult, we're also making a
-few real user's lives more difficult. It's not obvious that this is a
-good trade-off.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+                           Linus
