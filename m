@@ -1,120 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab1CCHaH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 02:30:07 -0500
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:46717 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754180Ab1CCHaG (ORCPT
+	id S1756809Ab1CCHcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 02:32:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58686 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793Ab1CCHcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 02:30:06 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
-	b=w9leRkxHwZSz4F4yp+uZat3d5tbfdi2Pz+GH9omO7lgmZHg7t/dy9gKCNfbtMWiW90KVnbgINcVlnIL+tny8ZRQlYpZQolsfqLRaXGypZM7H9QTAhoXtX2tlzELIdSHp;
-From: Tao Ma <tm@tao.ma>
+	Thu, 3 Mar 2011 02:32:20 -0500
+From: Ken Sumrall <ksumrall@android.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH] blktrace: Remove blk_fill_rwbs_rq.
-Date: Thu,  3 Mar 2011 15:29:40 +0800
-Message-Id: <1299137380-4119-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+Cc: Ken Sumrall <ksumrall@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
+        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] Syscalls: reboot: Add options to the reboot syscall to remount filesystems ro
+Date: Wed,  2 Mar 2011 23:31:22 -0800
+Message-Id: <1299137483-10975-1-git-send-email-ksumrall@android.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+Add 4 new commands to the reboot system call, that do the same thing as the
+RESTART, HALT, POWER_OFF, and RESTART2 commands, but also remount writable
+filesystems as read-only just before doing what the command normally does.
+Now that Android is using EXT4, and since we don't have a standard init
+setup to unmount filesystems before rebooting, this allows the system to
+reboot with clean filesystems, and also improves boot time as the journal
+does not need to be replayed when mounting the filesystem.
 
-If we enable trace events to trace block actions, We use
-blk_fill_rwbs_rq to analyze the corresponding actions
-in request's cmd_flags, but we only choose the minor 2 bits
-from it, so most of other flags(e.g, REQ_SYNC) are missing.
-For example, with a sync write we get:
-write_test-2409  [001]   160.013869: block_rq_insert: 3,64 W 0 () 258135 + 8 [write_test]
-
-Since now we have integrated the flags of both bio and request,
-it is safe to pass rq->cmd_flags directly to blk_fill_rwbs and
-blk_fill_rwbs_rq isn't needed any more.
-
-With this patch, after a sync write we get:
-write_test-2417  [000]   226.603878: block_rq_insert: 3,64 WS 0 () 258135 + 8 [write_test]
-
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: Ken Sumrall <ksumrall@android.com>
 ---
- include/linux/blktrace_api.h |    1 -
- include/trace/events/block.h |    6 +++---
- kernel/trace/blktrace.c      |   16 ----------------
- 3 files changed, 3 insertions(+), 20 deletions(-)
+ fs/super.c             |    9 +++++++++
+ include/linux/fs.h     |    1 +
+ include/linux/reboot.h |    4 ++++
+ kernel/sys.c           |   12 ++++++++++++
+ 4 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
-index 3395cf7..b22fb0d 100644
---- a/include/linux/blktrace_api.h
-+++ b/include/linux/blktrace_api.h
-@@ -245,7 +245,6 @@ static inline int blk_cmd_buf_len(struct request *rq)
- 
- extern void blk_dump_cmd(char *buf, struct request *rq);
- extern void blk_fill_rwbs(char *rwbs, u32 rw, int bytes);
--extern void blk_fill_rwbs_rq(char *rwbs, struct request *rq);
- 
- #endif /* CONFIG_EVENT_TRACING && CONFIG_BLOCK */
- 
-diff --git a/include/trace/events/block.h b/include/trace/events/block.h
-index aba421d..78f18ad 100644
---- a/include/trace/events/block.h
-+++ b/include/trace/events/block.h
-@@ -31,7 +31,7 @@ DECLARE_EVENT_CLASS(block_rq_with_error,
- 					0 : blk_rq_sectors(rq);
- 		__entry->errors    = rq->errors;
- 
--		blk_fill_rwbs_rq(__entry->rwbs, rq);
-+		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, blk_rq_bytes(rq));
- 		blk_dump_cmd(__get_str(cmd), rq);
- 	),
- 
-@@ -118,7 +118,7 @@ DECLARE_EVENT_CLASS(block_rq,
- 		__entry->bytes     = (rq->cmd_type == REQ_TYPE_BLOCK_PC) ?
- 					blk_rq_bytes(rq) : 0;
- 
--		blk_fill_rwbs_rq(__entry->rwbs, rq);
-+		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, blk_rq_bytes(rq));
- 		blk_dump_cmd(__get_str(cmd), rq);
- 		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
- 	),
-@@ -563,7 +563,7 @@ TRACE_EVENT(block_rq_remap,
- 		__entry->nr_sector	= blk_rq_sectors(rq);
- 		__entry->old_dev	= dev;
- 		__entry->old_sector	= from;
--		blk_fill_rwbs_rq(__entry->rwbs, rq);
-+		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, blk_rq_bytes(rq));
- 	),
- 
- 	TP_printk("%d,%d %s %llu + %u <- (%d,%d) %llu",
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index 07f4382..cfc059d 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -1824,21 +1824,5 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
- 	rwbs[i] = '\0';
+diff --git a/fs/super.c b/fs/super.c
+index 8819e3a..3f39a16 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -638,6 +638,15 @@ void emergency_remount(void)
+ 	}
  }
  
--void blk_fill_rwbs_rq(char *rwbs, struct request *rq)
--{
--	int rw = rq->cmd_flags & 0x03;
--	int bytes;
--
--	if (rq->cmd_flags & REQ_DISCARD)
--		rw |= REQ_DISCARD;
--
--	if (rq->cmd_flags & REQ_SECURE)
--		rw |= REQ_SECURE;
--
--	bytes = blk_rq_bytes(rq);
--
--	blk_fill_rwbs(rwbs, rw, bytes);
--}
--
- #endif /* CONFIG_EVENT_TRACING */
++void emergency_remount_synchronous(void)
++{
++	struct work_struct *work;
++
++	work = kmalloc(sizeof(*work), GFP_ATOMIC);
++	if (work)
++		do_emergency_remount(work);
++}
++
+ /*
+  * Unnamed block devices are dummy devices used by virtual
+  * filesystems which don't use real block-devices.  -- jrs
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 63d069b..e48ef0d 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2110,6 +2110,7 @@ extern int generic_write_sync(struct file *file, loff_t pos, loff_t count);
+ extern void sync_supers(void);
+ extern void emergency_sync(void);
+ extern void emergency_remount(void);
++extern void emergency_remount_synchronous(void);
+ #ifdef CONFIG_BLOCK
+ extern sector_t bmap(struct inode *, sector_t);
+ #endif
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 3005d5a..24b185d 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -26,11 +26,15 @@
+  */
+ 
+ #define	LINUX_REBOOT_CMD_RESTART	0x01234567
++#define	LINUX_REBOOT_CMD_RMNT_RESTART	0x12345670
+ #define	LINUX_REBOOT_CMD_HALT		0xCDEF0123
++#define	LINUX_REBOOT_CMD_RMNT_HALT	0xDEF0123C
+ #define	LINUX_REBOOT_CMD_CAD_ON		0x89ABCDEF
+ #define	LINUX_REBOOT_CMD_CAD_OFF	0x00000000
+ #define	LINUX_REBOOT_CMD_POWER_OFF	0x4321FEDC
++#define	LINUX_REBOOT_CMD_RMNT_POWER_OFF	0x321FEDC4
+ #define	LINUX_REBOOT_CMD_RESTART2	0xA1B2C3D4
++#define	LINUX_REBOOT_CMD_RMNT_RESTART2	0x1B2C3D4A
+ #define	LINUX_REBOOT_CMD_SW_SUSPEND	0xD000FCE2
+ #define	LINUX_REBOOT_CMD_KEXEC		0x45584543
+ 
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 7f5a0cd..3f474e6 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -392,6 +392,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 	mutex_lock(&reboot_mutex);
+ 	switch (cmd) {
+ 	case LINUX_REBOOT_CMD_RESTART:
++	case LINUX_REBOOT_CMD_RMNT_RESTART:
++		if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART)
++			emergency_remount_synchronous();
+ 		kernel_restart(NULL);
+ 		break;
+ 
+@@ -404,22 +407,31 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		break;
+ 
+ 	case LINUX_REBOOT_CMD_HALT:
++	case LINUX_REBOOT_CMD_RMNT_HALT:
++		if (cmd == LINUX_REBOOT_CMD_RMNT_HALT)
++			emergency_remount_synchronous();
+ 		kernel_halt();
+ 		do_exit(0);
+ 		panic("cannot halt");
+ 
+ 	case LINUX_REBOOT_CMD_POWER_OFF:
++	case LINUX_REBOOT_CMD_RMNT_POWER_OFF:
++		if (cmd == LINUX_REBOOT_CMD_RMNT_POWER_OFF)
++			emergency_remount_synchronous();
+ 		kernel_power_off();
+ 		do_exit(0);
+ 		break;
+ 
+ 	case LINUX_REBOOT_CMD_RESTART2:
++	case LINUX_REBOOT_CMD_RMNT_RESTART2:
+ 		if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
+ 			ret = -EFAULT;
+ 			break;
+ 		}
+ 		buffer[sizeof(buffer) - 1] = '\0';
+ 
++		if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART2)
++			emergency_remount_synchronous();
+ 		kernel_restart(buffer);
+ 		break;
  
 -- 
-1.6.3.GIT
+1.7.3.1
 
