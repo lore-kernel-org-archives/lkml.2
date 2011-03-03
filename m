@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab1CCDtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 22:49:04 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:51925 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751186Ab1CCDtD (ORCPT
+	id S932206Ab1CCDv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 22:51:29 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:57717 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757627Ab1CCDv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 22:49:03 -0500
-Message-ID: <4D6F0FA1.6060505@st.com>
-Date: Thu, 3 Mar 2011 09:18:49 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 2 Mar 2011 22:51:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xVD+k93vNd3GxNHWGO/8GrdrUYQ9+out6TH7e2p56jTpuQpxJzP0kXoMSoiMWmnTKt
+         pxvP0c+96Lapq26bXz1wLou+1uEQL+6zDU4HZn9+ZFMq42zKhitX1UIz3CxcpXGzxres
+         gFtH/LSdnYj1o8QBAryF9qPOt+yKdNKV9sZNY=
+Date: Thu, 3 Mar 2011 04:51:23 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [GIT PULL] tracepoints filtering updates
+Message-ID: <20110303035121.GA3456@nowhere>
+References: <1298693021-23500-1-git-send-email-fweisbec@gmail.com>
+ <20110302084925.GA21204@elte.hu>
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        amitgoel <amit.goel@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 7/8 resend] dw_dmac.c: Pass Channel Allocation Order from
- platform_data
-References: <cover.1298889267.git.viresh.kumar@st.com>	 <ffc35e090243231bf0b3808f2b722c69be2ce36f.1298889267.git.viresh.kumar@st.com> <1299091074.6974.96.camel@vkoul-udesk3>
-In-Reply-To: <1299091074.6974.96.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110302084925.GA21204@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 12:07 AM, Koul, Vinod wrote:
-> On Mon, 2011-02-28 at 16:11 +0530, Viresh Kumar wrote:
->> In SPEAr Platform channels 4-7 have more Fifo depth. So we must get better
->> channel first. This patch introduces concept of channel allocation order in
->> dw_dmac. If user doesn't paas anything or 0, than normal (ascending) channel
-> pass?
+On Wed, Mar 02, 2011 at 09:49:25AM +0100, Ingo Molnar wrote:
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > We currently set the filters after we mmap the events, this is a
+> > race that let undesired events record themselves in the buffer before
+> > we had the time to set the filters.
+> > 
+> > So set the filters before they can be recorded. That also librarizes
+> > the filters setting so that filtering can be done more easily
+> > from other tools than perf record later.
+> > 
+> > (PS: This should fix most of the bugs Ingo has reported
+> > about filters that weren't working with perf).
+> 
+> Nice!
+> 
+> Mind pulling Steve's filter-enhancements branch and sending a pull request for the 
+> whole thing? Steve's branch was:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git tip/perf/filter
+> 
+> ( Or your fixes could be applied to Steve's branch as well - whichever direction you 
+>   guys prefer - the important thing is to have filtering tested and validated as a 
+>   whole. )
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Oops!!
+Ok, I've merged Steve's branch and tested a few common filters with perf:
 
->> allocation will follow, else channels will be allocated in descending order.
->>
->> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
->> ---
->>  drivers/dma/dw_dmac.c   |    6 +++++-
->>  include/linux/dw_dmac.h |    3 +++
->>  2 files changed, 8 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
->> index 01f783d..37ffd2c 100644
->> --- a/drivers/dma/dw_dmac.c
->> +++ b/drivers/dma/dw_dmac.c
->> @@ -1314,7 +1314,11 @@ static int __init dw_probe(struct platform_device *pdev)
->>  		dwc->chan.device = &dw->dma;
->>  		dwc->chan.cookie = dwc->completed = 1;
->>  		dwc->chan.chan_id = i;
->> -		list_add_tail(&dwc->chan.device_node, &dw->dma.channels);
->> +		if (pdata->chan_allocation_order == CHAN_ALLOCATION_ASCENDING)
->> +			list_add_tail(&dwc->chan.device_node,
->> +					&dw->dma.channels);
->> +		else
->> +			list_add(&dwc->chan.device_node, &dw->dma.channels);
->>  
->>  		dwc->ch_regs = &__dw_regs(dw)->CHAN[i];
->>  		spin_lock_init(&dwc->lock);
->> diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
->> index c8aad71..057e883 100644
->> --- a/include/linux/dw_dmac.h
->> +++ b/include/linux/dw_dmac.h
->> @@ -19,6 +19,9 @@
->>   */
->>  struct dw_dma_platform_data {
->>  	unsigned int	nr_channels;
->> +#define CHAN_ALLOCATION_ASCENDING	0	/* zero to seven */
->> +#define CHAN_ALLOCATION_DESCENDING	1	/* seven to zero */
-> Can you add these defines outside of this struct?
+* irq numbers on irq tracepoints
+* fd on sys_enter_close
+* prev_comm on sched_switch (to test string)
 
-I did this deliberately. I feel this is probably the better way as it
-tells us _clearly_ the place where this macro is going to be used.
-So i would insist on keeping it as it is, if you agree??
+they all work well.
 
->> +	unsigned int	chan_allocation_order;
+You can pull the branch from:
 
--- 
-viresh
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/core
+
+--
+Frederic Weisbecker (2):
+      perf: Set filters before mmaping events
+      Merge branch '/tip/perf/filter' of git://git.kernel.org/.../rostedt/linux-2.6-trace.git into perf/core
+
+Steven Rostedt (14):
+      tracing/filter: Have no filter return a match
+      tracing/filter: Move OR and AND logic out of fn() method
+      tracing/filter: Dynamically allocate preds
+      tracing/filter: Call synchronize_sched() just once for system filters
+      tracing/filter: Allocate the preds in an array
+      tracing/filter: Free pred array on disabling of filter
+      tracing/filter: Use a tree instead of stack for filter_match_preds()
+      tracing/filter: Optimize short ciruit check
+      tracing/filter: Check the created pred tree
+      tracing/filter: Optimize filter by folding the tree
+      tracing/filter: Move MAX_FILTER_PRED to local tracing directory
+      tracing/filter: Increase the max preds to 2^14
+      tracing/filter: Swap entire filter of events
+      tracing/filter: Remove synchronize_sched() from __alloc_preds()
+--
+ include/linux/ftrace_event.h       |    1 -
+ kernel/trace/trace.h               |   38 ++-
+ kernel/trace/trace_events_filter.c |  885 +++++++++++++++++++++++++++++-------
+ tools/perf/builtin-record.c        |   18 +-
+ tools/perf/util/evlist.c           |   28 ++
+ tools/perf/util/evlist.h           |    1 +
+ 6 files changed, 789 insertions(+), 182 deletions(-)
