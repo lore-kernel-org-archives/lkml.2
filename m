@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab1CCTx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 14:53:29 -0500
-Received: from smtpq2.gn.mail.iss.as9143.net ([212.54.34.165]:46536 "EHLO
-	smtpq2.gn.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757224Ab1CCTx2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 14:53:28 -0500
-Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
-From: Hans Nieser <hnsr@xs4all.nl>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1298641542.18103.48.camel@krikkit>
-References: <1298396007.23906.27.camel@krikkit>
-	 <20110223095538.GA12662@electric-eye.fr.zoreil.com>
-	 <1298463704.31256.29.camel@krikkit>  <1298485893.31256.40.camel@krikkit>
-	 <1298641542.18103.48.camel@krikkit>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 20:53:25 +0100
-Message-ID: <1299182005.28968.9.camel@krikkit>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
-X-ZiggoSMTP-MailScanner-ID: 1PvEaT-0003oj-O9
-X-ZiggoSMTP-MailScanner: Found to be clean
-X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
-	score=-4.918, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
-	BAYES_00 -1.90, PROLO_TRUST_RDNS -3.00, RDNS_DYNAMIC 0.98)
-X-ZiggoSMTP-MailScanner-From: hnsr@xs4all.nl
+	id S1758640Ab1CCTyt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 14:54:49 -0500
+Received: from lotus.nuim.ie ([149.157.1.189]:57771 "EHLO lotus.nuim.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758533Ab1CCTys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 14:54:48 -0500
+X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Mar 2011 14:54:48 EST
+Message-id: <4D6FEFD4.9010608@nuim.ie>
+Date: Thu, 03 Mar 2011 13:45:24 -0600
+From: Tianji Li <Tianji.Li@nuim.ie>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430
+ Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-version: 1.0
+To: rick.jones2@hp.com
+Cc: =?ISO-8859-1?Q?Dave_T=E4ht?= <d@taht.net>, sedat.dilek@gmail.com,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        bloat-devel@lists.bufferbloat.net, linux-kernel@vger.kernel.org
+Subject: Re: ANNOUNCE: debloat-testing kernel git tree
+References: <20110225222210.GA3618@tuxdriver.com>
+ <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
+ <87fwr9jxya.fsf@cruithne.co.teklibre.org>
+ <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
+ <8739n9ii7z.fsf@cruithne.co.teklibre.org>
+ <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
+ <87tyfph2az.fsf@cruithne.co.teklibre.org> <1299176168.2157.14.camel@tardy>
+In-reply-to: <1299176168.2157.14.camel@tardy>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-25 at 14:45 +0100, Hans Nieser wrote:
-...
-> I've also attempted to bisect the issue I have been having with slow
-> transfer speed (I don't know if its related to the hang, but I figure if
-> the hang ever gets fixed, this will have to be fixed as well to make
-> r8169 usable for me)
-...
 
-Just wanted to let you know that after installing a new Intel gbit NIC I
-ordered, I sadly still get poor performance, so this is definitely a
-separate issue from the r8169 lock up. (lock ups are gone now)
 
-I've given up on getting r8169 working at this point but if you have any
-patches you need tested or need more info in the future please do let me
-know
+On 03/03/2011 12:16 PM, Rick Jones wrote:
+>> For wireless routers and cable home gateways especially, this research
+>> shows that the total un-managed buffers in your system should be less
+>> than 32.
+>
+> Would it be a good thing to start describing these queues not so much in
+> terms of packets but in terms of delay (or bandwidth X delay)?
+>
 
+The unit of bandwidth is something like Mbps, that of delay can be 
+second, so bandwidth X delay --> Mb, which is the unit of packet size. 
+So both packets and delay should have the same effect for sizing buffers.
+
+Tianji
+
+
+
+> Constants tend to live longer than they should, no matter how noble in
+> birth.
+>
+> rick jones
+>
+> _______________________________________________
+> Bloat-devel mailing list
+> Bloat-devel@lists.bufferbloat.net
+> https://lists.bufferbloat.net/listinfo/bloat-devel
+>
