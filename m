@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab1CCCjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 21:39:42 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52071 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab1CCCjl (ORCPT
+	id S932176Ab1CCCkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 21:40:14 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53981 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758091Ab1CCCkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 21:39:41 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 3 Mar 2011 11:33:15 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, aarcange@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 6/8] Add __GFP_OTHER_NODE flag
-Message-Id: <20110303113315.7bf5de3c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299113128-11349-7-git-send-email-andi@firstfloor.org>
-References: <1299113128-11349-1-git-send-email-andi@firstfloor.org>
-	<1299113128-11349-7-git-send-email-andi@firstfloor.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Mar 2011 21:40:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GsqGRlih4bJRiIVwUHuGjsxSQCPtxreYa0PklZfj90TjqNHz5yDJCpCMy2uVvP1T/7
+         lFfTi8sMdbLeOXp9B1GPL7fbthDwkXrAlTc54dSLCd/sYetaFvWA0/XDQr1hMaKalgXm
+         E7POu4l/12WHsAOnh0+6bt6bDLaoEAU3nsOZg=
+Date: Thu, 3 Mar 2011 03:40:06 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 1/3] perf script: change process_event prototype
+Message-ID: <20110303024003.GC1946@nowhere>
+References: <1299086960-26964-1-git-send-email-daahern@cisco.com>
+ <1299086960-26964-2-git-send-email-daahern@cisco.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299086960-26964-2-git-send-email-daahern@cisco.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Mar 2011 16:45:26 -0800
-Andi Kleen <andi@firstfloor.org> wrote:
+On Wed, Mar 02, 2011 at 10:29:18AM -0700, David Ahern wrote:
+> Prepare for handling of samples for any event type.
+> 
+> Signed-off-by: David Ahern <daahern@cisco.com>
+> ---
+>  tools/perf/builtin-script.c                        |   40 +++++++++++--------
+>  .../util/scripting-engines/trace-event-python.c    |   20 ++++++++-
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a new __GFP_OTHER_NODE flag to tell the low level numa statistics
-> in zone_statistics() that an allocation is on behalf of another thread.
-> This way the local and remote counters can be still correct, even
-> when background daemons like khugepaged are changing memory
-> mappings.
-> 
-> This only affects the accounting, but I think it's worth doing that
-> right to avoid confusing users.
-> 
-> I first tried to just pass down the right node, but this required
-> a lot of changes to pass down this parameter and at least one
-> addition of a 10th argument to a 9 argument function. Using
-> the flag is a lot less intrusive.
-> 
-> Open: should be also used for migration?
-> 
-> Cc: aarcange@redhat.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+What about Perl?
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>  tools/perf/util/trace-event-scripting.c            |    8 +--
+>  tools/perf/util/trace-event.h                      |    6 ++-
+>  4 files changed, 47 insertions(+), 27 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index 5f40df6..0bee150 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -20,6 +20,27 @@ static u64			last_timestamp;
+>  static u64			nr_unordered;
+>  extern const struct option	record_options[];
+>  
+> +static void process_event(union perf_event *event,
+> +			  struct perf_sample *sample,
+> +			  struct perf_session *session)
+> +{
+> +	struct thread *thread = perf_session__findnew(session, event->ip.pid);
+> +
+> +	if (thread == NULL) {
+> +		pr_debug("problem processing %d event, skipping it.\n",
+> +			 event->header.type);
+> +		return;
+> +	}
 
+Seems the thread is needed by any endpoints. It would be better to resolve
+it from process_sample_event and pass it to the process_event() handler.
 
+> +
+> +	/*
+> +	 * FIXME: better resolve from pid from the struct trace_entry
+> +	 * field, although it should be the same than this perf
+> +	 * event pid
+> +	 */
+> +	print_event(sample->cpu, sample->raw_data, sample->raw_size,
+> +		    sample->time, thread->comm);
+> +}
+[...]
+> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+> index 2040b85..5b03fb6 100644
+> --- a/tools/perf/util/scripting-engines/trace-event-python.c
+> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
+> @@ -204,9 +204,9 @@ static inline struct event *find_cache_event(int type)
+>  	return event;
+>  }
+>  
+> -static void python_process_event(int cpu, void *data,
+> -				 int size __unused,
+> -				 unsigned long long nsecs, char *comm)
+> +static void python_process_event(union perf_event *pevent,
+> +				struct perf_sample *sample,
+> +				struct perf_session *session)
+>  {
+>  	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+>  	static char handler_name[256];
+> @@ -218,6 +218,20 @@ static void python_process_event(int cpu, void *data,
+>  	int type;
+>  	int pid;
+
+Please avoid such blank line in the middle of local vars declaration.
+
+> +	int cpu = sample->cpu;
+> +	void *data = sample->raw_data;
+> +	unsigned long long nsecs = sample->time;
+> +	char *comm;
+> +	struct thread *thread;
+> +
+> +	thread = perf_session__findnew(session, pevent->ip.pid);
+> +	if (thread == NULL) {
+> +		pr_debug("problem processing %d event, skipping it.\n",
+> +			 pevent->header.type);
+> +		return;
+> +	}
+> +	comm = thread->comm;
+> +
