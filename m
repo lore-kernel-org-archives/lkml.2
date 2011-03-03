@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab1CCPWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 10:22:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59096 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758218Ab1CCPWV (ORCPT
+	id S1758292Ab1CCPYD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 10:24:03 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:44245 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758190Ab1CCPYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 10:22:21 -0500
-Date: Thu, 3 Mar 2011 15:22:42 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Cc: davidb@codeaurora.org, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Linus Walleij <linux.walleij@sterricsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Qualcomm PM8921 MFD 2/6] mfd: pm8xxx: Add irq support
-Message-ID: <20110303152242.GB32234@opensource.wolfsonmicro.com>
-References: <1299104001-5240-1-git-send-email-adharmap@codeaurora.org>
- <1299104001-5240-3-git-send-email-adharmap@codeaurora.org>
- <20110302224616.GB32325@opensource.wolfsonmicro.com>
- <4D6F1B2B.3090706@codeaurora.org>
+	Thu, 3 Mar 2011 10:24:01 -0500
+Date: Thu, 3 Mar 2011 16:23:49 +0100
+From: Harald Welte <laforge@gpl-violations.org>
+To: Armijn Hemel <armijn@gpl-violations.org>
+Cc: Sebastian Gottschall <s.gottschall@newmedia-net.de>,
+        linux-kernel@vger.kernel.org, James Morris <jmorris@intercode.com.au>,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: changing EXPORT_SYMBOL_GPL to EXPORT_SYMBOL in DD-WRT
+Message-ID: <20110303152349.GL8117@prithivi.gnumonks.org>
+References: <1299164159.10725.19.camel@hibbert>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6F1B2B.3090706@codeaurora.org>
-X-Cookie: Don't get to bragging.
+In-Reply-To: <1299164159.10725.19.camel@hibbert>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 08:38:03PM -0800, Abhijeet Dharmapurikar wrote:
-> Mark Brown wrote:
+Hi Sebastian, Armijn and others,
 
-> >Is it really useful to register a struct device purely for the interrupt
-> >controller?  I'd have expected this to be core functionality of the
-> >device.  The fact that you need to store the device at all is a bit odd
-> >too as you're using the MFD API.
+I can only follow what Armijn has been writing.
 
-> This design is slightly different from other MFD drivers.
-> I separated the interrupt from the core because the interrupt
-> implementation for different Qualcomm pmics remains the same. On
-> 8660 FFA boards for example, we have two pmic chips that have the
-> same interrupt subdevice implementation (the number of interrupts
-> managed by each is different). I didn't want to duplicate the exact
-> code in the core driver - hence a separate interrupt driver.
+On Thu, Mar 03, 2011 at 03:55:59PM +0100, Armijn Hemel wrote:
+> I noticed that a few hours ago you changed a few lines in the kernel
+> source of DD-WRT, changing the export from a few symbols from 'GPL only'
+> to something a lot more permissive:
 
-Could you deal with this with a library instead?
+While the ideas and thoughts regarding the legal implications of
+EXPORT_SYMBOL_GPL are wide (see e.g. http://lwn.net/Articles/154602/) and there
+is no precedent as far as I know, there seems general consensus that it _at
+least_ signifies the explicit intent of the author.
 
-> With that in mind, the driver has following functions
-> pm8xxxx_read_root
-> pm8xxxx_read_master
-> pm8xxxx_read_block
+By using the _GPL variant, the author unmistakingly indicates: 
+"I consider any use of that symbol to create a derivative work which must again
+ be licensed under GNU GPL"
 
-> Do you still think I should change the name?
+So by modifying a _GPL symbol into the non-GPL variant (and using the code from
+a non-GPL module), one would clearly violate the intent of the original author.
+Whether or not that intent of the author is grounded in copyright law may
+depend on the specific jurisdiction, circumstances and the judge that would
+make up his mind about it, if such a case ever went to court.
 
-I'd suggest adding an _irq in there.
+I would be interested to hear what DaveM, James Morris and Herbert Xu
+as the authors of the files in question have to say about such activity.
+
+Regards,
+	Harald
+-- 
+- Harald Welte <laforge@gpl-violations.org>       http://gpl-violations.org/
+============================================================================
+"Privacy in residential applications is a desirable marketing option."
+                                                  (ETSI EN 300 175-7 Ch. A6)
