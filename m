@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab1CCIVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:21:08 -0500
+	id S1757442Ab1CCIVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:21:05 -0500
 Received: from mga01.intel.com ([192.55.52.88]:61716 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab1CCIVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:21:00 -0500
+	id S1755969Ab1CCIVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 03:21:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
-   d="scan'208";a="663359354"
-Message-Id: <20110303074949.287801184@intel.com>
+   d="scan'208";a="663359357"
+Message-Id: <20110303074950.306247535@intel.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 Mar 2011 14:45:10 +0800
+Date: Thu, 03 Mar 2011 14:45:18 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+CC: Jan Kara <jack@suse.cz>, Michael Rubin <mrubin@google.com>,
         Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
+CC: Chris Mason <chris.mason@oracle.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
@@ -32,130 +33,73 @@ CC: Balbir Singh <balbir@linux.vnet.ibm.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 05/27] btrfs: avoid duplicate balance_dirty_pages_ratelimited() calls
+Subject: [PATCH 13/27] writeback: account per-bdi accumulated written pages
 References: <20110303064505.718671603@intel.com>
-Content-Disposition: inline; filename=btrfs-fix-balance-size.patch
+Content-Disposition: inline; filename=writeback-bdi-written.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing 1KB sequential writes to the same page,
-balance_dirty_pages_ratelimited() should be called once instead of 4
-times. Failing to do so will make all tasks throttled much too heavy.
+From: Jan Kara <jack@suse.cz>
 
-CC: Chris Mason <chris.mason@oracle.com>
+Introduce the BDI_WRITTEN counter. It will be used for estimating the
+bdi's write bandwidth.
+
+Peter Zijlstra <a.p.zijlstra@chello.nl>:
+Move BDI_WRITTEN accounting into __bdi_writeout_inc().
+This will cover and fix fuse, which only calls bdi_writeout_inc().
+
+CC: Michael Rubin <mrubin@google.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/btrfs/file.c       |   11 +++++++----
- fs/btrfs/ioctl.c      |    6 ++++--
- fs/btrfs/relocation.c |    6 ++++--
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ include/linux/backing-dev.h |    1 +
+ mm/backing-dev.c            |    6 ++++--
+ mm/page-writeback.c         |    1 +
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
---- linux-next.orig/fs/btrfs/file.c	2011-02-21 14:24:56.000000000 +0800
-+++ linux-next/fs/btrfs/file.c	2011-02-21 14:37:34.000000000 +0800
-@@ -770,7 +770,8 @@ out:
- static noinline int prepare_pages(struct btrfs_root *root, struct file *file,
- 			 struct page **pages, size_t num_pages,
- 			 loff_t pos, unsigned long first_index,
--			 unsigned long last_index, size_t write_bytes)
-+			 unsigned long last_index, size_t write_bytes,
-+			 int *nr_dirtied)
+--- linux-next.orig/include/linux/backing-dev.h	2011-03-03 14:03:37.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2011-03-03 14:04:06.000000000 +0800
+@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
+ enum bdi_stat_item {
+ 	BDI_RECLAIMABLE,
+ 	BDI_WRITEBACK,
++	BDI_WRITTEN,
+ 	NR_BDI_STAT_ITEMS
+ };
+ 
+--- linux-next.orig/mm/backing-dev.c	2011-03-03 14:03:37.000000000 +0800
++++ linux-next/mm/backing-dev.c	2011-03-03 14:04:06.000000000 +0800
+@@ -92,6 +92,7 @@ static int bdi_debug_stats_show(struct s
+ 		   "BdiDirtyThresh:   %8lu kB\n"
+ 		   "DirtyThresh:      %8lu kB\n"
+ 		   "BackgroundThresh: %8lu kB\n"
++		   "BdiWritten:       %8lu kB\n"
+ 		   "b_dirty:          %8lu\n"
+ 		   "b_io:             %8lu\n"
+ 		   "b_more_io:        %8lu\n"
+@@ -99,8 +100,9 @@ static int bdi_debug_stats_show(struct s
+ 		   "state:            %8lx\n",
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+-		   K(bdi_thresh), K(dirty_thresh),
+-		   K(background_thresh), nr_dirty, nr_io, nr_more_io,
++		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
++		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
++		   nr_dirty, nr_io, nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
+ 
+--- linux-next.orig/mm/page-writeback.c	2011-03-03 14:04:01.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-03-03 14:04:06.000000000 +0800
+@@ -219,6 +219,7 @@ int dirty_bytes_handler(struct ctl_table
+  */
+ static inline void __bdi_writeout_inc(struct backing_dev_info *bdi)
  {
- 	struct extent_state *cached_state = NULL;
- 	int i;
-@@ -837,7 +838,8 @@ again:
- 				     GFP_NOFS);
- 	}
- 	for (i = 0; i < num_pages; i++) {
--		clear_page_dirty_for_io(pages[i]);
-+		if (!clear_page_dirty_for_io(pages[i]))
-+			(*nr_dirtied)++;
- 		set_page_extent_mapped(pages[i]);
- 		WARN_ON(!PageLocked(pages[i]));
- 	}
-@@ -989,6 +991,7 @@ static ssize_t btrfs_file_aio_write(stru
- 	}
- 
- 	while (iov_iter_count(&i) > 0) {
-+		int nr_dirtied = 0;
- 		size_t offset = pos & (PAGE_CACHE_SIZE - 1);
- 		size_t write_bytes = min(iov_iter_count(&i),
- 					 nrptrs * (size_t)PAGE_CACHE_SIZE -
-@@ -1015,7 +1018,7 @@ static ssize_t btrfs_file_aio_write(stru
- 
- 		ret = prepare_pages(root, file, pages, num_pages,
- 				    pos, first_index, last_index,
--				    write_bytes);
-+				    write_bytes, &nr_dirtied);
- 		if (ret) {
- 			btrfs_delalloc_release_space(inode,
- 					num_pages << PAGE_CACHE_SHIFT);
-@@ -1050,7 +1053,7 @@ static ssize_t btrfs_file_aio_write(stru
- 			} else {
- 				balance_dirty_pages_ratelimited_nr(
- 							inode->i_mapping,
--							dirty_pages);
-+							nr_dirtied);
- 				if (dirty_pages <
- 				(root->leafsize >> PAGE_CACHE_SHIFT) + 1)
- 					btrfs_btree_balance_dirty(root, 1);
---- linux-next.orig/fs/btrfs/ioctl.c	2011-02-21 14:24:56.000000000 +0800
-+++ linux-next/fs/btrfs/ioctl.c	2011-02-21 14:26:21.000000000 +0800
-@@ -654,6 +654,7 @@ static int btrfs_defrag_file(struct file
- 	u64 skip = 0;
- 	u64 defrag_end = 0;
- 	unsigned long i;
-+	int dirtied;
- 	int ret;
- 	int compress_type = BTRFS_COMPRESS_ZLIB;
- 
-@@ -766,7 +767,7 @@ again:
- 
- 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
- 		ClearPageChecked(page);
--		set_page_dirty(page);
-+		dirtied = set_page_dirty(page);
- 		unlock_extent(io_tree, page_start, page_end, GFP_NOFS);
- 
- loop_unlock:
-@@ -774,7 +775,8 @@ loop_unlock:
- 		page_cache_release(page);
- 		mutex_unlock(&inode->i_mutex);
- 
--		balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
-+		if (dirtied)
-+			balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
- 		i++;
- 	}
- 
---- linux-next.orig/fs/btrfs/relocation.c	2011-02-21 14:24:56.000000000 +0800
-+++ linux-next/fs/btrfs/relocation.c	2011-02-21 14:26:21.000000000 +0800
-@@ -2902,6 +2902,7 @@ static int relocate_file_extent_cluster(
- 	struct file_ra_state *ra;
- 	int nr = 0;
- 	int ret = 0;
-+	int dirtied;
- 
- 	if (!cluster->nr)
- 		return 0;
-@@ -2978,7 +2979,7 @@ static int relocate_file_extent_cluster(
- 		}
- 
- 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
--		set_page_dirty(page);
-+		dirtied = set_page_dirty(page);
- 
- 		unlock_extent(&BTRFS_I(inode)->io_tree,
- 			      page_start, page_end, GFP_NOFS);
-@@ -2986,7 +2987,8 @@ static int relocate_file_extent_cluster(
- 		page_cache_release(page);
- 
- 		index++;
--		balance_dirty_pages_ratelimited(inode->i_mapping);
-+		if (dirtied)
-+			balance_dirty_pages_ratelimited(inode->i_mapping);
- 		btrfs_throttle(BTRFS_I(inode)->root);
- 	}
- 	WARN_ON(nr != cluster->nr);
++	__inc_bdi_stat(bdi, BDI_WRITTEN);
+ 	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
+ 			      bdi->max_prop_frac);
+ }
 
 
