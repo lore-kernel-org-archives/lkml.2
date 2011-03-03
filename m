@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339Ab1CCRvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 12:51:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932144Ab1CCRu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 12:50:56 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 3/3] KEYS: Define error codes to indicate a name service errors
-To: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Thu, 03 Mar 2011 17:50:50 +0000
-Message-ID: <20110303175050.21702.69089.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20110303175030.21702.31104.stgit@warthog.procyon.org.uk>
-References: <20110303175030.21702.31104.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S932349Ab1CCRvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 12:51:04 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:63985 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144Ab1CCRvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 12:51:01 -0500
+Subject: [PATCH] Make /proc/slabinfo 0400
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Mar 2011 12:50:52 -0500
+Message-ID: <1299174652.2071.12.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the kernel has filesystems (and possibly other services) that want to
-look up internet addresses corresponding to arbitrary hostnames retrieved from
-the server, it would seem useful to provide a couple of error codes to indicate
-problems with the look up, rather than overloading some other error code.
+Allowing unprivileged users to read /proc/slabinfo represents a security
+risk, since revealing details of slab allocations can expose information
+that is useful when exploiting kernel heap corruption issues.  This is
+evidenced by observing that nearly all recent public exploits for heap
+issues rely on feedback from /proc/slabinfo to manipulate heap layout
+into an exploitable state.
 
-Define ENONAMESERVICE to indicate "Network name service unavailable".  This can
-be used to indicate, for example, that an attempt was made by dns_query() to
-make a query, but the name server (e.g. a DNS server) it is supposed to contact
-didn't answer or that it couldn't determine the location of a suitable server.
+Changing the permissions on this file to 0400 by default will make heap
+corruption issues more difficult to exploit.  Ordinary usage should not
+require unprivileged users to debug the running kernel; if this ability
+is required, an admin can always chmod the file appropriately.
 
-Define ENAMEUNKNOWN to indicate "Network name unknown".  This can be used to
-indicate, for example, that an attempt was made by dns_query() to make a query,
-but the name server (e.g. a DNS server) replied indicating that it had no
-matching records.
 
-The DNS query upcall program can report these to keyctl_reject() so that cached
-failed queries will respond with these errors until they expire.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
 ---
+ mm/slab.c |    3 ++-
+ mm/slub.c |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
- arch/alpha/include/asm/errno.h  |    2 ++
- arch/mips/include/asm/errno.h   |    2 ++
- arch/parisc/include/asm/errno.h |    2 ++
- arch/sparc/include/asm/errno.h  |    2 ++
- include/asm-generic/errno.h     |    2 ++
- 5 files changed, 10 insertions(+), 0 deletions(-)
+diff --git a/mm/slab.c b/mm/slab.c
+index 37961d1..7f719f6 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -4535,7 +4535,8 @@ static const struct file_operations proc_slabstats_operations = {
+ 
+ static int __init slab_proc_init(void)
+ {
+-	proc_create("slabinfo",S_IWUSR|S_IRUGO,NULL,&proc_slabinfo_operations);
++	proc_create("slabinfo", S_IWUSR|S_IRUSR, NULL,
++		    &proc_slabinfo_operations);
+ #ifdef CONFIG_DEBUG_SLAB_LEAK
+ 	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
+ #endif
+diff --git a/mm/slub.c b/mm/slub.c
+index e15aa7f..5f57834 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4691,7 +4691,7 @@ static const struct file_operations proc_slabinfo_operations = {
+ 
+ static int __init slab_proc_init(void)
+ {
+-	proc_create("slabinfo", S_IRUGO, NULL, &proc_slabinfo_operations);
++	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
+ 	return 0;
+ }
+ module_init(slab_proc_init);
 
-diff --git a/arch/alpha/include/asm/errno.h b/arch/alpha/include/asm/errno.h
-index 519663c..ee8a3f0 100644
---- a/arch/alpha/include/asm/errno.h
-+++ b/arch/alpha/include/asm/errno.h
-@@ -122,5 +122,7 @@
- 
- #define	ERFKILL		138	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	139	/* Authentication service not available */
-+#define	ENONAMESERVICE	140	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	141	/* Network name unknown */
- 
- #endif
-diff --git a/arch/mips/include/asm/errno.h b/arch/mips/include/asm/errno.h
-index 5fa7fed..faed965 100644
---- a/arch/mips/include/asm/errno.h
-+++ b/arch/mips/include/asm/errno.h
-@@ -121,6 +121,8 @@
- 
- #define	ERFKILL		167	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	168	/* Authentication service not available */
-+#define	ENONAMESERVICE	169	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	170	/* Network name unknown */
- 
- #define EDQUOT		1133	/* Quota exceeded */
- 
-diff --git a/arch/parisc/include/asm/errno.h b/arch/parisc/include/asm/errno.h
-index 6a19346..63ee0bc 100644
---- a/arch/parisc/include/asm/errno.h
-+++ b/arch/parisc/include/asm/errno.h
-@@ -122,5 +122,7 @@
- 
- #define	ERFKILL		256	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	257	/* Authentication service not available */
-+#define	ENONAMESERVICE	258	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	259	/* Network name unknown */
- 
- #endif
-diff --git a/arch/sparc/include/asm/errno.h b/arch/sparc/include/asm/errno.h
-index ab3a26a..f40d5ae 100644
---- a/arch/sparc/include/asm/errno.h
-+++ b/arch/sparc/include/asm/errno.h
-@@ -112,5 +112,7 @@
- 
- #define	ERFKILL		134	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	135	/* Authentication service not available */
-+#define	ENONAMESERVICE	136	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	137	/* Network name unknown */
- 
- #endif
-diff --git a/include/asm-generic/errno.h b/include/asm-generic/errno.h
-index bcf1908..25878f1 100644
---- a/include/asm-generic/errno.h
-+++ b/include/asm-generic/errno.h
-@@ -108,5 +108,7 @@
- 
- #define ERFKILL		132	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	133	/* Authentication service not available */
-+#define	ENONAMESERVICE	134	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	135	/* Network name unknown */
- 
- #endif
 
