@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab1CCROY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 12:14:24 -0500
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:38250 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758464Ab1CCROX (ORCPT
+	id S1758551Ab1CCRVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 12:21:21 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:44694 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758503Ab1CCRVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 12:14:23 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D6FCC99.6090202@cam.ac.uk>
-Date: Thu, 03 Mar 2011 17:15:05 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Moving staging:iio over to threaded interrupts.
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 12:21:20 -0500
+From: Stefan Bader <stefan.bader@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: [2.6.32+drm33-longterm] Linux 2.6.32.31+drm33.14
+Date: Thu,  3 Mar 2011 18:21:13 +0100
+Message-Id: <1299172873-6700-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
+To: linux-kernel@vger.kernel.org
+To: stable@kernel.org
+To: kernel-team@lists.ubuntu.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+I am announcing the release of the 2.6.32.31+drm33.14 longterm tree.
 
-Given the timing of the writing of most of the IIO core was 
-prior to threaded interrupts hitting the mainstream we didn't
-use them originally. I suspect that the large numbers of old style
-interrupts that we have is going to be a bit of a blocker when we
-move out of staging so have been thinking about what to do about it.
+This tree is based on 2.6.32 and generally has all of the stable updates
+applied. Except those to the DRM subsystem, which was based on 2.6.33 and
+took updates from that upstream stable as long as that existed. It will
+continue to add patches to the DRM subsystem as long as they are valid
+according to the stable update rules (Documentation/stable_kernel_rules.txt).
+DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
-This email is intended to get some initial thoughts from others
-(some of whom are hopefully more familiar with the ins and outs
-of threaded interrupts than I am!)
+This release contains patches from upstream 2.6.32.31, but dropped any patches
+to the DRM subsystem.
 
-As I understand it, the primary point of threaded interrupts is
-to replace bottom half handlers (conventionally done on using
-work queues) with kernel threads that are woken on the interrupt.
-The reason is that kernel threads can be pre empted whereas work
-queue items can not.
+The updated 2.6.32.y-drm33.z tree can be found at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
+and can be browsed through git web via:
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
 
-We have two common types of interrupt in IIO.
+-Stefan
 
-* Event interrupts (threshold detectors etc). I think these should
-  be trivial to convert to threaded irq's.  For those that need
-  timestamps we will still need a top half handler to grab that
-  but it should be easy enough to do.  There are nasty cases where
-  a given physical line can do both this and the next case.  With
-  care we can probably avoid this being an issue by careful switching
-  of the interrupt handlers according to what can occur in a given
-  configuration of the device.
+------
 
-* Trigger interrupts - These are more complex.
+* Revert "swiotlb: fix wrong panic"
+* Linux 2.6.32.31
 
-For those not that familiar with the IIO trigger infrastructure let
-me run through its intent and give an outline of how it currently works.
+ Makefile      |    2 +-
+ lib/swiotlb.c |    6 ++----
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-Our current triggers fall into two classes:
-1) Those associated with a device - data ready signals typically
-2) Those independent of a device - gpio, timer, userspace.
+diff --git a/Makefile b/Makefile
+index 0789e7c..ddc0ce4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .30+drm33.14
++EXTRAVERSION = .31+drm33.14
+ NAME = Man-Eating Seals of Antiquity
 
-For simplicity we treat both of these classes the same.
+ # *DOCUMENTATION*
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 7740ee8..ac25cd2 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -631,10 +631,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+ 	/*
+ 	 * Ensure that the address returned is DMA'ble
+ 	 */
+-	if (!dma_capable(dev, dev_addr, size)) {
+-		swiotlb_tbl_unmap_single(dev, map, size, dir);
+-		dev_addr = swiotlb_virt_to_bus(dev, io_tlb_overflow_buffer);
+-	}
++	if (!dma_capable(dev, dev_addr, size))
++		panic("map_single: bounce buffer is not DMA'ble");
 
-Any trigger can have a number of devices registered with it.  This
-allows for, as near a possible, simultaneous reading from a set of
-devices.  Which devices these are can be configured / changed at
-runtime.
-
-There are two activation lists and each device driver instance can register
-in one or both of these. The first 'fast' queue is intended for devices that
-have a 'latch' or 'capture' signal typically consisting of a gpio
-linked pin.  (no in tree users, but hardware with this
-is common enough). Basically the intent is this list launches true
-top half elements.
-
-The second 'slow' queue currently queues up work queue items to read
-from each of the devices.  It's this part that would ideally be threaded.
-
-Currently the infrastructure is nice and clean and more or less looks
-the same as drivers doing their own handling of the relevant interrupts.
-
-The problem lies in the fact each actual interrupt can effectively
-call multiple bottom halves.
-
-So to my mind two solutions exist.
-1) A single thread per trigger.  Everything prior to the work queue
-calls is moved into a handler that goes in the 'fast' list which stays
-in our top half handler.  The work queue bits are called one after
-another in the bottom half.
-
-2) Allow each consumer to attach it's own thread to the trigger
-controller and basically implement our own variant of the core threaded
-interrupt code that allows for a list of threads rather than a single one.
-
-I rather like the idea of 2.  It might even end up with different
-devices being queried from different processor cores simultaneously
-which is quite cute.  The question is whether a simple enough
-implementation is possible that the originators of the threaded interrupt
-code would be happy with it (as it bypasses or would mean additions to their
-core code).
-
-I originally sort opinions from IIO developers on this, but as no
-one has been forthcoming with opinions am reposting to a wider
-audience to get suggestions on how to handle this.
-
-Thanks and please cc anyone who might want to offer opinions on this.
-
-Thanks,
-
-Jonathan
-
+ 	return dev_addr;
+ }
