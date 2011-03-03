@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab1CCQIT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 11:08:19 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35339 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758196Ab1CCQIR (ORCPT
+	id S932144Ab1CCQJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 11:09:15 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40523 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab1CCQJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 11:08:17 -0500
+	Thu, 3 Mar 2011 11:09:12 -0500
+Message-ID: <4D6FBD04.6090702@oracle.com>
+Date: Thu, 03 Mar 2011 08:08:36 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <20110303154706.GA22560@redhat.com>
-References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com>
- <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Mar 2011 08:07:22 -0800
-Message-ID: <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] exec: introduce get_arg_ptr() helper
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        driverdevel <devel@driverdev.osuosl.org>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] staging/brcm80211: fix printk format warnings
+References: <20110301181119.f1c7a9c3.sfr@canb.auug.org.au> <20110301162948.34c28d6e.randy.dunlap@oracle.com> <20110302210511.GA20798@kroah.com> <20110303103620.6b3c463f.sfr@canb.auug.org.au> <20110303072028.GA21427@sdf-MacBook>
+In-Reply-To: <20110303072028.GA21427@sdf-MacBook>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D6FBD0C.0114,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 7:47 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> I _personally_ don't like "conditional". Its name is based on code logic.
->> It's unclear what mean "conditional". From data strucuture view, It is
->> "opaque userland pointer".
->
-> I agree with any naming, just suggest a better name ;)
+On 03/02/11 23:20, Stanislav Fomichev wrote:
+>> Maybe due to conflict resolutions in my tree (assuming that Randy based
+>> his patch in linux-next).
+> We don't have brcm80211/sys/ directory (it was renamed to
+> brcm80211/brcmsmac); so it's based on the wrong/outdated tree.
 
-Maybe just "struct user_arg_ptr" or something?
+It was based on linux-next of 2011-0301, which is what the patch email
+was in reply to.
 
-                        Linus
+> And I suppose these errors are already fixed.
+
+Good to know.  Thanks.
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
