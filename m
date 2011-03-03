@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab1CCU6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 15:58:11 -0500
-Received: from waste.org ([173.11.57.241]:50064 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932281Ab1CCU6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 15:58:10 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Matt Mackall <mpm@selenic.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, linux-mm@kvack.org,
+	id S1758803Ab1CCVDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:03:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59218 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758665Ab1CCVDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 16:03:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <87tyfk7x0c.fsf@devron.myhome.or.jp>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk> <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
+ <20110303060352.GK22723@ZenIV.linux.org.uk> <AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com>
+ <87tyfk7x0c.fsf@devron.myhome.or.jp>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Mar 2011 13:02:50 -0800
+Message-ID: <AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com>
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1299174652.2071.12.camel@dan>
-References: <1299174652.2071.12.camel@dan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 14:58:02 -0600
-Message-ID: <1299185882.3062.233.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 12:50 -0500, Dan Rosenberg wrote:
-> Allowing unprivileged users to read /proc/slabinfo represents a security
-> risk, since revealing details of slab allocations can expose information
-> that is useful when exploiting kernel heap corruption issues.  This is
-> evidenced by observing that nearly all recent public exploits for heap
-> issues rely on feedback from /proc/slabinfo to manipulate heap layout
-> into an exploitable state.
+On Thu, Mar 3, 2011 at 12:46 PM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+>
+> But, some commands see i_nlink (IIRC, it's checking i_nlink == 2, to
+> know empty dir or not).
 
-Looking at a couple of these exploits, my suspicion is that looking at
-slabinfo simply improves the odds of success by a small factor (ie 10x
-or so) and doesn't present a real obstacle to attackers. All that
-appears to be required is to arrange that an overrunnable object be
-allocated next to one that is exploitable when overrun. And that can be
-arranged with fairly high probability on SLUB's merged caches.
+Actually, that would be a serious bug in the application.
 
-On the other hand, I'm not convinced the contents of this file are of
-much use to people without admin access.
+The traditional rule of thumb is that a directory with i_nlink==1 has
+a "I'm not counting at all".
 
--- 
-Mathematics is the supreme nostalgia of our time.
+For example, I think that's the rule that 'find' uses to decide if a
+directory can have subdirectories (and when it could try to stop
+scanning early): i_nlink == 1 means that yes, it _can_ have
+subdirectories, we just don't know how many.
 
+So checking i_nlink==2 is actually a user-level bug.
 
+> So we have to simulate some levels. I guess you
+> are not saying we don't need to care it at all though.
+
+I'm saying that it should just work to set i_nlink=1 and not do
+anything at all. Ever. It's a valid model for directory counts.
+
+Seriously - that's what isofs does, for example. It does mean that
+'find' for certain cases gets bit more expensive, but on the other
+hand, other operations are a lot _less_ expensive.
+
+We might well try that as a FAT mount option, to let people decide
+whether they really do want the "scan directories all the time" or
+only the "let 'find' scan directories when it needs to" behavior.
+
+                      Linus
