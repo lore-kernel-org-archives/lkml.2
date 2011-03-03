@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758863Ab1CCVSs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:18:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44315 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab1CCVSr (ORCPT
+	id S1758874Ab1CCVTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:19:24 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53298 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758699Ab1CCVTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:18:47 -0500
+	Thu, 3 Mar 2011 16:19:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:cc:subject
          :references:in-reply-to:content-type:content-transfer-encoding;
-        b=xAqCtvYL9ovOJVIwHJdCyxKQaFfO95vB51IowIFcD1WuQJFiLzqxPAXNqOPjTasIBe
-         A74uo3mCyidrgqeWFCKAoEK/po7RhkufBjWwshQxQ1vDAxu06t1kLwC7sOh3R8Asx3gU
-         1gEL5YWrBZgrSzUt/wF7Nx+9d3oPuziDfDYDI=
-Message-ID: <4D7005B1.4020008@gmail.com>
-Date: Fri, 04 Mar 2011 00:18:41 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+        b=uPFgtyh/3E9Jxv5Q4mfST1z6sfoT1VV35qxBWv+xhYZLu1S0O+/1yeVWIw6Nsfr6wf
+         3eZX6HvKDO9smjd1UeXhZv8mHR/3bqIhs9YqgN2GCMQsldneEJBwoYCKe1TfNa4wR23S
+         O8LeGdGHMluoQTKly0Zh98TD5wymmirfiYhiY=
+Message-ID: <4D7005D8.7000407@gmail.com>
+Date: Thu, 03 Mar 2011 16:19:20 -0500
+From: Jinqiu <crindy646@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.14) Gecko/20110221 Thunderbird/3.1.8
 MIME-Version: 1.0
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] x86: fix section of a disable_apic_timer
-References: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de> <1299182701-8591-7-git-send-email-henne@nachtwindheim.de>
-In-Reply-To: <1299182701-8591-7-git-send-email-henne@nachtwindheim.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [patch] Fix bug #13853: dereference pointer 'dev' before null
+ check
+References: <4D6EFAE5.4000400@gmail.com> <20110303112920.307665dc.rdunlap@xenotime.net>
+In-Reply-To: <20110303112920.307665dc.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 11:05 PM, Henrik Kretzschmar wrote:
-> This variable placed better into section .init.data,
-> since its only accessed by __init code.
-> 
-> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+
+On 11-3-3 下午2:29, Randy Dunlap wrote:
+> On Wed, 02 Mar 2011 21:20:21 -0500 Jinqiu wrote:
+>
+>> This patch fixes bug #13853 .This still exists in latest version.
+>> 'dev' is dereferenced before testing for NULL.
+>>
+>> Signed-off-by: Jinqiu Yang<crindy646@gmail.com>
+>> --- a/drivers/net/ariadne.c
+>> +++ b/drivers/net/ariadne.c
+>> @@ -420,7 +420,7 @@ static inline void ariadne_reset(struct
+>> static irqreturn_t ariadne_interrupt(int irq, void *data)
+>> {
+>> 	struct net_device *dev = (struct net_device *) data;
+>> - 	volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
+>> + 	volatile struct Am79C960 *lance;
+>> 	struct ariadne_private *priv;
+>> 	int csr0, boguscnt;
+>> 	int handled = 0;
+> Did you patch generator tool insert tabs in this patch?
+No, I did not. This is weird. The original patch is fine.
+  I would fix email client issues.
+Thanks for your help! :-)
+
+  Jinqiu
+> The line below should be formatted as:
+>
+> @@ -429,6 +429,7 @@ static irqreturn_t ariadne_interrupt(int
+>
+> with no space between 429, and 7.
+>
+>> @@ -429,6 +429, 7 @@ static irqreturn_t ariadne_interrupt(int
+>> 		printk(KERN_WARNING  "ariadne_interrupt(): irq for unknown device.\n");
+>> 		return IRQ_NONE;
+>> 	}
+>> + 	lance = (struct Am79C960 *)dev->base_addr;
+>>
+>> 	lance->RAP = CSR0; 					/* PCnet-ISA Controller Status */
+>>
+>>
+>>
+>>
+>> --
+>
 > ---
->  arch/x86/kernel/apic/apic.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 64efb2d..dab58b6 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -163,7 +163,7 @@ early_param("nox2apic", setup_nox2apic);
->  unsigned long mp_lapic_addr;
->  int disable_apic;
->  /* Disable local APIC timer from the kernel commandline or via dmi quirk */
-> -static int disable_apic_timer __cpuinitdata;
-> +static int disable_apic_timer __initdata = 0;
->  /* Local APIC timer works in C2 */
->  int local_apic_timer_c2_ok;
->  EXPORT_SYMBOL_GPL(local_apic_timer_c2_ok);
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
-Good to me, though I don't get why we need 0 here.
-
--- 
-    Cyrill
