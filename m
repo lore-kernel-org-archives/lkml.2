@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab1CCBxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 20:53:24 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:42362 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300Ab1CCBxX (ORCPT
+	id S1757264Ab1CCBzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 20:55:37 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:37824 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab1CCBzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 20:53:23 -0500
-Date: Wed, 2 Mar 2011 20:52:37 -0500 (EST)
-From: CAI Qian <caiqian@redhat.com>
-To: subrata@linux.vnet.ibm.com
-Cc: ltp-list@lists.sf.net, vapier@gentoo.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        Paolo Ciarrocchi <paolo.ciarrocchi@gmail.com>
-Message-ID: <1469445745.266603.1299117157337.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1299068635.4463.1.camel@subratamodak.linux.ibm.com>
-Subject: Re: [LTP] [ANNOUNCE] The Linux Test Project has been released for
- FEBRUARY 2011.
+	Wed, 2 Mar 2011 20:55:36 -0500
+Message-ID: <019ad511a576046f79364a846041a64c.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201103030230.27363.vda.linux@googlemail.com>
+References: <20110301152457.GE26074@htj.dyndns.org>
+    <20110302133206.GA9838@redhat.com>
+    <0a2c2dfb67198c5bd2cfc6e6c1896f23.squirrel@webmail.greenhost.nl>
+    <201103030230.27363.vda.linux@googlemail.com>
+Date: Thu, 3 Mar 2011 02:55:32 +0100 (CET)
+Subject: Re: [RFC] Proposal for ptrace improvements
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <vda.linux@googlemail.com>
+Cc: "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
+        "Roland McGrath" <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org,
+        "Michael Kerrisk" <mtk.manpages@googlemail.com>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: bbdeaaa4d227adae8d620e69c05793d6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, March 3, 2011 02:30, Denys Vlasenko wrote:
+> On Thursday 03 March 2011 01:47, Indan Zupancic wrote:
+>> On Wed, March 2, 2011 14:32, Oleg Nesterov wrote:
+>> > On 03/02, Tejun Heo wrote:
+>> >> On Wed, Mar 02, 2011 at 06:07:35AM +0100, Indan Zupancic wrote:
+>> >> > I'm not sure what Denys is talking about: Currently it's impossible to
+>> >> > pass along SIGSTOP to traced processes. Quoting the ptrace manpage:
+>> >> >
+>> >> >    PTRACE_CONT
+>> >> >           Restarts  the stopped child process.  If data is nonzero and not
+>> >> >           SIGSTOP, it is interpreted as a signal to be  delivered  to  the
+>> >> >           child;  otherwise,  no  signal is delivered.
+>> >>
+>> >> AFAICS, that's not true.  SIGSTOP isn't treated differently from other
+>> >> signals in the ptrace signal delivery path.  Maybe it was true in the
+>> >> past.
+>> >
+>> > Yes, this is not true. And it seems this was never true.
+>> >
+>> > This is the second time this manpage confuses people in this discussion,
+>> > probably it should be fixed...
+>>
+>> Passing SIGSTOP does not actually stop the traced task, which is in line
+>> with what the manpage says. All it does is generating that second SIGSTOP
+>> notification, but when the task is continued it's running, not stopped.
+>
+> It can be argued that after this the task is running _precisely_
+> because it was continued by the debugger.
 
-> There was discussion like this some few years back. The idea was to get
-> some core tests from LTP to the kernel source tree. But then the idea
-> was dropped probably to avoid maintenance overhead ;-)
-Where are the places in kernel source tree for those?
+That would be an incorrect argument. PTRACE_CONT is supposed to let the
+task continue doing whatever it was doing, and in the case of receiving
+SIGSTOP that was going into a stopped state.
 
-Those days, there just too many tests and testing projects for kernel like
-LTP, autotest, xfstests and so on. Why not have somewhere to collabrate and
-then to extract the best?
+>> So ptraced tasks can't be stopped with SIGSTOP and continued with SIGCONT.
+>
+> It can be stopped - just do not PTRACE_CONT it after second SIGSTOP
+> notification.
 
-LTP has so many goals and focus which isn't going to be only to test kernel
-any more and it is increasing difficult to support so many distros, kernel
-versions, and so on.
+Stopped for tracing is not the same as stopped by SIGSTOP! So saying
+to just hang in the traced state is not a good solution. This would
+mean that there are special rules for SIGSTOP handling compared to
+other signals, that's stupid.
 
-There are some CORE tests like memory management tests, ksm, oom etc have
-benefit from the developers' bless and review. It also need to be updated
-to keep the tests relevant to the current git tree, since the features/specs
-are changing consistent inside the kernel.
+- The tracer shouldn't get that second notification at all if it didn't
+  ask for it.
 
-This could be also useful to improve the kernel quality by providing test
-code inside the kernel tree that to be used during the code review process
-that for example, a ksm patchset needs to pass that particular sanity tests
-in order to catch the regression. It provide benefit that when the changelog
-said that it passed the ksm tests inside the kernel, we knew exactly what it is
-without needing to sync up with another project like LTP.
+- It's hard to distinguish a SIGSTOP from an undocumented "task stopping"
+  notification which is lying because the task didn't stop after that
+  event was handled.
 
-In term of maintenance, it needs to be selectively which tests need to be
-inside the kernel. There should ideally have a dedicated maintainer from the
-testing point of view to review them. The criteria can be something like,
+- There is no need or use for this complexity, just pass along SIGSTOP!
 
-1) purely purpose of the tests are to test kernel written in C with the kernel
-   coding style. Userspace and integration tests should be better to put into
-   LTP and other projects.
-2) tests need to pass sub-system maintainers' review that for example, ksm
-   tests need MM sub-system maintainers' review-by and sign-off-by and alike.
-3) they need to be working with and sync up to the latest git version.
-4) they have to be proved to be the best tests we can have to test those
-   particular kernel code. There are many tests in LTP, but there are also
-   many duplicated tests as well. Those need to be solved when considering to
-   be moved inside the kernel source.
-5) they should really be functional testing. Non-functional tests like stress
-   or performance tests are usually more complex to setup hence defeat the
-   purpose of quick regression checking.
+>
+> The bug is that it can't be continued with SIGCONT after that.
 
-Once we have those tests in-place, the next step to improve the kernel quality
-is to have more patches had Tested-by tags before been accepted in the kernel
-git tree. Those testers can simply use the non-ambiguious references for tests
-provided by those in-kernel tests.
+No, that is a side effect of your buggy work around which proves that
+SIGSTOP doesn't currently work.
 
-In addition, those could be a follow-up items with the kernel regression reports
-that after fixed/analyzed a regression in kernel, the next natural thing to do
-is to fix/add missing tests to close this gap in the future by providing efficient
-tests to our users if all possible.
+For a debugger it doesn't matter much, but for anything that tries to be
+unobtrusive like strace this is just madness.
 
-CAI Qian
+> That's the gist of Tejun Heo's proposal.
+>
+> Oleg's proposal is a bit different. It proposes that we do need
+> to do PTRACE_CONT after second SIGSTOP notification too,
+> but task will be indeed stopped after this, and resumed
+> when SIGCONT arrives.
+
+Please implement Oleg's proposal, anything else is madness.
+
+Ptrace and task stopping because of SIGSTOP are two independent things
+and should be treated like that, if you want to improve ptrace.
+
+Greetings,
+
+Indan
+
+
