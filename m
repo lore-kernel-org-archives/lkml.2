@@ -1,121 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab1CCIsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:48:39 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:49558 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751651Ab1CCIsh (ORCPT
+	id S1757537Ab1CCIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:49:59 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47355 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab1CCIt6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:48:37 -0500
-Date: Thu, 3 Mar 2011 10:48:29 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Anand Gadiyar <gadiyar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org, Keshava Munegowda <keshava_mgowda@ti.com>
-Subject: Re: linux-next: manual merge of the usb tree with the omap tree
-Message-ID: <20110303084829.GB2644@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110302165755.b45124c8.sfr@canb.auug.org.au>
+	Thu, 3 Mar 2011 03:49:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=i9uj8csELuxsdLfDtxOHBgJgF4QlREmR8K3qXElD07om9rnIU9geaen3O5p4VJQX7N
+         9yT4iH/9iTuNcwhhzQoGLXdCCoUwcjYbyMl7o8sjFzcm9EPE8AbJNh+iQlINHeH9GvZJ
+         nC8YHm7KWh1fQlnusfp1w0wddBKNY4GzZnoeQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302165755.b45124c8.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTine=Om_oTdUH9RT9J=QEtvwZnP5uMrVxVXf0gYw@mail.gmail.com>
+References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
+	<AANLkTine=Om_oTdUH9RT9J=QEtvwZnP5uMrVxVXf0gYw@mail.gmail.com>
+Date: Thu, 3 Mar 2011 16:49:56 +0800
+Message-ID: <AANLkTi=6fFq3snYf8z_eO1bp_X26CdHAso35xR2RPDMH@mail.gmail.com>
+Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
+ remount filesystems ro
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Ken Sumrall <ksumrall@android.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
+        Eric Paris <eparis@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 04:57:55PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the usb tree got a conflict in
-> arch/arm/mach-omap2/board-4430sdp.c between commit
-> 1dbea0f5e23b6c647db72fa4a048cb7140625e13 ("arm: omap4: 4430sdp: drop ehci
-> support") from the omap tree and commit
-> 181b250cf53233a7a7c6d7e1e9df402506712e93 ("arm: omap: usb: create common
-> enums and structures for ehci and ohci") from the usb tree.
-> 
-> The former removed the code modified by the latter, so I did that.
+On Thu, Mar 3, 2011 at 4:46 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> On Thu, Mar 3, 2011 at 3:31 PM, Ken Sumrall <ksumrall@android.com> wrote:
+>> Add 4 new commands to the reboot system call, that do the same thing as the
+>> RESTART, HALT, POWER_OFF, and RESTART2 commands, but also remount writable
+>> filesystems as read-only just before doing what the command normally does.
+>> Now that Android is using EXT4, and since we don't have a standard init
+>> setup to unmount filesystems before rebooting, this allows the system to
+>> reboot with clean filesystems, and also improves boot time as the journal
+>> does not need to be replayed when mounting the filesystem.
+>>
+>> Signed-off-by: Ken Sumrall <ksumrall@android.com>
+>> ---
+>>  fs/super.c             |    9 +++++++++
+>>  include/linux/fs.h     |    1 +
+>>  include/linux/reboot.h |    4 ++++
+>>  kernel/sys.c           |   12 ++++++++++++
+>>  4 files changed, 26 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/fs/super.c b/fs/super.c
+>> index 8819e3a..3f39a16 100644
+>> --- a/fs/super.c
+>> +++ b/fs/super.c
+>> @@ -638,6 +638,15 @@ void emergency_remount(void)
+>>        }
+>>  }
+>>
+>> +void emergency_remount_synchronous(void)
+>> +{
+>> +       struct work_struct *work;
+>> +
+>> +       work = kmalloc(sizeof(*work), GFP_ATOMIC);
+>> +       if (work)
+>> +               do_emergency_remount(work);
+>
+> work is not needed here? just call do_mergency_remount()
 
-This can be fixed if Greg applies this patch:
+fix above comment: still need a null pointer
 
-commit 076bfacd5bba0f2e419474488c8f8c060c7799d8
-Author: Anand Gadiyar <gadiyar@ti.com>
-Date:   Wed Feb 16 16:47:19 2011 +0530
+>
+>> +}
+>> +
+>>  /*
+>>  * Unnamed block devices are dummy devices used by virtual
+>>  * filesystems which don't use real block-devices.  -- jrs
+>> diff --git a/include/linux/fs.h b/include/linux/fs.h
+>> index 63d069b..e48ef0d 100644
+>> --- a/include/linux/fs.h
+>> +++ b/include/linux/fs.h
+>> @@ -2110,6 +2110,7 @@ extern int generic_write_sync(struct file *file, loff_t pos, loff_t count);
+>>  extern void sync_supers(void);
+>>  extern void emergency_sync(void);
+>>  extern void emergency_remount(void);
+>> +extern void emergency_remount_synchronous(void);
+>>  #ifdef CONFIG_BLOCK
+>>  extern sector_t bmap(struct inode *, sector_t);
+>>  #endif
+>> diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+>> index 3005d5a..24b185d 100644
+>> --- a/include/linux/reboot.h
+>> +++ b/include/linux/reboot.h
+>> @@ -26,11 +26,15 @@
+>>  */
+>>
+>>  #define        LINUX_REBOOT_CMD_RESTART        0x01234567
+>> +#define        LINUX_REBOOT_CMD_RMNT_RESTART   0x12345670
+>>  #define        LINUX_REBOOT_CMD_HALT           0xCDEF0123
+>> +#define        LINUX_REBOOT_CMD_RMNT_HALT      0xDEF0123C
+>>  #define        LINUX_REBOOT_CMD_CAD_ON         0x89ABCDEF
+>>  #define        LINUX_REBOOT_CMD_CAD_OFF        0x00000000
+>>  #define        LINUX_REBOOT_CMD_POWER_OFF      0x4321FEDC
+>> +#define        LINUX_REBOOT_CMD_RMNT_POWER_OFF 0x321FEDC4
+>>  #define        LINUX_REBOOT_CMD_RESTART2       0xA1B2C3D4
+>> +#define        LINUX_REBOOT_CMD_RMNT_RESTART2  0x1B2C3D4A
+>>  #define        LINUX_REBOOT_CMD_SW_SUSPEND     0xD000FCE2
+>>  #define        LINUX_REBOOT_CMD_KEXEC          0x45584543
+>>
+>> diff --git a/kernel/sys.c b/kernel/sys.c
+>> index 7f5a0cd..3f474e6 100644
+>> --- a/kernel/sys.c
+>> +++ b/kernel/sys.c
+>> @@ -392,6 +392,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>>        mutex_lock(&reboot_mutex);
+>>        switch (cmd) {
+>>        case LINUX_REBOOT_CMD_RESTART:
+>> +       case LINUX_REBOOT_CMD_RMNT_RESTART:
+>> +               if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART)
+>> +                       emergency_remount_synchronous();
+>>                kernel_restart(NULL);
+>>                break;
+>>
+>> @@ -404,22 +407,31 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>>                break;
+>>
+>>        case LINUX_REBOOT_CMD_HALT:
+>> +       case LINUX_REBOOT_CMD_RMNT_HALT:
+>> +               if (cmd == LINUX_REBOOT_CMD_RMNT_HALT)
+>> +                       emergency_remount_synchronous();
+>>                kernel_halt();
+>>                do_exit(0);
+>>                panic("cannot halt");
+>>
+>>        case LINUX_REBOOT_CMD_POWER_OFF:
+>> +       case LINUX_REBOOT_CMD_RMNT_POWER_OFF:
+>> +               if (cmd == LINUX_REBOOT_CMD_RMNT_POWER_OFF)
+>> +                       emergency_remount_synchronous();
+>>                kernel_power_off();
+>>                do_exit(0);
+>>                break;
+>>
+>>        case LINUX_REBOOT_CMD_RESTART2:
+>> +       case LINUX_REBOOT_CMD_RMNT_RESTART2:
+>>                if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
+>>                        ret = -EFAULT;
+>>                        break;
+>>                }
+>>                buffer[sizeof(buffer) - 1] = '\0';
+>>
+>> +               if (cmd == LINUX_REBOOT_CMD_RMNT_RESTART2)
+>> +                       emergency_remount_synchronous();
+>>                kernel_restart(buffer);
+>>                break;
+>>
+>> --
+>> 1.7.3.1
+>>
+>>
+>
+>
+>
+> --
+> Regards
+> dave
+>
 
-    arm: omap4: 4430sdp: drop ehci support
-    
-    Most revisions of the OMAP4 Blaze/SDP platform do not have
-    the EHCI signals routed by default. The pads are routed
-    for the alternate HSI functionality instead, and explicit
-    board modifications are needed to route the signals to
-    the USB PHY on the board.
-    
-    Also, turning on the PHY connected to the EHCI port causes
-    a board reboot during bootup due to an unintended short
-    on the rails - this affects many initial revisions of the
-    board, and needs a minor board mod to fix (or as a
-    workaround, one should not attempt to power on the
-    USB PHY).
-    
-    Given that these boards need explicit board mods to even
-    get EHCI working (separate from the accidental short above),
-    we should not attempt to enable EHCI by default.
-    
-    So drop the EHCI support from the board files for the
-    Blaze/SDP platforms.
-    
-    Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
-    Cc: Keshava Munegowda <keshava_mgowda@ti.com>
-    Cc: Tony Lindgren <tony@atomide.com>
-    Signed-off-by: Felipe Balbi <balbi@ti.com>
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index 1230121..f603f3b 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -44,7 +44,6 @@
- #define ETH_KS8851_IRQ			34
- #define ETH_KS8851_POWER_ON		48
- #define ETH_KS8851_QUART		138
--#define OMAP4SDP_MDM_PWR_EN_GPIO	157
- #define OMAP4_SFH7741_SENSOR_OUTPUT_GPIO	184
- #define OMAP4_SFH7741_ENABLE_GPIO		188
- 
-@@ -251,16 +250,6 @@ static void __init omap_4430sdp_init_irq(void)
- 	gic_init_irq();
- }
- 
--static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
--	.port_mode[0]	= OMAP_EHCI_PORT_MODE_PHY,
--	.port_mode[1]	= OMAP_USBHS_PORT_MODE_UNUSED,
--	.port_mode[2]	= OMAP_USBHS_PORT_MODE_UNUSED,
--	.phy_reset	= false,
--	.reset_gpio_port[0]  = -EINVAL,
--	.reset_gpio_port[1]  = -EINVAL,
--	.reset_gpio_port[2]  = -EINVAL,
--};
--
- static struct omap_musb_board_data musb_board_data = {
- 	.interface_type		= MUSB_INTERFACE_UTMI,
- 	.mode			= MUSB_OTG,
-@@ -577,14 +566,6 @@ static void __init omap_4430sdp_init(void)
- 	omap_serial_init();
- 	omap4_twl6030_hsmmc_init(mmc);
- 
--	/* Power on the ULPI PHY */
--	status = gpio_request(OMAP4SDP_MDM_PWR_EN_GPIO, "USBB1 PHY VMDM_3V3");
--	if (status)
--		pr_err("%s: Could not get USBB1 PHY GPIO\n", __func__);
--	else
--		gpio_direction_output(OMAP4SDP_MDM_PWR_EN_GPIO, 1);
--
--	usbhs_init(&usbhs_bdata);
- 	usb_musb_init(&musb_board_data);
- 
- 	status = omap_ethernet_init();
 
 -- 
-balbi
+Regards
+dave
