@@ -1,46 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758418Ab1CCPfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 10:35:11 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:54349 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758349Ab1CCPfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 10:35:09 -0500
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201103031535.p23FZ1hI023122@stout.americas.sgi.com>
-Date: Thu, 03 Mar 2011 09:35:00 -0600
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.38-rc8
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S1758234Ab1CCPo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 10:44:27 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:58192 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757489Ab1CCPo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 10:44:26 -0500
+Message-ID: <4D6FB751.3010608@kernel.dk>
+Date: Thu, 03 Mar 2011 10:44:17 -0500
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Justin TerAvest <teravest@google.com>, Chad Talbott <ctalbott@google.com>,
+        Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: Per iocontext request descriptor limits (Was: Re: RFC: default
+  group_isolation to 1, remove option)
+References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com> <20110301142002.GB25699@redhat.com> <4D6F0ED0.80804@kernel.dk> <20110303153007.GF16720@redhat.com>
+In-Reply-To: <20110303153007.GF16720@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Regressions fixed, hopefully none introduced..
+On 2011-03-03 10:30, Vivek Goyal wrote:
+> On Wed, Mar 02, 2011 at 10:45:20PM -0500, Jens Axboe wrote:
+>> On 2011-03-01 09:20, Vivek Goyal wrote:
+>>> I think creating per group request pool will complicate the
+>>> implementation further. (we have done that once in the past). Jens
+>>> once mentioned that he liked number of requests per iocontext limit
+>>> better than overall queue limit. So if we implement per iocontext
+>>> limit, it will get rid of need of doing anything extra for group
+>>> infrastructure.
+>>>
+>>> Jens, do you think per iocontext per queue limit on request
+>>> descriptors make sense and we can get rid of per queue overall limit? 
+>>
+>> Since we practically don't need a limit anymore to begin with (or so is
+>> the theory).
+> 
+> So what has changed that we don't need queue limits on nr_requests anymore?
+> If we get rid of queue limits then we need to get rid of bdi congestion
+> logic also and come up with some kind of ioc congestion logic so that
+> a thread which does not want to sleep while submitting the request needs to
+> checks it own ioc for being congested or not for a specific device/bdi. 
 
-Sorry to report that one was introduced in XFS.  A caller was
-providing the address of something smaller than what was expected
-by a function that zeroed it, with a predictable result.
+Right now congestion is a measure of request starvation on the OS side.
+It may make sense to keep the notion of a congested device when we are
+operating at the device limits. But as a blocking measure it should go
+away.
 
-Please take the following change, which corrects the problem.
-Thanks.
+No recent change is causing us to be able to throw away the limit. It
+used to be that the vm got really unhappy with long queues, since you
+could have tons of memory dirty. This works a LOT better now. And one
+would hope that it does, since there are a number of drivers that don't
+have limts. So when I say "practically" don't need limits anymore, the
+hope is that we'll behave well enough with just per-ioc limits in place.
 
-					-Alex
+>> then yes we can move to per-ioc limits instead and get rid
+>> of that queue state. We'd have to hold on to the ioc for the duration of
+>> the IO explicitly from the request then.
+> 
+> I think every request submitted on request queue already takes a reference
+> on ioc (set_request) and reference is not dropped till completion. So
+> ioc is anyway around till request completes.
 
-The following changes since commit cbdbb4c1d22e26f9d5314fefe6f2c7e5ed7f6a0f:
+That's only true for CFQ, it's not a block layer property. This would
+have to be explicitly done.
 
-  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-03-02 20:02:32 -0800)
+>> I primarily like that implementation since it means we can make the IO
+>> completion lockless, at least on the block layer side. We still have
+>> state to complete in the schedulers that require that, but it's a good
+>> step at least.
+> 
+> Ok so in completion path the contention will move from queue_lock to
+> ioc lock or something like that. (We hope that there are no other
+> dependencies on queue here, devil lies in details :-))
 
-are available in the git repository at:
+Right, so it's spread out and in most cases the ioc will be completely
+uncontended since it's usually private to the process.
 
-  git://oss.sgi.com/xfs/xfs for-linus
+> The other potential issue with this approach is how will we handle the
+> case of flusher thread submitting IO. At some point of time we want to
+> account it to right cgroup.
+> 
+> Retrieving iocontext from bio will be hard as it will atleast require
+> on extra pointer in page_cgroup and I am not sure how feasible that is.
+> 
+> Or we could come up with the concept of group iocontext. With the help
+> of page cgroup we should be able to get to cgroup, retrieve the right
+> group iocontext and check the limit against that. But I guess this
+> get complicated. 
+> 
+> So if we move to ioc based limit, then for async IO, a reasonable way
+> would be to find the io context of submitting task and operate on that
+> even if that means increased page_cgroup size.
 
-Alex Elder (1):
-      xfs: zero proper structure size for geometry calls
+For now it's not a complicated effort, I already have a patch for this.
+If page tracking needs extra complexity, it'll have to remain in the
+page tracking code.
 
- fs/xfs/linux-2.6/xfs_ioctl.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+-- 
+Jens Axboe
+
