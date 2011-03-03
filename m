@@ -1,163 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757949Ab1CCLjx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 06:39:53 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:49570 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751786Ab1CCLjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 06:39:52 -0500
-X-Authenticated: #41721828
-X-Provags-ID: V01U2FsdGVkX19SyCB4HapS0FNq1tRh3kVeJQXZ/W4Lm6lkfcI0Mv
-	wE3HogDx6Meo+9
-From: =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Al Cho <acho@novell.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-Subject: [PATCH v2] staging: keucr: use kernel byteorder functions
-Date: Thu,  3 Mar 2011 12:38:20 +0100
-Message-Id: <1299152300-5585-1-git-send-email-j.neuschaefer@gmx.net>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20110303113225.GA1341@debian.debian>
-References: <20110303113225.GA1341@debian.debian>
-X-Y-GMX-Trusted: 0
+	id S1756096Ab1CCLlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 06:41:07 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:18848 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab1CCLlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 06:41:06 -0500
+Date: Thu, 3 Mar 2011 13:37:37 +0200 (EET)
+From: Aaro Koskinen <aaro.koskinen@nokia.com>
+X-X-Sender: aakoskin@esdhcp041196.research.nokia.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Aaro Koskinen <aaro.koskinen@nokia.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        stable@kernel.org
+Subject: Re: [PATCH] procfs: fix /proc/<pid>/maps heap check
+In-Reply-To: <20110303102631.B939.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.1.10.1103031333020.27610@esdhcp041196.research.nokia.com>
+References: <1298996813-8625-1-git-send-email-aaro.koskinen@nokia.com> <alpine.DEB.1.10.1103021449000.27610@esdhcp041196.research.nokia.com> <20110303102631.B939.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/keucr/TODO     |    1 -
- drivers/staging/keucr/common.h |   12 ------------
- drivers/staging/keucr/ms.c     |   28 +++++++++++++++-------------
- 3 files changed, 15 insertions(+), 26 deletions(-)
+Hi,
 
-diff --git a/drivers/staging/keucr/TODO b/drivers/staging/keucr/TODO
-index 179b7fe..1c48e40 100644
---- a/drivers/staging/keucr/TODO
-+++ b/drivers/staging/keucr/TODO
-@@ -6,7 +6,6 @@ TODO:
- 	  be merged into the drivers/usb/storage/ directory and
- 	  infrastructure instead.
- 	- review by the USB developer community
--	- common.h: use kernel swap, le, & be functions
- 	- smcommon.h & smilsub.c: use kernel hweight8(), hweight16()
- 
- Please send any patches for this driver to Al Cho <acho@novell.com> and
-diff --git a/drivers/staging/keucr/common.h b/drivers/staging/keucr/common.h
-index f2be045..b87dc7a 100644
---- a/drivers/staging/keucr/common.h
-+++ b/drivers/staging/keucr/common.h
-@@ -9,17 +9,5 @@ typedef u16 *PWORD;
- typedef u32 DWORD;
- typedef u32 *PDWORD;
- 
--#define swapWORD(w)	((((unsigned short)(w) << 8) & 0xff00) |	\
--			 (((unsigned short)(w) >> 8) & 0x00ff))
--#define swapDWORD(dw)	((((unsigned long)(dw) << 24) & 0xff000000) |	\
--			 (((unsigned long)(dw) <<  8) & 0x00ff0000) |	\
--			 (((unsigned long)(dw) >>  8) & 0x0000ff00) |	\
--			 (((unsigned long)(dw) >> 24) & 0x000000ff))
--
--#define LittleEndianWORD(w)	(w)
--#define LittleEndianDWORD(dw)	(dw)
--#define BigEndianWORD(w)	swapWORD(w)
--#define BigEndianDWORD(dw)	swapDWORD(dw)
--
- #endif
- 
-diff --git a/drivers/staging/keucr/ms.c b/drivers/staging/keucr/ms.c
-index 452ea8f..48496e4 100644
---- a/drivers/staging/keucr/ms.c
-+++ b/drivers/staging/keucr/ms.c
-@@ -1,4 +1,6 @@
- #include <linux/slab.h>
-+#include <asm/byteorder.h>
-+
- #include "usb.h"
- #include "scsiglue.h"
- #include "transport.h"
-@@ -166,8 +168,8 @@ int MS_CardInit(struct us_data *us)
- 			continue;
- 
- 		if (((extdat.mngflg & MS_REG_MNG_SYSFLG) == MS_REG_MNG_SYSFLG_USER) ||
--			(BigEndianWORD(((MemStickBootBlockPage0 *)PageBuffer0)->header.wBlockID) != MS_BOOT_BLOCK_ID) ||
--			(BigEndianWORD(((MemStickBootBlockPage0 *)PageBuffer0)->header.wFormatVersion) != MS_BOOT_BLOCK_FORMAT_VERSION) ||
-+			(be16_to_cpu(((MemStickBootBlockPage0 *)PageBuffer0)->header.wBlockID) != MS_BOOT_BLOCK_ID) ||
-+			(be16_to_cpu(((MemStickBootBlockPage0 *)PageBuffer0)->header.wFormatVersion) != MS_BOOT_BLOCK_FORMAT_VERSION) ||
- 			(((MemStickBootBlockPage0 *)PageBuffer0)->header.bNumberOfDataEntry != MS_BOOT_BLOCK_DATA_ENTRIES))
- 				continue;
- 
-@@ -266,7 +268,7 @@ int MS_LibCheckDisableBlock(struct us_data *us, WORD PhyBlock)
- 	MS_ReaderReadPage(us, PhyBlock, 1, (DWORD *)PageBuf, &extdat);
- 	do
- 	{
--		blk = BigEndianWORD(PageBuf[index]);
-+		blk = be16_to_cpu(PageBuf[index]);
- 		if (blk == MS_LB_NOT_USED)
- 			break;
- 		if (blk == us->MS_Lib.Log2PhyMap[0])
-@@ -355,7 +357,7 @@ int MS_LibProcessBootBlock(struct us_data *us, WORD PhyBlock, BYTE *PageData)
- 	SysInfo= &(((MemStickBootBlockPage0 *)PageData)->sysinf);
- 
- 	if ((SysInfo->bMsClass != MS_SYSINF_MSCLASS_TYPE_1)                                   ||
--		(BigEndianWORD(SysInfo->wPageSize) != MS_SYSINF_PAGE_SIZE)                       ||
-+		(be16_to_cpu(SysInfo->wPageSize) != MS_SYSINF_PAGE_SIZE)                       ||
- 		((SysInfo->bSecuritySupport & MS_SYSINF_SECURITY) == MS_SYSINF_SECURITY_SUPPORT) ||
- 		(SysInfo->bReserved1 != MS_SYSINF_RESERVED1)                                     ||
- 		(SysInfo->bReserved2 != MS_SYSINF_RESERVED2)                                     ||
-@@ -376,12 +378,12 @@ int MS_LibProcessBootBlock(struct us_data *us, WORD PhyBlock, BYTE *PageData)
- 			goto exit;
- 	}
- 
--	us->MS_Lib.blockSize        = BigEndianWORD(SysInfo->wBlockSize);
--	us->MS_Lib.NumberOfPhyBlock = BigEndianWORD(SysInfo->wBlockNumber);
--	us->MS_Lib.NumberOfLogBlock = BigEndianWORD(SysInfo->wTotalBlockNumber)- 2;
-+	us->MS_Lib.blockSize        = be16_to_cpu(SysInfo->wBlockSize);
-+	us->MS_Lib.NumberOfPhyBlock = be16_to_cpu(SysInfo->wBlockNumber);
-+	us->MS_Lib.NumberOfLogBlock = be16_to_cpu(SysInfo->wTotalBlockNumber) - 2;
- 	us->MS_Lib.PagesPerBlock    = us->MS_Lib.blockSize * SIZE_OF_KIRO / MS_BYTES_PER_PAGE;
- 	us->MS_Lib.NumberOfSegment  = us->MS_Lib.NumberOfPhyBlock / MS_PHYSICAL_BLOCKS_PER_SEGMENT;
--	us->MS_Model                = BigEndianWORD(SysInfo->wMemorySize);
-+	us->MS_Model                = be16_to_cpu(SysInfo->wMemorySize);
- 
- 	if (MS_LibAllocLogicalMap(us))			//Allocate to all number of logicalblock and physicalblock
- 		goto exit;
-@@ -394,10 +396,10 @@ int MS_LibProcessBootBlock(struct us_data *us, WORD PhyBlock, BYTE *PageData)
- 	{
- 		DWORD  EntryOffset, EntrySize;
- 
--		if ((EntryOffset = BigEndianDWORD(SysEntry->entry[i].dwStart)) == 0xffffff)
-+		if ((EntryOffset = be32_to_cpu(SysEntry->entry[i].dwStart)) == 0xffffff)
- 			continue;
- 
--		if ((EntrySize = BigEndianDWORD(SysEntry->entry[i].dwSize)) == 0)
-+		if ((EntrySize = be32_to_cpu(SysEntry->entry[i].dwSize)) == 0)
- 			continue;
- 
- 		if (EntryOffset + MS_BYTES_PER_PAGE + EntrySize > us->MS_Lib.blockSize * (DWORD)SIZE_OF_KIRO)
-@@ -429,7 +431,7 @@ int MS_LibProcessBootBlock(struct us_data *us, WORD PhyBlock, BYTE *PageData)
- 					PrevPageNumber = PageNumber;
- 				}
- 
--				if ((phyblk = BigEndianWORD(*(WORD *)(PageBuffer + (EntryOffset % MS_BYTES_PER_PAGE)))) < 0x0fff)
-+				if ((phyblk = be16_to_cpu(*(WORD *)(PageBuffer + (EntryOffset % MS_BYTES_PER_PAGE)))) < 0x0fff)
- 					MS_LibSetInitialErrorBlock(us, phyblk);
- 
- 				EntryOffset += 2;
-@@ -455,10 +457,10 @@ int MS_LibProcessBootBlock(struct us_data *us, WORD PhyBlock, BYTE *PageData)
- 			}
- 
- 			idi = &((MemStickBootBlockCIS_IDI *)(PageBuffer + (EntryOffset % MS_BYTES_PER_PAGE)))->idi.idi;
--			if (LittleEndianWORD(idi->wIDIgeneralConfiguration) != MS_IDI_GENERAL_CONF)
-+			if (le16_to_cpu(idi->wIDIgeneralConfiguration) != MS_IDI_GENERAL_CONF)
- 				goto exit;
- 
--			us->MS_Lib.BytesPerSector = LittleEndianWORD(idi->wIDIbytesPerSector);
-+			us->MS_Lib.BytesPerSector = le16_to_cpu(idi->wIDIbytesPerSector);
- 			if (us->MS_Lib.BytesPerSector != MS_BYTES_PER_PAGE)
- 				goto exit;
- 		}
--- 
-1.7.4.1
+On Thu, 3 Mar 2011, KOSAKI Motohiro wrote:
+>> On Tue, 1 Mar 2011, Aaro Koskinen wrote:
+>>> The current check looks wrong and prints "[heap]" only if the mapping
+>>> matches exactly the heap. However, the heap may be merged with some
+>>> other mappings, and there may be also be multiple mappings.
+>>>
+>>> Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+>>> Cc: stable@kernel.org
 
+[...]
+
+> Your description said,
+> 	the heap may be merged with some other mappings,
+>                        ^^^^^^
+> but your example is splitting case. not merge. In other words, your
+> patch care splitting case but break merge case.
+>
+> Ok, we have no obvious correct behavior. This is debatable. So,
+> Why do you think vma splitting case is important than merge?
+
+Sorry, I was unclear.
+
+The current behaviour is wrong for both merged and split cases, and I
+think the patch fixes both.
+
+And yes, the example program is for the split case. I'll see if I can
+make a test program for the merged case...
+
+A.
