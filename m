@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758373Ab1CCP3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 10:29:31 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:32839 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab1CCP3a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 10:29:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=c2hrDAByTTVO3BHfrEpQOwrdUVyFBFN4GqouaMXCjj5JQ20QDwCN1NfklxUVM6Hftq
-         Jjmcpy3bBW1RKE3DchJX0XUHQNVIpXEHExKy3o2hdco9mB792KaP+QtlSBG7lfPanr9v
-         /iBc9TFxUQTh+sY4vFfCSBYpdYTxM3OATOIyA=
+	id S1758397Ab1CCPaY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 10:30:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10235 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753929Ab1CCPaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 10:30:23 -0500
+Date: Thu, 3 Mar 2011 10:30:07 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Justin TerAvest <teravest@google.com>, Chad Talbott <ctalbott@google.com>,
+        Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Per iocontext request descriptor limits (Was: Re: RFC: default
+ group_isolation to 1, remove option)
+Message-ID: <20110303153007.GF16720@redhat.com>
+References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com>
+ <20110301142002.GB25699@redhat.com>
+ <4D6F0ED0.80804@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <20110303140551.GA20677@zhy>
-References: <20110303113435.GA2868@balbir.in.ibm.com>
-	<20110303140551.GA20677@zhy>
-Date: Thu, 3 Mar 2011 20:59:29 +0530
-X-Google-Sender-Auth: 183cH9ZnsCBV6VSMFzRVLAdHe5M
-Message-ID: <AANLkTikHFLoJOZvx2YebKdHt+jjiHgUFasiLTrZ6vBUJ@mail.gmail.com>
-Subject: Re: [BUGFIX][PATCH] Fix sched rt group scheduling when hierachy is enabled
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <pzijlstr@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Bharata B Rao <bharata.rao@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6F0ED0.80804@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 7:35 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Thu, Mar 03, 2011 at 05:04:35PM +0530, Balbir Singh wrote:
->> Fix hierarchical scheduling in sched rt group
->>
->> From: Balbir Singh <balbir@linux.vnet.ibm.com>
->>
->> The current sched rt code is broken when it comes to hierarchical
->> scheduling, this patch fixes two problems
->>
->> 1. It adds redundant enqueuing (harmless) when it finds a queue
->>    has tasks enqueued, but it has no run time and it is not
->>    throttled.
->
-> You say redundant here, so in fact we don't need it, right?
->
+On Wed, Mar 02, 2011 at 10:45:20PM -0500, Jens Axboe wrote:
+> On 2011-03-01 09:20, Vivek Goyal wrote:
+> > I think creating per group request pool will complicate the
+> > implementation further. (we have done that once in the past). Jens
+> > once mentioned that he liked number of requests per iocontext limit
+> > better than overall queue limit. So if we implement per iocontext
+> > limit, it will get rid of need of doing anything extra for group
+> > infrastructure.
+> > 
+> > Jens, do you think per iocontext per queue limit on request
+> > descriptors make sense and we can get rid of per queue overall limit? 
+> 
+> Since we practically don't need a limit anymore to begin with (or so is
+> the theory).
 
-No, not really :) It is required, it is a backup check to see if we
-have queued tasks, rt_time of 0 and the runqueue is not throttled, why
-should it be dequeued?
+So what has changed that we don't need queue limits on nr_requests anymore?
+If we get rid of queue limits then we need to get rid of bdi congestion
+logic also and come up with some kind of ioc congestion logic so that
+a thread which does not want to sleep while submitting the request needs to
+checks it own ioc for being congested or not for a specific device/bdi. 
 
->> 2. The most important change is in sched_rt_rq_enqueue/dequeue.
->>    The code just picks the rt_rq belonging to the current cpu
->>    on which the period timer runs, the patch fixes it, so that
->>    the correct rt_se is enqueued/dequeued.
->
-> Ah, this is true. It is also needed for stable-2.6.33+
->
+>then yes we can move to per-ioc limits instead and get rid
+> of that queue state. We'd have to hold on to the ioc for the duration of
+> the IO explicitly from the request then.
 
-Yep, we'll need backports to stable versions
+I think every request submitted on request queue already takes a reference
+on ioc (set_request) and reference is not dropped till completion. So
+ioc is anyway around till request completes.
 
-Balbir
+> 
+> I primarily like that implementation since it means we can make the IO
+> completion lockless, at least on the block layer side. We still have
+> state to complete in the schedulers that require that, but it's a good
+> step at least.
+
+Ok so in completion path the contention will move from queue_lock to
+ioc lock or something like that. (We hope that there are no other
+dependencies on queue here, devil lies in details :-))
+
+The other potential issue with this approach is how will we handle the
+case of flusher thread submitting IO. At some point of time we want to
+account it to right cgroup.
+
+Retrieving iocontext from bio will be hard as it will atleast require
+on extra pointer in page_cgroup and I am not sure how feasible that is.
+
+Or we could come up with the concept of group iocontext. With the help
+of page cgroup we should be able to get to cgroup, retrieve the right
+group iocontext and check the limit against that. But I guess this
+get complicated. 
+
+So if we move to ioc based limit, then for async IO, a reasonable way
+would be to find the io context of submitting task and operate on that
+even if that means increased page_cgroup size.
+
+Thanks
+Vivek 
