@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab1CCArM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 19:47:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30804 "EHLO mga09.intel.com"
+	id S1756596Ab1CCArP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 19:47:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:28403 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab1CCAqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 19:46:03 -0500
+	id S1754658Ab1CCAqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 19:46:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,256,1297065600"; 
-   d="scan'208";a="715432806"
+   d="scan'208";a="715432807"
 From: Andi Kleen <andi@firstfloor.org>
 To: akpm@linux-foundation.org
 Cc: aarcange@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 8/8] Add VM counters for transparent hugepages
-Date: Wed,  2 Mar 2011 16:45:28 -0800
-Message-Id: <1299113128-11349-9-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 7/8] Use GFP_OTHER_NODE for transparent huge pages
+Date: Wed,  2 Mar 2011 16:45:27 -0800
+Message-Id: <1299113128-11349-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1299113128-11349-1-git-send-email-andi@firstfloor.org>
 References: <1299113128-11349-1-git-send-email-andi@firstfloor.org>
@@ -25,150 +25,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-I found it difficult to make sense of transparent huge pages without
-having any counters for its actions. Add some counters to vmstat
-for allocation of transparent hugepages and fallback to smaller
-pages.
-
-Optional patch, but useful for development and understanding the system.
+Pass GFP_OTHER_NODE for transparent hugepages NUMA allocations
+done by the hugepages daemon. This way the low level accounting
+for local versus remote pages works correctly.
 
 Contains improvements from Andrea Arcangeli
 
-Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: aarcange@redhat.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/vmstat.h |    7 +++++++
- mm/huge_memory.c       |   25 +++++++++++++++++++++----
- mm/vmstat.c            |    8 ++++++++
- 3 files changed, 36 insertions(+), 4 deletions(-)
+ mm/huge_memory.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index 9b5c63d..a21d694 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -58,6 +58,13 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		UNEVICTABLE_PGCLEARED,	/* on COW, page truncate */
- 		UNEVICTABLE_PGSTRANDED,	/* unable to isolate on unlock */
- 		UNEVICTABLE_MLOCKFREED,
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	        THP_FAULT_ALLOC,
-+		THP_COLLAPSE_ALLOC,	
-+		THP_FAULT_FALLBACK,	
-+		THP_COLLAPSE_ALLOC_FAILED,
-+		THP_SPLIT,
-+#endif
- 		NR_VM_EVENT_ITEMS
- };
- 
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 8c6c4a7..f13a9a3 100644
+index 8a7f94c..8c6c4a7 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -680,8 +680,11 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -643,23 +643,24 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 	return ret;
+ }
+ 
+-static inline gfp_t alloc_hugepage_gfpmask(int defrag)
++static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
+ {
+-	return GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT);
++	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
+ }
+ 
+ static inline struct page *alloc_hugepage_vma(int defrag,
+ 					      struct vm_area_struct *vma,
+-					      unsigned long haddr, int nd)
++					      unsigned long haddr, int nd,
++					      gfp_t extra_gfp)
+ {
+-	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag),
++	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag, extra_gfp),
+ 			       HPAGE_PMD_ORDER, vma, haddr, nd);
+ }
+ 
+ #ifndef CONFIG_NUMA
+ static inline struct page *alloc_hugepage(int defrag)
+ {
+-	return alloc_pages(alloc_hugepage_gfpmask(defrag),
++	return alloc_pages(alloc_hugepage_gfpmask(defrag, 0),
+ 			   HPAGE_PMD_ORDER);
+ }
+ #endif
+@@ -678,7 +679,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		if (unlikely(khugepaged_enter(vma)))
  			return VM_FAULT_OOM;
  		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
- 					  vma, haddr, numa_node_id(), 0);
--		if (unlikely(!page))
-+		if (unlikely(!page)) {
-+			count_vm_event(THP_FAULT_FALLBACK);
+-					  vma, haddr, numa_node_id());
++					  vma, haddr, numa_node_id(), 0);
+ 		if (unlikely(!page))
  			goto out;
-+		}
-+		count_vm_event(THP_FAULT_ALLOC);
  		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
- 			put_page(page);
- 			goto out;
-@@ -909,11 +912,13 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -799,7 +800,8 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+ 	}
+ 
+ 	for (i = 0; i < HPAGE_PMD_NR; i++) {
+-		pages[i] = alloc_page_vma_node(GFP_HIGHUSER_MOVABLE,
++		pages[i] = alloc_page_vma_node(GFP_HIGHUSER_MOVABLE | 
++					       __GFP_OTHER_NODE,
+ 					       vma, address, page_to_nid(page));
+ 		if (unlikely(!pages[i] ||
+ 			     mem_cgroup_newpage_charge(pages[i], mm,
+@@ -902,7 +904,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (transparent_hugepage_enabled(vma) &&
+ 	    !transparent_hugepage_debug_cow())
+ 		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+-					      vma, haddr, numa_node_id());
++					      vma, haddr, numa_node_id(), 0);
+ 	else
  		new_page = NULL;
  
- 	if (unlikely(!new_page)) {
-+		count_vm_event(THP_FAULT_FALLBACK);
- 		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
- 						   pmd, orig_pmd, page, haddr);
- 		put_page(page);
- 		goto out;
- 	}
-+	count_vm_event(THP_FAULT_ALLOC);
- 
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
- 		put_page(new_page);
-@@ -1390,6 +1395,7 @@ int split_huge_page(struct page *page)
- 
- 	BUG_ON(!PageSwapBacked(page));
- 	__split_huge_page(page, anon_vma);
-+	count_vm_event(THP_SPLIT);
- 
- 	BUG_ON(PageCompound(page));
- out_unlock:
-@@ -1780,9 +1786,11 @@ static void collapse_huge_page(struct mm_struct *mm,
- 				      node, __GFP_OTHER_NODE);
+@@ -1775,7 +1777,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	 * scalability.
+ 	 */
+ 	new_page = alloc_hugepage_vma(khugepaged_defrag(), vma, address,
+-				      node);
++				      node, __GFP_OTHER_NODE);
  	if (unlikely(!new_page)) {
  		up_read(&mm->mmap_sem);
-+		count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
  		*hpage = ERR_PTR(-ENOMEM);
- 		return;
- 	}
-+	count_vm_event(THP_COLLAPSE_ALLOC);
- #endif
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
- 		up_read(&mm->mmap_sem);
-@@ -2147,8 +2155,11 @@ static void khugepaged_do_scan(struct page **hpage)
- #ifndef CONFIG_NUMA
- 		if (!*hpage) {
- 			*hpage = alloc_hugepage(khugepaged_defrag());
--			if (unlikely(!*hpage))
-+			if (unlikely(!*hpage)) {
-+				count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 				break;
-+			}
-+			count_vm_event(THP_COLLAPSE_ALLOC);
- 		}
- #else
- 		if (IS_ERR(*hpage))
-@@ -2188,8 +2199,11 @@ static struct page *khugepaged_alloc_hugepage(void)
- 
- 	do {
- 		hpage = alloc_hugepage(khugepaged_defrag());
--		if (!hpage)
-+		if (!hpage) {
-+			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 			khugepaged_alloc_sleep();
-+		} else
-+			count_vm_event(THP_COLLAPSE_ALLOC);
- 	} while (unlikely(!hpage) &&
- 		 likely(khugepaged_enabled()));
- 	return hpage;
-@@ -2206,8 +2220,11 @@ static void khugepaged_loop(void)
- 	while (likely(khugepaged_enabled())) {
- #ifndef CONFIG_NUMA
- 		hpage = khugepaged_alloc_hugepage();
--		if (unlikely(!hpage))
-+		if (unlikely(!hpage)) {
-+			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
- 			break;
-+		}
-+		count_vm_event(THP_COLLAPSE_ALLOC);
- #else
- 		if (IS_ERR(hpage)) {
- 			khugepaged_alloc_sleep();
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 2b461ed..a23f2d2 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -946,6 +946,14 @@ static const char * const vmstat_text[] = {
- 	"unevictable_pgs_stranded",
- 	"unevictable_pgs_mlockfreed",
- #endif
-+
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	"thp_fault_alloc",
-+	"thp_fault_fallback",
-+	"thp_collapse_alloc",
-+	"thp_collapse_alloc_failure",
-+	"thp_split",
-+#endif
- };
- 
- static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
 -- 
 1.7.4
 
