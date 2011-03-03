@@ -1,81 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1CCHI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 02:08:57 -0500
-Received: from gwu.lbox.cz ([62.245.111.132]:53842 "EHLO gwu.lbox.cz"
+	id S1754799Ab1CCHKt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 02:10:49 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33652 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab1CCHI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 02:08:56 -0500
-Date: Thu, 3 Mar 2011 08:06:52 +0100
-From: Nikola Ciprich <extmaillist@linuxbox.cz>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
-	boot
-Message-ID: <20110303070652.GG29840@pcnci.linuxbox.cz>
-References: <20110225104823.GD29840@pcnci.linuxbox.cz> <4D67C077.6060108@redhat.com> <20110227172052.GB2474@nik-comp.lan> <4D6BA85B.7080908@redhat.com> <20110228143247.GE29840@pcnci.linuxbox.cz> <4D6BBC84.6020408@redhat.com> <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com>
+	id S1753353Ab1CCHKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 02:10:48 -0500
+Date: Thu, 3 Mar 2011 08:10:31 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL] tracepoints filtering updates
+Message-ID: <20110303071031.GA10935@elte.hu>
+References: <1298693021-23500-1-git-send-email-fweisbec@gmail.com>
+ <20110302084925.GA21204@elte.hu>
+ <20110303035121.GA3456@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6EF536.305@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 4703390 records (last update: 20110302)
-X-Spam-Score: N/A (trusted relay)
+In-Reply-To: <20110303035121.GA3456@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No worries.  What mess?
-twice sending the same mail, nevermind :)
 
->
-> I have two things you can try:
->
-> first is running a single VCPU guest, if you have not done so already.
-yup, UP guest is fine, just SMP doesn't work.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> Second is adding the bootparameter "clocksource=acpi_pm" to your guest  
-> kernel.
-yes, this makes SMP work too! I just realized when You were asking about current
-clocksource, I told You only host source, not the guest. So I checked now,
-and (at least for UP, I guess for SMP it's the same), the clocksource is
-kvm-clock! So seems like it got broken with the TSC changes?
-
-
->
-> If either of those fixes the problem, it very well have to do with this  
-> change and not that you may be missing later dependent patches.  This  
-> change should be nearly a 1-1 transformation, and if it is not,  
-> something is wrong.
->
-> What branch are you bisecting on, the kvm branch or the kernel tree  
-> itself?  It would be helpful to see the exact code in case any  
-> surrouding logic changed.
-I was bisecting linus' linux-2.6.git main branch, between 2.6.36..2.6.37
-
->
-> Thanks,
->
-> Zach
+> l (fweisbec[at]gmail.com)
+> 	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+> 	[score: 0.0000]
+> Content-Length: 3017
+> Lines: 76
+> 
+> On Wed, Mar 02, 2011 at 09:49:25AM +0100, Ingo Molnar wrote:
+> > 
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > We currently set the filters after we mmap the events, this is a
+> > > race that let undesired events record themselves in the buffer before
+> > > we had the time to set the filters.
+> > > 
+> > > So set the filters before they can be recorded. That also librarizes
+> > > the filters setting so that filtering can be done more easily
+> > > from other tools than perf record later.
+> > > 
+> > > (PS: This should fix most of the bugs Ingo has reported
+> > > about filters that weren't working with perf).
+> > 
+> > Nice!
+> > 
+> > Mind pulling Steve's filter-enhancements branch and sending a pull request for the 
+> > whole thing? Steve's branch was:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git tip/perf/filter
+> > 
+> > ( Or your fixes could be applied to Steve's branch as well - whichever direction you 
+> >   guys prefer - the important thing is to have filtering tested and validated as a 
+> >   whole. )
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> 
+> Ok, I've merged Steve's branch and tested a few common filters with perf:
+> 
+> * irq numbers on irq tracepoints
+> * fd on sys_enter_close
+> * prev_comm on sched_switch (to test string)
+> 
+> they all work well.
+> 
+> You can pull the branch from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/core
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> Frederic Weisbecker (2):
+>       perf: Set filters before mmaping events
+>       Merge branch '/tip/perf/filter' of git://git.kernel.org/.../rostedt/linux-2.6-trace.git into perf/core
+> 
+> Steven Rostedt (14):
+>       tracing/filter: Have no filter return a match
+>       tracing/filter: Move OR and AND logic out of fn() method
+>       tracing/filter: Dynamically allocate preds
+>       tracing/filter: Call synchronize_sched() just once for system filters
+>       tracing/filter: Allocate the preds in an array
+>       tracing/filter: Free pred array on disabling of filter
+>       tracing/filter: Use a tree instead of stack for filter_match_preds()
+>       tracing/filter: Optimize short ciruit check
+>       tracing/filter: Check the created pred tree
+>       tracing/filter: Optimize filter by folding the tree
+>       tracing/filter: Move MAX_FILTER_PRED to local tracing directory
+>       tracing/filter: Increase the max preds to 2^14
+>       tracing/filter: Swap entire filter of events
+>       tracing/filter: Remove synchronize_sched() from __alloc_preds()
+> --
+>  include/linux/ftrace_event.h       |    1 -
+>  kernel/trace/trace.h               |   38 ++-
+>  kernel/trace/trace_events_filter.c |  885 +++++++++++++++++++++++++++++-------
+>  tools/perf/builtin-record.c        |   18 +-
+>  tools/perf/util/evlist.c           |   28 ++
+>  tools/perf/util/evlist.h           |    1 +
+>  6 files changed, 789 insertions(+), 182 deletions(-)
 
--- 
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
+Pulled, thanks a lot guys!
 
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+	Ingo
