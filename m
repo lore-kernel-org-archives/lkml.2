@@ -1,109 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758502Ab1CCOuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 09:50:16 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:33571 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758473Ab1CCOuP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 09:50:15 -0500
-X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX1/e1bE5HoHeOaI2iUt7DyoqUlUxULLjVsibzqJa/x
-	HlCpkizjUlhdNF
-Date: Thu, 3 Mar 2011 15:50:08 +0100
-From: torbenh <torbenh@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
-Message-ID: <20110303145008.GE4903@siel.b>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
-	LKML <linux-kernel@vger.kernel.org>,
-	John Stultz <john.stultz@linaro.org>,
-	Richard Cochran <richard.cochran@omicron.at>,
-	Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-References: <20110201134320.688829863@linutronix.de>
- <20110201134420.164172635@linutronix.de>
+	id S1757489Ab1CCO7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 09:59:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31666 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325Ab1CCO7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 09:59:49 -0500
+Date: Thu, 3 Mar 2011 09:59:08 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/05] use proc_dointvec_minmax to check boundaries while
+ needed
+Message-ID: <20110303145908.GA32154@redhat.com>
+References: <20110303135819.GA2620@darkstar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110201134420.164172635@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20110303135819.GA2620@darkstar>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 01:52:35PM -0000, Thomas Gleixner wrote:
-> From: Richard Cochran <richardcochran@gmail.com>
+On Thu, Mar 03, 2011 at 09:58:20PM +0800, Dave Young wrote:
+> proc_dointvec doesn't check extra minmax params, use proc_dointvec_minmax
+> instead of proc_dointvec for cases need boundaries check.
+
+Is this patch needed, if you are basically changing it again in patches 3
+and 5?
+
+Cheers,
+Don
+
 > 
-> This patch adds support for adding and removing posix clocks. The
-> clock lifetime cycle is patterned after usb devices. Each clock is
-> represented by a standard character device. In addition, the driver
-> may optionally implement custom character device operations.
-> 
-> The posix clock and timer system calls listed below now work with
-> dynamic posix clocks, as well as the traditional static clocks.
-> The following system calls are affected:
-> 
->    - clock_adjtime (brand new syscall)
->    - clock_gettime
->    - clock_getres
->    - clock_settime
->    - timer_create
->    - timer_delete
->    - timer_gettime
->    - timer_settime
-> 
-> [ tglx: Adapted to the posix-timer cleanup. Moved clock_posix_dynamic
->   	to posix-clock.c and made all referenced functions static ]
-> 
-> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-> Cc: John Stultz <john.stultz@linaro.org>
-> LKML-Reference: <21258f45fcc5e08a595f411c7760f3ccc18964bb.1296124770.git.richard.cochran@omicron.at>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
 > ---
->  include/linux/posix-clock.h  |  150 ++++++++++++++
->  include/linux/posix-timers.h |    6 
->  kernel/posix-timers.c        |    4 
->  kernel/time/Makefile         |    3 
->  kernel/time/posix-clock.c    |  441 +++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 601 insertions(+), 3 deletions(-)
->  create mode 100644 include/linux/posix-clock.h
->  create mode 100644 kernel/time/posix-clock-syscalls.h
->  create mode 100644 kernel/time/posix-clock.c
-
-
-
+>  kernel/sysctl.c |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 > 
-> +
-> +static int pc_clock_adjtime(clockid_t id, struct timex *tx)
-> +{
-> +	struct posix_clock_desc cd;
-> +	int err;
-> +
-> +	err = get_clock_desc(id, &cd);
-> +	if (err)
-> +		return err;
-
-there is no permission check here.
-if i get the clock fd in READ mode, i can still adjtime.
-same for settime.
-
-> +
-> +	if (cd.clk->ops.clock_adjtime)
-> +		err = cd.clk->ops.clock_adjtime(cd.clk, tx);
-> +	else
-> +		err = -EOPNOTSUPP;
-> +
-> +	put_clock_desc(&cd);
-> +
-> +	return err;
-> +}
-
-
-
-
--- 
-torben Hohn
+> --- linux-2.6.orig/kernel/sysctl.c	2011-03-03 10:44:53.000000000 +0800
+> +++ linux-2.6/kernel/sysctl.c	2011-03-03 11:02:43.736663258 +0800
+> @@ -374,7 +374,7 @@ static struct ctl_table kern_table[] = {
+>  		.data		= &sysctl_sched_autogroup_enabled,
+>  		.maxlen		= sizeof(unsigned int),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> +		.proc_handler	= proc_dointvec_minmax,
+>  		.extra1		= &zero,
+>  		.extra2		= &one,
+>  	},
+> @@ -1204,7 +1204,7 @@ static struct ctl_table vm_table[] = {
+>  		.data		= &block_dump,
+>  		.maxlen		= sizeof(block_dump),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> +		.proc_handler	= proc_dointvec_minmax,
+>  		.extra1		= &zero,
+>  	},
+>  	{
+> @@ -1212,7 +1212,7 @@ static struct ctl_table vm_table[] = {
+>  		.data		= &sysctl_vfs_cache_pressure,
+>  		.maxlen		= sizeof(sysctl_vfs_cache_pressure),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> +		.proc_handler	= proc_dointvec_minmax,
+>  		.extra1		= &zero,
+>  	},
+>  #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
+> @@ -1221,7 +1221,7 @@ static struct ctl_table vm_table[] = {
+>  		.data		= &sysctl_legacy_va_layout,
+>  		.maxlen		= sizeof(sysctl_legacy_va_layout),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> +		.proc_handler	= proc_dointvec_minmax,
+>  		.extra1		= &zero,
+>  	},
+>  #endif
+> @@ -1231,7 +1231,7 @@ static struct ctl_table vm_table[] = {
+>  		.data		= &zone_reclaim_mode,
+>  		.maxlen		= sizeof(zone_reclaim_mode),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> +		.proc_handler	= proc_dointvec_minmax,
+>  		.extra1		= &zero,
+>  	},
+>  	{
+> @@ -1287,7 +1287,7 @@ static struct ctl_table vm_table[] = {
+>  		.data		= &vdso_enabled,
+>  		.maxlen		= sizeof(vdso_enabled),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_dointvec,
+> +		.proc_handler	= proc_dointvec_minmax,
+>  		.extra1		= &zero,
+>  	},
+>  #endif
