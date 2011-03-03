@@ -1,144 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758505Ab1CCOUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 09:20:07 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:18594 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758478Ab1CCOTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 09:19:53 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACIyb02rRN+K/2dsb2JhbACmZXSjDpwfhWEEhRqHEoNC
-X-IronPort-AV: E=Sophos;i="4.62,258,1297036800"; 
-   d="scan'208";a="268828650"
-Message-ID: <4D6FA39A.60203@cisco.com>
-Date: Thu, 03 Mar 2011 07:20:10 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1758531Ab1CCOUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 09:20:34 -0500
+Received: from shutemov.name ([188.40.19.243]:56248 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758518Ab1CCOUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 09:20:31 -0500
+Date: Thu, 3 Mar 2011 16:20:30 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH, v8 0/3] *** SUBJECT HERE ***
+Message-ID: <20110303142030.GA9980@shutemov.name>
+References: <1299161947-9903-1-git-send-email-kirill@shutemov.name>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/3] perf script: dump software events and samples from
- hardware-based profiling
-References: <1299086960-26964-1-git-send-email-daahern@cisco.com> <1299086960-26964-4-git-send-email-daahern@cisco.com> <20110303030515.GD1946@nowhere>
-In-Reply-To: <20110303030515.GD1946@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299161947-9903-1-git-send-email-kirill@shutemov.name>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 03/02/2011 08:05 PM, Frederic Weisbecker wrote:
-> On Wed, Mar 02, 2011 at 10:29:20AM -0700, David Ahern wrote:
->> @@ -763,6 +783,18 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
->>  		exit(-1);
->>  	}
->>  
->> +	if (no_callchain)
->> +		symbol_conf.use_callchain = false;
->> +
->> +	else {
->> +		symbol_conf.use_callchain = true;
->> +		if (callchain_register_param(&callchain_param) < 0) {
+On Thu, Mar 03, 2011 at 04:19:04PM +0200, Kirill A. Shutsemov wrote:
+> From: Kirill A. Shutemov <kirill@shutemov.name>
 > 
-> That call doesn't seem needed. Register callchain params is only useful
-> for later callchain sorting.
+> *** BLURB HERE ***
 
-ok. I see that now. I'll remove.
+Oops.
 
+Changelog:
+
+v8:
+ - change hiearchy rules
+ - introduce timer_slack.effective_slack_ns
+ - get_task_timer_slack() -> task_get_effective_timer_slack()
+ - task_get_effective_timer_slack() splited in separate patch
+ - implement PR_GET_EFFECTIVE_TIMERSLACK
+
+v7:
+ - totally reworked interface and rewritten from scratch
+   (See Documentation/cgroups/timer_slack.txt for more information)
+v6:
+ - add documentation
+ - use notifier_call_chain() instead of check hook
+ - fix validate_change()
+ - cleanup
+v5:
+ - -EBUSY on writing to timer_slack.min_slack_ns/max_slack_ns if a child has
+   wider min-max range
+v4:
+ - hierarchy support
+ - drop dummy_timer_slack_check()
+ - workaround lockdep false (?) positive
+ - allow 0 as timer slack value
+v3:
+ - rework interface
+ - s/EXPORT_SYMBOL/EXPORT_SYMBOL_GPL/
+v2:
+ - fixed with CONFIG_CGROUP_TIMER_SLACK=y
+v1:
+ - initial revision
+
+> Kirill A. Shutemov (3):
+>   hrtimer: introduce effective timer slack
+>   hrtimer: implement PR_GET_EFFECTIVE_TIMERSLACK
+>   cgroups: introduce timer slack controller
 > 
->> +			error("Can't register callchain params\n");
->> +			err = -EINVAL;
->> +			goto out;
->> +		}
->> +	}
->> +
->>  	if (rec_script_path)
->>  		script_path = rec_script_path;
->>  	if (rep_script_path)
-> [...]
->> +void perf_session__print_sample(union perf_event *event,
->> +				struct perf_sample *sample,
->> +				struct perf_session *session,
->> +				struct perf_event_attr *attr,
->> +				bool show_unresolved)
->> +{
->> +	struct callchain_cursor_node *node, *prev;
->> +	struct addr_location al;
->> +	const char *evname = NULL;
->> +	const char *comm;
->> +	const char *symname, *dsoname;
->> +	u32 cpu = -1;
->> +	u64 secs = 0, usecs = 0;
->> +
->> +	if (perf_event__preprocess_sample(event, session, &al, sample,
->> +					  NULL) < 0) {
->> +		error("problem processing %d event, skipping it.\n",
->> +			event->header.type);
->> +		return;
->> +	}
->> +
->> +	if (session->sample_type & PERF_SAMPLE_TIME) {
->> +		u64 nsecs = sample->time;
->> +		secs = nsecs / NSECS_PER_SEC;
->> +		nsecs -= secs * NSECS_PER_SEC;
->> +		usecs = nsecs / NSECS_PER_USEC;
->> +	}
->> +
->> +   	evname = __event_name(attr->type, attr->config);
->> +	if  (!evname)
->> +		evname = "(unknown)";
->> +
->> +	comm = al.thread->comm_set ? al.thread->comm : "-";
->> +
->> +	if (attr->sample_type & PERF_SAMPLE_CPU)
->> +		cpu = sample->cpu;
->> +
->> +	if (symbol_conf.use_callchain && sample->callchain) {
->> +
->> +		if (perf_session__resolve_callchain(session, al.thread,
->> +						sample->callchain, NULL) != 0) {
->> +			if (verbose)
->> +				error("Failed to resolve callchain. Skipping\n");
->> +			return;
->> +		}
->> +
->> +		node = session->callchain_cursor.first;
->> +		if (!node)
->> +			return;
->> +
->> +		while (node) {
->> +			if (node->sym && node->sym->name)
->> +				symname = node->sym->name;
->> +			else if (show_unresolved)
->> +				symname = "";
->> +			else
->> +				goto next;
->> +
->> +			if (node->map && node->map->dso && node->map->dso->name)
->> +				dsoname = node->map->dso->name;
->> +			else if (show_unresolved)
->> +				dsoname = "";
->> +			else
->> +				goto next;
->> +
->> +			print_one_symbol(comm, al.thread->pid, cpu, secs, usecs,
->> +			             evname, node->ip, symname, dsoname);
->> +
->> +next:
->> +			prev = node;
->> +			node = node->next;
+>  Documentation/cgroups/timer_slack.txt |   64 +++++++++++++++++
+>  fs/select.c                           |    7 +--
+>  include/linux/cgroup_subsys.h         |    6 ++
+>  include/linux/prctl.h                 |    6 ++
+>  include/linux/sched.h                 |   10 +++
+>  init/Kconfig                          |    8 ++
+>  kernel/Makefile                       |    1 +
+>  kernel/cgroup_timer_slack.c           |  124 +++++++++++++++++++++++++++++++++
+>  kernel/fork.c                         |    4 +
+>  kernel/futex.c                        |    4 +-
+>  kernel/hrtimer.c                      |    2 +-
+>  kernel/sys.c                          |    3 +
+>  12 files changed, 231 insertions(+), 8 deletions(-)
+>  create mode 100644 Documentation/cgroups/timer_slack.txt
+>  create mode 100644 kernel/cgroup_timer_slack.c
 > 
-> Hmm, that's a wrong way of walking through callchains. In fact it's not
-> a classical list. node->next can be a ghost entry from a previous callchain
-> that we kept cached in order to optimize allocations.
+> -- 
+> 1.7.4.1
 > 
-> You need the accessors callchain_cursor_current() and callchain_cursor_advance().
 
-Ok. I'll look at perf-report's callchain_append again.
-
-David
+-- 
+ Kirill A. Shutemov
