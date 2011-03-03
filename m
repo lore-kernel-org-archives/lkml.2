@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab1CCWzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 17:55:04 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:36379 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759020Ab1CCWzC (ORCPT
+	id S1759059Ab1CCW5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 17:57:06 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46950 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758926Ab1CCW5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 17:55:02 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6274"; a="77889081"
-Message-ID: <4D701C44.7090506@codeaurora.org>
-Date: Thu, 03 Mar 2011 14:55:00 -0800
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
+	Thu, 3 Mar 2011 17:57:05 -0500
+Date: Thu, 3 Mar 2011 22:57:02 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] st_nlink after rmdir() and rename()
+Message-ID: <20110303225702.GQ22723@ZenIV.linux.org.uk>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk>
+ <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
+ <20110303060352.GK22723@ZenIV.linux.org.uk>
+ <AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com>
+ <87tyfk7x0c.fsf@devron.myhome.or.jp>
+ <AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com>
+ <87lj0v9984.fsf@devron.myhome.or.jp>
+ <AANLkTinSiD3YakBTNfYXrE12YDsDREHX3GzLzCncduTV@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: davidb@codeaurora.org, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Collins <collinsd@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Linus Walleij <linux.walleij@sterricsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Qualcomm PM8921 MFD 2/6] mfd: pm8xxx: Add irq support
-References: <1299104001-5240-1-git-send-email-adharmap@codeaurora.org> <1299104001-5240-3-git-send-email-adharmap@codeaurora.org> <20110302224616.GB32325@opensource.wolfsonmicro.com> <4D6F1B2B.3090706@codeaurora.org> <20110303152242.GB32234@opensource.wolfsonmicro.com>
-In-Reply-To: <20110303152242.GB32234@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinSiD3YakBTNfYXrE12YDsDREHX3GzLzCncduTV@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Wed, Mar 02, 2011 at 08:38:03PM -0800, Abhijeet Dharmapurikar wrote:
->> Mark Brown wrote:
+On Thu, Mar 03, 2011 at 01:52:18PM -0800, Linus Torvalds wrote:
+> On Thu, Mar 3, 2011 at 1:37 PM, OGAWA Hirofumi
+> <hirofumi@mail.parknet.co.jp> wrote:
+> >
+> > And I can't only see is why you refuse to make consistent behavior (if
+> > you are saying it). It's why I said if it's _really easy_.
 > 
->>> Is it really useful to register a struct device purely for the interrupt
->>> controller?  I'd have expected this to be core functionality of the
->>> device.  The fact that you need to store the device at all is a bit odd
->>> too as you're using the MFD API.
+> The thing is, it really isn't really easy. As mentioned, it's actually
+> impossible on NFS, and it's possibly impossible on other filesystems
+> too.
 > 
->> This design is slightly different from other MFD drivers.
->> I separated the interrupt from the core because the interrupt
->> implementation for different Qualcomm pmics remains the same. On
->> 8660 FFA boards for example, we have two pmic chips that have the
->> same interrupt subdevice implementation (the number of interrupts
->> managed by each is different). I didn't want to duplicate the exact
->> code in the core driver - hence a separate interrupt driver.
+> So what I'm objecting to is "try to make something consistent that
+> CANNOT be consistent anyway", and calling it a bug.
 > 
-> Could you deal with this with a library instead?
+> I'm not saying there aren't real bugs there too (the actual races in
+> i_nlink handling are real bugs). But I _am_ saying that it's simply
+> not true that i_nlink must be zero if you do an "fstat()" after doing
+> an rmdir on an fd that you held open. Nobody can reasonably care, and
+> anybody who _does_ care is better off getting a nasty surprise early
+> rather than late.
 
-Can you please clarify what a library means here?
+Ho-hum...  OK, let me put it that way:
+	* pile I've sent a pull request for is really bug-only; none of it
+has anything to do with what's discussed in that thread, other than "it's
+also about i_nlink and found during the same code review".  i_nlink races,
+pair of fs corruptors and a braino in UDF (256 << sizeof(inode->i_nlink)
+as a way to spell "maximal allowed number of links"; never really worked,
+even before we had switched to 32bit internal i_nlink - the real limit is
+0xffff, not 0x3ff or 0xfff).
+	* it's trivial to get the same behaviour on all local filesystems;
+most of them have it and rely on it to detect the inodes that need to be
+freed on final iput().  It has nothing to do with counting subdirs or any
+such nonsense.
+	* inotify is broken for filesystems that don't get you zero ->i_nlink
+when the last dentry pointing to doomed inode is dropped.  Regardless of what
+you get in fstat().  Excusable for remote fs, but not nice for local ones.
+I'd *LOVE* to get rid of inotife/dnotify/etc., but it's probably not feasible
+now.
+	* NFS is not hard to handle, actually, especially for directories.
+Regular files may be trickier, but then we have many places in that area
+where NFS is not quite POSIX-compliant, to put it mildly.
+	* I honestly don't know what's the real situation with other
+remote filesystems; thus the RFC.  Hopefully, people familiar with that
+are on fsdevel...
 
->> pm8xxxx_read_block
-> 
->> Do you still think I should change the name?
-> 
-> I'd suggest adding an _irq in there.
-Ok will do.
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc. is a member of the Code Aurora Forum.
+BTW, I suspect that another exception among the local filesystems (affs)
+is actually leaking blocks on rmdir.  Need to experiment to verify that,
+but it smells like another genuine bug.
