@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab1CCGYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 01:24:15 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56462 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755845Ab1CCGYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 01:24:12 -0500
-Message-ID: <4D6F348C.2050804@cn.fujitsu.com>
-Date: Thu, 03 Mar 2011 14:26:20 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1757726Ab1CCGYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 01:24:35 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62042 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756010Ab1CCGYe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 01:24:34 -0500
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] perf cgroup: Fix a typo in kernel config
-References: <4D6F3461.6060406@cn.fujitsu.com>
-In-Reply-To: <4D6F3461.6060406@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-03 14:23:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-03 14:23:01,
-	Serialize complete at 2011-03-03 14:23:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTikcC1o0zM5ChPhhvhbLPtCNzrtUJ7HCNHHGTcaU@mail.gmail.com>
+References: <AANLkTikcC1o0zM5ChPhhvhbLPtCNzrtUJ7HCNHHGTcaU@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 2 Mar 2011 23:24:14 -0700
+X-Google-Sender-Auth: 1kpr73q04sV1FEq9asA75EbBqj4
+Message-ID: <AANLkTin121DDb7DNntYvBDNPjHoESpV9X9V5yYjRjtQt@mail.gmail.com>
+Subject: Re: problems with GPIO
+To: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s/specificied/specified
+On Thu, Feb 17, 2011 at 9:21 PM, Murali K. Vemuri
+<vemuri.muralikrishna@gmail.com> wrote:
+> Hi There,
+>
+> I am rather a novice with linux kernel and I have this problem.
+> My board is  OMAP 3530 based and I use GPIO 21 to detect an external
+> device plug-in.
+> Now, when the board is just booted (after a complete power disconnect
+> ), the GPIO is high, and when I plug in my external device, the GPIO
+> goes low, and I am able to detect it.
+> However, I see the voltage level still low after I remove the external
+> plug-in, and any further plug-ins, remain un-detected.
+> My H/W engineers say it is some config I am missing in Kernel.
+> can someone point me?
+>
+> my code snippet is like:
+>
+>    omap_mux_init_gpio(MY_GPIO,  OMAP_PIN_INPUT_PULLDOWN  );
+>    gpio_request(MY_GPIO,"CABLE IN");
+>    gpio_direction_input(MY_GPIO);
+>    gpio_set_value(MY_GPIO,1);
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- init/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It depends on the gpio controller driver, but gpio_set_value() is very
+likely switching the GPIO pin from input to output.  Why are you
+calling gpio_set_value()?
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 20d6bd9..4c4edf2 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -688,7 +688,7 @@ config CGROUP_PERF
- 	depends on PERF_EVENTS && CGROUPS
- 	help
- 	  This option extends the per-cpu mode to restrict monitoring to
--	  threads which belong to the cgroup specificied and run on the
-+	  threads which belong to the cgroup specified and run on the
- 	  designated cpu.
- 
- 	  Say N if unsure.
--- 
-1.6.3
+g.
