@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab1CCSQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 13:16:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:58219 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758464Ab1CCSQG (ORCPT
+	id S1758662Ab1CCSQT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 13:16:19 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:45325 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758616Ab1CCSQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 13:16:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pratheesh Gangadhar <pratheesh@ti.com>
-Subject: Re: [PATCH v9 1/1] PRUSS UIO driver support
-Date: Thu, 3 Mar 2011 19:15:55 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de, gregkh@suse.de,
-        tglx@linutronix.de, sshtylyov@mvista.com, amit.chatterjee@ti.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org
-References: <1299175677-17859-1-git-send-email-pratheesh@ti.com> <1299175677-17859-2-git-send-email-pratheesh@ti.com>
-In-Reply-To: <1299175677-17859-2-git-send-email-pratheesh@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Thu, 3 Mar 2011 13:16:16 -0500
+Subject: Re: ANNOUNCE: debloat-testing kernel git tree
+From: Rick Jones <rick.jones2@hp.com>
+Reply-To: rick.jones2@hp.com
+To: Dave =?ISO-8859-1?Q?T=E4ht?= <d@taht.net>
+Cc: sedat.dilek@gmail.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, bloat-devel@lists.bufferbloat.net,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <87tyfph2az.fsf@cruithne.co.teklibre.org>
+References: <20110225222210.GA3618@tuxdriver.com>
+	 <AANLkTingkcc-dvs_8Nr0vYXdXvuDHEn6sz14tnHzLp8W@mail.gmail.com>
+	 <87fwr9jxya.fsf@cruithne.co.teklibre.org>
+	 <AANLkTinpG-xAC-VV-j7EBJB522+BqCyyFd_6N3KEr2Cf@mail.gmail.com>
+	 <8739n9ii7z.fsf@cruithne.co.teklibre.org>
+	 <AANLkTi=Cp7N4xqPyU6KWF6DOzFytxaA2BeoXhnhsZ6dp@mail.gmail.com>
+	 <87tyfph2az.fsf@cruithne.co.teklibre.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Mar 2011 10:16:08 -0800
+Message-ID: <1299176168.2157.14.camel@tardy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103031915.55825.arnd@arndb.de>
-X-Provags-ID: V02:K0:za9aTHCheHikzDHObuGvn6XyZVhyFU7k8CZJcluFHo9
- 3uc0PReAU4TlvcWcKxGKK7hrBu7EbcX5iOvtSSTZ+BzsSlgJ9V
- nMpLFUFGBEu1vlPKwnWkvLl3E8ShEK8FUZ69Bm3lUiOraJqORn
- 5J+w1Dy021vK4FZeuVnOnjzNnfrkHuzeefcWdWH5V0FXCYjFHB
- IxJzR7Aj7+xpdg1XNywwg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 March 2011 19:07:57 Pratheesh Gangadhar wrote:
-> +struct uio_pruss_dev {
-> +       struct uio_info *info;
-> +       struct clk *pruss_clk;
-> +       dma_addr_t sram_paddr;
-> +       dma_addr_t ddr_paddr;
-> +       void __iomem *prussio_vaddr;
-> +       void *sram_vaddr;
-> +       void *ddr_vaddr;
-> +       unsigned int hostirq_start;
-> +       unsigned int pintc_base;
-> +};
-> +
-> +struct pruss_priv {
-> +       struct uio_pruss_dev *pupdev;
-> +};
+> For wireless routers and cable home gateways especially, this research
+> shows that the total un-managed buffers in your system should be less
+> than 32.
 
-I cannot see the point of struct pruss_priv, I think it would be better to
-just merge the two data structures into one. Everything else looks
-good to me now.
+Would it be a good thing to start describing these queues not so much in
+terms of packets but in terms of delay (or bandwidth X delay)?
 
-	Arnd
+Constants tend to live longer than they should, no matter how noble in
+birth.
+
+rick jones
+
