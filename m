@@ -1,32 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802Ab1CCJew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 04:34:52 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50145 "EHLO mx2.mail.elte.hu"
+	id S1757945Ab1CCJfg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 04:35:36 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50291 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab1CCJet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 04:34:49 -0500
-Date: Thu, 3 Mar 2011 10:34:22 +0100
+	id S1757877Ab1CCJfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 04:35:33 -0500
+Date: Thu, 3 Mar 2011 10:35:21 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Tao Ma <tm@tao.ma>
-Cc: Liu Yuan <namei.unix@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jaxboe@fusionio.com, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [RFC PATCH 4/5] mm: Add hit/miss accounting for Page Cache
-Message-ID: <20110303093422.GC18252@elte.hu>
-References: <no>
- <1299055090-23976-4-git-send-email-namei.unix@gmail.com>
- <20110302084542.GA20795@elte.hu>
- <4D6F077B.3060400@tao.ma>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [tip:x86/mm] x86: Work around old gas bug
+Message-ID: <20110303093521.GD18252@elte.hu>
+References: <201103012352.p21NqRN1006974@imap1.linux-foundation.org>
+ <tip-253d89d3dd6b65595f317e5f1ecef43aa207a3a0@git.kernel.org>
+ <4D6E2B8B02000078000347C0@vpn.id2.novell.com>
+ <20110302104144.GB25608@elte.hu>
+ <20110302082453.934f2033.akpm@linux-foundation.org>
+ <1299130025.19589.89.camel@sli10-conroe>
+ <20110302213553.88ec33cd.akpm@linux-foundation.org>
+ <4D6F6C660200007800034AD2@vpn.id2.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6F077B.3060400@tao.ma>
+In-Reply-To: <4D6F6C660200007800034AD2@vpn.id2.novell.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,96 +42,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Tao Ma <tm@tao.ma> wrote:
+* Jan Beulich <JBeulich@novell.com> wrote:
 
-> On 03/02/2011 04:45 PM, Ingo Molnar wrote:
-> >* Liu Yuan<namei.unix@gmail.com>  wrote:
-> >
-> >>+		if (likely(!retry_find)&&  page&&  PageUptodate(page))
-> >>+			page_cache_acct_hit(inode->i_sb, READ);
-> >>+		else
-> >>+			page_cache_acct_missed(inode->i_sb, READ);
-> >Sigh.
-> >
-> >This would make such a nice tracepoint or sw perf event. It could be collected in a
-> >'count' form, equivalent to the stats you are aiming for here, or it could even be
-> >traced, if someone is interested in such details.
-> >
-> >It could be mixed with other events, enriching multiple apps at once.
-> >
-> >But, instead of trying to improve those aspects of our existing instrumentation
-> >frameworks, mm/* is gradually growing its own special instrumentation hacks, missing
-> >the big picture and fragmenting the instrumentation space some more.
+> >>> On 03.03.11 at 06:35, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Thu, 03 Mar 2011 13:27:05 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
+> > 
+> >> On Thu, 2011-03-03 at 00:24 +0800, Andrew Morton wrote:
+> >> > On Wed, 2 Mar 2011 11:41:44 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+> >> > 
+> >> > > Meanwhile, what i hate more than ugly code repetition is code that does 
+> > not build at 
+> >> > > all on akpm's test environment ;-)
+> >> > 
+> >> > I hadn't got around to testing it.  Bad news :(
+> >> > 
+> >> Andrew,
+> >> can you this on your side? this is what Jan proposed. I can only test a
+> >> latest binutils here.
+> > 
+> > Nope.
+> > 
+> > arch/x86/kernel/entry_64.S: Assembler messages:
+> > arch/x86/kernel/entry_64.S:985: Error: too many positional arguments
+> 
+> Indeed - the problem isn't with the actual assembly construct, but
+> rather with the changed definitions of *INVALIDATE_TLB_VECTOR* -
+> properly parenthesizing them (as we needed to do in other places)
+> and removing unnecessary spaces gets this to build for me, even 
+> with the original use of .irp instead of .irpc:
+> 
+> #if NR_CPUS <= 32
+> # define NUM_INVALIDATE_TLB_VECTORS (NR_CPUS)
+> #else
+> # define NUM_INVALIDATE_TLB_VECTORS (32)
+> #endif
+> 
+> #define INVALIDATE_TLB_VECTOR_END	(0xee)
+> #define INVALIDATE_TLB_VECTOR_START	\
+> 	(INVALIDATE_TLB_VECTOR_END-NUM_INVALIDATE_TLB_VECTORS+1)
 
-> Thanks for the quick response. Actually our team(including Liu) here are planing 
-> to add some debug info to the mm parts for analyzing the application behavior and 
-> hope to find some way to improve our application's performance. We have searched 
-> the trace points in mm, but it seems to us that the trace points isn't quite 
-> welcomed there. Only vmscan and writeback have some limited trace points added. 
-> That's the reason we first tried to add some debug info like this patch. You does 
-> shed some light on our direction. Thanks.
+That looks much nicer!
 
-Yes, it's very much a 'critical mass' phenomenon: the moment there's enough 
-tracepoints, above some magic limit, things happen quickly and everyone finds the 
-stuff obviously useful.
-
-Before that limit it's all pretty painful.
-
-> btw, what part do you think is needed to add some trace point?  We
-> volunteer to add more if you like.
-
-Whatever part you find useful in your daily development work!
-
-Tracepoints are pretty flexible. The bit that is missing and which is very important 
-for the MM is the collapse into 'summaries' and the avoidance of tracing overhead 
-when only a summary is wanted. Please see Wu Fengguang's reply in this thread about 
-the 'dump state' facility he and Steve added to recover large statistics.
-
-I suspect the hit/miss histogram you are building in this patch could be recovered 
-via that facility initially?
-
-The next step would generalize that approach - it is non-trivial but powerful :-)
-
-The idea is to allow non-trivial histograms and summaries to be built out of simple 
-events, via the filter engine.
-
-It would require an extension of tracing to really allow a filter expression to be 
-defined over existing events, which would allow the maintenance of a persistent 
-'sum' variable - probably within the perf ring-buffer. We already have filter 
-support, that would have to be extended with a notion of 'persistent variables'.
-
-So right now, if you define a tracepoint in that spot, we already support such 
-filter expressions:
-
-     'bdev == sda1 && page_state == PageUptodate'
-
-You can inject such filter expressions into /debug/tracing/events/*/*/filter today, 
-and you can use filters in perf record --filter '...' as well.
-
-To implement 'fast statistics', the filter engine would have to be extended to 
-support (simple) statements like:
-
-	if (bdev == sda1 && page_state == PageUptodate)'
-		var0++;
-
-And:
-
-	if (bdev == sda1 && page_state != PageUptodate)'
-		var1++;
-
-Only a very minimal type of C syntax would be supported - not a full C parser.
-
-That way the 'var0' portion of the perf ring-buffer (which would not be part of the 
-regular, overwritten ring-buffer) would act as a 'hits' variable that you could 
-recover. The 'var1' portion would be the 'misses' counter.
-
-Individual trace events would only twiddle var0 and var1 - they would not inject a 
-full-blown event into the ring-buffer, so statistics would be very fast.
-
-This method is very extensible and could be used for far more things than just MM 
-statistics. In theory all of /proc statistics collection could be replaced and made 
-optional that way, just by adding the right events to the right spots in the kernel.  
-That is obviously a very long-term project.
+Mind sending a patch? I zapped the original non-working workaround from -tip.
 
 Thanks,
 
