@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759002Ab1CCWaI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 17:30:08 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:51189 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758986Ab1CCWaE (ORCPT
+	id S1758927Ab1CCWck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 17:32:40 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46792 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758800Ab1CCWci convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 17:30:04 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Matt Mackall <mpm@selenic.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1299188667.3062.259.camel@calx>
-References: <1299174652.2071.12.camel@dan>  <1299185882.3062.233.camel@calx>
-	 <1299186986.2071.90.camel@dan>  <1299188667.3062.259.camel@calx>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 17:30:00 -0500
-Message-ID: <1299191400.2071.203.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Mar 2011 17:32:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=j55dHGelw60W/LXjuiOXFi7TgzX3BfeQcR0/J/we1A7aF5OUlOWn3nXuV2FOUR1u9x
+         +27RpNpEZb6Ws1aRYPijtGBKpE+l+aFsZVqI1jTY2sQCv7dUQKdock5q9u5vFUEtBwdt
+         ecnttiXXu0DIsliGogKQmTJycOWD9s6sJWqgg=
+MIME-Version: 1.0
+In-Reply-To: <m1zkpc1rbc.fsf@fess.ebiederm.org>
+References: <1298659961-23863-1-git-send-email-lucian.grijincu@gmail.com>
+ <20110302.170644.58413369.davem@davemloft.net> <m1zkpc1rbc.fsf@fess.ebiederm.org>
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Thu, 3 Mar 2011 23:32:18 +0100
+Message-ID: <AANLkTik_hnW9DEtcYmY9Ne+zGsxWs4q05nXMfdyh13mK@mail.gmail.com>
+Subject: Re: RFC v1: sysctl: add sysctl header cookie, share tables between nets
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Miller <davem@davemloft.net>, adobriyan@gmail.com, tavi@cs.pub.ro,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Well if it were a 1000x-1000000x difficulty improvement, I would say you
-> had a point. But at 10x, it's just not a real obstacle. For instance, in
-> this exploit:
-> 
-> http://www.exploit-db.com/exploits/14814/
-> 
-> ..there's already detection of successful smashing, so working around
-> not having /proc/slabinfo is as simple as putting the initial smash in a
-> loop. I can probably improve my odds of success to nearly 100% by
-> pre-allocating a ton of objects all at once to get my own private slab
-> page and tidy adjoining allocations. I'll only fail if someone does a
-> simultaneous allocation between my target objects or I happen to
-> straddle slab pages.
-> 
-
-For this particular exploit, the allocation and triggering of the
-vulnerability were in separate stages, so that's the case, but other
-exploits might have additional constraints.  For example, there is a
-public exploit for a two-byte SLUB overflow that relies on a partial
-overwrite into a free chunk; exploitation of vulnerabilities similar to
-this may be significantly hindered by the lack of availability of this
-interface.  Still other issues may only get one shot at exploitation
-without needing to clean up corrupted heap state to avoid panicking the
-kernel.  In short, every exploit is different, and exposure
-of /proc/slabinfo may be the thing that puts some more difficult cases
-within reach.
-
-> And once an exploit writer has figured that out once, everyone else just
-> copies it (like they've copied the slabinfo technique). At which point,
-> we might as well make the file more permissive again.. 
-> 
-
-This may be true to some extent, but kernel vulnerabilities tend to be
-somewhat varied in terms of exploitation constraints, so I'm not
-convinced a general technique would apply to enough cases to render this
-change completely pointless.
-
-Many security features, for example NX enforcement, have not proven to
-be especially significant in completely mitigating exploitation of
-userland memory corruption vulnerabilities by themselves, given the
-advent of code-reuse exploitation techniques.  They have also come at
-the cost of breaking some applications.  However, the reason we don't
-just turn them all off is because they provide SOME hurdle, however
-small, and given enough incremental improvements, we eventually get to
-the point where things are actually hard.
-
-> > > On the other hand, I'm not convinced the contents of this file are of
-> > > much use to people without admin access.
-> > > 
-> > 
-> > Exactly.  We might as well do everything we can to make attackers' lives
-> > more difficult, especially when the cost is so low.
-> 
-> There are thousands of attackers and millions of users. Most of those
-> millions are on single-user systems with no local attackers. For every
-> attacker's life we make trivially more difficult, we're also making a
-> few real user's lives more difficult. It's not obvious that this is a
-> good trade-off.
-> 
-
-I appreciate your input on this, you've made very reasonable points.
-I'm just not convinced that those few real users are being substantially
-inconvenienced, even if there's only a small benefit for the larger
-population of users who are at risk for attacks.  Perhaps others could
-contribute their opinions to the discussion.
-
--Dan
-
-> -- 
-> Mathematics is the supreme nostalgia of our time.
+On Thu, Mar 3, 2011 at 10:33 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> I may be missing something in these patches. I haven't had time to look
+> at this most recent batch carefully.  But from a 10,000 foot perspective I
+> have a problem with them.  With a handful of network devices the size of
+> the data structures is negligible.
+>
+> So until I can see a reason why we should save a few bytes at the cost
+> of greater future maintenance costs I'm not in favor of this patch set.
 
 
+Sorry, I'm moving between countries and I don't have as much time as
+I'd like to.
+
+This patch series adds the "cookie" field and uses it in a few places.
+I need this for the next step, but I wanted some feedback regarding
+the cookie approach (sane? applicable if the 'dynamic header' feature
+is accepted?).
+
+Afterwards I want to add a "dynamic ctl_header" which will implement a
+few ops (something on the lines of 'find_in_table' and 'scan' from
+proc_sysctl.c).
+
+At 'scan' time the "dynamic header" will create inodes for the
+directories underneath with:
+  ctl_table='shared ctl table for /proc/sys/net/ipv4/conf' (or
+ipv6/addrconf or neigh)
+  ctl_table_header=a device specific (not dynamic) table header with
+->cookie pointing to a struct {char*dev_name; struct net*net;}
+
+proc_handlers will use the name (or even a pointer to the device or
+whatever speeds up the implementation) and the net to find out the
+real ->data similar to the netns_proc_handlers from this patch series.
+
+Adding an interface will not need to scan through the list of existing
+ctl headers to see if any duplicates exist because there cannot be two
+interfaces with the same name.
+
+Promise to get back with patches for this implementation as soon as I can.
+
+PS: sorry if my mumbling does not make much sense, hopefully code will
+make things clear.
+-- 
+ .
+..: Lucian
