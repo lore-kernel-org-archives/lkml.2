@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab1CCN6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 08:58:33 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54687 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab1CCN6c (ORCPT
+	id S1758327Ab1CCN6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 08:58:48 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61726 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758314Ab1CCN6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 08:58:32 -0500
+	Thu, 3 Mar 2011 08:58:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=qrvTSLHzkbjaYq9rlns0Z4vC0h0g9v7atJLQKBOBUtFtkbGQRJLbl48n9dflSuSsWx
-         6met8HKIkBhr/BqlaJ0wHUmeZT56a1NSepK02YGy7xygtAAE7aDuXi78AsAj7gQHDP8q
-         p+gbZ4lWdJE5YG51gQ0fEEagOYyRq90w94r1c=
-Date: Thu, 3 Mar 2011 21:58:20 +0800
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 01/05] use proc_dointvec_minmax to check boundaries while
- needed
-Message-ID: <20110303135819.GA2620@darkstar>
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=MbxnfyoQRB6fgLqKOxNE5+W0U8wt+U8n67g+jeNoEEQDIKqwU1J4yUX7j+YWAWkfCl
+         zXVlWrG1EBRNQEKvKvsHUuASEIn3wNvbH16OFVk5s52wKV8gCxaeAwHytq2ME/9L8Ozg
+         0VOtUXjoASqGSFqwzDwRMx/UqsCleXC6gP7kI=
+Message-ID: <4D6F9E77.3040505@gmail.com>
+Date: Thu, 03 Mar 2011 14:58:15 +0100
+From: "=?ISO-8859-1?Q?Andreas_Bie=DFmann?=" <andreas.devel@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.14) Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?ISO-8859-1?Q?Andreas_Bie=DFmann?= <andreas.devel@googlemail.com>
+CC: "Jason A. Donenfeld" <Jason@zx2c4.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fs-writeback: fix NULL pointer dereference in __mark_inode_dirty
+References: <1298906733-31427-1-git-send-email-biessmann@corscience.de>	<20110228154314.GA4675@swordfish.minsk.epam.com>	<4D6BC666.4010603@gmail.com>	<20110228162909.GB4675@swordfish.minsk.epam.com> <AANLkTimARkrtmBBgtXmNA=MOD94FWQ8x-qcmLJ8mdQ6o@mail.gmail.com> <4D6E016B.50600@gmail.com>
+In-Reply-To: <4D6E016B.50600@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-proc_dointvec doesn't check extra minmax params, use proc_dointvec_minmax
-instead of proc_dointvec for cases need boundaries check.
+Dear Jason A. Donenfeld,
 
-Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
----
- kernel/sysctl.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Am 02.03.2011 09:35, schrieb Andreas Bieﬂmann:
+> Dear Jason A. Donenfeld,
+> 
+> Am 01.03.2011 10:00, schrieb Jason A. Donenfeld:
+>> Can you make an isolated test case to trigger this bug?
+> 
+> in my case it is easily reproduceable. I have an SD-card in our embedded
+> device (AVR32 AP7000). Some random data is continuously written to an
+> FAT filesystem on that device. When you pull the card out of the slot
+> you trigger that NULL pointer dereference.
+> 
+> I will try to reproduce that error on my workstation but this will need
+> some time. Maybe I can not hit that race on my quad core workstation but
+> I will give it a try.
 
---- linux-2.6.orig/kernel/sysctl.c	2011-03-03 10:44:53.000000000 +0800
-+++ linux-2.6/kernel/sysctl.c	2011-03-03 11:02:43.736663258 +0800
-@@ -374,7 +374,7 @@ static struct ctl_table kern_table[] = {
- 		.data		= &sysctl_sched_autogroup_enabled,
- 		.maxlen		= sizeof(unsigned int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_dointvec_minmax,
- 		.extra1		= &zero,
- 		.extra2		= &one,
- 	},
-@@ -1204,7 +1204,7 @@ static struct ctl_table vm_table[] = {
- 		.data		= &block_dump,
- 		.maxlen		= sizeof(block_dump),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_dointvec_minmax,
- 		.extra1		= &zero,
- 	},
- 	{
-@@ -1212,7 +1212,7 @@ static struct ctl_table vm_table[] = {
- 		.data		= &sysctl_vfs_cache_pressure,
- 		.maxlen		= sizeof(sysctl_vfs_cache_pressure),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_dointvec_minmax,
- 		.extra1		= &zero,
- 	},
- #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
-@@ -1221,7 +1221,7 @@ static struct ctl_table vm_table[] = {
- 		.data		= &sysctl_legacy_va_layout,
- 		.maxlen		= sizeof(sysctl_legacy_va_layout),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_dointvec_minmax,
- 		.extra1		= &zero,
- 	},
- #endif
-@@ -1231,7 +1231,7 @@ static struct ctl_table vm_table[] = {
- 		.data		= &zone_reclaim_mode,
- 		.maxlen		= sizeof(zone_reclaim_mode),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_dointvec_minmax,
- 		.extra1		= &zero,
- 	},
- 	{
-@@ -1287,7 +1287,7 @@ static struct ctl_table vm_table[] = {
- 		.data		= &vdso_enabled,
- 		.maxlen		= sizeof(vdso_enabled),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_dointvec_minmax,
- 		.extra1		= &zero,
- 	},
- #endif
+unfortunately I can not reproduce this error on my workstation. I tested
+an 35 in 1 USB card reader and a single USB stick.
+I will try to test on another architecture uniprocessor system (e.g. one
+of our ARM eval boards).
+
+regards
+
+Andreas Bieﬂmann
