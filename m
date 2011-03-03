@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab1CCPYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 10:24:03 -0500
-Received: from ganesha.gnumonks.org ([213.95.27.120]:44245 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758190Ab1CCPYB (ORCPT
+	id S1758373Ab1CCP3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 10:29:31 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:32839 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab1CCP3a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 10:24:01 -0500
-Date: Thu, 3 Mar 2011 16:23:49 +0100
-From: Harald Welte <laforge@gpl-violations.org>
-To: Armijn Hemel <armijn@gpl-violations.org>
-Cc: Sebastian Gottschall <s.gottschall@newmedia-net.de>,
-        linux-kernel@vger.kernel.org, James Morris <jmorris@intercode.com.au>,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: changing EXPORT_SYMBOL_GPL to EXPORT_SYMBOL in DD-WRT
-Message-ID: <20110303152349.GL8117@prithivi.gnumonks.org>
-References: <1299164159.10725.19.camel@hibbert>
+	Thu, 3 Mar 2011 10:29:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=c2hrDAByTTVO3BHfrEpQOwrdUVyFBFN4GqouaMXCjj5JQ20QDwCN1NfklxUVM6Hftq
+         Jjmcpy3bBW1RKE3DchJX0XUHQNVIpXEHExKy3o2hdco9mB792KaP+QtlSBG7lfPanr9v
+         /iBc9TFxUQTh+sY4vFfCSBYpdYTxM3OATOIyA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299164159.10725.19.camel@hibbert>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110303140551.GA20677@zhy>
+References: <20110303113435.GA2868@balbir.in.ibm.com>
+	<20110303140551.GA20677@zhy>
+Date: Thu, 3 Mar 2011 20:59:29 +0530
+X-Google-Sender-Auth: 183cH9ZnsCBV6VSMFzRVLAdHe5M
+Message-ID: <AANLkTikHFLoJOZvx2YebKdHt+jjiHgUFasiLTrZ6vBUJ@mail.gmail.com>
+Subject: Re: [BUGFIX][PATCH] Fix sched rt group scheduling when hierachy is enabled
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <pzijlstr@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Bharata B Rao <bharata.rao@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian, Armijn and others,
+On Thu, Mar 3, 2011 at 7:35 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Thu, Mar 03, 2011 at 05:04:35PM +0530, Balbir Singh wrote:
+>> Fix hierarchical scheduling in sched rt group
+>>
+>> From: Balbir Singh <balbir@linux.vnet.ibm.com>
+>>
+>> The current sched rt code is broken when it comes to hierarchical
+>> scheduling, this patch fixes two problems
+>>
+>> 1. It adds redundant enqueuing (harmless) when it finds a queue
+>>    has tasks enqueued, but it has no run time and it is not
+>>    throttled.
+>
+> You say redundant here, so in fact we don't need it, right?
+>
 
-I can only follow what Armijn has been writing.
+No, not really :) It is required, it is a backup check to see if we
+have queued tasks, rt_time of 0 and the runqueue is not throttled, why
+should it be dequeued?
 
-On Thu, Mar 03, 2011 at 03:55:59PM +0100, Armijn Hemel wrote:
-> I noticed that a few hours ago you changed a few lines in the kernel
-> source of DD-WRT, changing the export from a few symbols from 'GPL only'
-> to something a lot more permissive:
+>> 2. The most important change is in sched_rt_rq_enqueue/dequeue.
+>>    The code just picks the rt_rq belonging to the current cpu
+>>    on which the period timer runs, the patch fixes it, so that
+>>    the correct rt_se is enqueued/dequeued.
+>
+> Ah, this is true. It is also needed for stable-2.6.33+
+>
 
-While the ideas and thoughts regarding the legal implications of
-EXPORT_SYMBOL_GPL are wide (see e.g. http://lwn.net/Articles/154602/) and there
-is no precedent as far as I know, there seems general consensus that it _at
-least_ signifies the explicit intent of the author.
+Yep, we'll need backports to stable versions
 
-By using the _GPL variant, the author unmistakingly indicates: 
-"I consider any use of that symbol to create a derivative work which must again
- be licensed under GNU GPL"
-
-So by modifying a _GPL symbol into the non-GPL variant (and using the code from
-a non-GPL module), one would clearly violate the intent of the original author.
-Whether or not that intent of the author is grounded in copyright law may
-depend on the specific jurisdiction, circumstances and the judge that would
-make up his mind about it, if such a case ever went to court.
-
-I would be interested to hear what DaveM, James Morris and Herbert Xu
-as the authors of the files in question have to say about such activity.
-
-Regards,
-	Harald
--- 
-- Harald Welte <laforge@gpl-violations.org>       http://gpl-violations.org/
-============================================================================
-"Privacy in residential applications is a desirable marketing option."
-                                                  (ETSI EN 300 175-7 Ch. A6)
+Balbir
