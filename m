@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758859Ab1CCUvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 15:51:04 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18749 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758196Ab1CCUvB (ORCPT
+	id S1758844Ab1CCUv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 15:51:26 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48601 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758196Ab1CCUvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 15:51:01 -0500
-Date: Thu, 3 Mar 2011 12:50:12 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: akpm@linux-foundation.org, gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2011-03-02-16-52 uploaded (linux-next:
- drivers/staging/epca - missing header files)
-Message-Id: <20110303125012.2a7218d4.randy.dunlap@oracle.com>
-In-Reply-To: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
-References: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D6FFF0B.01A0,ss=1,fgs=0
+	Thu, 3 Mar 2011 15:51:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=AhoXoPevAIMHdeIA5K+rbB4UQL7xd4+VCu8YhygWmg+x7ieUiRd+gcK7Yo/8jR9Wc8
+         c80E5lSWjvmpRsN8SOeRuOTy0xWdk53O28O+jjGuEazwYGYkQuCSNx7GCqFTdgnc6dR4
+         aII6wVeB0w7hfdsZmsG13lcO/IgOZ0Av7aVV0=
+MIME-Version: 1.0
+In-Reply-To: <1299174901-16762-8-git-send-email-iws@ovro.caltech.edu>
+References: <1299174901-16762-1-git-send-email-iws@ovro.caltech.edu>
+	<1299174901-16762-8-git-send-email-iws@ovro.caltech.edu>
+Date: Thu, 3 Mar 2011 12:51:14 -0800
+X-Google-Sender-Auth: qJIzLLImZvkSB6g1C7uY4tcjOZA
+Message-ID: <AANLkTik6G6zh+=-5pJZRWBcQXry=3DUrc=CQ+QNbsSuH@mail.gmail.com>
+Subject: Re: [PATCH v3 7/9] fsldma: support async_tx dependencies and
+ automatic unmapping
+From: Dan Williams <dan.j.williams@intel.com>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        leoli@freescale.com, "Koul, Vinod" <vinod.koul@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Mar 2011 16:52:55 -0800 akpm@linux-foundation.org wrote:
+On Thu, Mar 3, 2011 at 9:54 AM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
+> Previous to this patch, the dma_run_dependencies() function has been
+> called while holding desc_lock. This function can call tx_submit() for
+> other descriptors, which may try to re-grab the lock. Avoid this by
+> moving the descriptors to be cleaned up to a temporary list, and
+> dropping the lock before cleanup.
+>
+> At the same time, add support for automatic unmapping of src and dst
+> buffers, as offered by the DMAEngine API.
 
-> The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
-> 
->    http://userweb.kernel.org/~akpm/mmotm/
-> 
-> and will soon be available at
-> 
->    git://zen-kernel.org/kernel/mmotm.git
-> 
-> It contains the following patches against 2.6.38-rc7:
+Unfortunately, this may be a short lived addition as Russell has put
+the the kibosh on how the dmaengine api supports dependencies and
+automated unmapping [1].  It really needs to be up to the client to
+maintain all the mappings until the dma operation is complete.  If we
+cross dma mapping domains we need to queisce operations, remap the
+buffers and submit the dma to the next channel.  The current approach
+of using overlapping mappings is broken on at least ARM v6+ platforms.
 
+So I need to rework how md raid submits dependencies and manages the
+dma mapping api, and will most likely end up removing dependency
+support from the api as I do not see a clean way for this to be
+automated behind the client's back.  Mapping needs to be sole
+responsibility of the client.
 
-Who did the (incomplete) move of some tty drivers to staging? (in linux-next)
+Other than that this patch looks good.
 
-Please also move drivers/char/digi*.h
+--
+Dan
 
-#include "digiPCI.h"
-#include "digi1.h"
-#include "digiFep1.h"
-=>
-drivers/staging/tty/epca.c:46:21: error: digiPCI.h: No such file or directory
-drivers/staging/tty/epca.c:49:19: error: digi1.h: No such file or directory
-drivers/staging/tty/epca.c:50:22: error: digiFep1.h: No such file or directory
-
-causes over 100 build errors.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+[1] http://marc.info/?l=linux-raid&m=129407256602759&w=2
