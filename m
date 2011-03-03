@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758784Ab1CCUpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 15:45:16 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41589 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758472Ab1CCUpP (ORCPT
+	id S1758806Ab1CCUpi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 15:45:38 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59485 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758733Ab1CCUph convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 15:45:15 -0500
+	Thu, 3 Mar 2011 15:45:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=ENgdcfvEiKDGltH+dh+9YP1T70XqcBeBmRuaiaOOtK6MO7ILlBnSDRdmvMWkxxe6eU
-         uWyYlYeYuJkdGBZVR1dgkFAEXbUzErRTO1uKiFRxppROJMmyWOJ5SlKMOtaNkwq6i+NV
-         QZdSaeGlm9vBTOINQUjZi+5nLBoAnt+d2RPxk=
-Message-ID: <4D6FFDD3.8070206@gmail.com>
-Date: Thu, 03 Mar 2011 23:45:07 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qDOl+Bz4K0I1731/06Uwm3Opk/kml5StUw5JElAMW0K4NWoggy7pWYKFJEgcKd44j6
+         T0TX9z4JRF+taSMrJdQTHUBYG8pA07tA2Yu5f4D5P1Q2mQU/bP7Cy/3Lg09TWkwoeQHR
+         0mgOL9WGOzx0Fi2sM8CLgsCIzU8Baw1aHSgUU=
 MIME-Version: 1.0
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+In-Reply-To: <alpine.LNX.2.00.1103032100360.2430@swampdragon.chaosbits.net>
+References: <20110303193006.GA29129@svh.nico22.de>
+	<alpine.LNX.2.00.1103032100360.2430@swampdragon.chaosbits.net>
+Date: Thu, 3 Mar 2011 21:45:35 +0100
+Message-ID: <AANLkTi=B3Bpq=5Oyh2FjSX0o_R=Tmwx-ksfMq1bqA_ix@mail.gmail.com>
+Subject: Re: Network link detection
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: =?ISO-8859-1?Q?Nico_Sch=FCmann?= <dev@nico22.de>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] x86: make apic_disable() static and init
-References: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de> <1299182701-8591-3-git-send-email-henne@nachtwindheim.de>
-In-Reply-To: <1299182701-8591-3-git-send-email-henne@nachtwindheim.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 11:04 PM, Henrik Kretzschmar wrote:
-> apic_disable() is only used in apic.c, so it does not
-> need the prototype which was introduced inc commit
-> 08306ce61d6848e6fbf74fa4cc693c3fb29e943f .
-> Therefore we remove it from the header and make it static.
-> 
-> It is also called only from init code, so we mark it as such.
-> 
-> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-> ---
+On Thu, Mar 3, 2011 at 9:03 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Thu, 3 Mar 2011, Nico Schümann wrote:
+>
+>> Dear kernel developers,
+>>
+>> currently I'm looking for a way to find out whether a network link went
+>> down or up. Of course there is mii-tool, which can watch devices, too.
+>>
+>> So for now, I created a small program that polls the MII_LINK_OK
+>> flag with the SIOCGMIIREG ioctl - the same thing that mii-tools does.
+>> But polling that often for a link change that occurs maybe once in a
+>> month sounds like waste of energy.
+>>
+>> Unfortunately, I was not able to find out a way to be notified about
+>> link status changes asynchronously. Is there a way? I'm looking for
+>> something like "inotify for link states".
+>>
+> I guess you could use inotify to keep an eye on the 'carrier' file in
+> sysfs (for example, from my system;
+> /sys/devices/pci0000:00/0000:00:19.0/net/eth0/carrier )
+> That file will contain "0" if there is no link and "1" if there is a link.
 
-Thanks for cleanup Henrik!
-(nb: Please always CC an commit's author next time.)
+Does sysfs support inotify?
+I don't think so.
 
-Acked-by: Cyrill Gorunov <gorcunov@openvz.org>
+> --
+> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+> Plain text mails only, please.
+> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+>
+
 -- 
-    Cyrill
+Thanks,
+//richard
