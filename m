@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870Ab1CCCRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 21:17:22 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50597 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757725Ab1CCCRU (ORCPT
+	id S1758031Ab1CCCSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 21:18:44 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49342 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757442Ab1CCCSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 21:17:20 -0500
-Date: Wed, 2 Mar 2011 18:17:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-03-02-16-52 uploaded
-Message-Id: <20110302181711.2399cdba.akpm@linux-foundation.org>
-In-Reply-To: <20110303130538.3e99f952.sfr@canb.auug.org.au>
-References: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
-	<20110303130538.3e99f952.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Wed, 2 Mar 2011 21:18:43 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 3 Mar 2011 11:12:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, aarcange@redhat.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/8] Fix interleaving for transparent hugepages v2
+Message-Id: <20110303111220.cae43e8e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1299113128-11349-2-git-send-email-andi@firstfloor.org>
+References: <1299113128-11349-1-git-send-email-andi@firstfloor.org>
+	<1299113128-11349-2-git-send-email-andi@firstfloor.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,35 +27,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Mar 2011 13:05:38 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed,  2 Mar 2011 16:45:21 -0800
+Andi Kleen <andi@firstfloor.org> wrote:
 
-> Hi Andrew,
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> On Wed, 02 Mar 2011 16:52:55 -0800 akpm@linux-foundation.org wrote:
-> >
-> > The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
+> Bugfix, independent from the rest of the series.
 > 
-> If you create your linux-next.patch using kapm-start..kapm-end in the
-> linux-next tree, you will save about 8000+ lines of patch and you won't
-> need "next-remove-localversion.patch" any more.  I am keeping those
-> references up to date each day.
+> The THP code didn't pass the correct interleaving shift to the memory
+> policy code. Fix this here by adjusting for the order.
+> 
+> v2: Use + (thanks Christoph)
+> Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+> Reviewed-by: Christoph Lameter <cl@linux.com>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-What's in the 8000 lines?
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> BTW, To keep "git am" happy:
-> 
-> diff --git a/broken-out/memcg-keep-only-one-charge-cancelling-function-fix.patch
-> index e081c43..42c45fc 100644
-> --- a/broken-out/memcg-keep-only-one-charge-cancelling-function-fix.patch
-> +++ b/broken-out/memcg-keep-only-one-charge-cancelling-function-fix.patch
-> @@ -1,3 +1,4 @@
-> +From: Johannes Weiner <hannes@cmpxchg.org>
->  
->  Keep the underscore-version of the charge cancelling function which took a
->  page count, rather than silently changing the semantics of the
-> 
-
-Didn't understand that - why is git-am unhappy?  Your sentence was
-truncated.
