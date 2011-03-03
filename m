@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab1CCWAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 17:00:31 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33549
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758925Ab1CCWAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 17:00:30 -0500
-Date: Thu, 03 Mar 2011 14:01:06 -0800 (PST)
-Message-Id: <20110303.140106.191399853.davem@davemloft.net>
-To: chris.friesen@genband.com
-Cc: dev@nico22.de, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Network link detection
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D700A5B.2000807@genband.com>
-References: <20110303193006.GA29129@svh.nico22.de>
-	<4D700A5B.2000807@genband.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1758903Ab1CCWCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 17:02:12 -0500
+Received: from gwu.lbox.cz ([62.245.111.132]:45787 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758251Ab1CCWCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 17:02:11 -0500
+Date: Thu, 3 Mar 2011 23:01:55 +0100
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+	boot
+Message-ID: <20110303220155.GB27691@nik-comp.lan>
+References: <20110228143247.GE29840@pcnci.linuxbox.cz> <4D6BBC84.6020408@redhat.com> <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com> <20110303070652.GG29840@pcnci.linuxbox.cz> <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan> <4D700F09.9000002@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D700F09.9000002@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 4711626 records (last update: 20110303)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Friesen <chris.friesen@genband.com>
-Date: Thu, 03 Mar 2011 15:38:35 -0600
+> That sounds like a kernel which will be vulnerable to broken KVM clock  
+> on 32-bit.  There's a kernel side fix that is needed, but why the server  
+> side change triggers the problem needs more investigation.
+OK, it's important for me that I can fix this by kernel parameter,
+but if I can help somehow with debugging, please let me know.
+thanks for Your time!
+nik
 
-> You might look at whether you could write a kernel module to register
-> for NETDEV_CHANGE notifications and pass that back to userspace.
+>
+> Zach
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-This is the kind of responses you get when you ask networking specific
-questions and don't CC: netdev :-/
+-- 
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
 
-There is this thing called netlink, you can listen for arbitrary
-network state change events on a socket, and get the link state
-notifications you are looking for.  It's in use by many real
-applications like NetworkManager and co.
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
