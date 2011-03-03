@@ -1,80 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645Ab1CCIWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:22:40 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33553 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757720Ab1CCIWM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:22:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=sp1DcUaiqjRw+Ro4dZZcptr3he9ck8+wcIXNqhAWU7f8yBoaFz3Cz41pviDdvyXLFC
-         sJAv25cdCWj1E1jA8VWELFMPqdKgRSkrmLCb5CrKVZC28dXjOwn5PZkpDGuvDA2AZGCY
-         nKyrJdOe8dVBgg5Jc57O3Pep8L0jqHvWEiJew=
-Subject: [PATCH] backlight: ltv350qv: fix a memory leak
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 16:22:03 +0800
-Message-ID: <1299140523.3846.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757648Ab1CCIWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:22:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:40262 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754771Ab1CCIR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 03:17:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
+   d="scan'208";a="715563065"
+Message-Id: <20110303074951.840216412@intel.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 03 Mar 2011 14:45:29 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Rik van Riel <riel@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Greg Thelen <gthelen@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+CC: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 24/27] writeback: trace global_dirty_state
+References: <20110303064505.718671603@intel.com>
+Content-Disposition: inline; filename=writeback-trace-global-dirty-states.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Add trace balance_dirty_state for showing the global dirty page counts
+and thresholds at each balance_dirty_pages() loop.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- drivers/video/backlight/ltv350qv.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ include/trace/events/writeback.h |   48 +++++++++++++++++++++++++++++
+ mm/page-writeback.c              |    1 
+ 2 files changed, 49 insertions(+)
 
-diff --git a/drivers/video/backlight/ltv350qv.c b/drivers/video/backlight/ltv350qv.c
-index 8010aae..dd0e84a 100644
---- a/drivers/video/backlight/ltv350qv.c
-+++ b/drivers/video/backlight/ltv350qv.c
-@@ -239,11 +239,15 @@ static int __devinit ltv350qv_probe(struct spi_device *spi)
- 	lcd->spi = spi;
- 	lcd->power = FB_BLANK_POWERDOWN;
- 	lcd->buffer = kzalloc(8, GFP_KERNEL);
-+	if (!lcd->buffer) {
-+		ret = -ENOMEM;
-+		goto out_free_lcd;
-+	}
+--- linux-next.orig/mm/page-writeback.c	2011-03-03 14:02:58.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-03-03 14:03:24.000000000 +0800
+@@ -386,6 +386,7 @@ void global_dirty_limits(unsigned long *
+ 	tsk = current;
+ 	*pbackground = background;
+ 	*pdirty = dirty;
++	trace_global_dirty_state(background, dirty);
+ }
+ EXPORT_SYMBOL_GPL(global_dirty_limits);
  
- 	ld = lcd_device_register("ltv350qv", &spi->dev, lcd, &ltv_ops);
- 	if (IS_ERR(ld)) {
- 		ret = PTR_ERR(ld);
--		goto out_free_lcd;
-+		goto out_free_buffer;
- 	}
- 	lcd->ld = ld;
+--- linux-next.orig/include/trace/events/writeback.h	2011-03-03 14:02:58.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-03-03 14:03:24.000000000 +0800
+@@ -287,6 +287,54 @@ TRACE_EVENT(balance_dirty_pages,
+ 		  )
+ );
  
-@@ -257,6 +261,8 @@ static int __devinit ltv350qv_probe(struct spi_device *spi)
++TRACE_EVENT(global_dirty_state,
++
++	TP_PROTO(unsigned long background_thresh,
++		 unsigned long dirty_thresh
++	),
++
++	TP_ARGS(background_thresh,
++		dirty_thresh
++	),
++
++	TP_STRUCT__entry(
++		__field(unsigned long,	nr_dirty)
++		__field(unsigned long,	nr_writeback)
++		__field(unsigned long,	nr_unstable)
++		__field(unsigned long,	background_thresh)
++		__field(unsigned long,	dirty_thresh)
++		__field(unsigned long,	poll_thresh)
++		__field(unsigned long,	nr_dirtied)
++		__field(unsigned long,	nr_written)
++	),
++
++	TP_fast_assign(
++		__entry->nr_dirty	= global_page_state(NR_FILE_DIRTY);
++		__entry->nr_writeback	= global_page_state(NR_WRITEBACK);
++		__entry->nr_unstable	= global_page_state(NR_UNSTABLE_NFS);
++		__entry->nr_dirtied	= global_page_state(NR_DIRTIED);
++		__entry->nr_written	= global_page_state(NR_WRITTEN);
++		__entry->background_thresh	= background_thresh;
++		__entry->dirty_thresh		= dirty_thresh;
++		__entry->poll_thresh		= current->nr_dirtied_pause;
++	),
++
++	TP_printk("dirty=%lu writeback=%lu unstable=%lu "
++		  "bg_thresh=%lu thresh=%lu gap=%ld poll=%ld "
++		  "dirtied=%lu written=%lu",
++		  __entry->nr_dirty,
++		  __entry->nr_writeback,
++		  __entry->nr_unstable,
++		  __entry->background_thresh,
++		  __entry->dirty_thresh,
++		  __entry->dirty_thresh - __entry->nr_dirty -
++		  __entry->nr_writeback - __entry->nr_unstable,
++		  __entry->poll_thresh,
++		  __entry->nr_dirtied,
++		  __entry->nr_written
++	)
++);
++
+ DECLARE_EVENT_CLASS(writeback_congest_waited_template,
  
- out_unregister:
- 	lcd_device_unregister(ld);
-+out_free_buffer:
-+	kfree(lcd->buffer);
- out_free_lcd:
- 	kfree(lcd);
- 	return ret;
-@@ -268,6 +274,7 @@ static int __devexit ltv350qv_remove(struct spi_device *spi)
- 
- 	ltv350qv_power(lcd, FB_BLANK_POWERDOWN);
- 	lcd_device_unregister(lcd->ld);
-+	kfree(lcd->buffer);
- 	kfree(lcd);
- 
- 	return 0;
--- 
-1.7.1
-
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
 
 
