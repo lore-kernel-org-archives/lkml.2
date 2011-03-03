@@ -1,125 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab1CCMrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 07:47:11 -0500
-Received: from vostochny.stro.at ([78.47.22.85]:34839 "EHLO vostochny.stro.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758173Ab1CCMrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 07:47:07 -0500
-Date: Thu, 3 Mar 2011 13:47:05 +0100
-From: Maximilian Attems <max@stro.at>
-To: Jesper Dangaard Brouer <hawk@comx.dk>
-Cc: Michael Prokop <mika@debian.org>, "Marco d'Itri" <md@linux.it>,
-        Debian kernel team <debian-kernel@lists.debian.org>,
-        Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: HP G6 hardware kernel boot issue > 2.6.37 cciss/hpsa
-Message-ID: <20110303124705.GA19471@stro.at>
-Mail-Followup-To: Jesper Dangaard Brouer <hawk@comx.dk>,
-	Michael Prokop <mika@debian.org>, Marco d'Itri <md@linux.it>,
-	Debian kernel team <debian-kernel@lists.debian.org>,
-	Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Kay Sievers <kay.sievers@vrfy.org>,
-	Martin Pitt <martin.pitt@ubuntu.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>
-References: <1299087769.4279.27.camel@firesoul.comx.local>
+	id S1758177Ab1CCMxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 07:53:21 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34022 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab1CCMxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 07:53:20 -0500
+Date: Thu, 3 Mar 2011 12:53:19 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC] [PATCH 5/10] Generic Watchdog Timer Driver
+Message-ID: <20110303125317.GA23770@sirena.org.uk>
+References: <20110223204330.GA7417@infomag.iguana.be> <201102240921.02967.alexander.stein@systec-electronic.com> <20110303103814.GA3790@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299087769.4279.27.camel@firesoul.comx.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110303103814.GA3790@infomag.iguana.be>
+X-Cookie: Fast, cheap, good: pick two.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Mar 2011, Jesper Dangaard Brouer wrote:
+On Thu, Mar 03, 2011 at 11:38:14AM +0100, Wim Van Sebroeck wrote:
 
-> Hi Google and maintainers,
-> 
-> I have a kernel booting problem with kernels above 2.6.37 on Debian
-> Squeeze, on HP G6 hardware, which have the harddisk controller:
-> 
->  HP Smart Array P410i Controller / Smart Array G6 controllers
-> 
-> This problem is (of cause) related to the introduction of the driver
-> HPSA, which takes over from the driver CCISS (the overlapping PCI IDs
-> were removed in commit 6fa977520871 see below).
-> 
-> This driver transition causes the device names to change
->   from /dev/cciss/c0d0p1
->   to   /dev/sda1.
+Reflowed into 80 columns.
 
-please file proper Debian bug report with reportbug.
-we already have scripts dealing with such device changes.
-Had previously thought that the need of them was over after the
-libata change, but obviously you show the contrare.
+> 2) Is there a real need for having 500ms or 1500ms? why would 1 or 2
+> seconds not be OK? (which are allready small timeouts for userspace
+> anyway...)
 
-So fire up reportbug and report against linux-2.6 with severity grave.
- 
-> Thus, it would be really nice if UUID / LABEL / udev worked, as it
-> would make it possible to boot kernels above and below 2.6.37.
-> 
-> == Here comes the BUG and work-around ==
-> 
-> The BUG is that, if I compile the kernel and include the CCISS driver
-> (even-though it will not be used), then initramfs will drop me into a
-> shell, complaining that it cannot find /dev/disk/by-uuid/...
-> 
-> The work-around is, either
->  1) to avoid using initrd images, or
->  2) don't compile the kernel with the CCISS driver.
-> 
-> == Maintainers tasks ==
-> 
-> I suspect the bug lies in initramfs-tools, or the udev version used by
-> initramfs-tools.
-> 
-> Could the maintainers of initramfs-tools and udev, please tell me
-> something like its fixed in version XXX, and the Debian maintainers
-> just need to compile initramfs-tools with this version to fix the
-> issue? ;-)
-> 
->  initramfs-tools Version: 0.98.8
->  udev            Version: 164-3
-> 
-> ps. I'm testing with net-next 2.6.38-rc5-02558-g07df529
-> -- 
-> Med venlig hilsen / Best regards
->   Jesper Brouer
->   ComX Networks A/S
->   Linux Network Kernel Developer
->   Cand. Scient Datalog / MSc.CS
->   Author of http://adsl-optimizer.dk
->   LinkedIn: http://www.linkedin.com/in/brouer
-> 
-> Keywords: driver CCISS, HPSA, HP DL G6, uuid, udev, mkinitramfs,
-> initramfs-tools, debian squeeze
-> 
-> == Commit info ==
-> 
-> commit 6fa977520871b1fc0be64247abad02b678c13fda
-> Author: Mike Miller <mike.miller@hp.com>
-> Date:   Thu Oct 28 06:33:27 2010 -0600
-> 
->     cciss: remove overlapping PCI IDs
->     
->     This patch removes the controller overlap between cciss and hpsa. It was
->     decided that no overlap should exist. All new controllers will use the hpsa
->     SCSI based driver.
->     
->     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-> 
-> git describe --contains 6fa977520871b1
-> v2.6.37-rc1~75^2
-> 
-> 
-> 
-
-thank you.
-
--- 
-maks
+Yes, in embedded cases.  There it's much easier to have good control
+over userspace such that you can meet the scheduling requirements.
