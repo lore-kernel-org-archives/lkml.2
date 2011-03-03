@@ -1,83 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab1CCBaf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 20:30:35 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33571 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756790Ab1CCBae (ORCPT
+	id S1754902Ab1CCBc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 20:32:58 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65189 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab1CCBc4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 20:30:34 -0500
+	Wed, 2 Mar 2011 20:32:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=cxIrI2W6GFv+Api6DWgWnyDpivW2mdT+ylXQejp5Bl48e+jVncPTrvrA1AjJWFkscZ
-         x2j4MB4buMrXiPn4uifHzx+/vWWb1Yg1B5ZODPgKGpqJ8fbnRH19OGCNzlrFFDichZRw
-         42ZxgePLij9wqusC6n9RBeBFPx+GYvglE+ikw=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: "Indan Zupancic" <indan@nul.nu>
-Subject: Re: [RFC] Proposal for ptrace improvements
-Date: Thu, 3 Mar 2011 02:30:27 +0100
-User-Agent: KMail/1.8.2
-Cc: "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
-        "Roland McGrath" <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org,
-        "Michael Kerrisk" <mtk.manpages@googlemail.com>
-References: <20110301152457.GE26074@htj.dyndns.org> <20110302133206.GA9838@redhat.com> <0a2c2dfb67198c5bd2cfc6e6c1896f23.squirrel@webmail.greenhost.nl>
-In-Reply-To: <0a2c2dfb67198c5bd2cfc6e6c1896f23.squirrel@webmail.greenhost.nl>
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IUyas2CWdkye9asCtyLI8RxL5ip/y1lP0/HG7yz50MN7kqyxD/ajl1xiCcahbpAIKT
+         ZNh43QxzEv4aSOaKdH4yVWXi/YCMcZMwuThjpHSGDbyaEPOLy9grApT4zDTWgDpynesn
+         CUYnI2wIXuKxWGl00XptKG7cn/YXdGMALwpeQ=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201103030230.27363.vda.linux@googlemail.com>
+In-Reply-To: <20110203050021.GA29482@radium.snc4.facebook.com>
+References: <20110203050021.GA29482@radium.snc4.facebook.com>
+Date: Thu, 3 Mar 2011 09:32:55 +0800
+Message-ID: <AANLkTikDz_H-4T2-TndQ2s+ZQhFmV4SmvV=p658Fun4x@mail.gmail.com>
+Subject: Re: [PATCH] Add libpfm4 support
+From: Lin Ming <minggr@gmail.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+        perfmon2-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 March 2011 01:47, Indan Zupancic wrote:
-> On Wed, March 2, 2011 14:32, Oleg Nesterov wrote:
-> > On 03/02, Tejun Heo wrote:
-> >> On Wed, Mar 02, 2011 at 06:07:35AM +0100, Indan Zupancic wrote:
-> >> > I'm not sure what Denys is talking about: Currently it's impossible to
-> >> > pass along SIGSTOP to traced processes. Quoting the ptrace manpage:
-> >> >
-> >> >    PTRACE_CONT
-> >> >           Restarts  the stopped child process.  If data is nonzero and not
-> >> >           SIGSTOP, it is interpreted as a signal to be  delivered  to  the
-> >> >           child;  otherwise,  no  signal is delivered.
-> >>
-> >> AFAICS, that's not true.  SIGSTOP isn't treated differently from other
-> >> signals in the ptrace signal delivery path.  Maybe it was true in the
-> >> past.
-> >
-> > Yes, this is not true. And it seems this was never true.
-> >
-> > This is the second time this manpage confuses people in this discussion,
-> > probably it should be fixed...
-> 
-> Passing SIGSTOP does not actually stop the traced task, which is in line
-> with what the manpage says. All it does is generating that second SIGSTOP
-> notification, but when the task is continued it's running, not stopped.
+On Thu, Feb 3, 2011 at 1:00 PM, Arun Sharma <asharma@fb.com> wrote:
+>
+> libpfm4 is a library that takes a CPU vendor documentation
+> compatible string and fills out perf_event_attr. Typical
+> use case: user wants to look at events other than the
+> ones supported by perf using symbolic names.
+>
+> Signed-off-by: Arun Sharma <asharma@fb.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Tom Zanussi <tzanussi@gmail.com>
+> Cc: perfmon2-devel@lists.sourceforge.net
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 2b5387d..a358e54 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -602,6 +602,19 @@ else
+>        endif
+>  endif
+>
+> +ifdef NO_LIBPFM4
+> +       BASIC_CFLAGS += -DNO_LIBPFM4_SUPPORT
+> +else
+> +       FLAGS_LIBPFM4=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lpfm
+> +       ifneq ($(call try-cc,$(SOURCE_LIBPFM4),$(FLAGS_LIBPFM4)),y)
+> +               msg := $(warning libpfm4 not found, events restricted to generic ones. Please install libpfm4-devel or libpfm4-dev);
+> +               BASIC_CFLAGS += -DNO_LIBPFM4_SUPPORT
+> +       else
+> +               BASIC_CFLAGS += -DLIBPFM4
+> +               EXTLIBS += -lpfm
+> +       endif
+> +endif
+> +
+>  ifdef NO_LIBPERL
+>        BASIC_CFLAGS += -DNO_LIBPERL
+>  else
+> diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+> index b041ca6..ec6b27b 100644
+> --- a/tools/perf/feature-tests.mak
+> +++ b/tools/perf/feature-tests.mak
+> @@ -121,6 +121,17 @@ int main(void)
+>  }
+>  endef
+>
+> +ifndef NO_LIBPFM4
+> +define SOURCE_LIBPFM4
+> +#include <perfmon/pfmlib_perf_event.h>
+> +
+> +int main(void)
+> +{
+> +       return pfm_initialize();
+> +}
+> +endef
+> +endif
+> +
+>  # try-cc
+>  # Usage: option = $(call try-cc, source-to-build, cc-options)
+>  try-cc = $(shell sh -c                                           \
+> diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+> index 5b1ecd6..0fde6d3 100644
+> --- a/tools/perf/perf.c
+> +++ b/tools/perf/perf.c
+> @@ -474,6 +474,12 @@ int main(int argc, const char **argv)
+>        }
+>        cmd = argv[0];
+>
+> +#ifdef LIBPFM4
+> +       if (pfm_initialize() != PFM_SUCCESS) {
+> +               fprintf(stderr, "pfm_initialize failed\n");
+> +               return 1;
+> +       }
+> +#endif
+>        /*
+>         * We use PATH to find perf commands, but we prepend some higher
+>         * precedence paths: the "--exec-path" option, the PERF_EXEC_PATH
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 5cb6f4b..f1597dd 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -724,6 +724,47 @@ parse_numeric_event(const char **strp, struct perf_event_attr *attr)
+>        return EVT_FAILED;
+>  }
+>
+> +#ifdef LIBPFM4
+> +static enum event_result
+> +parse_libpfm4_event(const char **strp, struct perf_event_attr *attr)
+> +{
+> +       int ret;
+> +       const char *str = *strp;
+> +       const char *comma_loc = NULL;
+> +       char *evt_name = NULL;
+> +       size_t len = 0;
+> +
+> +       comma_loc = strchr(str, ',');
+> +       if (comma_loc) {
+> +               /* take the event name up to the comma */
+> +               len = comma_loc - str;
+> +               evt_name = strndup(str, len+1);
+> +               if (evt_name == NULL) {
+> +                       pr_err("strndup returned NULL. Out of memory?");
+> +                       return EVT_FAILED;
+> +               }
+> +               evt_name[len] = '\0';
+> +       } else {
+> +               evt_name = (char *) *strp;
+> +       }
+> +
+> +       ret = pfm_get_perf_event_encoding(evt_name, PFM_PLM0|PFM_PLM3, attr,
+> +                                         NULL, NULL);
+> +       if (ret != PFM_SUCCESS) {
+> +               return EVT_FAILED;
+> +       }
+> +
+> +       if (comma_loc) {
+> +               *strp += len;
+> +               free(evt_name);
+> +       } else {
+> +               *strp += strlen(evt_name);
+> +       }
+> +
+> +       return EVT_HANDLED;
+> +}
+> +#endif
+> +
+>  static enum event_result
+>  parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+>  {
+> @@ -789,6 +830,17 @@ parse_event_symbols(const char **str, struct perf_event_attr *attr)
+>        if (ret != EVT_FAILED)
+>                goto modifier;
+>
+> +#ifdef LIBPFM4
+> +       /*
+> +        * Handle libpfm4 before generic_hw events.
+> +        * Some events (eg: LLC_MISSES) fail otherwise.
+> +        */
+> +       ret = parse_libpfm4_event(str, attr);
+> +       if (ret != EVT_FAILED)
+> +               /* libpfm4 has its own modifier parsing code */
+> +               goto modifier;
+> +#endif
+> +
+>        ret = parse_generic_hw_event(str, attr);
+>        if (ret != EVT_FAILED)
+>                goto modifier;
+> @@ -995,6 +1047,45 @@ void print_events(void)
+>                }
+>        }
+>
+> +#ifdef LIBPFM4
+> +       printf("\n");
+> +       pfm_for_all_pmus(i) {
+> +               int ret;
+> +               pfm_pmu_info_t pinfo;
+> +               int count;
+> +               int k;
+> +
+> +               ret = pfm_get_pmu_info(i, &pinfo);
+> +               if (ret != PFM_SUCCESS)
+> +                       continue;
+> +               if (!pinfo.is_present)
+> +                       continue;
+> +               if (pinfo.pmu == PFM_PMU_PERF_EVENT)
+> +                       continue;
+> +
+> +               printf("\nDetected PMU:  %s -- %s Total events: %d\n",
+> +                       pinfo.name,
+> +                       pinfo.desc,
+> +                       pinfo.nevents);
+> +
+> +               count = 0;
+> +               pfm_for_each_event(k) {
 
-It can be argued that after this the task is running _precisely_
-because it was continued by the debugger.
+I got a build error with latest libpfm4 git tree(bff5dff),
 
-> So ptraced tasks can't be stopped with SIGSTOP and continued with SIGCONT.
+    CC util/parse-events.o
+cc1: warnings being treated as errors
+util/parse-events.c: In function ‘print_events’:
+util/parse-events.c:1087: error: implicit declaration of function
+‘pfm_for_each_event’
+util/parse-events.c:1087: error: nested extern declaration of
+‘pfm_for_each_event’
+util/parse-events.c:1087: error: expected ‘;’ before ‘{’ token
+make: *** [util/parse-events.o] Error 1
 
-It can be stopped - just do not PTRACE_CONT it after second SIGSTOP
-notification.
+Lin Ming
 
-The bug is that it can't be continued with SIGCONT after that.
-
-That's the gist of Tejun Heo's proposal.
-
-Oleg's proposal is a bit different. It proposes that we do need
-to do PTRACE_CONT after second SIGSTOP notification too,
-but task will be indeed stopped after this, and resumed
-when SIGCONT arrives.
-
--- 
-vda
+> +                       pfm_event_info_t info;
+> +
+> +                       ret = pfm_get_event_info(k, &info);
+> +                       if (info.pmu != pinfo.pmu)
+> +                               continue;
+> +
+> +                       count++;
+> +                       if (count > pinfo.nevents)
+> +                               break;
+> +                       printf("  %-42s [%s]\n",
+> +                               info.name,
+> +                               event_type_descriptors[PERF_TYPE_HARDWARE]);
+> +               }
+> +       }
+> +#endif
+> +
+>        printf("\n");
+>        printf("  %-42s [%s]\n",
+>                "rNNN (see 'perf list --help' on how to encode it)",
+> diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+> index b82cafb..4a30ade 100644
+> --- a/tools/perf/util/parse-events.h
+> +++ b/tools/perf/util/parse-events.h
+> @@ -5,6 +5,9 @@
+>  */
+>
+>  #include "../../../include/linux/perf_event.h"
+> +#ifdef LIBPFM4
+> +#include <perfmon/pfmlib_perf_event.h>
+> +#endif
+>
+>  struct list_head;
+>  struct perf_evsel;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
