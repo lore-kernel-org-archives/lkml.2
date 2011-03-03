@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab1CCVNs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 16:13:48 -0500
-Received: from kroah.org ([198.145.64.141]:33849 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932290Ab1CCVNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 16:13:47 -0500
-Date: Thu, 3 Mar 2011 13:13:36 -0800
-From: Greg KH <greg@kroah.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [REVIEW] NVM Express driver
-Message-ID: <20110303211336.GA32645@kroah.com>
-References: <20110303204749.GY3663@linux.intel.com>
+	id S932431Ab1CCVN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 16:13:58 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46793 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab1CCVN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 16:13:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=G2VYt1BEBeb/PJPOne9yEDfs/Ww6Rig61lDW6YRnPHJkZG1R3lv/D+9tqTGhHxhXk6
+         vMoX72c6lyQnDp92BKgxgoTxOe7KjbRZgCNcV8EsDxGGo2GBznuSp/rs54iP7Tzl5bf5
+         xATAP5LBG6G/e4HniraYAhSl2o/M7GdsPExIE=
+Message-ID: <4D70048D.7070403@gmail.com>
+Date: Fri, 04 Mar 2011 00:13:49 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303204749.GY3663@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Henrik Kretzschmar <henne@nachtwindheim.de>
+CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] x86: remove unneeded prototypes
+References: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de> <1299182701-8591-6-git-send-email-henne@nachtwindheim.de>
+In-Reply-To: <1299182701-8591-6-git-send-email-henne@nachtwindheim.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 03:47:49PM -0500, Matthew Wilcox wrote:
+On 03/03/2011 11:05 PM, Henrik Kretzschmar wrote:
+> lapic_clockevent is moved, that we can get rid of some
+> unneeded prototypes.
 > 
-> Hi everyone,
+> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+> ---
+>  arch/x86/kernel/apic/apic.c |   38 +++++++++++++++++---------------------
+>  1 files changed, 17 insertions(+), 21 deletions(-)
 > 
-> You may have seen the recent announcement of the NVM Express spec;
-> here's the driver.  I've put a git tree up on kernel.org with
-> all the history that's fit to be released (earlier versions
-> were full of Intel codenames and are not suited to public
-> consumption).  If you'd rather review the history, it's at
-> http://git.kernel.org/?p=linux/kernel/git/willy/nvme.git;a=summary
-> 
-> Jens has already offered to pull my nvme tree into his block tree, so
-> that's the route I intend to take into Linus' tree.  Comments appreciated,
-> however in a masterpiece of bad timing I am going to be travelling for
-> the next week, so please bear with me if I don't respond quickly.
-> 
-> diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
-> index 63ffd78..f8159ba 100644
-> --- a/Documentation/ioctl/ioctl-number.txt
-> +++ b/Documentation/ioctl/ioctl-number.txt
-> @@ -148,6 +148,7 @@ Code  Seq#(hex)	Include File		Comments
->  'M'	01-03	drivers/scsi/megaraid/megaraid_sas.h
->  'M'	00-0F	drivers/video/fsl-diu-fb.h	conflict!
->  'N'	00-1F	drivers/usb/scanner.h
-> +'N'	40-7F	drivers/block/nvme.c
-
-I hate to ask this, but why do you have ioctls for this?  At first
-glance, a number of the ioctls you have should just be sysfs files to
-export the information.  What am I misunderstanding here?
-
-> +static int nvme_download_firmware(struct nvme_ns *ns,
-> +						struct nvme_dlfw __user *udlfw)
-> +{
-> +	struct nvme_dev *dev = ns->dev;
-> +	struct nvme_dlfw dlfw;
-> +	struct nvme_command c;
-> +	int nents, status;
-> +	struct scatterlist *sg;
-> +	struct nvme_prps *prps;
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index a0e9c1f..64efb2d 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -187,29 +187,8 @@ static struct resource lapic_resource = {
+>  
+>  static unsigned int calibration_result;
+>  
+> -static int lapic_next_event(unsigned long delta,
+> -			    struct clock_event_device *evt);
+> -static void lapic_timer_setup(enum clock_event_mode mode,
+> -			      struct clock_event_device *evt);
+> -static void lapic_timer_broadcast(const struct cpumask *mask);
+>  static void apic_pm_activate(void);
+>  
+> -/*
+> - * The local apic timer can be used for any function which is CPU local.
+> - */
+> -static struct clock_event_device lapic_clockevent = {
+> -	.name		= "lapic",
+> -	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT
+> -			| CLOCK_EVT_FEAT_C3STOP | CLOCK_EVT_FEAT_DUMMY,
+> -	.shift		= 32,
+> -	.set_mode	= lapic_timer_setup,
+> -	.set_next_event	= lapic_next_event,
+> -	.broadcast	= lapic_timer_broadcast,
+> -	.rating		= 100,
+> -	.irq		= -1,
+> -};
+> -static DEFINE_PER_CPU(struct clock_event_device, lapic_events);
+> -
+>  static unsigned long apic_phys;
+>  
+>  /*
+> @@ -501,6 +480,23 @@ static void lapic_timer_broadcast(const struct cpumask *mask)
+>  #endif
+>  }
+>  
 > +
-> +	if (copy_from_user(&dlfw, udlfw, sizeof(dlfw)))
-> +		return -EFAULT;
-> +	if (dlfw.length >= (1 << 30))
-> +		return -EINVAL;
+> +/*
+> + * The local apic timer can be used for any function which is CPU local.
+> + */
+> +static struct clock_event_device lapic_clockevent = {
+> +	.name		= "lapic",
+> +	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT
+> +			| CLOCK_EVT_FEAT_C3STOP | CLOCK_EVT_FEAT_DUMMY,
+> +	.shift		= 32,
+> +	.set_mode	= lapic_timer_setup,
+> +	.set_next_event	= lapic_next_event,
+> +	.broadcast	= lapic_timer_broadcast,
+> +	.rating		= 100,
+> +	.irq		= -1,
+> +};
+> +static DEFINE_PER_CPU(struct clock_event_device, lapic_events);
 > +
-> +	nents = nvme_map_user_pages(dev, 1, dlfw.addr, dlfw.length * 4, &sg);
-> +	if (nents < 0)
-> +		return nents;
-> +
-> +	memset(&c, 0, sizeof(c));
-> +	c.dlfw.opcode = nvme_admin_download_fw;
-> +	c.dlfw.numd = cpu_to_le32(dlfw.length);
-> +	c.dlfw.offset = cpu_to_le32(dlfw.offset);
-> +	prps = nvme_setup_prps(dev, &c.common, sg, dlfw.length * 4);
-> +
-> +	status = nvme_submit_admin_cmd(dev, &c, NULL);
-> +	nvme_unmap_user_pages(dev, 0, dlfw.addr, dlfw.length * 4, sg, nents);
-> +	nvme_free_prps(dev, prps);
-> +	return status;
-> +}
+>  /*
+>   * Setup the local APIC timer for this CPU. Copy the initialized values
+>   * of the boot CPU and register the clock event in the framework.
 
-Shouldn't you be using the build-in firmware kernel interface instead of
-rolling your own in an ioctl?
+Looks good to me  -- now this snippets are near the place we refer them.
 
-thanks,
-
-greg k-h
+-- 
+    Cyrill
