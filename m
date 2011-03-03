@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab1CCMF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 07:05:27 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40098 "EHLO mx3.mail.elte.hu"
+	id S1757831Ab1CCMQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 07:16:30 -0500
+Received: from sh.osrg.net ([192.16.179.4]:42137 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757446Ab1CCMFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 07:05:23 -0500
-Date: Thu, 3 Mar 2011 13:05:04 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] x86, amd-nb: Misc correctness fixes
-Message-ID: <20110303120504.GA28508@elte.hu>
-References: <20110302193855.GA3840@aftab>
- <20110303091440.GA18252@elte.hu>
- <20110303115932.GA8603@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303115932.GA8603@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751915Ab1CCMQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 07:16:28 -0500
+Date: Thu, 03 Mar 2011 21:16:22 +0900 (JST)
+Message-Id: <20110303.211622.78542371.ryusuke@osrg.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        linux-nilfs@vger.kernel.org
+Subject: [GIT PULL] nilfs2 fix for 2.6.38
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 03 Mar 2011 21:16:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-* Borislav Petkov <bp@amd64.org> wrote:
+please pull from:
 
-> On Thu, Mar 03, 2011 at 04:14:40AM -0500, Ingo Molnar wrote:
-> > I'm confused about the title - a 'correctness fix' is one that fixes an actual bug.
-> > 
-> > Did you mean 'cleanliness fixes'?
-> 
-> Yes sir, this is basically a result from the 'make W=1 ..' thing I've
-> been playing with lately. Fixed.
-> 
-> > Also, checkpatch outputs a warning that looks legit.
-> 
-> Won't happen again. Hadn't enabled the pre-commit hook for checkpatch on
-> that machine. Fixed.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
 
-Note that there are checkpatch warnings that are crappy - especially the col80 ones 
-tend to produce 'fixes' that are far worse than the offense. So it's not an 
-automatism, it's a case by case tool.
+This will fix a reported regression leading a snapshot management
+application to create meaningless snapshots endlessly.
 
-> Here's a better version:
+Thanks,
 
-Applied, thanks!
+Ryusuke Konishi
+--
+The following changes since commit dd9c1549edef02290edced639f67b54a25abbe0e:
 
-	Ingo
+  Linux 2.6.38-rc7 (2011-03-01 13:55:12 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+
+Ryusuke Konishi (1):
+      nilfs2: fix regression that i-flag is not set on changeless checkpoints
+
+ fs/nilfs2/segment.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
