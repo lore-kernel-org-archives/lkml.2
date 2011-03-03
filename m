@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397Ab1CCPaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 10:30:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10235 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753929Ab1CCPaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 10:30:23 -0500
-Date: Thu, 3 Mar 2011 10:30:07 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Justin TerAvest <teravest@google.com>, Chad Talbott <ctalbott@google.com>,
-        Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>
-Subject: Per iocontext request descriptor limits (Was: Re: RFC: default
- group_isolation to 1, remove option)
-Message-ID: <20110303153007.GF16720@redhat.com>
-References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com>
- <20110301142002.GB25699@redhat.com>
- <4D6F0ED0.80804@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6F0ED0.80804@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758362Ab1CCPbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 10:31:48 -0500
+Received: from flanders.hackvalue.nl ([82.94.238.226]:50044 "EHLO
+	flanders.hackvalue.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758036Ab1CCPbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 10:31:46 -0500
+X-Greylist: delayed 2142 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Mar 2011 10:31:46 EST
+Subject: changing EXPORT_SYMBOL_GPL to EXPORT_SYMBOL in DD-WRT
+From: Armijn Hemel <armijn@gpl-violations.org>
+To: s.gottschall@newmedia-net.de
+Cc: laforge@gpl-violations.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Mar 2011 15:55:59 +0100
+Message-ID: <1299164159.10725.19.camel@hibbert>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 10:45:20PM -0500, Jens Axboe wrote:
-> On 2011-03-01 09:20, Vivek Goyal wrote:
-> > I think creating per group request pool will complicate the
-> > implementation further. (we have done that once in the past). Jens
-> > once mentioned that he liked number of requests per iocontext limit
-> > better than overall queue limit. So if we implement per iocontext
-> > limit, it will get rid of need of doing anything extra for group
-> > infrastructure.
-> > 
-> > Jens, do you think per iocontext per queue limit on request
-> > descriptors make sense and we can get rid of per queue overall limit? 
-> 
-> Since we practically don't need a limit anymore to begin with (or so is
-> the theory).
+hello Sebastian,
 
-So what has changed that we don't need queue limits on nr_requests anymore?
-If we get rid of queue limits then we need to get rid of bdi congestion
-logic also and come up with some kind of ioc congestion logic so that
-a thread which does not want to sleep while submitting the request needs to
-checks it own ioc for being congested or not for a specific device/bdi. 
+I noticed that a few hours ago you changed a few lines in the kernel
+source of DD-WRT, changing the export from a few symbols from 'GPL only'
+to something a lot more permissive:
 
->then yes we can move to per-ioc limits instead and get rid
-> of that queue state. We'd have to hold on to the ioc for the duration of
-> the IO explicitly from the request then.
+http://svn.dd-wrt.com:8000/changeset/16368
 
-I think every request submitted on request queue already takes a reference
-on ioc (set_request) and reference is not dropped till completion. So
-ioc is anyway around till request completes.
+As you are probably aware the EXPORT_SYMBOL_GPL macro is there to
+clearly signal that it was the author's intent to make these symbols
+only available to GPL licensed kernel modules. What you have effectively
+done is ignore the author's intent. It also might end up in DD-WRT
+derivatives.
 
-> 
-> I primarily like that implementation since it means we can make the IO
-> completion lockless, at least on the block layer side. We still have
-> state to complete in the schedulers that require that, but it's a good
-> step at least.
+I am sure that this is not what you meant to do. The commit message
+indicates that you are working around a certain problem you are facing
+with DD-WRT. I am sure that the Linux kernel developers would love to
+hear about that problem. For your convenience I have put them in CC.
 
-Ok so in completion path the contention will move from queue_lock to
-ioc lock or something like that. (We hope that there are no other
-dependencies on queue here, devil lies in details :-))
+warm regards,
 
-The other potential issue with this approach is how will we handle the
-case of flusher thread submitting IO. At some point of time we want to
-account it to right cgroup.
+armijn
 
-Retrieving iocontext from bio will be hard as it will atleast require
-on extra pointer in page_cgroup and I am not sure how feasible that is.
+-- 
+ ---------------------------------------------------------------------------
+        armijn@gpl-violations.org || http://www.gpl-violations.org/
+ ---------------------------------------------------------------------------
 
-Or we could come up with the concept of group iocontext. With the help
-of page cgroup we should be able to get to cgroup, retrieve the right
-group iocontext and check the limit against that. But I guess this
-get complicated. 
-
-So if we move to ioc based limit, then for async IO, a reasonable way
-would be to find the io context of submitting task and operate on that
-even if that means increased page_cgroup size.
-
-Thanks
-Vivek 
