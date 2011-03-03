@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab1CCHWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 02:22:34 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:56320 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1CCHWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 02:22:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LnyHovK5wZ3nHQyEDPwiD3H89fRh3j7XLqFTRNyDj1CKQiQY3FT0LaMvsle/taEIxp
-         2gXB93Gkm6aIimh8gkyff1LeU9ZDvxRvN6fzEv8dEHOe6INOv3W/gsfdHRr4Qg1O7ihw
-         MSJVFYICRLI0clOxSqa2blM3mbC/KsThJdNwA=
-Date: Thu, 3 Mar 2011 01:22:24 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Sage Weil <sage@newdream.net>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [RFC] introduce sys_syncat to sync a single file system
-Message-ID: <20110303072223.GA28133@elie>
-References: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1102171035220.13904@cobra.newdream.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755139Ab1CCH2I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 02:28:08 -0500
+Received: from mga09.intel.com ([134.134.136.24]:62382 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752657Ab1CCH2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 02:28:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,257,1297065600"; 
+   d="scan'208";a="608545685"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Han Pingtian <phan@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-perf-users@vger.kernel.org
+Subject: [PATCH] perf: Avoid resolving [kernel.kallsyms] to real path for buildid cache
+Date: Thu,  3 Mar 2011 23:23:57 +0800
+Message-Id: <1299165837-27817-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+kallsyms has a virtual file name [kernel.kallsyms].
+Currently, it can't be added to buildid cache successfully
+because the code(build_id_cache__add_s) tries to resolve
+[kernel.kallsyms]to a real absolute pathname and that fails.
 
-Sage Weil wrote:
+Fixes it by not resolving it and just use the name [kernel.kallsyms].
+So dir ~/.debug/[kernel.kallsyms] is created.
 
->  - On machines with many of mounts, it is not at all uncommon for some of
->    them to hang (e.g. unresponsive NFS server).  sync(2) will get stuck on
->    those and may never get to the one you do care about (e.g., /).
+Original bug report at:
+https://lkml.org/lkml/2011/3/1/524
 
-Fun to see this again.
+Tested-by: Han Pingtian <phan@redhat.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ tools/perf/util/header.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
->  - Some applications (Ceph, dpkg) write lots of data to the file system and
->    then want to make sure it is flushed to disk.  Calling fsync(2) on each
->    file introduces unnecessary ordering constraints that result in a large
->    amount of sub-optimal writeback/flush/commit behavior by the file
->    system.
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 72c124d..1f8883b 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -271,11 +271,15 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ 			  const char *name, bool is_kallsyms)
+ {
+ 	const size_t size = PATH_MAX;
+-	char *realname = realpath(name, NULL),
+-	     *filename = malloc(size),
++	char *realname, *filename = malloc(size),
+ 	     *linkname = malloc(size), *targetname;
+ 	int len, err = -1;
+ 
++	if (is_kallsyms)
++		realname = (char *)name;
++	else
++		realname = realpath(name, NULL);
++
+ 	if (realname == NULL || filename == NULL || linkname == NULL)
+ 		goto out_free;
+ 
+@@ -307,7 +311,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ 	if (symlink(targetname, linkname) == 0)
+ 		err = 0;
+ out_free:
+-	free(realname);
++	if (!is_kallsyms)
++		free(realname);
+ 	free(filename);
+ 	free(linkname);
+ 	return err;
+-- 
+1.7.2.3
 
-FWIW dpkg uses sync_file_range(2) and only syncs the files it needs to
-nowadays.  Other apps in the same position should probably do the
-same.[1][2]
-
-> This patch introduces a new system call syncat(2) that mimics the existing 
-> *at() interfaces by taking an fd and/or path.  The fd can be either an 
-> open file descriptor or AT_FDCWD, and the pathname can be either a path or 
-> (unlike the usual *at() style interface) NULL.  Only the file system for 
-> the referenced file is synced.
-
-Sounds like overengineering.  The openat(2) family of calls are meant
-to add flexibility to familiar calls that perform an operation with a
-path relative to the cwd.  To maintain familiarity, they include some
-complication (AT_FDCWD, taking a relative path, and so on).
-
-Since sync_one_filesystem(2) is new, why not just take a file or
-directory fd (and perhaps flags for future expansion)?  I can use
-open(".", O_NONBLOCK) to get a file descriptor for the cwd.
-
-> Is this a reasonable approach?  (Patch below is compile tested only.  :)
-
-Sounds reasonably sane.
-
-As for the patch: without the pathname arg it becomes much simpler.
-To my inexpert eyes, aside from that it looks good.
-
-Thanks,
-Jonathan
-
-[1] http://thread.gmane.org/gmane.comp.file-systems.ext4/22190
-[2] http://lists.debian.org/debian-dpkg/2010/11/threads.html#00075
