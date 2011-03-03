@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab1CCAGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 19:06:21 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50291 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752307Ab1CCAGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 19:06:20 -0500
-Date: Wed, 2 Mar 2011 16:06:01 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johan Wessfeldt <johan.wessfeldt@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mcheck: Correction to a missing return value from
- misc_register
-Message-Id: <20110302160601.a8936c21.akpm@linux-foundation.org>
-In-Reply-To: <1298891944-21364-1-git-send-email-johan.wessfeldt@gmail.com>
-References: <1298891944-21364-1-git-send-email-johan.wessfeldt@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754035Ab1CCAJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 19:09:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752657Ab1CCAJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Mar 2011 19:09:36 -0500
+Date: Wed, 2 Mar 2011 19:09:32 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "neilb@suse.de" <neilb@suse.de>
+Subject: Re: [PATCH 0/3] block: Few fixes for throttle and blk_cleanup_queue()
+Message-ID: <20110303000931.GA11538@redhat.com>
+References: <1298921130-17533-1-git-send-email-vgoyal@redhat.com>
+ <4D6ED971.7040305@fusionio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6ED971.7040305@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Feb 2011 12:19:04 +0100
-Johan Wessfeldt <johan.wessfeldt@gmail.com> wrote:
-
-> Return value from misc_register was not handled correctly
-> in mcheck_init_device()
+On Wed, Mar 02, 2011 at 06:57:37PM -0500, Jens Axboe wrote:
+> On 2011-02-28 14:25, Vivek Goyal wrote:
+> > Hi Jens,
+> > 
+> > These are few fixes for block throtl code and for blk_cleanup_queue(). These
+> > should be a good candidate for 2.6.39.
 > 
-> Signed-off-by: Johan Wessfeldt <johan.wessfeldt@gmail.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> They look good, thanks.
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index d916183..7274a11 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -2140,7 +2140,7 @@ static __init int mcheck_init_device(void)
->  	}
->  
->  	register_hotcpu_notifier(&mce_cpu_notifier);
-> -	misc_register(&mce_log_device);
-> +	err = misc_register(&mce_log_device);
->  
->  	return err;
->  }
+> A small please to revisit your changelog style. Lets drop the bullet
+> points, and it's best to keep at eg 72 chars so that the output is
+> readable in git log easily. I sometimes change these for you, would be
+> nice if they followed normal style though.
 
-It should be fixed, but not that way.  If misc_register() fails here,
-mcheck_init_device() should undo all the things which it just did.
+Sure. I will drop bullet style and also limit line width to 72 characters
+in future postings.
 
-And the memory leak which occurs if sysdev_class_register() fails and
-the memory and other resource leaks which occur if mce_create_device()
-fails should be fixed too.
+Do you want me to repost this patch series with changelogs corrected?
 
-mcheck_init_device() a rather optimistic function.
+Thanks
+Vivek
