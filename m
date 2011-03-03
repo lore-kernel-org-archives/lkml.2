@@ -1,167 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758240Ab1CCNbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 08:31:24 -0500
-Received: from mga11.intel.com ([192.55.52.93]:20582 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757974Ab1CCNbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 08:31:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,258,1297065600"; 
-   d="scan'208";a="893369633"
-Date: Thu, 3 Mar 2011 21:31:19 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] Fix mapping->writeback_index to point to the last
- written page
-Message-ID: <20110303133119.GA16562@localhost>
-References: <4D676067.8050200@ce.jp.nec.com>
- <20110302221808.GG7496@quack.suse.cz>
- <4D6EFC4B.30505@ce.jp.nec.com>
+	id S1758198Ab1CCNqc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 08:46:32 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42347 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756155Ab1CCNqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 08:46:32 -0500
+Date: Thu, 3 Mar 2011 13:45:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
+        s.hauer@pengutronix.de, xiao-lizhang@freescale.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv1] ARM: imx: Add support for low power suspend on MX51.
+Message-ID: <20110303134551.GC25891@n2100.arm.linux.org.uk>
+References: <1299086278-12131-1-git-send-email-Dinh.Nguyen@freescale.com> <20110302215238.GK22310@pengutronix.de> <20110303115242.GA25891@n2100.arm.linux.org.uk> <20110303124658.GR22310@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D6EFC4B.30505@ce.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110303124658.GR22310@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 10:26:19AM +0800, Jun'ichi Nomura wrote:
-> Hi Jan,
-> 
-> thank you for the comments.
-> 
-> On 03/03/11 07:18, Jan Kara wrote:
-> > On Fri 25-02-11 16:55:19, Jun'ichi Nomura wrote:
-> >> I think it's intended for sequential writer.
-> >   Not exactly. The code is meant so that background writeback gets to
-> > writing the end of a file which gets continuously dirtied (if we always
-> > started at the beginning, nr_to_write could always get to 0 before we reach
-> > end of the file).
-> 
-> Ah, ok. Thanks.
-> My patch doesn't break the above goal.
+On Thu, Mar 03, 2011 at 01:46:58PM +0100, Uwe Kleine-König wrote:
+> On Thu, Mar 03, 2011 at 11:52:42AM +0000, Russell King - ARM Linux wrote:
+> > On Wed, Mar 02, 2011 at 10:52:38PM +0100, Uwe Kleine-König wrote:
+> > > > +static int __init mx5_pm_init(void)
+> > > > +{
+> > > > +	if (cpu_is_mx51())
+> > > > +		suspend_set_ops(&mx5_suspend_ops);
+> > > I'd prefer to have that called by imx51_init_early.
+> > 
+> > This function name looks fine.  As we now have an init_early in the
+> > arch hooks, let's keep things called foo_init_early() to that use
+> > and not start using 'early' for stuff used from initcalls.
+> > 
+> > Renaming this is a recipe for causing confusion and having grep hit
+> > false positives.  Please leave it as is.
+> It seems you and Thomas both didn't notice the "by" in my sentence.
+> Or maybe it's not proper English? The thing I wanted to express is that
+> instead of introducing another initcall I prefer that imx51_init_early
+> calls mx5_pm_init instead. The name mx5_pm_init is fine for me, though
+> imx51_pm_init would still be better.
 
-Yeah.
+Is there a reason to set this really really early?  What's that reason
+exactly?
 
-> >> Otherwise, the last written page was left dirty until the writeback
-> >> wraps around.
-> >>
-> >> I.e. if the sequential dirtier has written on pagecache as '*'s below:
-> >>
-> >>    |*******|*******|****---|-------|-------|     ( |---| is a page )
-> >>
-> >> then, writeback happens:
-> >>
-> >>    |-------|-------|-------|-------|-------|
-> >>
-> >> and the dirtier continues:
-> >>
-> >>    |-------|-------|----***|*******|*****--|
-> >>                    A       B
-> >>
-> >> Next writeback should start from page A, not B.
-> >   Yes, this is downside of our current scheme. Have you actually observed
-> > it in practice or is it mostly a theoretic concern?
-> 
-> Half practical, half theoretic.
-> It has been observed with a real application, which uses a big ring file.
-> 
-> I took a trace with a test program for example:
-> 
-> [1st writeback session]
->        ...
->        flush-8:0-2743  4571: block_bio_queue: 8,0 W 94898514 + 8
->        flush-8:0-2743  4571: block_bio_queue: 8,0 W 94898522 + 8
->        flush-8:0-2743  4571: block_bio_queue: 8,0 W 94898530 + 8
->        flush-8:0-2743  4571: block_bio_queue: 8,0 W 94898538 + 8
->        flush-8:0-2743  4571: block_bio_queue: 8,0 W 94898546 + 8
->      kworker/0:1-11    4571: block_rq_issue: 8,0 W 0 () 94898514 + 40
-> >>     flush-8:0-2743  4571: block_bio_queue: 8,0 W 94898554 + 8
-> >>     flush-8:0-2743  4571: block_rq_issue: 8,0 W 0 () 94898554 + 8
-> 
-> [2nd writeback session after 35sec]
->        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898562 + 8
->        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898570 + 8
->        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898578 + 8
->        ...
->      kworker/0:1-11    4606: block_rq_issue: 8,0 W 0 () 94898562 + 640
->      kworker/0:1-11    4606: block_rq_issue: 8,0 W 0 () 94899202 + 72
->        ...
-
-        >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899962 + 8
-        >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899970 + 8
-        >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899978 + 8
-        >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899986 + 8
-        >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899994 + 8
-==>     >      kworker/0:1-11    4606: block_rq_issue: 8,0 W 0 () 94899962 + 40
-        > >>     flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898554 + 8
-==>     > >>     flush-8:0-2743  4606: block_rq_issue: 8,0 W 0 () 94898554 + 8
-
-I'd expect the wrapped around 94898554+8 to be merged with 94899962+8.
-Why kworker/0:1-11 is submitting the request early? And the second
-request is submitted by flush-8:0-2743.
-
-> The 1st writeback ended at block 94898562. (94898554+8)
-> The 2nd writeback started there.
-> However, since the last page at the 1st writeback was just redirtied,
-> the 2nd writeback looped back to block 94898554 after sequentially
-> submitting blocks from 94898562 to 94900001.
-> 
-> 1 extra seek which could be avoided.
-> I haven't seen fatal problem with the latest kernel, though.
-> 
-> With older kernels (before 2.6.29, without commit 31a12666),
-> kupdate leaves the dirty pages like spots until the application wraps
-> around the ring. (It could take hours to days.)
-> That led me to this code.
-> 
-> > But as I'm thinking about it, it wouldn't harm our original aim to do
-> > what you propose and it can help this relatively common case. So I think
-> > it's a good idea. Fengguang, what do you think?
-
-I see no problem too.
-
-Tested-by: Wu Fengguang <fengguang.wu@intel.com>
-
-I compared the writeback_single_inode trace (https://lkml.org/lkml/2011/3/3/73)
-and find no differences other than the 1-offset in the index field.
-
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=292 wrote=8192 to_write=-1 index=8191
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=2820 wrote=8192 to_write=0 index=16383
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=8644 wrote=8192 to_write=0 index=24575
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=15664 wrote=8192 to_write=0 index=32767
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=21660 wrote=8192 to_write=0 index=40959
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=27592 wrote=8192 to_write=0 index=49151
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=34700 wrote=8192 to_write=0 index=57343
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=40936 wrote=8192 to_write=0 index=65535
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=47556 wrote=8192 to_write=0 index=73727
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=53660 wrote=8192 to_write=0 index=81919
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=60220 wrote=8192 to_write=0 index=90111
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=67156 wrote=8192 to_write=0 index=98303
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=73796 wrote=8192 to_write=0 index=106495
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=79948 wrote=8192 to_write=0 index=114687
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=86176 wrote=8192 to_write=0 index=122879
-
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=480 wrote=8192 to_write=-1 index=8192
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=536 wrote=8192 to_write=0 index=16384
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=828 wrote=8192 to_write=0 index=24576
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=1540 wrote=8192 to_write=0 index=32768
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=2084 wrote=8192 to_write=0 index=40960
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=2620 wrote=8192 to_write=0 index=49152
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=3156 wrote=8192 to_write=0 index=57344
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=4008 wrote=8192 to_write=0 index=65536
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=4964 wrote=8192 to_write=0 index=73728
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=5560 wrote=8192 to_write=0 index=81920
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=6132 wrote=8192 to_write=0 index=90112
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=7436 wrote=8192 to_write=-180 index=98304
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=8200 wrote=8192 to_write=0 index=106496
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=8652 wrote=8192 to_write=0 index=114688
-writeback_single_inode: bdi 8:0: ino=12 state=I_DIRTY_PAGES age=9424 wrote=8192 to_write=0 index=122880
-
-Thanks,
-Fengguang
+You can't suspend the system until the scheduler is up and running.
+Neither can you use cpuidle.  So it seems there isn't a pressing reason
+to place this stuff really early in the fragile part of kernel
+initialization.
