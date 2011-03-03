@@ -1,197 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab1CCLDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 06:03:55 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:45119 "EHLO gir.skynet.ie"
+	id S1755972Ab1CCLNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 06:13:19 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47323 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754772Ab1CCLDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 06:03:53 -0500
-Date: Thu, 3 Mar 2011 11:03:24 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: akpm@linux-foundation.org
-Cc: "Nadolski, Edmund" <edmund.nadolski@intel.com>, Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Christoph Lameter <cl@linux.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, stable@kernel.org,
-        linux-mm@kvack.org
-Subject: stable: mm: vmstat: use a single setter function and callback for
-	adjusting percpu thresholds
-Message-ID: <20110303110324.GH14162@csn.ul.ie>
+	id S1753150Ab1CCLNS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 06:13:18 -0500
+From: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+CC: "sachi@mistralsolutions.com" <sachi@mistralsolutions.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "Watkins, Melissa" <m-watkins@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 3 Mar 2011 16:42:58 +0530
+Subject: RE: [PATCH v2 02/13] da850: pruss platform specific additions.
+Thread-Topic: [PATCH v2 02/13] da850: pruss platform specific additions.
+Thread-Index: AcvX3gJmESMBPKlIQ2+xayF1PDd7EgAJ/YQQ
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C008825@dbde02.ent.ti.com>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
+ <1297435892-28278-3-git-send-email-subhasish@mistralsolutions.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024BF35DEE@dbde02.ent.ti.com>
+ <4102429DCB2B4B47A4F51ED0B9A62E2B@subhasishg>
+In-Reply-To: <4102429DCB2B4B47A4F51ED0B9A62E2B@subhasishg>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Edmund Nadolski reported the same problem Kosaki did against the commit
-[88f5acf8: mm: page allocator: adjust the per-cpu counter threshold when
-memory is low] whereby kswapd was in an inconsistent locking state due
-to calling get_online_cpus(): See https://lkml.org/lkml/2011/3/2/398 for
-details. This is already fixed upstream by commit [b44129b3: mm: vmstat: use
-a single setter function and callback for adjusting percpu thresholds]. Unless
-there is an objection, can this be picked up for 2.6.37-stable please?
-Ideally it would apply against 2.6.36.x as well but that release is no
-longer maintained.
+Hi,
 
-==== CUT HERE ====
+> -----Original Message-----
+> From: Subhasish Ghosh [mailto:subhasish@mistralsolutions.com]
+> Sent: Tuesday, March 01, 2011 12:29 PM
+> Hello,
+> 
+> Can we not have the PRU UIO also as a part of the MFD framework.
+> I know that the UIO is not really a device, but I feel its incorrect to
+> register the same device twice.
+> Instead we can have a single entry as the MFD framework and the UIO, as a
+> child device, based upon the MFD driver APIs.
+> 
+> All that we need to do is add an entry into the da8xx_pruss_devices
+> structure
+> and the MFD driver will do the rest to get the UIO probe called.
+> 
+Well I see the need for MFD for in-kernel PRUSS based drivers like UART/CAN, 
+but UIO use cases are typically mutually exclusive to this. UIO driver 
+exports whole PRUSS I/O region and Interrupts to user space application and 
+all the tasks including PRUSS INTC setup, loading firmware and
+enable/disable PRUs are handled by PRUSS user driver.
+I feel it will be a nightmare to make them co-exist unless say we have
+2 instances of PRUSS in a SOC. Think about kernel driver setting up PRUSS, PINTC and loading firmware and user land overriding and vice versa. Things are much simpler if we make the usage model mutually exclusive.
+Also I don't see any overlap in functionality and reuse UIO can gain from
+MFD driver.  
+Since we can't register device twice - I would prefer KConfig based check
+for the same. 
 
-reduce_pgdat_percpu_threshold() and restore_pgdat_percpu_threshold() exist
-to adjust the per-cpu vmstat thresholds while kswapd is awake to avoid
-errors due to counter drift.  The functions duplicate some code so this
-patch replaces them with a single set_pgdat_percpu_threshold() that takes
-a callback function to calculate the desired threshold as a parameter.
+Also can you point me where you add UART and CAN driver as children to PRUSS
+MFD driver - I can't seem to find this in patches.
 
-[akpm@linux-foundation.org: readability tweak]
-[kosaki.motohiro@jp.fujitsu.com: set_pgdat_percpu_threshold(): don't use for_each_online_cpu]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index e4cc21c..833e676 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -254,8 +254,11 @@ extern void dec_zone_state(struct zone *, enum zone_stat_item);
- extern void __dec_zone_state(struct zone *, enum zone_stat_item);
- 
- void refresh_cpu_vm_stats(int);
--void reduce_pgdat_percpu_threshold(pg_data_t *pgdat);
--void restore_pgdat_percpu_threshold(pg_data_t *pgdat);
-+
-+int calculate_pressure_threshold(struct zone *zone);
-+int calculate_normal_threshold(struct zone *zone);
-+void set_pgdat_percpu_threshold(pg_data_t *pgdat,
-+				int (*calculate_pressure)(struct zone *));
- #else /* CONFIG_SMP */
- 
- /*
-@@ -300,8 +303,7 @@ static inline void __dec_zone_page_state(struct page *page,
- #define dec_zone_page_state __dec_zone_page_state
- #define mod_zone_page_state __mod_zone_page_state
- 
--static inline void reduce_pgdat_percpu_threshold(pg_data_t *pgdat) { }
--static inline void restore_pgdat_percpu_threshold(pg_data_t *pgdat) { }
-+#define set_pgdat_percpu_threshold(pgdat, callback) { }
- 
- static inline void refresh_cpu_vm_stats(int cpu) { }
- #endif
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5da4295..86f8c34 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2448,9 +2448,24 @@ static int kswapd(void *p)
- 				 */
- 				if (!sleeping_prematurely(pgdat, order, remaining)) {
- 					trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
--					restore_pgdat_percpu_threshold(pgdat);
-+
-+					/*
-+					 * vmstat counters are not perfectly
-+					 * accurate and the estimated value
-+					 * for counters such as NR_FREE_PAGES
-+					 * can deviate from the true value by
-+					 * nr_online_cpus * threshold. To
-+					 * avoid the zone watermarks being
-+					 * breached while under pressure, we
-+					 * reduce the per-cpu vmstat threshold
-+					 * while kswapd is awake and restore
-+					 * them before going back to sleep.
-+					 */
-+					set_pgdat_percpu_threshold(pgdat,
-+						calculate_normal_threshold);
- 					schedule();
--					reduce_pgdat_percpu_threshold(pgdat);
-+					set_pgdat_percpu_threshold(pgdat,
-+						calculate_pressure_threshold);
- 				} else {
- 					if (remaining)
- 						count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index bc0f095..751a65e 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -83,7 +83,7 @@ EXPORT_SYMBOL(vm_stat);
- 
- #ifdef CONFIG_SMP
- 
--static int calculate_pressure_threshold(struct zone *zone)
-+int calculate_pressure_threshold(struct zone *zone)
- {
- 	int threshold;
- 	int watermark_distance;
-@@ -107,7 +107,7 @@ static int calculate_pressure_threshold(struct zone *zone)
- 	return threshold;
- }
- 
--static int calculate_threshold(struct zone *zone)
-+int calculate_normal_threshold(struct zone *zone)
- {
- 	int threshold;
- 	int mem;	/* memory in 128 MB units */
-@@ -166,7 +166,7 @@ static void refresh_zone_stat_thresholds(void)
- 	for_each_populated_zone(zone) {
- 		unsigned long max_drift, tolerate_drift;
- 
--		threshold = calculate_threshold(zone);
-+		threshold = calculate_normal_threshold(zone);
- 
- 		for_each_online_cpu(cpu)
- 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-@@ -185,46 +185,24 @@ static void refresh_zone_stat_thresholds(void)
- 	}
- }
- 
--void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
-+void set_pgdat_percpu_threshold(pg_data_t *pgdat,
-+				int (*calculate_pressure)(struct zone *))
- {
- 	struct zone *zone;
- 	int cpu;
- 	int threshold;
- 	int i;
- 
--	get_online_cpus();
--	for (i = 0; i < pgdat->nr_zones; i++) {
--		zone = &pgdat->node_zones[i];
--		if (!zone->percpu_drift_mark)
--			continue;
--
--		threshold = calculate_pressure_threshold(zone);
--		for_each_online_cpu(cpu)
--			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
--							= threshold;
--	}
--	put_online_cpus();
--}
--
--void restore_pgdat_percpu_threshold(pg_data_t *pgdat)
--{
--	struct zone *zone;
--	int cpu;
--	int threshold;
--	int i;
--
--	get_online_cpus();
- 	for (i = 0; i < pgdat->nr_zones; i++) {
- 		zone = &pgdat->node_zones[i];
- 		if (!zone->percpu_drift_mark)
- 			continue;
- 
--		threshold = calculate_threshold(zone);
--		for_each_online_cpu(cpu)
-+		threshold = (*calculate_pressure)(zone);
-+		for_each_possible_cpu(cpu)
- 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
- 							= threshold;
- 	}
--	put_online_cpus();
- }
- 
- /*
+Thanks,
+Pratheesh
