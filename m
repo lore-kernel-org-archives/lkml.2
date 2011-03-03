@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab1CCJqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 04:46:39 -0500
-Received: from nm25.bullet.mail.ne1.yahoo.com ([98.138.90.88]:37196 "HELO
-	nm25.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750931Ab1CCJqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 04:46:38 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 586228.79861.bm@omp1026.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=lcwQ9u7XNvFtYFuHv+t6og2ToRkAycD6G4OzEPy9K6fC0E1RC17F4KsRsapg02jAk8GWtL+oehqs4SHsKGUiB8nZMvfi0OFtamaC4OWmNPtPj+j8N1zKYelkCDk8C6OiFOCC30an/pXqexvWjIR1yn0MACFPrvrb8y4Cg8dQKU4=;
-Message-ID: <414584.43237.qm@web121810.mail.ne1.yahoo.com>
-X-YMail-OSG: ABvL2DwVM1kQ9pn3_PSBhB8m5T.WILtMidVxpkYcGlr1VfN
- k0L7.ddxfKK0W9VmSg_LcNHnksSYzhi2zXrEKyMn_fJwBrgkdr5T8I2AVIdm
- Six5hzKSgJKZEfOO.RMZ.KpfFDga_cx4ujBP6nos6AB1uieNJBARvcLQIXUE
- 6x40Oi8BQ1_DskRiBzKcLce.2I5IeZSS54VN.SW4EIQyslvvkgcmdghYne_u
- TBcKZRcMAY8PUpb_Koy0So__woXRDtxVC3ymwrXrvgOqwrPdvgTeVB3Dx7PW
- bc8.Yi6vXXhK8zuxikzHazKga4SFFfLpiJNLcFBu5Zs8z3A--
-X-Mailer: YahooMailWebService/0.8.109.292656
-Date: Thu, 3 Mar 2011 01:46:37 -0800 (PST)
-From: GAURAV YADAV <gaurav_christmas@yahoo.com>
-To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
-        ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
-        preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757741Ab1CCJsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 04:48:08 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:54972 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab1CCJsG convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Thu, 3 Mar 2011 04:48:06 -0500
+Message-Id: <4D6F6C660200007800034AD2@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 03 Mar 2011 09:24:38 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Shaohua Li" <shaohua.li@intel.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [tip:x86/mm] x86: Work around old gas bug
+References: <201103012352.p21NqRN1006974@imap1.linux-foundation.org>
+ <tip-253d89d3dd6b65595f317e5f1ecef43aa207a3a0@git.kernel.org>
+ <4D6E2B8B02000078000347C0@vpn.id2.novell.com>
+ <20110302104144.GB25608@elte.hu>
+ <20110302082453.934f2033.akpm@linux-foundation.org>
+ <1299130025.19589.89.camel@sli10-conroe>
+ <20110302213553.88ec33cd.akpm@linux-foundation.org>
+In-Reply-To: <20110302213553.88ec33cd.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://wave.senigallia.biz/gift.php?id=6131
+>>> On 03.03.11 at 06:35, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 03 Mar 2011 13:27:05 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
+> 
+>> On Thu, 2011-03-03 at 00:24 +0800, Andrew Morton wrote:
+>> > On Wed, 2 Mar 2011 11:41:44 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+>> > 
+>> > > Meanwhile, what i hate more than ugly code repetition is code that does 
+> not build at 
+>> > > all on akpm's test environment ;-)
+>> > 
+>> > I hadn't got around to testing it.  Bad news :(
+>> > 
+>> Andrew,
+>> can you this on your side? this is what Jan proposed. I can only test a
+>> latest binutils here.
+> 
+> Nope.
+> 
+> arch/x86/kernel/entry_64.S: Assembler messages:
+> arch/x86/kernel/entry_64.S:985: Error: too many positional arguments
 
+Indeed - the problem isn't with the actual assembly construct, but
+rather with the changed definitions of *INVALIDATE_TLB_VECTOR* -
+properly parenthesizing them (as we needed to do in other places)
+and removing unnecessary spaces gets this to build for me, even 
+with the original use of .irp instead of .irpc:
 
-      
+#if NR_CPUS <= 32
+# define NUM_INVALIDATE_TLB_VECTORS (NR_CPUS)
+#else
+# define NUM_INVALIDATE_TLB_VECTORS (32)
+#endif
+
+#define INVALIDATE_TLB_VECTOR_END	(0xee)
+#define INVALIDATE_TLB_VECTOR_START	\
+	(INVALIDATE_TLB_VECTOR_END-NUM_INVALIDATE_TLB_VECTORS+1)
+
+Jan
+
