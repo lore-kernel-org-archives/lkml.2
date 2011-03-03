@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab1CCGvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 01:51:19 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47079 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1CCGvS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 01:51:18 -0500
-Message-ID: <8D0A8E9498DC4424BEA50A1B950A05FE@minx0099669>
-From: "Pavan Savoy" <pavan_savoy@ti.com>
-To: "Greg KH" <greg@kroah.com>
-Cc: <linux-kernel@vger.kernel.org>, <gregkh@suse.de>
-References: <1299059996-21267-1-git-send-email-pavan_savoy@ti.com> <20110303040605.GA26776@kroah.com>
-Subject: Re: [PATCH] drivers:misc: ti-st: fix debugging code
-Date: Thu, 3 Mar 2011 12:34:17 +0530
-Organization: mindtree ltd.
+	id S1754555Ab1CCG5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 01:57:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50705 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753255Ab1CCG5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 01:57:32 -0500
+Message-ID: <4D6F3C5B.8020307@cn.fujitsu.com>
+Date: Thu, 03 Mar 2011 14:59:39 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "Kirill A. Shutsemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, containers@lists.linux-foundation.org,
+        jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
+Subject: Re: [PATCH, v7] cgroups: introduce timer slack controller
+References: <1299084001-3916-1-git-send-email-kirill@shutemov.name> <1299084001-3916-2-git-send-email-kirill@shutemov.name> <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-03 14:56:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-03 14:56:21,
+	Serialize complete at 2011-03-03 14:56:21
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5843
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> +unsigned long get_task_timer_slack(struct task_struct *tsk)
+>> +{
+>> +	struct cgroup_subsys_state *css;
+>> +	struct tslack_cgroup *tslack_cgroup;
+>> +	unsigned long ret;
+>> +
+>> +	rcu_read_lock();
+> 
+> Did you just remove the odd comment or actually figure out why you
+> need rcu_read_lock() here ?
+> 
 
+It's necessary to protect against task exiting or task moving between cgroups.
 
->What tree was this made against?  I can't seem to apply it to my
->staging-next tree.
->confused,
-
-Made against linux-next as usual.
-However I see that your staging-next has these for drivers/misc/ti-st/
-
-73f12e8d3d94828b9efe2b8b8a34b4ad6d14ee47 drivers: misc: ti-st: fix review comments
-2bb32e84a17fab547c7a746c7888e846c9cd88cc misc: ti-st: Kconfig & Makefile for TI_ST
-a0cc2f3b51a8649da5262aba7501dc21738e1b8d staging: ti-st: move TI_ST from staging to misc/
-
-and the linux-next has these for drivers/misc/ti-st/
-
-bb6a7d53d52ec5b574467c48159677904d34a56a drivers:misc: ti-st: fix debugging code
-781a7395d239dbdb59738ca7fe08e71641bf583c drivers:misc: ti-st: remove multiple gpio handling
-6d71ba2105a1d8c1712cdfcf46fc6040e4707cb9 drivers:misc: ti-st: fix hci-ll on wake_ind collision
-ef04d121f030329aae0c2d3ec22beea0c5cbcfd3 drivers:misc: ti-st: firmware download optimization
-6710fcff66ef0330cdc458557271ee86026745d0 drivers:misc: ti-st: set right debug levels for logs
-704426649dd4324b34cefea322f4333e5280f852 drivers:misc: ti-st: fix error codes
-ec60d0ad20ff8796dc41b30a9dce485478ccd263 drivers:misc: ti-st: move from rfkill to sysfs
-5c88b02196a99332dacf305c8757674dd7a303ff drivers:misc: ti-st: register with channel IDs
-73f12e8d3d94828b9efe2b8b8a34b4ad6d14ee47 drivers: misc: ti-st: fix review comments
-2bb32e84a17fab547c7a746c7888e846c9cd88cc misc: ti-st: Kconfig & Makefile for TI_ST
-a0cc2f3b51a8649da5262aba7501dc21738e1b8d staging: ti-st: move TI_ST from staging to misc/
-
-So, I am not sure how the 8 patches on top of "drivers: misc: ti-st: fix review comments" made it to linux-next without making to 
-staging-next ....
-when I received the automated mail of these 8 patches I got the tree link as
-"git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git" unlike the usual staging-next !!
-
-So make be you should apply them on driver-core-2.6 ?
-Can you help me understand the flow ?
-
->greg k-h
-
+>> +	css = task_subsys_state(tsk, timer_slack_subsys.subsys_id);
+>> +	tslack_cgroup = container_of(css, struct tslack_cgroup, css);
+>> +	ret = max(tsk->timer_slack_ns, tslack_cgroup->min_slack_ns);
+>> +	rcu_read_unlock();
+>> +
+>> +	return ret;
+>> +}
+> 
+> Otherwise, it's way more palatable than the last one.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
