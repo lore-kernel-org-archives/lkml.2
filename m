@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab1CCLwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 06:52:40 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45177 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753150Ab1CCLwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 06:52:38 -0500
-Date: Thu, 3 Mar 2011 11:52:04 GMT
-From: tip-bot for Jan Beulich <JBeulich@novell.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        shaohua.li@intel.com, akpm@linux-foundation.org, jbeulich@novell.com,
-        JBeulich@novell.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        shaohua.li@intel.com, akpm@linux-foundation.org, jbeulich@novell.com,
-        JBeulich@novell.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4D6F81B10200007800034B0B@vpn.id2.novell.com>
-References: <4D6F81B10200007800034B0B@vpn.id2.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86: Work around old gas bug
-Message-ID: <tip-d04c579f971bf7d995db1ef7a7161c0143068859@git.kernel.org>
-Git-Commit-ID: d04c579f971bf7d995db1ef7a7161c0143068859
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1758104Ab1CCLwy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 06:52:54 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36809 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab1CCLww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 06:52:52 -0500
+Date: Thu, 3 Mar 2011 11:52:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
+        s.hauer@pengutronix.de, xiao-lizhang@freescale.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv1] ARM: imx: Add support for low power suspend on MX51.
+Message-ID: <20110303115242.GA25891@n2100.arm.linux.org.uk>
+References: <1299086278-12131-1-git-send-email-Dinh.Nguyen@freescale.com> <20110302215238.GK22310@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 03 Mar 2011 11:52:06 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110302215238.GK22310@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d04c579f971bf7d995db1ef7a7161c0143068859
-Gitweb:     http://git.kernel.org/tip/d04c579f971bf7d995db1ef7a7161c0143068859
-Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Thu, 3 Mar 2011 10:55:29 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 3 Mar 2011 12:47:08 +0100
+On Wed, Mar 02, 2011 at 10:52:38PM +0100, Uwe Kleine-König wrote:
+> > +static int __init mx5_pm_init(void)
+> > +{
+> > +	if (cpu_is_mx51())
+> > +		suspend_set_ops(&mx5_suspend_ops);
+> I'd prefer to have that called by imx51_init_early.
 
-x86: Work around old gas bug
+This function name looks fine.  As we now have an init_early in the
+arch hooks, let's keep things called foo_init_early() to that use
+and not start using 'early' for stuff used from initcalls.
 
-Add extra parentheses around a couple of definitions introduced
-by "x86: Cleanup vector usage" and used in assembly macro
-arguments, and remove spaces. Without that old (2.16.1) gas
-would see more macro arguments than were actually specified.
-
-Reported-and-tested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Shaohua Li <shaohua.li@intel.com>
-LKML-Reference: <4D6F81B10200007800034B0B@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/irq_vectors.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 4980f48..6e976ee 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -126,14 +126,14 @@
- 
- /* up to 32 vectors used for spreading out TLB flushes: */
- #if NR_CPUS <= 32
--# define NUM_INVALIDATE_TLB_VECTORS NR_CPUS
-+# define NUM_INVALIDATE_TLB_VECTORS	(NR_CPUS)
- #else
--# define NUM_INVALIDATE_TLB_VECTORS 32
-+# define NUM_INVALIDATE_TLB_VECTORS	(32)
- #endif
- 
--#define INVALIDATE_TLB_VECTOR_END	0xee
-+#define INVALIDATE_TLB_VECTOR_END	(0xee)
- #define INVALIDATE_TLB_VECTOR_START	\
--	(INVALIDATE_TLB_VECTOR_END - NUM_INVALIDATE_TLB_VECTORS + 1)
-+	(INVALIDATE_TLB_VECTOR_END-NUM_INVALIDATE_TLB_VECTORS+1)
- 
- #define NR_VECTORS			 256
- 
+Renaming this is a recipe for causing confusion and having grep hit
+false positives.  Please leave it as is.
