@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab1CCPC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 10:02:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2518 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886Ab1CCPC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 10:02:57 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH] blktrace: Remove blk_fill_rwbs_rq.
-References: <1299137380-4119-1-git-send-email-tm@tao.ma>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 03 Mar 2011 10:02:49 -0500
-In-Reply-To: <1299137380-4119-1-git-send-email-tm@tao.ma> (Tao Ma's message of
-	"Thu, 3 Mar 2011 15:29:40 +0800")
-Message-ID: <x49k4ggs0va.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1758009Ab1CCPFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 10:05:17 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:51384 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab1CCPFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 10:05:15 -0500
+X-IronPort-AV: E=Sophos;i="4.62,258,1297036800"; 
+   d="scan'208";a="4603044"
+Date: Thu, 3 Mar 2011 15:05:09 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: topperxin <topperxin@126.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re:[Xen-devel] [PATCH v2 0/6] Xen PV on HVM fixes and improvements
+In-Reply-To: <50e6b629.254d.12e798c9072.Coremail.topperxin@126.com>
+Message-ID: <alpine.DEB.2.00.1103031502090.2968@kaball-desktop>
+References: <alpine.DEB.2.00.1102251651570.19277@kaball-desktop> <50e6b629.254d.12e798c9072.Coremail.topperxin@126.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed;
+	boundary="8323329-1248268431-1299164709=:2968"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tao Ma <tm@tao.ma> writes:
+--8323329-1248268431-1299164709=:2968
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 
-> From: Tao Ma <boyu.mt@taobao.com>
->
-> If we enable trace events to trace block actions, We use
-> blk_fill_rwbs_rq to analyze the corresponding actions
-> in request's cmd_flags, but we only choose the minor 2 bits
-> from it, so most of other flags(e.g, REQ_SYNC) are missing.
-> For example, with a sync write we get:
-> write_test-2409  [001]   160.013869: block_rq_insert: 3,64 W 0 () 258135 + 8 [write_test]
->
-> Since now we have integrated the flags of both bio and request,
-> it is safe to pass rq->cmd_flags directly to blk_fill_rwbs and
-> blk_fill_rwbs_rq isn't needed any more.
->
-> With this patch, after a sync write we get:
-> write_test-2417  [000]   226.603878: block_rq_insert: 3,64 WS 0 () 258135 + 8 [write_test]
+On Thu, 3 Mar 2011, topperxin wrote:
+> Hi stefano,
+> 
+>    It's very great of your work.I think it't useful 
+> to me, I have checked it out, and I will study it.
+>   What I care mostly is the pv-on-hvm drivers, now 
+> my main work is port pvonhvm drivers to various guest
+> OS, no matter what OS version, such as ubuntu 10.10, 
+> debian 505 etc. But I found this work is difficult & 
+> boring to me, I can't find a general method which can 
+> easily port the pvonhvm drivers to all kinds guest os.
+> Do you have any good ideas?
 
-Looks good to me.  It looks like the limited number of flags passed
-through was simply an oversight (going back even to when the bio and
-request flags were not merged, there was still special casing for
-discard, at least).
+PV on HVM is upstream now, so it is just a matter of time before all the
+distros will have a kernel that supports PV on HVM out of the box.
 
-Anywho...
 
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+>    I found there are not platform-pci source in your 
+> project, as we know, in the old pvonhvm drivers version,
+> platform-pci module is important, it was used to establish
+> the communication mechanism, such as xenbus, evtchn,etc, 
+> could you please tell me how can you get rid of it? and how 
+> can you substitute platform-pci, with which?
+
+Yes there is:
+drivers/xen/platform-pci.c
+
+--8323329-1248268431-1299164709=:2968--
