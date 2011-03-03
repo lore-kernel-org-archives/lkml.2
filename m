@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab1CCHmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 02:42:20 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:22227 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab1CCHmT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 02:42:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TOTd9d4VrvFdk++U39QFDDGSkFy1ylGT2wEAtaVMcyzQzUzNJfcHOx6KM2Le7PPjEU
-         /NrIWNNp6QBSjznZQXmQ==
+	id S1756997Ab1CCHqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 02:46:18 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:41469 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707Ab1CCHqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 02:46:17 -0500
+Date: Wed, 2 Mar 2011 23:46:09 -0800
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Kirill A. Shutsemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
+Subject: Re: [PATCH, v7] cgroups: introduce timer slack controller
+Message-ID: <20110303074609.GL14893@count0.beaverton.ibm.com>
+References: <1299084001-3916-1-git-send-email-kirill@shutemov.name>
+ <1299084001-3916-2-git-send-email-kirill@shutemov.name>
+ <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <4D6F347E.2010806@cn.fujitsu.com>
-References: <4D6F3461.6060406@cn.fujitsu.com>
-	<4D6F347E.2010806@cn.fujitsu.com>
-Date: Thu, 3 Mar 2011 08:42:15 +0100
-Message-ID: <AANLkTiktGeR0LaNGAhXn7G5CJ3q3T=copn88Y-OgGBDb@mail.gmail.com>
-Subject: Re: [PATCH 3/4] perf cgroup: Clean up perf_cgroup_create()
-From: Stephane Eranian <eranian@google.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 7:26 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
-> - Use kzalloc() to replace kmalloc() + memset().
-> - Remove redundant initialization, since alloc_percpu() returns
->  zero-filled percpu memory.
->
-Acked-by: Stephane Eranian <eranian@google.com>
+On Wed, Mar 02, 2011 at 07:40:01PM +0100, Thomas Gleixner wrote:
+> On Wed, 2 Mar 2011, Kirill A. Shutsemov wrote:
 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  kernel/perf_event.c |   11 +----------
->  1 files changed, 1 insertions(+), 10 deletions(-)
->
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index dca92b2..d6b3d16 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -7341,26 +7341,17 @@ static struct cgroup_subsys_state *perf_cgroup_create(
->        struct cgroup_subsys *ss, struct cgroup *cont)
->  {
->        struct perf_cgroup *jc;
-> -       struct perf_cgroup_info *t;
-> -       int c;
->
-> -       jc = kmalloc(sizeof(*jc), GFP_KERNEL);
-> +       jc = kzalloc(sizeof(*jc), GFP_KERNEL);
->        if (!jc)
->                return ERR_PTR(-ENOMEM);
->
-> -       memset(jc, 0, sizeof(*jc));
-> -
->        jc->info = alloc_percpu(struct perf_cgroup_info);
->        if (!jc->info) {
->                kfree(jc);
->                return ERR_PTR(-ENOMEM);
->        }
->
-> -       for_each_possible_cpu(c) {
-> -               t = per_cpu_ptr(jc->info, c);
-> -               t->time = 0;
-> -               t->timestamp = 0;
-> -       }
->        return &jc->css;
->  }
->
-> --
-> 1.6.3
->
+<snip>
+
+> > +		if (val > child->min_slack_ns)
+> > +			tslack_write_min(cur, cft, val);
+> > +	}
+> 
+> So, we can increase the value and propagate it through the groups
+> children, but decreasing it requires to go through all child groups
+> seperately. 
+
+One goal is to restrict shrinking timer slacks so that they
+cannot be less than the parent cgroup's.
+
+> 
+> When I'm trying to optimize something during runtime and chose a too
+> high value I need to go through hoops and loops to make it smaller
+> again.
+> 
+> Asymetric behaviour sucks always.
+
+Well, in this case I think the asymmetry is less sucky because I don't
+see any point in imposing the same restrictions on raising the timer
+slack *except* this symmetry argument. But I haven't played much with
+timer slacks so I don't know: Is there any case where raising the timer
+slack would be harmful?
+
+Would making the values additive solve the symmetry problem? In other words,
+the "minimum" you see in a cgroups min_slack_ns file is the minimum in
+addition to the minimum timer slack of its parent. Then, so long as negative
+values are disallowed, you can't possibly write values that violate this
+restriction. We could re-evaluate the resulting minimum timer slack internally
+during writes to the file so functions using timer slack won't have to walk
+the cgroup parents to calculate it but it couldn't result in EPERM...
+
+Cheers,
+	-Matt Helsley
