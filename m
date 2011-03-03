@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1CCHDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 02:03:25 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57528 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab1CCHDX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 02:03:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cF+wd+i9zn7UZLHTuTPP1MSKWqN6AOSuHCl74NrdeXQKc/qSnljafIDUTK7Ro5DbtT
-         pqia64U7cxyLDAiAvhEVB4JwCd6kJdn+K6YKefc+5YHy/RVHE4opNlRh0NFLrdUxYXZJ
-         ar5OMPZpuRIOYWPUJhbGBp+/0W3D/dcXoF6zw=
-Date: Thu, 3 Mar 2011 08:03:17 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org,
-        Michael Kerrisk <mtk.manpages@googlemail.com>
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110303070317.GM28266@mtj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <20110302133206.GA9838@redhat.com>
- <0a2c2dfb67198c5bd2cfc6e6c1896f23.squirrel@webmail.greenhost.nl>
- <201103030230.27363.vda.linux@googlemail.com>
- <019ad511a576046f79364a846041a64c.squirrel@webmail.greenhost.nl>
+	id S1754570Ab1CCHI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 02:08:57 -0500
+Received: from gwu.lbox.cz ([62.245.111.132]:53842 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910Ab1CCHI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 02:08:56 -0500
+Date: Thu, 3 Mar 2011 08:06:52 +0100
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+	boot
+Message-ID: <20110303070652.GG29840@pcnci.linuxbox.cz>
+References: <20110225104823.GD29840@pcnci.linuxbox.cz> <4D67C077.6060108@redhat.com> <20110227172052.GB2474@nik-comp.lan> <4D6BA85B.7080908@redhat.com> <20110228143247.GE29840@pcnci.linuxbox.cz> <4D6BBC84.6020408@redhat.com> <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <019ad511a576046f79364a846041a64c.squirrel@webmail.greenhost.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D6EF536.305@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 4703390 records (last update: 20110302)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Indan.
+> No worries.  What mess?
+twice sending the same mail, nevermind :)
 
-On Thu, Mar 03, 2011 at 02:55:32AM +0100, Indan Zupancic wrote:
-> > It can be argued that after this the task is running _precisely_
-> > because it was continued by the debugger.
-> 
-> That would be an incorrect argument. PTRACE_CONT is supposed to let the
-> task continue doing whatever it was doing, and in the case of receiving
-> SIGSTOP that was going into a stopped state.
+>
+> I have two things you can try:
+>
+> first is running a single VCPU guest, if you have not done so already.
+yup, UP guest is fine, just SMP doesn't work.
 
-Again, that's your "supposed" which apparently is widely different
-depending on who you ask and irrelevant because the currently
-implemented visible behavior is completely different.
+> Second is adding the bootparameter "clocksource=acpi_pm" to your guest  
+> kernel.
+yes, this makes SMP work too! I just realized when You were asking about current
+clocksource, I told You only host source, not the guest. So I checked now,
+and (at least for UP, I guess for SMP it's the same), the clocksource is
+kvm-clock! So seems like it got broken with the TSC changes?
 
-> Stopped for tracing is not the same as stopped by SIGSTOP! So saying
-> to just hang in the traced state is not a good solution. This would
-> mean that there are special rules for SIGSTOP handling compared to
-> other signals, that's stupid.
-> 
-> - The tracer shouldn't get that second notification at all if it didn't
->   ask for it.
 
-You're confused about the two notifications.  The first one is signal
-delivery notification.  The second one is job control stop
-notification.  They are completely separate.
+>
+> If either of those fixes the problem, it very well have to do with this  
+> change and not that you may be missing later dependent patches.  This  
+> change should be nearly a 1-1 transformation, and if it is not,  
+> something is wrong.
+>
+> What branch are you bisecting on, the kvm branch or the kernel tree  
+> itself?  It would be helpful to see the exact code in case any  
+> surrouding logic changed.
+I was bisecting linus' linux-2.6.git main branch, between 2.6.36..2.6.37
 
-> - It's hard to distinguish a SIGSTOP from an undocumented "task stopping"
->   notification which is lying because the task didn't stop after that
->   event was handled.
-
-It is not difficult to distinguish.  Use GET_SIGINFO.  It has been
-like that from the beginning.
-
-> - There is no need or use for this complexity, just pass along SIGSTOP!
-
-No, SIGSTOP delivery and job control stop are two separate steps.
-
-> > The bug is that it can't be continued with SIGCONT after that.
-> 
-> No, that is a side effect of your buggy work around which proves that
-> SIGSTOP doesn't currently work.
-
-You're basically trying to restart the previous discussion from the
-beginning.  Go back and read the thread and read the RFC again.
-
-> For a debugger it doesn't matter much, but for anything that tries to be
-> unobtrusive like strace this is just madness.
-
-It actually seems pretty sane to me, but if you think it's a madness,
-think of it as wiring in front of sensors.  It will help you to accept
-it.  Why do you think I spent time writing the RFC?
-
-> > Oleg's proposal is a bit different. It proposes that we do need
-> > to do PTRACE_CONT after second SIGSTOP notification too,
-> > but task will be indeed stopped after this, and resumed
-> > when SIGCONT arrives.
-> 
-> Please implement Oleg's proposal, anything else is madness.
-> 
-> Ptrace and task stopping because of SIGSTOP are two independent things
-> and should be treated like that, if you want to improve ptrace.
-
-Again, go back, read the thread.  Understand it.  Read the RFC.
-Understand it and come back if you still have something to contribute.
-You're pretty short on details but long on claims.
-
-Thanks.
+>
+> Thanks,
+>
+> Zach
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
 -- 
-tejun
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
