@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab1CCNzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 08:55:37 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61943 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757974Ab1CCNzg (ORCPT
+	id S1758303Ab1CCN6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 08:58:33 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54687 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab1CCN6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 08:55:36 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peppe CAVALLARO <peppe.cavallaro@st.com>
-Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Date: Thu, 3 Mar 2011 14:55:24 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Stuart MENEFY <stuart.menefy@st.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com> <201103030945.07486.arnd@arndb.de> <4D6F6C96.1010303@st.com>
-In-Reply-To: <4D6F6C96.1010303@st.com>
+	Thu, 3 Mar 2011 08:58:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=qrvTSLHzkbjaYq9rlns0Z4vC0h0g9v7atJLQKBOBUtFtkbGQRJLbl48n9dflSuSsWx
+         6met8HKIkBhr/BqlaJ0wHUmeZT56a1NSepK02YGy7xygtAAE7aDuXi78AsAj7gQHDP8q
+         p+gbZ4lWdJE5YG51gQ0fEEagOYyRq90w94r1c=
+Date: Thu, 3 Mar 2011 21:58:20 +0800
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>, Don Zickus <dzickus@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 01/05] use proc_dointvec_minmax to check boundaries while
+ needed
+Message-ID: <20110303135819.GA2620@darkstar>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103031455.25089.arnd@arndb.de>
-X-Provags-ID: V02:K0:zC+QW3tUu2sHiO/DE3RDj0UF+3H2XZDJnrrYLNE27gL
- Xdkj3FH4Sgavx9e8GKhLxBhrCUDT2cFKB9wGl0N3NGw5QMc+vn
- pGLLioE3Tmo7ZXjE+aBgnwbrpJ9iwL7yrFFopi5tbg8WeqNUFd
- 7RzSXNeKPxRqWiRG7ShmxW9C488PKIpc7hz9FHo158+81YlPms
- cYi6HV7Kt5hVMBLwex9Dw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 March 2011, Peppe CAVALLARO wrote:
-> This logic is already in the driver, indeed.
-> What I've seen on our embedded systems is that the
-> cost of RX interrupts is very hight and NAPI partially helps.
-> Typically, in an IP-STB, I receive a burst of UDP pkt
-> and this  means that many interrupts occur (~99% of CPU
-> usage on slow platforms).
-> With the ext timer I was able to reduce the CPU usage in
-> these kind of scenarios to ~50%.
+proc_dointvec doesn't check extra minmax params, use proc_dointvec_minmax
+instead of proc_dointvec for cases need boundaries check.
 
-I don't understand. Shouldn't the interrupts be stopped as long
-as the system is busy? This sounds like a bug in your NAPI
-handling, or maybe you just need to use a lower NAPI_WEIGHT
-so you stay in polling mode longer.
+Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+---
+ kernel/sysctl.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-	Arnd
+--- linux-2.6.orig/kernel/sysctl.c	2011-03-03 10:44:53.000000000 +0800
++++ linux-2.6/kernel/sysctl.c	2011-03-03 11:02:43.736663258 +0800
+@@ -374,7 +374,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &sysctl_sched_autogroup_enabled,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
+@@ -1204,7 +1204,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &block_dump,
+ 		.maxlen		= sizeof(block_dump),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &zero,
+ 	},
+ 	{
+@@ -1212,7 +1212,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &sysctl_vfs_cache_pressure,
+ 		.maxlen		= sizeof(sysctl_vfs_cache_pressure),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &zero,
+ 	},
+ #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
+@@ -1221,7 +1221,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &sysctl_legacy_va_layout,
+ 		.maxlen		= sizeof(sysctl_legacy_va_layout),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &zero,
+ 	},
+ #endif
+@@ -1231,7 +1231,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &zone_reclaim_mode,
+ 		.maxlen		= sizeof(zone_reclaim_mode),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &zero,
+ 	},
+ 	{
+@@ -1287,7 +1287,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &vdso_enabled,
+ 		.maxlen		= sizeof(vdso_enabled),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &zero,
+ 	},
+ #endif
