@@ -1,152 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1CCIds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 03:33:48 -0500
-Received: from shutemov.name ([188.40.19.243]:40383 "EHLO shutemov.name"
+	id S1757586Ab1CCIep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 03:34:45 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:50833 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350Ab1CCIdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 03:33:47 -0500
-Date: Thu, 3 Mar 2011 10:33:46 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v7] cgroups: introduce timer slack controller
-Message-ID: <20110303083346.GA8145@shutemov.name>
-References: <1299084001-3916-1-git-send-email-kirill@shutemov.name>
- <1299084001-3916-2-git-send-email-kirill@shutemov.name>
- <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
+	id S1755376Ab1CCIeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 03:34:44 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        "'Xuetao Guan'" <epip.guan@gmail.com>
+Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "'Sascha Hauer'" <s.hauer@pengutronix.de>
+References: <20110303115210.b0e8786b.sfr@canb.auug.org.au>
+In-Reply-To: <20110303115210.b0e8786b.sfr@canb.auug.org.au>
+Subject: RE: linux-next: manual merge of the unicore32 tree with the i.MX tree
+Date: Thu, 3 Mar 2011 16:33:08 +0800
+Message-ID: <021601cbd97d$a0cefc10$e26cf430$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIejF6O3PRpazwgZqc2b94OzUkSzJN14jXQ
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 07:40:01PM +0100, Thomas Gleixner wrote:
-> On Wed, 2 Mar 2011, Kirill A. Shutsemov wrote:
-> 
-> Not CC'ing me does not avoid another review :)
 
-Sorry for that. It's by mistake.
 
-> > diff --git a/fs/select.c b/fs/select.c
-> > index e56560d..a189e4d 100644
-> > --- a/fs/select.c
-> > +++ b/fs/select.c
-> > @@ -69,7 +69,6 @@ static long __estimate_accuracy(struct timespec *tv)
-> >  
-> >  long select_estimate_accuracy(struct timespec *tv)
-> >  {
-> > -	unsigned long ret;
-> >  	struct timespec now;
-> >  
-> >  	/*
-> > @@ -81,10 +80,8 @@ long select_estimate_accuracy(struct timespec *tv)
-> >  
-> >  	ktime_get_ts(&now);
-> >  	now = timespec_sub(*tv, now);
-> > -	ret = __estimate_accuracy(&now);
-> > -	if (ret < current->timer_slack_ns)
-> > -		return current->timer_slack_ns;
-> > -	return ret;
-> > +	return clamp(__estimate_accuracy(&now),
-> > +			get_task_timer_slack(current), LONG_MAX);
-> >  }
+> -----Original Message-----
+> From: linux-next-owner@vger.kernel.org [mailto:linux-next-owner@vger.kernel.org] On Behalf Of Stephen Rothwell
+> Sent: Thursday, March 03, 2011 8:52 AM
+> To: Xuetao Guan
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; GuanXuetao; Sascha Hauer
+> Subject: linux-next: manual merge of the unicore32 tree with the i.MX tree
 > 
-> Can you please split out the get_task_timer_slack() change into a
-> separate patch?
+> Hi Xuetao,
 > 
-> Also the function wants to be named different.
+> Today's linux-next merge of the unicore32 tree got a conflict in
+> drivers/video/Kconfig between commit
+> 657df5cdfd525648a04b3db69eaa1ba8eb1baf87 ("video: Add i.MX23/28
+> framebuffer driver") from the i.MX tree and commit
+> a336d8ba89b5afe129cb9178f26216b22d6beb63 ("unicore32 machine related: add
+> frame buffer driver for pkunity-v3 soc") from the unicore32 tree.
 > 
-> task_get_effective_timer_slack() or such, so it becomes clear, that
-> it's not just a wrapper around tsk->timer_slack_ns
-> 
-> And the places which access tsk->timer_slack_ns directly should be
-> updated with comments, why they are not using the wrapper.
+> Just overlapping additions.  I fixed it up (see below) and can carry the
+> fix as necessary.
+Thanks.
+It looks good to me.
 
-Ok, I'll fix it.
-
-> > +static int tslack_write_min(struct cgroup *cgroup, struct cftype *cft, u64 val)
-> > +{
-> > +	struct cgroup *cur;
-> > +
-> > +	if (val > ULONG_MAX)
-> > +		return -EINVAL;
-> > +
-> > +	/* the min timer slack value should be more or equal than parent's */
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> s/should/must/
-
-Ok.
-
-> > +	if (cgroup->parent) {
-> > +		struct tslack_cgroup *parent = cgroup_to_tslack(cgroup->parent);
+> diff --cc drivers/video/Kconfig
+> index 8a2f8cf,ec55a87..0000000
+> --- a/drivers/video/Kconfig
+> +++ b/drivers/video/Kconfig
+> @@@ -2320,15 -2365,17 +2320,26 @@@ config FB_JZ474
+>   	help
+>   	  Framebuffer support for the JZ4740 SoC.
 > 
-> New line between variables and code please
-
-Ok.
-
-> > +		if (parent->min_slack_ns > val)
-> > +			return -EPERM;
-> > +	}
-> > +
-> > +	cgroup_to_tslack(cgroup)->min_slack_ns = val;
-> > +
-> > +	/* update children's min slack value if needed */
-> > +	list_for_each_entry(cur, &cgroup->children, sibling) {
-> > +		struct tslack_cgroup *child = cgroup_to_tslack(cur);
+>  +config FB_MXS
+>  +	tristate "MXS LCD framebuffer support"
+>  +	depends on FB && ARCH_MXS
+>  +	select FB_CFB_FILLRECT
+>  +	select FB_CFB_COPYAREA
+>  +	select FB_CFB_IMAGEBLIT
+>  +	help
+>  +	  Framebuffer support for the MXS SoC.
+>  +
+> + config FB_PUV3_UNIGFX
+> + 	tristate "PKUnity v3 Unigfx framebuffer support"
+> + 	depends on FB && UNICORE32 && ARCH_PUV3
+> + 	select FB_SYS_FILLRECT
+> + 	select FB_SYS_COPYAREA
+> + 	select FB_SYS_IMAGEBLIT
+> + 	select FB_SYS_FOPS
+> + 	help
+> + 	  Choose this option if you want to use the Unigfx device as a
+> + 	  framebuffer device. Without the support of PCI & AGP.
+> +
+>   source "drivers/video/omap/Kconfig"
+>   source "drivers/video/omap2/Kconfig"
 > 
-> Ditto
-> 
-> > +		if (val > child->min_slack_ns)
-> > +			tslack_write_min(cur, cft, val);
-> > +	}
-> 
-> So, we can increase the value and propagate it through the groups
-> children, but decreasing it requires to go through all child groups
-> seperately. 
-> 
-> When I'm trying to optimize something during runtime and chose a too
-> high value I need to go through hoops and loops to make it smaller
-> again.
-> 
-> Asymetric behaviour sucks always.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Other option is to remove restriction on the min_slack_ns value and
-modify get_task_timer_slack() to use the most strict value up by
-hierarchy.
-Do you prefer this approach?
-
-> > +unsigned long get_task_timer_slack(struct task_struct *tsk)
-> > +{
-> > +	struct cgroup_subsys_state *css;
-> > +	struct tslack_cgroup *tslack_cgroup;
-> > +	unsigned long ret;
-> > +
-> > +	rcu_read_lock();
-> 
-> Did you just remove the odd comment or actually figure out why you
-> need rcu_read_lock() here ?
-
-The second ;)
-
-> > +	css = task_subsys_state(tsk, timer_slack_subsys.subsys_id);
-> > +	tslack_cgroup = container_of(css, struct tslack_cgroup, css);
-> > +	ret = max(tsk->timer_slack_ns, tslack_cgroup->min_slack_ns);
-> > +	rcu_read_unlock();
-> > +
-> > +	return ret;
-> > +}
-> 
-> Otherwise, it's way more palatable than the last one.
-
-Thanks for reviewing.
-
--- 
- Kirill A. Shutemov
