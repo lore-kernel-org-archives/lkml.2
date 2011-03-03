@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758903Ab1CCWCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 17:02:12 -0500
-Received: from gwu.lbox.cz ([62.245.111.132]:45787 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758251Ab1CCWCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 17:02:11 -0500
-Date: Thu, 3 Mar 2011 23:01:55 +0100
-From: Nikola Ciprich <extmaillist@linuxbox.cz>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@redhat.com>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
-	boot
-Message-ID: <20110303220155.GB27691@nik-comp.lan>
-References: <20110228143247.GE29840@pcnci.linuxbox.cz> <4D6BBC84.6020408@redhat.com> <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com> <20110303070652.GG29840@pcnci.linuxbox.cz> <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan> <4D700F09.9000002@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D700F09.9000002@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 4711626 records (last update: 20110303)
-X-Spam-Score: N/A (trusted relay)
+	id S1758934Ab1CCWDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 17:03:20 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:9711 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793Ab1CCWDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 17:03:19 -0500
+Date: Thu, 3 Mar 2011 23:02:53 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Dirk Eibach <eibach@gdsys.de>,
+        devicetree-discuss@lists.ozlabs.org, rdunlap@xenotime.net,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] hwmon: (ads1015) Add devicetree documentation
+Message-ID: <20110303230253.0e8455c2@endymion.delvare>
+In-Reply-To: <20110303172653.GB22940@angua.secretlab.ca>
+References: <1299143805-13133-1-git-send-email-eibach@gdsys.de>
+	<20110303115151.GF3649@pengutronix.de>
+	<20110303132025.51e0d92e@endymion.delvare>
+	<20110303132549.GG3649@pengutronix.de>
+	<20110303172653.GB22940@angua.secretlab.ca>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That sounds like a kernel which will be vulnerable to broken KVM clock  
-> on 32-bit.  There's a kernel side fix that is needed, but why the server  
-> side change triggers the problem needs more investigation.
-OK, it's important for me that I can fix this by kernel parameter,
-but if I can help somehow with debugging, please let me know.
-thanks for Your time!
-nik
+On Thu, 3 Mar 2011 10:26:53 -0700, Grant Likely wrote:
+> On Thu, Mar 03, 2011 at 02:25:49PM +0100, Wolfram Sang wrote:
+> > OK. The thing is you can't map platform_data 1:1 to bindings, because
+> > most are very specific to the Linux-driver. Do you think something like
+> > "active-channels" would be sufficent for those other hwmon devices, too?
+> > (I still do not like "exported-channels", because there is no need to
+> > export the channels for the OS. The devicetree is primarily a hardware
+> > description language) Or maybe we go specific and say "ads1015,channel1
+> > = 1"? Maybe somebody knows of a similar chips as a reference?
+> 
+> Yes, Wolfram's correct.  The focus should be on what the connections
+> actually are instead of what the OS should attempt to do with them.
+> ie. give the active channels actual names for what they do, or use a
+> phandle to reference them from another node.  The driver can then make
+> a decision based on whether or not a channel has a configuration
+> provided.
+> 
+> From the little information I have, I'd recommend something like:
+> 
+> sensor@49 {
+> 	compatible = "ti,ads1015"
+> 	reg = <0x49>;
+> 
+> 	// Each child node (one node per channel) has an address with
+> 	// no range
+> 	#address-cells = <1>;
+> 	#size-cells = <0>;
+> 
+> 	adc@2 {
+> 		ti,measurement = "cpu voltage";
+> 		reg = <2>;
+> 	};
+> 
+> 	adc@4 {
+> 		ti,measurement = "base voltage";
+> 		reg = <4>;
+> 	};
+> };
+> 
+> However, after taking a little look at the data sheet, this binding
+> might end up being a little naive for what the part can do.  It might
+> make more sense to do something like:
+> 
+> sensor@49 {
+> 	compatible = "ti,ads1015"
+> 	reg = <0x49>;
+> 
+> 	// Each child node (one node per channel) has an address with
+> 	// no range
+> 	#address-cells = <1>;
+> 	#size-cells = <0>;
+> 
+> 	measurement@0 {
+> 		reg = <0>;	// This reg value no longer reflects
+> 				// the chip, it's just a handle for
+> 				// logical measurement channels
 
->
-> Zach
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+If there any hard requirement for this? From the driver's perspective,
+the multiplexer setting can be used as the channel ID, and it's easier
+this way than using arbitrary identifiers.
+
+> 		ti,measurement = "cpu voltage";
+> 		ti,multiplexer = <2>; // AIN0 vs. AIN3
+> 		ti,gain = <5>; // +/-0.256V
+> 		ti,inverse-polarity;
+> 	};
+> 
+> 	measurement@1 {
+> 		reg = <1>;
+> 		ti,measurement = "base voltage";
+> 		ti,multiplexer = <4>; // AIN0 vs. GND
+> 		ti,gain = <2>; // +/-2.048V
+> 	};
+> };
+> 
+> ...which splits it up by logical measurement configurations instead of
+> only the multiplexer setting.
+
+I wouldn't disagree, as I did suggest making the gain a per-channel
+setting while reviewing Dirk's driver. I had not thought of labelling,
+but the hwmon sysfs API supports this too, so it would fit nicely
+(although it can also be handled in user-space if needed.)
+
+> It's more verbose than a single exported-channels property, but it is
+> flexible enough that it can be easily extended with extra
+> configuration data per channel.
+
+I will leave it up to Dirk to decide how much time he wants to spend on
+this. He has already been very patient with the driver review process
+and I do not want to abuse his patience.
 
 -- 
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
-
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+Jean Delvare
