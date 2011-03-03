@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab1CCKE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 05:04:58 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40453 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab1CCKE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 05:04:57 -0500
-Subject: Re: [BUG] lock issue in perf cgroup with jump label enabled
-From: Peter Zijlstra <peterz@infradead.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D6F51C9.3020800@cn.fujitsu.com>
-References: <4D6F51C9.3020800@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Mar 2011 11:06:27 +0100
-Message-ID: <1299146787.1310.41.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756176Ab1CCKIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 05:08:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21952 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753135Ab1CCKIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 05:08:39 -0500
+From: Xiaotian Feng <dfeng@redhat.com>
+To: linux-kernel@vger.kernel.org, gregkh@suse.de
+Cc: Xiaotian Feng <dfeng@redhat.com>
+Subject: [PATCH] tty_audit: fix tty_audit_add_data live lock on audit disabled
+Date: Thu,  3 Mar 2011 18:08:24 +0800
+Message-Id: <1299146904-17150-1-git-send-email-dfeng@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 16:31 +0800, Li Zefan wrote:
-> With CONFIG_JUMP_LABEL enabled:
-> 
-> # mount -t cgroup -o perf_event xxx /mnt
-> # mkdir /mnt/test
-> # ./perf stat -B -a -e cycles:u -G test -- sleep 1
-> 
-> lockdep warning will be triggered immediately, and the machine
-> will become unresponsive.
-> 
-> I guess this is the culprit?
-> 
-> In the "perf cgroup support" patch:
-> 
-> @@ -419,6 +781,17 @@ list_add_event(struct perf_event *event, struct perf_event_con
->                 list_add_tail(&event->group_entry, list);
->         }
->  
-> +       if (is_cgroup_event(event)) {
-> +               ctx->nr_cgroups++;
-> +               /*
-> +                * one more event:
-> +                * - that has cgroup constraint on event->cpu
-> +                * - that may need work on context switch
-> +                */
-> +               atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
-> +               jump_label_inc(&perf_sched_events);
-> +       }
-> 
-> list_add_event() is called with spin lock ctl->lock held,  while
-> jump_label_inc() will acquire jump_label_mutex..
+The current tty_audit_add_data code:
 
-I think something like the below ought to cure that.
+        do {
+                size_t run;
 
+                run = N_TTY_BUF_SIZE - buf->valid;
+                if (run > size)
+                        run = size;
+                memcpy(buf->data + buf->valid, data, run);
+                buf->valid += run;
+                data += run;
+                size -= run;
+                if (buf->valid == N_TTY_BUF_SIZE)
+                        tty_audit_buf_push_current(buf);
+        } while (size != 0);
+
+If the current buffer is full, kernel will then call tty_audit_buf_push_current
+to empty the buffer. But if we disabled audit at the same time, tty_audit_buf_push()
+returns immediately if audit_enabled is zero.  Without emptying the buffer.
+With obvious effect on tty_audit_add_data() that ends up spinning in that loop,
+copying 0 bytes at each iteration and attempting to push each time without any effect.
+Holding the lock all along.
+
+Suggested-by: Alexander Viro <aviro@redhat.com> 
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/perf_event.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ drivers/tty/tty_audit.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 64a018e..6bc69a4 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -817,16 +817,8 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 		list_add_tail(&event->group_entry, list);
- 	}
- 
--	if (is_cgroup_event(event)) {
-+	if (is_cgroup_event(event))
- 		ctx->nr_cgroups++;
--		/*
--		 * one more event:
--		 * - that has cgroup constraint on event->cpu
--		 * - that may need work on context switch
--		 */
--		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
--		jump_label_inc(&perf_sched_events);
--	}
- 
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
- 	if (!ctx->nr_events)
-@@ -6553,6 +6545,16 @@ SYSCALL_DEFINE5(perf_event_open,
- 		goto err_context;
- 	}
- 
-+	if (is_cgroup_event(event)) {
-+		/*
-+		 * one more event:
-+		 * - that has cgroup constraint on event->cpu
-+		 * - that may need work on context switch
-+		 */
-+		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
-+		jump_label_inc(&perf_sched_events);
+diff --git a/drivers/tty/tty_audit.c b/drivers/tty/tty_audit.c
+index f64582b..7c58669 100644
+--- a/drivers/tty/tty_audit.c
++++ b/drivers/tty/tty_audit.c
+@@ -95,8 +95,10 @@ static void tty_audit_buf_push(struct task_struct *tsk, uid_t loginuid,
+ {
+ 	if (buf->valid == 0)
+ 		return;
+-	if (audit_enabled == 0)
++	if (audit_enabled == 0) {
++		buf->valid = 0;
+ 		return;
 +	}
-+
- 	if (move_group) {
- 		struct perf_event_context *gctx = group_leader->ctx;
- 
-
+ 	tty_audit_log("tty", tsk, loginuid, sessionid, buf->major, buf->minor,
+ 		      buf->data, buf->valid);
+ 	buf->valid = 0;
+-- 
+1.7.1
 
