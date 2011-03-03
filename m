@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758373Ab1CCOTM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 09:19:12 -0500
-Received: from shutemov.name ([188.40.19.243]:53706 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754244Ab1CCOTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 09:19:09 -0500
-From: "Kirill A. Shutsemov" <kirill@shutemov.name>
-To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH, v8 2/3] hrtimer: implement PR_GET_EFFECTIVE_TIMERSLACK
-Date: Thu,  3 Mar 2011 16:19:06 +0200
-Message-Id: <1299161947-9903-3-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299161947-9903-1-git-send-email-kirill@shutemov.name>
-References: <1299161947-9903-1-git-send-email-kirill@shutemov.name>
+	id S1758446Ab1CCOTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 09:19:33 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:37411 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758424Ab1CCOTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 09:19:31 -0500
+Date: Thu, 3 Mar 2011 09:19:28 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
+ top level
+Message-ID: <20110303141928.GA25256@infradead.org>
+References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
+ <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
+ <20110301223251.11c95eed.rdunlap@xenotime.net>
+ <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill A. Shutemov <kirill@shutemov.name>
+On Wed, Mar 02, 2011 at 01:32:11PM -0800, Nicholas A. Bellinger wrote:
+> The kernel code itself that is specific to using the SSE v4.2
+> instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
+> iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
+> default to using the unoptimized 1x8 slicing soft CRC32C code.  This
+> particular piece of logic has been tested on powerpc and arm and is
+> funcitoning as expected from the kernel level using the arch independent
+> soft code.
 
-PR_GET_EFFECTIVE_TIMERSLACK allows process to know its effective timer
-slack value.
+I don't think you need that code at all.  The crypto code is structured
+to prefer the optimized implementation if it is present.  Just stripping
+the x86-specific code out and always requesting the plain crc32c
+algorithm should give you the optimized one if it is present on your
+system.
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- include/linux/prctl.h |    6 ++++++
- kernel/sys.c          |    3 +++
- 2 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/prctl.h b/include/linux/prctl.h
-index a3baeb2..3199458 100644
---- a/include/linux/prctl.h
-+++ b/include/linux/prctl.h
-@@ -102,4 +102,10 @@
- 
- #define PR_MCE_KILL_GET 34
- 
-+/*
-+ * Get effective timerslack value for the process.
-+ * It can be higher than PR_GET_TIMERSLACK.
-+ */
-+#define PR_GET_EFFECTIVE_TIMERSLACK 35
-+
- #endif /* _LINUX_PRCTL_H */
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 18da702..b2ec8bf 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1693,6 +1693,9 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 		case PR_GET_TIMERSLACK:
- 			error = current->timer_slack_ns;
- 			break;
-+		case PR_GET_EFFECTIVE_TIMERSLACK:
-+			error = task_get_effective_timer_slack(current);
-+			break;
- 		case PR_SET_TIMERSLACK:
- 			if (arg2 <= 0)
- 				current->timer_slack_ns =
--- 
-1.7.4.1
+Please give it a try.
 
