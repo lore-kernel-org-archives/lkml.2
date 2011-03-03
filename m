@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab1CCBPo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Mar 2011 20:15:44 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:47915 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab1CCBPn (ORCPT
+	id S1756520Ab1CCBPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Mar 2011 20:15:54 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:4423 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753927Ab1CCBPx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Mar 2011 20:15:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:organization:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hzsswTlGOBepYjiq2ARxDbPWsQNfsU/nzjmAndmxA3dEurdm9VzDKGtipUqJ4wck4/
-         Cr21Dw4U+fgJ7ulRU5/tcb/o2Qy7bmU0WnHnY/Tz5CNaue5GqaZHwGn5p+DokrKceWnG
-         ggyNJ3V4OFmfXMuNNf3UykBhRh4AzP7xzuEpM=
-Subject: [PATCH 0/2] [TRIVIAL] cgroup:doc Update documentation of cgroup
-From: GeunSik Lim <leemgs1@gmail.com>
-Reply-To: leemgs1@gmail.com
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain
-Organization: Private
-Date: Thu, 03 Mar 2011 10:15:34 +0900
-Message-Id: <1299114934.10998.16.camel@centos55>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.8.0 (2.8.0-40.el5_1.1) 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Mar 2011 20:15:53 -0500
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+From: "Jian Peng" <jipeng@broadcom.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+cc: "Jian Peng" <jipeng@broadcom.com>
+Date: Wed, 2 Mar 2011 17:15:42 -0800
+Subject: 2.6.37 kernel compilation warning with gcc-4.5.2
+Thread-Topic: 2.6.37 kernel compilation warning with gcc-4.5.2
+Thread-Index: AcvZQIKrPIkYtNyRSkqCLlP8hQ8ZuA==
+Message-ID: <E18F441196CA634DB8E1F1C56A50A8743241DEA69E@IRVEXCHCCR01.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+X-WSS-ID: 617033C826W6530729-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jiri Kosina, 
+While compiling 2.6.37 kernel with gcc-4.5.2 based toolchain for MIPS, there are a few warnings
 
-This is a trivial patch for cgroups/cpuset feature. 
-Current document file for cgroups/cpuset is still not updated. 
-So, I made this patch based on linux-2.6.38-rc7.
+  CC      kernel/async.o
+kernel/async.c: In function 'async_synchronize_cookie_domain':
+kernel/async.c:270:10: warning: 'starttime.tv64' may be used uninitialized in this function
+kernel/async.c: In function 'async_run_entry_fn':
+kernel/async.c:122:10: warning: 'calltime.tv64' may be used uninitialized in this function
+...
+  CC      fs/ubifs/super.o
+fs/ubifs/super.c: In function 'ubifs_umount':
+fs/ubifs/super.c:1491:2: warning: statement with no effect
+  CC      fs/ubifs/sb.o
+  CC      fs/ubifs/io.o
+  CC      fs/ubifs/tnc.o
+  CC      fs/ubifs/master.o
+  CC      fs/ubifs/scan.o
+  CC      fs/ubifs/replay.o
+  CC      fs/ubifs/log.o
+  CC      fs/ubifs/commit.o
+  CC      fs/ubifs/gc.o
+  CC      fs/ubifs/orphan.o
+  CC      fs/ubifs/budget.o
+  CC      fs/ubifs/find.o
+  CC      fs/ubifs/tnc_commit.o
+  CC      fs/ubifs/compress.o
+  CC      fs/ubifs/lpt.o
+  CC      fs/ubifs/lprops.o
+  CC      fs/ubifs/recovery.o
+  CC      fs/ubifs/ioctl.o
+  CC      fs/ubifs/lpt_commit.o
+c/lpt_commit.c: In function 'layout_cnodes':
+fs/ubifs/lpt_commit.c:211:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:219:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:233:4: warning: statement with no effect
+fs/ubifs/lpt_commit.c:246:5: warning: statement with no effect
+fs/ubifs/lpt_commit.c:254:5: warning: statement with no effect
+fs/ubifs/lpt_commit.c:267:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:276:4: warning: statement with no effect
+fs/ubifs/lpt_commit.c:288:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:296:4: warning: statement with no effect
+fs/ubifs/lpt_commit.c:308:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:313:2: warning: statement with no effect
+fs/ubifs/lpt_commit.c: In function 'write_cnodes':
+fs/ubifs/lpt_commit.c:395:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:402:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:421:4: warning: statement with no effect
+fs/ubifs/lpt_commit.c:436:5: warning: statement with no effect
+fs/ubifs/lpt_commit.c:443:5: warning: statement with no effect
+fs/ubifs/lpt_commit.c:465:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:479:4: warning: statement with no effect
+fs/ubifs/lpt_commit.c:493:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:506:4: warning: statement with no effect
+fs/ubifs/lpt_commit.c:520:3: warning: statement with no effect
+fs/ubifs/lpt_commit.c:531:2: warning: statement with no effect
+...
+  CC      drivers/base/power/sysfs.o
+  CC      drivers/base/power/main.o
+drivers/base/power/main.c: In function 'pm_noirq_op.clone.17':
+drivers/base/power/main.c:306:10: warning: 'calltime.tv64' may be used uninitialized in this function
+...
 
-Regards,
-Geunsik Lim. 
+Those in fs/ubifs really bothers me since all of them are for debugging and gcc dislike them.
 
-== CUT HERE ==
+Did anyone fix it in either changing Makefile or C codes? If not, I will post my patch to get rid of them.
 
->From c9d5de47e369a63164bb04d0c39eaee39d87e8b5 Mon Sep 17 00:00:00 2001
-From: Geunsik Lim <geunsik.lim@samsung.com>
-Date: Thu, 3 Mar 2011 09:58:11 +0900
-Subject: [PATCH 0/2] cgroup:doc Update documentation of cgroup
-
-This patch is for updating contents of cgroup doc based on Linux-2.6.38-rc7.
-For example, 
-cpuset list, valid website according to cset(python), suitable words. 
-
-Geunsik Lim (2):
-  Update cpuset info & webiste via cgroup.
-  Update suitable words to explain cgroups.
-
- Documentation/cgroups/cgroups.txt |   12 ++++++------
- Documentation/cgroups/cpusets.txt |   17 +++++++++--------
- 2 files changed, 15 insertions(+), 14 deletions(-)
-
-
-
-
------------------------------------------------
-To unsubscribe from this list: send the line "unsubscribe linux-***" 
-in the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
-GeunSik Lim ( Samsung Electronics )
-e-Mail  :1) geunsik.lim@samsung.com
-         2) leemgs@gmail.com , leemgs1@gmail.com
-HomePage: http://blog.naver.com/invain/
------------------------------------------------
+Thanks,
+Jian
 
