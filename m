@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759086Ab1CCXgS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 18:36:18 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:42402 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab1CCXgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 18:36:16 -0500
-Date: Fri, 4 Mar 2011 10:36:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: linux-next: manual merge of the i.MX tree with the arm tree
-Message-Id: <20110304103610.b55f4ca4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759115Ab1CCXhI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 18:37:08 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59243 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758752Ab1CCXhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 18:37:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <4D6FDDB1.3060209@teksavvy.com>
+References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
+ <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com> <4D6FDDB1.3060209@teksavvy.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Mar 2011 15:36:27 -0800
+Message-ID: <AANLkTimXhGRsuL3Z51msS_YEtsa4UZuN9XW8Xb+hu_KN@mail.gmail.com>
+Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
+ remount filesystems ro
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Ken Sumrall <ksumrall@android.com>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
+        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+On Thu, Mar 3, 2011 at 10:28 AM, Mark Lord <kernel@teksavvy.com> wrote:
+> On 11-03-03 12:45 PM, Linus Torvalds wrote:
+>>
+>> If you can change whatever user-land process that does the reboot
+>> system call (and clearly you can, since you're adding new commands and
+>> using those), then why the heck don't you just do the remount-ro from
+>> that same user land?
+>
+> Is there a system call for emergency_remount_*() ?
+> I've been writing to /proc/proc/sysrq-trigger to accomplish this.
 
-Today's linux-next merge of the i.MX tree got a conflict in
-arch/arm/mach-mxs/gpio.c between commit
-bf0c11183fc3a2acce56d2b53f2a117322bd3c3b ("ARM: 6744/1: mxs: irq_data
-conversion") from the arm tree and commit
-6bc4e4b309f83caa7a5ec2e6b5715bb7c2cb6879 ("arm: mxs: add irq_chip-name
-for GPIO IRQs") from the i.MX tree.
+So I don't know what this has to do with "emergency_remount()" - we're
+talking about a regular controlled shutdown/reset. The fact that the
+patch used the emergency_remount() code seems to be purely an
+implementation issue, nothing more.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+And while sysrq-trigger certainly works (when it's enabled, but that's
+true of /proc too, of course), I do think it's a rather odd way of
+solving the problem, when the simple "just remount read-only" is what
+the code actually _wants_ to do.
 
-diff --cc arch/arm/mach-mxs/gpio.c
-index 61991e4,5120ab5..0000000
---- a/arch/arm/mach-mxs/gpio.c
-+++ b/arch/arm/mach-mxs/gpio.c
-@@@ -182,11 -182,12 +182,12 @@@ static int mxs_gpio_set_wake_irq(struc
-  }
-  
-  static struct irq_chip gpio_irq_chip = {
-+ 	.name = "mxs gpio",
- -	.ack = mxs_gpio_ack_irq,
- -	.mask = mxs_gpio_mask_irq,
- -	.unmask = mxs_gpio_unmask_irq,
- -	.set_type = mxs_gpio_set_irq_type,
- -	.set_wake = mxs_gpio_set_wake_irq,
- +	.irq_ack = mxs_gpio_ack_irq,
- +	.irq_mask = mxs_gpio_mask_irq,
- +	.irq_unmask = mxs_gpio_unmask_irq,
- +	.irq_set_type = mxs_gpio_set_irq_type,
- +	.irq_set_wake = mxs_gpio_set_wake_irq,
-  };
-  
-  static void mxs_set_gpio_direction(struct gpio_chip *chip, unsigned offset,
+But you're certainly right that it takes less code to open
+/proc/sysrq-trigger and writing a single byte to it than it does to do
+the straightforward "let's just do the normal mount thing".
+
+                             Linus
