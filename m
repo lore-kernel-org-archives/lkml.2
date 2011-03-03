@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147Ab1CCHfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 02:35:52 -0500
-Received: from www.tglx.de ([62.245.132.106]:40157 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab1CCHfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 02:35:50 -0500
-Date: Thu, 3 Mar 2011 08:34:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Li Zefan <lizf@cn.fujitsu.com>
-cc: "Kirill A. Shutsemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, containers@lists.linux-foundation.org,
-        jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v7] cgroups: introduce timer slack controller
-In-Reply-To: <4D6F3C5B.8020307@cn.fujitsu.com>
-Message-ID: <alpine.LFD.2.00.1103030829310.2701@localhost6.localdomain6>
-References: <1299084001-3916-1-git-send-email-kirill@shutemov.name> <1299084001-3916-2-git-send-email-kirill@shutemov.name> <alpine.LFD.2.00.1103021912090.2701@localhost6.localdomain6> <4D6F3C5B.8020307@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757450Ab1CCHiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 02:38:25 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57034 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab1CCHiX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 02:38:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hPJwzG3/ZhDcm2Ea+uK8I23RAmXNZJoBq9Rhu4buop5BOv3CBCPTOt/hXh96L0Mu46
+         4pepSKTV1M6cE4g55TIMZcZRWZ8oXFYQdPvbsK6qt24X5fuPzKR8nBB/b5v8WIenc21s
+         b11WHKs6sV9lzaaz1wcN8wSp1yUCvR4TnTA5M=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110301.151622.200374696.davem@davemloft.net>
+References: <1299021191-17961-1-git-send-email-arnd@arndb.de>
+	<1299021191-17961-6-git-send-email-arnd@arndb.de>
+	<20110301.151622.200374696.davem@davemloft.net>
+Date: Thu, 3 Mar 2011 18:38:22 +1100
+Message-ID: <AANLkTinfM=OyMwHEuMejNtcXTUSWP=j_9oYXSU0gx=8Q@mail.gmail.com>
+Subject: Re: [PATCH 5/7] x25: remove the BKL
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-x25@vger.kernel.org,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Mar 2011, Li Zefan wrote:
+Looks good, put 8gig through it over the past few days and system stable.
 
-> >> +unsigned long get_task_timer_slack(struct task_struct *tsk)
-> >> +{
-> >> +	struct cgroup_subsys_state *css;
-> >> +	struct tslack_cgroup *tslack_cgroup;
-> >> +	unsigned long ret;
-> >> +
-> >> +	rcu_read_lock();
-> > 
-> > Did you just remove the odd comment or actually figure out why you
-> > need rcu_read_lock() here ?
-> > 
-> 
-> It's necessary to protect against task exiting or task moving between cgroups.
+Tested-by: Andrew Hendry <andrew.hendry@gmail.com>
 
-I know, though after the last review I wanted to make sure, that the
-author understands it as well and not just removed the odd comment
-just because I ranted about it :)
-
-Thanks,
-
-	tglx
+On Wed, Mar 2, 2011 at 10:16 AM, David Miller <davem@davemloft.net> wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Wed,  2 Mar 2011 00:13:09 +0100
+>
+>> This replaces all instances of lock_kernel in x25
+>> with lock_sock, taking care to release the socket
+>> lock around sleeping functions (sock_alloc_send_skb
+>> and skb_recv_datagram). It is not clear whether
+>> this is a correct solution, but it seem to be what
+>> other protocols do in the same situation.
+>>
+>> Includes a fix suggested by Eric Dumazet.
+>>
+>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>
+> Acked-by: David S. Miller <davem@davemloft.net>
+>
