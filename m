@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759115Ab1CCXhI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 18:37:08 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59243 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758752Ab1CCXhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 18:37:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <4D6FDDB1.3060209@teksavvy.com>
-References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
- <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com> <4D6FDDB1.3060209@teksavvy.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Mar 2011 15:36:27 -0800
-Message-ID: <AANLkTimXhGRsuL3Z51msS_YEtsa4UZuN9XW8Xb+hu_KN@mail.gmail.com>
-Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
- remount filesystems ro
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Ken Sumrall <ksumrall@android.com>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
-        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759025Ab1CCXmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 18:42:10 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:48290 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758739Ab1CCXmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 18:42:08 -0500
+Date: Fri, 4 Mar 2011 10:42:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: linux-next: manual merge of the s5p tree with the i.MX tree
+Message-Id: <20110304104206.d2feadef.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 10:28 AM, Mark Lord <kernel@teksavvy.com> wrote:
-> On 11-03-03 12:45 PM, Linus Torvalds wrote:
->>
->> If you can change whatever user-land process that does the reboot
->> system call (and clearly you can, since you're adding new commands and
->> using those), then why the heck don't you just do the remount-ro from
->> that same user land?
->
-> Is there a system call for emergency_remount_*() ?
-> I've been writing to /proc/proc/sysrq-trigger to accomplish this.
+Hi Kukjin,
 
-So I don't know what this has to do with "emergency_remount()" - we're
-talking about a regular controlled shutdown/reset. The fact that the
-patch used the emergency_remount() code seems to be purely an
-implementation issue, nothing more.
+Today's linux-next merge of the s5p tree got a conflict in
+arch/arm/mm/Kconfig between commit
+4d2f13be1e370a670c1cae20c194d5ce961e0fa5 ("ARM: imx3x: clean up
+ARCH_MX3X") from the i.MX tree and commit
+10606aadb046d008c88d1a99b309357ca33d590e ("ARM: EXYNOS4: Update Kconfig
+and Makefile for the new ARCH_EXYNOS4") from the s5p tree.
 
-And while sysrq-trigger certainly works (when it's enabled, but that's
-true of /proc too, of course), I do think it's a rather odd way of
-solving the problem, when the simple "just remount read-only" is what
-the code actually _wants_ to do.
+Just context changes. I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-But you're certainly right that it takes less code to open
-/proc/sysrq-trigger and writing a single byte to it than it does to do
-the straightforward "let's just do the normal mount thing".
-
-                             Linus
+diff --cc arch/arm/mm/Kconfig
+index 08daea9,0f59e54..0000000
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@@ -819,8 -811,8 +819,8 @@@ config CACHE_FEROCEON_L2_WRITETHROUG
+  config CACHE_L2X0
+  	bool "Enable the L2x0 outer cache controller"
+  	depends on REALVIEW_EB_ARM11MP || MACH_REALVIEW_PB11MP || MACH_REALVIEW_PB1176 || \
+ -		   REALVIEW_EB_A9MP || ARCH_MX35 || ARCH_MX31 || MACH_REALVIEW_PBX || \
+ +		   REALVIEW_EB_A9MP || SOC_IMX35 || SOC_IMX31 || MACH_REALVIEW_PBX || \
+- 		   ARCH_NOMADIK || ARCH_OMAP4 || ARCH_S5PV310 || ARCH_TEGRA || \
++ 		   ARCH_NOMADIK || ARCH_OMAP4 || ARCH_EXYNOS4 || ARCH_TEGRA || \
+  		   ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_SHMOBILE
+  	default y
+  	select OUTER_CACHE
