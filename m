@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab1CCT6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 14:58:20 -0500
-Received: from sv2.nico22.de ([62.112.144.130]:40796 "EHLO sv2.nico22.de"
+	id S1758765Ab1CCUAj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 15:00:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12792 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756708Ab1CCT6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 14:58:19 -0500
-X-Greylist: delayed 1683 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Mar 2011 14:58:19 EST
-Date: Thu, 3 Mar 2011 20:30:06 +0100
-From: Nico =?iso-8859-1?Q?Sch=FCmann?= <dev@nico22.de>
-To: linux-kernel@vger.kernel.org
-Subject: Network link detection
-Message-ID: <20110303193006.GA29129@svh.nico22.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758207Ab1CCUAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 15:00:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,259,1297065600"; 
+   d="scan'208";a="608773588"
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/8] Preserve original node for transparent huge page copies
+Date: Thu,  3 Mar 2011 11:59:47 -0800
+Message-Id: <1299182391-6061-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1299182391-6061-1-git-send-email-andi@firstfloor.org>
+References: <1299182391-6061-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear kernel developers,
+From: Andi Kleen <ak@linux.intel.com>
 
-currently I'm looking for a way to find out whether a network link went 
-down or up. Of course there is mii-tool, which can watch devices, too.
+This makes a difference for LOCAL policy, where the node cannot
+be determined from the policy itself, but has to be gotten
+from the original page.
 
-So for now, I created a small program that polls the MII_LINK_OK
-flag with the SIOCGMIIREG ioctl - the same thing that mii-tools does. 
-But polling that often for a link change that occurs maybe once in a 
-month sounds like waste of energy.
+Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/huge_memory.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Unfortunately, I was not able to find out a way to be notified about 
-link status changes asynchronously. Is there a way? I'm looking for 
-something like "inotify for link states".
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index c7c2cd9..1802db8 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -799,8 +799,8 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+ 	}
+ 
+ 	for (i = 0; i < HPAGE_PMD_NR; i++) {
+-		pages[i] = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
+-					  vma, address);
++		pages[i] = alloc_page_vma_node(GFP_HIGHUSER_MOVABLE,
++					       vma, address, page_to_nid(page));
+ 		if (unlikely(!pages[i] ||
+ 			     mem_cgroup_newpage_charge(pages[i], mm,
+ 						       GFP_KERNEL))) {
+-- 
+1.7.4
 
-There are some debug outputs as in drivers/net/natsemi.c:1672
-                        printk(KERN_NOTICE "%s: link up.\n", dev->name);
-so it would be quite easy to insert a notification.
-
-If there is no way yet to get these notifications asynchronosly, would 
-there be real use for it or am I just missing something?
-
-Thanks,
-
-Nico
