@@ -1,31 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759934Ab1CDRNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:13:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39209 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab1CDRNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 12:13:54 -0500
-Date: Fri, 4 Mar 2011 17:13:53 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: chris.mason@oracle.com
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: [RFC] a couple of i_nlink fixes in btrfs
-Message-ID: <20110304171353.GU22723@ZenIV.linux.org.uk>
+	id S1759975Ab1CDROf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:14:35 -0500
+Received: from kroah.org ([198.145.64.141]:38592 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759914Ab1CDROe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 12:14:34 -0500
+Date: Fri, 4 Mar 2011 09:13:06 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Timo von Holtz <tvh@informatik.uni-kiel.de>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: linux-next: manual merge of the staging tree with the v4l-dvb
+ tree
+Message-ID: <20110304171306.GD22173@kroah.com>
+References: <20110304163849.651cfbbe.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110304163849.651cfbbe.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	a) rename() plays with i_nlink of old_inode; bad, since it's not
-locked.  I'd add a variant of btrfs_unlink_inode() that would leave
-btrfs_drop_nlink()/btrfs_update_inode() to callers and use it instead.
-	b) btrfs_link() doesn't check for i_nlink overflows.  I don't
-know if there's anything preventing that many links to a file on btrfs,
-but if there is, it's at least worth a comment in there...
+On Fri, Mar 04, 2011 at 04:38:49PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/usbvideo/vicam.c between commit
+> af6302700e87a883481c342001ef81b77641bf98 ("[media] staging-usbvideo:
+> remove") from the v4l-dvb tree and commits
+> 046d747e0d2cb597e0b6fa4a79c32b43e97ed792 ("Staging: usbvideo: vicam:
+> fixed some coding style issues") and
+> 38a26ef272d8a93c88de54d8d3bd14ac3ce36056 ("staging: usbvideo: vicam: Fix
+> build in -next") from the staging tree.
+> 
+> I removed the file.
 
-	Please, review; patches in followups or in #btrfs in vfs-2.6.git
+thanks for doing this.
+
+greg k-h
