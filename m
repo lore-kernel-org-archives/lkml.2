@@ -1,85 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab1CDLah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 06:30:37 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45557 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759294Ab1CDLag (ORCPT
+	id S1759502Ab1CDLli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 06:41:38 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55872 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759440Ab1CDLlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 06:30:36 -0500
-X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX1+Fc1ZTgXCFgwqfWhDJvAQK/g9k9bmr4yAhtXzDix
-	OnNYchlTKSeVNS
-Date: Fri, 4 Mar 2011 12:30:32 +0100
-From: torbenh <torbenh@gmx.de>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, richard.cochran@omicron.at,
-        johnstul@us.ibm.com, tglx@linutronix.de
-Subject: Re: [PATCH 2/3] ptp: add a software clock based on
- clock_monotonic_raw
-Message-ID: <20110304113032.GC3237@siel.b>
-Mail-Followup-To: Richard Cochran <richardcochran@gmail.com>,
-	linux-kernel@vger.kernel.org, richard.cochran@omicron.at,
-	johnstul@us.ibm.com, tglx@linutronix.de
-References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
- <1299173174-348-3-git-send-email-torbenh@gmx.de>
- <20110304064251.GC3824@riccoc20.at.omicron.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304064251.GC3824@riccoc20.at.omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+	Fri, 4 Mar 2011 06:41:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Ed4XSJOl2YU7Hk6FeVrdLAj9ubR5gSIkBU4T7Bh12yBHBldJ8sD0JqqI4ZOKTOwnkG
+         I3Ag5s6hv4tNVZo+ZrYKD9CgMEoYArM+8Qi/wd62xjLw4eGTRGbSd1Z/K5So23UmcAqi
+         kb0x/Q/vNZiuduDnGUwOh4vAGGV8nbQoBXMbY=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Soren Sandmann <ssp@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH v3 -tip] x86, dumpstack: Correct stack dump info when frame pointer is available
+Date: Fri,  4 Mar 2011 20:41:19 +0900
+Message-Id: <1299238879-27792-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 07:42:51AM +0100, Richard Cochran wrote:
-> On Thu, Mar 03, 2011 at 06:26:13PM +0100, Torben Hohn wrote:
-> > +config PTP_1588_CLOCK_SOFTWARE
-> > +	tristate "software PTP clock"
-> > +	depends on PTP_1588_CLOCK
-> > +	help
-> > +	  This driver adds a software PTP clock. 
-> 
-> As John said, this needs a longer description. You can look back at
-> my V6 as an example.
-> 
->   https://lkml.org/lkml/2010/9/23/220
-> 
-> > +static int ptp_ixp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
-> 
-> Once again, please rename.
+Current stack dump code scans entire stack and check each entry
+contains a pointer to kernel code. If CONFIG_FRAME_POINTER=y it
+could mark whether the pointer is valid or not based on value of
+the frame pointer. Invalid entries could be preceded by '?' sign.
 
-i was planning to rename it.
-i just posted my patches early on because i had found the permission
-problem, and thought the software clock might be useful to play around
-with the whole framework.
-iE without the software clock, i wouldnt have found the actual problem,
-because i dont have the right h/w.
+However this was not going to happen because scan start point was
+always higher than the frame pointer so that they could not meet.
 
+Commit 9c0729dc8062 ("x86: Eliminate bp argument from the stack
+tracing routines") delayed bp acquisition point, so the bp was
+read in lower frame, thus all of the entries were marked invalid.
 
-> 
-> Better yet, why not just use the V6 example instead?  If we are going
-> to have a testing driver, then I would want the simulated ancillary
-> code as well.
+This patch fixes this by reverting above commit while retaining
+stack_frame() helper as suggested by Frederic Weisbecker.
+End result looks like below:
 
-well... your example code messes with clock_realtime.
-i was planning to emit real timed events, not just some simulation.
-but i dont completely understand this part of the code yet.
+before:
+[    3.508329] Call Trace:
+[    3.508551]  [<ffffffff814f35c9>] ? panic+0x91/0x199
+[    3.508662]  [<ffffffff814f3739>] ? printk+0x68/0x6a
+[    3.508770]  [<ffffffff81a981b2>] ? mount_block_root+0x257/0x26e
+[    3.508876]  [<ffffffff81a9821f>] ? mount_root+0x56/0x5a
+[    3.508975]  [<ffffffff81a98393>] ? prepare_namespace+0x170/0x1a9
+[    3.509216]  [<ffffffff81a9772b>] ? kernel_init+0x1d2/0x1e2
+[    3.509335]  [<ffffffff81003894>] ? kernel_thread_helper+0x4/0x10
+[    3.509442]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
+[    3.509542]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
+[    3.509641]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
 
+after:
+[    3.522991] Call Trace:
+[    3.523351]  [<ffffffff814f35b9>] panic+0x91/0x199
+[    3.523468]  [<ffffffff814f3729>] ? printk+0x68/0x6a
+[    3.523576]  [<ffffffff81a981b2>] mount_block_root+0x257/0x26e
+[    3.523681]  [<ffffffff81a9821f>] mount_root+0x56/0x5a
+[    3.523780]  [<ffffffff81a98393>] prepare_namespace+0x170/0x1a9
+[    3.523885]  [<ffffffff81a9772b>] kernel_init+0x1d2/0x1e2
+[    3.523987]  [<ffffffff81003894>] kernel_thread_helper+0x4/0x10
+[    3.524228]  [<ffffffff814f6880>] ? restore_args+0x0/0x30
+[    3.524345]  [<ffffffff81a97559>] ? kernel_init+0x0/0x1e2
+[    3.524445]  [<ffffffff81003890>] ? kernel_thread_helper+0x0/0x10
 
-> 
-> > +
-> > +static struct ptp_clock_info ptp_ixp_caps = {
-> > +	.owner		= THIS_MODULE,
-> > +	.name		= "software timer",
-> > +	.max_adj	= 66666655,
-> 
-> You should calculate the actual limit of adjustment and use it here.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Soren Sandmann <ssp@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+v3:
+ * apply comment from Frederic
+ * add a couple of printk fixes
 
-yeah. i posted it too early...
-gonna fix it in the next iteration.
+ arch/x86/include/asm/kdebug.h     |    2 +-
+ arch/x86/include/asm/stacktrace.h |    6 +++---
+ arch/x86/kernel/cpu/perf_event.c  |    2 +-
+ arch/x86/kernel/dumpstack.c       |   14 ++++++++------
+ arch/x86/kernel/dumpstack_32.c    |   23 ++++++++++++-----------
+ arch/x86/kernel/dumpstack_64.c    |   24 ++++++++++++------------
+ arch/x86/kernel/process.c         |    2 +-
+ arch/x86/kernel/stacktrace.c      |    6 +++---
+ 8 files changed, 41 insertions(+), 38 deletions(-)
 
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index ca242d35e873..e28ec43a0737 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -26,7 +26,7 @@ extern void die(const char *, struct pt_regs *,long);
+ extern int __must_check __die(const char *, struct pt_regs *, long);
+ extern void show_registers(struct pt_regs *regs);
+ extern void show_trace(struct task_struct *t, struct pt_regs *regs,
+-		       unsigned long *sp);
++		       unsigned long *sp, unsigned long bp);
+ extern void __show_regs(struct pt_regs *regs, int all);
+ extern void show_regs(struct pt_regs *regs);
+ extern unsigned long oops_begin(void);
+diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
+index 52b5c7ed3608..d7e89c83645d 100644
+--- a/arch/x86/include/asm/stacktrace.h
++++ b/arch/x86/include/asm/stacktrace.h
+@@ -47,7 +47,7 @@ struct stacktrace_ops {
+ };
+ 
+ void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
+-		unsigned long *stack,
++		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data);
+ 
+ #ifdef CONFIG_X86_32
+@@ -86,11 +86,11 @@ stack_frame(struct task_struct *task, struct pt_regs *regs)
+ 
+ extern void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *stack, char *log_lvl);
++		   unsigned long *stack, unsigned long bp, char *log_lvl);
+ 
+ extern void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, char *log_lvl);
++		   unsigned long *sp, unsigned long bp, char *log_lvl);
+ 
+ extern unsigned int code_bytes;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 9d977a2ea693..53a770ef4eaf 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1722,7 +1722,7 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 
+ 	perf_callchain_store(entry, regs->ip);
+ 
+-	dump_trace(NULL, regs, NULL, &backtrace_ops, entry);
++	dump_trace(NULL, regs, NULL, regs->bp, &backtrace_ops, entry);
+ }
+ 
+ #ifdef CONFIG_COMPAT
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index df20723a6a1b..c330160b6da3 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -175,21 +175,21 @@ static const struct stacktrace_ops print_trace_ops = {
+ 
+ void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		unsigned long *stack, char *log_lvl)
++		unsigned long *stack, unsigned long bp, char *log_lvl)
+ {
+ 	printk("%sCall Trace:\n", log_lvl);
+-	dump_trace(task, regs, stack, &print_trace_ops, log_lvl);
++	dump_trace(task, regs, stack, bp, &print_trace_ops, log_lvl);
+ }
+ 
+ void show_trace(struct task_struct *task, struct pt_regs *regs,
+-		unsigned long *stack)
++		unsigned long *stack, unsigned long bp)
+ {
+-	show_trace_log_lvl(task, regs, stack, "");
++	show_trace_log_lvl(task, regs, stack, bp, "");
+ }
+ 
+ void show_stack(struct task_struct *task, unsigned long *sp)
+ {
+-	show_stack_log_lvl(task, NULL, sp, "");
++	show_stack_log_lvl(task, NULL, sp, 0, "");
+ }
+ 
+ /*
+@@ -197,14 +197,16 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+  */
+ void dump_stack(void)
+ {
++	unsigned long bp;
+ 	unsigned long stack;
+ 
++	bp = stack_frame(current, NULL);
+ 	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
+ 		current->pid, current->comm, print_tainted(),
+ 		init_utsname()->release,
+ 		(int)strcspn(init_utsname()->version, " "),
+ 		init_utsname()->version);
+-	show_trace(NULL, NULL, &stack);
++	show_trace(NULL, NULL, &stack, bp);
+ }
+ EXPORT_SYMBOL(dump_stack);
+ 
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 74cc1eda384b..c99f9ed013d5 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -17,12 +17,11 @@
+ #include <asm/stacktrace.h>
+ 
+ 
+-void dump_trace(struct task_struct *task,
+-		struct pt_regs *regs, unsigned long *stack,
++void dump_trace(struct task_struct *task, struct pt_regs *regs,
++		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data)
+ {
+ 	int graph = 0;
+-	unsigned long bp;
+ 
+ 	if (!task)
+ 		task = current;
+@@ -35,7 +34,9 @@ void dump_trace(struct task_struct *task,
+ 			stack = (unsigned long *)task->thread.sp;
+ 	}
+ 
+-	bp = stack_frame(task, regs);
++	if (!bp)
++		bp = stack_frame(task, regs);
++
+ 	for (;;) {
+ 		struct thread_info *context;
+ 
+@@ -55,7 +56,7 @@ EXPORT_SYMBOL(dump_trace);
+ 
+ void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, char *log_lvl)
++		   unsigned long *sp, unsigned long bp, char *log_lvl)
+ {
+ 	unsigned long *stack;
+ 	int i;
+@@ -77,7 +78,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		touch_nmi_watchdog();
+ 	}
+ 	printk(KERN_CONT "\n");
+-	show_trace_log_lvl(task, regs, sp, log_lvl);
++	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+ 
+@@ -102,7 +103,7 @@ void show_registers(struct pt_regs *regs)
+ 		u8 *ip;
+ 
+ 		printk(KERN_EMERG "Stack:\n");
+-		show_stack_log_lvl(NULL, regs, &regs->sp, KERN_EMERG);
++		show_stack_log_lvl(NULL, regs, &regs->sp, 0, KERN_EMERG);
+ 
+ 		printk(KERN_EMERG "Code: ");
+ 
+@@ -115,16 +116,16 @@ void show_registers(struct pt_regs *regs)
+ 		for (i = 0; i < code_len; i++, ip++) {
+ 			if (ip < (u8 *)PAGE_OFFSET ||
+ 					probe_kernel_address(ip, c)) {
+-				printk(" Bad EIP value.");
++				printk(KERN_CONT " Bad EIP value.");
+ 				break;
+ 			}
+ 			if (ip == (u8 *)regs->ip)
+-				printk("<%02x> ", c);
++				printk(KERN_CONT "<%02x> ", c);
+ 			else
+-				printk("%02x ", c);
++				printk(KERN_CONT "%02x ", c);
+ 		}
+ 	}
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ }
+ 
+ int is_valid_bugaddr(unsigned long ip)
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index a6b6fcf7f0ae..c316e23471a8 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -139,8 +139,8 @@ fixup_bp_irq_link(unsigned long bp, unsigned long *stack,
+  * severe exception (double fault, nmi, stack fault, debug, mce) hardware stack
+  */
+ 
+-void dump_trace(struct task_struct *task,
+-		struct pt_regs *regs, unsigned long *stack,
++void dump_trace(struct task_struct *task, struct pt_regs *regs,
++		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data)
+ {
+ 	const unsigned cpu = get_cpu();
+@@ -150,7 +150,6 @@ void dump_trace(struct task_struct *task,
+ 	struct thread_info *tinfo;
+ 	int graph = 0;
+ 	unsigned long dummy;
+-	unsigned long bp;
+ 
+ 	if (!task)
+ 		task = current;
+@@ -161,7 +160,8 @@ void dump_trace(struct task_struct *task,
+ 			stack = (unsigned long *)task->thread.sp;
+ 	}
+ 
+-	bp = stack_frame(task, regs);
++	if (!bp)
++		bp = stack_frame(task, regs);
+ 	/*
+ 	 * Print function call entries in all stacks, starting at the
+ 	 * current stack address. If the stacks consist of nested
+@@ -180,7 +180,7 @@ void dump_trace(struct task_struct *task,
+ 
+ 			bp = ops->walk_stack(tinfo, stack, bp, ops,
+ 					     data, estack_end, &graph);
+-			ops->stack(data, "<EOE>");
++			ops->stack(data, "EOE");
+ 			/*
+ 			 * We link to the next stack via the
+ 			 * second-to-last pointer (index -2 to end) in the
+@@ -225,7 +225,7 @@ EXPORT_SYMBOL(dump_trace);
+ 
+ void
+ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		   unsigned long *sp, char *log_lvl)
++		   unsigned long *sp, unsigned long bp, char *log_lvl)
+ {
+ 	unsigned long *irq_stack_end;
+ 	unsigned long *irq_stack;
+@@ -269,7 +269,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 	preempt_enable();
+ 
+ 	printk(KERN_CONT "\n");
+-	show_trace_log_lvl(task, regs, sp, log_lvl);
++	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+ void show_registers(struct pt_regs *regs)
+@@ -298,7 +298,7 @@ void show_registers(struct pt_regs *regs)
+ 
+ 		printk(KERN_EMERG "Stack:\n");
+ 		show_stack_log_lvl(NULL, regs, (unsigned long *)sp,
+-				   KERN_EMERG);
++				   regs->bp, KERN_EMERG);
+ 
+ 		printk(KERN_EMERG "Code: ");
+ 
+@@ -311,16 +311,16 @@ void show_registers(struct pt_regs *regs)
+ 		for (i = 0; i < code_len; i++, ip++) {
+ 			if (ip < (u8 *)PAGE_OFFSET ||
+ 					probe_kernel_address(ip, c)) {
+-				printk(" Bad RIP value.");
++				printk(KERN_CONT " Bad RIP value.");
+ 				break;
+ 			}
+ 			if (ip == (u8 *)regs->ip)
+-				printk("<%02x> ", c);
++				printk(KERN_CONT "<%02x> ", c);
+ 			else
+-				printk("%02x ", c);
++				printk(KERN_CONT "%02x ", c);
+ 		}
+ 	}
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ }
+ 
+ int is_valid_bugaddr(unsigned long ip)
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index ff4554198981..f4c6cc40168e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -86,7 +86,7 @@ void exit_thread(void)
+ void show_regs(struct pt_regs *regs)
+ {
+ 	show_registers(regs);
+-	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs));
++	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
+ }
+ 
+ void show_regs_common(void)
+diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
+index 938c8e10a19a..6515733a289d 100644
+--- a/arch/x86/kernel/stacktrace.c
++++ b/arch/x86/kernel/stacktrace.c
+@@ -73,7 +73,7 @@ static const struct stacktrace_ops save_stack_ops_nosched = {
+  */
+ void save_stack_trace(struct stack_trace *trace)
+ {
+-	dump_trace(current, NULL, NULL, &save_stack_ops, trace);
++	dump_trace(current, NULL, NULL, 0, &save_stack_ops, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+@@ -81,14 +81,14 @@ EXPORT_SYMBOL_GPL(save_stack_trace);
+ 
+ void save_stack_trace_regs(struct stack_trace *trace, struct pt_regs *regs)
+ {
+-	dump_trace(current, regs, NULL, &save_stack_ops, trace);
++	dump_trace(current, regs, NULL, 0, &save_stack_ops, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+ 
+ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ {
+-	dump_trace(tsk, NULL, NULL, &save_stack_ops_nosched, trace);
++	dump_trace(tsk, NULL, NULL, 0, &save_stack_ops_nosched, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
 -- 
-torben Hohn
+1.7.4
+
