@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab1CDAMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 19:12:23 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56161 "EHLO mx1.suse.de"
+	id S1759122Ab1CDAQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 19:16:48 -0500
+Received: from cantor.suse.de ([195.135.220.2]:56225 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab1CDAMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 19:12:22 -0500
-Date: Thu, 3 Mar 2011 16:05:50 -0800
-From: Greg KH <gregkh@suse.de>
-To: Valdis.Kletnieks@vt.edu
-Cc: akpm@linux-foundation.org, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: mmotm 2011-03-02 - ACPI/sysfs WARNING with NVidia graphics card
-Message-ID: <20110304000550.GA2073@suse.de>
-References: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
- <33350.1299196241@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <33350.1299196241@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751536Ab1CDAQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 19:16:47 -0500
+Date: Fri, 4 Mar 2011 11:16:24 +1100
+From: NeilBrown <neilb@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Patterson <andrew.patterson@hp.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, James.Bottomley@suse.de
+Subject: Re: [PATCH] Fix over-zealous flush_disk when changing device size.
+Message-ID: <20110304111624.4be27aaf@notabene.brown>
+In-Reply-To: <20110303143120.GA8134@infradead.org>
+References: <20110217165057.5c50e566@notabene.brown>
+	<20110303143120.GA8134@infradead.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 06:50:41PM -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 02 Mar 2011 16:52:55 PST, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
+On Thu, 3 Mar 2011 09:31:20 -0500 Christoph Hellwig <hch@infradead.org> wrote:
+
+> On Thu, Feb 17, 2011 at 04:50:57PM +1100, NeilBrown wrote:
 > > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
+> > Hi Andrew (and others)
+> >  I wonder if you would review the following for me and comment.
 > 
-> Dell Latitude E6500, with an NVidia G98M (Quadro NVS 160M) graphics card.
+> Please send think in this area through -fsdevel next time, thanks!
+
+Will try to remember - it is sometimes hard to get this sort of patch before
+the right audience ... I thought "block layer" rather than "file systems" :-(
+
+Thanks for finding it anyway.
+
 > 
-> Seen in my dmesg - it's had the 'Firmware Bug' message for roughly forever, but
-> apparently somewhere recently a warning crawled in. 2.6.38-rc5-next-20110222
-> did not throw the warning, jsut the firmware bug msg.
+> > There are two cases when we call flush_disk.
+> > In one, the device has disappeared (check_disk_change) so any
+> > data will hold becomes irrelevant.
+> > In the oter, the device has changed size (check_disk_size_change)
+> > so data we hold may be irrelevant.
+> > 
+> > In both cases it makes sense to discard any 'clean' buffers,
+> > so they will be read back from the device if needed.
 > 
-> Hope somebody recognizes it, I won't be able to bisect this one for a bit (I
-> have 2 or 3 other things I have a bigger need to track down).
+> Does it?  If the device has disappeared we can't read them back anyway.
+
+I think that is the point - return an error rather than stale data.
+
+> If the device has resized to a smaller size the same is true about
+> those buffers that have gone away, and if it has resized to a larger
+> size invalidating anything doesn't make sense at all.  I think this
+> area needs more love than a quick kill_dirty hackjob.
+
+I tend to agree.  I wasn't entirely convinced by the changelog comments on
+the original offending patch, but I couldn't convince myself there was no
+justification either, and I wanted to fix the corruption I saw - while close
+to the end of a release cycle - without introducing any new regressions.
+
 > 
-> [    0.784712] ACPI: Sleep Button [SBTN]
-> [    0.816626] ------------[ cut here ]------------
-> [    0.816633] WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x88/0x9c()
-> [    0.816635] Hardware name: Latitude E6500                  
-> [    0.816637] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/device'
-> [    0.816640] Modules linked in:
-> [    0.816645] Pid: 1, comm: swapper Not tainted 2.6.38-rc7-mmotm0302 #2
-> [    0.816647] Call Trace:
-> [    0.816652]  [<ffffffff8103899e>] ? warn_slowpath_common+0x7e/0x96
-> [    0.816657]  [<ffffffff81038a4a>] ? warn_slowpath_fmt+0x41/0x43
-> [    0.816661]  [<ffffffff8114d876>] ? sysfs_add_one+0x88/0x9c
-> [    0.816665]  [<ffffffff8114e06e>] ? sysfs_do_create_link+0x145/0x1d5
-> [    0.816669]  [<ffffffff8114e10c>] ? sysfs_create_link+0xe/0x10
-> [    0.816674]  [<ffffffff8126cef1>] ? acpi_video_device_find_cap+0x1f5/0x2de
-> [    0.816678]  [<ffffffff8126d196>] ? acpi_video_bus_get_one_device+0x1bc/0x250
-> [    0.816682]  [<ffffffff8126d3f8>] ? acpi_video_bus_add+0x1ce/0x36e
-> [    0.816687]  [<ffffffff8124983d>] ? acpi_device_probe+0x49/0x117
-> [    0.816692]  [<ffffffff812bd56b>] ? really_probe+0xc0/0x14d
-> [    0.816696]  [<ffffffff812bd6fe>] ? driver_probe_device+0x37/0x52
-> [    0.816700]  [<ffffffff812bd773>] ? __driver_attach+0x5a/0x7d
-> [    0.816704]  [<ffffffff812bd719>] ? __driver_attach+0x0/0x7d
-> [    0.816708]  [<ffffffff812bc85d>] ? bus_for_each_dev+0x54/0x88
-> [    0.816712]  [<ffffffff812bd319>] ? driver_attach+0x19/0x1b
-> [    0.816715]  [<ffffffff812bcf6d>] ? bus_add_driver+0xab/0x201
-> [    0.816719]  [<ffffffff812bd976>] ? driver_register+0xb2/0x11f
-> [    0.816724]  [<ffffffff81b3cf29>] ? acpi_video_init+0x0/0x17
-> [    0.816729]  [<ffffffff8124a29e>] ? acpi_bus_register_driver+0x3e/0x40
-> [    0.816732]  [<ffffffff8126c8c5>] ? acpi_video_register+0x1b/0x34
-> [    0.816736]  [<ffffffff81b3cf3e>] ? acpi_video_init+0x15/0x17
-> [    0.816741]  [<ffffffff8100020a>] ? do_one_initcall+0x7a/0x130
-> [    0.816746]  [<ffffffff81b1bc0e>] ? kernel_init+0xe1/0x15b
-> [    0.816750]  [<ffffffff81002f94>] ? kernel_thread_helper+0x4/0x10
-> [    0.816754]  [<ffffffff8102a634>] ? finish_task_switch+0x3f/0xe3
-> [    0.816759]  [<ffffffff8155ab44>] ? restore_args+0x0/0x30
-> [    0.816763]  [<ffffffff81b1bb2d>] ? kernel_init+0x0/0x15b
-> [    0.816766]  [<ffffffff81002f90>] ? kernel_thread_helper+0x0/0x10
-> [    0.816804] ---[ end trace 6d450e935ee1897c ]---
-> [    0.816808] ACPI: Create sysfs link
-> [    0.817274] acpi device:38: registered as cooling_device0
-> [    0.818068] input: Video Bus as /devices/LNXSYSTM:00/device:00/PNP0A03:00/device:36/LNXVIDEO:00/input/input3
-> [    0.818077] ACPI: Video Device [VID] (multi-head: yes  rom: no  post: no)
-> [    0.818236] [Firmware Bug]: Duplicate ACPI video bus devices for the same VGA controller, please try module parameter "video.allow_duplicates=1"if the current driver doesn't work.
+> > In the former case it makes sense to discard 'dirty' buffers
+> > as there will never be anywhere safe to write the data.  In the
+> > second case it *does*not* make sense to discard dirty buffers
+> > as that will lead to file system corruption when you simply enlarge
+> > the containing devices.
+> 
+> Doing anything like this at the buffer cache layer or inode cache layer
+> doesn't make any sense.  If a device goes away or shrinks below the
+> filesystem size the filesystem simply needs to be shut down and in te
+> former size the admin needs to start a manual repair.  Trying to do
+> any botch jobs in lower layer never works in practice.
 
-Have you tried this option?
+Amen.
+What I personally would really like to see is an interface for the block
+device to say to the filesystem (or more specifically: whatever has bdclaimed
+it) "I am about to resize to $X - is that OK?" and also "I have resized -
+deal with it".
 
-There's nothing sysfs can do here, sorry, it really looks like you have
-a BIOS/firmware problem.
+> 
+> For now I think the best short term fix is to simply revert commit
+> 608aeef17a91747d6303de4df5e2c2e6899a95e8
+> 
+> 	"Call flush_disk() after detecting an online resize."
 
-good luck,
+You may be right, but I suspect that Andrew Patterson had a real issue to
+solve which lead to submitting it, and I'd really like to understand that
+issue before I would feel confident just reverting it.
 
-greg k-h
+Andrew:  are you out there?  Can you provide some background for your patch?
+
+Thanks,
+NeilBrown
+
