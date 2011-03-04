@@ -1,118 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759183Ab1CDBmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 20:42:00 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59853 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759156Ab1CDBl7 (ORCPT
+	id S1759197Ab1CDBqA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 20:46:00 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:59649 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759156Ab1CDBp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 20:41:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QFVMi70jTwMimMXf2r7Hm3P6Eea75Tts+uopwawWOl5MS4uitUS8urW4QPHTUtz3gA
-         p1o23pumOECa0MAWweO7jO1tjRKNjKLW72SD39R78ZG6dsm/HTVDRBV1loujnkrNjRFU
-         DNLuvPYJZlBdXf/khz4tCFzAERSKJx6Z5WmIs=
+	Thu, 3 Mar 2011 20:45:59 -0500
+Message-ID: <4D70443A.1010602@ce.jp.nec.com>
+Date: Fri, 04 Mar 2011 10:45:30 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110303145908.GA32154@redhat.com>
-References: <20110303135819.GA2620@darkstar>
-	<20110303145908.GA32154@redhat.com>
-Date: Fri, 4 Mar 2011 09:41:59 +0800
-Message-ID: <AANLkTi=sz7By1HaJ+HhFaQDWyUnrR5PNyAcL0uPnEt-K@mail.gmail.com>
-Subject: Re: [PATCH 01/05] use proc_dointvec_minmax to check boundaries while needed
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Jan Kara <jack@suse.cz>
+CC: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] Fix mapping->writeback_index to point to the last written
+ page
+References: <4D676067.8050200@ce.jp.nec.com> <20110302221808.GG7496@quack.suse.cz> <4D6EFC4B.30505@ce.jp.nec.com> <20110303133119.GA16562@localhost> <20110303140802.GA27751@quack.suse.cz>
+In-Reply-To: <20110303140802.GA27751@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p241g6xM030010
 
-On Thu, Mar 3, 2011 at 10:59 PM, Don Zickus <dzickus@redhat.com> wrote:
-> On Thu, Mar 03, 2011 at 09:58:20PM +0800, Dave Young wrote:
->> proc_dointvec doesn't check extra minmax params, use proc_dointvec_minmax
->> instead of proc_dointvec for cases need boundaries check.
->
-> Is this patch needed, if you are basically changing it again in patches 3
-> and 5?
-
-Sure if 3 and 5 is acked, if someone object them then this is good?
-
->
-> Cheers,
-> Don
->
+On 03/03/11 23:08, Jan Kara wrote:
+> On Thu 03-03-11 21:31:19, Wu Fengguang wrote:
+>> On Thu, Mar 03, 2011 at 10:26:19AM +0800, Jun'ichi Nomura wrote:
+>>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899962 + 8
+>>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899970 + 8
+>>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899978 + 8
+>>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899986 + 8
+>>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899994 + 8
+>> ==>     >      kworker/0:1-11    4606: block_rq_issue: 8,0 W 0 () 94899962 + 40
+>>         > >>     flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898554 + 8
+>> ==>     > >>     flush-8:0-2743  4606: block_rq_issue: 8,0 W 0 () 94898554 + 8
 >>
->> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
->> ---
->>  kernel/sysctl.c |   12 ++++++------
->>  1 file changed, 6 insertions(+), 6 deletions(-)
->>
->> --- linux-2.6.orig/kernel/sysctl.c    2011-03-03 10:44:53.000000000 +0800
->> +++ linux-2.6/kernel/sysctl.c 2011-03-03 11:02:43.736663258 +0800
->> @@ -374,7 +374,7 @@ static struct ctl_table kern_table[] = {
->>               .data           = &sysctl_sched_autogroup_enabled,
->>               .maxlen         = sizeof(unsigned int),
->>               .mode           = 0644,
->> -             .proc_handler   = proc_dointvec,
->> +             .proc_handler   = proc_dointvec_minmax,
->>               .extra1         = &zero,
->>               .extra2         = &one,
->>       },
->> @@ -1204,7 +1204,7 @@ static struct ctl_table vm_table[] = {
->>               .data           = &block_dump,
->>               .maxlen         = sizeof(block_dump),
->>               .mode           = 0644,
->> -             .proc_handler   = proc_dointvec,
->> +             .proc_handler   = proc_dointvec_minmax,
->>               .extra1         = &zero,
->>       },
->>       {
->> @@ -1212,7 +1212,7 @@ static struct ctl_table vm_table[] = {
->>               .data           = &sysctl_vfs_cache_pressure,
->>               .maxlen         = sizeof(sysctl_vfs_cache_pressure),
->>               .mode           = 0644,
->> -             .proc_handler   = proc_dointvec,
->> +             .proc_handler   = proc_dointvec_minmax,
->>               .extra1         = &zero,
->>       },
->>  #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
->> @@ -1221,7 +1221,7 @@ static struct ctl_table vm_table[] = {
->>               .data           = &sysctl_legacy_va_layout,
->>               .maxlen         = sizeof(sysctl_legacy_va_layout),
->>               .mode           = 0644,
->> -             .proc_handler   = proc_dointvec,
->> +             .proc_handler   = proc_dointvec_minmax,
->>               .extra1         = &zero,
->>       },
->>  #endif
->> @@ -1231,7 +1231,7 @@ static struct ctl_table vm_table[] = {
->>               .data           = &zone_reclaim_mode,
->>               .maxlen         = sizeof(zone_reclaim_mode),
->>               .mode           = 0644,
->> -             .proc_handler   = proc_dointvec,
->> +             .proc_handler   = proc_dointvec_minmax,
->>               .extra1         = &zero,
->>       },
->>       {
->> @@ -1287,7 +1287,7 @@ static struct ctl_table vm_table[] = {
->>               .data           = &vdso_enabled,
->>               .maxlen         = sizeof(vdso_enabled),
->>               .mode           = 0644,
->> -             .proc_handler   = proc_dointvec,
->> +             .proc_handler   = proc_dointvec_minmax,
->>               .extra1         = &zero,
->>       },
->>  #endif
->
+>> I'd expect the wrapped around 94898554+8 to be merged with 94899962+8.
+>   How could they be merged? They are not continguous...
+> 
+>> Why kworker/0:1-11 is submitting the request early? And the second
+>> request is submitted by flush-8:0-2743.
+>   I'm not sure about that either - but I think that kworker is submitting
+> the work when unplug happens while flush ends up doing it when the queue is
+> alredy unplugged.
 
+Yes. For the above case, it was unplug.
 
+For other cases, the reason was max_sectors.
+Before writeback wraps around, the request has already grown to
+max_sectors size (~512KB) and doesn't accept new merge.
 
+Thanks,
 -- 
-Regards
-dave
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Jun'ichi Nomura, NEC Corporation
