@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759600Ab1CDMwn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 07:52:43 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47042 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759400Ab1CDMwm (ORCPT
+	id S1759618Ab1CDMw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 07:52:58 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:52617 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759400Ab1CDMw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 07:52:42 -0500
-Date: Fri, 4 Mar 2011 12:52:39 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [REVIEW] NVM Express driver
-Message-ID: <20110304125239.GE17653@sirena.org.uk>
-References: <20110303204749.GY3663@linux.intel.com> <20110303211336.GA32645@kroah.com> <20110303214104.GZ3663@linux.intel.com>
+	Fri, 4 Mar 2011 07:52:56 -0500
+Date: Fri, 4 Mar 2011 07:52:20 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Anton Altaparmakov <aia21@cam.ac.uk>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@lst.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        George Spelvin <linux@horizon.com>
+Subject: Re: a major regression in recent kernels? - was: Re: Null pointer
+ OOPS in sync_inodes_sb+0xa9/0x104
+Message-ID: <20110304125220.GA6740@infradead.org>
+References: <20110302034417.4954.qmail@science.horizon.com>
+ <023AB542-CCF0-4436-8594-51132FEA8070@cam.ac.uk>
+ <AANLkTi=eWdUjgTB2iWOB7YxOtm9f9a9Ux2uCghR=KTgN@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110303214104.GZ3663@linux.intel.com>
-X-Cookie: There are no games on this system.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <AANLkTi=eWdUjgTB2iWOB7YxOtm9f9a9Ux2uCghR=KTgN@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 04:41:04PM -0500, Matthew Wilcox wrote:
+On Wed, Mar 02, 2011 at 10:31:15AM -0800, Linus Torvalds wrote:
+> The whole "backing_dev_info" has been a total disaster. The thing is
+> crap. It violates all the normal kernel memory management rules ("Thou
+> shalt use reference counts and free only when it goes to zero") and
+> the whole thing has been a constant source of "oh, that driver didn't
+> set it, but we changed all the code to require it to be correct".
+> 
+> And the reason we set it to NULL when the device goes away is exactly
+> that it's not ref-counted correctly, so we really _have_ to set it to
+> NULL, because it's not going to be around.
+> 
+> (And the reverse of that is why all kernel data structures should use
+> refcounts, and not some external lifetime notion)
 
-> There's a bit of an impedence mismatch there.  Think of this as
-> being drive firmware instead of controller firmware.  This isn't for
-> request_firmware() kind of uses, it's for some admin tool to come along
-> and tell the drive "Oh, here's some new firmware for you".
+Yes.  But the bdi is even worse than that, as it conflates things with
+different lifetime into a single object.  We have the "old school" bdi
+which mostly contained various bits of tuning for the VM and read-ahead
+algorithms.  This one is required to stay around even with no fs mounted
+on block devices because people expect it to stay around with no fs
+mounted.  And then we have the writeback context entangled into it,
+which only makes sense with an active filesystem (or block device node)
+on it to make it special fun.  Even more fun is that we have a pointer
+from the superblock, and one from the inode, and the latter might point
+to lala land if this is say a /dev/mem node which has a different bdi
+for the "old-school" MM usage.
 
-What some other devices I've seen do for this is expose the firmware
-storage as a MTD device.  Dunno if that matches the hardware at all
-here, though.
+I had various stages of prototypes for separating the two into:
+
+ 1) the old bdi.  Life time rules are: allocated and reference counted
+    with the containing device.  That is gendisk for block devices,
+    server context for remote devices, static at module init time for
+    /dev/zero and similar.
+ 2) writeback context.  Only exists if a user is there, and thus
+    refcounted by itself. For non-blockdevice filesystem instances it's
+    trivially always allocated with the superblock, and goes away with it.
+    For block-device instances we need to keep a pointer to it from
+    struct block_device and properly look it up on mount, or opening of
+    the block device nodes.
+
+I guess I need to get back to it, but kept it off for now as the code
+had reached relative stability and really fear touching it again.
+
+It's for sure not .38 material, though.
