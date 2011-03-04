@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab1CDW7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 17:59:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55242 "EHLO mx1.redhat.com"
+	id S932751Ab1CDXAt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 18:00:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52350 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932520Ab1CDW7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 17:59:38 -0500
-Message-ID: <4D716ED7.5000200@redhat.com>
-Date: Fri, 04 Mar 2011 17:59:35 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-References: <20110303070652.GG29840@pcnci.linuxbox.cz> <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan> <4D700F09.9000002@redhat.com> <20110303220155.GB27691@nik-comp.lan> <4D7101AF.6060009@redhat.com> <20110304182733.GA2867@nik-comp.lan> <1299265762.11618.140.camel@mothafucka.localdomain> <20110304205512.GB2867@nik-comp.lan> <1299274906.11618.157.camel@mothafucka.localdomain> <20110304223640.GC2867@nik-comp.lan>
-In-Reply-To: <20110304223640.GC2867@nik-comp.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932707Ab1CDXAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 18:00:48 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: hjk@hansjkoch.de, gregkh@suse.de, tglx@linutronix.de, sshtylyov@mvista.com,
+        arnd@arndb.de, pratheesh@ti.com, amit.chatterjee@ti.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v11 0/1] Add PRUSS UIO driver support
+Date: Sat,  5 Mar 2011 04:30:16 +0530
+Message-Id: <1299279617-21108-1-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2011 05:36 PM, Nikola Ciprich wrote:
->> I think although the long term plan is to just do this update once in
->> your case (stable tsc), this update is needed.
->>
->> Why don't you send a patch to re-include it ?
->>
->>      
-> Yes, I'll gladly submit patch, one question, is this OK
-> to just add calling kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu) before
-> the conditional (as I did in my test), or should it go somewhere to else {..}
-> section? it's called inside the conditional again, which will cause it
-> to be called twice in some cases, is it OK?
-> n.
->    
+This patch series add support for PRUSS (Programmable Real-time Unit Sub
+System) UIO driver in Texas Instruments DA850, AM18xx and OMAP-L138 processors.
+PRUSS is programmable RISC core which can be used to implement Soft IPs
+(eg:- DMA, CAN, UART,SmartCard) and Industrial communications data link layers
+(eg:- PROFIBUS). UIO driver exposes PRUSS resources like memory and interrupts
+to user space application.PRUSS UIO application API can be used to control PRUs
+in PRUSS, setup PRU INTC, load firmware to PRUs and implement IPC between Host
+processor and PRUs. More information on PRUSS and UIO linux user space API
+available in the links below
 
-Let me write a patch to fix this..
+http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader_API_Guide
+
+Platform/board specific portion of this patch depends on Mistral patches below
+
+[PATCH 1/1] davinci: changed SRAM allocator to shared ram :
+				https://patchwork.kernel.org/patch/549351/
+[PATCH 1/1] da830: macro rename DA8XX_LPSC0_DMAX to DA8XX_LPSC0_PRUSS :
+				 https://patchwork.kernel.org/patch/549331/
+[PATCH v2 01/13] mfd: pruss mfd driver :
+				https://patchwork.kernel.org/patch/549531/
+[PATCH v2 02/13] da850: pruss platform specific additions :
+				https://patchwork.kernel.org/patch/549521/
+
+I will submit a seperate patch set on top of these patches to support PRUSS
+UIO driver.
+
+Pratheesh Gangadhar (1):
+  PRUSS UIO driver support
+
+ drivers/uio/Kconfig                     |   17 ++
+ drivers/uio/Makefile                    |    1 +
+ drivers/uio/uio_pruss.c                 |  247 +++++++++++++++++++++++++++++++
+ include/linux/platform_data/uio_pruss.h |   25 +++
+ 4 files changed, 290 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/uio/uio_pruss.c
+ create mode 100644 include/linux/platform_data/uio_pruss.h
+
