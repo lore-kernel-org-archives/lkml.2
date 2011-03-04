@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760197Ab1CDUsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 15:48:38 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52834 "EHLO ogre.sisk.pl"
+	id S1760205Ab1CDUvu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 15:51:50 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:40506 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760167Ab1CDUsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 15:48:37 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kees Cook <kees.cook@canonical.com>
-Subject: Re: [PATCH] power: disable hibernation if module loading is disabled
-Date: Fri, 4 Mar 2011 21:48:39 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
-        security@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org
-References: <1299255084-4390-1-git-send-email-segoon@openwall.com> <20110304184324.GQ372@outflux.net>
-In-Reply-To: <20110304184324.GQ372@outflux.net>
+	id S1760065Ab1CDUvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 15:51:48 -0500
+Date: Fri, 4 Mar 2011 12:51:43 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation
+	problem
+Message-ID: <20110304205143.GE27190@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <4D634D8F.4070401@panasas.com> <20110222114222.GA24728@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103042148.39944.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222114222.GA24728@quack.suse.cz>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 04, 2011, Kees Cook wrote:
-> On Fri, Mar 04, 2011 at 07:11:24PM +0300, Vasiliy Kulikov wrote:
-> > If /proc/sys/kernel/modules_disabled is set to 1, then nobody (even full
-> > root) may not read/write arbitrary kernel memory.  In spite of it,
-> > hibernation allows anyone with an access to either /dev/snapshot or
-> > /sys/power/ make the full snapshot of the system.  This snapshot may be
-> > freely changed and uploaded back.
+On Tue, Feb 22, 2011 at 12:42:22PM +0100, Jan Kara wrote:
+>   Hi Boaz,
 > 
-> Ah, yes please. I'd like to try to have ways to close all the
-> "intentional" arbitrary memory writing interfaces.
+> On Mon 21-02-11 21:45:51, Boaz Harrosh wrote:
+> > On 02/21/2011 06:00 PM, Darrick J. Wong wrote:
+> > > Last summer there was a long thread entitled "Wrong DIF guard tag on ext2
+> > > write" (http://marc.info/?l=linux-scsi&m=127530531808556&w=2) that started a
+> > > discussion about how to deal with the situation where one program tells the
+> > > kernel to write a block to disk, the kernel computes the checksum of that data,
+> > > and then a second program begins writing to that same block before the disk HBA
+> > > can DMA the memory block, thereby causing the disk to complain about being sent
+> > > invalid checksums.
+> > 
+> > The brokenness is in ext2/3 if you'll use btrfs, xfs and I think late versions
+> > of ext4 it should work much better. (If you still have problems please report
+> > them, those FSs advertise stable pages write-out)
+>   Do they? I've just checked ext4 and xfs and they don't seem to enforce
+> stable pages. They do lock the page (which implicitely happens in mm code
+> for any filesystem BTW) but this is not enough. You have to wait for
+> PageWriteback to get cleared and only btrfs does that.
+> 
+> > This problem is easily fixed at the FS layer or even at VFS, by overriding mk_write
+> > and syncing with write-out for example by taking the page-lock. Currently each
+> > FS is to itself because in VFS it would force the behaviour on FSs that it does
+> > not make sense to.
+>   Yes, it's easy to fix but at a performance cost for any application doing
+> frequent rewrites regardless whether integrity features are used or not.
+> And I don't think that's a good thing. I even remember someone measured the
+> hit last time this came up and it was rather noticeable.
+> 
+> > Note that the proper solution does not copy any data, just forces the app to
+> > wait before changing write-out pages.
+>   I think that's up for discussion. In fact what is going to be faster
+> depends pretty much on your system config. If you have enough CPU/RAM
+> bandwidth compared to storage speed, you're better of doing copying. If
+> you can barely saturate storage with your CPU/RAM, waiting is probably
+> better for you. 
+> 
+> Moreover if you do data copyout, you push the performance cost only on
+> users of the integrity feature which is nice. But on the other hand users
+> of integrity take the cost even if they are not doing rewrites.
+> 
+> A solution which is technically plausible and penalizing only rewrites
+> of data-integrity protected pages would be a use of shadow pages as Darrick
+> describes below. So I'd lean towards that long term. But for now I think
+> Darrick's solution is OK to make the integrity feature actually useful and
+> later someone can try something more clever.
 
-They are not exactly arbitrary and I'd like to see a plausible attack
-scenario using the hibernation interface as is (assuming you're not a
-full root at least).
+Hmm.  Any interest in pushing the page copy patch as an interim solution while
+I work on getting the wait-on-writeback strategy to function?  I agree it's not
+the fastest solution, but at least it won't be running broken while I find the
+faster solution(s).
 
-> Hooking it to modules_disable seems as good as any other toggle.
+(More on that writeback patch in a short while.)
 
-You're kidding, aren't you?
-
-> Still waiting to hear
-> anything on this: http://article.gmane.org/gmane.linux.acpi.devel/49471
-
-I personally don't think it's a good idea, but I'm not the maintainer of that
-code.
-
-Thanks,
-Rafael
+--D
