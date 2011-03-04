@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760242Ab1CDVbZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:31:25 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:14992 "EHLO relay.sw.ru"
+	id S1760227Ab1CDVcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:32:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5552 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760167Ab1CDVbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:31:24 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, avagin@openvz.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH rh6] mm: skip zombie in OOM-killer
-Date: Sat,  5 Mar 2011 00:30:56 +0300
-Message-Id: <1299274256-2122-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.5.5.6
+	id S1760167Ab1CDVb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:31:59 -0500
+Date: Fri, 4 Mar 2011 16:31:47 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Justin TerAvest <teravest@google.com>, Chad Talbott <ctalbott@google.com>,
+        Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: Per iocontext request descriptor limits (Was: Re: RFC: default
+ group_isolation to 1, remove option)
+Message-ID: <20110304213147.GH5466@redhat.com>
+References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com>
+ <20110301142002.GB25699@redhat.com>
+ <4D6F0ED0.80804@kernel.dk>
+ <20110303153007.GF16720@redhat.com>
+ <4D6FB751.3010608@kernel.dk>
+ <20110303165717.GA19527@redhat.com>
+ <20110303180328.GH16720@redhat.com>
+ <4D70C695.4040205@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D70C695.4040205@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A parent may wait a memory and zombie will prevent killing another task.
+On Fri, Mar 04, 2011 at 12:01:41PM +0100, Jens Axboe wrote:
+> On 2011-03-03 19:03, Vivek Goyal wrote:
+> > On Thu, Mar 03, 2011 at 11:57:17AM -0500, Vivek Goyal wrote:
+> > 
+> > [..]
+> >>> For now it's not a complicated effort, I already have a patch for this.
+> >>> If page tracking needs extra complexity, it'll have to remain in the
+> >>> page tracking code.
+> >>
+> >> Great. I am hoping once you get some free time, you will cleanup and post
+> >> that patch.
+> > 
+> > Hmmm..., Now I got interested in this stuff. In case you would like to see
+> > your patch to be in and finding it hard to find time to clean it up, I can
+> > do that and repost and also fix any bugs.
+> 
+> I did an initial run on the plane:
+> 
+> http://git.kernel.dk/?p=linux-2.6-block.git;a=shortlog;h=refs/heads/for-2.6.39/ioc-rq-alloc
+> 
+> Not tested at all, so there are likely a few bugs. Congestion is gone,
+> we'll need to consider that. Before the device was either congested or
+> not congested, now the question to ask would be "is the device congested
+> for ME" as the answer will depend on who is asking.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- mm/oom_kill.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 7dcca55..2fc554e 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -311,7 +311,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 		 * blocked waiting for another task which itself is waiting
- 		 * for memory. Is there a better alternative?
- 		 */
--		if (test_tsk_thread_flag(p, TIF_MEMDIE))
-+		if (test_tsk_thread_flag(p, TIF_MEMDIE) && p->mm)
- 			return ERR_PTR(-1UL);
- 
- 		/*
--- 
-1.7.1
+Thanks Jens. I was having a quick look and noticed that ioc->count[] state
+is global across queues. I guess what we want is to keep track of ioc
+state per queue (something like cfq_io_context). By maintaining per device
+state in ioc, we can also tell whether a particular ioc is congested or
+not on a specific device.
 
+Thanks
+Vivek
