@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367Ab1CDJFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 04:05:33 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45251
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759308Ab1CDJF0 (ORCPT
+	id S1759348Ab1CDJGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 04:06:50 -0500
+Received: from server103.greatnet.de ([83.133.97.6]:44883 "EHLO
+	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab1CDJGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 04:05:26 -0500
-Date: Fri, 04 Mar 2011 01:06:03 -0800 (PST)
-Message-Id: <20110304.010603.104076956.davem@davemloft.net>
-To: jslaby@suse.cz
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, jirislaby@gmail.com,
-        netdev@vger.kernel.org, maxk@qualcomm.com, vtun@office.satix.net
-Subject: Re: tun: Failed to create tun sysfs files
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D70A929.4010900@suse.cz>
-References: <201103030127.p231ReNl012841@imap1.linux-foundation.org>
-	<4D70A929.4010900@suse.cz>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 4 Mar 2011 04:06:46 -0500
+Message-ID: <4D70ABA2.8090004@nachtwindheim.de>
+Date: Fri, 04 Mar 2011 10:06:42 +0100
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] x86: fix section of a disable_apic_timer
+References: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de> <1299182701-8591-7-git-send-email-henne@nachtwindheim.de> <4D7005B1.4020008@gmail.com>
+In-Reply-To: <4D7005B1.4020008@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
-Date: Fri, 04 Mar 2011 09:56:09 +0100
-
-> On 03/03/2011 01:52 AM, akpm@linux-foundation.org wrote:
->> The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
+Am 03.03.2011 22:18, schrieb Cyrill Gorcunov:
+> On 03/03/2011 11:05 PM, Henrik Kretzschmar wrote:
+>> This variable placed better into section .init.data,
+>> since its only accessed by __init code.
+>>
+>> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+>> ---
+>>  arch/x86/kernel/apic/apic.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+>> index 64efb2d..dab58b6 100644
+>> --- a/arch/x86/kernel/apic/apic.c
+>> +++ b/arch/x86/kernel/apic/apic.c
+>> @@ -163,7 +163,7 @@ early_param("nox2apic", setup_nox2apic);
+>>  unsigned long mp_lapic_addr;
+>>  int disable_apic;
+>>  /* Disable local APIC timer from the kernel commandline or via dmi quirk */
+>> -static int disable_apic_timer __cpuinitdata;
+>> +static int disable_apic_timer __initdata = 0;
+>>  /* Local APIC timer works in C2 */
+>>  int local_apic_timer_c2_ok;
+>>  EXPORT_SYMBOL_GPL(local_apic_timer_c2_ok);
 > 
-> Hi, I'm seeing this with tun (also with earlier versions):
+> Good to me, though I don't get why we need 0 here.
+> 
 
-The name of the attribute was changed to netdev_group in order to
-fix this problem, in fact quite some time ago.
+I wanted to help gcc, but some tests showed me that gcc is much cleverer than I thought.
+So I verified that you are right and I'll change that gladly.
 
-See the last entry of the net_class_attributes array in
-net/core/net-sysfs.c, if it isn't called "netdev_group"
-something is awry.
+
+
+
+
