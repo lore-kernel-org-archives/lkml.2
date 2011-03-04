@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759963Ab1CDS1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 13:27:50 -0500
-Received: from gwu.lbox.cz ([62.245.111.132]:42710 "EHLO gwu.lbox.cz"
+	id S1759999Ab1CDS2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 13:28:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758463Ab1CDS1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 13:27:48 -0500
-Date: Fri, 4 Mar 2011 19:27:33 +0100
-From: Nikola Ciprich <extmaillist@linuxbox.cz>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@redhat.com>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
-	boot
-Message-ID: <20110304182733.GA2867@nik-comp.lan>
-References: <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com> <20110303070652.GG29840@pcnci.linuxbox.cz> <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan> <4D700F09.9000002@redhat.com> <20110303220155.GB27691@nik-comp.lan> <4D7101AF.6060009@redhat.com>
+	id S1759842Ab1CDS2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 13:28:05 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, "Alex\,Shi" <alex.shi@intel.com>,
+        "Li\, Shaohua" <shaohua.li@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "tytso\@mit.edu" <tytso@mit.edu>,
+        "jaxboe\@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen\, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
+References: <1297732201.24560.2.camel@sli10-conroe>
+	<20110221164909.GG6584@quack.suse.cz>
+	<1298449487.14712.1064.camel@debian>
+	<20110224121339.GE23042@quack.suse.cz>
+	<AANLkTinAeQMy-OoYYpbYeX=EjZ_-uT=67Ktk1PbE=A7_@mail.gmail.com>
+	<x49hbbmpqbo.fsf@segfault.boston.devel.redhat.com>
+	<20110302094246.GA7496@quack.suse.cz>
+	<x491v2p4i0u.fsf@segfault.boston.devel.redhat.com>
+	<20110302211748.GF7496@quack.suse.cz>
+	<x49lj0x0zve.fsf@segfault.boston.devel.redhat.com>
+	<20110304153248.GC2649@quack.suse.cz>
+	<x49d3m6j35j.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 04 Mar 2011 13:27:57 -0500
+In-Reply-To: <x49d3m6j35j.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Fri, 04 Mar 2011 10:50:32 -0500")
+Message-ID: <x491v2mivv6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7101AF.6060009@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 4717492 records (last update: 20110304)
-X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Zachary,
+Jeff Moyer <jmoyer@redhat.com> writes:
 
-> You don't see any messages about TSC being unstable or switching  
-> clocksource after loading the KVM module?  And you are not suspending  
-> the host or anything?
-no messages, no suspending, nothing.
+> Jan Kara <jack@suse.cz> writes:
+>
+>> I'm not so happy with ext4 results. The difference between ext3 and ext4
+>> might be that amount of data written by kjournald in ext3 is considerably
+>> larger if it ends up pushing out data (because of data=ordered mode) as
+>> well. With ext4, all data are written by filemap_fdatawrite() from fsync
+>> because of delayed allocation. And thus maybe for ext4 WRITE_SYNC_PLUG
+>> is hurting us with your fast storage and small amount of written data? With
+>> WRITE_SYNC, data would be already on it's way to storage before we get to
+>> wait for them...
+>
+>> Or it could be that we really send more data in WRITE mode rather than in
+>> WRITE_SYNC mode with the patch on ext4 (that should be verifiable with
+>> blktrace). But I wonder how that could happen...
+>
+> It looks like this is the case, the I/O isn't coming down as
+> synchronous.  I'm seeing a lot of writes, very few write sync's, which
+> means that the write stream will be preempted by the incoming reads.
+>
+> Time to audit that fsync path and make sure it's marked properly, I
+> guess.
 
+OK, I spoke too soon.  Here's the blktrace summary information (I re-ran
+the tests using 3 samples, the blktrace is from the last run of the
+three in each case):
 
-> Can you try using "processor.max_cstate=1" on the host as a kernel  
-> parameter and see if it makes a difference?
-I tried it, no change..
-n.
+Vanilla
+-------
+fs_mark: 307.288 files/sec
+fio: 286509 KB/s
 
+Total (sde):
+ Reads Queued:     341,558,   84,994MiB  Writes Queued:       1,561K,    6,244MiB
+ Read Dispatches:  341,493,   84,994MiB  Write Dispatches:  648,046,    6,244MiB
+ Reads Requeued:         0               Writes Requeued:        27
+ Reads Completed:  341,491,   84,994MiB  Writes Completed:  648,021,    6,244MiB
+ Read Merges:           65,    2,780KiB  Write Merges:      913,076,    3,652MiB
+ IO unplugs:       578,102               Timer unplugs:           0
 
--- 
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 01 Ostrava
+Throughput (R/W): 282,797KiB/s / 20,776KiB/s
+Events (sde): 16,724,303 entries
 
-tel.:   +420 596 603 142
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
+Patched
+-------
+fs_mark: 278.587 files/sec
+fio: 298007 KB/s
 
-www.linuxbox.cz
+Total (sde):
+ Reads Queued:     345,407,   86,834MiB  Writes Queued:       1,566K,    6,264MiB
+ Read Dispatches:  345,391,   86,834MiB  Write Dispatches:  327,404,    6,264MiB
+ Reads Requeued:         0               Writes Requeued:        33
+ Reads Completed:  345,391,   86,834MiB  Writes Completed:  327,371,    6,264MiB
+ Read Merges:           16,    1,576KiB  Write Merges:        1,238K,    4,954MiB
+ IO unplugs:       580,308               Timer unplugs:           0
 
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+Throughput (R/W): 288,771KiB/s / 20,832KiB/s
+Events (sde): 14,030,610 entries
+
+So, it appears we flush out writes much more aggressively without the
+patch in place.  I'm not sure why the write bandwidth looks to be higher
+in the patched case... odd.
+
+Cheers,
+Jeff
