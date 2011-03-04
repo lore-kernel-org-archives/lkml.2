@@ -1,39 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab1CDPZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:25:17 -0500
-Received: from mail.deathmatch.net ([72.66.92.28]:3266 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758483Ab1CDPZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:25:12 -0500
-Date: Fri, 4 Mar 2011 10:24:47 -0500
-From: Bob Copeland <me@bobcopeland.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: omfs fixes
-Message-ID: <20110304152447.GA14198@hash.localnet>
-References: <20110303032454.GI22723@ZenIV.linux.org.uk> <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com> <20110303060352.GK22723@ZenIV.linux.org.uk> <AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com> <87tyfk7x0c.fsf@devron.myhome.or.jp> <AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com> <87lj0v9984.fsf@devron.myhome.or.jp> <AANLkTinSiD3YakBTNfYXrE12YDsDREHX3GzLzCncduTV@mail.gmail.com> <20110303225702.GQ22723@ZenIV.linux.org.uk> <20110304065542.GT22723@ZenIV.linux.org.uk>
+	id S1759406Ab1CDPcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:32:54 -0500
+Received: from cantor.suse.de ([195.135.220.2]:48914 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345Ab1CDPcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 10:32:53 -0500
+Date: Fri, 4 Mar 2011 16:32:48 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Corrado Zoccolo <czoccolo@gmail.com>,
+        "Alex,Shi" <alex.shi@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
+        Vivek Goyal <vgoyal@redhat.com>, "tytso@mit.edu" <tytso@mit.edu>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs
+ machine
+Message-ID: <20110304153248.GC2649@quack.suse.cz>
+References: <1297732201.24560.2.camel@sli10-conroe>
+ <20110221164909.GG6584@quack.suse.cz>
+ <1298449487.14712.1064.camel@debian>
+ <20110224121339.GE23042@quack.suse.cz>
+ <AANLkTinAeQMy-OoYYpbYeX=EjZ_-uT=67Ktk1PbE=A7_@mail.gmail.com>
+ <x49hbbmpqbo.fsf@segfault.boston.devel.redhat.com>
+ <20110302094246.GA7496@quack.suse.cz>
+ <x491v2p4i0u.fsf@segfault.boston.devel.redhat.com>
+ <20110302211748.GF7496@quack.suse.cz>
+ <x49lj0x0zve.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110304065542.GT22723@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <x49lj0x0zve.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 06:55:42AM +0000, Al Viro wrote:
-> I've pushed fixes for (b), (c) and (d) into #i_nlink and I think that (a)
-> needs to be dealt with as well, but that one is less nasty.  Bob, do you
-> prefer that to go through your tree or should it go straight to Linus?
-> It's in git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ i_nlink,
+  Hi Jeff,
+On Wed 02-03-11 20:14:13, Jeff Moyer wrote:
+> So, the results are in.  The test workload is an fs_mark process writing
+> out 64k files and fsyncing each file after it's written.  Concurrently
+> with this is a fio job running a buffered sequential reader (bsr).  Each
+> data point is the average of 10 runs, after throwing out the first run.
+> File system mount options are left at their defaults, which means that
+> barriers are on.  The storage is an HP EVA, connected to the host via a
+> single 4Gb FC path.
+  Thanks a lot for testing! BTW: fs_mark runs in a single thread or do you
+use more threads?
 
-Looks great, thanks for the review.  I'll go ahead and take them through
-my tree after a quick run through the test harness.
+> ext3 looks marginally better with your patches.  We get better files/sec
+> AND better throughput from the buffered reader.  For ext4, the results
+> are less encouraging.  We see a drop in files/sec, and an increase in
+> throughput for the sequential reader.  So, the fsync-ing is being
+> starved a bit more than before.
+> 
+>         ||       ext3        ||       ext4        ||
+>         || fs_mark | fio bsr || fs_mark | fio bsr ||
+> --------++---------+---------++---------+---------||
+> vanilla || 517.535 | 178187  || 408.547 | 277130  ||
+> patched || 540.34  | 182312  || 342.813 | 294655  ||
+> ====================================================
+> %diff   ||  +4.4% |    +2.3% ||  -16.1% |  +6.3%  ||
+Interesting. I'm surprised ext3 and ext4 results differ this much. I'm more
+than happy with ext3 results since I just wanted to verify that fsync load
+doesn't degrade too much with the improved logic preferring non-fsync load
+more than we used to.
 
+I'm not so happy with ext4 results. The difference between ext3 and ext4
+might be that amount of data written by kjournald in ext3 is considerably
+larger if it ends up pushing out data (because of data=ordered mode) as
+well. With ext4, all data are written by filemap_fdatawrite() from fsync
+because of delayed allocation. And thus maybe for ext4 WRITE_SYNC_PLUG
+is hurting us with your fast storage and small amount of written data? With
+WRITE_SYNC, data would be already on it's way to storage before we get to
+wait for them...
+
+Or it could be that we really send more data in WRITE mode rather than in
+WRITE_SYNC mode with the patch on ext4 (that should be verifiable with
+blktrace). But I wonder how that could happen...
+
+							Bye
+								Honza
 -- 
-Bob Copeland %% www.bobcopeland.com
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
