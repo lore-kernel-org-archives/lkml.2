@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759999Ab1CDS2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 13:28:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759842Ab1CDS2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 13:28:05 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, "Alex\,Shi" <alex.shi@intel.com>,
-        "Li\, Shaohua" <shaohua.li@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "tytso\@mit.edu" <tytso@mit.edu>,
-        "jaxboe\@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen\, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
-References: <1297732201.24560.2.camel@sli10-conroe>
-	<20110221164909.GG6584@quack.suse.cz>
-	<1298449487.14712.1064.camel@debian>
-	<20110224121339.GE23042@quack.suse.cz>
-	<AANLkTinAeQMy-OoYYpbYeX=EjZ_-uT=67Ktk1PbE=A7_@mail.gmail.com>
-	<x49hbbmpqbo.fsf@segfault.boston.devel.redhat.com>
-	<20110302094246.GA7496@quack.suse.cz>
-	<x491v2p4i0u.fsf@segfault.boston.devel.redhat.com>
-	<20110302211748.GF7496@quack.suse.cz>
-	<x49lj0x0zve.fsf@segfault.boston.devel.redhat.com>
-	<20110304153248.GC2649@quack.suse.cz>
-	<x49d3m6j35j.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 04 Mar 2011 13:27:57 -0500
-In-Reply-To: <x49d3m6j35j.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Fri, 04 Mar 2011 10:50:32 -0500")
-Message-ID: <x491v2mivv6.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759980Ab1CDSb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 13:31:26 -0500
+Received: from xenotime.net ([184.105.210.51]:38962 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758463Ab1CDSbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 13:31:25 -0500
+Date: Fri, 4 Mar 2011 10:31:21 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: j223yang@asset.uwaterloo.ca
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Patch] ariadne: fix possible null dereference
+Message-Id: <20110304103121.81a2364b.rdunlap@xenotime.net>
+In-Reply-To: <20110304174625.GA31042@asset.uwaterloo.ca>
+References: <20110304174625.GA31042@asset.uwaterloo.ca>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer <jmoyer@redhat.com> writes:
+On Fri, 4 Mar 2011 12:46:26 -0500 j223yang@asset.uwaterloo.ca wrote:
 
-> Jan Kara <jack@suse.cz> writes:
->
->> I'm not so happy with ext4 results. The difference between ext3 and ext4
->> might be that amount of data written by kjournald in ext3 is considerably
->> larger if it ends up pushing out data (because of data=ordered mode) as
->> well. With ext4, all data are written by filemap_fdatawrite() from fsync
->> because of delayed allocation. And thus maybe for ext4 WRITE_SYNC_PLUG
->> is hurting us with your fast storage and small amount of written data? With
->> WRITE_SYNC, data would be already on it's way to storage before we get to
->> wait for them...
->
->> Or it could be that we really send more data in WRITE mode rather than in
->> WRITE_SYNC mode with the patch on ext4 (that should be verifiable with
->> blktrace). But I wonder how that could happen...
->
-> It looks like this is the case, the I/O isn't coming down as
-> synchronous.  I'm seeing a lot of writes, very few write sync's, which
-> means that the write stream will be preempted by the incoming reads.
->
-> Time to audit that fsync path and make sure it's marked properly, I
-> guess.
+> This patch fixes bugzilla #13853:
+> https://bugzilla.kernel.org/show_bug.cgi?id=13853
+> 
+> The patch removes dereference of 'dev' after testing for NULL.
+> The source code ariadne.c uses spaces instead of tabs, so the patch
+> uses spaces too.
 
-OK, I spoke too soon.  Here's the blktrace summary information (I re-ran
-the tests using 3 samples, the blktrace is from the last run of the
-three in each case):
+Sorry for the confusion here, but (while I agree with the fix in this
+patch), this patch still does not apply cleanly.
 
-Vanilla
--------
-fs_mark: 307.288 files/sec
-fio: 286509 KB/s
+If a line in the source code file uses spaces, then use spaces.
+If a line in the source code file uses tabs, then use tabs.
 
-Total (sde):
- Reads Queued:     341,558,   84,994MiB  Writes Queued:       1,561K,    6,244MiB
- Read Dispatches:  341,493,   84,994MiB  Write Dispatches:  648,046,    6,244MiB
- Reads Requeued:         0               Writes Requeued:        27
- Reads Completed:  341,491,   84,994MiB  Writes Completed:  648,021,    6,244MiB
- Read Merges:           65,    2,780KiB  Write Merges:      913,076,    3,652MiB
- IO unplugs:       578,102               Timer unplugs:           0
+You cannot exchange one for the other in your generated patch.
+Using 'diff' creates the patch correctly, so I guess that your patch
+generation tool still needs some work.
 
-Throughput (R/W): 282,797KiB/s / 20,776KiB/s
-Events (sde): 16,724,303 entries
+Please take your patch and test applying it:
 
-Patched
--------
-fs_mark: 278.587 files/sec
-fio: 298007 KB/s
+> cd linux-2.6.38-rc7
+> patch -p1 --dry-run < ~/tmp/ariadne.patch
+patching file drivers/net/ariadne.c
+Hunk #2 FAILED at 430.
+1 out of 2 hunks FAILED -- saving rejects to file drivers/net/ariadne.c.rej
 
-Total (sde):
- Reads Queued:     345,407,   86,834MiB  Writes Queued:       1,566K,    6,264MiB
- Read Dispatches:  345,391,   86,834MiB  Write Dispatches:  327,404,    6,264MiB
- Reads Requeued:         0               Writes Requeued:        33
- Reads Completed:  345,391,   86,834MiB  Writes Completed:  327,371,    6,264MiB
- Read Merges:           16,    1,576KiB  Write Merges:        1,238K,    4,954MiB
- IO unplugs:       580,308               Timer unplugs:           0
 
-Throughput (R/W): 288,771KiB/s / 20,832KiB/s
-Events (sde): 14,030,610 entries
+> Signed-off-by: Jinqiu Yang<crindy646@gmail.com>
+> ---
+>  drivers/net/ariadne.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ariadne.c b/drivers/net/ariadne.c
+> --- a/drivers/net/ariadne.c
+> +++ b/drivers/net/ariadne.c
+> @@ -420,7 +420,7 @@ static inline void ariadne_reset(struct
+>  static irqreturn_t ariadne_interrupt(int irq, void *data)
+>  {
+>      struct net_device *dev = (struct net_device *)data;
+> -    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
+> +    volatile struct Am79C960 *lance;
+>      struct ariadne_private *priv;
+>      int csr0, boguscnt;
+>      int handled = 0;
+> @@ -430,6 +430,7 @@ static irqreturn_t ariadne_interrupt(int
+>         return IRQ_NONE;
+>      }
+> 
+> +    lance = (struct Am79C960 *)dev->base_addr;
+>      lance->RAP = CSR0;                 /* PCnet-ISA Controller Status */
+> 
+>      if (!(lance->RDP & INTR))          /* Check if any interrupt has been */
+> 
+> --
 
-So, it appears we flush out writes much more aggressively without the
-patch in place.  I'm not sure why the write bandwidth looks to be higher
-in the patched case... odd.
-
-Cheers,
-Jeff
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
