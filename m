@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759777Ab1CDPqE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:46:04 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64163 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab1CDPqD (ORCPT
+	id S1759820Ab1CDPqp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:46:45 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40295 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759718Ab1CDPqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:46:03 -0500
+	Fri, 4 Mar 2011 10:46:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:subject:message-id:mime-version:content-type
          :content-disposition:user-agent;
-        b=XIPJ8EkmQ7IvHDkePxFUxg0koGLeL1+DG1hbnkI28pkhPIEYlWl8qGTR+Hot5vjgXG
-         AFu5fvFERoXlenCUXw/jqbz11K2Y2Zo2VxV1OVnrpC+mBtm7YY5jauINKeAaD517BO3x
-         UKba1g7NdQ+svODWK97HbqxUUqT+Ra0/AypdM=
-Date: Fri, 4 Mar 2011 23:45:49 +0800
+        b=uovPEiQA4WfEL0/SeB6sl6i4cmdZSO5Gpseif6xNa5R4ksvbuukIQ8gPbS/tVKaxwu
+         AbC0ynqPT/Lt4XffR0woLYygKOCy9CG7yZX7CUhUpcMHZ/kFeSt8qCTkJAXPm+HGVpqy
+         jJMsNi+ZocxmKnr0Cj8C1/GzNszsHEUYsAiEs=
+Date: Fri, 4 Mar 2011 23:46:31 +0800
 From: Dave Young <hidave.darkstar@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         David Miller <davem@davemloft.net>, Don Zickus <dzickus@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: sysctl: add proc_dointvec_bool handler
-Message-ID: <20110304154549.GA14672@darkstar>
+Subject: [PATCH 02/04 v2] sysctl: change to use proc_dointvec_bool while
+ needed
+Message-ID: <20110304154631.GB14672@darkstar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,58 +30,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add proc_dointvec_bool sysctl handler for cases value is limited to 0 and 1
+change only 0 and 1 valid sysctl case to use proc_do_intvec_bool handler
 
 Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
 ---
- include/linux/sysctl.h |    2 ++
- kernel/sysctl.c        |   27 +++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+)
+ kernel/sysctl.c |   32 ++++++++------------------------
+ 1 file changed, 8 insertions(+), 24 deletions(-)
 
---- linux-2.6.orig/kernel/sysctl.c	2011-03-03 11:13:01.986661838 +0800
-+++ linux-2.6/kernel/sysctl.c	2011-03-03 11:15:52.196661447 +0800
-@@ -2448,6 +2448,33 @@ int proc_dointvec_minmax(struct ctl_tabl
- 				do_proc_dointvec_minmax_conv, &param);
- }
- 
-+/**
-+ * proc_dointvec_bool - read a vector of integers with 0/1 values
-+ * @table: the sysctl table
-+ * @write: %TRUE if this is a write to the sysctl file
-+ * @buffer: the user buffer
-+ * @lenp: the size of the user buffer
-+ * @ppos: file position
-+ *
-+ * Reads/writes up to table->maxlen/sizeof(unsigned int) integer
-+ * values from/to the user buffer, treated as an ASCII string.
-+ *
-+ * This routine will ensure the values are either 0 or 1.
-+ *
-+ * Returns 0 on success.
-+ */
-+int proc_dointvec_bool(struct ctl_table *table, int write,
-+		  void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	struct do_proc_dointvec_minmax_conv_param param = {
-+		.min = &zero,
-+		.max = &one,
-+	};
-+	return do_proc_dointvec(table, write, buffer, lenp, ppos,
-+				do_proc_dointvec_minmax_conv, &param);
-+}
-+EXPORT_SYMBOL(proc_dointvec_bool);
-+
- static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
- 				     void __user *buffer,
- 				     size_t *lenp, loff_t *ppos,
---- linux-2.6.orig/include/linux/sysctl.h	2010-06-22 14:02:49.000000000 +0800
-+++ linux-2.6/include/linux/sysctl.h	2011-03-03 11:16:16.119994725 +0800
-@@ -970,6 +970,8 @@ extern int proc_dointvec(struct ctl_tabl
- 			 void __user *, size_t *, loff_t *);
- extern int proc_dointvec_minmax(struct ctl_table *, int,
- 				void __user *, size_t *, loff_t *);
-+extern int proc_dointvec_bool(struct ctl_table *, int,
-+				void __user *, size_t *, loff_t *);
- extern int proc_dointvec_jiffies(struct ctl_table *, int,
- 				 void __user *, size_t *, loff_t *);
- extern int proc_dointvec_userhz_jiffies(struct ctl_table *, int,
+--- linux-2.6.orig/kernel/sysctl.c	2011-03-04 23:05:29.000000000 +0800
++++ linux-2.6/kernel/sysctl.c	2011-03-04 23:16:34.083637541 +0800
+@@ -342,9 +342,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &sysctl_timer_migration,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ #endif
+ 	{
+@@ -374,9 +372,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &sysctl_sched_autogroup_enabled,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ #endif
+ #ifdef CONFIG_PROVE_LOCKING
+@@ -704,9 +700,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &dmesg_restrict,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ 	{
+ 		.procname	= "kptr_restrict",
+@@ -747,9 +741,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &softlockup_panic,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ 	{
+ 		.procname       = "nmi_watchdog",
+@@ -861,9 +853,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= &sysctl_hung_task_panic,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ 	{
+ 		.procname	= "hung_task_check_count",
+@@ -1297,9 +1287,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &vm_highmem_is_dirtyable,
+ 		.maxlen		= sizeof(vm_highmem_is_dirtyable),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ #endif
+ 	{
+@@ -1315,18 +1303,14 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &sysctl_memory_failure_early_kill,
+ 		.maxlen		= sizeof(sysctl_memory_failure_early_kill),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ 	{
+ 		.procname	= "memory_failure_recovery",
+ 		.data		= &sysctl_memory_failure_recovery,
+ 		.maxlen		= sizeof(sysctl_memory_failure_recovery),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &zero,
+-		.extra2		= &one,
++		.proc_handler	= proc_dointvec_bool,
+ 	},
+ #endif
+ 	{ }
