@@ -1,68 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378Ab1CDJJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 04:09:09 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:44147 "EHLO
-	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759285Ab1CDJJF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 04:09:05 -0500
-Message-ID: <4D70AC2E.1060405@nachtwindheim.de>
-Date: Fri, 04 Mar 2011 10:09:02 +0100
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	id S1759371Ab1CDJK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 04:10:56 -0500
+Received: from mga03.intel.com ([143.182.124.21]:5923 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759285Ab1CDJKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 04:10:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,263,1297065600"; 
+   d="scan'208";a="397485665"
+Date: Fri, 4 Mar 2011 17:06:09 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/27] IO-less dirty throttling v6
+Message-ID: <20110304090609.GA1885@localhost>
+References: <20110303064505.718671603@intel.com>
+ <20110303201226.GI16720@redhat.com>
+ <20110303204827.GJ16720@redhat.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] x86: make some apic symbols init
-References: <1299182701-8591-1-git-send-email-henne@nachtwindheim.de> <1299182701-8591-2-git-send-email-henne@nachtwindheim.de> <4D7005D6.9050108@gmail.com>
-In-Reply-To: <4D7005D6.9050108@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110303204827.GJ16720@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.03.2011 22:19, schrieb Cyrill Gorcunov:
-> On 03/03/2011 11:04 PM, Henrik Kretzschmar wrote:
->> apic_force_enable(), apic_verify() and the variable
->> force_enable_local_apic are only used by init code
->> and now get marked as such.
->>
->> Global __initdata variables may better be initialized,
->> since they are in the data section and not in the bss.
->>
->> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
->> ---
->>  arch/x86/include/asm/apic.h |    2 +-
->>  arch/x86/kernel/apic/apic.c |    6 +++---
->>  2 files changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
->> index dbd558c..afe69e1 100644
->> --- a/arch/x86/include/asm/apic.h
->> +++ b/arch/x86/include/asm/apic.h
->> @@ -240,7 +240,7 @@ extern void setup_boot_APIC_clock(void);
->>  extern void setup_secondary_APIC_clock(void);
->>  extern int APIC_init_uniprocessor(void);
->>  extern void enable_NMI_through_LVT0(void);
->> -extern int apic_force_enable(unsigned long addr);
->> +extern int apic_force_enable(unsigned long addr) __init;
+On Fri, Mar 04, 2011 at 04:48:27AM +0800, Vivek Goyal wrote:
+> On Thu, Mar 03, 2011 at 03:12:26PM -0500, Vivek Goyal wrote:
+> > On Thu, Mar 03, 2011 at 02:45:05PM +0800, Wu Fengguang wrote:
+> > 
+> > [..]
+> > > - serve as simple IO controllers: if provide an interface for the user
+> > >   to set task_bw directly (by returning the user specified value
+> > >   directly at the beginning of dirty_throttle_bandwidth(), plus always
+> > >   throttle such tasks even under the background dirty threshold), we get
+> > >   a bandwidth based per-task async write IO controller; let the user
+> > >   scale up/down the @priority parameter in dirty_throttle_bandwidth(),
+> > >   we get a priority based IO controller. It's possible to extend the
+> > >   capabilities to the scope of cgroup, too.
+> > > 
+> > 
+> > Hi Fengguang,
+> > 
+> > Above simple IO controller capabilities sound interesting and I was
+> > looking at the patch to figure out the details. 
+> > 
+> > You seem to be mentioning that user can explicitly set the upper rate
+> > limit per task for async IO. Can't really figure that out where is the
+> > interface for setting such upper limits. Can you please point me to that.
 > 
-> Nope, we either should _check_ all the prototipes and fix them
-> either left them untouched. This will confuse code readers with "for
-> what reason some functions have __init, some -- not". So I rather
-> would fix this nit in different patch later which would address
-> all of them (if this would not break someone's queue).
-> 
-Ack, I'll fix it.
+> Never mind. Jeff moyer pointed out that you mentioned above as possible
+> future enhancements on top of this patchset.
 
->>   */
->> -static int force_enable_local_apic;
->> +static int force_enable_local_apic __initdata = 0;
-> 
-> Hmm, I fail to see why we need to set it to 0.
+Hi Vivek,
 
-Ack, I'll fix this also.
+Here is an update show the bandwidth limit possibility. I tested it by
+starting 8 or 10 concurrent dd's, doing "ulimit -m $((i<<10))" before
+starting the i'th dd. The first 3 dd's progress are shown in the
+following graphs.
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/xfs-10dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-22/balance_dirty_pages-task-bw.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/xfs-8dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-15/balance_dirty_pages-task-bw.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/ext4-10dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-29/balance_dirty_pages-task-bw.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/btrfs-10dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-35/balance_dirty_pages-task-bw.png
+
+The bandwidth limit is not perfect in two of the above cases:
+- the xfs 10dd case: tasks could be hard throttled on dirty exceeding
+- the ext4 10dd case: filesystem makes >500ms latencies (smaller ones will be compensated)
+
+Thanks,
+Fengguang
+---
+
+Subject: writeback: per-task async write bandwidth limit
+Date: Fri Mar 04 10:38:04 CST 2011
+
+XXX: the user interface is reusing RLIMIT_RSS for now.
+
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2011-03-04 10:33:06.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-03-04 16:03:52.000000000 +0800
+@@ -428,6 +428,11 @@ unsigned long bdi_dirty_limit(struct bac
+ 	return bdi_dirty;
+ }
+ 
++static unsigned long hard_dirty_limit(unsigned long thresh)
++{
++	return max(thresh, default_backing_dev_info.dirty_threshold);
++}
++
+ /*
+  * If we can dirty N more pages globally, honour N/8 to the bdi that runs low,
+  * so as to help it ramp up.
+@@ -589,7 +594,7 @@ static unsigned long dirty_throttle_band
+ 					      unsigned long bdi_dirty,
+ 					      struct task_struct *tsk)
+ {
+-	unsigned long limit = default_backing_dev_info.dirty_threshold;
++	unsigned long limit = hard_dirty_limit(thresh);
+ 	unsigned long bdi_thresh = bdi->dirty_threshold;
+ 	unsigned long origin;
+ 	unsigned long goal;
+@@ -1221,6 +1226,11 @@ static void balance_dirty_pages(struct a
+ 		 * when the bdi limits are ramping up.
+ 		 */
+ 		if (nr_dirty <= (background_thresh + dirty_thresh) / 2) {
++			if (current->signal->rlim[RLIMIT_RSS].rlim_cur !=
++			    RLIM_INFINITY) {
++				pause_max = MAX_PAUSE;
++				goto calc_bw;
++			}
+ 			current->paused_when = jiffies;
+ 			current->nr_dirtied = 0;
+ 			break;
+@@ -1233,7 +1243,7 @@ static void balance_dirty_pages(struct a
+ 			bdi_start_background_writeback(bdi);
+ 
+ 		pause_max = max_pause(bdi, bdi_dirty);
+-
++calc_bw:
+ 		bw = dirty_throttle_bandwidth(bdi, dirty_thresh, nr_dirty,
+ 					      bdi_dirty, current);
+ 		if (unlikely(bw == 0)) {
+@@ -1241,6 +1251,8 @@ static void balance_dirty_pages(struct a
+ 			pause = pause_max;
+ 			goto pause;
+ 		}
++		bw = min(bw, current->signal->rlim[RLIMIT_RSS].rlim_cur >>
++								PAGE_SHIFT);
+ 		period = (HZ * pages_dirtied + bw / 2) / bw;
+ 		pause = current->paused_when + period - jiffies;
+ 		/*
+@@ -1292,8 +1304,8 @@ pause:
+ 		current->paused_when += pause;
+ 		current->nr_dirtied = 0;
+ 
+-		if (nr_dirty < default_backing_dev_info.dirty_threshold +
+-		    default_backing_dev_info.dirty_threshold / DIRTY_MARGIN)
++		dirty_thresh = hard_dirty_limit(dirty_thresh);
++		if (nr_dirty < dirty_thresh + dirty_thresh / DIRTY_MARGIN)
+ 			break;
+ 	}
  
