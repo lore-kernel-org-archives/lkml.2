@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab1CDVTz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:19:55 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:32381 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab1CDVTy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:19:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DHHAEHXrzOLtwOPy/5r1ZYg2HNiOXz2ciK1qgYyLMkU3rpQhDs87W03+OgqsroYSvd
-         7a0Xc+oyWqTtvC1H/RTg==
+	id S1760210Ab1CDVVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:21:15 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52946 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751778Ab1CDVVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:21:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [PATCH] power: disable hibernation if module loading is disabled
+Date: Fri, 4 Mar 2011 22:21:02 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, security@kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@lists.linux-foundation.org
+References: <1299255084-4390-1-git-send-email-segoon@openwall.com> <201103042142.09247.rjw@sisk.pl> <20110304211035.GA28842@albatros>
+In-Reply-To: <20110304211035.GA28842@albatros>
 MIME-Version: 1.0
-In-Reply-To: <20110302081430.GE15665@elte.hu>
-References: <4d6d636b.98a1df0a.15d8.57d1@mx.google.com>
-	<1299027401.4937.106.camel@minggr.sh.intel.com>
-	<AANLkTimkAuDQOW8J=vqcz-7r9gaN_=qq1=guBh6n6A7u@mail.gmail.com>
-	<20110302081430.GE15665@elte.hu>
-Date: Fri, 4 Mar 2011 22:19:48 +0100
-Message-ID: <AANLkTi=ZSKepq5n_CpA7jNaUEjBWzeECuHJxi9VXr821@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: update PEBS event constraints (v2)
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "perfmon2-devel@lists.sf.net" <perfmon2-devel@lists.sf.net>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "acme@redhat.com" <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103042221.02852.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay. I realize I did not answer this message earlier.
+On Friday, March 04, 2011, Vasiliy Kulikov wrote:
+> On Fri, Mar 04, 2011 at 21:42 +0100, Rafael J. Wysocki wrote:
+> > That "everyone" is actually the "full root" (in the case of /sys/power/state)
+> > or someone having CAP_SYS_ADMIN in the /dev/snapshot case, right?
+> 
+> Yes, sorry for my bad english.  "Everyone" is indeed misleading :-D
+> 
+> > Second, there's _zero_ relationship between /proc/sys/kernel/modules_disabled
+> > and the hibernation interface, so please find a different way to solve the
+> > problem (if there is any).
+> 
+> If modules_disabled is set to 1, then nobody, even full root may not write
+> to the kernel, right?  So, if something permits to indirectly pass
+> modules_disabled restriction, this is a bug.  Otherwise,
+> modules_disabled is confusing as it gives false sense of security.
+> 
+> -OR-
+> 
+> modules_disabled's documentation should be changed to note that it
+> doesn't prevent rootkit uploading, but only forbids modprob'ing modules
+> via the "official" init_module(2) gate, disallowing e.g. module autoloading.
 
+Why not to change that documentation, then?
 
-On Wed, Mar 2, 2011 at 9:14 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> On Wed, Mar 2, 2011 at 1:56 AM, Lin Ming <ming.m.lin@intel.com> wrote:
->> > On Wed, 2011-03-02 at 04:20 +0800, Stephane Eranian wrote:
->> >> This patch updates PEBS event constraints for Intel Atom, Nehalem, Westmere.
->> >>
->> >> This patch also reorganizes the PEBS format/constraint detection code. It is
->> >> now based on processor model and not PEBS format. Two processors may use the
->> >> same PEBS format without have the same list of PEBS events.
->> >>
->> >> In this second version, we simplified the initialization of the PEBS constraints
->> >> by leveraging the existing switch() statement in perf_event_intel.c. We also
->> >> renamed the constraint tables to be more consistent with regular constraints.
->> >
->> > Hi, Stephane
->> >
->> > Nice updates.
->> > Wondering where did you get these PEBS event constraints? I didn't find
->> > these in the latest manual.
->> >
->> Yeah, the manual is lacking some information. The other source of information
->> is the PTU event files (whatif.intel.com).
->
-> Plus i suspect you have performed testing on affected CPUs as well?
->
-Yes, I did.
+Also, please note that in order to "write" into memory using the hibernation
+interface you need to have write access to swap, which you can use to corrupt
+memory regardless of the modules_disabled setting AFAICS.
 
-> If yes then i think we want to push these fixes via perf/urgent - they seem to
-> nicely round up the constraints.
->
-> Thanks,
->
->        Ingo
->
+Thanks,
+Rafael
