@@ -1,152 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab1CDWwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 17:52:14 -0500
-Received: from mail-vx0-f206.google.com ([209.85.220.206]:38697 "EHLO
-	mail-vx0-f206.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932520Ab1CDWwN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 17:52:13 -0500
-X-Greylist: delayed 40158 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 17:52:13 EST
+	id S932726Ab1CDW5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 17:57:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932520Ab1CDW5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 17:57:11 -0500
+Message-ID: <4D716E43.4080909@redhat.com>
+Date: Fri, 04 Mar 2011 17:57:07 -0500
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Reply-To: dudl@cypress.com, ccross@android.com, konkers@android.com,
-        olof@lixom.net, linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        micahc@google.com, chromium-os-reviews@chromium.org, msb@chromium.org,
-        olofj@chromium.org, vbendeb+kernel@chromium.org
-X-Google-Appengine-App-Id: chromiumcodereview
-Message-ID: <20cf3005123492db71049da6a54a@google.com>
-Date: Fri, 04 Mar 2011 11:42:54 +0000
-Subject: CHROMIUM: arm: tegra: Add platfrom devices for Cypress trackpad (issue6623011)
-From: dudl@cypress.com
-To: ccross@android.com, konkers@android.com, olof@lixom.net,
-        linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        micahc@google.com, dudl@cypress.com
-Cc: chromium-os-reviews@chromium.org, msb@chromium.org, olofj@chromium.org,
-        vbendeb+kernel@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed; delsp=yes
+To: Glauber Costa <glommer@redhat.com>
+CC: Nikola Ciprich <extmaillist@linuxbox.cz>, Avi Kivity <avi@redhat.com>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+ boot
+References: <20110228152823.GF29840@pcnci.linuxbox.cz>	 <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan>	 <4D6EF536.305@redhat.com> <20110303070652.GG29840@pcnci.linuxbox.cz>	 <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan>	 <4D700F09.9000002@redhat.com> <20110303220155.GB27691@nik-comp.lan>	 <4D7101AF.6060009@redhat.com>  <20110304182733.GA2867@nik-comp.lan> <1299265762.11618.140.camel@mothafucka.localdomain>
+In-Reply-To: <1299265762.11618.140.camel@mothafucka.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewers: ccross_android.com, konkers_android.com, olof_lixom.net,  
-linux_arm.linux.org.uk, linux-tegra_vger.kernel.org,  
-linux-arm-kernel_lists.infradead.org, linux-kernel_vger.kernel.org, Micah  
-C, dudl,
+On 03/04/2011 02:09 PM, Glauber Costa wrote:
+> On Fri, 2011-03-04 at 19:27 +0100, Nikola Ciprich wrote:
+>    
+>> Hello Zachary,
+>>
+>>      
+>>> You don't see any messages about TSC being unstable or switching
+>>> clocksource after loading the KVM module?  And you are not suspending
+>>> the host or anything?
+>>>        
+>> no messages, no suspending, nothing.
+>>
+>>
+>>      
+>>> Can you try using "processor.max_cstate=1" on the host as a kernel
+>>> parameter and see if it makes a difference?
+>>>        
+>> I tried it, no change..
+>> n.
+>>      
+> Zach,
+>
+> I don't understand 100 % the logic behind all your tsc changes.
+> But kvm-clock-wise, most of the problems we had in the past were related
+> to the difference in resolution between the tsc and the host clocksource
+> (hpet, acpi_pm, etc), which in his case, it is a non-issue.
+>
+> It does seem to me like some compensation logic kicked in, dismantling
+> an otherwise good tsc. He does have nonstop_tsc, which means it can't
+> get any better.
+>
+> One thing I noticed when reading the culprit patch in bisect, is that in
+> vcpu_load(), there were previously a call to
+>
+>   kvm_request_guest_time_update(vcpu)
+>
+> that was removed without a counterpart addition. Any idea about why it
+> was done?
+>    
 
-Description:
-CHROMIUM: arm: tegra: Add platfrom devices for Cypress trackpad
-
-1. Add platfrom data strcuture cyapa_platfrom_data.
-2. Add trackpad device into platfrom I2C bus 0.
-3. Initialize platfrom data for cyapa_platfrom_data.
-4. This code is merged based kernel version 2.7.37-rc5.
-
-
-Change-Id: I3591317ac9c3b7d5328a9c617d662ad6be6065a2
-Signed-off-by: Du, Dudley <dudl@cypress.com>
-
-BUG=None
-TEST=Test on arm tegra2 seaborad and kaen platform
-
-Please review this at http://codereview.chromium.org/6623011/
-
-SVN Base: http://git.chromium.org/git/kernel-next.git@chromeos-2.6.37-rc5
-
-Affected files:
-   M arch/arm/mach-tegra/board-seaboard.h
-   M arch/arm/mach-tegra/board-seaboard.c
-
-
-Index: arch/arm/mach-tegra/board-seaboard.c
-diff --git a/arch/arm/mach-tegra/board-seaboard.c  
-b/arch/arm/mach-tegra/board-seaboard.c
-index  
-75fbab68ef61c0c117bb8dafa2aaca90947a860b..de272cc73794c6600994af3c0e834dd884f6b56b  
-100644
---- a/arch/arm/mach-tegra/board-seaboard.c
-+++ b/arch/arm/mach-tegra/board-seaboard.c
-@@ -303,6 +303,36 @@ static struct tegra_i2c_platform_data  
-seaboard_dvc_platform_data = {
-  	.is_dvc		= true,
-  };
-
-+/* for Cypress Trackpad. */
-+#include <linux/cyapa.h>
-+
-+static int cyapa_i2c_platform_init(void)
-+{
-+	return 0;
-+}
-+
-+static int cyapa_i2c_platform_wakeup(void)
-+{
-+	return 0;
-+}
-+
-+static struct cyapa_platform_data cyapa_i2c_platform_data = {
-+	.flag = 0,
-+	.gen = CYAPA_GEN2,
-+	.power_state = CYAPA_PWR_ACTIVE,
-+	.use_absolute_mode = false,
-+	.use_polling_mode = false,
-+	.polling_interval_time_active = CYAPA_ACTIVE_POLLING_INTVAL_TIME,
-+	.polling_interval_time_lowpower = CYAPA_LOWPOWER_POLLING_INTVAL_TIME,
-+	.active_touch_timeout = CYAPA_ACTIVE_TOUCH_TIMEOUT,
-+	.name = CYAPA_I2C_NAME,
-+	.irq_gpio = TEGRA_GPIO_CYTP_INT,
-+	.report_rate = CYAPA_REPORT_RATE,
-+
-+	.wakeup = cyapa_i2c_platform_wakeup,
-+	.init = cyapa_i2c_platform_init,
-+};
-+
-  static struct i2c_board_info __initdata seaboard_i2c0_devices[] = {
-  	{
-  		I2C_BOARD_INFO("wm8903", 0x1a),
-@@ -311,6 +341,11 @@ static struct i2c_board_info __initdata  
-seaboard_i2c0_devices[] = {
-  		I2C_BOARD_INFO("isl29018", 0x44),
-  		.irq = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_ISL29018_IRQ),
-  	},
-+	{
-+		I2C_BOARD_INFO(CYAPA_I2C_NAME, 0x67),
-+		.irq = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_CYTP_INT),
-+		.platform_data = &cyapa_i2c_platform_data,
-+	},
-  };
-
-  static struct i2c_board_info __initdata seaboard_i2c4_devices[] = {
-@@ -549,6 +584,11 @@ static void __init tegra_seaboard_init(void)
-
-  	tegra_gpio_enable(TEGRA_GPIO_LIDSWITCH);
-  	tegra_gpio_enable(TEGRA_GPIO_POWERKEY);
-+
-+	/* for Cypress trackpad. */
-+	tegra_gpio_enable(TEGRA_GPIO_CYTP_INT);
-+	gpio_request(TEGRA_GPIO_CYTP_INT, "gpio_cytp_int");
-+	gpio_direction_input(TEGRA_GPIO_CYTP_INT);
-  }
-
-  MACHINE_START(SEABOARD, "seaboard")
-Index: arch/arm/mach-tegra/board-seaboard.h
-diff --git a/arch/arm/mach-tegra/board-seaboard.h  
-b/arch/arm/mach-tegra/board-seaboard.h
-index  
-5e1fc48bfa940056f2fd8e4c3bee5124d1398da4..4a38c4163ac338e90433a95afb90ec57a456ed1b  
-100644
---- a/arch/arm/mach-tegra/board-seaboard.h
-+++ b/arch/arm/mach-tegra/board-seaboard.h
-@@ -28,6 +28,9 @@
-  #define TEGRA_GPIO_ISL29018_IRQ		TEGRA_GPIO_PZ2
-  #define TEGRA_GPIO_AC_ONLINE		TEGRA_GPIO_PV3
-
-+/* for Cypress Trackpad gpio interrupt. */
-+#define TEGRA_GPIO_CYTP_INT		TEGRA_GPIO_PW2
-+
-  void seaboard_pinmux_init(void);
-  int seaboard_panel_init(void);
-  int seaboard_sdhci_init(void);
-
-
+That's probably the source of the bug... I've been looking for that 
+exact line, though, and I can't find it missing.
