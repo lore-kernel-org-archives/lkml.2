@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab1CDVKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:10:42 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:62671 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932516Ab1CDVKh (ORCPT
+	id S932660Ab1CDVKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:10:44 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60322 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932589Ab1CDVKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:10:37 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Matt Mackall <mpm@selenic.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
-        cl@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimvhHxsMCf2FX0O8VqksOa2EAMz=S_C3LQKvE60@mail.gmail.com>
-References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>
-	 <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>
-	 <1299191400.2071.203.camel@dan>
-	 <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
-	 <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
-	 <1299260164.8493.4071.camel@nimitz>
-	 <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
-	 <1299262495.3062.298.camel@calx>
-	 <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
-	 <1299271041.2071.1398.camel@dan>
-	 <AANLkTimvhHxsMCf2FX0O8VqksOa2EAMz=S_C3LQKvE60@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Mar 2011 16:10:34 -0500
-Message-ID: <1299273034.2071.1417.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Mar 2011 16:10:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HyEa8xCfpFdRO7vB2wc5S+l2SgSQp8enX2KK9m0RQ/8qIjuION6aZGBajhVrlJw01R
+         BLDxZNzKUB2wTegsJRHc4D8UluQmJ7NIcTMoNDEfl2GUw6eCGqBtb5JYsCU3lGFMQJ8v
+         HyF8puKOhJpM0724mfy5CIotIlXVRWGsQc74s=
+Date: Sat, 5 Mar 2011 00:10:35 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH] power: disable hibernation if module loading is
+ disabled
+Message-ID: <20110304211035.GA28842@albatros>
+References: <1299255084-4390-1-git-send-email-segoon@openwall.com>
+ <201103042142.09247.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201103042142.09247.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 22:58 +0200, Pekka Enberg wrote:
-> On Fri, Mar 4, 2011 at 10:37 PM, Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-> > This patch makes these techniques more difficult by making it hard to
-> > know whether the last attacker-allocated object resides before a free or
-> > allocated object.  Especially with vulnerabilities that only allow one
-> > attempt at exploitation before recovery is needed to avoid trashing too
-> > much heap state and causing a crash, this could go a long way.  I'd
-> > still argue in favor of removing the ability to know how many objects
-> > are used in a given slab, since randomizing objects doesn't help if you
-> > know every object is allocated.
-> 
-> So if the attacker knows every object is allocated, how does that help
-> if we're randomizing the initial freelist?
+On Fri, Mar 04, 2011 at 21:42 +0100, Rafael J. Wysocki wrote:
+> That "everyone" is actually the "full root" (in the case of /sys/power/state)
+> or someone having CAP_SYS_ADMIN in the /dev/snapshot case, right?
 
-If you know you've got a slab completely full of your objects, then it
-doesn't matter that they happened to be allocated in a random fashion -
-they're still all allocated, and by freeing one of them and
-reallocating, you'll still be next to your target.
+Yes, sorry for my bad english.  "Everyone" is indeed misleading :-D
 
+> Second, there's _zero_ relationship between /proc/sys/kernel/modules_disabled
+> and the hibernation interface, so please find a different way to solve the
+> problem (if there is any).
+
+If modules_disabled is set to 1, then nobody, even full root may not write
+to the kernel, right?  So, if something permits to indirectly pass
+modules_disabled restriction, this is a bug.  Otherwise,
+modules_disabled is confusing as it gives false sense of security.
+
+-OR-
+
+modules_disabled's documentation should be changed to note that it
+doesn't prevent rootkit uploading, but only forbids modprob'ing modules
+via the "official" init_module(2) gate, disallowing e.g. module autoloading.
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
