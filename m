@@ -1,63 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545Ab1CDCsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 21:48:16 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:60881 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758280Ab1CDCsO (ORCPT
+	id S1758601Ab1CDCxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 21:53:14 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59469 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab1CDCxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 21:48:14 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAHPhb01Ld/sX/2dsb2JhbAAMhB7RI5ELgSeDRHYEhRo
-X-IronPort-AV: E=Sophos;i="4.62,262,1297054800"; 
-   d="scan'208";a="94333347"
-Message-ID: <4D7052E5.9030506@teksavvy.com>
-Date: Thu, 03 Mar 2011 21:48:05 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.14) Gecko/20110221 Thunderbird/3.1.8
+	Thu, 3 Mar 2011 21:53:13 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Date: Fri, 04 Mar 2011 11:52:50 +0900
+From: Yasunori Goto <y-goto@jp.fujitsu.com>
+To: Rik van Riel <riel@redhat.com>
+Subject: Re: Strange minor page fault repeats when SPECjbb2005 is executed
+Cc: Linux Kernel ML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>
+In-Reply-To: <4D6FC6C7.8060001@redhat.com>
+References: <20110303200139.B187.E1E9C6FF@jp.fujitsu.com> <4D6FC6C7.8060001@redhat.com>
+Message-Id: <20110304115250.E751.E1E9C6FF@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ken Sumrall <ksumrall@android.com>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
-        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
- remount filesystems ro
-References: <1299137483-10975-1-git-send-email-ksumrall@android.com> <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com> <4D6FDDB1.3060209@teksavvy.com> <AANLkTimXhGRsuL3Z51msS_YEtsa4UZuN9XW8Xb+hu_KN@mail.gmail.com> <AANLkTinQ30f-7bi8QSBjwcmHXH6aydqws1vrFMMaMCWc@mail.gmail.com> <AANLkTi=UuVxtvLqWq=8gTGQyoNKmJwvs3Kr=xSWHbxtx@mail.gmail.com>
-In-Reply-To: <AANLkTi=UuVxtvLqWq=8gTGQyoNKmJwvs3Kr=xSWHbxtx@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.55 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-03-03 09:33 PM, Linus Torvalds wrote:
-> On Thu, Mar 3, 2011 at 6:00 PM, Ken Sumrall <ksumrall@android.com> wrote:
->>
->> Writing a single byte to /proc/sysrq-trigger is an asynchronous
->> operation, with no obvious way to be informed that it has completed
->> the remount.
+Thank you for your response.
+
+> On 03/03/2011 06:01 AM, Yasunori Goto wrote:
 > 
-> Right you are. That's something of a misfeature, but it comes from the
-> way sysrq works: obviously the "real" sysrq thing is about keyboard
-> input, so all the sysrq stuff has to be async.
+> > In this log, cpu4 and 6 repeat page faults.
+> > ----
+> > handle_mm_fault jiffies64=4295160616 cpu=4 address=40019a38 pmdval=0000000070832067 ptehigh=00000000 ptelow=55171067
+> > handle_mm_fault jiffies64=4295160616 cpu=6 address=40003a38 pmdval=0000000070832067 ptehigh=00000000 ptelow=551ef067
+> > handle_mm_fault jiffies64=4295160616 cpu=6 address=40003a38 pmdval=0000000070832067 ptehigh=00000000 ptelow=551ef067
+> > handle_mm_fault jiffies64=4295160616 cpu=4 address=40019a38 pmdval=0000000070832067 ptehigh=00000000 ptelow=55171067
+> > handle_mm_fault jiffies64=4295160616 cpu=4 address=40019a38 pmdval=0000000070832067 ptehigh=00000000 ptelow=55171067
 > 
-> The fact that that async nature then ends up also affecting the
-> /proc/sysrq-trigger case (which _could_ be synchronous) is a bit sad
-> in this case.
+> > I confirmed this phenomenon is reproduced on 2.6.31 and 2.6.38-rc5
+> > of x86 kernel, and I heard this phenomenon doesn't occur on
+> > x86-64 kernel from another engineer who found this problem first.
+> >
+> > In addition, this phenomenon occurred on 4 boxes, so I think the cause
+> > is not hardware malfunction.
+> 
+> On what CPU model(s) does this happen?
 
-Agreed.
+I'll attach cpuinfo in my current box which can reproduce this problem.
+(1 socket, 4 cores, 8 logical cpus.)
 
-I have the echo s/u to sysrq-trigger (plus a 2-sec sleep ala MS-Win)
-on my Ubuntu systems here, because their shutdown "sequence"
-is racy and buggy, and frequently powers off the box with the
-rootfs still mounted rw otherwise.
+And summary of other 3 boxes are here. (Unfortunately, I can't use them now.)
 
-And don't get me started about the races on system startup
- -- "upstart" is an abomination, or at least the Ubuntu use of it is.
+1) Intel(R) Xeon(R) CPU           X5680  @ 3.33GHz 
+    2 socket,
+    # of core -> 12
+    # of logical cpus -> 24
 
-Cheers
+2) Intel(R) Xeon(R) CPU           X7560  @ 2.27GHz
+    2 socket
+    # of coer -> 8
+    # of logical cpus -> 16
+
+3) Intel(R) Xeon(TM) CPU 3.80GHz
+    1 socket
+    # of core 1
+    # of logical cpus -> 2
+
+(The stop time was very short on 3rd box. It was about 5 seconds.
+ But it was sometimes 1 hours on 1st box.)
+
+
+> 
+> Obviously the PTE is present and allows read, write and
+> execute accesses, so the PTE should not cause any faults.
+> 
+> That leaves the TLB. It looks almost like the CPU keeps
+> re-faulting on a (old?) TLB entry, possibly with wrong
+> permissions, and does not re-load it from the PTE.
+> 
+> I know this "should not happen" on x86, but I cannot think
+> of an alternative explanation right now.  Can you try flushing
+> the TLB entry in question from handle_pte_fault?
+
+I inserted __flush_tlb_one(address) between my debug print and calling 
+handle_pte_fault(). But, this phenomenon is reproduced.
+
+> 
+> It looks like the code already does this for write faults, but
+> maybe the garbage collection code uses PROT_NONE a lot and is
+> running into this issue with a read or exec fault?
+> 
+> It would be good to print the fault flags as well in your debug
+> print, so we know what kind of fault is being repeated...
+
+I did it. The flags was 9 (FALUT_FLAG_ALLOW_RETRY and FAULT_FLAG_WRITE).
+
+-----
+handle_mm_fault jiffies64=4295117679 cpu=7 address=40001788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54cb1067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=2 address=40007788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54d3b067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=6 address=40000000 pmdval=0000000070845067 ptehigh=00000000 ptelow=54cb0067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=4 address=40002788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54d22067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=7 address=40001788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54cb1067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=2 address=40007788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54d3b067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=6 address=40000000 pmdval=0000000070845067 ptehigh=00000000 ptelow=54cb0067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=4 address=40002788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54d22067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=7 address=40001788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54cb1067 flags=9
+handle_mm_fault jiffies64=4295117679 cpu=2 address=40007788 pmdval=0000000070845067 ptehigh=00000000 ptelow=54d3b067 flags=9
+-----
+These outputs repeated many times....
+
+
+Thanks.
+
+-----------
+/proc/cpuinfo
+
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 0
+cpu cores	: 4
+apicid		: 0
+initial apicid	: 0
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.20
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+processor	: 1
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 1
+cpu cores	: 4
+apicid		: 2
+initial apicid	: 2
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.15
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+processor	: 2
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 9
+cpu cores	: 4
+apicid		: 18
+initial apicid	: 18
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.15
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+processor	: 3
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 10
+cpu cores	: 4
+apicid		: 20
+initial apicid	: 20
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.15
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+processor	: 4
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 0
+cpu cores	: 4
+apicid		: 1
+initial apicid	: 1
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.16
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+processor	: 5
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 1
+cpu cores	: 4
+apicid		: 3
+initial apicid	: 3
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.15
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+processor	: 6
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 9
+cpu cores	: 4
+apicid		: 19
+initial apicid	: 19
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.15
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+processor	: 7
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 44
+model name	: Intel(R) Xeon(R) CPU           E5640  @ 2.67GHz
+stepping	: 1
+cpu MHz		: 1596.000
+cache size	: 12288 KB
+physical id	: 0
+siblings	: 8
+core id		: 10
+cpu cores	: 4
+apicid		: 21
+initial apicid	: 21
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 11
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat dts tpr_shadow vnmi flexpriority ept vpid
+bogomips	: 5333.15
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
+
+
+-- 
+Yasunori Goto 
+
+
