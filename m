@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759605Ab1CDOIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:08:17 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:45092 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759301Ab1CDOIP (ORCPT
+	id S1759624Ab1CDOJE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:09:04 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:58063 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758463Ab1CDOJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:08:15 -0500
-Date: Fri, 4 Mar 2011 09:08:14 -0500
-From: "hch@infradead.org" <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "hch@infradead.org" <hch@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] fs: make generic file read/write functions plug
-Message-ID: <20110304140814.GA28953@infradead.org>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
- <1295659049-2688-8-git-send-email-jaxboe@fusionio.com>
- <20110304040907.GB32404@redhat.com>
- <4D70E78D.9000402@fusionio.com>
- <20110304132551.GA2407@infradead.org>
- <4D70EBB9.302@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D70EBB9.302@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 4 Mar 2011 09:09:02 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=-NBgKsjfVa4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=UpaswEPueBhchG7YPJYA:9 a=OiH8e4BKfxZYiHKcmMhy4a53QfUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] lockstat: export data in python expression
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <1298916475.5226.850.camel@laptop>
+References: <4D67E286.8010907@dcl.info.waseda.ac.jp>
+	 <1298905223-1807-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+	 <1298916475.5226.850.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 04 Mar 2011 09:08:58 -0500
+Message-ID: <1299247738.6376.51.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 02:40:09PM +0100, Jens Axboe wrote:
-> > REQ_META?  Maybe we should finally agree what it does and decide if it
-> > should be used consistenly.  Especially the priority over REQ_SYNC in
-> > cfq still looks somewhat odd, as does the totally inconsequent use.
+On Mon, 2011-02-28 at 19:07 +0100, Peter Zijlstra wrote:
+> On Tue, 2011-03-01 at 00:00 +0900, Hitoshi Mitake wrote:
+> > I'm writing the tool for parsing and arranging the data of /proc/lock_stat
+> > in python. But I soon found that lock_stat is hard to parse, so I wrote
+> > this patch to let lock_stat output its information in python expression.
 > 
-> For me it was primarily a blktrace hint, but yes it does have prio boost
-> properties in CFQ as well. I'm inclined to let those stay the way they
-> are. Not sure we can properly call it anything outside of a hint that
-> these IO have slightly higher priority, at least I would not want to
-> lock the IO scheduler into to something more concrete than that.
+> _IF_ we're going to do something like this, I'd much prefer a sane
+> output format over something that's easily parseble by just one thing.
 
-The problem is that these two meanings are inherently conflicting.
-Metadata updates do not have to be synchronous or have any kind of
-priority.  In fact for XFS they normall aren't, and I'd be surprised it
-the same isn't true for other journalled filesystems.
+Right, I do not think the kernel should be exporting information in a
+python (or any other) language.
 
-Priority metadata goes into the log, which for XFS is always written as
-a FLUSH+FUA bio.  Writeback of metadata happens asynchronously in the
-background, and only becomes a priority if the journal is full and we'll
-need to make space available.
+If it is very difficult to parse, then I doubt anything is currently
+parsing it, so it should be fine to change the format. Lets just change
+it to something that is much easier to to parse and stick with that.
 
-So giving plain REQ_META a priority boost makes it impossible to use it
-for the blktrace annotation use case.  One could only apply the boost
-for the REQ_SYNC + REQ_META combination, but even that seems rather
-hackish to me.  I'd really love to see numbers where the additional
-boost of REQ_META over REQ_SYNC makes any difference.
+-- Steve
+
 
