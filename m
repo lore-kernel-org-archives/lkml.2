@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759077Ab1CDBbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 20:31:46 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:38403 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab1CDBbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 20:31:45 -0500
-Date: Fri, 4 Mar 2011 12:31:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: linux-next: manual merge of the net tree with the i.MX tree
-Message-Id: <20110304123135.f3389022.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__4_Mar_2011_12_31_35_+1100_hSFvZdtrw/e5NjL="
+	id S1759183Ab1CDBmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 20:42:00 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:59853 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759156Ab1CDBl7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 20:41:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QFVMi70jTwMimMXf2r7Hm3P6Eea75Tts+uopwawWOl5MS4uitUS8urW4QPHTUtz3gA
+         p1o23pumOECa0MAWweO7jO1tjRKNjKLW72SD39R78ZG6dsm/HTVDRBV1loujnkrNjRFU
+         DNLuvPYJZlBdXf/khz4tCFzAERSKJx6Z5WmIs=
+MIME-Version: 1.0
+In-Reply-To: <20110303145908.GA32154@redhat.com>
+References: <20110303135819.GA2620@darkstar>
+	<20110303145908.GA32154@redhat.com>
+Date: Fri, 4 Mar 2011 09:41:59 +0800
+Message-ID: <AANLkTi=sz7By1HaJ+HhFaQDWyUnrR5PNyAcL0uPnEt-K@mail.gmail.com>
+Subject: Re: [PATCH 01/05] use proc_dointvec_minmax to check boundaries while needed
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p241g6xM030010
 
---Signature=_Fri__4_Mar_2011_12_31_35_+1100_hSFvZdtrw/e5NjL=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 3, 2011 at 10:59 PM, Don Zickus <dzickus@redhat.com> wrote:
+> On Thu, Mar 03, 2011 at 09:58:20PM +0800, Dave Young wrote:
+>> proc_dointvec doesn't check extra minmax params, use proc_dointvec_minmax
+>> instead of proc_dointvec for cases need boundaries check.
+>
+> Is this patch needed, if you are basically changing it again in patches 3
+> and 5?
 
-Hi all,
+Sure if 3 and 5 is acked, if someone object them then this is good?
 
-Today's linux-next merge of the net tree got a conflict in
-drivers/net/Kconfig between commit
-4d2f13be1e370a670c1cae20c194d5ce961e0fa5 ("ARM: imx3x: clean up
-ARCH_MX3X") from the i.MX tree and commit
-085e79ed88351d2f3cbf257ff4fc00394792da18 (net/fec: consolidate all i.MX
-options to CONFIG_ARM"") from the net tree.
+>
+> Cheers,
+> Don
+>
+>>
+>> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+>> ---
+>>  kernel/sysctl.c |   12 ++++++------
+>>  1 file changed, 6 insertions(+), 6 deletions(-)
+>>
+>> --- linux-2.6.orig/kernel/sysctl.c    2011-03-03 10:44:53.000000000 +0800
+>> +++ linux-2.6/kernel/sysctl.c 2011-03-03 11:02:43.736663258 +0800
+>> @@ -374,7 +374,7 @@ static struct ctl_table kern_table[] = {
+>>               .data           = &sysctl_sched_autogroup_enabled,
+>>               .maxlen         = sizeof(unsigned int),
+>>               .mode           = 0644,
+>> -             .proc_handler   = proc_dointvec,
+>> +             .proc_handler   = proc_dointvec_minmax,
+>>               .extra1         = &zero,
+>>               .extra2         = &one,
+>>       },
+>> @@ -1204,7 +1204,7 @@ static struct ctl_table vm_table[] = {
+>>               .data           = &block_dump,
+>>               .maxlen         = sizeof(block_dump),
+>>               .mode           = 0644,
+>> -             .proc_handler   = proc_dointvec,
+>> +             .proc_handler   = proc_dointvec_minmax,
+>>               .extra1         = &zero,
+>>       },
+>>       {
+>> @@ -1212,7 +1212,7 @@ static struct ctl_table vm_table[] = {
+>>               .data           = &sysctl_vfs_cache_pressure,
+>>               .maxlen         = sizeof(sysctl_vfs_cache_pressure),
+>>               .mode           = 0644,
+>> -             .proc_handler   = proc_dointvec,
+>> +             .proc_handler   = proc_dointvec_minmax,
+>>               .extra1         = &zero,
+>>       },
+>>  #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
+>> @@ -1221,7 +1221,7 @@ static struct ctl_table vm_table[] = {
+>>               .data           = &sysctl_legacy_va_layout,
+>>               .maxlen         = sizeof(sysctl_legacy_va_layout),
+>>               .mode           = 0644,
+>> -             .proc_handler   = proc_dointvec,
+>> +             .proc_handler   = proc_dointvec_minmax,
+>>               .extra1         = &zero,
+>>       },
+>>  #endif
+>> @@ -1231,7 +1231,7 @@ static struct ctl_table vm_table[] = {
+>>               .data           = &zone_reclaim_mode,
+>>               .maxlen         = sizeof(zone_reclaim_mode),
+>>               .mode           = 0644,
+>> -             .proc_handler   = proc_dointvec,
+>> +             .proc_handler   = proc_dointvec_minmax,
+>>               .extra1         = &zero,
+>>       },
+>>       {
+>> @@ -1287,7 +1287,7 @@ static struct ctl_table vm_table[] = {
+>>               .data           = &vdso_enabled,
+>>               .maxlen         = sizeof(vdso_enabled),
+>>               .mode           = 0644,
+>> -             .proc_handler   = proc_dointvec,
+>> +             .proc_handler   = proc_dointvec_minmax,
+>>               .extra1         = &zero,
+>>       },
+>>  #endif
+>
 
-The latter seems to be a superset of the former, so I used that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__4_Mar_2011_12_31_35_+1100_hSFvZdtrw/e5NjL=
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNcED3AAoJEDMEi1NhKgbsFAwIAJHWqhRIUGaGnuk0UFZMm1X3
-OJS/js8Hrxe82lyK9N5hQa/m1nehw/ONFaYUy/PIF4WKGiJ+t+kutORiYjo7Be2e
-fA3BYS7mjoF5/usxQz550U9wDLFnuexifIgS0g7fKWjlbiFbogNRZXI4iYIxN1ak
-mGcoyB4MomPWgYWHjPY0IUdN6dPDlQncVwI/5hV3wpRK7XJVD0OQhr2S4hlKlzq1
-oEViuNw+BvLXfbM/hagrHK9LFNt8mSiHiFuDTk2bAfdkhzEgh5rmDkbu8Jcq3+iR
-mhKnMPzVsgdb0GFBHk+PkvdfCWAIyJerAx+A34G0mTRfnMSRjCB+KFIzGd9a5+0=
-=Xi+s
------END PGP SIGNATURE-----
-
---Signature=_Fri__4_Mar_2011_12_31_35_+1100_hSFvZdtrw/e5NjL=--
+-- 
+Regards
+dave
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
