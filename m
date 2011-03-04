@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760682Ab1CEBNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:13:44 -0500
-Received: from kroah.org ([198.145.64.141]:50268 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760389Ab1CEBAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:38 2011
-Message-Id: <20110305005637.922506210@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:39 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [34/73] USB: prevent buggy hubs from crashing the USB stack
-In-Reply-To: <20110305005720.GA16162@kroah.com>
+	id S1760406Ab1CEBN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:13:57 -0500
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:55168 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760398Ab1CEBN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:13:56 -0500
+X-Greylist: delayed 4719 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 20:13:55 EST
+X-ClientAddr: 85.127.41.184
+Date: Sat, 5 Mar 2011 00:49:41 +0100
+From: Nicolas Kaiser <nikai@nikai.net>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net/macvtap: fix error check
+Message-ID: <20110305004941.7b195e9d@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-m2soft-MailScanner-Information: Please contact the ISP for more information
+X-m2soft-MailScanner-ID: p24Na5na018764
+X-m2soft-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-m2soft-MailScanner-From: nikai@nikai.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+'len' is unsigned of type size_t and can't be negative.
 
-------------------
-
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit d199c96d41d80a567493e12b8e96ea056a1350c1 upstream.
-
-If anyone comes across a high-speed hub that (by mistake or by design)
-claims to have no Transaction Translators, plugging a full- or
-low-speed device into it will cause the USB stack to crash.  This
-patch (as1446) prevents the problem by ignoring such devices, since
-the kernel has no way to communicate with them.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Perry Neben <neben@vmware.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 ---
- drivers/usb/core/hub.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/macvtap.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2740,6 +2740,11 @@ hub_port_init (struct usb_hub *hub, stru
- 		udev->ttport = hdev->ttport;
- 	} else if (udev->speed != USB_SPEED_HIGH
- 			&& hdev->speed == USB_SPEED_HIGH) {
-+		if (!hub->tt.hub) {
-+			dev_err(&udev->dev, "parent hub has no TT\n");
-+			retval = -EINVAL;
-+			goto fail;
-+		}
- 		udev->tt = &hub->tt;
- 		udev->ttport = port1;
- 	}
-
-
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 5933621..fc27a99 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -528,8 +528,9 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+ 		vnet_hdr_len = q->vnet_hdr_sz;
+ 
+ 		err = -EINVAL;
+-		if ((len -= vnet_hdr_len) < 0)
++		if (len < vnet_hdr_len)
+ 			goto err;
++		len -= vnet_hdr_len;
+ 
+ 		err = memcpy_fromiovecend((void *)&vnet_hdr, iv, 0,
+ 					   sizeof(vnet_hdr));
+-- 
+1.7.3.4
