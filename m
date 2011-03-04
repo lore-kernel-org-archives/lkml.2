@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989Ab1CDSZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 13:25:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41682 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758463Ab1CDSZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 13:25:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=VuqRD5mdWFPzABQzxFDNOBSoSkO7Tp+dKEP2Bi/F86MZLjaqRNOJn7L78MqbeUACzb
-         zDC+KoKfqbr+9JYQ2WnN1o1rK7AsCLaMS18J6TCBbl0k1bWsdwGC9LL8iFF3rARSIQGx
-         BdicVyVe73LH6fqkfGnW9LXyKVkGJrpqxHp+A=
-Date: Fri, 4 Mar 2011 21:17:49 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: "J.P. Lacerda" <jp.lacerda@codethink.co.uk>
-Cc: akpm@linux-foundation.org, johan.wessfeldt@gmail.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] x86: Fix mcheck_init_device() to handle
- misc_register() correctly
-Message-ID: <20110304181749.GA3469@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	"J.P. Lacerda" <jp.lacerda@codethink.co.uk>,
-	akpm@linux-foundation.org, johan.wessfeldt@gmail.com,
-	tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1299245367-20279-1-git-send-email-jp.lacerda@codethink.co.uk>
+	id S1759963Ab1CDS1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 13:27:50 -0500
+Received: from gwu.lbox.cz ([62.245.111.132]:42710 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758463Ab1CDS1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 13:27:48 -0500
+Date: Fri, 4 Mar 2011 19:27:33 +0100
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@redhat.com>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+	boot
+Message-ID: <20110304182733.GA2867@nik-comp.lan>
+References: <20110228152823.GF29840@pcnci.linuxbox.cz> <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com> <20110303070652.GG29840@pcnci.linuxbox.cz> <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan> <4D700F09.9000002@redhat.com> <20110303220155.GB27691@nik-comp.lan> <4D7101AF.6060009@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299245367-20279-1-git-send-email-jp.lacerda@codethink.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D7101AF.6060009@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 4717492 records (last update: 20110304)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 01:29:27PM +0000, J.P. Lacerda wrote:
-> The return value for misc_register() was not being taken into account.
-> Furthermore, if misc_register() fails, we must rollback any changes made by
-> mcheck_init_device()
-> 
-> Signed-off-by: J.P. Lacerda <jp.lacerda@codethink.co.uk>
+Hello Zachary,
 
-Ah...  You found a bug that Johan missed in his original patch.  But you
-still left out the case where mce_create_device() can fail which his 
-patch addressed.  Also his patch was nicer; using gotos to unwind is 
-the standard way for kernel error handling.
-
-Also why did you poach his patch without giving any kind of credit,
-instead of just telling him about the bug???  WTF?
-
-Johan, please fix add a free_cpumask_var(mce_dev_initialized); to your
-patch.  Call it [PATCH v2].  Add in the changelog that J.P. Lacerda
-told you about the missing free_cpumask_var(mce_dev_initialized).
-
-regards,
-dan carpenter
+> You don't see any messages about TSC being unstable or switching  
+> clocksource after loading the KVM module?  And you are not suspending  
+> the host or anything?
+no messages, no suspending, nothing.
 
 
+> Can you try using "processor.max_cstate=1" on the host as a kernel  
+> parameter and see if it makes a difference?
+I tried it, no change..
+n.
+
+
+-- 
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
