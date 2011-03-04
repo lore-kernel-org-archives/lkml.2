@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759874Ab1CDQQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:16:24 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41871 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759708Ab1CDQQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:16:23 -0500
-Message-ID: <4D710FF9.6040305@ru.mvista.com>
-Date: Fri, 04 Mar 2011 19:14:49 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	id S1759876Ab1CDQWM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:22:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759837Ab1CDQWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 11:22:11 -0500
+Date: Fri, 4 Mar 2011 17:13:21 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110304161321.GB23553@redhat.com>
+References: <20110301152457.GE26074@htj.dyndns.org> <20110303173422.GA27960@redhat.com> <20110303202246.GB32152@redhat.com> <AANLkTikeCzr-OGkmaaortS7_rR+JCM9B6aJV0c52EMbE@mail.gmail.com> <20110304134126.GL20499@htj.dyndns.org> <AANLkTikLd2Kg9Pz+5eLd_irdxoKdrR9qPj8yixeTfvaM@mail.gmail.com> <20110304140745.GP20499@htj.dyndns.org> <AANLkTina7D3QffUK7vYvc3aVTvbcJQqm8VgQP3xJKYdw@mail.gmail.com>
 MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: mx51_efika: update platform data for new mfd changes
-References: <20110304080653.3f2c3f19@debxo>
-In-Reply-To: <20110304080653.3f2c3f19@debxo>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTina7D3QffUK7vYvc3aVTvbcJQqm8VgQP3xJKYdw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 03/04, Denys Vlasenko wrote:
+>
+> # time sh -c './strace -e trace=exit_group ls -lR /usr/share >/dev/null'
+> exit_group(0)                           = ?
+> real	0m47.695s
+> user	0m3.965s
+> sys	0m29.047s
+>
+> strace with PTRACE_GETSIGINFO:
+>
+> # time sh -c './strace -e trace=exit_group ls -lR /usr/share >/dev/null'
+> exit_group(0)                           = ?
+> real	0m51.958s
+> user	0m3.899s
+> sys	0m31.584s
 
-Andres Salomon wrote:
+I am wondering how much ptrace_check_attach()->wait_task_inactive()
+contributes... it can sleep.
 
-> Note that this relies on stuff currently in mfd's next tree, but this
-> is also a newer driver.  I'm not sure which tree it should go through,
-> as it's a problem that shows up in next.
+And note that many ptrace requests do not really need this,
+PTRACE_GETSIGINFO in particular.
 
-    This passage should be under --- tear line.
+Oleg.
 
-> From: Andres Salomon <dilinger@queued.net>
-
-> MFD changes in c738892f cause the mc13xxx_platform_data struct
-
-    Linus asks to also specify the commit summary in parens.
-
-> to change.  This changes one more (new) user of it, fixing a build
-> error.
-
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-
-WBR, Sergei
