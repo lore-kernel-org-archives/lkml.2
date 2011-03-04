@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759128Ab1CCXzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 18:55:00 -0500
-Received: from exprod7og115.obsmtp.com ([64.18.2.217]:37672 "EHLO
-	exprod7og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab1CCXy7 (ORCPT
+	id S1759134Ab1CDAG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 19:06:29 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:28850 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758875Ab1CDAG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 18:54:59 -0500
-Message-ID: <4D702A24.70805@genband.com>
-Date: Thu, 03 Mar 2011 17:54:12 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Thu, 3 Mar 2011 19:06:28 -0500
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: <linux-kernel@vger.kernel.org>, "'Ewe, Kok Howg'" <kok.howg.ewe@intel.com>,
+        "'Lai, Mee Sim'" <mee.sim.lai@intel.com>,
+        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
+References: <F5323EE7947C4C1CB0868F843FB4F917@hacdom.okisemi.com> <AANLkTim4z7vfyNceLYZhGzpYaECeSfLOYjzEhT9JFvJH@mail.gmail.com> <BF5CB373A5A948A2976AE727EA3F6B70@hacdom.okisemi.com> <20110303185632.GL22940@angua.secretlab.ca>
+Subject: RE: About GPIO interrupt function with sysfs
+Date: Fri, 4 Mar 2011 09:06:25 +0900
+Message-ID: <2BC88E699A3D491E8B7C2B761F8296C7@hacdom.okisemi.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: dev@nico22.de, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Network link detection
-References: <20110303193006.GA29129@svh.nico22.de>	<4D700A5B.2000807@genband.com> <20110303.140106.191399853.davem@davemloft.net>
-In-Reply-To: <20110303.140106.191399853.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Mar 2011 23:54:13.0778 (UTC) FILETIME=[4C73F720:01CBD9FE]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17990.002
-X-TM-AS-Result: No--9.151800-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+thread-index: AcvZ1Lj7xPDnN68xTmyY1pdXzfP/kQAKHwjQ
+In-Reply-To: <20110303185632.GL22940@angua.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 04:01 PM, David Miller wrote:
-> From: Chris Friesen <chris.friesen@genband.com>
-> Date: Thu, 03 Mar 2011 15:38:35 -0600
-> 
->> You might look at whether you could write a kernel module to register
->> for NETDEV_CHANGE notifications and pass that back to userspace.
-> 
-> This is the kind of responses you get when you ask networking specific
-> questions and don't CC: netdev :-/
+Hi Grant, 
 
-My apologies for misleading the original poster.  I can only claim a
-brain fart since I've actually used rtnetlink for other things.
+On Friday, March 04, 2011 3:57 AM, Grant Likely wrote:
+> I don't know.  I'll need to dig into that code before I can 
+> answer.  I suggest digging into it yourself to figure out the 
+> answer as I cannot promise that I'll get to it anytime soon.
 
-> There is this thing called netlink, you can listen for arbitrary
-> network state change events on a socket, and get the link state
-> notifications you are looking for.  It's in use by many real
-> applications like NetworkManager and co.
+Seeing "gpio_to_irq" of another architecture (e.g. ARM), there is significant code in it.
+In addition, you can see "Not implemented, yet" description in "arch/x86/include/asm/gpio.h"
+Thus, I suspect that x86 GPIO sysfs can't support interrupt function at present.
 
-For future reference then, to listen for link state notifications you'd
-use NETLINK_ROUTE with nl_groups set to RTMGRP_LINK, and the link state
-will be signaled in the if_flags field of received messages?
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
-Chris
-
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
