@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab1CDK3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 05:29:09 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:56620 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754031Ab1CDK3H (ORCPT
+	id S1759361Ab1CDKi0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 05:38:26 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45672 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab1CDKiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 05:29:07 -0500
-Message-ID: <4D70BE9D.4000507@stericsson.com>
-Date: Fri, 4 Mar 2011 11:27:41 +0100
-From: martin persson <martin.persson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	Fri, 4 Mar 2011 05:38:24 -0500
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, sfrench@us.ibm.com, agruen@linbit.com,
+        dilger.kernel@dilger.ca, sandeen@redhat.com, jlayton@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <20110302185847.GA3524@fieldses.org>
+References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110228211145.GG28617@thunk.org> <87oc5vgwqr.fsf@linux.vnet.ibm.com> <20110302154943.GB29136@fieldses.org> <87ei6pza5v.fsf@linux.vnet.ibm.com> <20110302185847.GA3524@fieldses.org>
+User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
+Date: Fri, 04 Mar 2011 16:08:15 +0530
+Message-ID: <871v2nw4q0.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: Colin Cross <ccross@android.com>,
-        "linux-arm-kernel@lists-infradead.org" 
-	<linux-arm-kernel@lists-infradead.org>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Varun Swara <Varun.Swara@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency with cpufreq notifiers
-References: <1290060899-9786-1-git-send-email-ccross@android.com> <AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com>
-In-Reply-To: <AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've seen no problems using this patch and have been grateful for it's existence. So I'm happy to put:
+On Wed, 2 Mar 2011 13:58:47 -0500, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Wed, Mar 02, 2011 at 11:17:56PM +0530, Aneesh Kumar K. V wrote:
+> > On Wed, 2 Mar 2011 10:49:43 -0500, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > > On Tue, Mar 01, 2011 at 12:20:36PM +0530, Aneesh Kumar K. V wrote:
+> > > > On Mon, 28 Feb 2011 16:11:45 -0500, "Ted Ts'o" <tytso@mit.edu> wrote:
+> > > > > Hi Aneesh,
+> > > > > 
+> > > > > What is the current status of this patch series?  I seem to remember
+> > > > > that Christoph and Al Viro had some objections; have those been
+> > > > > cleared yet?  If not, can you summarize what their objections are?
+> > > > 
+> > > > The main objection raised was the use of may_delete and may_create inode
+> > > > operations callback. They are gone now and we have MAY_* flags as
+> > > > favoured by Al Viro.  The new MAY_* flags added are 
+> > > > 
+> > > > #define MAY_CREATE_FILE 128
+> > > > #define MAY_CREATE_DIR 256
+> > > > #define MAY_DELETE_CHILD 512
+> > > > #define MAY_DELETE_SELF 1024
+> > > > #define MAY_TAKE_OWNERSHIP 2048
+> > > > #define MAY_CHMOD 4096
+> > > > #define MAY_SET_TIMES 8192
+> > > > 
+> > > > 
+> > > > > 
+> > > > > To be honest I haven't been paying super close attention to this patch
+> > > > > series, and I'm curious what needs to happen with it one way or
+> > > > > another.
+> > > > > 
+> > > > 
+> > > > IMHO we are ready to get first 11 patches upstream in the next merge
+> > > > window. ie the below set of patches.
+> > > 
+> > > Why aren't all of them ready?
+> > > 
+> > 
+> > All except how to enable richacl in local file system is ready. I
+> > actually floated two ideas in the patch series
+> > 
+> > 1) mount option
+> > 2) Ext4 compat flags.
+> 
+> The choice of ACL format is a persistant property of the filesystem, not
+> of a single mount of the filesystem: for example, people can't try out
+> richacls for one mount and then decide to revert bacak to posix acls.
+> 
+> (Right?)  So I'm assuming we should use the latter--but I don't
+> understand what ext4 compat flags are.... Is there some disadvantage to
+> using them?
+> 
 
-Tested-by: martin.persson@stericsson.com
+We already have a mount option to enable posix acl (-o acl|noacl). So
+along the same line should we have -o richacl|norichacl or should we
+have richacl as a ext4 compat flag EXT4_FEATURE_COMPAT_RICHACL. The
+compat feature can be enabled via tune2fs for an already created file
+system. Once the compat feature is enabled a -o acl mount option cause
+the richacl access check to be enabled. That can also result in
+mapping the existing posix acl in the file system to richacl and
+using mapped richacl for access restriction. With compat flag once set
+we will never be able to mount the file system again to use posix acl
+access restriction. (We cannot map richacl to posixacl because richacl
+support advanced access masks)
 
-/Martin
 
-On 03/04/2011 11:17 AM, Linus Walleij wrote:
-> 2010/11/18 Colin Cross<ccross@android.com>:
->
->> The clock to the ARM TWD local timer scales with the cpu
->> frequency. To allow the cpu frequency to change while
->> maintaining a constant TWD frequency, pick a lower target
->> frequency for the TWD and use the prescaler to divide down
->> to the closest lower frequency.
-> We are using this with some custom hooks for the U8500.
->
-> Tested-by: Linus Walleij<linus.walleij@linaro.org>
->
-> Martin Persson can probably provide an additional Tested-by
-> from ST-Ericsson if it helps.
->
-> Colin are you merging this patch for 2.6.39 through
-> Russells tracker or pull request? It's an important patch
-> for us.
->
-> Yours,
-> Linus Walleij
+With mount option (-o richacl) we can still mount the file system with
+-o acl which implies we will have to ignore the richacl associated with
+files and only evaluate the posix acl stored.
+
+-aneesh
