@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759958Ab1CDRfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:35:52 -0500
-Received: from xenotime.net ([184.105.210.51]:50472 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1759270Ab1CDRfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 12:35:51 -0500
-Date: Fri, 4 Mar 2011 09:35:48 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>, Jiri Kosina <trivial@kernel.org>
-Cc: linux@kbdbabel.org, romfs@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org
-Subject: Re: [PATCH]fix a link in Documentation/filesystem/romfs.txt
-Message-Id: <20110304093548.a37e0ef9.rdunlap@xenotime.net>
-In-Reply-To: <20110304115926.GA4104@gmail.com>
-References: <20110304115926.GA4104@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1759969Ab1CDRgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:36:20 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:41567 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758463Ab1CDRgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 12:36:19 -0500
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Theodore Tso <tytso@mit.edu>, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Matt Mackall <mpm@selenic.com>, cl@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
+References: <1299174652.2071.12.camel@dan>	<1299185882.3062.233.camel@calx>
+	 <1299186986.2071.90.camel@dan>	<1299188667.3062.259.camel@calx>
+	 <1299191400.2071.203.camel@dan>
+	 <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
+	 <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 04 Mar 2011 09:36:04 -0800
+Message-ID: <1299260164.8493.4071.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Mar 2011 19:59:31 +0800 Harry Wei wrote:
-
-> Hi us,
->     I think it is a good patch for Documentation/filesystem/romfs.txt.
+On Fri, 2011-03-04 at 08:52 +0200, Pekka Enberg wrote:
+> On Fri, Mar 4, 2011 at 2:50 AM, Theodore Tso <tytso@mit.edu> wrote:
+> > Being able to monitor /proc/slabinfo is incredibly useful for finding various
+> > kernel problems.  We can see if some part of the kernel is out of balance,
+> > and we can also find memory leaks.   I once saved a school system's Linux
+> > deployment because their systems were crashing once a week, and becoming
+> > progressively more unreliable before they crashed, and the school board
+> > was about to pull the plug.
 > 
->    From: Alexander Kurz <linux@kbdbabel.org>
-> 
-> Hello romfs group,
-> 	 I have posted a patch to fix the reference to
-> the outdated ftp site (which still serves genromfs-0.5.1) in
-> Documentation/filesystems/romfs.txt last month,
-> but nobody has picked it up yet.
-> 
-> Does anybody like to forward this?
-> Thanks, Alexander
+> Indeed. However, I'm not sure we need to expose the number of _active
+> objects_ to non-CAP_ADMIN users (which could be set to zeros if you
+> don't have sufficient privileges). Memory leaks can be detected from
+> the total number of objects anyway, no? 
 
-Hi Jiri,
-Do you have this merged somewhere?
+This:
 
-Thanks.
+	http://www.exploit-db.com/exploits/14814/
 
-> Thanks.
-> Best Regards.
-> Harry Wei.
-> 
-> Signed-off-by: Alexander Kurz<linux@kbdbabel.org>
-> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-> ---
->  Documentation/filesystems/romfs.txt |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/romfs.txt b/Documentation/filesystems/romfs.txt
-> index 2d2a7b2..3b7ef40 100644
-> --- a/Documentation/filesystems/romfs.txt
-> +++ b/Documentation/filesystems/romfs.txt
-> @@ -17,8 +17,7 @@ comparison, an actual rescue disk used up 3202 blocks with ext2, while
->  with romfs, it needed 3079 blocks.
->  
->  To create such a file system, you'll need a user program named
-> -genromfs.  It is available via anonymous ftp on sunsite.unc.edu and
-> -its mirrors, in the /pub/Linux/system/recovery/ directory.
-> +genromfs. It is available on http://romfs.sourceforge.net.
->  
->  As the name suggests, romfs could be also used (space-efficiently) on
->  various read-only media, like (E)EPROM disks if someone will have the
-> -- 
+loops doing allocations until total==active, and then does one more
+allocation to get the position in the slab it needs.  If we mask
+'active', it'll just loop until 'total' gets bumped, and then consider
+the _previous_ allocation to have been the one that was in the necessary
+position.
 
+As Ted mentioned, the real issue here is being able to infer location
+inside the slab by correlating your allocations with when the slab
+statistics get bumped.  You can do that with slabinfo pretty precisely,
+but you can probably also pull it off with meminfo too, albeit with less
+precision.
 
+We need to either keep the bad guys away from the counts (this patch),
+or de-correlate the counts moving around with the position of objects in
+the slab.  Ted's suggestion is a good one, and the only other thing I
+can think of is to make the values useless, perhaps by batching and
+delaying the (exposed) counts by a random amount.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- Dave
+
