@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759115Ab1CDA74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 19:59:56 -0500
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:61381 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758930Ab1CDA7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 19:59:55 -0500
-X-AuditID: 1209190d-b7cacae000000a14-4b-4d70398a0f11
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <1299191400.2071.203.camel@dan>
-Date: Thu, 3 Mar 2011 19:50:43 -0500
-Cc: Matt Mackall <mpm@selenic.com>, cl@linux-foundation.org,
-        penberg@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+	id S1759086Ab1CDBQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 20:16:34 -0500
+Received: from mga14.intel.com ([143.182.124.37]:48939 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758917Ab1CDBQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 20:16:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,261,1297065600"; 
+   d="scan'208";a="397311641"
+Subject: Re: [PATCH v3 0/4] perf: offcore event monitoring patches
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1299147297.1310.50.camel@laptop>
+References: <1299119690-13991-1-git-send-email-ming.m.lin@intel.com>
+	 <1299147297.1310.50.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Mar 2011 09:16:37 +0800
+Message-ID: <1299201397.2908.0.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
-References: <1299174652.2071.12.camel@dan>  <1299185882.3062.233.camel@calx> <1299186986.2071.90.camel@dan>  <1299188667.3062.259.camel@calx> <1299191400.2071.203.camel@dan>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-X-Mailer: Apple Mail (2.1082)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-03-03 at 18:14 +0800, Peter Zijlstra wrote:
+> On Thu, 2011-03-03 at 10:34 +0800, Lin Ming wrote:
+> 
+> > Peter,
+> > The event scheduling issue was fixed, could you please consider merging
+> > this series?
+> 
+> I'll have a look today.
+> 
+> BTW, you managed to wreck git-send-email, you have git 1.7 which does
+> the right thing by default (--no-chain-reply-to), please do use that. I
+> normally ignore emails send like this.
 
-On Mar 3, 2011, at 5:30 PM, Dan Rosenberg wrote:
+OK. Will use --no-chain-reply-to next time.
 
-> I appreciate your input on this, you've made very reasonable points.
-> I'm just not convinced that those few real users are being substantially
-> inconvenienced, even if there's only a small benefit for the larger
-> population of users who are at risk for attacks.  Perhaps others could
-> contribute their opinions to the discussion.
-
-Being able to monitor /proc/slabinfo is incredibly useful for finding various
-kernel problems.  We can see if some part of the kernel is out of balance,
-and we can also find memory leaks.   I once saved a school system's Linux
-deployment because their systems were crashing once a week, and becoming
-progressively more unreliable before they crashed, and the school board
-was about to pull the plug.
-
-Turned out the "virus scanner" was a piece of garbage that slowly leaked
-memory over time, and since it was proprietary code that was loaded as 
-a kernel module, it showed up in /proc/slabinfo.   If it had been protected
-it would have been much harder for me to get access to such debugging
-data.
-
-I wonder if there is some other change we could make to the slab allocator
-that would make it harder for exploit writers without having to protect the
-/proc/slabinfo file.  For example, could we randomly select different free 
-objects in a page instead of filling them in sequentially?
-
--- Ted
 
