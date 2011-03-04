@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760044Ab1CDTAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 14:00:23 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64860 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab1CDTAW (ORCPT
+	id S1760067Ab1CDTAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 14:00:31 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48701 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760049Ab1CDTA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 14:00:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=Rqt0tjbpUMxWk9XNxPVtvlHRGBAo1Z6Jkl5KVpZEWLPVBVCxRTbAjNez/DD0iHCeoX
-         GpOYgT6E5hQczQO+6y3tVrKynjSQOnjlx03kvEProSkdnwC7akkyfTgrDeAFcOlRGAOj
-         QBpjP3NsqRIhI/GDvj4BFAHlZxsQC28ZYPX4k=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] Proposal for ptrace improvements
-Date: Fri, 4 Mar 2011 19:59:57 +0100
-User-Agent: KMail/1.8.2
-Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-References: <20110301152457.GE26074@htj.dyndns.org> <AANLkTinn_J3fxyjgQk02mHpbxh_5fXNk1qT-YwjgCGqK@mail.gmail.com> <AANLkTinwo05bRQ8YE2-gmD0cY-8ML7vkiCkbhWOWn+=C@mail.gmail.com>
-In-Reply-To: <AANLkTinwo05bRQ8YE2-gmD0cY-8ML7vkiCkbhWOWn+=C@mail.gmail.com>
+	Fri, 4 Mar 2011 14:00:29 -0500
+Message-ID: <4D713670.70506@ru.mvista.com>
+Date: Fri, 04 Mar 2011 21:58:56 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Andres Salomon <dilinger@queued.net>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Amit Kucheria <amit.kucheria@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: mx51_efika: update platform data for new mfd changes
+References: <20110304080653.3f2c3f19@debxo>	<4D710FF9.6040305@ru.mvista.com> <20110304083822.0f40d120@debxo>
+In-Reply-To: <20110304083822.0f40d120@debxo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201103041959.57966.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 March 2011 18:12, Linus Torvalds wrote:
-> On Fri, Mar 4, 2011 at 9:05 AM, Denys Vlasenko <vda.linux@googlemail.com> wrote:
-> >
-> > Here's a typical sequence of operations strace is doing:
-> >
-> > wait4(-1, [{WIFSTOPPED(s) && WSTOPSIG(s) == SIGTRAP}], __WALL, NULL) = 10445
-> > ptrace(PTRACE_GETSIGINFO, 10445, 0, {si_signo=SIGTRAP, si_code=0x5,
-> > si_pid=10445, si_uid=0, si_value={int=0, ptr=0}}) = 0
-> > ptrace(PTRACE_PEEKUSER, 10445, 8*ORIG_RAX, [0x36]) = 0
-> > ptrace(PTRACE_PEEKUSER, 10445, 8*CS, [0x23]) = 0
-> > ptrace(PTRACE_PEEKUSER, 10445, 8*RAX, [0xffffffffffffffda]) = 0
-> > ptrace(PTRACE_PEEKUSER, 10445, 8*RBX, [0x1]) = 0
-> > ptrace(PTRACE_PEEKUSER, 10445, 8*RCX, [0x5401]) = 0
-> > ptrace(PTRACE_PEEKUSER, 10445, 8*RDX, [0xffb83f10]) = 0
-> > ptrace(PTRACE_SYSCALL, 10445, 0x1, SIG_0) = 0
-> >
-> > IOW: strace wastes a lot of time just transiting to the kernel and back
-> > with simple syscalls to get the information.
-> >
-> > What would help here is a "vectorized" waitpid operation
-> > which retrieves much more information in one go:
-> >
-> > waitpid_vec(int max_results, int status_vector[], siginfo_t
-> > si_vector[], struct pt_regs reg_vector[])
-> 
-> No. Start off with what we already have: make ptrace use
-> "PTRACE_GETREGSET" instead of PTRACE_PEEKUSER.
-> 
-> That should get the whole "user_regs_struct" in one single system call.
+Hello.
 
-Aye. That's the idea: get more info in one go.
+Andres Salomon wrote:
 
-I bet a part of the rationale for PTRACE_GETREGSET
-was to get not one register per syscall, but all of them.
+>>> Note that this relies on stuff currently in mfd's next tree, but
+>>> this is also a newer driver.  I'm not sure which tree it should go
+>>> through, as it's a problem that shows up in next.
 
-We have more of these:
+>>     This passage should be under --- tear line.
 
-readv/writev
+> What?
 
-Get not one signal, but many of them (signalfd).
+    See Documentation/SubmittingPatches, section 15, "The canonical patch format".
 
-Get not one task's wait notification, but many of them,
-    and also get accompanying siginfo etc (waitpidv?
-    or better, waitfd?)
+>>> From: Andres Salomon <dilinger@queued.net>
 
--- 
-vda
+>>> MFD changes in c738892f cause the mc13xxx_platform_data struct
+
+>>     Linus asks to also specify the commit summary in parens.
+
+> Also, what?  If there are changes to how patches should be submitted,
+> please provide a reference (Documentation/SubmittingPatches should
+> be updated, as well).
+
+    I have no time to rummage in the mail archives, sorry.
+
+>>> to change.  This changes one more (new) user of it, fixing a build
+>>> error.
+>>> Signed-off-by: Andres Salomon <dilinger@queued.net>
+
+WBR, Sergei
+
