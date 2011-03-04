@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760086Ab1CDTJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 14:09:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5296 "EHLO mx1.redhat.com"
+	id S1760086Ab1CDTPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 14:15:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10774 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759999Ab1CDTJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 14:09:34 -0500
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-From: Glauber Costa <glommer@redhat.com>
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110304182733.GA2867@nik-comp.lan>
-References: <20110228152823.GF29840@pcnci.linuxbox.cz>
-	 <4D6BC5CA.8060004@redhat.com> <20110228171550.GA2173@nik-comp.lan>
-	 <4D6EF536.305@redhat.com> <20110303070652.GG29840@pcnci.linuxbox.cz>
-	 <4D6FFE5D.1030401@redhat.com> <20110303210647.GA27691@nik-comp.lan>
-	 <4D700F09.9000002@redhat.com> <20110303220155.GB27691@nik-comp.lan>
-	 <4D7101AF.6060009@redhat.com>  <20110304182733.GA2867@nik-comp.lan>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Fri, 04 Mar 2011 16:09:22 -0300
-Message-ID: <1299265762.11618.140.camel@mothafucka.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759886Ab1CDTPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 14:15:06 -0500
+Date: Fri, 4 Mar 2011 14:14:59 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Justin TerAvest <teravest@google.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        Chad Talbott <ctalbott@google.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6 v5.1] cfq-iosched: Introduce CFQ group hierarchical
+ scheduling and "use_hierarchy" interface
+Message-ID: <20110304191458.GE5466@redhat.com>
+References: <4D61FE91.60705@cn.fujitsu.com>
+ <4D6201A3.70301@cn.fujitsu.com>
+ <4D64788F.6040408@cn.fujitsu.com>
+ <20110224181140.GE18494@redhat.com>
+ <4D670C14.9040504@cn.fujitsu.com>
+ <20110227231618.GA1014@redhat.com>
+ <20110228001544.GA2762@redhat.com>
+ <4D6E1556.5060905@cn.fujitsu.com>
+ <4D706BC3.9090900@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D706BC3.9090900@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 19:27 +0100, Nikola Ciprich wrote:
-> Hello Zachary,
+On Fri, Mar 04, 2011 at 12:34:11PM +0800, Gui Jianfeng wrote:
+> Gui Jianfeng wrote:
+> > Vivek Goyal wrote:
+> >> On Sun, Feb 27, 2011 at 06:16:18PM -0500, Vivek Goyal wrote:
+> >>> On Fri, Feb 25, 2011 at 09:55:32AM +0800, Gui Jianfeng wrote:
+> >>>> Vivek Goyal wrote:
+> >>>>> On Wed, Feb 23, 2011 at 11:01:35AM +0800, Gui Jianfeng wrote:
+> >>>>>> Hi
+> >>>>>>
+> >>>>>> I rebase this series on top of *for-next* branch, it will make merging life easier.
+> >>>>>>
+> >>>>>> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
+> >>>>>> in the way that it puts all CFQ queues in a hidden group and schedules with other 
+> >>>>>> CFQ group under their parent. The patchset is available here,
+> >>>>>> http://lkml.org/lkml/2010/8/30/30
+> >>>>> Gui,
+> >>>>>
+> >>>>> I was running some tests (iostest) with these patches and my system crashed
+> >>>>> after a while.
+> >>>>>
+> >>>>> To be precise I was running "brrmmap" test of iostest.
+> >>>> Vivek,
+> >>>>
+> >>>> I simply run iostest with brrmmap mode, I can't reproduce this bug.
+> >>>> Would you give more details.
+> >>>> Can you tell me the iostest command line options?
+> >>> iostest /dev/dm-1 -G --nrgrp 4 -m 8 --cgtime --io_serviced --dequeue --total
+> >>>
+> >>> I was actually trying to run all the workloads defined but after running
+> >>> 2 workloads it crashed on 3rd workload.
+> >>>
+> >>> Now I tried to re-run brrmmap and it did not crash. So I am trying to run
+> >>> all the inbuilt workloads again.
+> >>>
+> >>>> Did you enable use_hierarchy in root group?
+> >>> No I did not. Trying to test the flat setup first.
+> >> Again was running above job and after 3 workloads it ran into a different
+> >> BUG_ON().
+> > 
+> > Vivek,
+> > 
+> > It seems there's a race.
+> > Would you try the following patch. This patch seems working for me.
+> > 
+> > diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> > index 380d667..abbbb0e 100644
+> > --- a/block/cfq-iosched.c
+> > +++ b/block/cfq-iosched.c
+> > @@ -4126,11 +4126,12 @@ new_queue:
+> >  	cfqq->allocated[rw]++;
+> >  	cfqq->ref++;
+> >  
+> > -	spin_unlock_irqrestore(q->queue_lock, flags);
+> > -
+> >  	rq->elevator_private[0] = cic;
+> >  	rq->elevator_private[1] = cfqq;
+> >  	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
+> > +
+> > +	spin_unlock_irqrestore(q->queue_lock, flags);
+> > +
+> >  	return 0;
+> >  
+> >  queue_fail:
+> > 
+> > Thanks
+> > Gui
+> > 
 > 
-> > You don't see any messages about TSC being unstable or switching  
-> > clocksource after loading the KVM module?  And you are not suspending  
-> > the host or anything?
-> no messages, no suspending, nothing.
+> Jens,
 > 
+> This bug seems being introduced in commmit 763414b in for-next branch when
+> merging for-2.6.39/core branch.
+> Would you apply the above patch?
 > 
-> > Can you try using "processor.max_cstate=1" on the host as a kernel  
-> > parameter and see if it makes a difference?
-> I tried it, no change..
-> n.
+> Vivek, can you try the patchset again with this fix? It works fine for me now.
 
-Zach,
+Gui,
 
-I don't understand 100 % the logic behind all your tsc changes.
-But kvm-clock-wise, most of the problems we had in the past were related
-to the difference in resolution between the tsc and the host clocksource
-(hpet, acpi_pm, etc), which in his case, it is a non-issue.
+Ok, I ran iostest with this fix and it seems to have worked. I need to run
+it for some more time. And I also need to spend more time reviewing your
+patchset. There are so many details to it. Soon I will spare some time
+to review it more and also test it bit more.
 
-It does seem to me like some compensation logic kicked in, dismantling
-an otherwise good tsc. He does have nonstop_tsc, which means it can't
-get any better.
+Of the top of my head I have one concern.
 
-One thing I noticed when reading the culprit patch in bisect, is that in
-vcpu_load(), there were previously a call to  
+- How to map iopriority to weights. I am thinking that currently weight
+  range is 100-1000. If we decide to extend the range in current scheme,
+  it will change the ioprio entity weight also and effectively the
+  service differentiation between ioprio level will change. I am
+  wondering if this is a concern and how cpu scheduler has managed it
 
- kvm_request_guest_time_update(vcpu)
-
-that was removed without a counterpart addition. Any idea about why it
-was done?
-
-Nikola, does adding that line back alleviate the problem for you ?
-
+Thanks
+Vivek
