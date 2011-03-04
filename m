@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab1CDVIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:08:17 -0500
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:59043 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932582Ab1CDVIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932578Ab1CDVIM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 4 Mar 2011 16:08:12 -0500
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:59041 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932452Ab1CDVIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:08:10 -0500
 From: Hagen Paul Pfeifer <hagen@jauu.net>
 To: linux-kernel@vger.kernel.org
 Cc: Hagen Paul Pfeifer <hagen@jauu.net>
-Subject: [PATCH 4/4] af_unix: remove unused struct sockaddr_un cruft
-Date: Fri,  4 Mar 2011 22:08:03 +0100
-Message-Id: <1299272883-32499-4-git-send-email-hagen@jauu.net>
+Subject: [PATCH 2/4] af_packet: struct socket declared/assigned but unused
+Date: Fri,  4 Mar 2011 22:08:01 +0100
+Message-Id: <1299272883-32499-2-git-send-email-hagen@jauu.net>
 X-Mailer: git-send-email 1.7.4.1.57.g0466.dirty
 In-Reply-To: <1299272883-32499-1-git-send-email-hagen@jauu.net>
 References: <1299272883-32499-1-git-send-email-hagen@jauu.net>
@@ -22,29 +22,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
 ---
- net/unix/af_unix.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ net/packet/af_packet.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 217fb7f..df5997d 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1567,7 +1567,6 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 	struct sock_iocb *siocb = kiocb_to_siocb(kiocb);
- 	struct sock *sk = sock->sk;
- 	struct sock *other = NULL;
--	struct sockaddr_un *sunaddr = msg->msg_name;
- 	int err, size;
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 5efef5b..b5362e9 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -966,7 +966,6 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+ 
+ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ {
+-	struct socket *sock;
  	struct sk_buff *skb;
- 	int sent = 0;
-@@ -1590,7 +1589,6 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 		err = sk->sk_state == TCP_ESTABLISHED ? -EISCONN : -EOPNOTSUPP;
- 		goto out_err;
- 	} else {
--		sunaddr = NULL;
- 		err = -ENOTCONN;
- 		other = unix_peer(sk);
- 		if (!other)
+ 	struct net_device *dev;
+ 	__be16 proto;
+@@ -978,8 +977,6 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ 	int len_sum = 0;
+ 	int status = 0;
+ 
+-	sock = po->sk.sk_socket;
+-
+ 	mutex_lock(&po->pg_vec_lock);
+ 
+ 	err = -EBUSY;
 -- 
 1.7.4.1.57.g0466.dirty
 
