@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759487Ab1CDP6N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:58:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:61304 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab1CDP6M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:58:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Subject: Re: [PATCH v10 1/1] PRUSS UIO driver support
-Date: Fri, 4 Mar 2011 16:58:05 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "TK, Pratheesh Gangadhar" <pratheesh@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1299213772-21931-1-git-send-email-pratheesh@ti.com> <20110304142028.GD28175@local> <B85A65D85D7EB246BE421B3FB0FBB593024C009039@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024C009039@dbde02.ent.ti.com>
+	id S1759525Ab1CDQBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:01:21 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50679 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752264Ab1CDQBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 11:01:20 -0500
+Date: Fri, 4 Mar 2011 16:00:59 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <4D710BFC0200007800034F3A@vpn.id2.novell.com>
+References: <4D710BFC0200007800034F3A@vpn.id2.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Remove dead config option X86_CPU
+Message-ID: <tip-24a2a35a18ebc4e143e86ad3fda50ee78de30d06@git.kernel.org>
+Git-Commit-ID: 24a2a35a18ebc4e143e86ad3fda50ee78de30d06
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103041658.05655.arnd@arndb.de>
-X-Provags-ID: V02:K0:K8fDNVH1U+i43IskLV4bZf3iNN6I3AyFEUwR0d83yR8
- k57C6//JgJvqoYqPQjTPfU3gpjiwb1KG8z6sblk7DrlwOn5Mx0
- OX1O/qSyQKVd+f1CqiWSF5D/qDHL7hrAB0IeiQZSU8+Fp9OtAt
- pIgW92sg5LuZyqPNDOvtCr3/UsNA1N7gs+GTuV6qQnBatV5VQY
- np+1ttgmFXcbB+aG1nLvA==
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 04 Mar 2011 16:01:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 March 2011, Nori, Sekhar wrote:
-> On Fri, Mar 04, 2011 at 19:50:28, Hans J. Koch wrote:
-> > On Fri, Mar 04, 2011 at 10:12:52AM +0530, Pratheesh Gangadhar wrote:
-> > > diff --git a/include/linux/uio_pruss.h b/include/linux/uio_pruss.h
-> > > new file mode 100644
-> > > index 0000000..8c9b2c9
-> > > --- /dev/null
-> > > +++ b/include/linux/uio_pruss.h
-> > 
-> > That should go to arch/arm/mach-davinci/include/mach/
-> > and not to the top level include/linux/ directory.
-> 
-> It was put in here because this driver
-> will be used across two ARM architectures
-> (DaVinci and OMAP). Although it won't be used
-> outside of ARM at least in near future.
+Commit-ID:  24a2a35a18ebc4e143e86ad3fda50ee78de30d06
+Gitweb:     http://git.kernel.org/tip/24a2a35a18ebc4e143e86ad3fda50ee78de30d06
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Fri, 4 Mar 2011 14:57:48 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 4 Mar 2011 16:34:33 +0100
 
-I think include/linux/ is fine for this, and arch/arm/include/asm would
-be ok as well. You might want to have only a single pruss header
-file that defines all the platform data for the child drivers, though.
+x86: Remove dead config option X86_CPU
 
-Ideally, you would of course not need the header at all. This will
-be possible with the move to a flat device tree, where you can store the
-offset as a property of the device
+This isn't being referenced anywhere, and the selects done from
+it can be easily done together with all the other X86 ones
 
-Another alternative would be to move it to a resource of the platform
-device.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4D710BFC0200007800034F3A@vpn.id2.novell.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/Kconfig     |    2 ++
+ arch/x86/Kconfig.cpu |    5 -----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-	Arnd
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d5ed94d..43214e3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -64,6 +64,8 @@ config X86
+ 	select HAVE_TEXT_POKE_SMP
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_SPARSE_IRQ
++	select GENERIC_FIND_FIRST_BIT
++	select GENERIC_FIND_NEXT_BIT
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 283c5a6..ed47e6e 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -294,11 +294,6 @@ config X86_GENERIC
+ 
+ endif
+ 
+-config X86_CPU
+-	def_bool y
+-	select GENERIC_FIND_FIRST_BIT
+-	select GENERIC_FIND_NEXT_BIT
+-
+ #
+ # Define implied options from the CPU selection here
+ config X86_INTERNODE_CACHE_SHIFT
