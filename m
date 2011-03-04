@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab1CDGxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 01:53:33 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:47100 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab1CDGxc (ORCPT
+	id S1753911Ab1CDGzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 01:55:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38202 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab1CDGzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 01:53:32 -0500
-Message-ID: <3e6f092bd0aa54fd6b9eb524f6c87ecf.squirrel@webmail.greenhost.nl>
-In-Reply-To: <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-    <20110216192658.GA7225@blimp.localdomain>
-    <20110217221329.GA3332@x61.home>
-    <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-    <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-    <AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
-    <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-    <20110222130440.21a27714@jbarnes-desktop>
-    <20110222223120.GA3567@x61.home>
-    <AANLkTimLBo4REwrCJfy3U_z-SJ8uoOurO7c66D5RpZRh@mail.gmail.com>
-Date: Fri, 4 Mar 2011 07:53:15 +0100 (CET)
-Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after 
-     reopening lid
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "Alex Riesen" <raa.lkml@gmail.com>,
-        "DRI mailing list" <dri-devel@lists.freedesktop.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Tino Keitel" <tino.keitel@tikei.de>, stable@kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Fri, 4 Mar 2011 01:55:46 -0500
+Date: Fri, 4 Mar 2011 06:55:42 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Bob Copeland <me@bobcopeland.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: omfs fixes
+Message-ID: <20110304065542.GT22723@ZenIV.linux.org.uk>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk>
+ <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com>
+ <20110303060352.GK22723@ZenIV.linux.org.uk>
+ <AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com>
+ <87tyfk7x0c.fsf@devron.myhome.or.jp>
+ <AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com>
+ <87lj0v9984.fsf@devron.myhome.or.jp>
+ <AANLkTinSiD3YakBTNfYXrE12YDsDREHX3GzLzCncduTV@mail.gmail.com>
+ <20110303225702.GQ22723@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: aaa3b708a984912a81ea67a52d88c378
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110303225702.GQ22723@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Mar 03, 2011 at 10:57:02PM +0000, Al Viro wrote:
 
-On Wed, February 23, 2011 02:09, Linus Torvalds wrote:
-> On Tue, Feb 22, 2011 at 2:31 PM, Tino Keitel <tino.keitel@tikei.de> wrote:
->>
->> I just tried 2.6.38-rc6 on my ThinkPad X61s without any other DRM
->> related patches, and my backlight issue is gone.
->
-> I applied Indan's fix in -rc6 (commit 951f3512dba5), since it had
-> several testers and seemed to simplify the code nicely too.
+> BTW, I suspect that another exception among the local filesystems (affs)
+> is actually leaking blocks on rmdir.  Need to experiment to verify that,
+> but it smells like another genuine bug.
 
-Sadly, as so often in life, it's not correct. At this point I'm not sure
-if it's better to revert that patch and add a correct one, or to just
-fix it up. The end result is the same I suppose. I've also found more
-documentation, namely: ACPI_IGD_OpRegion_Spec.pdf, which has the ASLE
-stuff in intel_opregion.c, and VOL_1_graphics_core.pdf, which mentions
-LBPC (I was looking at 3 before). Apparently the undocumented stuff
-the old code did was correct. What I don't understand is how BIOS
-makers could know about those bits.
+affs turned out to be OK; it uses rather convoluted scheme for link counter
+(and uses i_nlink == 0 as trigger for freeing inode), and it actually
+works fine.  Directories: 1 as long as they are alive, 0 once they are
+doomed.  Everything else: 1 if there's exactly one link, 0 once it's doomed,
+2 when there's more than 1 link.  It works.
 
-The good side is that that big warning in my patch description is
-invalid, something else was going on: The BIOS used LBPC to set and
-restore brightness, while the driver only used BLC_PWM_CTL after my
-patch.
+omfs, however, is _not_ OK in several respects.  There's no i_nlink races,
+since everything has one parent and rename() gets away with its playing with
+link count of old_inode (and it's more complicated than in case of ext*,
+BTW).  However,
+	a) it gives all live directories i_nlink == 2.  Should be 1, since it's
+really "can't tell how many".
+	b) it uses i_nlink == 0 as indication of doomed inode.  And on
+rmdir() it drives i_nlink to 0, so that works.  On overwriting directory
+rename(), OTOH, it leaves i_nlink at 1 and leaks the sucker.  Blocks
+are not freed.
+	c) readdir() is really not well.  Directories on omfs are hash
+tables - array of pointers to chains, indexed by hash function of name.
+If we run into an entry that is too long for what remains in the buffer,
+we keep scanning the chain.  And if something past it will turn out to
+be short enough, we'll advance file->f_pos and keep going.  Moreover,
+if the _last_ one in chain happens to be short enough, we'll spill over
+to the next chain, completely forgetting what had been missed in the
+previous one.
+	d) rename playing odd games with link count of old inode is not
+a bug; it's too convoluted for no good reason, but at least it's correct.
+Failing to mark old_inode dirty after updating ->i_ctime in there, OTOH,
+is racy.
 
-All credits to Intel for making something simple as backlight control
-as stupid and complex as possible:
-
-- It has two registers to control brightness, sometimes one is used,
-sometimes the other, sometimes both, and it's unknown what the BIOS
-uses, and it's undefined what registers are restored by the BIOS after
-reboot/resume.
-
-- When using ACPI and ASLE, the kernel requests a brightness change
-via a standard ACPI method, which in turns lets the BIOS generate an
-ASLE interrupt, which is handled by the driver. The brightness to set
-is between 0 and 255, and the driver is supposed to store the current
-brightness in another register. That register stores the brightness in
-percentages, which is used by the BIOS to restore brightness. How it
-does that is undefined, so it can use either register. So the BIOS
-obviously knows how to change the brightness, and it's still seemed
-like a good idea to bother the driver with it. The ASLE interface is
-a mess.
-
-All in all, after my patch, systems using ASLE and a BIOS storing
-the brightness in LBPC stopped working. The reason it works without
-ASLE is because the brightness is never changed by the driver, the
-backlight is only enabled or disabled.
-
-I'd love to clean up the whole backlight mess, but it's too late in
-the RC cycle to do that.
-
-So please revert my patch and apply Takashi Iwai's, which fixes the
-most immediate bug without changing anything else. This should go
-in stable too.
-
->From f6b8a45b9544072e6ddbb944a4c03a9ec8cbca3a Mon Sep 17 00:00:00 2001 From: Takashi
-Iwai <tiwai@suse.de>
-Date: Mon, 21 Feb 2011 14:19:27 +0100
-Subject: [PATCH] drm/i915: Fix calculation of backlight value in combined mode
-
-The commit a95735569312f2ab0c80425e2cd1e5cb0b4e1870
-    drm/i915: Refactor panel backlight controls
-causes a regression for GM45 that is using the combined mode for
-controlling the backlight brightness.  The commit introduced a wrong bit shift for
-computing the current backlight level.
-
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=672946
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=34524
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: <stable@kernel.org>
----
- drivers/gpu/drm/i915/intel_panel.c |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -176,7 +176,6 @@
- 			val &= ~1;
- 			pci_read_config_byte(dev->pdev, PCI_LBPC, &lbpc);
- 			val *= lbpc;
--			val >>= 1;
- 		}
- 	}
-
-
+I've pushed fixes for (b), (c) and (d) into #i_nlink and I think that (a)
+needs to be dealt with as well, but that one is less nasty.  Bob, do you
+prefer that to go through your tree or should it go straight to Linus?
+It's in git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ i_nlink,
+Al Viro (4):
+      omfs: rename() needs to mark old_inode dirty after ctime update
+      omfs: stop playing silly buggers with omfs_unlink() in ->rename()
+      omfs: merge unlink() and rmdir(), close leak in rename()
+      omfs: make readdir stop when filldir says so
+ fs/omfs/dir.c |   66 +++++++++++++++++---------------------------------------
+ 1 files changed, 20 insertions(+), 46 deletions(-)
