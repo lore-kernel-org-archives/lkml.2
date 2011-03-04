@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759855Ab1CDPuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:50:39 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41247 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759838Ab1CDPuh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:50:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=mtCixTdzrV75SvHWnSjnY639YHvjFsgShNZZF6JPzCvViLC6k0hj5Cvc5Y9sJj/+N4
-         Z9eEw7hhccxlcaZdAF6yw4nKIZ+t+632uGetSbLq/nQtItQFRMtmeWxXRbf98Hb5knot
-         cUY+3xvDSCC5GnyM+9jv6KhHD3tpe6VKJWwHk=
+	id S1759865Ab1CDPul (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:50:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759804Ab1CDPuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 10:50:40 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, "Alex\,Shi" <alex.shi@intel.com>,
+        "Li\, Shaohua" <shaohua.li@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "tytso\@mit.edu" <tytso@mit.edu>,
+        "jaxboe\@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen\, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
+References: <1297732201.24560.2.camel@sli10-conroe>
+	<20110221164909.GG6584@quack.suse.cz>
+	<1298449487.14712.1064.camel@debian>
+	<20110224121339.GE23042@quack.suse.cz>
+	<AANLkTinAeQMy-OoYYpbYeX=EjZ_-uT=67Ktk1PbE=A7_@mail.gmail.com>
+	<x49hbbmpqbo.fsf@segfault.boston.devel.redhat.com>
+	<20110302094246.GA7496@quack.suse.cz>
+	<x491v2p4i0u.fsf@segfault.boston.devel.redhat.com>
+	<20110302211748.GF7496@quack.suse.cz>
+	<x49lj0x0zve.fsf@segfault.boston.devel.redhat.com>
+	<20110304153248.GC2649@quack.suse.cz>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 04 Mar 2011 10:50:32 -0500
+In-Reply-To: <20110304153248.GC2649@quack.suse.cz> (Jan Kara's message of
+	"Fri, 4 Mar 2011 16:32:48 +0100")
+Message-ID: <x49d3m6j35j.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110304154549.GA14672@darkstar>
-References: <20110304154549.GA14672@darkstar>
-Date: Fri, 4 Mar 2011 23:50:36 +0800
-Message-ID: <AANLkTin6BzvErgnTjAi7nyPtrDnunzRGe-TD3gc3pdku@mail.gmail.com>
-Subject: Re: sysctl: add proc_dointvec_bool handler
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, Don Zickus <dzickus@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 4, 2011 at 11:45 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> Add proc_dointvec_bool sysctl handler for cases value is limited to 0 and 1
->
-> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
-> ---
->  include/linux/sysctl.h |    2 ++
->  kernel/sysctl.c        |   27 +++++++++++++++++++++++++++
->  2 files changed, 29 insertions(+)
->
-> --- linux-2.6.orig/kernel/sysctl.c      2011-03-03 11:13:01.986661838 +0800
-> +++ linux-2.6/kernel/sysctl.c   2011-03-03 11:15:52.196661447 +0800
+Jan Kara <jack@suse.cz> writes:
 
-This one is PATCH 01/04,  I missed the info in subject
+> I'm not so happy with ext4 results. The difference between ext3 and ext4
+> might be that amount of data written by kjournald in ext3 is considerably
+> larger if it ends up pushing out data (because of data=ordered mode) as
+> well. With ext4, all data are written by filemap_fdatawrite() from fsync
+> because of delayed allocation. And thus maybe for ext4 WRITE_SYNC_PLUG
+> is hurting us with your fast storage and small amount of written data? With
+> WRITE_SYNC, data would be already on it's way to storage before we get to
+> wait for them...
 
--- 
-Regards
-dave
+> Or it could be that we really send more data in WRITE mode rather than in
+> WRITE_SYNC mode with the patch on ext4 (that should be verifiable with
+> blktrace). But I wonder how that could happen...
+
+It looks like this is the case, the I/O isn't coming down as
+synchronous.  I'm seeing a lot of writes, very few write sync's, which
+means that the write stream will be preempted by the incoming reads.
+
+Time to audit that fsync path and make sure it's marked properly, I
+guess.
+
+Cheers,
+Jeff
