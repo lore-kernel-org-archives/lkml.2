@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759397Ab1CDKQi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 05:16:38 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60532 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759144Ab1CDKQh (ORCPT
+	id S1759409Ab1CDKRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 05:17:11 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41496 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759144Ab1CDKRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 05:16:37 -0500
+	Fri, 4 Mar 2011 05:17:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IeguddlNo2ioSWQ9YSizEARvj+Vuxd2C9XLvWGBBZhnVVLzoru7R1wPbqE/Rcdsrn1
-         neV960CT7JoksKU0sPHT+YdVWSt2olITndn3jPc+5lsBpo9k/WI/NtooCXLaaOGaGexq
-         WZpuN6zD5JLqcfJHlrxwB9V14F4FeM6+PoRIg=
-Date: Fri, 4 Mar 2011 11:16:32 +0100
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        tglx@linutronix.de, yinghai@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, shaohui.zheng@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] x86, mm: Clean up initmem_init
-Message-ID: <20110304101620.GG20499@htj.dyndns.org>
-References: <tip-ffe77a4605fb2588f8666850ad3e3b196241658f@git.kernel.org>
- <alpine.DEB.2.00.1102191906180.31263@chino.kir.corp.google.com>
- <20110221083511.GC31267@htj.dyndns.org>
- <alpine.DEB.2.00.1103031231060.9993@chino.kir.corp.google.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ruK9JDk/GUQlAL4fQylyrJPtFwhg0uds0+Du9wKebE7vrBW4kouJBcerh2U8V0J1D0
+         UQ50Wf9/ss6iX/0GKFHo/AHhJWoY3mqvMQiN2h9mf6aguj7bh/DzTzNuX2nTPzMbUwHp
+         8AtV7mM+NQO88gOtiaqOdskhGlZKHuaRz4uEs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103031231060.9993@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1290060899-9786-1-git-send-email-ccross@android.com>
+References: <1290060899-9786-1-git-send-email-ccross@android.com>
+Date: Fri, 4 Mar 2011 11:17:08 +0100
+Message-ID: <AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com>
+Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency with cpufreq notifiers
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Colin Cross <ccross@android.com>
+Cc: linux-arm-kernel@lists-infradead.org,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Rickard ANDERSSON <Rickard.Andersson@stericsson.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        Varun Swara <Varun.Swara@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Martin Persson <martin.persson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2010/11/18 Colin Cross <ccross@android.com>:
 
-On Thu, Mar 03, 2011 at 01:15:04PM -0800, David Rientjes wrote:
-> This patch cleans initmem_init() so that it is more readable and doesn't
-> use an unnecessary array of function pointers to convolute the flow of
-> the code.  It also makes it obvious that dummy_numa_init() will always
-> succeed (and documents that requirement) so that the existing BUG() is
-> never actually reached.
-> 
-> No functional change.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+> The clock to the ARM TWD local timer scales with the cpu
+> frequency. To allow the cpu frequency to change while
+> maintaining a constant TWD frequency, pick a lower target
+> frequency for the TWD and use the prescaler to divide down
+> to the closest lower frequency.
 
-Just a nitpick.
+We are using this with some custom hooks for the U8500.
 
-> +/*
-> + * Used if there's no underlying NUMA architecture, NUMA initialization fails,
-> + * or NUMA is disabled on the command line.
-> + *
-> + * Must online at least one node and add memory blocks that cover all allowed
-> + * memory.
-> + */
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
 
-Can you please reformat to docbook style?
+Martin Persson can probably provide an additional Tested-by
+from ST-Ericsson if it helps.
 
-Thanks.
+Colin are you merging this patch for 2.6.39 through
+Russells tracker or pull request? It's an important patch
+for us.
 
--- 
-tejun
+Yours,
+Linus Walleij
