@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760089Ab1CDV7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:59:20 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34258 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750757Ab1CDV7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:59:18 -0500
-Date: Fri, 4 Mar 2011 21:59:15 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [REVIEW] NVM Express driver
-Message-ID: <20110304215915.18199ce1@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110304212851.GB28680@kroah.com>
-References: <20110303204749.GY3663@linux.intel.com>
-	<20110303211336.GA32645@kroah.com>
-	<20110303214104.GZ3663@linux.intel.com>
-	<20110303215155.GA30451@kroah.com>
-	<20110303220735.GA3663@linux.intel.com>
-	<20110303222226.GA30966@kroah.com>
-	<20110304124348.6419c661@lxorguk.ukuu.org.uk>
-	<20110304212851.GB28680@kroah.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760271Ab1CDWE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 17:04:26 -0500
+Received: from mail.stp.gov.py ([201.217.56.163]:33162 "EHLO stp.gov.py"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760145Ab1CDWEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 17:04:25 -0500
+MIME-Version: 1.0
+Date: Fri, 04 Mar 2011 19:04:18 -0300
+From: Peter Shun <grupoimpulsor@stp.gov.py>
+To: undisclosed-recipients:;
+Subject: Achtung
+Organization: Peter Shun
+Reply-To: petershun.wong@yahoo.com.hk
+Message-ID: <086b49d202f4214977d484fb8f884c3a@127.0.0.1>
+User-Agent: RoundCube Webmail/0.2.2
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And non-automated loading of firmware as well.  Dell uses this for
-> updating their BIOSes just fine, with a userspace tool that initiates
-> the loading of the firmware.
 
-Try using the Dell tool with namespaces.
 
-> How does Dell do it?
+-- 
+Grüße 
 
-How do most other apps do it.
+Ich bin Herr Peter Wong Tung Shun, ich arbeite mit Hang Seng Bank, HONG
+KONG.and Ich habe einen geschäftlichen Vorschlag für Sie. Unser Kunde spät
+machte ein Festgeldkonto Höhe von US $ 20.500.000m aber nicht etwaige
+nächsten Angehörigen in einer seiner Schreibarbeit, ich möchte Sie als
+Ausländer, als der Empfänger dieser Gelder stehen, um aus meinem Bank
+übertragen werden zu einem Offshore-Konto mit Ihrer Hilfe, wenn bereit.
+Nach dem erfolgreichen Transfer sind wir im Verhältnis von 30% für Sie und
+70% für mich zu teilen. 
 
-> So, what could be changed in the current firmware interface to fix this
-> problem in a manner which would solve these perceived issues?
+Alles was ich brauche von Ihnen ist Ihre Bereitschaft, Vertrauenswürdigkeit
+und Engagement, wenn Interesse sende ich Ihnen die volle Angaben zur
+Transaktion nach Eingang Ihrer Antwort. 
 
-I'm not sure it can. The basis of the interface is driver requests
-firmware. That is done by using a pathname which in a namespaced
-environment isn't global and has races
+Du kannst mich auf meiner privaten E-Mail-Kontakt:
+(petershun.wong@yahoo.com.hk) und senden Sie die folgenden Informationen
+für die Dokumentation dazu. 
 
-(Several things break quite spectacularly if you request_firmware while
-updating a package, but of course nobody considered such details even for
-automatic stuff in many cases. Really there is some locking needed).
+(1) Vollständige Namen (2) aktuelle Wohnadresse (3) Private Telefonnummer, 
 
-For manual updating of a block of firmware the interface most stuff wants
-is
+Ich freue mich von Ihnen zu hören 
 
-	copy_from_user()
+Mit freundlichen Grüßen 
 
-or if you wanted to wrap it up nicely
-
-	x = vmalloc_from_user(void __user *ptr, ssize_t len);
-
-The app knows which firmware it is talking about and can inspect and
-compare it while holding an open file handle on the deivce. That protects
-against hotplug races and getting the wrong device second access, and
-ensures that the firmware, device and userspace are all talking about
-exactly the same thing.
-
-It would nice to say "its an obscure corner case that will just error",
-but far too much hardware still gets semi permanently (or permanently)
-converted into junk if you goof a permanent flash firmware update.
-
+Herr Peter Wong Tung Shun
