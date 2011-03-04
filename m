@@ -1,165 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759371Ab1CDJK4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 04:10:56 -0500
-Received: from mga03.intel.com ([143.182.124.21]:5923 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759285Ab1CDJKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 04:10:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,263,1297065600"; 
-   d="scan'208";a="397485665"
-Date: Fri, 4 Mar 2011 17:06:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/27] IO-less dirty throttling v6
-Message-ID: <20110304090609.GA1885@localhost>
-References: <20110303064505.718671603@intel.com>
- <20110303201226.GI16720@redhat.com>
- <20110303204827.GJ16720@redhat.com>
+	id S1759382Ab1CDJL7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 04:11:59 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:62078 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759285Ab1CDJL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 04:11:57 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 1/1] PRUSS UIO driver support
+Date: Fri, 4 Mar 2011 10:11:36 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.5.1; x86_64; ; )
+Cc: Pratheesh Gangadhar <pratheesh@ti.com>, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com, sshtylyov@mvista.com,
+        amit.chatterjee@ti.com, gregkh@suse.de, hjk@hansjkoch.de,
+        tglx@linutronix.de
+References: <1299213772-21931-1-git-send-email-pratheesh@ti.com> <1299213772-21931-2-git-send-email-pratheesh@ti.com>
+In-Reply-To: <1299213772-21931-2-git-send-email-pratheesh@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303204827.GJ16720@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103041011.36932.arnd@arndb.de>
+X-Provags-ID: V02:K0:G3Eg70gNTTRKhBVv5/rtiQIMrcHlzbXTpdIc1lJidWl
+ 7xTZMibILifTytspHNEQ7h1eUX6NieEoWx+m5GCDpP6kvzwaMZ
+ A8gELoogq3xLdiqCfaYS+8DHfv1iR6fOmcBqQzx+Msa0HY3Xj2
+ /2t02BQPM+l8BPIBU7TBgigpW9hi69dElii9jRawam0NrX69hy
+ o3GhdTjEl/XYIV1+BEgFQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 04:48:27AM +0800, Vivek Goyal wrote:
-> On Thu, Mar 03, 2011 at 03:12:26PM -0500, Vivek Goyal wrote:
-> > On Thu, Mar 03, 2011 at 02:45:05PM +0800, Wu Fengguang wrote:
-> > 
-> > [..]
-> > > - serve as simple IO controllers: if provide an interface for the user
-> > >   to set task_bw directly (by returning the user specified value
-> > >   directly at the beginning of dirty_throttle_bandwidth(), plus always
-> > >   throttle such tasks even under the background dirty threshold), we get
-> > >   a bandwidth based per-task async write IO controller; let the user
-> > >   scale up/down the @priority parameter in dirty_throttle_bandwidth(),
-> > >   we get a priority based IO controller. It's possible to extend the
-> > >   capabilities to the scope of cgroup, too.
-> > > 
-> > 
-> > Hi Fengguang,
-> > 
-> > Above simple IO controller capabilities sound interesting and I was
-> > looking at the patch to figure out the details. 
-> > 
-> > You seem to be mentioning that user can explicitly set the upper rate
-> > limit per task for async IO. Can't really figure that out where is the
-> > interface for setting such upper limits. Can you please point me to that.
-> 
-> Never mind. Jeff moyer pointed out that you mentioned above as possible
-> future enhancements on top of this patchset.
-
-Hi Vivek,
-
-Here is an update show the bandwidth limit possibility. I tested it by
-starting 8 or 10 concurrent dd's, doing "ulimit -m $((i<<10))" before
-starting the i'th dd. The first 3 dd's progress are shown in the
-following graphs.
-
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/xfs-10dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-22/balance_dirty_pages-task-bw.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/xfs-8dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-15/balance_dirty_pages-task-bw.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/ext4-10dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-29/balance_dirty_pages-task-bw.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/BW-LIMIT/btrfs-10dd-1M-8p-2975M-20%25-2.6.38-rc7-dt6+-2011-03-04-16-35/balance_dirty_pages-task-bw.png
-
-The bandwidth limit is not perfect in two of the above cases:
-- the xfs 10dd case: tasks could be hard throttled on dirty exceeding
-- the ext4 10dd case: filesystem makes >500ms latencies (smaller ones will be compensated)
-
-Thanks,
-Fengguang
----
-
-Subject: writeback: per-task async write bandwidth limit
-Date: Fri Mar 04 10:38:04 CST 2011
-
-XXX: the user interface is reusing RLIMIT_RSS for now.
-
-CC: Vivek Goyal <vgoyal@redhat.com>
-CC: Andrea Righi <arighi@develer.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2011-03-04 10:33:06.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-03-04 16:03:52.000000000 +0800
-@@ -428,6 +428,11 @@ unsigned long bdi_dirty_limit(struct bac
- 	return bdi_dirty;
- }
+On Friday 04 March 2011 05:42:52 Pratheesh Gangadhar wrote:
+> This patch implements PRUSS (Programmable Real-time Unit Sub System)
+> UIO driver which exports SOC resources associated with PRUSS like
+> I/O, memories and IRQs to user space. PRUSS is dual 32-bit RISC
+> processors which is efficient in performing embedded tasks that
+> require manipulation of packed memory mapped data structures and
+> handling system events that have tight real time constraints. This
+> driver is currently supported on Texas Instruments DA850, AM18xx and
+> OMAP-L138 devices.
+> For example, PRUSS runs firmware for real-time critical industrial
+> communication data link layer and communicates with application stack
+> running in user space via shared memory and IRQs.
  
-+static unsigned long hard_dirty_limit(unsigned long thresh)
-+{
-+	return max(thresh, default_backing_dev_info.dirty_threshold);
-+}
-+
- /*
-  * If we can dirty N more pages globally, honour N/8 to the bdi that runs low,
-  * so as to help it ramp up.
-@@ -589,7 +594,7 @@ static unsigned long dirty_throttle_band
- 					      unsigned long bdi_dirty,
- 					      struct task_struct *tsk)
- {
--	unsigned long limit = default_backing_dev_info.dirty_threshold;
-+	unsigned long limit = hard_dirty_limit(thresh);
- 	unsigned long bdi_thresh = bdi->dirty_threshold;
- 	unsigned long origin;
- 	unsigned long goal;
-@@ -1221,6 +1226,11 @@ static void balance_dirty_pages(struct a
- 		 * when the bdi limits are ramping up.
- 		 */
- 		if (nr_dirty <= (background_thresh + dirty_thresh) / 2) {
-+			if (current->signal->rlim[RLIMIT_RSS].rlim_cur !=
-+			    RLIM_INFINITY) {
-+				pause_max = MAX_PAUSE;
-+				goto calc_bw;
-+			}
- 			current->paused_when = jiffies;
- 			current->nr_dirtied = 0;
- 			break;
-@@ -1233,7 +1243,7 @@ static void balance_dirty_pages(struct a
- 			bdi_start_background_writeback(bdi);
- 
- 		pause_max = max_pause(bdi, bdi_dirty);
--
-+calc_bw:
- 		bw = dirty_throttle_bandwidth(bdi, dirty_thresh, nr_dirty,
- 					      bdi_dirty, current);
- 		if (unlikely(bw == 0)) {
-@@ -1241,6 +1251,8 @@ static void balance_dirty_pages(struct a
- 			pause = pause_max;
- 			goto pause;
- 		}
-+		bw = min(bw, current->signal->rlim[RLIMIT_RSS].rlim_cur >>
-+								PAGE_SHIFT);
- 		period = (HZ * pages_dirtied + bw / 2) / bw;
- 		pause = current->paused_when + period - jiffies;
- 		/*
-@@ -1292,8 +1304,8 @@ pause:
- 		current->paused_when += pause;
- 		current->nr_dirtied = 0;
- 
--		if (nr_dirty < default_backing_dev_info.dirty_threshold +
--		    default_backing_dev_info.dirty_threshold / DIRTY_MARGIN)
-+		dirty_thresh = hard_dirty_limit(dirty_thresh);
-+		if (nr_dirty < dirty_thresh + dirty_thresh / DIRTY_MARGIN)
- 			break;
- 	}
- 
+Looks good
+
+> Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
+> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
