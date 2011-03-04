@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab1CDLAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 06:00:46 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61578 "EHLO song.cn.fujitsu.com"
+	id S1759509Ab1CDLBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 06:01:13 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:49564 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab1CDLAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 06:00:44 -0500
-Message-ID: <4D70C693.4060405@cn.fujitsu.com>
-Date: Fri, 04 Mar 2011 19:01:39 +0800
+	id S1752084Ab1CDLBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 06:01:11 -0500
+Message-ID: <4D70C6AF.1010406@cn.fujitsu.com>
+Date: Fri, 04 Mar 2011 19:02:07 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH 9/10] KVM: MMU: remove unused macros
+Subject: [PATCH 10/10] KVM: cleanup memslot_id function
 References: <4D70C569.1030107@cn.fujitsu.com>
 In-Reply-To: <4D70C569.1030107@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-04 18:59:32,
+ 2011-03-04 18:59:59,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-04 18:59:33,
-	Serialize complete at 2011-03-04 18:59:33
+ 2011-03-04 19:00:01,
+	Serialize complete at 2011-03-04 19:00:01
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These macros are not used, so removed
+We can get memslot id from memslot->id directly
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c         |    5 -----
- arch/x86/kvm/paging_tmpl.h |    3 ---
- 2 files changed, 0 insertions(+), 8 deletions(-)
+ include/linux/kvm_host.h |    7 ++++++-
+ virt/kvm/kvm_main.c      |   17 -----------------
+ 2 files changed, 6 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 7d558b8..54a2ead 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -111,9 +111,6 @@ module_param(oos_shadow, bool, 0644);
- #define PT64_LEVEL_SHIFT(level) \
- 		(PAGE_SHIFT + (level - 1) * PT64_LEVEL_BITS)
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index ab42855..b1a7430 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -365,7 +365,6 @@ pfn_t gfn_to_pfn_prot(struct kvm *kvm, gfn_t gfn, bool write_fault,
+ 		      bool *writable);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn);
+-int memslot_id(struct kvm *kvm, gfn_t gfn);
+ void kvm_release_pfn_dirty(pfn_t);
+ void kvm_release_pfn_clean(pfn_t pfn);
+ void kvm_set_pfn_dirty(pfn_t pfn);
+@@ -388,6 +387,12 @@ int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
+ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
+ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
++
++static inline int memslot_id(struct kvm *kvm, gfn_t gfn)
++{
++	return gfn_to_memslot(kvm, gfn)->id;
++}
++
+ int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
+ unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
+ void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 1fa0d29..cf90f28 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -997,23 +997,6 @@ out:
+ 	return size;
+ }
  
--#define PT64_LEVEL_MASK(level) \
--		(((1ULL << PT64_LEVEL_BITS) - 1) << PT64_LEVEL_SHIFT(level))
+-int memslot_id(struct kvm *kvm, gfn_t gfn)
+-{
+-	int i;
+-	struct kvm_memslots *slots = kvm_memslots(kvm);
+-	struct kvm_memory_slot *memslot = NULL;
 -
- #define PT64_INDEX(address, level)\
- 	(((address) >> PT64_LEVEL_SHIFT(level)) & ((1 << PT64_LEVEL_BITS) - 1))
- 
-@@ -123,8 +120,6 @@ module_param(oos_shadow, bool, 0644);
- #define PT32_LEVEL_SHIFT(level) \
- 		(PAGE_SHIFT + (level - 1) * PT32_LEVEL_BITS)
- 
--#define PT32_LEVEL_MASK(level) \
--		(((1ULL << PT32_LEVEL_BITS) - 1) << PT32_LEVEL_SHIFT(level))
- #define PT32_LVL_OFFSET_MASK(level) \
- 	(PT32_BASE_ADDR_MASK & ((1ULL << (PAGE_SHIFT + (((level) - 1) \
- 						* PT32_LEVEL_BITS))) - 1))
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index b3862ee..86eb816 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -31,7 +31,6 @@
- 	#define PT_LVL_ADDR_MASK(lvl) PT64_LVL_ADDR_MASK(lvl)
- 	#define PT_LVL_OFFSET_MASK(lvl) PT64_LVL_OFFSET_MASK(lvl)
- 	#define PT_INDEX(addr, level) PT64_INDEX(addr, level)
--	#define PT_LEVEL_MASK(level) PT64_LEVEL_MASK(level)
- 	#define PT_LEVEL_BITS PT64_LEVEL_BITS
- 	#ifdef CONFIG_X86_64
- 	#define PT_MAX_FULL_LEVELS 4
-@@ -48,7 +47,6 @@
- 	#define PT_LVL_ADDR_MASK(lvl) PT32_LVL_ADDR_MASK(lvl)
- 	#define PT_LVL_OFFSET_MASK(lvl) PT32_LVL_OFFSET_MASK(lvl)
- 	#define PT_INDEX(addr, level) PT32_INDEX(addr, level)
--	#define PT_LEVEL_MASK(level) PT32_LEVEL_MASK(level)
- 	#define PT_LEVEL_BITS PT32_LEVEL_BITS
- 	#define PT_MAX_FULL_LEVELS 2
- 	#define CMPXCHG cmpxchg
-@@ -827,7 +825,6 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- #undef FNAME
- #undef PT_BASE_ADDR_MASK
- #undef PT_INDEX
--#undef PT_LEVEL_MASK
- #undef PT_LVL_ADDR_MASK
- #undef PT_LVL_OFFSET_MASK
- #undef PT_LEVEL_BITS
+-	for (i = 0; i < slots->nmemslots; ++i) {
+-		memslot = &slots->memslots[i];
+-
+-		if (gfn >= memslot->base_gfn
+-		    && gfn < memslot->base_gfn + memslot->npages)
+-			break;
+-	}
+-
+-	return memslot - slots->memslots;
+-}
+-
+ static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
+ 				     gfn_t *nr_pages)
+ {
 -- 
 1.7.4
-
