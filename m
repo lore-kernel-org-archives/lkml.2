@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1CDHW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 02:22:27 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33030 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1CDHW0 (ORCPT
+	id S1754237Ab1CDHYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 02:24:22 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:34792 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab1CDHYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 02:22:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FsAPyySk+RBY5C44Y7UKMmdGAkQor1mLTHIgtlqCiYI7AituQUnX50oXLHuNb8sqOi
-         muDHNqzzcDPQXJoumEE5AEuAc+NyvDiLGNUBNWFWWwNhstV5QEtRlzG4yh5fWp7E+G0o
-         PVXZjyJO6/7mb4sWH8RHAwrDHSjNHGpScCPXU=
-Date: Fri, 4 Mar 2011 08:22:39 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Torben Hohn <torbenh@gmx.de>
-Cc: linux-kernel@vger.kernel.org, richard.cochran@omicron.at,
-        johnstul@us.ibm.com, tglx@linutronix.de
-Subject: Re: [PATCH 3/3] Check for write permission on FD based posix-clocks
-Message-ID: <20110304072239.GA8957@riccoc20.at.omicron.at>
-References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
- <1299173174-348-4-git-send-email-torbenh@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299173174-348-4-git-send-email-torbenh@gmx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 4 Mar 2011 02:24:20 -0500
+Date: Fri, 04 Mar 2011 16:16:56 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH] MAX8997/8966 PMIC: compiler warning removed (incompatible
+ pointer)
+In-reply-to: <1299221427-4726-3-git-send-email-myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
+Message-id: <1299223016-8655-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.1
+Content-transfer-encoding: 7BIT
+References: <1299221427-4726-3-git-send-email-myungjoo.ham@samsung.com>
+X-OriginalArrivalTime: 04 Mar 2011 07:16:56.0671 (UTC)
+ FILETIME=[252BC6F0:01CBDA3C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 06:26:14PM +0100, Torben Hohn wrote:
-> pc_clock_settime() and pc_clock_adjtime() did not check
-> whether the fd was opened in write mode.
-> 
-> It was possible to set a clock, when we only had read
-> permissions.
-> 
-> for completeness, we would also need to check for Read permissions
-> on the read operations. but that would be a bit paranoid, probably.
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/regulator/max8997.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
-I have no objection to this form of clock access control, but I would
-like to get agreement about it from the list.
-
-> diff --git a/kernel/time/posix-clock.c b/kernel/time/posix-clock.c
-> index 04498cb..25028dd 100644
-> --- a/kernel/time/posix-clock.c
-> +++ b/kernel/time/posix-clock.c
-> @@ -287,11 +287,16 @@ static int pc_clock_adjtime(clockid_t id, struct timex *tx)
->  	if (err)
->  		return err;
->  
-> +	if ((cd.fp->f_mode & FMODE_WRITE) == 0) {
-> +		err = -EACCES;
-
-Looks like clock_settime and adjtimex are supposed to return EPERM in
-this case.
-
-Thanks,
-
-Richard
-
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index 30778c5..957063a 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -790,18 +790,27 @@ static struct regulator_ops max8997_fixedstate_ops = {
+ 	.set_voltage		= max8997_set_voltage_charger_cv,
+ };
+ 
++static int max8997_set_voltage_ldo_wrap(struct regulator_dev *rdev,
++		int min_uV, int max_uV)
++{
++	unsigned dummy;
++
++	return max8997_set_voltage_ldo(rdev, min_uV, max_uV, &dummy);
++}
++
++
+ static struct regulator_ops max8997_charger_ops = {
+ 	.is_enabled		= max8997_reg_is_enabled,
+ 	.enable			= max8997_reg_enable,
+ 	.disable		= max8997_reg_disable,
+ 	.get_current_limit	= max8997_get_voltage,
+-	.set_current_limit	= max8997_set_voltage_ldo,
++	.set_current_limit	= max8997_set_voltage_ldo_wrap,
+ };
+ 
+ static struct regulator_ops max8997_charger_fixedstate_ops = {
+ 	.is_enabled		= max8997_reg_is_enabled,
+ 	.get_current_limit	= max8997_get_voltage,
+-	.set_current_limit	= max8997_set_voltage_ldo,
++	.set_current_limit	= max8997_set_voltage_ldo_wrap,
+ };
+ 
+ #define regulator_desc_ldo(num)		{	\
+-- 
+1.7.1
 
