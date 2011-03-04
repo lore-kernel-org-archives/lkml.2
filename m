@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435Ab1CDLGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 06:06:12 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:58291 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752084Ab1CDLGK (ORCPT
+	id S1759451Ab1CDLIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 06:08:09 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49744 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab1CDLIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 06:06:10 -0500
-X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX19603k5/8t6s3zlk5OgDTbIWtNVie39b1qMwwOoDc
-	Xb0xXMftPwSf05
-Date: Fri, 4 Mar 2011 12:06:06 +0100
-From: torbenh <torbenh@gmx.de>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
-        richard.cochran@omicron.at, tglx@linutronix.de
-Subject: Re: [PATCH 2/3] ptp: add a software clock based on
- clock_monotonic_raw
-Message-ID: <20110304110606.GB3237@siel.b>
-Mail-Followup-To: Richard Cochran <richardcochran@gmail.com>,
-	john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
-	richard.cochran@omicron.at, tglx@linutronix.de
-References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
- <1299173174-348-3-git-send-email-torbenh@gmx.de>
- <1299180844.28285.111.camel@work-vm>
- <20110304064639.GD3824@riccoc20.at.omicron.at>
+	Fri, 4 Mar 2011 06:08:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BO6VsTPKIZ5H/VV4xPAHYC276tbyJVY+Q5/py/U5fe5MvCwsfDUMCs9JhzQrO7ELsp
+         HakbtJ5m4k2rGm91n5+5KFvqN+djO6wJ3k8Q0kuyO+bPs9OUicxxvtzYqudBMI0MtLpm
+         zFmi9VoNK3s2eLjltEwA9GeXJ1E4Rbc0AHmVk=
+Date: Fri, 4 Mar 2011 12:07:57 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Clark <sclark46@earthlink.net>
+Cc: Mark Lord <kernel@teksavvy.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: NEC ND-4550A problems reading DVD-R
+Message-ID: <20110304110757.GJ20499@htj.dyndns.org>
+References: <m339n7g7tw.fsf@intrepid.localdomain>
+ <20110301080153.GA26074@htj.dyndns.org>
+ <4D6CF92A.4020105@teksavvy.com>
+ <4D6D151D.8030307@earthlink.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110304064639.GD3824@riccoc20.at.omicron.at>
+In-Reply-To: <4D6D151D.8030307@earthlink.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 07:46:39AM +0100, Richard Cochran wrote:
-> On Thu, Mar 03, 2011 at 11:34:04AM -0800, john stultz wrote:
-> > On Thu, 2011-03-03 at 18:26 +0100, Torben Hohn wrote:
-> > > First version of a software clock. Not very useful yet,
-> > > as it doesnt generate events, but at least it allows
-> > > for testing the ptp framework without special hardware.
-> > 
-> > So in the past, I pushed back on Richard for having something similar,
-> > as I'm not psyched about duplicating interfaces. However, your
-> > implementation is CLOCK_MONOTONIC_RAW instead of CLOCK_REALTIME and it
-> > keeps the adjustments internal, I'm not as opposed.
-> 
-> (Aha! So it is okay after all ;)
-> 
-> I do think a software only PHC will make it easier for people to get
-> started with the new interface. I have been carrying along such a
-> patch privately for my own testing.
+(cc'ing Jens and James)
 
-can you post your patch then ?
-if john likes somthing better in my implementation, we should merge
-them.
+On Tue, Mar 01, 2011 at 10:47:41AM -0500, Stephen Clark wrote:
+> On 03/01/2011 08:48 AM, Mark Lord wrote:
+> >On 11-03-01 03:01 AM, Tejun Heo wrote:
+> >..
+> >>I think that's determined by drivers/scsi/sr.h::SR_TIMEOUT which is
+> >>hardcoded to be 30 seconds.  Maybe it's better to move it to use the
+> >>block parameter.  Anyways, the drive actually takes longer than 30secs
+> >>to recognize the media?
+> >That slow behaviour is not uncommon, especially as drives struggle
+> >to recognize various forms of copy-protected media (DVD-Video).
+> >A longer default, or tuneable timeout, would help.
+>
+> I agree with Mark, this should be a user tuneable value. My 2006 LG
+> dvd-rw frequently times out
+> trying to identify the media. But after numerous timeout error
+> messages it usually suceeds.
 
-i will be away for the next week, so its probably up to you.
+I don't think it should be a user tunable value.  It should be
+something automatic.  I mean, how many would know to go some cryptic
+place and increase sr probing timeout?
 
-i am still trying to find out, whether 802.1AS will spec accurate ptp
-clocks. i have the feeling that they wont.
-the main concern is synchronicity of the clock inside all devices of the
-timing domain. that this clock i running at the same frequency as the
-wallclock is not important.
+At the same time, increasing it for other cases is quite unattractive,
+so it probably would be a good idea to only use higher timeout value
+for the TUR right after media presence change event.
 
-here is a pretty confused mail about this:
-http://article.gmane.org/gmane.comp.audio.jackit/23606
+Anyone interested in doing it?
 
-i hope this thread will yield more useful information as it develops.
-
-i am currently acting under the assumption, that a device like this:
-http://www.xmos.com/products/reference-designs/avbl2
-would need to be the ptp master when the computer doesnt have h/w
-timestamping in its NIC.
-i am also assuming that the clock in that device would be crappy.
-
-so we wouldnt want to servo CLOCK_REALTIME after that crappy clock.
-but we want an instance of that clock as accurate as possible inside 
-the computer. so that we can bind streaming apps to this clock.
+Thanks.
 
 -- 
-torben Hohn
+tejun
