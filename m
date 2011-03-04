@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759876Ab1CDQWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:22:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759837Ab1CDQWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:22:11 -0500
-Date: Fri, 4 Mar 2011 17:13:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110304161321.GB23553@redhat.com>
-References: <20110301152457.GE26074@htj.dyndns.org> <20110303173422.GA27960@redhat.com> <20110303202246.GB32152@redhat.com> <AANLkTikeCzr-OGkmaaortS7_rR+JCM9B6aJV0c52EMbE@mail.gmail.com> <20110304134126.GL20499@htj.dyndns.org> <AANLkTikLd2Kg9Pz+5eLd_irdxoKdrR9qPj8yixeTfvaM@mail.gmail.com> <20110304140745.GP20499@htj.dyndns.org> <AANLkTina7D3QffUK7vYvc3aVTvbcJQqm8VgQP3xJKYdw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTina7D3QffUK7vYvc3aVTvbcJQqm8VgQP3xJKYdw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759727Ab1CDQWS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:22:18 -0500
+Received: from server103.greatnet.de ([83.133.97.6]:59025 "EHLO
+	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759893Ab1CDQWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 11:22:15 -0500
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+To: mingo@elte.hu
+Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, gorcunov@gmail.com,
+        Henrik Kretzschmar <henne@nachtwindheim.de>
+Subject: [PATCHv3 4/7] x86: remove enable_NMI_through_LVT0() entirely
+Date: Fri,  4 Mar 2011 17:21:52 +0100
+Message-Id: <1299255715-8680-4-git-send-email-henne@nachtwindheim.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1299255715-8680-1-git-send-email-henne@nachtwindheim.de>
+References: <1299255715-8680-1-git-send-email-henne@nachtwindheim.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04, Denys Vlasenko wrote:
->
-> # time sh -c './strace -e trace=exit_group ls -lR /usr/share >/dev/null'
-> exit_group(0)                           = ?
-> real	0m47.695s
-> user	0m3.965s
-> sys	0m29.047s
->
-> strace with PTRACE_GETSIGINFO:
->
-> # time sh -c './strace -e trace=exit_group ls -lR /usr/share >/dev/null'
-> exit_group(0)                           = ?
-> real	0m51.958s
-> user	0m3.899s
-> sys	0m31.584s
+This function is not used anywhere in the tree,
+since commit 072b198a4ad48bd722ec6d203d65422a4698eae7
+so it can be removed.
 
-I am wondering how much ptrace_check_attach()->wait_task_inactive()
-contributes... it can sleep.
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ arch/x86/include/asm/apic.h |    1 -
+ arch/x86/kernel/apic/apic.c |   17 -----------------
+ 2 files changed, 0 insertions(+), 18 deletions(-)
 
-And note that many ptrace requests do not really need this,
-PTRACE_GETSIGINFO in particular.
-
-Oleg.
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index b3f444d..72bdfec 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -238,7 +238,6 @@ void register_lapic_address(unsigned long address);
+ extern void setup_boot_APIC_clock(void);
+ extern void setup_secondary_APIC_clock(void);
+ extern int APIC_init_uniprocessor(void);
+-extern void enable_NMI_through_LVT0(void);
+ extern int apic_force_enable(unsigned long addr);
+ 
+ /*
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 4a65366..161342a 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -292,23 +292,6 @@ u64 native_apic_icr_read(void)
+ 	return icr1 | ((u64)icr2 << 32);
+ }
+ 
+-/**
+- * enable_NMI_through_LVT0 - enable NMI through local vector table 0
+- */
+-void __cpuinit enable_NMI_through_LVT0(void)
+-{
+-	unsigned int v;
+-
+-	/* unmask and set to NMI */
+-	v = APIC_DM_NMI;
+-
+-	/* Level triggered for 82489DX (32bit mode) */
+-	if (!lapic_is_integrated())
+-		v |= APIC_LVT_LEVEL_TRIGGER;
+-
+-	apic_write(APIC_LVT0, v);
+-}
+-
+ #ifdef CONFIG_X86_32
+ /**
+  * get_physical_broadcast - Get number of physical broadcast IDs
+-- 
+1.7.2.3
 
