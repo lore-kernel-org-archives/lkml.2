@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab1CDOlQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:41:16 -0500
+	id S1759644Ab1CDOlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:41:35 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:58531 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab1CDOlP (ORCPT
+	with ESMTP id S1759294Ab1CDOld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:41:15 -0500
+	Fri, 4 Mar 2011 09:41:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=MNViEwN7NegO+GvC7pfjnC4Fq6A29k2lTsTgEjsedWMhLFOQ1rJ+64OGDD+u0cesB3
-         s8UYbAHVBDCaGaECUxGH7mynPGNf4us8b8zyoMZlIwodL29+7B16ZWw81dfCiwsj18Vr
-         NVCzSAF9UfsMbL4pEE5DPZ0puyyjsqeSxPpzI=
-Date: Fri, 4 Mar 2011 15:40:59 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110304144059.GS20499@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <20110303173422.GA27960@redhat.com>
- <20110303202246.GB32152@redhat.com>
- <AANLkTikeCzr-OGkmaaortS7_rR+JCM9B6aJV0c52EMbE@mail.gmail.com>
- <20110304134126.GL20499@htj.dyndns.org>
- <AANLkTikLd2Kg9Pz+5eLd_irdxoKdrR9qPj8yixeTfvaM@mail.gmail.com>
- <20110304140745.GP20499@htj.dyndns.org>
- <AANLkTina7D3QffUK7vYvc3aVTvbcJQqm8VgQP3xJKYdw@mail.gmail.com>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iILDNw3YmvFmhfk2DLuFWfukjf/VMcw2GWDKH0JcaMEL3D4txaWf+EfC+Ti6/jCDDg
+         0W1Mn7gS4PE4R8hsUGW3QjhsblYLVoaeEqb1oMnooRjM+GvQGayKnqXrwF57TZ9naOlX
+         dEuDaG0LY4+kVU7ezoa7u03T/oeHHDWrjKW2c=
+Date: Fri, 4 Mar 2011 15:41:22 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf lock: clean the options for perf record
+Message-ID: <20110304144119.GE1972@nowhere>
+References: <4D63D685.2010401@dcl.info.waseda.ac.jp>
+ <1298389415.2217.243.camel@twins>
+ <20110222182206.GB1799@nowhere>
+ <4D648A65.2040107@dcl.info.waseda.ac.jp>
+ <4D667D60.5010903@dcl.info.waseda.ac.jp>
+ <20110224165014.GB1840@nowhere>
+ <4D67E286.8010907@dcl.info.waseda.ac.jp>
+ <AANLkTikUGO=Obm7Ue4VzEueQ7DERPiwci1VV9NmKZf1u@mail.gmail.com>
+ <4D70B3E1.8020108@dcl.info.waseda.ac.jp>
+ <1299249438.20306.3.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTina7D3QffUK7vYvc3aVTvbcJQqm8VgQP3xJKYdw@mail.gmail.com>
+In-Reply-To: <1299249438.20306.3.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 03:31:15PM +0100, Denys Vlasenko wrote:
-> On Fri, Mar 4, 2011 at 3:07 PM, Tejun Heo <tj@kernel.org> wrote:
-> > Hello,
-> >
-> > On Fri, Mar 04, 2011 at 02:59:32PM +0100, Denys Vlasenko wrote:
-> >> I would rather speed strace up than slow it down further, even if
-> >> slightly.
-> >
-> > The question to ask is at what cost?  If mostly unnoticeable slow down
-> > makes the API cleaner, I'll go that way.  Everything is a tradeoff.
+On Fri, Mar 04, 2011 at 09:37:18AM -0500, Steven Rostedt wrote:
+> On Fri, 2011-03-04 at 18:41 +0900, Hitoshi Mitake wrote:
 > 
-> # time sh -c 'ls -lR /usr/share >/dev/null'
-> real	0m2.633s
->
-> strace without PTRACE_GETSIGINFO:
-> real	0m47.023s
-> real	0m48.799s
-> real	0m47.695s
->
-> strace with PTRACE_GETSIGINFO:
-> real	0m51.958s
-> real	0m53.773s
-> real	0m51.625s
+> > BTW, how do you think about the idea of exporting data in
+> > python (or other neutral) expression from procfs? I feel it is a
+> > good idea. Communicating with unified format between user space and
+> > kernel space will reduce lots of parsing overhead. Is this too
+> > aggressive or insane?
+> 
+> As I mentioned in another email, I have no problem with an easy to parse
+> file. But I will aggressively NAK any "python" or other scripting
+> language. I'm sure I would get the same response if I were to have the
+> kernel outputting perl language ;)
 
-Great, numbers, so it's ~10 slow down.  Gees, with or without that
-change, strace(2) is heavy, >18 times slower than without.  Maybe it
-should give up on ptrace and use the new tracing infrastructure?
+Same for me.
 
-Anyways, thanks a lot for the numbers.  Much appreciated.
-
--- 
-tejun
+But even before talking about that, I wonder if doing this is actually needed.
