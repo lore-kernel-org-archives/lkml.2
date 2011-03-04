@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab1CDJDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 04:03:54 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45242
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751571Ab1CDJDv (ORCPT
+	id S1759326Ab1CDJFE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 04:05:04 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:63122 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab1CDJE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 04:03:51 -0500
-Date: Fri, 04 Mar 2011 01:04:28 -0800 (PST)
-Message-Id: <20110304.010428.71127798.davem@davemloft.net>
-To: sledz@dresearch.de
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, m.schuknecht@dresearch.de
-Subject: Re: [PATCH resent] tcp: ioctl type SIOCOUTQNSD returns amount of
- data not sent
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1299228497-21246-1-git-send-email-sledz@dresearch.de>
-References: <1299228497-21246-1-git-send-email-sledz@dresearch.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Mar 2011 04:04:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PpwGyGBUKjnirhH4DgCAalao7qtWHroGkCVCaShe5PY3okEBMox5v3y3o7oYukJtz6
+         Dv1Rgm8YJ591kHfiNrYeqiwlUUAJiWZeI5cCxzMmURcALGoLBDyAH8yLX1Sfie3gvxqq
+         BKsNdtak8W4t+Y95LAJndEjWM8iUtX/LYa6TQ=
+Date: Fri, 4 Mar 2011 01:04:51 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dudley Du <dudl@cypress.com>
+Cc: "rubini@ipvvis.unipv.it" <rubini@cvml.unipv.it>,
+        "olofj@google.com" <olofj@google.com>,
+        "micahc@google.com" <micahc@google.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mouse: Add new i2c-based input mouse driver into input
+ subsystem for Cypress i2c trackpad devices.
+Message-ID: <20110304090450.GB4323@core.coreip.homeip.net>
+References: <B27AC323FA92C946BA36D2913DDC8E3701FD6F0B1A3B@VMBX126.ihostexchange.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B27AC323FA92C946BA36D2913DDC8E3701FD6F0B1A3B@VMBX126.ihostexchange.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steffen Sledz <sledz@dresearch.de>
-Date: Fri,  4 Mar 2011 09:48:17 +0100
+Hi Dudley,
 
-> diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
-> index 199975f..ef2be0b 100644
-> --- a/include/asm-generic/ioctls.h
-> +++ b/include/asm-generic/ioctls.h
-> @@ -74,6 +74,7 @@
->  #define TCSETXW		0x5435
->  #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
->  #define TIOCVHANGUP	0x5437
-> +#define TIOCOUTQNSD	0x5438
->  
->  #define FIONCLEX	0x5450
->  #define FIOCLEX		0x5451
+On Fri, Mar 04, 2011 at 03:48:21AM -0500, Dudley Du wrote:
+> Hi Linux-Input Maintainers,
+> 
+> This patch adds new i2c-based input mouse driver into input subsystem for
+> Cypress i2c trackpad devices. Through this new added driver,
+> Cypress i2c trackpad devices will be supported in Linux based system
+> which are developed based on Cypress self-designed PSOC chipset.
+> The function of this driver reads trackpad data using i2c interfaces
+> and report cursor moving data and gesture combined keys to input subsystem.
+> 
+> This driver adds one driver main file cypress.c in drivers/input/mouse directory,
+> and one header file cyapa.h in include/linux directory,
+> and modified Kconfig and Makefile files in drivers/input/mouse directory to include this driver.
+> 
+> Attached is the patch file for this driver and bellow is the content of this driver.
+> 
 
-Hitting only asm-generic/ioctls.h is insufficient, many architectures do
-not make use of this file and the build will fail for them with your patch
-applied.
+Could you please try describing capabilities of your device. From the
+glancing at it it looks like it supports some form of multi-touch...
+
+>From the very rough code scanning there appears to be huge amount of
+code that reinterprets data coming from the device and converts it into
+gestures (virtual keyboard, virtual wheel hanlding, etc, etc). Such
+processing does not belong to the kernel driver but rather to userspace.
+Please take a look and other touchpad drivers in the kernel (synaptics,
+alps, elantech, bcm, and so for) and how they are work in tandem with
+synaptics X driver which provides advanced gesture handling.
+
+I also question why one would give choise between using relative and
+absolute reporting when absolute mode provides more data for gesture
+processing. Also polling mode is probably unsuitable for production
+driver and so I'd recommend dropping it for the mainline submission.
+
+Thanks.
+
+-- 
+Dmitry
