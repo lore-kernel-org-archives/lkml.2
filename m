@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759703Ab1CDOuV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:50:21 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50782 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759562Ab1CDOuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:50:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=tQz823Dlv6oaJsmGfw1EBKDPdZCnRs5N1uZKv63qK26Sjd7hQbzaRO0OqIb8B1oZFZ
-         Lq08Bg3lU78o2e6y9w1t1BFLS52dXYqrg6oZoPSjSnu+OkPH84v5GvHpotRdaCyu1iYT
-         LxxEDQKs43Nre+ni3fTYbj94jlrTAobhyNVKs=
-MIME-Version: 1.0
-Date: Fri, 4 Mar 2011 15:50:19 +0100
-Message-ID: <AANLkTi=-ZZTAb_6cec-GKDBmsjgchM3h9Zg9_39+AD1t@mail.gmail.com>
-Subject: 2.6.38-rc6: general protection error inside KVM 64 bits guest
-From: Francis Moreau <francis.moro@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759713Ab1CDO5y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:57:54 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:41307 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab1CDO5x convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Fri, 4 Mar 2011 09:57:53 -0500
+Message-Id: <4D710BFC0200007800034F3A@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 04 Mar 2011 14:57:48 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: remove dead config option X86_CPU
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This isn't being referenced anywhere, and the selects done from it can
+be easily done together with all the other X86 ones
 
-I'm running kernel 2.6.38-rc6 with qemu-kvm 0.12.3.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Doing this inside the guest:
+---
+ arch/x86/Kconfig     |    2 ++
+ arch/x86/Kconfig.cpu |    5 -----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-int main(void)
-{
-	if (ioperm(0x3e0, 4, 1) < 0) {
-		perror("ioperm");
-		exit(1);
-	}
+--- 2.6.38-rc7/arch/x86/Kconfig
++++ 2.6.38-rc7-x86-remove-X86_CPU/arch/x86/Kconfig
+@@ -64,6 +64,8 @@ config X86
+ 	select HAVE_TEXT_POKE_SMP
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_SPARSE_IRQ
++	select GENERIC_FIND_FIRST_BIT
++	select GENERIC_FIND_NEXT_BIT
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+--- 2.6.38-rc7/arch/x86/Kconfig.cpu
++++ 2.6.38-rc7-x86-remove-X86_CPU/arch/x86/Kconfig.cpu
+@@ -294,11 +294,6 @@ config X86_GENERIC
+ 
+ endif
+ 
+-config X86_CPU
+-	def_bool y
+-	select GENERIC_FIND_FIRST_BIT
+-	select GENERIC_FIND_NEXT_BIT
+-
+ #
+ # Define implied options from the CPU selection here
+ config X86_INTERNODE_CACHE_SHIFT
 
-	outb(0, 0x3e0);
-	inb(0x3e1);
-	printf("exiting succesfully\n");
-	return 0;
-}
 
-make a general protection error.
 
-Looking for the faulty instruction with gdb and found that's the 'inb'
-instruction the culprit.
-
-Running the same program on the host works fine.
-
-Could anybody tell me what's wrong ?
-
-Thanks
--- 
-Francis
