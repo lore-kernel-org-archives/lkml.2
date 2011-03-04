@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759361Ab1CDKi0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 05:38:26 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45672 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab1CDKiY (ORCPT
+	id S1759388Ab1CDKpa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 05:45:30 -0500
+Received: from mail-qw0-f78.google.com ([209.85.216.78]:38171 "EHLO
+	mail-qw0-f78.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab1CDKp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 05:38:24 -0500
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, sfrench@us.ibm.com, agruen@linbit.com,
-        dilger.kernel@dilger.ca, sandeen@redhat.com, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <20110302185847.GA3524@fieldses.org>
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110228211145.GG28617@thunk.org> <87oc5vgwqr.fsf@linux.vnet.ibm.com> <20110302154943.GB29136@fieldses.org> <87ei6pza5v.fsf@linux.vnet.ibm.com> <20110302185847.GA3524@fieldses.org>
-User-Agent: Notmuch/0.5-66-g70c5e2c (http://notmuchmail.org) Emacs/23.1.1 (i686-pc-linux-gnu)
-Date: Fri, 04 Mar 2011 16:08:15 +0530
-Message-ID: <871v2nw4q0.fsf@linux.vnet.ibm.com>
+	Fri, 4 Mar 2011 05:45:29 -0500
+X-Greylist: delayed 10570 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 05:45:29 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Reply-To: dudl@cypress.com, rubini@cvml.unipv.it, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@google.com, micahc@google.com, chromium-os-reviews@chromium.org,
+        vb+kernel@google.com, msb@chromium.org, olofj@chromium.org
+X-Google-Appengine-App-Id: chromiumcodereview
+Message-ID: <bcaec52c66a51e1eda049da36252@google.com>
+Date: Fri, 04 Mar 2011 07:49:18 +0000
+Subject: Add new i2c-based input mouse driver into input subsystem for Cypress
+ trackpad devices. (issue6626009)
+From: dudl@cypress.com
+To: rubini@cvml.unipv.it, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@google.com, micahc@google.com, dudl@cypress.com
+Cc: chromium-os-reviews@chromium.org, vb+kernel@google.com, msb@chromium.org,
+        olofj@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed; delsp=yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Mar 2011 13:58:47 -0500, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> On Wed, Mar 02, 2011 at 11:17:56PM +0530, Aneesh Kumar K. V wrote:
-> > On Wed, 2 Mar 2011 10:49:43 -0500, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > > On Tue, Mar 01, 2011 at 12:20:36PM +0530, Aneesh Kumar K. V wrote:
-> > > > On Mon, 28 Feb 2011 16:11:45 -0500, "Ted Ts'o" <tytso@mit.edu> wrote:
-> > > > > Hi Aneesh,
-> > > > > 
-> > > > > What is the current status of this patch series?  I seem to remember
-> > > > > that Christoph and Al Viro had some objections; have those been
-> > > > > cleared yet?  If not, can you summarize what their objections are?
-> > > > 
-> > > > The main objection raised was the use of may_delete and may_create inode
-> > > > operations callback. They are gone now and we have MAY_* flags as
-> > > > favoured by Al Viro.  The new MAY_* flags added are 
-> > > > 
-> > > > #define MAY_CREATE_FILE 128
-> > > > #define MAY_CREATE_DIR 256
-> > > > #define MAY_DELETE_CHILD 512
-> > > > #define MAY_DELETE_SELF 1024
-> > > > #define MAY_TAKE_OWNERSHIP 2048
-> > > > #define MAY_CHMOD 4096
-> > > > #define MAY_SET_TIMES 8192
-> > > > 
-> > > > 
-> > > > > 
-> > > > > To be honest I haven't been paying super close attention to this patch
-> > > > > series, and I'm curious what needs to happen with it one way or
-> > > > > another.
-> > > > > 
-> > > > 
-> > > > IMHO we are ready to get first 11 patches upstream in the next merge
-> > > > window. ie the below set of patches.
-> > > 
-> > > Why aren't all of them ready?
-> > > 
-> > 
-> > All except how to enable richacl in local file system is ready. I
-> > actually floated two ideas in the patch series
-> > 
-> > 1) mount option
-> > 2) Ext4 compat flags.
-> 
-> The choice of ACL format is a persistant property of the filesystem, not
-> of a single mount of the filesystem: for example, people can't try out
-> richacls for one mount and then decide to revert bacak to posix acls.
-> 
-> (Right?)  So I'm assuming we should use the latter--but I don't
-> understand what ext4 compat flags are.... Is there some disadvantage to
-> using them?
-> 
+Reviewers: rubini_ipvvis.unipv.it, dmitry.torokhov_gmail.com,  
+linux-input_vger.kernel.org, linux-kernel_vger.kernel.org, olofj_g, Micah  
+C, dudl,
 
-We already have a mount option to enable posix acl (-o acl|noacl). So
-along the same line should we have -o richacl|norichacl or should we
-have richacl as a ext4 compat flag EXT4_FEATURE_COMPAT_RICHACL. The
-compat feature can be enabled via tune2fs for an already created file
-system. Once the compat feature is enabled a -o acl mount option cause
-the richacl access check to be enabled. That can also result in
-mapping the existing posix acl in the file system to richacl and
-using mapped richacl for access restriction. With compat flag once set
-we will never be able to mount the file system again to use posix acl
-access restriction. (We cannot map richacl to posixacl because richacl
-support advanced access masks)
+Description:
+Add new i2c-based input mouse driver into input subsystem for Cypress  
+trackpad
+devices.
+
+Through this new added driver,
+Cypress i2c-based trackpad devices will be supported in Linux based system
+which are developed based on Cypress self-designed PSOC chipset.
+This driver reads trackpad data using i2c interfaces and report cursor
+moving data and gesture combined keys to input subsystem.
 
 
-With mount option (-o richacl) we can still mount the file system with
--o acl which implies we will have to ignore the richacl associated with
-files and only evaluate the posix acl stored.
+Change-Id: I108ad1505f3d34ab24658921a772e937940a1b88
+Signed-off-by: Du, Dudley <dudl@cypress.com>
 
--aneesh
+BUG=None
+TEST=Work fine on ARM tegra2 saeboard and kaen platfrom
+
+Please review this at http://codereview.chromium.org/6626009/
+
+SVN Base: http://git.chromium.org/git/kernel-next.git@chromeos-2.6.37
+
+Affected files:
+   M drivers/input/mouse/Kconfig
+   M drivers/input/mouse/Makefile
+   A drivers/input/mouse/cypress_i2c.c
+   A include/linux/cyapa.h
+
+
