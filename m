@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759996Ab1CDScF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 13:32:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49225 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab1CDScD (ORCPT
+	id S1760017Ab1CDSgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 13:36:40 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:51696 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759729Ab1CDSgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 13:32:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=V7h2jqBw9IOGv3DeWYYe2k9De7TT7LGnH4XiHczuzhbn11R4oXcOq+aCXTOpsz6pzA
-         MseCfElqG0ZXzjuCj609mUi7qPno1/pYUlKDaAYsuDp/K2lJjdl4pUGRgxSWEt8tTSI0
-         Tkj4A9qsLNMzWY65946bKh8f0YtpOoYiqOEQA=
-From: Johan Wessfeldt <johan.wessfeldt@gmail.com>
-To: tglx@linutronix.de
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Johan Wessfeldt <johan.wessfeldt@gmail.com>
-Subject: [PATCH] x86: mce: Potential memory leaks when initializing mcheck devices
-Date: Fri,  4 Mar 2011 19:31:56 +0100
-Message-Id: <1299263516-18858-1-git-send-email-johan.wessfeldt@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 4 Mar 2011 13:36:38 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=qxg4wLrSSpAjEgaYM4T+H99Csx9HMY+cqf1j8Hfr3JvoBBw1C4/zwsKKcIHoe7zX5zi8C8Vu3qXhxbzdsVoAoVhPPLVHdlurnAf+io3ckYTOuzTbcCYdFhv+++Z1siXI;
+Date: Fri, 4 Mar 2011 10:36:34 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Micha Nelissen <micha@neli.hopto.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] Add support for multiple MSI on x86
+Message-ID: <20110304103634.4641ae36@jbarnes-desktop>
+In-Reply-To: <4D583E31.4070507@neli.hopto.org>
+References: <4D583E31.4070507@neli.hopto.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes sure cleanup is done properly when mcheck fails
-initializing any of its resources.
+On Sun, 13 Feb 2011 21:25:21 +0100
+Micha Nelissen <micha@neli.hopto.org> wrote:
 
-Note!
-It should be safe to call mce_remove_device on ANY of the cpus as
-mce_remove_device checks if corresponding cpu was initialized
-before removing its resources.
+> Patch is based on earlier patch from Matthew Wilcox.
 
-Please review.
+I like this before when Matthew was working on it too; Matthew can you
+give it a look?  I'd have to dig through the archives to see why we
+didn't apply it before (maybe lack of device support?  if so, it sounds
+like this patch addresses that issue, since Micha has a device in mind).
 
-Signed-off-by: Johan Wessfeldt <johan.wessfeldt@gmail.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index d916183..273f2f6 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2136,15 +2136,26 @@ static __init int mcheck_init_device(void)
- 	for_each_online_cpu(i) {
- 		err = mce_create_device(i);
- 		if (err)
--			return err;
-+			goto out_unreg;
- 	}
- 
- 	register_hotcpu_notifier(&mce_cpu_notifier);
--	misc_register(&mce_log_device);
-+	err = misc_register(&mce_log_device);
-+	if (err)
-+		goto out_unreg_hotcpu;
-+
-+	return 0;
-+
-+out_unreg_hotcpu:
-+	unregister_hotcpu_notifier(&mce_cpu_notifier);
-+out_unreg:
-+	for_each_online_cpu(i)
-+		mce_remove_device(i);
- 
-+	sysdev_class_unregister(&mce_sysclass);
-+	free_cpumask_var(mce_dev_initialized);
- 	return err;
- }
--
- device_initcall(mcheck_init_device);
- 
- /*
+Thanks,
 -- 
-1.7.2.3
-
+Jesse Barnes, Intel Open Source Technology Center
