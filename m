@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab1CDXMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 18:12:44 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:60016 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab1CDXMn (ORCPT
+	id S1760037Ab1CDXP2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 18:15:28 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:57776 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751755Ab1CDXP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 18:12:43 -0500
-Date: Fri, 4 Mar 2011 18:12:41 -0500
-From: "hch@infradead.org" <hch@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "hch@infradead.org" <hch@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] fs: make generic file read/write functions plug
-Message-ID: <20110304231241.GA3507@infradead.org>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
- <1295659049-2688-8-git-send-email-jaxboe@fusionio.com>
- <20110304040907.GB32404@redhat.com>
- <4D70E78D.9000402@fusionio.com>
- <20110304132551.GA2407@infradead.org>
- <4D70EBB9.302@fusionio.com>
- <20110304140814.GA28953@infradead.org>
- <4D7162B7.20101@fusionio.com>
+	Fri, 4 Mar 2011 18:15:27 -0500
+X-Sasl-enc: 2ogtRwmw/9c6QxmmI44dXj15KVdyfFpfYwWczjOr+12h 1299280526
+Message-ID: <4D717289.40403@fastmail.fm>
+Date: Fri, 04 Mar 2011 23:15:21 +0000
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.14) Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D7162B7.20101@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Don Zickus <dzickus@redhat.com>
+CC: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] watchdog, nmi:  Allow hardlockup to panic by default
+References: <1299184439-9215-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1299184439-9215-1-git-send-email-dzickus@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 11:07:51PM +0100, Jens Axboe wrote:
-> Seems only gfs2 actually sets the flag now. So how about we remove the
-> prio boost for meta data and just retain it as an information attribute?
+On 03/03/2011 20:33, Don Zickus wrote:
+> Add a Kconfig option to allow users to set the hardlockup to panic
+> by default.  Also add in a 'nmi_watchdog=nopanic' to override this.
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+>
+[snip]
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 2b97418..80bd292 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -176,6 +176,23 @@ config HARDLOCKUP_DETECTOR
+>  	def_bool LOCKUP_DETECTOR && PERF_EVENTS && HAVE_PERF_EVENTS_NMI && \
+>  		 !ARCH_HAS_NMI_WATCHDOG
+>  
+> +config BOOTPARAM_HARDLOCKUP_PANIC
+> +	bool "Panic (Reboot) On Soft Lockups"
 
-ext3/4 also use it for inodes and directories.  XFS has code to use, but
-it's currently unreachable.
+Did you mean Hard Lockups here?
+
+Thanks,
+
+Jack
