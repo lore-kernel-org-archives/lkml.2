@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243Ab1CDGFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 01:05:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50959 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1CDGFf (ORCPT
+	id S1751326Ab1CDGRJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 01:17:09 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:48839 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750809Ab1CDGRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 01:05:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ggGo8Mmegp22D5+Bq3e8vuDcZy9vV5odw8ahhaqyLNVLgBeq5JZn0Q6BbaRJVysxyc
-         DZDTM7+7+CXn+DosUZTVZLt6hOOpvl5QN9MUib1siQ6U1qMpvs1xed+Y5+w7xu4kTpfk
-         FrC+diEIOiMrQg/7pjZ4Apcr8sFZ+U+V4IBBk=
-Date: Fri, 4 Mar 2011 07:05:46 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
-Message-ID: <20110304060546.GA3824@riccoc20.at.omicron.at>
-References: <20110201134320.688829863@linutronix.de>
- <20110201134420.164172635@linutronix.de>
- <20110303145008.GE4903@siel.b>
- <20110303160114.GA4284@riccoc20.at.omicron.at>
- <20110303170759.GF4903@siel.b>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303170759.GF4903@siel.b>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 4 Mar 2011 01:17:07 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
+	b=Bb7CdyyswBf23ZBw4D7NZBfSGU18eL0xTSW3A11XtRa56XReFi3RYdh+mXyeBGG1s/xzsTHHYlooxGqwzyFuAw2bpb17IFf/069ZI0dAai0XdG2wDpGA83jHG9FkELgu;
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Subject: [PATCH] blktrace: Use rq->cmd_flags directly in blk_add_trace_rq.
+Date: Fri,  4 Mar 2011 14:15:58 +0800
+Message-Id: <1299219358-17507-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 06:07:59PM +0100, torbenh wrote:
-> On Thu, Mar 03, 2011 at 05:01:14PM +0100, Richard Cochran wrote:
-> > 
-> > You are right, but I think the check should be for the capability
-> > instead. Checking the file mode for RDWR seems a bit pedantic to me.
-> 
-> i dont see, why an fd based clock, which already has associated permissions,
-> should check against the capability.
-> why should the ptpd be running as root ?
-> changing the permissions of /dev/ptp0 to allow ptpd to set the
-> clock should be enough. 
+From: Tao Ma <boyu.mt@taobao.com>
 
-Thinking a bit more about this, I can see three options:
+In blk_add_trace_rq, we only chose the minor 2 bits from
+request's cmd_flags and did some check for discard.
+so most of other flags(e.g, REQ_SYNC) are missing.
 
-1. Enfore CAP_SYS_TIME in the posix dynamic clock layer.
+For example, with a sync write after blkparse we get:
+  8,16   1        1     0.001776503  7509  A  WS 1349632 + 1024 <- (8,17) 1347584
+  8,16   1        2     0.001776813  7509  Q  WS 1349632 + 1024 [dd]
+  8,16   1        3     0.001780395  7509  G  WS 1349632 + 1024 [dd]
+  8,16   1        5     0.001783186  7509  I   W 1349632 + 1024 [dd]
+  8,16   1       11     0.001816987  7509  D   W 1349632 + 1024 [dd]
+  8,16   0        2     0.006218192     0  C   W 1349632 + 1024 [0]
 
-2. Defer the CAP_SYS_TIME check to the underlying dynamic clock. That
-   puts the decision of whether a clock counts as a "system clock" to
-   the author of the driver.
+Since now we have integrated the flags of both bio and request,
+it is safe to pass rq->cmd_flags directly to __blk_add_trace.
 
-3. As you suggest, just use file read/write as get/set permissions.
+With this patch, after a sync write we get:
+  8,16   1        1     0.001776900  5425  A  WS 1189888 + 1024 <- (8,17) 1187840
+  8,16   1        2     0.001777179  5425  Q  WS 1189888 + 1024 [dd]
+  8,16   1        3     0.001780797  5425  G  WS 1189888 + 1024 [dd]
+  8,16   1        5     0.001783402  5425  I  WS 1189888 + 1024 [dd]
+  8,16   1       11     0.001817468  5425  D  WS 1189888 + 1024 [dd]
+  8,16   0        2     0.005640709     0  C  WS 1189888 + 1024 [0]
 
-The admin can still restrict device node ownership and read access in
-any case. You could event combine these methods (1 and 3, or 1 and 2)
-but I think that would only lead to user confusion.
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ kernel/trace/blktrace.c |   15 ++++-----------
+ 1 files changed, 4 insertions(+), 11 deletions(-)
 
-I am not opinionated about this, but I would like to gather some
-feedback before going forward. The implementation is easy in any case.
+diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+index cbafed7..7aa40f8 100644
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -703,28 +703,21 @@ void blk_trace_shutdown(struct request_queue *q)
+  *
+  **/
+ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
+-				    u32 what)
++			     u32 what)
+ {
+ 	struct blk_trace *bt = q->blk_trace;
+-	int rw = rq->cmd_flags & 0x03;
+ 
+ 	if (likely(!bt))
+ 		return;
+ 
+-	if (rq->cmd_flags & REQ_DISCARD)
+-		rw |= REQ_DISCARD;
+-
+-	if (rq->cmd_flags & REQ_SECURE)
+-		rw |= REQ_SECURE;
+-
+ 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
+ 		what |= BLK_TC_ACT(BLK_TC_PC);
+-		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rw,
++		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
+ 				what, rq->errors, rq->cmd_len, rq->cmd);
+ 	} else  {
+ 		what |= BLK_TC_ACT(BLK_TC_FS);
+-		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq), rw,
+-				what, rq->errors, 0, NULL);
++		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
++				rq->cmd_flags, what, rq->errors, 0, NULL);
+ 	}
+ }
+ 
+-- 
+1.6.3.GIT
 
-Thanks,
-
-Richard
