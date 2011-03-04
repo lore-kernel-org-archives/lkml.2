@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760035Ab1CDRQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:16:33 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42792 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759888Ab1CDRQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 12:16:30 -0500
-Date: Fri, 4 Mar 2011 18:16:19 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "J.P. Lacerda" <jp.lacerda@codethink.co.uk>
-Cc: akpm@linux-foundation.org, johan.wessfeldt@gmail.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] x86: Fix mcheck_init_device() to handle
- misc_register() correctly
-Message-ID: <20110304171619.GB9311@gere.osrc.amd.com>
-References: <1299245367-20279-1-git-send-email-jp.lacerda@codethink.co.uk>
+	id S1760041Ab1CDRQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:16:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42412 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759954Ab1CDRQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 12:16:42 -0500
+Date: Fri, 4 Mar 2011 18:07:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110304170737.GA26904@redhat.com>
+References: <20110301152457.GE26074@htj.dyndns.org> <20110301190638.GA12196@host1.dyn.jankratochvil.net> <AANLkTiknaHNADRa3R4Tefg2TGuFmKPZY-_08_krFiNFF@mail.gmail.com> <20110304161441.GA12987@host1.jankratochvil.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299245367-20279-1-git-send-email-jp.lacerda@codethink.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110304161441.GA12987@host1.jankratochvil.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 01:29:27PM +0000, J.P. Lacerda wrote:
-> The return value for misc_register() was not being taken into account.
-> Furthermore, if misc_register() fails, we must rollback any changes made by
-> mcheck_init_device()
+On 03/04, Jan Kratochvil wrote:
+>
+> On Tue, 01 Mar 2011 23:14:14 +0100, Denys Vlasenko wrote:
+> > On Tue, Mar 1, 2011 at 8:06 PM, Jan Kratochvil <jan.kratochvil@redhat.com> wrote:
+> > > Currently it is already a problem that apps did not / do not expect the first
+> > > waitpid after PTRACE_ATTACH may not be SIGSTOP.
+> >
+> > That's exactly why we want to add a better alternative, which doesn't
+> > insert that blasted SIGSTOP.
+>
+> But it insteads blasted SIGTRAP (or some other signal) instead.
 
-If you're going to fix all error paths here, you still need to handle
-unrolling the setup done by mce_create_device() if we fail somewhere in
-between.
+I don't really understand your concerns... If you modify gdb to use
+PTRACE_SEIZE you can forget about the current problems with the first
+signal.
 
-> Signed-off-by: J.P. Lacerda <jp.lacerda@codethink.co.uk>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |   13 ++++++++++++-
->  1 files changed, 12 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index d916183..20c2c44 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -2140,7 +2140,18 @@ static __init int mcheck_init_device(void)
->  	}
->  
->  	register_hotcpu_notifier(&mce_cpu_notifier);
-> -	misc_register(&mce_log_device);
-> +	err = misc_register(&mce_log_device);
-> +
+Currently gdb has to take care, but mostly because it should "dismiss"
+the real signal sent by attach.
 
-no newline here.
+> It would be best if such PTRACE_SEIZE (similar to PTRACE_INTERRUPT) would
+> guarantee the first waitpid afterwards returns the artificial signal from
+> PTRACE_SEIZE.
 
-> +	if (err) {
-> +		unregister_hotcpu_notifier(&mce_cpu_notifier);
-> +
-> +		for_each_online_cpu(i) {
-> +			mce_remove_device(i);
-> +		}
+Again, I don't think this really matters.
 
-no need for braces around a single loop body statement.
+Suppose that the tracee reports, say, a signal after PTRACE_SEIZE/INTERRUPT.
+And this is possible anyway if the debugger races with kill(). Why this
+is bad?
 
-> +
-> +		sysdev_class_unregister(&mce_sysclass);
-> +		free_cpumask_var(mce_dev_initialized);
-> +	}
->  
->  	return err;
+Oleg.
 
-Anyway, while this is makes sense from correctness POV, if we hit an
-error path here this early then something else is going terribly wrong
-which would've screamed very loudly already. Are you hitting this on a
-real workload or you caught this by code staring?
-
-Because if it is the second case, the merit of fixing those error
-paths vs adding code which is almost never executed is significantly
-diminished.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
