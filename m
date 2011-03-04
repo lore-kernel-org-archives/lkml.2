@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759734Ab1CDPwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:52:39 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:35133 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab1CDPwi convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Fri, 4 Mar 2011 10:52:38 -0500
-Message-Id: <4D7118D30200007800034F79@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 04 Mar 2011 15:52:35 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <davej@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: really print supported CPUs if PROCESSOR_SELECT=y
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758521Ab1CDP5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:57:15 -0500
+Received: from server103.greatnet.de ([83.133.97.6]:33038 "EHLO
+	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab1CDP5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 10:57:14 -0500
+Message-ID: <4D710BD2.3070303@nachtwindheim.de>
+Date: Fri, 04 Mar 2011 16:57:06 +0100
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/7] x86: remove superflous goal definition of tsc_sync
+References: <1299239923-7092-1-git-send-email-henne@nachtwindheim.de>	<AANLkTi=zU=N35RYmcSEkoLNAycQy7Cfcq3jHBYu+dq1O@mail.gmail.com> <AANLkTimptB1K3Kc+Hy1JbY=38pHSp0FfjA1LAKniLV2m@mail.gmail.com>
+In-Reply-To: <AANLkTimptB1K3Kc+Hy1JbY=38pHSp0FfjA1LAKniLV2m@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm sure it was a mere oversight that the CONFIG_ prefixes are missing.
-
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Dave Jones <davej@redhat.com>
-
----
- arch/x86/kernel/cpu/common.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- 2.6.38-rc7/arch/x86/kernel/cpu/common.c
-+++ 2.6.38-rc7-x86-show-supported-cpus/arch/x86/kernel/cpu/common.c
-@@ -675,7 +675,7 @@ void __init early_cpu_init(void)
- 	const struct cpu_dev *const *cdev;
- 	int count = 0;
+Am 04.03.2011 13:50, schrieb Cyrill Gorcunov:
+>> Probably we better write it this way:
+>>
+>> - obj-$(CONFIG_SMP)              += smpboot.o tsc_sync.o
+>> - obj-$(CONFIG_X86_64_SMP)       += tsc_sync.o
+>>
+>> + obj-$(CONFIG_SMP)              += smpboot.o
+>> + obj-$(CONFIG_SMP)              += tsc_sync.o
+>>
  
--#ifdef PROCESSOR_SELECT
-+#ifdef CONFIG_PROCESSOR_SELECT
- 	printk(KERN_INFO "KERNEL supported cpus:\n");
- #endif
- 
-@@ -687,7 +687,7 @@ void __init early_cpu_init(void)
- 		cpu_devs[count] = cpudev;
- 		count++;
- 
--#ifdef PROCESSOR_SELECT
-+#ifdef CONFIG_PROCESSOR_SELECT
- 		{
- 			unsigned int j;
- 
+Yes, I see what you mean. Removing/adding one item on such a multiple item
+line makes muddled diffs.
 
+Thank you for friendly reviewing, patience and your Acked-by,
+
+Henrik Kretzschmar
 
 
