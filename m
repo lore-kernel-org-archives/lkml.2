@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab1CDQBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:01:21 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50679 "EHLO hera.kernel.org"
+	id S1759618Ab1CDQHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:07:05 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:39879 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264Ab1CDQBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:01:20 -0500
-Date: Fri, 4 Mar 2011 16:00:59 GMT
-From: tip-bot for Jan Beulich <JBeulich@novell.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <4D710BFC0200007800034F3A@vpn.id2.novell.com>
-References: <4D710BFC0200007800034F3A@vpn.id2.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Remove dead config option X86_CPU
-Message-ID: <tip-24a2a35a18ebc4e143e86ad3fda50ee78de30d06@git.kernel.org>
-Git-Commit-ID: 24a2a35a18ebc4e143e86ad3fda50ee78de30d06
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 04 Mar 2011 16:01:00 +0000 (UTC)
+	id S1752232Ab1CDQHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 11:07:03 -0500
+Date: Fri, 4 Mar 2011 08:06:53 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>,
+        Amit Kucheria <amit.kucheria@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        "Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] ARM: mx51_efika: update platform data for new mfd changes
+Message-ID: <20110304080653.3f2c3f19@debxo>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  24a2a35a18ebc4e143e86ad3fda50ee78de30d06
-Gitweb:     http://git.kernel.org/tip/24a2a35a18ebc4e143e86ad3fda50ee78de30d06
-Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Fri, 4 Mar 2011 14:57:48 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 4 Mar 2011 16:34:33 +0100
+Note that this relies on stuff currently in mfd's next tree, but this
+is also a newer driver.  I'm not sure which tree it should go through,
+as it's a problem that shows up in next.
 
-x86: Remove dead config option X86_CPU
 
-This isn't being referenced anywhere, and the selects done from
-it can be easily done together with all the other X86 ones
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-LKML-Reference: <4D710BFC0200007800034F3A@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+From: Andres Salomon <dilinger@queued.net>
+
+MFD changes in c738892f cause the mc13xxx_platform_data struct
+to change.  This changes one more (new) user of it, fixing a build
+error.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- arch/x86/Kconfig     |    2 ++
- arch/x86/Kconfig.cpu |    5 -----
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ arch/arm/mach-mx5/mx51_efika.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d5ed94d..43214e3 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -64,6 +64,8 @@ config X86
- 	select HAVE_TEXT_POKE_SMP
- 	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_SPARSE_IRQ
-+	select GENERIC_FIND_FIRST_BIT
-+	select GENERIC_FIND_NEXT_BIT
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select USE_GENERIC_SMP_HELPERS if SMP
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 283c5a6..ed47e6e 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -294,11 +294,6 @@ config X86_GENERIC
+diff --git a/arch/arm/mach-mx5/mx51_efika.c b/arch/arm/mach-mx5/mx51_efika.c
+index 74991c9..6451fb4 100644
+--- a/arch/arm/mach-mx5/mx51_efika.c
++++ b/arch/arm/mach-mx5/mx51_efika.c
+@@ -572,8 +572,10 @@ static struct mc13xxx_regulator_init_data mx51_efika_regulators[] = {
  
- endif
+ static struct mc13xxx_platform_data mx51_efika_mc13892_data = {
+ 	.flags = MC13XXX_USE_RTC | MC13XXX_USE_REGULATOR,
+-	.num_regulators = ARRAY_SIZE(mx51_efika_regulators),
+-	.regulators = mx51_efika_regulators,
++	.regulators = {
++		.num_regulators = ARRAY_SIZE(mx51_efika_regulators),
++		.regulators = mx51_efika_regulators,
++	},
+ };
  
--config X86_CPU
--	def_bool y
--	select GENERIC_FIND_FIRST_BIT
--	select GENERIC_FIND_NEXT_BIT
--
- #
- # Define implied options from the CPU selection here
- config X86_INTERNODE_CACHE_SHIFT
+ static struct spi_board_info mx51_efika_spi_board_info[] __initdata = {
+-- 
+1.7.2.3
+
