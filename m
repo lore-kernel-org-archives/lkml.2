@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab1CDVNA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:13:00 -0500
-Received: from waste.org ([173.11.57.241]:43451 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932540Ab1CDVM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:12:58 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Matt Mackall <mpm@selenic.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
-        cl@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimvhHxsMCf2FX0O8VqksOa2EAMz=S_C3LQKvE60@mail.gmail.com>
-References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>
-	 <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>
-	 <1299191400.2071.203.camel@dan>
-	 <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
-	 <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
-	 <1299260164.8493.4071.camel@nimitz>
-	 <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
-	 <1299262495.3062.298.camel@calx>
-	 <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
-	 <1299271041.2071.1398.camel@dan>
-	 <AANLkTimvhHxsMCf2FX0O8VqksOa2EAMz=S_C3LQKvE60@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Mar 2011 15:12:55 -0600
-Message-ID: <1299273175.3062.327.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1760184Ab1CDVTz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:19:55 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:32381 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab1CDVTy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:19:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DHHAEHXrzOLtwOPy/5r1ZYg2HNiOXz2ciK1qgYyLMkU3rpQhDs87W03+OgqsroYSvd
+         7a0Xc+oyWqTtvC1H/RTg==
+MIME-Version: 1.0
+In-Reply-To: <20110302081430.GE15665@elte.hu>
+References: <4d6d636b.98a1df0a.15d8.57d1@mx.google.com>
+	<1299027401.4937.106.camel@minggr.sh.intel.com>
+	<AANLkTimkAuDQOW8J=vqcz-7r9gaN_=qq1=guBh6n6A7u@mail.gmail.com>
+	<20110302081430.GE15665@elte.hu>
+Date: Fri, 4 Mar 2011 22:19:48 +0100
+Message-ID: <AANLkTi=ZSKepq5n_CpA7jNaUEjBWzeECuHJxi9VXr821@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: update PEBS event constraints (v2)
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Lin Ming <ming.m.lin@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "perfmon2-devel@lists.sf.net" <perfmon2-devel@lists.sf.net>,
+        "eranian@gmail.com" <eranian@gmail.com>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "acme@redhat.com" <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 22:58 +0200, Pekka Enberg wrote:
-> On Fri, Mar 4, 2011 at 10:37 PM, Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-> > This patch makes these techniques more difficult by making it hard to
-> > know whether the last attacker-allocated object resides before a free or
-> > allocated object.  Especially with vulnerabilities that only allow one
-> > attempt at exploitation before recovery is needed to avoid trashing too
-> > much heap state and causing a crash, this could go a long way.  I'd
-> > still argue in favor of removing the ability to know how many objects
-> > are used in a given slab, since randomizing objects doesn't help if you
-> > know every object is allocated.
-> 
-> So if the attacker knows every object is allocated, how does that help
-> if we're randomizing the initial freelist?
-
-First note that all of these attacks are probabilistic. 
-
-Now, with a randomized free list, if I create 1000 objects of type B,
-then, on average, the partially-filled page the next allocation comes
-from will be half-full of B objects. Thus, the next object will have a
-50% chance of being in the right spot for an exploit. 
-
-Now if I delete the 800th B object, it's probably on a slab that's
-otherwise full of B objects since we fill partial slabs before creating
-new ones. If my next allocation comes from that slab, it will thus get a
-spot that's almost guaranteed to be in the right spot.
-
-Similarly, if I create 1000 objects and then delete every tenth one,
-I've now got a swiss cheese heap where just about every hole is
-well-positioned. 
-
--- 
-Mathematics is the supreme nostalgia of our time.
+Sorry for the delay. I realize I did not answer this message earlier.
 
 
+On Wed, Mar 2, 2011 at 9:14 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Stephane Eranian <eranian@google.com> wrote:
+>
+>> On Wed, Mar 2, 2011 at 1:56 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> > On Wed, 2011-03-02 at 04:20 +0800, Stephane Eranian wrote:
+>> >> This patch updates PEBS event constraints for Intel Atom, Nehalem, Westmere.
+>> >>
+>> >> This patch also reorganizes the PEBS format/constraint detection code. It is
+>> >> now based on processor model and not PEBS format. Two processors may use the
+>> >> same PEBS format without have the same list of PEBS events.
+>> >>
+>> >> In this second version, we simplified the initialization of the PEBS constraints
+>> >> by leveraging the existing switch() statement in perf_event_intel.c. We also
+>> >> renamed the constraint tables to be more consistent with regular constraints.
+>> >
+>> > Hi, Stephane
+>> >
+>> > Nice updates.
+>> > Wondering where did you get these PEBS event constraints? I didn't find
+>> > these in the latest manual.
+>> >
+>> Yeah, the manual is lacking some information. The other source of information
+>> is the PTU event files (whatif.intel.com).
+>
+> Plus i suspect you have performed testing on affected CPUs as well?
+>
+Yes, I did.
+
+> If yes then i think we want to push these fixes via perf/urgent - they seem to
+> nicely round up the constraints.
+>
+> Thanks,
+>
+>        Ingo
+>
