@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758852Ab1CDHj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 02:39:59 -0500
-Received: from quamquam.org ([88.198.196.3]:34690 "EHLO quamquam.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896Ab1CDHj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 02:39:58 -0500
-Date: Fri, 4 Mar 2011 08:39:44 +0100
-From: Daniel Poelzleithner <poelzi@poelzi.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, containers@lists.linux-foundation.org
-Message-ID: <20110304083944.22fb612f@sol>
-Reply-To: linux-kernel@vger.kernel.org
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 194.77.75.60
-X-SA-Exim-Rcpt-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, containers@lists.linux-foundation.org
-X-SA-Exim-Mail-From: poelzi@poelzi.org
-Subject: cgroup memory, blkio and the lovely swapping
-X-SA-Exim-Version: 4.2.1 (built Sat, 07 Nov 2009 20:03:47 +0000)
-X-SA-Exim-Scanned: Yes (on quamquam.org)
+	id S1758990Ab1CDHk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 02:40:29 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:41911 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878Ab1CDHk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 02:40:27 -0500
+Date: Fri, 4 Mar 2011 12:55:17 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <pzijlstr@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Bharata B Rao <bharata.rao@in.ibm.com>
+Subject: Re: [BUGFIX][PATCH] Fix sched rt group scheduling when hierachy is
+ enabled
+Message-ID: <20110304072517.GC2868@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20110303113435.GA2868@balbir.in.ibm.com>
+ <20110303140551.GA20677@zhy>
+ <AANLkTikHFLoJOZvx2YebKdHt+jjiHgUFasiLTrZ6vBUJ@mail.gmail.com>
+ <AANLkTikqC=MNXXavJ_jxhFNQz1uNdABXVhvj82HW=BNA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <AANLkTikqC=MNXXavJ_jxhFNQz1uNdABXVhvj82HW=BNA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Yong Zhang <yong.zhang0@gmail.com> [2011-03-04 11:43:16]:
 
-currently when one process causes heavy swapping, the responsiveness of
-the hole system suffers greatly. With the small memleak [1] test tool I
-wrote, the effect can be experienced very easily, depending on the
-delay the lag can become quite large. If I ensure that 10% of the RAM
-stay free for free memory and cache, the system never swaps to death.
-That works very well, but if accesses to the swap are very heavy, the
-system still lags on all other processes, not only the swapping one.
-Putting the swapping process into a blkio cgroup with little weight does
-not affect the io or swap io from other processes with larger weight in
-their group.
+> On Thu, Mar 3, 2011 at 11:29 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > No, not really :) It is required, it is a backup check to see if we
+> > have queued tasks, rt_time of 0 and the runqueue is not throttled, why
+> > should it be dequeued?
+> 
+> But I can't see where that kind of rt_rq is dequeued, mind pointing it out?
+>
 
-Maybe I'm mistaken, but wouldn't it be the easiest way to get fair
-swapping and control to let the pagein respect the blkio.weight value
-or even better add a second weight value for swapping io ?
+So here is what I saw
 
+1. sched_dequeue_stack called from the dequeue path dequeues the
+queues and sets rt_nr_running to 0
+2. Enqueuing fails because rt_throttled is set for the group_rq
+(parent who is throttled)
+3. This causes further enqueue to fail, since rt_nr_running did
+not increment in step 2, eventually the timer decrements rt_time
+to 0 and the task is never picked up.
 
-
-kind regards
-  Daniel
-
-
-[1] https://github.com/poelzi/ulatencyd/blob/master/tests/memleak.c
+-- 
+	Three Cheers,
+	Balbir
