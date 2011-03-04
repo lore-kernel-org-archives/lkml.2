@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab1CDSUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 13:20:21 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:37388 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759891Ab1CDSUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 13:20:18 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=DtUhnTV1SpCd3IIDRTNM3MWly82jB4KfTPL6gFJO8vJKcP31lvyUA3SS2HP5/ZKnNSDePNUvFYg9AI0vtEGmv5BI0bY+NnuMRuLTUPVgNO7wa56Adx7fd5GZXwcBnce4;
-Date: Fri, 4 Mar 2011 10:20:12 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2] x86: early_quirk check all bus/dev/func in domain 0
-Message-ID: <20110304102012.3ef9e7b2@jbarnes-desktop>
-In-Reply-To: <4D506EDC.2070609@kernel.org>
-References: <4D506EDC.2070609@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S1759918Ab1CDSZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 13:25:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758960Ab1CDSZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 13:25:04 -0500
+Date: Fri, 4 Mar 2011 19:16:30 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110304181630.GA28729@redhat.com>
+References: <20110301152457.GE26074@htj.dyndns.org> <20110303173422.GA27960@redhat.com> <20110303202246.GB32152@redhat.com> <20110304082329.GA20499@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110304082329.GA20499@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Feb 2011 14:14:52 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+On 03/04, Tejun Heo wrote:
+>
+> > Tracee:
+> >
+> > 	int main(void)
+> > 	{
+> > 		kill(SIGSTOP, getpid());
+> >
+> > 		printf("I am running\n");
+> >
+> > 		for (;;)
+> > 			;
+> > 	}
+> >
+> > To simplify again, suppose that the debugger attaches when it is
+> > already stopped, then it does PTRACE_CONT(0).
+> >
+> > In this case the tracee remains SIGNAL_STOP_STOPPED but prints
+> > "I am running" and enters the endless loop.
+> >
+> > (the new debugger can do PTRACE_SEIZE after that and "return"
+> >  it to the stopped state without affecting jctl state).
+> >
+> > Now, if SIGCONT comes (from anywhere) it clears SIGNAL_STOP_STOPPED,
+> > the tracee traps and reports this event to debugger.
+> >
+> > Correct?
+>
+> * The above requires another ptrace trap site which can probably
+>   shared with PTRACE_SEIZE.
 
-> 
-> When we have 00:1a.0, 00:1a.1, 00:1a.2, 00:1a.7
-> Found only 00:1a.0, and 00:1a.1 get processed. and 00:1a.2 and 00:1a.7 get skipped.
-> 
-> We should only check header type on func0.
-> Also should not bail out when have gap.
-> 
-> At last try to process bus 00 - 0xff instead of only bus 00.
-> 
-> -v2: check with VENDOR_ID instead of CLASS_DEVICE for invalid device.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+OK, thanks. I was a bit confused by TASK_TRACED | TASK_STOPPED state
+idea. Obviously the state can't be TASK_RUNNING | TASK_STOPPED.
 
-I need a much better changelog here.  It sounds (and looks) like the
-patch is doing several things:
-  - processing more than the first two functions on a device
-  - processing the full set of busses in the first domain
-  - checking for nonexistent devices
+> The question is whether to make group
+>   stop state available for other trap sites too or just enable it in
+>   the new trap site.  ATM, I'm leaning toward the latter.
 
-Why are you making these changes?  Do you have a system that needs
-early quirks but violates the existing assumptions?  Can you apply a
-standard quirk instead?
+Yes.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+There is another corner case. Suppose that another SIGSTOP comes
+while the tracee runs the endless loop above.
+
+In this case nothing changes, the tracee should report this signal.
+But what should it do if the debugger does PTRACE_CONT(SIGSTOP) after
+that?
+
+Should it stop and report another job control stop after that, or
+should it ignore this signal? In the first case, at least we should
+not notify the real parent again. In the latter case, perhaps the
+naive debugger can be confused and this differs from the current
+behaviour.
+
+And, if it stops, should this also stop other PTRACE_CONT'ed threads
+as well? Currently we do...
+
+Not that I think this is terribly important, but I think it makes
+sense to discuss/document this case anyway.
+
+
+Anyway. I think this RFC is fine.
+
+Oleg.
+
