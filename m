@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759654Ab1CDMAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 07:00:12 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45611 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759612Ab1CDMAH (ORCPT
+	id S1759602Ab1CDL7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 06:59:08 -0500
+Received: from server103.greatnet.de ([83.133.97.6]:34018 "EHLO
+	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759498Ab1CDL64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 07:00:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=p7UsgHs+m3WSctui/dn6qFKpnwFneK2aL2exMa4qqaElJUU+z5wsoq0JzFxVuWxMfL
-         uXTK/gtytZI6eor1hdRQmHKdO2LInsRD35f7mNqOKlh+mz4p58h8u4zJ2CFOJUS+c217
-         LJVThd3aA2iKSNwyVT7gSUY46R0RCStY7veyQ=
-Date: Fri, 4 Mar 2011 19:59:31 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux@kbdbabel.org
-Cc: romfs@googlegroups.com, rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org
-Subject: [PATCH]fix a link in Documentation/filesystem/romfs.txt
-Message-ID: <20110304115926.GA4104@gmail.com>
-Mail-Followup-To: linux@kbdbabel.org, romfs@googlegroups.com,
-	rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
-	linux-doc@vger.kernel.org, greg@kroah.com,
-	akpm@linux-foundation.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 4 Mar 2011 06:58:56 -0500
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+To: mingo@elte.hu
+Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, gorcunov@gmail.com,
+        Henrik Kretzschmar <henne@nachtwindheim.de>
+Subject: [PATCHv2 3/7] x86: make apic_disable() static and init
+Date: Fri,  4 Mar 2011 12:58:39 +0100
+Message-Id: <1299239923-7092-3-git-send-email-henne@nachtwindheim.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1299239923-7092-1-git-send-email-henne@nachtwindheim.de>
+References: <1299239923-7092-1-git-send-email-henne@nachtwindheim.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi us,
-    I think it is a good patch for Documentation/filesystem/romfs.txt.
+apic_disable() is only used in apic.c, so it does not
+need the prototype which was introduced in
+commit 08306ce61d6848e6fbf74fa4cc693c3fb29e943f .
+Therefore we remove it from the header and make it static.
 
-   From: Alexander Kurz <linux@kbdbabel.org>
+It is also called only from init code, so we mark it as such.
 
-Hello romfs group,
-	 I have posted a patch to fix the reference to
-the outdated ftp site (which still serves genromfs-0.5.1) in
-Documentation/filesystems/romfs.txt last month,
-but nobody has picked it up yet.
-
-Does anybody like to forward this?
-Thanks, Alexander
-
-Thanks.
-Best Regards.
-Harry Wei.
-
-Signed-off-by: Alexander Kurz<linux@kbdbabel.org>
-Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
 ---
- Documentation/filesystems/romfs.txt |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/apic.h |    2 --
+ arch/x86/kernel/apic/apic.c |    2 +-
+ 2 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/filesystems/romfs.txt b/Documentation/filesystems/romfs.txt
-index 2d2a7b2..3b7ef40 100644
---- a/Documentation/filesystems/romfs.txt
-+++ b/Documentation/filesystems/romfs.txt
-@@ -17,8 +17,7 @@ comparison, an actual rescue disk used up 3202 blocks with ext2, while
- with romfs, it needed 3079 blocks.
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index dbd558c..b3f444d 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -220,7 +220,6 @@ extern void enable_IR_x2apic(void);
  
- To create such a file system, you'll need a user program named
--genromfs.  It is available via anonymous ftp on sunsite.unc.edu and
--its mirrors, in the /pub/Linux/system/recovery/ directory.
-+genromfs. It is available on http://romfs.sourceforge.net.
+ extern int get_physical_broadcast(void);
  
- As the name suggests, romfs could be also used (space-efficiently) on
- various read-only media, like (E)EPROM disks if someone will have the
+-extern void apic_disable(void);
+ extern int lapic_get_maxlvt(void);
+ extern void clear_local_APIC(void);
+ extern void connect_bsp_APIC(void);
+@@ -261,7 +260,6 @@ static inline void lapic_shutdown(void) { }
+ #define local_apic_timer_c2_ok		1
+ static inline void init_apic_mappings(void) { }
+ static inline void disable_local_APIC(void) { }
+-static inline void apic_disable(void) { }
+ # define setup_boot_APIC_clock x86_init_noop
+ # define setup_secondary_APIC_clock x86_init_noop
+ #endif /* !CONFIG_X86_LOCAL_APIC */
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b62723c..4a65366 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -248,7 +248,7 @@ static int modern_apic(void)
+  * right after this call apic become NOOP driven
+  * so apic->write/read doesn't do anything
+  */
+-void apic_disable(void)
++static void __init apic_disable(void)
+ {
+ 	pr_info("APIC: switched to apic NOOP\n");
+ 	apic = &apic_noop;
 -- 
-1.7.0.4
-
+1.7.2.3
 
