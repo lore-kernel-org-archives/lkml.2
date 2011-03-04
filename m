@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258Ab1CDInQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 03:43:16 -0500
-Received: from linux-sh.org ([111.68.239.195]:44926 "EHLO linux-sh.org"
+	id S1759270Ab1CDIny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 03:43:54 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:35888 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896Ab1CDInP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 03:43:15 -0500
-Date: Fri, 4 Mar 2011 17:09:19 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh updates for 2.6.38-rc8
-Message-ID: <20110304080919.GC13621@linux-sh.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+	id S1754237Ab1CDInw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 03:43:52 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Guan Xuetao'" <epip@hera.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <greg@kroah.com>
+References: <cover.1298821856.git.epip@hera.kernel.org> <b05e05c32279bbb45939006a6bbaf7e7183f14ce.1298821856.git.epip@hera.kernel.org> <201102281617.00462.arnd@arndb.de>
+In-Reply-To: <201102281617.00462.arnd@arndb.de>
+Subject: RE: [PATCH 13/17] unicore32 io: redefine __REG(x) and re-use readl/writel funcs
+Date: Fri, 4 Mar 2011 16:00:55 +0800
+Message-ID: <03a101cbda42$4c48b080$e4da1180$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQFwUWJwWz5DKqeEVgvooZZn2tVwVwFvvDsaAoQX3q+UtEJRUA==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-fixes-for-linus
 
-Which contains:
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Monday, February 28, 2011 11:17 PM
+> To: Guan Xuetao
+> Cc: GuanXuetao; linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; greg@kroah.com
+> Subject: Re: [PATCH 13/17] unicore32 io: redefine __REG(x) and re-use readl/writel funcs
+> 
+> On Sunday 27 February 2011, Guan Xuetao wrote:
+> > From: GuanXuetao <gxt@mprc.pku.edu.cn>
+> >
+> >   -- by advice of Arnd Bergmann
+> >
+> > Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> 
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> I was expecting this to get folded into the patches that introduce the files,
+> but this way is fine as well.
+I want to keep the patches for core and additional architecture files stable, so each usage of old __REG macor
+should be replaced by readl/writel and then generating a big patch.
 
-Francesco Virlinzi (1):
-      sh: Change __nosave_XXX symbols to long
+Thanks & Regards.
+Guan Xuetao
 
-Nobuhiro Iwamatsu (2):
-      sh: sh7750: move machtypes.h to include/generated
-      sh: sh7750: Fix incompatible pointer type
-
-Stuart Menefy (2):
-      sh: Ensure ST40-300 BogoMIPS value is consistent
-      sh: Flush executable pages in copy_user_highpage
-
- arch/sh/include/asm/sections.h        |    2 +-
- arch/sh/kernel/cpu/sh4/setup-sh7750.c |   13 +++++++++----
- arch/sh/lib/delay.c                   |   10 ++++++++++
- arch/sh/mm/cache.c                    |    3 ++-
- 4 files changed, 22 insertions(+), 6 deletions(-)
