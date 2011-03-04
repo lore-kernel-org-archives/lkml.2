@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760268Ab1CDVl7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:41:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760219Ab1CDVl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:41:58 -0500
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-From: Glauber Costa <glommer@redhat.com>
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110304205512.GB2867@nik-comp.lan>
-References: <20110228171550.GA2173@nik-comp.lan> <4D6EF536.305@redhat.com>
-	 <20110303070652.GG29840@pcnci.linuxbox.cz> <4D6FFE5D.1030401@redhat.com>
-	 <20110303210647.GA27691@nik-comp.lan> <4D700F09.9000002@redhat.com>
-	 <20110303220155.GB27691@nik-comp.lan> <4D7101AF.6060009@redhat.com>
-	 <20110304182733.GA2867@nik-comp.lan>
-	 <1299265762.11618.140.camel@mothafucka.localdomain>
-	 <20110304205512.GB2867@nik-comp.lan>
+	id S1760275Ab1CDVoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:44:09 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:56711 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760219Ab1CDVoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:44:07 -0500
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Matt Mackall <mpm@selenic.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        cl@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTina+O77BFV+7mO9fX2aJimpO0ov_MKwxGtMwqG+@mail.gmail.com>
+References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>
+	 <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>
+	 <1299191400.2071.203.camel@dan>
+	 <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
+	 <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
+	 <1299260164.8493.4071.camel@nimitz>
+	 <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
+	 <1299262495.3062.298.camel@calx>
+	 <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
+	 <1299270709.3062.313.camel@calx> <1299271377.2071.1406.camel@dan>
+	 <AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
+	 <1299272907.2071.1415.camel@dan>
+	 <AANLkTina+O77BFV+7mO9fX2aJimpO0ov_MKwxGtMwqG+@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Fri, 04 Mar 2011 18:41:46 -0300
-Message-ID: <1299274906.11618.157.camel@mothafucka.localdomain>
+Date: Fri, 04 Mar 2011 16:44:02 -0500
+Message-ID: <1299275042.2071.1422.camel@dan>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 21:55 +0100, Nikola Ciprich wrote:
-> > Zach,
-> > 
-> > I don't understand 100 % the logic behind all your tsc changes.
-> > But kvm-clock-wise, most of the problems we had in the past were related
-> > to the difference in resolution between the tsc and the host clocksource
-> > (hpet, acpi_pm, etc), which in his case, it is a non-issue.
-> > 
-> > It does seem to me like some compensation logic kicked in, dismantling
-> > an otherwise good tsc. He does have nonstop_tsc, which means it can't
-> > get any better.
-> > 
-> > One thing I noticed when reading the culprit patch in bisect, is that in
-> > vcpu_load(), there were previously a call to  
-> > 
-> >  kvm_request_guest_time_update(vcpu)
-> > 
-> > that was removed without a counterpart addition. Any idea about why it
-> > was done?
-> > 
-> > Nikola, does adding that line back alleviate the problem for you ?
-> Hello Glauber,
-> kvm_request_guest_time_update seems to have been renamed and then
-> removed since then, but I've added 
-> kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> instead and now the guest boots!
-> So maybe missing clock update is really the culprit here?
-> What do You guys think?
-> n.
+On Fri, 2011-03-04 at 23:30 +0200, Pekka Enberg wrote:
+> Right. So you fill a slab with objects A that you want to overflow
+> (struct shmid_kernel in the example exploit) then free one of them,
+> allocate object B, smash it (and the next object), and find the
+> smashed object A.
+> 
+> But doesn't that make the whole /slab/procinfo discussion moot? You
+> can always use brute force to allocate N objects (where N is larger
+> than max objects in a slab) and then just free nth object that's most
+> likely to land on the slab you have full control over (as explained by
+> Matt).
+> 
+>                         Pekka 
 
-I think although the long term plan is to just do this update once in
-your case (stable tsc), this update is needed. 
+This is a good point, and one that I've come to accept as a result of
+having this conversation.  Consider the patch dropped, unless there are
+other reasons I've missed.  I still think it's worth brainstorming
+techniques for hardening the kernel heap in ways that don't create
+performance impact, but I admit that the presence or absence of this
+debugging information isn't a crucial factor in successful exploitation.
 
-Why don't you send a patch to re-include it ?
+Thanks,
+Dan
 
