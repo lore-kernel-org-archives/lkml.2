@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759689Ab1CDOm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:42:58 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:36602 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759426Ab1CDOm5 convert rfc822-to-8bit (ORCPT
+	id S1759696Ab1CDOpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:45:47 -0500
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:40622 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759544Ab1CDOpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:42:57 -0500
-Subject: Re: [PATCH 09/27] nfs: writeback pages wait queue
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Chris Mason <chris.mason@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110304143838.GA11504@localhost>
-References: <20110303064505.718671603@intel.com>
-	 <20110303074949.809203319@intel.com> <1299168481.1310.56.camel@laptop>
-	 <20110304020157.GB7976@localhost> <1299229843.2428.13484.camel@twins>
-	 <1299230795.2428.13486.camel@twins>  <20110304143838.GA11504@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 04 Mar 2011 15:41:13 +0100
-Message-ID: <1299249673.24454.5.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 4 Mar 2011 09:45:45 -0500
+Message-ID: <4D70FAC2.5010109@linux.vnet.ibm.com>
+Date: Fri, 04 Mar 2011 11:44:18 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] tpm_tis on Lenovo T410 broken in 2.6.38-rc6
+References: <E1PuKHL-0000lw-RM@tytso-glaptop> <4D6CFA80.3020505@linux.vnet.ibm.com> <AANLkTi=BtfXYV+1_JZh0SRZhJz=Ys3wCF-t5rBR2iz8O@mail.gmail.com> <4D6D61B1.7000302@linux.vnet.ibm.com> <20110301213756.GA2959@thunk.org>
+In-Reply-To: <20110301213756.GA2959@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11030414-5054-0000-0000-00000079415D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 22:38 +0800, Wu Fengguang wrote:
-> Sorry for being ignorance on the memory barriers..
+Hi Ted, sorry for the delay.
 
-n/p, everybody who encounters them seems to be a bit confused at first
-and a lot more confused later :-)
+On 03/01/2011 06:37 PM, Ted Ts'o wrote:
+> On Tue, Mar 01, 2011 at 06:14:25PM -0300, Rajiv Andrade wrote:
+>> I was referring to the first, 9b29050f, and the commitc4ff4b82  reverted by Ted fixes a bug for other users.
+> What's the bug that other users suffer by having a longer timeout?  It
+> means that if things fails it takes longer for them to get an error
+> message in the case of something that's going to fail anyway, right?
+> Somehow that seems less serious than the TPM simply completely failing
+> to function caused by too-short timeouts.  (My situation).  So sorry
+> if I'm feeling selfish, but a longer timeout before returning failure
+> seems less important than my not being able to access the TPM at all.
+The bug was that when running the kernel with IMA, at boot time, it 
+issues 3 TPM commands IIRC, given the 2 min timeout,
+when the TPM didn't respond due to it not working with interrupts for 
+example, the boot hang for 6 minutes. The TPM device
+driver then relies on the default values, given neither 
+tpm_get_timeouts() can succeed. Unfortunately, yes, I don't have a
+fix for TPMs not working with interrupts yet, however we've been making 
+progress there recently, should be out soon.
 
-> The below patch removes the unnecessary smp_mb__after_clear_bit(). 
+I understand, and I didn't mean one was more or less important than the 
+other, just gave the reason I wrote it at that time,
+considering that I wasn't aware of the effect you're facing.
+You're not being selfish from my POV also, both bugs need to be fixed.
 
-OK, thanks!
+> So, the results of my experiments.  First of all, trying to merge in
+> your for_james branch doesn't help at all.  I used the tip of Linus's
+> tree as of this morning (commit 3e1f2356ce2) and then merged in your
+> for-james tree (commit b83452256e).  No go.  I tried setting the
+> interrupts parameter to both 0 and 1, and either way, things still
+> didn't work.
+>
+> OK, next, I tried Linus's idea, which was to put a WARN macro here in
+> tpm_calc_ordinal_duration:
+>
+>          if (duration_idx != TPM_UNDEFINED) {
+> 		duration = chip->vendor.duration[duration_idx];
+>                  /* if duration is 0, it's because chip->vendor.duration wasn't \
+> */
+>                  /* filled yet, so we set the lowest timeout just to give enough\
+>   */
+>                  /* time for tpm_get_timeouts() to succeed */
+> NEW ---->	WARN(duration<=0,
+> 		    "no duration for ordinal %x (diration_idx %d)",
+> 		    ordinal, duration_idx);
+>                  return (duration<= 0 ? HZ : duration);
+> 	} else
+>                  return 2 * 60 * HZ;
+> }
+>
+> That resulted in the following data (see attached), which you will
+> hopefully find useful.
+Thanks, it is. HZ isn't enough time for this TPM/setup to have short 
+timeout commands to succeed, including
+the tpm_get_timeouts(). I was skeptic at first that this would be the 
+reason since I have the same machine,
+and was working for me, the reason I asked for these parameters setup 
+attempts. I'll write a patch that will
+contemplate the long boot time timeout and this bugs fixed, pursuing the 
+interrupts fix path.
+
+Rajiv
+
