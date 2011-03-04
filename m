@@ -1,236 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760298Ab1CDXsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 18:48:20 -0500
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:53616
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758213Ab1CDXsT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 18:48:19 -0500
-X-SpamScore: -24
-X-BigFish: VS-24(zz542N1432N4015L9371Pzz1202hzz8275bh8275dhz2dh2a8h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Nguyen Dinh-R00091 <R00091@freescale.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        Zhang Lily-R58066 <R58066@freescale.com>,
-        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>
-Subject: RE: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
- WFI
-Thread-Topic: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
- WFI
-Thread-Index: AQHL2sQV2wru9FbG9kebNQISz1Arp5Qd0rlw
-Date: Fri, 4 Mar 2011 23:33:11 +0000
-Message-ID: <56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
-In-Reply-To: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.81.68.39]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760325Ab1CDXsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 18:48:47 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56084 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759896Ab1CDXsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 18:48:46 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6275"; a="77933930"
+Message-ID: <4D717A5D.8010608@codeaurora.org>
+Date: Fri, 04 Mar 2011 15:48:45 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5?= =?ISO-8859-1?Q?g?= 
+	<arve@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mattias Wallin <Mattias.Wallin@stericsson.com>
+Subject: Re: [PATCHv4 0/4] ARM: Fixing udelay() for SMP and non-SMP systems
+References: <1292883633-19553-1-git-send-email-sboyd@codeaurora.org> <AANLkTi=KU_zUrBsp0a9iJyj6RmTgYqZcffQynTV-2tKW@mail.gmail.com>
+In-Reply-To: <AANLkTi=KU_zUrBsp0a9iJyj6RmTgYqZcffQynTV-2tKW@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaud,
+On 03/04/2011 02:10 AM, Linus Walleij wrote:
+> 2010/12/20 Stephen Boyd<sboyd@codeaurora.org>:
+>
+>> These patches fix the udelay() issue pointed out on
+>> arm-lkml[1][2]. A quick recap: some SMP machines can scale
+>> their CPU frequencies independent of one another. loops_per_jiffy
+>> is calibrated globally and used in __const_udelay(). If one CPU
+>> is running faster than what the loops_per_jiffy is calculated
+>> (or scaled) for, udelay() will be incorrect and not wait long
+>> enough (or too long). A similar problem occurs if the cpu
+>> frequency is scaled during a udelay() call.
+>
+> Hwt's happening to this patch set? We have applied it and
+> implemented a timer for the U8500.
+>
+> Tested-by: Linus Walleij<linus.walleij@linaro.org>
+>
+> Mattias WALLIN can probably also provide a Tested-by:
+> from ST-Ericsson if it helps.
+>
+> Generally I think this is good and important stuff that should
+> be merged, will you be submitting it to Russells patch tracker
+> or pull request for 2.6.39?
+>
 
-I just sent out a 2nd set of the MX51 LPM patch. I have tested successfully on my mx51 babbage without any code modifications.
-
-If you would kindly verify on your side, that would great.
-
-You need both patches:
-
-[PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
-[PATCHv2 2/2] ARM: mx51: Add support for low power suspend on MX51
+Thanks for testing and reporting it Linus. We are certainly interested 
+in getting this in. If I'm not mistaken, the last time we sent it out, 
+there was a C vs. assembly argument and got side tracked or no one acked 
+or responded to it. Will try to send out the patches again within the 
+next few weeks.
 
 Thanks,
+Saravana
 
-Dinh
-
-
->-----Original Message-----
->From: Nguyen Dinh-R00091
->Sent: Friday, March 04, 2011 5:30 PM
->To: linux-kernel@vger.kernel.org
->Cc: linux-arm-kernel@lists.infradead.org; linux@arm.linux.org.uk; s.hauer@pengutronix.de; u.kleine-
->koenig@pengutronix.de; Zhang Lily-R58066; Vaidyanathan Ranjani-RA5478; Nguyen Dinh-R00091
->Subject: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
->
->From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
->
->Implement code for MX51 that allows the SoC to enter WFI when
->arch_idle is called.
->
->This patch is also necessary for correctly suspending the system.
->
->Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
->---
-> arch/arm/mach-mx5/Makefile              |    2 +-
-> arch/arm/mach-mx5/system.c              |   84 +++++++++++++++++++++++++++++++
-> arch/arm/plat-mxc/include/mach/mxc.h    |    9 +++
-> arch/arm/plat-mxc/include/mach/system.h |    6 ++-
-> 4 files changed, 99 insertions(+), 2 deletions(-)
-> create mode 100644 arch/arm/mach-mx5/system.c
->
->diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
->index 0d43be9..1106acd 100644
->--- a/arch/arm/mach-mx5/Makefile
->+++ b/arch/arm/mach-mx5/Makefile
->@@ -3,7 +3,7 @@
-> #
->
-> # Object file lists.
->-obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o
->+obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o system.o
-> obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
->
-> obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
->diff --git a/arch/arm/mach-mx5/system.c b/arch/arm/mach-mx5/system.c
->new file mode 100644
->index 0000000..06d306b
->--- /dev/null
->+++ b/arch/arm/mach-mx5/system.c
->@@ -0,0 +1,84 @@
->+/*
->+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
->+ */
->+
->+/*
->+ * The code contained herein is licensed under the GNU General Public
->+ * License. You may obtain a copy of the GNU General Public License
->+ * Version 2 or later at the following locations:
->+ *
->+ * http://www.opensource.org/licenses/gpl-license.html
->+ * http://www.gnu.org/copyleft/gpl.html
->+ */
->+#include <linux/platform_device.h>
->+#include <asm/io.h>
->+#include <mach/hardware.h>
->+#include "crm_regs.h"
->+
->+/* set cpu low power mode before WFI instruction. This function is called mx5 because
->+ it can be used for mx50, mx51, and mx53.*/
->+void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
->+{
->+	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
->+	u32 empgc0, empgc1;
->+	int stop_mode = 0;
->+
->+	/* always allow platform to issue a deep sleep mode request */
->+	plat_lpc = __raw_readl(MXC_CORTEXA8_PLAT_LPC) &
->+	    ~(MXC_CORTEXA8_PLAT_LPC_DSM);
->+	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
->+	arm_srpgcr = __raw_readl(MXC_SRPG_ARM_SRPGCR) & ~(MXC_SRPGCR_PCR);
->+	empgc0 = __raw_readl(MXC_SRPG_EMPGC0_SRPGCR) & ~(MXC_SRPGCR_PCR);
->+	empgc1 = __raw_readl(MXC_SRPG_EMPGC1_SRPGCR) & ~(MXC_SRPGCR_PCR);
->+
->+	switch (mode) {
->+	case WAIT_CLOCKED:
->+		break;
->+	case WAIT_UNCLOCKED:
->+		ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
->+		break;
->+	case WAIT_UNCLOCKED_POWER_OFF:
->+	case STOP_POWER_OFF:
->+		plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
->+			    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
->+		if (mode == WAIT_UNCLOCKED_POWER_OFF) {
->+			ccm_clpcr |= 0x1 << MXC_CCM_CLPCR_LPM_OFFSET;
->+			ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
->+			ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
->+			stop_mode = 0;
->+		} else {
->+			ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
->+			ccm_clpcr |= 0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET;
->+			ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
->+			ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
->+			stop_mode = 1;
->+		}
->+
->+		arm_srpgcr |= MXC_SRPGCR_PCR;
->+		if (stop_mode) {
->+			empgc0 |= MXC_SRPGCR_PCR;
->+			empgc1 |= MXC_SRPGCR_PCR;
->+		}
->+
->+		if (tzic_enable_wake(1) != 0)
->+			return;
->+		break;
->+	case STOP_POWER_ON:
->+		ccm_clpcr |= 0x2 << MXC_CCM_CLPCR_LPM_OFFSET;
->+		break;
->+	default:
->+		printk(KERN_WARNING "UNKNOWN cpu power mode: %d\n", mode);
->+		return;
->+	}
->+
->+	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
->+	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
->+	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
->+	/* Enable NEON SRPG for all but MX50TO1.0. */
->+	__raw_writel(arm_srpgcr, MXC_SRPG_NEON_SRPGCR);
->+	if (stop_mode) {
->+		__raw_writel(empgc0, MXC_SRPG_EMPGC0_SRPGCR);
->+		__raw_writel(empgc1, MXC_SRPG_EMPGC1_SRPGCR);
->+	}
->+}
->+
->diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
->index 04c7a26..8a8970d 100644
->--- a/arch/arm/plat-mxc/include/mach/mxc.h
->+++ b/arch/arm/plat-mxc/include/mach/mxc.h
->@@ -181,6 +181,15 @@ struct cpu_op {
-> 	u32 cpu_rate;
-> };
->
->+int tzic_enable_wake(int is_idle);
->+enum mxc_cpu_pwr_mode {
->+	WAIT_CLOCKED,		/* wfi only */
->+	WAIT_UNCLOCKED,		/* WAIT */
->+	WAIT_UNCLOCKED_POWER_OFF,	/* WAIT + SRPG */
->+	STOP_POWER_ON,		/* just STOP */
->+	STOP_POWER_OFF,		/* STOP + SRPG */
->+};
->+
-> extern struct cpu_op *(*get_cpu_op)(int *op);
-> #endif
->
->diff --git a/arch/arm/plat-mxc/include/mach/system.h b/arch/arm/plat-mxc/include/mach/system.h
->index 95be51b..35283a4 100644
->--- a/arch/arm/plat-mxc/include/mach/system.h
->+++ b/arch/arm/plat-mxc/include/mach/system.h
->@@ -20,6 +20,8 @@
-> #include <mach/hardware.h>
-> #include <mach/common.h>
->
->+extern void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode);
->+
-> static inline void arch_idle(void)
-> {
-> #ifdef CONFIG_ARCH_MXC91231
->@@ -54,7 +56,9 @@ static inline void arch_idle(void)
-> 			"orr %0, %0, #0x00000004\n"
-> 			"mcr p15, 0, %0, c1, c0, 0\n"
-> 			: "=r" (reg));
->-	} else
->+	} else if (cpu_is_mx51())
->+		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
->+	else
-> 		cpu_do_idle();
-> }
->
->--
->1.6.0.4
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
