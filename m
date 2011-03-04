@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759657Ab1CDOm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:42:29 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39545 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759412Ab1CDOm2 convert rfc822-to-8bit (ORCPT
+	id S1759689Ab1CDOm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:42:58 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:36602 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759426Ab1CDOm5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:42:28 -0500
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 4 Mar 2011 20:11:56 +0530
-Subject: RE: [PATCH v10 1/1] PRUSS UIO driver support
-Thread-Topic: [PATCH v10 1/1] PRUSS UIO driver support
-Thread-Index: Acvad7Vie4wPYYywQ6qYiO/Aj324hAAAiDmg
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C009039@dbde02.ent.ti.com>
-References: <1299213772-21931-1-git-send-email-pratheesh@ti.com>
-	<1299213772-21931-2-git-send-email-pratheesh@ti.com>
- <20110304142028.GD28175@local>
-In-Reply-To: <20110304142028.GD28175@local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 4 Mar 2011 09:42:57 -0500
+Subject: Re: [PATCH 09/27] nfs: writeback pages wait queue
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Chris Mason <chris.mason@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110304143838.GA11504@localhost>
+References: <20110303064505.718671603@intel.com>
+	 <20110303074949.809203319@intel.com> <1299168481.1310.56.camel@laptop>
+	 <20110304020157.GB7976@localhost> <1299229843.2428.13484.camel@twins>
+	 <1299230795.2428.13486.camel@twins>  <20110304143838.GA11504@localhost>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Date: Fri, 04 Mar 2011 15:41:13 +0100
+Message-ID: <1299249673.24454.5.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On Fri, 2011-03-04 at 22:38 +0800, Wu Fengguang wrote:
+> Sorry for being ignorance on the memory barriers..
 
-On Fri, Mar 04, 2011 at 19:50:28, Hans J. Koch wrote:
-> On Fri, Mar 04, 2011 at 10:12:52AM +0530, Pratheesh Gangadhar wrote:
-> > diff --git a/include/linux/uio_pruss.h b/include/linux/uio_pruss.h
-> > new file mode 100644
-> > index 0000000..8c9b2c9
-> > --- /dev/null
-> > +++ b/include/linux/uio_pruss.h
-> 
-> That should go to arch/arm/mach-davinci/include/mach/
-> and not to the top level include/linux/ directory.
+n/p, everybody who encounters them seems to be a bit confused at first
+and a lot more confused later :-)
 
-It was put in here because this driver
-will be used across two ARM architectures
-(DaVinci and OMAP). Although it won't be used
-outside of ARM at least in near future.
+> The below patch removes the unnecessary smp_mb__after_clear_bit(). 
 
-Thanks,
-Sekhar
-
+OK, thanks!
