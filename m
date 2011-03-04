@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab1CDVw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:52:26 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47455 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760279Ab1CDVwZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:52:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=h98dBC0tOkMLH0/DpRH3KHC75Pzcf94/OJgCDuBB8n1Ru8yrkTmobtZnaQkIV8pJKY
-         ZPr/XMx/sq5pd0MTxTTAVuwXKNMrHMqCpU+L1LYj4r9jIO0HqQ6BRcIVLuco56WUx5ik
-         p2DxaUJ30uaINeRWhrgGFRYGysbHucFICwGg4=
-Date: Sat, 5 Mar 2011 00:52:20 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] power: disable hibernation if module loading is
- disabled
-Message-ID: <20110304215218.GB30253@albatros>
-References: <1299255084-4390-1-git-send-email-segoon@openwall.com>
- <20110304203201.GA22079@elf.ucw.cz>
+	id S932589Ab1CDVwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:52:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932445Ab1CDVwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:52:39 -0500
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [RESEND PATCH v2 0/2] intel-iommu: Fix domain_ids exhaustion
+To: dwmw2@infradead.org, iommu@lists.linux-foundation.org
+Cc: alex.williamson@redhat.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, ddutile@redhat.com, chrisw@redhat.com
+Date: Fri, 04 Mar 2011 14:52:00 -0700
+Message-ID: <20110304214837.7617.46438.stgit@s20.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304203201.GA22079@elf.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 21:32 +0100, Pavel Machek wrote:
-> > +	if (modules_disabled)
-> > +		return -EPERM;
-> > +
-> >  	error = platform_begin(platform_mode);
-> 
-> Hmm. How is this supposed to work with CONFIG_MODULES off?
+David,
 
-Good catch, thank you.  I'll fix this.
+Please comment or apply.  Thanks,
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Alex
+
+When we unbind a device from a driver, we don't properly unlink
+the domain from the iommu, so we never free the domain id it
+was using.  We're typically limited to something like 256 domain
+ids, so a loop of unbinding and rebinding a device can exhaust
+this pretty quickly.  If we're assigning the device to a KVM
+guest, libvirt does exactly this each time the device is removed
+from the host driver or added back.  When we do run out, we oops
+the kernel.  Fix these.
+
+v2:
+
+We only want to call domain_exit() for domains automatically created
+via the dma ops path.  VM and SI domains have their own life cycle
+and should not be destroyed here.  With v1, if a device was unbound
+from pci-stub while assigned to a VM, the kernel would oops on the
+next call into iommu ops.
+
+---
+
+Alex Williamson (2):
+      intel-iommu: Fix get_domain_for_dev() error path
+      intel-iommu: Unlink domain from iommu
+
+
+ drivers/pci/intel-iommu.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
