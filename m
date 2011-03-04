@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab1CDVIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:08:12 -0500
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:59041 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932452Ab1CDVIK (ORCPT
+	id S932615Ab1CDVIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:08:36 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:52895 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932493Ab1CDVIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:08:10 -0500
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: linux-kernel@vger.kernel.org
-Cc: Hagen Paul Pfeifer <hagen@jauu.net>
-Subject: [PATCH 2/4] af_packet: struct socket declared/assigned but unused
-Date: Fri,  4 Mar 2011 22:08:01 +0100
-Message-Id: <1299272883-32499-2-git-send-email-hagen@jauu.net>
-X-Mailer: git-send-email 1.7.4.1.57.g0466.dirty
-In-Reply-To: <1299272883-32499-1-git-send-email-hagen@jauu.net>
-References: <1299272883-32499-1-git-send-email-hagen@jauu.net>
+	Fri, 4 Mar 2011 16:08:32 -0500
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Matt Mackall <mpm@selenic.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        cl@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
+References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>
+	 <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>
+	 <1299191400.2071.203.camel@dan>
+	 <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
+	 <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
+	 <1299260164.8493.4071.camel@nimitz>
+	 <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
+	 <1299262495.3062.298.camel@calx>
+	 <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
+	 <1299270709.3062.313.camel@calx> <1299271377.2071.1406.camel@dan>
+	 <AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Mar 2011 16:08:27 -0500
+Message-ID: <1299272907.2071.1415.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
----
- net/packet/af_packet.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+On Fri, 2011-03-04 at 22:56 +0200, Pekka Enberg wrote:
+> On Fri, 2011-03-04 at 14:31 -0600, Matt Mackall wrote:
+> >> On Fri, 2011-03-04 at 22:02 +0200, Pekka Enberg wrote:
+> >> > On Fri, Mar 4, 2011 at 8:14 PM, Matt Mackall <mpm@selenic.com> wrote:
+> >> > >> Of course, as you say, '/proc/meminfo' still does give you the trigger
+> >> > >> for "oh, now somebody actually allocated a new page". That's totally
+> >> > >> independent of slabinfo, though (and knowing the number of active
+> >> > >> slabs would neither help nor hurt somebody who uses meminfo - you
+> >> > >> might as well allocate new sockets in a loop, and use _only_ meminfo
+> >> > >> to see when that allocated a new page).
+> >> > >
+> >> > > I think lying to the user is much worse than changing the permissions.
+> >> > > The cost of the resulting confusion is WAY higher.
+> >> >
+> >> > Yeah, maybe. I've attached a proof of concept patch that attempts to
+> >> > randomize object layout in individual slabs. I'm don't completely
+> >> > understand the attack vector so I don't make any claims if the patch
+> >> > helps or not.
+> >>
+> >> In general, the attack relies on getting an object A (vulnerable to
+> >> overrun) immediately beneath an object B (that can be exploited when
+> >> overrun).
+> >>
+> >> I'm not sure how much randomization helps, though. Allocate 1000 objects
+> >> of type B, deallocate the 800th, then allocate an object of type A. It's
+> >> almost certainly next to a B.
+> 
+> On Fri, Mar 4, 2011 at 10:42 PM, Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+> > On second thought, this does pose a problem.  Even if you don't know how
+> > full the most recent slab is or where free vs. used chunks are within
+> > it, if you can guarantee that you filled an entire previous slab with
+> > your objects and then free and reallocate one of them, then you can
+> > still win.
+> 
+> Guys, I still don't get it, sorry.
+> 
+> Why can you still win? With my patch, reallocation shouldn't matter;
+> the freelist randomization ought to make it less likely for *any* two
+> allocated objects to be adjacent.
+> 
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 5efef5b..b5362e9 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -966,7 +966,6 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 
- static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
- {
--	struct socket *sock;
- 	struct sk_buff *skb;
- 	struct net_device *dev;
- 	__be16 proto;
-@@ -978,8 +977,6 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
- 	int len_sum = 0;
- 	int status = 0;
- 
--	sock = po->sk.sk_socket;
--
- 	mutex_lock(&po->pg_vec_lock);
- 
- 	err = -EBUSY;
--- 
-1.7.4.1.57.g0466.dirty
+I could be mistaken on this, so feel free to correct me.  What if you
+just fill more than one slab with the object you'd like to overflow
+into, then pick an object that's guaranteed to reside in a slab filled
+with your objects.  Upon freeing that object and allocating a new
+to-be-overflowed object (that's sized so it's handled by the same slab
+cache), this new object will be guaranteed to be sitting immediately
+before one of your objects (or before the end of the slab if you're
+unlucky).  You can still win because it doesn't matter which specific
+object you overflow, only that you overflow one of them.
+
+-Dan
+
 
