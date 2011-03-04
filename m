@@ -1,313 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab1CDD1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 22:27:24 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41656 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758280Ab1CDD1X (ORCPT
+	id S1758658Ab1CDDcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 22:32:12 -0500
+Received: from smtp104.sbc.mail.re3.yahoo.com ([66.196.96.80]:32314 "HELO
+	smtp104.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751630Ab1CDDcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 22:27:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=DwkzQ5r7SEaO2cENpLNZ5j4H37WBwW/Tc8bKOu4UcQsikY164AU3aSaXO2+3aHHMdN
-         WoKgsTNVfXTxKvRJqULLxqz1kornc4+qDblQPs9xSqsZyiSr0eQcLKBIUCir1ZdKc3ml
-         zhnmPCvfGnsWzpPGM3mnO+TQKmr4yhwC4yfNo=
-MIME-Version: 1.0
-Date: Fri, 4 Mar 2011 03:27:22 +0000
-Message-ID: <AANLkTin0PGOfHr3AvQk-BAhyMY7ihYMU1-wX4RJG=1YT@mail.gmail.com>
-Subject: 2.6.38-rc7, iwlagn crash
-From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
-To: linux-kernel@vger.kernel.org, ilw@linux.intel.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Mar 2011 22:32:10 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Mar 2011 22:32:09 EST
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: cJ1MvCIVM1nSdyh0EqNDUIY42797cT60bIrmKKZHigme4HZ
+ HmNmaokmwUhD4VTbd7n0CJWjV2zk9Ks6Qdv4RdDXo0v98nV80u9kaBbDtKjh
+ ubgttG9IsoGTXuHi.8f5BxqC7qwMoLxc6UIGsrDKG8rnrdO86ghBVmsLnxrb
+ MtHOMM8mkTTA_baVwpN3Skcue4UsX71Ed_OpF0Vu2tpM_FnPDagoPqqqEAA1
+ AKXalkchpG1gTWRCXOa4UNGog80Z1eZft5uPbmUcgor2ATjJSCEZ88_PbC9m
+ S1SalgjnfZXgbYoI1VhvKNhj_MKiFSG4iXuAC
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Madhu Iyengar <madhu.iyengar@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Hannes Reinecke <hare@suse.de>, Ruediger Oertel <ro@suse.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFC-v2 0/3] qla2xxx LLD target mode + tcm_qla2xxx fabric module
+Date: Thu,  3 Mar 2011 19:25:18 -0800
+Message-Id: <1299209121-32174-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-(please cc as not subscribed)
+<quick resend to fix vger subject filtering..>
 
-I'm running Ubuntu 10.10 and 2.6.38-020638rc7-generic #201103020909
-SMP Wed Mar 2 09:11:42 UTC 2011 x86_64 GNU/Linux from
-http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.38-rc7-natty/ . The
-machine is a Lenovo T510 with this chip:
+Greetings all,
 
-03:00.0 Network controller: Intel Corporation Centrino Advanced-N 6200 (rev 35)
+Attached is the second RFC series for adding QLA2XXX LLD target mode support
+into v8.03.05-k0 from >= .38-rc6, along with the accompanying tcm_qla2xxx.ko
+fabric module for mainline target v4.0 infrastructure.  This series has been
+broken up into reviewable sections and should be considered a 'for-39'
+EXPERIMENTAL item.
 
- I was trying to setup up an adhoc wifi connection between my phone
-and the laptop when I saw this in dmesg:
+The QLA2xxx LLD changes and tcm_qla2xxx.ko code should currently be considered
+BETA status, and currently physical mode (non NPIV) is functioning.  Thus far
+target mode has been run using both PCIe device passthrough into KVM guest and
+bare-metal HW together with TCM IBLOCK/FILEIO/RAMDISK_MCP backends.  Running
+heavy multi-threaded LTP disktest runs with large block (~1000 MB/sec @ 256K)
+and small I/O block (~100K IOPs @ 512 byte) traffic to multi-lun configurations
+is able to run sustained on the order of days with the latest tests.
 
+An overview of the current status, todo list, mini-howto and running layout
+from /sys/kernel/config/target/qla2xxx/ are available here:
 
-[111474.461347] ------------[ cut here ]------------
-[111474.461377] WARNING: at
-/home/kernel-ppa/COD/linux/drivers/net/wireless/iwlwifi/iwl-core.c:1898
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]()
-[111474.461382] Hardware name: 4384BB3
-[111474.461384] Modules linked in: nf_nat_h323 nf_conntrack_h323
-nf_nat_pptp nf_conntrack_pptp nf_conntrack_proto_gre nf_nat_proto_gre
-nf_nat_tftp nf_conntrack_tftp nf_nat_sip nf_conntrack_sip nf_nat_irc
-nf_nat_ftp cdc_acm usbhid hid xt_limit xt_tcpudp ipt_LOG
-ipt_MASQUERADE xt_DSCP ipt_REJECT nf_conntrack_irc nf_conntrack_ftp
-xt_state nls_iso8859_1 nls_cp437 vfat fat binfmt_misc vboxnetadp
-vboxnetflt vboxdrv microcode parport_pc ppdev iptable_nat nf_nat
-nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_mangle
-iptable_filter ip_tables x_tables uvcvideo snd_hda_codec_hdmi
-snd_hda_codec_conexant arc4 videodev v4l2_compat_ioctl32 snd_hda_intel
-snd_hda_codec snd_hwdep joydev snd_pcm hdaps thinkpad_ec iwlagn
-snd_seq_midi iwlcore psmouse snd_rawmidi snd_seq_midi_event mac80211
-snd_seq serio_raw tpm_tis tpm lp parport thinkpad_acpi tpm_bios nvram
-snd_timer snd_seq_device cfg80211 snd intel_ips soundcore
-snd_page_alloc sha256_generic aesni_intel cryptd aes_x86_64
-aes_generic dm_crypt usb_storage uas i915 ahci drm_kms_helper
-firewire_ohci e1000e libahci sdhci_pci firewire_core drm sdhci
-crc_itu_t i2c_algo_bit video
-[111474.461481] Pid: 1317, comm: wpa_supplicant Tainted: G        W
-2.6.38-020638rc7-generic #201103020909
-[111474.461483] Call Trace:
-[111474.461492]  [<ffffffffa02e6c7e>] ?
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]
-[111474.461497]  [<ffffffffa02e6c7e>] ?
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]
-[111474.461507]  [<ffffffff81065430>] ? warn_slowpath_common+0x90/0xc0
-[111474.461510]  [<ffffffff8106547a>] ? warn_slowpath_null+0x1a/0x20
-[111474.461514]  [<ffffffffa02e6c7e>] ?
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]
-[111474.461527]  [<ffffffffa02869ec>] ?
-ieee80211_runtime_change_iftype+0xdc/0x180 [mac80211]
-[111474.461535]  [<ffffffffa0286b85>] ?
-ieee80211_if_change_type+0xf5/0x120 [mac80211]
-[111474.461543]  [<ffffffffa028995b>] ?
-ieee80211_change_iface+0x3b/0x130 [mac80211]
-[111474.461551]  [<ffffffffa01bf898>] ?
-cfg80211_change_iface+0xe8/0x1c0 [cfg80211]
-[111474.461558]  [<ffffffffa01d78f6>] ?
-cfg80211_wext_siwmode+0xa6/0xf0 [cfg80211]
-[111474.461564]  [<ffffffff8158a4cb>] ? ioctl_standard_call+0x6b/0xf0
-[111474.461566]  [<ffffffff8158a460>] ? ioctl_standard_call+0x0/0xf0
-[111474.461569]  [<ffffffff81589882>] ? wireless_process_ioctl+0x102/0x130
-[111474.461571]  [<ffffffff8158afe0>] ? ioctl_private_call+0x0/0xa0
-[111474.461573]  [<ffffffff8158afe0>] ? ioctl_private_call+0x0/0xa0
-[111474.461575]  [<ffffffff8158a460>] ? ioctl_standard_call+0x0/0xf0
-[111474.461578]  [<ffffffff8158991c>] ? wext_ioctl_dispatch+0x6c/0x90
-[111474.461580]  [<ffffffff81589b66>] ? wext_handle_ioctl+0x46/0x90
-[111474.461585]  [<ffffffff814ad76a>] ? sockfd_lookup_light+0x4a/0x80
-[111474.461589]  [<ffffffff814c687b>] ? dev_ioctl+0x28b/0x2a0
-[111474.461591]  [<ffffffff814ad25f>] ? sock_ioctl+0xbf/0x280
-[111474.461594]  [<ffffffff811704bd>] ? vfs_ioctl+0x1d/0x50
-[111474.461596]  [<ffffffff81170f79>] ? do_vfs_ioctl+0x69/0x1d0
-[111474.461598]  [<ffffffff81171174>] ? sys_ioctl+0x94/0xa0
-[111474.461601]  [<ffffffff8100c002>] ? system_call_fastpath+0x16/0x1b
-[111474.461603] ---[ end trace fb86611b81442165 ]---
-[111474.464580] iwlagn 0000:03:00.0: Error: Response NULL in 'REPLY_ADD_STA'
-[111474.464586] iwlagn 0000:03:00.0: Adding station ff:ff:ff:ff:ff:ff failed.
-[111474.472777] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111474.542468] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111474.543552] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111474.543809] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111475.894906] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111475.959248] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111475.960079] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111475.960195] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111477.339405] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111477.386319] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111477.387069] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111477.387213] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111478.700588] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111478.753591] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111478.754417] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111478.791333] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111480.192722] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111480.249724] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111480.250545] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111480.250695] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111481.654631] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111481.696438] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111481.697237] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111481.755643] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111483.016561] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111483.073672] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111483.074542] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111483.084848] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111484.463193] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111484.510342] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111484.511087] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111484.515897] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111485.930848] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111485.987148] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111485.988018] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111485.988177] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111487.369539] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111487.423704] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111487.424479] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111487.424621] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111488.796752] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111488.850445] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111488.851280] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111488.851502] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111490.271484] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111490.307285] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111490.308059] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111490.342785] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111491.678358] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111491.744236] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111491.745065] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111491.773720] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111493.205384] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111493.250872] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111493.251799] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111493.307372] wlan0: No active IBSS STAs - trying to scan for other
-IBSS networks with same SSID (merge)
-[111494.660506] wlan0: Selected IBSS BSSID 86:9f:24:fb:b0:44 based on
-configured SSID
-[111494.717399] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111494.718199] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111496.047915] wlan0: Trigger new scan to find an IBSS to join
-[111501.880336] wlan0: Trigger new scan to find an IBSS to join
-[111504.990820] wlan0: Creating new IBSS network, BSSID be:c7:fe:1c:61:99
-[111505.034037] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111505.034743] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111506.404722] wlan0: Trigger new scan to find an IBSS to join
-[111511.567631] wlan0: Trigger new scan to find an IBSS to join
-[111514.702225] wlan0: Creating new IBSS network, BSSID 46:d5:59:b4:0b:54
-[111514.752202] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111514.753078] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111516.083283] wlan0: Trigger new scan to find an IBSS to join
-[111521.585645] wlan0: Trigger new scan to find an IBSS to join
-[111524.617640] wlan0: Creating new IBSS network, BSSID b6:ca:41:c0:3e:bd
-[111524.660101] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111524.661059] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111525.980241] wlan0: Trigger new scan to find an IBSS to join
-[111531.296978] wlan0: Trigger new scan to find an IBSS to join
-[111534.328992] wlan0: Creating new IBSS network, BSSID d6:00:8a:56:93:99
-[111534.379572] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111534.380379] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111535.712405] wlan0: Trigger new scan to find an IBSS to join
-[111541.621646] wlan0: Trigger new scan to find an IBSS to join
-[111544.755981] wlan0: Creating new IBSS network, BSSID 72:06:bb:e2:44:34
-[111544.817710] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111544.818623] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111546.186140] wlan0: Trigger new scan to find an IBSS to join
-[111551.332991] wlan0: Trigger new scan to find an IBSS to join
-[111554.467270] wlan0: Creating new IBSS network, BSSID 2a:49:ae:30:50:9e
-[111554.533525] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111554.534350] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111555.904319] wlan0: Trigger new scan to find an IBSS to join
-[111561.555433] wlan0: Trigger new scan to find an IBSS to join
-[111564.587401] wlan0: Creating new IBSS network, BSSID aa:87:38:e5:ae:c0
-[111564.661200] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111564.662171] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111565.981796] wlan0: Trigger new scan to find an IBSS to join
-[111568.625818] iwlagn 0000:03:00.0: failed to remove IBSS station
-00:00:00:00:00:00
-[111631.701608] ADDRCONF(NETDEV_UP): wlan0: link is not ready
-[111631.829391] ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
-[111631.833307] wlan0: Trigger new scan to find an IBSS to join
-[111634.393859] iwlagn 0000:03:00.0: failed to remove IBSS station
-00:00:00:00:00:00
-[111634.705546] wlan0: Trigger new scan to find an IBSS to join
-[111639.969168] wlan0: Trigger new scan to find an IBSS to join
-[111642.456143] wlan0: no IPv6 routers present
-[111643.095083] wlan0: Creating new IBSS network, BSSID ce:27:15:66:ab:a8
-[111643.095541] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111643.096508] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111644.424790] wlan0: Trigger new scan to find an IBSS to join
-[111649.672932] wlan0: Trigger new scan to find an IBSS to join
-[111652.806533] wlan0: Creating new IBSS network, BSSID fe:a3:87:bf:ed:2f
-[111652.812108] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111652.813077] iwlagn 0000:03:00.0: Unable to find TIM Element in beacon
-[111654.639431] iwlagn 0000:03:00.0: Error sending
-REPLY_TX_POWER_DBM_CMD: time out after 500ms.
-[111654.639443] iwlagn 0000:03:00.0: Error sending TX power (-110)
-[111654.639447] ------------[ cut here ]------------
-[111654.639477] WARNING: at
-/home/kernel-ppa/COD/linux/drivers/net/wireless/iwlwifi/iwl-core.c:1898
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]()
-[111654.639482] Hardware name: 4384BB3
-[111654.639484] Modules linked in: nf_nat_h323 nf_conntrack_h323
-nf_nat_pptp nf_conntrack_pptp nf_conntrack_proto_gre nf_nat_proto_gre
-nf_nat_tftp nf_conntrack_tftp nf_nat_sip nf_conntrack_sip nf_nat_irc
-nf_nat_ftp cdc_acm usbhid hid xt_limit xt_tcpudp ipt_LOG
-ipt_MASQUERADE xt_DSCP ipt_REJECT nf_conntrack_irc nf_conntrack_ftp
-xt_state nls_iso8859_1 nls_cp437 vfat fat binfmt_misc vboxnetadp
-vboxnetflt vboxdrv microcode parport_pc ppdev iptable_nat nf_nat
-nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_mangle
-iptable_filter ip_tables x_tables uvcvideo snd_hda_codec_hdmi
-snd_hda_codec_conexant arc4 videodev v4l2_compat_ioctl32 snd_hda_intel
-snd_hda_codec snd_hwdep joydev snd_pcm hdaps thinkpad_ec iwlagn
-snd_seq_midi iwlcore psmouse snd_rawmidi snd_seq_midi_event mac80211
-snd_seq serio_raw tpm_tis tpm lp parport thinkpad_acpi tpm_bios nvram
-snd_timer snd_seq_device cfg80211 snd intel_ips soundcore
-snd_page_alloc sha256_generic aesni_intel cryptd aes_x86_64
-aes_generic dm_crypt usb_storage uas i915 ahci drm_kms_helper
-firewire_ohci e1000e libahci sdhci_pci firewire_core drm sdhci
-crc_itu_t i2c_algo_bit video
-[111654.639584] Pid: 1317, comm: wpa_supplicant Tainted: G        W
-2.6.38-020638rc7-generic #201103020909
-[111654.639586] Call Trace:
-[111654.639594]  [<ffffffffa02e6c7e>] ?
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]
-[111654.639599]  [<ffffffffa02e6c7e>] ?
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]
-[111654.639605]  [<ffffffff81065430>] ? warn_slowpath_common+0x90/0xc0
-[111654.639608]  [<ffffffff8106547a>] ? warn_slowpath_null+0x1a/0x20
-[111654.639612]  [<ffffffffa02e6c7e>] ?
-iwl_mac_change_interface+0x12e/0x130 [iwlcore]
-[111654.639626]  [<ffffffffa02869ec>] ?
-ieee80211_runtime_change_iftype+0xdc/0x180 [mac80211]
-[111654.639633]  [<ffffffffa0286b85>] ?
-ieee80211_if_change_type+0xf5/0x120 [mac80211]
-[111654.639641]  [<ffffffffa028995b>] ?
-ieee80211_change_iface+0x3b/0x130 [mac80211]
-[111654.639650]  [<ffffffffa01bf898>] ?
-cfg80211_change_iface+0xe8/0x1c0 [cfg80211]
-[111654.639657]  [<ffffffffa01d78f6>] ?
-cfg80211_wext_siwmode+0xa6/0xf0 [cfg80211]
-[111654.639661]  [<ffffffff8158a4cb>] ? ioctl_standard_call+0x6b/0xf0
-[111654.639664]  [<ffffffff8158a460>] ? ioctl_standard_call+0x0/0xf0
-[111654.639666]  [<ffffffff81589882>] ? wireless_process_ioctl+0x102/0x130
-[111654.639668]  [<ffffffff8158afe0>] ? ioctl_private_call+0x0/0xa0
-[111654.639670]  [<ffffffff8158afe0>] ? ioctl_private_call+0x0/0xa0
-[111654.639672]  [<ffffffff8158a460>] ? ioctl_standard_call+0x0/0xf0
-[111654.639675]  [<ffffffff8158991c>] ? wext_ioctl_dispatch+0x6c/0x90
-[111654.639677]  [<ffffffff81589b66>] ? wext_handle_ioctl+0x46/0x90
-[111654.639680]  [<ffffffff814ad76a>] ? sockfd_lookup_light+0x4a/0x80
-[111654.639683]  [<ffffffff814c687b>] ? dev_ioctl+0x28b/0x2a0
-[111654.639685]  [<ffffffff814ad25f>] ? sock_ioctl+0xbf/0x280
-[111654.639688]  [<ffffffff811704bd>] ? vfs_ioctl+0x1d/0x50
-[111654.639690]  [<ffffffff81170f79>] ? do_vfs_ioctl+0x69/0x1d0
-[111654.639692]  [<ffffffff81171174>] ? sys_ioctl+0x94/0xa0
-[111654.639695]  [<ffffffff8100c002>] ? system_call_fastpath+0x16/0x1b
-[111654.639697] ---[ end trace fb86611b81442166 ]---
+http://www.linux-iscsi.org/index.php/Qlogic
+http://www.linux-iscsi.org/wiki/QLogic/configFS
 
-I think the crash happens when the phone attempts to get an IP, at
-least that's what the phone says right after/at the crash. Any ideas?
+There have been a number of important bugfixes, improvements, and cleanups
+since this was originally posted in December, including changes to address
+a number of naming conventions to follow existing qla2xxx LLD code.  Many
+thanks to Madhu Iyengar and the Qlogic team for their review and feedback.
+Also thanks to Ruediger Oertel (and others) for testing with the lastest BETA
+lio-core-2.6.git/tcm_qla2xxx-38 code and providing their helpful feedback.
 
-// Mathias
+There are a few specific items that we (Madhu+myself) have been discussing
+off-list, from which we would like to get input from the larger set of
+Linux/SCSI devels (James, Christoph) as well as distro folks (Hannes and Mike)
+before larger re-org changes to the current functioning code are considered.
+
+The biggest item up for discussion is that currently qla_target.c is built
+directly into qla2xxx.ko, and qla2xxx LLD control plane and I/O codepaths have
+been modified to make function calls into qla_target.c logic.  There are currently
+some a handful of locations where target mode is incorrectly assumed to be enabled
+for all cases (this will be addressed for RFC-v3), as we do require the ability to
+run in target only mode, initiator only mode, and mixed T/I modes.
+
+So one of the questions we have is how qla_target.c and associated LLD changes
+can best be integrated into the mainline and distro qla2xxx drivers so that they
+cause as minimal disruption to existing initiator mode operation as possible.
+
+We had an idea to split the main qla_target.c logic into an external module
+(eg: into tcm_qla2xxx.ko) and only keep the basic target mode definitions in
+qla2xxx LLD, and communicate to external qla_target.c/tcm_qla2xxx code through
+a series of LLD specific callbacks setup during the tcm_qla2xxx_lport
+initialization and association to the scsi_qla_host_t being configured to run
+in target mode.  This would move a great deal of QLA2XXX target mode specific
+logic into tcm_qla2xxx, but would still require some level of target mode setup
+logic within the existing qla2xxx LLD to allow tcm_qla2xxx to function properly.
+
+(jejb, hch, hare, mnc, please add your comments here)
+
+A list of the changes to existing qla2xxx LLD code is available here:
+
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob_plain;f=Documentation/target/tcm_qla2xxx_arch_doc.txt;hb=refs/heads/tcm_qla2xxx-38
+
+So wrt to the current RFC-v2 series, things are broken up into three individual patches:
+
+The qla2xxx LLD changes in patch #1 and #2 where originally based on qla2x00t
+v8.02.01-k4 / .26 and qla2x00t-target.ko from the SCST project, and are a modern
+refactoring -> forward port of this logic to recent mainline target and qla2xxx
+LLD code.
+
+Patch #1 adds the main qla2x_target.c logic and associated headers into the
+qla2xxx LLD, including the main struct qla_target_template API for interaction
+with tcm_qla2xxx.
+
+Patch #2 adds the various callbacks into struct qla_hw_data->qla2x_tmpl and
+qla2x_target.c logic within the qla2xxx LLD proper.  Please see the above
+tcm_qla2xxx_arch_doc.txt for info.
+
+Patch #3 adds the seperate tcm_qla2xxx fabric module using a generic configfs
+control plane on modern v4 target mode code.  This module defines it's own set
+of struct qla_target_template callers for interaction with qla2x_target.c ->
+qla2xxx LLD code.
+
+The first RFC series is available here:
+
+http://marc.info/?l=linux-scsi&m=129244523223528&w=2
+
+Please have a look and add your comments.
+
+Thanks!
+
+--nab
+
+Nicholas Bellinger (3):
+  qla2xxx: Add target mode support into 2xxx series LLD code
+  qla2xxx: Enable 2xxx series LLD target mode support
+  tcm_qla2xxx: Add HW target mode I/O, control and TMR path code
+
+ drivers/scsi/qla2xxx/Makefile                     |    4 +-
+ drivers/scsi/qla2xxx/qla_attr.c                   |   13 +-
+ drivers/scsi/qla2xxx/qla_dbg.h                    |   34 +
+ drivers/scsi/qla2xxx/qla_def.h                    |   68 +-
+ drivers/scsi/qla2xxx/qla_fw.h                     |   10 +
+ drivers/scsi/qla2xxx/qla_gbl.h                    |   11 +
+ drivers/scsi/qla2xxx/qla_gs.c                     |   13 +-
+ drivers/scsi/qla2xxx/qla_init.c                   |  249 +-
+ drivers/scsi/qla2xxx/qla_iocb.c                   |  106 +-
+ drivers/scsi/qla2xxx/qla_isr.c                    |  229 +-
+ drivers/scsi/qla2xxx/qla_mbx.c                    |  173 +-
+ drivers/scsi/qla2xxx/qla_mid.c                    |   34 +-
+ drivers/scsi/qla2xxx/qla_os.c                     |  168 +-
+ drivers/scsi/qla2xxx/qla_target.c                 | 5185 +++++++++++++++++++++
+ drivers/scsi/qla2xxx/qla_target.h                 | 1107 +++++
+ drivers/target/Kconfig                            |    1 +
+ drivers/target/Makefile                           |    2 +
+ drivers/target/tcm_qla2xxx/Kconfig                |    7 +
+ drivers/target/tcm_qla2xxx/Makefile               |    6 +
+ drivers/target/tcm_qla2xxx/tcm_qla2xxx_base.h     |  102 +
+ drivers/target/tcm_qla2xxx/tcm_qla2xxx_configfs.c | 1439 ++++++
+ drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.c   |  853 ++++
+ drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.h   |   53 +
+ 23 files changed, 9809 insertions(+), 58 deletions(-)
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.c
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.h
+ create mode 100644 drivers/target/tcm_qla2xxx/Kconfig
+ create mode 100644 drivers/target/tcm_qla2xxx/Makefile
+ create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_base.h
+ create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_configfs.c
+ create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.c
+ create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.h
+
+-- 
+1.7.4.1
+
