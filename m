@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1CDFjr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 00:39:47 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:60477 "EHLO smtps.tip.net.au"
+	id S1751472Ab1CDFjL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 00:39:11 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60459 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751577Ab1CDFjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 00:39:13 -0500
-Date: Fri, 4 Mar 2011 16:39:11 +1100
+	id S1751099Ab1CDFiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 00:38:54 -0500
+Date: Fri, 4 Mar 2011 16:38:49 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, "Igor M. Liplianin" <liplianin@me.by>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Timo von Holtz <tvh@informatik.uni-kiel.de>,
+        Alan Cox <alan@linux.intel.com>
 Subject: linux-next: manual merge of the staging tree with the v4l-dvb tree
-Message-Id: <20110304163911.034f7f27.sfr@canb.auug.org.au>
+Message-Id: <20110304163849.651cfbbe.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Greg,
 
 Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/Makefile between commit
-a1256092a1e87511c977a3d0ef96151cda77e5c9 ("[media] Altera FPGA firmware
-download module") from the v4l-dvb tree and commit
-0867b42113ec4eb8646eb361b15cbcfb741ddf5b ("staging: gma500: Intel GMA500
-staging driver") from the staging tree.
+drivers/staging/usbvideo/vicam.c between commit
+af6302700e87a883481c342001ef81b77641bf98 ("[media] staging-usbvideo:
+remove") from the v4l-dvb tree and commits
+046d747e0d2cb597e0b6fa4a79c32b43e97ed792 ("Staging: usbvideo: vicam:
+fixed some coding style issues") and
+38a26ef272d8a93c88de54d8d3bd14ac3ce36056 ("staging: usbvideo: vicam: Fix
+build in -next") from the staging tree.
 
-One of the reasons I dislike unrelated white space changes ... I fixed it
-up (see below) and can carry the fix as necessary.
--- 
+I removed the file.
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc drivers/staging/Makefile
-index 0269142,0983edc..0000000
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@@ -61,13 -61,13 +61,14 @@@ obj-$(CONFIG_SOLO6X10)		+= solo6x10
-  obj-$(CONFIG_TIDSPBRIDGE)	+= tidspbridge/
-  obj-$(CONFIG_ACPI_QUICKSTART)	+= quickstart/
-  obj-$(CONFIG_WESTBRIDGE_ASTORIA)	+= westbridge/astoria/
-- obj-$(CONFIG_SBE_2T3E3)	+= sbe-2t3e3/
-+ obj-$(CONFIG_SBE_2T3E3)		+= sbe-2t3e3/
-  obj-$(CONFIG_ATH6K_LEGACY)	+= ath6kl/
-  obj-$(CONFIG_USB_ENESTORAGE)	+= keucr/
-- obj-$(CONFIG_BCM_WIMAX)	+= bcm/
-+ obj-$(CONFIG_BCM_WIMAX)		+= bcm/
-  obj-$(CONFIG_FT1000)		+= ft1000/
-- obj-$(CONFIG_SND_INTEL_SST)		+= intel_sst/
-- obj-$(CONFIG_SPEAKUP)	+= speakup/
-+ obj-$(CONFIG_SND_INTEL_SST)	+= intel_sst/
-+ obj-$(CONFIG_SPEAKUP)		+= speakup/
- +obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
-  obj-$(CONFIG_TOUCHSCREEN_CLEARPAD_TM1217)	+= cptm1217/
-  obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)	+= ste_rmi4/
-+ obj-$(CONFIG_DRM_PSB)		+= gma500/
+--Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNcHrpAAoJEDMEi1NhKgbsPzoH/AnWCi/H55/wKzoTRUPvB+Co
+NLLvhew7/pwDW5qZNosZoZlDDdjjtdQ0ugrR3EIynhXfqMuYex7mgB7fcrY0yemH
+n7FTiTETYAw/XRAiUtAdsM5NeirkNG0Ots4LAVkch5ieXW8WqfeEIp4PuvdRRw0s
+vgc18f+/utmYGHaYilBxq8JcoB+V6DVf1s1sjc+3zf3LnPBkZTsDxDp3LjM/TchR
+uxl3m+z7cGpBGQ7yfhb9Nmu4xu5uzRadhd0W6M9P4d+mh1ZqhefCJFLZzy/g0NIa
+L7YvrKiTSCNu9PGzvY6lWd40HppoYbRKOqZknMtBzl03UOoOcDzsX/XnGGCQjlU=
+=voAM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ--
