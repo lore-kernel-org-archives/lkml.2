@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759820Ab1CDQPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:15:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53325 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759427Ab1CDQPq (ORCPT
+	id S1759874Ab1CDQQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:16:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41871 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759708Ab1CDQQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:15:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vFCFV3C39UOiEDmBlFQn33hRTg00M0KBRpFqr9ThLI8EmnIGSapp/aXWMJfbVPQzwl
-         GktK4xiwpntt/UGwDynt+8io945WTGc+iS+mzKcQabk8hbCw4TlnrOZ6PB30oBJ8wt14
-         kyl6Ht0awFpBBESkg79+pDAu4LZNksOZ/pogw=
-Date: Fri, 4 Mar 2011 17:15:41 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110304161541.GV20499@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <20110303173422.GA27960@redhat.com>
- <20110304084441.GB20499@htj.dyndns.org>
- <20110304160151.GA23553@redhat.com>
+	Fri, 4 Mar 2011 11:16:23 -0500
+Message-ID: <4D710FF9.6040305@ru.mvista.com>
+Date: Fri, 04 Mar 2011 19:14:49 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304160151.GA23553@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andres Salomon <dilinger@queued.net>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Amit Kucheria <amit.kucheria@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: mx51_efika: update platform data for new mfd changes
+References: <20110304080653.3f2c3f19@debxo>
+In-Reply-To: <20110304080653.3f2c3f19@debxo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+Hello.
 
-On Fri, Mar 04, 2011 at 05:01:51PM +0100, Oleg Nesterov wrote:
-> What I meant, I think the exact details can be discussed separately.
-> Say, personally I'd prefer 2 different requests, ATTACH && INTERUPT,
-> but I think this is very minor, and I agree with everything as long
-> as user-space developers do not object. I just tried to avoid the
-> discussion of the "cosmetic" details at this point.
+Andres Salomon wrote:
 
-Understood.  One thing tho.  Do you think having ATTACH_NO_STOP would
-be better?  I think that's a noticeable difference.  To me, it seems
-to only complicate things.  If we decide to go for
-ATTACH_STOP_WITHOUT_SIDE_EFFECT then the difference between that and
-INTERRUPT again becomes really small, so that was the reason why I
-proposed to have a unified one.
+> Note that this relies on stuff currently in mfd's next tree, but this
+> is also a newer driver.  I'm not sure which tree it should go through,
+> as it's a problem that shows up in next.
 
-Thanks.
+    This passage should be under --- tear line.
 
--- 
-tejun
+> From: Andres Salomon <dilinger@queued.net>
+
+> MFD changes in c738892f cause the mc13xxx_platform_data struct
+
+    Linus asks to also specify the commit summary in parens.
+
+> to change.  This changes one more (new) user of it, fixing a build
+> error.
+
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+
+WBR, Sergei
