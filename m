@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab1CDJFE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 04:05:04 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:63122 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab1CDJE6 (ORCPT
+	id S1759352Ab1CDJFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 04:05:15 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:37058 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759344Ab1CDJFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 04:04:58 -0500
+	Fri, 4 Mar 2011 04:05:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PpwGyGBUKjnirhH4DgCAalao7qtWHroGkCVCaShe5PY3okEBMox5v3y3o7oYukJtz6
-         Dv1Rgm8YJ591kHfiNrYeqiwlUUAJiWZeI5cCxzMmURcALGoLBDyAH8yLX1Sfie3gvxqq
-         BKsNdtak8W4t+Y95LAJndEjWM8iUtX/LYa6TQ=
-Date: Fri, 4 Mar 2011 01:04:51 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dudley Du <dudl@cypress.com>
-Cc: "rubini@ipvvis.unipv.it" <rubini@cvml.unipv.it>,
-        "olofj@google.com" <olofj@google.com>,
-        "micahc@google.com" <micahc@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mouse: Add new i2c-based input mouse driver into input
- subsystem for Cypress i2c trackpad devices.
-Message-ID: <20110304090450.GB4323@core.coreip.homeip.net>
-References: <B27AC323FA92C946BA36D2913DDC8E3701FD6F0B1A3B@VMBX126.ihostexchange.net>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=L0JX/1wuQ3C1h/m94h8/IdTr6RxaON6kAJseIrnoamZuaS9W8ihQ/3BymNVnJXpYft
+         m5qoNmEbo/8FNBCjeYKJJcC20GNl9HM8aDLt4Eos/Zc04uGbZDPkEjgob5v0ne6uvPQg
+         7P92YuQz//BC3z3csSduKBB/ftCzD40eJrYzI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B27AC323FA92C946BA36D2913DDC8E3701FD6F0B1A3B@VMBX126.ihostexchange.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <190369924.284397.1299226860624.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+References: <20110303142453.GA21064@saboteur.suse.cz>
+	<190369924.284397.1299226860624.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+Date: Fri, 4 Mar 2011 01:04:54 -0800
+Message-ID: <AANLkTim+AdMqho4m45oiz=-QBCsZopncraRnkD52XGQL@mail.gmail.com>
+Subject: Re: [LTP] [ANNOUNCE] The Linux Test Project has been released for
+ FEBRUARY 2011.
+From: Garrett Cooper <yanegomi@gmail.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: Cyril Hrubis <chrubis@suse.cz>, ltp-list@lists.sf.net, vapier@gentoo.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Paolo Ciarrocchi <paolo.ciarrocchi@gmail.com>,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dudley,
+On Fri, Mar 4, 2011 at 12:21 AM, CAI Qian <caiqian@redhat.com> wrote:
+>
+>> Well, I don't see what would be gained by merging parts of the LTP into
+>> kernel tree. As I said before, this would probably lead to splitting of
+>> the forces (and not that we have a lot to split anyway). LTP already has
+>> directory called testcases/kernel/, LTP is in the git repository and we
+>> have a mailing list. All that is needed is people start noticing that
+>> we are here.
+> Then, the approach to merge parts of LTP to kernel is to say "Here we are,
+> please accept our best". On the other hand, I have noticed that there are
+> many developers tend to have test code in their kernel submit changelog
+> which isn't it better to make life easier for them to add those testing
+> code in a proper place in kernel which in-turn to benefit in a long run.
+>
+>> I don't think that it's easy to say if some tests are testing
+>> kernel/userspace. Sometimes the line isn't that clear.
+> There are C code as in kernel coding style. Scripting code like Bash, Perl
+> better to re-written in C that in a long run when there are something like
+> thousands of tests to run that performance/scalabitlies/maintenence is going
+> to matter just like to write an OS.
+>
+>> Well, requiring maintainers to sign-off your tests is kind of dull. That
+>> would probably block the tests from being accepted just because
+>> maintainers don't care too much/have different things to do.
+> The idea is to raise a bar to get the best out of it. If maintainers don't
+> care too much about the testing right now that is fine. There are many people
+> they do care. A particular subsystem maintainer and its tests maintainer
+> aren't necessary to be the same person because subsystem maintainer isn't
+> necessary to be the best one to find/acknowledge defeats for code he maintained.
+>
+>> You can't easily prove that something is best ;).
+> The best will at lest be reviewed by eyes from the kernel community and
+> experts, and will be the one to be accepted by the community.
+>
+>> Once again, LTP does exist so reference to LTP is not ambiguous. Yes,
+>> it's, for historical reasons, hosted on sourceforge rather than
+>> kernel.org. But there it is.
+> By accepted into the kernel, it certainly make it easier to reference
+> without dealing with two projects and trees.
 
-On Fri, Mar 04, 2011 at 03:48:21AM -0500, Dudley Du wrote:
-> Hi Linux-Input Maintainers,
-> 
-> This patch adds new i2c-based input mouse driver into input subsystem for
-> Cypress i2c trackpad devices. Through this new added driver,
-> Cypress i2c trackpad devices will be supported in Linux based system
-> which are developed based on Cypress self-designed PSOC chipset.
-> The function of this driver reads trackpad data using i2c interfaces
-> and report cursor moving data and gesture combined keys to input subsystem.
-> 
-> This driver adds one driver main file cypress.c in drivers/input/mouse directory,
-> and one header file cyapa.h in include/linux directory,
-> and modified Kconfig and Makefile files in drivers/input/mouse directory to include this driver.
-> 
-> Attached is the patch file for this driver and bellow is the content of this driver.
-> 
-
-Could you please try describing capabilities of your device. From the
-glancing at it it looks like it supports some form of multi-touch...
-
->From the very rough code scanning there appears to be huge amount of
-code that reinterprets data coming from the device and converts it into
-gestures (virtual keyboard, virtual wheel hanlding, etc, etc). Such
-processing does not belong to the kernel driver but rather to userspace.
-Please take a look and other touchpad drivers in the kernel (synaptics,
-alps, elantech, bcm, and so for) and how they are work in tandem with
-synaptics X driver which provides advanced gesture handling.
-
-I also question why one would give choise between using relative and
-absolute reporting when absolute mode provides more data for gesture
-processing. Also polling mode is probably unsuitable for production
-driver and so I'd recommend dropping it for the mainline submission.
-
-Thanks.
-
--- 
-Dmitry
+I'm sorry for even starting this bikeshed discussion. Let's just bury
+the hatchet and get back to work on more fruitful things.
+Thanks,
+-Garrett
