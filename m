@@ -1,368 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab1CDHAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 02:00:37 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57310 "EHLO smtps.tip.net.au"
+	id S1751423Ab1CDHIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 02:08:18 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36320 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751421Ab1CDHAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 02:00:35 -0500
-Date: Fri, 4 Mar 2011 18:00:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for March 4
-Message-Id: <20110304180027.20deb6c4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__4_Mar_2011_18_00_27_+1100_fwQ/fzoFawMdDaej"
+	id S1750809Ab1CDHIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 02:08:17 -0500
+Date: Fri, 4 Mar 2011 08:08:02 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: David Rientjes <rientjes@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        brgerst@gmail.com, shaohui.zheng@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] x86, mm: Clean up initmem_init
+Message-ID: <20110304070802.GA27618@elte.hu>
+References: <tip-ffe77a4605fb2588f8666850ad3e3b196241658f@git.kernel.org>
+ <alpine.DEB.2.00.1102191906180.31263@chino.kir.corp.google.com>
+ <20110221083511.GC31267@htj.dyndns.org>
+ <alpine.DEB.2.00.1103031231060.9993@chino.kir.corp.google.com>
+ <4D700B93.2080807@gmail.com>
+ <alpine.DEB.2.00.1103031359070.4141@chino.kir.corp.google.com>
+ <4D701015.2040703@kernel.org>
+ <alpine.DEB.2.00.1103031404510.4141@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1103031404510.4141@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__4_Mar_2011_18_00_27_+1100_fwQ/fzoFawMdDaej
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+* David Rientjes <rientjes@google.com> wrote:
 
-Changes since 20110303:
+> On Thu, 3 Mar 2011, Yinghai Lu wrote:
+> 
+> > he want
+> > 
+> > > +#ifdef CONFIG_ACPI_NUMA
+> > >> > +		ret = numa_init(x86_acpi_numa_init);
+> > >> > +		if (!ret)
+> > >> > +			return;
+> > >> > +#endif
+> > >> > +#ifdef CONFIG_AMD_NUMA
+> > >> > +		ret = numa_init(amd_numa_init);
+> > >> > +		if (!ret)
+> > >> > +			return;
+> > >> > +#endif
+> > 
+> > to be replaced by:
+> > 
+> > > +#ifdef CONFIG_ACPI_NUMA
+> > >> > +		if (!numa_init(x86_acpi_numa_init))
+> > >> > +			return;
+> > >> > +#endif
+> > >> > +#ifdef CONFIG_AMD_NUMA
+> > >> > +		if (!numa_init(amd_numa_init))
+> > >> > +			return;
+> > >> > +#endif
+> 
+> It's a matter of style and I think it's up to Ingo what he'd prefer to 
+> see.
 
-Dropped tree: xen
+I think your variant is cleaner: hiding function call side-effects in conditionscan 
+be a fragile thing to do. We want constant expressions with no side-effects - so if 
+functions are called they should be constant functions as well.
 
-The i.MX tree gained a conflict against the arm tree.
+Code compactness isn't everything - if it was we'd be using C to the max to create 
+unreadable compound expressions all the time.
 
-The s5p tree gained a conflict against the i.MX tree.
+Thanks,
 
-The v4l-dvb tree lost its build failure.
-
-The net tree gained a conflict against the i.MX tree.
-
-The usb tree gained a conflict against the i.MX tree.
-
-The staging tree gained conflicts against the v4l-dvb tree.
-
-The powerpc allyesconfig build is still broken by some obscure bloating
-of the low memory code.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 184 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-mxs/gpio.c
-Merging linux-spec/for-next
-Merging msm/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
-.h
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-CONFLICT (content): Merge conflict in arch/arm/mm/Kconfig
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-CONFLICT (content): Merge conflict in arch/arm/configs/u8500_defconfig
-CONFLICT (content): Merge conflict in arch/arm/mach-ux500/cpu-db8500.c
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-CONFLICT (content): Merge conflict in drivers/video/Kconfig
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-CONFLICT (content): Merge conflict in drivers/hwmon/Makefile
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-CONFLICT (content): Merge conflict in arch/alpha/Kconfig
-CONFLICT (content): Merge conflict in arch/parisc/Kconfig
-CONFLICT (content): Merge conflict in arch/sparc/Kconfig
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_ata.c
-CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_scsi_host.c
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/Kconfig
-CONFLICT (content): Merge conflict in drivers/net/bnx2x/bnx2x.h
-CONFLICT (content): Merge conflict in lib/Makefile
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-mx27_3ds.c
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-pcm038.c
-CONFLICT (content): Merge conflict in arch/arm/mach-mx3/mach-mx31_3ds.c
-CONFLICT (content): Merge conflict in arch/arm/mach-mx3/mach-mx31moboard.c
-CONFLICT (content): Merge conflict in drivers/mfd/davinci_voicecodec.c
-CONFLICT (content): Merge conflict in drivers/mfd/ucb1x00-ts.c
-CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in MAINTAINERS
-CONFLICT (content): Merge conflict in fs/eventpoll.c
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in arch/x86/kernel/acpi/sleep.c
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-CONFLICT (content): Merge conflict in include/linux/pci_ids.h
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in arch/x86/kernel/vmlinux.lds.S
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-CONFLICT (content): Merge conflict in drivers/hwmon/lm85.c
-Applying: OLPC: fix for removal of run_wake_count
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
-CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-4430sdp.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3evm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/clock3xxx_data.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/usb-musb.c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/include/plat/usb.h
-CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
-CONFLICT (content): Merge conflict in drivers/usb/gadget/fsl_mxc_udc.c
-CONFLICT (content): Merge conflict in drivers/usb/musb/musb_core.h
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/Kconfig
-CONFLICT (content): Merge conflict in drivers/staging/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmsmac/wl=
-_mac80211.c
-CONFLICT (delete/modify): drivers/staging/dabusb/dabusb.c deleted in HEAD a=
-nd modified in staging/staging-next. Version staging/staging-next of driver=
-s/staging/dabusb/dabusb.c left in tree.
-CONFLICT (delete/modify): drivers/staging/dabusb/dabusb.h deleted in HEAD a=
-nd modified in staging/staging-next. Version staging/staging-next of driver=
-s/staging/dabusb/dabusb.h left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/easycap/easycap_ioctl=
-.c
-CONFLICT (delete/modify): drivers/staging/usbvideo/usbvideo.c deleted in HE=
-AD and modified in staging/staging-next. Version staging/staging-next of dr=
-ivers/staging/usbvideo/usbvideo.c left in tree.
-CONFLICT (delete/modify): drivers/staging/usbvideo/vicam.c deleted in HEAD =
-and modified in staging/staging-next. Version staging/staging-next of drive=
-rs/staging/usbvideo/vicam.c left in tree.
-$ git rm -f drivers/staging/usbvideo/usbvideo.c
-$ git rm -f drivers/staging/usbvideo/vicam.c
-$ git rm -f drivers/staging/dabusb/dabusb.c drivers/staging/dabusb/dabusb.h
-Merging slabh/slabh
-Merging bkl-config/config
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-
---Signature=_Fri__4_Mar_2011_18_00_27_+1100_fwQ/fzoFawMdDaej
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNcI4LAAoJEDMEi1NhKgbsViYH/2XaWsCup0oCWpTdjRNDlHEh
-ReMom5NRMsl/Y6UbR3kau30vBERl2WezwxS0VyhfKEZ+OTELCFGIpUguDpiziKJP
-o/5MVcZSHcMRiCqPwWQBJjXtyakqnS9AXMfguZtCxn5CFgGWAgNEd/PfFtnesEnj
-+ip0Vzeagc219kU0QqVEjG+QrXk1siZmazg6H0IDnZvkNWFJ7pgbPx/Qfijg51fV
-yhVyZhZnqR+V8gUTAKATZUL4WXoPJ3h5EOmwvRcHIlH98sWpj1rEfz7+aLQcZMkT
-pKQCbkXNZGQOv8B4mPnmjrfKgTOEdVet6yvSsv/rH5yYTc/oIe4X2S1R1p5IGbs=
-=tNKp
------END PGP SIGNATURE-----
-
---Signature=_Fri__4_Mar_2011_18_00_27_+1100_fwQ/fzoFawMdDaej--
+	Ingo
