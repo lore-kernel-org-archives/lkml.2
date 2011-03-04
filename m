@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab1CDOUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:20:53 -0500
-Received: from elasmtp-spurfowl.atl.sa.earthlink.net ([209.86.89.66]:35739
-	"EHLO elasmtp-spurfowl.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752492Ab1CDOUv (ORCPT
+	id S932414Ab1CDOVZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:21:25 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64903 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932230Ab1CDOVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:20:51 -0500
-X-Greylist: delayed 687 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 09:20:51 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=bZQipMR0/7GCAekI3bFLQ7U58lAoxZzOgyQ98XlulkTwXnDl4vy26V1C30yeR3HO;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4D70F286.5040508@earthlink.net>
-Date: Fri, 04 Mar 2011 09:09:10 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Fri, 4 Mar 2011 09:21:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tU/xYH+2aqYNjhfuztrAD1q0wDLOFZRFlH+LXDcDW1EL+gfL+5HQP0H0kdw7nv/Rhm
+         bj+1c5JaCewYGDFU3ZWH+JsN28RZx85Nkvjl46gnI6zvslwIRJiegFdwCwkX1l7BooRY
+         reGsjuLgsKZnpoRpm19dnsXmVMD02z0tK8PX0=
+Date: Fri, 4 Mar 2011 15:21:15 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf lock: clean the options for perf record
+Message-ID: <20110304142113.GC1972@nowhere>
+References: <1298389415.2217.243.camel@twins>
+ <20110222182206.GB1799@nowhere>
+ <4D648A65.2040107@dcl.info.waseda.ac.jp>
+ <4D667D60.5010903@dcl.info.waseda.ac.jp>
+ <20110224165014.GB1840@nowhere>
+ <4D67E286.8010907@dcl.info.waseda.ac.jp>
+ <AANLkTikUGO=Obm7Ue4VzEueQ7DERPiwci1VV9NmKZf1u@mail.gmail.com>
+ <4D70B3E1.8020108@dcl.info.waseda.ac.jp>
+ <20110304135635.GB1972@nowhere>
+ <1299247099.24454.3.camel@twins>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Mark Lord <kernel@teksavvy.com>, Krzysztof Halasa <khc@pm.waw.pl>,
-        linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: NEC ND-4550A problems reading DVD-R
-References: <m339n7g7tw.fsf@intrepid.localdomain> <20110301080153.GA26074@htj.dyndns.org> <4D6CF92A.4020105@teksavvy.com> <4D6D151D.8030307@earthlink.net> <20110304110757.GJ20499@htj.dyndns.org>
-In-Reply-To: <20110304110757.GJ20499@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79feaeadb27a0a162da65ae7d2f5216f0a350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299247099.24454.3.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2011 06:07 AM, Tejun Heo wrote:
-> (cc'ing Jens and James)
->
-> On Tue, Mar 01, 2011 at 10:47:41AM -0500, Stephen Clark wrote:
->    
->> On 03/01/2011 08:48 AM, Mark Lord wrote:
->>      
->>> On 11-03-01 03:01 AM, Tejun Heo wrote:
->>> ..
->>>        
->>>> I think that's determined by drivers/scsi/sr.h::SR_TIMEOUT which is
->>>> hardcoded to be 30 seconds.  Maybe it's better to move it to use the
->>>> block parameter.  Anyways, the drive actually takes longer than 30secs
->>>> to recognize the media?
->>>>          
->>> That slow behaviour is not uncommon, especially as drives struggle
->>> to recognize various forms of copy-protected media (DVD-Video).
->>> A longer default, or tuneable timeout, would help.
->>>        
->> I agree with Mark, this should be a user tuneable value. My 2006 LG
->> dvd-rw frequently times out
->> trying to identify the media. But after numerous timeout error
->> messages it usually suceeds.
->>      
-> I don't think it should be a user tunable value.  It should be
-> something automatic.  I mean, how many would know to go some cryptic
-> place and increase sr probing timeout?
->
-> At the same time, increasing it for other cases is quite unattractive,
-> so it probably would be a good idea to only use higher timeout value
-> for the TUR right after media presence change event.
->
-> Anyone interested in doing it?
->
-> Thanks.
->
->    
-I don't see this as being any different than all the other obfuscated 
-tunable values that already
-exists. At least I could google or look around for a tunable and maybe 
-change it myself instead of having to
-patch the source.
+On Fri, Mar 04, 2011 at 02:58:19PM +0100, Peter Zijlstra wrote:
+> On Fri, 2011-03-04 at 14:56 +0100, Frederic Weisbecker wrote:
+> > lockstat is a global measurement since the boot.
+> 
+> You can reset lockstat at any given time.
 
--- 
+Event though, that's still a global profiling. You can't have a per
+process or thread granularity.
 
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
+Or even more precise context for some future feature in perf that
+I have in mind and would like to implement soon, like counting/sampling
+an event only between two others. More exactly having two lists for
+each event:
 
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
+* activate
+* deactivate
 
+Those on the first list activate the target event when they overflow. (->start() )
+Those on the second list deactivate .... (->stop() )
 
+With events in activate and deactivate in the same context than the target,
+locking and permissions should be kept simple. Locking especially shouldn't be
+needed in the fast path. Then if that's needed we could think about a cross
+context things later.
 
+Plus an attr->start_state that decides if the first ->add() made is made
+with PERF_EF_STAT or not. (We then need to keep track of some activated/deactivated
+state across schedules).
+
+That's in fact the exclude_irq and exclude_softirq idea extended to any kind
+of existing event.
