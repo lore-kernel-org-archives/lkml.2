@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759427Ab1CDPZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:25:10 -0500
-Received: from mga03.intel.com ([143.182.124.21]:39444 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758483Ab1CDPZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:25:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,264,1297065600"; 
-   d="scan'208";a="397627930"
-Date: Fri, 4 Mar 2011 15:02:05 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Ken Mills <ken.k.mills@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Usage of the n_gsm line discipline
-Message-ID: <20110304150205.7805f406@bob.linux.org.uk>
-In-Reply-To: <20110304152348.5d03c8ef@surf>
-References: <20110304152348.5d03c8ef@surf>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932230Ab1CDPZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:25:17 -0500
+Received: from mail.deathmatch.net ([72.66.92.28]:3266 "EHLO
+	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758483Ab1CDPZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 10:25:12 -0500
+Date: Fri, 4 Mar 2011 10:24:47 -0500
+From: Bob Copeland <me@bobcopeland.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: omfs fixes
+Message-ID: <20110304152447.GA14198@hash.localnet>
+References: <20110303032454.GI22723@ZenIV.linux.org.uk> <AANLkTin5GpLSvNnLb_=2wMS9w6RjHa=q8p0gOENtNjfq@mail.gmail.com> <20110303060352.GK22723@ZenIV.linux.org.uk> <AANLkTi=85DJo-Qy0bABKg1J_j0s=8HfTt1m+rq4E5GqS@mail.gmail.com> <87tyfk7x0c.fsf@devron.myhome.or.jp> <AANLkTinJPQtcBQsBd+OmioywcxSgzWXFgqMBSrfx8e6D@mail.gmail.com> <87lj0v9984.fsf@devron.myhome.or.jp> <AANLkTinSiD3YakBTNfYXrE12YDsDREHX3GzLzCncduTV@mail.gmail.com> <20110303225702.GQ22723@ZenIV.linux.org.uk> <20110304065542.GT22723@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110304065542.GT22723@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So, maybe I misconfigured n_gsm, or I didn't understand how to use it.
-> Would it be possible to have a few details on how it is supposed to be
-> used ? I haven't been able to find any userspace code that currently
-> makes use of n_gsm. Is it available somewhere ?
+On Fri, Mar 04, 2011 at 06:55:42AM +0000, Al Viro wrote:
+> I've pushed fixes for (b), (c) and (d) into #i_nlink and I think that (a)
+> needs to be dealt with as well, but that one is less nasty.  Bob, do you
+> prefer that to go through your tree or should it go straight to Linus?
+> It's in git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ i_nlink,
 
-Check dmesg but if your modem doesn't start up in multiplex mode you
-will need to issue an AT+CMUX command first. So the usual sequence is
+Looks great, thanks for the review.  I'll go ahead and take them through
+my tree after a quick run through the test harness.
 
-	write AT+CMUXblah [see GSM spec/modem command info]
-	TIOCSETD
-	GSMIOC_GETCONF
-		[modify anything needed]
-	GSMIOC_SETCONF
+-- 
+Bob Copeland %% www.bobcopeland.com
 
-The defaults uses are the T1/T2/N2 from the spec, we are not the
-initiator, and using encoding 1 (ie HDLC/LAP like), 64byte MRU/MTU.
-
-So at the very least you'll want to set initiator to 1 so that we start
-issuing SABM messages at the modem to enter mux mode.
-
-> If I can get it to work, I am willing to contribute a
-> Documentation/n_gsm.txt document.
-
-That would be good.
-
-Alan
