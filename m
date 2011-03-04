@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab1CDFjL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 00:39:11 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:60459 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab1CDFiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 00:38:54 -0500
-Date: Fri, 4 Mar 2011 16:38:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Timo von Holtz <tvh@informatik.uni-kiel.de>,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: manual merge of the staging tree with the v4l-dvb tree
-Message-Id: <20110304163849.651cfbbe.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ"
+	id S1751243Ab1CDGFg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 01:05:36 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50959 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1CDGFf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 01:05:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ggGo8Mmegp22D5+Bq3e8vuDcZy9vV5odw8ahhaqyLNVLgBeq5JZn0Q6BbaRJVysxyc
+         DZDTM7+7+CXn+DosUZTVZLt6hOOpvl5QN9MUib1siQ6U1qMpvs1xed+Y5+w7xu4kTpfk
+         FrC+diEIOiMrQg/7pjZ4Apcr8sFZ+U+V4IBBk=
+Date: Fri, 4 Mar 2011 07:05:46 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
+Message-ID: <20110304060546.GA3824@riccoc20.at.omicron.at>
+References: <20110201134320.688829863@linutronix.de>
+ <20110201134420.164172635@linutronix.de>
+ <20110303145008.GE4903@siel.b>
+ <20110303160114.GA4284@riccoc20.at.omicron.at>
+ <20110303170759.GF4903@siel.b>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110303170759.GF4903@siel.b>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 03, 2011 at 06:07:59PM +0100, torbenh wrote:
+> On Thu, Mar 03, 2011 at 05:01:14PM +0100, Richard Cochran wrote:
+> > 
+> > You are right, but I think the check should be for the capability
+> > instead. Checking the file mode for RDWR seems a bit pedantic to me.
+> 
+> i dont see, why an fd based clock, which already has associated permissions,
+> should check against the capability.
+> why should the ptpd be running as root ?
+> changing the permissions of /dev/ptp0 to allow ptpd to set the
+> clock should be enough. 
 
-Hi Greg,
+Thinking a bit more about this, I can see three options:
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/usbvideo/vicam.c between commit
-af6302700e87a883481c342001ef81b77641bf98 ("[media] staging-usbvideo:
-remove") from the v4l-dvb tree and commits
-046d747e0d2cb597e0b6fa4a79c32b43e97ed792 ("Staging: usbvideo: vicam:
-fixed some coding style issues") and
-38a26ef272d8a93c88de54d8d3bd14ac3ce36056 ("staging: usbvideo: vicam: Fix
-build in -next") from the staging tree.
+1. Enfore CAP_SYS_TIME in the posix dynamic clock layer.
 
-I removed the file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+2. Defer the CAP_SYS_TIME check to the underlying dynamic clock. That
+   puts the decision of whether a clock counts as a "system clock" to
+   the author of the driver.
 
---Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ
-Content-Type: application/pgp-signature
+3. As you suggest, just use file read/write as get/set permissions.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+The admin can still restrict device node ownership and read access in
+any case. You could event combine these methods (1 and 3, or 1 and 2)
+but I think that would only lead to user confusion.
 
-iQEcBAEBAgAGBQJNcHrpAAoJEDMEi1NhKgbsPzoH/AnWCi/H55/wKzoTRUPvB+Co
-NLLvhew7/pwDW5qZNosZoZlDDdjjtdQ0ugrR3EIynhXfqMuYex7mgB7fcrY0yemH
-n7FTiTETYAw/XRAiUtAdsM5NeirkNG0Ots4LAVkch5ieXW8WqfeEIp4PuvdRRw0s
-vgc18f+/utmYGHaYilBxq8JcoB+V6DVf1s1sjc+3zf3LnPBkZTsDxDp3LjM/TchR
-uxl3m+z7cGpBGQ7yfhb9Nmu4xu5uzRadhd0W6M9P4d+mh1ZqhefCJFLZzy/g0NIa
-L7YvrKiTSCNu9PGzvY6lWd40HppoYbRKOqZknMtBzl03UOoOcDzsX/XnGGCQjlU=
-=voAM
------END PGP SIGNATURE-----
+I am not opinionated about this, but I would like to gather some
+feedback before going forward. The implementation is easy in any case.
 
---Signature=_Fri__4_Mar_2011_16_38_49_+1100_P1D9p2viBeskIjHJ--
+Thanks,
+
+Richard
