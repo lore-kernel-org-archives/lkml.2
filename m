@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759703Ab1CDQfL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:35:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35974 "EHLO mx1.redhat.com"
+	id S1759758Ab1CDQi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:38:29 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48674 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab1CDQfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:35:10 -0500
-Date: Fri, 4 Mar 2011 17:26:18 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110304162618.GA24871@redhat.com>
-References: <20110301152457.GE26074@htj.dyndns.org> <20110303173422.GA27960@redhat.com> <20110304084441.GB20499@htj.dyndns.org> <20110304160151.GA23553@redhat.com> <20110304161541.GV20499@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304161541.GV20499@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759580Ab1CDQi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 11:38:27 -0500
+Date: Fri, 4 Mar 2011 08:38:22 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Amit Kucheria <amit.kucheria@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: mx51_efika: update platform data for new mfd
+ changes
+Message-ID: <20110304083822.0f40d120@debxo>
+In-Reply-To: <4D710FF9.6040305@ru.mvista.com>
+References: <20110304080653.3f2c3f19@debxo>
+	<4D710FF9.6040305@ru.mvista.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Fri, Mar 04, 2011 at 05:01:51PM +0100, Oleg Nesterov wrote:
-> > What I meant, I think the exact details can be discussed separately.
-> > Say, personally I'd prefer 2 different requests, ATTACH && INTERUPT,
-> > but I think this is very minor, and I agree with everything as long
-> > as user-space developers do not object. I just tried to avoid the
-> > discussion of the "cosmetic" details at this point.
->
-> Understood.  One thing tho.  Do you think having ATTACH_NO_STOP would
-> be better?
+On Fri, 04 Mar 2011 19:14:49 +0300
+Sergei Shtylyov <sshtylyov@mvista.com> wrote:
 
-No, I don't think so. More precisely, I simply do not know, we should
-probably ask Jan.
+> Hello.
+> 
+> Andres Salomon wrote:
+> 
+> > Note that this relies on stuff currently in mfd's next tree, but
+> > this is also a newer driver.  I'm not sure which tree it should go
+> > through, as it's a problem that shows up in next.
+> 
+>     This passage should be under --- tear line.
 
-But. from the previous discussions, gdb seems to need
-PTRACE_O_ATTACH_NEW_THREADS_AND_DO_NOT_STOP. Because gdb simply do not
-want to know about the new thread, until it does something "interesting".
-However this leads to other questions.
+What?
 
-Oleg.
+
+> 
+> > From: Andres Salomon <dilinger@queued.net>
+> 
+> > MFD changes in c738892f cause the mc13xxx_platform_data struct
+> 
+>     Linus asks to also specify the commit summary in parens.
+> 
+
+Also, what?  If there are changes to how patches should be submitted,
+please provide a reference (Documentation/SubmittingPatches should
+be updated, as well).
+
+
+
+> > to change.  This changes one more (new) user of it, fixing a build
+> > error.
+> 
+> > Signed-off-by: Andres Salomon <dilinger@queued.net>
+> 
+> WBR, Sergei
 
