@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759855Ab1CDQjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:39:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31839 "EHLO mx1.redhat.com"
+	id S1759863Ab1CDQk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:40:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42235 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759785Ab1CDQjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:39:19 -0500
-Date: Fri, 4 Mar 2011 17:30:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110304163029.GB24871@redhat.com>
-References: <20110301152457.GE26074@htj.dyndns.org> <20110303173422.GA27960@redhat.com> <20110303202246.GB32152@redhat.com> <AANLkTikeCzr-OGkmaaortS7_rR+JCM9B6aJV0c52EMbE@mail.gmail.com> <20110304134126.GL20499@htj.dyndns.org> <AANLkTikLd2Kg9Pz+5eLd_irdxoKdrR9qPj8yixeTfvaM@mail.gmail.com> <20110304140745.GP20499@htj.dyndns.org> <AANLkTina7D3QffUK7vYvc3aVTvbcJQqm8VgQP3xJKYdw@mail.gmail.com> <20110304161321.GB23553@redhat.com>
+	id S1759607Ab1CDQk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 11:40:58 -0500
+Date: Fri, 4 Mar 2011 11:40:52 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: [PATCH]cfq-iosched: give busy sync queue no dispatch limit
+Message-ID: <20110304164052.GA5466@redhat.com>
+References: <1299225689.2337.4.camel@sli10-conroe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110304161321.GB23553@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1299225689.2337.4.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04, Oleg Nesterov wrote:
->
-> On 03/04, Denys Vlasenko wrote:
-> >
-> > # time sh -c './strace -e trace=exit_group ls -lR /usr/share >/dev/null'
-> > exit_group(0)                           = ?
-> > real	0m47.695s
-> > user	0m3.965s
-> > sys	0m29.047s
-> >
-> > strace with PTRACE_GETSIGINFO:
-> >
-> > # time sh -c './strace -e trace=exit_group ls -lR /usr/share >/dev/null'
-> > exit_group(0)                           = ?
-> > real	0m51.958s
-> > user	0m3.899s
-> > sys	0m31.584s
->
-> I am wondering how much ptrace_check_attach()->wait_task_inactive()
-> contributes... it can sleep.
->
-> And note that many ptrace requests do not really need this,
-> PTRACE_GETSIGINFO in particular.
+On Fri, Mar 04, 2011 at 04:01:29PM +0800, Shaohua Li wrote:
 
-could you replace the extra PTRACE_GETSIGINFO by invalid request?
+[..]
+> @@ -2412,15 +2418,31 @@ static bool cfq_may_dispatch(struct cfq_
+>  			return false;
+>  
+>  		/*
+> +		 * If there is only one sync queue, and its think time is
+> +		 * small, we can ignore async queue here and give the sync
+> +		 * queue no dispatch limit. The reason is a sync queue can
+> +		 * preempt async queue, limiting the sync queue doesn't make
+> +		 * sense. This is useful for aiostress test.
+> +		 */
+> +		if (cfq_cfqq_sync(cfqq) && cfqd->busy_sync_queues == 1) {
+> +			struct cfq_io_context *cic = RQ_CIC(cfqq->next_rq);
+> +
+> +			if (sample_valid(cic->ttime_samples) &&
+> +				cic->ttime_mean < cfqd->cfq_slice_idle)
+> +				promote_sync = true;
+> +		}
 
-Oleg.
+What's the relation of think time here? Or why should we check for think
+time being small. To me it does not make a difference in this case.
 
+We have a request in existing queue and we figure out that this is the
+only sync queue in the system to we let it dispatch more than quantum.
+Thinktime should not even matter.
+
+Thanks
+Vivek
