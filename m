@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab1CDL7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 06:59:11 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:34018 "EHLO
-	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759507Ab1CDL65 (ORCPT
+	id S1759654Ab1CDMAM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 07:00:12 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45611 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759612Ab1CDMAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 06:58:57 -0500
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: mingo@elte.hu
-Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gorcunov@gmail.com,
-        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCHv2 5/7] x86: remove ancient crufty prototype
-Date: Fri,  4 Mar 2011 12:58:41 +0100
-Message-Id: <1299239923-7092-5-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299239923-7092-1-git-send-email-henne@nachtwindheim.de>
-References: <1299239923-7092-1-git-send-email-henne@nachtwindheim.de>
+	Fri, 4 Mar 2011 07:00:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=p7UsgHs+m3WSctui/dn6qFKpnwFneK2aL2exMa4qqaElJUU+z5wsoq0JzFxVuWxMfL
+         uXTK/gtytZI6eor1hdRQmHKdO2LInsRD35f7mNqOKlh+mz4p58h8u4zJ2CFOJUS+c217
+         LJVThd3aA2iKSNwyVT7gSUY46R0RCStY7veyQ=
+Date: Fri, 4 Mar 2011 19:59:31 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux@kbdbabel.org
+Cc: romfs@googlegroups.com, rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org
+Subject: [PATCH]fix a link in Documentation/filesystem/romfs.txt
+Message-ID: <20110304115926.GA4104@gmail.com>
+Mail-Followup-To: linux@kbdbabel.org, romfs@googlegroups.com,
+	rdunlap@xenotime.net, linux-kernel@vger.kernel.org,
+	linux-doc@vger.kernel.org, greg@kroah.com,
+	akpm@linux-foundation.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function cache_APIC_registers() does not exist in
-the whole git history, so it can be removed.
+Hi us,
+    I think it is a good patch for Documentation/filesystem/romfs.txt.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+   From: Alexander Kurz <linux@kbdbabel.org>
+
+Hello romfs group,
+	 I have posted a patch to fix the reference to
+the outdated ftp site (which still serves genromfs-0.5.1) in
+Documentation/filesystems/romfs.txt last month,
+but nobody has picked it up yet.
+
+Does anybody like to forward this?
+Thanks, Alexander
+
+Thanks.
+Best Regards.
+Harry Wei.
+
+Signed-off-by: Alexander Kurz<linux@kbdbabel.org>
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 ---
- arch/x86/include/asm/apic.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ Documentation/filesystems/romfs.txt |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 72bdfec..a279d98 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -227,7 +227,6 @@ extern void disconnect_bsp_APIC(int virt_wire_setup);
- extern void disable_local_APIC(void);
- extern void lapic_shutdown(void);
- extern int verify_local_APIC(void);
--extern void cache_APIC_registers(void);
- extern void sync_Arb_IDs(void);
- extern void init_bsp_APIC(void);
- extern void setup_local_APIC(void);
+diff --git a/Documentation/filesystems/romfs.txt b/Documentation/filesystems/romfs.txt
+index 2d2a7b2..3b7ef40 100644
+--- a/Documentation/filesystems/romfs.txt
++++ b/Documentation/filesystems/romfs.txt
+@@ -17,8 +17,7 @@ comparison, an actual rescue disk used up 3202 blocks with ext2, while
+ with romfs, it needed 3079 blocks.
+ 
+ To create such a file system, you'll need a user program named
+-genromfs.  It is available via anonymous ftp on sunsite.unc.edu and
+-its mirrors, in the /pub/Linux/system/recovery/ directory.
++genromfs. It is available on http://romfs.sourceforge.net.
+ 
+ As the name suggests, romfs could be also used (space-efficiently) on
+ various read-only media, like (E)EPROM disks if someone will have the
 -- 
-1.7.2.3
+1.7.0.4
+
 
