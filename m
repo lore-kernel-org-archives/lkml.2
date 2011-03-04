@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab1CDG4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 01:56:54 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:32834 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab1CDG4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 01:56:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=lmvJ8lSxjgEOOkhDa/1DUlK3TYuVmJyh77Fp2+5aYLqjj318CLy8hfxg/vlguXvYcx
-         RtUpkuadx6UzkpGtyAU7hJUArYtMjlP73LcgjvvQcI7ojwhZ8ZiXbhAnW4xIMEso5R/5
-         El6w2JFkPoRRnF8zd/ovVM2m0poCKdE+1bnEI=
-Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
- remount filesystems ro
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Lord <kernel@teksavvy.com>, Ken Sumrall <ksumrall@android.com>,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <matthew@wil.cx>,
-        Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <AANLkTimXhGRsuL3Z51msS_YEtsa4UZuN9XW8Xb+hu_KN@mail.gmail.com>
-References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
-	 <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com>
-	 <4D6FDDB1.3060209@teksavvy.com>
-	 <AANLkTimXhGRsuL3Z51msS_YEtsa4UZuN9XW8Xb+hu_KN@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Mar 2011 08:55:23 +0200
-Message-ID: <1299221723.2735.6.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1758741Ab1CDG5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 01:57:23 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:38591 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751421Ab1CDG5W convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 01:57:22 -0500
+From: Peppe CAVALLARO <peppe.cavallaro@st.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Stuart MENEFY <stuart.menefy@st.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Date: Fri, 4 Mar 2011 07:53:50 +0100
+Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
+Thread-Topic: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
+Thread-Index: AcvaOOtaEfq/brCeRt6Ks9dBa2ETnA==
+Message-ID: <4D708C7E.8010204@st.com>
+References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com>
+ <201103030945.07486.arnd@arndb.de> <4D6F6C96.1010303@st.com>
+ <201103031455.25089.arnd@arndb.de>
+In-Reply-To: <201103031455.25089.arnd@arndb.de>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-enigmail-version: 1.1.1
+user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.14)
+ Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
+openpgp: url=wwwkeys.bri.st.com
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-03-03 at 15:36 -0800, Linus Torvalds wrote:
-> But you're certainly right that it takes less code to open
-> /proc/sysrq-trigger and writing a single byte to it than it does to do
-> the straightforward "let's just do the normal mount thing".
+On 3/3/2011 2:55 PM, Arnd Bergmann wrote:
+>
+> On Thursday 03 March 2011, Peppe CAVALLARO wrote:
+> > This logic is already in the driver, indeed.
+> > What I've seen on our embedded systems is that the
+> > cost of RX interrupts is very hight and NAPI partially helps.
+> > Typically, in an IP-STB, I receive a burst of UDP pkt
+> > and this  means that many interrupts occur (~99% of CPU
+> > usage on slow platforms).
+> > With the ext timer I was able to reduce the CPU usage in
+> > these kind of scenarios to ~50%.
+>
+> I don't understand. Shouldn't the interrupts be stopped as long
+> as the system is busy? This sounds like a bug in your NAPI
+> handling, or maybe you just need to use a lower NAPI_WEIGHT
+> so you stay in polling mode longer.
+>
 
-/proc/sysrq-trigger is sometimes simply disabled for "security reasons".
-I'm not sure about Android, but some systems I know do disable it. So I
-think /proc/mounts is a cleaner approach.
+Hi Arnd,
+yes you are right, in fact, I do not receive an interrupt
+for each frame received but the average of the frames
+I found in the ring is very low.
+At any rate, let me do some tests so i'll come back with
+some numbers. In the meantime, I'm looking at the napi
+support inside the driver and experiment with lower
+NAPI_WEIGHT (default is 64).
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Peppe
+>
+>
+>         Arnd
+>
