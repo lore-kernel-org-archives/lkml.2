@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759985Ab1CDRgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:36:40 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:35455 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758960Ab1CDRgj (ORCPT
+	id S1758463Ab1CDRpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:45:41 -0500
+Received: from auth.codethink.co.uk ([208.78.96.188]:44698 "EHLO
+	auth.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab1CDRpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 12:36:39 -0500
-Date: Fri, 4 Mar 2011 12:36:35 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
-        rp@svcs.cs.pdx.edu
-Subject: [RELEASE] Userspace RCU 0.5.4
-Message-ID: <20110304173635.GA13194@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:34:12 up 100 days, 22:37,  4 users,  load average: 0.13, 0.06,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 4 Mar 2011 12:45:40 -0500
+X-Greylist: delayed 3514 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 12:45:40 EST
+Subject: Re: [PATCH] mcheck: Correction to a missing return value from
+ misc_register
+From: "J.P. Lacerda" <jpl@codethink.co.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johan Wessfeldt <johan.wessfeldt@gmail.com>, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110302160601.a8936c21.akpm@linux-foundation.org>
+References: <1298891944-21364-1-git-send-email-johan.wessfeldt@gmail.com>
+	 <20110302160601.a8936c21.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Mar 2011 16:44:16 +0000
+Message-ID: <1299257056.1964.13.camel@neoteric>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This data
-synchronization library provides read-side access which scales linearly with the
-number of cores. It does so by allowing multiples copies of a given data
-structure to live at the same time, and by monitoring the data structure
-accesses to detect grace periods after which memory reclamation is possible.
+Andrew,
 
-Changelog for v0.5.4:
+Where can a memory leak occur in sysdev_class_register()?
+If one does occur, should the fix not be applied to
+sysdev_class_register(), as opposed to mcheck_init_device()?
 
- *  urcu-bp: Update fork() handling
-    
-    Introduce
-    
-    extern void rcu_bp_before_fork(void);
-    extern void rcu_bp_after_fork_parent(void);
-    extern void rcu_bp_after_fork_child(void);
-    
-    to handle fork gracefully. These disable signals and hold the registry mutex
-    across forks. (this flavor of the liburcu library ("bp" for "bulletproof")
-    is mainly used by UST, the user-space tracer).
+Thanks,
 
-Project website: http://lttng.org/urcu
-Download link: http://www.lttng.org/files/urcu/
+J.P.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+On Wed, 2011-03-02 at 16:06 -0800, Andrew Morton wrote:
+> On Mon, 28 Feb 2011 12:19:04 +0100
+> Johan Wessfeldt <johan.wessfeldt@gmail.com> wrote:
+> 
+> > Return value from misc_register was not handled correctly
+> > in mcheck_init_device()
+> > 
+> > Signed-off-by: Johan Wessfeldt <johan.wessfeldt@gmail.com>
+> > ---
+> >  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> > index d916183..7274a11 100644
+> > --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> > @@ -2140,7 +2140,7 @@ static __init int mcheck_init_device(void)
+> >  	}
+> >  
+> >  	register_hotcpu_notifier(&mce_cpu_notifier);
+> > -	misc_register(&mce_log_device);
+> > +	err = misc_register(&mce_log_device);
+> >  
+> >  	return err;
+> >  }
+> 
+> It should be fixed, but not that way.  If misc_register() fails here,
+> mcheck_init_device() should undo all the things which it just did.
+> 
+> And the memory leak which occurs if sysdev_class_register() fails and
+> the memory and other resource leaks which occur if mce_create_device()
+> fails should be fixed too.
+> 
+> mcheck_init_device() a rather optimistic function.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
