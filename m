@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759583Ab1CDM4Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 07:56:16 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64630 "EHLO
+	id S1759627Ab1CDM4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 07:56:25 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:56857 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759397Ab1CDM4P (ORCPT
+	with ESMTP id S1759506Ab1CDM4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 07:56:15 -0500
+	Fri, 4 Mar 2011 07:56:23 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH 16/17] unicore32: add (void __iomem *) to io_p2v macro
-Date: Fri, 4 Mar 2011 12:52:57 +0100
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH, v8 1/3] hrtimer: introduce effective timer slack
+Date: Fri, 4 Mar 2011 13:55:21 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "'Guan Xuetao'" <epip@hera.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, greg@kroah.com
-References: <cover.1298821856.git.epip@hera.kernel.org> <201102281635.56528.arnd@arndb.de> <03ba01cbda54$a5c39f00$f14add00$@mprc.pku.edu.cn>
-In-Reply-To: <03ba01cbda54$a5c39f00$f14add00$@mprc.pku.edu.cn>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <1299161947-9903-1-git-send-email-kirill@shutemov.name> <201103031732.28964.arnd@arndb.de> <20110304122035.GB14933@shutemov.name>
+In-Reply-To: <20110304122035.GB14933@shutemov.name>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103041252.57410.arnd@arndb.de>
-X-Provags-ID: V02:K0:8x5Z9Ar3R/KM730cn7C4NW+ArbDWXfrQeYh5za7fSF6
- S9VLg89uFFfOuO74daH5YEh0O5rizX1Z6k7sFecqfsZdHWUHcF
- NQ3NqVIL8kjpFkhjDNAbRbJq43+2+XYy/tMCfH19FjQgyvJvzV
- UQlY2tXBVo9LhjkuBVZmGvT5+2GPNsJzMZ26NxSBRzGqaixM6P
- VxHlqmlRMuW4UJKtBBWyw==
+Message-Id: <201103041355.21740.arnd@arndb.de>
+X-Provags-ID: V02:K0:0ji2WyF3ii5Gplmi76/Qc7IRua1loetvSfkf5YtqB62
+ BL8RHLT4bYmL3ZPBt3mFlMs2XuSMYW/XhKVvHcqwYHvNGxXQU4
+ bJqc+QrBXwC7QrD0U3yEOGGHp0aWd4NOj4fdtxQgbVIQKJNZg2
+ 0SnfwLlL4a2nwtqTkDe8wPGwlPj9VAZSNlnOsotColx8S5ieVf
+ h1C46aTokIrBRvMlHcBWg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 March 2011, Guan Xuetao wrote:
-> From: GuanXuetao <gxt@mprc.pku.edu.cn>
-> Date: Fri, 4 Mar 2011 18:07:48 +0800
-> Subject: [PATCH] unicore32: modify io_p2v and io_v2p macros, and adjust PKUNITY_mmio_BASEs
+On Friday 04 March 2011, Kirill A. Shutemov wrote:
+> > Does this make sense to you?
 > 
-> 1. remove __REG macro
-> 2. add (void __iomem *) to io_p2v macro
-> 3. add (phys_addr_t) to io_v2p macro
-> 4. add PKUNITY_AHB_BASE and PKUNITY_APB_BASE definitions
-> 5. modify all PKUNITY_mmio_BASEs from physical addr to virtual addr
-> 6. adjust prefix macro for all usage of PKUNITY_mmio_BASEs
->   -- by advice with Arnd Bergmann
-> 
-> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Hm.. I think we can add this kind of functionality to timer slack cgroup
+> as a policy/stratagy later. I want to integrate basic functionality to
+> kernel first.
 
-Looks good,
+Yes, makes sense. I wasn't objecting the current patch set, just trying
+to make sure that the other idea does not get lost, and we don't introduce
+anything now that prevents us from doing it later.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-
+	Arnd
