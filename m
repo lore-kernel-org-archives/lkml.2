@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852Ab1CDSPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 13:15:00 -0500
-Received: from waste.org ([173.11.57.241]:34872 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790Ab1CDSO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 13:14:59 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Matt Mackall <mpm@selenic.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Theodore Tso <tytso@mit.edu>, Dan Rosenberg <drosenberg@vsecurity.com>,
-        cl@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
-References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>
-	 <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>
-	 <1299191400.2071.203.camel@dan>
-	 <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
-	 <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
-	 <1299260164.8493.4071.camel@nimitz>
-	 <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Mar 2011 12:14:55 -0600
-Message-ID: <1299262495.3062.298.camel@calx>
+	id S932416Ab1CDSP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 13:15:27 -0500
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:48524 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759903Ab1CDSPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 13:15:25 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=iXCHwgjehfETE7Xi4F8Y0zSXiutCDTuoVxCILBECtkhQ0WAot98T8ODTCNfEXPWxtEixkCLEqehZVSYGgeQqkwCD+6B53sSo5ZrVWxAmuw87k40ez7cq798vwYWLcX11;
+Date: Fri, 4 Mar 2011 10:15:09 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Narendra_K@Dell.com, viro@zeniv.linux.org.uk, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Shyam_Iyer@Dell.com, Matt_Domsch@Dell.com, Charles_Rose@Dell.com,
+        Jordan_Hargrave@Dell.com
+Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Message-ID: <20110304101509.7eef7475@jbarnes-desktop>
+In-Reply-To: <20110223131734.GA6275@srcf.ucam.org>
+References: <20110223131536.GA16707@fedora14-r610.blr.amer.dell.com>
+	<20110223131734.GA6275@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 09:48 -0800, Linus Torvalds wrote:
-> On Fri, Mar 4, 2011 at 9:36 AM, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> >
-> > We need to either keep the bad guys away from the counts (this patch),
-> > or de-correlate the counts moving around with the position of objects in
-> > the slab.  Ted's suggestion is a good one, and the only other thing I
-> > can think of is to make the values useless, perhaps by batching and
-> > delaying the (exposed) counts by a random amount.
-> 
-> We might just decide to expose the 'active' count for regular users
-> (and then, in case there are tools there that parse this as normal
-> users, we could set the 'total' fields to be the same as the active
-> one, possibly rounded up to the slab allocation or something.
-> 
-> I know, I know, from a memory usage standpoint, 'active' is secondary,
-> but it still correlates fairly well, so it's still useful.  And for
-> seeing memory leaks (as opposed to slab fragmentation etc issues),
-> it's actually the interesting case.
-> 
-> And at the same time, it's actually much less involved with actual
-> physical allocations than 'total' is, and thus much less of an attack
-> vector. The fact that we got another socket allocation when we opened
-> a new socket is not "useful" information for an attacker, not in the
-> way it is to see a hint of _where_ the socket got allocated.
-> 
-> Of course, as you say, '/proc/meminfo' still does give you the trigger
-> for "oh, now somebody actually allocated a new page". That's totally
-> independent of slabinfo, though (and knowing the number of active
-> slabs would neither help nor hurt somebody who uses meminfo - you
-> might as well allocate new sockets in a loop, and use _only_ meminfo
-> to see when that allocated a new page).
+On Wed, 23 Feb 2011 13:17:34 +0000
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 
-I think lying to the user is much worse than changing the permissions.
-The cost of the resulting confusion is WAY higher.
+> On Wed, Feb 23, 2011 at 06:24:31PM +0530, Narendra_K@Dell.com wrote:
+> 
+> > This patch fixes the following build breakage introduced by the patch
+> > '[PATCH V3] Export ACPI _DSM provided firmware instance number and string to
+> > sysfs'.
+> 
+> First, you should include this as part of your original patch so that 
+> the build doesn't break during bisection.
+> 
+> > This is fixed by making fs/nls/nls_base.c compile conditionally into
+> > vmlinux by introducing a new config option CONFIG_NLS_BASE which is
+> > selected by (ACPI || DMI || NLS).
+> 
+> Why?
+> 
+> > -obj-$(CONFIG_NLS)		+= nls/
+> > +obj-y				+= nls/
+> 
+> You seem to have just broken building any of the NLS code as modules.
+> 
+> >  menuconfig NLS
+> >  	tristate "Native language support"
+> > +	select NLS_BASE
+> 
+> All CONFIG_NLS does is build nls_base.
+> 
+> > +config NLS_BASE
+> > +	bool "Base NLS functions"
+> > +	depends on ACPI || DMI
+> 
+> What in this code depends on ACPI or DMI?
+> 
+> > -obj-$(CONFIG_NLS)		+= nls_base.o
+> > +obj-$(CONFIG_NLS_BASE)		+= nls_base.o
+> 
+> And why make this change?
+> 
+> Just have something like
+> 
+> select NLS if (ACPI || DMI)
+> 
+> in drivers/pci/Kconfig.
 
+Narendra, can you send me an updated patch including the build fix?
+Either using this approach or the other one I outlined in my other mail.
+
+Thanks,
 -- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Jesse Barnes, Intel Open Source Technology Center
