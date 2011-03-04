@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab1CDCee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 21:34:34 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56042 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759195Ab1CDCed (ORCPT
+	id S1758545Ab1CDCsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 21:48:16 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:60881 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758280Ab1CDCsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 21:34:33 -0500
+	Thu, 3 Mar 2011 21:48:14 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAHPhb01Ld/sX/2dsb2JhbAAMhB7RI5ELgSeDRHYEhRo
+X-IronPort-AV: E=Sophos;i="4.62,262,1297054800"; 
+   d="scan'208";a="94333347"
+Message-ID: <4D7052E5.9030506@teksavvy.com>
+Date: Thu, 03 Mar 2011 21:48:05 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.14) Gecko/20110221 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinQ30f-7bi8QSBjwcmHXH6aydqws1vrFMMaMCWc@mail.gmail.com>
-References: <1299137483-10975-1-git-send-email-ksumrall@android.com>
- <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com>
- <4D6FDDB1.3060209@teksavvy.com> <AANLkTimXhGRsuL3Z51msS_YEtsa4UZuN9XW8Xb+hu_KN@mail.gmail.com>
- <AANLkTinQ30f-7bi8QSBjwcmHXH6aydqws1vrFMMaMCWc@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Mar 2011 18:33:36 -0800
-Message-ID: <AANLkTi=UuVxtvLqWq=8gTGQyoNKmJwvs3Kr=xSWHbxtx@mail.gmail.com>
-Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
- remount filesystems ro
-To: Ken Sumrall <ksumrall@android.com>
-Cc: Mark Lord <kernel@teksavvy.com>, linux-kernel@vger.kernel.org,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ken Sumrall <ksumrall@android.com>, linux-kernel@vger.kernel.org,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         Christoph Hellwig <hch@lst.de>,
         Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
@@ -27,45 +25,39 @@ Cc: Mark Lord <kernel@teksavvy.com>, linux-kernel@vger.kernel.org,
         Eric Paris <eparis@redhat.com>, Dave Young <hidave.darkstar@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>, James Morris <jmorris@namei.org>,
         linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] Syscalls: reboot: Add options to the reboot syscall to
+ remount filesystems ro
+References: <1299137483-10975-1-git-send-email-ksumrall@android.com> <AANLkTik1pNPzPqXaNrLNFnEt4+cknxYdOUwZ9Q=g5PCA@mail.gmail.com> <4D6FDDB1.3060209@teksavvy.com> <AANLkTimXhGRsuL3Z51msS_YEtsa4UZuN9XW8Xb+hu_KN@mail.gmail.com> <AANLkTinQ30f-7bi8QSBjwcmHXH6aydqws1vrFMMaMCWc@mail.gmail.com> <AANLkTi=UuVxtvLqWq=8gTGQyoNKmJwvs3Kr=xSWHbxtx@mail.gmail.com>
+In-Reply-To: <AANLkTi=UuVxtvLqWq=8gTGQyoNKmJwvs3Kr=xSWHbxtx@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 6:00 PM, Ken Sumrall <ksumrall@android.com> wrote:
->
-> Writing a single byte to /proc/sysrq-trigger is an asynchronous
-> operation, with no obvious way to be informed that it has completed
-> the remount.
+On 11-03-03 09:33 PM, Linus Torvalds wrote:
+> On Thu, Mar 3, 2011 at 6:00 PM, Ken Sumrall <ksumrall@android.com> wrote:
+>>
+>> Writing a single byte to /proc/sysrq-trigger is an asynchronous
+>> operation, with no obvious way to be informed that it has completed
+>> the remount.
+> 
+> Right you are. That's something of a misfeature, but it comes from the
+> way sysrq works: obviously the "real" sysrq thing is about keyboard
+> input, so all the sysrq stuff has to be async.
+> 
+> The fact that that async nature then ends up also affecting the
+> /proc/sysrq-trigger case (which _could_ be synchronous) is a bit sad
+> in this case.
 
-Right you are. That's something of a misfeature, but it comes from the
-way sysrq works: obviously the "real" sysrq thing is about keyboard
-input, so all the sysrq stuff has to be async.
+Agreed.
 
-The fact that that async nature then ends up also affecting the
-/proc/sysrq-trigger case (which _could_ be synchronous) is a bit sad
-in this case.
+I have the echo s/u to sysrq-trigger (plus a 2-sec sleep ala MS-Win)
+on my Ubuntu systems here, because their shutdown "sequence"
+is racy and buggy, and frequently powers off the box with the
+rootfs still mounted rw otherwise.
 
-That said, I obviously think that just doing the read-only mount
-yourself is the right thing to do regardless, and the sysrq thing
-would have been just a cute/ugly hack if it had worked.
+And don't get me started about the races on system startup
+ -- "upstart" is an abomination, or at least the Ubuntu use of it is.
 
-> I'm heading down the path of reading /proc/mounts and remounting all
-> read-wirte filesystems backed by a block device as read-only.
-
-So just as a practical matter: while it's quite possible that the nice
-seq_printf() model of /proc/mounts means that it should work correctly
-even if you read each line individually and then re-mount while
-holding the file open, I would suggest that you read the whole file
-into a buffer before you then start changing the mounts.
-
-Otherwise, _if_ we ever were to actually move the filesystem on our
-internal list of mounts when we re-mount it, you might otherwise end
-up seeign the same filesystem multiple times (or the reverse - missing
-some filesystem).
-
-Basically, I'm saying that you should try to avoid changing mount
-information in between read() calls to /proc/mounts. It might cause
-confusion.
-
-                                        Linus
+Cheers
