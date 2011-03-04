@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758463Ab1CDRpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:45:41 -0500
-Received: from auth.codethink.co.uk ([208.78.96.188]:44698 "EHLO
-	auth.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab1CDRpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 12:45:40 -0500
-X-Greylist: delayed 3514 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 12:45:40 EST
-Subject: Re: [PATCH] mcheck: Correction to a missing return value from
- misc_register
-From: "J.P. Lacerda" <jpl@codethink.co.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johan Wessfeldt <johan.wessfeldt@gmail.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110302160601.a8936c21.akpm@linux-foundation.org>
-References: <1298891944-21364-1-git-send-email-johan.wessfeldt@gmail.com>
-	 <20110302160601.a8936c21.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Mar 2011 16:44:16 +0000
-Message-ID: <1299257056.1964.13.camel@neoteric>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1759671Ab1CDRto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:49:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35235 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752095Ab1CDRtn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 12:49:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <1299260164.8493.4071.camel@nimitz>
+References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>
+ <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>
+ <1299191400.2071.203.camel@dan> <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
+ <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com> <1299260164.8493.4071.camel@nimitz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 4 Mar 2011 09:48:47 -0800
+Message-ID: <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Theodore Tso <tytso@mit.edu>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Matt Mackall <mpm@selenic.com>, cl@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+On Fri, Mar 4, 2011 at 9:36 AM, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+>
+> We need to either keep the bad guys away from the counts (this patch),
+> or de-correlate the counts moving around with the position of objects in
+> the slab.  Ted's suggestion is a good one, and the only other thing I
+> can think of is to make the values useless, perhaps by batching and
+> delaying the (exposed) counts by a random amount.
 
-Where can a memory leak occur in sysdev_class_register()?
-If one does occur, should the fix not be applied to
-sysdev_class_register(), as opposed to mcheck_init_device()?
+We might just decide to expose the 'active' count for regular users
+(and then, in case there are tools there that parse this as normal
+users, we could set the 'total' fields to be the same as the active
+one, possibly rounded up to the slab allocation or something.
 
-Thanks,
+I know, I know, from a memory usage standpoint, 'active' is secondary,
+but it still correlates fairly well, so it's still useful.  And for
+seeing memory leaks (as opposed to slab fragmentation etc issues),
+it's actually the interesting case.
 
-J.P.
+And at the same time, it's actually much less involved with actual
+physical allocations than 'total' is, and thus much less of an attack
+vector. The fact that we got another socket allocation when we opened
+a new socket is not "useful" information for an attacker, not in the
+way it is to see a hint of _where_ the socket got allocated.
 
-On Wed, 2011-03-02 at 16:06 -0800, Andrew Morton wrote:
-> On Mon, 28 Feb 2011 12:19:04 +0100
-> Johan Wessfeldt <johan.wessfeldt@gmail.com> wrote:
-> 
-> > Return value from misc_register was not handled correctly
-> > in mcheck_init_device()
-> > 
-> > Signed-off-by: Johan Wessfeldt <johan.wessfeldt@gmail.com>
-> > ---
-> >  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> > index d916183..7274a11 100644
-> > --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> > @@ -2140,7 +2140,7 @@ static __init int mcheck_init_device(void)
-> >  	}
-> >  
-> >  	register_hotcpu_notifier(&mce_cpu_notifier);
-> > -	misc_register(&mce_log_device);
-> > +	err = misc_register(&mce_log_device);
-> >  
-> >  	return err;
-> >  }
-> 
-> It should be fixed, but not that way.  If misc_register() fails here,
-> mcheck_init_device() should undo all the things which it just did.
-> 
-> And the memory leak which occurs if sysdev_class_register() fails and
-> the memory and other resource leaks which occur if mce_create_device()
-> fails should be fixed too.
-> 
-> mcheck_init_device() a rather optimistic function.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Of course, as you say, '/proc/meminfo' still does give you the trigger
+for "oh, now somebody actually allocated a new page". That's totally
+independent of slabinfo, though (and knowing the number of active
+slabs would neither help nor hurt somebody who uses meminfo - you
+might as well allocate new sockets in a loop, and use _only_ meminfo
+to see when that allocated a new page).
 
-
+                                    Linus
