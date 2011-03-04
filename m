@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759909Ab1CDRG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:06:57 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:7406 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759404Ab1CDRG4 (ORCPT
+	id S1759923Ab1CDRMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:12:36 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:60603 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979Ab1CDRMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 12:06:56 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6274"; a="77848218"
-From: David Brown <davidb@codeaurora.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MAINTAINERS: Update MSM maintainers
-References: <1298419415-3973-1-git-send-email-davidb@codeaurora.org>
-	<1298420395.17118.6.camel@m0nster>
-	<AANLkTikuaOL7mdARoNtx2ZJGJm6FBrqizrit6_uSaUte@mail.gmail.com>
-	<4D657B69.4000107@codeaurora.org> <1298512932.17118.16.camel@m0nster>
-	<4D66CDD4.7080103@codeaurora.org> <20110304153646.GC1358@ucw.cz>
-X-Hashcash: 1:20:110304:pavel@ucw.cz::xx1i5l/EQ8nXcM5D:0000001cK
-X-Hashcash: 1:20:110304:dwalker@fifo99.com::SPrWStzF00AcSLDp:00000000000000000000000000000000000000000000Rhy
-X-Hashcash: 1:20:110304:linux-arm-msm@vger.kernel.org::2s8B99AYxzt+taC4:000000000000000000000000000000001BAd
-X-Hashcash: 1:20:110304:linux-arm-kernel@lists.infradead.org::55+5JqlQj/X0J9y5:00000000000000000000000001MFJ
-X-Hashcash: 1:20:110304:linux-kernel@vger.kernel.org::CzsXW2x52yQbrmcd:0000000000000000000000000000000003YCN
-X-Hashcash: 1:20:110304:torvalds@linux-foundation.org::hoJ5PJCXd7la/zoI:000000000000000000000000000000004zN2
-X-Hashcash: 1:20:110304:bryanh@codeaurora.org::EVNkYjUhmRYsI4cx:0000000000000000000000000000000000000000DARW
-Date: Fri, 04 Mar 2011 09:06:55 -0800
-In-Reply-To: <20110304153646.GC1358@ucw.cz> (Pavel Machek's message of "Fri, 4
-	Mar 2011 16:36:47 +0100")
-Message-ID: <8yasjv2ke6o.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 4 Mar 2011 12:12:35 -0500
+Subject: Re: BUG at mm/mmap.c:2309 when cx18.ko and cx18-alsa.ko loaded
+From: Andy Walls <awalls@md.metrocast.net>
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+In-Reply-To: <AANLkTikoSnBZ5E2tD2d5QsLf4DxmQYi0rYtNRvnU8Fmz@mail.gmail.com>
+References: <1299204400.2812.35.camel@localhost>
+	 <AANLkTikoSnBZ5E2tD2d5QsLf4DxmQYi0rYtNRvnU8Fmz@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Mar 2011 12:13:04 -0500
+Message-ID: <1299258784.14867.16.camel@morgan.silverblock.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-03-04_07:2011-03-04,2011-03-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1012030000 definitions=main-1103040121
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04 2011, Pavel Machek wrote:
+On Fri, 2011-03-04 at 10:50 -0500, Devin Heitmueller wrote:
+> On Thu, Mar 3, 2011 at 9:06 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+> > Hi,
+> >
+> > I got a BUG when loading the cx18.ko module (which in turn requests the
+> > cx18-alsa.ko module) on a kernel built from this repository
+> >
+> >        http://git.linuxtv.org/media_tree.git staging/for_v2.6.39
+> >
+> > which I beleive is based on 2.6.38-rc2.
+> >
+> > The BUG is mmap related and I'm almost certain it has to do with
+> > userspace accessing cx18-alsa.ko ALSA device nodes, since cx18.ko
+> > doesn't provide any mmap() related file ops.
+> >
+> > So here is my transcription of a fuzzy digital photo of the screen:
+> <snip>
+> > I'm not very familiar with mmap() nor ALSA and I did not author the
+> > cx18-alsa part of the cx18 driver, so any hints at where to look for the
+> > problem are appreciated.
+> 
+> Hi Andy,
+> 
+> I'm traveling on business for about two weeks, so I won't be able to
+> look into this right now.
+> 
+> Any idea whether this is some new regression?
 
-> But you know this patch was great counterexample. Trying to remove
-> someone from mainainers without asking them first is very very
-> impolite...
+I do not know.  I normally don't let cx18-alsa.ko load, due to
+PulseAudio's persistence at keeping the device nodes open (which makes
+unloading the cx18.ko module for development a hassle.)
 
-Yeah, I screwed up.  Hopefully my future screwups will be more
-technical, which are usually easier to fix.
 
-David
+>   I'm just trying to
+> understand whether this is something that has always been there since
+> I originally added the ALSA support to cx18 or whether it's something
+> that is new, in which case it might make sense to drag the ALSA people
+> into the conversation since there haven't been any changes in the cx18
+> driver lately.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+I can add some information about what is going on in userspace.  This
+was on a Fedora 10 machine.  When devices nodes show up, the HAL daemon
+and PulseAudio start using the device nodes right away.
+
+That activity  triggers cx18.ko to do a firmware load which gets udevd
+running to satisfy firmware requests, and then the cx18 driver issues
+some simple commands to the CX23418 firmware, which will have
+acknowledgment interrupts coming back from the CX23418.  I resolved the
+firmware race in cx18*.ko a while ago, so I'm confident its not an
+issue.
+
+The BUG looks like some sort of mmap() race or memory management problem
+outside of the cx18*.ko modules, given that mmput(), which appears to be
+an mm specific reference counting function, is involved.
+
+It could also be in ALSA I guess.
+
+I'm not sure how in the cx18-alsa.ko things can be screwed up so badly
+that it messes up the kernel's reference counting of mm structures.
+
+I'll take a harder look at it myself this weekend, but the kernel mm
+system is a little out of my current realm of experience.  Looks like I
+get to learn, because I'm not going to bisect a BUG() that halts the
+machine and risks disk corruption every time.
+
+Regards,
+Andy
+
+
+
