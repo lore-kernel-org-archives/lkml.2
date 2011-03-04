@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760008Ab1CDRQO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:16:14 -0500
-Received: from kroah.org ([198.145.64.141]:38585 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759801Ab1CDROd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759944Ab1CDROd (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 4 Mar 2011 12:14:33 -0500
-Date: Fri, 4 Mar 2011 09:12:56 -0800
+Received: from kroah.org ([198.145.64.141]:38573 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759768Ab1CDROc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 12:14:32 -0500
+Date: Fri, 4 Mar 2011 09:12:15 -0800
 From: Greg KH <greg@kroah.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Timo von Holtz <tvh@informatik.uni-kiel.de>
-Subject: Re: linux-next: manual merge of the staging tree with the v4l-dvb
- tree
-Message-ID: <20110304171256.GC22173@kroah.com>
-References: <20110304163856.7ce5d15d.sfr@canb.auug.org.au>
+        Richard Zhao <richard.zhao@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: linux-next: manual merge of the usb tree with the i.MX tree
+Message-ID: <20110304171215.GA22173@kroah.com>
+References: <20110304155800.b48993d7.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110304163856.7ce5d15d.sfr@canb.auug.org.au>
+In-Reply-To: <20110304155800.b48993d7.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 04:38:56PM +1100, Stephen Rothwell wrote:
+On Fri, Mar 04, 2011 at 03:58:00PM +1100, Stephen Rothwell wrote:
 > Hi Greg,
 > 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/dabusb/dabusb.c and drivers/staging/dabusb/dabusb.h
-> between commit f8f4a7f5c1219571acf55f3889138b594e5b3b68 ("[media] dabusb:
-> remove obsolete driver") from the v4l-dvb tree and commit
-> 868788278eaa5b841ec1a810b41e156f5fba0ab5 ("Staging: dabusb: fixed coding
-> style issues") from the staging tree.
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/gadget/fsl_mxc_udc.c between commit
+> 4d2f13be1e370a670c1cae20c194d5ce961e0fa5 ("ARM: imx3x: clean up
+> ARCH_MX3X") from the i.MX tree and commit
+> a51ea8cc9cfcfd719240455ff8f217b4f165d1d0 ("usb: gadget/fsl_mxc_udc:
+> Detect the CPU type in run-time") from the usb tree.
 > 
-> I removed the files.
+> The latter is a superset of the former, so I used that.
 
-That sounds correct, thanks.
+Thanks, I appreciate it.
 
 greg k-h
