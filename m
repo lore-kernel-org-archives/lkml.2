@@ -1,49 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759274Ab1CDJln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 04:41:43 -0500
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:55585 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1CDJlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 04:41:42 -0500
-Message-ID: <4D70B3E1.8020108@dcl.info.waseda.ac.jp>
-Date: Fri, 04 Mar 2011 18:41:53 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:2.0b10pre) Gecko/20110114 Thunderbird/3.3a2
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf lock: clean the options for perf record
-References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <4D63D685.2010401@dcl.info.waseda.ac.jp> <1298389415.2217.243.camel@twins> <20110222182206.GB1799@nowhere> <4D648A65.2040107@dcl.info.waseda.ac.jp> <4D667D60.5010903@dcl.info.waseda.ac.jp> <20110224165014.GB1840@nowhere> <4D67E286.8010907@dcl.info.waseda.ac.jp> <AANLkTikUGO=Obm7Ue4VzEueQ7DERPiwci1VV9NmKZf1u@mail.gmail.com>
-In-Reply-To: <AANLkTikUGO=Obm7Ue4VzEueQ7DERPiwci1VV9NmKZf1u@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759270Ab1CDJqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 04:46:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834Ab1CDJqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 04:46:11 -0500
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, lczerner@redhat.com, jmoyer@redhat.com
+Subject: [PATCH] block: fix mis-synchronisation in blkdev_issue_zeroout()
+Date: Fri,  4 Mar 2011 10:46:08 +0100
+Message-Id: <1299231968-5730-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/11 23:55, Frederic Weisbecker wrote:
-> On Sat, Feb 26, 2011 at 02:10:30AM +0900, Hitoshi Mitake wrote:
->> It seems that I was too preprocessed with the method and
->> forgot the purpose...
->>
->> Maybe the things like simple lockstat visualizer or
->> special diff between two lockstat snapshots are
->> useful for the first looking at big picture.
->> I feel that they have worth to write and test.
->
-> Indeed they sound like good ideas. Being able to do a diff
-> on locks profiles would be useful to compare two changes on
-> the kernel.
->
+BZ29402
+https://bugzilla.kernel.org/show_bug.cgi?id=29402
 
-BTW, how do you think about the idea of exporting data in
-python (or other neutral) expression from procfs? I feel it is a
-good idea. Communicating with unified format between user space and
-kernel space will reduce lots of parsing overhead. Is this too
-aggressive or insane?
+We can hit serious mis-synchronization in bio completion path of
+blkdev_issue_zeroout() leading to a panic.
+
+The problem is that when we are going to wait_for_completion() in
+blkdev_issue_zeroout() we check if the bb.done equals issued (number of
+submitted bios). If it does, we can skip the wait_for_completition()
+and just out of the function since there is nothing to wait for.
+However, there is a ordering problem because bio_batch_end_io() is
+calling atomic_inc(&bb->done) before complete(), hence it might seem to
+blkdev_issue_zeroout() that all bios has been completed and exit. At
+this point when bio_batch_end_io() is going to call complete(bb->wait),
+bb and wait does not longer exist since it was allocated on stack in
+blkdev_issue_zeroout() ==> panic!
+
+(thread 1)                      (thread 2)
+bio_batch_end_io()              blkdev_issue_zeroout()
+  if(bb) {                      ...
+    if (bb->end_io)             ...
+      bb->end_io(bio, err);     ...
+    atomic_inc(&bb->done);      ...
+    ...                         while (issued != atomic_read(&bb.done))
+    ...                         (let issued == bb.done)
+    ...                         (do the rest of the function)
+    ...                         return ret;
+    complete(bb->wait);
+    ^^^^^^^^
+    panic
+
+We can fix this easily by simplifying bio_batch and completion counting.
+We can count completion locally in blkdev_issue_zeroout() without need of
+locking or atomic operation because we are the only one handling issued
+variable holding the number of submitted bios. So remove atomic_t done
+from struct bio_batch.
+
+Also remove bio_end_io_t *end_io since it is not used.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reported-by: Eric Whitney <eric.whitney@hp.com>
+Tested-by: Eric Whitney <eric.whitney@hp.com>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ block/blk-lib.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 1a320d2..dcee6e2 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -106,10 +106,8 @@ EXPORT_SYMBOL(blkdev_issue_discard);
+ 
+ struct bio_batch
+ {
+-	atomic_t 		done;
+ 	unsigned long 		flags;
+ 	struct completion 	*wait;
+-	bio_end_io_t		*end_io;
+ };
+ 
+ static void bio_batch_end_io(struct bio *bio, int err)
+@@ -122,12 +120,8 @@ static void bio_batch_end_io(struct bio *bio, int err)
+ 		else
+ 			clear_bit(BIO_UPTODATE, &bb->flags);
+ 	}
+-	if (bb) {
+-		if (bb->end_io)
+-			bb->end_io(bio, err);
+-		atomic_inc(&bb->done);
++	if (bb)
+ 		complete(bb->wait);
+-	}
+ 	bio_put(bio);
+ }
+ 
+@@ -153,10 +147,8 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 	unsigned int sz, issued = 0;
+ 	DECLARE_COMPLETION_ONSTACK(wait);
+ 
+-	atomic_set(&bb.done, 0);
+ 	bb.flags = 1 << BIO_UPTODATE;
+ 	bb.wait = &wait;
+-	bb.end_io = NULL;
+ 
+ submit:
+ 	ret = 0;
+@@ -190,7 +182,7 @@ submit:
+ 	}
+ 
+ 	/* Wait for bios in-flight */
+-	while (issued != atomic_read(&bb.done))
++	while (issued--)
+ 		wait_for_completion(&wait);
+ 
+ 	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-- 
+1.7.4
+
