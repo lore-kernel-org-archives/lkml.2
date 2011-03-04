@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751050Ab1CDF3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 00:29:47 -0500
-Received: from deadhat.com ([71.245.97.202]:50364 "EHLO deadhat.com"
+	id S1750911Ab1CDFiv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 00:38:51 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60455 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab1CDF3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 00:29:46 -0500
-Message-ID: <4D7078C8.8050009@deadhat.com>
-Date: Thu, 03 Mar 2011 21:29:44 -0800
-From: David Johnston <dj@deadhat.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.14) Gecko/20110221 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, tytso@mit.edu,
-        richard.weinberger@gmail.com, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Subject: Re: Why is my copyright code in the linux kernel?
-References: <ded07e5c09d72da478c6218658095f5a.squirrel@deadhat.com> <AANLkTimg1x56B4Yu=Zsd0VEci2i4jRKaMU+gxv3oFVr8@mail.gmail.com> <20110301235433.GD2959@thunk.org> <4D6EBC04.5050709@zytor.com>
-In-Reply-To: <4D6EBC04.5050709@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750703Ab1CDFiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 00:38:50 -0500
+Date: Fri, 4 Mar 2011 16:38:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Timo von Holtz <tvh@informatik.uni-kiel.de>
+Subject: linux-next: manual merge of the staging tree with the v4l-dvb tree
+Message-Id: <20110304163841.fa243eef.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__4_Mar_2011_16_38_41_+1100_wR+nY66=zHxpoAVG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/2/2011 1:52 PM, H. Peter Anvin wrote:
-> On 03/01/2011 03:54 PM, Ted Ts'o wrote:
->> On Wed, Mar 02, 2011 at 12:30:45AM +0100, richard -rw- weinberger wrote:
->>>> You will see a remarkable resemblance to parts of
->>>> linux-2.6.36.2/drivers/staging/rt2860/common/cmm_aes.c. E.G. the AES code,
->>> please note, this is a staging driver.
->> It's not even the primary driver.  Is there anything that this driver
->> provides that isn't provided by the upstream supported, mainline
->> rt2x00 project?  I.e., can we just delete the staging driver?
->>
->> If we are going to keep the staging driver for some reason, one of the
->> things that should be added to the TODO list would be delete its
->> driver-specific AES code and replace it with calls to the kernel's
->> generic AES code, which among other things, has the advantage that it
->> can take advantage of the AES-NI instructions provided on more modern
->> x86 CPU's.
->>
->>>> I'd like to know who is an appropriate person to discuss this with.
->>> the code is from ralink.
->> David, you might want to contact ralink directly, since it's likely
->> they are distributing that driver with your AES code in other places
->> besides just in the mainstream kernel sources.  Even if we delete the
->> code in the staging tree, they might be distributing that driver still
->> via other means.
->>
-> I think it's more fundamental than that.  If ralink -- or anyone else --
-> submitted a plagiarized driver to the staging tree, we should remove it
-> immediately unless the copyright holder (David in this case) is willing
-> to allow us to retain it while things are sorted out.
->
-> And yes, David still needs to contact ralink about sorting out the
-> violation.
->
-> Finally, obviously, a proper Linux driver should use the AES facilities
-> in the kernel crypto core.
->
-> 	-hpa
-Yes I am willing to allow you to retain it.
-I guess, to be all legalese..
-     I herein permit you to use any 802.11 related C code taken from the 
-www.deadhat.com website, in the linux kernel, and to publish it under 
-the terms of version 2 of the GNU General Public License.
+--Signature=_Fri__4_Mar_2011_16_38_41_+1100_wR+nY66=zHxpoAVG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes I've emailed ralink and VIA. I hope they're nice people.
+Hi Greg,
 
-DJ
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/usbvideo/usbvideo.c between commit
+af6302700e87a883481c342001ef81b77641bf98 ([media] staging-usbvideo:
+remove"") from the v4l-dvb tree and commit  ("Staging: usbvideo:
+usbvideo: fixed some coding style issues") from the staging tree.
 
+I removed the file.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__4_Mar_2011_16_38_41_+1100_wR+nY66=zHxpoAVG
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNcHrhAAoJEDMEi1NhKgbsWfoIAJm7uFzHqDudxW36ypGMH7R7
+N9V81DeDZZN+G0J3MKCY2eyvwsgSoc7367QUHg3Bj3aJ8zjDj+pXo4wUHfIniYaY
+lhFMpdO7Zb7m4POLrHHxlgrBbP91GInU7aTbntUh0BgT1vPiAbn41bYXSUXeUy48
+qZ/ITUgnQTGR+ArGpR+udd9v/AWLLBZGfLUNxTdX21+JDr/g9UUa3LUcDV8qLr6o
+LhhfOZEX5E9P6a1w+D6aRV9GCYMhj+sdQTZ0Ltnh9uMcGTpeud0FXs0NW27tXTvM
+0lN8F+W/n3sLzcN3YRiWWz8PnoW4lLtuHzFz9CjqoGN1TPFPU1f5/EtPiteq2T8=
+=V5yH
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__4_Mar_2011_16_38_41_+1100_wR+nY66=zHxpoAVG--
