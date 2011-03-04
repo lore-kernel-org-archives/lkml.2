@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759765Ab1CDPtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:49:41 -0500
-Received: from eddie.linux-mips.org ([78.24.191.182]:32770 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759652Ab1CDPtk (ORCPT
+	id S1759792Ab1CDPu0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:50:26 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42240 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab1CDPuZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:49:40 -0500
-Date: Fri, 4 Mar 2011 16:49:12 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Maurus Cuelenaere <mcuelenaere@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: Jz4740: Add HAVE_CLK
-Message-ID: <20110304154912.GA24966@linux-mips.org>
-References: <4d6c2da3.cc7e0e0a.2116.ffffde18@mx.google.com>
- <4D6CB9C4.8000609@metafoo.de>
+	Fri, 4 Mar 2011 10:50:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6CB9C4.8000609@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1299204400.2812.35.camel@localhost>
+References: <1299204400.2812.35.camel@localhost>
+Date: Fri, 4 Mar 2011 10:50:23 -0500
+Message-ID: <AANLkTikoSnBZ5E2tD2d5QsLf4DxmQYi0rYtNRvnU8Fmz@mail.gmail.com>
+Subject: Re: BUG at mm/mmap.c:2309 when cx18.ko and cx18-alsa.ko loaded
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 10:17:56AM +0100, Lars-Peter Clausen wrote:
+On Thu, Mar 3, 2011 at 9:06 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+> Hi,
+>
+> I got a BUG when loading the cx18.ko module (which in turn requests the
+> cx18-alsa.ko module) on a kernel built from this repository
+>
+>        http://git.linuxtv.org/media_tree.git staging/for_v2.6.39
+>
+> which I beleive is based on 2.6.38-rc2.
+>
+> The BUG is mmap related and I'm almost certain it has to do with
+> userspace accessing cx18-alsa.ko ALSA device nodes, since cx18.ko
+> doesn't provide any mmap() related file ops.
+>
+> So here is my transcription of a fuzzy digital photo of the screen:
+<snip>
+> I'm not very familiar with mmap() nor ALSA and I did not author the
+> cx18-alsa part of the cx18 driver, so any hints at where to look for the
+> problem are appreciated.
 
-> On 03/01/2011 12:20 AM, Maurus Cuelenaere wrote:
-> > Jz4740 supports the clock framework but doesn't have HAVE_CLK defined, so define
-> > it!
-> > 
-> > Signed-off-by: Maurus Cuelenaere <mcuelenaere@gmail.com>
-> 
-> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Hi Andy,
 
-Thanks folks.  Applied,
+I'm traveling on business for about two weeks, so I won't be able to
+look into this right now.
 
-  Ralf
+Any idea whether this is some new regression?  I'm just trying to
+understand whether this is something that has always been there since
+I originally added the ALSA support to cx18 or whether it's something
+that is new, in which case it might make sense to drag the ALSA people
+into the conversation since there haven't been any changes in the cx18
+driver lately.
+
+Devin
+
+-- 
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
