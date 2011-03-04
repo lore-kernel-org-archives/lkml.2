@@ -1,130 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760201Ab1CDXaf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 18:30:35 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:18669
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759644Ab1CDXad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 18:30:33 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <xiao-lizhang@freescale.com>, <Ranjani.Vaidyanathan@freescale.com>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv2 2/2] ARM: mx51: Add support for low power suspend on MX51
-Date: Fri, 4 Mar 2011 17:29:59 -0600
-Message-ID: <1299281399-32304-2-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+	id S1760147Ab1CDXcY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 18:32:24 -0500
+Received: from kroah.org ([198.145.64.141]:43296 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759747Ab1CDXcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 18:32:23 -0500
+Date: Fri, 4 Mar 2011 15:10:31 -0800
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [REVIEW] NVM Express driver
+Message-ID: <20110304231031.GA27628@kroah.com>
+References: <20110303211336.GA32645@kroah.com>
+ <20110303214104.GZ3663@linux.intel.com>
+ <20110303215155.GA30451@kroah.com>
+ <20110303220735.GA3663@linux.intel.com>
+ <20110303222226.GA30966@kroah.com>
+ <20110304124348.6419c661@lxorguk.ukuu.org.uk>
+ <20110304212851.GB28680@kroah.com>
+ <20110304215915.18199ce1@lxorguk.ukuu.org.uk>
+ <20110304221034.GD25574@kroah.com>
+ <20110304223329.18a81f5f@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110304223329.18a81f5f@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On Fri, Mar 04, 2011 at 10:33:29PM +0000, Alan Cox wrote:
+> > > How do most other apps do it.
+> > 
+> > They write to the sysfs file with the firmware when they feel like it.
+> 
+> Very few seem to do this. Quite a lot also have a much more complex
+> interaction anyway than 'firmware please', 'zap' , 'ok' to be fair.
+> 
+> > > > So, what could be changed in the current firmware interface to fix this
+> > > > problem in a manner which would solve these perceived issues?
+> > > 
+> > > I'm not sure it can. The basis of the interface is driver requests
+> > > firmware. That is done by using a pathname which in a namespaced
+> > > environment isn't global and has races
+> > 
+> > Of course, but those races don't show up in real systems, right?
+> 
+> They do. That's why I know they exist. If enough people use your distro
+> then eventually someone catches it.
 
-Adds initial low power suspend functionality to MX51.
-Supports "mem" and "standby" modes.
+Ok, I guess I must be doing support for distros that never get used :)
 
-Tested on mx51-babbage.
+Have pointers to bug reports?
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/Makefile   |    1 +
- arch/arm/mach-mx5/pm-imx51.c |   62 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 63 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-mx5/pm-imx51.c
+> > > (Several things break quite spectacularly if you request_firmware while
+> > > updating a package, but of course nobody considered such details even for
+> > > automatic stuff in many cases. Really there is some locking needed).
+> > 
+> > I've never heard of this race before as you usually do firmware upload
+> > either at boot time, or when a user specifically asks for it.  Neither
+> > of those times is when packages are usually getting updated.
+> 
+> Usually is not a good answer for correctness and security with firmware.
+> It's really really not a good answer when flashing new firmware. "Usually
+> your expensive hardware is not turned into a valueless brick" lacks a
+> certain something.
+> 
+> For dynamically requested firmware the request_firmware interface is
+> excellent stuff, and the right way to fix the races is to lock between
+> the daemon and package manager. For flashing stuff it's not up to the job.
 
-diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
-index 1106acd..2f6258e 100644
---- a/arch/arm/mach-mx5/Makefile
-+++ b/arch/arm/mach-mx5/Makefile
-@@ -6,6 +6,7 @@
- obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o system.o
- obj-$(CONFIG_SOC_IMX50) += mm-mx50.o
- 
-+obj-$(CONFIG_PM) += pm-imx51.o
- obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
- obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
- obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
-diff --git a/arch/arm/mach-mx5/pm-imx51.c b/arch/arm/mach-mx5/pm-imx51.c
-new file mode 100644
-index 0000000..6bb76e2
---- /dev/null
-+++ b/arch/arm/mach-mx5/pm-imx51.c
-@@ -0,0 +1,62 @@
-+/*
-+ *  Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+#include <linux/suspend.h>
-+#include <asm/mach/map.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlb.h>
-+#include <mach/system.h>
-+#include "crm_regs.h"
-+
-+static int mx5_suspend_enter(suspend_state_t state)
-+{
-+	switch (state) {
-+	case PM_SUSPEND_MEM:
-+		mx5_cpu_lp_set(STOP_POWER_OFF);
-+		break;
-+	case PM_SUSPEND_STANDBY:
-+		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	if (state == PM_SUSPEND_MEM) {
-+		local_flush_tlb_all();
-+		flush_cache_all();
-+
-+		/*clear the EMPGC0/1 bits */
-+		__raw_writel(0, MXC_SRPG_EMPGC0_SRPGCR);
-+		__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
-+	}
-+
-+	cpu_do_idle();
-+
-+	return 0;
-+}
-+
-+static int mx5_pm_valid(suspend_state_t state)
-+{
-+	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
-+}
-+
-+static const struct platform_suspend_ops mx5_suspend_ops = {
-+	.valid = mx5_pm_valid,
-+	.enter = mx5_suspend_enter,
-+};
-+
-+static int __init mx5_pm_init(void)
-+{
-+	if (cpu_is_mx51())
-+		suspend_set_ops(&mx5_suspend_ops);
-+
-+	return 0;
-+}
-+device_initcall(mx5_pm_init);
--- 
-1.6.0.4
+Fair enough.
 
+> > > For manual updating of a block of firmware the interface most stuff wants
+> > > is
+> > > 
+> > > 	copy_from_user()
+> > > 
+> > > or if you wanted to wrap it up nicely
+> > > 
+> > > 	x = vmalloc_from_user(void __user *ptr, ssize_t len);
+> > > 
+> > > The app knows which firmware it is talking about and can inspect and
+> > > compare it while holding an open file handle on the deivce. That protects
+> > > against hotplug races and getting the wrong device second access, and
+> > > ensures that the firmware, device and userspace are all talking about
+> > > exactly the same thing.
+> > 
+> > But you do get this type of buffer from the firware interface to your
+> > driver today, right?
+> 
+> Providing you jump through a small army of hoops, get the right sysfs
+> nodes, dodge any race conditions, hotplug and the like yes. But it should
+> be robust and simple. Using request_firmware for this case is neither
+> robust nor simple, nor is it easy to get the sysfs/driver open/hotplug
+> race handling right so instead of the kernel code being very occasionally
+> buggy (which we can spot) the user apps will be horribly buggy and we
+> don't read those so your push for a complex mis-standard in the kernel
+> actually makes the problem far worse than it would be without.
+> 
+> > Still, I don't want this to all of a sudden be "open season" for every
+> > individual driver deciding to want to create an ioctl call for firmware
+> > updating just because the authors don't like the existing in-kernel
+> > interface.  Please fix up the in-kernel one instead to meet your needs.
+> 
+> You are not creating an open season. The every driver having its own
+> ioctl for firmware updating is the norm, and its in some ways a rather
+> good norm because when it comes to flash updating there isn't much
+> standardisation and you don't want standardisation as it just asks for
+> the wrong tool to work in an unfortunate race or user mix-up. Flash
+> updating is special - it's good that one app doesn't work on another
+> device !
+> 
+> You could have a standardised helper easily enough I guess. Pick a
+> standard struct and firmware descriptor and provide a
+> 
+> request_firmware_from_user(struct firmware_something __user *fw)
+> 
+> which hands back stuff in the form the rest of the firmware logic likes
+> to play and has a standard user side struct format.
 
+Ok, patches gladly accepted :)
+
+As well as the general "The firmware subsystem needs an active
+maintainer" plea, as the previous maintainer passed away a number of
+years ago :(
+
+thanks,
+
+greg k-h
