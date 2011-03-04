@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759836Ab1CDPv0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:51:26 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62079 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759668Ab1CDPvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:51:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=OVr4eLLG0Mf9G9hHxcK8/xary4iadIFZ4dQI8/FtJTLWkVGn/0WIHDfSaIIGHxxmBp
-         nTDYRPDiuViUS5KaYxSJ7tqBafFIRJldGLrQxaWt6AZyNxqX6ofAo71Qmc7aRYPbSPfx
-         A/ANZ7lDRod6ZKqOUHlzwIEjt87Inoc+i+iPA=
-Date: Fri, 4 Mar 2011 16:51:18 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Subject: [GIT PULL tip:x86/mm] x86-64 NUMA changes
-Message-ID: <20110304155106.GU20499@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759734Ab1CDPwj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:52:39 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:35133 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab1CDPwi convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Fri, 4 Mar 2011 10:52:38 -0500
+Message-Id: <4D7118D30200007800034F79@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 04 Mar 2011 15:52:35 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <davej@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: really print supported CPUs if PROCESSOR_SELECT=y
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo.
+I'm sure it was a mere oversight that the CONFIG_ prefixes are missing.
 
-Please pull from the following git branch to receive x86-64 NUMA
-changes.  It contains four commits.  As discussed before, NUMA affine
-page table allocation is reverted.  Two to fix node0 online assumption
-and one making initmem_init() prettier.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Dave Jones <davej@redhat.com>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
+---
+ arch/x86/kernel/cpu/common.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-As usual, if HEAD doesn't appear, please pull from master.
+--- 2.6.38-rc7/arch/x86/kernel/cpu/common.c
++++ 2.6.38-rc7-x86-show-supported-cpus/arch/x86/kernel/cpu/common.c
+@@ -675,7 +675,7 @@ void __init early_cpu_init(void)
+ 	const struct cpu_dev *const *cdev;
+ 	int count = 0;
+ 
+-#ifdef PROCESSOR_SELECT
++#ifdef CONFIG_PROCESSOR_SELECT
+ 	printk(KERN_INFO "KERNEL supported cpus:\n");
+ #endif
+ 
+@@ -687,7 +687,7 @@ void __init early_cpu_init(void)
+ 		cpu_devs[count] = cpudev;
+ 		count++;
+ 
+-#ifdef PROCESSOR_SELECT
++#ifdef CONFIG_PROCESSOR_SELECT
+ 		{
+ 			unsigned int j;
+ 
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
 
-tip:x86/mm contains d04c579f9 (x86: Work around old gas bug) making
-this pull non-fastforward; however, pulling won't generate any
-conflict.
 
-Thank you.
-
-David Rientjes (1):
-      x86-64, NUMA: Clean up initmem_init()
-
-Tejun Heo (2):
-      x86-64, NUMA: Revert NUMA affine page table allocation
-      x86-64, NUMA: Don't assume phys node 0 is always online in numa_emulation()
-
-Yinghai Lu (1):
-      x86-64, NUMA: Fix numa_emulation code with node0 without RAM
-
- arch/x86/include/asm/page_types.h |    2 -
- arch/x86/kernel/setup.c           |    8 +++
- arch/x86/mm/init_64.c             |   54 ---------------------
- arch/x86/mm/numa_64.c             |   96 +++++++++++++++++++++----------------
- arch/x86/mm/numa_emulation.c      |   20 ++++++--
- 5 files changed, 79 insertions(+), 101 deletions(-)
-
--- 
-tejun
