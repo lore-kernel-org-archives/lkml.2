@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759404Ab1CDLEI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 06:04:08 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59676 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab1CDLEG (ORCPT
+	id S1759435Ab1CDLGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 06:06:12 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:58291 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752084Ab1CDLGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 06:04:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=umRhdM2f/nEAZ4AaGXIlo/kocMJQXuYuAO8zIKASKmuky+gKaVp6yoFpDnP/0NFood
-         GSwmjqqS8Dw5cVfIAS2sfITW7MaugyHLP/tyeZQH9vBDo+eGZ+h+vjraKHRBTOZ5LzFo
-         YEvLOSs4mdoliwu9oxUOBlKE4gyzvk0lf6JYw=
-Date: Fri, 4 Mar 2011 12:04:01 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH for .39] x86, numa: Fix numa_emulation code with node0
- without RAM
-Message-ID: <20110304110401.GI20499@htj.dyndns.org>
-References: <4D6ED045.3090309@kernel.org>
+	Fri, 4 Mar 2011 06:06:10 -0500
+X-Authenticated: #911537
+X-Provags-ID: V01U2FsdGVkX19603k5/8t6s3zlk5OgDTbIWtNVie39b1qMwwOoDc
+	Xb0xXMftPwSf05
+Date: Fri, 4 Mar 2011 12:06:06 +0100
+From: torbenh <torbenh@gmx.de>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        richard.cochran@omicron.at, tglx@linutronix.de
+Subject: Re: [PATCH 2/3] ptp: add a software clock based on
+ clock_monotonic_raw
+Message-ID: <20110304110606.GB3237@siel.b>
+Mail-Followup-To: Richard Cochran <richardcochran@gmail.com>,
+	john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+	richard.cochran@omicron.at, tglx@linutronix.de
+References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
+ <1299173174-348-3-git-send-email-torbenh@gmx.de>
+ <1299180844.28285.111.camel@work-vm>
+ <20110304064639.GD3824@riccoc20.at.omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D6ED045.3090309@kernel.org>
+In-Reply-To: <20110304064639.GD3824@riccoc20.at.omicron.at>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 03:18:29PM -0800, Yinghai Lu wrote:
+On Fri, Mar 04, 2011 at 07:46:39AM +0100, Richard Cochran wrote:
+> On Thu, Mar 03, 2011 at 11:34:04AM -0800, john stultz wrote:
+> > On Thu, 2011-03-03 at 18:26 +0100, Torben Hohn wrote:
+> > > First version of a software clock. Not very useful yet,
+> > > as it doesnt generate events, but at least it allows
+> > > for testing the ptp framework without special hardware.
+> > 
+> > So in the past, I pushed back on Richard for having something similar,
+> > as I'm not psyched about duplicating interfaces. However, your
+> > implementation is CLOCK_MONOTONIC_RAW instead of CLOCK_REALTIME and it
+> > keeps the adjustments internal, I'm not as opposed.
 > 
-> On one system that does not have RAM on node0.
+> (Aha! So it is okay after all ;)
 > 
-> when numa_emulation is compiled in, and
-> 1. boot system without numa=fake...
-> 2. or boot system with numa=fake=128 to make emulation fail
-> 
-> will get:
-> 
-> [    0.092026] ------------[ cut here ]------------
-> [    0.096005] kernel BUG at arch/x86/mm/numa_emulation.c:439!
-> [    0.096005] invalid opcode: 0000 [#1] SMP 
-> [    0.096005] last sysfs file: 
-> [    0.096005] CPU 0 
-> [    0.096005] Modules linked in:
-> [    0.096005] 
-> [    0.096005] Pid: 0, comm: swapper Not tainted 2.6.38-rc6-tip-yh-03869-gcb0491d-dirty #684 Sun Microsystems     Sun Fire X4240/Sun Fire X4240
-> [    0.096005] RIP: 0010:[<ffffffff81cdc65b>]  [<ffffffff81cdc65b>] numa_add_cpu+0x56/0xcf
-> [    0.096005] RSP: 0000:ffffffff82437ed8  EFLAGS: 00010246
-> ...
-> [    0.096005] Call Trace:
-> [    0.096005]  [<ffffffff81cd7931>] identify_cpu+0x2d7/0x2df
-> [    0.096005]  [<ffffffff827e54fa>] identify_boot_cpu+0x10/0x30
-> [    0.096005]  [<ffffffff827e5704>] check_bugs+0x9/0x2d
-> [    0.096005]  [<ffffffff827dceda>] start_kernel+0x3d7/0x3f1
-> [    0.096005]  [<ffffffff827dc2cc>] x86_64_start_reservations+0x9c/0xa0
-> [    0.096005]  [<ffffffff827dc4ad>] x86_64_start_kernel+0x1dd/0x1e8
-> [    0.096005] Code: 74 06 48 8d 04 90 eb 0f 48 c7 c0 30 d9 00 00 48 03 04 d5 90 0f 60 82 8b 00 83 f8 ff 74 0d 0f a3 05 8b 7e 92 00 19 d2 85 d2 75 02 <0f> 0b 48 98 be 00 01 00 00 48 c7 c7 e0 44 60 82 44 8b 2c 85 e0 
-> [    0.096005] RIP  [<ffffffff81cdc65b>] numa_add_cpu+0x56/0xcf
-> [    0.096005]  RSP <ffffffff82437ed8>
-> [    0.096026] ---[ end trace a7919e7f17c0a725 ]---
-> 
-> need to used early_cpu_to_node directly, because numa_cpu_node() will return node0 that is not onlined.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> I do think a software only PHC will make it easier for people to get
+> started with the new interface. I have been carrying along such a
+> patch privately for my own testing.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+can you post your patch then ?
+if john likes somthing better in my implementation, we should merge
+them.
 
-Thanks.
+i will be away for the next week, so its probably up to you.
+
+i am still trying to find out, whether 802.1AS will spec accurate ptp
+clocks. i have the feeling that they wont.
+the main concern is synchronicity of the clock inside all devices of the
+timing domain. that this clock i running at the same frequency as the
+wallclock is not important.
+
+here is a pretty confused mail about this:
+http://article.gmane.org/gmane.comp.audio.jackit/23606
+
+i hope this thread will yield more useful information as it develops.
+
+i am currently acting under the assumption, that a device like this:
+http://www.xmos.com/products/reference-designs/avbl2
+would need to be the ptp master when the computer doesnt have h/w
+timestamping in its NIC.
+i am also assuming that the clock in that device would be crappy.
+
+so we wouldnt want to servo CLOCK_REALTIME after that crappy clock.
+but we want an instance of that clock as accurate as possible inside 
+the computer. so that we can bind streaming apps to this clock.
 
 -- 
-tejun
+torben Hohn
