@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760313Ab1CDVqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:46:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63790 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760290Ab1CDVqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:46:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sgVu1eGgjr3b8l/+HvcsQvdZz+WWNxf/v+tEBcBLa2L6GoRIvyDN/427+lqujR5VZ8
-         sDWmkNVVgdhbrUEtof+xWzbHy+EwVgQfR4Y/OlIW79uyZXaxuUXJbh9S+TRifVSwXi9p
-         HqUkhj0/SlNoOsRfUCQB6cYKGiE31GoiRa2XA=
-Date: Sat, 5 Mar 2011 00:46:32 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] power: disable hibernation if module loading is
- disabled
-Message-ID: <20110304214630.GA29883@albatros>
-References: <1299255084-4390-1-git-send-email-segoon@openwall.com>
- <201103042142.09247.rjw@sisk.pl>
- <20110304211035.GA28842@albatros>
- <201103042221.02852.rjw@sisk.pl>
+	id S1760308Ab1CDVuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:50:08 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:43377 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760255Ab1CDVuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:50:07 -0500
+X-ASG-Debug-ID: 1299275406-03d6a54f600b830001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D715E8A.5070006@fusionio.com>
+Date: Fri, 4 Mar 2011 22:50:02 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103042221.02852.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mike Snitzer <snitzer@redhat.com>
+CC: Shaohua Li <shli@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com> <1295659049-2688-6-git-send-email-jaxboe@fusionio.com> <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com> <20110303221353.GA10366@redhat.com> <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com> <20110304214359.GA18442@redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <20110304214359.GA18442@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299275406
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57060
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 22:21 +0100, Rafael J. Wysocki wrote:
-> On Friday, March 04, 2011, Vasiliy Kulikov wrote:
-> > If modules_disabled is set to 1, then nobody, even full root may not write
-> > to the kernel, right?  So, if something permits to indirectly pass
-> > modules_disabled restriction, this is a bug.  Otherwise,
-> > modules_disabled is confusing as it gives false sense of security.
-> > 
-> > -OR-
-> > 
-> > modules_disabled's documentation should be changed to note that it
-> > doesn't prevent rootkit uploading, but only forbids modprob'ing modules
-> > via the "official" init_module(2) gate, disallowing e.g. module autoloading.
+On 2011-03-04 22:43, Mike Snitzer wrote:
+> On Fri, Mar 04 2011 at  8:02am -0500,
+> Shaohua Li <shli@kernel.org> wrote:
 > 
-> Why not to change that documentation, then?
+>> 2011/3/4 Mike Snitzer <snitzer@redhat.com>:
+>>> I'm now hitting a lockdep issue, while running a 'for-2.6.39/stack-plug'
+>>> kernel, when I try an fsync heavy workload to a request-based mpath
+>>> device (the kernel ultimately goes down in flames, I've yet to look at
+>>> the crashdump I took)
+>>>
+>>>
+>>> =======================================================
+>>> [ INFO: possible circular locking dependency detected ]
+>>> 2.6.38-rc6-snitm+ #2
+>>> -------------------------------------------------------
+>>> ffsb/3110 is trying to acquire lock:
+>>>  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff811b4c4d>] flush_plug_list+0xbc/0x135
+>>>
+>>> but task is already holding lock:
+>>>  (&rq->lock){-.-.-.}, at: [<ffffffff8137132f>] schedule+0x16a/0x725
+>>>
+>>> which lock already depends on the new lock.
+>> I hit this too. Can you check if attached debug patch fixes it?
+> 
+> Fixes it for me.
 
-Because it's better to fix something (if it is possible, of course) than
-simply documenting the bug.
+The preempt bit in block/ should not be needed. Can you check whether
+it's the moving of the flush in sched.c that does the trick?
 
-> Also, please note that in order to "write" into memory using the hibernation
-> interface you need to have write access to swap,
-
-No, you may just "write the kernel" via write() /dev/snapshot, this is
-the way uswsusp works.  I didn't check whether it really needs
-temporary file to change the kernel memory or it may be done entirely
-without disk iteraction.  This is irrelevant to modules_disabled policy
-violation, though.
-
-> which you can use to corrupt
-> memory regardless of the modules_disabled setting AFAICS.
-
-Please correct me if I'm wrong, but kernel memory is not swappable at
-all and only userspace memory is written to the swap.  Root with
-CAP_SYS_ADMIN already may do everything with all processes, so this is
-not a threat.
-
-If one may change kernel memory via swap then it is another problem with
-modules_disabled.
-
-Thanks,
+The problem with the current spot is that it's under the runqueue lock.
+The problem with the modified variant is that we flush even if the task
+is not going to sleep. We really just want to flush when it is going to
+move out of the runqueue, but we want to do that outside of the runqueue
+lock as well.
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Jens Axboe
+
