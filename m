@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab1CDWLM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 17:11:12 -0500
-Received: from kroah.org ([198.145.64.141]:39311 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932498Ab1CDWLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 17:11:10 -0500
-Date: Fri, 4 Mar 2011 14:10:34 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [REVIEW] NVM Express driver
-Message-ID: <20110304221034.GD25574@kroah.com>
-References: <20110303204749.GY3663@linux.intel.com>
- <20110303211336.GA32645@kroah.com>
- <20110303214104.GZ3663@linux.intel.com>
- <20110303215155.GA30451@kroah.com>
- <20110303220735.GA3663@linux.intel.com>
- <20110303222226.GA30966@kroah.com>
- <20110304124348.6419c661@lxorguk.ukuu.org.uk>
- <20110304212851.GB28680@kroah.com>
- <20110304215915.18199ce1@lxorguk.ukuu.org.uk>
+	id S932679Ab1CDWO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 17:14:59 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:47529 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932629Ab1CDWO6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 17:14:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=mArsyyLvPpVj+3Mag0kZ3z6Ip8VXdN0sBGEKI2ZWRjYze2DB7qxu3kqABuPhdx5CqG
+         vLN0HBXhCz3XPrCcXWPvXLt/lggHiGaNeudUkmo/Syy/UI8V4AVjv7aCXCg0QDZmguMI
+         qUPqfVX7xisRN/vxCeM4XvaYkvkvONW6FeNb4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304215915.18199ce1@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikA=88EMs8RRm0RPQ+Q9nKj=2G+G86h5nCnV7Se@mail.gmail.com>
+References: <1299174652.2071.12.camel@dan>
+	<1299185882.3062.233.camel@calx>
+	<1299186986.2071.90.camel@dan>
+	<1299188667.3062.259.camel@calx>
+	<1299191400.2071.203.camel@dan>
+	<2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
+	<AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
+	<1299260164.8493.4071.camel@nimitz>
+	<AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>
+	<1299262495.3062.298.camel@calx>
+	<AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
+	<1299270709.3062.313.camel@calx>
+	<1299271377.2071.1406.camel@dan>
+	<AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
+	<1299272907.2071.1415.camel@dan>
+	<AANLkTina+O77BFV+7mO9fX2aJimpO0ov_MKwxGtMwqG+@mail.gmail.com>
+	<1299275042.2071.1422.camel@dan>
+	<AANLkTikA=88EMs8RRm0RPQ+Q9nKj=2G+G86h5nCnV7Se@mail.gmail.com>
+Date: Sat, 5 Mar 2011 00:14:57 +0200
+X-Google-Sender-Auth: iWmbkVeASp9fFyER2WN2nY6bGBo
+Message-ID: <AANLkTikQxOgYFLbc2KbEKgRYL1RCnkPE-T80-GBY2Cgj@mail.gmail.com>
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+From: Pekka Enberg <penberg@kernel.org>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Matt Mackall <mpm@selenic.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        cl@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 09:59:15PM +0000, Alan Cox wrote:
-> > And non-automated loading of firmware as well.  Dell uses this for
-> > updating their BIOSes just fine, with a userspace tool that initiates
-> > the loading of the firmware.
-> 
-> Try using the Dell tool with namespaces.
+On Sat, Mar 5, 2011 at 12:10 AM, Pekka Enberg <penberg@kernel.org> wrote:
+> I can think of four things that will make things harder for the
+> attacker (in the order of least theoretical performance impact):
+>
+>  (1) disable slub merging
+>
+>  (2) pin down random objects in the slab during setup (i.e. don't
+> allow them to be allocated)
+>
+>  (3) randomize the initial freelist
+>
+>  (4) randomize padding between objects in a slab
+>
+> AFAICT, all of them will make brute force attacks using the kernel
+> heap as an attack vector harder but won't prevent them.
 
-Heck, try using _any_ tool that talks to sysfs with namespaces, don't
-try to claim that this driver using its own custom firmware loader is a
-solution to the namespace/sysfs issue please.  That's very disingenuous.
+There's also a fifth one:
 
-> > How does Dell do it?
-> 
-> How do most other apps do it.
+  (5) randomize slab page allocation order
 
-They write to the sysfs file with the firmware when they feel like it.
+which will make it harder to make sure you have full control over a
+slab and figure out which allocation lands on it.
 
-> > So, what could be changed in the current firmware interface to fix this
-> > problem in a manner which would solve these perceived issues?
-> 
-> I'm not sure it can. The basis of the interface is driver requests
-> firmware. That is done by using a pathname which in a namespaced
-> environment isn't global and has races
-
-Of course, but those races don't show up in real systems, right?
-
-> (Several things break quite spectacularly if you request_firmware while
-> updating a package, but of course nobody considered such details even for
-> automatic stuff in many cases. Really there is some locking needed).
-
-I've never heard of this race before as you usually do firmware upload
-either at boot time, or when a user specifically asks for it.  Neither
-of those times is when packages are usually getting updated.
-
-> For manual updating of a block of firmware the interface most stuff wants
-> is
-> 
-> 	copy_from_user()
-> 
-> or if you wanted to wrap it up nicely
-> 
-> 	x = vmalloc_from_user(void __user *ptr, ssize_t len);
-> 
-> The app knows which firmware it is talking about and can inspect and
-> compare it while holding an open file handle on the deivce. That protects
-> against hotplug races and getting the wrong device second access, and
-> ensures that the firmware, device and userspace are all talking about
-> exactly the same thing.
-
-But you do get this type of buffer from the firware interface to your
-driver today, right?
-
-> It would nice to say "its an obscure corner case that will just error",
-> but far too much hardware still gets semi permanently (or permanently)
-> converted into junk if you goof a permanent flash firmware update.
-
-One would hope that the hardware was a bit more resiliant than that, but
-I know how hardware is designed :(
-
-Still, I don't want this to all of a sudden be "open season" for every
-individual driver deciding to want to create an ioctl call for firmware
-updating just because the authors don't like the existing in-kernel
-interface.  Please fix up the in-kernel one instead to meet your needs.
-
-thanks,
-
-greg k-h
+                        Pekka
