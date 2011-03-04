@@ -1,51 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab1CDCBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 21:01:41 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62857 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759086Ab1CDCBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 21:01:40 -0500
-Message-ID: <4D704888.7000707@cn.fujitsu.com>
-Date: Fri, 04 Mar 2011 10:03:52 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1759220Ab1CDCCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 21:02:06 -0500
+Received: from mga14.intel.com ([143.182.124.37]:19328 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759157Ab1CDCCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 21:02:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,261,1297065600"; 
+   d="scan'208";a="397329287"
+Date: Fri, 4 Mar 2011 10:01:58 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Chris Mason <chris.mason@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/27] nfs: writeback pages wait queue
+Message-ID: <20110304020157.GB7976@localhost>
+References: <20110303064505.718671603@intel.com>
+ <20110303074949.809203319@intel.com>
+ <1299168481.1310.56.camel@laptop>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Wolfram Sang <w.sang@pengutronix.de>, Jinqiu <crindy646@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Fix bug #13853: dereference pointer 'dev' before null
- check
-References: <4D6EFAE5.4000400@gmail.com>	<4D6F01DA.3040307@cn.fujitsu.com>	<20110303081156.GA14163@pengutronix.de> <20110303084125.57f43b81.rdunlap@xenotime.net>
-In-Reply-To: <20110303084125.57f43b81.rdunlap@xenotime.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-04 10:00:29,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-04 10:00:30,
-	Serialize complete at 2011-03-04 10:00:30
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299168481.1310.56.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap wrote:
-> On Thu, 3 Mar 2011 09:11:56 +0100 Wolfram Sang wrote:
+On Fri, Mar 04, 2011 at 12:08:01AM +0800, Peter Zijlstra wrote:
+> On Thu, 2011-03-03 at 14:45 +0800, Wu Fengguang wrote:
+> > +static void nfs_wakeup_congested(long nr,
+> > +                                struct backing_dev_info *bdi,
+> > +                                wait_queue_head_t *wqh)
+> > +{
+> > +       long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
+> > +
+> > +       if (nr < 2 * limit - min(limit / 8, NFS_WAIT_PAGES)) {
+> > +               if (test_bit(BDI_sync_congested, &bdi->state)) {
+> > +                       clear_bdi_congested(bdi, BLK_RW_SYNC);
+> > +                       smp_mb__after_clear_bit();
+> > +               }
+> > +               if (waitqueue_active(&wqh[BLK_RW_SYNC]))
+> > +                       wake_up(&wqh[BLK_RW_SYNC]);
+> > +       }
+> > +       if (nr < limit - min(limit / 8, NFS_WAIT_PAGES)) {
+> > +               if (test_bit(BDI_async_congested, &bdi->state)) {
+> > +                       clear_bdi_congested(bdi, BLK_RW_ASYNC);
+> > +                       smp_mb__after_clear_bit();
+> > +               }
+> > +               if (waitqueue_active(&wqh[BLK_RW_ASYNC]))
+> > +                       wake_up(&wqh[BLK_RW_ASYNC]);
+> > +       }
+> > +} 
 > 
->> Hi,
->>
->>> Don't ever mention "bug #13853", because this number makes no sense
->>> for everyone except you. A proper subject may be:
->>>
->>> [PATCH] ariadne: fix possible null dereference.
->>
->> I agree for the subject line. Still, in the body or maybe after the "---" I'd
->> think it makes sense, so it is known there is a bugzilla entry to close? Also,
->> using search engines, one will be able to dig up the patch.
-> 
-> It should just refer to the full bugzilla #13853 URL:
-> https://bugzilla.kernel.org/show_bug.cgi?id=13853
-> 
+> memory barriers want a comment - always - explaining what they order and
+> against whoem.
 
-Ok, then this should be made clear, for example add the URL in the changelog.
+OK. Added this comment:
 
+                        clear_bdi_congested(bdi, BLK_RW_SYNC);
+                        /*
+                         * On the following wake_up(), nfs_wait_congested()
+                         * will see the cleared bit and quit.
+                         */
+                        smp_mb__after_clear_bit();
+                }
+                if (waitqueue_active(&wqh[BLK_RW_SYNC]))
+                        wake_up(&wqh[BLK_RW_SYNC]);
+
+Thanks,
+Fengguang
+---
+Subject: nfs: writeback pages wait queue
+Date: Tue Aug 03 22:47:07 CST 2010
+
+The generic writeback routines are departing from congestion_wait()
+in preference of get_request_wait(), aka. waiting on the block queues.
+
+Introduce the missing writeback wait queue for NFS, otherwise its
+writeback pages will grow out of control, exhausting all PG_dirty pages.
+
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/nfs/client.c           |    2 
+ fs/nfs/write.c            |   97 +++++++++++++++++++++++++++++++-----
+ include/linux/nfs_fs_sb.h |    1 
+ 3 files changed, 89 insertions(+), 11 deletions(-)
+
+--- linux-next.orig/fs/nfs/write.c	2011-03-03 14:44:16.000000000 +0800
++++ linux-next/fs/nfs/write.c	2011-03-04 09:58:38.000000000 +0800
+@@ -185,11 +185,72 @@ static int wb_priority(struct writeback_
+  * NFS congestion control
+  */
+ 
++#define NFS_WAIT_PAGES	(1024L >> (PAGE_SHIFT - 10))
+ int nfs_congestion_kb;
+ 
+-#define NFS_CONGESTION_ON_THRESH 	(nfs_congestion_kb >> (PAGE_SHIFT-10))
+-#define NFS_CONGESTION_OFF_THRESH	\
+-	(NFS_CONGESTION_ON_THRESH - (NFS_CONGESTION_ON_THRESH >> 2))
++/*
++ * SYNC requests will block on (2*limit) and wakeup on (2*limit-NFS_WAIT_PAGES)
++ * ASYNC requests will block on (limit) and wakeup on (limit - NFS_WAIT_PAGES)
++ * In this way SYNC writes will never be blocked by ASYNC ones.
++ */
++
++static void nfs_set_congested(long nr, struct backing_dev_info *bdi)
++{
++	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
++
++	if (nr > limit && !test_bit(BDI_async_congested, &bdi->state))
++		set_bdi_congested(bdi, BLK_RW_ASYNC);
++	else if (nr > 2 * limit && !test_bit(BDI_sync_congested, &bdi->state))
++		set_bdi_congested(bdi, BLK_RW_SYNC);
++}
++
++static void nfs_wait_congested(int is_sync,
++			       struct backing_dev_info *bdi,
++			       wait_queue_head_t *wqh)
++{
++	int waitbit = is_sync ? BDI_sync_congested : BDI_async_congested;
++	DEFINE_WAIT(wait);
++
++	if (!test_bit(waitbit, &bdi->state))
++		return;
++
++	for (;;) {
++		prepare_to_wait(&wqh[is_sync], &wait, TASK_UNINTERRUPTIBLE);
++		if (!test_bit(waitbit, &bdi->state))
++			break;
++
++		io_schedule();
++	}
++	finish_wait(&wqh[is_sync], &wait);
++}
++
++static void nfs_wakeup_congested(long nr,
++				 struct backing_dev_info *bdi,
++				 wait_queue_head_t *wqh)
++{
++	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
++
++	if (nr < 2 * limit - min(limit / 8, NFS_WAIT_PAGES)) {
++		if (test_bit(BDI_sync_congested, &bdi->state)) {
++			clear_bdi_congested(bdi, BLK_RW_SYNC);
++			/*
++			 * On the following wake_up(), nfs_wait_congested()
++			 * will see the cleared bit and quit.
++			 */
++			smp_mb__after_clear_bit();
++		}
++		if (waitqueue_active(&wqh[BLK_RW_SYNC]))
++			wake_up(&wqh[BLK_RW_SYNC]);
++	}
++	if (nr < limit - min(limit / 8, NFS_WAIT_PAGES)) {
++		if (test_bit(BDI_async_congested, &bdi->state)) {
++			clear_bdi_congested(bdi, BLK_RW_ASYNC);
++			smp_mb__after_clear_bit();
++		}
++		if (waitqueue_active(&wqh[BLK_RW_ASYNC]))
++			wake_up(&wqh[BLK_RW_ASYNC]);
++	}
++}
+ 
+ static int nfs_set_page_writeback(struct page *page)
+ {
+@@ -200,11 +261,8 @@ static int nfs_set_page_writeback(struct
+ 		struct nfs_server *nfss = NFS_SERVER(inode);
+ 
+ 		page_cache_get(page);
+-		if (atomic_long_inc_return(&nfss->writeback) >
+-				NFS_CONGESTION_ON_THRESH) {
+-			set_bdi_congested(&nfss->backing_dev_info,
+-						BLK_RW_ASYNC);
+-		}
++		nfs_set_congested(atomic_long_inc_return(&nfss->writeback),
++				  &nfss->backing_dev_info);
+ 	}
+ 	return ret;
+ }
+@@ -216,8 +274,10 @@ static void nfs_end_page_writeback(struc
+ 
+ 	end_page_writeback(page);
+ 	page_cache_release(page);
+-	if (atomic_long_dec_return(&nfss->writeback) < NFS_CONGESTION_OFF_THRESH)
+-		clear_bdi_congested(&nfss->backing_dev_info, BLK_RW_ASYNC);
++
++	nfs_wakeup_congested(atomic_long_dec_return(&nfss->writeback),
++			     &nfss->backing_dev_info,
++			     nfss->writeback_wait);
+ }
+ 
+ static struct nfs_page *nfs_find_and_lock_request(struct page *page, bool nonblock)
+@@ -318,19 +378,34 @@ static int nfs_writepage_locked(struct p
+ 
+ int nfs_writepage(struct page *page, struct writeback_control *wbc)
+ {
++	struct inode *inode = page->mapping->host;
++	struct nfs_server *nfss = NFS_SERVER(inode);
+ 	int ret;
+ 
+ 	ret = nfs_writepage_locked(page, wbc);
+ 	unlock_page(page);
++
++	nfs_wait_congested(wbc->sync_mode == WB_SYNC_ALL,
++			   &nfss->backing_dev_info,
++			   nfss->writeback_wait);
++
+ 	return ret;
+ }
+ 
+-static int nfs_writepages_callback(struct page *page, struct writeback_control *wbc, void *data)
++static int nfs_writepages_callback(struct page *page,
++				   struct writeback_control *wbc, void *data)
+ {
++	struct inode *inode = page->mapping->host;
++	struct nfs_server *nfss = NFS_SERVER(inode);
+ 	int ret;
+ 
+ 	ret = nfs_do_writepage(page, wbc, data);
+ 	unlock_page(page);
++
++	nfs_wait_congested(wbc->sync_mode == WB_SYNC_ALL,
++			   &nfss->backing_dev_info,
++			   nfss->writeback_wait);
++
+ 	return ret;
+ }
+ 
+--- linux-next.orig/include/linux/nfs_fs_sb.h	2011-03-03 14:44:15.000000000 +0800
++++ linux-next/include/linux/nfs_fs_sb.h	2011-03-03 14:44:16.000000000 +0800
+@@ -102,6 +102,7 @@ struct nfs_server {
+ 	struct nfs_iostats __percpu *io_stats;	/* I/O statistics */
+ 	struct backing_dev_info	backing_dev_info;
+ 	atomic_long_t		writeback;	/* number of writeback pages */
++	wait_queue_head_t	writeback_wait[2];
+ 	int			flags;		/* various flags */
+ 	unsigned int		caps;		/* server capabilities */
+ 	unsigned int		rsize;		/* read size */
+--- linux-next.orig/fs/nfs/client.c	2011-03-03 14:44:15.000000000 +0800
++++ linux-next/fs/nfs/client.c	2011-03-03 14:44:16.000000000 +0800
+@@ -1042,6 +1042,8 @@ static struct nfs_server *nfs_alloc_serv
+ 	INIT_LIST_HEAD(&server->delegations);
+ 
+ 	atomic_set(&server->active, 0);
++	init_waitqueue_head(&server->writeback_wait[BLK_RW_SYNC]);
++	init_waitqueue_head(&server->writeback_wait[BLK_RW_ASYNC]);
+ 
+ 	server->io_stats = nfs_alloc_iostats();
+ 	if (!server->io_stats) {
