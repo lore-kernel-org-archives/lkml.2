@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281Ab1CDWH5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 17:07:57 -0500
-Received: from mx1.fusionio.com ([64.244.102.30]:55364 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760159Ab1CDWH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 17:07:56 -0500
-X-ASG-Debug-ID: 1299276475-03d6a54f630bd00001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D7162B7.20101@fusionio.com>
-Date: Fri, 4 Mar 2011 23:07:51 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: "hch@infradead.org" <hch@infradead.org>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] fs: make generic file read/write functions plug
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com> <1295659049-2688-8-git-send-email-jaxboe@fusionio.com> <20110304040907.GB32404@redhat.com> <4D70E78D.9000402@fusionio.com> <20110304132551.GA2407@infradead.org> <4D70EBB9.302@fusionio.com> <20110304140814.GA28953@infradead.org>
-X-ASG-Orig-Subj: Re: [PATCH 07/10] fs: make generic file read/write functions plug
-In-Reply-To: <20110304140814.GA28953@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299276475
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.60
-X-Barracuda-Spam-Status: No, SCORE=0.60 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=MARKETING_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57062
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.60 MARKETING_SUBJECT      Subject contains popular marketing words
+	id S1760284Ab1CDWJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 17:09:19 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3017 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab1CDWJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 17:09:17 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6275"; a="77917716"
+From: Sheetal Sahasrabudhe <sheetals@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: will.deacon@arm.com, jamie.iles@picochip.com, jean.pihet@newoldbits.com,
+        robert.richter@amd.com, dwalker@fifo99.com, bryanh@codeaurora.org,
+        davidb@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sheetal Sahasrabudhe <sheetals@codeaurora.org>
+Subject: [PATCH 0/3] ARM: Add Scorpion/ScorpionMP support to perf and Oprofile
+Date: Fri,  4 Mar 2011 17:09:11 -0500
+Message-Id: <1299276551-11978-1-git-send-email-sheetals@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-04 15:08, hch@infradead.org wrote:
-> On Fri, Mar 04, 2011 at 02:40:09PM +0100, Jens Axboe wrote:
->>> REQ_META?  Maybe we should finally agree what it does and decide if it
->>> should be used consistenly.  Especially the priority over REQ_SYNC in
->>> cfq still looks somewhat odd, as does the totally inconsequent use.
->>
->> For me it was primarily a blktrace hint, but yes it does have prio boost
->> properties in CFQ as well. I'm inclined to let those stay the way they
->> are. Not sure we can properly call it anything outside of a hint that
->> these IO have slightly higher priority, at least I would not want to
->> lock the IO scheduler into to something more concrete than that.
-> 
-> The problem is that these two meanings are inherently conflicting.
-> Metadata updates do not have to be synchronous or have any kind of
-> priority.  In fact for XFS they normall aren't, and I'd be surprised it
-> the same isn't true for other journalled filesystems.
-> 
-> Priority metadata goes into the log, which for XFS is always written as
-> a FLUSH+FUA bio.  Writeback of metadata happens asynchronously in the
-> background, and only becomes a priority if the journal is full and we'll
-> need to make space available.
-> 
-> So giving plain REQ_META a priority boost makes it impossible to use it
-> for the blktrace annotation use case.  One could only apply the boost
-> for the REQ_SYNC + REQ_META combination, but even that seems rather
-> hackish to me.  I'd really love to see numbers where the additional
-> boost of REQ_META over REQ_SYNC makes any difference.
+This patchset contains the following features:
+It adds support for Qualcomm Scorpion and ScorpionMP processors to perfevents
+and Oprofile.
+It adds PMU support for Scorpion and ScorpionMP.
+It also updates PMU IRQ identifiers for various Scorpion and ScorpionMP targets.
 
-Seems only gfs2 actually sets the flag now. So how about we remove the
-prio boost for meta data and just retain it as an information attribute?
+Sheetal Sahasrabudhe (3):
+  msm: Add support for Scorpion and ScorpionMP PMU
+  [ARM] perfevents: Add support for Scorpion performance monitors
+  [ARM] Oprofile: Add Qualcomm Scorpion and ScorpionMP CPU type
 
-If there's a need for this slight boosts, it is probably best done
-explicitly being signalled from the caller.
+ arch/arm/include/asm/perf_event.h          |    2 +
+ arch/arm/kernel/perf_event.c               |   11 +
+ arch/arm/kernel/perf_event_qc.c            |  677 ++++++++++++++++++++++++++++
+ arch/arm/mach-msm/Makefile                 |    2 +
+ arch/arm/mach-msm/include/mach/irqs-7x30.h |    2 +-
+ arch/arm/mach-msm/include/mach/irqs-8960.h |    2 +-
+ arch/arm/mach-msm/include/mach/irqs-8x50.h |    2 +-
+ arch/arm/mach-msm/include/mach/irqs-8x60.h |    2 +-
+ arch/arm/mach-msm/pmu.c                    |   36 ++
+ arch/arm/oprofile/common.c                 |    4 +
+ 10 files changed, 736 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/kernel/perf_event_qc.c
+ create mode 100644 arch/arm/mach-msm/pmu.c
 
 -- 
-Jens Axboe
+1.7.4.1
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
 
