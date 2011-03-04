@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759264Ab1CDIqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 03:46:35 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34400 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab1CDIqe (ORCPT
+	id S1759029Ab1CDIsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 03:48:46 -0500
+Received: from proxy.DResearch.DE ([87.193.137.100]:49032 "EHLO
+	mail.dresearch.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751571Ab1CDIsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 03:46:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pZimROn9bXzdJBW8fZ0iuWFzdFpY+bJN2PjytPnB3aFP53uR7VF5u2DMHTfzbs6cb8
-         qAYr7YgmhSL6tlFznXtT4ynXm9p6V3sxrH1JmDDflRVSyXhVNBkr2A6e+0S7HXCdue3i
-         tNvh+wSdIc21ny0EbVuGC0QDonMADCQLniusw=
-Date: Fri, 4 Mar 2011 09:44:41 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110304084441.GB20499@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <20110303173422.GA27960@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303173422.GA27960@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 4 Mar 2011 03:48:45 -0500
+From: Steffen Sledz <sledz@dresearch.de>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Mario Schuknecht <m.schuknecht@dresearch.de>,
+        Steffen Sledz <sledz@dresearch.de>
+Subject: [PATCH resent] tcp: ioctl type SIOCOUTQNSD returns amount of data not sent
+Date: Fri,  4 Mar 2011 09:48:17 +0100
+Message-Id: <1299228497-21246-1-git-send-email-sledz@dresearch.de>
+X-Mailer: git-send-email 1.7.1
+X-OriginalArrivalTime: 04 Mar 2011 08:48:43.0181 (UTC) FILETIME=[F74E85D0:01CBDA48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Oleg.
+From: Mario Schuknecht <m.schuknecht@dresearch.de>
 
-On Thu, Mar 03, 2011 at 06:34:22PM +0100, Oleg Nesterov wrote:
-> > P4. PTRACE_SEIZE
-> 
-> This is the new request. You know, I'd like to discuss the details
-> later and separately. Actually, I think the user-space developers
-> should participate and tell what they need. As for me, I certainly
-> agree that SIGSTOP from PTRACE_ATTACH is very wrong, and it is very
-> bad that gdb has to send SIGSTOP if it wants to stop the tracee.
-> IOW, I agree that something like this is needed and useful. In
-> particular,
+In contrast to SIOCOUTQ which returns the amount of data sent
+but not yet acknowledged plus data not yet sent this patch only
+returns the data not sent.
 
-While discussing is good, I'd like to keep things slightly more
-driven.  I think, as anything else, there's a balance to hit between
-discussing and just pushing things forward.  We did fair amount of
-discussion past two+ months and well I think it's about time to push
-forward.
+For various methods of live streaming bitrate control it may
+be helpful to know how much data are in the tcp outqueue are
+not sent yet.
 
-By now gdb/strace ppl should be aware of what's going on, right?  So,
-if you guys have something on mind w.r.t. kernel behavior, please
-share, but I won't wait for some discussion elsewhere to reach a
-conclusion especially because the issues which seem to cause the most
-amount of delay are not really about what's necessary to achieve the
-desired functionalities but wildly different wet wild dreams about
-sexy unicorns.
+Signed-off-by: Mario Schuknecht <m.schuknecht@dresearch.de>
+Signed-off-by: Steffen Sledz <sledz@dresearch.de>
+---
+ include/asm-generic/ioctls.h |    1 +
+ include/linux/sockios.h      |    1 +
+ net/ipv4/tcp.c               |    9 +++++++++
+ 3 files changed, 11 insertions(+), 0 deletions(-)
 
-> > A better way to solve this is simply giving the tracer the capability
-> > to listen for the end of jctl stop.
-> 
-> Hmm. I don't understand what "the end of jctl stop" actually means.
-> 
-> Since you are talking about WCONTINUED below, I guess it means that
-> the process is not group-stopped any longer, say, SIGCONT comes.
-
-Yeap, I meant emssion of SIGCONT ending the job control stop in
-effect.
-
-> > What state the tracee is in can be determined by retriving siginfo
-> > using PTRACE_GETSIGINFO.
-> 
-> I don't understand this this details right now... But I guess this
-> doesn't matter right now.
-> 
-> Either way, debugger should have the ability to know the tracee's
-> state wrt group-stop. To oversimplify, it should know the state of
-> SIGNAL_STOP_STOPPED bit. Correct?
-
-Yes, that information should be available via PTRACE_GETSIGINFO.
-
-Thanks.
-
+diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
+index 199975f..ef2be0b 100644
+--- a/include/asm-generic/ioctls.h
++++ b/include/asm-generic/ioctls.h
+@@ -74,6 +74,7 @@
+ #define TCSETXW		0x5435
+ #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
+ #define TIOCVHANGUP	0x5437
++#define TIOCOUTQNSD	0x5438
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+diff --git a/include/linux/sockios.h b/include/linux/sockios.h
+index 241f179..4c5ca47 100644
+--- a/include/linux/sockios.h
++++ b/include/linux/sockios.h
+@@ -23,6 +23,7 @@
+ /* Linux-specific socket ioctls */
+ #define SIOCINQ		FIONREAD
+ #define SIOCOUTQ	TIOCOUTQ
++#define SIOCOUTQNSD	TIOCOUTQNSD
+ 
+ /* Routing table calls. */
+ #define SIOCADDRT	0x890B		/* add routing table entry	*/
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index a17a5a7..b22d450 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -505,6 +505,15 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
+ 		else
+ 			answ = tp->write_seq - tp->snd_una;
+ 		break;
++	case SIOCOUTQNSD:
++		if (sk->sk_state == TCP_LISTEN)
++			return -EINVAL;
++
++		if ((1 << sk->sk_state) & (TCPF_SYN_SENT | TCPF_SYN_RECV))
++			answ = 0;
++		else
++			answ = tp->write_seq - tp->snd_nxt;
++		break;
+ 	default:
+ 		return -ENOIOCTLCMD;
+ 	}
 -- 
-tejun
+1.7.1
+
