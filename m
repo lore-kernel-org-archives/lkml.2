@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759674Ab1CDPV4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:21:56 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63571 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab1CDPVz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:21:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ALQiz0z5DZVKTa3bFaeAnN037VUyUPHnZRyKrFZBuCsCIoyFm9N/mBXBc0ErFKXvMr
-         Eyo24JBVNusaCrvq363c/MY7hF0hroHLKS/6zwDrT+SlAcbAaHcicIQHTTqRzAsK5zbl
-         FHTNDFYQSvepNdnrKZ83ZkgvsRocgAX25BlYI=
-MIME-Version: 1.0
-In-Reply-To: <20110304140404.GK11359@redhat.com>
-References: <20110303135819.GA2620@darkstar>
-	<20110303145908.GA32154@redhat.com>
-	<AANLkTi=sz7By1HaJ+HhFaQDWyUnrR5PNyAcL0uPnEt-K@mail.gmail.com>
-	<20110304140404.GK11359@redhat.com>
-Date: Fri, 4 Mar 2011 23:21:54 +0800
-Message-ID: <AANLkTi=a7tuNOqqiWE-Ncd5YnsUKUOveypopTfApOmHX@mail.gmail.com>
-Subject: Re: [PATCH 01/05] use proc_dointvec_minmax to check boundaries while needed
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759427Ab1CDPZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:25:10 -0500
+Received: from mga03.intel.com ([143.182.124.21]:39444 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758483Ab1CDPZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 10:25:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,264,1297065600"; 
+   d="scan'208";a="397627930"
+Date: Fri, 4 Mar 2011 15:02:05 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Ken Mills <ken.k.mills@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Usage of the n_gsm line discipline
+Message-ID: <20110304150205.7805f406@bob.linux.org.uk>
+In-Reply-To: <20110304152348.5d03c8ef@surf>
+References: <20110304152348.5d03c8ef@surf>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 4, 2011 at 10:04 PM, Don Zickus <dzickus@redhat.com> wrote:
-> On Fri, Mar 04, 2011 at 09:41:59AM +0800, Dave Young wrote:
->> On Thu, Mar 3, 2011 at 10:59 PM, Don Zickus <dzickus@redhat.com> wrote:
->> > On Thu, Mar 03, 2011 at 09:58:20PM +0800, Dave Young wrote:
->> >> proc_dointvec doesn't check extra minmax params, use proc_dointvec_minmax
->> >> instead of proc_dointvec for cases need boundaries check.
->> >
->> > Is this patch needed, if you are basically changing it again in patches 3
->> > and 5?
->>
->> Sure if 3 and 5 is acked, if someone object them then this is good?
->
-> Ok.  I guess I would have posted patches 2-4 first to get everyone's
-> opinion.  Then if the reaction was negative, try with patch 1.
->
-> Personally I don't see any problems with patches 2-4.  Then again I don't
-> deal with sysctl that much, so I don't what rules there are in that area of
-> code.
+> So, maybe I misconfigured n_gsm, or I didn't understand how to use it.
+> Would it be possible to have a few details on how it is supposed to be
+> used ? I haven't been able to find any userspace code that currently
+> makes use of n_gsm. Is it available somewhere ?
 
-No problem, I will try resend 2-4 with first one merged, Thanks.
--- 
-Regards
-dave
+Check dmesg but if your modem doesn't start up in multiplex mode you
+will need to issue an AT+CMUX command first. So the usual sequence is
+
+	write AT+CMUXblah [see GSM spec/modem command info]
+	TIOCSETD
+	GSMIOC_GETCONF
+		[modify anything needed]
+	GSMIOC_SETCONF
+
+The defaults uses are the T1/T2/N2 from the spec, we are not the
+initiator, and using encoding 1 (ie HDLC/LAP like), 64byte MRU/MTU.
+
+So at the very least you'll want to set initiator to 1 so that we start
+issuing SABM messages at the modem to enter mux mode.
+
+> If I can get it to work, I am willing to contribute a
+> Documentation/n_gsm.txt document.
+
+That would be good.
+
+Alan
