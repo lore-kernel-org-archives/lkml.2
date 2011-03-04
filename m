@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690Ab1CDWQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 17:16:46 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49882 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab1CDWQp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 17:16:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=d+Gztny5r+eGU2+TCZOHyZI0MeNhU0p7F2XqtpwUrUN+I0PaZ+e/vYfBRKeirmMOFr
-         9ugr/mM+9w38MeOcftEJq57cfYkNR8gaWLVYFJ5AbTpcubMntp93RBRruy5iGAD9tRxx
-         sAdKcwbedWJSh55GTYWae2/XIAUKEeqvjvydI=
+	id S932711Ab1CDWQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 17:16:52 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:34858 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932693Ab1CDWQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 17:16:49 -0500
+Message-ID: <4D7164CE.80009@kernel.dk>
+Date: Fri, 04 Mar 2011 23:16:46 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <4D70880C.4000209@zytor.com>
-References: <ded07e5c09d72da478c6218658095f5a.squirrel@deadhat.com>
-	<AANLkTimg1x56B4Yu=Zsd0VEci2i4jRKaMU+gxv3oFVr8@mail.gmail.com>
-	<20110301235433.GD2959@thunk.org>
-	<4D6EBC04.5050709@zytor.com>
-	<4D7078C8.8050009@deadhat.com>
-	<4D70880C.4000209@zytor.com>
-Date: Fri, 4 Mar 2011 14:16:43 -0800
-X-Google-Sender-Auth: -QYzS6W8wKuoIfP-cH6G_khkixU
-Message-ID: <AANLkTim6utrJZ-jVJdNJA6Ea_f8xQ-eAaGX8yfBaT9oc@mail.gmail.com>
-Subject: Re: Why is my copyright code in the linux kernel?
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: David Johnston <dj@deadhat.com>, tytso@mit.edu,
-        richard.weinberger@gmail.com, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
+To: Tejun Heo <tj@kernel.org>
+CC: Stephen Clark <sclark46@earthlink.net>, Mark Lord <kernel@teksavvy.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>, linux-ide@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: NEC ND-4550A problems reading DVD-R
+References: <m339n7g7tw.fsf@intrepid.localdomain> <20110301080153.GA26074@htj.dyndns.org> <4D6CF92A.4020105@teksavvy.com> <4D6D151D.8030307@earthlink.net> <20110304110757.GJ20499@htj.dyndns.org>
+In-Reply-To: <20110304110757.GJ20499@htj.dyndns.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 10:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 03/03/2011 09:29 PM, David Johnston wrote:
->> Yes I am willing to allow you to retain it.
->> I guess, to be all legalese..
->>     I herein permit you to use any 802.11 related C code taken from the
->> www.deadhat.com website, in the linux kernel, and to publish it under
->> the terms of version 2 of the GNU General Public License.
+On 2011-03-04 12:07, Tejun Heo wrote:
+> (cc'ing Jens and James)
+> 
+> On Tue, Mar 01, 2011 at 10:47:41AM -0500, Stephen Clark wrote:
+>> On 03/01/2011 08:48 AM, Mark Lord wrote:
+>>> On 11-03-01 03:01 AM, Tejun Heo wrote:
+>>> ..
+>>>> I think that's determined by drivers/scsi/sr.h::SR_TIMEOUT which is
+>>>> hardcoded to be 30 seconds.  Maybe it's better to move it to use the
+>>>> block parameter.  Anyways, the drive actually takes longer than 30secs
+>>>> to recognize the media?
+>>> That slow behaviour is not uncommon, especially as drives struggle
+>>> to recognize various forms of copy-protected media (DVD-Video).
+>>> A longer default, or tuneable timeout, would help.
 >>
->> Yes I've emailed ralink and VIA. I hope they're nice people.
->
-> First of all, thank you (both for the code and for being reasonable.)
->
-> It sounds like this might simply have been an honest misreading.
->
+>> I agree with Mark, this should be a user tuneable value. My 2006 LG
+>> dvd-rw frequently times out
+>> trying to identify the media. But after numerous timeout error
+>> messages it usually suceeds.
+> 
+> I don't think it should be a user tunable value.  It should be
+> something automatic.  I mean, how many would know to go some cryptic
+> place and increase sr probing timeout?
+> 
+> At the same time, increasing it for other cases is quite unattractive,
+> so it probably would be a good idea to only use higher timeout value
+> for the TUR right after media presence change event.
+> 
+> Anyone interested in doing it?
 
-interesting.
+A higher timeout would be the easy fix. And unless there's a solid way
+to detect whether the drive is truly hung or just busy trying to grok
+the media, I think it's the only feasible solution.
 
-in the git history, some functions take IN/OUT macro.
+-- 
+Jens Axboe
 
--VOID AES_GTK_KEY_UNWRAP(IN UCHAR * key,
--                       OUT UCHAR * plaintext,
--                       IN UINT32 c_len, IN UCHAR * ciphertext)
-
-so they had driver for other os at first, and ported that one to Linux later ?
-
-Yinghai
