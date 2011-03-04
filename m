@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab1CDGfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 01:35:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33012 "EHLO mail.zytor.com"
+	id S1752047Ab1CDGgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 01:36:04 -0500
+Received: from sv2.nico22.de ([62.112.144.130]:34421 "EHLO sv2.nico22.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103Ab1CDGfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 01:35:06 -0500
-Message-ID: <4D70880C.4000209@zytor.com>
-Date: Thu, 03 Mar 2011 22:34:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1751103Ab1CDGgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 01:36:03 -0500
+Date: Fri, 4 Mar 2011 07:35:58 +0100
+From: Nico =?iso-8859-1?Q?Sch=FCmann?= <dev@nico22.de>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Network link detection
+Message-ID: <20110304063558.GA4774@svh.nico22.de>
+References: <20110303193006.GA29129@svh.nico22.de>
+ <20110303140733.40307493@nehalam>
 MIME-Version: 1.0
-To: David Johnston <dj@deadhat.com>
-CC: tytso@mit.edu, richard.weinberger@gmail.com, linux-kernel@vger.kernel.org,
-        gregkh@suse.de
-Subject: Re: Why is my copyright code in the linux kernel?
-References: <ded07e5c09d72da478c6218658095f5a.squirrel@deadhat.com> <AANLkTimg1x56B4Yu=Zsd0VEci2i4jRKaMU+gxv3oFVr8@mail.gmail.com> <20110301235433.GD2959@thunk.org> <4D6EBC04.5050709@zytor.com> <4D7078C8.8050009@deadhat.com>
-In-Reply-To: <4D7078C8.8050009@deadhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110303140733.40307493@nehalam>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2011 09:29 PM, David Johnston wrote:
-> Yes I am willing to allow you to retain it.
-> I guess, to be all legalese..
->     I herein permit you to use any 802.11 related C code taken from the
-> www.deadhat.com website, in the linux kernel, and to publish it under
-> the terms of version 2 of the GNU General Public License.
+On Thu, Mar 03, 2011 at 02:07:33PM -0800, Stephen Hemminger wrote:
+> Simple answer is use netlink. That is what all real services use (NM, Quagga, ...)
+> Netlink can be hard to parse, so I recommend using a wrapper library.
 > 
-> Yes I've emailed ralink and VIA. I hope they're nice people.
+> Simplest example is the link-event example in libmnl
+>   http://www.netfilter.org/projects/libmnl/index.html
 
-First of all, thank you (both for the code and for being reasonable.)
+The link-event example does about what I plan to do - and it just 
+works. So that pointer was just right. Thank you!
 
-It sounds like this might simply have been an honest misreading.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Nico
