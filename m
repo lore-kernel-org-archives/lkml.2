@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab1CDOlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:41:35 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58531 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759294Ab1CDOld (ORCPT
+	id S1759657Ab1CDOm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:42:29 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39545 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759412Ab1CDOm2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:41:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iILDNw3YmvFmhfk2DLuFWfukjf/VMcw2GWDKH0JcaMEL3D4txaWf+EfC+Ti6/jCDDg
-         0W1Mn7gS4PE4R8hsUGW3QjhsblYLVoaeEqb1oMnooRjM+GvQGayKnqXrwF57TZ9naOlX
-         dEuDaG0LY4+kVU7ezoa7u03T/oeHHDWrjKW2c=
-Date: Fri, 4 Mar 2011 15:41:22 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf lock: clean the options for perf record
-Message-ID: <20110304144119.GE1972@nowhere>
-References: <4D63D685.2010401@dcl.info.waseda.ac.jp>
- <1298389415.2217.243.camel@twins>
- <20110222182206.GB1799@nowhere>
- <4D648A65.2040107@dcl.info.waseda.ac.jp>
- <4D667D60.5010903@dcl.info.waseda.ac.jp>
- <20110224165014.GB1840@nowhere>
- <4D67E286.8010907@dcl.info.waseda.ac.jp>
- <AANLkTikUGO=Obm7Ue4VzEueQ7DERPiwci1VV9NmKZf1u@mail.gmail.com>
- <4D70B3E1.8020108@dcl.info.waseda.ac.jp>
- <1299249438.20306.3.camel@gandalf.stny.rr.com>
+	Fri, 4 Mar 2011 09:42:28 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>,
+        "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 4 Mar 2011 20:11:56 +0530
+Subject: RE: [PATCH v10 1/1] PRUSS UIO driver support
+Thread-Topic: [PATCH v10 1/1] PRUSS UIO driver support
+Thread-Index: Acvad7Vie4wPYYywQ6qYiO/Aj324hAAAiDmg
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024C009039@dbde02.ent.ti.com>
+References: <1299213772-21931-1-git-send-email-pratheesh@ti.com>
+	<1299213772-21931-2-git-send-email-pratheesh@ti.com>
+ <20110304142028.GD28175@local>
+In-Reply-To: <20110304142028.GD28175@local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299249438.20306.3.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 09:37:18AM -0500, Steven Rostedt wrote:
-> On Fri, 2011-03-04 at 18:41 +0900, Hitoshi Mitake wrote:
-> 
-> > BTW, how do you think about the idea of exporting data in
-> > python (or other neutral) expression from procfs? I feel it is a
-> > good idea. Communicating with unified format between user space and
-> > kernel space will reduce lots of parsing overhead. Is this too
-> > aggressive or insane?
-> 
-> As I mentioned in another email, I have no problem with an easy to parse
-> file. But I will aggressively NAK any "python" or other scripting
-> language. I'm sure I would get the same response if I were to have the
-> kernel outputting perl language ;)
+Hi Hans,
 
-Same for me.
+On Fri, Mar 04, 2011 at 19:50:28, Hans J. Koch wrote:
+> On Fri, Mar 04, 2011 at 10:12:52AM +0530, Pratheesh Gangadhar wrote:
+> > diff --git a/include/linux/uio_pruss.h b/include/linux/uio_pruss.h
+> > new file mode 100644
+> > index 0000000..8c9b2c9
+> > --- /dev/null
+> > +++ b/include/linux/uio_pruss.h
+> 
+> That should go to arch/arm/mach-davinci/include/mach/
+> and not to the top level include/linux/ directory.
 
-But even before talking about that, I wonder if doing this is actually needed.
+It was put in here because this driver
+will be used across two ARM architectures
+(DaVinci and OMAP). Although it won't be used
+outside of ARM at least in near future.
+
+Thanks,
+Sekhar
+
