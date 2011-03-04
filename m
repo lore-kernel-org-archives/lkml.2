@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759969Ab1CDRgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 12:36:20 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:41567 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758463Ab1CDRgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 12:36:19 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Theodore Tso <tytso@mit.edu>, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Matt Mackall <mpm@selenic.com>, cl@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
-References: <1299174652.2071.12.camel@dan>	<1299185882.3062.233.camel@calx>
-	 <1299186986.2071.90.camel@dan>	<1299188667.3062.259.camel@calx>
-	 <1299191400.2071.203.camel@dan>
-	 <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>
-	 <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 04 Mar 2011 09:36:04 -0800
-Message-ID: <1299260164.8493.4071.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1759985Ab1CDRgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:36:40 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:35455 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758960Ab1CDRgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 12:36:39 -0500
+Date: Fri, 4 Mar 2011 12:36:35 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
+        rp@svcs.cs.pdx.edu
+Subject: [RELEASE] Userspace RCU 0.5.4
+Message-ID: <20110304173635.GA13194@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:34:12 up 100 days, 22:37,  4 users,  load average: 0.13, 0.06,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 08:52 +0200, Pekka Enberg wrote:
-> On Fri, Mar 4, 2011 at 2:50 AM, Theodore Tso <tytso@mit.edu> wrote:
-> > Being able to monitor /proc/slabinfo is incredibly useful for finding various
-> > kernel problems.  We can see if some part of the kernel is out of balance,
-> > and we can also find memory leaks.   I once saved a school system's Linux
-> > deployment because their systems were crashing once a week, and becoming
-> > progressively more unreliable before they crashed, and the school board
-> > was about to pull the plug.
-> 
-> Indeed. However, I'm not sure we need to expose the number of _active
-> objects_ to non-CAP_ADMIN users (which could be set to zeros if you
-> don't have sufficient privileges). Memory leaks can be detected from
-> the total number of objects anyway, no? 
+liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This data
+synchronization library provides read-side access which scales linearly with the
+number of cores. It does so by allowing multiples copies of a given data
+structure to live at the same time, and by monitoring the data structure
+accesses to detect grace periods after which memory reclamation is possible.
 
-This:
+Changelog for v0.5.4:
 
-	http://www.exploit-db.com/exploits/14814/
+ *  urcu-bp: Update fork() handling
+    
+    Introduce
+    
+    extern void rcu_bp_before_fork(void);
+    extern void rcu_bp_after_fork_parent(void);
+    extern void rcu_bp_after_fork_child(void);
+    
+    to handle fork gracefully. These disable signals and hold the registry mutex
+    across forks. (this flavor of the liburcu library ("bp" for "bulletproof")
+    is mainly used by UST, the user-space tracer).
 
-loops doing allocations until total==active, and then does one more
-allocation to get the position in the slab it needs.  If we mask
-'active', it'll just loop until 'total' gets bumped, and then consider
-the _previous_ allocation to have been the one that was in the necessary
-position.
+Project website: http://lttng.org/urcu
+Download link: http://www.lttng.org/files/urcu/
 
-As Ted mentioned, the real issue here is being able to infer location
-inside the slab by correlating your allocations with when the slab
-statistics get bumped.  You can do that with slabinfo pretty precisely,
-but you can probably also pull it off with meminfo too, albeit with less
-precision.
-
-We need to either keep the bad guys away from the counts (this patch),
-or de-correlate the counts moving around with the position of objects in
-the slab.  Ted's suggestion is a good one, and the only other thing I
-can think of is to make the values useless, perhaps by batching and
-delaying the (exposed) counts by a random amount.
-
--- Dave
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
