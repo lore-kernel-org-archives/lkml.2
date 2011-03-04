@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab1CDI7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 03:59:12 -0500
-Received: from mail.perches.com ([173.55.12.10]:4108 "EHLO mail.perches.com"
+	id S1759342Ab1CDJCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 04:02:49 -0500
+Received: from lo.gmane.org ([80.91.229.12]:57083 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758400Ab1CDI6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 03:58:47 -0500
-Subject: Re: [PATCH 1/2] MAX8997/8966 MFD: Add IRQ control feature
-From: Joe Perches <joe@perches.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
-In-Reply-To: <1299224747-11081-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
-	 <1299224747-11081-1-git-send-email-myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Mar 2011 00:58:45 -0800
-Message-ID: <1299229125.1929.52.camel@Joe-Laptop>
+	id S1751571Ab1CDJCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 04:02:45 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: el es <el.es.cr@gmail.com>
+Subject: Re: [REVIEW] NVM Express driver
+Date: Fri, 4 Mar 2011 09:02:33 +0000 (UTC)
+Message-ID: <loom.20110304T095238-128@post.gmane.org>
+References: <20110303204749.GY3663@linux.intel.com> <20110303211336.GA32645@kroah.com> <20110303214104.GZ3663@linux.intel.com> <20110303215155.GA30451@kroah.com> <20110303220735.GA3663@linux.intel.com> <20110303222226.GA30966@kroah.com> <4D704DAB.9080100@mit.edu>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 217.36.116.108 (Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.14) Gecko/20110218 Firefox/3.6.14 ( .NET CLR 3.5.30729))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 16:45 +0900, MyungJoo Ham wrote:
-> This patch enables IRQ handling for MAX8997/8966 chips.
+Andy Lutomirski <luto <at> MIT.EDU> writes:
 
-Just trivial comments.
+> 
 
-> +++ b/drivers/mfd/max8997-irq.c
-> +static u8 max8997_mask_reg[] = {
+> > I didn't even realize we had a firmware README file...
+> >
+> > Anyway, just use request_firmware_nowait(), you will be fine.
+> >
+> 
+> Unless I'm misunderstanding the spec, this is for *nonvolatile* firmware 
+> updates.  So if I have two of these devices and I stick a firmware file 
+> into /lib/firmware, should it update both devices?
+> 
+> Shouldn't reflashing the device firmware be something that the users 
+> asks for by something a little more specific than just creating a file? 
+>   (In any case, creating /lib/firmware/nvmhci-3 to flash slot 3 seems 
+> rather silly.)
+> 
 
-static const?
+_lame user warning on_
 
-[]
+if module is built-in, maybe something like /sys/class/nvm/driveX/fw_path could
+receive the _path_ to firmware, so that writing to it (either/or writing to
+hypothetical /sys/class/nvm/driveX/fw_do_update) would trigger the flashing
+procedure, and reading it would provide _human readable_ flashing progress
+information ?
 
-> +static struct max8997_irq_data max8997_irqs[] = {
+If module is complied, well, as a module, could be invoked with the fw_path
+parameter and the fw_do_update parameter as the safety flag.
 
-here too?
+With appropriate safety measures, like making sure drive is unmounted, queue is
+empty and so on, ensured in userspace?
 
-> +	[MAX8997_PMICIRQ_PWRONR] = {
-> +		.group	= PMIC_INT1,
-> +		.mask	= 1 << 0,
-> +	},
+> --Andy
+> 
 
-I think the declaration style is a little hard to
-read and verify.  Maybe use a macro something like:
-
-#define DECLARE_IRQ(val, _group, _mask)			\
-	[ val ] = { .group = _group, .mask = _mask }
-
-> +	[MAX8997_PMICIRQ_PWRONF] = {
-> +		.group	= PMIC_INT1,
-> +		.mask	= 1 << 1,
-> +	},
-
-So this becomes
-
-	DECLARE_IRQ(MAX8997_PMICIRQ_PWRONR, PMIC_INT1, 1 << 0),
-	DECLARE_IRQ(MAX8997_PMICIRQ_PWRONF, PMIC_INT1, 1 << 1),
-	etc...
-
-[]
-
-> +static struct irq_chip max8997_irq_chip = {
-
-static const?
-
-> +static irqreturn_t max8997_irq_thread(int irq, void *data)
-> +{
-> +	struct max8997_dev *max8997 = data;
-> +	u8 irq_reg[MAX8997_IRQ_GROUP_NR];
-[]
-> +	for (i = 0; i < MAX8997_IRQ_GROUP_NR; i++)
-> +		irq_reg[i] = 0;
-
-Maybe use a memset or change the declaration to
-	u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
+el es
 
 
