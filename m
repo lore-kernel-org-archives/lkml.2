@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759145Ab1CDA3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 19:29:43 -0500
-Received: from kroah.org ([198.145.64.141]:51598 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758886Ab1CDA3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 19:29:42 -0500
-Date: Thu, 3 Mar 2011 16:18:26 -0800
-From: Greg KH <greg@kroah.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: akpm@linux-foundation.org, "Nadolski, Edmund" <edmund.nadolski@intel.com>,
-        Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Christoph Lameter <cl@linux.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, stable@kernel.org,
-        linux-mm@kvack.org
-Subject: Re: stable: mm: vmstat: use a single setter function and callback
- for adjusting percpu thresholds
-Message-ID: <20110304001826.GA2429@kroah.com>
-References: <20110303110324.GH14162@csn.ul.ie>
+	id S1759160Ab1CDAas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 19:30:48 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:52581 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759071Ab1CDAar convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 19:30:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=XQKnnPWB5TEmbFVAA6J5pWjMmu6RnbeR9rWXGtrEuxC885qrMVVFMxB2HTf7+4h2RA
+         oenw7NozHhP/nkMFjvDA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110303110324.GH14162@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110302231727.GG2547@redhat.com>
+References: <1298669760-26344-1-git-send-email-gthelen@google.com>
+ <1298669760-26344-10-git-send-email-gthelen@google.com> <20110302231727.GG2547@redhat.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Thu, 3 Mar 2011 16:30:23 -0800
+Message-ID: <AANLkTinSrmH-XGuFMBve9SczdXsmKzJbFN4cZ234=z9A@mail.gmail.com>
+Subject: Re: [PATCH v5 9/9] memcg: check memcg dirty limits in page writeback
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Chad Talbott <ctalbott@google.com>,
+        Justin TerAvest <teravest@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 11:03:24AM +0000, Mel Gorman wrote:
-> Edmund Nadolski reported the same problem Kosaki did against the commit
-> [88f5acf8: mm: page allocator: adjust the per-cpu counter threshold when
-> memory is low] whereby kswapd was in an inconsistent locking state due
-> to calling get_online_cpus(): See https://lkml.org/lkml/2011/3/2/398 for
-> details. This is already fixed upstream by commit [b44129b3: mm: vmstat: use
-> a single setter function and callback for adjusting percpu thresholds]. Unless
-> there is an objection, can this be picked up for 2.6.37-stable please?
-> Ideally it would apply against 2.6.36.x as well but that release is no
-> longer maintained.
+On Wed, Mar 2, 2011 at 3:17 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Feb 25, 2011 at 01:36:00PM -0800, Greg Thelen wrote:
+>
+> [..]
+>> @@ -500,18 +527,27 @@ static void balance_dirty_pages(struct address_space *mapping,
+>>               };
+>>
+>>               global_dirty_info(&sys_info);
+>> +             if (!memcg_dirty_info(NULL, &memcg_info))
+>> +                     memcg_info = sys_info;
+>>
+>>               /*
+>>                * Throttle it only when the background writeback cannot
+>>                * catch-up. This avoids (excessively) small writeouts
+>>                * when the bdi limits are ramping up.
+>>                */
+>> -             if (dirty_info_reclaimable(&sys_info) + sys_info.nr_writeback <=
+>> +             if ((dirty_info_reclaimable(&sys_info) +
+>> +                  sys_info.nr_writeback <=
+>>                               (sys_info.background_thresh +
+>> -                              sys_info.dirty_thresh) / 2)
+>> +                              sys_info.dirty_thresh) / 2) &&
+>> +                 (dirty_info_reclaimable(&memcg_info) +
+>> +                  memcg_info.nr_writeback <=
+>> +                             (memcg_info.background_thresh +
+>> +                              memcg_info.dirty_thresh) / 2))
+>>                       break;
+>>
+>> -             bdi_thresh = bdi_dirty_limit(bdi, sys_info.dirty_thresh);
+>> +             bdi_thresh = bdi_dirty_limit(bdi,
+>> +                             min(sys_info.dirty_thresh,
+>> +                                 memcg_info.dirty_thresh));
+>>               bdi_thresh = task_dirty_limit(current, bdi_thresh);
+>
+> Greg, so currently we seem to have per_bdi/per_task dirty limits and
+> now with this patch it will sort of become per_cgroup/per_bdi/per_task
+> dirty limits? I think that kind of makes sense to me.
+>
+> Thanks
+> Vivek
+>
 
-Now queued up, thanks.
-
-greg k-h
+Vivek,  you are correct.  This patch adds per_cgroup limits to the
+existing system, bdi, and system dirty memory limits.
