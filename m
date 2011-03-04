@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab1CDCUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Mar 2011 21:20:09 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23274 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758917Ab1CDCUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Mar 2011 21:20:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,261,1297065600"; 
-   d="scan'208";a="715981047"
-Date: Fri, 4 Mar 2011 10:20:03 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] Fix mapping->writeback_index to point to the last
- written page
-Message-ID: <20110304022003.GA9213@localhost>
-References: <4D676067.8050200@ce.jp.nec.com>
- <20110302221808.GG7496@quack.suse.cz>
- <4D6EFC4B.30505@ce.jp.nec.com>
- <20110303133119.GA16562@localhost>
- <20110303140802.GA27751@quack.suse.cz>
- <4D70443A.1010602@ce.jp.nec.com>
+	id S932380Ab1CDCbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Mar 2011 21:31:00 -0500
+Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:61115 "EHLO
+	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759195Ab1CDCa7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Mar 2011 21:30:59 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Mar 2011 21:30:59 EST
+X-AuditID: 12074422-b7c3eae000000a70-ff-4d704db68900
+Message-ID: <4D704DAB.9080100@mit.edu>
+Date: Thu, 03 Mar 2011 21:25:47 -0500
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D70443A.1010602@ce.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <greg@kroah.com>
+CC: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [REVIEW] NVM Express driver
+References: <20110303204749.GY3663@linux.intel.com> <20110303211336.GA32645@kroah.com> <20110303214104.GZ3663@linux.intel.com> <20110303215155.GA30451@kroah.com> <20110303220735.GA3663@linux.intel.com> <20110303222226.GA30966@kroah.com>
+In-Reply-To: <20110303222226.GA30966@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAARePLzc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 09:45:30AM +0800, Jun'ichi Nomura wrote:
-> On 03/03/11 23:08, Jan Kara wrote:
-> > On Thu 03-03-11 21:31:19, Wu Fengguang wrote:
-> >> On Thu, Mar 03, 2011 at 10:26:19AM +0800, Jun'ichi Nomura wrote:
+On 03/03/2011 05:22 PM, Greg KH wrote:
+> On Thu, Mar 03, 2011 at 05:07:35PM -0500, Matthew Wilcox wrote:
+>> On Thu, Mar 03, 2011 at 01:51:55PM -0800, Greg KH wrote:
+>>> Heh, no, well, submit_io should just go through the block layer and not
+>>> be a separate ioctl, right?
+>>
+>> Just like with SG_IO, there are reasons to do I/Os without going through
+>> the block layer.
+>
+> Ok, that makes sense.
+>
+>>>> There's a bit of an impedence mismatch there.  Think of this as
+>>>> being drive firmware instead of controller firmware.  This isn't for
+>>>> request_firmware() kind of uses, it's for some admin tool to come along
+>>>> and tell the drive "Oh, here's some new firmware for you".
+>>>
+>>> That's fine, request_firmware will work wonderfully for that.
+>>
+>> How would the driver know that it should call request_firmware()?
+>> Do it every 60 seconds in case somebody's downloaded some new firmware?
+>
+> Ick, no, just use the function provided that lets you create a firmware
+> request and be notified when it is written to,
+> request_firmware_nowait().  That is what it is there for.
+>
+>>>> If you look at the spec [1], you'll see there are a number of firmware
+>>>> slots in the device, and it's up to the managability utility to decide
+>>>> which one to replace or activate.  I dno't think you want to pull all
+>>>> that gnarly decision making code into the kernel, do you?
+>>>>
+>>>> [1] http://download.intel.com/standards/nvmhci/NVM_Express_1_0_Gold.pdf
+>>>
+>>> No, just export multiple "slots" as firmware devices ready to be filled
+>>> in by userspace whenever it wants/needs to.  The management utility can
+>>> just dump the firmware to those sysfs files when it determines it needs
+>>> to update the firmware, no decision making in the kernel at all.
+>>
+>> OK ... glad we decided to limit the number of slots.  I still don't see
+>> (in Documentation/firmware_class/README) how this works for user-initiated
+>> firmware updates rather than kernel-initiated.
+>
+> I didn't even realize we had a firmware README file...
+>
+> Anyway, just use request_firmware_nowait(), you will be fine.
+>
 
->> [2nd writeback session after 35sec]
->>        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898562 + 8
->>        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898570 + 8
->>        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898578 + 8
->>        ...
->>      kworker/0:1-11    4606: block_rq_issue: 8,0 W 0 () 94898562 + 640
->>      kworker/0:1-11    4606: block_rq_issue: 8,0 W 0 () 94899202 + 72 
->>        ...                                                           
-> >>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899962 + 8
-> >>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899970 + 8
-> >>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899978 + 8
-> >>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899986 + 8
-> >>         >        flush-8:0-2743  4606: block_bio_queue: 8,0 W 94899994 + 8
-> >> ==>     >      kworker/0:1-11    4606: block_rq_issue: 8,0 W 0 () 94899962 + 40
-> >>         > >>     flush-8:0-2743  4606: block_bio_queue: 8,0 W 94898554 + 8
-> >> ==>     > >>     flush-8:0-2743  4606: block_rq_issue: 8,0 W 0 () 94898554 + 8
-> >>
-> >> I'd expect the wrapped around 94898554+8 to be merged with 94899962+8.
-> >   How could they be merged? They are not continguous...
+Unless I'm misunderstanding the spec, this is for *nonvolatile* firmware 
+updates.  So if I have two of these devices and I stick a firmware file 
+into /lib/firmware, should it update both devices?
 
-Oops, it is. It's 94898562+8 that is continuous with 94898554+8, however the
-former has been submitted on max_sectors limit. So 94898554+8 lost the chance
-to get merged.
+Shouldn't reflashing the device firmware be something that the users 
+asks for by something a little more specific than just creating a file? 
+  (In any case, creating /lib/firmware/nvmhci-3 to flash slot 3 seems 
+rather silly.)
 
-> >> Why kworker/0:1-11 is submitting the request early? And the second
-> >> request is submitted by flush-8:0-2743.
-> >   I'm not sure about that either - but I think that kworker is submitting
-> > the work when unplug happens while flush ends up doing it when the queue is
-> > alredy unplugged.
-> 
-> Yes. For the above case, it was unplug.
-> 
-> For other cases, the reason was max_sectors.
-> Before writeback wraps around, the request has already grown to
-> max_sectors size (~512KB) and doesn't accept new merge.
-
-Yup, good explanation!
-
-Thanks,
-Fengguang
+--Andy
