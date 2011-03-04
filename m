@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759587Ab1CDM05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 07:26:57 -0500
-Received: from proxy.DResearch.DE ([87.193.137.100]:57740 "EHLO
-	mail.dresearch.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751999Ab1CDM0z (ORCPT
+	id S1759532Ab1CDMij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 07:38:39 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60076 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab1CDMii convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 07:26:55 -0500
-Message-ID: <4D70DA8D.9070603@dresearch.de>
-Date: Fri, 04 Mar 2011 13:26:53 +0100
-From: Steffen Sledz <sledz@dresearch.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.14) Gecko/20110221 Lightning/1.0b2 Thunderbird/3.1.8
+	Fri, 4 Mar 2011 07:38:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EOemiB4vV9GgyWkUpS7lPinnVwbEkkSwNu13uefLD20yGBXmEdAXo3dPcaWaXIjFo0
+         84irvAz5bGOkHURYDWsSNsFBegQVl3hhx48hPpqGPZ2eCsz65JCjV5szeDlXRx3JxLqp
+         iiAUw4eR5BoM4YJGBWcOoYIHpBnko8KFC/obk=
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Mario Schuknecht <m.schuknecht@dresearch.de>,
-        Steffen Sledz <sledz@dresearch.de>
-Subject: Re: [PATCH v2] tcp: ioctl type SIOCOUTQNSD returns amount of data
- not sent
-References: <201103041057.53671.arnd@arndb.de> <1299234031-13937-1-git-send-email-sledz@dresearch.de>
-In-Reply-To: <1299234031-13937-1-git-send-email-sledz@dresearch.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 04 Mar 2011 12:26:54.0367 (UTC) FILETIME=[7242FAF0:01CBDA67]
+In-Reply-To: <20110304070802.GA27618@elte.hu>
+References: <tip-ffe77a4605fb2588f8666850ad3e3b196241658f@git.kernel.org>
+	<alpine.DEB.2.00.1102191906180.31263@chino.kir.corp.google.com>
+	<20110221083511.GC31267@htj.dyndns.org>
+	<alpine.DEB.2.00.1103031231060.9993@chino.kir.corp.google.com>
+	<4D700B93.2080807@gmail.com>
+	<alpine.DEB.2.00.1103031359070.4141@chino.kir.corp.google.com>
+	<4D701015.2040703@kernel.org>
+	<alpine.DEB.2.00.1103031404510.4141@chino.kir.corp.google.com>
+	<20110304070802.GA27618@elte.hu>
+Date: Fri, 4 Mar 2011 15:38:37 +0300
+Message-ID: <AANLkTim=ksthQbvmB17Ahw0F718sop9Or5Yh6TuEWwXe@mail.gmail.com>
+Subject: Re: [patch] x86, mm: Clean up initmem_init
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        brgerst@gmail.com, shaohui.zheng@intel.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.03.2011 12:49, schrieb Alan Cox:
-> ...
->>> Signed-off-by: Mario Schuknecht <m.schuknecht@dresearch.de>
->>> ---
->>>  include/asm-generic/ioctls.h |    1 +
->>>  include/linux/sockios.h      |    1 +
->>>  net/ipv4/tcp.c               |    9 +++++++++
->>>  3 files changed, 11 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
->>> index a321665..b87115b 100644
->>> --- a/include/asm-generic/ioctls.h
->>> +++ b/include/asm-generic/ioctls.h
->>> @@ -72,6 +72,7 @@
->>>  #define TCSETXF		0x5434
->>>  #define TCSETXW		0x5435
->>>  #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
->>> +#define TIOCOUTQNSD	0x5437
+On Fri, Mar 4, 2011 at 10:08 AM, Ingo Molnar <mingo@elte.hu> wrote:
+...
+>>
+>> It's a matter of style and I think it's up to Ingo what he'd prefer to
+>> see.
 >
-> These are tty not socket ioctl codes. For various historical reasons some
-> of them got sort of emulated by the socket layer in Unix and thus in
-> Linux.
+> I think your variant is cleaner: hiding function call side-effects in conditionscan
+> be a fragile thing to do. We want constant expressions with no side-effects - so if
+> functions are called they should be constant functions as well.
+
+Well, we do it a lot with say strcmp and others so I would use rather
+semantic argument,
+but I agree that David's version is easier to read and mark same time
+that these functions
+are important steps in bootup procedure. So I'm sorry for proposing
+this change in first place.
+
 >
-> If you plan to add one to Linux then please post the accompanying *tty
-> layer* patches and reasoning, otherwise if it is socket only please stick
-> to the socket ioctl.
-
-So we should define the new SIOCOUTQNSD in sockios.h only and not similiar to SIOCOUTQ using TIOCOUTQ. Right?
-
-Steffen
-
--- 
-DResearch Fahrzeugelektronik GmbH
-Otto-Schmirgal-Str. 3, 10319 Berlin, Germany
-Tel: +49 30 515932-237 mailto:sledz@DResearch.de
-Fax: +49 30 515932-299
-Geschäftsführer: Dr. Michael Weber, Werner Mögle;
-Amtsgericht Berlin Charlottenburg; HRB 130120 B;
-Ust.-IDNr. DE273952058
-
+> Code compactness isn't everything - if it was we'd be using C to the max to create
+> unreadable compound expressions all the time.
+>
+> Thanks,
+>
+>        Ingo
+>
