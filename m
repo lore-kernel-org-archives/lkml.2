@@ -1,92 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760246Ab1CDVa3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:30:29 -0500
-Received: from kroah.org ([198.145.64.141]:38816 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760096Ab1CDVa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760223Ab1CDVa1 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 4 Mar 2011 16:30:27 -0500
-Date: Fri, 4 Mar 2011 13:29:44 -0800
+Received: from kroah.org ([198.145.64.141]:38808 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760096Ab1CDVaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 16:30:25 -0500
+Date: Fri, 4 Mar 2011 13:27:09 -0800
 From: Greg KH <greg@kroah.com>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [REVIEW] NVM Express driver
-Message-ID: <20110304212944.GC28680@kroah.com>
-References: <20110303204749.GY3663@linux.intel.com>
- <20110303211336.GA32645@kroah.com>
- <20110303214104.GZ3663@linux.intel.com>
- <20110303215155.GA30451@kroah.com>
- <20110303220735.GA3663@linux.intel.com>
- <20110303222226.GA30966@kroah.com>
- <4D704DAB.9080100@mit.edu>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>, security@kernel.org,
+        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [Security] [PATCH] power: disable hibernation if module
+ loading is disabled
+Message-ID: <20110304212709.GA28680@kroah.com>
+References: <1299255084-4390-1-git-send-email-segoon@openwall.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D704DAB.9080100@mit.edu>
+In-Reply-To: <1299255084-4390-1-git-send-email-segoon@openwall.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 03, 2011 at 09:25:47PM -0500, Andy Lutomirski wrote:
-> On 03/03/2011 05:22 PM, Greg KH wrote:
-> >On Thu, Mar 03, 2011 at 05:07:35PM -0500, Matthew Wilcox wrote:
-> >>On Thu, Mar 03, 2011 at 01:51:55PM -0800, Greg KH wrote:
-> >>>Heh, no, well, submit_io should just go through the block layer and not
-> >>>be a separate ioctl, right?
-> >>
-> >>Just like with SG_IO, there are reasons to do I/Os without going through
-> >>the block layer.
-> >
-> >Ok, that makes sense.
-> >
-> >>>>There's a bit of an impedence mismatch there.  Think of this as
-> >>>>being drive firmware instead of controller firmware.  This isn't for
-> >>>>request_firmware() kind of uses, it's for some admin tool to come along
-> >>>>and tell the drive "Oh, here's some new firmware for you".
-> >>>
-> >>>That's fine, request_firmware will work wonderfully for that.
-> >>
-> >>How would the driver know that it should call request_firmware()?
-> >>Do it every 60 seconds in case somebody's downloaded some new firmware?
-> >
-> >Ick, no, just use the function provided that lets you create a firmware
-> >request and be notified when it is written to,
-> >request_firmware_nowait().  That is what it is there for.
-> >
-> >>>>If you look at the spec [1], you'll see there are a number of firmware
-> >>>>slots in the device, and it's up to the managability utility to decide
-> >>>>which one to replace or activate.  I dno't think you want to pull all
-> >>>>that gnarly decision making code into the kernel, do you?
-> >>>>
-> >>>>[1] http://download.intel.com/standards/nvmhci/NVM_Express_1_0_Gold.pdf
-> >>>
-> >>>No, just export multiple "slots" as firmware devices ready to be filled
-> >>>in by userspace whenever it wants/needs to.  The management utility can
-> >>>just dump the firmware to those sysfs files when it determines it needs
-> >>>to update the firmware, no decision making in the kernel at all.
-> >>
-> >>OK ... glad we decided to limit the number of slots.  I still don't see
-> >>(in Documentation/firmware_class/README) how this works for user-initiated
-> >>firmware updates rather than kernel-initiated.
-> >
-> >I didn't even realize we had a firmware README file...
-> >
-> >Anyway, just use request_firmware_nowait(), you will be fine.
-> >
-> 
-> Unless I'm misunderstanding the spec, this is for *nonvolatile*
-> firmware updates.  So if I have two of these devices and I stick a
-> firmware file into /lib/firmware, should it update both devices?
-> 
-> Shouldn't reflashing the device firmware be something that the users
-> asks for by something a little more specific than just creating a
-> file?  (In any case, creating /lib/firmware/nvmhci-3 to flash slot 3
-> seems rather silly.)
+On Fri, Mar 04, 2011 at 07:11:24PM +0300, Vasiliy Kulikov wrote:
+> If /proc/sys/kernel/modules_disabled is set to 1, then nobody (even full
+> root) may not read/write arbitrary kernel memory.  In spite of it,
+> hibernation allows anyone with an access to either /dev/snapshot or
+> /sys/power/ make the full snapshot of the system.  This snapshot may be
+> freely changed and uploaded back.
 
-Yes, a userspace tool should handle all of this, much like Dell does
-this with BIOS updates through this same interface.  See their in-kernel
-code, and userspace tools for details on how to do this sanely.
+This sounds like a very unintentional change to the "don't load any
+modules" option, right?  If so, you should really document this
+somewhere, otherwise people are going to get very confused when their
+system suspends suddenly stop working for no obvious reason.
 
 thanks,
 
