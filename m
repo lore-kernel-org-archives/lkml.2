@@ -1,74 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab1CDIWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 03:22:14 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49773 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab1CDIWL (ORCPT
+	id S1759238Ab1CDIXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 03:23:36 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48549 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab1CDIXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 03:22:11 -0500
+	Fri, 4 Mar 2011 03:23:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=aLmXA6qhQQX3EZdpj6/73PnuG/yzxGYXC1MgFo/GK5dA58ilDiNHNoKKIFQVC5S8Ml
-         J8TGtieJ5czYIzBNxklm/+oxoCjUH2T50fXQtI8vzZxZDsfDTruRIyLO1wt5RCIMzEFF
-         pS7Fu9yszwDyF8WqeIZFQ4ILVK8c//aTkod4c=
-Message-ID: <4D709FFC.6000107@gmail.com>
-Date: Fri, 04 Mar 2011 09:17:00 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WGELHSrTGjKeGPe4QFMgm4VioSO0Ox0Y/+uoeD93Rjji8TRCKnhcB6ANMD1/mSwMqf
+         hpbOmNqV9bifh0tNFYax3OE6R2m/rFH3MXqJE5r2/rgU/AZ3d6dloKLPO7zi9Aneew9n
+         RPk+j86A4+Q/FnztnEMD661YCPf7CxS56gxMY=
+Date: Fri, 4 Mar 2011 09:23:29 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110304082329.GA20499@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+ <20110303173422.GA27960@redhat.com>
+ <20110303202246.GB32152@redhat.com>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, cluster-devel@redhat.com, xfs@oss.sgi.com,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2] Check for immutable flag in fallocate path
-References: <4D6221B8.9040303@gmail.com> <4D6F5473.2070709@gmail.com> <20110303213903.GL15097@dastard>
-In-Reply-To: <20110303213903.GL15097@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110303202246.GB32152@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Hey, Oleg.
 
-Il 03/03/2011 22:39, Dave Chinner ha scritto:
-> WTF?  Why does append mode have any effect on whether we can punch
-> holes in a file or not? There's no justification for adding this in
-> the commit message. Why is it even in a patch that is for checking
-> immutable inodes? What is the point of adding it, when all that will
-> happen is people will switch to XFS_IOC_UNRESVSP which has never had
-> this limitation?
-
-So according to you, it's legal to do an "unreserve" operation on an
-append-only file. It's not the same for me, but if the community said
-that this is the right behavior then ok.
-
+On Thu, Mar 03, 2011 at 09:22:46PM +0100, Oleg Nesterov wrote:
+> On 03/03, Oleg Nesterov wrote:
+> >
+> > I'll ask the questions later.
 > 
-> And this asks bigger questions - why would you allow preallocate
-> anywhere but at or beyond EOF on an append mode inode? You can only
-> append to the file, so if you're going to add limitations based on
-> the append flag, you need to think this through a bit more....
+> Right now I do not see any holes (but I'll try more ;)
+
+Heh, I'm sure you'll find some. :-)
+
+> One question, to ensure I really understand you. To simplify,
+> consider this particular example.
 > 
-
-I don't understand this point. The theory of operation was:
-
-1) we don't allow any operation (reserve/unreserve) on a immutable file;
-2) we don't allow *unreserve* operation on an append-only file (this
-check makes sense only for fs that support the unreserve operation).
-
+> Tracee:
 > 
-> Also, like Christoph said, these checks belong in the generic code,
-> not in every filesystem. The same checks have to be made for every
-> filesystem, so they should be done before calling out the
-> filesystems regardless of what functionality the filesystem actually
-> supports.
+> 	int main(void)
+> 	{
+> 		kill(SIGSTOP, getpid());
 > 
+> 		printf("I am running\n");
+> 
+> 		for (;;)
+> 			;
+> 	}
+> 
+> To simplify again, suppose that the debugger attaches when it is
+> already stopped, then it does PTRACE_CONT(0).
+> 
+> In this case the tracee remains SIGNAL_STOP_STOPPED but prints
+> "I am running" and enters the endless loop.
+> 
+> (the new debugger can do PTRACE_SEIZE after that and "return"
+>  it to the stopped state without affecting jctl state).
+> 
+> Now, if SIGCONT comes (from anywhere) it clears SIGNAL_STOP_STOPPED,
+> the tracee traps and reports this event to debugger.
+> 
+> Correct?
 
-This was related to the first point, if we remove it then it's ok to
-check in a common code. Even if I think we should do the check under the
-inode lock to avoid race between fallocate and setattr, isn't it?
+The notification of the end of job control stop (ie. emission of
+SIGCONT) is probably the most hazy part and probably would change a
+bit while implemented, but here are the baselines I have on mind.
 
-Marco
+* The notification of the job control stop itself is the only time
+  that wait(2) reports the job control signal and the siginfo which
+  was sent together.
+
+* When job control stop ends, exit_code is changed to indicate ptrace
+  trap and siginfo indicates the trap site and that job control stop
+  is no long in effect.  This of course should wake up the tracer if
+  it's wait(2)ing.
+
+* The above requires another ptrace trap site which can probably
+  shared with PTRACE_SEIZE.  The question is whether to make group
+  stop state available for other trap sites too or just enable it in
+  the new trap site.  ATM, I'm leaning toward the latter.
+
+> And, once again. In the mt case, I assume that SIGCONT makes
+> every traced thread to report this event individually, right?
+>
+> (I am talking about the case when the group-stop was finished,
+>  iow "every" probably means the threads which participated and
+>  reported CLD_STOPPED to the debugger).
+
+Yeap, it's per-task ptrace trap which is broadcasted to every ptraced
+task which participated in the group stop.
+
+> In both cases, later then this SIGCONT will be reported again
+> as any "normal" signal when some thread dequeues it.
+
+Yeap, that's something which happens in the delivery path for SIGCONT.
+It should behave the same (other than fixing notification to real
+parent, that is).
+
+> Is my understanding correct?
+
+Yeap, seems pretty accurate.
+
+Thank you.
+
+-- 
+tejun
