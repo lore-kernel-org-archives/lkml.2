@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759792Ab1CDPu0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 10:50:26 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42240 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab1CDPuZ convert rfc822-to-8bit (ORCPT
+	id S1759855Ab1CDPuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 10:50:39 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41247 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759838Ab1CDPuh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 10:50:25 -0500
+	Fri, 4 Mar 2011 10:50:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=mtCixTdzrV75SvHWnSjnY639YHvjFsgShNZZF6JPzCvViLC6k0hj5Cvc5Y9sJj/+N4
+         Z9eEw7hhccxlcaZdAF6yw4nKIZ+t+632uGetSbLq/nQtItQFRMtmeWxXRbf98Hb5knot
+         cUY+3xvDSCC5GnyM+9jv6KhHD3tpe6VKJWwHk=
 MIME-Version: 1.0
-In-Reply-To: <1299204400.2812.35.camel@localhost>
-References: <1299204400.2812.35.camel@localhost>
-Date: Fri, 4 Mar 2011 10:50:23 -0500
-Message-ID: <AANLkTikoSnBZ5E2tD2d5QsLf4DxmQYi0rYtNRvnU8Fmz@mail.gmail.com>
-Subject: Re: BUG at mm/mmap.c:2309 when cx18.ko and cx18-alsa.ko loaded
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110304154549.GA14672@darkstar>
+References: <20110304154549.GA14672@darkstar>
+Date: Fri, 4 Mar 2011 23:50:36 +0800
+Message-ID: <AANLkTin6BzvErgnTjAi7nyPtrDnunzRGe-TD3gc3pdku@mail.gmail.com>
+Subject: Re: sysctl: add proc_dointvec_bool handler
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>, Don Zickus <dzickus@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 9:06 PM, Andy Walls <awalls@md.metrocast.net> wrote:
-> Hi,
+On Fri, Mar 4, 2011 at 11:45 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> Add proc_dointvec_bool sysctl handler for cases value is limited to 0 and 1
 >
-> I got a BUG when loading the cx18.ko module (which in turn requests the
-> cx18-alsa.ko module) on a kernel built from this repository
+> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+> ---
+>  include/linux/sysctl.h |    2 ++
+>  kernel/sysctl.c        |   27 +++++++++++++++++++++++++++
+>  2 files changed, 29 insertions(+)
 >
-> � � � �http://git.linuxtv.org/media_tree.git staging/for_v2.6.39
->
-> which I beleive is based on 2.6.38-rc2.
->
-> The BUG is mmap related and I'm almost certain it has to do with
-> userspace accessing cx18-alsa.ko ALSA device nodes, since cx18.ko
-> doesn't provide any mmap() related file ops.
->
-> So here is my transcription of a fuzzy digital photo of the screen:
-<snip>
-> I'm not very familiar with mmap() nor ALSA and I did not author the
-> cx18-alsa part of the cx18 driver, so any hints at where to look for the
-> problem are appreciated.
+> --- linux-2.6.orig/kernel/sysctl.c      2011-03-03 11:13:01.986661838 +0800
+> +++ linux-2.6/kernel/sysctl.c   2011-03-03 11:15:52.196661447 +0800
 
-Hi Andy,
-
-I'm traveling on business for about two weeks, so I won't be able to
-look into this right now.
-
-Any idea whether this is some new regression?  I'm just trying to
-understand whether this is something that has always been there since
-I originally added the ALSA support to cx18 or whether it's something
-that is new, in which case it might make sense to drag the ALSA people
-into the conversation since there haven't been any changes in the cx18
-driver lately.
-
-Devin
+This one is PATCH 01/04,  I missed the info in subject
 
 -- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Regards
+dave
