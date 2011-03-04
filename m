@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab1CDMzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 07:55:11 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52671 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759400Ab1CDMzH convert rfc822-to-8bit (ORCPT
+	id S1759583Ab1CDM4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 07:56:16 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64630 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759397Ab1CDM4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 07:55:07 -0500
-Subject: RE: [PATCH 09/13] unicore: mmu_gather rework
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'David Miller'" <davem@davemloft.net>,
-        "'Hugh Dickins'" <hugh.dickins@tiscali.co.uk>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, "'Nick Piggin'" <npiggin@kernel.dk>,
-        "'Paul McKenney'" <paulmck@linux.vnet.ibm.com>,
-        "'Yanmin Zhang'" <yanmin_zhang@linux.intel.com>,
-        "'Andrea Arcangeli'" <aarcange@redhat.com>,
-        "'Avi Kivity'" <avi@redhat.com>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Rik van Riel'" <riel@redhat.com>, "'Ingo Molnar'" <mingo@elte.hu>,
-        akpm@linux-foundation.org,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <03ca01cbda63$31930fd0$94b92f70$@mprc.pku.edu.cn>
-References: <20110302175004.222724818@chello.nl>
-	 <20110302175200.883953013@chello.nl>
-	 <03ca01cbda63$31930fd0$94b92f70$@mprc.pku.edu.cn>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 04 Mar 2011 13:17:00 +0100
-Message-ID: <1299241020.2428.13504.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 4 Mar 2011 07:56:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH 16/17] unicore32: add (void __iomem *) to io_p2v macro
+Date: Fri, 4 Mar 2011 12:52:57 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "'Guan Xuetao'" <epip@hera.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, greg@kroah.com
+References: <cover.1298821856.git.epip@hera.kernel.org> <201102281635.56528.arnd@arndb.de> <03ba01cbda54$a5c39f00$f14add00$@mprc.pku.edu.cn>
+In-Reply-To: <03ba01cbda54$a5c39f00$f14add00$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103041252.57410.arnd@arndb.de>
+X-Provags-ID: V02:K0:8x5Z9Ar3R/KM730cn7C4NW+ArbDWXfrQeYh5za7fSF6
+ S9VLg89uFFfOuO74daH5YEh0O5rizX1Z6k7sFecqfsZdHWUHcF
+ NQ3NqVIL8kjpFkhjDNAbRbJq43+2+XYy/tMCfH19FjQgyvJvzV
+ UQlY2tXBVo9LhjkuBVZmGvT5+2GPNsJzMZ26NxSBRzGqaixM6P
+ VxHlqmlRMuW4UJKtBBWyw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 19:56 +0800, Guan Xuetao wrote:
+On Friday 04 March 2011, Guan Xuetao wrote:
+> From: GuanXuetao <gxt@mprc.pku.edu.cn>
+> Date: Fri, 4 Mar 2011 18:07:48 +0800
+> Subject: [PATCH] unicore32: modify io_p2v and io_v2p macros, and adjust PKUNITY_mmio_BASEs
+> 
+> 1. remove __REG macro
+> 2. add (void __iomem *) to io_p2v macro
+> 3. add (phys_addr_t) to io_v2p macro
+> 4. add PKUNITY_AHB_BASE and PKUNITY_APB_BASE definitions
+> 5. modify all PKUNITY_mmio_BASEs from physical addr to virtual addr
+> 6. adjust prefix macro for all usage of PKUNITY_mmio_BASEs
+>   -- by advice with Arnd Bergmann
+> 
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-> Thanks Peter.
-> It looks good to me, though it is dependent on your patch set "mm: Preemptible mmu_gather"
+Looks good,
 
-It is indeed, the split-out per arch is purely to ease review. The final
-commit should be a merge of the first 10 patches so as not to break
-bisection.
-
-> While I have another look to include/asm-generic/tlb.h, I found it is also suitable for unicore32.
-> And so, I rewrite the tlb.h to use asm-generic version, and then your patch set will also work for me.
-
-Awesome, I notice you're loosing flush_tlb_range() support for this, if
-you're fine with that I'm obviously not going to argue, but if its
-better for your platform to keep doing this we can work on that as well
-as I'm trying to add generic support for range tracking into the generic
-tlb code.
-
-More importantly, you seem to loose your call to flush_cache_range()
-which isn't a NOP on your platform.
-
-Furthermore, while arch/unicore32/mm/tlb-ucv2.S is mostly magic to me, I
-see unicore32 is one of the few architectures that actually uses
-vm_flags in flush_tlb_range(). Do you have independent I/D-TLB flushes
-or are you flushing I-cache on VM_EXEC?
-
-Also, I notice your flush_tlb_range() implementation looks to be a loop
-invalidating individual pages, which I can imagine is cheaper for small
-ranges but large ranges might be better of with a full invalidate. Did
-you think about this?
-
-
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
