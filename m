@@ -1,98 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab1CDGud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 01:50:33 -0500
+	id S1754331Ab1CDGut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 01:50:49 -0500
 Received: from mailout1.samsung.com ([203.254.224.24]:21913 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab1CDGua (ORCPT
+	with ESMTP id S1751260Ab1CDGub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 01:50:30 -0500
-Date: Fri, 04 Mar 2011 15:50:26 +0900
+	Fri, 4 Mar 2011 01:50:31 -0500
+Date: Fri, 04 Mar 2011 15:50:27 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v2 1/2] MAX8997/8966 MFD Driver Initial Release
- (PMIC+RTC+MUIC+Haptic+...)
+Subject: [PATCH v2 2/2] MAX8997/8966 PMIC Regulator Driver Initial Release
 In-reply-to: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         kyungmin.park@samsung.com, myungjoo.ham@gmail.com
-Message-id: <1299221427-4726-2-git-send-email-myungjoo.ham@samsung.com>
+Message-id: <1299221427-4726-3-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.1
 Content-transfer-encoding: 7BIT
 References: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
-X-OriginalArrivalTime: 04 Mar 2011 06:50:28.0057 (UTC)
- FILETIME=[72488490:01CBDA38]
+X-OriginalArrivalTime: 04 Mar 2011 06:50:28.0073 (UTC)
+ FILETIME=[724AF590:01CBDA38]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX8997/MAX8966 chip is a multi-function device with I2C bussses. The
-chip includes PMIC, RTC, Fuel Gauge, MUIC, Haptic, Flash control, and
-Battery (charging) control.
+This patch supports PMIC/Regulator part of MAX8997/MAX8966 MFD.
+In this initial release, selecting voltages or current-limit
+and switching on/off the regulators are supported.
 
-This patch is an initial release of a MAX8997/8966 driver that supports
-to enable the chip with its primary I2C bus that connects every device
-mentioned above except for Fuel Gauge, which uses another I2C bus. The
-fuel gauge is not supported by this mfd driver and is supported by a
-seperated driver of MAX17042 Fuel Gauge (yes, the fuel gauge part is
-compatible with MAX17042).
+Controlling voltages for DVS with GPIOs is not implemented fully
+and requires more considerations: it controls multiple bucks (selection
+of 1, 2, and 5) at the same time with SET1~3 gpios. Thus, when DVS-GPIO
+is activated, we lose the ability to control the voltage of a single
+buck regulator independently; i.e., contolling a buck affects other two
+bucks. Therefore, using the conventional regulator framework directly
+might be problematic.
+
+On the other hand, controlling all the three bucks simultenously based
+on the voltage set table may help build cpufreq and similar system
+more robust; i.e., all the three voltages are consistent every time
+without glitches during transition.
 
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/mfd/Kconfig                 |   12 +
- drivers/mfd/Makefile                |    1 +
- drivers/mfd/max8997.c               |  427 +++++++++++++++++++++++++++++++++++
- include/linux/mfd/max8997-private.h |  347 ++++++++++++++++++++++++++++
- include/linux/mfd/max8997.h         |   88 +++++++
- 5 files changed, 875 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/max8997.c
- create mode 100644 include/linux/mfd/max8997-private.h
- create mode 100644 include/linux/mfd/max8997.h
+ drivers/regulator/Kconfig   |    9 +
+ drivers/regulator/Makefile  |    1 +
+ drivers/regulator/max8997.c | 1238 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/max8997.h |   28 +-
+ 4 files changed, 1275 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/regulator/max8997.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index fd01836..c682ad1 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -293,6 +293,18 @@ config MFD_MAX8925
- 	  accessing the device, additional drivers must be enabled in order
- 	  to use the functionality of the device.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index e1d9436..395d359 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -108,6 +108,15 @@ config REGULATOR_MAX8952
+ 	  via I2C bus. Maxim 8952 has one voltage output and supports 4 DVS
+ 	  modes ranging from 0.77V to 1.40V by 0.01V steps.
  
-+config MFD_MAX8997
-+	bool "Maxim Semiconductor MAX8997/8966 PMIC Support"
-+	depends on I2C=y && GENERIC_HARDIRQS
-+	select MFD_CORE
++config REGULATOR_MAX8997
++	tristate "Maxim 8997/8966 regulator"
++	depends on MFD_MAX8997
 +	help
-+	  Say yes here to support for Maxim Semiconductor MAX8998/8966.
-+	  This is a Power Management IC with RTC, Flash, Fuel Gauge, Haptic,
-+	  MUIC controls on chip.
-+	  This driver provies common support for accessing the device,
-+	  additional drivers must be enabled in order to use the functionality
-+	  of the device.
++	  This driver controls a Maxim 8997/8966 regulator
++	  via I2C bus. The provided regulator is suitable for S5PC110,
++	  S5PV210, and Exynos-4 chips to control VCC_CORE and
++	  VCC_USIM voltages.
 +
- config MFD_MAX8998
- 	bool "Maxim Semiconductor MAX8998/National LP3974 PMIC Support"
- 	depends on I2C=y && GENERIC_HARDIRQS
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index a54e2c7..f6662e3 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -60,6 +60,7 @@ obj-$(CONFIG_UCB1400_CORE)	+= ucb1400_core.o
- obj-$(CONFIG_PMIC_DA903X)	+= da903x.o
- max8925-objs			:= max8925-core.o max8925-i2c.o
- obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
-+obj-$(CONFIG_MFD_MAX8997)	+= max8997.o
- obj-$(CONFIG_MFD_MAX8998)	+= max8998.o max8998-irq.o
- 
- pcf50633-objs			:= pcf50633-core.o pcf50633-irq.o
-diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+ config REGULATOR_MAX8998
+ 	tristate "Maxim 8998 voltage regulator"
+ 	depends on MFD_MAX8998
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 0b5e88c..e43b852 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
+ obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
+ obj-$(CONFIG_REGULATOR_MAX8925) += max8925-regulator.o
+ obj-$(CONFIG_REGULATOR_MAX8952) += max8952.o
++obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
+ obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
+ obj-$(CONFIG_REGULATOR_WM831X) += wm831x-dcdc.o
+ obj-$(CONFIG_REGULATOR_WM831X) += wm831x-isink.o
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
 new file mode 100644
-index 0000000..5d1fca0
+index 0000000..b32f5b5
 --- /dev/null
-+++ b/drivers/mfd/max8997.c
-@@ -0,0 +1,427 @@
++++ b/drivers/regulator/max8997.c
+@@ -0,0 +1,1238 @@
 +/*
-+ * max8997.c - mfd core driver for the Maxim 8966 and 8997
++ * max8997.c - Regulator driver for the Maxim 8997/8966
 + *
 + * Copyright (C) 2011 Samsung Electronics
 + * MyungJoo Ham <myungjoo.ham@smasung.com>
@@ -114,857 +113,1267 @@ index 0000000..5d1fca0
 + * This driver is based on max8998.c
 + */
 +
++#include <linux/bug.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
 +#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/mutex.h>
-+#include <linux/mfd/core.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
 +#include <linux/mfd/max8997.h>
 +#include <linux/mfd/max8997-private.h>
 +
-+#define I2C_ADDR_PMIC	(0xCC >> 1)
-+#define I2C_ADDR_MUIC	(0x4A >> 1)
-+#define I2C_ADDR_BATTERY	(0x6C >> 1)
-+#define I2C_ADDR_RTC	(0x0C >> 1)
-+#define I2C_ADDR_HAPTIC	(0x90 >> 1)
++struct max8997_data {
++	struct device *dev;
++	struct max8997_dev *iodev;
++	int num_regulators;
++	struct regulator_dev **rdev;
++	int ramp_delay; /* in mV/us */
 +
-+static struct mfd_cell max8997_devs[] = {
-+	{ .name = "max8997-pmic", },
-+	{ .name = "max8997-rtc", },
-+	{ .name = "max8997-battery", },
-+	{ .name = "max8997-haptic", },
-+	{ .name = "max8997-muic", },
-+	{ .name = "max8997-flash", },
++	u8 buck1_vol[8];
++	u8 buck2_vol[8];
++	u8 buck5_vol[8];
++	int buck125_gpioindex;
++
++	u8 saved_states[MAX8997_REG_MAX];
++	struct regulator_dev *saved_rdev[MAX8997_REG_MAX];
 +};
 +
-+int max8997_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
++static inline void max8997_set_gpio(struct max8997_data *max8997)
 +{
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
-+	int ret;
++	struct max8997_platform_data *pdata =
++		dev_get_platdata(max8997->iodev->dev);
++	int set3 = (max8997->buck125_gpioindex) & 0x1;
++	int set2 = ((max8997->buck125_gpioindex) >> 1) & 0x1;
++	int set1 = ((max8997->buck125_gpioindex) >> 2) & 0x1;
 +
-+	mutex_lock(&max8997->iolock);
-+	ret = i2c_smbus_read_byte_data(i2c, reg);
-+	mutex_unlock(&max8997->iolock);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret &= 0xff;
-+	*dest = ret;
-+	return 0;
++	gpio_set_value(pdata->buck125_gpios[0], set1);
++	gpio_set_value(pdata->buck125_gpios[1], set2);
++	gpio_set_value(pdata->buck125_gpios[2], set3);
 +}
-+EXPORT_SYMBOL_GPL(max8997_read_reg);
 +
-+int max8997_bulk_read(struct i2c_client *i2c, u8 reg, int count, u8 *buf)
++struct voltage_map_desc {
++	int min;
++	int max;
++	int step;
++	unsigned int n_bits;
++};
++
++/* Voltage maps in mV */
++static const struct voltage_map_desc ldo_voltage_map_desc = {
++	.min = 800,	.max = 3950,	.step = 50,	.n_bits = 6,
++}; /* LDO1 ~ 18, 21 all */
++
++static const struct voltage_map_desc buck1245_voltage_map_desc = {
++	.min = 650,	.max = 2225,	.step = 25,	.n_bits = 6,
++}; /* Buck1, 2, 4, 5 */
++
++static const struct voltage_map_desc buck37_voltage_map_desc = {
++	.min = 750,	.max = 3900,	.step = 50,	.n_bits = 6,
++}; /* Buck3, 7 */
++
++/* current map in mA */
++static const struct voltage_map_desc charger_current_map_desc = {
++	.min = 200,	.max = 950,	.step = 50,	.n_bits = 4,
++};
++
++static const struct voltage_map_desc topoff_current_map_desc = {
++	.min = 50,	.max = 200,	.step = 10,	.n_bits = 4,
++};
++
++static const struct voltage_map_desc *reg_voltage_map[] = {
++	[MAX8997_LDO1] = &ldo_voltage_map_desc,
++	[MAX8997_LDO2] = &ldo_voltage_map_desc,
++	[MAX8997_LDO3] = &ldo_voltage_map_desc,
++	[MAX8997_LDO4] = &ldo_voltage_map_desc,
++	[MAX8997_LDO5] = &ldo_voltage_map_desc,
++	[MAX8997_LDO6] = &ldo_voltage_map_desc,
++	[MAX8997_LDO7] = &ldo_voltage_map_desc,
++	[MAX8997_LDO8] = &ldo_voltage_map_desc,
++	[MAX8997_LDO9] = &ldo_voltage_map_desc,
++	[MAX8997_LDO10] = &ldo_voltage_map_desc,
++	[MAX8997_LDO11] = &ldo_voltage_map_desc,
++	[MAX8997_LDO12] = &ldo_voltage_map_desc,
++	[MAX8997_LDO13] = &ldo_voltage_map_desc,
++	[MAX8997_LDO14] = &ldo_voltage_map_desc,
++	[MAX8997_LDO15] = &ldo_voltage_map_desc,
++	[MAX8997_LDO16] = &ldo_voltage_map_desc,
++	[MAX8997_LDO17] = &ldo_voltage_map_desc,
++	[MAX8997_LDO18] = &ldo_voltage_map_desc,
++	[MAX8997_LDO21] = &ldo_voltage_map_desc,
++	[MAX8997_BUCK1] = &buck1245_voltage_map_desc,
++	[MAX8997_BUCK2] = &buck1245_voltage_map_desc,
++	[MAX8997_BUCK3] = &buck37_voltage_map_desc,
++	[MAX8997_BUCK4] = &buck1245_voltage_map_desc,
++	[MAX8997_BUCK5] = &buck1245_voltage_map_desc,
++	[MAX8997_BUCK6] = NULL,
++	[MAX8997_BUCK7] = &buck37_voltage_map_desc,
++	[MAX8997_EN32KHZ_AP] = NULL,
++	[MAX8997_EN32KHZ_CP] = NULL,
++	[MAX8997_ENVICHG] = NULL,
++	[MAX8997_ESAFEOUT1] = NULL,
++	[MAX8997_ESAFEOUT2] = NULL,
++	[MAX8997_CHARGER_CV] = NULL,
++	[MAX8997_CHARGER] = &charger_current_map_desc,
++	[MAX8997_CHARGER_TOPOFF] = &topoff_current_map_desc,
++};
++
++static inline int max8997_get_ldo(struct regulator_dev *rdev)
 +{
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
-+	int ret;
-+
-+	mutex_lock(&max8997->iolock);
-+	ret = i2c_smbus_read_i2c_block_data(i2c, reg, count, buf);
-+	mutex_unlock(&max8997->iolock);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
++	return rdev_get_id(rdev);
 +}
-+EXPORT_SYMBOL_GPL(max8997_bulk_read);
 +
-+int max8997_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
++static int max8997_list_voltage(struct regulator_dev *rdev,
++		unsigned int selector)
 +{
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
-+	int ret;
++	const struct voltage_map_desc *desc;
++	int ldo = max8997_get_ldo(rdev);
++	int val;
 +
-+	mutex_lock(&max8997->iolock);
-+	ret = i2c_smbus_write_byte_data(i2c, reg, value);
-+	mutex_unlock(&max8997->iolock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(max8997_write_reg);
++	if (ldo >= ARRAY_SIZE(reg_voltage_map) ||
++			ldo < 0)
++		return -EINVAL;
 +
-+int max8997_bulk_write(struct i2c_client *i2c, u8 reg, int count, u8 *buf)
-+{
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
-+	int ret;
-+
-+	mutex_lock(&max8997->iolock);
-+	ret = i2c_smbus_write_i2c_block_data(i2c, reg, count, buf);
-+	mutex_unlock(&max8997->iolock);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(max8997_bulk_write);
-+
-+int max8997_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask)
-+{
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
-+	int ret;
-+
-+	mutex_lock(&max8997->iolock);
-+	ret = i2c_smbus_read_byte_data(i2c, reg);
-+	if (ret >= 0) {
-+		u8 old_val = ret & 0xff;
-+		u8 new_val = (val & mask) | (old_val & (~mask));
-+		ret = i2c_smbus_write_byte_data(i2c, reg, new_val);
++	if (ldo == MAX8997_ESAFEOUT1 || ldo == MAX8997_ESAFEOUT2) {
++		switch (selector) {
++		case 0:
++			return 4850000;
++		case 1:
++			return 4900000;
++		case 2:
++			return 4950000;
++		case 3:
++			return 3300000;
++		default:
++			return -EINVAL;
++		}
 +	}
-+	mutex_unlock(&max8997->iolock);
++
++	if (ldo == MAX8997_CHARGER_CV) {
++		switch (selector) {
++		case 0x00:
++			return 4200000;
++		case 0x01 ... 0x0E:
++			return 4000000 + 20000 * (selector - 0x01);
++		case 0x0F:
++			return 4350000;
++		default:
++			return -EINVAL;
++		}
++	}
++
++	desc = reg_voltage_map[ldo];
++	if (desc == NULL)
++		return -EINVAL;
++
++	val = desc->min + desc->step * selector;
++	if (val > desc->max)
++		return -EINVAL;
++
++	return val * 1000;
++}
++
++static int max8997_get_enable_register(struct regulator_dev *rdev,
++		int *reg, int *mask, int *pattern)
++{
++	int ldo = max8997_get_ldo(rdev);
++
++	switch (ldo) {
++	case MAX8997_LDO1 ... MAX8997_LDO21:
++		*reg = MAX8997_REG_LDO1CTRL + (ldo - MAX8997_LDO1);
++		*mask = 0xC0;
++		*pattern = 0xC0;
++		break;
++	case MAX8997_BUCK1:
++		*reg = MAX8997_REG_BUCK1CTRL;
++		*mask = 0x01;
++		*pattern = 0x01;
++		break;
++	case MAX8997_BUCK2:
++		*reg = MAX8997_REG_BUCK2CTRL;
++		*mask = 0x01;
++		*pattern = 0x01;
++		break;
++	case MAX8997_BUCK3:
++		*reg = MAX8997_REG_BUCK3CTRL;
++		*mask = 0x01;
++		*pattern = 0x01;
++		break;
++	case MAX8997_BUCK4:
++		*reg = MAX8997_REG_BUCK4CTRL;
++		*mask = 0x01;
++		*pattern = 0x01;
++		break;
++	case MAX8997_BUCK5:
++		*reg = MAX8997_REG_BUCK5CTRL;
++		*mask = 0x01;
++		*pattern = 0x01;
++		break;
++	case MAX8997_BUCK6:
++		*reg = MAX8997_REG_BUCK6CTRL;
++		*mask = 0x01;
++		*pattern = 0x01;
++		break;
++	case MAX8997_BUCK7:
++		*reg = MAX8997_REG_BUCK7CTRL;
++		*mask = 0x01;
++		*pattern = 0x01;
++		break;
++	case MAX8997_EN32KHZ_AP ... MAX8997_EN32KHZ_CP:
++		*reg = MAX8997_REG_MAINCON1;
++		*mask = 0x01 << (ldo - MAX8997_EN32KHZ_AP);
++		*pattern = 0x01 << (ldo - MAX8997_EN32KHZ_AP);
++		break;
++	case MAX8997_ENVICHG:
++		*reg = MAX8997_REG_MBCCTRL1;
++		*mask = 0x80;
++		*pattern = 0x80;
++		break;
++	case MAX8997_ESAFEOUT1 ... MAX8997_ESAFEOUT2:
++		*reg = MAX8997_REG_SAFEOUTCTRL;
++		*mask = 0x40 << (ldo - MAX8997_ESAFEOUT1);
++		*pattern = 0x40 << (ldo - MAX8997_ESAFEOUT1);
++		break;
++	case MAX8997_CHARGER:
++		*reg = MAX8997_REG_MBCCTRL2;
++		*mask = 0x40;
++		*pattern = 0x40;
++		break;
++	default:
++		/* Not controllable or not exists */
++		return -EINVAL;
++		break;
++	}
++
++	return 0;
++}
++
++static int max8997_reg_is_enabled(struct regulator_dev *rdev)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int ret, reg, mask, pattern;
++	u8 val;
++
++	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
++	if (ret == -EINVAL)
++		return 1; /* "not controllable" */
++	else if (ret)
++		return ret;
++
++	ret = max8997_read_reg(i2c, reg, &val);
++	if (ret)
++		return ret;
++
++	return (val & mask) == pattern;
++}
++
++static int max8997_reg_enable(struct regulator_dev *rdev)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int ret, reg, mask, pattern;
++
++	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
++	if (ret)
++		return ret;
++
++	return max8997_update_reg(i2c, reg, pattern, mask);
++}
++
++static int max8997_reg_disable(struct regulator_dev *rdev)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int ret, reg, mask, pattern;
++
++	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
++	if (ret)
++		return ret;
++
++	return max8997_update_reg(i2c, reg, ~pattern, mask);
++}
++
++static int max8997_get_voltage_register(struct regulator_dev *rdev,
++		int *_reg, int *_shift, int *_mask)
++{
++	int ldo = max8997_get_ldo(rdev);
++	int reg, shift = 0, mask = 0x3f;
++
++	switch (ldo) {
++	case MAX8997_LDO1 ... MAX8997_LDO21:
++		reg = MAX8997_REG_LDO1CTRL + (ldo - MAX8997_LDO1);
++		break;
++	case MAX8997_BUCK1:
++		reg = MAX8997_REG_BUCK1DVS1;
++		break;
++	case MAX8997_BUCK2:
++		reg = MAX8997_REG_BUCK2DVS1;
++		break;
++	case MAX8997_BUCK3:
++		reg = MAX8997_REG_BUCK3DVS;
++		break;
++	case MAX8997_BUCK4:
++		reg = MAX8997_REG_BUCK4DVS;
++		break;
++	case MAX8997_BUCK5:
++		reg = MAX8997_REG_BUCK5DVS1;
++		break;
++	case MAX8997_BUCK7:
++		reg = MAX8997_REG_BUCK7DVS;
++		break;
++	case MAX8997_ESAFEOUT1 ...  MAX8997_ESAFEOUT2:
++		reg = MAX8997_REG_SAFEOUTCTRL;
++		shift = (ldo == MAX8997_ESAFEOUT2) ? 2 : 0;
++		mask = 0x3;
++		break;
++	case MAX8997_CHARGER_CV:
++		reg = MAX8997_REG_MBCCTRL3;
++		shift = 0;
++		mask = 0xf;
++		break;
++	case MAX8997_CHARGER:
++		reg = MAX8997_REG_MBCCTRL4;
++		shift = 0;
++		mask = 0xf;
++		break;
++	case MAX8997_CHARGER_TOPOFF:
++		reg = MAX8997_REG_MBCCTRL5;
++		shift = 0;
++		mask = 0xf;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	*_reg = reg;
++	*_shift = shift;
++	*_mask = mask;
++
++	return 0;
++}
++
++static int max8997_get_voltage(struct regulator_dev *rdev)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct max8997_platform_data *pdata =
++		dev_get_platdata(max8997->iodev->dev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int reg, shift, mask, ret;
++	int ldo = max8997_get_ldo(rdev);
++	u8 val;
++
++	ret = max8997_get_voltage_register(rdev, &reg, &shift, &mask);
++	if (ret)
++		return ret;
++
++
++	if ((ldo == MAX8997_BUCK1 && pdata->buck1_gpiodvs) ||
++			(ldo == MAX8997_BUCK2 && pdata->buck2_gpiodvs) ||
++			(ldo == MAX8997_BUCK5 && pdata->buck5_gpiodvs))
++		reg += max8997->buck125_gpioindex;
++
++	ret = max8997_read_reg(i2c, reg, &val);
++	if (ret)
++		return ret;
++
++	val >>= shift;
++	val &= mask;
++
++	ret = max8997_list_voltage(rdev, val);
++
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(max8997_update_reg);
 +
-+static int max8997_i2c_probe(struct i2c_client *i2c,
-+			    const struct i2c_device_id *id)
++static inline int max8997_get_voltage_proper_val(
++		const struct voltage_map_desc *desc,
++		int min_vol, int max_vol)
 +{
-+	struct max8997_dev *max8997;
-+	struct max8997_platform_data *pdata = i2c->dev.platform_data;
-+	int ret = 0;
++	int i = 0;
 +
-+	max8997 = kzalloc(sizeof(struct max8997_dev), GFP_KERNEL);
-+	if (max8997 == NULL)
++	if (desc == NULL)
++		return -EINVAL;
++
++	if (max_vol < desc->min || min_vol > desc->max)
++		return -EINVAL;
++
++	while (desc->min + desc->step * i < min_vol &&
++			desc->min + desc->step * i < desc->max)
++		i++;
++
++	if (desc->min + desc->step * i > max_vol)
++		return -EINVAL;
++
++	if (i >= (1 << desc->n_bits))
++		return -EINVAL;
++
++	return i;
++}
++
++static int max8997_set_voltage_charger_cv(struct regulator_dev *rdev,
++		int min_uV, int max_uV, unsigned *selector)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int ldo = max8997_get_ldo(rdev);
++	int lb, ub;
++	int reg, shift = 0, mask, ret = 0;
++	u8 val = 0x0;
++
++	if (ldo != MAX8997_CHARGER_CV)
++		return -EINVAL;
++
++	ret = max8997_get_voltage_register(rdev, &reg, &shift, &mask);
++	if (ret)
++		return ret;
++
++	if (max_uV < 4000000 || min_uV > 4350000)
++		return -EINVAL;
++
++	if (min_uV <= 4000000) {
++		if (max_uV >= 4000000)
++			return -EINVAL;
++		else
++			val = 0x1;
++	} else if (min_uV <= 4200000 && max_uV >= 4200000)
++		val = 0x0;
++	else {
++		lb = (min_uV - 4000001) / 20000 + 2;
++		ub = (max_uV - 4000000) / 20000 + 1;
++
++		if (lb > ub)
++			return -EINVAL;
++
++		if (lb < 0xf)
++			val = lb;
++		else {
++			if (ub >= 0xf)
++				val = 0xf;
++			else
++				return -EINVAL;
++		}
++	}
++
++	*selector = val;
++
++	ret = max8997_update_reg(i2c, reg, val << shift, mask);
++
++	return ret;
++}
++
++/*
++ * For LDO1 ~ LDO21, BUCK1~5, BUCK7, CHARGER, CHARGER_TOPOFF
++ * BUCK1, 2, and 5 are available if they are not controlled by gpio
++ */
++static int max8997_set_voltage_ldo(struct regulator_dev *rdev,
++		int min_uV, int max_uV, unsigned *selector)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
++	const struct voltage_map_desc *desc;
++	int ldo = max8997_get_ldo(rdev);
++	int reg, shift = 0, mask, ret;
++	int i;
++	u8 org;
++
++	switch (ldo) {
++	case MAX8997_LDO1 ... MAX8997_LDO21:
++		break;
++	case MAX8997_BUCK1 ... MAX8997_BUCK5:
++		break;
++	case MAX8997_BUCK6:
++		return -EINVAL;
++	case MAX8997_BUCK7:
++		break;
++	case MAX8997_CHARGER:
++		break;
++	case MAX8997_CHARGER_TOPOFF:
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	desc = reg_voltage_map[ldo];
++
++	i = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
++	if (i < 0)
++		return i;
++
++	ret = max8997_get_voltage_register(rdev, &reg, &shift, &mask);
++	if (ret)
++		return ret;
++
++	max8997_read_reg(i2c, reg, &org);
++	org = (org & mask) >> shift;
++
++	ret = max8997_update_reg(i2c, reg, i << shift, mask << shift);
++	*selector = i;
++
++	if (ldo == MAX8997_BUCK1 || ldo == MAX8997_BUCK2 ||
++			ldo == MAX8997_BUCK4 || ldo == MAX8997_BUCK5) {
++		/* If the voltage is increasing */
++		if (org < i)
++			udelay(desc->step * (i - org) / max8997->ramp_delay);
++	}
++
++	return ret;
++}
++
++/*
++ * Assess the damage on the voltage setting of BUCK1,2,5 by the change.
++ */
++static int max8997_assess_side_effect(struct regulator_dev *rdev,
++		u8 new_val, int *best)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct max8997_platform_data *pdata =
++		dev_get_platdata(max8997->iodev->dev);
++	int ldo = max8997_get_ldo(rdev);
++	u8 *buckx_val[3];
++	bool buckx_gpiodvs[3];
++	int side_effect[8];
++	int min_side_effect = INT_MAX;
++	int i;
++
++	*best = -1;
++
++	switch (ldo) {
++	case MAX8997_BUCK1:
++		ldo = 0;
++		break;
++	case MAX8997_BUCK2:
++		ldo = 1;
++		break;
++	case MAX8997_BUCK5:
++		ldo = 2;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	buckx_val[0] = max8997->buck1_vol;
++	buckx_val[1] = max8997->buck2_vol;
++	buckx_val[2] = max8997->buck5_vol;
++	buckx_gpiodvs[0] = pdata->buck1_gpiodvs;
++	buckx_gpiodvs[1] = pdata->buck2_gpiodvs;
++	buckx_gpiodvs[2] = pdata->buck5_gpiodvs;
++
++	for (i = 0; i < 8; i++) {
++		if (new_val == (buckx_val[ldo])[i]) {
++			int others;
++
++			side_effect[i] = 0;
++			for (others = 0; others < 3; others++) {
++				int diff;
++
++				if (others == ldo)
++					continue;
++				if (buckx_gpiodvs[others] == false)
++					continue; /* Not affected */
++				diff = (buckx_val[others])[i] -
++						(buckx_val[others])
++						[max8997->buck125_gpioindex];
++				if (diff > 0)
++					side_effect[i] += diff;
++				else if (diff < 0)
++					side_effect[i] -= diff;
++			}
++			if (side_effect[i] == 0) {
++				*best = i;
++				return 0; /* NO SIDE EFFECT! Use This! */
++			}
++			if (side_effect[i] < min_side_effect) {
++				min_side_effect = side_effect[i];
++				*best = i;
++			}
++		} else
++			side_effect[i] = -1;
++	}
++
++	if (*best == -1)
++		return -EINVAL;
++
++	if (pdata->ignore_gpiodvs_side_effect == false)
++		return -EINVAL;
++
++	WARN(true, "MAX8997 GPIO-DVS Side Effect Warning: GPIO SET: %d -> %d\n",
++			max8997->buck125_gpioindex, *best);
++
++	return side_effect[*best];
++}
++
++/*
++ * For Buck 1 ~ 5 and 7. If it is not controlled by GPIO, this calls
++ * max8997_set_voltage_ldo to do the job.
++ */
++static int max8997_set_voltage_buck(struct regulator_dev *rdev,
++		int min_uV, int max_uV, unsigned *selector)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct max8997_platform_data *pdata =
++		dev_get_platdata(max8997->iodev->dev);
++	int ldo = max8997_get_ldo(rdev);
++	const struct voltage_map_desc *desc;
++	int new_val, new_idx, damage;
++	bool gpio_dvs_mode = false;
++	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
++
++	if (ldo < MAX8997_BUCK1 || ldo > MAX8997_BUCK7)
++		return -EINVAL;
++
++	switch (ldo) {
++	case MAX8997_BUCK1:
++		if (pdata->buck1_gpiodvs)
++			gpio_dvs_mode = true;
++		break;
++	case MAX8997_BUCK2:
++		if (pdata->buck2_gpiodvs)
++			gpio_dvs_mode = true;
++		break;
++	case MAX8997_BUCK5:
++		if (pdata->buck5_gpiodvs)
++			gpio_dvs_mode = true;
++		break;
++	}
++
++	if (gpio_dvs_mode) {
++		desc = reg_voltage_map[ldo];
++		new_val = max8997_get_voltage_proper_val(desc, min_vol,
++							max_vol);
++		if (new_val < 0)
++			return new_val;
++
++		damage = max8997_assess_side_effect(rdev, new_val, &new_idx);
++
++		if (damage < 0)
++			return damage;
++
++		max8997->buck125_gpioindex = new_idx;
++		max8997_set_gpio(max8997);
++		*selector = new_val;
++
++		return 0;
++	}
++
++	return max8997_set_voltage_ldo(rdev, min_uV, max_uV, selector);
++}
++
++static const int safeoutvolt[] = {
++	3300000,
++	4850000,
++	4900000,
++	4950000,
++};
++
++/* For SAFEOUT1 and SAFEOUT2 */
++static int max8997_set_voltage_safeout(struct regulator_dev *rdev,
++		int min_uV, int max_uV, unsigned *selector)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int ldo = max8997_get_ldo(rdev);
++	int reg, shift = 0, mask, ret;
++	int i = 0;
++	u8 val;
++
++	if (ldo != MAX8997_ESAFEOUT1 && ldo != MAX8997_ESAFEOUT2)
++		return -EINVAL;
++
++	for (i = 0; i < ARRAY_SIZE(safeoutvolt); i++) {
++		if (min_uV <= safeoutvolt[i] &&
++				max_uV >= safeoutvolt[i])
++			break;
++	}
++
++	if (i >= ARRAY_SIZE(safeoutvolt))
++		return -EINVAL;
++
++	if (i == 0)
++		val = 0x3;
++	else
++		val = i - 1;
++
++	ret = max8997_get_voltage_register(rdev, &reg, &shift, &mask);
++	if (ret)
++		return ret;
++
++	ret = max8997_update_reg(i2c, reg, val << shift, mask << shift);
++	*selector = val;
++
++	return ret;
++}
++
++static int max8997_reg_enable_suspend(struct regulator_dev *rdev)
++{
++	return 0;
++}
++
++static int max8997_reg_disable_suspend(struct regulator_dev *rdev)
++{
++	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	int ret, reg, mask, pattern;
++	int ldo = max8997_get_ldo(rdev);
++
++	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
++	if (ret)
++		return ret;
++
++	max8997_read_reg(i2c, reg, &max8997->saved_states[ldo]);
++	max8997->saved_rdev[ldo] = rdev;
++
++	if (ldo == MAX8997_LDO1 ||
++			ldo == MAX8997_LDO10 ||
++			ldo == MAX8997_LDO21) {
++		pr_info("Conditional Power-Off for %s\n", rdev->desc->name);
++		return max8997_update_reg(i2c, reg, 0x40, mask);
++	}
++
++	pr_info("Full Power-Off for %s (%xh -> %xh)\n", rdev->desc->name,
++			max8997->saved_states[ldo] & mask, (~pattern) & mask);
++	return max8997_update_reg(i2c, reg, ~pattern, mask);
++}
++
++static struct regulator_ops max8997_ldo_ops = {
++	.list_voltage		= max8997_list_voltage,
++	.is_enabled		= max8997_reg_is_enabled,
++	.enable			= max8997_reg_enable,
++	.disable		= max8997_reg_disable,
++	.get_voltage		= max8997_get_voltage,
++	.set_voltage		= max8997_set_voltage_ldo,
++	.set_suspend_enable	= max8997_reg_enable_suspend,
++	.set_suspend_disable	= max8997_reg_disable_suspend,
++};
++
++static struct regulator_ops max8997_buck_ops = {
++	.list_voltage		= max8997_list_voltage,
++	.is_enabled		= max8997_reg_is_enabled,
++	.enable			= max8997_reg_enable,
++	.disable		= max8997_reg_disable,
++	.get_voltage		= max8997_get_voltage,
++	.set_voltage		= max8997_set_voltage_buck,
++	.set_suspend_enable	= max8997_reg_enable_suspend,
++	.set_suspend_disable	= max8997_reg_disable_suspend,
++};
++
++static struct regulator_ops max8997_fixedvolt_ops = {
++	.list_voltage		= max8997_list_voltage,
++	.is_enabled		= max8997_reg_is_enabled,
++	.enable			= max8997_reg_enable,
++	.disable		= max8997_reg_disable,
++	.set_suspend_enable	= max8997_reg_enable_suspend,
++	.set_suspend_disable	= max8997_reg_disable_suspend,
++};
++
++static struct regulator_ops max8997_safeout_ops = {
++	.is_enabled		= max8997_reg_is_enabled,
++	.enable			= max8997_reg_enable,
++	.disable		= max8997_reg_disable,
++	.get_voltage		= max8997_get_voltage,
++	.set_voltage		= max8997_set_voltage_safeout,
++	.set_suspend_enable	= max8997_reg_enable_suspend,
++	.set_suspend_disable	= max8997_reg_disable_suspend,
++};
++
++static struct regulator_ops max8997_fixedstate_ops = {
++	.get_voltage		= max8997_get_voltage,
++	.set_voltage		= max8997_set_voltage_charger_cv,
++};
++
++static struct regulator_ops max8997_charger_ops = {
++	.is_enabled		= max8997_reg_is_enabled,
++	.enable			= max8997_reg_enable,
++	.disable		= max8997_reg_disable,
++	.get_current_limit	= max8997_get_voltage,
++	.set_current_limit	= max8997_set_voltage_ldo,
++};
++
++static struct regulator_ops max8997_charger_fixedstate_ops = {
++	.is_enabled		= max8997_reg_is_enabled,
++	.get_current_limit	= max8997_get_voltage,
++	.set_current_limit	= max8997_set_voltage_ldo,
++};
++
++#define regulator_desc_ldo(num)		{	\
++	.name		= "LDO"#num,		\
++	.id		= MAX8997_LDO##num,	\
++	.ops		= &max8997_ldo_ops,	\
++	.type		= REGULATOR_VOLTAGE,	\
++	.owner		= THIS_MODULE,		\
++}
++#define regulator_desc_buck(num)		{	\
++	.name		= "BUCK"#num,		\
++	.id		= MAX8997_BUCK##num,	\
++	.ops		= &max8997_buck_ops,	\
++	.type		= REGULATOR_VOLTAGE,	\
++	.owner		= THIS_MODULE,		\
++}
++
++static struct regulator_desc regulators[] = {
++	regulator_desc_ldo(1),
++	regulator_desc_ldo(2),
++	regulator_desc_ldo(3),
++	regulator_desc_ldo(4),
++	regulator_desc_ldo(5),
++	regulator_desc_ldo(6),
++	regulator_desc_ldo(7),
++	regulator_desc_ldo(8),
++	regulator_desc_ldo(9),
++	regulator_desc_ldo(10),
++	regulator_desc_ldo(11),
++	regulator_desc_ldo(12),
++	regulator_desc_ldo(13),
++	regulator_desc_ldo(14),
++	regulator_desc_ldo(15),
++	regulator_desc_ldo(16),
++	regulator_desc_ldo(17),
++	regulator_desc_ldo(18),
++	regulator_desc_ldo(21),
++	regulator_desc_buck(1),
++	regulator_desc_buck(2),
++	regulator_desc_buck(3),
++	regulator_desc_buck(4),
++	regulator_desc_buck(5),
++	{
++		.name	= "BUCK6",
++		.id	= MAX8997_BUCK6,
++		.ops	= &max8997_fixedvolt_ops,
++		.type	= REGULATOR_VOLTAGE,
++		.owner	= THIS_MODULE,
++	},
++	regulator_desc_buck(7),
++	{
++		.name	= "EN32KHz AP",
++		.id	= MAX8997_EN32KHZ_AP,
++		.ops	= &max8997_fixedvolt_ops,
++		.type	= REGULATOR_VOLTAGE,
++		.owner	= THIS_MODULE,
++	}, {
++		.name	= "EN32KHz CP",
++		.id	= MAX8997_EN32KHZ_CP,
++		.ops	= &max8997_fixedvolt_ops,
++		.type	= REGULATOR_VOLTAGE,
++		.owner	= THIS_MODULE,
++	}, {
++		.name	= "ENVICHG",
++		.id	= MAX8997_ENVICHG,
++		.ops	= &max8997_fixedvolt_ops,
++		.type	= REGULATOR_VOLTAGE,
++		.owner	= THIS_MODULE,
++	}, {
++		.name	= "ESAFEOUT1",
++		.id	= MAX8997_ESAFEOUT1,
++		.ops	= &max8997_safeout_ops,
++		.type	= REGULATOR_VOLTAGE,
++		.owner	 = THIS_MODULE,
++	}, {
++		.name	= "ESAFEOUT2",
++		.id	= MAX8997_ESAFEOUT2,
++		.ops	= &max8997_safeout_ops,
++		.type	= REGULATOR_VOLTAGE,
++		.owner	 = THIS_MODULE,
++	}, {
++		.name	= "CHARGER CV",
++		.id	= MAX8997_CHARGER_CV,
++		.ops	= &max8997_fixedstate_ops,
++		.type	= REGULATOR_VOLTAGE,
++		.owner	 = THIS_MODULE,
++	}, {
++		.name	= "CHARGER",
++		.id	= MAX8997_CHARGER,
++		.ops	= &max8997_charger_ops,
++		.type	= REGULATOR_CURRENT,
++		.owner	 = THIS_MODULE,
++	}, {
++		.name	= "CHARGER TOPOFF",
++		.id	= MAX8997_CHARGER_TOPOFF,
++		.ops	= &max8997_charger_fixedstate_ops,
++		.type	= REGULATOR_CURRENT,
++		.owner	 = THIS_MODULE,
++	},
++};
++
++static __devinit int max8997_pmic_probe(struct platform_device *pdev)
++{
++	struct max8997_dev *iodev = dev_get_drvdata(pdev->dev.parent);
++	struct max8997_platform_data *pdata = dev_get_platdata(iodev->dev);
++	struct regulator_dev **rdev;
++	struct max8997_data *max8997;
++	struct i2c_client *i2c;
++	int i, ret, size;
++	u8 max_buck1 = 0, max_buck2 = 0, max_buck5 = 0;
++
++	if (!pdata) {
++		dev_err(pdev->dev.parent, "No platform init data supplied.\n");
++		return -ENODEV;
++	}
++
++	max8997 = kzalloc(sizeof(struct max8997_data), GFP_KERNEL);
++	if (!max8997)
 +		return -ENOMEM;
 +
-+	i2c_set_clientdata(i2c, max8997);
-+	max8997->dev = &i2c->dev;
-+	max8997->i2c = i2c;
-+	max8997->type = id->driver_data;
++	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
++	max8997->rdev = kzalloc(size, GFP_KERNEL);
++	if (!max8997->rdev) {
++		kfree(max8997);
++		return -ENOMEM;
++	}
 +
-+	if (!pdata)
-+		goto err;
++	rdev = max8997->rdev;
++	max8997->dev = &pdev->dev;
++	max8997->iodev = iodev;
++	max8997->num_regulators = pdata->num_regulators;
++	platform_set_drvdata(pdev, max8997);
++	i2c = max8997->iodev->i2c;
 +
-+	max8997->wakeup = pdata->wakeup;
++	max8997->buck125_gpioindex = pdata->buck125_default_idx;
 +
-+	mutex_init(&max8997->iolock);
++	for (i = 0; i < 8; i++) {
++		max8997->buck1_vol[i] = ret =
++			max8997_get_voltage_proper_val(
++					&buck1245_voltage_map_desc,
++					pdata->buck1_voltage[i] / 1000,
++					pdata->buck1_voltage[i] / 1000 +
++					buck1245_voltage_map_desc.step);
++		if (ret < 0)
++			goto err_alloc;
 +
-+	max8997->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
-+	i2c_set_clientdata(max8997->rtc, max8997);
-+	max8997->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
-+	i2c_set_clientdata(max8997->haptic, max8997);
-+	max8997->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
-+	i2c_set_clientdata(max8997->muic, max8997);
++		max8997->buck2_vol[i] = ret =
++			max8997_get_voltage_proper_val(
++					&buck1245_voltage_map_desc,
++					pdata->buck2_voltage[i] / 1000,
++					pdata->buck2_voltage[i] / 1000 +
++					buck1245_voltage_map_desc.step);
++		if (ret < 0)
++			goto err_alloc;
 +
-+	pm_runtime_set_active(max8997->dev);
++		max8997->buck5_vol[i] = ret =
++			max8997_get_voltage_proper_val(
++					&buck1245_voltage_map_desc,
++					pdata->buck5_voltage[i] / 1000,
++					pdata->buck5_voltage[i] / 1000 +
++					buck1245_voltage_map_desc.step);
++		if (ret < 0)
++			goto err_alloc;
 +
-+	mfd_add_devices(max8997->dev, -1, max8997_devs,
-+			ARRAY_SIZE(max8997_devs),
-+			NULL, 0);
++		if (max_buck1 < max8997->buck1_vol[i])
++			max_buck1 = max8997->buck1_vol[i];
++		if (max_buck2 < max8997->buck2_vol[i])
++			max_buck2 = max8997->buck2_vol[i];
++		if (max_buck5 < max8997->buck5_vol[i])
++			max_buck5 = max8997->buck5_vol[i];
++	}
++
++	/* For the safety, set max voltage before setting up */
++	for (i = 0; i < 8; i++) {
++		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
++				max_buck1, 0x3f);
++		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
++				max_buck2, 0x3f);
++		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
++				max_buck5, 0x3f);
++	}
 +
 +	/*
-+	 * TODO: enable others (flash, muic, rtc, battery, ...) and
-+	 * check the return value
++	 * If buck 1, 2, and 5 do not care DVS GPIO settings, ignore them.
++	 * If at least one of them cares, set gpios.
 +	 */
++	if (pdata->buck1_gpiodvs || pdata->buck2_gpiodvs ||
++			pdata->buck5_gpiodvs) {
++		bool gpio1set = false, gpio2set = false;
 +
-+	if (ret < 0)
-+		goto err_mfd;
++		if (!gpio_is_valid(pdata->buck125_gpios[0]) ||
++				!gpio_is_valid(pdata->buck125_gpios[1]) ||
++				!gpio_is_valid(pdata->buck125_gpios[2])) {
++			dev_err(&pdev->dev, "GPIO NOT VALID\n");
++			ret = -EINVAL;
++			goto err_alloc;
++		}
 +
-+	return ret;
++		ret = gpio_request(pdata->buck125_gpios[0],
++				"MAX8997 SET1");
++		if (ret == -EBUSY)
++			dev_warn(&pdev->dev, "Duplicated gpio request"
++					" on SET1\n");
++		else if (ret)
++			goto err_alloc;
++		else
++			gpio1set = true;
 +
-+err_mfd:
-+	mfd_remove_devices(max8997->dev);
-+	i2c_unregister_device(max8997->muic);
-+	i2c_unregister_device(max8997->haptic);
-+	i2c_unregister_device(max8997->rtc);
++		ret = gpio_request(pdata->buck125_gpios[1],
++				"MAX8997 SET2");
++		if (ret == -EBUSY)
++			dev_warn(&pdev->dev, "Duplicated gpio request"
++					" on SET2\n");
++		else if (ret) {
++			if (gpio1set)
++				gpio_free(pdata->buck125_gpios[0]);
++			goto err_alloc;
++		} else
++			gpio2set = true;
++
++		ret = gpio_request(pdata->buck125_gpios[2],
++				"MAX8997 SET3");
++		if (ret == -EBUSY)
++			dev_warn(&pdev->dev, "Duplicated gpio request"
++					" on SET3\n");
++		else if (ret) {
++			if (gpio1set)
++				gpio_free(pdata->buck125_gpios[0]);
++			if (gpio2set)
++				gpio_free(pdata->buck125_gpios[1]);
++			goto err_alloc;
++		}
++
++		gpio_direction_output(pdata->buck125_gpios[0],
++				(max8997->buck125_gpioindex >> 2)
++				& 0x1); /* SET1 */
++		gpio_direction_output(pdata->buck125_gpios[1],
++				(max8997->buck125_gpioindex >> 1)
++				& 0x1); /* SET2 */
++		gpio_direction_output(pdata->buck125_gpios[2],
++				(max8997->buck125_gpioindex >> 0)
++				& 0x1); /* SET3 */
++		ret = 0;
++	}
++
++	/* DVS-GPIO disabled */
++	max8997_update_reg(i2c, MAX8997_REG_BUCK1CTRL, (pdata->buck1_gpiodvs) ?
++			(1 << 1) : (0 << 1), 1 << 1);
++	max8997_update_reg(i2c, MAX8997_REG_BUCK2CTRL, (pdata->buck2_gpiodvs) ?
++			(1 << 1) : (0 << 1), 1 << 1);
++	max8997_update_reg(i2c, MAX8997_REG_BUCK5CTRL, (pdata->buck5_gpiodvs) ?
++			(1 << 1) : (0 << 1), 1 << 1);
++
++	/* Initialize all the DVS related BUCK registers */
++	for (i = 0; i < 8; i++) {
++		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS(i + 1),
++				max8997->buck1_vol[i],
++				0x3f);
++		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS(i + 1),
++				max8997->buck2_vol[i],
++				0x3f);
++		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS(i + 1),
++				max8997->buck5_vol[i],
++				0x3f);
++	}
++
++	for (i = 0; i < pdata->num_regulators; i++) {
++		const struct voltage_map_desc *desc;
++		int id = pdata->regulators[i].id;
++
++		desc = reg_voltage_map[id];
++		if (desc)
++			regulators[id].n_voltages =
++				(desc->max - desc->min) / desc->step + 1;
++		else if (id == MAX8997_ESAFEOUT1 || id == MAX8997_ESAFEOUT2)
++			regulators[id].n_voltages = 4;
++		else if (id == MAX8997_CHARGER_CV)
++			regulators[id].n_voltages = 16;
++
++		rdev[i] = regulator_register(&regulators[id], max8997->dev,
++				pdata->regulators[i].initdata, max8997);
++		if (IS_ERR(rdev[i])) {
++			ret = PTR_ERR(rdev[i]);
++			dev_err(max8997->dev, "regulator init failed for %d\n",
++					id);
++			rdev[i] = NULL;
++			goto err;
++		}
++	}
++
++	/* Misc Settings */
++	/* TODO: Read BUCK RAMP and apply delays for it */
++	/* Default is 10mV/us */
++	max8997->ramp_delay = 10;
++	max8997_write_reg(i2c, MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
++
++	return 0;
 +err:
++	for (i = 0; i < max8997->num_regulators; i++)
++		if (rdev[i])
++			regulator_unregister(rdev[i]);
++err_alloc:
++	kfree(max8997->rdev);
 +	kfree(max8997);
++
 +	return ret;
 +}
 +
-+static int max8997_i2c_remove(struct i2c_client *i2c)
++static int __devexit max8997_pmic_remove(struct platform_device *pdev)
 +{
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
++	struct max8997_data *max8997 = platform_get_drvdata(pdev);
++	struct regulator_dev **rdev = max8997->rdev;
++	int i;
 +
-+	mfd_remove_devices(max8997->dev);
-+	i2c_unregister_device(max8997->muic);
-+	i2c_unregister_device(max8997->haptic);
-+	i2c_unregister_device(max8997->rtc);
++	for (i = 0; i < max8997->num_regulators; i++)
++		if (rdev[i])
++			regulator_unregister(rdev[i]);
++
++	kfree(max8997->rdev);
 +	kfree(max8997);
 +
 +	return 0;
 +}
 +
-+static const struct i2c_device_id max8997_i2c_id[] = {
-+	{ "max8997", TYPE_MAX8997 },
-+	{ "max8966", TYPE_MAX8966 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
-+
-+u8 max8997_dumpaddr_pmic[] = {
-+	MAX8997_REG_INT1MSK,
-+	MAX8997_REG_INT2MSK,
-+	MAX8997_REG_INT3MSK,
-+	MAX8997_REG_INT4MSK,
-+	MAX8997_REG_MAINCON1,
-+	MAX8997_REG_MAINCON2,
-+	MAX8997_REG_BUCKRAMP,
-+	MAX8997_REG_BUCK1CTRL,
-+	MAX8997_REG_BUCK1DVS1,
-+	MAX8997_REG_BUCK1DVS2,
-+	MAX8997_REG_BUCK1DVS3,
-+	MAX8997_REG_BUCK1DVS4,
-+	MAX8997_REG_BUCK1DVS5,
-+	MAX8997_REG_BUCK1DVS6,
-+	MAX8997_REG_BUCK1DVS7,
-+	MAX8997_REG_BUCK1DVS8,
-+	MAX8997_REG_BUCK2CTRL,
-+	MAX8997_REG_BUCK2DVS1,
-+	MAX8997_REG_BUCK2DVS2,
-+	MAX8997_REG_BUCK2DVS3,
-+	MAX8997_REG_BUCK2DVS4,
-+	MAX8997_REG_BUCK2DVS5,
-+	MAX8997_REG_BUCK2DVS6,
-+	MAX8997_REG_BUCK2DVS7,
-+	MAX8997_REG_BUCK2DVS8,
-+	MAX8997_REG_BUCK3CTRL,
-+	MAX8997_REG_BUCK3DVS,
-+	MAX8997_REG_BUCK4CTRL,
-+	MAX8997_REG_BUCK4DVS,
-+	MAX8997_REG_BUCK5CTRL,
-+	MAX8997_REG_BUCK5DVS1,
-+	MAX8997_REG_BUCK5DVS2,
-+	MAX8997_REG_BUCK5DVS3,
-+	MAX8997_REG_BUCK5DVS4,
-+	MAX8997_REG_BUCK5DVS5,
-+	MAX8997_REG_BUCK5DVS6,
-+	MAX8997_REG_BUCK5DVS7,
-+	MAX8997_REG_BUCK5DVS8,
-+	MAX8997_REG_BUCK6CTRL,
-+	MAX8997_REG_BUCK6BPSKIPCTRL,
-+	MAX8997_REG_BUCK7CTRL,
-+	MAX8997_REG_BUCK7DVS,
-+	MAX8997_REG_LDO1CTRL,
-+	MAX8997_REG_LDO2CTRL,
-+	MAX8997_REG_LDO3CTRL,
-+	MAX8997_REG_LDO4CTRL,
-+	MAX8997_REG_LDO5CTRL,
-+	MAX8997_REG_LDO6CTRL,
-+	MAX8997_REG_LDO7CTRL,
-+	MAX8997_REG_LDO8CTRL,
-+	MAX8997_REG_LDO9CTRL,
-+	MAX8997_REG_LDO10CTRL,
-+	MAX8997_REG_LDO11CTRL,
-+	MAX8997_REG_LDO12CTRL,
-+	MAX8997_REG_LDO13CTRL,
-+	MAX8997_REG_LDO14CTRL,
-+	MAX8997_REG_LDO15CTRL,
-+	MAX8997_REG_LDO16CTRL,
-+	MAX8997_REG_LDO17CTRL,
-+	MAX8997_REG_LDO18CTRL,
-+	MAX8997_REG_LDO21CTRL,
-+	MAX8997_REG_MBCCTRL1,
-+	MAX8997_REG_MBCCTRL2,
-+	MAX8997_REG_MBCCTRL3,
-+	MAX8997_REG_MBCCTRL4,
-+	MAX8997_REG_MBCCTRL5,
-+	MAX8997_REG_MBCCTRL6,
-+	MAX8997_REG_OTPCGHCVS,
-+	MAX8997_REG_SAFEOUTCTRL,
-+	MAX8997_REG_LBCNFG1,
-+	MAX8997_REG_LBCNFG2,
-+	MAX8997_REG_BBCCTRL,
-+
-+	MAX8997_REG_FLASH1_CUR,
-+	MAX8997_REG_FLASH2_CUR,
-+	MAX8997_REG_MOVIE_CUR,
-+	MAX8997_REG_GSMB_CUR,
-+	MAX8997_REG_BOOST_CNTL,
-+	MAX8997_REG_LEN_CNTL,
-+	MAX8997_REG_FLASH_CNTL,
-+	MAX8997_REG_WDT_CNTL,
-+	MAX8997_REG_MAXFLASH1,
-+	MAX8997_REG_MAXFLASH2,
-+	MAX8997_REG_FLASHSTATUSMASK,
-+
-+	MAX8997_REG_GPIOCNTL1,
-+	MAX8997_REG_GPIOCNTL2,
-+	MAX8997_REG_GPIOCNTL3,
-+	MAX8997_REG_GPIOCNTL4,
-+	MAX8997_REG_GPIOCNTL5,
-+	MAX8997_REG_GPIOCNTL6,
-+	MAX8997_REG_GPIOCNTL7,
-+	MAX8997_REG_GPIOCNTL8,
-+	MAX8997_REG_GPIOCNTL9,
-+	MAX8997_REG_GPIOCNTL10,
-+	MAX8997_REG_GPIOCNTL11,
-+	MAX8997_REG_GPIOCNTL12,
-+
-+	MAX8997_REG_LDO1CONFIG,
-+	MAX8997_REG_LDO2CONFIG,
-+	MAX8997_REG_LDO3CONFIG,
-+	MAX8997_REG_LDO4CONFIG,
-+	MAX8997_REG_LDO5CONFIG,
-+	MAX8997_REG_LDO6CONFIG,
-+	MAX8997_REG_LDO7CONFIG,
-+	MAX8997_REG_LDO8CONFIG,
-+	MAX8997_REG_LDO9CONFIG,
-+	MAX8997_REG_LDO10CONFIG,
-+	MAX8997_REG_LDO11CONFIG,
-+	MAX8997_REG_LDO12CONFIG,
-+	MAX8997_REG_LDO13CONFIG,
-+	MAX8997_REG_LDO14CONFIG,
-+	MAX8997_REG_LDO15CONFIG,
-+	MAX8997_REG_LDO16CONFIG,
-+	MAX8997_REG_LDO17CONFIG,
-+	MAX8997_REG_LDO18CONFIG,
-+	MAX8997_REG_LDO21CONFIG,
-+
-+	MAX8997_REG_DVSOKTIMER1,
-+	MAX8997_REG_DVSOKTIMER2,
-+	MAX8997_REG_DVSOKTIMER4,
-+	MAX8997_REG_DVSOKTIMER5,
++static const struct platform_device_id max8997_pmic_id[] = {
++	{ "max8997-pmic", 0},
++	{ },
 +};
 +
-+u8 max8997_dumpaddr_muic[] = {
-+	MAX8997_MUIC_REG_INTMASK1,
-+	MAX8997_MUIC_REG_INTMASK2,
-+	MAX8997_MUIC_REG_INTMASK3,
-+	MAX8997_MUIC_REG_CDETCTRL,
-+	MAX8997_MUIC_REG_CONTROL1,
-+	MAX8997_MUIC_REG_CONTROL2,
-+	MAX8997_MUIC_REG_CONTROL3,
-+};
-+
-+u8 max8997_dumpaddr_haptic[] = {
-+	MAX8997_HAPTIC_REG_CONF1,
-+	MAX8997_HAPTIC_REG_CONF2,
-+	MAX8997_HAPTIC_REG_DRVCONF,
-+	MAX8997_HAPTIC_REG_CYCLECONF1,
-+	MAX8997_HAPTIC_REG_CYCLECONF2,
-+	MAX8997_HAPTIC_REG_SIGCONF1,
-+	MAX8997_HAPTIC_REG_SIGCONF2,
-+	MAX8997_HAPTIC_REG_SIGCONF3,
-+	MAX8997_HAPTIC_REG_SIGCONF4,
-+	MAX8997_HAPTIC_REG_SIGDC1,
-+	MAX8997_HAPTIC_REG_SIGDC2,
-+	MAX8997_HAPTIC_REG_SIGPWMDC1,
-+	MAX8997_HAPTIC_REG_SIGPWMDC2,
-+	MAX8997_HAPTIC_REG_SIGPWMDC3,
-+	MAX8997_HAPTIC_REG_SIGPWMDC4,
-+};
-+
-+static int max8997_freeze(struct device *dev)
++static int max8997_resume(struct device *dev)
 +{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
++	struct platform_device *pdev = container_of(dev,
++			struct platform_device, dev);
++	struct max8997_data *max8997 = platform_get_drvdata(pdev);
++	struct i2c_client *i2c = max8997->iodev->i2c;
++	struct regulator_dev *rdev;
++	int ret, reg, mask, pattern;
 +	int i;
++	u8 val;
 +
-+	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_pmic); i++)
-+		max8997_read_reg(i2c, max8997_dumpaddr_pmic[i],
-+				&max8997->reg_dump[i]);
++	/* Show Error/Warning Messages for Inconsistency */
++	for (i = 0; i < MAX8997_REG_MAX; i++) {
++		if (max8997->saved_rdev[i]) {
++			rdev = max8997->saved_rdev[i];
++			ret = max8997_get_enable_register(rdev, &reg, &mask,
++					&pattern);
++			if (ret) {
++				dev_err(dev, "Cannot recover %s.\n",
++						rdev->desc->name);
++				continue;
++			}
 +
-+	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_muic); i++)
-+		max8997_read_reg(i2c, max8997_dumpaddr_muic[i],
-+				&max8997->reg_dump[i + MAX8997_REG_PMIC_END]);
++			ret = max8997_read_reg(i2c, reg, &val);
++			if (ret) {
++				dev_err(dev, "Cannot read %s.\n",
++						rdev->desc->name);
++				continue;
++			}
 +
-+	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_haptic); i++)
-+		max8997_read_reg(i2c, max8997_dumpaddr_haptic[i],
-+				&max8997->reg_dump[i + MAX8997_REG_PMIC_END +
-+				MAX8997_MUIC_REG_END]);
++			if (rdev->use_count > 0 || (rdev->constraints &&
++						rdev->constraints->always_on)) {
++				if ((val & mask) != (pattern & mask)) {
++					dev_err(dev, "regulator_suspend_prepare"
++							"(ON) missed turning on"
++							" %s (%xh)\n",
++							rdev->desc->name,
++							val & mask);
++					max8997_update_reg(i2c, reg, pattern,
++							mask);
++				}
++				continue;
++			}
++
++			if ((val & mask) == (pattern & mask)) {
++				dev_err(dev, "Regulator %s has NO use_count and"
++						" is NOT always-on but enabled."
++						" reg = %2.2xh\n",
++						rdev->desc->name, val);
++				continue;
++			}
++
++			ret = max8997_update_reg(i2c, reg,
++					max8997->saved_states[i], mask);
++			if (ret) {
++				dev_err(dev, "Cannot update %s.\n",
++						rdev->desc->name);
++				continue;
++			}
++
++			if ((val & mask) != (max8997->saved_states[i] & mask)) {
++				dev_err(dev, "Regulator %s resumes from %2.2xh"
++						" to %2.2xh (uc = %d)\n",
++						rdev->desc->name,
++						val & mask,
++						max8997->saved_states[i] & mask,
++						rdev->use_count);
++			}
++		}
++		max8997->saved_rdev[i] = NULL;
++	}
 +
 +	return 0;
 +}
 +
-+static int max8997_restore(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_pmic); i++)
-+		max8997_write_reg(i2c, max8997_dumpaddr_pmic[i],
-+				max8997->reg_dump[i]);
-+
-+	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_muic); i++)
-+		max8997_write_reg(i2c, max8997_dumpaddr_muic[i],
-+				max8997->reg_dump[i + MAX8997_REG_PMIC_END]);
-+
-+	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_haptic); i++)
-+		max8997_write_reg(i2c, max8997_dumpaddr_haptic[i],
-+				max8997->reg_dump[i + MAX8997_REG_PMIC_END +
-+				MAX8997_MUIC_REG_END]);
-+
-+	return 0;
-+}
-+
-+const struct dev_pm_ops max8997_pm = {
-+	.freeze = max8997_freeze,
-+	.restore = max8997_restore,
++static const struct dev_pm_ops max8997_pm = {
++	.resume = max8997_resume,
 +};
 +
-+static struct i2c_driver max8997_i2c_driver = {
++static struct platform_driver max8997_pmic_driver = {
 +	.driver = {
-+		   .name = "max8997",
-+		   .owner = THIS_MODULE,
-+		   .pm = &max8997_pm,
++		.name = "max8997-pmic",
++		.owner = THIS_MODULE,
++		.pm = &max8997_pm,
 +	},
-+	.probe = max8997_i2c_probe,
-+	.remove = max8997_i2c_remove,
-+	.id_table = max8997_i2c_id,
++	.probe = max8997_pmic_probe,
++	.remove = __devexit_p(max8997_pmic_remove),
++	.id_table = max8997_pmic_id,
 +};
 +
-+static int __init max8997_i2c_init(void)
++static int __init max8997_pmic_init(void)
 +{
-+	return i2c_add_driver(&max8997_i2c_driver);
++	return platform_driver_register(&max8997_pmic_driver);
 +}
-+/* init early so consumer devices can complete system boot */
-+subsys_initcall(max8997_i2c_init);
++subsys_initcall(max8997_pmic_init);
 +
-+static void __exit max8997_i2c_exit(void)
++static void __exit max8997_pmic_cleanup(void)
 +{
-+	i2c_del_driver(&max8997_i2c_driver);
++	platform_driver_unregister(&max8997_pmic_driver);
 +}
-+module_exit(max8997_i2c_exit);
++module_exit(max8997_pmic_cleanup);
 +
-+MODULE_DESCRIPTION("MAXIM 8997 multi-function core driver");
++MODULE_DESCRIPTION("MAXIM 8997/8966 Regulator Driver");
 +MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-new file mode 100644
-index 0000000..93a9477
---- /dev/null
-+++ b/include/linux/mfd/max8997-private.h
-@@ -0,0 +1,347 @@
-+/*
-+ * max8997.h - Voltage regulator driver for the Maxim 8997
-+ *
-+ *  Copyright (C) 2010 Samsung Electrnoics
-+ *  MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __LINUX_MFD_MAX8997_PRIV_H
-+#define __LINUX_MFD_MAX8997_PRIV_H
-+
-+#include <linux/i2c.h>
-+
-+enum max8997_pmic_reg {
-+	MAX8997_REG_PMIC_ID0	= 0x00,
-+	MAX8997_REG_PMIC_ID1	= 0x01,
-+	MAX8997_REG_INTSRC	= 0x02,
-+	MAX8997_REG_INT1	= 0x03,
-+	MAX8997_REG_INT2	= 0x04,
-+	MAX8997_REG_INT3	= 0x05,
-+	MAX8997_REG_INT4	= 0x06,
-+
-+	MAX8997_REG_INT1MSK	= 0x08,
-+	MAX8997_REG_INT2MSK	= 0x09,
-+	MAX8997_REG_INT3MSK	= 0x0a,
-+	MAX8997_REG_INT4MSK	= 0x0b,
-+
-+	MAX8997_REG_STATUS1	= 0x0d,
-+	MAX8997_REG_STATUS2	= 0x0e,
-+	MAX8997_REG_STATUS3	= 0x0f,
-+	MAX8997_REG_STATUS4	= 0x10,
-+
-+	MAX8997_REG_MAINCON1	= 0x13,
-+	MAX8997_REG_MAINCON2	= 0x14,
-+	MAX8997_REG_BUCKRAMP	= 0x15,
-+
-+	MAX8997_REG_BUCK1CTRL	= 0x18,
-+	MAX8997_REG_BUCK1DVS1	= 0x19,
-+	MAX8997_REG_BUCK1DVS2	= 0x1a,
-+	MAX8997_REG_BUCK1DVS3	= 0x1b,
-+	MAX8997_REG_BUCK1DVS4	= 0x1c,
-+	MAX8997_REG_BUCK1DVS5	= 0x1d,
-+	MAX8997_REG_BUCK1DVS6	= 0x1e,
-+	MAX8997_REG_BUCK1DVS7	= 0x1f,
-+	MAX8997_REG_BUCK1DVS8	= 0x20,
-+	MAX8997_REG_BUCK2CTRL	= 0x21,
-+	MAX8997_REG_BUCK2DVS1	= 0x22,
-+	MAX8997_REG_BUCK2DVS2	= 0x23,
-+	MAX8997_REG_BUCK2DVS3	= 0x24,
-+	MAX8997_REG_BUCK2DVS4	= 0x25,
-+	MAX8997_REG_BUCK2DVS5	= 0x26,
-+	MAX8997_REG_BUCK2DVS6	= 0x27,
-+	MAX8997_REG_BUCK2DVS7	= 0x28,
-+	MAX8997_REG_BUCK2DVS8	= 0x29,
-+	MAX8997_REG_BUCK3CTRL	= 0x2a,
-+	MAX8997_REG_BUCK3DVS	= 0x2b,
-+	MAX8997_REG_BUCK4CTRL	= 0x2c,
-+	MAX8997_REG_BUCK4DVS	= 0x2d,
-+	MAX8997_REG_BUCK5CTRL	= 0x2e,
-+	MAX8997_REG_BUCK5DVS1	= 0x2f,
-+	MAX8997_REG_BUCK5DVS2	= 0x30,
-+	MAX8997_REG_BUCK5DVS3	= 0x31,
-+	MAX8997_REG_BUCK5DVS4	= 0x32,
-+	MAX8997_REG_BUCK5DVS5	= 0x33,
-+	MAX8997_REG_BUCK5DVS6	= 0x34,
-+	MAX8997_REG_BUCK5DVS7	= 0x35,
-+	MAX8997_REG_BUCK5DVS8	= 0x36,
-+	MAX8997_REG_BUCK6CTRL	= 0x37,
-+	MAX8997_REG_BUCK6BPSKIPCTRL	= 0x38,
-+	MAX8997_REG_BUCK7CTRL	= 0x39,
-+	MAX8997_REG_BUCK7DVS	= 0x3a,
-+	MAX8997_REG_LDO1CTRL	= 0x3b,
-+	MAX8997_REG_LDO2CTRL	= 0x3c,
-+	MAX8997_REG_LDO3CTRL	= 0x3d,
-+	MAX8997_REG_LDO4CTRL	= 0x3e,
-+	MAX8997_REG_LDO5CTRL	= 0x3f,
-+	MAX8997_REG_LDO6CTRL	= 0x40,
-+	MAX8997_REG_LDO7CTRL	= 0x41,
-+	MAX8997_REG_LDO8CTRL	= 0x42,
-+	MAX8997_REG_LDO9CTRL	= 0x43,
-+	MAX8997_REG_LDO10CTRL	= 0x44,
-+	MAX8997_REG_LDO11CTRL	= 0x45,
-+	MAX8997_REG_LDO12CTRL	= 0x46,
-+	MAX8997_REG_LDO13CTRL	= 0x47,
-+	MAX8997_REG_LDO14CTRL	= 0x48,
-+	MAX8997_REG_LDO15CTRL	= 0x49,
-+	MAX8997_REG_LDO16CTRL	= 0x4a,
-+	MAX8997_REG_LDO17CTRL	= 0x4b,
-+	MAX8997_REG_LDO18CTRL	= 0x4c,
-+	MAX8997_REG_LDO21CTRL	= 0x4d,
-+
-+	MAX8997_REG_MBCCTRL1	= 0x50,
-+	MAX8997_REG_MBCCTRL2	= 0x51,
-+	MAX8997_REG_MBCCTRL3	= 0x52,
-+	MAX8997_REG_MBCCTRL4	= 0x53,
-+	MAX8997_REG_MBCCTRL5	= 0x54,
-+	MAX8997_REG_MBCCTRL6	= 0x55,
-+	MAX8997_REG_OTPCGHCVS	= 0x56,
-+
-+	MAX8997_REG_SAFEOUTCTRL	= 0x5a,
-+
-+	MAX8997_REG_LBCNFG1	= 0x5e,
-+	MAX8997_REG_LBCNFG2	= 0x5f,
-+	MAX8997_REG_BBCCTRL	= 0x60,
-+
-+	MAX8997_REG_FLASH1_CUR	= 0x63, /* 0x63 ~ 0x6e for FLASH */
-+	MAX8997_REG_FLASH2_CUR	= 0x64,
-+	MAX8997_REG_MOVIE_CUR	= 0x65,
-+	MAX8997_REG_GSMB_CUR	= 0x66,
-+	MAX8997_REG_BOOST_CNTL	= 0x67,
-+	MAX8997_REG_LEN_CNTL	= 0x68,
-+	MAX8997_REG_FLASH_CNTL	= 0x69,
-+	MAX8997_REG_WDT_CNTL	= 0x6a,
-+	MAX8997_REG_MAXFLASH1	= 0x6b,
-+	MAX8997_REG_MAXFLASH2	= 0x6c,
-+	MAX8997_REG_FLASHSTATUS	= 0x6d,
-+	MAX8997_REG_FLASHSTATUSMASK	= 0x6e,
-+
-+	MAX8997_REG_GPIOCNTL1	= 0x70,
-+	MAX8997_REG_GPIOCNTL2	= 0x71,
-+	MAX8997_REG_GPIOCNTL3	= 0x72,
-+	MAX8997_REG_GPIOCNTL4	= 0x73,
-+	MAX8997_REG_GPIOCNTL5	= 0x74,
-+	MAX8997_REG_GPIOCNTL6	= 0x75,
-+	MAX8997_REG_GPIOCNTL7	= 0x76,
-+	MAX8997_REG_GPIOCNTL8	= 0x77,
-+	MAX8997_REG_GPIOCNTL9	= 0x78,
-+	MAX8997_REG_GPIOCNTL10	= 0x79,
-+	MAX8997_REG_GPIOCNTL11	= 0x7a,
-+	MAX8997_REG_GPIOCNTL12	= 0x7b,
-+
-+	MAX8997_REG_LDO1CONFIG	= 0x80,
-+	MAX8997_REG_LDO2CONFIG	= 0x81,
-+	MAX8997_REG_LDO3CONFIG	= 0x82,
-+	MAX8997_REG_LDO4CONFIG	= 0x83,
-+	MAX8997_REG_LDO5CONFIG	= 0x84,
-+	MAX8997_REG_LDO6CONFIG	= 0x85,
-+	MAX8997_REG_LDO7CONFIG	= 0x86,
-+	MAX8997_REG_LDO8CONFIG	= 0x87,
-+	MAX8997_REG_LDO9CONFIG	= 0x88,
-+	MAX8997_REG_LDO10CONFIG	= 0x89,
-+	MAX8997_REG_LDO11CONFIG	= 0x8a,
-+	MAX8997_REG_LDO12CONFIG	= 0x8b,
-+	MAX8997_REG_LDO13CONFIG	= 0x8c,
-+	MAX8997_REG_LDO14CONFIG	= 0x8d,
-+	MAX8997_REG_LDO15CONFIG	= 0x8e,
-+	MAX8997_REG_LDO16CONFIG	= 0x8f,
-+	MAX8997_REG_LDO17CONFIG	= 0x90,
-+	MAX8997_REG_LDO18CONFIG	= 0x91,
-+	MAX8997_REG_LDO21CONFIG	= 0x92,
-+
-+	MAX8997_REG_DVSOKTIMER1	= 0x97,
-+	MAX8997_REG_DVSOKTIMER2	= 0x98,
-+	MAX8997_REG_DVSOKTIMER4	= 0x99,
-+	MAX8997_REG_DVSOKTIMER5	= 0x9a,
-+
-+	MAX8997_REG_PMIC_END	= 0x9b,
-+};
-+
-+enum max8997_muic_reg {
-+	MAX8997_MUIC_REG_ID		= 0x0,
-+	MAX8997_MUIC_REG_INT1		= 0x1,
-+	MAX8997_MUIC_REG_INT2		= 0x2,
-+	MAX8997_MUIC_REG_INT3		= 0x3,
-+	MAX8997_MUIC_REG_STATUS1	= 0x4,
-+	MAX8997_MUIC_REG_STATUS2	= 0x5,
-+	MAX8997_MUIC_REG_STATUS3	= 0x6,
-+	MAX8997_MUIC_REG_INTMASK1	= 0x7,
-+	MAX8997_MUIC_REG_INTMASK2	= 0x8,
-+	MAX8997_MUIC_REG_INTMASK3	= 0x9,
-+	MAX8997_MUIC_REG_CDETCTRL	= 0xa,
-+
-+	MAX8997_MUIC_REG_CONTROL1	= 0xc,
-+	MAX8997_MUIC_REG_CONTROL2	= 0xd,
-+	MAX8997_MUIC_REG_CONTROL3	= 0xe,
-+
-+	MAX8997_MUIC_REG_END		= 0xf,
-+};
-+
-+enum max8997_haptic_reg {
-+	MAX8997_HAPTIC_REG_GENERAL	= 0x00,
-+	MAX8997_HAPTIC_REG_CONF1	= 0x01,
-+	MAX8997_HAPTIC_REG_CONF2	= 0x02,
-+	MAX8997_HAPTIC_REG_DRVCONF	= 0x03,
-+	MAX8997_HAPTIC_REG_CYCLECONF1	= 0x04,
-+	MAX8997_HAPTIC_REG_CYCLECONF2	= 0x05,
-+	MAX8997_HAPTIC_REG_SIGCONF1	= 0x06,
-+	MAX8997_HAPTIC_REG_SIGCONF2	= 0x07,
-+	MAX8997_HAPTIC_REG_SIGCONF3	= 0x08,
-+	MAX8997_HAPTIC_REG_SIGCONF4	= 0x09,
-+	MAX8997_HAPTIC_REG_SIGDC1	= 0x0a,
-+	MAX8997_HAPTIC_REG_SIGDC2	= 0x0b,
-+	MAX8997_HAPTIC_REG_SIGPWMDC1	= 0x0c,
-+	MAX8997_HAPTIC_REG_SIGPWMDC2	= 0x0d,
-+	MAX8997_HAPTIC_REG_SIGPWMDC3	= 0x0e,
-+	MAX8997_HAPTIC_REG_SIGPWMDC4	= 0x0f,
-+	MAX8997_HAPTIC_REG_MTR_REV	= 0x10,
-+
-+	MAX8997_HAPTIC_REG_END		= 0x11,
-+};
-+
-+/* slave addr = 0x0c: using "2nd part" of rev4 datasheet */
-+enum max8997_rtc_reg {
-+	MAX8997_RTC_CTRLMASK		= 0x02,
-+	MAX8997_RTC_CTRL		= 0x03,
-+	MAX8997_RTC_UPDATE1		= 0x04,
-+	MAX8997_RTC_UPDATE2		= 0x05,
-+	MAX8997_RTC_WTSR_SMPL		= 0x06,
-+
-+	MAX8997_RTC_SEC			= 0x10,
-+	MAX8997_RTC_MIN			= 0x11,
-+	MAX8997_RTC_HOUR		= 0x12,
-+	MAX8997_RTC_DAY_OF_WEEK		= 0x13,
-+	MAX8997_RTC_MONTH		= 0x14,
-+	MAX8997_RTC_YEAR		= 0x15,
-+	MAX8997_RTC_DAY_OF_MONTH	= 0x16,
-+	MAX8997_RTC_ALARM1_SEC		= 0x17,
-+	MAX8997_RTC_ALARM1_MIN		= 0x18,
-+	MAX8997_RTC_ALARM1_HOUR		= 0x19,
-+	MAX8997_RTC_ALARM1_DAY_OF_WEEK	= 0x1a,
-+	MAX8997_RTC_ALARM1_MONTH	= 0x1b,
-+	MAX8997_RTC_ALARM1_YEAR		= 0x1c,
-+	MAX8997_RTC_ALARM1_DAY_OF_MONTH	= 0x1d,
-+	MAX8997_RTC_ALARM2_SEC		= 0x1e,
-+	MAX8997_RTC_ALARM2_MIN		= 0x1f,
-+	MAX8997_RTC_ALARM2_HOUR		= 0x20,
-+	MAX8997_RTC_ALARM2_DAY_OF_WEEK	= 0x21,
-+	MAX8997_RTC_ALARM2_MONTH	= 0x22,
-+	MAX8997_RTC_ALARM2_YEAR		= 0x23,
-+	MAX8997_RTC_ALARM2_DAY_OF_MONTH	= 0x24,
-+};
-+
-+enum max8997_irq_source {
-+	PMIC_INT1 = 0,
-+	PMIC_INT2,
-+	PMIC_INT3,
-+	PMIC_INT4,
-+
-+	FUEL_GAUGE, /* Ignored (MAX17042 driver handles) */
-+
-+	MUIC_INT1,
-+	MUIC_INT2,
-+	MUIC_INT3,
-+
-+	GPIO_LOW, /* Not implemented */
-+	GPIO_HI, /* Not implemented */
-+
-+	FLASH_STATUS, /* Not implemented */
-+
-+	MAX8997_IRQ_GROUP_NR,
-+};
-+
-+enum max8997_irq {
-+	MAX8997_PMICIRQ_PWRONR,
-+	MAX8997_PMICIRQ_PWRONF,
-+	MAX8997_PMICIRQ_PWRON1SEC,
-+	MAX8997_PMICIRQ_JIGONR,
-+	MAX8997_PMICIRQ_JIGONF,
-+	MAX8997_PMICIRQ_LOWBAT2,
-+	MAX8997_PMICIRQ_LOWBAT1,
-+
-+	MAX8997_PMICIRQ_JIGR,
-+	MAX8997_PMICIRQ_JIGF,
-+	MAX8997_PMICIRQ_MR,
-+	MAX8997_PMICIRQ_DVS1OK,
-+	MAX8997_PMICIRQ_DVS2OK,
-+	MAX8997_PMICIRQ_DVS3OK,
-+	MAX8997_PMICIRQ_DVS4OK,
-+
-+	MAX8997_PMICIRQ_CHGINS,
-+	MAX8997_PMICIRQ_CHGRM,
-+	MAX8997_PMICIRQ_DCINOVP,
-+	MAX8997_PMICIRQ_TOPOFFR,
-+	MAX8997_PMICIRQ_CHGRSTF,
-+	MAX8997_PMICIRQ_MBCHGTMEXPD,
-+
-+	MAX8997_PMICIRQ_RTC60S,
-+	MAX8997_PMICIRQ_RTCA1,
-+	MAX8997_PMICIRQ_RTCA2,
-+	MAX8997_PMICIRQ_SMPL_INT,
-+	MAX8997_PMICIRQ_RTC1S,
-+	MAX8997_PMICIRQ_WTSR,
-+
-+	MAX8997_MUICIRQ_ADCError,
-+	MAX8997_MUICIRQ_ADCLow,
-+	MAX8997_MUICIRQ_ADC,
-+
-+	MAX8997_MUICIRQ_VBVolt,
-+	MAX8997_MUICIRQ_DBChg,
-+	MAX8997_MUICIRQ_DCDTmr,
-+	MAX8997_MUICIRQ_ChgDetRun,
-+	MAX8997_MUICIRQ_ChgTyp,
-+
-+	MAX8997_MUICIRQ_OVP,
-+
-+	MAX8997_IRQ_NR,
-+};
-+
-+#define MAX8997_REG_BUCK1DVS(x)	(MAX8997_REG_BUCK1DVS1 + (x) - 1)
-+#define MAX8997_REG_BUCK2DVS(x)	(MAX8997_REG_BUCK2DVS1 + (x) - 1)
-+#define MAX8997_REG_BUCK5DVS(x)	(MAX8997_REG_BUCK5DVS1 + (x) - 1)
-+
-+struct max8997_dev {
-+	struct device *dev;
-+	struct i2c_client *i2c; /* 0xcc / PMIC, Battery Control, and FLASH */
-+	struct i2c_client *rtc; /* slave addr 0x0c */
-+	struct i2c_client *haptic; /* slave addr 0x90 */
-+	struct i2c_client *muic; /* slave addr 0x4a */
-+	struct mutex iolock;
-+
-+	int type;
-+	struct platform_device *battery; /* battery control (not fuel gauge) */
-+
-+	bool wakeup;
-+
-+	/* For hibernation */
-+	u8 reg_dump[MAX8997_REG_PMIC_END + MAX8997_MUIC_REG_END +
-+		MAX8997_HAPTIC_REG_END];
-+};
-+
-+enum max8997_types {
-+	TYPE_MAX8997,
-+	TYPE_MAX8966,
-+};
-+
-+extern int max8997_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
-+extern int max8997_bulk_read(struct i2c_client *i2c, u8 reg, int count,
-+				u8 *buf);
-+extern int max8997_write_reg(struct i2c_client *i2c, u8 reg, u8 value);
-+extern int max8997_bulk_write(struct i2c_client *i2c, u8 reg, int count,
-+				u8 *buf);
-+extern int max8997_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask);
-+
-+#endif /*  __LINUX_MFD_MAX8997_PRIV_H */
 diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
-new file mode 100644
-index 0000000..d0d9136
---- /dev/null
+index d0d9136..cb671b3 100644
+--- a/include/linux/mfd/max8997.h
 +++ b/include/linux/mfd/max8997.h
-@@ -0,0 +1,88 @@
-+/*
-+ * max8997.h - Driver for the Maxim 8997/8966
-+ *
-+ *  Copyright (C) 2009-2010 Samsung Electrnoics
-+ *  MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * This driver is based on max8998.h
-+ *
-+ * MAX8997 has PMIC, MUIC, HAPTIC, RTC, FLASH, and Fuel Gauge devices.
-+ * Except Fuel Gauge, every device shares the same I2C bus and included in
-+ * this mfd driver. Although the fuel gauge is included in the chip, it is
-+ * excluded from the driver because a) it has a different I2C bus from
-+ * others and b) it can be enabled simply by using MAX17042 driver.
-+ */
+@@ -68,6 +68,8 @@ enum max8998_regulators {
+ 	MAX8997_CHARGER_CV, /* control MBCCV of MBCCTRL3 */
+ 	MAX8997_CHARGER, /* charger current, MBCCTRL4 */
+ 	MAX8997_CHARGER_TOPOFF, /* MBCCTRL5 */
 +
-+#ifndef __LINUX_MFD_MAX8998_H
-+#define __LINUX_MFD_MAX8998_H
++	MAX8997_REG_MAX,
+ };
+ 
+ struct max8997_regulator_data {
+@@ -77,7 +79,31 @@ struct max8997_regulator_data {
+ 
+ struct max8997_platform_data {
+ 	bool wakeup;
+-	/* PMIC: Not implemented */
++	/* IRQ: Not implemented */
++	/* ---- PMIC ---- */
++	struct max8997_regulator_data *regulators;
++	int num_regulators;
 +
-+#include <linux/regulator/consumer.h>
++	/*
++	 * SET1~3 DVS GPIOs control Buck1, 2, and 5 simultaneously. Therefore,
++	 * With buckx_gpiodvs enabled, the buckx cannot be controlled
++	 * independently. To control buckx (of 1, 2, and 5) independently,
++	 * disable buckx_gpiodvs and control with BUCKxDVS1 register.
++	 *
++	 * When buckx_gpiodvs and bucky_gpiodvs are both enabled, set_voltage
++	 * on buckx will change the voltage of bucky at the same time.
++	 *
++	 */
++	bool ignore_gpiodvs_side_effect;
++	int buck125_gpios[3]; /* GPIO of [0]SET1, [1]SET2, [2]SET3 */
++	int buck125_default_idx; /* Default value of SET1, 2, 3 */
++	unsigned int buck1_voltage[8]; /* buckx_voltage in uV */
++	bool buck1_gpiodvs;
++	unsigned int buck2_voltage[8];
++	bool buck2_gpiodvs;
++	unsigned int buck5_voltage[8];
++	bool buck5_gpiodvs;
 +
-+/* MAX8997/8966 regulator IDs */
-+enum max8998_regulators {
-+	MAX8997_LDO1 = 0,
-+	MAX8997_LDO2,
-+	MAX8997_LDO3,
-+	MAX8997_LDO4,
-+	MAX8997_LDO5,
-+	MAX8997_LDO6,
-+	MAX8997_LDO7,
-+	MAX8997_LDO8,
-+	MAX8997_LDO9,
-+	MAX8997_LDO10,
-+	MAX8997_LDO11,
-+	MAX8997_LDO12,
-+	MAX8997_LDO13,
-+	MAX8997_LDO14,
-+	MAX8997_LDO15,
-+	MAX8997_LDO16,
-+	MAX8997_LDO17,
-+	MAX8997_LDO18,
-+	MAX8997_LDO21,
-+	MAX8997_BUCK1,
-+	MAX8997_BUCK2,
-+	MAX8997_BUCK3,
-+	MAX8997_BUCK4,
-+	MAX8997_BUCK5,
-+	MAX8997_BUCK6,
-+	MAX8997_BUCK7,
-+	MAX8997_EN32KHZ_AP,
-+	MAX8997_EN32KHZ_CP,
-+	MAX8997_ENVICHG,
-+	MAX8997_ESAFEOUT1,
-+	MAX8997_ESAFEOUT2,
-+	MAX8997_CHARGER_CV, /* control MBCCV of MBCCTRL3 */
-+	MAX8997_CHARGER, /* charger current, MBCCTRL4 */
-+	MAX8997_CHARGER_TOPOFF, /* MBCCTRL5 */
-+};
-+
-+struct max8997_regulator_data {
-+	int id;
-+	struct regulator_init_data *initdata;
-+};
-+
-+struct max8997_platform_data {
-+	bool wakeup;
-+	/* PMIC: Not implemented */
-+	/* MUIC: Not implemented */
-+	/* HAPTIC: Not implemented */
-+	/* RTC: Not implemented */
-+	/* Flash: Not implemented */
-+	/* Charger control: Not implemented */
-+};
-+
-+#endif /* __LINUX_MFD_MAX8998_H */
+ 	/* MUIC: Not implemented */
+ 	/* HAPTIC: Not implemented */
+ 	/* RTC: Not implemented */
 -- 
 1.7.1
 
