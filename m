@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759898Ab1CDQwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:52:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36271 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264Ab1CDQwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:52:49 -0500
-Date: Fri, 4 Mar 2011 08:52:04 -0800
-From: Greg KH <gregkh@suse.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        "TK, Pratheesh Gangadhar" <pratheesh@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "sshtylyov@mvista.com" <sshtylyov@mvista.com>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 1/1] PRUSS UIO driver support
-Message-ID: <20110304165204.GA21244@suse.de>
-References: <1299213772-21931-1-git-send-email-pratheesh@ti.com>
- <20110304142028.GD28175@local>
- <B85A65D85D7EB246BE421B3FB0FBB593024C009039@dbde02.ent.ti.com>
- <201103041658.05655.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201103041658.05655.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759858Ab1CDRAa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 12:00:30 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52550 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753173Ab1CDRA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 12:00:29 -0500
+Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
+ top level
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+In-Reply-To: <1299185905.5401.405.camel@haakon2.linux-iscsi.org>
+References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
+	 <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
+	 <20110301223251.11c95eed.rdunlap@xenotime.net>
+	 <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
+	 <20110303141928.GA25256@infradead.org>
+	 <1299185905.5401.405.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Mar 2011 11:00:21 -0600
+Message-ID: <1299258022.7041.64.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 04:58:05PM +0100, Arnd Bergmann wrote:
-> On Friday 04 March 2011, Nori, Sekhar wrote:
-> > On Fri, Mar 04, 2011 at 19:50:28, Hans J. Koch wrote:
-> > > On Fri, Mar 04, 2011 at 10:12:52AM +0530, Pratheesh Gangadhar wrote:
-> > > > diff --git a/include/linux/uio_pruss.h b/include/linux/uio_pruss.h
-> > > > new file mode 100644
-> > > > index 0000000..8c9b2c9
-> > > > --- /dev/null
-> > > > +++ b/include/linux/uio_pruss.h
-> > > 
-> > > That should go to arch/arm/mach-davinci/include/mach/
-> > > and not to the top level include/linux/ directory.
+On Thu, 2011-03-03 at 12:58 -0800, Nicholas A. Bellinger wrote:
+> On Thu, 2011-03-03 at 09:19 -0500, Christoph Hellwig wrote:
+> > On Wed, Mar 02, 2011 at 01:32:11PM -0800, Nicholas A. Bellinger wrote:
+> > > The kernel code itself that is specific to using the SSE v4.2
+> > > instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
+> > > iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
+> > > default to using the unoptimized 1x8 slicing soft CRC32C code.  This
+> > > particular piece of logic has been tested on powerpc and arm and is
+> > > funcitoning as expected from the kernel level using the arch independent
+> > > soft code.
 > > 
-> > It was put in here because this driver
-> > will be used across two ARM architectures
-> > (DaVinci and OMAP). Although it won't be used
-> > outside of ARM at least in near future.
+> > I don't think you need that code at all.  The crypto code is structured
+> > to prefer the optimized implementation if it is present.  Just stripping
+> > the x86-specific code out and always requesting the plain crc32c
+> > algorithm should give you the optimized one if it is present on your
+> > system.
+> > 
+> > Please give it a try.
+> > 
 > 
-> I think include/linux/ is fine for this
-
-No, please use include/linux/platform_data/ instead, that is where
-platform data should be going into, not into the "global" space if
-include/linux/
-
-> , and arch/arm/include/asm would
-> be ok as well. You might want to have only a single pruss header
-> file that defines all the platform data for the child drivers, though.
+> This is what I originally thought as well, but this ended up not being
+> the case when the logic was originally coded up.   I just tried again
+> with .38-rc7 on a 5500 series machine and simply stubbing out the
+> CONFIG_X86 part from iscsi_login_setup_crypto() and calling:
 > 
-> Ideally, you would of course not need the header at all. This will
-> be possible with the move to a flat device tree, where you can store the
-> offset as a property of the device
+>    crypto_alloc_hash("crc32c", 0, CRYPTO_ALG_ASYNC)
 > 
-> Another alternative would be to move it to a resource of the platform
-> device.
+> does not automatically load and use crc32c_intel.ko when only requesting
+> plain crc32c.
 
-That might be a nice idea for the future.
+It sounds like there might be a bug in the crypto layer, so the Linux
+way is to make it work as intended.
 
-thanks,
+It's absolutely not acceptable just to pull other layer workarounds into
+drivers.
 
-greg k-h
+> The reason for the extra crypto_alloc_hash("crc32c-intel", ...) call in
+> iscsi_login_setup_crypto() is to load crc32c_intel.ko on-demand for
+> cpu_has_xmm4_2 capable machines.
+> 
+> I should mention this is with the following .config:
+> 
+> CONFIG_CRYPTO_CRC32C=y
+> CONFIG_CRYPTO_CRC32C_INTEL=m
+> 
+> This would seem to indicate that CRC32C_INTEL needs to be compiled in
+> (or at least manually loaded) for libcypto to use the optimized
+> instructions when the plain crc32c is called, correct..?
+
+That sounds right.  There's probably not an autoload for this on
+recognising sse instructions.
+
+James
+
+
+
+James
+
+
