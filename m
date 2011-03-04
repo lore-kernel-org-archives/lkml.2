@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab1CDVJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 16:09:57 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38248
+	id S932633Ab1CDVKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 16:10:04 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38252
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932503Ab1CDVJz (ORCPT
+	by vger.kernel.org with ESMTP id S932503Ab1CDVKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 16:09:55 -0500
-Date: Fri, 04 Mar 2011 13:10:31 -0800 (PST)
-Message-Id: <20110304.131031.189690288.davem@davemloft.net>
+	Fri, 4 Mar 2011 16:10:02 -0500
+Date: Fri, 04 Mar 2011 13:10:39 -0800 (PST)
+Message-Id: <20110304.131039.112585485.davem@davemloft.net>
 To: ddaney@caviumnetworks.com
 Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
         devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
         linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [RFC PATCH v2 10/12] netdev: mdio-octeon.c: Convert to use
+Subject: Re: [RFC PATCH v2 11/12] netdev: octeon_mgmt: Convert to use
  device tree.
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1299267744-17278-11-git-send-email-ddaney@caviumnetworks.com>
+In-Reply-To: <1299267744-17278-12-git-send-email-ddaney@caviumnetworks.com>
 References: <1299267744-17278-1-git-send-email-ddaney@caviumnetworks.com>
-	<1299267744-17278-11-git-send-email-ddaney@caviumnetworks.com>
+	<1299267744-17278-12-git-send-email-ddaney@caviumnetworks.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -28,9 +28,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <ddaney@caviumnetworks.com>
-Date: Fri,  4 Mar 2011 11:42:22 -0800
+Date: Fri,  4 Mar 2011 11:42:23 -0800
 
-> Get the MDIO bus controller addresses from the device tree.
+> The device tree will supply the register bank base addresses, make
+> register addressing relative to those.  PHY connection is now
+> described by the device tree.
 > 
 > Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 
