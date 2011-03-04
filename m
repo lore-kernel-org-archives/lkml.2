@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759665Ab1CDOdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:33:04 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53756 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab1CDOdB (ORCPT
+	id S1759618Ab1CDOhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:37:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:48194 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758466Ab1CDOhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:33:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=edUeAuhs9QnS17fKzOz4ViiZZWPgHYAQAH5dKiQYPeWc5bqypq5JP3zH7zd7jh88jz
-         yUFF5szm4sm2DCTrSJF3AKRzhyN0j4xFTYXcXfCG7/Drdv9+U58NdahipwdtTIgwHCCu
-         iM6Z9qGuiivur3pAIfVB2TagVzv25qR5ZKPJQ=
-Date: Fri, 4 Mar 2011 15:32:56 +0100
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH x86/mm UPDATED] x86-64, NUMA: Fix distance table
- handling
-Message-ID: <20110304143256.GR20499@htj.dyndns.org>
-References: <20110224192305.GB15498@elte.hu>
- <4D66B176.9030300@kernel.org>
- <alpine.DEB.2.00.1103010844430.19743@chino.kir.corp.google.com>
- <20110302100400.GK19669@htj.dyndns.org>
- <20110302102530.GB3319@htj.dyndns.org>
- <alpine.DEB.2.00.1103020628210.31626@chino.kir.corp.google.com>
- <20110302154215.GN3319@htj.dyndns.org>
- <4D6EB2C3.7040704@kernel.org>
- <4D6EB856.1010004@kernel.org>
- <alpine.DEB.2.00.1103031205070.9993@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1103031205070.9993@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 4 Mar 2011 09:37:20 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=_RNfGJhW_G8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=JeQ7r8q9cwzjBT4CA48A:9 a=mM7byUpeoS-IoAoS_w1U_bSma44A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] perf lock: clean the options for perf record
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <4D70B3E1.8020108@dcl.info.waseda.ac.jp>
+References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+	 <4D63D685.2010401@dcl.info.waseda.ac.jp> <1298389415.2217.243.camel@twins>
+	 <20110222182206.GB1799@nowhere> <4D648A65.2040107@dcl.info.waseda.ac.jp>
+	 <4D667D60.5010903@dcl.info.waseda.ac.jp> <20110224165014.GB1840@nowhere>
+	 <4D67E286.8010907@dcl.info.waseda.ac.jp>
+	 <AANLkTikUGO=Obm7Ue4VzEueQ7DERPiwci1VV9NmKZf1u@mail.gmail.com>
+	 <4D70B3E1.8020108@dcl.info.waseda.ac.jp>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 04 Mar 2011 09:37:18 -0500
+Message-ID: <1299249438.20306.3.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2011-03-04 at 18:41 +0900, Hitoshi Mitake wrote:
 
-On Thu, Mar 03, 2011 at 12:07:10PM -0800, David Rientjes wrote:
-> The new emulation code needs to remove the assumption that node 0 always 
-> is online and become more robust since there's no such restriction in the 
-> ACPI spec.
+> BTW, how do you think about the idea of exporting data in
+> python (or other neutral) expression from procfs? I feel it is a
+> good idea. Communicating with unified format between user space and
+> kernel space will reduce lots of parsing overhead. Is this too
+> aggressive or insane?
 
-Yeah, indeed, that's possible.  ACPI spec isn't really the deciding
-factor here.  The node IDs are purely software and a system is
-required to have at least one node, so it seems reasonable to require
-node 0 to be always online - or even to require all online node IDs to
-be consecutive starting from 0.  The only reason we may have holes in
-node IDs now is because PXM -> nid mapping isn't released for empty
-memory-only nodes.
+As I mentioned in another email, I have no problem with an easy to parse
+file. But I will aggressively NAK any "python" or other scripting
+language. I'm sure I would get the same response if I were to have the
+kernel outputting perl language ;)
 
-The biggest downside of deferring checks for this type of rare
-conditions to upper layers when not strictly necessary is that it
-tends to lead to one-off bugs which trigger very infrequently.
+I would be OK if we have two files similar to stat and status, where one
+format is human readable, the other is for parsing.
 
-That said, maybe we're already too deep toward that direction and it's
-much easier to weed out the assumptions that node0 is always online.
+Thus, the only acceptable language that should come out of the kernel is
+English.
 
-Thanks.
+-- Steve
 
--- 
-tejun
+
