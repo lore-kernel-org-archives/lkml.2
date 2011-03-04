@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759681Ab1CDOqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 09:46:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21282 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984Ab1CDOqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 09:46:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,264,1297065600"; 
-   d="scan'208";a="663871464"
-Date: Fri, 4 Mar 2011 09:46:33 -0500
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [REVIEW] NVM Express driver
-Message-ID: <20110304144633.GB3663@linux.intel.com>
-References: <20110303204749.GY3663@linux.intel.com>
- <20110304130645.GA21454@infradead.org>
+	id S1759703Ab1CDOuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 09:50:21 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50782 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759562Ab1CDOuU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 09:50:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=tQz823Dlv6oaJsmGfw1EBKDPdZCnRs5N1uZKv63qK26Sjd7hQbzaRO0OqIb8B1oZFZ
+         Lq08Bg3lU78o2e6y9w1t1BFLS52dXYqrg6oZoPSjSnu+OkPH84v5GvHpotRdaCyu1iYT
+         LxxEDQKs43Nre+ni3fTYbj94jlrTAobhyNVKs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304130645.GA21454@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 4 Mar 2011 15:50:19 +0100
+Message-ID: <AANLkTi=-ZZTAb_6cec-GKDBmsjgchM3h9Zg9_39+AD1t@mail.gmail.com>
+Subject: 2.6.38-rc6: general protection error inside KVM 64 bits guest
+From: Francis Moreau <francis.moro@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 08:06:45AM -0500, Christoph Hellwig wrote:
-> What's the reason to make this a make_request based driver?  That loses
-> all the intelligence that has been put into the queueing layer, like I/O
-> bandwith controlling and fair scheduling.  Is it just queue_lock
-> contention?  If so it would be great if you could help with testing
-> Jens' stack-plug and request allocation scalability patches.
+Hello,
 
-The hardware has the ability to do I/O bandwidth control and fair
-scheduling (albeit on a fairly coarse granularity).  By doing it in
-software, all we're doing for these devices is increasing I/O latency
-and burning CPU cycles.
+I'm running kernel 2.6.38-rc6 with qemu-kvm 0.12.3.
+
+Doing this inside the guest:
+
+int main(void)
+{
+	if (ioperm(0x3e0, 4, 1) < 0) {
+		perror("ioperm");
+		exit(1);
+	}
+
+	outb(0, 0x3e0);
+	inb(0x3e1);
+	printf("exiting succesfully\n");
+	return 0;
+}
+
+make a general protection error.
+
+Looking for the faulty instruction with gdb and found that's the 'inb'
+instruction the culprit.
+
+Running the same program on the host works fine.
+
+Could anybody tell me what's wrong ?
+
+Thanks
+-- 
+Francis
