@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759958Ab1CDQXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 11:23:22 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:59011 "EHLO
-	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759878Ab1CDQWN (ORCPT
+	id S1759978Ab1CDQXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 11:23:51 -0500
+Received: from [46.28.109.124] ([46.28.109.124]:55182 "EHLO
+	host1.jankratochvil.net" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759966Ab1CDQXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 11:22:13 -0500
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: mingo@elte.hu
-Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gorcunov@gmail.com,
-        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCHv3 2/7] x86: make some apic symbols init
-Date: Fri,  4 Mar 2011 17:21:50 +0100
-Message-Id: <1299255715-8680-2-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299255715-8680-1-git-send-email-henne@nachtwindheim.de>
-References: <1299255715-8680-1-git-send-email-henne@nachtwindheim.de>
+	Fri, 4 Mar 2011 11:23:50 -0500
+X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 11:23:50 EST
+Date: Fri, 4 Mar 2011 17:14:41 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110304161441.GA12987@host1.jankratochvil.net>
+References: <20110301152457.GE26074@htj.dyndns.org>
+ <20110301190638.GA12196@host1.dyn.jankratochvil.net>
+ <AANLkTiknaHNADRa3R4Tefg2TGuFmKPZY-_08_krFiNFF@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTiknaHNADRa3R4Tefg2TGuFmKPZY-_08_krFiNFF@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-apic_force_enable(), apic_verify() and the variable
-force_enable_local_apic are only used by init code
-and now get marked as such.
+On Tue, 01 Mar 2011 23:14:14 +0100, Denys Vlasenko wrote:
+> On Tue, Mar 1, 2011 at 8:06 PM, Jan Kratochvil <jan.kratochvil@redhat.com> wrote:
+> > Currently it is already a problem that apps did not / do not expect the first
+> > waitpid after PTRACE_ATTACH may not be SIGSTOP.
+> 
+> That's exactly why we want to add a better alternative, which doesn't
+> insert that blasted SIGSTOP.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- arch/x86/kernel/apic/apic.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+But it insteads blasted SIGTRAP (or some other signal) instead.
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 6c464a3..b62723c 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -93,7 +93,7 @@ DEFINE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid, BAD_APICID);
-  *
-  * +1=force-enable
-  */
--static int force_enable_local_apic;
-+static int force_enable_local_apic __initdata;
- /*
-  * APIC command line parameters
-  */
-@@ -1560,7 +1560,7 @@ static int __init detect_init_APIC(void)
- }
- #else
- 
--static int apic_verify(void)
-+static int __init apic_verify(void)
- {
- 	u32 features, h, l;
- 
-@@ -1585,7 +1585,7 @@ static int apic_verify(void)
- 	return 0;
- }
- 
--int apic_force_enable(unsigned long addr)
-+int __init apic_force_enable(unsigned long addr)
- {
- 	u32 h, l;
- 
--- 
-1.7.2.3
+It would be best if such PTRACE_SEIZE (similar to PTRACE_INTERRUPT) would
+guarantee the first waitpid afterwards returns the artificial signal from
+PTRACE_SEIZE.
 
+
+Thanks,
+Jan
