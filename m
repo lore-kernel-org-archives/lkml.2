@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760304Ab1CEBAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:00:04 -0500
-Received: from kroah.org ([198.145.64.141]:50154 "EHLO coco.kroah.org"
+	id S1760751Ab1CEBQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:16:52 -0500
+Received: from kroah.org ([198.145.64.141]:50187 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760272Ab1CEA77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:59:59 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:35 2011
-Message-Id: <20110305005635.865913355@clark.kroah.org>
+	id S1760311Ab1CEBAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:36 2011
+Message-Id: <20110305005636.558976465@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:18 -0800
+Date: Fri, 04 Mar 2011 16:55:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        rvossen@broadcom.com
-Subject: [13/73] staging: brcm80211: bugfix for softmac crash on multi cpu configurations
+        Timo Warns <warns@pre-sense.de>, Eugene Teo <eugeneteo@kernel.sg>,
+        Richard Russon <ldm@flatcap.org>,
+        Harvey Harrison <harvey.harrison@gmail.com>
+Subject: [20/73] ldm: corrupted partition table can cause kernel oops
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,109 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Timo Warns <Warns@pre-sense.de>
 
-From: Roland Vossen <rvossen@broadcom.com>
+commit 294f6cf48666825d23c9372ef37631232746e40d upstream.
 
-commit 6a3be6e6e7feb4cb35275475d6a863b748d59cc3 upstream
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
+a bug that causes a kernel oops on certain corrupted LDM partitions.  A
+kernel subsystem seems to crash, because, after the oops, the kernel no
+longer recognizes newly connected storage devices.
 
-Solved a locking issue that resulted in driver crashes with the 43224 and 43225
-chips. The problem has been reported on several fora. Root cause was two fold:
-hardware was being manipulated by two unsynchronized threads, and a scan
-operation could interfere with an ongoing dynamic calibration process. Fix was
-to invoke a lock on wl_ops_config() operation and to set internal flags when a
-scan operation is started and stopped.
+The patch changes ldm_parse_vmdb() to Validate the value of vblk_size.
 
-Please add this to the staging-linus branch.
-
-Reviewed-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: Roland Vossen <rvossen@broadcom.com>
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Acked-by: Richard Russon <ldm@flatcap.org>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/staging/brcm80211/sys/wl_mac80211.c  |   14 ++++++++++----
- drivers/staging/brcm80211/sys/wlc_mac80211.c |   13 +++++++++++++
- drivers/staging/brcm80211/sys/wlc_pub.h      |    2 ++
- 3 files changed, 25 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/brcm80211/sys/wl_mac80211.c
-+++ b/drivers/staging/brcm80211/sys/wl_mac80211.c
-@@ -353,9 +353,7 @@ ieee_set_channel(struct ieee80211_hw *hw
- 	switch (type) {
- 	case NL80211_CHAN_HT20:
- 	case NL80211_CHAN_NO_HT:
--		WL_LOCK(wl);
- 		err = wlc_set(wl->wlc, WLC_SET_CHANNEL, chan->hw_value);
--		WL_UNLOCK(wl);
- 		break;
- 	case NL80211_CHAN_HT40MINUS:
- 	case NL80211_CHAN_HT40PLUS:
-@@ -376,6 +374,7 @@ static int wl_ops_config(struct ieee8021
- 	int err = 0;
- 	int new_int;
- 
-+	WL_LOCK(wl);
- 	if (changed & IEEE80211_CONF_CHANGE_LISTEN_INTERVAL) {
- 		WL_NONE(("%s: Setting listen interval to %d\n",
- 			 __func__, conf->listen_interval));
-@@ -431,6 +430,7 @@ static int wl_ops_config(struct ieee8021
+---
+ fs/partitions/ldm.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -251,6 +251,11 @@ static bool ldm_parse_vmdb (const u8 *da
  	}
  
-  config_out:
-+	WL_UNLOCK(wl);
- 	return err;
- }
- 
-@@ -559,14 +559,20 @@ wl_ops_set_tim(struct ieee80211_hw *hw,
- 
- static void wl_ops_sw_scan_start(struct ieee80211_hw *hw)
- {
-+	struct wl_info *wl = hw->priv;
- 	WL_NONE(("Scan Start\n"));
--	return;
-+	WL_LOCK(wl);
-+	wlc_scan_start(wl->wlc);
-+	WL_UNLOCK(wl);
- }
- 
- static void wl_ops_sw_scan_complete(struct ieee80211_hw *hw)
- {
-+	struct wl_info *wl = hw->priv;
- 	WL_NONE(("Scan Complete\n"));
--	return;
-+	WL_LOCK(wl);
-+	wlc_scan_stop(wl->wlc);
-+	WL_UNLOCK(wl);
- }
- 
- static void wl_ops_set_tsf(struct ieee80211_hw *hw, u64 tsf)
---- a/drivers/staging/brcm80211/sys/wlc_mac80211.c
-+++ b/drivers/staging/brcm80211/sys/wlc_mac80211.c
-@@ -8672,3 +8672,16 @@ static void wlc_txq_free(wlc_info_t *wlc
- 
- 	kfree(qi);
- }
+ 	vm->vblk_size     = get_unaligned_be32(data + 0x08);
++	if (vm->vblk_size == 0) {
++		ldm_error ("Illegal VBLK size");
++		return false;
++	}
 +
-+/*
-+ * Flag 'scan in progress' to withold dynamic phy calibration
-+ */
-+void wlc_scan_start(struct wlc_info *wlc)
-+{
-+	wlc_phy_hold_upd(wlc->band->pi, PHY_HOLD_FOR_SCAN, true);
-+}
-+
-+void wlc_scan_stop(struct wlc_info *wlc)
-+{
-+	wlc_phy_hold_upd(wlc->band->pi, PHY_HOLD_FOR_SCAN, false);
-+}
---- a/drivers/staging/brcm80211/sys/wlc_pub.h
-+++ b/drivers/staging/brcm80211/sys/wlc_pub.h
-@@ -568,6 +568,8 @@ extern void wlc_enable_mac(struct wlc_in
- extern u16 wlc_rate_shm_offset(struct wlc_info *wlc, u8 rate);
- extern u32 wlc_get_rspec_history(struct wlc_bsscfg *cfg);
- extern u32 wlc_get_current_highest_rate(struct wlc_bsscfg *cfg);
-+extern void wlc_scan_start(struct wlc_info *wlc);
-+extern void wlc_scan_stop(struct wlc_info *wlc);
+ 	vm->vblk_offset   = get_unaligned_be32(data + 0x0C);
+ 	vm->last_vblk_seq = get_unaligned_be32(data + 0x04);
  
- static inline int wlc_iovar_getuint(struct wlc_info *wlc, const char *name,
- 				    uint *arg)
 
 
