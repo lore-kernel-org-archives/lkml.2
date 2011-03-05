@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab1CEIE2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 03:04:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55098 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1CEIE0 (ORCPT
+	id S1752166Ab1CEIJq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 03:09:46 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38059
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750982Ab1CEIJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 03:04:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=mj3c+vtWYdxKpT8lCBd1ze40Ld/Agdz3R+hoMPwcS1nVD5dTrBh+U3LW2Bzwm6/P1X
-         pL0lswexs3yLTtRdyaa6qpjwbnvO1SPhuWglmgJKf2RaMvLN/zq/Ce5ZPrXWfSvsavAj
-         QYRom7qN8FbbdEqqwAsTeY+Q8UKIXb7qG6DFk=
-Message-ID: <4D71EE86.6030309@suse.cz>
-Date: Sat, 05 Mar 2011 09:04:22 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+	Sat, 5 Mar 2011 03:09:45 -0500
+Date: Sat, 05 Mar 2011 00:10:22 -0800 (PST)
+Message-Id: <20110305.001022.183044112.davem@davemloft.net>
+To: jslaby@suse.cz
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, mm-commits@vger.kernel.org,
         netdev@vger.kernel.org, maxk@qualcomm.com
-Subject: tun routing is broken [was: tun: Failed to create tun sysfs files]
-References: <201103030127.p231ReNl012841@imap1.linux-foundation.org>	<4D70A929.4010900@suse.cz> <20110304.010603.104076956.davem@davemloft.net> <4D70B2DC.2000005@gmail.com>
-In-Reply-To: <4D70B2DC.2000005@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: tun routing is broken
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D71EE86.6030309@suse.cz>
+References: <20110304.010603.104076956.davem@davemloft.net>
+	<4D70B2DC.2000005@gmail.com>
+	<4D71EE86.6030309@suse.cz>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2011 10:37 AM, Jiri Slaby wrote:
-> On 03/04/2011 10:06 AM, David Miller wrote:
->> From: Jiri Slaby <jslaby@suse.cz>
->> Date: Fri, 04 Mar 2011 09:56:09 +0100
->>
->>> On 03/03/2011 01:52 AM, akpm@linux-foundation.org wrote:
->>>> The mm-of-the-moment snapshot 2011-03-02-16-52 has been uploaded to
->>>
->>> Hi, I'm seeing this with tun (also with earlier versions):
->>
->> The name of the attribute was changed to netdev_group in order to
->> fix this problem, in fact quite some time ago.
->>
->> See the last entry of the net_class_attributes array in
->> net/core/net-sysfs.c, if it isn't called "netdev_group"
->> something is awry.
-> 
-> <idiocy>
-> Aha, sorry for the noise, I booted the old kernel.
-> </idiocy>
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Sat, 05 Mar 2011 09:04:22 +0100
 
-Ok, so I booted the new kernel, and tun is broken there completely. If I
-try to ping a vpn peer:
-...
-capget(0x20080522, 0, NULL)             = 0
-capset(0x20080522, 0, {0, 0, 0})        = 0
-socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
-connect(4, {sa_family=AF_INET, sin_port=htons(1025),
-sin_addr=inet_addr("10.20.11.1")}, 16) = -1 EINVAL (Invalid argument)
+> Ok, so I booted the new kernel, and tun is broken there completely. If I
+> try to ping a vpn peer:
 
-the route is:
-10.20.11.1 dev tun0  proto kernel  scope link  src 10.20.11.33
+-mm tree is missing this fix which went in yesterday.  Please if
+you are going to be testing networking a lot, test against net-next-2.6
+instead of Andrew's tree which invariable lags behind:
 
-When I try to ping a router on eth0 10.0.28.10, it works as expected.
+--------------------
+ipv4: Fix __ip_dev_find() to use ifa_local instead of ifa_address.
 
-Maybe the changes in ipv4 routing cause this? But my amateur eyes can't
-see any breakage there...
+Reported-by: Stephen Hemminger <shemminger@vyatta.com>
+Reported-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/ipv4/devinet.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Now I'm back in mmotm 2011-02-10-16-26 and it works, indeed.
-
-regards,
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index 9038928..ff53860 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -111,7 +111,7 @@ static inline unsigned int inet_addr_hash(struct net *net, __be32 addr)
+ 
+ static void inet_hash_insert(struct net *net, struct in_ifaddr *ifa)
+ {
+-	unsigned int hash = inet_addr_hash(net, ifa->ifa_address);
++	unsigned int hash = inet_addr_hash(net, ifa->ifa_local);
+ 
+ 	spin_lock(&inet_addr_hash_lock);
+ 	hlist_add_head_rcu(&ifa->hash, &inet_addr_lst[hash]);
+@@ -146,7 +146,7 @@ struct net_device *__ip_dev_find(struct net *net, __be32 addr, bool devref)
+ 
+ 		if (!net_eq(dev_net(dev), net))
+ 			continue;
+-		if (ifa->ifa_address == addr) {
++		if (ifa->ifa_local == addr) {
+ 			result = dev;
+ 			break;
+ 		}
 -- 
-js
-suse labs
+1.7.4.1
+
+
+
