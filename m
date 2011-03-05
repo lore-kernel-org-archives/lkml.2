@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760583Ab1CEBDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:03:53 -0500
-Received: from kroah.org ([198.145.64.141]:50456 "EHLO coco.kroah.org"
+	id S932486Ab1CEBEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:04:07 -0500
+Received: from kroah.org ([198.145.64.141]:50433 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760558Ab1CEBAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:53 -0500
+	id S1760548Ab1CEBAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:49 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:40 2011
-Message-Id: <20110305005640.450183221@clark.kroah.org>
+Message-Id: <20110305005640.149993362@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:56:05 -0800
+Date: Fri, 04 Mar 2011 16:56:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        daniel.vetter@ffwll.ch, chris@chris-wilson.co.uk,
-        Jan Niehusmann <jan@gondor.com>
-Subject: [60/73] drm/i915: fix memory corruption with GM965 and >4GB RAM
+        Ian Abbott <abbotti@mev.co.uk>, "W. Trevor King" <wking@drexel.edu>
+Subject: [57/73] Staging: comedi: Add MODULE_LICENSE and similar to NI modules
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Niehusmann <jan@gondor.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 6927faf30920b8c03dfa007e732642a1f1f20089 upstream.
+commit 3c323c01b6bd5fd01be21a8f0cdc11e55997aa06 upstream.
 
-On a Thinkpad x61s, I noticed some memory corruption when
-plugging/unplugging the external VGA connection. The symptoms are that
-4 bytes at the beginning of a page get overwritten by zeroes.
-The address of the corruption varies when rebooting the machine, but
-stays constant while it's running (so it's possible to repeatedly write
-some data and then corrupt it again by plugging the cable).
+As mentioned by W. Trevor King on the devel@linuxdriverproject.org list
+on "Thu, 27 Jan 2011 18:52:15 -0500", "Message-ID:
+<20110127235214.GA5107@thialfi.dhcp.drexel.edu>", the ni_pcimio module
+is missing module metadata, including a license.
 
-Further investigation revealed that the corrupted address is
-(dev_priv->status_page_dmah->busaddr & 0xffffffff), ie. the beginning of
-the hardware status page of the i965 graphics card, cut to 32 bits.
+This patch adds module metadata to all the NI comedi driver modules.  It
+also removes a duplicate MODULE_LICENSE("GPL") line from the "mite"
+module.
 
-So it seems that for some memory access, the hardware uses only 32 bit
-addressing. If the hardware status page is located >4GB, this
-corrupts unrelated memory.
-
-Signed-off-by: Jan Niehusmann <jan@gondor.com>
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: W. Trevor King <wking@drexel.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/staging/comedi/drivers/mite.c      |    2 --
+ drivers/staging/comedi/drivers/ni_6527.c   |    4 ++++
+ drivers/staging/comedi/drivers/ni_65xx.c   |    4 ++++
+ drivers/staging/comedi/drivers/ni_660x.c   |    4 ++++
+ drivers/staging/comedi/drivers/ni_670x.c   |    4 ++++
+ drivers/staging/comedi/drivers/ni_pcidio.c |    4 ++++
+ drivers/staging/comedi/drivers/ni_pcimio.c |    4 ++++
+ 7 files changed, 24 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1943,6 +1943,17 @@ int i915_driver_load(struct drm_device *
- 	if (IS_GEN2(dev))
- 		dma_set_coherent_mask(&dev->pdev->dev, DMA_BIT_MASK(30));
+--- a/drivers/staging/comedi/drivers/mite.c
++++ b/drivers/staging/comedi/drivers/mite.c
+@@ -61,8 +61,6 @@
+ #define PCI_DAQ_SIZE		4096
+ #define PCI_DAQ_SIZE_660X       8192
  
-+	/* 965GM sometimes incorrectly writes to hardware status page (HWS)
-+	 * using 32bit addressing, overwriting memory if HWS is located
-+	 * above 4GB.
-+	 *
-+	 * The documentation also mentions an issue with undefined
-+	 * behaviour if any general state is accessed within a page above 4GB,
-+	 * which also needs to be handled carefully.
-+	 */
-+	if (IS_BROADWATER(dev) || IS_CRESTLINE(dev))
-+		dma_set_coherent_mask(&dev->pdev->dev, DMA_BIT_MASK(32));
+-MODULE_LICENSE("GPL");
+-
+ struct mite_struct *mite_devices;
+ EXPORT_SYMBOL(mite_devices);
+ 
+--- a/drivers/staging/comedi/drivers/ni_6527.c
++++ b/drivers/staging/comedi/drivers/ni_6527.c
+@@ -527,3 +527,7 @@ static void __exit driver_ni6527_cleanup
+ 
+ module_init(driver_ni6527_init_module);
+ module_exit(driver_ni6527_cleanup_module);
 +
- 	dev_priv->regs = ioremap(base, size);
- 	if (!dev_priv->regs) {
- 		DRM_ERROR("failed to map registers\n");
++MODULE_AUTHOR("Comedi http://www.comedi.org");
++MODULE_DESCRIPTION("Comedi low-level driver");
++MODULE_LICENSE("GPL");
+--- a/drivers/staging/comedi/drivers/ni_65xx.c
++++ b/drivers/staging/comedi/drivers/ni_65xx.c
+@@ -871,3 +871,7 @@ static void __exit driver_ni_65xx_cleanu
+ 
+ module_init(driver_ni_65xx_init_module);
+ module_exit(driver_ni_65xx_cleanup_module);
++
++MODULE_AUTHOR("Comedi http://www.comedi.org");
++MODULE_DESCRIPTION("Comedi low-level driver");
++MODULE_LICENSE("GPL");
+--- a/drivers/staging/comedi/drivers/ni_660x.c
++++ b/drivers/staging/comedi/drivers/ni_660x.c
+@@ -1421,3 +1421,7 @@ static int ni_660x_dio_insn_config(struc
+ 	};
+ 	return 0;
+ }
++
++MODULE_AUTHOR("Comedi http://www.comedi.org");
++MODULE_DESCRIPTION("Comedi low-level driver");
++MODULE_LICENSE("GPL");
+--- a/drivers/staging/comedi/drivers/ni_670x.c
++++ b/drivers/staging/comedi/drivers/ni_670x.c
+@@ -384,3 +384,7 @@ static int ni_670x_find_device(struct co
+ 	mite_list_devices();
+ 	return -EIO;
+ }
++
++MODULE_AUTHOR("Comedi http://www.comedi.org");
++MODULE_DESCRIPTION("Comedi low-level driver");
++MODULE_LICENSE("GPL");
+--- a/drivers/staging/comedi/drivers/ni_pcidio.c
++++ b/drivers/staging/comedi/drivers/ni_pcidio.c
+@@ -1354,3 +1354,7 @@ static void __exit driver_pcidio_cleanup
+ 
+ module_init(driver_pcidio_init_module);
+ module_exit(driver_pcidio_cleanup_module);
++
++MODULE_AUTHOR("Comedi http://www.comedi.org");
++MODULE_DESCRIPTION("Comedi low-level driver");
++MODULE_LICENSE("GPL");
+--- a/drivers/staging/comedi/drivers/ni_pcimio.c
++++ b/drivers/staging/comedi/drivers/ni_pcimio.c
+@@ -1853,3 +1853,7 @@ static int pcimio_dio_change(struct come
+ 
+ 	return 0;
+ }
++
++MODULE_AUTHOR("Comedi http://www.comedi.org");
++MODULE_DESCRIPTION("Comedi low-level driver");
++MODULE_LICENSE("GPL");
 
 
