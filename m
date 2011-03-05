@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab1CEROc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 12:14:32 -0500
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:52246 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab1CEROb (ORCPT
+	id S1753467Ab1CERvA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 12:51:00 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48082 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab1CERul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 12:14:31 -0500
-Message-ID: <4D726F6D.4000909@dcl.info.waseda.ac.jp>
-Date: Sun, 06 Mar 2011 02:14:21 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b10pre) Gecko/20110114 Thunderbird/3.3a2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf lock: clean the options for perf record
-References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp>  <4D63D685.2010401@dcl.info.waseda.ac.jp> <1298389415.2217.243.camel@twins>  <20110222182206.GB1799@nowhere> <4D648A65.2040107@dcl.info.waseda.ac.jp>  <4D667D60.5010903@dcl.info.waseda.ac.jp> <20110224165014.GB1840@nowhere>  <4D67E286.8010907@dcl.info.waseda.ac.jp>  <AANLkTikUGO=Obm7Ue4VzEueQ7DERPiwci1VV9NmKZf1u@mail.gmail.com>  <4D70B3E1.8020108@dcl.info.waseda.ac.jp> <1299249438.20306.3.camel@gandalf.stny.rr.com>
-In-Reply-To: <1299249438.20306.3.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sat, 5 Mar 2011 12:50:41 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 3/4] fs/9p: Attach writeback_fid on first open with WR flag
+Date: Sat,  5 Mar 2011 23:20:24 +0530
+Message-Id: <1299347425-16810-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1299347425-16810-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1299347425-16810-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011年03月04日 23:37, Steven Rostedt wrote:
-> On Fri, 2011-03-04 at 18:41 +0900, Hitoshi Mitake wrote:
->
->> BTW, how do you think about the idea of exporting data in
->> python (or other neutral) expression from procfs? I feel it is a
->> good idea. Communicating with unified format between user space and
->> kernel space will reduce lots of parsing overhead. Is this too
->> aggressive or insane?
->
-> As I mentioned in another email, I have no problem with an easy to parse
-> file. But I will aggressively NAK any "python" or other scripting
-> language. I'm sure I would get the same response if I were to have the
-> kernel outputting perl language ;)
->
-> I would be OK if we have two files similar to stat and status, where one
-> format is human readable, the other is for parsing.
->
-> Thus, the only acceptable language that should come out of the kernel is
-> English.
->
-> -- Steve
->
->
->
+We don't need writeback fid if we are only doing O_RDONLY open
 
-OK. As you say, the big confusion might be occur if there are lots of
-format like python or perl (and they have several versions).
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/vfs_file.c       |    3 ++-
+ fs/9p/vfs_inode.c      |    3 ++-
+ fs/9p/vfs_inode_dotl.c |    3 ++-
+ 3 files changed, 6 insertions(+), 3 deletions(-)
 
-The reason why I posted the patch is that I like the idea of
-/proc/config.gz. Providing the data from kernel in specific syntax
-is so smart, so I followed it :)
+diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
+index 3337d58..6997eb6 100644
+--- a/fs/9p/vfs_file.c
++++ b/fs/9p/vfs_file.c
+@@ -91,7 +91,8 @@ int v9fs_file_open(struct inode *inode, struct file *file)
+ 
+ 	file->private_data = fid;
+ 	mutex_lock(&v9inode->v_mutex);
+-	if (v9ses->cache && !v9inode->writeback_fid) {
++	if (v9ses->cache && !v9inode->writeback_fid &&
++	    ((file->f_flags & O_ACCMODE) != O_RDONLY)) {
+ 		/*
+ 		 * clone a fid and add it to writeback_fid
+ 		 * we do it during open time instead of
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 0afbbb4..774a20a 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -652,7 +652,8 @@ v9fs_vfs_create(struct inode *dir, struct dentry *dentry, int mode,
+ 	if (nd && nd->flags & LOOKUP_OPEN) {
+ 		v9inode = V9FS_I(dentry->d_inode);
+ 		mutex_lock(&v9inode->v_mutex);
+-		if (v9ses->cache && !v9inode->writeback_fid) {
++		if (v9ses->cache && !v9inode->writeback_fid &&
++		    ((flags & O_ACCMODE) != O_RDONLY)) {
+ 			/*
+ 			 * clone a fid and add it to writeback_fid
+ 			 * we do it during open time instead of
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index 0a0ac30..8b616dc 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -246,7 +246,8 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 
+ 	v9inode = V9FS_I(inode);
+ 	mutex_lock(&v9inode->v_mutex);
+-	if (v9ses->cache && !v9inode->writeback_fid) {
++	if (v9ses->cache && !v9inode->writeback_fid &&
++	    ((flags & O_ACCMODE) != O_RDONLY)) {
+ 		/*
+ 		 * clone a fid and add it to writeback_fid
+ 		 * we do it during open time instead of
+-- 
+1.7.1
+
