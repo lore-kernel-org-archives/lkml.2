@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760349Ab1CEBAL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:00:11 -0500
-Received: from kroah.org ([198.145.64.141]:50177 "EHLO coco.kroah.org"
+	id S1760425Ab1CEBAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:00:24 -0500
+Received: from kroah.org ([198.145.64.141]:50263 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760306Ab1CEBAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:36 2011
-Message-Id: <20110305005636.371928382@clark.kroah.org>
+	id S1760384Ab1CEBAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:37 2011
+Message-Id: <20110305005637.819425422@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:23 -0800
+Date: Fri, 04 Mar 2011 16:55:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Nelson Elhage <nelhage@ksplice.com>
-Subject: [18/73] epoll: prevent creating circular epoll structures
+        Luben Tuikov <ltuikov@yahoo.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [33/73] USB: Reset USB 3.0 devices on (re)discovery
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,203 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davide Libenzi <davidel@xmailserver.org>
+From: Luben Tuikov <ltuikov@yahoo.com>
 
-commit 22bacca48a1755f79b7e0f192ddb9fbb7fc6e64e upstream.
+commit 07194ab7be63a972096309ab0ea747df455c6a20 upstream.
 
-In several places, an epoll fd can call another file's ->f_op->poll()
-method with ep->mtx held.  This is in general unsafe, because that other
-file could itself be an epoll fd that contains the original epoll fd.
+If the device isn't reset, the XHCI HCD sends
+SET ADDRESS to address 0 while the device is
+already in Addressed state, and the request is
+dropped on the floor as it is addressed to the
+default address. This sequence of events, which this
+patch fixes looks like this:
 
-The code defends against this possibility in its own ->poll() method using
-ep_call_nested, but there are several other unsafe calls to ->poll
-elsewhere that can be made to deadlock.  For example, the following simple
-program causes the call in ep_insert recursively call the original fd's
-->poll, leading to deadlock:
+usb_reset_and_verify_device()
+	hub_port_init()
+		hub_set_address()
+			SET_ADDRESS to 0 with 1
+		usb_get_device_descriptor(udev, 8)
+		usb_get_device_descriptor(udev, 18)
+	descriptors_changed() --> goto re_enumerate:
+		hub_port_logical_disconnect()
+			kick_khubd()
 
- #include <unistd.h>
- #include <sys/epoll.h>
+And then:
 
- int main(void) {
-     int e1, e2, p[2];
-     struct epoll_event evt = {
-         .events = EPOLLIN
-     };
+hub_events()
+	hub_port_connect_change()
+		usb_disconnect()
+			usb_disable_device()
+		new device struct
+		sets device state to Powered
+		choose_address()
+		hub_port_init() <-- no reset, but SET ADDRESS to 0 with 1, timeout!
 
-     e1 = epoll_create(1);
-     e2 = epoll_create(2);
-     pipe(p);
+The solution is to always reset the device in
+hub_port_init() to put it in a known state.
 
-     epoll_ctl(e2, EPOLL_CTL_ADD, e1, &evt);
-     epoll_ctl(e1, EPOLL_CTL_ADD, p[0], &evt);
-     write(p[1], p, sizeof p);
-     epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
+Note from Sarah Sharp:
 
-     return 0;
- }
+This patch should be queued for stable trees all the way back to 2.6.34,
+since that was the first kernel that supported configured device reset.
+The code this patch touches has been there since 2.6.32, but the bug
+would never be hit before 2.6.34 because the xHCI driver would
+completely reject an attempt to reset a configured device under xHCI.
 
-On insertion, check whether the inserted file is itself a struct epoll,
-and if so, do a recursive walk to detect whether inserting this file would
-create a loop of epoll structures, which could lead to deadlock.
-
-[nelhage@ksplice.com: Use epmutex to serialize concurrent inserts]
-Signed-off-by: Davide Libenzi <davidel@xmailserver.org>
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-Reported-by: Nelson Elhage <nelhage@ksplice.com>
-Tested-by: Nelson Elhage <nelhage@ksplice.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/eventpoll.c |   95 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 95 insertions(+)
+ drivers/usb/core/hub.c |   18 +++++++-----------
+ 1 file changed, 7 insertions(+), 11 deletions(-)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -63,6 +63,13 @@
-  * cleanup path and it is also acquired by eventpoll_release_file()
-  * if a file has been pushed inside an epoll set and it is then
-  * close()d without a previous call toepoll_ctl(EPOLL_CTL_DEL).
-+ * It is also acquired when inserting an epoll fd onto another epoll
-+ * fd. We do this so that we walk the epoll tree and ensure that this
-+ * insertion does not create a cycle of epoll file descriptors, which
-+ * could lead to deadlock. We need a global mutex to prevent two
-+ * simultaneous inserts (A into B and B into A) from racing and
-+ * constructing a cycle without either insert observing that it is
-+ * going to.
-  * It is possible to drop the "ep->mtx" and to use the global
-  * mutex "epmutex" (together with "ep->lock") to have it working,
-  * but having "ep->mtx" will make the interface more scalable.
-@@ -224,6 +231,9 @@ static int max_user_watches __read_mostl
-  */
- static DEFINE_MUTEX(epmutex);
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2672,17 +2672,13 @@ hub_port_init (struct usb_hub *hub, stru
  
-+/* Used to check for epoll file descriptor inclusion loops */
-+static struct nested_calls poll_loop_ncalls;
-+
- /* Used for safe wake up implementation */
- static struct nested_calls poll_safewake_ncalls;
+ 	mutex_lock(&usb_address0_mutex);
  
-@@ -1195,6 +1205,62 @@ retry:
- 	return res;
- }
+-	if (!udev->config && oldspeed == USB_SPEED_SUPER) {
+-		/* Don't reset USB 3.0 devices during an initial setup */
+-		usb_set_device_state(udev, USB_STATE_DEFAULT);
+-	} else {
+-		/* Reset the device; full speed may morph to high speed */
+-		/* FIXME a USB 2.0 device may morph into SuperSpeed on reset. */
+-		retval = hub_port_reset(hub, port1, udev, delay);
+-		if (retval < 0)		/* error or disconnect */
+-			goto fail;
+-		/* success, speed is known */
+-	}
++	/* Reset the device; full speed may morph to high speed */
++	/* FIXME a USB 2.0 device may morph into SuperSpeed on reset. */
++	retval = hub_port_reset(hub, port1, udev, delay);
++	if (retval < 0)		/* error or disconnect */
++		goto fail;
++	/* success, speed is known */
++
+ 	retval = -ENODEV;
  
-+/**
-+ * ep_loop_check_proc - Callback function to be passed to the @ep_call_nested()
-+ *                      API, to verify that adding an epoll file inside another
-+ *                      epoll structure, does not violate the constraints, in
-+ *                      terms of closed loops, or too deep chains (which can
-+ *                      result in excessive stack usage).
-+ *
-+ * @priv: Pointer to the epoll file to be currently checked.
-+ * @cookie: Original cookie for this call. This is the top-of-the-chain epoll
-+ *          data structure pointer.
-+ * @call_nests: Current dept of the @ep_call_nested() call stack.
-+ *
-+ * Returns: Returns zero if adding the epoll @file inside current epoll
-+ *          structure @ep does not violate the constraints, or -1 otherwise.
-+ */
-+static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
-+{
-+	int error = 0;
-+	struct file *file = priv;
-+	struct eventpoll *ep = file->private_data;
-+	struct rb_node *rbp;
-+	struct epitem *epi;
-+
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		epi = rb_entry(rbp, struct epitem, rbn);
-+		if (unlikely(is_file_epoll(epi->ffd.file))) {
-+			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+					       ep_loop_check_proc, epi->ffd.file,
-+					       epi->ffd.file->private_data, current);
-+			if (error != 0)
-+				break;
-+		}
-+	}
-+	mutex_unlock(&ep->mtx);
-+
-+	return error;
-+}
-+
-+/**
-+ * ep_loop_check - Performs a check to verify that adding an epoll file (@file)
-+ *                 another epoll file (represented by @ep) does not create
-+ *                 closed loops or too deep chains.
-+ *
-+ * @ep: Pointer to the epoll private data structure.
-+ * @file: Pointer to the epoll file to be checked.
-+ *
-+ * Returns: Returns zero if adding the epoll @file inside current epoll
-+ *          structure @ep does not violate the constraints, or -1 otherwise.
-+ */
-+static int ep_loop_check(struct eventpoll *ep, struct file *file)
-+{
-+	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+			      ep_loop_check_proc, file, ep, current);
-+}
-+
- /*
-  * Open an eventpoll file descriptor.
-  */
-@@ -1243,6 +1309,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
- 		struct epoll_event __user *, event)
- {
- 	int error;
-+	int did_lock_epmutex = 0;
- 	struct file *file, *tfile;
- 	struct eventpoll *ep;
- 	struct epitem *epi;
-@@ -1284,6 +1351,25 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
- 	 */
- 	ep = file->private_data;
- 
-+	/*
-+	 * When we insert an epoll file descriptor, inside another epoll file
-+	 * descriptor, there is the change of creating closed loops, which are
-+	 * better be handled here, than in more critical paths.
-+	 *
-+	 * We hold epmutex across the loop check and the insert in this case, in
-+	 * order to prevent two separate inserts from racing and each doing the
-+	 * insert "at the same time" such that ep_loop_check passes on both
-+	 * before either one does the insert, thereby creating a cycle.
-+	 */
-+	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD)) {
-+		mutex_lock(&epmutex);
-+		did_lock_epmutex = 1;
-+		error = -ELOOP;
-+		if (ep_loop_check(ep, tfile) != 0)
-+			goto error_tgt_fput;
-+	}
-+
-+
- 	mutex_lock(&ep->mtx);
- 
- 	/*
-@@ -1319,6 +1405,9 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
- 	mutex_unlock(&ep->mtx);
- 
- error_tgt_fput:
-+	if (unlikely(did_lock_epmutex))
-+		mutex_unlock(&epmutex);
-+
- 	fput(tfile);
- error_fput:
- 	fput(file);
-@@ -1437,6 +1526,12 @@ static int __init eventpoll_init(void)
- 	max_user_watches = (((si.totalram - si.totalhigh) / 25) << PAGE_SHIFT) /
- 		EP_ITEM_COST;
- 
-+	/*
-+	 * Initialize the structure used to perform epoll file descriptor
-+	 * inclusion loops checks.
-+	 */
-+	ep_nested_calls_init(&poll_loop_ncalls);
-+
- 	/* Initialize the structure used to perform safe poll wait head wake ups */
- 	ep_nested_calls_init(&poll_safewake_ncalls);
- 
+ 	if (oldspeed != USB_SPEED_UNKNOWN && oldspeed != udev->speed) {
 
 
