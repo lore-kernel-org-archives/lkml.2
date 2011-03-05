@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1CERQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 12:16:57 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50511 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753467Ab1CERQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 12:16:56 -0500
-Date: Sat, 5 Mar 2011 18:16:45 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: yinghai@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Subject: Re: [GIT PULL tip:x86/mm] x86-64 NUMA changes
-Message-ID: <20110305171645.GA21673@elte.hu>
-References: <20110304155106.GU20499@htj.dyndns.org>
+	id S1754107Ab1CERU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 12:20:28 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:48016 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab1CERU0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 12:20:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=V07/wCb3LyKnoFeJca2TI/VVViNh1cUxFXByNvwwx2ORxU5+7LiDBzOWjr6su4Kkxs
+         PeIlOzkim1/J8cJgzUTzphzaRJE5f9V8pd7HVtwmclmH8Wgz52RMnScZPxCYUtf9Pqha
+         ldwRezi4uamBBRc+5/Q6YIyGyW/OjvsAwk83E=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304155106.GU20499@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1299343345-3984-25-git-send-email-cesarb@cesarb.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+	<1299343345-3984-25-git-send-email-cesarb@cesarb.net>
+Date: Sat, 5 Mar 2011 19:20:25 +0200
+X-Google-Sender-Auth: yHMmwdwarILBMuYIIkrlSpOgCvw
+Message-ID: <AANLkTinEsm6yGcaTMZOVGShSvCVKKMQnHBQec6w1_MtS@mail.gmail.com>
+Subject: Re: [PATCHv2 24/24] sys_swapon: separate final enabling of the swapfile
+From: Pekka Enberg <penberg@kernel.org>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 5, 2011 at 6:42 PM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> The block in sys_swapon which does the final adjustments to the
+> swap_info_struct and to swap_list is the same as the block which
+> re-inserts it again at sys_swapoff on failure of try_to_unuse(). Move
+> this code to a separate function, and use it both in sys_swapon and
+> sys_swapoff.
+>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> Tested-by: Eric B Munson <emunson@mgebm.net>
+> Acked-by: Eric B Munson <emunson@mgebm.net>
 
-* Tejun Heo <tj@kernel.org> wrote:
-
-> Hello, Ingo.
-> 
-> Please pull from the following git branch to receive x86-64 NUMA
-> changes.  It contains four commits.  As discussed before, NUMA affine
-> page table allocation is reverted.  Two to fix node0 online assumption
-> and one making initmem_init() prettier.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
-> 
-> As usual, if HEAD doesn't appear, please pull from master.
-> 
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-mm
-> 
-> tip:x86/mm contains d04c579f9 (x86: Work around old gas bug) making
-> this pull non-fastforward; however, pulling won't generate any
-> conflict.
-> 
-> Thank you.
-> 
-> David Rientjes (1):
->       x86-64, NUMA: Clean up initmem_init()
-> 
-> Tejun Heo (2):
->       x86-64, NUMA: Revert NUMA affine page table allocation
->       x86-64, NUMA: Don't assume phys node 0 is always online in numa_emulation()
-> 
-> Yinghai Lu (1):
->       x86-64, NUMA: Fix numa_emulation code with node0 without RAM
-> 
->  arch/x86/include/asm/page_types.h |    2 -
->  arch/x86/kernel/setup.c           |    8 +++
->  arch/x86/mm/init_64.c             |   54 ---------------------
->  arch/x86/mm/numa_64.c             |   96 +++++++++++++++++++++----------------
->  arch/x86/mm/numa_emulation.c      |   20 ++++++--
->  5 files changed, 79 insertions(+), 101 deletions(-)
-
-Thanks, pulled.
-
-	Ingo
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
