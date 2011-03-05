@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760659Ab1CEBJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:09:42 -0500
-Received: from kroah.org ([198.145.64.141]:50414 "EHLO coco.kroah.org"
+	id S1760495Ab1CEBAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:00:39 -0500
+Received: from kroah.org ([198.145.64.141]:50383 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760524Ab1CEBAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:45 -0500
+	id S1760236Ab1CEBAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:39 2011
-Message-Id: <20110305005639.864721706@clark.kroah.org>
+Message-Id: <20110305005639.401687414@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:59 -0800
+Date: Fri, 04 Mar 2011 16:55:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@ZenIV.linux.org.uk>, Josh Hunt <johunt@akamai.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [54/73] ext2: Fix link count corruption under heavy link+rename load
+        Yu-Chen Cho <acho@novell.com>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: [49/73] Bluetooth: Add Atheros BT AR5BBU12 fw supported
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Hunt <johunt@akamai.com>
+From: Yu-Chen Cho <acho@novell.com>
 
-commit e8a80c6f769dd4622d8b211b398452158ee60c0b upstream.
+commit e9036e336a8e5640871e0006ea4a89982b25046f upstream.
 
-vfs_rename_other() does not lock renamed inode with i_mutex. Thus changing
-i_nlink in a non-atomic manner (which happens in ext2_rename()) can corrupt
-it as reported and analyzed by Josh.
+Add the btusb.c blacklist [0489:e02c] for Atheros AR5BBU12 BT
+and add to ath3k.c supported this device.
 
-In fact, there is no good reason to mess with i_nlink of the moved file.
-We did it presumably to simulate linking into the new directory and unlinking
-from an old one. But the practical effect of this is disputable because fsck
-can possibly treat file as being properly linked into both directories without
-writing any error which is confusing. So we just stop increment-decrement
-games with i_nlink which also fixes the corruption.
-
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Yu-Chen Cho <acho@novell.com>
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext2/namei.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/bluetooth/ath3k.c |    3 +++
+ drivers/bluetooth/btusb.c |    3 +++
+ 2 files changed, 6 insertions(+)
 
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -344,7 +344,6 @@ static int ext2_rename (struct inode * o
- 		new_de = ext2_find_entry (new_dir, &new_dentry->d_name, &new_page);
- 		if (!new_de)
- 			goto out_dir;
--		inode_inc_link_count(old_inode);
- 		ext2_set_link(new_dir, new_de, new_page, old_inode, 1);
- 		new_inode->i_ctime = CURRENT_TIME_SEC;
- 		if (dir_de)
-@@ -356,12 +355,9 @@ static int ext2_rename (struct inode * o
- 			if (new_dir->i_nlink >= EXT2_LINK_MAX)
- 				goto out_dir;
- 		}
--		inode_inc_link_count(old_inode);
- 		err = ext2_add_link(new_dentry, old_inode);
--		if (err) {
--			inode_dec_link_count(old_inode);
-+		if (err)
- 			goto out_dir;
--		}
- 		if (dir_de)
- 			inode_inc_link_count(new_dir);
- 	}
-@@ -369,12 +365,11 @@ static int ext2_rename (struct inode * o
- 	/*
- 	 * Like most other Unix systems, set the ctime for inodes on a
-  	 * rename.
--	 * inode_dec_link_count() will mark the inode dirty.
- 	 */
- 	old_inode->i_ctime = CURRENT_TIME_SEC;
-+	mark_inode_dirty(old_inode);
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -41,6 +41,9 @@ static struct usb_device_id ath3k_table[
  
- 	ext2_delete_entry (old_de, old_page);
--	inode_dec_link_count(old_inode);
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
++
++	/* Atheros AR5BBU12 with sflash firmware */
++	{ USB_DEVICE(0x0489, 0xE02C) },
+ 	{ }	/* Terminating entry */
+ };
  
- 	if (dir_de) {
- 		if (old_dir != new_dir)
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -105,6 +105,9 @@ static struct usb_device_id blacklist_ta
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+ 
++	/* Atheros AR5BBU12 with sflash firmware */
++	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
++
+ 	/* Broadcom BCM2035 */
+ 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
+ 	{ USB_DEVICE(0x0a5c, 0x200a), .driver_info = BTUSB_WRONG_SCO_MTU },
 
 
