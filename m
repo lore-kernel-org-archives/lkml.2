@@ -1,157 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1CEPxa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 10:53:30 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45637 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab1CEPx2 (ORCPT
+	id S1753973Ab1CEQwE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 11:52:04 -0500
+Received: from smtp-03.mandic.com.br ([200.225.81.143]:56104 "EHLO
+	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab1CEQtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 10:53:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cGMbe7N33QtYADlg73AabOzPPG1tN8PGr4g/EPFmx9jDzI1eZHUkEtXIT84/G2FgKi
-         3M2JU0GfBLmZJU+ZuBzyYvxM9QRdwuzR6nBsPnAFUunA4DJysI9+pBL/LVrjP1k0hnWn
-         rH27BCxJ2RYHSpns+fYkFENlEyz3GzmedXxyA=
-Date: Sun, 6 Mar 2011 00:53:16 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Vagin <avagin@gmail.com>
-Cc: Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: check zone->all_unreclaimable in
- all_unreclaimable()
-Message-ID: <20110305155316.GB1918@barrios-desktop>
-References: <1299325456-2687-1-git-send-email-avagin@openvz.org>
- <20110305152056.GA1918@barrios-desktop>
- <4D72580D.4000208@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D72580D.4000208@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 5 Mar 2011 11:49:20 -0500
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: [PATCHv2 13/24] sys_swapon: separate bdev claim and inode lock
+Date: Sat,  5 Mar 2011 13:42:14 -0300
+Message-Id: <1299343345-3984-14-git-send-email-cesarb@cesarb.net>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 05, 2011 at 06:34:37PM +0300, Andrew Vagin wrote:
-> On 03/05/2011 06:20 PM, Minchan Kim wrote:
-> >On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
-> >>Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
-> >>kernel may hang up, because shrink_zones() will do nothing, but
-> >>all_unreclaimable() will say, that zone has reclaimable pages.
-> >>
-> >>do_try_to_free_pages()
-> >>	shrink_zones()
-> >>		 for_each_zone
-> >>			if (zone->all_unreclaimable)
-> >>				continue
-> >>	if !all_unreclaimable(zonelist, sc)
-> >>		return 1
-> >>
-> >>__alloc_pages_slowpath()
-> >>retry:
-> >>	did_some_progress = do_try_to_free_pages(page)
-> >>	...
-> >>	if (!page&&  did_some_progress)
-> >>		retry;
-> >>
-> >>Signed-off-by: Andrey Vagin<avagin@openvz.org>
-> >>---
-> >>  mm/vmscan.c |    2 ++
-> >>  1 files changed, 2 insertions(+), 0 deletions(-)
-> >>
-> >>diff --git a/mm/vmscan.c b/mm/vmscan.c
-> >>index 6771ea7..1c056f7 100644
-> >>--- a/mm/vmscan.c
-> >>+++ b/mm/vmscan.c
-> >>@@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
-> >>
-> >>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> >>  			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> >>+		if (zone->all_unreclaimable)
-> >>+			continue;
-> >>  		if (!populated_zone(zone))
-> >>  			continue;
-> >>  		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> >
-> >zone_reclaimable checks it. Isn't it enough?
-> I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
-> This two patches are enough.
+Move the code which claims the bdev (S_ISBLK) or locks the inode
+(S_ISREG) to a separate function. Only code movement, no functional
+changes.
 
-Sorry if I confused you. 
-I mean zone->all_unreclaimable become true if !zone_reclaimable in balance_pgdat.
-zone_reclaimable compares recent pages_scanned with the number of zone lru pages.
-So too many page scanning in small lru pages makes the zone to unreclaimable zone.
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+Tested-by: Eric B Munson <emunson@mgebm.net>
+Acked-by: Eric B Munson <emunson@mgebm.net>
+---
+ mm/swapfile.c |   64 ++++++++++++++++++++++++++++++++++----------------------
+ 1 files changed, 39 insertions(+), 25 deletions(-)
 
-In all_unreclaimable, we calls zone_reclaimable to detect it.
-It's the same thing with your patch.
-
-> >Does the hang up really happen or see it by code review?
-> Yes. You can reproduce it for help the attached python program. It's
-> not very clever:)
-> It make the following actions in loop:
-> 1. fork
-> 2. mmap
-> 3. touch memory
-> 4. read memory
-> 5. munmmap
-
-It seems the test program makes fork bombs and memory hogging.
-If you applied this patch, the problem is gone?
-
-> 
-> >>-- 
-> >>1.7.1
-> >>
-> >>--
-> >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >>the body to majordomo@kvack.org.  For more info on Linux MM,
-> >>see: http://www.linux-mm.org/ .
-> >>Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> >>Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
-> 
-
-> import sys, time, mmap, os
-> from subprocess import Popen, PIPE
-> import random
-> 
-> global mem_size
-> 
-> def info(msg):
-> 	pid = os.getpid()
-> 	print >> sys.stderr, "%s: %s" % (pid, msg)
-> 	sys.stderr.flush()
-> 
-> 
-> 
-> def memory_loop(cmd = "a"):
-> 	"""
-> 	cmd may be:
-> 		c: check memory
-> 		else: touch memory
-> 	"""
-> 	c = 0
-> 	for j in xrange(0, mem_size):
-> 		if cmd == "c":
-> 			if f[j<<12] != chr(j % 255):
-> 				info("Data corruption")
-> 				sys.exit(1)
-> 		else:
-> 			f[j<<12] = chr(j % 255)
-> 
-> while True:
-> 	pid = os.fork()
-> 	if (pid != 0):
-> 		mem_size = random.randint(0, 56 * 4096)
-> 		f = mmap.mmap(-1, mem_size << 12, mmap.MAP_ANONYMOUS|mmap.MAP_PRIVATE)
-> 		memory_loop()
-> 		memory_loop("c")
-> 		f.close()
-
-
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 96be104..27faeec 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1889,6 +1889,43 @@ static struct swap_info_struct *alloc_swap_info(void)
+ 	return p;
+ }
+ 
++static int claim_swapfile(struct swap_info_struct *p, struct inode *inode)
++{
++	int error;
++
++	if (S_ISBLK(inode->i_mode)) {
++		p->bdev = bdgrab(I_BDEV(inode));
++		error = blkdev_get(p->bdev,
++				   FMODE_READ | FMODE_WRITE | FMODE_EXCL,
++				   sys_swapon);
++		if (error < 0) {
++			p->bdev = NULL;
++			error = -EINVAL;
++			goto bad_swap;
++		}
++		p->old_block_size = block_size(p->bdev);
++		error = set_blocksize(p->bdev, PAGE_SIZE);
++		if (error < 0)
++			goto bad_swap;
++		p->flags |= SWP_BLKDEV;
++	} else if (S_ISREG(inode->i_mode)) {
++		p->bdev = inode->i_sb->s_bdev;
++		mutex_lock(&inode->i_mutex);
++		if (IS_SWAPFILE(inode)) {
++			error = -EBUSY;
++			goto bad_swap;
++		}
++	} else {
++		error = -EINVAL;
++		goto bad_swap;
++	}
++
++	return 0;
++
++bad_swap:
++	return error;
++}
++
+ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ {
+ 	struct swap_info_struct *p;
+@@ -1942,32 +1979,9 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 		}
+ 	}
+ 
+-	if (S_ISBLK(inode->i_mode)) {
+-		p->bdev = bdgrab(I_BDEV(inode));
+-		error = blkdev_get(p->bdev,
+-				   FMODE_READ | FMODE_WRITE | FMODE_EXCL,
+-				   sys_swapon);
+-		if (error < 0) {
+-			p->bdev = NULL;
+-			error = -EINVAL;
+-			goto bad_swap;
+-		}
+-		p->old_block_size = block_size(p->bdev);
+-		error = set_blocksize(p->bdev, PAGE_SIZE);
+-		if (error < 0)
+-			goto bad_swap;
+-		p->flags |= SWP_BLKDEV;
+-	} else if (S_ISREG(inode->i_mode)) {
+-		p->bdev = inode->i_sb->s_bdev;
+-		mutex_lock(&inode->i_mutex);
+-		if (IS_SWAPFILE(inode)) {
+-			error = -EBUSY;
+-			goto bad_swap;
+-		}
+-	} else {
+-		error = -EINVAL;
++	error = claim_swapfile(p, inode);
++	if (unlikely(error))
+ 		goto bad_swap;
+-	}
+ 
+ 	swapfilepages = i_size_read(inode) >> PAGE_SHIFT;
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.4
+
