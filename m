@@ -1,45 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab1CERHu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 12:07:50 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52755 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197Ab1CERHt (ORCPT
+	id S1753707Ab1CERIJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 12:08:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59720 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753463Ab1CERII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 12:07:49 -0500
+	Sat, 5 Mar 2011 12:08:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=sUsJIpekBII15nbZ4ReTzCQLPVTCaGYOlwuSigVS3LFTeYoNfVzDjJfjFxYq4yWJ79
-         EezbZ+7OS35d/aJF3Ida13AxT+6MElIIbwYT8qUBW/w5kQOhf5gwJfUjdzfc5QVExhlN
-         to2pGGsVd2FeDJPOwYLdXqlX7OzWyMpd4C41c=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=guzwlfPJttsB1xvbar7W5SACAc2Lgqj/X2S0dKKuDReHTvFr+HOSzFPsgSyMWQplQm
+         O4aogIznNU5W373Rb3Ig29aV54pCobfjHW1Rt2ChRVx9vy7UNyk1bB7X6e98Aeiz4XCS
+         UKUSDvziKJZzVnjfia1HI5XGM3CBkzCUZyRfw=
+Date: Sun, 6 Mar 2011 02:07:59 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Vagin <avagin@gmail.com>
+Cc: Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: check zone->all_unreclaimable in
+ all_unreclaimable()
+Message-ID: <20110305170759.GC1918@barrios-desktop>
+References: <1299325456-2687-1-git-send-email-avagin@openvz.org>
+ <20110305152056.GA1918@barrios-desktop>
+ <4D72580D.4000208@gmail.com>
+ <20110305155316.GB1918@barrios-desktop>
+ <4D7267B6.6020406@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1299343345-3984-5-git-send-email-cesarb@cesarb.net>
-References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
-	<1299343345-3984-5-git-send-email-cesarb@cesarb.net>
-Date: Sat, 5 Mar 2011 19:07:48 +0200
-X-Google-Sender-Auth: TGcBFQjTaYFy_QPxHQUFSzb8Wzg
-Message-ID: <AANLkTi=aoWZYvESDf-pOzd8Yj+5vJtdFy62LfRZ87-TL@mail.gmail.com>
-Subject: Re: [PATCHv2 04/24] sys_swapon: separate swap_info allocation
-From: Pekka Enberg <penberg@kernel.org>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7267B6.6020406@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 5, 2011 at 6:42 PM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
-> Move the swap_info allocation to its own function. Only code movement,
-> no functional changes.
->
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> Tested-by: Eric B Munson <emunson@mgebm.net>
-> Acked-by: Eric B Munson <emunson@mgebm.net>
+On Sat, Mar 05, 2011 at 07:41:26PM +0300, Andrew Vagin wrote:
+> On 03/05/2011 06:53 PM, Minchan Kim wrote:
+> >On Sat, Mar 05, 2011 at 06:34:37PM +0300, Andrew Vagin wrote:
+> >>On 03/05/2011 06:20 PM, Minchan Kim wrote:
+> >>>On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
+> >>>>Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
+> >>>>kernel may hang up, because shrink_zones() will do nothing, but
+> >>>>all_unreclaimable() will say, that zone has reclaimable pages.
+> >>>>
+> >>>>do_try_to_free_pages()
+> >>>>	shrink_zones()
+> >>>>		 for_each_zone
+> >>>>			if (zone->all_unreclaimable)
+> >>>>				continue
+> >>>>	if !all_unreclaimable(zonelist, sc)
+> >>>>		return 1
+> >>>>
+> >>>>__alloc_pages_slowpath()
+> >>>>retry:
+> >>>>	did_some_progress = do_try_to_free_pages(page)
+> >>>>	...
+> >>>>	if (!page&&   did_some_progress)
+> >>>>		retry;
+> >>>>
+> >>>>Signed-off-by: Andrey Vagin<avagin@openvz.org>
+> >>>>---
+> >>>>  mm/vmscan.c |    2 ++
+> >>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+> >>>>
+> >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >>>>index 6771ea7..1c056f7 100644
+> >>>>--- a/mm/vmscan.c
+> >>>>+++ b/mm/vmscan.c
+> >>>>@@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
+> >>>>
+> >>>>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> >>>>  			gfp_zone(sc->gfp_mask), sc->nodemask) {
+> >>>>+		if (zone->all_unreclaimable)
+> >>>>+			continue;
+> >>>>  		if (!populated_zone(zone))
+> >>>>  			continue;
+> >>>>  		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+> >>>zone_reclaimable checks it. Isn't it enough?
+> >>I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
+> >>This two patches are enough.
+> >Sorry if I confused you.
+> >I mean zone->all_unreclaimable become true if !zone_reclaimable in balance_pgdat.
+> >zone_reclaimable compares recent pages_scanned with the number of zone lru pages.
+> >So too many page scanning in small lru pages makes the zone to unreclaimable zone.
+> >
+> >In all_unreclaimable, we calls zone_reclaimable to detect it.
+> >It's the same thing with your patch.
+> balance_pgdat set zone->all_unreclaimable, but the problem is that
+> it is cleaned late.
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Yes. It can be delayed by pcp so (zone->all_unreclaimable = true) is
+a false alram since zone have a free page and it can be returned 
+to free list by drain_all_pages in next turn.
+
+> 
+> The problem is that zone->all_unreclaimable = True, but
+> zone_reclaimable() returns True too.
+
+Why is it a problem? 
+If zone->all_unreclaimable gives a false alram, we does need to check
+it again by zone_reclaimable call.
+
+If we believe a false alarm and give up the reclaim, maybe we have to make
+unnecessary oom kill.
+
+> 
+> zone->all_unreclaimable will be cleaned in free_*_pages, but this
+> may be late. It is enough allocate one page from page cache, that
+> zone_reclaimable() returns True and zone->all_unreclaimable becomes
+> True.
+> >>>Does the hang up really happen or see it by code review?
+> >>Yes. You can reproduce it for help the attached python program. It's
+> >>not very clever:)
+> >>It make the following actions in loop:
+> >>1. fork
+> >>2. mmap
+> >>3. touch memory
+> >>4. read memory
+> >>5. munmmap
+> >It seems the test program makes fork bombs and memory hogging.
+> >If you applied this patch, the problem is gone?
+> Yes.
+
+Hmm.. Although it solves the problem, I think it's not a good idea that
+depends on false alram and give up the retry.
+
+
+> >>>>-- 
+> >>>>1.7.1
+> >>>>
+> >>>>--
+> >>>>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >>>>the body to majordomo@kvack.org.  For more info on Linux MM,
+> >>>>see: http://www.linux-mm.org/ .
+> >>>>Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> >>>>Don't email:<a href=mailto:"dont@kvack.org">   email@kvack.org</a>
+> >>import sys, time, mmap, os
+> >>from subprocess import Popen, PIPE
+> >>import random
+> >>
+> >>global mem_size
+> >>
+> >>def info(msg):
+> >>	pid = os.getpid()
+> >>	print>>  sys.stderr, "%s: %s" % (pid, msg)
+> >>	sys.stderr.flush()
+> >>
+> >>
+> >>
+> >>def memory_loop(cmd = "a"):
+> >>	"""
+> >>	cmd may be:
+> >>		c: check memory
+> >>		else: touch memory
+> >>	"""
+> >>	c = 0
+> >>	for j in xrange(0, mem_size):
+> >>		if cmd == "c":
+> >>			if f[j<<12] != chr(j % 255):
+> >>				info("Data corruption")
+> >>				sys.exit(1)
+> >>		else:
+> >>			f[j<<12] = chr(j % 255)
+> >>
+> >>while True:
+> >>	pid = os.fork()
+> >>	if (pid != 0):
+> >>		mem_size = random.randint(0, 56 * 4096)
+> >>		f = mmap.mmap(-1, mem_size<<  12, mmap.MAP_ANONYMOUS|mmap.MAP_PRIVATE)
+> >>		memory_loop()
+> >>		memory_loop("c")
+> >>		f.close()
+> >
+> 
+
+-- 
+Kind regards,
+Minchan Kim
