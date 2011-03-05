@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760555Ab1CEBAu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:00:50 -0500
-Received: from kroah.org ([198.145.64.141]:50397 "EHLO coco.kroah.org"
+	id S1760587Ab1CEBBr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:01:47 -0500
+Received: from kroah.org ([198.145.64.141]:50502 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760507Ab1CEBAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:41 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:39 2011
-Message-Id: <20110305005639.587543798@clark.kroah.org>
+	id S932437Ab1CEBBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:01:07 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:41 2011
+Message-Id: <20110305005641.603625616@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:56 -0800
+Date: Fri, 04 Mar 2011 16:56:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [51/73] ASoC: correct pxa AC97 DAI names
+        David Howells <dhowells@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        Wang Lei <wang840925@gmail.com>, James Morris <jmorris@namei.org>
+Subject: [72/73] DNS: Fix a NULL pointer deref when trying to read an error key [CVE-2011-1076]
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,188 +26,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 4bfc4e2508234f9149fd33fae853e99fb9e4a75b upstream.
+commit 1362fa078dae16776cd439791c6605b224ea6171 upstream.
 
-Correct names for pxa AC97 DAI are pxa2xx-ac97 and pxa2xx-ac97-aux. Fix
-that for all PXA platforms.
+When a DNS resolver key is instantiated with an error indication, attempts to
+read that key will result in an oops because user_read() is expecting there to
+be a payload - and there isn't one [CVE-2011-1076].
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Give the DNS resolver key its own read handler that returns the error cached in
+key->type_data.x[0] as an error rather than crashing.
+
+Also make the kenter() at the beginning of dns_resolver_instantiate() limit the
+amount of data it prints, since the data is not necessarily NUL-terminated.
+
+The buggy code was added in:
+
+	commit 4a2d789267e00b5a1175ecd2ddefcc78b83fbf09
+	Author: Wang Lei <wang840925@gmail.com>
+	Date:   Wed Aug 11 09:37:58 2010 +0100
+	Subject: DNS: If the DNS server returns an error, allow that to be cached [ver #2]
+
+This can trivially be reproduced by any user with the following program
+compiled with -lkeyutils:
+
+	#include <stdlib.h>
+	#include <keyutils.h>
+	#include <err.h>
+	static char payload[] = "#dnserror=6";
+	int main()
+	{
+		key_serial_t key;
+		key = add_key("dns_resolver", "a", payload, sizeof(payload),
+			      KEY_SPEC_SESSION_KEYRING);
+		if (key == -1)
+			err(1, "add_key");
+		if (keyctl_read(key, NULL, 0) == -1)
+			err(1, "read_key");
+		return 0;
+	}
+
+What should happen is that keyctl_read() reports error 6 (ENXIO) to the user:
+
+	dns-break: read_key: No such device or address
+
+but instead the kernel oopses.
+
+This cannot be reproduced with the 'keyutils add' or 'keyutils padd' commands
+as both of those cut the data down below the NUL termination that must be
+included in the data.  Without this dns_resolver_instantiate() will return
+-EINVAL and the key will not be instantiated such that it can be read.
+
+The oops looks like:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+IP: [<ffffffff811b99f7>] user_read+0x4f/0x8f
+PGD 3bdf8067 PUD 385b9067 PMD 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:19.0/irq
+CPU 0
+Modules linked in:
+
+Pid: 2150, comm: dns-break Not tainted 2.6.38-rc7-cachefs+ #468                  /DG965RY
+RIP: 0010:[<ffffffff811b99f7>]  [<ffffffff811b99f7>] user_read+0x4f/0x8f
+RSP: 0018:ffff88003bf47f08  EFLAGS: 00010246
+RAX: 0000000000000001 RBX: ffff88003b5ea378 RCX: ffffffff81972368
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88003b5ea378
+RBP: ffff88003bf47f28 R08: ffff88003be56620 R09: 0000000000000000
+R10: 0000000000000395 R11: 0000000000000002 R12: 0000000000000000
+R13: 0000000000000000 R14: 0000000000000000 R15: ffffffffffffffa1
+FS:  00007feab5751700(0000) GS:ffff88003e000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000010 CR3: 000000003de40000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process dns-break (pid: 2150, threadinfo ffff88003bf46000, task ffff88003be56090)
+Stack:
+ ffff88003b5ea378 ffff88003b5ea3a0 0000000000000000 0000000000000000
+ ffff88003bf47f68 ffffffff811b708e ffff88003c442bc8 0000000000000000
+ 00000000004005a0 00007fffba368060 0000000000000000 0000000000000000
+Call Trace:
+ [<ffffffff811b708e>] keyctl_read_key+0xac/0xcf
+ [<ffffffff811b7c07>] sys_keyctl+0x75/0xb6
+ [<ffffffff81001f7b>] system_call_fastpath+0x16/0x1b
+Code: 75 1f 48 83 7b 28 00 75 18 c6 05 58 2b fb 00 01 be bb 00 00 00 48 c7 c7 76 1c 75 81 e8 13 c2 e9 ff 4c 8b b3 e0 00 00 00 4d 85 ed <41> 0f b7 5e 10 74 2d 4d 85 e4 74 28 e8 98 79 ee ff 49 39 dd 48
+RIP  [<ffffffff811b99f7>] user_read+0x4f/0x8f
+ RSP <ffff88003bf47f08>
+CR2: 0000000000000010
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+cc: Wang Lei <wang840925@gmail.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/pxa/e740_wm9705.c    |    4 ++--
- sound/soc/pxa/e750_wm9705.c    |    4 ++--
- sound/soc/pxa/e800_wm9712.c    |    4 ++--
- sound/soc/pxa/em-x270.c        |    4 ++--
- sound/soc/pxa/mioa701_wm9713.c |    4 ++--
- sound/soc/pxa/palm27x.c        |    4 ++--
- sound/soc/pxa/tosa.c           |    4 ++--
- sound/soc/pxa/zylonite.c       |    4 ++--
- 8 files changed, 16 insertions(+), 16 deletions(-)
+ Documentation/networking/dns_resolver.txt |    9 ++++++++-
+ net/dns_resolver/dns_key.c                |   20 +++++++++++++++++---
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
---- a/sound/soc/pxa/e740_wm9705.c
-+++ b/sound/soc/pxa/e740_wm9705.c
-@@ -117,7 +117,7 @@ static struct snd_soc_dai_link e740_dai[
- 	{
- 		.name = "AC97",
- 		.stream_name = "AC97 HiFi",
--		.cpu_dai_name = "pxa-ac97.0",
-+		.cpu_dai_name = "pxa2xx-ac97",
- 		.codec_dai_name = "wm9705-hifi",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9705-codec",
-@@ -126,7 +126,7 @@ static struct snd_soc_dai_link e740_dai[
- 	{
- 		.name = "AC97 Aux",
- 		.stream_name = "AC97 Aux",
--		.cpu_dai_name = "pxa-ac97.1",
-+		.cpu_dai_name = "pxa2xx-ac97-aux",
- 		.codec_dai_name = "wm9705-aux",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9705-codec",
---- a/sound/soc/pxa/e750_wm9705.c
-+++ b/sound/soc/pxa/e750_wm9705.c
-@@ -99,7 +99,7 @@ static struct snd_soc_dai_link e750_dai[
- 	{
- 		.name = "AC97",
- 		.stream_name = "AC97 HiFi",
--		.cpu_dai_name = "pxa-ac97.0",
-+		.cpu_dai_name = "pxa2xx-ac97",
- 		.codec_dai_name = "wm9705-hifi",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9705-codec",
-@@ -109,7 +109,7 @@ static struct snd_soc_dai_link e750_dai[
- 	{
- 		.name = "AC97 Aux",
- 		.stream_name = "AC97 Aux",
--		.cpu_dai_name = "pxa-ac97.1",
-+		.cpu_dai_name = "pxa2xx-ac97-aux",
- 		.codec_dai_name ="wm9705-aux",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9705-codec",
---- a/sound/soc/pxa/e800_wm9712.c
-+++ b/sound/soc/pxa/e800_wm9712.c
-@@ -89,7 +89,7 @@ static struct snd_soc_dai_link e800_dai[
- 	{
- 		.name = "AC97",
- 		.stream_name = "AC97 HiFi",
--		.cpu_dai_name = "pxa-ac97.0",
-+		.cpu_dai_name = "pxa2xx-ac97",
- 		.codec_dai_name = "wm9712-hifi",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9712-codec",
-@@ -98,7 +98,7 @@ static struct snd_soc_dai_link e800_dai[
- 	{
- 		.name = "AC97 Aux",
- 		.stream_name = "AC97 Aux",
--		.cpu_dai_name = "pxa-ac97.1",
-+		.cpu_dai_name = "pxa2xx-ac97-aux",
- 		.codec_dai_name ="wm9712-aux",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9712-codec",
---- a/sound/soc/pxa/em-x270.c
-+++ b/sound/soc/pxa/em-x270.c
-@@ -38,7 +38,7 @@ static struct snd_soc_dai_link em_x270_d
- 	{
- 		.name = "AC97",
- 		.stream_name = "AC97 HiFi",
--		.cpu_dai_name = "pxa-ac97.0",
-+		.cpu_dai_name = "pxa2xx-ac97",
- 		.codec_dai_name = "wm9712-hifi",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9712-codec",
-@@ -46,7 +46,7 @@ static struct snd_soc_dai_link em_x270_d
- 	{
- 		.name = "AC97 Aux",
- 		.stream_name = "AC97 Aux",
--		.cpu_dai_name = "pxa-ac97.1",
-+		.cpu_dai_name = "pxa2xx-ac97-aux",
- 		.codec_dai_name ="wm9712-aux",
- 		.platform_name = "pxa-pcm-audio",
- 		.codec_name = "wm9712-codec",
---- a/sound/soc/pxa/mioa701_wm9713.c
-+++ b/sound/soc/pxa/mioa701_wm9713.c
-@@ -162,7 +162,7 @@ static struct snd_soc_dai_link mioa701_d
- 	{
- 		.name = "AC97",
- 		.stream_name = "AC97 HiFi",
--		.cpu_dai_name = "pxa-ac97.0",
-+		.cpu_dai_name = "pxa2xx-ac97",
- 		.codec_dai_name = "wm9713-hifi",
- 		.codec_name = "wm9713-codec",
- 		.init = mioa701_wm9713_init,
-@@ -172,7 +172,7 @@ static struct snd_soc_dai_link mioa701_d
- 	{
- 		.name = "AC97 Aux",
- 		.stream_name = "AC97 Aux",
--		.cpu_dai_name = "pxa-ac97.1",
-+		.cpu_dai_name = "pxa2xx-ac97-aux",
- 		.codec_dai_name ="wm9713-aux",
- 		.codec_name = "wm9713-codec",
- 		.platform_name = "pxa-pcm-audio",
---- a/sound/soc/pxa/palm27x.c
-+++ b/sound/soc/pxa/palm27x.c
-@@ -132,7 +132,7 @@ static struct snd_soc_dai_link palm27x_d
- {
- 	.name = "AC97 HiFi",
- 	.stream_name = "AC97 HiFi",
--	.cpu_dai_name = "pxa-ac97.0",
-+	.cpu_dai_name = "pxa2xx-ac97",
- 	.codec_dai_name =  "wm9712-hifi",
- 	.codec_name = "wm9712-codec",
- 	.platform_name = "pxa-pcm-audio",
-@@ -141,7 +141,7 @@ static struct snd_soc_dai_link palm27x_d
- {
- 	.name = "AC97 Aux",
- 	.stream_name = "AC97 Aux",
--	.cpu_dai_name = "pxa-ac97.1",
-+	.cpu_dai_name = "pxa2xx-ac97-aux",
- 	.codec_dai_name = "wm9712-aux",
- 	.codec_name = "wm9712-codec",
- 	.platform_name = "pxa-pcm-audio",
---- a/sound/soc/pxa/tosa.c
-+++ b/sound/soc/pxa/tosa.c
-@@ -217,7 +217,7 @@ static struct snd_soc_dai_link tosa_dai[
- {
- 	.name = "AC97",
- 	.stream_name = "AC97 HiFi",
--	.cpu_dai_name = "pxa-ac97.0",
-+	.cpu_dai_name = "pxa2xx-ac97",
- 	.codec_dai_name = "wm9712-hifi",
- 	.platform_name = "pxa-pcm-audio",
- 	.codec_name = "wm9712-codec",
-@@ -227,7 +227,7 @@ static struct snd_soc_dai_link tosa_dai[
- {
- 	.name = "AC97 Aux",
- 	.stream_name = "AC97 Aux",
--	.cpu_dai_name = "pxa-ac97.1",
-+	.cpu_dai_name = "pxa2xx-ac97-aux",
- 	.codec_dai_name = "wm9712-aux",
- 	.platform_name = "pxa-pcm-audio",
- 	.codec_name = "wm9712-codec",
---- a/sound/soc/pxa/zylonite.c
-+++ b/sound/soc/pxa/zylonite.c
-@@ -166,7 +166,7 @@ static struct snd_soc_dai_link zylonite_
- 	.stream_name = "AC97 HiFi",
- 	.codec_name = "wm9713-codec",
- 	.platform_name = "pxa-pcm-audio",
--	.cpu_dai_name = "pxa-ac97.0",
-+	.cpu_dai_name = "pxa2xx-ac97",
- 	.codec_name = "wm9713-hifi",
- 	.init = zylonite_wm9713_init,
- },
-@@ -175,7 +175,7 @@ static struct snd_soc_dai_link zylonite_
- 	.stream_name = "AC97 Aux",
- 	.codec_name = "wm9713-codec",
- 	.platform_name = "pxa-pcm-audio",
--	.cpu_dai_name = "pxa-ac97.1",
-+	.cpu_dai_name = "pxa2xx-ac97-aux",
- 	.codec_name = "wm9713-aux",
- },
- {
+--- a/Documentation/networking/dns_resolver.txt
++++ b/Documentation/networking/dns_resolver.txt
+@@ -61,7 +61,6 @@ before the more general line given above
+ 	create	dns_resolver  	foo:*	*	/usr/sbin/dns.foo %k
+ 
+ 
+-
+ =====
+ USAGE
+ =====
+@@ -104,6 +103,14 @@ implemented in the module can be called
+      returned also.
+ 
+ 
++===============================
++READING DNS KEYS FROM USERSPACE
++===============================
++
++Keys of dns_resolver type can be read from userspace using keyctl_read() or
++"keyctl read/print/pipe".
++
++
+ =========
+ MECHANISM
+ =========
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -67,8 +67,9 @@ dns_resolver_instantiate(struct key *key
+ 	size_t result_len = 0;
+ 	const char *data = _data, *end, *opt;
+ 
+-	kenter("%%%d,%s,'%s',%zu",
+-	       key->serial, key->description, data, datalen);
++	kenter("%%%d,%s,'%*.*s',%zu",
++	       key->serial, key->description,
++	       (int)datalen, (int)datalen, data, datalen);
+ 
+ 	if (datalen <= 1 || !data || data[datalen - 1] != '\0')
+ 		return -EINVAL;
+@@ -217,6 +218,19 @@ static void dns_resolver_describe(const
+ 		seq_printf(m, ": %u", key->datalen);
+ }
+ 
++/*
++ * read the DNS data
++ * - the key's semaphore is read-locked
++ */
++static long dns_resolver_read(const struct key *key,
++			      char __user *buffer, size_t buflen)
++{
++	if (key->type_data.x[0])
++		return key->type_data.x[0];
++
++	return user_read(key, buffer, buflen);
++}
++
+ struct key_type key_type_dns_resolver = {
+ 	.name		= "dns_resolver",
+ 	.instantiate	= dns_resolver_instantiate,
+@@ -224,7 +238,7 @@ struct key_type key_type_dns_resolver =
+ 	.revoke		= user_revoke,
+ 	.destroy	= user_destroy,
+ 	.describe	= dns_resolver_describe,
+-	.read		= user_read,
++	.read		= dns_resolver_read,
+ };
+ 
+ static int __init init_dns_resolver(void)
 
 
