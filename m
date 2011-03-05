@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760587Ab1CEBBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:01:47 -0500
-Received: from kroah.org ([198.145.64.141]:50502 "EHLO coco.kroah.org"
+	id S1760589Ab1CEBCD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:02:03 -0500
+Received: from kroah.org ([198.145.64.141]:50515 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab1CEBBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:01:07 -0500
+	id S932528Ab1CEBBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:01:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:41 2011
-Message-Id: <20110305005641.603625616@clark.kroah.org>
+Message-Id: <20110305005641.315011111@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:56:17 -0800
+Date: Fri, 04 Mar 2011 16:56:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Howells <dhowells@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Wang Lei <wang840925@gmail.com>, James Morris <jmorris@namei.org>
-Subject: [72/73] DNS: Fix a NULL pointer deref when trying to read an error key [CVE-2011-1076]
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [69/73] r8169: disable ASPM
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,172 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 1362fa078dae16776cd439791c6605b224ea6171 upstream.
+commit ba04c7c93bbcb48ce880cf75b6e9dffcd79d4c7b upstream.
 
-When a DNS resolver key is instantiated with an error indication, attempts to
-read that key will result in an oops because user_read() is expecting there to
-be a payload - and there isn't one [CVE-2011-1076].
+For some time is known that ASPM is causing troubles on r8169, i.e. make
+device randomly stop working without any errors in dmesg.
 
-Give the DNS resolver key its own read handler that returns the error cached in
-key->type_data.x[0] as an error rather than crashing.
+Currently Tomi Leppikangas reports that system with r8169 device hangs
+with MCE errors when ASPM is enabled:
+https://bugzilla.redhat.com/show_bug.cgi?id=642861#c4
 
-Also make the kenter() at the beginning of dns_resolver_instantiate() limit the
-amount of data it prints, since the data is not necessarily NUL-terminated.
+Lets disable ASPM for r8169 devices at all, to avoid problems with
+r8169 PCIe devices at least for some users.
 
-The buggy code was added in:
-
-	commit 4a2d789267e00b5a1175ecd2ddefcc78b83fbf09
-	Author: Wang Lei <wang840925@gmail.com>
-	Date:   Wed Aug 11 09:37:58 2010 +0100
-	Subject: DNS: If the DNS server returns an error, allow that to be cached [ver #2]
-
-This can trivially be reproduced by any user with the following program
-compiled with -lkeyutils:
-
-	#include <stdlib.h>
-	#include <keyutils.h>
-	#include <err.h>
-	static char payload[] = "#dnserror=6";
-	int main()
-	{
-		key_serial_t key;
-		key = add_key("dns_resolver", "a", payload, sizeof(payload),
-			      KEY_SPEC_SESSION_KEYRING);
-		if (key == -1)
-			err(1, "add_key");
-		if (keyctl_read(key, NULL, 0) == -1)
-			err(1, "read_key");
-		return 0;
-	}
-
-What should happen is that keyctl_read() reports error 6 (ENXIO) to the user:
-
-	dns-break: read_key: No such device or address
-
-but instead the kernel oopses.
-
-This cannot be reproduced with the 'keyutils add' or 'keyutils padd' commands
-as both of those cut the data down below the NUL termination that must be
-included in the data.  Without this dns_resolver_instantiate() will return
--EINVAL and the key will not be instantiated such that it can be read.
-
-The oops looks like:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-IP: [<ffffffff811b99f7>] user_read+0x4f/0x8f
-PGD 3bdf8067 PUD 385b9067 PMD 0
-Oops: 0000 [#1] SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:19.0/irq
-CPU 0
-Modules linked in:
-
-Pid: 2150, comm: dns-break Not tainted 2.6.38-rc7-cachefs+ #468                  /DG965RY
-RIP: 0010:[<ffffffff811b99f7>]  [<ffffffff811b99f7>] user_read+0x4f/0x8f
-RSP: 0018:ffff88003bf47f08  EFLAGS: 00010246
-RAX: 0000000000000001 RBX: ffff88003b5ea378 RCX: ffffffff81972368
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88003b5ea378
-RBP: ffff88003bf47f28 R08: ffff88003be56620 R09: 0000000000000000
-R10: 0000000000000395 R11: 0000000000000002 R12: 0000000000000000
-R13: 0000000000000000 R14: 0000000000000000 R15: ffffffffffffffa1
-FS:  00007feab5751700(0000) GS:ffff88003e000000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000010 CR3: 000000003de40000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process dns-break (pid: 2150, threadinfo ffff88003bf46000, task ffff88003be56090)
-Stack:
- ffff88003b5ea378 ffff88003b5ea3a0 0000000000000000 0000000000000000
- ffff88003bf47f68 ffffffff811b708e ffff88003c442bc8 0000000000000000
- 00000000004005a0 00007fffba368060 0000000000000000 0000000000000000
-Call Trace:
- [<ffffffff811b708e>] keyctl_read_key+0xac/0xcf
- [<ffffffff811b7c07>] sys_keyctl+0x75/0xb6
- [<ffffffff81001f7b>] system_call_fastpath+0x16/0x1b
-Code: 75 1f 48 83 7b 28 00 75 18 c6 05 58 2b fb 00 01 be bb 00 00 00 48 c7 c7 76 1c 75 81 e8 13 c2 e9 ff 4c 8b b3 e0 00 00 00 4d 85 ed <41> 0f b7 5e 10 74 2d 4d 85 e4 74 28 e8 98 79 ee ff 49 39 dd 48
-RIP  [<ffffffff811b99f7>] user_read+0x4f/0x8f
- RSP <ffff88003bf47f08>
-CR2: 0000000000000010
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-cc: Wang Lei <wang840925@gmail.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Reported-by: Tomi Leppikangas <tomi.leppikangas@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/networking/dns_resolver.txt |    9 ++++++++-
- net/dns_resolver/dns_key.c                |   20 +++++++++++++++++---
- 2 files changed, 25 insertions(+), 4 deletions(-)
+ drivers/net/r8169.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/Documentation/networking/dns_resolver.txt
-+++ b/Documentation/networking/dns_resolver.txt
-@@ -61,7 +61,6 @@ before the more general line given above
- 	create	dns_resolver  	foo:*	*	/usr/sbin/dns.foo %k
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -24,6 +24,7 @@
+ #include <linux/init.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pci-aspm.h>
  
+ #include <asm/system.h>
+ #include <asm/io.h>
+@@ -3047,6 +3048,11 @@ rtl8169_init_one(struct pci_dev *pdev, c
+ 	mii->reg_num_mask = 0x1f;
+ 	mii->supports_gmii = !!(cfg->features & RTL_FEATURE_GMII);
  
--
- =====
- USAGE
- =====
-@@ -104,6 +103,14 @@ implemented in the module can be called
-      returned also.
- 
- 
-+===============================
-+READING DNS KEYS FROM USERSPACE
-+===============================
++	/* disable ASPM completely as that cause random device stop working
++	 * problems as well as full system hangs for some PCIe devices users */
++	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
++				     PCIE_LINK_STATE_CLKPM);
 +
-+Keys of dns_resolver type can be read from userspace using keyctl_read() or
-+"keyctl read/print/pipe".
-+
-+
- =========
- MECHANISM
- =========
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -67,8 +67,9 @@ dns_resolver_instantiate(struct key *key
- 	size_t result_len = 0;
- 	const char *data = _data, *end, *opt;
- 
--	kenter("%%%d,%s,'%s',%zu",
--	       key->serial, key->description, data, datalen);
-+	kenter("%%%d,%s,'%*.*s',%zu",
-+	       key->serial, key->description,
-+	       (int)datalen, (int)datalen, data, datalen);
- 
- 	if (datalen <= 1 || !data || data[datalen - 1] != '\0')
- 		return -EINVAL;
-@@ -217,6 +218,19 @@ static void dns_resolver_describe(const
- 		seq_printf(m, ": %u", key->datalen);
- }
- 
-+/*
-+ * read the DNS data
-+ * - the key's semaphore is read-locked
-+ */
-+static long dns_resolver_read(const struct key *key,
-+			      char __user *buffer, size_t buflen)
-+{
-+	if (key->type_data.x[0])
-+		return key->type_data.x[0];
-+
-+	return user_read(key, buffer, buflen);
-+}
-+
- struct key_type key_type_dns_resolver = {
- 	.name		= "dns_resolver",
- 	.instantiate	= dns_resolver_instantiate,
-@@ -224,7 +238,7 @@ struct key_type key_type_dns_resolver =
- 	.revoke		= user_revoke,
- 	.destroy	= user_destroy,
- 	.describe	= dns_resolver_describe,
--	.read		= user_read,
-+	.read		= dns_resolver_read,
- };
- 
- static int __init init_dns_resolver(void)
+ 	/* enable device (incl. PCI PM wakeup and hotplug setup) */
+ 	rc = pci_enable_device(pdev);
+ 	if (rc < 0) {
 
 
