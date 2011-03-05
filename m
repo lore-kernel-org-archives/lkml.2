@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab1CEJnF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 04:43:05 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:55031 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab1CEJnC (ORCPT
+	id S1752501Ab1CEJp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 04:45:26 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58362 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab1CEJpY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 04:43:02 -0500
+	Sat, 5 Mar 2011 04:45:24 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=MWZzD24OFjdqn0o3t/HPjgNH3NYsYC0Z3cVXG0J3tSO//9vzqONdV8F72N+RsVBWyu
-         UpORqz7olm5rAU/Ozy9uXasNXKF0rAHxgq2m3aYAa77/9eRBk6zQr6dbKDs/m6NAq2t7
-         iEkHpU3lTV0Npq/U50qJdHHGAR1zc3Mq8so5I=
-Message-ID: <4D720469.1010101@gmail.com>
-Date: Sat, 05 Mar 2011 10:37:45 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kYZaZX/yvP46IqEP/aHBKEQXbb2TtWUbzDbw2Hiy9lz/AcyeGR7apVKCqO7zHCTmYA
+         l2pW289fO78GBEZZtzKMX3/cOKQUkRgME8tPY76JoWnlIyVl2QdfPSZ9opIBi97r+pn5
+         /rR0zK9Ib3Obl2xs+1Ef1EyXkWxXJNzPF1fWU=
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH v3] Check for immutable/append flag in fallocate path
-References: <4D6221B8.9040303@gmail.com> <4D6F5473.2070709@gmail.com>
-In-Reply-To: <4D6F5473.2070709@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTi=+jfk5+tWewwnx+SHj+FQAXd03sPC3mDW32GUK@mail.gmail.com>
+References: <AANLkTin0PGOfHr3AvQk-BAhyMY7ihYMU1-wX4RJG=1YT@mail.gmail.com>
+	<20110304134648.GB9866@tuxdriver.com>
+	<1299251879.24333.3.camel@wwguy-ubuntu>
+	<AANLkTinfCc0e4BtBxoq7MHtgv54HJk-yU=gQj9Xm_=R9@mail.gmail.com>
+	<AANLkTi=+jfk5+tWewwnx+SHj+FQAXd03sPC3mDW32GUK@mail.gmail.com>
+Date: Sat, 5 Mar 2011 09:45:22 +0000
+Message-ID: <AANLkTikUE-LLSBNH=cNmPZ+Wenff5RxKcfK0kJXp9Wk+@mail.gmail.com>
+Subject: Re: 2.6.38-rc7, iwlagn crash
+From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
+To: wwguy <wey-yi.w.guy@intel.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+On 5 March 2011 03:45, Mathias Burén <mathias.buren@gmail.com> wrote:
+> On 4 March 2011 22:23, Mathias Burén <mathias.buren@gmail.com> wrote:
+>> On 4 March 2011 15:17, wwguy <wey-yi.w.guy@intel.com> wrote:
+>>> On Fri, 2011-03-04 at 05:46 -0800, John W. Linville wrote:
+>>>> Cc'ing Wey-yi and linux-wireless...anyone else having problems with
+>>>> iwlagn and IBSS?
+>>>>
+>>>> On Fri, Mar 04, 2011 at 03:27:22AM +0000, Mathias Burén wrote:
+>>>> > Hi,
+>>>> >
+>>>> > (please cc as not subscribed)
+>>>> >
+>>>> >
+>>>> >
+>>>> > I think the crash happens when the phone attempts to get an IP, at
+>>>> > least that's what the phone says right after/at the crash. Any ideas?
+>>>> >
+>>>> >
+>>> forwarding to my team to work on it, any additional information you can
+>>> provide?
+>>>
+>>> It is in IBSS mode, do you have any information can shared with us on
+>>> your phone's model, setup, and ...
+>>> if you can load the module with debug=0x43fff and provide the dmesg log,
+>>> it will be very helpful
+>>>
+>>> Thanks
+>>> Wey
+>>>
+>>>
+(snip)
 
-In the fallocate path the kernel doesn't check for the immutable/append
-flag. It's possible to have a race condition in this scenario: an
-application open a file in read/write and it does something, meanwhile
-root set the immutable flag on the file, the application at that point
-can call fallocate with success. In addition, we don't allow to do any
-unreserve operation on an append only file but only the reserve one.
+I compiled my own kernel (downloaded 2.6.37-rc8 source, applied the
+apparmor patch required for Ubuntu, copied over the config, make
+oldconfig, enabled iwlwifi debug in menuconfig then compiled it),
+booted it and loaded iwlagn with debug=0x43fff. Then I attempted the
+same thing (Ubuntu Adhoc, no wireless security, trying to connect with
+the phone).
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
-Patch is against 2.6.38-rc7
+The entire dmesg can be found here:
+http://www.privatepaste.com/download/49e6ead6c7
 
-ChangeLog:
-v3: Modified do_fallocate instead of every single fs
-v2: Added the check for append-only file for XFS
-v1: First draft
-
---- open.c.orig	2011-03-01 22:55:12.000000000 +0100
-+++ open.c	2011-03-04 15:28:43.000000000 +0100
-@@ -233,6 +233,14 @@ int do_fallocate(struct file *file, int
- 
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
-+
-+	/* It's not possible punch hole on append only file */
-+	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
-+		return -EPERM;
-+
-+	if (IS_IMMUTABLE(inode))
-+		return -EPERM;
-+
- 	/*
- 	 * Revalidate the write permissions, in case security policy has
- 	 * changed since the files were opened.
-
+Regards,
+// Mathias
