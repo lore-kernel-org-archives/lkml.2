@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab1CEXbO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 18:31:14 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:18191 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab1CEXbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 18:31:09 -0500
-Date: Sun, 6 Mar 2011 00:30:35 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-nfs@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH] NFSD, VFS: Remove dead code in nfsd_rename()
-Message-ID: <alpine.LNX.2.00.1103060024380.6297@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753120Ab1CEX2X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 18:28:23 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55010 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667Ab1CEX2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 18:28:22 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Subject: Re: does hibernate to disk try hard enough to free memory?
+Date: Sun, 6 Mar 2011 00:28:02 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+References: <201102222159.58546.Martin@lichtvoll.de> <201102232106.51980.rjw@sisk.pl> <201103051541.45511.Martin@lichtvoll.de>
+In-Reply-To: <201103051541.45511.Martin@lichtvoll.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103060028.02477.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we have the following code in fs/nfsd/vfs.c::nfsd_rename() :
+On Saturday, March 05, 2011, Martin Steigerwald wrote:
+> Am Wednesday 23 February 2011 schrieb Rafael J. Wysocki:
+> > On Wednesday, February 23, 2011, Martin Steigerwald wrote:
+> > > Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
+> > > > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> > > > > Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
+> > > > > > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> > > > > > > Hi!
+> > > > > > > 
+> > > > > > > Since Radeon KMS I often have it that my ThinkPad T42 with 2
+> > > > > > > MiB of RAM is not able to allocate memory for the
+> > > > > > > hibernation image. Before KMS hibernation only very rarely
+> > > > > > > failed for that reason.
+> > > > > > > 
+> > > > > > > Often I run without compositing at all as I believe this
+> > > > > > > might spare some pages as well. But this doesn't always
+> > > > > > > help.
+> > > > > > > 
+> > > > > > > It complains that to less pages could be freed. For example
+> > > > > > > with kernel 2.6.37:
+> > > > > > > 
+> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation
+> > > > > > > image: Feb 16 00:15:00 shambhala kernel: PM: Need to copy
+> > > > > > > 186577 pages Feb 16 00:15:00 shambhala kernel: PM: Normal
+> > > > > > > pages needed: 114411 + 1024, available pages: 112767
+> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
+> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating
+> > > > > > > hibernation image Feb 16 00:15:00 shambhala kernel: Extended
+> > > > > > > CMOS year: 2000 Feb 16 00:15:00 shambhala kernel: ACPI:
+> > > > > > > Waking up from system sleep state S4
+> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: early recover of
+> > > > > > > devices complete after 0.376 msecs
+> > > > > > 
+> > > > > > What's the value in /sys/power/image_size?
+> > > > > 
+> > > > > shambhala:~> cat /sys/power/image_size
+> > > > > 844206080
+> > > > > 
+> > > > > Should I try with less?
+> > > > 
+> > > > Yes, please.  Try with 700000000 for example.
+> > > 
+> > > I replaced dropping by settings image_size to this valua and the
+> > > ThinkPad hibernated with KMail open. Thus seems to work, but I will
+> > > test a bit further.
+> > > 
+> > > Where does the higher value previously set come from? Autotuning?
+> > 
+> > Likely.  The number seems to match at least.
+> > 
+> > > Is there anything that can be improved with autotuning?
+> > 
+> > We can lower the ratio of the image size to the total RAM.
+> > Alternatively, we can increase SPARE_PAGES.
+> > 
+> > > If yes, I can file a bug report.
+> > 
+> > Yes, please.
+> 
+> Reported-as:
+> 
+> Bug 30482 - try harder to free enough memory / improve image size 
+> autotuning
 
-	...
-	host_err = nfsd_break_lease(odentry->d_inode);
-	if (host_err)
-		goto out_drop_write;
-	if (ndentry->d_inode) {
-		host_err = nfsd_break_lease(ndentry->d_inode);
-		if (host_err)
-			goto out_drop_write;
-	}
-	if (host_err)
-		goto out_drop_write;
-	...
+I attached a patch for you to test to the bug entry.
 
-'host_err' is guaranteed to be 0 by the time we test 'ndentry->d_inode'. 
-If 'host_err' becomes != 0 inside the 'if' statement, then we goto 
-'out_drop_write'. So, after the 'if' statement there is no way that 
-'host_err' can be anything but 0, so the test afterwards is just dead 
-code.
-This patch removes the dead code.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- vfs.c |    2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index da1d970..9cc626b 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -1749,8 +1749,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
- 		if (host_err)
- 			goto out_drop_write;
- 	}
--	if (host_err)
--		goto out_drop_write;
- 	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
- 	if (!host_err) {
- 		host_err = commit_metadata(tfhp);
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Thanks,
+Rafael
