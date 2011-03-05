@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab1CEMYS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 07:24:18 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54179 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab1CEMYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 07:24:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI / PM: Add kerneldoc descrition of pci_pm_reset()
-Date: Sat, 5 Mar 2011 13:24:27 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1753496Ab1CEMbG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 07:31:06 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:6243 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab1CEMbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 07:31:05 -0500
+Subject: Re: [PATCH] net: mac80211: fix compilation warning
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: bookjovi@gmail.com
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "open list:NETWORKING [WIREL..." <linux-wireless@vger.kernel.org>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <1299108754-5492-1-git-send-email-bookjovi@gmail.com>
+References: <1299108754-5492-1-git-send-email-bookjovi@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Sat, 05 Mar 2011 12:31:00 +0000
+Message-ID: <1299328260.4277.92.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201103051324.27461.rjw@sisk.pl>
+X-OriginalArrivalTime: 05 Mar 2011 12:31:04.0587 (UTC) FILETIME=[31D145B0:01CBDB31]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17992.005
+X-TM-AS-Result: No--14.126600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Wed, 2011-03-02 at 18:32 -0500, bookjovi@gmail.com wrote:
+> From: Jovi Zhang <bookjovi@gmail.com>
+> 
+> this commit fix compilation warning as following:
+> net/mac80211/tx.c:1753: warning: unused variable mppath
+[...]
 
-The pci_pm_reset() function is not a very nice interface due to its
-limitations and conditional behavior (e.g. it doesn't affect devices
-in low-power states), but it cannot be simply dropped, because
-existing device drivers may depend on it.  Still, its behavior and
-limitations should be well documented, so add an appropriate
-kerneldoc comment to it.
+You clearly didn't try building this with CONFIG_MAC80211_MESH enabled.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/pci/pci.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+Ben.
 
-Index: linux-2.6/drivers/pci/pci.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.c
-+++ linux-2.6/drivers/pci/pci.c
-@@ -2473,6 +2473,21 @@ clear:
- 	return 0;
- }
- 
-+/**
-+ * pci_pm_reset - Put device into PCI_D3hot and back to PCI_D0.
-+ * @dev: Device to reset.
-+ * @probe: If set, only check if the device can be reset this way.
-+ *
-+ * If @dev supports native PCI PM and its PCI_PM_CTRL_NO_SOFT_RESET flag is
-+ * unset, it will be reinitialized internally when going from PCI_D3hot to
-+ * PCI_D0.  If that's the case and the device is not in a low-power state
-+ * already, force it into PCI_D3hot and back to PCI_D0, causing it to be reset.
-+ *
-+ * NOTE: This causes the caller to sleep for twice the device power transition
-+ * cooldown period, which for the D0->D3hot and D3hot->D0 transitions is 10 ms
-+ * by devault (ie. unless the @dev's d3_delay field has a different value).
-+ * Moreover, only devices in D0 can be reset by this function.
-+ */
- static int pci_pm_reset(struct pci_dev *dev, int probe)
- {
- 	u16 csr;
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
