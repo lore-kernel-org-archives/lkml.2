@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1CEUxa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:53:30 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47860 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752616Ab1CEUx3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:53:29 -0500
+	id S1753274Ab1CEUss (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 15:48:48 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54876 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752659Ab1CEUso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 15:48:44 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH v2] PCI / PM: Add kerneldoc description of pci_pm_reset()
+Date: Sat, 5 Mar 2011 21:48:44 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
+References: <201103051324.27461.rjw@sisk.pl>
+In-Reply-To: <201103051324.27461.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <20110305203140.GD7546@redhat.com>
-References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com>
- <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com>
- <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com>
- <20110305203040.GA7546@redhat.com> <20110305203140.GD7546@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 5 Mar 2011 12:52:34 -0800
-Message-ID: <AANLkTi=mce6tzg=vwf45XUQoADA=YbP2QJ2_tpg=QgQE@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] exec: unify do_execve/compat_do_execve code
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103052148.44413.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, everything looks fine to me.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Except looking at this, I don't think this part:
+The pci_pm_reset() function is not a very nice interface due to its
+limitations and conditional behavior (e.g. it doesn't affect devices
+in low-power states), but it cannot be simply dropped, because
+existing device drivers may depend on it.  However, its behavior and
+limitations should be well documented, so add an appropriate
+kerneldoc comment to it.
 
-On Sat, Mar 5, 2011 at 12:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->
->  struct user_arg_ptr {
-> -       const char __user *const __user *native;
-> +#ifdef CONFIG_COMPAT
-> +       bool is_compat;
-> +#endif
-> +       union {
-> +               const char __user *const __user *native;
-> +               compat_uptr_t __user *compat;
-> +       } ptr;
->  };
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-will necessarily even compile on an architecture that doesn't have any
-'compat' support.
+Hi,
 
-Do we even define 'compat_uptr_t' for that case? I don't think so.
+I corrected some spelling and similar stuff.
 
-So I suspect you need two of those annoying #ifdef's. Or we need to
-have some way to guarantee that 'compat_uptr_t' exists.
+Thanks,
+Rafael
 
-                           Linus
+---
+ drivers/pci/pci.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+Index: linux-2.6/drivers/pci/pci.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.c
++++ linux-2.6/drivers/pci/pci.c
+@@ -2473,6 +2473,21 @@ clear:
+ 	return 0;
+ }
+ 
++/**
++ * pci_pm_reset - Put device into PCI_D3 and back into PCI_D0.
++ * @dev: Device to reset.
++ * @probe: If set, only check if the device can be reset this way.
++ *
++ * If @dev supports native PCI PM and its PCI_PM_CTRL_NO_SOFT_RESET flag is
++ * unset, it will be reinitialized internally when going from PCI_D3hot to
++ * PCI_D0.  If that's the case and the device is not in a low-power state
++ * already, force it into PCI_D3hot and back to PCI_D0, causing it to be reset.
++ *
++ * NOTE: This causes the caller to sleep for twice the device power transition
++ * cooldown period, which for the D0->D3hot and D3hot->D0 transitions is 10 ms
++ * by devault (i.e. unless the @dev's d3_delay field has a different value).
++ * Moreover, only devices in D0 can be reset by this function.
++ */
+ static int pci_pm_reset(struct pci_dev *dev, int probe)
+ {
+ 	u16 csr;
+
