@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab1CEE7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 23:59:06 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:37714 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab1CEE7D (ORCPT
+	id S1751224Ab1CEFKk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 00:10:40 -0500
+Received: from teddy.stmarytx.edu ([69.150.209.230]:21283 "EHLO
+	teddy.stmarytx.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab1CEFKj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 23:59:03 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 04 Mar 2011 23:59:03 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Michael Spang <mspang@csclub.uwaterloo.ca>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: Add TS-7800 revisions 6-9
-In-reply-to: <1299299957-13018-1-git-send-email-mspang@csclub.uwaterloo.ca>
-Message-id: <alpine.LFD.2.00.1103042357310.27995@xanadu.home>
-References: <1299299957-13018-1-git-send-email-mspang@csclub.uwaterloo.ca>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sat, 5 Mar 2011 00:10:39 -0500
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Mar 2011 00:10:39 EST
+From: "Colton, Milo L." <mcolton@stmarytx.edu>
+Subject: Mailbox Quota Exceeded!!!
+Thread-Topic: Mailbox Quota Exceeded!!!
+Thread-Index: Acva8vT6W19optRgRbaryShl7OTiPA==
+Date: Sat, 5 Mar 2011 05:05:33 +0000
+Message-ID: <569781BEEE7FC1468206E533D33B0D9F073526@EXCH1.stmarytx.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [82.128.59.37]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Mar 2011, Michael Spang wrote:
-
-> The RTC, NAND, and RNG devices are not enabled on current TS-7800s.
-> The manufacturer is at revision 9 (at least), and they do support
-> these devices. We'll assume revisions 6 through 8 do as well.
-> 
-> Signed-off-by: Michael Spang <mspang@csclub.uwaterloo.ca>
-
-Alexander Clouter <alex@digriz.org.uk> did send the exact same patch on 
-February 16 already.
+IT Service,
 
 
-Nicolas
+
+You have exceeded the limit of your mailbox set by your IT service provider, and you will be having problems in sending and receiving mails. To prevent this, please click on the link below to reset your account.
+
+
+
+http://forms3.createforms.com/102243/form_2_1.html
