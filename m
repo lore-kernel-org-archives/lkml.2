@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760550Ab1CEBE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:04:58 -0500
-Received: from kroah.org ([198.145.64.141]:47662 "EHLO coco.kroah.org"
+	id S932753Ab1CEBFN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:05:13 -0500
+Received: from kroah.org ([198.145.64.141]:47720 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab1CEBE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:04:56 -0500
+	id S932677Ab1CEBFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:05:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 17:03:52 2011
-Message-Id: <20110305010351.939263080@clark.kroah.org>
+Message-Id: <20110305010352.883022372@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 17:02:55 -0800
+Date: Fri, 04 Mar 2011 17:03:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tristan Ye <tristan.ye@oracle.com>, Joel Becker <jlbec@evilplan.org>
-Subject: [01/18] Ocfs2/refcounttree: Fix a bug for refcounttree to writeback clusters in a right number.
+        Jiri Kosina <jkosina@suse.cz>, maximilian attems <max@stro.at>
+Subject: [11/18] HID: add support for Acan FG-8100 barcode reader
 In-Reply-To: <20110305010410.GA18668@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tristan Ye <tristan.ye@oracle.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit acf3bb007e5636ef4c17505affb0974175108553 upstream.
+commit e8d0eab4d9eda9f5e97852f780f020bfb134f9f0 upstream.
 
-Current refcounttree codes actually didn't writeback the new pages out in
-write-back mode, due to a bug of always passing a ZERO number of clusters
-to 'ocfs2_cow_sync_writeback', the patch tries to pass a proper one in.
+Acan FG-8100 barcode reader (0x04b4/0xbca1) has vendor ID of
+cypress and requires the same MIN/MAX swap descriptor quirk
+as other barcode readers from cypress.
 
-Signed-off-by: Tristan Ye <tristan.ye@oracle.com>
-Signed-off-by: Joel Becker <jlbec@evilplan.org>
+Reported-by: Stijn Ghesquiere <stijn@applesnail.net>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/refcounttree.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c    |    1 +
+ drivers/hid/hid-cypress.c |    2 ++
+ drivers/hid/hid-ids.h     |    1 +
+ 3 files changed, 4 insertions(+)
 
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -3236,7 +3236,7 @@ static int ocfs2_make_clusters_writable(
- 					u32 num_clusters, unsigned int e_flags)
- {
- 	int ret, delete, index, credits =  0;
--	u32 new_bit, new_len;
-+	u32 new_bit, new_len, orig_num_clusters;
- 	unsigned int set_len;
- 	struct ocfs2_super *osb = OCFS2_SB(sb);
- 	handle_t *handle;
-@@ -3269,6 +3269,8 @@ static int ocfs2_make_clusters_writable(
- 		goto out;
- 	}
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1297,6 +1297,7 @@ static const struct hid_device_id hid_bl
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0006) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
+--- a/drivers/hid/hid-cypress.c
++++ b/drivers/hid/hid-cypress.c
+@@ -126,6 +126,8 @@ static const struct hid_device_id cp_dev
+ 		.driver_data = CP_RDESC_SWAPPED_MIN_MAX },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_2),
+ 		.driver_data = CP_RDESC_SWAPPED_MIN_MAX },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_3),
++		.driver_data = CP_RDESC_SWAPPED_MIN_MAX },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_MOUSE),
+ 		.driver_data = CP_2WHEEL_MOUSE_HACK },
+ 	{ }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -148,6 +148,7 @@
+ #define USB_DEVICE_ID_CYPRESS_ULTRAMOUSE	0x7417
+ #define USB_DEVICE_ID_CYPRESS_BARCODE_1	0xde61
+ #define USB_DEVICE_ID_CYPRESS_BARCODE_2	0xde64
++#define USB_DEVICE_ID_CYPRESS_BARCODE_3	0xbca1
  
-+	orig_num_clusters = num_clusters;
-+
- 	while (num_clusters) {
- 		ret = ocfs2_get_refcount_rec(ref_ci, context->ref_root_bh,
- 					     p_cluster, num_clusters,
-@@ -3356,7 +3358,8 @@ static int ocfs2_make_clusters_writable(
- 	 * in write-back mode.
- 	 */
- 	if (context->get_clusters == ocfs2_di_get_clusters) {
--		ret = ocfs2_cow_sync_writeback(sb, context, cpos, num_clusters);
-+		ret = ocfs2_cow_sync_writeback(sb, context, cpos,
-+					       orig_num_clusters);
- 		if (ret)
- 			mlog_errno(ret);
- 	}
+ #define USB_VENDOR_ID_DEALEXTREAME	0x10c5
+ #define USB_DEVICE_ID_DEALEXTREAME_RADIO_SI4701	0x819a
 
 
