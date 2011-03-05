@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab1CEUlE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:41:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754358Ab1CEUlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:41:02 -0500
-Date: Sat, 5 Mar 2011 21:31:59 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH v4 4/4] exec: document acct_arg_size()
-Message-ID: <20110305203159.GE7546@redhat.com>
-References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com> <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com> <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com> <20110305203040.GA7546@redhat.com>
+	id S1753019Ab1CEUrY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 15:47:24 -0500
+Received: from lebrac.rtp-net.org ([88.191.135.105]:56826 "EHLO
+	lebrac.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab1CEUrQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 15:47:16 -0500
+From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
+To: Nguyen Dinh-R00091 <R00091@freescale.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "s.hauer\@pengutronix.de" <s.hauer@pengutronix.de>,
+        "u.kleine-koenig\@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>
+Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
+Organization: RtpNet
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+Date: Sat, 05 Mar 2011 21:46:52 +0100
+In-Reply-To: <56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+	(Nguyen Dinh-R's message of "Fri, 4 Mar 2011 23:33:11 +0000")
+Message-ID: <87oc5puwg3.fsf@lebrac.rtp-net.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110305203040.GA7546@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the comment to explain acct_arg_size().
+Nguyen Dinh-R00091 <R00091@freescale.com> writes:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
+> Hi Arnaud,
 
- fs/exec.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Hi,
 
---- 38/fs/exec.c~4_doc_acct_arg_size	2011-03-05 21:23:15.000000000 +0100
-+++ 38/fs/exec.c	2011-03-05 21:23:33.000000000 +0100
-@@ -164,7 +164,12 @@ out:
- }
- 
- #ifdef CONFIG_MMU
--
-+/*
-+ * The nascent bprm->mm is not visible until exec_mmap() but it can
-+ * use a lot of memory, account these pages in current->mm temporary
-+ * for oom_badness()->get_mm_rss(). Once exec succeeds or fails, we
-+ * change the counter back via acct_arg_size(0).
-+ */
- static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
- {
- 	struct mm_struct *mm = current->mm;
+>
+> I just sent out a 2nd set of the MX51 LPM patch. I have tested successfully on my mx51 babbage without any code modifications.
+>
+> If you would kindly verify on your side, that would great.
+>
+> You need both patches:
+>
+> [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
+> [PATCHv2 2/2] ARM: mx51: Add support for low power suspend on MX51
 
+No success. I even tried disabling nearly all drivers and nothing. The
+last line I have in the serial console is :
+
+PM: late suspend of devices complete after 0.354 msecs
+
+So, I still don't know if the system is crashing while suspending or if
+the system is suspended but doesn't wake up.
+
+Arnaud
