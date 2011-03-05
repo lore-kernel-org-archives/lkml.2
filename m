@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760739Ab1CEBQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:16:35 -0500
-Received: from kroah.org ([198.145.64.141]:50198 "EHLO coco.kroah.org"
+	id S1760304Ab1CEBAE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:00:04 -0500
+Received: from kroah.org ([198.145.64.141]:50154 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760322Ab1CEBAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:07 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:36 2011
-Message-Id: <20110305005636.651906472@clark.kroah.org>
+	id S1760272Ab1CEA77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 19:59:59 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:35 2011
+Message-Id: <20110305005635.865913355@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:26 -0800
+Date: Fri, 04 Mar 2011 16:55:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lei Xu <B33228@freescale.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        john stultz <johnstul@us.ibm.com>, Jack Lan <jack.lan@freescale.com>
-Subject: [21/73] drivers/rtc/rtc-ds3232.c: fix time range difference between linux and RTC chip
+        rvossen@broadcom.com
+Subject: [13/73] staging: brcm80211: bugfix for softmac crash on multi cpu configurations
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +25,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lei Xu <B33228@freescale.com>
 
-commit a2d6d2fa90c0e1d2cc1d59ccb5bbe93bb28b7413 upstream.
+From: Roland Vossen <rvossen@broadcom.com>
 
-In linux rtc_time struct, tm_mon range is 0~11, tm_wday range is 0~6,
-while in RTC HW REG, month range is 1~12, day of the week range is 1~7,
-this patch adjusts difference of them.
+commit 6a3be6e6e7feb4cb35275475d6a863b748d59cc3 upstream
 
-The efect of this bug was that most of month will be operated on as the
-next month by the hardware (When in Jan it maybe even worse).  For
-example, if in May, software wrote 4 to the hardware, which handled it as
-April.  Then the logic would be different between software and hardware,
-which would cause weird things to happen.
+Solved a locking issue that resulted in driver crashes with the 43224 and 43225
+chips. The problem has been reported on several fora. Root cause was two fold:
+hardware was being manipulated by two unsynchronized threads, and a scan
+operation could interfere with an ongoing dynamic calibration process. Fix was
+to invoke a lock on wl_ops_config() operation and to set internal flags when a
+scan operation is started and stopped.
 
-Signed-off-by: Lei Xu <B33228@freescale.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: john stultz <johnstul@us.ibm.com>
-Cc: Jack Lan <jack.lan@freescale.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Please add this to the staging-linus branch.
+
+Reviewed-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: Roland Vossen <rvossen@broadcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/rtc/rtc-ds3232.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/staging/brcm80211/sys/wl_mac80211.c  |   14 ++++++++++----
+ drivers/staging/brcm80211/sys/wlc_mac80211.c |   13 +++++++++++++
+ drivers/staging/brcm80211/sys/wlc_pub.h      |    2 ++
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
---- a/drivers/rtc/rtc-ds3232.c
-+++ b/drivers/rtc/rtc-ds3232.c
-@@ -1,7 +1,7 @@
- /*
-  * RTC client/driver for the Maxim/Dallas DS3232 Real-Time Clock over I2C
-  *
-- * Copyright (C) 2009-2010 Freescale Semiconductor.
-+ * Copyright (C) 2009-2011 Freescale Semiconductor.
-  * Author: Jack Lan <jack.lan@freescale.com>
-  *
-  * This program is free software; you can redistribute  it and/or modify it
-@@ -141,9 +141,11 @@ static int ds3232_read_time(struct devic
- 		time->tm_hour = bcd2bin(hour);
+--- a/drivers/staging/brcm80211/sys/wl_mac80211.c
++++ b/drivers/staging/brcm80211/sys/wl_mac80211.c
+@@ -353,9 +353,7 @@ ieee_set_channel(struct ieee80211_hw *hw
+ 	switch (type) {
+ 	case NL80211_CHAN_HT20:
+ 	case NL80211_CHAN_NO_HT:
+-		WL_LOCK(wl);
+ 		err = wlc_set(wl->wlc, WLC_SET_CHANNEL, chan->hw_value);
+-		WL_UNLOCK(wl);
+ 		break;
+ 	case NL80211_CHAN_HT40MINUS:
+ 	case NL80211_CHAN_HT40PLUS:
+@@ -376,6 +374,7 @@ static int wl_ops_config(struct ieee8021
+ 	int err = 0;
+ 	int new_int;
+ 
++	WL_LOCK(wl);
+ 	if (changed & IEEE80211_CONF_CHANGE_LISTEN_INTERVAL) {
+ 		WL_NONE(("%s: Setting listen interval to %d\n",
+ 			 __func__, conf->listen_interval));
+@@ -431,6 +430,7 @@ static int wl_ops_config(struct ieee8021
  	}
  
--	time->tm_wday = bcd2bin(week);
-+	/* Day of the week in linux range is 0~6 while 1~7 in RTC chip */
-+	time->tm_wday = bcd2bin(week) - 1;
- 	time->tm_mday = bcd2bin(day);
--	time->tm_mon = bcd2bin(month & 0x7F);
-+	/* linux tm_mon range:0~11, while month range is 1~12 in RTC chip */
-+	time->tm_mon = bcd2bin(month & 0x7F) - 1;
- 	if (century)
- 		add_century = 100;
+  config_out:
++	WL_UNLOCK(wl);
+ 	return err;
+ }
  
-@@ -162,9 +164,11 @@ static int ds3232_set_time(struct device
- 	buf[0] = bin2bcd(time->tm_sec);
- 	buf[1] = bin2bcd(time->tm_min);
- 	buf[2] = bin2bcd(time->tm_hour);
--	buf[3] = bin2bcd(time->tm_wday); /* Day of the week */
-+	/* Day of the week in linux range is 0~6 while 1~7 in RTC chip */
-+	buf[3] = bin2bcd(time->tm_wday + 1);
- 	buf[4] = bin2bcd(time->tm_mday); /* Date */
--	buf[5] = bin2bcd(time->tm_mon);
-+	/* linux tm_mon range:0~11, while month range is 1~12 in RTC chip */
-+	buf[5] = bin2bcd(time->tm_mon + 1);
- 	if (time->tm_year >= 100) {
- 		buf[5] |= 0x80;
- 		buf[6] = bin2bcd(time->tm_year - 100);
+@@ -559,14 +559,20 @@ wl_ops_set_tim(struct ieee80211_hw *hw,
+ 
+ static void wl_ops_sw_scan_start(struct ieee80211_hw *hw)
+ {
++	struct wl_info *wl = hw->priv;
+ 	WL_NONE(("Scan Start\n"));
+-	return;
++	WL_LOCK(wl);
++	wlc_scan_start(wl->wlc);
++	WL_UNLOCK(wl);
+ }
+ 
+ static void wl_ops_sw_scan_complete(struct ieee80211_hw *hw)
+ {
++	struct wl_info *wl = hw->priv;
+ 	WL_NONE(("Scan Complete\n"));
+-	return;
++	WL_LOCK(wl);
++	wlc_scan_stop(wl->wlc);
++	WL_UNLOCK(wl);
+ }
+ 
+ static void wl_ops_set_tsf(struct ieee80211_hw *hw, u64 tsf)
+--- a/drivers/staging/brcm80211/sys/wlc_mac80211.c
++++ b/drivers/staging/brcm80211/sys/wlc_mac80211.c
+@@ -8672,3 +8672,16 @@ static void wlc_txq_free(wlc_info_t *wlc
+ 
+ 	kfree(qi);
+ }
++
++/*
++ * Flag 'scan in progress' to withold dynamic phy calibration
++ */
++void wlc_scan_start(struct wlc_info *wlc)
++{
++	wlc_phy_hold_upd(wlc->band->pi, PHY_HOLD_FOR_SCAN, true);
++}
++
++void wlc_scan_stop(struct wlc_info *wlc)
++{
++	wlc_phy_hold_upd(wlc->band->pi, PHY_HOLD_FOR_SCAN, false);
++}
+--- a/drivers/staging/brcm80211/sys/wlc_pub.h
++++ b/drivers/staging/brcm80211/sys/wlc_pub.h
+@@ -568,6 +568,8 @@ extern void wlc_enable_mac(struct wlc_in
+ extern u16 wlc_rate_shm_offset(struct wlc_info *wlc, u8 rate);
+ extern u32 wlc_get_rspec_history(struct wlc_bsscfg *cfg);
+ extern u32 wlc_get_current_highest_rate(struct wlc_bsscfg *cfg);
++extern void wlc_scan_start(struct wlc_info *wlc);
++extern void wlc_scan_stop(struct wlc_info *wlc);
+ 
+ static inline int wlc_iovar_getuint(struct wlc_info *wlc, const char *name,
+ 				    uint *arg)
 
 
