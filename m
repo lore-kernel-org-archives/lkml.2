@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760483Ab1CEBAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:00:37 -0500
-Received: from kroah.org ([198.145.64.141]:50316 "EHLO coco.kroah.org"
+	id S932506Ab1CEBA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:00:59 -0500
+Received: from kroah.org ([198.145.64.141]:50473 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759883Ab1CEBAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:30 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:38 2011
-Message-Id: <20110305005638.771311301@clark.kroah.org>
+	id S932446Ab1CEBA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:40 2011
+Message-Id: <20110305005640.631894732@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:48 -0800
+Date: Fri, 04 Mar 2011 16:56:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [43/73] ACPI / debugfs: Fix buffer overflows, double free
+        Tejun Heo <tj@kernel.org>, Jan Beulich <JBeulich@novell.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [62/73] block: add @force_kblockd to __blk_run_queue()
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,78 +27,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 2949ad50711cc161721cf788711722eeeca33764 upstream.
+commit 1654e7411a1ad4999fe7890ef51d2a2bbb1fcf76 upstream.
 
-File position is not controlled, it may lead to overwrites of arbitrary
-kernel memory.  Also the code may kfree() the same pointer multiple
-times.
+__blk_run_queue() automatically either calls q->request_fn() directly
+or schedules kblockd depending on whether the function is recursed.
+blk-flush implementation needs to be able to explicitly choose
+kblockd.  Add @force_kblockd.
 
-One more flaw is still present: if multiple processes open the file then
-all 3 static variables are shared, leading to various race conditions.
-They should be moved to file->private_data.
+All the current users are converted to specify %false for the
+parameter and this patch doesn't introduce any behavior change.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-Reviewed-by: Eugene Teo <eugeneteo@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+stable: This is prerequisite for fixing ide oops caused by the new
+        blk-flush implementation.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jan Beulich <JBeulich@novell.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/debugfs.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ block/blk-core.c                 |   11 ++++++-----
+ block/blk-flush.c                |    2 +-
+ block/cfq-iosched.c              |    6 +++---
+ block/elevator.c                 |    4 ++--
+ drivers/scsi/scsi_lib.c          |    2 +-
+ drivers/scsi/scsi_transport_fc.c |    2 +-
+ include/linux/blkdev.h           |    2 +-
+ 7 files changed, 15 insertions(+), 14 deletions(-)
 
---- a/drivers/acpi/debugfs.c
-+++ b/drivers/acpi/debugfs.c
-@@ -26,7 +26,9 @@ static ssize_t cm_write(struct file *fil
- 			size_t count, loff_t *ppos)
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -352,7 +352,7 @@ void blk_start_queue(struct request_queu
+ 	WARN_ON(!irqs_disabled());
+ 
+ 	queue_flag_clear(QUEUE_FLAG_STOPPED, q);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ }
+ EXPORT_SYMBOL(blk_start_queue);
+ 
+@@ -403,13 +403,14 @@ EXPORT_SYMBOL(blk_sync_queue);
+ /**
+  * __blk_run_queue - run a single device queue
+  * @q:	The queue to run
++ * @force_kblockd: Don't run @q->request_fn directly.  Use kblockd.
+  *
+  * Description:
+  *    See @blk_run_queue. This variant must be called with the queue lock
+  *    held and interrupts disabled.
+  *
+  */
+-void __blk_run_queue(struct request_queue *q)
++void __blk_run_queue(struct request_queue *q, bool force_kblockd)
  {
- 	static char *buf;
--	static int uncopied_bytes;
-+	static u32 max_size;
-+	static u32 uncopied_bytes;
-+
- 	struct acpi_table_header table;
- 	acpi_status status;
+ 	blk_remove_plug(q);
  
-@@ -37,19 +39,24 @@ static ssize_t cm_write(struct file *fil
- 		if (copy_from_user(&table, user_buf,
- 				   sizeof(struct acpi_table_header)))
- 			return -EFAULT;
--		uncopied_bytes = table.length;
--		buf = kzalloc(uncopied_bytes, GFP_KERNEL);
-+		uncopied_bytes = max_size = table.length;
-+		buf = kzalloc(max_size, GFP_KERNEL);
- 		if (!buf)
- 			return -ENOMEM;
+@@ -423,7 +424,7 @@ void __blk_run_queue(struct request_queu
+ 	 * Only recurse once to avoid overrunning the stack, let the unplug
+ 	 * handling reinvoke the handler shortly if we already got there.
+ 	 */
+-	if (!queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
++	if (!force_kblockd && !queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
+ 		q->request_fn(q);
+ 		queue_flag_clear(QUEUE_FLAG_REENTER, q);
+ 	} else {
+@@ -446,7 +447,7 @@ void blk_run_queue(struct request_queue
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(q->queue_lock, flags);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ EXPORT_SYMBOL(blk_run_queue);
+@@ -1053,7 +1054,7 @@ void blk_insert_request(struct request_q
+ 
+ 	drive_stat_acct(rq, 1);
+ 	__elv_add_request(q, rq, where, 0);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ EXPORT_SYMBOL(blk_insert_request);
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -69,7 +69,7 @@ static void blk_flush_complete_seq_end_i
+ 	 * queue.  Kick the queue in those cases.
+ 	 */
+ 	if (was_empty && next_rq)
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ }
+ 
+ static void pre_flush_end_io(struct request *rq, int error)
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3335,7 +3335,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, s
+ 			    cfqd->busy_queues > 1) {
+ 				cfq_del_timer(cfqd, cfqq);
+ 				cfq_clear_cfqq_wait_request(cfqq);
+-				__blk_run_queue(cfqd->queue);
++				__blk_run_queue(cfqd->queue, false);
+ 			} else {
+ 				cfq_blkiocg_update_idle_time_stats(
+ 						&cfqq->cfqg->blkg);
+@@ -3350,7 +3350,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, s
+ 		 * this new queue is RT and the current one is BE
+ 		 */
+ 		cfq_preempt_queue(cfqd, cfqq);
+-		__blk_run_queue(cfqd->queue);
++		__blk_run_queue(cfqd->queue, false);
  	}
+ }
  
--	if (uncopied_bytes < count) {
--		kfree(buf);
-+	if (buf == NULL)
-+		return -EINVAL;
-+
-+	if ((*ppos > max_size) ||
-+	    (*ppos + count > max_size) ||
-+	    (*ppos + count < count) ||
-+	    (count > uncopied_bytes))
- 		return -EINVAL;
--	}
+@@ -3711,7 +3711,7 @@ static void cfq_kick_queue(struct work_s
+ 	struct request_queue *q = cfqd->queue;
  
- 	if (copy_from_user(buf + (*ppos), user_buf, count)) {
- 		kfree(buf);
-+		buf = NULL;
- 		return -EFAULT;
- 	}
+ 	spin_lock_irq(q->queue_lock);
+-	__blk_run_queue(cfqd->queue);
++	__blk_run_queue(cfqd->queue, false);
+ 	spin_unlock_irq(q->queue_lock);
+ }
  
-@@ -59,6 +66,7 @@ static ssize_t cm_write(struct file *fil
- 	if (!uncopied_bytes) {
- 		status = acpi_install_method(buf);
- 		kfree(buf);
-+		buf = NULL;
- 		if (ACPI_FAILURE(status))
- 			return -EINVAL;
- 		add_taint(TAINT_OVERRIDDEN_ACPI_TABLE);
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -602,7 +602,7 @@ void elv_quiesce_start(struct request_qu
+ 	 */
+ 	elv_drain_elevator(q);
+ 	while (q->rq.elvpriv) {
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ 		spin_unlock_irq(q->queue_lock);
+ 		msleep(10);
+ 		spin_lock_irq(q->queue_lock);
+@@ -651,7 +651,7 @@ void elv_insert(struct request_queue *q,
+ 		 *   with anything.  There's no point in delaying queue
+ 		 *   processing.
+ 		 */
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ 		break;
+ 
+ 	case ELEVATOR_INSERT_SORT:
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -443,7 +443,7 @@ static void scsi_run_queue(struct reques
+ 					&sdev->request_queue->queue_flags);
+ 		if (flagset)
+ 			queue_flag_set(QUEUE_FLAG_REENTER, sdev->request_queue);
+-		__blk_run_queue(sdev->request_queue);
++		__blk_run_queue(sdev->request_queue, false);
+ 		if (flagset)
+ 			queue_flag_clear(QUEUE_FLAG_REENTER, sdev->request_queue);
+ 		spin_unlock(sdev->request_queue->queue_lock);
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -3829,7 +3829,7 @@ fc_bsg_goose_queue(struct fc_rport *rpor
+ 		  !test_bit(QUEUE_FLAG_REENTER, &rport->rqst_q->queue_flags);
+ 	if (flagset)
+ 		queue_flag_set(QUEUE_FLAG_REENTER, rport->rqst_q);
+-	__blk_run_queue(rport->rqst_q);
++	__blk_run_queue(rport->rqst_q, false);
+ 	if (flagset)
+ 		queue_flag_clear(QUEUE_FLAG_REENTER, rport->rqst_q);
+ 	spin_unlock_irqrestore(rport->rqst_q->queue_lock, flags);
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -700,7 +700,7 @@ extern void blk_start_queue(struct reque
+ extern void blk_stop_queue(struct request_queue *q);
+ extern void blk_sync_queue(struct request_queue *q);
+ extern void __blk_stop_queue(struct request_queue *q);
+-extern void __blk_run_queue(struct request_queue *);
++extern void __blk_run_queue(struct request_queue *q, bool force_kblockd);
+ extern void blk_run_queue(struct request_queue *);
+ extern int blk_rq_map_user(struct request_queue *, struct request *,
+ 			   struct rq_map_data *, void __user *, unsigned long,
 
 
