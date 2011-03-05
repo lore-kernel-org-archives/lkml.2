@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1CEMWL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 07:22:11 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54166 "EHLO ogre.sisk.pl"
+	id S1752795Ab1CEMYS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 07:24:18 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54179 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab1CEMWJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 07:22:09 -0500
+	id S1750821Ab1CEMYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 07:24:17 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI/ACPI: Report ASPM support to BIOS if not disabled from command line
-Date: Sat, 5 Mar 2011 13:21:51 +0100
+Subject: [PATCH] PCI / PM: Add kerneldoc descrition of pci_pm_reset()
+Date: Sat, 5 Mar 2011 13:24:27 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
+Cc: Len Brown <lenb@kernel.org>,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linux-pci@vger.kernel.org
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103051321.51856.rjw@sisk.pl>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103051324.27461.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-We need to distinguish the situation in which ASPM support is
-disabled from the command line or through .config from the situation
-in which it is disabled, because the hardware or BIOS can't handle
-it.  In the former case we should not report ASPM support to the BIOS
-through ACPI _OSC, but in the latter case we should do that.
+The pci_pm_reset() function is not a very nice interface due to its
+limitations and conditional behavior (e.g. it doesn't affect devices
+in low-power states), but it cannot be simply dropped, because
+existing device drivers may depend on it.  Still, its behavior and
+limitations should be well documented, so add an appropriate
+kerneldoc comment to it.
 
-Introduce pcie_aspm_support_enabled() that can be used by
-acpi_pci_root_add() to determine whether or not it should report ASPM
-support to the BIOS through _OSC.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=29722
-References: https://bugzilla.kernel.org/show_bug.cgi?id=20232
-Reported-and-tested-by: Ortwin Glück <odi@odi.ch>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/pci_root.c |    2 +-
- drivers/pci/pcie/aspm.c |    7 +++++++
- include/linux/pci.h     |    7 +++----
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/pci/pci.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-Index: linux-2.6/drivers/pci/pcie/aspm.c
+Index: linux-2.6/drivers/pci/pci.c
 ===================================================================
---- linux-2.6.orig/drivers/pci/pcie/aspm.c
-+++ linux-2.6/drivers/pci/pcie/aspm.c
-@@ -69,6 +69,7 @@ struct pcie_link_state {
- };
- 
- static int aspm_disabled, aspm_force, aspm_clear_state;
-+static bool aspm_support_enabled = true;
- static DEFINE_MUTEX(aspm_lock);
- static LIST_HEAD(link_list);
- 
-@@ -896,6 +897,7 @@ static int __init pcie_aspm_disable(char
- {
- 	if (!strcmp(str, "off")) {
- 		aspm_disabled = 1;
-+		aspm_support_enabled = false;
- 		printk(KERN_INFO "PCIe ASPM is disabled\n");
- 	} else if (!strcmp(str, "force")) {
- 		aspm_force = 1;
-@@ -930,3 +932,8 @@ int pcie_aspm_enabled(void)
+--- linux-2.6.orig/drivers/pci/pci.c
++++ linux-2.6/drivers/pci/pci.c
+@@ -2473,6 +2473,21 @@ clear:
+ 	return 0;
  }
- EXPORT_SYMBOL(pcie_aspm_enabled);
  
-+bool pcie_aspm_support_enabled(void)
-+{
-+	return aspm_support_enabled;
-+}
-+EXPORT_SYMBOL(pcie_aspm_support_enabled);
-Index: linux-2.6/drivers/acpi/pci_root.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/pci_root.c
-+++ linux-2.6/drivers/acpi/pci_root.c
-@@ -564,7 +564,7 @@ static int __devinit acpi_pci_root_add(s
- 	/* Indicate support for various _OSC capabilities. */
- 	if (pci_ext_cfg_avail(root->bus->self))
- 		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
--	if (pcie_aspm_enabled())
-+	if (pcie_aspm_support_enabled())
- 		flags |= OSC_ACTIVE_STATE_PWR_SUPPORT |
- 			OSC_CLOCK_PWR_CAPABILITY_SUPPORT;
- 	if (pci_msi_enabled())
-Index: linux-2.6/include/linux/pci.h
-===================================================================
---- linux-2.6.orig/include/linux/pci.h
-+++ linux-2.6/include/linux/pci.h
-@@ -1002,12 +1002,11 @@ extern bool pcie_ports_auto;
- #endif
- 
- #ifndef CONFIG_PCIEASPM
--static inline int pcie_aspm_enabled(void)
--{
--	return 0;
--}
-+static inline int pcie_aspm_enabled(void) { return 0; }
-+static inline bool pcie_aspm_support_enabled(void) { return false; }
- #else
- extern int pcie_aspm_enabled(void);
-+extern bool pcie_aspm_support_enabled(void);
- #endif
- 
- #ifdef CONFIG_PCIEAER
++/**
++ * pci_pm_reset - Put device into PCI_D3hot and back to PCI_D0.
++ * @dev: Device to reset.
++ * @probe: If set, only check if the device can be reset this way.
++ *
++ * If @dev supports native PCI PM and its PCI_PM_CTRL_NO_SOFT_RESET flag is
++ * unset, it will be reinitialized internally when going from PCI_D3hot to
++ * PCI_D0.  If that's the case and the device is not in a low-power state
++ * already, force it into PCI_D3hot and back to PCI_D0, causing it to be reset.
++ *
++ * NOTE: This causes the caller to sleep for twice the device power transition
++ * cooldown period, which for the D0->D3hot and D3hot->D0 transitions is 10 ms
++ * by devault (ie. unless the @dev's d3_delay field has a different value).
++ * Moreover, only devices in D0 can be reset by this function.
++ */
+ static int pci_pm_reset(struct pci_dev *dev, int probe)
+ {
+ 	u16 csr;
