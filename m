@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760168Ab1CEA7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 19:59:54 -0500
-Received: from kroah.org ([198.145.64.141]:50105 "EHLO coco.kroah.org"
+	id S1760262Ab1CEA77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 19:59:59 -0500
+Received: from kroah.org ([198.145.64.141]:50144 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760052Ab1CEA7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:59:52 -0500
+	id S1760224Ab1CEA75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 19:59:57 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:35 2011
-Message-Id: <20110305005635.088686930@clark.kroah.org>
+Message-Id: <20110305005635.653859317@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:10 -0800
+Date: Fri, 04 Mar 2011 16:55:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Amit Shah <amitshah@gmx.net>, baoyb <baoyb@avit.org.cn>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [05/73] USB: serial/usb_wwan, fix tty NULL dereference
+        Miklos Szeredi <mszeredi@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: [11/73] mm: prevent concurrent unmap_mapping_range() on the same inode
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,71 +25,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 38237fd2be9421c104f84cc35665097bdce89013 upstream.
+commit 2aa15890f3c191326678f1bd68af61ec6b8753ec upstream.
 
-tty_port_tty_get may return without any problems NULL. Handle this
-case and do not oops in usb_wwan_indat_callback by dereferencing it.
+Michael Leun reported that running parallel opens on a fuse filesystem
+can trigger a "kernel BUG at mm/truncate.c:475"
 
-The oops:
-Unable to handle kernel paging request for data at address 0x000000d8
-Faulting instruction address: 0xc0175b3c
-Oops: Kernel access of bad area, sig: 11 [#1]
-PowerPC 40x Platform
-last sysfs file:
-/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
-Modules linked in:
-NIP: c0175b3c LR: c0175e7c CTR: c0215c90
-REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
-MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
-DEAR: 000000d8, ESR: 00000000
-TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
-GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
-GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
-GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
-GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
-NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
-LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-Call Trace:
-[c77f7e00] [00000003] 0x3 (unreliable)
-[c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-[c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
-...
+Gurudas Pai reported the same bug on NFS.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
-Cc: Amit Shah <amitshah@gmx.net>
-Cc: baoyb <baoyb@avit.org.cn>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+The reason is, unmap_mapping_range() is not prepared for more than
+one concurrent invocation per inode.  For example:
+
+  thread1: going through a big range, stops in the middle of a vma and
+     stores the restart address in vm_truncate_count.
+
+  thread2: comes in with a small (e.g. single page) unmap request on
+     the same vma, somewhere before restart_address, finds that the
+     vma was already unmapped up to the restart address and happily
+     returns without doing anything.
+
+Another scenario would be two big unmap requests, both having to
+restart the unmapping and each one setting vm_truncate_count to its
+own value.  This could go on forever without any of them being able to
+finish.
+
+Truncate and hole punching already serialize with i_mutex.  Other
+callers of unmap_mapping_range() do not, and it's difficult to get
+i_mutex protection for all callers.  In particular ->d_revalidate(),
+which calls invalidate_inode_pages2_range() in fuse, may be called
+with or without i_mutex.
+
+This patch adds a new mutex to 'struct address_space' to prevent
+running multiple concurrent unmap_mapping_range() on the same mapping.
+
+[ We'll hopefully get rid of all this with the upcoming mm
+  preemptibility series by Peter Zijlstra, the "mm: Remove i_mmap_mutex
+  lockbreak" patch in particular.  But that is for 2.6.39 ]
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Reported-by: Michael Leun <lkml20101129@newton.leun.net>
+Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/usb_wwan.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ fs/gfs2/main.c     |    9 +--------
+ fs/inode.c         |   22 +++++++++++++++-------
+ fs/nilfs2/btnode.c |    5 -----
+ fs/nilfs2/btnode.h |    1 -
+ fs/nilfs2/mdt.c    |    4 ++--
+ fs/nilfs2/page.h   |    1 -
+ fs/nilfs2/super.c  |    2 +-
+ include/linux/fs.h |    2 ++
+ mm/memory.c        |    2 ++
+ 9 files changed, 23 insertions(+), 25 deletions(-)
 
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -216,12 +216,15 @@ static void usb_wwan_indat_callback(stru
- 		    __func__, status, endpoint);
- 	} else {
- 		tty = tty_port_tty_get(&port->port);
--		if (urb->actual_length) {
--			tty_insert_flip_string(tty, data, urb->actual_length);
--			tty_flip_buffer_push(tty);
--		} else
--			dbg("%s: empty read urb received", __func__);
--		tty_kref_put(tty);
-+		if (tty) {
-+			if (urb->actual_length) {
-+				tty_insert_flip_string(tty, data,
-+						urb->actual_length);
-+				tty_flip_buffer_push(tty);
-+			} else
-+				dbg("%s: empty read urb received", __func__);
-+			tty_kref_put(tty);
-+		}
+--- a/fs/gfs2/main.c
++++ b/fs/gfs2/main.c
+@@ -59,14 +59,7 @@ static void gfs2_init_gl_aspace_once(voi
+ 	struct address_space *mapping = (struct address_space *)(gl + 1);
  
- 		/* Resubmit urb so we continue receiving */
- 		if (status != -ESHUTDOWN) {
+ 	gfs2_init_glock_once(gl);
+-	memset(mapping, 0, sizeof(*mapping));
+-	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
+-	spin_lock_init(&mapping->tree_lock);
+-	spin_lock_init(&mapping->i_mmap_lock);
+-	INIT_LIST_HEAD(&mapping->private_list);
+-	spin_lock_init(&mapping->private_lock);
+-	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
+-	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
++	address_space_init_once(mapping);
+ }
+ 
+ /**
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -280,6 +280,20 @@ static void destroy_inode(struct inode *
+ 		kmem_cache_free(inode_cachep, (inode));
+ }
+ 
++void address_space_init_once(struct address_space *mapping)
++{
++	memset(mapping, 0, sizeof(*mapping));
++	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
++	spin_lock_init(&mapping->tree_lock);
++	spin_lock_init(&mapping->i_mmap_lock);
++	INIT_LIST_HEAD(&mapping->private_list);
++	spin_lock_init(&mapping->private_lock);
++	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
++	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
++	mutex_init(&mapping->unmap_mutex);
++}
++EXPORT_SYMBOL(address_space_init_once);
++
+ /*
+  * These are initializations that only need to be done
+  * once, because the fields are idempotent across use
+@@ -293,13 +307,7 @@ void inode_init_once(struct inode *inode
+ 	INIT_LIST_HEAD(&inode->i_devices);
+ 	INIT_LIST_HEAD(&inode->i_wb_list);
+ 	INIT_LIST_HEAD(&inode->i_lru);
+-	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
+-	spin_lock_init(&inode->i_data.tree_lock);
+-	spin_lock_init(&inode->i_data.i_mmap_lock);
+-	INIT_LIST_HEAD(&inode->i_data.private_list);
+-	spin_lock_init(&inode->i_data.private_lock);
+-	INIT_RAW_PRIO_TREE_ROOT(&inode->i_data.i_mmap);
+-	INIT_LIST_HEAD(&inode->i_data.i_mmap_nonlinear);
++	address_space_init_once(&inode->i_data);
+ 	i_size_ordered_init(inode);
+ #ifdef CONFIG_FSNOTIFY
+ 	INIT_HLIST_HEAD(&inode->i_fsnotify_marks);
+--- a/fs/nilfs2/btnode.c
++++ b/fs/nilfs2/btnode.c
+@@ -35,11 +35,6 @@
+ #include "btnode.h"
+ 
+ 
+-void nilfs_btnode_cache_init_once(struct address_space *btnc)
+-{
+-	nilfs_mapping_init_once(btnc);
+-}
+-
+ static const struct address_space_operations def_btnode_aops = {
+ 	.sync_page		= block_sync_page,
+ };
+--- a/fs/nilfs2/btnode.h
++++ b/fs/nilfs2/btnode.h
+@@ -37,7 +37,6 @@ struct nilfs_btnode_chkey_ctxt {
+ 	struct buffer_head *newbh;
+ };
+ 
+-void nilfs_btnode_cache_init_once(struct address_space *);
+ void nilfs_btnode_cache_init(struct address_space *, struct backing_dev_info *);
+ void nilfs_btnode_cache_clear(struct address_space *);
+ struct buffer_head *nilfs_btnode_create_block(struct address_space *btnc,
+--- a/fs/nilfs2/mdt.c
++++ b/fs/nilfs2/mdt.c
+@@ -460,9 +460,9 @@ int nilfs_mdt_setup_shadow_map(struct in
+ 	struct backing_dev_info *bdi = inode->i_sb->s_bdi;
+ 
+ 	INIT_LIST_HEAD(&shadow->frozen_buffers);
+-	nilfs_mapping_init_once(&shadow->frozen_data);
++	address_space_init_once(&shadow->frozen_data);
+ 	nilfs_mapping_init(&shadow->frozen_data, bdi, &shadow_map_aops);
+-	nilfs_mapping_init_once(&shadow->frozen_btnodes);
++	address_space_init_once(&shadow->frozen_btnodes);
+ 	nilfs_mapping_init(&shadow->frozen_btnodes, bdi, &shadow_map_aops);
+ 	mi->mi_shadow = shadow;
+ 	return 0;
+--- a/fs/nilfs2/page.h
++++ b/fs/nilfs2/page.h
+@@ -61,7 +61,6 @@ void nilfs_free_private_page(struct page
+ int nilfs_copy_dirty_pages(struct address_space *, struct address_space *);
+ void nilfs_copy_back_pages(struct address_space *, struct address_space *);
+ void nilfs_clear_dirty_pages(struct address_space *);
+-void nilfs_mapping_init_once(struct address_space *mapping);
+ void nilfs_mapping_init(struct address_space *mapping,
+ 			struct backing_dev_info *bdi,
+ 			const struct address_space_operations *aops);
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@ -1263,7 +1263,7 @@ static void nilfs_inode_init_once(void *
+ #ifdef CONFIG_NILFS_XATTR
+ 	init_rwsem(&ii->xattr_sem);
+ #endif
+-	nilfs_btnode_cache_init_once(&ii->i_btnode_cache);
++	address_space_init_once(&ii->i_btnode_cache);
+ 	ii->i_bmap = &ii->i_bmap_data;
+ 	inode_init_once(&ii->vfs_inode);
+ }
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -646,6 +646,7 @@ struct address_space {
+ 	spinlock_t		private_lock;	/* for use by the address_space */
+ 	struct list_head	private_list;	/* ditto */
+ 	struct address_space	*assoc_mapping;	/* ditto */
++	struct mutex		unmap_mutex;    /* to protect unmapping */
+ } __attribute__((aligned(sizeof(long))));
+ 	/*
+ 	 * On most architectures that alignment is already the case; but
+@@ -2203,6 +2204,7 @@ extern loff_t vfs_llseek(struct file *fi
+ 
+ extern int inode_init_always(struct super_block *, struct inode *);
+ extern void inode_init_once(struct inode *);
++extern void address_space_init_once(struct address_space *mapping);
+ extern void ihold(struct inode * inode);
+ extern void iput(struct inode *);
+ extern struct inode * igrab(struct inode *);
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2572,6 +2572,7 @@ void unmap_mapping_range(struct address_
+ 		details.last_index = ULONG_MAX;
+ 	details.i_mmap_lock = &mapping->i_mmap_lock;
+ 
++	mutex_lock(&mapping->unmap_mutex);
+ 	spin_lock(&mapping->i_mmap_lock);
+ 
+ 	/* Protect against endless unmapping loops */
+@@ -2588,6 +2589,7 @@ void unmap_mapping_range(struct address_
+ 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
+ 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
+ 	spin_unlock(&mapping->i_mmap_lock);
++	mutex_unlock(&mapping->unmap_mutex);
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
 
 
