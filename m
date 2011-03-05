@@ -1,55 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab1CEJ14 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 04:27:56 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50123 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab1CEJ1y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 04:27:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=C8IAEA3Q5pAxtIx+UixYe6OBm0nhi9LhqZco093mwCgEo59BtpE/c/sbdV5iVLdMRL
-         AoA+wJaCwQ4Pp31E0pxgdIfq6S0gHighGAlwSw677qhsjoHTi5+WbrfszUzXHUNj5mhd
-         VD0n9O61ODJ2nyyteZmR++Lo2P+dg6Km++p1g=
-From: bookjovi@gmail.com
-To: bookjovi@gmail.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com> (maintainer:NFS,
-	SUNRPC, AND...),
-        linux-nfs@vger.kernel.org (open list:NFS, SUNRPC, AND...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] nfs: fix compilation warning
-Date: Wed,  2 Mar 2011 18:19:37 -0500
-Message-Id: <1299107978-3248-1-git-send-email-bookjovi@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1752166Ab1CEJgz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 04:36:55 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:27735 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140Ab1CEJgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 04:36:52 -0500
+X-IronPort-AV: E=Sophos;i="4.62,268,1297054800"; 
+   d="scan'208";a="12979637"
+Subject: Re: [17/18] arp_notify: unconditionally send gratuitous ARP for
+ NETDEV_NOTIFY_PEERS.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Mike Surcouf <mike@surcouf.co.uk>,
+        Hank Janssen <hjanssen@microsoft.com>
+In-Reply-To: <20110305010353.482533027@clark.kroah.org>
+References: <20110305010353.482533027@clark.kroah.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Sat, 5 Mar 2011 09:36:49 +0000
+Message-ID: <1299317809.13328.42.camel@localhost.localdomain>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jovi Zhang <bookjovi@gmail.com>
+On Sat, 2011-03-05 at 01:03 +0000, Greg KH wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> From: Ian Campbell <Ian.Campbell@citrix.com>
+> 
+> commit d11327ad6695db8117c78d70611e71102ceec2ac upstream.
+> 
+> NETDEV_NOTIFY_PEER is an explicit request by the driver to send a link
+> notification while NETDEV_UP/NETDEV_CHANGEADDR generate link
+> notifications as a sort of side effect.
+> 
+> In the later cases the sysctl option is present because link
+> notification events can have undesired effects e.g. if the link is
+> flapping. I don't think this applies in the case of an explicit
+> request from a driver.
+> 
+> This patch makes NETDEV_NOTIFY_PEER unconditional, if preferred we
+> could add a new sysctl for this case which defaults to on.
+> 
+> This change causes Xen post-migration ARP notifications (which cause
+> switches to relearn their MAC tables etc) to be sent by default.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> [reported to solve hyperv live migration problem - gkh]
 
-this commit fix compilation warning as following:
-linux-2.6/fs/nfs/nfs4proc.c:3265: warning: comparison of distinct pointer types lacks a cast
+I hadn't spotted this second caller of netif_notify_peers under
+drivers/staging but, yes, I rather suspect it will help hyperv as well
+as Xen given that 7c161d0b900ea9bd9fc5ea5d3fa9916e9eb0dd88 "staging: hv:
+Enable sending GARP packet after live migration" is already in the
+stable and longterm trees.
 
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
----
- fs/nfs/nfs4proc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ian.
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 1ff76ac..c7eb4ee 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3262,7 +3262,7 @@ static int buf_to_pages_noslab(const void *buf, size_t buflen,
- 	spages = pages;
- 
- 	do {
--		len = min(PAGE_CACHE_SIZE, buflen);
-+		len = min((size_t)PAGE_CACHE_SIZE, buflen);
- 		newpage = alloc_page(GFP_KERNEL);
- 
- 		if (newpage == NULL)
--- 
-1.7.2.3
+> Cc: Haiyang Zhang <haiyangz@microsoft.com>
+> Cc: Mike Surcouf <mike@surcouf.co.uk>
+> Cc: Hank Janssen <hjanssen@microsoft.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  net/ipv4/devinet.c |   30 ++++++++++++++++++++----------
+>  1 file changed, 20 insertions(+), 10 deletions(-)
+> 
+> --- a/net/ipv4/devinet.c
+> +++ b/net/ipv4/devinet.c
+> @@ -1025,6 +1025,21 @@ static inline bool inetdev_valid_mtu(uns
+>  	return mtu >= 68;
+>  }
+>  
+> +static void inetdev_send_gratuitous_arp(struct net_device *dev,
+> +					struct in_device *in_dev)
+> +
+> +{
+> +	struct in_ifaddr *ifa = in_dev->ifa_list;
+> +
+> +	if (!ifa)
+> +		return;
+> +
+> +	arp_send(ARPOP_REQUEST, ETH_P_ARP,
+> +		 ifa->ifa_address, dev,
+> +		 ifa->ifa_address, NULL,
+> +		 dev->dev_addr, NULL);
+> +}
+> +
+>  /* Called only under RTNL semaphore */
+>  
+>  static int inetdev_event(struct notifier_block *this, unsigned long event,
+> @@ -1076,18 +1091,13 @@ static int inetdev_event(struct notifier
+>  		}
+>  		ip_mc_up(in_dev);
+>  		/* fall through */
+> -	case NETDEV_NOTIFY_PEERS:
+>  	case NETDEV_CHANGEADDR:
+> +		if (!IN_DEV_ARP_NOTIFY(in_dev))
+> +			break;
+> +		/* fall through */
+> +	case NETDEV_NOTIFY_PEERS:
+>  		/* Send gratuitous ARP to notify of link change */
+> -		if (IN_DEV_ARP_NOTIFY(in_dev)) {
+> -			struct in_ifaddr *ifa = in_dev->ifa_list;
+> -
+> -			if (ifa)
+> -				arp_send(ARPOP_REQUEST, ETH_P_ARP,
+> -					 ifa->ifa_address, dev,
+> -					 ifa->ifa_address, NULL,
+> -					 dev->dev_addr, NULL);
+> -		}
+> +		inetdev_send_gratuitous_arp(dev, in_dev);
+>  		break;
+>  	case NETDEV_DOWN:
+>  		ip_mc_down(in_dev);
+> 
+> 
+
 
