@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab1CENxx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 08:53:53 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61297 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab1CENxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 08:53:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=qt0rgWvyr6tmjzDYIE9yWi1hVdAQXPcA3eclUVA6hDzghGfhyq0odWzPDU56R2xyZX
-         xRnvsFfohPyLLvZuRXj8oDoKpTGdEJAt251bjoQ/Jnx6X0+uWHUxtkUSZTr5J1RtlJb1
-         QkG1GpOzTbz9vzvJRwZ0GaYdnXMkOVhiGnnqw=
-Message-ID: <4D72406B.6090504@gmail.com>
-Date: Sat, 05 Mar 2011 14:53:47 +0100
-From: =?ISO-8859-1?Q?Nicolas_de_Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: Jiri Pirko <jpirko@redhat.com>
-CC: Xiaotian Feng <dfeng@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Tom Herbert <therbert@google.com>
-Subject: Re: [RFC PATCH] net/core: fix skb handling on netif serves for both
- bridge and vlan
-References: <1299149713-18740-1-git-send-email-dfeng@redhat.com> <20110305103613.GB7799@psychotron.redhat.com>
-In-Reply-To: <20110305103613.GB7799@psychotron.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752738Ab1CEOPP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 09:15:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:62055 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab1CEOPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 09:15:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,269,1297065600"; 
+   d="scan'208";a="609413209"
+Subject: Re: [RFC -tip] perf, x86: P4 PMU -- Address erratum 15 and 17
+From: Lin Ming <ming.m.lin@intel.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D7141FC.8000504@gmail.com>
+References: <4D7141FC.8000504@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Mar 2011 22:14:47 +0800
+Message-Id: <1299334487.2324.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 05/03/2011 11:36, Jiri Pirko a écrit :
-> Thu, Mar 03, 2011 at 11:55:13AM CET, dfeng@redhat.com wrote:
->> Consider network topology as follows:
->>
->> eth0  eth1
->> |_____|
->>     |
->>   bond0 --- br0
->>     |
->>   vlan0 --- br1
->>
->> bond0 serves for both br0 and vlan0, if a vlan tagged packet was sent
->> to br1 through bond0, bridge handling code is seeing the packet on bond0
->> and handing it off to my "legacy" bridge before vlan_tx_tag_present
->> and vlan_hwaccel_do_receive even haven't a chance to look at it.
->>
->> Moving the vlan_tx_tag_present before bridge/macvlan handling code could
->> cure this.
->
-> Wouldn't this break "eth0 - br0 - br0.5"?
+On Sat, 2011-03-05 at 03:48 +0800, Cyrill Gorcunov wrote:
+> Errata N15 and 17 of 249199-071 should be taken
+> into account. They are mostly hard to hit at moment
+> i believe but still better to be fixed.
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> ---
+> 
+> Ming, mind to give it a shot? I seems will be able to test myself
+> at Wednesday only. And I would like to get a review first to eliminate
+> some silly mistakes ;)
 
-I think it would. One more reason to build a single interface stacking framework...
+I'll test this next Monday when I back to office.
 
-	Nicolas.
+Thanks.
+
+> 
+>  arch/x86/kernel/cpu/perf_event_p4.c |   54 ++++++++++++++++++++++++++++++++++--
+>  1 file changed, 51 insertions(+), 3 deletions(-)
+
+
