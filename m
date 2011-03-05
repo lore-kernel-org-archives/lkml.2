@@ -1,195 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1CETlr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 14:41:47 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33550 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab1CETlq (ORCPT
+	id S1754077Ab1CETtg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 14:49:36 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:28693 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab1CETtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 14:41:46 -0500
+	Sat, 5 Mar 2011 14:49:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:x-face:face:x-url:x-pgp-fp
-         :x-pgp:date:in-reply-to:message-id:user-agent:mime-version
-         :content-type;
-        b=i0ZeG6bbhUgqqg406ptuXD7WCB/rOaSBxITJh21wMpe7VXo6JfMCPcRTu7eH+Ji1if
-         ikboEg24zKHc3sJDTaUAAT+63Z7eRtxmUV8pWw/AhxKzTUVLyoKIr/D+ilzjnA5BA+PQ
-         Twl4Mwdpzm2GR6l++c6JZIYdBz5c6w+1bx68A=
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Douglas W. Jones" <jones@cs.uiowa.edu>,
-        Denis Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] lib: vsprintf: 32-bit put_dec() fixes
-References: <alpine.LSU.2.00.1103050436010.4098@sister.anvils>
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-Url: http://mina86.com/
-X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
-X-PGP: B7C6DF1E
-Date: Sat, 05 Mar 2011 20:41:40 +0100
-In-Reply-To: <alpine.LSU.2.00.1103050436010.4098@sister.anvils> (Hugh
-	Dickins's message of "Sat, 5 Mar 2011 04:42:30 -0800 (PST)")
-Message-ID: <87k4gd73t7.fsf@erwin.mina86.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=YVcLg6fZgIHqum94KXTVvB4xIgpKYPteQx3vkJeejoyq4BwGcKQ6U5eYEY6LJx/ab3
+         1lY2f+UOCh6tKHN5PMNg==
+Date: Sat, 5 Mar 2011 11:49:23 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Michal Nazarewicz <mina86@mina86.com>
+cc: linux-kernel@vger.kernel.org, "Douglas W. Jones" <jones@cs.uiowa.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Denis Vlasenko <vda.linux@googlemail.com>, e@gmail.com
+Subject: Re: [PATCH mmotm] fix broken bootup on 32-bit
+In-Reply-To: <AANLkTikDssqCD-f1E=i-HvKEAMnBMtD5qJq-k5Q3FJKC@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1103051123020.1872@sister.anvils>
+References: <alpine.LSU.2.00.1103050436010.4098@sister.anvils> <AANLkTikDssqCD-f1E=i-HvKEAMnBMtD5qJq-k5Q3FJKC@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit fixes the 32-bit put_dec() function.
+On Sat, 5 Mar 2011, Michal Nazarewicz wrote:
+> On Mar 5, 2011 1:43 PM, "Hugh Dickins" <hughd@google.com> wrote:
+> >
+> > mmotm 2011-03-02-16-52 is utterly broken on 32-bit: panics at boot
+> > with "Couldn't register console driver", and preceding warnings don't
+> > even print their line numbers... which leads to the vsprintf changes.
+> 
+> Sorry. I must have submitted the wrong version of the patch. I don't know
+> how that could happen.
 
-I have submitted by mistake an older version of the put_dec()
-patch with a bug in it (which had been spotted by Denys and
-fixed in subsequent version), which resulted in Hugh having to
-find the bug once again (after experiencing boot failure).
+I don't know by what route they got into mmotm:
+I can't find them on LKML since last August.
 
-This commit fixes the bug once and for all and introduces some
-additional optimisations and comments (which were present in
-the fixed version of put_dec() patch).
+> 
+> > Comparing the 32-bit version of put_dec() against mod7_put_dec()
+> > in tools/put-dec/put-dec-test.c (ah, it is useful after all!) shows
+> > that someone has decided to invert the ordering of pairs of lines
+> > in the kernel version of the algorithm, making a nonsense of it.
+> 
+> Again, I'm at loss of how that happened. I remember Denis pointing this out
+> though and me fixing it. In some strange turn of events I must have
+> submitted version without the fix.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Hugh Dickins <hughd@google.com>
----
- lib/vsprintf.c |   49 ++++++++++++++++++++++++-------------------------
- 1 files changed, 24 insertions(+), 25 deletions(-)
+And what other surprises may have crept in there?
 
-Hugh Dickins <hughd@google.com> writes:
-> mmotm 2011-03-02-16-52 is utterly broken on 32-bit: panics
-> at boot with "Couldn't register console driver", and
-> preceding warnings don't even print their line
-> numbers... which leads to the vsprintf changes.
+I think you need to get more signoffs from competent (not me!) people,
+and (at least for initial submission) a configurable test of the code
+that can actually be run at startup in the kernel.
 
-As I suspected, I sent by mistake the v3 instead of v4 of the
-patch.  I haven't spotted any problems because I was building
-kernel for my 32-bit machine from a branch with a fix but than
-sent patch from a branch for 64-bit machine (which was not
-affected by the bug).
+I nearly called the tools/put-dec testing worthless, since what it's
+testing is divorced from and different from what's being run in the
+kernel.  But that's unfair, it surely helped me to a booting system.
 
-Hugh proposed version with cascades of ifs.  I think this is
-better version because it's smaller and benchmark are not
-clear which version is faster (on Intel version with ifs was
-faster but on ARM version without ifs was).
+> 
+> > Switch them back, and put in the conditionals from mod7_put_dec()
+> > (absent from mod6_put_dec??): my guess is that less work is better.
+> >
+> > My testing has gone no further than booting up, and checking that
+> > the numbers in /proc/partitions come out right (which they didn't
+> > at my first attempt, when I thought just a one-liner was needed).
+> >
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > ---
+> > Diffed to go on the top of mmotm, but can be applied after
+> > lib-vsprintf-optimised-put_dec-function-fix.patch
+> >
+> >  lib/vsprintf.c |   33 ++++++++++++++++++++-------------
+> >  1 file changed, 20 insertions(+), 13 deletions(-)
+> >
+> > --- mmotm/lib/vsprintf.c        2011-03-03 15:43:57.000000000 -0800
+> > +++ linux/lib/vsprintf.c        2011-03-05 03:37:14.000000000 -0800
+> > @@ -310,22 +310,29 @@ char *put_dec(char *buf, unsigned long l
+> >
+> >        q  = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
+> >
+> > -       q  = q / 10000;
+> >        buf = put_dec_full4(buf, q % 10000);
+> > +       q  = q / 10000;
+> 
+> This should be enough.
 
-I pushed an unified version of the whole put_dec patch,
-rebased on v2.6.38-rc7, to github:
+Looking at it again this morning, yes, that's the only reordering that
+matters, the rest just makes it more recognizably like what's tested.
 
-        git://github.com/mina86/linux-2.6.git v2.6.38-rc7+put-dec
+> 
+> >
+> >        d1 = q + 7671 * d3 + 9496 * d2 + 6 * d1;
+> > -       q  = d1 / 10000;
+> > -       buf = put_dec_full4(buf, d1 % 10000);
+> > -
+> > -       d2 = q + 4749 * d3 + 42 * d2;
+> > -       q  = d2 / 10000;
+> > -       buf = put_dec_full4(buf, d2 % 10000);
+> > -
+> > -       d3 = q + 281 * d3;
+> > -       q  = d3 / 10000;
+> > -       buf = put_dec_full4(buf, d3 % 10000);
+> > -
+> > -       buf = put_dec_full4(buf, q);
+> > +       if (d1) {
+> > +               buf = put_dec_full4(buf, d1 % 10000);
+> > +               q  = d1 / 10000;
+> > +
+> > +               d2 = q + 4749 * d3 + 42 * d2;
+> > +               if (d2) {
+> > +                       buf = put_dec_full4(buf, d2 % 10000);
+> > +                       q  = d2 / 10000;
+> > +
+> > +                       d3 = q + 281 * d3;
+> > +                       if (d3) {
+> > +                               buf = put_dec_full4(buf, d3 % 10000);
+> > +                               q  = d3 / 10000;
+> > +
+> > +                               if (q)
+> > +                                       buf = put_dec_full4(buf, q);
+> > +                       }
+> > +               }
+> > +       }
+> >
+> >        while (buf[-1] == '0')
+> >                --buf;
+> 
+> Note that this loop handles zeros at the beginning so it's not necessary to
+> add the ifs. As I've said, swapping the two lines at the beginning will be
+> enough, and I would recommend doing only that.
 
-The attached patch is rebased on top of -mm (ie. just a delta).
+I realize that zeroes are handled, but I was imagining that one branch
+taken (for numbers up to 9999) is cheaper than four out-of-line function
+calls, six divisions-or-modulos by constant 10000, three multiplications
+by constants; oh, and a lot more once I look inside put_dec_full4().
 
-For the sake of elegance, I would probably recommend taking
-the unified patch instead of what's already in -mm plus this
-or Hugh's fix.
+Is that not the case?  Isn't performance the justification for this magic?
 
-Again, sorry about all the problems.
+> 
+> Once again, sorry about the trouble.
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 344c03f..daa9209 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -157,7 +157,7 @@ static noinline_for_stack char *put_dec_full5(char *buf, unsigned q)
- 	 * without any branches.
- 	 */
- 
--	r      = (q * (uint64_t)0xcccd) >> 19;
-+	r = (q * (uint64_t)0xcccd) >> 19;
- 	*buf++ = (q - 10 * r) + '0';
- 
- 	/*
-@@ -226,7 +226,14 @@ static noinline_for_stack char *put_dec_trunc5(char *buf, unsigned q)
- 	return buf;
- }
- 
--/* No inlining helps gcc to use registers better */
-+/*
-+ * This function formats all integers correctly, however on 32-bit
-+ * processors function below is used (not this one) which handles only
-+ * non-zero integers.  So be advised never to call this function with
-+ * num == 0.
-+ *
-+ * No inlining helps gcc to use registers better
-+ */
- static noinline_for_stack
- char *put_dec(char *buf, unsigned long long num)
- {
-@@ -293,36 +300,36 @@ char *put_dec_8bit(char *buf, unsigned q)
-  * permission from the author).  This performs no 64-bit division and
-  * hence should be faster on 32-bit machines then the version of the
-  * function above.
-+ *
-+ * This function formats correctly all NON-ZERO integers.  Passing
-+ * zero makes daemons come out of your closet.  This is OK, since
-+ * number(), which calls this function, has a special case for zero
-+ * anyways.
-  */
- static noinline_for_stack
- char *put_dec(char *buf, unsigned long long n)
- {
- 	uint32_t d3, d2, d1, q;
- 
--	if (n < 10) {
--		*buf++ = '0' + (unsigned)n;
--		return buf;
--	}
--
- 	d1 = (n >> 16) & 0xFFFF;
- 	d2 = (n >> 32) & 0xFFFF;
- 	d3 = (n >> 48) & 0xFFFF;
- 
--	q  = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
-+	q = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
- 
--	q  = q / 10000;
- 	buf = put_dec_full4(buf, q % 10000);
-+	q = q / 10000;
- 
- 	d1 = q + 7671 * d3 + 9496 * d2 + 6 * d1;
--	q  = d1 / 10000;
-+	q = d1 / 10000;
- 	buf = put_dec_full4(buf, d1 % 10000);
- 
- 	d2 = q + 4749 * d3 + 42 * d2;
--	q  = d2 / 10000;
-+	q = d2 / 10000;
- 	buf = put_dec_full4(buf, d2 % 10000);
- 
- 	d3 = q + 281 * d3;
--	q  = d3 / 10000;
-+	q = d3 / 10000;
- 	buf = put_dec_full4(buf, d3 % 10000);
- 
- 	buf = put_dec_full4(buf, q);
-@@ -407,22 +414,14 @@ char *number(char *buf, char *end, unsigned long long num,
- 			spec.field_width--;
- 		}
- 	}
--	if (need_pfx) {
--		spec.field_width--;
--		if (spec.base == 16)
--			spec.field_width--;
--	}
-+	if (need_pfx)
-+		spec.field_width -= spec.base / 8;
- 
- 	/* generate full string in tmp[], in reverse order */
- 	i = 0;
--	if (num == 0)
--		tmp[i++] = '0';
--	/* Generic code, for any base:
--	else do {
--		tmp[i++] = (digits[do_div(num,base)] | locase);
--	} while (num != 0);
--	*/
--	else if (spec.base != 10) { /* 8 or 16 */
-+	if (num < 8) {
-+		tmp[i++] = '0' + (char)num;
-+	} else if (spec.base != 10) { /* 8 or 16 */
- 		int mask = spec.base - 1;
- 		int shift = 3;
- 
--- 
-1.7.1
+Hugh
