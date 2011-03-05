@@ -1,63 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab1CEFVi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 00:21:38 -0500
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:45524 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab1CEFVh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 00:21:37 -0500
-Date: Sat, 5 Mar 2011 06:21:31 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: chenliu@asset.uwaterloo.ca
-Cc: schwidefsky@de.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2]early: fix possible overlapping data buffer
-Message-ID: <20110305052131.GA2687@osiris.boeblingen.de.ibm.com>
-References: <20110304151011.GA30600@asset.uwaterloo.ca>
+	id S1751238Ab1CEFZF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 00:25:05 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54998 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab1CEFZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 00:25:03 -0500
+Message-ID: <4D71C718.3020800@cn.fujitsu.com>
+Date: Sat, 05 Mar 2011 13:16:08 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304151011.GA30600@asset.uwaterloo.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Justin TerAvest <teravest@google.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        Chad Talbott <ctalbott@google.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6 v5.1] cfq-iosched: Introduce CFQ group hierarchical
+ scheduling and "use_hierarchy" interface
+References: <4D61FE91.60705@cn.fujitsu.com> <4D6201A3.70301@cn.fujitsu.com> <4D64788F.6040408@cn.fujitsu.com> <20110224181140.GE18494@redhat.com> <4D670C14.9040504@cn.fujitsu.com> <20110227231618.GA1014@redhat.com> <20110228001544.GA2762@redhat.com> <4D6E1556.5060905@cn.fujitsu.com> <4D706BC3.9090900@cn.fujitsu.com> <20110304191458.GE5466@redhat.com>
+In-Reply-To: <20110304191458.GE5466@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-05 13:23:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-03-05 13:23:50,
+	Serialize complete at 2011-03-05 13:23:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 10:10:11AM -0500, chenliu@asset.uwaterloo.ca wrote:
-> This patch fixes bugzilla #12965:
-> https://bugzilla.kernel.org/show_bug.cgi?id=12965
+Vivek Goyal wrote:
+> On Fri, Mar 04, 2011 at 12:34:11PM +0800, Gui Jianfeng wrote:
+>> Gui Jianfeng wrote:
+>>> Vivek Goyal wrote:
+>>>> On Sun, Feb 27, 2011 at 06:16:18PM -0500, Vivek Goyal wrote:
+>>>>> On Fri, Feb 25, 2011 at 09:55:32AM +0800, Gui Jianfeng wrote:
+>>>>>> Vivek Goyal wrote:
+>>>>>>> On Wed, Feb 23, 2011 at 11:01:35AM +0800, Gui Jianfeng wrote:
+>>>>>>>> Hi
+>>>>>>>>
+>>>>>>>> I rebase this series on top of *for-next* branch, it will make merging life easier.
+>>>>>>>>
+>>>>>>>> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
+>>>>>>>> in the way that it puts all CFQ queues in a hidden group and schedules with other 
+>>>>>>>> CFQ group under their parent. The patchset is available here,
+>>>>>>>> http://lkml.org/lkml/2010/8/30/30
+>>>>>>> Gui,
+>>>>>>>
+>>>>>>> I was running some tests (iostest) with these patches and my system crashed
+>>>>>>> after a while.
+>>>>>>>
+>>>>>>> To be precise I was running "brrmmap" test of iostest.
+>>>>>> Vivek,
+>>>>>>
+>>>>>> I simply run iostest with brrmmap mode, I can't reproduce this bug.
+>>>>>> Would you give more details.
+>>>>>> Can you tell me the iostest command line options?
+>>>>> iostest /dev/dm-1 -G --nrgrp 4 -m 8 --cgtime --io_serviced --dequeue --total
+>>>>>
+>>>>> I was actually trying to run all the workloads defined but after running
+>>>>> 2 workloads it crashed on 3rd workload.
+>>>>>
+>>>>> Now I tried to re-run brrmmap and it did not crash. So I am trying to run
+>>>>> all the inbuilt workloads again.
+>>>>>
+>>>>>> Did you enable use_hierarchy in root group?
+>>>>> No I did not. Trying to test the flat setup first.
+>>>> Again was running above job and after 3 workloads it ran into a different
+>>>> BUG_ON().
+>>> Vivek,
+>>>
+>>> It seems there's a race.
+>>> Would you try the following patch. This patch seems working for me.
+>>>
+>>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>>> index 380d667..abbbb0e 100644
+>>> --- a/block/cfq-iosched.c
+>>> +++ b/block/cfq-iosched.c
+>>> @@ -4126,11 +4126,12 @@ new_queue:
+>>>  	cfqq->allocated[rw]++;
+>>>  	cfqq->ref++;
+>>>  
+>>> -	spin_unlock_irqrestore(q->queue_lock, flags);
+>>> -
+>>>  	rq->elevator_private[0] = cic;
+>>>  	rq->elevator_private[1] = cfqq;
+>>>  	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
+>>> +
+>>> +	spin_unlock_irqrestore(q->queue_lock, flags);
+>>> +
+>>>  	return 0;
+>>>  
+>>>  queue_fail:
+>>>
+>>> Thanks
+>>> Gui
+>>>
+>> Jens,
+>>
+>> This bug seems being introduced in commmit 763414b in for-next branch when
+>> merging for-2.6.39/core branch.
+>> Would you apply the above patch?
+>>
+>> Vivek, can you try the patchset again with this fix? It works fine for me now.
 > 
-> The original code contains dangerous uses of sprintf functions like
-> sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13", defsys_cmd, min_size),
-> where defsys_cmd is defined as a fixed length buffer. Replace them with
-> snprintf can fix such issues.
+> Gui,
 > 
-> Signed-off-by: Chen Liu <chenliunju@gmail.com>
-> ---
->  arch/s390/kernel/early.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
-> 
-> --- a/arch/s390/kernel/early.c
-> +++ b/arch/s390/kernel/early.c
-> @@ -133,8 +133,8 @@ static noinline __init void create_kerne
->  		sinitrd_pfn = PFN_DOWN(__pa(INITRD_START));
->  		einitrd_pfn = PFN_UP(__pa(INITRD_START + INITRD_SIZE));
->  		min_size = einitrd_pfn << 2;
-> -		sprintf(defsys_cmd, "%s EW %.5X-%.5X", defsys_cmd,
-> -		sinitrd_pfn, einitrd_pfn);
-> +		snprintf(defsys_cmd, sizeof(defsys_cmd), "%s EW %.5X-%.5X",
-> +			 defsys_cmd, sinitrd_pfn, einitrd_pfn);
->  	}
->  #endif
+> Ok, I ran iostest with this fix and it seems to have worked. I need to run
+> it for some more time. And I also need to spend more time reviewing your
+> patchset. There are so many details to it. Soon I will spare some time
+> to review it more and also test it bit more.
 
-This is not the right fix for the bugzilla. What is complained about is that
-defsys_cmd is used both as input string as well as output string.
-The result in this case is not really defined since all input strings must
-be of type const char *, which in this case is obviously not true.
-It just happens to work because the format string consumes the input string
-first.
-Right fix would be to remember the written bytes of the previous sprintf to
-the string and use that as offset when adding something.
-In _addition_ all sprintfs could be converted to snprintfs as well.
+Vivek,
+
+Ok, thanks.
+
+> 
+> Of the top of my head I have one concern.
+> 
+> - How to map iopriority to weights. I am thinking that currently weight
+>   range is 100-1000. If we decide to extend the range in current scheme,
+>   it will change the ioprio entity weight also and effectively the
+>   service differentiation between ioprio level will change. I am
+>   wondering if this is a concern and how cpu scheduler has managed it
+
+Isn't it enought for ten times of weight difference? The old ioprio scheme
+has only 4.5 times service difference. So I think we don't need to extend
+the range for the time being.
+
+Thanks,
+Gui
+
+> 
+> Thanks
+> Vivek
+> 
