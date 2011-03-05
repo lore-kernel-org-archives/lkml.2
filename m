@@ -1,440 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab1CEUks (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:40:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63288 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753465Ab1CEUko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:40:44 -0500
-Date: Sat, 5 Mar 2011 21:31:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH v4 3/4] exec: unify do_execve/compat_do_execve code
-Message-ID: <20110305203140.GD7546@redhat.com>
-References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com> <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com> <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com> <20110305203040.GA7546@redhat.com>
+	id S1754089Ab1CETPQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 14:15:16 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16718 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab1CETPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 14:15:14 -0500
+Message-ID: <4D728B8C.2080803@kernel.org>
+Date: Sat, 05 Mar 2011 11:14:20 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110305203040.GA7546@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-mm@kvack.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC] memblock; Properly handle overlaps
+References: <1299297946.8833.931.camel@pasglop>	 <4D71CE24.1090302@kernel.org> <1299311788.8833.937.camel@pasglop>
+In-Reply-To: <1299311788.8833.937.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D728BAE.0076,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the appropriate members into struct user_arg_ptr and teach
-get_user_arg_ptr() to handle is_compat = T case correctly.
+On 03/04/2011 11:56 PM, Benjamin Herrenschmidt wrote:
+>>
+>> did you try remove and add tricks?
+> 
+> Yes, and it's a band-wait on top of a wooden leg... (didn't even work
+> properly for some real cases I hit with bad FW data, ended up with two
+> regions once reserving a portion of the previous one). It doesn't take
+> long starting at the implementation of remove() to understand why :-)
+> 
+> Also, if something like that happens, you expose yourself to rampant
+> corruption and other very hard to debug problems, because nothing will
+> tell you that the array is corrupted (no longer a monotonic progression)
+> and you might get overlapping allocations, allocations spanning reserved
+> regions etc... all silently.
+> 
+> I think the whole thing was long overdue for an overhaul. Hopefully, my
+> new code is -much- more robust under all circumstances of full overlap,
+> partial overlap, freeing entire regions with multiple blocks in them or
+> reserving regions with multiple holes, etc...
+> 
+> Note that my patch really only rewrite those two low level functions
+> (add and remove of a region to a list), so it's reasonably contained and
+> should be easy to audit.
+> 
+> I want to spend a bit more time next week throwing at my userspace
+> version some nasty test cases involving non-coalesce boundaries, and
+> once that's done, and unless I have some massive bug I haven't seen, I
+> think we should just merge the patch.
 
-This allows us to remove the compat_do_execve() code from fs/compat.c
-and reimplement compat_do_execve() as the trivial wrapper on top of
-do_execve_common(is_compat => true).
+please check changes on top your patch regarding memblock_add_region
+1. after check with bottom, we need to update the size. otherwise when we checking with top, we could use wrong size, and increase to extra big.
+2. before we calling memblock_remove_region() in the loop, it could render blank array. So need to move the special case handle down.
 
-In fact, this fixes another (minor) bug. "compat_uptr_t str" can
-overflow after "str += len" in compat_copy_strings() if a 64bit
-application execs via sys32_execve().
+Thanks
 
-Unexport acct_arg_size() and get_arg_page(), fs/compat.c doesn't
-need them any longer.
+Yinghai
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
+ mm/memblock.c |   32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
 
- include/linux/binfmts.h |    4 
- fs/exec.c               |   58 +++++++++--
- fs/compat.c             |  235 ------------------------------------------------
- 3 files changed, 46 insertions(+), 251 deletions(-)
-
---- 38/include/linux/binfmts.h~3_handle_compat_case	2011-03-05 21:13:45.000000000 +0100
-+++ 38/include/linux/binfmts.h	2011-03-05 21:23:15.000000000 +0100
-@@ -60,10 +60,6 @@ struct linux_binprm {
- 	unsigned long loader, exec;
- };
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -279,15 +279,6 @@ static long __init_memblock memblock_add
+ 	phys_addr_t end = base + size;
+ 	long i;
  
--extern void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
--extern struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
--					int write);
+-	/* If the array is empty, special case, replace the fake
+-	 * filler region and return
+-	 */
+-	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
+-		type->regions[0].base = base;
+-		type->regions[0].size = size;
+-		return 0;
+-	}
 -
- #define BINPRM_FLAGS_ENFORCE_NONDUMP_BIT 0
- #define BINPRM_FLAGS_ENFORCE_NONDUMP (1 << BINPRM_FLAGS_ENFORCE_NONDUMP_BIT)
+ 	/* First try and coalesce this MEMBLOCK with others */
+ 	for (i = 0; i < type->cnt; i++) {
+ 		struct memblock_region *rgn = &type->regions[i];
+@@ -330,11 +321,17 @@ static long __init_memblock memblock_add
+ 			 * coalesced block.
+ 			 */
+ 			base = rgn->base + rgn->size;
+-		}
  
---- 38/fs/exec.c~3_handle_compat_case	2011-03-05 21:22:42.000000000 +0100
-+++ 38/fs/exec.c	2011-03-05 21:23:15.000000000 +0100
-@@ -55,6 +55,7 @@
- #include <linux/fs_struct.h>
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
-+#include <linux/compat.h>
- 
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
-@@ -164,7 +165,7 @@ out:
- 
- #ifdef CONFIG_MMU
- 
--void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
- {
- 	struct mm_struct *mm = current->mm;
- 	long diff = (long)(pages - bprm->vma_pages);
-@@ -183,7 +184,7 @@ void acct_arg_size(struct linux_binprm *
- #endif
- }
- 
--struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
- 	struct page *page;
-@@ -302,11 +303,11 @@ static bool valid_arg_len(struct linux_b
- 
- #else
- 
--void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
- {
- }
- 
--struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
- 	struct page *page;
-@@ -396,17 +397,34 @@ err:
- }
- 
- struct user_arg_ptr {
--	const char __user *const __user *native;
-+#ifdef CONFIG_COMPAT
-+	bool is_compat;
-+#endif
-+	union {
-+		const char __user *const __user *native;
-+		compat_uptr_t __user *compat;
-+	} ptr;
- };
- 
- static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
- {
--	const char __user *ptr;
-+	const char __user *native;
- 
--	if (get_user(ptr, argv.native + nr))
-+#ifdef CONFIG_COMPAT
-+	if (unlikely(argv.is_compat)) {
-+		compat_uptr_t compat;
+-		/* Check if e have nothing else to allocate (fully coalesced) */
+-		if (base >= end)
+-			return 0;
++			/*
++			 * Check if We have nothing else to allocate
++			 * (fully coalesced)
++			 */
++			if (base >= end)
++				return 0;
 +
-+		if (get_user(compat, argv.ptr.compat + nr))
-+			return ERR_PTR(-EFAULT);
-+
-+		return compat_ptr(compat);
++			/* Update left over size */
++			size = end - base;
++		}
+ 
+ 		/* Now check if we overlap or are adjacent with the
+ 		 * top of a block
+@@ -360,6 +357,15 @@ static long __init_memblock memblock_add
+ 		}
+ 	}
+ 
++	/* If the array is empty, special case, replace the fake
++	 * filler region and return
++	 */
++	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
++		type->regions[0].base = base;
++		type->regions[0].size = size;
++		return 0;
 +	}
-+#endif
 +
-+	if (get_user(native, argv.ptr.native + nr))
- 		return ERR_PTR(-EFAULT);
- 
--	return ptr;
-+	return native;
- }
- 
- /*
-@@ -416,7 +434,7 @@ static int count(struct user_arg_ptr arg
- {
- 	int i = 0;
- 
--	if (argv.native != NULL) {
-+	if (argv.ptr.native != NULL) {
- 		for (;;) {
- 			const char __user *p = get_user_arg_ptr(argv, i);
- 
-@@ -539,7 +557,7 @@ int copy_strings_kernel(int argc, const 
- 	int r;
- 	mm_segment_t oldfs = get_fs();
- 	struct user_arg_ptr argv = {
--		.native = (const char __user *const  __user *)__argv,
-+		.ptr.native = (const char __user *const  __user *)__argv,
- 	};
- 
- 	set_fs(KERNEL_DS);
-@@ -1510,10 +1528,28 @@ int do_execve(const char *filename,
- 	const char __user *const __user *__envp,
- 	struct pt_regs *regs)
- {
--	struct user_arg_ptr argv = { .native = __argv };
--	struct user_arg_ptr envp = { .native = __envp };
-+	struct user_arg_ptr argv = { .ptr.native = __argv };
-+	struct user_arg_ptr envp = { .ptr.native = __envp };
-+	return do_execve_common(filename, argv, envp, regs);
-+}
-+
-+#ifdef CONFIG_COMPAT
-+int compat_do_execve(char *filename,
-+	compat_uptr_t __user *__argv,
-+	compat_uptr_t __user *__envp,
-+	struct pt_regs *regs)
-+{
-+	struct user_arg_ptr argv = {
-+		.is_compat = true,
-+		.ptr.compat = __argv,
-+	};
-+	struct user_arg_ptr envp = {
-+		.is_compat = true,
-+		.ptr.compat = __envp,
-+	};
- 	return do_execve_common(filename, argv, envp, regs);
- }
-+#endif
- 
- void set_binfmt(struct linux_binfmt *new)
- {
---- 38/fs/compat.c~3_handle_compat_case	2011-03-05 21:13:45.000000000 +0100
-+++ 38/fs/compat.c	2011-03-05 21:23:15.000000000 +0100
-@@ -1330,241 +1330,6 @@ compat_sys_openat(unsigned int dfd, cons
- 	return do_sys_open(dfd, filename, flags, mode);
- }
- 
--/*
-- * compat_count() counts the number of arguments/envelopes. It is basically
-- * a copy of count() from fs/exec.c, except that it works with 32 bit argv
-- * and envp pointers.
-- */
--static int compat_count(compat_uptr_t __user *argv, int max)
--{
--	int i = 0;
--
--	if (argv != NULL) {
--		for (;;) {
--			compat_uptr_t p;
--
--			if (get_user(p, argv))
--				return -EFAULT;
--			if (!p)
--				break;
--			argv++;
--			if (i++ >= max)
--				return -E2BIG;
--
--			if (fatal_signal_pending(current))
--				return -ERESTARTNOHAND;
--			cond_resched();
--		}
--	}
--	return i;
--}
--
--/*
-- * compat_copy_strings() is basically a copy of copy_strings() from fs/exec.c
-- * except that it works with 32 bit argv and envp pointers.
-- */
--static int compat_copy_strings(int argc, compat_uptr_t __user *argv,
--				struct linux_binprm *bprm)
--{
--	struct page *kmapped_page = NULL;
--	char *kaddr = NULL;
--	unsigned long kpos = 0;
--	int ret;
--
--	while (argc-- > 0) {
--		compat_uptr_t str;
--		int len;
--		unsigned long pos;
--
--		if (get_user(str, argv+argc) ||
--		    !(len = strnlen_user(compat_ptr(str), MAX_ARG_STRLEN))) {
--			ret = -EFAULT;
--			goto out;
--		}
--
--		if (len > MAX_ARG_STRLEN) {
--			ret = -E2BIG;
--			goto out;
--		}
--
--		/* We're going to work our way backwords. */
--		pos = bprm->p;
--		str += len;
--		bprm->p -= len;
--
--		while (len > 0) {
--			int offset, bytes_to_copy;
--
--			if (fatal_signal_pending(current)) {
--				ret = -ERESTARTNOHAND;
--				goto out;
--			}
--			cond_resched();
--
--			offset = pos % PAGE_SIZE;
--			if (offset == 0)
--				offset = PAGE_SIZE;
--
--			bytes_to_copy = offset;
--			if (bytes_to_copy > len)
--				bytes_to_copy = len;
--
--			offset -= bytes_to_copy;
--			pos -= bytes_to_copy;
--			str -= bytes_to_copy;
--			len -= bytes_to_copy;
--
--			if (!kmapped_page || kpos != (pos & PAGE_MASK)) {
--				struct page *page;
--
--				page = get_arg_page(bprm, pos, 1);
--				if (!page) {
--					ret = -E2BIG;
--					goto out;
--				}
--
--				if (kmapped_page) {
--					flush_kernel_dcache_page(kmapped_page);
--					kunmap(kmapped_page);
--					put_page(kmapped_page);
--				}
--				kmapped_page = page;
--				kaddr = kmap(kmapped_page);
--				kpos = pos & PAGE_MASK;
--				flush_cache_page(bprm->vma, kpos,
--						 page_to_pfn(kmapped_page));
--			}
--			if (copy_from_user(kaddr+offset, compat_ptr(str),
--						bytes_to_copy)) {
--				ret = -EFAULT;
--				goto out;
--			}
--		}
--	}
--	ret = 0;
--out:
--	if (kmapped_page) {
--		flush_kernel_dcache_page(kmapped_page);
--		kunmap(kmapped_page);
--		put_page(kmapped_page);
--	}
--	return ret;
--}
--
--/*
-- * compat_do_execve() is mostly a copy of do_execve(), with the exception
-- * that it processes 32 bit argv and envp pointers.
-- */
--int compat_do_execve(char * filename,
--	compat_uptr_t __user *argv,
--	compat_uptr_t __user *envp,
--	struct pt_regs * regs)
--{
--	struct linux_binprm *bprm;
--	struct file *file;
--	struct files_struct *displaced;
--	bool clear_in_exec;
--	int retval;
--
--	retval = unshare_files(&displaced);
--	if (retval)
--		goto out_ret;
--
--	retval = -ENOMEM;
--	bprm = kzalloc(sizeof(*bprm), GFP_KERNEL);
--	if (!bprm)
--		goto out_files;
--
--	retval = prepare_bprm_creds(bprm);
--	if (retval)
--		goto out_free;
--
--	retval = check_unsafe_exec(bprm);
--	if (retval < 0)
--		goto out_free;
--	clear_in_exec = retval;
--	current->in_execve = 1;
--
--	file = open_exec(filename);
--	retval = PTR_ERR(file);
--	if (IS_ERR(file))
--		goto out_unmark;
--
--	sched_exec();
--
--	bprm->file = file;
--	bprm->filename = filename;
--	bprm->interp = filename;
--
--	retval = bprm_mm_init(bprm);
--	if (retval)
--		goto out_file;
--
--	bprm->argc = compat_count(argv, MAX_ARG_STRINGS);
--	if ((retval = bprm->argc) < 0)
--		goto out;
--
--	bprm->envc = compat_count(envp, MAX_ARG_STRINGS);
--	if ((retval = bprm->envc) < 0)
--		goto out;
--
--	retval = prepare_binprm(bprm);
--	if (retval < 0)
--		goto out;
--
--	retval = copy_strings_kernel(1, &bprm->filename, bprm);
--	if (retval < 0)
--		goto out;
--
--	bprm->exec = bprm->p;
--	retval = compat_copy_strings(bprm->envc, envp, bprm);
--	if (retval < 0)
--		goto out;
--
--	retval = compat_copy_strings(bprm->argc, argv, bprm);
--	if (retval < 0)
--		goto out;
--
--	retval = search_binary_handler(bprm, regs);
--	if (retval < 0)
--		goto out;
--
--	/* execve succeeded */
--	current->fs->in_exec = 0;
--	current->in_execve = 0;
--	acct_update_integrals(current);
--	free_bprm(bprm);
--	if (displaced)
--		put_files_struct(displaced);
--	return retval;
--
--out:
--	if (bprm->mm) {
--		acct_arg_size(bprm, 0);
--		mmput(bprm->mm);
--	}
--
--out_file:
--	if (bprm->file) {
--		allow_write_access(bprm->file);
--		fput(bprm->file);
--	}
--
--out_unmark:
--	if (clear_in_exec)
--		current->fs->in_exec = 0;
--	current->in_execve = 0;
--
--out_free:
--	free_bprm(bprm);
--
--out_files:
--	if (displaced)
--		reset_files_struct(displaced);
--out_ret:
--	return retval;
--}
--
- #define __COMPAT_NFDBITS       (8 * sizeof(compat_ulong_t))
- 
- static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
-
+  new_block:
+ 	/* If we are out of space, we fail. It's too late to resize the array
+ 	 * but then this shouldn't have happened in the first place.
