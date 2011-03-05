@@ -1,70 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab1CEQwa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 11:52:30 -0500
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:50249 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab1CEQtS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 11:49:18 -0500
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: [PATCHv2 11/24] sys_swapon: do only cleanup in the cleanup blocks
-Date: Sat,  5 Mar 2011 13:42:12 -0300
-Message-Id: <1299343345-3984-12-git-send-email-cesarb@cesarb.net>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
-References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+	id S1752921Ab1CEPfu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 10:35:50 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:29254 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab1CEPft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 10:35:49 -0500
+Message-ID: <4D72580D.4000208@gmail.com>
+Date: Sat, 05 Mar 2011 18:34:37 +0300
+From: Andrew Vagin <avagin@gmail.com>
+Reply-To: avagin@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: check zone->all_unreclaimable in all_unreclaimable()
+References: <1299325456-2687-1-git-send-email-avagin@openvz.org> <20110305152056.GA1918@barrios-desktop>
+In-Reply-To: <20110305152056.GA1918@barrios-desktop>
+Content-Type: multipart/mixed;
+ boundary="------------060901050701040301010807"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only way error is 0 in the cleanup blocks is when the function is
-returning successfully. In this case, the cleanup blocks were setting
-S_SWAPFILE in the S_ISREG case. But this is not a cleanup.
+This is a multi-part message in MIME format.
+--------------060901050701040301010807
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Move the setting of S_SWAPFILE to just before the "goto out;" to make
-this more clear. At this point, we do not need to test for inode because
-it will never be NULL.
+On 03/05/2011 06:20 PM, Minchan Kim wrote:
+> On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
+>> Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
+>> kernel may hang up, because shrink_zones() will do nothing, but
+>> all_unreclaimable() will say, that zone has reclaimable pages.
+>>
+>> do_try_to_free_pages()
+>> 	shrink_zones()
+>> 		 for_each_zone
+>> 			if (zone->all_unreclaimable)
+>> 				continue
+>> 	if !all_unreclaimable(zonelist, sc)
+>> 		return 1
+>>
+>> __alloc_pages_slowpath()
+>> retry:
+>> 	did_some_progress = do_try_to_free_pages(page)
+>> 	...
+>> 	if (!page&&  did_some_progress)
+>> 		retry;
+>>
+>> Signed-off-by: Andrey Vagin<avagin@openvz.org>
+>> ---
+>>   mm/vmscan.c |    2 ++
+>>   1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 6771ea7..1c056f7 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
+>>
+>>   	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>>   			gfp_zone(sc->gfp_mask), sc->nodemask) {
+>> +		if (zone->all_unreclaimable)
+>> +			continue;
+>>   		if (!populated_zone(zone))
+>>   			continue;
+>>   		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+>
+> zone_reclaimable checks it. Isn't it enough?
+I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
+This two patches are enough.
+> Does the hang up really happen or see it by code review?
+Yes. You can reproduce it for help the attached python program. It's not 
+very clever:)
+It make the following actions in loop:
+1. fork
+2. mmap
+3. touch memory
+4. read memory
+5. munmmap
 
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-Tested-by: Eric B Munson <emunson@mgebm.net>
-Acked-by: Eric B Munson <emunson@mgebm.net>
----
- mm/swapfile.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+>> -- 
+>> 1.7.1
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index bc00c1a..ebc0307 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2136,6 +2136,8 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 	atomic_inc(&proc_poll_event);
- 	wake_up_interruptible(&proc_poll_wait);
- 
-+	if (S_ISREG(inode->i_mode))
-+		inode->i_flags |= S_SWAPFILE;
- 	error = 0;
- 	goto out;
- bad_swap:
-@@ -2160,11 +2162,8 @@ out:
- 	}
- 	if (name)
- 		putname(name);
--	if (inode && S_ISREG(inode->i_mode)) {
--		if (!error)
--			inode->i_flags |= S_SWAPFILE;
-+	if (inode && S_ISREG(inode->i_mode))
- 		mutex_unlock(&inode->i_mutex);
--	}
- 	return error;
- }
- 
--- 
-1.7.4
 
+--------------060901050701040301010807
+Content-Type: text/plain;
+ name="memeater.py"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="memeater.py"
+
+import sys, time, mmap, os
+from subprocess import Popen, PIPE
+import random
+
+global mem_size
+
+def info(msg):
+	pid = os.getpid()
+	print >> sys.stderr, "%s: %s" % (pid, msg)
+	sys.stderr.flush()
+
+
+
+def memory_loop(cmd = "a"):
+	"""
+	cmd may be:
+		c: check memory
+		else: touch memory
+	"""
+	c = 0
+	for j in xrange(0, mem_size):
+		if cmd == "c":
+			if f[j<<12] != chr(j % 255):
+				info("Data corruption")
+				sys.exit(1)
+		else:
+			f[j<<12] = chr(j % 255)
+
+while True:
+	pid = os.fork()
+	if (pid != 0):
+		mem_size = random.randint(0, 56 * 4096)
+		f = mmap.mmap(-1, mem_size << 12, mmap.MAP_ANONYMOUS|mmap.MAP_PRIVATE)
+		memory_loop()
+		memory_loop("c")
+		f.close()
+
+--------------060901050701040301010807--
