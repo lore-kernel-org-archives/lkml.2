@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab1CEUju (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:39:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64905 "EHLO mx1.redhat.com"
+	id S1754378Ab1CEUks (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 15:40:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63288 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab1CEUjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:39:48 -0500
-Date: Sat, 5 Mar 2011 21:30:40 +0100
+	id S1753465Ab1CEUko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 15:40:44 -0500
+Date: Sat, 5 Mar 2011 21:31:40 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
@@ -15,39 +15,426 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
         Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH v4 0/4] exec: unify native/compat code
-Message-ID: <20110305203040.GA7546@redhat.com>
-References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com> <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com> <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com>
+Subject: [PATCH v4 3/4] exec: unify do_execve/compat_do_execve code
+Message-ID: <20110305203140.GD7546@redhat.com>
+References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com> <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com> <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com> <20110305203040.GA7546@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com>
+In-Reply-To: <20110305203040.GA7546@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03, Linus Torvalds wrote:
->
-> On Thu, Mar 3, 2011 at 7:47 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> I _personally_ don't like "conditional". Its name is based on code logic.
-> >> It's unclear what mean "conditional". From data strucuture view, It is
-> >> "opaque userland pointer".
-> >
-> > I agree with any naming, just suggest a better name ;)
->
-> Maybe just "struct user_arg_ptr" or something?
+Add the appropriate members into struct user_arg_ptr and teach
+get_user_arg_ptr() to handle is_compat = T case correctly.
 
-OK, nothing else was suggessted, I assume Kosaki agrees.
+This allows us to remove the compat_do_execve() code from fs/compat.c
+and reimplement compat_do_execve() as the trivial wrapper on top of
+do_execve_common(is_compat => true).
 
-So rename conditional_ptr to user_arg_ptr.
+In fact, this fixes another (minor) bug. "compat_uptr_t str" can
+overflow after "str += len" in compat_copy_strings() if a 64bit
+application execs via sys32_execve().
 
-Also rename get_user_ptr() to get_user_arg_ptr(). It was suggested to
-use the same "user_arg_ptr" for this helper too, but this is not
-grep-friendly. As for get_ in the name... Well, I can redo again ;)
-But this matches get_user() and this is all what this helper does.
+Unexport acct_arg_size() and get_arg_page(), fs/compat.c doesn't
+need them any longer.
 
-Otherwise unchanged.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
 
-Oleg.
+ include/linux/binfmts.h |    4 
+ fs/exec.c               |   58 +++++++++--
+ fs/compat.c             |  235 ------------------------------------------------
+ 3 files changed, 46 insertions(+), 251 deletions(-)
+
+--- 38/include/linux/binfmts.h~3_handle_compat_case	2011-03-05 21:13:45.000000000 +0100
++++ 38/include/linux/binfmts.h	2011-03-05 21:23:15.000000000 +0100
+@@ -60,10 +60,6 @@ struct linux_binprm {
+ 	unsigned long loader, exec;
+ };
+ 
+-extern void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
+-extern struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+-					int write);
+-
+ #define BINPRM_FLAGS_ENFORCE_NONDUMP_BIT 0
+ #define BINPRM_FLAGS_ENFORCE_NONDUMP (1 << BINPRM_FLAGS_ENFORCE_NONDUMP_BIT)
+ 
+--- 38/fs/exec.c~3_handle_compat_case	2011-03-05 21:22:42.000000000 +0100
++++ 38/fs/exec.c	2011-03-05 21:23:15.000000000 +0100
+@@ -55,6 +55,7 @@
+ #include <linux/fs_struct.h>
+ #include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
++#include <linux/compat.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -164,7 +165,7 @@ out:
+ 
+ #ifdef CONFIG_MMU
+ 
+-void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	long diff = (long)(pages - bprm->vma_pages);
+@@ -183,7 +184,7 @@ void acct_arg_size(struct linux_binprm *
+ #endif
+ }
+ 
+-struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
++static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+ 	struct page *page;
+@@ -302,11 +303,11 @@ static bool valid_arg_len(struct linux_b
+ 
+ #else
+ 
+-void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
+ {
+ }
+ 
+-struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
++static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+ 	struct page *page;
+@@ -396,17 +397,34 @@ err:
+ }
+ 
+ struct user_arg_ptr {
+-	const char __user *const __user *native;
++#ifdef CONFIG_COMPAT
++	bool is_compat;
++#endif
++	union {
++		const char __user *const __user *native;
++		compat_uptr_t __user *compat;
++	} ptr;
+ };
+ 
+ static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
+ {
+-	const char __user *ptr;
++	const char __user *native;
+ 
+-	if (get_user(ptr, argv.native + nr))
++#ifdef CONFIG_COMPAT
++	if (unlikely(argv.is_compat)) {
++		compat_uptr_t compat;
++
++		if (get_user(compat, argv.ptr.compat + nr))
++			return ERR_PTR(-EFAULT);
++
++		return compat_ptr(compat);
++	}
++#endif
++
++	if (get_user(native, argv.ptr.native + nr))
+ 		return ERR_PTR(-EFAULT);
+ 
+-	return ptr;
++	return native;
+ }
+ 
+ /*
+@@ -416,7 +434,7 @@ static int count(struct user_arg_ptr arg
+ {
+ 	int i = 0;
+ 
+-	if (argv.native != NULL) {
++	if (argv.ptr.native != NULL) {
+ 		for (;;) {
+ 			const char __user *p = get_user_arg_ptr(argv, i);
+ 
+@@ -539,7 +557,7 @@ int copy_strings_kernel(int argc, const 
+ 	int r;
+ 	mm_segment_t oldfs = get_fs();
+ 	struct user_arg_ptr argv = {
+-		.native = (const char __user *const  __user *)__argv,
++		.ptr.native = (const char __user *const  __user *)__argv,
+ 	};
+ 
+ 	set_fs(KERNEL_DS);
+@@ -1510,10 +1528,28 @@ int do_execve(const char *filename,
+ 	const char __user *const __user *__envp,
+ 	struct pt_regs *regs)
+ {
+-	struct user_arg_ptr argv = { .native = __argv };
+-	struct user_arg_ptr envp = { .native = __envp };
++	struct user_arg_ptr argv = { .ptr.native = __argv };
++	struct user_arg_ptr envp = { .ptr.native = __envp };
++	return do_execve_common(filename, argv, envp, regs);
++}
++
++#ifdef CONFIG_COMPAT
++int compat_do_execve(char *filename,
++	compat_uptr_t __user *__argv,
++	compat_uptr_t __user *__envp,
++	struct pt_regs *regs)
++{
++	struct user_arg_ptr argv = {
++		.is_compat = true,
++		.ptr.compat = __argv,
++	};
++	struct user_arg_ptr envp = {
++		.is_compat = true,
++		.ptr.compat = __envp,
++	};
+ 	return do_execve_common(filename, argv, envp, regs);
+ }
++#endif
+ 
+ void set_binfmt(struct linux_binfmt *new)
+ {
+--- 38/fs/compat.c~3_handle_compat_case	2011-03-05 21:13:45.000000000 +0100
++++ 38/fs/compat.c	2011-03-05 21:23:15.000000000 +0100
+@@ -1330,241 +1330,6 @@ compat_sys_openat(unsigned int dfd, cons
+ 	return do_sys_open(dfd, filename, flags, mode);
+ }
+ 
+-/*
+- * compat_count() counts the number of arguments/envelopes. It is basically
+- * a copy of count() from fs/exec.c, except that it works with 32 bit argv
+- * and envp pointers.
+- */
+-static int compat_count(compat_uptr_t __user *argv, int max)
+-{
+-	int i = 0;
+-
+-	if (argv != NULL) {
+-		for (;;) {
+-			compat_uptr_t p;
+-
+-			if (get_user(p, argv))
+-				return -EFAULT;
+-			if (!p)
+-				break;
+-			argv++;
+-			if (i++ >= max)
+-				return -E2BIG;
+-
+-			if (fatal_signal_pending(current))
+-				return -ERESTARTNOHAND;
+-			cond_resched();
+-		}
+-	}
+-	return i;
+-}
+-
+-/*
+- * compat_copy_strings() is basically a copy of copy_strings() from fs/exec.c
+- * except that it works with 32 bit argv and envp pointers.
+- */
+-static int compat_copy_strings(int argc, compat_uptr_t __user *argv,
+-				struct linux_binprm *bprm)
+-{
+-	struct page *kmapped_page = NULL;
+-	char *kaddr = NULL;
+-	unsigned long kpos = 0;
+-	int ret;
+-
+-	while (argc-- > 0) {
+-		compat_uptr_t str;
+-		int len;
+-		unsigned long pos;
+-
+-		if (get_user(str, argv+argc) ||
+-		    !(len = strnlen_user(compat_ptr(str), MAX_ARG_STRLEN))) {
+-			ret = -EFAULT;
+-			goto out;
+-		}
+-
+-		if (len > MAX_ARG_STRLEN) {
+-			ret = -E2BIG;
+-			goto out;
+-		}
+-
+-		/* We're going to work our way backwords. */
+-		pos = bprm->p;
+-		str += len;
+-		bprm->p -= len;
+-
+-		while (len > 0) {
+-			int offset, bytes_to_copy;
+-
+-			if (fatal_signal_pending(current)) {
+-				ret = -ERESTARTNOHAND;
+-				goto out;
+-			}
+-			cond_resched();
+-
+-			offset = pos % PAGE_SIZE;
+-			if (offset == 0)
+-				offset = PAGE_SIZE;
+-
+-			bytes_to_copy = offset;
+-			if (bytes_to_copy > len)
+-				bytes_to_copy = len;
+-
+-			offset -= bytes_to_copy;
+-			pos -= bytes_to_copy;
+-			str -= bytes_to_copy;
+-			len -= bytes_to_copy;
+-
+-			if (!kmapped_page || kpos != (pos & PAGE_MASK)) {
+-				struct page *page;
+-
+-				page = get_arg_page(bprm, pos, 1);
+-				if (!page) {
+-					ret = -E2BIG;
+-					goto out;
+-				}
+-
+-				if (kmapped_page) {
+-					flush_kernel_dcache_page(kmapped_page);
+-					kunmap(kmapped_page);
+-					put_page(kmapped_page);
+-				}
+-				kmapped_page = page;
+-				kaddr = kmap(kmapped_page);
+-				kpos = pos & PAGE_MASK;
+-				flush_cache_page(bprm->vma, kpos,
+-						 page_to_pfn(kmapped_page));
+-			}
+-			if (copy_from_user(kaddr+offset, compat_ptr(str),
+-						bytes_to_copy)) {
+-				ret = -EFAULT;
+-				goto out;
+-			}
+-		}
+-	}
+-	ret = 0;
+-out:
+-	if (kmapped_page) {
+-		flush_kernel_dcache_page(kmapped_page);
+-		kunmap(kmapped_page);
+-		put_page(kmapped_page);
+-	}
+-	return ret;
+-}
+-
+-/*
+- * compat_do_execve() is mostly a copy of do_execve(), with the exception
+- * that it processes 32 bit argv and envp pointers.
+- */
+-int compat_do_execve(char * filename,
+-	compat_uptr_t __user *argv,
+-	compat_uptr_t __user *envp,
+-	struct pt_regs * regs)
+-{
+-	struct linux_binprm *bprm;
+-	struct file *file;
+-	struct files_struct *displaced;
+-	bool clear_in_exec;
+-	int retval;
+-
+-	retval = unshare_files(&displaced);
+-	if (retval)
+-		goto out_ret;
+-
+-	retval = -ENOMEM;
+-	bprm = kzalloc(sizeof(*bprm), GFP_KERNEL);
+-	if (!bprm)
+-		goto out_files;
+-
+-	retval = prepare_bprm_creds(bprm);
+-	if (retval)
+-		goto out_free;
+-
+-	retval = check_unsafe_exec(bprm);
+-	if (retval < 0)
+-		goto out_free;
+-	clear_in_exec = retval;
+-	current->in_execve = 1;
+-
+-	file = open_exec(filename);
+-	retval = PTR_ERR(file);
+-	if (IS_ERR(file))
+-		goto out_unmark;
+-
+-	sched_exec();
+-
+-	bprm->file = file;
+-	bprm->filename = filename;
+-	bprm->interp = filename;
+-
+-	retval = bprm_mm_init(bprm);
+-	if (retval)
+-		goto out_file;
+-
+-	bprm->argc = compat_count(argv, MAX_ARG_STRINGS);
+-	if ((retval = bprm->argc) < 0)
+-		goto out;
+-
+-	bprm->envc = compat_count(envp, MAX_ARG_STRINGS);
+-	if ((retval = bprm->envc) < 0)
+-		goto out;
+-
+-	retval = prepare_binprm(bprm);
+-	if (retval < 0)
+-		goto out;
+-
+-	retval = copy_strings_kernel(1, &bprm->filename, bprm);
+-	if (retval < 0)
+-		goto out;
+-
+-	bprm->exec = bprm->p;
+-	retval = compat_copy_strings(bprm->envc, envp, bprm);
+-	if (retval < 0)
+-		goto out;
+-
+-	retval = compat_copy_strings(bprm->argc, argv, bprm);
+-	if (retval < 0)
+-		goto out;
+-
+-	retval = search_binary_handler(bprm, regs);
+-	if (retval < 0)
+-		goto out;
+-
+-	/* execve succeeded */
+-	current->fs->in_exec = 0;
+-	current->in_execve = 0;
+-	acct_update_integrals(current);
+-	free_bprm(bprm);
+-	if (displaced)
+-		put_files_struct(displaced);
+-	return retval;
+-
+-out:
+-	if (bprm->mm) {
+-		acct_arg_size(bprm, 0);
+-		mmput(bprm->mm);
+-	}
+-
+-out_file:
+-	if (bprm->file) {
+-		allow_write_access(bprm->file);
+-		fput(bprm->file);
+-	}
+-
+-out_unmark:
+-	if (clear_in_exec)
+-		current->fs->in_exec = 0;
+-	current->in_execve = 0;
+-
+-out_free:
+-	free_bprm(bprm);
+-
+-out_files:
+-	if (displaced)
+-		reset_files_struct(displaced);
+-out_ret:
+-	return retval;
+-}
+-
+ #define __COMPAT_NFDBITS       (8 * sizeof(compat_ulong_t))
+ 
+ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
 
