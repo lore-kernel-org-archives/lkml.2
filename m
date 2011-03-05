@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab1CEMnI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 07:43:08 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:41853 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab1CEMnG (ORCPT
+	id S1753286Ab1CEM4q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 07:56:46 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44928 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633Ab1CEM4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 07:43:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=Ld4hVN0xLIEhDWmGuHCDZtbeY585q/NtzQZyGK7L3JF1SHjmheZRRDFEbeWepU22d7
-         xGzeacc1yER8QyMohJKQ==
-Date: Sat, 5 Mar 2011 04:42:30 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Nazarewicz <mina86@mina86.com>,
-        "Douglas W. Jones" <jones@cs.uiowa.edu>,
-        Denis Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH mmotm] fix broken bootup on 32-bit
-Message-ID: <alpine.LSU.2.00.1103050436010.4098@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sat, 5 Mar 2011 07:56:45 -0500
+Date: Sat, 5 Mar 2011 13:56:37 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Johan Wessfeldt <johan.wessfeldt@gmail.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "J.P. Lacerda" <jp.lacerda@codethink.co.uk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] x86: Fix mcheck_init_device() to handle
+ misc_register() correctly
+Message-ID: <20110305125637.GB27180@aftab>
+References: <1299245367-20279-1-git-send-email-jp.lacerda@codethink.co.uk>
+ <20110304171619.GB9311@gere.osrc.amd.com>
+ <AANLkTim42BWV4EiM7M6m8CLQZMZ4j8LnBgA-+2Wz==9a@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim42BWV4EiM7M6m8CLQZMZ4j8LnBgA-+2Wz==9a@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmotm 2011-03-02-16-52 is utterly broken on 32-bit: panics at boot
-with "Couldn't register console driver", and preceding warnings don't
-even print their line numbers... which leads to the vsprintf changes.
+On Fri, Mar 04, 2011 at 04:07:21PM -0500, Johan Wessfeldt wrote:
+> On Fri, Mar 4, 2011 at 6:16 PM, Borislav Petkov <bp@amd64.org> wrote:
 
-Comparing the 32-bit version of put_dec() against mod7_put_dec()
-in tools/put-dec/put-dec-test.c (ah, it is useful after all!) shows
-that someone has decided to invert the ordering of pairs of lines
-in the kernel version of the algorithm, making a nonsense of it.
+..
 
-Switch them back, and put in the conditionals from mod7_put_dec()
-(absent from mod6_put_dec??): my guess is that less work is better.
+> > Anyway, while this is makes sense from correctness POV, if we hit an
+> > error path here this early then something else is going terribly wrong
+> > which would've screamed very loudly already. Are you hitting this on a
+> > real workload or you caught this by code staring?
+> The orginal patch was made with the intention of auditing the code
+> according to the kernel-janitors TODO list:
+> http://kernelnewbies.org/KernelJanitors/Todo/ReturnCodes .
+> 
+> To clear things up. I originally posted a minor patch, which basically passed
+> the return value from misc_register up the stack. See
+> http://marc.info/?l=linux-kernel&m=129889198732342&w=2
 
-My testing has gone no further than booting up, and checking that
-the numbers in /proc/partitions come out right (which they didn't
-at my first attempt, when I thought just a one-liner was needed).
+I see what you're doing and I think it is great that you're trying to
+audit the code - this is actually very commendable but I'm questioning
+whether such a "fix" makes sense in this case. As I said above, if we
+hit those error paths, then we definitely botched up something else big
+time and recovering here is pretty moot at this point. Therefore, adding
+a bunch of code which is almost never executed is simply unneeded.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-Diffed to go on the top of mmotm, but can be applied after
-lib-vsprintf-optimised-put_dec-function-fix.patch
+HTH.
 
- lib/vsprintf.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+-- 
+Regards/Gruss,
+Boris.
 
---- mmotm/lib/vsprintf.c	2011-03-03 15:43:57.000000000 -0800
-+++ linux/lib/vsprintf.c	2011-03-05 03:37:14.000000000 -0800
-@@ -310,22 +310,29 @@ char *put_dec(char *buf, unsigned long l
- 
- 	q  = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
- 
--	q  = q / 10000;
- 	buf = put_dec_full4(buf, q % 10000);
-+	q  = q / 10000;
- 
- 	d1 = q + 7671 * d3 + 9496 * d2 + 6 * d1;
--	q  = d1 / 10000;
--	buf = put_dec_full4(buf, d1 % 10000);
--
--	d2 = q + 4749 * d3 + 42 * d2;
--	q  = d2 / 10000;
--	buf = put_dec_full4(buf, d2 % 10000);
--
--	d3 = q + 281 * d3;
--	q  = d3 / 10000;
--	buf = put_dec_full4(buf, d3 % 10000);
--
--	buf = put_dec_full4(buf, q);
-+	if (d1) {
-+		buf = put_dec_full4(buf, d1 % 10000);
-+		q  = d1 / 10000;
-+
-+		d2 = q + 4749 * d3 + 42 * d2;
-+		if (d2) {
-+			buf = put_dec_full4(buf, d2 % 10000);
-+			q  = d2 / 10000;
-+
-+			d3 = q + 281 * d3;
-+			if (d3) {
-+				buf = put_dec_full4(buf, d3 % 10000);
-+				q  = d3 / 10000;
-+
-+				if (q)
-+					buf = put_dec_full4(buf, q);
-+			}
-+		}
-+	}
- 
- 	while (buf[-1] == '0')
- 		--buf;
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
