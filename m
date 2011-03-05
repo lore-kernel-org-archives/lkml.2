@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760221Ab1CEA75 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 19:59:57 -0500
-Received: from kroah.org ([198.145.64.141]:50123 "EHLO coco.kroah.org"
+	id S1760359Ab1CEBS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:18:29 -0500
+Received: from kroah.org ([198.145.64.141]:50147 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760052Ab1CEA7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:59:54 -0500
+	id S1760227Ab1CEA76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 19:59:58 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:35 2011
-Message-Id: <20110305005635.363169221@clark.kroah.org>
+Message-Id: <20110305005635.755333874@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:13 -0800
+Date: Fri, 04 Mar 2011 16:55:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [08/73] p54pci: update receive dma buffers before and after processing
+        rvossen@broadcom.com, Brett Rudley <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>
+Subject: [12/73] staging: brcm80211: remove assert to avoid panic since 2.6.37 kernel
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Arend van Spriel <arend@broadcom.com>
 
-commit 0bf719dfdecc5552155cbec78e49fa06e531e35c upstream.
+commit d062d44a8386c82c06e483f0c0d1124ba3cab2c8 upstream
 
-Documentation/DMA-API-HOWTO.txt states:
+The driver assumed it would receive skb packets from MAC80211 which
+are not cloned. To guard this assumption an assert was placed in
+the transmit routine. As of kernel 2.6.37 it turns out MAC80211 does
+pass skb packets that are cloned. The assert is also not needed as
+it does not lead to a failure state in our driver when the packet is
+cloned. Therefore the assert can safely be removed.
 
-"DMA transfers need to be synced properly in order for
-the cpu and device to see the most uptodate and correct
-copy of the DMA buffer."
+> commit f8a0a781488ec7288d1049e5d2022850aa98f7b6
+> Author: Felix Fietkau <nbd@openwrt.org>
+> Date:   Sat Dec 18 19:30:50 2010 +0100
+>
+>     mac80211: fix potentially redundant skb data copying
+>
+>     When an skb is shared, it needs to be duplicated, along with its data
+>     If the skb does not have enough headroom, using skb_copy might cause t
+>     buffer to be copied twice (once by skb_copy and once by pskb_expand_he
+>     Fix this by using skb_clone initially and letting ieee80211_skb_resize
+>     out the rest.
+>
+>     Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+>     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+>
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Brett Rudley <brudley@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/p54pci.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/staging/brcm80211/sys/wlc_mac80211.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/net/wireless/p54/p54pci.c
-+++ b/drivers/net/wireless/p54/p54pci.c
-@@ -199,6 +199,7 @@ static void p54p_check_rx_ring(struct ie
- 	while (i != idx) {
- 		u16 len;
- 		struct sk_buff *skb;
-+		dma_addr_t dma_addr;
- 		desc = &ring[i];
- 		len = le16_to_cpu(desc->len);
- 		skb = rx_buf[i];
-@@ -216,17 +217,20 @@ static void p54p_check_rx_ring(struct ie
+--- a/drivers/staging/brcm80211/sys/wlc_mac80211.c
++++ b/drivers/staging/brcm80211/sys/wlc_mac80211.c
+@@ -5336,7 +5336,6 @@ wlc_sendpkt_mac80211(wlc_info_t *wlc, vo
+ 	fifo = prio2fifo[prio];
  
- 			len = priv->common.rx_mtu;
- 		}
-+		dma_addr = le32_to_cpu(desc->host_addr);
-+		pci_dma_sync_single_for_cpu(priv->pdev, dma_addr,
-+			priv->common.rx_mtu + 32, PCI_DMA_FROMDEVICE);
- 		skb_put(skb, len);
- 
- 		if (p54_rx(dev, skb)) {
--			pci_unmap_single(priv->pdev,
--					 le32_to_cpu(desc->host_addr),
--					 priv->common.rx_mtu + 32,
--					 PCI_DMA_FROMDEVICE);
-+			pci_unmap_single(priv->pdev, dma_addr,
-+				priv->common.rx_mtu + 32, PCI_DMA_FROMDEVICE);
- 			rx_buf[i] = NULL;
--			desc->host_addr = 0;
-+			desc->host_addr = cpu_to_le32(0);
- 		} else {
- 			skb_trim(skb, 0);
-+			pci_dma_sync_single_for_device(priv->pdev, dma_addr,
-+				priv->common.rx_mtu + 32, PCI_DMA_FROMDEVICE);
- 			desc->len = cpu_to_le16(priv->common.rx_mtu + 32);
- 		}
- 
+ 	ASSERT((uint) PKTHEADROOM(sdu) >= TXOFF);
+-	ASSERT(!PKTSHARED(sdu));
+ 	ASSERT(!PKTNEXT(sdu));
+ 	ASSERT(!PKTLINK(sdu));
+ 	ASSERT(fifo < NFIFO);
 
 
