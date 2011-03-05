@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab1CEIaF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 03:30:05 -0500
-Received: from ozlabs.org ([203.10.76.45]:43563 "EHLO ozlabs.org"
+	id S1752635Ab1CEIbh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 03:31:37 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42225 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982Ab1CEIaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 03:30:04 -0500
-Date: Sat, 5 Mar 2011 19:24:09 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 02/12] of: Allow scripts/dtc/libfdt to be used
- from kernel code
-Message-ID: <20110305082409.GB3312@yookeroo>
-Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
-	David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
-	ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
-	grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-References: <1299267744-17278-1-git-send-email-ddaney@caviumnetworks.com>
- <1299267744-17278-3-git-send-email-ddaney@caviumnetworks.com>
+	id S1752062Ab1CEIbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 03:31:35 -0500
+Date: Sat, 5 Mar 2011 08:31:09 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jbeulich@novell.com, JBeulich@novell.com, davej@redhat.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
+        davej@redhat.com, mingo@elte.hu
+In-Reply-To: <4D7118D30200007800034F79@vpn.id2.novell.com>
+References: <4D7118D30200007800034F79@vpn.id2.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Really print supported CPUs if PROCESSOR_SELECT=y
+Message-ID: <tip-ac23f25355ef53f3d14352fcff3c6817527a9749@git.kernel.org>
+Git-Commit-ID: ac23f25355ef53f3d14352fcff3c6817527a9749
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1299267744-17278-3-git-send-email-ddaney@caviumnetworks.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 05 Mar 2011 08:31:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 11:42:14AM -0800, David Daney wrote:
-> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
-[snip]
-> --- /dev/null
-> +++ b/lib/libfdt/libfdt_env.h
-> @@ -0,0 +1,21 @@
-> +#ifndef _LIBFDT_ENV_H
-> +#define _LIBFDT_ENV_H
-> +
-> +#include <linux/string.h>
-> +
-> +#define _B(n)	((unsigned long long)((uint8_t *)&x)[n])
-> +static inline uint32_t fdt32_to_cpu(uint32_t x)
-> +{
-> +	return (_B(0) << 24) | (_B(1) << 16) | (_B(2) << 8) | _B(3);
-> +}
-> +#define cpu_to_fdt32(x) fdt32_to_cpu(x)
-> +
-> +static inline uint64_t fdt64_to_cpu(uint64_t x)
-> +{
-> +	return (_B(0) << 56) | (_B(1) << 48) | (_B(2) << 40) | (_B(3) << 32)
-> +		| (_B(4) << 24) | (_B(5) << 16) | (_B(6) << 8) | _B(7);
-> +}
-> +#define cpu_to_fdt64(x) fdt64_to_cpu(x)
-> +#undef _B
+Commit-ID:  ac23f25355ef53f3d14352fcff3c6817527a9749
+Gitweb:     http://git.kernel.org/tip/ac23f25355ef53f3d14352fcff3c6817527a9749
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Fri, 4 Mar 2011 15:52:35 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 5 Mar 2011 09:29:45 +0100
 
-Ah, yuck.  I only used those nasty macros in the userspace version of
-libfdt_env.h because bytesex.h is such a portability nightmare.  The
-kernel already has cpu_to_be{32,64}(), and the fdt byteswapping
-functions should just be aliased to them.
+x86: Really print supported CPUs if PROCESSOR_SELECT=y
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+I'm sure it was a mere oversight that the CONFIG_ prefixes are
+missing.
+
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Dave Jones <davej@redhat.com>
+LKML-Reference: <4D7118D30200007800034F79@vpn.id2.novell.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/common.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 1d59834..5d98c46 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -675,7 +675,7 @@ void __init early_cpu_init(void)
+ 	const struct cpu_dev *const *cdev;
+ 	int count = 0;
+ 
+-#ifdef PROCESSOR_SELECT
++#ifdef CONFIG_PROCESSOR_SELECT
+ 	printk(KERN_INFO "KERNEL supported cpus:\n");
+ #endif
+ 
+@@ -687,7 +687,7 @@ void __init early_cpu_init(void)
+ 		cpu_devs[count] = cpudev;
+ 		count++;
+ 
+-#ifdef PROCESSOR_SELECT
++#ifdef CONFIG_PROCESSOR_SELECT
+ 		{
+ 			unsigned int j;
+ 
