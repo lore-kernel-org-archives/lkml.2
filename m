@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1CEUHl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:07:41 -0500
-Received: from thelittlecloset.ca ([64.40.149.83]:46769 "EHLO plecavalier.com"
+	id S1754221Ab1CEUIN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 15:08:13 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59320 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab1CEUHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:07:40 -0500
-Content-Type: text/plain; charset=UTF-8
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ide <linux-ide@vger.kernel.org>
-Subject: Re: Second drive on VT6421
-From: Philippe LeCavalier <support@plecavalier.com>
-To: =?utf-8?q?Alejandro_Riveira_Fern=C3=A1ndez?= <ariveira@gmail.com>
-In-reply-to: <20110305210537.7675b600@varda>
-References: <1299350988-sup-2113@plc.intranet.plecavalier.com> <20110305210537.7675b600@varda>
-Date: Sat, 05 Mar 2011 15:07:33 -0500
-Message-Id: <1299355624-sup-9766@plc.intranet.plecavalier.com>
-User-Agent: Sup/0.12.1
-Content-Transfer-Encoding: 8bit
+	id S1752695Ab1CEUIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 15:08:11 -0500
+Subject: Re: [PATCH 2/3] ptp: add a software clock based on
+ clock_monotonic_raw
+From: john stultz <johnstul@us.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Torben Hohn <torbenh@gmx.de>, linux-kernel@vger.kernel.org,
+        richard.cochran@omicron.at, tglx@linutronix.de
+In-Reply-To: <20110304064639.GD3824@riccoc20.at.omicron.at>
+References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
+	 <1299173174-348-3-git-send-email-torbenh@gmx.de>
+	 <1299180844.28285.111.camel@work-vm>
+	 <20110304064639.GD3824@riccoc20.at.omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Mar 2011 12:08:07 -0800
+Message-ID: <1299355687.28285.130.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thx.
-
-If I can provide more nfo pls ask.
-
-Excerpts from Alejandro Riveira Fernández's message of Sat Mar 05 15:05:37 -0500 2011:
-> El Sat, 05 Mar 2011 14:00:44 -0500
-> Philippe LeCavalier <support@plecavalier.com> escribió:
+On Fri, 2011-03-04 at 07:46 +0100, Richard Cochran wrote:
+> On Thu, Mar 03, 2011 at 11:34:04AM -0800, john stultz wrote:
+> > On Thu, 2011-03-03 at 18:26 +0100, Torben Hohn wrote:
+> > > First version of a software clock. Not very useful yet,
+> > > as it doesnt generate events, but at least it allows
+> > > for testing the ptp framework without special hardware.
+> > 
+> > So in the past, I pushed back on Richard for having something similar,
+> > as I'm not psyched about duplicating interfaces. However, your
+> > implementation is CLOCK_MONOTONIC_RAW instead of CLOCK_REALTIME and it
+> > keeps the adjustments internal, I'm not as opposed.
 > 
->  Adding linux-ide to CC
+> (Aha! So it is okay after all ;)
 > 
-> > I know it's been discussed but since it's been a while, has anyone
-> > managed to get a second drive detected with this card?
-> > 
-> > I'm on Deb Squeeze with 2.6.32-5
-> > 
-> > sata_via is loading fine and I can see the drives if they're connected
-> > individually but not if I connect both. If I do connect both I only see
-> > one of them -which is always from the same port-.
-> > 
-> > To be clear, I'm not referring to the eSATA port. I'm not up to that
-> > yet.
--- 
-Thanks,
-Phil
+> I do think a software only PHC will make it easier for people to get
+> started with the new interface. I have been carrying along such a
+> patch privately for my own testing.
+
+Consistency is but a hobgoblin... :)
+
+But seriously, do forgive me if I misunderstood your earlier patches
+with this respect. I thought it was just exporting CLOCK_REALTIME
+directly through a new interface/clockid (which would be duplicative).
+
+thanks
+-john
+
+
