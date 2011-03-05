@@ -1,139 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238Ab1CEFZF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 00:25:05 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54998 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab1CEFZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 00:25:03 -0500
-Message-ID: <4D71C718.3020800@cn.fujitsu.com>
-Date: Sat, 05 Mar 2011 13:16:08 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752180Ab1CEFov (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 00:44:51 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:37392 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751110Ab1CEFou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 00:44:50 -0500
+Date: Sat, 5 Mar 2011 06:44:48 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: 2.6.38-rc6+: oops while hibernating, pcmcia?
+Message-ID: <20110305054426.GA2096@elf.ucw.cz>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Justin TerAvest <teravest@google.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        Chad Talbott <ctalbott@google.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6 v5.1] cfq-iosched: Introduce CFQ group hierarchical
- scheduling and "use_hierarchy" interface
-References: <4D61FE91.60705@cn.fujitsu.com> <4D6201A3.70301@cn.fujitsu.com> <4D64788F.6040408@cn.fujitsu.com> <20110224181140.GE18494@redhat.com> <4D670C14.9040504@cn.fujitsu.com> <20110227231618.GA1014@redhat.com> <20110228001544.GA2762@redhat.com> <4D6E1556.5060905@cn.fujitsu.com> <4D706BC3.9090900@cn.fujitsu.com> <20110304191458.GE5466@redhat.com>
-In-Reply-To: <20110304191458.GE5466@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-05 13:23:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-05 13:23:50,
-	Serialize complete at 2011-03-05 13:23:50
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Fri, Mar 04, 2011 at 12:34:11PM +0800, Gui Jianfeng wrote:
->> Gui Jianfeng wrote:
->>> Vivek Goyal wrote:
->>>> On Sun, Feb 27, 2011 at 06:16:18PM -0500, Vivek Goyal wrote:
->>>>> On Fri, Feb 25, 2011 at 09:55:32AM +0800, Gui Jianfeng wrote:
->>>>>> Vivek Goyal wrote:
->>>>>>> On Wed, Feb 23, 2011 at 11:01:35AM +0800, Gui Jianfeng wrote:
->>>>>>>> Hi
->>>>>>>>
->>>>>>>> I rebase this series on top of *for-next* branch, it will make merging life easier.
->>>>>>>>
->>>>>>>> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
->>>>>>>> in the way that it puts all CFQ queues in a hidden group and schedules with other 
->>>>>>>> CFQ group under their parent. The patchset is available here,
->>>>>>>> http://lkml.org/lkml/2010/8/30/30
->>>>>>> Gui,
->>>>>>>
->>>>>>> I was running some tests (iostest) with these patches and my system crashed
->>>>>>> after a while.
->>>>>>>
->>>>>>> To be precise I was running "brrmmap" test of iostest.
->>>>>> Vivek,
->>>>>>
->>>>>> I simply run iostest with brrmmap mode, I can't reproduce this bug.
->>>>>> Would you give more details.
->>>>>> Can you tell me the iostest command line options?
->>>>> iostest /dev/dm-1 -G --nrgrp 4 -m 8 --cgtime --io_serviced --dequeue --total
->>>>>
->>>>> I was actually trying to run all the workloads defined but after running
->>>>> 2 workloads it crashed on 3rd workload.
->>>>>
->>>>> Now I tried to re-run brrmmap and it did not crash. So I am trying to run
->>>>> all the inbuilt workloads again.
->>>>>
->>>>>> Did you enable use_hierarchy in root group?
->>>>> No I did not. Trying to test the flat setup first.
->>>> Again was running above job and after 3 workloads it ran into a different
->>>> BUG_ON().
->>> Vivek,
->>>
->>> It seems there's a race.
->>> Would you try the following patch. This patch seems working for me.
->>>
->>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->>> index 380d667..abbbb0e 100644
->>> --- a/block/cfq-iosched.c
->>> +++ b/block/cfq-iosched.c
->>> @@ -4126,11 +4126,12 @@ new_queue:
->>>  	cfqq->allocated[rw]++;
->>>  	cfqq->ref++;
->>>  
->>> -	spin_unlock_irqrestore(q->queue_lock, flags);
->>> -
->>>  	rq->elevator_private[0] = cic;
->>>  	rq->elevator_private[1] = cfqq;
->>>  	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
->>> +
->>> +	spin_unlock_irqrestore(q->queue_lock, flags);
->>> +
->>>  	return 0;
->>>  
->>>  queue_fail:
->>>
->>> Thanks
->>> Gui
->>>
->> Jens,
->>
->> This bug seems being introduced in commmit 763414b in for-next branch when
->> merging for-2.6.39/core branch.
->> Would you apply the above patch?
->>
->> Vivek, can you try the patchset again with this fix? It works fine for me now.
-> 
-> Gui,
-> 
-> Ok, I ran iostest with this fix and it seems to have worked. I need to run
-> it for some more time. And I also need to spend more time reviewing your
-> patchset. There are so many details to it. Soon I will spare some time
-> to review it more and also test it bit more.
+Hi!
 
-Vivek,
-
-Ok, thanks.
-
-> 
-> Of the top of my head I have one concern.
-> 
-> - How to map iopriority to weights. I am thinking that currently weight
->   range is 100-1000. If we decide to extend the range in current scheme,
->   it will change the ioprio entity weight also and effectively the
->   service differentiation between ioprio level will change. I am
->   wondering if this is a concern and how cpu scheduler has managed it
-
-Isn't it enought for ten times of weight difference? The old ioprio scheme
-has only 4.5 times service difference. So I think we don't need to extend
-the range for the time being.
-
-Thanks,
-Gui
-
-> 
-> Thanks
-> Vivek
-> 
+Unfortunately it did not made it do disk. Thinkpad x60. PCMCIA was in
+the backtrace, and yes, I had CF card in the PCMCIA slot. Certainly
+not 100% repeatable, as it was 3rc hibernate or so...
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
