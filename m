@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab1CERLW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 12:11:22 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48324 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab1CERLU (ORCPT
+	id S1754396Ab1CEQwb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 11:52:31 -0500
+Received: from smtp-03.mandic.com.br ([200.225.81.143]:41240 "EHLO
+	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab1CEQtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 12:11:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=aFEsCejbVCndtmhUAbGCNBJtSZRNUVvUjniAdYF9mx6E/9r4Bb57tdwB7xu/9xPNMN
-         Wg3Bn5/3YNw+eNQsGGjsiKsckkSWOZl+q0sGWca5um0obPwwB2QRhdFTRqGZF0WjVn3B
-         mEKJWmGkdXttTklAfmcEnck59neoVDtD3Zmis=
-MIME-Version: 1.0
-Date: Sat, 5 Mar 2011 18:11:20 +0100
-Message-ID: <AANLkTinhThfS587rkX4y1UbJLQzQKEWGfrFArUVGD3Ew@mail.gmail.com>
-Subject: brcm80211: the system freezes if booted with laptop wifi switch to OFF
-From: Francis Moreau <francis.moro@gmail.com>
-To: brudley@broadcom.com
-Cc: gregkh@suse.de, linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 5 Mar 2011 11:49:18 -0500
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: [PATCHv2 12/24] sys_swapon: use a single error label
+Date: Sat,  5 Mar 2011 13:42:13 -0300
+Message-Id: <1299343345-3984-13-git-send-email-cesarb@cesarb.net>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+sys_swapon currently has two error labels, bad_swap and bad_swap_2.
+bad_swap does the same as bad_swap_2 plus destroy_swap_extents() and
+swap_cgroup_swapoff(); both are noops in the places where bad_swap_2 is
+jumped to. With a single extra test for inode (matching the one in the
+S_ISREG case below), all the error paths in the function can go to
+bad_swap.
 
-I'm currently running 2.6.38-rc6, and if I boot with my WIFI switch
-set to off position, the system freezes entirely when bringing up the
-wlan0 interface.
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+Tested-by: Eric B Munson <emunson@mgebm.net>
+Acked-by: Eric B Munson <emunson@mgebm.net>
+---
+ mm/swapfile.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-There's no trace so I don't really know how I can help to debug this further.
-
-Thanks
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index ebc0307..96be104 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1918,13 +1918,13 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 	if (IS_ERR(name)) {
+ 		error = PTR_ERR(name);
+ 		name = NULL;
+-		goto bad_swap_2;
++		goto bad_swap;
+ 	}
+ 	swap_file = filp_open(name, O_RDWR|O_LARGEFILE, 0);
+ 	if (IS_ERR(swap_file)) {
+ 		error = PTR_ERR(swap_file);
+ 		swap_file = NULL;
+-		goto bad_swap_2;
++		goto bad_swap;
+ 	}
+ 
+ 	p->swap_file = swap_file;
+@@ -2141,13 +2141,12 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 	error = 0;
+ 	goto out;
+ bad_swap:
+-	if (S_ISBLK(inode->i_mode) && p->bdev) {
++	if (inode && S_ISBLK(inode->i_mode) && p->bdev) {
+ 		set_blocksize(p->bdev, p->old_block_size);
+ 		blkdev_put(p->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
+ 	}
+ 	destroy_swap_extents(p);
+ 	swap_cgroup_swapoff(p->type);
+-bad_swap_2:
+ 	spin_lock(&swap_lock);
+ 	p->swap_file = NULL;
+ 	p->flags = 0;
 -- 
-Francis
+1.7.4
+
