@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab1CEEvB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 23:51:01 -0500
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:38866 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752243Ab1CEEvB (ORCPT
+	id S1753027Ab1CEE7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 23:59:06 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:37714 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab1CEE7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 23:51:01 -0500
-From: Michael Spang <mspang@csclub.uwaterloo.ca>
-To: Nicolas Pitre <nico@fluxnic.net>
+	Fri, 4 Mar 2011 23:59:03 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 04 Mar 2011 23:59:03 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Michael Spang <mspang@csclub.uwaterloo.ca>
 Cc: Lennert Buytenhek <kernel@wantstofly.org>,
         Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michael Spang <mspang@csclub.uwaterloo.ca>
-Subject: [PATCH v2 2/2] ARM: Enable TS-78XX features in unknown revisions
-Date: Fri,  4 Mar 2011 23:50:57 -0500
-Message-Id: <1299300657-17272-1-git-send-email-mspang@csclub.uwaterloo.ca>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299299957-13018-2-git-send-email-mspang@csclub.uwaterloo.ca>
-References: <1299299957-13018-2-git-send-email-mspang@csclub.uwaterloo.ca>
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: Add TS-7800 revisions 6-9
+In-reply-to: <1299299957-13018-1-git-send-email-mspang@csclub.uwaterloo.ca>
+Message-id: <alpine.LFD.2.00.1103042357310.27995@xanadu.home>
+References: <1299299957-13018-1-git-send-email-mspang@csclub.uwaterloo.ca>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the manufacturer increases the revision number the platform
-devices for the RTC, NAND, and RNG disappear. We should assume
-new revisions have these devices instead of assuming they do not.
+On Fri, 4 Mar 2011, Michael Spang wrote:
 
-Signed-off-by: Michael Spang <mspang@csclub.uwaterloo.ca>
----
- arch/arm/mach-orion5x/ts78xx-setup.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+> The RTC, NAND, and RNG devices are not enabled on current TS-7800s.
+> The manufacturer is at revision 9 (at least), and they do support
+> these devices. We'll assume revisions 6 through 8 do as well.
+> 
+> Signed-off-by: Michael Spang <mspang@csclub.uwaterloo.ca>
 
-Misspelled KERN_WARNING. Oops. This one is tested.
+Alexander Clouter <alex@digriz.org.uk> did send the exact same patch on 
+February 16 already.
 
-diff --git a/arch/arm/mach-orion5x/ts78xx-setup.c b/arch/arm/mach-orion5x/ts78xx-setup.c
-index 7bed418..3f8013a 100644
---- a/arch/arm/mach-orion5x/ts78xx-setup.c
-+++ b/arch/arm/mach-orion5x/ts78xx-setup.c
-@@ -343,9 +343,11 @@ static void ts78xx_fpga_supports(void)
- 		ts78xx_fpga.supports.ts_rng.present = 1;
- 		break;
- 	default:
--		ts78xx_fpga.supports.ts_rtc.present = 0;
--		ts78xx_fpga.supports.ts_nand.present = 0;
--		ts78xx_fpga.supports.ts_rng.present = 0;
-+		printk(KERN_WARNING "Unrecognized TS-78XX FPGA ID 0x%02x",
-+		       ts78xx_fpga.id);
-+		ts78xx_fpga.supports.ts_rtc.present = 1;
-+		ts78xx_fpga.supports.ts_nand.present = 1;
-+		ts78xx_fpga.supports.ts_rng.present = 1;
- 	}
- }
- 
--- 
-1.7.2.3
 
+Nicolas
