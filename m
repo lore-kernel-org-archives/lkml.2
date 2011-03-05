@@ -1,62 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760025Ab1CEAwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 19:52:13 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55496 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab1CEAwM (ORCPT
+	id S1759997Ab1CEA54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 19:57:56 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:49363 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab1CEA5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:52:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=KZsqqLabd8Y/JdfpvdZ+VMjr+igxVu/zV2ZwVmoobNO1BLQ788mWGDV2prGnp+QGWl
-         Y5kX1uCLXGyXnvEqu98qB+DfLGO7JNrJL6EbeBKCYObxmScHPgyHHGotEmYdaKLAYAlP
-         tOYU9wabc+M1qOdRvYqWRSPdi0Z9DNJ9DlZjk=
-Message-ID: <4D718933.1050106@gmail.com>
-Date: Sat, 05 Mar 2011 03:52:03 +0300
-From: "avagin@gmail.com" <avagin@gmail.com>
-Reply-To: avagin@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	Fri, 4 Mar 2011 19:57:54 -0500
+Date: Fri, 4 Mar 2011 17:57:50 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 02/12] of: Allow scripts/dtc/libfdt to be used
+ from kernel code
+Message-ID: <20110305005750.GC7579@angua.secretlab.ca>
+References: <1299267744-17278-1-git-send-email-ddaney@caviumnetworks.com>
+ <1299267744-17278-3-git-send-email-ddaney@caviumnetworks.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH rh6] mm: skip zombie in OOM-killer
-References: <1299274256-2122-1-git-send-email-avagin@openvz.org> <alpine.DEB.2.00.1103041541040.7795@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1103041541040.7795@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299267744-17278-3-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2011 02:41 AM, David Rientjes wrote:
-> On Sat, 5 Mar 2011, Andrey Vagin wrote:
->
->> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
->> index 7dcca55..2fc554e 100644
->> --- a/mm/oom_kill.c
->> +++ b/mm/oom_kill.c
->> @@ -311,7 +311,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
->>   		 * blocked waiting for another task which itself is waiting
->>   		 * for memory. Is there a better alternative?
->>   		 */
->> -		if (test_tsk_thread_flag(p, TIF_MEMDIE))
->> +		if (test_tsk_thread_flag(p, TIF_MEMDIE)&&  p->mm)
->>   			return ERR_PTR(-1UL);
->>
->>   		/*
->
-> I think it would be better to just do
->
-> 	if (!p->mm)
-> 		continue;
->
-> after the check for oom_unkillable_task() because everything that follows
-> this really depends on p->mm being non-NULL to actually do anything
-> useful.
-Yes. You are right. Thank you.
+[cc'ing David Gibson]
+On Fri, Mar 04, 2011 at 11:42:14AM -0800, David Daney wrote:
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> ---
+>  include/linux/libfdt.h      |    3 +++
+>  lib/Kconfig                 |    6 ++++++
+>  lib/Makefile                |    2 ++
+>  lib/libfdt/Makefile         |    7 +++++++
+>  lib/libfdt/libfdt_env.h     |   21 +++++++++++++++++++++
+>  scripts/dtc/libfdt/libfdt.h |    4 ++--
+>  6 files changed, 41 insertions(+), 2 deletions(-)
+>  create mode 100644 include/linux/libfdt.h
+>  create mode 100644 lib/libfdt/Makefile
+>  create mode 100644 lib/libfdt/libfdt_env.h
+> 
+> diff --git a/include/linux/libfdt.h b/include/linux/libfdt.h
+> new file mode 100644
+> index 0000000..10bce91
+> --- /dev/null
+> +++ b/include/linux/libfdt.h
+> @@ -0,0 +1,3 @@
+> +#include "../../lib/libfdt/libfdt_env.h"
+
+libfdt_env.h should be in include/linux
+
+> +#include "../../scripts/dtc/libfdt/fdt.h"
+> +#include "../../scripts/dtc/libfdt/libfdt.h"
+
+Hmmm... I wonder if there is a better way to do this.  I don't much
+care for the relative path references.
+
+Also, need to have #ifdef _INCLUDE_LIBFDT_H_ protection
+
+> diff --git a/lib/Kconfig b/lib/Kconfig
+> index 0ee67e0..e8a2638 100644
+> --- a/lib/Kconfig
+> +++ b/lib/Kconfig
+> @@ -219,4 +219,10 @@ config LRU_CACHE
+>  config AVERAGE
+>  	bool
+>  
+> +#
+> +# The Flattened Device Tree manipulation library
+> +#
+> +config LIBFDT
+> +	bool
+> +
+
+This should be in drivers/of/Kconfig
+
+>  endmenu
+> diff --git a/lib/Makefile b/lib/Makefile
+> index cbb774f..5840115 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -110,6 +110,8 @@ obj-$(CONFIG_ATOMIC64_SELFTEST) += atomic64_test.o
+>  
+>  obj-$(CONFIG_AVERAGE) += average.o
+>  
+> +obj-$(CONFIG_LIBFDT) += libfdt/
+> +
+
+Ditto here; drivers/of/libfdt
+
+>  hostprogs-y	:= gen_crc32table
+>  clean-files	:= crc32table.h
+>  
+> diff --git a/lib/libfdt/Makefile b/lib/libfdt/Makefile
+> new file mode 100644
+> index 0000000..6c1a496
+> --- /dev/null
+> +++ b/lib/libfdt/Makefile
+> @@ -0,0 +1,7 @@
+> +obj-y = fdt.o fdt_wip.o fdt_ro.o
+> +
+> +EXTRA_CFLAGS += -include $(src)/libfdt_env.h -I$(src)/../../scripts/dtc/libfdt
+> +
+> +$(obj)/%.o: $(src)/../../scripts/dtc/libfdt/%.c FORCE
+> +	$(call cmd,force_checksrc)
+> +	$(call if_changed_rule,cc_o_c)
+> diff --git a/lib/libfdt/libfdt_env.h b/lib/libfdt/libfdt_env.h
+> new file mode 100644
+> index 0000000..d977b8b
+> --- /dev/null
+> +++ b/lib/libfdt/libfdt_env.h
+> @@ -0,0 +1,21 @@
+> +#ifndef _LIBFDT_ENV_H
+> +#define _LIBFDT_ENV_H
+> +
+> +#include <linux/string.h>
+> +
+> +#define _B(n)	((unsigned long long)((uint8_t *)&x)[n])
+> +static inline uint32_t fdt32_to_cpu(uint32_t x)
+> +{
+> +	return (_B(0) << 24) | (_B(1) << 16) | (_B(2) << 8) | _B(3);
+> +}
+> +#define cpu_to_fdt32(x) fdt32_to_cpu(x)
+> +
+> +static inline uint64_t fdt64_to_cpu(uint64_t x)
+> +{
+> +	return (_B(0) << 56) | (_B(1) << 48) | (_B(2) << 40) | (_B(3) << 32)
+> +		| (_B(4) << 24) | (_B(5) << 16) | (_B(6) << 8) | _B(7);
+> +}
+> +#define cpu_to_fdt64(x) fdt64_to_cpu(x)
+> +#undef _B
+> +
+
+This isn't necessary, the kernel already has efficient architecture
+macros for converting endianess.
+
+#define fdt32_to_cpu(x) be32_to_cpu(x)
+#define cpu_to_fdt32(x) cpu_to_be32(x)
+#define fdt64_to_cpu(x) be64_to_cpu(x)
+#define cpu_to_fdt64(x) cpu_to_be64(x)
+
+> +#endif /* _LIBFDT_ENV_H */
+> diff --git a/scripts/dtc/libfdt/libfdt.h b/scripts/dtc/libfdt/libfdt.h
+> index ce80e4f..33a0c4d 100644
+> --- a/scripts/dtc/libfdt/libfdt.h
+> +++ b/scripts/dtc/libfdt/libfdt.h
+> @@ -51,8 +51,8 @@
+>   *     EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+>   */
+>  
+> -#include <libfdt_env.h>
+> -#include <fdt.h>
+> +#include "libfdt_env.h"
+> +#include "fdt.h"
+
+This causes problems.  libfdt is an external library that is
+periodically copied into the kernel tree.  It would be better to add
+"-Iscripts/dtc/libfdt" to CFLAGS for .c files that want to call libfdt
+routines.
+
+>  
+>  #define FDT_FIRST_SUPPORTED_VERSION	0x10
+>  #define FDT_LAST_SUPPORTED_VERSION	0x11
+> -- 
+> 1.7.2.3
+> 
