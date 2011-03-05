@@ -1,360 +1,951 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1CEELM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 23:11:12 -0500
-Received: from gate.crashing.org ([63.228.1.57]:44787 "EHLO gate.crashing.org"
+	id S1752446Ab1CEEZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 23:25:29 -0500
+Received: from kroah.org ([198.145.64.141]:46518 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111Ab1CEELL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 23:11:11 -0500
-Subject: [RFC] memblock; Properly handle overlaps
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-mm@kvack.org, Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Mar 2011 15:05:46 +1100
-Message-ID: <1299297946.8833.931.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752184Ab1CEEZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 23:25:28 -0500
+Date: Fri, 4 Mar 2011 20:24:31 -0800
+From: Greg KH <greg@kroah.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110305042431.GA22840@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks !
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-This is not fully tested yet (I'm toying with a little userspace
-test bench, it seems to work well so far but I haven't yet tested
-the cases with no-coalesce boundaries which at least ARM needs).
+This adds the samsung-laptop driver to the kernel.  It now supports
+all known Samsung laptops that use the SABI interface.
 
-But it's good enough to get comments...
-
-So currently, things like memblock_reserve() or memblock_free()
-don't deal well -at-all- with overlaps of all kinds. Some specific
-cases are handled but the code is clumsy and things will fall over
-in many cases.
-
-This is annoying because typically memblock_reserve() is used to
-mark regions passed by the firmware as reserved and we all know
-how much we can trust our firmwares right ?
-
-I have also a case I need to deal with on powerpc where the flat
-device-tree is fully enclosed within some other FW blob that has
-its own reserve map entry, so when I end up trying to reserve
-both, the current memblock code pukes.
-
-In the end, I got tired, rewrote the low level functions to
-add and remove a region in an array, and figured that my new
-code looked simper and easier to understand than what was
-there in the first place anyways :-) But feel free to object
-or point out whether I've missed some obvious horrible case
-etc...
-
-Not-signed-off-yet-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
+ Documentation/ABI/testing/sysfs-driver-samsung-laptop |   19 
+ drivers/platform/x86/Kconfig                          |   13 
+ drivers/platform/x86/Makefile                         |    1 
+ drivers/platform/x86/samsung-laptop.c                 |  832 ++++++++++++++++++
+ 4 files changed, 865 insertions(+)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 4618fda..481b64b 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -58,28 +58,6 @@ static unsigned long __init_memblock memblock_addrs_overlap(phys_addr_t base1, p
- 	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
- }
+Matthew, this is a copy of the latest version in the linux-next tree of the
+driver.  Once it has been accepted into your tree, I'll delete the
+staging driver.  Or, if you want to give your ACK, I can just move the
+driver from staging into this directory in my tree, which will properly
+preserve the history of the code.
+
+v2 - I have also addressed all of the review comments you gave me
+     previously, and fixed a bug in the previous version that broke the
+     driver on the N128 laptop, as well as added support for a wide
+     range of other laptops thanks to many testers who sent in patches.
+
+v3 - Added a few more device ids, const changes, and now supports
+     variable brightness levels as not all laptops are the same with
+     this.
+
+
+diff --git a/Documentation/ABI/testing/sysfs-driver-samsung-laptop b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
+new file mode 100644
+index 0000000..0a81023
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
+@@ -0,0 +1,19 @@
++What:		/sys/devices/platform/samsung/performance_level
++Date:		January 1, 2010
++KernelVersion:	2.6.33
++Contact:	Greg Kroah-Hartman <gregkh@suse.de>
++Description:	Some Samsung laptops have different "performance levels"
++		that are can be modified by a function key, and by this
++		sysfs file.  These values don't always make a whole lot
++		of sense, but some users like to modify them to keep
++		their fans quiet at all costs.  Reading from this file
++		will show the current performance level.  Writing to the
++		file can change this value.
++			Valid options:
++				"silent"
++				"normal"
++				"overclock"
++		Note that not all laptops support all of these options.
++		Specifically, not all support the "overclock" option,
++		and it's still unknown if this value even changes
++		anything, other than making the user feel a bit better.
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index a59af5b..5624267 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -654,4 +654,17 @@ config XO1_RFKILL
+ 	  Support for enabling/disabling the WLAN interface on the OLPC XO-1
+ 	  laptop.
  
--static long __init_memblock memblock_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
--			       phys_addr_t base2, phys_addr_t size2)
--{
--	if (base2 == base1 + size1)
--		return 1;
--	else if (base1 == base2 + size2)
--		return -1;
--
--	return 0;
--}
--
--static long __init_memblock memblock_regions_adjacent(struct memblock_type *type,
--				 unsigned long r1, unsigned long r2)
--{
--	phys_addr_t base1 = type->regions[r1].base;
--	phys_addr_t size1 = type->regions[r1].size;
--	phys_addr_t base2 = type->regions[r2].base;
--	phys_addr_t size2 = type->regions[r2].size;
--
--	return memblock_addrs_adjacent(base1, size1, base2, size2);
--}
--
- long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
- {
- 	unsigned long i;
-@@ -206,14 +184,13 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 		type->regions[i].size = type->regions[i + 1].size;
- 	}
- 	type->cnt--;
--}
- 
--/* Assumption: base addr of region 1 < base addr of region 2 */
--static void __init_memblock memblock_coalesce_regions(struct memblock_type *type,
--		unsigned long r1, unsigned long r2)
--{
--	type->regions[r1].size += type->regions[r2].size;
--	memblock_remove_region(type, r2);
-+	/* Special case for empty arrays */
-+	if (type->cnt == 0) {
-+		type->cnt = 1;
-+		type->regions[0].base = 0;
-+		type->regions[0].size = 0;
-+	}
- }
- 
- /* Defined below but needed now */
-@@ -296,58 +273,94 @@ extern int __init_memblock __weak memblock_memory_can_coalesce(phys_addr_t addr1
- 	return 1;
- }
- 
--static long __init_memblock memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-+static long __init_memblock memblock_add_region(struct memblock_type *type,
-+						phys_addr_t base, phys_addr_t size)
- {
--	unsigned long coalesced = 0;
--	long adjacent, i;
-+	phys_addr_t end = base + size;
-+	long i;
- 
-+	/* If the array is empty, special case, replace the fake
-+	 * filler region and return
++config SAMSUNG_LAPTOP
++	tristate "Samsung Laptop driver"
++	depends on RFKILL && BACKLIGHT_CLASS_DEVICE && X86
++	---help---
++	  This module implements a driver for a wide range of different
++	  Samsung laptops.  It offers control over the different
++	  function keys, wireless LED, LCD backlight level, and
++	  sometimes provides a "performance_control" sysfs file to allow
++	  the performance level of the laptop to be changed.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called samsung-laptop.
++
+ endif # X86_PLATFORM_DEVICES
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 4ec4ff8..ad2fb97 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -34,3 +34,4 @@ obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
+ obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
+ obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
+ obj-$(CONFIG_IBM_RTL)		+= ibm_rtl.o
++obj-$(CONFIG_SAMSUNG_LAPTOP)	+= samsung-laptop.o
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+new file mode 100644
+index 0000000..e0b390d
+--- /dev/null
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -0,0 +1,832 @@
++/*
++ * Samsung Laptop driver
++ *
++ * Copyright (C) 2009,2011 Greg Kroah-Hartman (gregkh@suse.de)
++ * Copyright (C) 2009,2011 Novell Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/pci.h>
++#include <linux/backlight.h>
++#include <linux/fb.h>
++#include <linux/dmi.h>
++#include <linux/platform_device.h>
++#include <linux/rfkill.h>
++
++/*
++ * This driver is needed because a number of Samsung laptops do not hook
++ * their control settings through ACPI.  So we have to poke around in the
++ * BIOS to do things like brightness values, and "special" key controls.
++ */
++
++/*
++ * We have 0 - 8 as valid brightness levels.  The specs say that level 0 should
++ * be reserved by the BIOS (which really doesn't make much sense), we tell
++ * userspace that the value is 0 - 7 and then just tell the hardware 1 - 8
++ */
++#define MAX_BRIGHT	0x07
++
++
++#define SABI_IFACE_MAIN			0x00
++#define SABI_IFACE_SUB			0x02
++#define SABI_IFACE_COMPLETE		0x04
++#define SABI_IFACE_DATA			0x05
++
++/* Structure to get data back to the calling function */
++struct sabi_retval {
++	u8 retval[20];
++};
++
++struct sabi_header_offsets {
++	u8 port;
++	u8 re_mem;
++	u8 iface_func;
++	u8 en_mem;
++	u8 data_offset;
++	u8 data_segment;
++};
++
++struct sabi_commands {
++	/*
++	 * Brightness is 0 - 8, as described above.
++	 * Value 0 is for the BIOS to use
 +	 */
- 	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
- 		type->regions[0].base = base;
- 		type->regions[0].size = size;
- 		return 0;
- 	}
- 
--	/* First try and coalesce this MEMBLOCK with another. */
-+	/* First try and coalesce this MEMBLOCK with others */
- 	for (i = 0; i < type->cnt; i++) {
--		phys_addr_t rgnbase = type->regions[i].base;
--		phys_addr_t rgnsize = type->regions[i].size;
-+		struct memblock_region *rgn = &type->regions[i];
-+		phys_addr_t rend = rgn->base + rgn->size;
++	u8 get_brightness;
++	u8 set_brightness;
 +
-+		/* Exit if there's no possible hits */
-+		if (rgn->base > end)
-+			break;
- 
--		if ((rgnbase == base) && (rgnsize == size))
--			/* Already have this region, so we're done */
-+		/* Check if we are fully enclosed within an existing
-+		 * block
-+		 */
-+		if (rgn->base <= base && rend >= end)
- 			return 0;
- 
--		adjacent = memblock_addrs_adjacent(base, size, rgnbase, rgnsize);
--		/* Check if arch allows coalescing */
--		if (adjacent != 0 && type == &memblock.memory &&
--		    !memblock_memory_can_coalesce(base, size, rgnbase, rgnsize))
--			break;
--		if (adjacent > 0) {
--			type->regions[i].base -= size;
--			type->regions[i].size += size;
--			coalesced++;
--			break;
--		} else if (adjacent < 0) {
--			type->regions[i].size += size;
--			coalesced++;
--			break;
-+		/* Check if we overlap or are adjacent with the bottom
-+		 * of a block.
-+		 */
-+		if (base <= rgn->base && end >= rgn->base) {
-+			/* Check if we are allowed to coalesce the two
-+			 * blocks. If not, we create a new block.
-+			 */
-+			if (!memblock_memory_can_coalesce(base, size,
-+							  rgn->base,
-+							  rgn->size)) {
-+				/* Overlap & can't coalesce are mutually
-+				 * exclusive, if you do that, be prepared
-+				 * for trouble
-+				 */
-+				WARN_ON(end != rgn->base);
-+				goto new_block;
-+			}
-+			/* We extend the bottom of the block down to our
-+			 * base
-+			 */
-+			rgn->size += rgn->base - base;
-+			rgn->base = base;
++	/*
++	 * first byte:
++	 * 0x00 - wireless is off
++	 * 0x01 - wireless is on
++	 * second byte:
++	 * 0x02 - 3G is off
++	 * 0x03 - 3G is on
++	 * TODO, verify 3G is correct, that doesn't seem right...
++	 */
++	u8 get_wireless_button;
++	u8 set_wireless_button;
 +
-+			/* We continue processing from the end of the
-+			 * coalesced block.
-+			 */
-+			base = rgn->base + rgn->size;
- 		}
--	}
- 
--	/* If we plugged a hole, we may want to also coalesce with the
--	 * next region
--	 */
--	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1) &&
--	    ((type != &memblock.memory || memblock_memory_can_coalesce(type->regions[i].base,
--							     type->regions[i].size,
--							     type->regions[i+1].base,
--							     type->regions[i+1].size)))) {
--		memblock_coalesce_regions(type, i, i+1);
--		coalesced++;
--	}
-+		/* Check if e have nothing else to allocate (fully coalesced) */
-+		if (base >= end)
-+			return 0;
- 
--	if (coalesced)
--		return coalesced;
-+		/* Now check if we overlap or are adjacent with the
-+		 * top of a block
-+		 */
-+		if (base <= rend && end >= rend) {
-+			/* If we can't coalesce, create a new block */
-+			if (!memblock_memory_can_coalesce(rgn->base,
-+							  rgn->size,
-+							  base, size)) {
-+				/* Overlap & can't coalesce are mutually
-+				 * exclusive, if you do that, be prepared
-+				 * for trouble
-+				 */
-+				WARN_ON(rend != base);
-+				goto new_block;
-+			}
-+			/* We  adjust our base down to enclose it
-+			 * and destroy the original block
-+			 */
-+			size += (base - rgn->base);
-+			base = rgn->base;			
-+			memblock_remove_region(type, i--);
-+		}
++	/* 0 is off, 1 is on */
++	u8 get_backlight;
++	u8 set_backlight;
++
++	/*
++	 * 0x80 or 0x00 - no action
++	 * 0x81 - recovery key pressed
++	 */
++	u8 get_recovery_mode;
++	u8 set_recovery_mode;
++
++	/*
++	 * on seclinux: 0 is low, 1 is high,
++	 * on swsmi: 0 is normal, 1 is silent, 2 is turbo
++	 */
++	u8 get_performance_level;
++	u8 set_performance_level;
++
++	/*
++	 * Tell the BIOS that Linux is running on this machine.
++	 * 81 is on, 80 is off
++	 */
++	u8 set_linux;
++};
++
++struct sabi_performance_level {
++	const char *name;
++	u8 value;
++};
++
++struct sabi_config {
++	const char *test_string;
++	u16 main_function;
++	const struct sabi_header_offsets header_offsets;
++	const struct sabi_commands commands;
++	const struct sabi_performance_level performance_levels[4];
++	u8 min_brightness;
++	u8 max_brightness;
++};
++
++static const struct sabi_config sabi_configs[] = {
++	{
++		.test_string = "SECLINUX",
++
++		.main_function = 0x4c49,
++
++		.header_offsets = {
++			.port = 0x00,
++			.re_mem = 0x02,
++			.iface_func = 0x03,
++			.en_mem = 0x04,
++			.data_offset = 0x05,
++			.data_segment = 0x07,
++		},
++
++		.commands = {
++			.get_brightness = 0x00,
++			.set_brightness = 0x01,
++
++			.get_wireless_button = 0x02,
++			.set_wireless_button = 0x03,
++
++			.get_backlight = 0x04,
++			.set_backlight = 0x05,
++
++			.get_recovery_mode = 0x06,
++			.set_recovery_mode = 0x07,
++
++			.get_performance_level = 0x08,
++			.set_performance_level = 0x09,
++
++			.set_linux = 0x0a,
++		},
++
++		.performance_levels = {
++			{
++				.name = "silent",
++				.value = 0,
++			},
++			{
++				.name = "normal",
++				.value = 1,
++			},
++			{ },
++		},
++		.min_brightness = 1,
++		.max_brightness = 8,
++	},
++	{
++		.test_string = "SwSmi@",
++
++		.main_function = 0x5843,
++
++		.header_offsets = {
++			.port = 0x00,
++			.re_mem = 0x04,
++			.iface_func = 0x02,
++			.en_mem = 0x03,
++			.data_offset = 0x05,
++			.data_segment = 0x07,
++		},
++
++		.commands = {
++			.get_brightness = 0x10,
++			.set_brightness = 0x11,
++
++			.get_wireless_button = 0x12,
++			.set_wireless_button = 0x13,
++
++			.get_backlight = 0x2d,
++			.set_backlight = 0x2e,
++
++			.get_recovery_mode = 0xff,
++			.set_recovery_mode = 0xff,
++
++			.get_performance_level = 0x31,
++			.set_performance_level = 0x32,
++
++			.set_linux = 0xff,
++		},
++
++		.performance_levels = {
++			{
++				.name = "normal",
++				.value = 0,
++			},
++			{
++				.name = "silent",
++				.value = 1,
++			},
++			{
++				.name = "overclock",
++				.value = 2,
++			},
++			{ },
++		},
++		.min_brightness = 0,
++		.max_brightness = 8,
++	},
++	{ },
++};
++
++static const struct sabi_config *sabi_config;
++
++static void __iomem *sabi;
++static void __iomem *sabi_iface;
++static void __iomem *f0000_segment;
++static struct backlight_device *backlight_device;
++static struct mutex sabi_mutex;
++static struct platform_device *sdev;
++static struct rfkill *rfk;
++
++static int force;
++module_param(force, bool, 0);
++MODULE_PARM_DESC(force,
++		"Disable the DMI check and forces the driver to be loaded");
++
++static int debug;
++module_param(debug, bool, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(debug, "Debug enabled or not");
++
++static int sabi_get_command(u8 command, struct sabi_retval *sretval)
++{
++	int retval = 0;
++	u16 port = readw(sabi + sabi_config->header_offsets.port);
++	u8 complete, iface_data;
++
++	mutex_lock(&sabi_mutex);
++
++	/* enable memory to be able to write to it */
++	outb(readb(sabi + sabi_config->header_offsets.en_mem), port);
++
++	/* write out the command */
++	writew(sabi_config->main_function, sabi_iface + SABI_IFACE_MAIN);
++	writew(command, sabi_iface + SABI_IFACE_SUB);
++	writeb(0, sabi_iface + SABI_IFACE_COMPLETE);
++	outb(readb(sabi + sabi_config->header_offsets.iface_func), port);
++
++	/* write protect memory to make it safe */
++	outb(readb(sabi + sabi_config->header_offsets.re_mem), port);
++
++	/* see if the command actually succeeded */
++	complete = readb(sabi_iface + SABI_IFACE_COMPLETE);
++	iface_data = readb(sabi_iface + SABI_IFACE_DATA);
++	if (complete != 0xaa || iface_data == 0xff) {
++		pr_warn("SABI get command 0x%02x failed with completion flag 0x%02x and data 0x%02x\n",
++		        command, complete, iface_data);
++		retval = -EINVAL;
++		goto exit;
 +	}
- 
-+ new_block:
- 	/* If we are out of space, we fail. It's too late to resize the array
- 	 * but then this shouldn't have happened in the first place.
- 	 */
-@@ -365,7 +378,6 @@ static long __init_memblock memblock_add_region(struct memblock_type *type, phys
- 			break;
- 		}
- 	}
--
- 	if (base < type->regions[0].base) {
- 		type->regions[0].base = base;
- 		type->regions[0].size = size;
-@@ -389,52 +401,55 @@ long __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
- 
- }
- 
--static long __init_memblock __memblock_remove(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-+static long __init_memblock __memblock_remove(struct memblock_type *type,
-+					      phys_addr_t base, phys_addr_t size)
- {
--	phys_addr_t rgnbegin, rgnend;
- 	phys_addr_t end = base + size;
- 	int i;
- 
--	rgnbegin = rgnend = 0; /* supress gcc warnings */
--
--	/* Find the region where (base, size) belongs to */
--	for (i=0; i < type->cnt; i++) {
--		rgnbegin = type->regions[i].base;
--		rgnend = rgnbegin + type->regions[i].size;
-+	/* Walk through the array for collisions */
-+	for (i = 0; i < type->cnt; i++) {
-+		struct memblock_region *rgn = &type->regions[i];
-+		phys_addr_t rend = rgn->base + rgn->size;
- 
--		if ((rgnbegin <= base) && (end <= rgnend))
-+		/* Nothing more to do, exit */
-+		if (rgn->base > end)
- 			break;
--	}
- 
--	/* Didn't find the region */
--	if (i == type->cnt)
--		return -1;
-+		/* If we fully enclose the block, drop it */
-+		if (base <= rgn->base && end >= rend) {
-+			memblock_remove_region(type, i--);
-+			continue;
-+		}
- 
--	/* Check to see if we are removing entire region */
--	if ((rgnbegin == base) && (rgnend == end)) {
--		memblock_remove_region(type, i);
--		return 0;
--	}
-+		/* If we are fully enclosed within a block
-+		 * then we need to split it and we are done
-+		 */
-+		if (base > rgn->base && end < rend) {
-+			rgn->size = base - rgn->base;
-+			if (!memblock_add_region(type, end, rend - end)	)
-+				return 0;
-+			/* Failure to split is bad, we at least
-+			 * restore the block before erroring
-+			 */
-+			rgn->size = rend - rgn->base;
-+			WARN_ON(1);
-+			return -1;
-+		}
- 
--	/* Check to see if region is matching at the front */
--	if (rgnbegin == base) {
--		type->regions[i].base = end;
--		type->regions[i].size -= size;
--		return 0;
--	}
-+		/* Check if we need to trim the bottom of a block */
-+		if (rgn->base < end && rend > end) {
-+			rgn->size -= end - rgn->base;
-+			rgn->base = end;
-+			break;
-+		}
- 
--	/* Check to see if the region is matching at the end */
--	if (rgnend == end) {
--		type->regions[i].size -= size;
--		return 0;
--	}
-+		/* And check if we need to trim the top of a block */
-+		if (base < rend)
-+			rgn->size -= rend - base;
- 
--	/*
--	 * We need to split the entry -  adjust the current one to the
--	 * beginging of the hole and add the region after hole.
--	 */
--	type->regions[i].size = base - type->regions[i].base;
--	return memblock_add_region(type, end, rgnend - end);
++	/*
++	 * Save off the data into a structure so the caller use it.
++	 * Right now we only want the first 4 bytes,
++	 * There are commands that need more, but not for the ones we
++	 * currently care about.
++	 */
++	sretval->retval[0] = readb(sabi_iface + SABI_IFACE_DATA);
++	sretval->retval[1] = readb(sabi_iface + SABI_IFACE_DATA + 1);
++	sretval->retval[2] = readb(sabi_iface + SABI_IFACE_DATA + 2);
++	sretval->retval[3] = readb(sabi_iface + SABI_IFACE_DATA + 3);
++
++exit:
++	mutex_unlock(&sabi_mutex);
++	return retval;
++
++}
++
++static int sabi_set_command(u8 command, u8 data)
++{
++	int retval = 0;
++	u16 port = readw(sabi + sabi_config->header_offsets.port);
++	u8 complete, iface_data;
++
++	mutex_lock(&sabi_mutex);
++
++	/* enable memory to be able to write to it */
++	outb(readb(sabi + sabi_config->header_offsets.en_mem), port);
++
++	/* write out the command */
++	writew(sabi_config->main_function, sabi_iface + SABI_IFACE_MAIN);
++	writew(command, sabi_iface + SABI_IFACE_SUB);
++	writeb(0, sabi_iface + SABI_IFACE_COMPLETE);
++	writeb(data, sabi_iface + SABI_IFACE_DATA);
++	outb(readb(sabi + sabi_config->header_offsets.iface_func), port);
++
++	/* write protect memory to make it safe */
++	outb(readb(sabi + sabi_config->header_offsets.re_mem), port);
++
++	/* see if the command actually succeeded */
++	complete = readb(sabi_iface + SABI_IFACE_COMPLETE);
++	iface_data = readb(sabi_iface + SABI_IFACE_DATA);
++	if (complete != 0xaa || iface_data == 0xff) {
++		pr_warn("SABI set command 0x%02x failed with completion flag 0x%02x and data 0x%02x\n",
++		       command, complete, iface_data);
++		retval = -EINVAL;
 +	}
++
++	mutex_unlock(&sabi_mutex);
++	return retval;
++}
++
++static void test_backlight(void)
++{
++	struct sabi_retval sretval;
++
++	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
++	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
++
++	sabi_set_command(sabi_config->commands.set_backlight, 0);
++	printk(KERN_DEBUG "backlight should be off\n");
++
++	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
++	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
++
++	msleep(1000);
++
++	sabi_set_command(sabi_config->commands.set_backlight, 1);
++	printk(KERN_DEBUG "backlight should be on\n");
++
++	sabi_get_command(sabi_config->commands.get_backlight, &sretval);
++	printk(KERN_DEBUG "backlight = 0x%02x\n", sretval.retval[0]);
++}
++
++static void test_wireless(void)
++{
++	struct sabi_retval sretval;
++
++	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
++	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
++
++	sabi_set_command(sabi_config->commands.set_wireless_button, 0);
++	printk(KERN_DEBUG "wireless led should be off\n");
++
++	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
++	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
++
++	msleep(1000);
++
++	sabi_set_command(sabi_config->commands.set_wireless_button, 1);
++	printk(KERN_DEBUG "wireless led should be on\n");
++
++	sabi_get_command(sabi_config->commands.get_wireless_button, &sretval);
++	printk(KERN_DEBUG "wireless led = 0x%02x\n", sretval.retval[0]);
++}
++
++static u8 read_brightness(void)
++{
++	struct sabi_retval sretval;
++	int user_brightness = 0;
++	int retval;
++
++	retval = sabi_get_command(sabi_config->commands.get_brightness,
++				  &sretval);
++	if (!retval) {
++		user_brightness = sretval.retval[0];
++		if (user_brightness != 0)
++			user_brightness -= sabi_config->min_brightness;
++	}
++	return user_brightness;
++}
++
++static void set_brightness(u8 user_brightness)
++{
++	u8 user_level = user_brightness - sabi_config->min_brightness;
++
++	sabi_set_command(sabi_config->commands.set_brightness, user_level);
++}
++
++static int get_brightness(struct backlight_device *bd)
++{
++	return (int)read_brightness();
++}
++
++static int update_status(struct backlight_device *bd)
++{
++	set_brightness(bd->props.brightness);
++
++	if (bd->props.power == FB_BLANK_UNBLANK)
++		sabi_set_command(sabi_config->commands.set_backlight, 1);
++	else
++		sabi_set_command(sabi_config->commands.set_backlight, 0);
 +	return 0;
- }
- 
- long __init_memblock memblock_remove(phys_addr_t base, phys_addr_t size)
-@@ -467,7 +482,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- 
- 	found = memblock_find_base(size, align, 0, max_addr);
- 	if (found != MEMBLOCK_ERROR &&
--	    memblock_add_region(&memblock.reserved, found, size) >= 0)
-+	    !memblock_add_region(&memblock.reserved, found, size))
- 		return found;
- 
- 	return 0;
-@@ -548,7 +563,7 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
- 		if (this_nid == nid) {
- 			phys_addr_t ret = memblock_find_region(start, this_end, size, align);
- 			if (ret != MEMBLOCK_ERROR &&
--			    memblock_add_region(&memblock.reserved, ret, size) >= 0)
-+			    !memblock_add_region(&memblock.reserved, ret, size))
- 				return ret;
- 		}
- 		start = this_end;
-
-
++}
++
++static const struct backlight_ops backlight_ops = {
++	.get_brightness	= get_brightness,
++	.update_status	= update_status,
++};
++
++static int rfkill_set(void *data, bool blocked)
++{
++	/* Do something with blocked...*/
++	/*
++	 * blocked == false is on
++	 * blocked == true is off
++	 */
++	if (blocked)
++		sabi_set_command(sabi_config->commands.set_wireless_button, 0);
++	else
++		sabi_set_command(sabi_config->commands.set_wireless_button, 1);
++
++	return 0;
++}
++
++static struct rfkill_ops rfkill_ops = {
++	.set_block = rfkill_set,
++};
++
++static int init_wireless(struct platform_device *sdev)
++{
++	int retval;
++
++	rfk = rfkill_alloc("samsung-wifi", &sdev->dev, RFKILL_TYPE_WLAN,
++			   &rfkill_ops, NULL);
++	if (!rfk)
++		return -ENOMEM;
++
++	retval = rfkill_register(rfk);
++	if (retval) {
++		rfkill_destroy(rfk);
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static void destroy_wireless(void)
++{
++	rfkill_unregister(rfk);
++	rfkill_destroy(rfk);
++}
++
++static ssize_t get_performance_level(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct sabi_retval sretval;
++	int retval;
++	int i;
++
++	/* Read the state */
++	retval = sabi_get_command(sabi_config->commands.get_performance_level,
++				  &sretval);
++	if (retval)
++		return retval;
++
++	/* The logic is backwards, yeah, lots of fun... */
++	for (i = 0; sabi_config->performance_levels[i].name; ++i) {
++		if (sretval.retval[0] == sabi_config->performance_levels[i].value)
++			return sprintf(buf, "%s\n", sabi_config->performance_levels[i].name);
++	}
++	return sprintf(buf, "%s\n", "unknown");
++}
++
++static ssize_t set_performance_level(struct device *dev,
++				struct device_attribute *attr, const char *buf,
++				size_t count)
++{
++	if (count >= 1) {
++		int i;
++		for (i = 0; sabi_config->performance_levels[i].name; ++i) {
++			const struct sabi_performance_level *level =
++				&sabi_config->performance_levels[i];
++			if (!strncasecmp(level->name, buf, strlen(level->name))) {
++				sabi_set_command(sabi_config->commands.set_performance_level,
++						 level->value);
++				break;
++			}
++		}
++		if (!sabi_config->performance_levels[i].name)
++			return -EINVAL;
++	}
++	return count;
++}
++static DEVICE_ATTR(performance_level, S_IWUSR | S_IRUGO,
++		   get_performance_level, set_performance_level);
++
++
++static int __init dmi_check_cb(const struct dmi_system_id *id)
++{
++	pr_info("found laptop model '%s'\n",
++		id->ident);
++	return 0;
++}
++
++static struct dmi_system_id __initdata samsung_dmi_table[] = {
++	{
++		.ident = "N128",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "N128"),
++			DMI_MATCH(DMI_BOARD_NAME, "N128"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "N130",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "N130"),
++			DMI_MATCH(DMI_BOARD_NAME, "N130"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "X125",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X125"),
++			DMI_MATCH(DMI_BOARD_NAME, "X125"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "X120/X170",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X120/X170"),
++			DMI_MATCH(DMI_BOARD_NAME, "X120/X170"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "NC10",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "NC10"),
++			DMI_MATCH(DMI_BOARD_NAME, "NC10"),
++		},
++		.callback = dmi_check_cb,
++	},
++		{
++		.ident = "NP-Q45",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "SQ45S70S"),
++			DMI_MATCH(DMI_BOARD_NAME, "SQ45S70S"),
++		},
++		.callback = dmi_check_cb,
++		},
++	{
++		.ident = "X360",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X360"),
++			DMI_MATCH(DMI_BOARD_NAME, "X360"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "R518",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "R518"),
++			DMI_MATCH(DMI_BOARD_NAME, "R518"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "R519/R719",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "R519/R719"),
++			DMI_MATCH(DMI_BOARD_NAME, "R519/R719"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "N150/N210/N220",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
++			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "N150P/N210P/N220P",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "N150P/N210P/N220P"),
++			DMI_MATCH(DMI_BOARD_NAME, "N150P/N210P/N220P"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "R530/R730",
++		.matches = {
++		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		      DMI_MATCH(DMI_PRODUCT_NAME, "R530/R730"),
++		      DMI_MATCH(DMI_BOARD_NAME, "R530/R730"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "NF110/NF210/NF310",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
++			DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "N145P/N250P/N260P",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
++			DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "R70/R71",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "R70/R71"),
++			DMI_MATCH(DMI_BOARD_NAME, "R70/R71"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
++		.ident = "P460",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "P460"),
++			DMI_MATCH(DMI_BOARD_NAME, "P460"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
++
++static int find_signature(void __iomem *memcheck, const char *testStr)
++{
++	int i = 0;
++	int loca;
++
++	for (loca = 0; loca < 0xffff; loca++) {
++		char temp = readb(memcheck + loca);
++
++		if (temp == testStr[i]) {
++			if (i == strlen(testStr)-1)
++				break;
++			++i;
++		} else {
++			i = 0;
++		}
++	}
++	return loca;
++}
++
++static int __init samsung_init(void)
++{
++	struct backlight_properties props;
++	struct sabi_retval sretval;
++	unsigned int ifaceP;
++	int i;
++	int loca;
++	int retval;
++
++	mutex_init(&sabi_mutex);
++
++	if (!force && !dmi_check_system(samsung_dmi_table))
++		return -ENODEV;
++
++	f0000_segment = ioremap_nocache(0xf0000, 0xffff);
++	if (!f0000_segment) {
++		pr_err("Can't map the segment at 0xf0000\n");
++		return -EINVAL;
++	}
++
++	/* Try to find one of the signatures in memory to find the header */
++	for (i = 0; sabi_configs[i].test_string != 0; ++i) {
++		sabi_config = &sabi_configs[i];
++		loca = find_signature(f0000_segment, sabi_config->test_string);
++		if (loca != 0xffff)
++			break;
++	}
++
++	if (loca == 0xffff) {
++		pr_err("This computer does not support SABI\n");
++		goto error_no_signature;
++	}
++
++	/* point to the SMI port Number */
++	loca += 1;
++	sabi = (f0000_segment + loca);
++
++	if (debug) {
++		printk(KERN_DEBUG "This computer supports SABI==%x\n",
++			loca + 0xf0000 - 6);
++		printk(KERN_DEBUG "SABI header:\n");
++		printk(KERN_DEBUG " SMI Port Number = 0x%04x\n",
++			readw(sabi + sabi_config->header_offsets.port));
++		printk(KERN_DEBUG " SMI Interface Function = 0x%02x\n",
++			readb(sabi + sabi_config->header_offsets.iface_func));
++		printk(KERN_DEBUG " SMI enable memory buffer = 0x%02x\n",
++			readb(sabi + sabi_config->header_offsets.en_mem));
++		printk(KERN_DEBUG " SMI restore memory buffer = 0x%02x\n",
++			readb(sabi + sabi_config->header_offsets.re_mem));
++		printk(KERN_DEBUG " SABI data offset = 0x%04x\n",
++			readw(sabi + sabi_config->header_offsets.data_offset));
++		printk(KERN_DEBUG " SABI data segment = 0x%04x\n",
++			readw(sabi + sabi_config->header_offsets.data_segment));
++	}
++
++	/* Get a pointer to the SABI Interface */
++	ifaceP = (readw(sabi + sabi_config->header_offsets.data_segment) & 0x0ffff) << 4;
++	ifaceP += readw(sabi + sabi_config->header_offsets.data_offset) & 0x0ffff;
++	sabi_iface = ioremap_nocache(ifaceP, 16);
++	if (!sabi_iface) {
++		pr_err("Can't remap %x\n", ifaceP);
++		goto exit;
++	}
++	if (debug) {
++		printk(KERN_DEBUG "ifaceP = 0x%08x\n", ifaceP);
++		printk(KERN_DEBUG "sabi_iface = %p\n", sabi_iface);
++
++		test_backlight();
++		test_wireless();
++
++		retval = sabi_get_command(sabi_config->commands.get_brightness,
++					  &sretval);
++		printk(KERN_DEBUG "brightness = 0x%02x\n", sretval.retval[0]);
++	}
++
++	/* Turn on "Linux" mode in the BIOS */
++	if (sabi_config->commands.set_linux != 0xff) {
++		retval = sabi_set_command(sabi_config->commands.set_linux,
++					  0x81);
++		if (retval) {
++			pr_warn("Linux mode was not set!\n");
++			goto error_no_platform;
++		}
++	}
++
++	/* knock up a platform device to hang stuff off of */
++	sdev = platform_device_register_simple("samsung", -1, NULL, 0);
++	if (IS_ERR(sdev))
++		goto error_no_platform;
++
++	/* create a backlight device to talk to this one */
++	memset(&props, 0, sizeof(struct backlight_properties));
++	props.max_brightness = sabi_config->max_brightness;
++	backlight_device = backlight_device_register("samsung", &sdev->dev,
++						     NULL, &backlight_ops,
++						     &props);
++	if (IS_ERR(backlight_device))
++		goto error_no_backlight;
++
++	backlight_device->props.brightness = read_brightness();
++	backlight_device->props.power = FB_BLANK_UNBLANK;
++	backlight_update_status(backlight_device);
++
++	retval = init_wireless(sdev);
++	if (retval)
++		goto error_no_rfk;
++
++	retval = device_create_file(&sdev->dev, &dev_attr_performance_level);
++	if (retval)
++		goto error_file_create;
++
++exit:
++	return 0;
++
++error_file_create:
++	destroy_wireless();
++
++error_no_rfk:
++	backlight_device_unregister(backlight_device);
++
++error_no_backlight:
++	platform_device_unregister(sdev);
++
++error_no_platform:
++	iounmap(sabi_iface);
++
++error_no_signature:
++	iounmap(f0000_segment);
++	return -EINVAL;
++}
++
++static void __exit samsung_exit(void)
++{
++	/* Turn off "Linux" mode in the BIOS */
++	if (sabi_config->commands.set_linux != 0xff)
++		sabi_set_command(sabi_config->commands.set_linux, 0x80);
++
++	device_remove_file(&sdev->dev, &dev_attr_performance_level);
++	backlight_device_unregister(backlight_device);
++	destroy_wireless();
++	iounmap(sabi_iface);
++	iounmap(f0000_segment);
++	platform_device_unregister(sdev);
++}
++
++module_init(samsung_init);
++module_exit(samsung_exit);
++
++MODULE_AUTHOR("Greg Kroah-Hartman <gregkh@suse.de>");
++MODULE_DESCRIPTION("Samsung Backlight driver");
++MODULE_LICENSE("GPL");
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
