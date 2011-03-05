@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab1CEBTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:19:14 -0500
-Received: from kroah.org ([198.145.64.141]:50113 "EHLO coco.kroah.org"
+	id S1760214Ab1CEBTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:19:35 -0500
+Received: from kroah.org ([198.145.64.141]:50111 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760162Ab1CEA7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:59:53 -0500
+	id S1760142Ab1CEA7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 19:59:52 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:35 2011
-Message-Id: <20110305005635.276780989@clark.kroah.org>
+Message-Id: <20110305005635.183171205@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:12 -0800
+Date: Fri, 04 Mar 2011 16:55:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: [07/73] Revert "Bluetooth: Enable USB autosuspend by default on btusb"
+        Jon Thomas <jthomas@redhat.com>
+Subject: [06/73] sierra: add new ID for Airprime/Sierra USB IP modem
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Jon Thomas <jthomas@redhat.com>
 
-commit 78794b2cdeac37ac1fd950fc9c4454b56d88ac03 upstream.
+commit e1dc5157c574e7249dc1cd072fde2e48b3011533 upstream.
 
-This reverts commit 556ea928f78a390fe16ae584e6433dff304d3014.
+I picked up a new Sierra usb 308 (At&t Shockwave) on 2/2011 and the vendor code
+is 0x0f3d
 
-Jeff Chua reports that it can cause some bluetooth devices (he mentions
-an Bluetooth Intermec scanner) to just stop responding after a while
-with messages like
+Looking up vendor and product id's I see:
 
-  [ 4533.361959] btusb 8-1:1.0: no reset_resume for driver btusb?
-  [ 4533.361964] btusb 8-1:1.1: no reset_resume for driver btusb?
+0f3d  Airprime, Incorporated
+ 0112  CDMA 1xEVDO PC Card, PC 5220
 
-from the kernel. See also
+Sierra and Airprime are somehow related and I'm guessing the At&t usb 308 might
+be have some common hardware with the AirPrime SL809x.
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=26182
-
-for other reports.
-
-Reported-by: Jeff Chua <jeff.chua.linux@gmail.com>
-Reported-by: Andrew Meakovski <meako@bigmir.net>
-Reported-by: Jim Faulkner <jfaulkne@ccs.neu.edu>
-Acked-by: Greg KH <gregkh@suse.de>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jon Thomas <jthomas@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/bluetooth/btusb.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/usb/serial/sierra.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -1038,8 +1038,6 @@ static int btusb_probe(struct usb_interf
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -301,6 +301,9 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
++	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
++	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
++	},
+        { USB_DEVICE(0x413C, 0x08133) }, /* Dell Computer Corp. Wireless 5720 VZW Mobile Broadband (EVDO Rev-A) Minicard GPS Port */
  
- 	usb_set_intfdata(intf, data);
- 
--	usb_enable_autosuspend(interface_to_usbdev(intf));
--
- 	return 0;
- }
- 
+ 	{ }
 
 
