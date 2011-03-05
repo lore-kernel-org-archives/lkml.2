@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab1CEUIN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:08:13 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59320 "EHLO e8.ny.us.ibm.com"
+	id S1754250Ab1CEUju (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 15:39:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64905 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab1CEUIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:08:11 -0500
-Subject: Re: [PATCH 2/3] ptp: add a software clock based on
- clock_monotonic_raw
-From: john stultz <johnstul@us.ibm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Torben Hohn <torbenh@gmx.de>, linux-kernel@vger.kernel.org,
-        richard.cochran@omicron.at, tglx@linutronix.de
-In-Reply-To: <20110304064639.GD3824@riccoc20.at.omicron.at>
-References: <1299173174-348-1-git-send-email-torbenh@gmx.de>
-	 <1299173174-348-3-git-send-email-torbenh@gmx.de>
-	 <1299180844.28285.111.camel@work-vm>
-	 <20110304064639.GD3824@riccoc20.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Mar 2011 12:08:07 -0800
-Message-ID: <1299355687.28285.130.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752669Ab1CEUjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 15:39:48 -0500
+Date: Sat, 5 Mar 2011 21:30:40 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH v4 0/4] exec: unify native/compat code
+Message-ID: <20110305203040.GA7546@redhat.com>
+References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com> <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com> <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 07:46 +0100, Richard Cochran wrote:
-> On Thu, Mar 03, 2011 at 11:34:04AM -0800, john stultz wrote:
-> > On Thu, 2011-03-03 at 18:26 +0100, Torben Hohn wrote:
-> > > First version of a software clock. Not very useful yet,
-> > > as it doesnt generate events, but at least it allows
-> > > for testing the ptp framework without special hardware.
-> > 
-> > So in the past, I pushed back on Richard for having something similar,
-> > as I'm not psyched about duplicating interfaces. However, your
-> > implementation is CLOCK_MONOTONIC_RAW instead of CLOCK_REALTIME and it
-> > keeps the adjustments internal, I'm not as opposed.
-> 
-> (Aha! So it is okay after all ;)
-> 
-> I do think a software only PHC will make it easier for people to get
-> started with the new interface. I have been carrying along such a
-> patch privately for my own testing.
+On 03/03, Linus Torvalds wrote:
+>
+> On Thu, Mar 3, 2011 at 7:47 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> I _personally_ don't like "conditional". Its name is based on code logic.
+> >> It's unclear what mean "conditional". From data strucuture view, It is
+> >> "opaque userland pointer".
+> >
+> > I agree with any naming, just suggest a better name ;)
+>
+> Maybe just "struct user_arg_ptr" or something?
 
-Consistency is but a hobgoblin... :)
+OK, nothing else was suggessted, I assume Kosaki agrees.
 
-But seriously, do forgive me if I misunderstood your earlier patches
-with this respect. I thought it was just exporting CLOCK_REALTIME
-directly through a new interface/clockid (which would be duplicative).
+So rename conditional_ptr to user_arg_ptr.
 
-thanks
--john
+Also rename get_user_ptr() to get_user_arg_ptr(). It was suggested to
+use the same "user_arg_ptr" for this helper too, but this is not
+grep-friendly. As for get_ in the name... Well, I can redo again ;)
+But this matches get_user() and this is all what this helper does.
 
+Otherwise unchanged.
+
+Oleg.
 
