@@ -1,179 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab1CEBno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:43:44 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21311 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab1CEBnn (ORCPT
+	id S1760063Ab1CECM3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 21:12:29 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46676 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab1CECM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:43:43 -0500
-Date: Fri, 4 Mar 2011 17:42:39 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] kernel/signal.c: add kernel-doc to syscalls
-Message-Id: <20110304174239.9632800a.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D71954D.007F,ss=1,fgs=0
+	Fri, 4 Mar 2011 21:12:27 -0500
+Date: Fri, 4 Mar 2011 23:12:57 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: David Fries <david@fries.net>
+Cc: Liang Bao <tim.bao@gmail.com>, Andrei Warkentin <andreiw@motorola.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Feng Tang <feng.tang@intel.com>
+Subject: Re: [PATCH] work around for l2cap NULL dereference in
+ l2cap_conn_start
+Message-ID: <20110305021257.GD9005@joana>
+Mail-Followup-To: David Fries <david@fries.net>,
+	Liang Bao <tim.bao@gmail.com>,
+	Andrei Warkentin <andreiw@motorola.com>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Feng Tang <feng.tang@intel.com>
+References: <20110211035309.GA22204@spacedout.fries.net>
+ <20110214145649.GE2597@joana>
+ <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
+ <20110221043601.GB22204@spacedout.fries.net>
+ <AANLkTi=b5UCdyc3ZtUFCx23uYygM7eRyGu-y_wdJ5JXi@mail.gmail.com>
+ <20110227191545.GB2166@joana>
+ <20110228050340.GC22204@spacedout.fries.net>
+ <20110228173022.GC2165@joana>
+ <20110302061910.GE22204@spacedout.fries.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110302061910.GE22204@spacedout.fries.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Hi David,
 
-Add kernel-doc to syscalls in signal.c.
+* David Fries <david@fries.net> [2011-03-02 00:19:10 -0600]:
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- kernel/signal.c |   65 ++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 63 insertions(+), 2 deletions(-)
+> On Mon, Feb 28, 2011 at 02:30:22PM -0300, Gustavo F. Padovan wrote:
+> > Hi David,
+> > 
+> > * David Fries <david@fries.net> [2011-02-27 23:03:40 -0600]:
+> > 
+> > > On Sun, Feb 27, 2011 at 04:15:45PM -0300, Gustavo F. Padovan wrote:
+> > > > I pushed the following patch to bluetooth-2.6 tree. It should fix the problem
+> > > > by avoiding connections to be accepted before a L2CAP info response comes:
+> > > 
+> > > Is
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
+> > > the bluetooth-2.6 tree you mentioned?  I don't see your patch there.
+> > > As a side note, the inline patch in your e-mail has the tabs replaced by
+> > > spaces, once I changed them, it applied cleanly.
+> > > 
+> > > I first reverted to the base N900 kernel-power-2.6.28 46 (none of my
+> > > changes or debugging), it crashed as expected.  I then applied your
+> > > patch 743400e0, and it still crashed.  I added back the
+> > > l2cap_conn_start parent check and some debugging in af_bluetooth.c
+> > > dmesg debug output and patches follow.
+> > 
+> > I want to see a test with this patch and a recent kernel. We added many fixes
+> > to stack in the last two years. Can you test this scenario?
+> 
+> I'm sorry, but apparently not, at least this post says 2.6.37 isn't
+> going to happen for the N900 and Maemo.
+> http://forums.internettablettalk.com/showthread.php?t=70082
+> 
+> I tried 2.6.37-n900 from
+> git://gitorious.org/nokia-n900-kernel/nokia-n900-kernel.git anyway,
+> but the display visibly degrades like it isn't being updated and
+> doesn't apparently get any further.  I don't have anyway to debug it
+> further.
 
---- lnx-2638-rc7.orig/kernel/signal.c
-+++ lnx-2638-rc7/kernel/signal.c
-@@ -2061,6 +2061,9 @@ EXPORT_SYMBOL(unblock_all_signals);
-  * System call entry points.
-  */
- 
-+/**
-+ *  sys_restart_syscall - restart a system call
-+ */
- SYSCALL_DEFINE0(restart_syscall)
- {
- 	struct restart_block *restart = &current_thread_info()->restart_block;
-@@ -2114,6 +2117,13 @@ int sigprocmask(int how, sigset_t *set, 
- 	return error;
- }
- 
-+/**
-+ *  sys_rt_sigprocmask - change the list of currently blocked signals
-+ *  @how: whether to add, remove, or set signals
-+ *  @set: stores pending signals
-+ *  @oset: previous value of signal mask if non-null
-+ *  @sigsetsize: size of sigset_t type
-+ */
- SYSCALL_DEFINE4(rt_sigprocmask, int, how, sigset_t __user *, set,
- 		sigset_t __user *, oset, size_t, sigsetsize)
- {
-@@ -2174,6 +2184,12 @@ out:
- 	return error;
- }
- 
-+/**
-+ *  sys_rt_sigpending - examine a pending signal that has been raised
-+ *			while blocked
-+ *  @set: stores pending signals
-+ *  @sigsetsize: size of sigset_t type or larger
-+ */
- SYSCALL_DEFINE2(rt_sigpending, sigset_t __user *, set, size_t, sigsetsize)
- {
- 	return do_sigpending(set, sigsetsize);
-@@ -2253,6 +2269,14 @@ int copy_siginfo_to_user(siginfo_t __use
- 
- #endif
- 
-+/**
-+ *  sys_rt_sigtimedwait - synchronously wait for queued signals specified
-+ *			in @uthese
-+ *  @uthese: queued signals to wait for
-+ *  @uinfo: if non-null, the signal's siginfo is returned here
-+ *  @uts: upper bound on process time suspension
-+ *  @sigsetsize: size of sigset_t type
-+ */
- SYSCALL_DEFINE4(rt_sigtimedwait, const sigset_t __user *, uthese,
- 		siginfo_t __user *, uinfo, const struct timespec __user *, uts,
- 		size_t, sigsetsize)
-@@ -2330,6 +2354,11 @@ SYSCALL_DEFINE4(rt_sigtimedwait, const s
- 	return ret;
- }
- 
-+/**
-+ *  sys_kill - send a signal to a process
-+ *  @pid: the PID of the process
-+ *  @sig: signal to be sent
-+ */
- SYSCALL_DEFINE2(kill, pid_t, pid, int, sig)
- {
- 	struct siginfo info;
-@@ -2405,7 +2434,11 @@ SYSCALL_DEFINE3(tgkill, pid_t, tgid, pid
- 	return do_tkill(tgid, pid, sig);
- }
- 
--/*
-+/**
-+ *  sys_tkill - send signal to one specific task
-+ *  @pid: the PID of the task
-+ *  @sig: signal to be sent
-+ *
-  *  Send a signal to only one task, even if it's a CLONE_THREAD task.
-  */
- SYSCALL_DEFINE2(tkill, pid_t, pid, int, sig)
-@@ -2417,6 +2450,12 @@ SYSCALL_DEFINE2(tkill, pid_t, pid, int, 
- 	return do_tkill(0, pid, sig);
- }
- 
-+/**
-+ *  sys_rt_sigqueueinfo - send signal information to a signal
-+ *  @pid: the PID of the thread
-+ *  @sig: signal to be sent
-+ *  @uinfo: signal info to be sent
-+ */
- SYSCALL_DEFINE3(rt_sigqueueinfo, pid_t, pid, int, sig,
- 		siginfo_t __user *, uinfo)
- {
-@@ -2574,6 +2613,10 @@ out:
- 
- #ifdef __ARCH_WANT_SYS_SIGPENDING
- 
-+/**
-+ *  sys_sigpending - examine pending signals
-+ *  @set: where mask of pending signal is returned
-+ */
- SYSCALL_DEFINE1(sigpending, old_sigset_t __user *, set)
- {
- 	return do_sigpending(set, sizeof(*set));
-@@ -2582,7 +2625,12 @@ SYSCALL_DEFINE1(sigpending, old_sigset_t
- #endif
- 
- #ifdef __ARCH_WANT_SYS_SIGPROCMASK
--/*
-+/**
-+ *  sys_sigprocmask - examine and change blocked signals
-+ *  @how: whether to add, remove, or set signals
-+ *  @set: signals to add or remove (if non-null)
-+ *  @oset: previous value of signal mask if non-null
-+ *
-  * Some platforms have their own version with special arguments;
-  * others support only sys_rt_sigprocmask.
-  */
-@@ -2638,6 +2686,13 @@ out:
- #endif /* __ARCH_WANT_SYS_SIGPROCMASK */
- 
- #ifdef __ARCH_WANT_SYS_RT_SIGACTION
-+/**
-+ *  sys_rt_sigaction - alter an action taken by a process
-+ *  @sig: signal to be sent
-+ *  @act: the thread group ID of the thread
-+ *  @oact: the PID of the thread
-+ *  @sigsetsize: size of sigset_t type
-+ */
- SYSCALL_DEFINE4(rt_sigaction, int, sig,
- 		const struct sigaction __user *, act,
- 		struct sigaction __user *, oact,
-@@ -2724,6 +2779,12 @@ SYSCALL_DEFINE0(pause)
- #endif
- 
- #ifdef __ARCH_WANT_SYS_RT_SIGSUSPEND
-+/**
-+ *  sys_rt_sigsuspend - replace the signal mask for a value with the
-+ *	@unewset value until a signal is received
-+ *  @unewset: new signal mask value
-+ *  @sigsetsize: size of sigset_t type
-+ */
- SYSCALL_DEFINE2(rt_sigsuspend, sigset_t __user *, unewset, size_t, sigsetsize)
- {
- 	sigset_t newset;
+I think you can test this in a desktop machine.
+
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
