@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab1CEBND (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:13:03 -0500
-Received: from kroah.org ([198.145.64.141]:50277 "EHLO coco.kroah.org"
+	id S1760401Ab1CEBAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:00:20 -0500
+Received: from kroah.org ([198.145.64.141]:50257 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760403Ab1CEBAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:21 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:38 2011
-Message-Id: <20110305005638.112726383@clark.kroah.org>
+	id S1760362Ab1CEBAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:17 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:37 2011
+Message-Id: <20110305005637.711450050@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:41 -0800
+Date: Fri, 04 Mar 2011 16:55:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [36/73] ALSA: HDA: Add a new Conexant codec 506e (20590)
+        Paul Zimmerman <paulz@synopsys.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [32/73] xhci: Fix an error in count_sg_trbs_needed()
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
 
-commit 6da8b51657a9cd5a87b4e6e4c7bc76b598a95175 upstream.
+commit bcd2fde05341cef0052e49566ec88b406a521cf3 upstream.
 
-Conexant 506e/20590 has the same graph as the rest of the 5066 family.
+The expression
 
-BugLink: http://bugs.launchpad.net/bugs/723672
+	while (running_total < sg_dma_len(sg))
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+does not take into account that the remaining data length can be less
+than sg_dma_len(sg). In that case, running_total can end up being
+greater than the total data length, so an extra TRB is counted.
+Changing the expression to
+
+	while (running_total < sg_dma_len(sg) && running_total < temp)
+
+fixes that.
+
+This patch should be queued for stable kernels back to 2.6.31.
+
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_conexant.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3890,6 +3890,8 @@ static struct hda_codec_preset snd_hda_p
- 	  .patch = patch_cxt5066 },
- 	{ .id = 0x14f15069, .name = "CX20585",
- 	  .patch = patch_cxt5066 },
-+	{ .id = 0x14f1506e, .name = "CX20590",
-+	  .patch = patch_cxt5066 },
- 	{ .id = 0x14f15097, .name = "CX20631",
- 	  .patch = patch_conexant_auto },
- 	{ .id = 0x14f15098, .name = "CX20632",
-@@ -3916,6 +3918,7 @@ MODULE_ALIAS("snd-hda-codec-id:14f15066"
- MODULE_ALIAS("snd-hda-codec-id:14f15067");
- MODULE_ALIAS("snd-hda-codec-id:14f15068");
- MODULE_ALIAS("snd-hda-codec-id:14f15069");
-+MODULE_ALIAS("snd-hda-codec-id:14f1506e");
- MODULE_ALIAS("snd-hda-codec-id:14f15097");
- MODULE_ALIAS("snd-hda-codec-id:14f15098");
- MODULE_ALIAS("snd-hda-codec-id:14f150a1");
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2380,7 +2380,7 @@ static unsigned int count_sg_trbs_needed
+ 			num_trbs++;
+ 
+ 		/* How many more 64KB chunks to transfer, how many more TRBs? */
+-		while (running_total < sg_dma_len(sg)) {
++		while (running_total < sg_dma_len(sg) && running_total < temp) {
+ 			num_trbs++;
+ 			running_total += TRB_MAX_BUFF_SIZE;
+ 		}
 
 
