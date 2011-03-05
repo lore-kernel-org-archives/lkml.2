@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1CEMlk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 07:41:40 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:32933 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab1CEMlj convert rfc822-to-8bit (ORCPT
+	id S1753248Ab1CEMnI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 07:43:08 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:41853 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab1CEMnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 07:41:39 -0500
+	Sat, 5 Mar 2011 07:43:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bkNO9dHSVuXw9B14z983K9sWyhKK26VATUZEJz4yhVVIYAjXEixp9Oi23fvoY2fWDg
-         XoGAAcMDCnk1p05pURB8QVhd51g6z3ZMGoVmQSRC5dH3WC/scdG6At6glRU0Z2RXceN4
-         c1r+aBxQuTFFYeu490pK26RVrBRkvxUnZ5lTQ=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=Ld4hVN0xLIEhDWmGuHCDZtbeY585q/NtzQZyGK7L3JF1SHjmheZRRDFEbeWepU22d7
+         xGzeacc1yER8QyMohJKQ==
+Date: Sat, 5 Mar 2011 04:42:30 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Nazarewicz <mina86@mina86.com>,
+        "Douglas W. Jones" <jones@cs.uiowa.edu>,
+        Denis Vlasenko <vda.linux@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH mmotm] fix broken bootup on 32-bit
+Message-ID: <alpine.LSU.2.00.1103050436010.4098@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110305112936.GA30187@opensource.wolfsonmicro.com>
-References: <20110304180027.20deb6c4.sfr@canb.auug.org.au>
-	<20110304173357.23d36116.randy.dunlap@oracle.com>
-	<20110305112936.GA30187@opensource.wolfsonmicro.com>
-Date: Sat, 5 Mar 2011 20:41:38 +0800
-Message-ID: <AANLkTikivW3+V4QYh9Nt9FGXTefZiN9WbpAvGVeBJHNN@mail.gmail.com>
-Subject: Re: [PATCH -next] soc: sgtl5000 uses regulator interfaces
-From: Zeng Zhaoming <zengzm.kernel@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Zeng Zhaoming <zhaoming.zeng@freescale.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 5, 2011 at 7:29 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Mar 04, 2011 at 05:33:57PM -0800, Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> sgtl5000 uses regulator interfaces, so make selecting it depend
->> on REGULATOR.
->>
->> sgtl5000.c:(.text+0x4ae33): undefined reference to `regulator_unregister'
->> sgtl5000.c:(.text+0x4af41): undefined reference to `rdev_get_drvdata'
->> sgtl5000.c:(.text+0x4b191): undefined reference to `regulator_register'
->
+mmotm 2011-03-02-16-52 is utterly broken on 32-bit: panics at boot
+with "Couldn't register console driver", and preceding warnings don't
+even print their line numbers... which leads to the vsprintf changes.
 
-hi， Thanks for the report.
+Comparing the 32-bit version of put_dec() against mod7_put_dec()
+in tools/put-dec/put-dec-test.c (ah, it is useful after all!) shows
+that someone has decided to invert the ordering of pairs of lines
+in the kernel version of the algorithm, making a nonsense of it.
 
-> Since the regulator on the device is optional this isn't the best fix,
-> the code should be updated to support building without regulator.
+Switch them back, and put in the conditionals from mod7_put_dec()
+(absent from mod6_put_dec??): my guess is that less work is better.
 
-I will fix the code. If regulator not enabled, and the optional
-regulator not provided externally,
-a warning message will print out, and internal regulator will set
-directly by write register.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+My testing has gone no further than booting up, and checking that
+the numbers in /proc/partitions come out right (which they didn't
+at my first attempt, when I thought just a one-liner was needed).
 
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+Diffed to go on the top of mmotm, but can be applied after
+lib-vsprintf-optimised-put_dec-function-fix.patch
 
+ lib/vsprintf.c |   33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
 
--- 
-Best Regards
-    Zeng Zhaoming
+--- mmotm/lib/vsprintf.c	2011-03-03 15:43:57.000000000 -0800
++++ linux/lib/vsprintf.c	2011-03-05 03:37:14.000000000 -0800
+@@ -310,22 +310,29 @@ char *put_dec(char *buf, unsigned long l
+ 
+ 	q  = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
+ 
+-	q  = q / 10000;
+ 	buf = put_dec_full4(buf, q % 10000);
++	q  = q / 10000;
+ 
+ 	d1 = q + 7671 * d3 + 9496 * d2 + 6 * d1;
+-	q  = d1 / 10000;
+-	buf = put_dec_full4(buf, d1 % 10000);
+-
+-	d2 = q + 4749 * d3 + 42 * d2;
+-	q  = d2 / 10000;
+-	buf = put_dec_full4(buf, d2 % 10000);
+-
+-	d3 = q + 281 * d3;
+-	q  = d3 / 10000;
+-	buf = put_dec_full4(buf, d3 % 10000);
+-
+-	buf = put_dec_full4(buf, q);
++	if (d1) {
++		buf = put_dec_full4(buf, d1 % 10000);
++		q  = d1 / 10000;
++
++		d2 = q + 4749 * d3 + 42 * d2;
++		if (d2) {
++			buf = put_dec_full4(buf, d2 % 10000);
++			q  = d2 / 10000;
++
++			d3 = q + 281 * d3;
++			if (d3) {
++				buf = put_dec_full4(buf, d3 % 10000);
++				q  = d3 / 10000;
++
++				if (q)
++					buf = put_dec_full4(buf, q);
++			}
++		}
++	}
+ 
+ 	while (buf[-1] == '0')
+ 		--buf;
