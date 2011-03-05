@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760542Ab1CEBAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:00:48 -0500
-Received: from kroah.org ([198.145.64.141]:50403 "EHLO coco.kroah.org"
+	id S932565Ab1CEBEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:04:30 -0500
+Received: from kroah.org ([198.145.64.141]:50428 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760408Ab1CEBAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:42 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:39 2011
-Message-Id: <20110305005639.682957078@clark.kroah.org>
+	id S1760408Ab1CEBAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:48 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:40 2011
+Message-Id: <20110305005640.047100218@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:57 -0800
+Date: Fri, 04 Mar 2011 16:56:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [52/73] fuse: fix hang of single threaded fuseblk filesystem
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Brandon Philips <bphilips@suse.de>
+Subject: [56/73] e1000e: 82579 PHY incorrectly identified during init
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,142 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-commit 5a18ec176c934ca1bc9dc61580a5e0e90a9b5733 upstream.
+commit 664dc878ed6f0476b875547547a49e06f7a4e73b upstream.
 
-Single threaded NTFS-3G could get stuck if a delayed RELEASE reply
-triggered a DESTROY request via path_put().
+During init, reading the 2 PHY ID registers back-to-back in the default
+fast mode could return invalid data (all F's) and in slow mode could
+return data to the second read the data from the first read.  To resolve
+the issue in fast mode, set to slow mode before any PHY accesses; to
+resolve the issue in slow mode, put in a delay for every 82579 PHY access.
+Since this PHY is currently only paired with the pch2lan MAC and the PHY
+type is not known before the first PHY access which can fail this way,
+check for this based on MAC-type.
 
-Fix this by
-
- a) making RELEASE requests synchronous, whenever possible, on fuseblk
- filesystems
-
- b) if not possible (triggered by an asynchronous read/write) then do
- the path_put() in a separate thread with schedule_work().
-
-Reported-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Acked-by: Brandon Philips <bphilips@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- fs/fuse/file.c   |   52 +++++++++++++++++++++++++++++++++++++++++++++-------
- fs/fuse/fuse_i.h |    6 +++++-
- 2 files changed, 50 insertions(+), 8 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -86,18 +86,52 @@ struct fuse_file *fuse_file_get(struct f
- 	return ff;
- }
- 
-+static void fuse_release_async(struct work_struct *work)
-+{
-+	struct fuse_req *req;
-+	struct fuse_conn *fc;
-+	struct path path;
-+
-+	req = container_of(work, struct fuse_req, misc.release.work);
-+	path = req->misc.release.path;
-+	fc = get_fuse_conn(path.dentry->d_inode);
-+
-+	fuse_put_request(fc, req);
-+	path_put(&path);
-+}
-+
- static void fuse_release_end(struct fuse_conn *fc, struct fuse_req *req)
- {
--	path_put(&req->misc.release.path);
-+	if (fc->destroy_req) {
-+		/*
-+		 * If this is a fuseblk mount, then it's possible that
-+		 * releasing the path will result in releasing the
-+		 * super block and sending the DESTROY request.  If
-+		 * the server is single threaded, this would hang.
-+		 * For this reason do the path_put() in a separate
-+		 * thread.
-+		 */
-+		atomic_inc(&req->count);
-+		INIT_WORK(&req->misc.release.work, fuse_release_async);
-+		schedule_work(&req->misc.release.work);
-+	} else {
-+		path_put(&req->misc.release.path);
-+	}
- }
- 
--static void fuse_file_put(struct fuse_file *ff)
-+static void fuse_file_put(struct fuse_file *ff, bool sync)
- {
- 	if (atomic_dec_and_test(&ff->count)) {
- 		struct fuse_req *req = ff->reserved_req;
- 
--		req->end = fuse_release_end;
--		fuse_request_send_background(ff->fc, req);
-+		if (sync) {
-+			fuse_request_send(ff->fc, req);
-+			path_put(&req->misc.release.path);
-+			fuse_put_request(ff->fc, req);
-+		} else {
-+			req->end = fuse_release_end;
-+			fuse_request_send_background(ff->fc, req);
-+		}
- 		kfree(ff);
+---
+ drivers/net/e1000e/ich8lan.c |   16 +++++++++++-----
+ drivers/net/e1000e/phy.c     |   14 ++++++++++++++
+ 2 files changed, 25 insertions(+), 5 deletions(-)
+
+--- a/drivers/net/e1000e/ich8lan.c
++++ b/drivers/net/e1000e/ich8lan.c
+@@ -338,12 +338,17 @@ static s32 e1000_init_phy_params_pchlan(
  	}
- }
-@@ -219,8 +253,12 @@ void fuse_release_common(struct file *fi
- 	 * Normally this will send the RELEASE request, however if
- 	 * some asynchronous READ or WRITE requests are outstanding,
- 	 * the sending will be delayed.
-+	 *
-+	 * Make the release synchronous if this is a fuseblk mount,
-+	 * synchronous RELEASE is allowed (and desirable) in this case
-+	 * because the server can be trusted not to screw up.
- 	 */
--	fuse_file_put(ff);
-+	fuse_file_put(ff, ff->fc->destroy_req != NULL);
- }
  
- static int fuse_open(struct inode *inode, struct file *file)
-@@ -558,7 +596,7 @@ static void fuse_readpages_end(struct fu
- 		page_cache_release(page);
+ 	phy->id = e1000_phy_unknown;
+-	ret_val = e1000e_get_phy_id(hw);
+-	if (ret_val)
+-		goto out;
+-	if ((phy->id == 0) || (phy->id == PHY_REVISION_MASK)) {
++	switch (hw->mac.type) {
++	default:
++		ret_val = e1000e_get_phy_id(hw);
++		if (ret_val)
++			goto out;
++		if ((phy->id != 0) && (phy->id != PHY_REVISION_MASK))
++			break;
++		/* fall-through */
++	case e1000_pch2lan:
+ 		/*
+-		 * In case the PHY needs to be in mdio slow mode (eg. 82577),
++		 * In case the PHY needs to be in mdio slow mode,
+ 		 * set slow mode and try to get the PHY id again.
+ 		 */
+ 		ret_val = e1000_set_mdio_slow_mode_hv(hw);
+@@ -352,6 +357,7 @@ static s32 e1000_init_phy_params_pchlan(
+ 		ret_val = e1000e_get_phy_id(hw);
+ 		if (ret_val)
+ 			goto out;
++		break;
  	}
- 	if (req->ff)
--		fuse_file_put(req->ff);
-+		fuse_file_put(req->ff, false);
+ 	phy->type = e1000e_get_phy_type_from_id(phy->id);
+ 
+--- a/drivers/net/e1000e/phy.c
++++ b/drivers/net/e1000e/phy.c
+@@ -226,6 +226,13 @@ s32 e1000e_read_phy_reg_mdic(struct e100
+ 	}
+ 	*data = (u16) mdic;
+ 
++	/*
++	 * Allow some time after each MDIC transaction to avoid
++	 * reading duplicate data in the next MDIC transaction.
++	 */
++	if (hw->mac.type == e1000_pch2lan)
++		udelay(100);
++
+ 	return 0;
  }
  
- static void fuse_send_readpages(struct fuse_req *req, struct file *file)
-@@ -1137,7 +1175,7 @@ static ssize_t fuse_direct_write(struct
- static void fuse_writepage_free(struct fuse_conn *fc, struct fuse_req *req)
- {
- 	__free_page(req->pages[0]);
--	fuse_file_put(req->ff);
-+	fuse_file_put(req->ff, false);
+@@ -279,6 +286,13 @@ s32 e1000e_write_phy_reg_mdic(struct e10
+ 		return -E1000_ERR_PHY;
+ 	}
+ 
++	/*
++	 * Allow some time after each MDIC transaction to avoid
++	 * reading duplicate data in the next MDIC transaction.
++	 */
++	if (hw->mac.type == e1000_pch2lan)
++		udelay(100);
++
+ 	return 0;
  }
  
- static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -21,6 +21,7 @@
- #include <linux/rwsem.h>
- #include <linux/rbtree.h>
- #include <linux/poll.h>
-+#include <linux/workqueue.h>
- 
- /** Max number of pages that can be used in a single read request */
- #define FUSE_MAX_PAGES_PER_REQ 32
-@@ -257,7 +258,10 @@ struct fuse_req {
- 	union {
- 		struct fuse_forget_in forget_in;
- 		struct {
--			struct fuse_release_in in;
-+			union {
-+				struct fuse_release_in in;
-+				struct work_struct work;
-+			};
- 			struct path path;
- 		} release;
- 		struct fuse_init_in init_in;
 
 
