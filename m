@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab1CEBBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:01:09 -0500
-Received: from kroah.org ([198.145.64.141]:50515 "EHLO coco.kroah.org"
+	id S932666Ab1CEBBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:01:12 -0500
+Received: from kroah.org ([198.145.64.141]:50502 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932503Ab1CEBBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:01:06 -0500
+	id S932547Ab1CEBBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:01:05 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:41 2011
-Message-Id: <20110305005641.509001803@clark.kroah.org>
+Message-Id: <20110305005641.418975097@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:56:16 -0800
+Date: Fri, 04 Mar 2011 16:56:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [71/73] e1000e: disable broken PHY wakeup for ICH10 LOMs, use MAC wakeup instead
+        Gerrit Renker <gerrit@erg.abdn.ac.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [70/73] dccp: fix oops on Reset after close
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Gerrit Renker <gerrit@erg.abdn.ac.uk>
 
-commit 4def99bbfd46e05c5e03b5b282cb4ee30e27ff19 upstream.
+commit 720dc34bbbe9493c7bd48b2243058b4e447a929d upstream.
 
-When support for 82577/82578 was added[1] in 2.6.31, PHY wakeup was in-
-advertently enabled (even though it does not function properly) on ICH10
-LOMs.  This patch makes it so that the ICH10 LOMs use MAC wakeup instead
-as was done with the initial support for those devices (i.e. 82567LM-3,
-82567LF-3 and 82567V-4).
+This fixes a bug in the order of dccp_rcv_state_process() that still permitted
+reception even after closing the socket. A Reset after close thus causes a NULL
+pointer dereference by not preventing operations on an already torn-down socket.
 
-[1] commit a4f58f5455ba0efda36fb33c37074922d1527a10
+ dccp_v4_do_rcv()
+	|
+	| state other than OPEN
+	v
+ dccp_rcv_state_process()
+	|
+	| DCCP_PKT_RESET
+	v
+ dccp_rcv_reset()
+	|
+	v
+ dccp_time_wait()
 
-Reported-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+ WARNING: at net/ipv4/inet_timewait_sock.c:141 __inet_twsk_hashdance+0x48/0x128()
+ Modules linked in: arc4 ecb carl9170 rt2870sta(C) mac80211 r8712u(C) crc_ccitt ah
+ [<c0038850>] (unwind_backtrace+0x0/0xec) from [<c0055364>] (warn_slowpath_common)
+ [<c0055364>] (warn_slowpath_common+0x4c/0x64) from [<c0055398>] (warn_slowpath_n)
+ [<c0055398>] (warn_slowpath_null+0x1c/0x24) from [<c02b72d0>] (__inet_twsk_hashd)
+ [<c02b72d0>] (__inet_twsk_hashdance+0x48/0x128) from [<c031caa0>] (dccp_time_wai)
+ [<c031caa0>] (dccp_time_wait+0x40/0xc8) from [<c031c15c>] (dccp_rcv_state_proces)
+ [<c031c15c>] (dccp_rcv_state_process+0x120/0x538) from [<c032609c>] (dccp_v4_do_)
+ [<c032609c>] (dccp_v4_do_rcv+0x11c/0x14c) from [<c0286594>] (release_sock+0xac/0)
+ [<c0286594>] (release_sock+0xac/0x110) from [<c031fd34>] (dccp_close+0x28c/0x380)
+ [<c031fd34>] (dccp_close+0x28c/0x380) from [<c02d9a78>] (inet_release+0x64/0x70)
+
+The fix is by testing the socket state first. Receiving a packet in Closed state
+now also produces the required "No connection" Reset reply of RFC 4340, 8.3.1.
+
+Reported-and-tested-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Gerrit Renker <gerrit@erg.abdn.ac.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000e/netdev.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/dccp/input.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -5884,7 +5884,8 @@ static int __devinit e1000_probe(struct
- 		/* APME bit in EEPROM is mapped to WUC.APME */
- 		eeprom_data = er32(WUC);
- 		eeprom_apme_mask = E1000_WUC_APME;
--		if (eeprom_data & E1000_WUC_PHY_WAKE)
-+		if ((hw->mac.type > e1000_ich10lan) &&
-+		    (eeprom_data & E1000_WUC_PHY_WAKE))
- 			adapter->flags2 |= FLAG2_HAS_PHY_WAKEUP;
- 	} else if (adapter->flags & FLAG_APME_IN_CTRL3) {
- 		if (adapter->flags & FLAG_APME_CHECK_PORT_B &&
+--- a/net/dccp/input.c
++++ b/net/dccp/input.c
+@@ -621,6 +621,9 @@ int dccp_rcv_state_process(struct sock *
+ 		/* Caller (dccp_v4_do_rcv) will send Reset */
+ 		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
+ 		return 1;
++	} else if (sk->sk_state == DCCP_CLOSED) {
++		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
++		return 1;
+ 	}
+ 
+ 	if (sk->sk_state != DCCP_REQUESTING && sk->sk_state != DCCP_RESPOND) {
+@@ -683,10 +686,6 @@ int dccp_rcv_state_process(struct sock *
+ 	}
+ 
+ 	switch (sk->sk_state) {
+-	case DCCP_CLOSED:
+-		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
+-		return 1;
+-
+ 	case DCCP_REQUESTING:
+ 		queued = dccp_rcv_request_sent_state_process(sk, skb, dh, len);
+ 		if (queued >= 0)
 
 
