@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932688Ab1CEBFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:05:06 -0500
-Received: from kroah.org ([198.145.64.141]:47689 "EHLO coco.kroah.org"
+	id S932756Ab1CEBFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:05:31 -0500
+Received: from kroah.org ([198.145.64.141]:47750 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760558Ab1CEBFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:05:02 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 17:03:52 2011
-Message-Id: <20110305010352.504367425@clark.kroah.org>
+	id S932739Ab1CEBFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:05:12 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 17:03:53 2011
+Message-Id: <20110305010353.590838435@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 17:03:01 -0800
+Date: Fri, 04 Mar 2011 17:03:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@ZenIV.linux.org.uk>, Josh Hunt <johunt@akamai.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [07/18] ext2: Fix link count corruption under heavy link+rename load
+        Pavel Shilovsky <piastryyy@gmail.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [18/18] CIFS: Fix oplock break handling (try #2)
 In-Reply-To: <20110305010410.GA18668@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Hunt <johunt@akamai.com>
+From: Pavel Shilovsky <piastryyy@gmail.com>
 
-commit e8a80c6f769dd4622d8b211b398452158ee60c0b upstream.
+commit 12fed00de963433128b5366a21a55808fab2f756 upstream.
 
-vfs_rename_other() does not lock renamed inode with i_mutex. Thus changing
-i_nlink in a non-atomic manner (which happens in ext2_rename()) can corrupt
-it as reported and analyzed by Josh.
+When we get oplock break notification we should set the appropriate
+value of OplockLevel field in oplock break acknowledge according to
+the oplock level held by the client in this time. As we only can have
+level II oplock or no oplock in the case of oplock break, we should be
+aware only about clientCanCacheRead field in cifsInodeInfo structure.
 
-In fact, there is no good reason to mess with i_nlink of the moved file.
-We did it presumably to simulate linking into the new directory and unlinking
-from an old one. But the practical effect of this is disputable because fsck
-can possibly treat file as being properly linked into both directories without
-writing any error which is confusing. So we just stop increment-decrement
-games with i_nlink which also fixes the corruption.
+Also fix bug connected with wrong interpretation of OplockLevel field
+during oplock break notification processing.
 
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Pavel Shilovsky <piastryyy@gmail.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext2/namei.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ fs/cifs/cifsproto.h |    2 +-
+ fs/cifs/cifssmb.c   |    4 +++-
+ fs/cifs/file.c      |   17 +++++++++--------
+ 3 files changed, 13 insertions(+), 10 deletions(-)
 
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -327,7 +327,6 @@ static int ext2_rename (struct inode * o
- 		new_de = ext2_find_entry (new_dir, &new_dentry->d_name, &new_page);
- 		if (!new_de)
- 			goto out_dir;
--		inode_inc_link_count(old_inode);
- 		ext2_set_link(new_dir, new_de, new_page, old_inode, 1);
- 		new_inode->i_ctime = CURRENT_TIME_SEC;
- 		if (dir_de)
-@@ -339,12 +338,9 @@ static int ext2_rename (struct inode * o
- 			if (new_dir->i_nlink >= EXT2_LINK_MAX)
- 				goto out_dir;
- 		}
--		inode_inc_link_count(old_inode);
- 		err = ext2_add_link(new_dentry, old_inode);
--		if (err) {
--			inode_dec_link_count(old_inode);
-+		if (err)
- 			goto out_dir;
--		}
- 		if (dir_de)
- 			inode_inc_link_count(new_dir);
- 	}
-@@ -352,12 +348,11 @@ static int ext2_rename (struct inode * o
- 	/*
- 	 * Like most other Unix systems, set the ctime for inodes on a
-  	 * rename.
--	 * inode_dec_link_count() will mark the inode dirty.
+--- a/fs/cifs/cifsproto.h
++++ b/fs/cifs/cifsproto.h
+@@ -323,7 +323,7 @@ extern int CIFSSMBLock(const int xid, st
+ 			const __u16 netfid, const __u64 len,
+ 			const __u64 offset, const __u32 numUnlock,
+ 			const __u32 numLock, const __u8 lockType,
+-			const bool waitFlag);
++			const bool waitFlag, const __u8 oplock_level);
+ extern int CIFSSMBPosixLock(const int xid, struct cifsTconInfo *tcon,
+ 			const __u16 smb_file_id, const int get_flag,
+ 			const __u64 len, struct file_lock *,
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -1641,7 +1641,8 @@ int
+ CIFSSMBLock(const int xid, struct cifsTconInfo *tcon,
+ 	    const __u16 smb_file_id, const __u64 len,
+ 	    const __u64 offset, const __u32 numUnlock,
+-	    const __u32 numLock, const __u8 lockType, const bool waitFlag)
++	    const __u32 numLock, const __u8 lockType,
++	    const bool waitFlag, const __u8 oplock_level)
+ {
+ 	int rc = 0;
+ 	LOCK_REQ *pSMB = NULL;
+@@ -1669,6 +1670,7 @@ CIFSSMBLock(const int xid, struct cifsTc
+ 	pSMB->NumberOfLocks = cpu_to_le16(numLock);
+ 	pSMB->NumberOfUnlocks = cpu_to_le16(numUnlock);
+ 	pSMB->LockType = lockType;
++	pSMB->OplockLevel = oplock_level;
+ 	pSMB->AndXCommand = 0xFF;	/* none */
+ 	pSMB->Fid = smb_file_id; /* netfid stays le */
+ 
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -825,12 +825,12 @@ int cifs_lock(struct file *file, int cmd
+ 
+ 		/* BB we could chain these into one lock request BB */
+ 		rc = CIFSSMBLock(xid, tcon, netfid, length, pfLock->fl_start,
+-				 0, 1, lockType, 0 /* wait flag */ );
++				 0, 1, lockType, 0 /* wait flag */, 0);
+ 		if (rc == 0) {
+ 			rc = CIFSSMBLock(xid, tcon, netfid, length,
+ 					 pfLock->fl_start, 1 /* numUnlock */ ,
+ 					 0 /* numLock */ , lockType,
+-					 0 /* wait flag */ );
++					 0 /* wait flag */, 0);
+ 			pfLock->fl_type = F_UNLCK;
+ 			if (rc != 0)
+ 				cERROR(1, ("Error unlocking previously locked "
+@@ -873,8 +873,8 @@ int cifs_lock(struct file *file, int cmd
+ 
+ 		if (numLock) {
+ 			rc = CIFSSMBLock(xid, tcon, netfid, length,
+-					pfLock->fl_start,
+-					0, numLock, lockType, wait_flag);
++					 pfLock->fl_start, 0, numLock, lockType,
++					 wait_flag, 0);
+ 
+ 			if (rc == 0) {
+ 				/* For Windows locks we must store them. */
+@@ -894,9 +894,9 @@ int cifs_lock(struct file *file, int cmd
+ 						(pfLock->fl_start + length) >=
+ 						(li->offset + li->length)) {
+ 					stored_rc = CIFSSMBLock(xid, tcon,
+-							netfid,
+-							li->length, li->offset,
+-							1, 0, li->type, false);
++							netfid, li->length,
++							li->offset, 1, 0,
++							li->type, false, 0);
+ 					if (stored_rc)
+ 						rc = stored_rc;
+ 
+@@ -2314,7 +2314,8 @@ cifs_oplock_break(struct slow_work *work
  	 */
- 	old_inode->i_ctime = CURRENT_TIME_SEC;
-+	mark_inode_dirty(old_inode);
- 
- 	ext2_delete_entry (old_de, old_page);
--	inode_dec_link_count(old_inode);
- 
- 	if (dir_de) {
- 		if (old_dir != new_dir)
+ 	if (!cfile->closePend && !cfile->oplock_break_cancelled) {
+ 		rc = CIFSSMBLock(0, cifs_sb->tcon, cfile->netfid, 0, 0, 0, 0,
+-				 LOCKING_ANDX_OPLOCK_RELEASE, false);
++				 LOCKING_ANDX_OPLOCK_RELEASE, false,
++				 cinode->clientCanCacheRead ? 1 : 0);
+ 		cFYI(1, ("Oplock release rc = %d", rc));
+ 	}
+ }
 
 
