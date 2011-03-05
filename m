@@ -1,132 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1CEPxS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 10:53:18 -0500
-Received: from hera.kernel.org ([140.211.167.34]:58653 "EHLO hera.kernel.org"
+	id S1753273Ab1CEQmP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 11:42:15 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:18119 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab1CEPxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 10:53:16 -0500
-Date: Sat, 5 Mar 2011 15:52:46 GMT
-From: tip-bot for Lin Ming <ming.m.lin@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1299119690-13991-5-git-send-email-ming.m.lin@intel.com>
-References: <1299119690-13991-5-git-send-email-ming.m.lin@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Avoid the percore allocations if the CPU is not HT capable
-Message-ID: <tip-6909262429b70a162e9e7053672cfd8024c9275d@git.kernel.org>
-Git-Commit-ID: 6909262429b70a162e9e7053672cfd8024c9275d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752213Ab1CEQmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 11:42:14 -0500
+Message-ID: <4D7267B6.6020406@gmail.com>
+Date: Sat, 05 Mar 2011 19:41:26 +0300
+From: Andrew Vagin <avagin@gmail.com>
+Reply-To: avagin@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 05 Mar 2011 15:52:53 +0000 (UTC)
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: check zone->all_unreclaimable in all_unreclaimable()
+References: <1299325456-2687-1-git-send-email-avagin@openvz.org> <20110305152056.GA1918@barrios-desktop> <4D72580D.4000208@gmail.com> <20110305155316.GB1918@barrios-desktop>
+In-Reply-To: <20110305155316.GB1918@barrios-desktop>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6909262429b70a162e9e7053672cfd8024c9275d
-Gitweb:     http://git.kernel.org/tip/6909262429b70a162e9e7053672cfd8024c9275d
-Author:     Lin Ming <ming.m.lin@intel.com>
-AuthorDate: Thu, 3 Mar 2011 10:34:50 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 5 Mar 2011 07:12:16 +0100
+On 03/05/2011 06:53 PM, Minchan Kim wrote:
+> On Sat, Mar 05, 2011 at 06:34:37PM +0300, Andrew Vagin wrote:
+>> On 03/05/2011 06:20 PM, Minchan Kim wrote:
+>>> On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
+>>>> Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
+>>>> kernel may hang up, because shrink_zones() will do nothing, but
+>>>> all_unreclaimable() will say, that zone has reclaimable pages.
+>>>>
+>>>> do_try_to_free_pages()
+>>>> 	shrink_zones()
+>>>> 		 for_each_zone
+>>>> 			if (zone->all_unreclaimable)
+>>>> 				continue
+>>>> 	if !all_unreclaimable(zonelist, sc)
+>>>> 		return 1
+>>>>
+>>>> __alloc_pages_slowpath()
+>>>> retry:
+>>>> 	did_some_progress = do_try_to_free_pages(page)
+>>>> 	...
+>>>> 	if (!page&&   did_some_progress)
+>>>> 		retry;
+>>>>
+>>>> Signed-off-by: Andrey Vagin<avagin@openvz.org>
+>>>> ---
+>>>>   mm/vmscan.c |    2 ++
+>>>>   1 files changed, 2 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>>>> index 6771ea7..1c056f7 100644
+>>>> --- a/mm/vmscan.c
+>>>> +++ b/mm/vmscan.c
+>>>> @@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
+>>>>
+>>>>   	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>>>>   			gfp_zone(sc->gfp_mask), sc->nodemask) {
+>>>> +		if (zone->all_unreclaimable)
+>>>> +			continue;
+>>>>   		if (!populated_zone(zone))
+>>>>   			continue;
+>>>>   		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+>>> zone_reclaimable checks it. Isn't it enough?
+>> I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
+>> This two patches are enough.
+> Sorry if I confused you.
+> I mean zone->all_unreclaimable become true if !zone_reclaimable in balance_pgdat.
+> zone_reclaimable compares recent pages_scanned with the number of zone lru pages.
+> So too many page scanning in small lru pages makes the zone to unreclaimable zone.
+>
+> In all_unreclaimable, we calls zone_reclaimable to detect it.
+> It's the same thing with your patch.
+balance_pgdat set zone->all_unreclaimable, but the problem is that it is 
+cleaned late.
 
-perf: Avoid the percore allocations if the CPU is not HT capable
+The problem is that zone->all_unreclaimable = True, but 
+zone_reclaimable() returns True too.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1299119690-13991-5-git-send-email-ming.m.lin@intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/smp.h             |   10 ++++++++++
- arch/x86/kernel/cpu/perf_event.c       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |   18 ++++++++++++------
- 3 files changed, 23 insertions(+), 6 deletions(-)
+zone->all_unreclaimable will be cleaned in free_*_pages, but this may be 
+late. It is enough allocate one page from page cache, that 
+zone_reclaimable() returns True and zone->all_unreclaimable becomes True.
+>>> Does the hang up really happen or see it by code review?
+>> Yes. You can reproduce it for help the attached python program. It's
+>> not very clever:)
+>> It make the following actions in loop:
+>> 1. fork
+>> 2. mmap
+>> 3. touch memory
+>> 4. read memory
+>> 5. munmmap
+> It seems the test program makes fork bombs and memory hogging.
+> If you applied this patch, the problem is gone?
+Yes.
+>>>> -- 
+>>>> 1.7.1
+>>>>
+>>>> --
+>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>>> see: http://www.linux-mm.org/ .
+>>>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>>>> Don't email:<a href=mailto:"dont@kvack.org">   email@kvack.org</a>
+>> import sys, time, mmap, os
+>> from subprocess import Popen, PIPE
+>> import random
+>>
+>> global mem_size
+>>
+>> def info(msg):
+>> 	pid = os.getpid()
+>> 	print>>  sys.stderr, "%s: %s" % (pid, msg)
+>> 	sys.stderr.flush()
+>>
+>>
+>>
+>> def memory_loop(cmd = "a"):
+>> 	"""
+>> 	cmd may be:
+>> 		c: check memory
+>> 		else: touch memory
+>> 	"""
+>> 	c = 0
+>> 	for j in xrange(0, mem_size):
+>> 		if cmd == "c":
+>> 			if f[j<<12] != chr(j % 255):
+>> 				info("Data corruption")
+>> 				sys.exit(1)
+>> 		else:
+>> 			f[j<<12] = chr(j % 255)
+>>
+>> while True:
+>> 	pid = os.fork()
+>> 	if (pid != 0):
+>> 		mem_size = random.randint(0, 56 * 4096)
+>> 		f = mmap.mmap(-1, mem_size<<  12, mmap.MAP_ANONYMOUS|mmap.MAP_PRIVATE)
+>> 		memory_loop()
+>> 		memory_loop("c")
+>> 		f.close()
+>
 
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 1f46951..c1bbfa8 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -17,10 +17,20 @@
- #endif
- #include <asm/thread_info.h>
- #include <asm/cpumask.h>
-+#include <asm/cpufeature.h>
- 
- extern int smp_num_siblings;
- extern unsigned int num_processors;
- 
-+static inline bool cpu_has_ht_siblings(void)
-+{
-+	bool has_siblings = false;
-+#ifdef CONFIG_SMP
-+	has_siblings = cpu_has_ht && smp_num_siblings > 1;
-+#endif
-+	return has_siblings;
-+}
-+
- DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
- DECLARE_PER_CPU(u16, cpu_llc_id);
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4d6ce5d..2660418 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -30,6 +30,7 @@
- #include <asm/stacktrace.h>
- #include <asm/nmi.h>
- #include <asm/compat.h>
-+#include <asm/smp.h>
- 
- #if 0
- #undef wrmsrl
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 6e9b676..8fc2b2c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1205,6 +1205,9 @@ static int intel_pmu_cpu_prepare(int cpu)
- {
- 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 
-+	if (!cpu_has_ht_siblings())
-+		return NOTIFY_OK;
-+
- 	cpuc->per_core = kzalloc_node(sizeof(struct intel_percore),
- 				      GFP_KERNEL, cpu_to_node(cpu));
- 	if (!cpuc->per_core)
-@@ -1221,6 +1224,15 @@ static void intel_pmu_cpu_starting(int cpu)
- 	int core_id = topology_core_id(cpu);
- 	int i;
- 
-+	init_debug_store_on_cpu(cpu);
-+	/*
-+	 * Deal with CPUs that don't clear their LBRs on power-up.
-+	 */
-+	intel_pmu_lbr_reset();
-+
-+	if (!cpu_has_ht_siblings())
-+		return;
-+
- 	for_each_cpu(i, topology_thread_cpumask(cpu)) {
- 		struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
- 
-@@ -1233,12 +1245,6 @@ static void intel_pmu_cpu_starting(int cpu)
- 
- 	cpuc->per_core->core_id = core_id;
- 	cpuc->per_core->refcnt++;
--
--	init_debug_store_on_cpu(cpu);
--	/*
--	 * Deal with CPUs that don't clear their LBRs on power-up.
--	 */
--	intel_pmu_lbr_reset();
- }
- 
- static void intel_pmu_cpu_dying(int cpu)
