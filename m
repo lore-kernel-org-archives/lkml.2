@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab1CEBUh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:20:37 -0500
-Received: from kroah.org ([198.145.64.141]:50086 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759871Ab1CEA7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:59:48 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:34 2011
-Message-Id: <20110305005634.714960046@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:06 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>, Felipe Balbi <balbi@ti.com>
-Subject: [01/73] usb: musb: omap2430: fix kernel panic on reboot
-In-Reply-To: <20110305005720.GA16162@kroah.com>
+	id S1760158Ab1CEBfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:35:51 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20332 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759914Ab1CEBft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:35:49 -0500
+Date: Fri, 4 Mar 2011 17:33:57 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Zeng Zhaoming <zhaoming.zeng@freescale.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Subject: [PATCH -next] soc: sgtl5000 uses regulator interfaces
+Message-Id: <20110304173357.23d36116.randy.dunlap@oracle.com>
+In-Reply-To: <20110304180027.20deb6c4.sfr@canb.auug.org.au>
+References: <20110304180027.20deb6c4.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D719367.0023,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-------------------
+sgtl5000 uses regulator interfaces, so make selecting it depend
+on REGULATOR.
 
-From: Johan Hovold <jhovold@gmail.com>
+sgtl5000.c:(.text+0x4ae33): undefined reference to `regulator_unregister'
+sgtl5000.c:(.text+0x4af41): undefined reference to `rdev_get_drvdata'
+sgtl5000.c:(.text+0x4b191): undefined reference to `regulator_register'
 
-commit b193b412e62b134adf69af286c7e7f8e99259350 upstream.
-
-Cancel idle timer in musb_platform_exit.
-
-The idle timer could trigger after clock had been disabled leading to
-kernel panic when MUSB_DEVCTL is accessed in musb_do_idle on 2.6.37.
-
-The fault below is no longer triggered on 2.6.38-rc4 (clock is disabled
-later, and only if compiled as a module, and the offending memory access
-has moved) but the timer should be cancelled nonetheless.
-
-Rebooting... musb_hdrc musb_hdrc: remove, state 4
-usb usb1: USB disconnect, address 1
-musb_hdrc musb_hdrc: USB bus 1 deregistered
-Unhandled fault: external abort on non-linefetch (0x1028) at 0xfa0ab060
-Internal error: : 1028 [#1] PREEMPT
-last sysfs file: /sys/kernel/uevent_seqnum
-Modules linked in:
-CPU: 0    Not tainted  (2.6.37+ #6)
-PC is at musb_do_idle+0x24/0x138
-LR is at musb_do_idle+0x18/0x138
-pc : [<c02377d8>]    lr : [<c02377cc>]    psr: 80000193
-sp : cf2bdd80  ip : cf2bdd80  fp : c048a20c
-r10: c048a60c  r9 : c048a40c  r8 : cf85e110
-r7 : cf2bc000  r6 : 40000113  r5 : c0489800  r4 : cf85e110
-r3 : 00000004  r2 : 00000006  r1 : fa0ab000  r0 : cf8a7000
-Flags: Nzcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 8faac019  DAC: 00000015
-Process reboot (pid: 769, stack limit = 0xcf2bc2f0)
-Stack: (0xcf2bdd80 to 0xcf2be000)
-dd80: 00000103 c0489800 c02377b4 c005fa34 00000555 c0071a8c c04a3858 cf2bdda8
-dda0: 00000555 c048a00c cf2bdda8 cf2bdda8 1838beb0 00000103 00000004 cf2bc000
-ddc0: 00000001 00000001 c04896c8 0000000a 00000000 c005ac14 00000001 c003f32c
-dde0: 00000000 00000025 00000000 cf2bc000 00000002 00000001 cf2bc000 00000000
-de00: 00000001 c005ad08 cf2bc000 c002e07c c03ec039 ffffffff fa200000 c0033608
-de20: 00000001 00000000 cf852c14 cf81f200 c045b714 c045b708 cf2bc000 c04a37e8
-de40: c0033c04 cf2bc000 00000000 00000001 cf2bde68 cf2bde68 c01c3abc c004f7d8
-de60: 60000013 ffffffff c0033c04 00000000 01234567 fee1dead 00000000 c006627c
-de80: 00000001 c00662c8 28121969 c00663ec cfa38c40 cf9f6a00 cf2bded0 cf9f6a0c
-dea0: 00000000 cf92f000 00008914 c02cd284 c04a55c8 c028b398 c00715c0 becf24a8
-dec0: 30687465 00000000 00000000 00000000 00000002 1301a8c0 00000000 00000000
-dee0: 00000002 1301a8c0 00000000 00000000 c0450494 cf527920 00011f10 cf2bdf08
-df00: 00011f10 cf2bdf10 00011f10 cf2bdf18 c00f0b44 c004f7e8 cf2bdf18 cf2bdf18
-df20: 00011f10 cf2bdf30 00011f10 cf2bdf38 cf401300 cf486100 00000008 c00d2b28
-df40: 00011f10 cf401300 00200200 c00d3388 00011f10 cfb63a88 cfb63a80 c00c2f08
-df60: 00000000 00000000 cfb63a80 00000000 cf0a3480 00000006 c0033c04 cfb63a80
-df80: 00000000 c00c0104 00000003 cf0a3480 cfb63a80 00000000 00000001 00000004
-dfa0: 00000058 c0033a80 00000000 00000001 fee1dead 28121969 01234567 00000000
-dfc0: 00000000 00000001 00000004 00000058 00000001 00000001 00000000 00000001
-dfe0: 4024d200 becf2cb0 00009210 4024d218 60000010 fee1dead 00000000 00000000
-[<c02377d8>] (musb_do_idle+0x24/0x138) from [<c005fa34>] (run_timer_softirq+0x1a8/0x26)
-[<c005fa34>] (run_timer_softirq+0x1a8/0x26c) from [<c005ac14>] (__do_softirq+0x88/0x13)
-[<c005ac14>] (__do_softirq+0x88/0x138) from [<c005ad08>] (irq_exit+0x44/0x98)
-[<c005ad08>] (irq_exit+0x44/0x98) from [<c002e07c>] (asm_do_IRQ+0x7c/0xa0)
-[<c002e07c>] (asm_do_IRQ+0x7c/0xa0) from [<c0033608>] (__irq_svc+0x48/0xa8)
-Exception stack(0xcf2bde20 to 0xcf2bde68)
-de20: 00000001 00000000 cf852c14 cf81f200 c045b714 c045b708 cf2bc000 c04a37e8
-de40: c0033c04 cf2bc000 00000000 00000001 cf2bde68 cf2bde68 c01c3abc c004f7d8
-de60: 60000013 ffffffff
-[<c0033608>] (__irq_svc+0x48/0xa8) from [<c004f7d8>] (sub_preempt_count+0x0/0xb8)
-Code: ebf86030 e5940098 e594108c e5902010 (e5d13060)
----[ end trace 3689c0d808f9bf7c ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Zeng Zhaoming <zhaoming.zeng@freescale.com>
 ---
- drivers/usb/musb/omap2430.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -317,6 +317,7 @@ static int musb_platform_resume(struct m
- 
- int musb_platform_exit(struct musb *musb)
- {
-+	del_timer_sync(&musb_idle_timer);
- 
- 	musb_platform_suspend(musb);
- 
-
-
+--- linux-next-20110304.orig/sound/soc/codecs/Kconfig
++++ linux-next-20110304/sound/soc/codecs/Kconfig
+@@ -33,7 +33,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_MAX98088 if I2C
+ 	select SND_SOC_MAX9877 if I2C
+ 	select SND_SOC_PCM3008
+-	select SND_SOC_SGTL5000 if I2C
++	select SND_SOC_SGTL5000 if I2C && REGULATOR
+ 	select SND_SOC_SN95031 if INTEL_SCU_IPC
+ 	select SND_SOC_SPDIF
+ 	select SND_SOC_SSM2602 if I2C
