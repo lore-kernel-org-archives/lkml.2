@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab1CEBBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:01:12 -0500
+	id S1760570Ab1CEBB2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:01:28 -0500
 Received: from kroah.org ([198.145.64.141]:50502 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932547Ab1CEBBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:01:05 -0500
+	id S932572Ab1CEBBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:01:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:41 2011
-Message-Id: <20110305005641.418975097@clark.kroah.org>
+Message-Id: <20110305005641.700673708@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:56:15 -0800
+Date: Fri, 04 Mar 2011 16:56:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [70/73] dccp: fix oops on Reset after close
+        Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Mike Surcouf <mike@surcouf.co.uk>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [73/73] arp_notify: unconditionally send gratuitous ARP for NETDEV_NOTIFY_PEERS.
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerrit Renker <gerrit@erg.abdn.ac.uk>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-commit 720dc34bbbe9493c7bd48b2243058b4e447a929d upstream.
+commit d11327ad6695db8117c78d70611e71102ceec2ac upstream.
 
-This fixes a bug in the order of dccp_rcv_state_process() that still permitted
-reception even after closing the socket. A Reset after close thus causes a NULL
-pointer dereference by not preventing operations on an already torn-down socket.
+NETDEV_NOTIFY_PEER is an explicit request by the driver to send a link
+notification while NETDEV_UP/NETDEV_CHANGEADDR generate link
+notifications as a sort of side effect.
 
- dccp_v4_do_rcv()
-	|
-	| state other than OPEN
-	v
- dccp_rcv_state_process()
-	|
-	| DCCP_PKT_RESET
-	v
- dccp_rcv_reset()
-	|
-	v
- dccp_time_wait()
+In the later cases the sysctl option is present because link
+notification events can have undesired effects e.g. if the link is
+flapping. I don't think this applies in the case of an explicit
+request from a driver.
 
- WARNING: at net/ipv4/inet_timewait_sock.c:141 __inet_twsk_hashdance+0x48/0x128()
- Modules linked in: arc4 ecb carl9170 rt2870sta(C) mac80211 r8712u(C) crc_ccitt ah
- [<c0038850>] (unwind_backtrace+0x0/0xec) from [<c0055364>] (warn_slowpath_common)
- [<c0055364>] (warn_slowpath_common+0x4c/0x64) from [<c0055398>] (warn_slowpath_n)
- [<c0055398>] (warn_slowpath_null+0x1c/0x24) from [<c02b72d0>] (__inet_twsk_hashd)
- [<c02b72d0>] (__inet_twsk_hashdance+0x48/0x128) from [<c031caa0>] (dccp_time_wai)
- [<c031caa0>] (dccp_time_wait+0x40/0xc8) from [<c031c15c>] (dccp_rcv_state_proces)
- [<c031c15c>] (dccp_rcv_state_process+0x120/0x538) from [<c032609c>] (dccp_v4_do_)
- [<c032609c>] (dccp_v4_do_rcv+0x11c/0x14c) from [<c0286594>] (release_sock+0xac/0)
- [<c0286594>] (release_sock+0xac/0x110) from [<c031fd34>] (dccp_close+0x28c/0x380)
- [<c031fd34>] (dccp_close+0x28c/0x380) from [<c02d9a78>] (inet_release+0x64/0x70)
+This patch makes NETDEV_NOTIFY_PEER unconditional, if preferred we
+could add a new sysctl for this case which defaults to on.
 
-The fix is by testing the socket state first. Receiving a packet in Closed state
-now also produces the required "No connection" Reset reply of RFC 4340, 8.3.1.
+This change causes Xen post-migration ARP notifications (which cause
+switches to relearn their MAC tables etc) to be sent by default.
 
-Reported-and-tested-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Gerrit Renker <gerrit@erg.abdn.ac.uk>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[reported to solve hyperv live migration problem - gkh]
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Mike Surcouf <mike@surcouf.co.uk>
+Cc: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/dccp/input.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/ipv4/devinet.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
---- a/net/dccp/input.c
-+++ b/net/dccp/input.c
-@@ -621,6 +621,9 @@ int dccp_rcv_state_process(struct sock *
- 		/* Caller (dccp_v4_do_rcv) will send Reset */
- 		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
- 		return 1;
-+	} else if (sk->sk_state == DCCP_CLOSED) {
-+		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
-+		return 1;
- 	}
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1030,6 +1030,21 @@ static inline bool inetdev_valid_mtu(uns
+ 	return mtu >= 68;
+ }
  
- 	if (sk->sk_state != DCCP_REQUESTING && sk->sk_state != DCCP_RESPOND) {
-@@ -683,10 +686,6 @@ int dccp_rcv_state_process(struct sock *
- 	}
++static void inetdev_send_gratuitous_arp(struct net_device *dev,
++					struct in_device *in_dev)
++
++{
++	struct in_ifaddr *ifa = in_dev->ifa_list;
++
++	if (!ifa)
++		return;
++
++	arp_send(ARPOP_REQUEST, ETH_P_ARP,
++		 ifa->ifa_address, dev,
++		 ifa->ifa_address, NULL,
++		 dev->dev_addr, NULL);
++}
++
+ /* Called only under RTNL semaphore */
  
- 	switch (sk->sk_state) {
--	case DCCP_CLOSED:
--		dcb->dccpd_reset_code = DCCP_RESET_CODE_NO_CONNECTION;
--		return 1;
+ static int inetdev_event(struct notifier_block *this, unsigned long event,
+@@ -1082,18 +1097,13 @@ static int inetdev_event(struct notifier
+ 		}
+ 		ip_mc_up(in_dev);
+ 		/* fall through */
+-	case NETDEV_NOTIFY_PEERS:
+ 	case NETDEV_CHANGEADDR:
++		if (!IN_DEV_ARP_NOTIFY(in_dev))
++			break;
++		/* fall through */
++	case NETDEV_NOTIFY_PEERS:
+ 		/* Send gratuitous ARP to notify of link change */
+-		if (IN_DEV_ARP_NOTIFY(in_dev)) {
+-			struct in_ifaddr *ifa = in_dev->ifa_list;
 -
- 	case DCCP_REQUESTING:
- 		queued = dccp_rcv_request_sent_state_process(sk, skb, dh, len);
- 		if (queued >= 0)
+-			if (ifa)
+-				arp_send(ARPOP_REQUEST, ETH_P_ARP,
+-					 ifa->ifa_address, dev,
+-					 ifa->ifa_address, NULL,
+-					 dev->dev_addr, NULL);
+-		}
++		inetdev_send_gratuitous_arp(dev, in_dev);
+ 		break;
+ 	case NETDEV_DOWN:
+ 		ip_mc_down(in_dev);
 
 
