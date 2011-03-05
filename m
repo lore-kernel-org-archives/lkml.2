@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759934Ab1CEAce (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 19:32:34 -0500
-Received: from fieldses.org ([174.143.236.118]:40795 "EHLO fieldses.org"
+	id S1759954Ab1CEAvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 19:51:46 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:47677 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587Ab1CEAcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:32:31 -0500
-Date: Fri, 4 Mar 2011 19:32:15 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, sfrench@us.ibm.com, agruen@linbit.com,
-        dilger.kernel@dilger.ca, sandeen@redhat.com, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V5 00/24]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20110305003214.GF21260@fieldses.org>
-References: <1298469131-16555-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20110228211145.GG28617@thunk.org>
- <87oc5vgwqr.fsf@linux.vnet.ibm.com>
- <20110302154943.GB29136@fieldses.org>
- <87ei6pza5v.fsf@linux.vnet.ibm.com>
- <20110302185847.GA3524@fieldses.org>
- <871v2nw4q0.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871v2nw4q0.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751852Ab1CEAvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 19:51:45 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, avagin@openvz.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: skip zombie in OOM-killer
+Date: Sat,  5 Mar 2011 03:51:47 +0300
+Message-Id: <1299286307-4386-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 04:08:15PM +0530, Aneesh Kumar K. V wrote:
-> On Wed, 2 Mar 2011 13:58:47 -0500, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > On Wed, Mar 02, 2011 at 11:17:56PM +0530, Aneesh Kumar K. V wrote:
-> > > On Wed, 2 Mar 2011 10:49:43 -0500, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > > > On Tue, Mar 01, 2011 at 12:20:36PM +0530, Aneesh Kumar K. V wrote:
-> > > > > On Mon, 28 Feb 2011 16:11:45 -0500, "Ted Ts'o" <tytso@mit.edu> wrote:
-> > > > > > Hi Aneesh,
-> > > > > > 
-> > > > > > What is the current status of this patch series?  I seem to remember
-> > > > > > that Christoph and Al Viro had some objections; have those been
-> > > > > > cleared yet?  If not, can you summarize what their objections are?
-> > > > > 
-> > > > > The main objection raised was the use of may_delete and may_create inode
-> > > > > operations callback. They are gone now and we have MAY_* flags as
-> > > > > favoured by Al Viro.  The new MAY_* flags added are 
-> > > > > 
-> > > > > #define MAY_CREATE_FILE 128
-> > > > > #define MAY_CREATE_DIR 256
-> > > > > #define MAY_DELETE_CHILD 512
-> > > > > #define MAY_DELETE_SELF 1024
-> > > > > #define MAY_TAKE_OWNERSHIP 2048
-> > > > > #define MAY_CHMOD 4096
-> > > > > #define MAY_SET_TIMES 8192
-> > > > > 
-> > > > > 
-> > > > > > 
-> > > > > > To be honest I haven't been paying super close attention to this patch
-> > > > > > series, and I'm curious what needs to happen with it one way or
-> > > > > > another.
-> > > > > > 
-> > > > > 
-> > > > > IMHO we are ready to get first 11 patches upstream in the next merge
-> > > > > window. ie the below set of patches.
-> > > > 
-> > > > Why aren't all of them ready?
-> > > > 
-> > > 
-> > > All except how to enable richacl in local file system is ready. I
-> > > actually floated two ideas in the patch series
-> > > 
-> > > 1) mount option
-> > > 2) Ext4 compat flags.
-> > 
-> > The choice of ACL format is a persistant property of the filesystem, not
-> > of a single mount of the filesystem: for example, people can't try out
-> > richacls for one mount and then decide to revert bacak to posix acls.
-> > 
-> > (Right?)  So I'm assuming we should use the latter--but I don't
-> > understand what ext4 compat flags are.... Is there some disadvantage to
-> > using them?
-> > 
-> 
-> We already have a mount option to enable posix acl (-o acl|noacl). So
-> along the same line should we have -o richacl|norichacl or should we
-> have richacl as a ext4 compat flag EXT4_FEATURE_COMPAT_RICHACL. The
-> compat feature can be enabled via tune2fs for an already created file
-> system. Once the compat feature is enabled a -o acl mount option cause
-> the richacl access check to be enabled. That can also result in
-> mapping the existing posix acl in the file system to richacl and
-> using mapped richacl for access restriction. With compat flag once set
-> we will never be able to mount the file system again to use posix acl
-> access restriction. (We cannot map richacl to posixacl because richacl
-> support advanced access masks)
+When we check that task has flag TIF_MEMDIE, we forgot check that
+it has mm. A task may be zombie and a parent may wait a memor.
 
-Sounds fine to me.  I'm not sure you answered my question.  Is there any
-disadvantage to doing it this way?
+v2: Check that task doesn't have mm one time and skip it immediately
 
---b.
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ mm/oom_kill.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-> With mount option (-o richacl) we can still mount the file system with
-> -o acl which implies we will have to ignore the richacl associated with
-> files and only evaluate the posix acl stored.
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 7dcca55..b1ce3ba 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -299,6 +299,9 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 	for_each_process(p) {
+ 		unsigned int points;
+ 
++		if (!p->mm)
++			continue;
++
+ 		if (oom_unkillable_task(p, mem, nodemask))
+ 			continue;
+ 
+@@ -324,7 +327,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 		 * the process of exiting and releasing its resources.
+ 		 * Otherwise we could get an easy OOM deadlock.
+ 		 */
+-		if (thread_group_empty(p) && (p->flags & PF_EXITING) && p->mm) {
++		if (thread_group_empty(p) && (p->flags & PF_EXITING)) {
+ 			if (p != current)
+ 				return ERR_PTR(-1UL);
+ 
+-- 
+1.7.1
+
