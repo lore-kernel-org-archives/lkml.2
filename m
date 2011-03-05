@@ -1,266 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab1CEE1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 23:27:37 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:43574 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab1CEE1f (ORCPT
+	id S1752415Ab1CEEtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 23:49:22 -0500
+Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:38032 "EHLO
+	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752012Ab1CEEtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 23:27:35 -0500
-Date: Sat, 05 Mar 2011 13:27:28 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH v4] fat: Batched discard support for fat
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Message-id: <20110305042728.GA4511@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 05 Mar 2011 04:27:32.0811 (UTC)
- FILETIME=[A57391B0:01CBDAED]
+	Fri, 4 Mar 2011 23:49:20 -0500
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Mar 2011 23:49:20 EST
+From: Michael Spang <mspang@csclub.uwaterloo.ca>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Lennert Buytenhek <kernel@wantstofly.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michael Spang <mspang@csclub.uwaterloo.ca>
+Subject: [PATCH 1/2] ARM: Add TS-7800 revisions 6-9
+Date: Fri,  4 Mar 2011 23:39:16 -0500
+Message-Id: <1299299957-13018-1-git-send-email-mspang@csclub.uwaterloo.ca>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+The RTC, NAND, and RNG devices are not enabled on current TS-7800s.
+The manufacturer is at revision 9 (at least), and they do support
+these devices. We'll assume revisions 6 through 8 do as well.
 
-FAT supports batched discard as ext4.
-
-Cited from Lukas words.
-"The current solution is not ideal because of its bad performance impact.
-So basic idea to improve things is to avoid discarding every time some
-blocks are freed. and instead batching is together into bigger trims,
-which tends to be more effective."
-
-You can find an information in detail at following URLs.
-http://lwn.net/Articles/397538/
-http://lwn.net/Articles/383933/
-
-Clearify the meaning of "len" (Cited form Lukas mail)
-
-Let the "O" be free (bytes, blocks, whatever), and "=" be used.
-Now, we have a filesystem like this.
-
-  OOOO==O===OO===OOOOO==O===O===OOOOOOO===
-  ^                                      ^
-  0                                      40
-
-This is how it supposed to wotk if you have called FITIRM with parameters:
-
-start = 0
-minlen = 2
-len = 20
-
-So you will go through (blocks, bytes...) 0 -> 20
-
-  OOOO==O===OO===OOOOO==O===O===OOOOOOO===
-  ^                   ^
-  0                   20
-
-So, you will call discard on extents:
-
-0-3
-You'll skip 6 because is smaller than minlen
-10-11
-15-19
-
-instead of 
-
-0-3
-10-11
-15-19
-30-36
-
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Michael Spang <mspang@csclub.uwaterloo.ca>
 ---
-Changelog v4:
-	Simplify the exit condition
+ arch/arm/mach-orion5x/ts78xx-fpga.h  |    4 ++++
+ arch/arm/mach-orion5x/ts78xx-setup.c |    4 ++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-Changelog v3:
-	Adjust the minlen from queue discard_granularity
-	Use the corrent len usage
-Changelog v2:
-	Use the given start and len as Lukas comments
-	Check the queue supports discard feature
----
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index f504089..08b53e1 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
- 			      int nr_cluster);
- extern int fat_free_clusters(struct inode *inode, int cluster);
- extern int fat_count_free_clusters(struct super_block *sb);
-+extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
+diff --git a/arch/arm/mach-orion5x/ts78xx-fpga.h b/arch/arm/mach-orion5x/ts78xx-fpga.h
+index 37b3d48..791f754 100644
+--- a/arch/arm/mach-orion5x/ts78xx-fpga.h
++++ b/arch/arm/mach-orion5x/ts78xx-fpga.h
+@@ -11,6 +11,10 @@ enum fpga_ids {
+ 	TS7800_REV_3	= FPGAID(0x00b480, 0x03),
+ 	TS7800_REV_4	= FPGAID(0x00b480, 0x04),
+ 	TS7800_REV_5	= FPGAID(0x00b480, 0x05),
++	TS7800_REV_6	= FPGAID(0x00b480, 0x06),
++	TS7800_REV_7	= FPGAID(0x00b480, 0x07),
++	TS7800_REV_8	= FPGAID(0x00b480, 0x08),
++	TS7800_REV_9	= FPGAID(0x00b480, 0x09),
  
- /* fat/file.c */
- extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
-diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index b47d2c9..7d60d4b 100644
---- a/fs/fat/fatent.c
-+++ b/fs/fat/fatent.c
-@@ -1,6 +1,8 @@
- /*
-  * Copyright (C) 2004, OGAWA Hirofumi
-  * Released under GPL v2.
-+ *
-+ * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
-  */
- 
- #include <linux/module.h>
-@@ -541,6 +543,16 @@ out:
- 	return err;
- }
- 
-+static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+	sector_t block, nr_blocks;
-+
-+	block = fat_clus_to_blknr(sbi, cluster);
-+	nr_blocks = nr_clus * sbi->sec_per_clus;
-+	return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
-+}
-+
- int fat_free_clusters(struct inode *inode, int cluster)
- {
- 	struct super_block *sb = inode->i_sb;
-@@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
- 			if (cluster != fatent.entry + 1) {
- 				int nr_clus = fatent.entry - first_cl + 1;
- 
--				sb_issue_discard(sb,
--					fat_clus_to_blknr(sbi, first_cl),
--					nr_clus * sbi->sec_per_clus,
--					GFP_NOFS, 0);
--
-+				fat_issue_discard(sb, first_cl, nr_clus);
- 				first_cl = cluster;
- 			}
- 		}
-@@ -683,3 +691,82 @@ out:
- 	unlock_fat(sbi);
- 	return err;
- }
-+
-+int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+	struct fatent_operations *ops = sbi->fatent_ops;
-+	struct fat_entry fatent;
-+	unsigned long reada_blocks, reada_mask, cur_block;
-+	int err = 0, free, count, entry;
-+	int start, len, minlen, trimmed;
-+
-+	start = range->start >> sb->s_blocksize_bits;
-+	start = start / sbi->sec_per_clus;
-+	len = range->len >> sb->s_blocksize_bits;
-+	len = len / sbi->sec_per_clus;
-+	minlen = range->minlen >> sb->s_blocksize_bits;
-+	minlen = minlen / sbi->sec_per_clus;
-+	trimmed = 0;
-+	count = 0;
-+
-+	lock_fat(sbi);
-+	if (sbi->free_clusters != -1 && sbi->free_clus_valid)
-+		goto out;
-+
-+	reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
-+	reada_mask = reada_blocks - 1;
-+	cur_block = 0;
-+
-+	entry = 0;
-+	free = 0;
-+	fatent_init(&fatent);
-+
-+	if (start < FAT_START_ENT)
-+		start = FAT_START_ENT;
-+
-+	fatent_set_entry(&fatent, start);
-+
-+	while (count < sbi->max_cluster) {
-+		if (fatent.entry >= sbi->max_cluster)
-+			fatent.entry = FAT_START_ENT;
-+		/* readahead of fat blocks */
-+		if ((cur_block & reada_mask) == 0) {
-+			unsigned long rest = sbi->fat_length - cur_block;
-+			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
-+		}
-+		cur_block++;
-+
-+		err = fat_ent_read_block(sb, &fatent);
-+		if (err)
-+			goto out;
-+
-+		do {
-+			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
-+				free++;
-+				if (!entry)
-+					entry = fatent.entry;
-+			} else if (entry) {
-+				if (free >= minlen) {
-+					fat_issue_discard(sb, entry, free);
-+					trimmed += free;
-+				}
-+				free = 0;
-+				entry = 0;
-+			}
-+			count++;
-+			if (count >= len)
-+				goto done;
-+		} while (fat_ent_next(sbi, &fatent));
-+	}
-+done:
-+	if (free >= minlen) {
-+		fat_issue_discard(sb, entry, free);
-+		trimmed += free;
-+	}
-+	range->len = (trimmed * sbi->sec_per_clus) << sb->s_blocksize_bits;
-+	fatent_brelse(&fatent);
-+out:
-+	unlock_fat(sbi);
-+	return err;
-+}
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index 7257752..9910aba 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -125,6 +125,36 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return fat_ioctl_get_attributes(inode, user_attr);
- 	case FAT_IOCTL_SET_ATTRIBUTES:
- 		return fat_ioctl_set_attributes(filp, user_attr);
-+	case FITRIM:
-+	{
-+		struct super_block *sb = inode->i_sb;
-+		struct request_queue *q = bdev_get_queue(sb->s_bdev);
-+		struct fstrim_range range;
-+		int ret = 0;
-+
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if (!blk_queue_discard(q))
-+			return -EOPNOTSUPP;
-+
-+		if (copy_from_user(&range, (struct fstrim_range *)arg,
-+					sizeof(range)))
-+			return -EFAULT;
-+
-+		range.minlen = max((unsigned int)range.minlen,
-+					q->limits.discard_granularity);
-+		ret = fat_trim_fs(sb, &range);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (copy_to_user((struct fstrim_range *)arg, &range,
-+					sizeof(range)))
-+			return -EFAULT;
-+
-+		return 0;
-+	}
-+
- 	default:
- 		return -ENOTTY;	/* Inappropriate ioctl for device */
- 	}
+ 	/* Unaffordable & Expensive */
+ 	UAE_DUMMY	= FPGAID(0xffffff, 0x01),
+diff --git a/arch/arm/mach-orion5x/ts78xx-setup.c b/arch/arm/mach-orion5x/ts78xx-setup.c
+index c1c1cd0..7bed418 100644
+--- a/arch/arm/mach-orion5x/ts78xx-setup.c
++++ b/arch/arm/mach-orion5x/ts78xx-setup.c
+@@ -334,6 +334,10 @@ static void ts78xx_fpga_supports(void)
+ 	case TS7800_REV_3:
+ 	case TS7800_REV_4:
+ 	case TS7800_REV_5:
++	case TS7800_REV_6:
++	case TS7800_REV_7:
++	case TS7800_REV_8:
++	case TS7800_REV_9:
+ 		ts78xx_fpga.supports.ts_rtc.present = 1;
+ 		ts78xx_fpga.supports.ts_nand.present = 1;
+ 		ts78xx_fpga.supports.ts_rng.present = 1;
+-- 
+1.7.2.3
+
