@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760513Ab1CEBI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:08:28 -0500
-Received: from kroah.org ([198.145.64.141]:47683 "EHLO coco.kroah.org"
+	id S1760645Ab1CEBIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:08:42 -0500
+Received: from kroah.org ([198.145.64.141]:47681 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760580Ab1CEBFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:05:01 -0500
+	id S1760563Ab1CEBFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:05:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 17:03:52 2011
-Message-Id: <20110305010352.416062526@clark.kroah.org>
+Message-Id: <20110305010352.308656138@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 17:03:00 -0800
+Date: Fri, 04 Mar 2011 17:02:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [06/18] clockevents: Prevent oneshot mode when broadcast device is periodic
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [05/18] fuse: fix hang of single threaded fuseblk filesystem
 In-Reply-To: <20110305010410.GA18668@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,88 +25,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 3a142a0672b48a853f00af61f184c7341ac9c99d upstream.
+commit 5a18ec176c934ca1bc9dc61580a5e0e90a9b5733 upstream.
 
-When the per cpu timer is marked CLOCK_EVT_FEAT_C3STOP, then we only
-can switch into oneshot mode, when the backup broadcast device
-supports oneshot mode as well. Otherwise we would try to switch the
-broadcast device into an unsupported mode unconditionally. This went
-unnoticed so far as the current available broadcast devices support
-oneshot mode. Seth unearthed this problem while debugging and working
-around an hpet related BIOS wreckage.
+Single threaded NTFS-3G could get stuck if a delayed RELEASE reply
+triggered a DESTROY request via path_put().
 
-Add the necessary check to tick_is_oneshot_available().
+Fix this by
 
-Reported-and-tested-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <alpine.LFD.2.00.1102252231200.2701@localhost6.localdomain6>
+ a) making RELEASE requests synchronous, whenever possible, on fuseblk
+ filesystems
+
+ b) if not possible (triggered by an asynchronous read/write) then do
+ the path_put() in a separate thread with schedule_work().
+
+Reported-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/tick-broadcast.c |   10 ++++++++++
- kernel/time/tick-common.c    |    6 +++++-
- kernel/time/tick-internal.h  |    3 +++
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ fs/fuse/file.c   |   52 +++++++++++++++++++++++++++++++++++++++++++++-------
+ fs/fuse/fuse_i.h |    6 +++++-
+ 2 files changed, 50 insertions(+), 8 deletions(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -600,4 +600,14 @@ int tick_broadcast_oneshot_active(void)
- 	return tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT;
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -86,18 +86,52 @@ struct fuse_file *fuse_file_get(struct f
+ 	return ff;
  }
  
-+/*
-+ * Check whether the broadcast device supports oneshot.
-+ */
-+bool tick_broadcast_oneshot_available(void)
++static void fuse_release_async(struct work_struct *work)
 +{
-+	struct clock_event_device *bc = tick_broadcast_device.evtdev;
++	struct fuse_req *req;
++	struct fuse_conn *fc;
++	struct path path;
 +
-+	return bc ? bc->features & CLOCK_EVT_FEAT_ONESHOT : false;
++	req = container_of(work, struct fuse_req, misc.release.work);
++	path = req->misc.release.path;
++	fc = get_fuse_conn(path.dentry->d_inode);
++
++	fuse_put_request(fc, req);
++	path_put(&path);
 +}
 +
- #endif
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -51,7 +51,11 @@ int tick_is_oneshot_available(void)
+ static void fuse_release_end(struct fuse_conn *fc, struct fuse_req *req)
  {
- 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
- 
--	return dev && (dev->features & CLOCK_EVT_FEAT_ONESHOT);
-+	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
-+		return 0;
-+	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return 1;
-+	return tick_broadcast_oneshot_available();
+-	path_put(&req->misc.release.path);
++	if (fc->destroy_req) {
++		/*
++		 * If this is a fuseblk mount, then it's possible that
++		 * releasing the path will result in releasing the
++		 * super block and sending the DESTROY request.  If
++		 * the server is single threaded, this would hang.
++		 * For this reason do the path_put() in a separate
++		 * thread.
++		 */
++		atomic_inc(&req->count);
++		INIT_WORK(&req->misc.release.work, fuse_release_async);
++		schedule_work(&req->misc.release.work);
++	} else {
++		path_put(&req->misc.release.path);
++	}
  }
  
- /*
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -37,6 +37,7 @@ extern void tick_shutdown_broadcast_ones
- extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
- extern int tick_broadcast_oneshot_active(void);
- extern void tick_check_oneshot_broadcast(int cpu);
-+bool tick_broadcast_oneshot_available(void);
- # else /* BROADCAST */
- static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+-static void fuse_file_put(struct fuse_file *ff)
++static void fuse_file_put(struct fuse_file *ff, bool sync)
  {
-@@ -47,6 +48,7 @@ static inline void tick_broadcast_switch
- static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
- static inline int tick_broadcast_oneshot_active(void) { return 0; }
- static inline void tick_check_oneshot_broadcast(int cpu) { }
-+static inline bool tick_broadcast_oneshot_available(void) { return true; }
- # endif /* !BROADCAST */
+ 	if (atomic_dec_and_test(&ff->count)) {
+ 		struct fuse_req *req = ff->reserved_req;
  
- #else /* !ONESHOT */
-@@ -77,6 +79,7 @@ static inline int tick_resume_broadcast_
- 	return 0;
+-		req->end = fuse_release_end;
+-		fuse_request_send_background(ff->fc, req);
++		if (sync) {
++			fuse_request_send(ff->fc, req);
++			path_put(&req->misc.release.path);
++			fuse_put_request(ff->fc, req);
++		} else {
++			req->end = fuse_release_end;
++			fuse_request_send_background(ff->fc, req);
++		}
+ 		kfree(ff);
+ 	}
  }
- static inline int tick_broadcast_oneshot_active(void) { return 0; }
-+static inline bool tick_broadcast_oneshot_available(void) { return false; }
- #endif /* !TICK_ONESHOT */
+@@ -219,8 +253,12 @@ void fuse_release_common(struct file *fi
+ 	 * Normally this will send the RELEASE request, however if
+ 	 * some asynchronous READ or WRITE requests are outstanding,
+ 	 * the sending will be delayed.
++	 *
++	 * Make the release synchronous if this is a fuseblk mount,
++	 * synchronous RELEASE is allowed (and desirable) in this case
++	 * because the server can be trusted not to screw up.
+ 	 */
+-	fuse_file_put(ff);
++	fuse_file_put(ff, ff->fc->destroy_req != NULL);
+ }
  
- /*
+ static int fuse_open(struct inode *inode, struct file *file)
+@@ -549,7 +587,7 @@ static void fuse_readpages_end(struct fu
+ 		unlock_page(page);
+ 	}
+ 	if (req->ff)
+-		fuse_file_put(req->ff);
++		fuse_file_put(req->ff, false);
+ }
+ 
+ static void fuse_send_readpages(struct fuse_req *req, struct file *file)
+@@ -1129,7 +1167,7 @@ static ssize_t fuse_direct_write(struct
+ static void fuse_writepage_free(struct fuse_conn *fc, struct fuse_req *req)
+ {
+ 	__free_page(req->pages[0]);
+-	fuse_file_put(req->ff);
++	fuse_file_put(req->ff, false);
+ }
+ 
+ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -21,6 +21,7 @@
+ #include <linux/rwsem.h>
+ #include <linux/rbtree.h>
+ #include <linux/poll.h>
++#include <linux/workqueue.h>
+ 
+ /** Max number of pages that can be used in a single read request */
+ #define FUSE_MAX_PAGES_PER_REQ 32
+@@ -254,7 +255,10 @@ struct fuse_req {
+ 	union {
+ 		struct fuse_forget_in forget_in;
+ 		struct {
+-			struct fuse_release_in in;
++			union {
++				struct fuse_release_in in;
++				struct work_struct work;
++			};
+ 			struct path path;
+ 		} release;
+ 		struct fuse_init_in init_in;
 
 
