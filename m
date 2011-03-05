@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760430Ab1CEBNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:13:24 -0500
-Received: from kroah.org ([198.145.64.141]:50273 "EHLO coco.kroah.org"
+	id S1760682Ab1CEBNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:13:44 -0500
+Received: from kroah.org ([198.145.64.141]:50268 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760396Ab1CEBAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:20 -0500
+	id S1760389Ab1CEBAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:19 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:38 2011
-Message-Id: <20110305005638.027276711@clark.kroah.org>
+Message-Id: <20110305005637.922506210@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:40 -0800
+Date: Fri, 04 Mar 2011 16:55:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
-Subject: [35/73] usb: musb: core: set has_tt flag
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [34/73] USB: prevent buggy hubs from crashing the USB stack
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit ec95d35a6bd0047f05fe8a21e6c52f8bb418da55 upstream.
+commit d199c96d41d80a567493e12b8e96ea056a1350c1 upstream.
 
-MUSB is a non-standard host implementation which
-can handle all speeds with the same core. We need
-to set has_tt flag after commit
-d199c96d41d80a567493e12b8e96ea056a1350c1 (USB: prevent
-buggy hubs from crashing the USB stack) in order for
-MUSB HCD to continue working.
+If anyone comes across a high-speed hub that (by mistake or by design)
+claims to have no Transaction Translators, plugging a full- or
+low-speed device into it will cause the USB stack to crash.  This
+patch (as1446) prevents the problem by ignoring such devices, since
+the kernel has no way to communicate with them.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Michael Jones <michael.jones@matrix-vision.de>
-Tested-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Perry Neben <neben@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/musb/musb_core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/hub.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1880,6 +1880,7 @@ allocate_instance(struct device *dev,
- 	INIT_LIST_HEAD(&musb->out_bulk);
- 
- 	hcd->uses_new_polling = 1;
-+	hcd->has_tt = 1;
- 
- 	musb->vbuserr_retry = VBUSERR_RETRY_COUNT;
- 	musb->a_wait_bcon = OTG_TIME_A_WAIT_BCON;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2740,6 +2740,11 @@ hub_port_init (struct usb_hub *hub, stru
+ 		udev->ttport = hdev->ttport;
+ 	} else if (udev->speed != USB_SPEED_HIGH
+ 			&& hdev->speed == USB_SPEED_HIGH) {
++		if (!hub->tt.hub) {
++			dev_err(&udev->dev, "parent hub has no TT\n");
++			retval = -EINVAL;
++			goto fail;
++		}
+ 		udev->tt = &hub->tt;
+ 		udev->ttport = port1;
+ 	}
 
 
