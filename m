@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab1CESte (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 13:49:34 -0500
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:42884 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab1CEStd (ORCPT
+	id S1753942Ab1CETMF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 14:12:05 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12041 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab1CETMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 13:49:33 -0500
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+	Sat, 5 Mar 2011 14:12:03 -0500
+Date: Sat, 5 Mar 2011 20:11:29 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org, Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: [PATCH] mm: remove inline from scan_swap_map
-Date: Sat,  5 Mar 2011 15:49:16 -0300
-Message-Id: <1299350956-5614-1-git-send-email-cesarb@cesarb.net>
-X-Mailer: git-send-email 1.7.4
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCHv2 02/24] sys_swapon: remove changelog from function
+ comment
+In-Reply-To: <1299343345-3984-3-git-send-email-cesarb@cesarb.net>
+Message-ID: <alpine.LNX.2.00.1103052008510.32044@swampdragon.chaosbits.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net> <1299343345-3984-3-git-send-email-cesarb@cesarb.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scan_swap_map is a large function (224 lines), with several loops and a
-complex control flow involving several gotos.
+On Sat, 5 Mar 2011, Cesar Eduardo Barros wrote:
 
-Given all that, it is a bit silly that is is marked as inline. The
-compiler agrees with me: on a x86-64 compile, it did not inline the
-function.
+> Changelogs belong in the git history instead of in the source code.
+> 
+> Also, "The swapon system call" is redundant with
+> "SYSCALL_DEFINE2(swapon, ...)".
+> 
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> Tested-by: Eric B Munson <emunson@mgebm.net>
+> Acked-by: Eric B Munson <emunson@mgebm.net>
+> ---
+>  mm/swapfile.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 3fe8913..75ee39c 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -1844,11 +1844,6 @@ static int __init max_swapfiles_check(void)
+>  late_initcall(max_swapfiles_check);
+>  #endif
+>  
+> -/*
+> - * Written 01/25/92 by Simmule Turner, heavily changed by Linus.
+> - *
+> - * The swapon system call
+> - */
 
-Remove the "inline" and let the compiler decide instead.
+Second line in the comment can hardly be called "changelog".
 
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
----
- mm/swapfile.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Removing the comment won't break anything, so
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 0341c57..8ed42e7 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -212,8 +212,8 @@ static int wait_for_discard(void *word)
- #define SWAPFILE_CLUSTER	256
- #define LATENCY_LIMIT		256
- 
--static inline unsigned long scan_swap_map(struct swap_info_struct *si,
--					  unsigned char usage)
-+static unsigned long scan_swap_map(struct swap_info_struct *si,
-+				   unsigned char usage)
- {
- 	unsigned long offset;
- 	unsigned long scan_base;
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+
 -- 
-1.7.4
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
 
