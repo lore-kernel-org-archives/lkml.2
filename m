@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261Ab1CEIrO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 03:47:14 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43476 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab1CEIrN (ORCPT
+	id S1751975Ab1CEI60 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 03:58:26 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58431 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab1CEI6Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 03:47:13 -0500
+	Sat, 5 Mar 2011 03:58:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KZps2Nr/LhAzEF24x57D0iqcY2v2Nobi83Gfj+NrxXdWY1Q+RqS9ujjtpC3fljTWRj
-         7/hiu7kzpdTNVVBPtUge2VxQbaKn1sEtsqzqV+oF/ZnnpHgqOZaS/WmjAyN2WMqwMMuE
-         tHT5dxXxi9uFSKc1VYEbD3IbObf1tRgMewNqQ=
-Date: Sat, 5 Mar 2011 09:47:08 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <vda.linux@googlemail.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-Message-ID: <20110305084708.GE20499@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
- <20110301190638.GA12196@host1.dyn.jankratochvil.net>
- <AANLkTiknaHNADRa3R4Tefg2TGuFmKPZY-_08_krFiNFF@mail.gmail.com>
- <20110304161441.GA12987@host1.jankratochvil.net>
- <20110304170737.GA26904@redhat.com>
- <20110304181250.GA31141@host1.jankratochvil.net>
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=xJ+T93dSp4qrWy8MGnb+tBt9nWbvHXhL/8Tb5WbyxjMVKQC8sDjFJ/aAivORJ/+Bbw
+         30QOyCvHdVdpr/NLzyV5cr/Qq/DPOyqR9V9Ax1WtzqeVny/vVmo+3wi4U2L7zELthb07
+         XKaA/L2/tXs8/LDefE36fQKVwuEZK6xCb6Zn0=
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: File/memory corruption in 2.6.37?
+Date: Sat, 5 Mar 2011 09:58:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-trunk-amd64; KDE/4.4.5; x86_64; ; )
+Cc: thomas@fjellstrom.ca, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+References: <201102251457.51476.thomas@fjellstrom.ca> <201102251531.00363.thomas@fjellstrom.ca> <20110302155226.05fbe993.akpm@linux-foundation.org>
+In-Reply-To: <20110302155226.05fbe993.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110304181250.GA31141@host1.jankratochvil.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103050958.22167.roucaries.bastien@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 07:12:50PM +0100, Jan Kratochvil wrote:
-> On Fri, 04 Mar 2011 18:07:37 +0100, Oleg Nesterov wrote:
-> > Suppose that the tracee reports, say, a signal after PTRACE_SEIZE/INTERRUPT.
-> > And this is possible anyway if the debugger races with kill(). Why this
-> > is bad?
+Le jeudi 3 mars 2011 00:52:26, Andrew Morton a écrit :
+> On Fri, 25 Feb 2011 15:31:00 -0700
 > 
-> I was asking if it is possible or if it could be avoided.
+> Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
+> > On February 25, 2011, Thomas Gleixner wrote:
+> > > On Fri, 25 Feb 2011, Thomas Fjellstrom wrote:
+> > > > On February 25, 2011, you wrote:
+> > > > > Ever since I upgraded to 2.6.37 from 2.6.36, that kmail's folder
+> > > > > indexes are being corrupted fairly regularly. Far more often than
+> > > > > is usual (almost never). Several a day in fact are being
+> > > > > corrupted. I can only imagine that this isn't the only corruption
+> > > > > happening and it is worrying.
+> > > > 
+> > > > Forgot to give any kind of useful info:
+> > > > 
+> > > > System: Lenovo SL500 laptop, intel core2duo T9400 cpu, 4G ram, gm45
+> > > > intel gfx
+> > > > 
+> > > > running debian sid, with the current debian 2.6.37 kernel, was
+> > > > running a hand rolled 2.6.36 kernel with autogroup applied and
+> > > > didn't have these issues.
+> > > 
+> > > Could you verify that with an hand rolled 2.6.37.2 ?
+> > > 
+> > > Thanks,
+> > > 
+> > > 	tglx
+> > 
+> > I suppose it won't hurt to give it a try.
+> 
+> Any results yet?
+> 
+> Which filesystem is being used?  I've seen at least one similar report
+> for reiserfs.
 
-First of all, if the conditions are distinguishible reliably, I think
-things should be fine.  Also, after seizing, at least two conditions
-must be distinguishible immediately - whether the tracee was in group
-stop or just ptrace trapped, so I don't think guaranteeing single
-condition is feasible to begin with.
+Yes in my case kmail+git over reiserfs eat my data quite fast
 
-> When the tracer has a function to attach a task it should be a self-sufficient
-> function returning the tracee in some normal task like after other events.
-> So the attach operation should neither leave pending some excessive signals
-> nor it should eat some normal vital signals (like PTRACE_EVENT_FORK).
+That is really strange is a simple shell loop : while true; do sync; sleep 1; done; reduce the problem.
 
-That was one of the reasons why I suggested PTRACE_SEIZE to be both
-attach and interrupt.  In both cases, the possible states of the task
-would be exactly the same.  As debugger is likely to travel various
-paths in the interrupt case regularly, it will be much easier to get
-it right and once you get that right, attach becomes right at no
-additional cost!
-
-> Sure the tracer can always handle it some way, ignore this signal,
-> remember if it has seen that signal etc.  But if we design a new
-> ptrace interface it should be simple to use and it should not
-> suggest coding racy/buggy tracers.
-
-There's no signal to ignore.  It might not be as simple as you fancy
-but will (at least strive to) be reliable and race-free.  I think
-racy/buggy tracers have a lot more to do with lack of documentation
-and clear rules.  Everyone is left to guess and everyone of course
-ends up with different conclusions.  Let's add a detailed
-documentation of rules and subtleties.
-
-Thanks.
-
--- 
-tejun
+Bastien
+ 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
