@@ -1,137 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab1CEUyf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:54:35 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:42674 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752197Ab1CEUye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:54:34 -0500
-X-ASG-Debug-ID: 1299358471-01de284cf8101b0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D72A302.6060008@fusionio.com>
-Date: Sat, 5 Mar 2011 21:54:26 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753314Ab1CEWDQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 17:03:16 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52676 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab1CEWDP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 17:03:15 -0500
+Message-ID: <4D72B2D0.3080700@kernel.org>
+Date: Sat, 05 Mar 2011 14:01:52 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Shaohua Li <shli@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com> <1295659049-2688-6-git-send-email-jaxboe@fusionio.com> <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com> <20110303221353.GA10366@redhat.com> <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com> <20110304214359.GA18442@redhat.com> <4D715E8A.5070006@fusionio.com> <20110304222702.GB18921@redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <20110304222702.GB18921@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-mm@kvack.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC] memblock; Properly handle overlaps
+References: <1299297946.8833.931.camel@pasglop>	 <4D71CE24.1090302@kernel.org> <1299311788.8833.937.camel@pasglop>	 <4D728B8C.2080803@kernel.org> <1299361063.8833.953.camel@pasglop>
+In-Reply-To: <1299361063.8833.953.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299358471
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57153
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D72B30A.01A7,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-04 23:27, Mike Snitzer wrote:
-> On Fri, Mar 04 2011 at  4:50pm -0500,
-> Jens Axboe <jaxboe@fusionio.com> wrote:
-> 
->> On 2011-03-04 22:43, Mike Snitzer wrote:
->>> On Fri, Mar 04 2011 at  8:02am -0500,
->>> Shaohua Li <shli@kernel.org> wrote:
+On 03/05/2011 01:37 PM, Benjamin Herrenschmidt wrote:
+> On Sat, 2011-03-05 at 11:14 -0800, Yinghai Lu wrote:
+>> On 03/04/2011 11:56 PM, Benjamin Herrenschmidt wrote:
+>>>>
+>>>> did you try remove and add tricks?
 >>>
->>>> 2011/3/4 Mike Snitzer <snitzer@redhat.com>:
->>>>> I'm now hitting a lockdep issue, while running a 'for-2.6.39/stack-plug'
->>>>> kernel, when I try an fsync heavy workload to a request-based mpath
->>>>> device (the kernel ultimately goes down in flames, I've yet to look at
->>>>> the crashdump I took)
->>>>>
->>>>>
->>>>> =======================================================
->>>>> [ INFO: possible circular locking dependency detected ]
->>>>> 2.6.38-rc6-snitm+ #2
->>>>> -------------------------------------------------------
->>>>> ffsb/3110 is trying to acquire lock:
->>>>>  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff811b4c4d>] flush_plug_list+0xbc/0x135
->>>>>
->>>>> but task is already holding lock:
->>>>>  (&rq->lock){-.-.-.}, at: [<ffffffff8137132f>] schedule+0x16a/0x725
->>>>>
->>>>> which lock already depends on the new lock.
->>>> I hit this too. Can you check if attached debug patch fixes it?
+>>> Yes, and it's a band-wait on top of a wooden leg... (didn't even work
+>>> properly for some real cases I hit with bad FW data, ended up with two
+>>> regions once reserving a portion of the previous one). It doesn't take
+>>> long starting at the implementation of remove() to understand why :-)
 >>>
->>> Fixes it for me.
+>>> Also, if something like that happens, you expose yourself to rampant
+>>> corruption and other very hard to debug problems, because nothing will
+>>> tell you that the array is corrupted (no longer a monotonic progression)
+>>> and you might get overlapping allocations, allocations spanning reserved
+>>> regions etc... all silently.
+>>>
+>>> I think the whole thing was long overdue for an overhaul. Hopefully, my
+>>> new code is -much- more robust under all circumstances of full overlap,
+>>> partial overlap, freeing entire regions with multiple blocks in them or
+>>> reserving regions with multiple holes, etc...
+>>>
+>>> Note that my patch really only rewrite those two low level functions
+>>> (add and remove of a region to a list), so it's reasonably contained and
+>>> should be easy to audit.
+>>>
+>>> I want to spend a bit more time next week throwing at my userspace
+>>> version some nasty test cases involving non-coalesce boundaries, and
+>>> once that's done, and unless I have some massive bug I haven't seen, I
+>>> think we should just merge the patch.
 >>
->> The preempt bit in block/ should not be needed. Can you check whether
->> it's the moving of the flush in sched.c that does the trick?
+>> please check changes on top your patch regarding memblock_add_region
 > 
-> It works if I leave out the blk-core.c preempt change too.
+> Can you reply inline next to the respective code ? It would make things
+> easier :-)
 > 
->> The problem with the current spot is that it's under the runqueue lock.
->> The problem with the modified variant is that we flush even if the task
->> is not going to sleep. We really just want to flush when it is going to
->> move out of the runqueue, but we want to do that outside of the runqueue
->> lock as well.
+>> 1. after check with bottom, we need to update the size. otherwise when we
+>> checking with top, we could use wrong size, and increase to extra big.
 > 
-> OK. So we still need a proper fix for this issue.
+> You mean adding this ?
+> 
+> 			/* We continue processing from the end of the
+> 			 * coalesced block.
+> 			 */
+> 			base = rgn->base + rgn->size;
+> + 			size = end - base;
+> 
+> I suppose you are right. Interestingly enough I haven't trigged that in
+> my tests, I'll add an specific scenario to trigger that problem.
+> 
 
-Apparently so. Peter/Ingo, please shoot this one down in flames.
-Summary:
+yes. in addition to that, still need to move in base >= end into the previous if block.
+because only that place upste base, and also me need to make sure end >= start before using
+them to get fize.
 
-- Need a way to trigger this flushing when a task is going to sleep
-- It's currently done right before calling deactivate_task(). We know
-  the task is going to sleep here, but it's also under the runqueue
-  lock. Not good.
-- In the new location, it's not completely clear to me whether we can
-  safely deref 'prev' or not. The usage of prev_state would seem to
-  indicate that we cannot, and as far as I can tell, prev could at this
-  point already potentially be running on another CPU.
+>> @@ -330,11 +321,17 @@ static long __init_memblock memblock_add
+>>  			 * coalesced block.
+>>  			 */
+>>  			base = rgn->base + rgn->size;
+>> -		}
+>>  
+>> -		/* Check if e have nothing else to allocate (fully coalesced) */
+>> -		if (base >= end)
+>> -			return 0;
+>> +			/*
+>> +			 * Check if We have nothing else to allocate
+>> +			 * (fully coalesced)
+>> +			 */
+>> +			if (base >= end)
+>> +				return 0;
+>> +
+>> +			/* Update left over size */
+>> +			size = end - base;
+>> +		}
+>>  
+>>  		/* Now check if we overlap or are adjacent with the
+>>  		 * top of a block
 
-Help? Peter, we talked about this in Tokyo in September. Initial
-suggestion was to use preempt notifiers, which we can't because:
+Thanks
 
-- runqueue lock is also held
-- It's not unconditionally available, depends on config.
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index e806446..8581ad3 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2826,6 +2826,14 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
- 	finish_lock_switch(rq, prev);
- 
-+	/*
-+	 * If this task has IO plugged, make sure it
-+	 * gets flushed out to the devices before we go
-+	 * to sleep
-+	 */
-+	if (prev_state != TASK_RUNNING)
-+		blk_flush_plug(prev);
-+
- 	fire_sched_in_preempt_notifiers(current);
- 	if (mm)
- 		mmdrop(mm);
-@@ -3973,14 +3981,6 @@ need_resched_nonpreemptible:
- 				if (to_wakeup)
- 					try_to_wake_up_local(to_wakeup);
- 			}
--			/*
--			 * If this task has IO plugged, make sure it
--			 * gets flushed out to the devices before we go
--			 * to sleep
--			 */
--			blk_flush_plug(prev);
--			BUG_ON(prev->plug && !list_empty(&prev->plug->list));
--
- 			deactivate_task(rq, prev, DEQUEUE_SLEEP);
- 		}
- 		switch_count = &prev->nvcsw;
-
--- 
-Jens Axboe
-
+Yinghai
