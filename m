@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab1CEUrY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:47:24 -0500
-Received: from lebrac.rtp-net.org ([88.191.135.105]:56826 "EHLO
-	lebrac.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659Ab1CEUrQ (ORCPT
+	id S1753023Ab1CEWBa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 17:01:30 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:39603 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab1CEWB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:47:16 -0500
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: Nguyen Dinh-R00091 <R00091@freescale.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "s.hauer\@pengutronix.de" <s.hauer@pengutronix.de>,
-        "u.kleine-koenig\@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        Zhang Lily-R58066 <R58066@freescale.com>,
-        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>
-Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
-Organization: RtpNet
-References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
-	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
-Date: Sat, 05 Mar 2011 21:46:52 +0100
-In-Reply-To: <56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
-	(Nguyen Dinh-R's message of "Fri, 4 Mar 2011 23:33:11 +0000")
-Message-ID: <87oc5puwg3.fsf@lebrac.rtp-net.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Sat, 5 Mar 2011 17:01:29 -0500
+Date: Sat, 5 Mar 2011 23:01:27 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [patch 31/37] mn10300: Use generic irq Kconfig
+Message-ID: <20110305220127.GA21728@merkur.ravnborg.org>
+References: <20110119205258.462759212@linutronix.de> <20110119210840.381111598@linutronix.de> <AANLkTi=nLFx7Z7UfiXZrBQoGgC1Fh_dh9--5T=Di9qhc@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=nLFx7Z7UfiXZrBQoGgC1Fh_dh9--5T=Di9qhc@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nguyen Dinh-R00091 <R00091@freescale.com> writes:
+On Sat, Mar 05, 2011 at 10:02:33PM +0100, Geert Uytterhoeven wrote:
+> On Wed, Jan 19, 2011 at 22:49, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > No functional change.
+> >
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: David Howells <dhowells@redhat.com>
+> > ---
+> >  arch/mn10300/Kconfig |    5 +----
+> >  1 file changed, 1 insertion(+), 4 deletions(-)
+> >
+> > Index: linux-2.6/arch/mn10300/Kconfig
+> > ===================================================================
+> > --- linux-2.6.orig/arch/mn10300/Kconfig
+> > +++ linux-2.6/arch/mn10300/Kconfig
+> > @@ -1,6 +1,7 @@
+> >  config MN10300
+> >        def_bool y
+> >        select HAVE_OPROFILE
+> > +       select GENERIC_HARDIRQS
+> 
+> Wasn't this supposed to be "select HAVE_GENERIC_HARDIRQS"?
+> 
+> /me studying generic hardirqs...
 
-> Hi Arnaud,
+One could hope this was nicely documented in kernel/irq/Kconfig.
+But that file contains only 9 lines of comments for 10 config symbols.
 
-Hi,
+Maybe it is just me but I was struggeling understanding the purpose
+of these config symbols.
 
->
-> I just sent out a 2nd set of the MX51 LPM patch. I have tested successfully on my mx51 babbage without any code modifications.
->
-> If you would kindly verify on your side, that would great.
->
-> You need both patches:
->
-> [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
-> [PATCHv2 2/2] ARM: mx51: Add support for low power suspend on MX51
+I found the individual bits of genirq nicely documented in most cases.
+But the overall picture was/is hard to get.
 
-No success. I even tried disabling nearly all drivers and nothing. The
-last line I have in the serial console is :
+And I never got enough understanding to write up something myself :-(
 
-PM: late suspend of devices complete after 0.354 msecs
-
-So, I still don't know if the system is crashing while suspending or if
-the system is suspended but doesn't wake up.
-
-Arnaud
+	Sam
