@@ -1,122 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab1CEIdL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 03:33:11 -0500
-Received: from auth.codethink.co.uk ([208.78.96.188]:41914 "EHLO
-	auth.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab1CEIdK (ORCPT
+	id S1752773Ab1CEIdp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 03:33:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57186 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab1CEIdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 03:33:10 -0500
-Subject: Re: [PATCH] mcheck: Correction to a missing return value from
- misc_register
-From: "J.P. Lacerda" <jpl@codethink.co.uk>
-To: Johan Wessfeldt <johan.wessfeldt@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=8GsqKe91cmdF=g3eRjfSywjkkddGtQsqtOoyy@mail.gmail.com>
-References: <1298891944-21364-1-git-send-email-johan.wessfeldt@gmail.com>
-	 <20110302160601.a8936c21.akpm@linux-foundation.org>
-	 <1299257056.1964.13.camel@neoteric>
-	 <AANLkTi=8GsqKe91cmdF=g3eRjfSywjkkddGtQsqtOoyy@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Mar 2011 08:32:43 +0000
-Message-ID: <1299313963.2779.3.camel@neoteric>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Mar 2011 03:33:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cohNsuIeKToynZaxMCVe7KKHZdNo+LoKqF/gTE7dv1Ol/8KiH4UaHkGGlXi8/if2le
+         2ZvEpk1p4eoaXYW4aJw1T/d4tyUcCwdPnTFkXptTaEnCLR5fv5TMyqvQvtOR9OFsG9MC
+         /aC+ZTsGROly2qqVhgUkXkNYCL81tXfkML6O4=
+Date: Sat, 5 Mar 2011 09:33:39 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+Message-ID: <20110305083339.GD20499@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+ <20110303173422.GA27960@redhat.com>
+ <20110303202246.GB32152@redhat.com>
+ <20110304082329.GA20499@htj.dyndns.org>
+ <20110304181630.GA28729@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110304181630.GA28729@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Johan,
+Hey, Oleg.
 
-Sorry for the delayed reply.
-Yes, we should go with yours (which you have already sent).
+On Fri, Mar 04, 2011 at 07:16:30PM +0100, Oleg Nesterov wrote:
+> > The question is whether to make group
+> >   stop state available for other trap sites too or just enable it in
+> >   the new trap site.  ATM, I'm leaning toward the latter.
 
-Kind regards,
+I changed my mind and am now leaning toward the former.  That would
+make things easier for debuggers which resume the tracee but wants to
+keep track of the job control state.  Let's see how implementation
+turns out.  Planning can do only so much and implementation often
+comes with surprises of its own.
 
-J.P.
+> There is another corner case. Suppose that another SIGSTOP comes
+> while the tracee runs the endless loop above.
+> 
+> In this case nothing changes, the tracee should report this signal.
+> But what should it do if the debugger does PTRACE_CONT(SIGSTOP) after
+> that?
+> 
+> Should it stop and report another job control stop after that, or
+> should it ignore this signal? In the first case, at least we should
+> not notify the real parent again. In the latter case, perhaps the
+> naive debugger can be confused and this differs from the current
+> behaviour.
 
-On Fri, 2011-03-04 at 18:50 +0100, Johan Wessfeldt wrote:
-> Hi,
-> 
-> 
-> I made another patch for this (yesterday) but  sent it to
-> kernel-janitor list for a quick review. (as I'm new to this).
-> 
-> 
-> JP. Lacerda, I noticed you also made a patch. It's very similar.
-> Should I still send my patch in, or we go with yours?
-> 
-> 
-> Regards.
-> // Johan W.
-> 
-> 
-> On Fri, Mar 4, 2011 at 5:44 PM, J.P. Lacerda <jpl@codethink.co.uk>
-> wrote:
->         Andrew,
->         
->         Where can a memory leak occur in sysdev_class_register()?
->         If one does occur, should the fix not be applied to
->         sysdev_class_register(), as opposed to mcheck_init_device()?
->         
->         Thanks,
->         
->         J.P.
->         
->         
->         On Wed, 2011-03-02 at 16:06 -0800, Andrew Morton wrote:
->         > On Mon, 28 Feb 2011 12:19:04 +0100
->         > Johan Wessfeldt <johan.wessfeldt@gmail.com> wrote:
->         >
->         > > Return value from misc_register was not handled correctly
->         > > in mcheck_init_device()
->         > >
->         > > Signed-off-by: Johan Wessfeldt <johan.wessfeldt@gmail.com>
->         > > ---
->         > >  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->         > >  1 files changed, 1 insertions(+), 1 deletions(-)
->         > >
->         > > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c
->         b/arch/x86/kernel/cpu/mcheck/mce.c
->         > > index d916183..7274a11 100644
->         > > --- a/arch/x86/kernel/cpu/mcheck/mce.c
->         > > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
->         > > @@ -2140,7 +2140,7 @@ static __init int
->         mcheck_init_device(void)
->         > >     }
->         > >
->         > >     register_hotcpu_notifier(&mce_cpu_notifier);
->         > > -   misc_register(&mce_log_device);
->         > > +   err = misc_register(&mce_log_device);
->         > >
->         > >     return err;
->         > >  }
->         >
->         > It should be fixed, but not that way.  If misc_register()
->         fails here,
->         > mcheck_init_device() should undo all the things which it
->         just did.
->         >
->         > And the memory leak which occurs if sysdev_class_register()
->         fails and
->         > the memory and other resource leaks which occur if
->         mce_create_device()
->         > fails should be fixed too.
->         >
->         > mcheck_init_device() a rather optimistic function.
->         
->         > --
->         > To unsubscribe from this list: send the line "unsubscribe
->         linux-kernel" in
->         > the body of a message to majordomo@vger.kernel.org
->         > More majordomo info at
->          http://vger.kernel.org/majordomo-info.html
->         > Please read the FAQ at  http://www.tux.org/lkml/
->         
->         
-> 
-> 
+Interesting.  Ignoring would be the cleaner choice but I think we're
+bound to deliver it to the tracer and suppress notification to the
+real parent; otherwise, the behavior would change a bit too much - an
+invisible stop signal mask out of nowhere wouldn't be too pleasant.
 
+> And, if it stops, should this also stop other PTRACE_CONT'ed threads
+> as well? Currently we do...
 
+I think so; otherwise, again, the behavior would change too much for
+the current users.  This definitely needs to be documented in detail.
+
+> Not that I think this is terribly important, but I think it makes
+> sense to discuss/document this case anyway.
+
+Yeah, definitely.  I wasn't thinking about cases like the above but we
+need to so please keep them coming.  :-)
+
+> Anyway. I think this RFC is fine.
+
+Great.  Thanks.
+
+-- 
+tejun
