@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab1CEX2X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 18:28:23 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55010 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab1CEX2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 18:28:22 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Subject: Re: does hibernate to disk try hard enough to free memory?
-Date: Sun, 6 Mar 2011 00:28:02 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <201102222159.58546.Martin@lichtvoll.de> <201102232106.51980.rjw@sisk.pl> <201103051541.45511.Martin@lichtvoll.de>
-In-Reply-To: <201103051541.45511.Martin@lichtvoll.de>
+	id S1751983Ab1CENwE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 08:52:04 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41350 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab1CENwB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 08:52:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ciwz3/ITXtObMKGN1PVVpq3iPai/lIM8Az9mI13wrIFbi7m1qX7yfEv+zB1U8Cefnb
+         2lu8Q/j8c16iof+BgkFaqmpyqQO3e6IDQnGvsvlfB6Ek2B1SDaSSD0EeBTNVxeOo+eje
+         MtatkqKJ7gal1bvbtOcA+TbHQfVF1YYoptwT4=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103060028.02477.rjw@sisk.pl>
+In-Reply-To: <1299328260.4277.92.camel@localhost>
+References: <1299108754-5492-1-git-send-email-bookjovi@gmail.com>
+	<1299328260.4277.92.camel@localhost>
+Date: Sat, 5 Mar 2011 21:52:00 +0800
+Message-ID: <AANLkTimnSvBKSL6_d3RxufxUL_C9wCM+Fz66_B5Sc0KE@mail.gmail.com>
+Subject: Re: [PATCH] net: mac80211: fix compilation warning
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "open list:NETWORKING [WIREL..." <linux-wireless@vger.kernel.org>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 05, 2011, Martin Steigerwald wrote:
-> Am Wednesday 23 February 2011 schrieb Rafael J. Wysocki:
-> > On Wednesday, February 23, 2011, Martin Steigerwald wrote:
-> > > Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
-> > > > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> > > > > Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
-> > > > > > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> > > > > > > Hi!
-> > > > > > > 
-> > > > > > > Since Radeon KMS I often have it that my ThinkPad T42 with 2
-> > > > > > > MiB of RAM is not able to allocate memory for the
-> > > > > > > hibernation image. Before KMS hibernation only very rarely
-> > > > > > > failed for that reason.
-> > > > > > > 
-> > > > > > > Often I run without compositing at all as I believe this
-> > > > > > > might spare some pages as well. But this doesn't always
-> > > > > > > help.
-> > > > > > > 
-> > > > > > > It complains that to less pages could be freed. For example
-> > > > > > > with kernel 2.6.37:
-> > > > > > > 
-> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation
-> > > > > > > image: Feb 16 00:15:00 shambhala kernel: PM: Need to copy
-> > > > > > > 186577 pages Feb 16 00:15:00 shambhala kernel: PM: Normal
-> > > > > > > pages needed: 114411 + 1024, available pages: 112767
-> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
-> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating
-> > > > > > > hibernation image Feb 16 00:15:00 shambhala kernel: Extended
-> > > > > > > CMOS year: 2000 Feb 16 00:15:00 shambhala kernel: ACPI:
-> > > > > > > Waking up from system sleep state S4
-> > > > > > > Feb 16 00:15:00 shambhala kernel: PM: early recover of
-> > > > > > > devices complete after 0.376 msecs
-> > > > > > 
-> > > > > > What's the value in /sys/power/image_size?
-> > > > > 
-> > > > > shambhala:~> cat /sys/power/image_size
-> > > > > 844206080
-> > > > > 
-> > > > > Should I try with less?
-> > > > 
-> > > > Yes, please.  Try with 700000000 for example.
-> > > 
-> > > I replaced dropping by settings image_size to this valua and the
-> > > ThinkPad hibernated with KMail open. Thus seems to work, but I will
-> > > test a bit further.
-> > > 
-> > > Where does the higher value previously set come from? Autotuning?
-> > 
-> > Likely.  The number seems to match at least.
-> > 
-> > > Is there anything that can be improved with autotuning?
-> > 
-> > We can lower the ratio of the image size to the total RAM.
-> > Alternatively, we can increase SPARE_PAGES.
-> > 
-> > > If yes, I can file a bug report.
-> > 
-> > Yes, please.
-> 
-> Reported-as:
-> 
-> Bug 30482 - try harder to free enough memory / improve image size 
-> autotuning
+On Sat, Mar 5, 2011 at 8:31 PM, Ben Hutchings <bhutchings@solarflare.com> wrote:
+> On Wed, 2011-03-02 at 18:32 -0500, bookjovi@gmail.com wrote:
+>> From: Jovi Zhang <bookjovi@gmail.com>
+>>
+>> this commit fix compilation warning as following:
+>> net/mac80211/tx.c:1753: warning: unused variable mppath
+> [...]
+>
+> You clearly didn't try building this with CONFIG_MAC80211_MESH enabled.
+>
+Sorry, indeed, maybe should be like this:
 
-I attached a patch for you to test to the bug entry.
-
-Thanks,
-Rafael
++#ifdef CONFIG_MAC80211_MESH
+       struct mesh_path *mppath = NULL;
++#endif
