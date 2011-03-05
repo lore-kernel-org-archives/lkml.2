@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1CETIG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 14:08:06 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56250 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab1CETIF (ORCPT
+	id S1753962Ab1CETPx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 14:15:53 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12127 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab1CETPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 14:08:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=TJQLtzmIVfvIkePywlKhn8pOqUdgb2i0XH/vYpx8cL6zyPJ6KYKMnfYtHD6gmvw5wH
-         i2JPlnj43Si/gpUnmuJUcmzmADkWsrjIVKav8XFBIXOWovIb0gar9sNseDWPhEiuC7mb
-         mQd36ap8hX7dJgtwW8nmMf0VGB5b+FC91IBxo=
+	Sat, 5 Mar 2011 14:15:52 -0500
+Date: Sat, 5 Mar 2011 20:15:18 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCHv2 08/24] sys_swapon: move setting of error nearer use
+In-Reply-To: <1299343345-3984-9-git-send-email-cesarb@cesarb.net>
+Message-ID: <alpine.LNX.2.00.1103052014490.32044@swampdragon.chaosbits.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net> <1299343345-3984-9-git-send-email-cesarb@cesarb.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Sat, 5 Mar 2011 11:08:04 -0800
-Message-ID: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
-Subject: X32 psABI status update
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 5 Mar 2011, Cesar Eduardo Barros wrote:
 
-Many x32 bugs are fixed in kernel, glibc, binutils and GCC:
+> Move the setting of the error variable nearer the goto in a few places.
+> 
+> Avoids calling PTR_ERR() if not IS_ERR() in two places, and makes the
+> error condition more explicit in two other places.
+> 
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> Tested-by: Eric B Munson <emunson@mgebm.net>
+> Acked-by: Eric B Munson <emunson@mgebm.net>
 
-https://sites.google.com/site/x32abi/
+Looks good to me.
 
-The major remaining issues are glibc/gcc testsuite failures,
-kernel core dump and signal handler unwind.
-
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
 -- 
-H.J.
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
