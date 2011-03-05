@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab1CEKPh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 05:15:37 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65362 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab1CEKPg (ORCPT
+	id S1752482Ab1CEK23 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 05:28:29 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52602 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751861Ab1CEK22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 05:15:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=hGThmoNRq84mJKM/11A/R349ZcUTTNs51crvTVaSbF0sYtqQgiWK3kc2XN+gWdQvyc
-         B6WcaoUXVKoiHtS0rhGmK4lWUUq44xwodql2S3yiAD7zyONZDyoJPkFRGL6Oc+PgK4mk
-         sNcCCruRN39VJfRTIrkY3O7hLSeUkSiHaO9qE=
-Message-ID: <4D720C0B.1050300@gmail.com>
-Date: Sat, 05 Mar 2011 11:10:19 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH v3][RESEND] Check for immutable/append flag in fallocate path
-References: <4D6221B8.9040303@gmail.com>	<4D6F5473.2070709@gmail.com>	<4D720469.1010101@gmail.com> <AANLkTinyK0G=tfZob4u7XBj7Gna3FbZnLrqswz2oajwn@mail.gmail.com>
-In-Reply-To: <AANLkTinyK0G=tfZob4u7XBj7Gna3FbZnLrqswz2oajwn@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 5 Mar 2011 05:28:28 -0500
+Date: Sat, 5 Mar 2011 10:28:21 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [REVIEW] NVM Express driver
+Message-ID: <20110305102821.4fed5ca4@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110304231031.GA27628@kroah.com>
+References: <20110303211336.GA32645@kroah.com>
+	<20110303214104.GZ3663@linux.intel.com>
+	<20110303215155.GA30451@kroah.com>
+	<20110303220735.GA3663@linux.intel.com>
+	<20110303222226.GA30966@kroah.com>
+	<20110304124348.6419c661@lxorguk.ukuu.org.uk>
+	<20110304212851.GB28680@kroah.com>
+	<20110304215915.18199ce1@lxorguk.ukuu.org.uk>
+	<20110304221034.GD25574@kroah.com>
+	<20110304223329.18a81f5f@lxorguk.ukuu.org.uk>
+	<20110304231031.GA27628@kroah.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+> Ok, I guess I must be doing support for distros that never get used :)
+> 
+> Have pointers to bug reports?
 
-In the fallocate path the kernel doesn't check for the immutable/append
-flag. It's possible to have a race condition in this scenario: an
-application open a file in read/write and it does something, meanwhile
-root set the immutable flag on the file, the application at that point
-can call fallocate with success. In addition, we don't allow to do any
-unreserve operation on an append only file but only the reserve one.
+Not to hand it was some time ago at a previous employer and the fix we
+agree ona anyway I think ?
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
-ChangeLog:
-v3: Modified do_fallocate instead of every single fs
-v2: Added the check for append-only file for XFS
-v1: First draft
+> > You could have a standardised helper easily enough I guess. Pick a
+> > standard struct and firmware descriptor and provide a
+> > 
+> > request_firmware_from_user(struct firmware_something __user *fw)
+> > 
+> > which hands back stuff in the form the rest of the firmware logic likes
+> > to play and has a standard user side struct format.
+> 
+> Ok, patches gladly accepted :)
 
---- linux-2.6.38-rc7/fs/open.c.orig	2011-03-01 22:55:12.000000000 +0100
-+++ linux-2.6.38-rc7/fs/open.c	2011-03-04 15:28:43.000000000 +0100
-@@ -233,6 +233,14 @@ int do_fallocate(struct file *file, int
- 
- 	if (!(file->f_mode & FMODE_WRITE))
- 		return -EBADF;
-+
-+	/* It's not possible punch hole on append only file */
-+	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
-+		return -EPERM;
-+
-+	if (IS_IMMUTABLE(inode))
-+		return -EPERM;
-+
- 	/*
- 	 * Revalidate the write permissions, in case security policy has
- 	 * changed since the files were opened.
-
+I'll have a look next week if I get a moment, it doesn't look hard.
