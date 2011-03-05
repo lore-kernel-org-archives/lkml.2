@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760600Ab1CEBFB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:05:01 -0500
-Received: from kroah.org ([198.145.64.141]:47676 "EHLO coco.kroah.org"
+	id S932688Ab1CEBFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:05:06 -0500
+Received: from kroah.org ([198.145.64.141]:47689 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760558Ab1CEBE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:04:59 -0500
+	id S1760558Ab1CEBFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:05:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 17:03:52 2011
-Message-Id: <20110305010352.218066009@clark.kroah.org>
+Message-Id: <20110305010352.504367425@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 17:02:58 -0800
+Date: Fri, 04 Mar 2011 17:03:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Don Zickus <dzickus@redhat.com>, Matthew Garrett <mjg@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [04/18] x86: Use u32 instead of long to set reset vector back to 0
+        Al Viro <viro@ZenIV.linux.org.uk>, Josh Hunt <johunt@akamai.com>,
+        Jan Kara <jack@suse.cz>
+Subject: [07/18] ext2: Fix link count corruption under heavy link+rename load
 In-Reply-To: <20110305010410.GA18668@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Don Zickus <dzickus@redhat.com>
+From: Josh Hunt <johunt@akamai.com>
 
-commit 299c56966a72b9109d47c71a6db52097098703dd upstream.
+commit e8a80c6f769dd4622d8b211b398452158ee60c0b upstream.
 
-A customer of ours, complained that when setting the reset
-vector back to 0, it trashed other data and hung their box.
-They noticed when only 4 bytes were set to 0 instead of 8,
-everything worked correctly.
+vfs_rename_other() does not lock renamed inode with i_mutex. Thus changing
+i_nlink in a non-atomic manner (which happens in ext2_rename()) can corrupt
+it as reported and analyzed by Josh.
 
-Mathew pointed out:
+In fact, there is no good reason to mess with i_nlink of the moved file.
+We did it presumably to simulate linking into the new directory and unlinking
+from an old one. But the practical effect of this is disputable because fsck
+can possibly treat file as being properly linked into both directories without
+writing any error which is confusing. So we just stop increment-decrement
+games with i_nlink which also fixes the corruption.
 
- |
- | We're supposed to be resetting trampoline_phys_low and
- | trampoline_phys_high here, which are two 16-bit values.
- | Writing 64 bits is definitely going to overwrite space
- | that we're not supposed to be touching.
- |
-
-So limit the area modified to u32.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-LKML-Reference: <1297139100-424-1-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/smpboot_hooks.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext2/namei.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
---- a/arch/x86/include/asm/smpboot_hooks.h
-+++ b/arch/x86/include/asm/smpboot_hooks.h
-@@ -34,7 +34,7 @@ static inline void smpboot_restore_warm_
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -327,7 +327,6 @@ static int ext2_rename (struct inode * o
+ 		new_de = ext2_find_entry (new_dir, &new_dentry->d_name, &new_page);
+ 		if (!new_de)
+ 			goto out_dir;
+-		inode_inc_link_count(old_inode);
+ 		ext2_set_link(new_dir, new_de, new_page, old_inode, 1);
+ 		new_inode->i_ctime = CURRENT_TIME_SEC;
+ 		if (dir_de)
+@@ -339,12 +338,9 @@ static int ext2_rename (struct inode * o
+ 			if (new_dir->i_nlink >= EXT2_LINK_MAX)
+ 				goto out_dir;
+ 		}
+-		inode_inc_link_count(old_inode);
+ 		err = ext2_add_link(new_dentry, old_inode);
+-		if (err) {
+-			inode_dec_link_count(old_inode);
++		if (err)
+ 			goto out_dir;
+-		}
+ 		if (dir_de)
+ 			inode_inc_link_count(new_dir);
+ 	}
+@@ -352,12 +348,11 @@ static int ext2_rename (struct inode * o
+ 	/*
+ 	 * Like most other Unix systems, set the ctime for inodes on a
+  	 * rename.
+-	 * inode_dec_link_count() will mark the inode dirty.
  	 */
- 	CMOS_WRITE(0, 0xf);
+ 	old_inode->i_ctime = CURRENT_TIME_SEC;
++	mark_inode_dirty(old_inode);
  
--	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
-+	*((volatile u32 *)phys_to_virt(apic->trampoline_phys_low)) = 0;
- }
+ 	ext2_delete_entry (old_de, old_page);
+-	inode_dec_link_count(old_inode);
  
- static inline void __init smpboot_setup_io_apic(void)
+ 	if (dir_de) {
+ 		if (old_dir != new_dir)
 
 
