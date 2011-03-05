@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab1CENwE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 08:52:04 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41350 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab1CENwB convert rfc822-to-8bit (ORCPT
+	id S1752392Ab1CENxx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 08:53:53 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61297 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab1CENxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 08:52:01 -0500
+	Sat, 5 Mar 2011 08:53:51 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ciwz3/ITXtObMKGN1PVVpq3iPai/lIM8Az9mI13wrIFbi7m1qX7yfEv+zB1U8Cefnb
-         2lu8Q/j8c16iof+BgkFaqmpyqQO3e6IDQnGvsvlfB6Ek2B1SDaSSD0EeBTNVxeOo+eje
-         MtatkqKJ7gal1bvbtOcA+TbHQfVF1YYoptwT4=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=qt0rgWvyr6tmjzDYIE9yWi1hVdAQXPcA3eclUVA6hDzghGfhyq0odWzPDU56R2xyZX
+         xRnvsFfohPyLLvZuRXj8oDoKpTGdEJAt251bjoQ/Jnx6X0+uWHUxtkUSZTr5J1RtlJb1
+         QkG1GpOzTbz9vzvJRwZ0GaYdnXMkOVhiGnnqw=
+Message-ID: <4D72406B.6090504@gmail.com>
+Date: Sat, 05 Mar 2011 14:53:47 +0100
+From: =?ISO-8859-1?Q?Nicolas_de_Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1299328260.4277.92.camel@localhost>
-References: <1299108754-5492-1-git-send-email-bookjovi@gmail.com>
-	<1299328260.4277.92.camel@localhost>
-Date: Sat, 5 Mar 2011 21:52:00 +0800
-Message-ID: <AANLkTimnSvBKSL6_d3RxufxUL_C9wCM+Fz66_B5Sc0KE@mail.gmail.com>
-Subject: Re: [PATCH] net: mac80211: fix compilation warning
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        "open list:NETWORKING [WIREL..." <linux-wireless@vger.kernel.org>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jiri Pirko <jpirko@redhat.com>
+CC: Xiaotian Feng <dfeng@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>
+Subject: Re: [RFC PATCH] net/core: fix skb handling on netif serves for both
+ bridge and vlan
+References: <1299149713-18740-1-git-send-email-dfeng@redhat.com> <20110305103613.GB7799@psychotron.redhat.com>
+In-Reply-To: <20110305103613.GB7799@psychotron.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 5, 2011 at 8:31 PM, Ben Hutchings <bhutchings@solarflare.com> wrote:
-> On Wed, 2011-03-02 at 18:32 -0500, bookjovi@gmail.com wrote:
->> From: Jovi Zhang <bookjovi@gmail.com>
+Le 05/03/2011 11:36, Jiri Pirko a �crit :
+> Thu, Mar 03, 2011 at 11:55:13AM CET, dfeng@redhat.com wrote:
+>> Consider network topology as follows:
 >>
->> this commit fix compilation warning as following:
->> net/mac80211/tx.c:1753: warning: unused variable mppath
-> [...]
+>> eth0  eth1
+>> |_____|
+>>     |
+>>   bond0 --- br0
+>>     |
+>>   vlan0 --- br1
+>>
+>> bond0 serves for both br0 and vlan0, if a vlan tagged packet was sent
+>> to br1 through bond0, bridge handling code is seeing the packet on bond0
+>> and handing it off to my "legacy" bridge before vlan_tx_tag_present
+>> and vlan_hwaccel_do_receive even haven't a chance to look at it.
+>>
+>> Moving the vlan_tx_tag_present before bridge/macvlan handling code could
+>> cure this.
 >
-> You clearly didn't try building this with CONFIG_MAC80211_MESH enabled.
->
-Sorry, indeed, maybe should be like this:
+> Wouldn't this break "eth0 - br0 - br0.5"?
 
-+#ifdef CONFIG_MAC80211_MESH
-       struct mesh_path *mppath = NULL;
-+#endif
+I think it would. One more reason to build a single interface stacking framework...
+
+	Nicolas.
