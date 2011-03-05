@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab1CEMGv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 07:06:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43080 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751109Ab1CEMGu (ORCPT
+	id S1752921Ab1CEMWL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 07:22:11 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54166 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab1CEMWJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 07:06:50 -0500
-Date: Sat, 5 Mar 2011 12:07:13 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-Subject: Re: [rtc-linux] [PATCH 2/2] MAX8997/8966 RTC Driver Initial Release
-Message-ID: <20110305120713.GD30187@opensource.wolfsonmicro.com>
-References: <1299221427-4726-1-git-send-email-myungjoo.ham@samsung.com>
- <1299224924-11230-1-git-send-email-myungjoo.ham@samsung.com>
+	Sat, 5 Mar 2011 07:22:09 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] PCI/ACPI: Report ASPM support to BIOS if not disabled from command line
+Date: Sat, 5 Mar 2011 13:21:51 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linux-pci@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299224924-11230-1-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103051321.51856.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 04:48:44PM +0900, MyungJoo Ham wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> +static void tm_to_data(struct rtc_time *tm, u8 *data)
-> +{
-> +	data[RTC_SEC] = bin2bcd(tm->tm_sec) & 0x7f;
-> +	data[RTC_MIN] = bin2bcd(tm->tm_min) & 0x7f;
-> +	data[RTC_HOUR] = bin2bcd(tm->tm_hour) & 0x3f;
-> +	data[RTC_WEEKDAY] = wday_kernel_to_8997(tm->tm_wday) & 0x7f;
-> +	data[RTC_MONTH] = bin2bcd(tm->tm_mon) & 0x1f;
-> +	data[RTC_YEAR] = bin2bcd((tm->tm_year > 100) ? (tm->tm_year - 100) : 0)
-> +			& 0x7f;
-> +	data[RTC_MONTHDAY] = bin2bcd(tm->tm_mday) & 0x3f;
-> +
-> +	if (tm->tm_year < 100) /* Prior 2000 */
-> +		pr_warn("MAX8997 RTC cannot handle the year %d. "
-> +				"Assume it's 2000.\n", 1900 + tm->tm_year);
+We need to distinguish the situation in which ASPM support is
+disabled from the command line or through .config from the situation
+in which it is disabled, because the hardware or BIOS can't handle
+it.  In the former case we should not report ASPM support to the BIOS
+through ACPI _OSC, but in the latter case we should do that.
 
-It seems like an attempt to set an unsupported year should return an
-error rather than just displaying a warning (though the warning is
-useful so the user can figure out what went wrong).
+Introduce pcie_aspm_support_enabled() that can be used by
+acpi_pci_root_add() to determine whether or not it should report ASPM
+support to the BIOS through _OSC.
 
-> +MODULE_DESCRIPTION("MAXIM 8997/8966 RTC Driver");
-> +MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
-> +MODULE_LICENSE("GPL");
+References: https://bugzilla.kernel.org/show_bug.cgi?id=29722
+References: https://bugzilla.kernel.org/show_bug.cgi?id=20232
+Reported-and-tested-by: Ortwin Glück <odi@odi.ch>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/pci_root.c |    2 +-
+ drivers/pci/pcie/aspm.c |    7 +++++++
+ include/linux/pci.h     |    7 +++----
+ 3 files changed, 11 insertions(+), 5 deletions(-)
 
-A MODULE_ALIAS() would allow the driver to be automatically loaded when
-built as a module.
+Index: linux-2.6/drivers/pci/pcie/aspm.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pcie/aspm.c
++++ linux-2.6/drivers/pci/pcie/aspm.c
+@@ -69,6 +69,7 @@ struct pcie_link_state {
+ };
+ 
+ static int aspm_disabled, aspm_force, aspm_clear_state;
++static bool aspm_support_enabled = true;
+ static DEFINE_MUTEX(aspm_lock);
+ static LIST_HEAD(link_list);
+ 
+@@ -896,6 +897,7 @@ static int __init pcie_aspm_disable(char
+ {
+ 	if (!strcmp(str, "off")) {
+ 		aspm_disabled = 1;
++		aspm_support_enabled = false;
+ 		printk(KERN_INFO "PCIe ASPM is disabled\n");
+ 	} else if (!strcmp(str, "force")) {
+ 		aspm_force = 1;
+@@ -930,3 +932,8 @@ int pcie_aspm_enabled(void)
+ }
+ EXPORT_SYMBOL(pcie_aspm_enabled);
+ 
++bool pcie_aspm_support_enabled(void)
++{
++	return aspm_support_enabled;
++}
++EXPORT_SYMBOL(pcie_aspm_support_enabled);
+Index: linux-2.6/drivers/acpi/pci_root.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/pci_root.c
++++ linux-2.6/drivers/acpi/pci_root.c
+@@ -564,7 +564,7 @@ static int __devinit acpi_pci_root_add(s
+ 	/* Indicate support for various _OSC capabilities. */
+ 	if (pci_ext_cfg_avail(root->bus->self))
+ 		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+-	if (pcie_aspm_enabled())
++	if (pcie_aspm_support_enabled())
+ 		flags |= OSC_ACTIVE_STATE_PWR_SUPPORT |
+ 			OSC_CLOCK_PWR_CAPABILITY_SUPPORT;
+ 	if (pci_msi_enabled())
+Index: linux-2.6/include/linux/pci.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci.h
++++ linux-2.6/include/linux/pci.h
+@@ -1002,12 +1002,11 @@ extern bool pcie_ports_auto;
+ #endif
+ 
+ #ifndef CONFIG_PCIEASPM
+-static inline int pcie_aspm_enabled(void)
+-{
+-	return 0;
+-}
++static inline int pcie_aspm_enabled(void) { return 0; }
++static inline bool pcie_aspm_support_enabled(void) { return false; }
+ #else
+ extern int pcie_aspm_enabled(void);
++extern bool pcie_aspm_support_enabled(void);
+ #endif
+ 
+ #ifdef CONFIG_PCIEAER
