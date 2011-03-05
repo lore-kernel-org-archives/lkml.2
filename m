@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab1CEQwb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 11:52:31 -0500
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:41240 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab1CEQtS (ORCPT
+	id S1753621Ab1CERHN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 12:07:13 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61313 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab1CERHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 11:49:18 -0500
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+	Sat, 5 Mar 2011 12:07:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=qofj4uHNi5u1HX9lp7tgLp1ZCdY1pRihG75UGSnGpXtQNcIqfCZYU2g8VmCdpEMz2T
+         nIbBlzOdcKNGGyf+9DLH5/xLspJmeIcgxo+puK0CO3SQjZeFYv8Dz3od1njB/xqcFpFH
+         YkAJiwj9lXukHudtcEr+H2udELXMNaREcx2Jg=
+MIME-Version: 1.0
+In-Reply-To: <1299343345-3984-4-git-send-email-cesarb@cesarb.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+	<1299343345-3984-4-git-send-email-cesarb@cesarb.net>
+Date: Sat, 5 Mar 2011 19:07:11 +0200
+X-Google-Sender-Auth: JnKOd1NGmj_0Hgvx6bAu5kFAw3g
+Message-ID: <AANLkTin3EWz4g_y03M7TOzAmD+wYJkR3a-cOJOy4ru07@mail.gmail.com>
+Subject: Re: [PATCHv2 03/24] sys_swapon: do not depend on "type" after allocation
+From: Pekka Enberg <penberg@kernel.org>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: [PATCHv2 12/24] sys_swapon: use a single error label
-Date: Sat,  5 Mar 2011 13:42:13 -0300
-Message-Id: <1299343345-3984-13-git-send-email-cesarb@cesarb.net>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
-References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sys_swapon currently has two error labels, bad_swap and bad_swap_2.
-bad_swap does the same as bad_swap_2 plus destroy_swap_extents() and
-swap_cgroup_swapoff(); both are noops in the places where bad_swap_2 is
-jumped to. With a single extra test for inode (matching the one in the
-S_ISREG case below), all the error paths in the function can go to
-bad_swap.
+On Sat, Mar 5, 2011 at 6:42 PM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> Within sys_swapon, after the swap_info entry has been allocated, we
+> always have type == p->type and swap_info[type] == p. Use this fact to
+> reduce the dependency on the "type" local variable within the function,
+> as a preparation to move the allocation of the swap_info entry to a
+> separate function.
+>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> Tested-by: Eric B Munson <emunson@mgebm.net>
+> Acked-by: Eric B Munson <emunson@mgebm.net>
 
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-Tested-by: Eric B Munson <emunson@mgebm.net>
-Acked-by: Eric B Munson <emunson@mgebm.net>
----
- mm/swapfile.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index ebc0307..96be104 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1918,13 +1918,13 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 	if (IS_ERR(name)) {
- 		error = PTR_ERR(name);
- 		name = NULL;
--		goto bad_swap_2;
-+		goto bad_swap;
- 	}
- 	swap_file = filp_open(name, O_RDWR|O_LARGEFILE, 0);
- 	if (IS_ERR(swap_file)) {
- 		error = PTR_ERR(swap_file);
- 		swap_file = NULL;
--		goto bad_swap_2;
-+		goto bad_swap;
- 	}
- 
- 	p->swap_file = swap_file;
-@@ -2141,13 +2141,12 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 	error = 0;
- 	goto out;
- bad_swap:
--	if (S_ISBLK(inode->i_mode) && p->bdev) {
-+	if (inode && S_ISBLK(inode->i_mode) && p->bdev) {
- 		set_blocksize(p->bdev, p->old_block_size);
- 		blkdev_put(p->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
- 	}
- 	destroy_swap_extents(p);
- 	swap_cgroup_swapoff(p->type);
--bad_swap_2:
- 	spin_lock(&swap_lock);
- 	p->swap_file = NULL;
- 	p->flags = 0;
--- 
-1.7.4
-
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
