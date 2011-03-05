@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760214Ab1CEBTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:19:35 -0500
-Received: from kroah.org ([198.145.64.141]:50111 "EHLO coco.kroah.org"
+	id S1760319Ab1CEBTs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:19:48 -0500
+Received: from kroah.org ([198.145.64.141]:50099 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760142Ab1CEA7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:59:52 -0500
+	id S1760102Ab1CEA7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 19:59:50 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:35 2011
-Message-Id: <20110305005635.183171205@clark.kroah.org>
+Message-Id: <20110305005635.004347765@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:11 -0800
+Date: Fri, 04 Mar 2011 16:55:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Thomas <jthomas@redhat.com>
-Subject: [06/73] sierra: add new ID for Airprime/Sierra USB IP modem
+        Maciej Szmigiero <mhej@o2.pl>
+Subject: [04/73] USB: Add quirk for Samsung Android phone modem
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Thomas <jthomas@redhat.com>
+From: Maciej Szmigiero <mhej@o2.pl>
 
-commit e1dc5157c574e7249dc1cd072fde2e48b3011533 upstream.
+commit 72a012ce0a02c6c616676a24b40ff81d1aaeafda upstream.
 
-I picked up a new Sierra usb 308 (At&t Shockwave) on 2/2011 and the vendor code
-is 0x0f3d
+My Galaxy Spica needs this quirk when in modem mode, otherwise
+it causes endless USB bus resets and is unusable in this mode.
 
-Looking up vendor and product id's I see:
+Unfortunately Samsung decided to reuse ID of its old CDMA phone SGH-I500
+for the modem part.
+That's why in addition to this patch the visor driver must be prevented
+from binding to SPH-I500 ID, so ACM driver can do that.
 
-0f3d  Airprime, Incorporated
- 0112  CDMA 1xEVDO PC Card, PC 5220
-
-Sierra and Airprime are somehow related and I'm guessing the At&t usb 308 might
-be have some common hardware with the AirPrime SL809x.
-
-Signed-off-by: Jon Thomas <jthomas@redhat.com>
+Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/sierra.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/core/quirks.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -301,6 +301,9 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
-+	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
-+	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
-+	},
-        { USB_DEVICE(0x413C, 0x08133) }, /* Dell Computer Corp. Wireless 5720 VZW Mobile Broadband (EVDO Rev-A) Minicard GPS Port */
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -48,6 +48,10 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x04b4, 0x0526), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
- 	{ }
++	/* Samsung Android phone modem - ID conflict with SPH-I500 */
++	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
++			USB_QUIRK_CONFIG_INTF_STRINGS },
++
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 
 
