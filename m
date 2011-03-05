@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab1CEBEH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:04:07 -0500
-Received: from kroah.org ([198.145.64.141]:50433 "EHLO coco.kroah.org"
+	id S1760542Ab1CEBAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:00:48 -0500
+Received: from kroah.org ([198.145.64.141]:50403 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760548Ab1CEBAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:40 2011
-Message-Id: <20110305005640.149993362@clark.kroah.org>
+	id S1760408Ab1CEBAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:42 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:39 2011
+Message-Id: <20110305005639.682957078@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:56:02 -0800
+Date: Fri, 04 Mar 2011 16:55:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>, "W. Trevor King" <wking@drexel.edu>
-Subject: [57/73] Staging: comedi: Add MODULE_LICENSE and similar to NI modules
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [52/73] fuse: fix hang of single threaded fuseblk filesystem
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,103 +25,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 3c323c01b6bd5fd01be21a8f0cdc11e55997aa06 upstream.
+commit 5a18ec176c934ca1bc9dc61580a5e0e90a9b5733 upstream.
 
-As mentioned by W. Trevor King on the devel@linuxdriverproject.org list
-on "Thu, 27 Jan 2011 18:52:15 -0500", "Message-ID:
-<20110127235214.GA5107@thialfi.dhcp.drexel.edu>", the ni_pcimio module
-is missing module metadata, including a license.
+Single threaded NTFS-3G could get stuck if a delayed RELEASE reply
+triggered a DESTROY request via path_put().
 
-This patch adds module metadata to all the NI comedi driver modules.  It
-also removes a duplicate MODULE_LICENSE("GPL") line from the "mite"
-module.
+Fix this by
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Cc: W. Trevor King <wking@drexel.edu>
+ a) making RELEASE requests synchronous, whenever possible, on fuseblk
+ filesystems
+
+ b) if not possible (triggered by an asynchronous read/write) then do
+ the path_put() in a separate thread with schedule_work().
+
+Reported-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/comedi/drivers/mite.c      |    2 --
- drivers/staging/comedi/drivers/ni_6527.c   |    4 ++++
- drivers/staging/comedi/drivers/ni_65xx.c   |    4 ++++
- drivers/staging/comedi/drivers/ni_660x.c   |    4 ++++
- drivers/staging/comedi/drivers/ni_670x.c   |    4 ++++
- drivers/staging/comedi/drivers/ni_pcidio.c |    4 ++++
- drivers/staging/comedi/drivers/ni_pcimio.c |    4 ++++
- 7 files changed, 24 insertions(+), 2 deletions(-)
+ fs/fuse/file.c   |   52 +++++++++++++++++++++++++++++++++++++++++++++-------
+ fs/fuse/fuse_i.h |    6 +++++-
+ 2 files changed, 50 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/comedi/drivers/mite.c
-+++ b/drivers/staging/comedi/drivers/mite.c
-@@ -61,8 +61,6 @@
- #define PCI_DAQ_SIZE		4096
- #define PCI_DAQ_SIZE_660X       8192
- 
--MODULE_LICENSE("GPL");
--
- struct mite_struct *mite_devices;
- EXPORT_SYMBOL(mite_devices);
- 
---- a/drivers/staging/comedi/drivers/ni_6527.c
-+++ b/drivers/staging/comedi/drivers/ni_6527.c
-@@ -527,3 +527,7 @@ static void __exit driver_ni6527_cleanup
- 
- module_init(driver_ni6527_init_module);
- module_exit(driver_ni6527_cleanup_module);
-+
-+MODULE_AUTHOR("Comedi http://www.comedi.org");
-+MODULE_DESCRIPTION("Comedi low-level driver");
-+MODULE_LICENSE("GPL");
---- a/drivers/staging/comedi/drivers/ni_65xx.c
-+++ b/drivers/staging/comedi/drivers/ni_65xx.c
-@@ -871,3 +871,7 @@ static void __exit driver_ni_65xx_cleanu
- 
- module_init(driver_ni_65xx_init_module);
- module_exit(driver_ni_65xx_cleanup_module);
-+
-+MODULE_AUTHOR("Comedi http://www.comedi.org");
-+MODULE_DESCRIPTION("Comedi low-level driver");
-+MODULE_LICENSE("GPL");
---- a/drivers/staging/comedi/drivers/ni_660x.c
-+++ b/drivers/staging/comedi/drivers/ni_660x.c
-@@ -1421,3 +1421,7 @@ static int ni_660x_dio_insn_config(struc
- 	};
- 	return 0;
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -86,18 +86,52 @@ struct fuse_file *fuse_file_get(struct f
+ 	return ff;
  }
-+
-+MODULE_AUTHOR("Comedi http://www.comedi.org");
-+MODULE_DESCRIPTION("Comedi low-level driver");
-+MODULE_LICENSE("GPL");
---- a/drivers/staging/comedi/drivers/ni_670x.c
-+++ b/drivers/staging/comedi/drivers/ni_670x.c
-@@ -384,3 +384,7 @@ static int ni_670x_find_device(struct co
- 	mite_list_devices();
- 	return -EIO;
- }
-+
-+MODULE_AUTHOR("Comedi http://www.comedi.org");
-+MODULE_DESCRIPTION("Comedi low-level driver");
-+MODULE_LICENSE("GPL");
---- a/drivers/staging/comedi/drivers/ni_pcidio.c
-+++ b/drivers/staging/comedi/drivers/ni_pcidio.c
-@@ -1354,3 +1354,7 @@ static void __exit driver_pcidio_cleanup
  
- module_init(driver_pcidio_init_module);
- module_exit(driver_pcidio_cleanup_module);
++static void fuse_release_async(struct work_struct *work)
++{
++	struct fuse_req *req;
++	struct fuse_conn *fc;
++	struct path path;
 +
-+MODULE_AUTHOR("Comedi http://www.comedi.org");
-+MODULE_DESCRIPTION("Comedi low-level driver");
-+MODULE_LICENSE("GPL");
---- a/drivers/staging/comedi/drivers/ni_pcimio.c
-+++ b/drivers/staging/comedi/drivers/ni_pcimio.c
-@@ -1853,3 +1853,7 @@ static int pcimio_dio_change(struct come
- 
- 	return 0;
++	req = container_of(work, struct fuse_req, misc.release.work);
++	path = req->misc.release.path;
++	fc = get_fuse_conn(path.dentry->d_inode);
++
++	fuse_put_request(fc, req);
++	path_put(&path);
++}
++
+ static void fuse_release_end(struct fuse_conn *fc, struct fuse_req *req)
+ {
+-	path_put(&req->misc.release.path);
++	if (fc->destroy_req) {
++		/*
++		 * If this is a fuseblk mount, then it's possible that
++		 * releasing the path will result in releasing the
++		 * super block and sending the DESTROY request.  If
++		 * the server is single threaded, this would hang.
++		 * For this reason do the path_put() in a separate
++		 * thread.
++		 */
++		atomic_inc(&req->count);
++		INIT_WORK(&req->misc.release.work, fuse_release_async);
++		schedule_work(&req->misc.release.work);
++	} else {
++		path_put(&req->misc.release.path);
++	}
  }
-+
-+MODULE_AUTHOR("Comedi http://www.comedi.org");
-+MODULE_DESCRIPTION("Comedi low-level driver");
-+MODULE_LICENSE("GPL");
+ 
+-static void fuse_file_put(struct fuse_file *ff)
++static void fuse_file_put(struct fuse_file *ff, bool sync)
+ {
+ 	if (atomic_dec_and_test(&ff->count)) {
+ 		struct fuse_req *req = ff->reserved_req;
+ 
+-		req->end = fuse_release_end;
+-		fuse_request_send_background(ff->fc, req);
++		if (sync) {
++			fuse_request_send(ff->fc, req);
++			path_put(&req->misc.release.path);
++			fuse_put_request(ff->fc, req);
++		} else {
++			req->end = fuse_release_end;
++			fuse_request_send_background(ff->fc, req);
++		}
+ 		kfree(ff);
+ 	}
+ }
+@@ -219,8 +253,12 @@ void fuse_release_common(struct file *fi
+ 	 * Normally this will send the RELEASE request, however if
+ 	 * some asynchronous READ or WRITE requests are outstanding,
+ 	 * the sending will be delayed.
++	 *
++	 * Make the release synchronous if this is a fuseblk mount,
++	 * synchronous RELEASE is allowed (and desirable) in this case
++	 * because the server can be trusted not to screw up.
+ 	 */
+-	fuse_file_put(ff);
++	fuse_file_put(ff, ff->fc->destroy_req != NULL);
+ }
+ 
+ static int fuse_open(struct inode *inode, struct file *file)
+@@ -558,7 +596,7 @@ static void fuse_readpages_end(struct fu
+ 		page_cache_release(page);
+ 	}
+ 	if (req->ff)
+-		fuse_file_put(req->ff);
++		fuse_file_put(req->ff, false);
+ }
+ 
+ static void fuse_send_readpages(struct fuse_req *req, struct file *file)
+@@ -1137,7 +1175,7 @@ static ssize_t fuse_direct_write(struct
+ static void fuse_writepage_free(struct fuse_conn *fc, struct fuse_req *req)
+ {
+ 	__free_page(req->pages[0]);
+-	fuse_file_put(req->ff);
++	fuse_file_put(req->ff, false);
+ }
+ 
+ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -21,6 +21,7 @@
+ #include <linux/rwsem.h>
+ #include <linux/rbtree.h>
+ #include <linux/poll.h>
++#include <linux/workqueue.h>
+ 
+ /** Max number of pages that can be used in a single read request */
+ #define FUSE_MAX_PAGES_PER_REQ 32
+@@ -257,7 +258,10 @@ struct fuse_req {
+ 	union {
+ 		struct fuse_forget_in forget_in;
+ 		struct {
+-			struct fuse_release_in in;
++			union {
++				struct fuse_release_in in;
++				struct work_struct work;
++			};
+ 			struct path path;
+ 		} release;
+ 		struct fuse_init_in init_in;
 
 
