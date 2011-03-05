@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab1CEPVL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 10:21:11 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44115 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab1CEPVK (ORCPT
+	id S1753254Ab1CEXbO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 18:31:14 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18191 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab1CEXbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 10:21:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BuOkDogK50quMmQNBtT8lPDHJMlDwE4o3OucjlGOUyLbzyeV+j9wKpbvrKL05NYQlO
-         p5dPmDPcqTiEHZfhQ3Fbcp7C5Dv2HTe+VSziXwqdgmgC9DFJkwdcwiHj4iEwPNGRKtfm
-         /g075bKY54FnKjS97huU2ljqXFYukgyoBRm08=
-Date: Sun, 6 Mar 2011 00:20:57 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: check zone->all_unreclaimable in
- all_unreclaimable()
-Message-ID: <20110305152056.GA1918@barrios-desktop>
-References: <1299325456-2687-1-git-send-email-avagin@openvz.org>
+	Sat, 5 Mar 2011 18:31:09 -0500
+Date: Sun, 6 Mar 2011 00:30:35 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-nfs@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH] NFSD, VFS: Remove dead code in nfsd_rename()
+Message-ID: <alpine.LNX.2.00.1103060024380.6297@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299325456-2687-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
-> Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
-> kernel may hang up, because shrink_zones() will do nothing, but
-> all_unreclaimable() will say, that zone has reclaimable pages.
-> 
-> do_try_to_free_pages()
-> 	shrink_zones()
-> 		 for_each_zone
-> 			if (zone->all_unreclaimable)
-> 				continue
-> 	if !all_unreclaimable(zonelist, sc)
-> 		return 1
-> 
-> __alloc_pages_slowpath()
-> retry:
-> 	did_some_progress = do_try_to_free_pages(page)
-> 	...
-> 	if (!page && did_some_progress)
-> 		retry;
-> 
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  mm/vmscan.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6771ea7..1c056f7 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
->  
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->  			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> +		if (zone->all_unreclaimable)
-> +			continue;
->  		if (!populated_zone(zone))
->  			continue;
->  		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+Currently we have the following code in fs/nfsd/vfs.c::nfsd_rename() :
 
+	...
+	host_err = nfsd_break_lease(odentry->d_inode);
+	if (host_err)
+		goto out_drop_write;
+	if (ndentry->d_inode) {
+		host_err = nfsd_break_lease(ndentry->d_inode);
+		if (host_err)
+			goto out_drop_write;
+	}
+	if (host_err)
+		goto out_drop_write;
+	...
 
-zone_reclaimable checks it. Isn't it enough?
-Does the hang up really happen or see it by code review?
+'host_err' is guaranteed to be 0 by the time we test 'ndentry->d_inode'. 
+If 'host_err' becomes != 0 inside the 'if' statement, then we goto 
+'out_drop_write'. So, after the 'if' statement there is no way that 
+'host_err' can be anything but 0, so the test afterwards is just dead 
+code.
+This patch removes the dead code.
 
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ vfs.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index da1d970..9cc626b 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1749,8 +1749,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+ 		if (host_err)
+ 			goto out_drop_write;
+ 	}
+-	if (host_err)
+-		goto out_drop_write;
+ 	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
+ 	if (!host_err) {
+ 		host_err = commit_metadata(tfhp);
+
 
 -- 
-Kind regards,
-Minchan Kim
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
