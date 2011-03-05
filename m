@@ -1,147 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab1CEQmP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 11:42:15 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:18119 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752213Ab1CEQmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 11:42:14 -0500
-Message-ID: <4D7267B6.6020406@gmail.com>
-Date: Sat, 05 Mar 2011 19:41:26 +0300
-From: Andrew Vagin <avagin@gmail.com>
-Reply-To: avagin@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1753299Ab1CEQoI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 11:44:08 -0500
+Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:45655 "HELO
+	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753154Ab1CEQoH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 11:44:07 -0500
+X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Mar 2011 11:44:07 EST
+X-Yahoo-SMTP: UUgXI6uswBD5KpjQgCQhLGxd8fYE4avNC9a5Rknlre1OW34-
+X-YMail-OSG: IQnuneUVM1n8OOoG3yBQa3ZvlKGKIicL9f0DS_iQ.YfTbpE
+ TlKL3LiiU_j1k_Eexaox41ll8tg_7ZRhue1kaobb4QxAaORWzAvUtI00VZfw
+ nBZZgZCSdzxt.sWsiphs1diNPPhSApGOGcWbOl79ZNkbsswp2c1ZEgJawnhX
+ RC7CSAerZgdmvgalHWBujAXOC5oSJgdzu5g--
+X-Yahoo-Newman-Property: ymail-3
+From: "Richard Cliford" <richardcliford@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: richard.cliford001@gmail.com
+Date: Sat, 05 Mar 2011 22:51:07 +0800
+Subject: Dear Partner
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: check zone->all_unreclaimable in all_unreclaimable()
-References: <1299325456-2687-1-git-send-email-avagin@openvz.org> <20110305152056.GA1918@barrios-desktop> <4D72580D.4000208@gmail.com> <20110305155316.GB1918@barrios-desktop>
-In-Reply-To: <20110305155316.GB1918@barrios-desktop>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-ID: <PC6FDED66C1AAE0ad9050b65fb427dba930937eaa650bb@pc6fded66c1aae>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2011 06:53 PM, Minchan Kim wrote:
-> On Sat, Mar 05, 2011 at 06:34:37PM +0300, Andrew Vagin wrote:
->> On 03/05/2011 06:20 PM, Minchan Kim wrote:
->>> On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
->>>> Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
->>>> kernel may hang up, because shrink_zones() will do nothing, but
->>>> all_unreclaimable() will say, that zone has reclaimable pages.
->>>>
->>>> do_try_to_free_pages()
->>>> 	shrink_zones()
->>>> 		 for_each_zone
->>>> 			if (zone->all_unreclaimable)
->>>> 				continue
->>>> 	if !all_unreclaimable(zonelist, sc)
->>>> 		return 1
->>>>
->>>> __alloc_pages_slowpath()
->>>> retry:
->>>> 	did_some_progress = do_try_to_free_pages(page)
->>>> 	...
->>>> 	if (!page&&   did_some_progress)
->>>> 		retry;
->>>>
->>>> Signed-off-by: Andrey Vagin<avagin@openvz.org>
->>>> ---
->>>>   mm/vmscan.c |    2 ++
->>>>   1 files changed, 2 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>>> index 6771ea7..1c056f7 100644
->>>> --- a/mm/vmscan.c
->>>> +++ b/mm/vmscan.c
->>>> @@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
->>>>
->>>>   	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->>>>   			gfp_zone(sc->gfp_mask), sc->nodemask) {
->>>> +		if (zone->all_unreclaimable)
->>>> +			continue;
->>>>   		if (!populated_zone(zone))
->>>>   			continue;
->>>>   		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
->>> zone_reclaimable checks it. Isn't it enough?
->> I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
->> This two patches are enough.
-> Sorry if I confused you.
-> I mean zone->all_unreclaimable become true if !zone_reclaimable in balance_pgdat.
-> zone_reclaimable compares recent pages_scanned with the number of zone lru pages.
-> So too many page scanning in small lru pages makes the zone to unreclaimable zone.
->
-> In all_unreclaimable, we calls zone_reclaimable to detect it.
-> It's the same thing with your patch.
-balance_pgdat set zone->all_unreclaimable, but the problem is that it is 
-cleaned late.
+Dear Partner,
 
-The problem is that zone->all_unreclaimable = True, but 
-zone_reclaimable() returns True too.
+My name is Richard Cliford, am a Singaporean citizen and a seasoned Banker in Malaysia (Berhad office), I occupy the position of an accountant in this branch office, it is with good spirit of heart I opened up this great opportunity to you; there is a client of mine who died as a result of heart failure; because of the entire family lost their lives in the tsunami disaster on the 26th Dec, 2004, and his account of US$17.300 million with us has been unclaimed due to unavailability of a next of kin/relatives to claim his estate.
 
-zone->all_unreclaimable will be cleaned in free_*_pages, but this may be 
-late. It is enough allocate one page from page cache, that 
-zone_reclaimable() returns True and zone->all_unreclaimable becomes True.
->>> Does the hang up really happen or see it by code review?
->> Yes. You can reproduce it for help the attached python program. It's
->> not very clever:)
->> It make the following actions in loop:
->> 1. fork
->> 2. mmap
->> 3. touch memory
->> 4. read memory
->> 5. munmmap
-> It seems the test program makes fork bombs and memory hogging.
-> If you applied this patch, the problem is gone?
-Yes.
->>>> -- 
->>>> 1.7.1
->>>>
->>>> --
->>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>>> see: http://www.linux-mm.org/ .
->>>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
->>>> Don't email:<a href=mailto:"dont@kvack.org">   email@kvack.org</a>
->> import sys, time, mmap, os
->> from subprocess import Popen, PIPE
->> import random
->>
->> global mem_size
->>
->> def info(msg):
->> 	pid = os.getpid()
->> 	print>>  sys.stderr, "%s: %s" % (pid, msg)
->> 	sys.stderr.flush()
->>
->>
->>
->> def memory_loop(cmd = "a"):
->> 	"""
->> 	cmd may be:
->> 		c: check memory
->> 		else: touch memory
->> 	"""
->> 	c = 0
->> 	for j in xrange(0, mem_size):
->> 		if cmd == "c":
->> 			if f[j<<12] != chr(j % 255):
->> 				info("Data corruption")
->> 				sys.exit(1)
->> 		else:
->> 			f[j<<12] = chr(j % 255)
->>
->> while True:
->> 	pid = os.fork()
->> 	if (pid != 0):
->> 		mem_size = random.randint(0, 56 * 4096)
->> 		f = mmap.mmap(-1, mem_size<<  12, mmap.MAP_ANONYMOUS|mmap.MAP_PRIVATE)
->> 		memory_loop()
->> 		memory_loop("c")
->> 		f.close()
->
+Since none of the family relative is alive to claim this fund after bank having waited until now for any relative next of kin to surface in our custody; I decided to contact you fast; so that I can present you as the relative next of kin to my late client; so that bank will wire this fund direct to your bank account. You don't need to worry yourself in this transaction, it is not going to implicate you to any trouble in your country, and hence I will provide the legal papers in your name and favour.
+
+In view of this, I am seeking your cooperation and understanding to stand as the deceased next of kin to enable us claim the inheritance before the period given by the bank elapse. If you are interested and in agreement with me, get back to me quickly and I will send to you all our bank contacts and the information you may need to proceed without coming to Malaysia, and be rest assured that it is risks free project and the proceedings will be shared 50% for you 50% for me as soon as you confirm the total money in your account.
+ 
+Please reply immediately with your information including your full name, full address and telephone number for easy communication with you.
+
+I await your prompt response immediately.
+
+Best Regards
+
+Mr. Richard Cliford
 
