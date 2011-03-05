@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab1CEBEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:04:30 -0500
-Received: from kroah.org ([198.145.64.141]:50428 "EHLO coco.kroah.org"
+	id S932610Ab1CEBEr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:04:47 -0500
+Received: from kroah.org ([198.145.64.141]:50421 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760408Ab1CEBAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:48 -0500
+	id S1760530Ab1CEBAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:46 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:40 2011
-Message-Id: <20110305005640.047100218@clark.kroah.org>
+Message-Id: <20110305005639.949655756@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:56:01 -0800
+Date: Fri, 04 Mar 2011 16:56:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Brandon Philips <bphilips@suse.de>
-Subject: [56/73] e1000e: 82579 PHY incorrectly identified during init
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [55/73] mm: vmstat: use a single setter function and callback for adjusting percpu thresholds
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,93 +26,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Mel Gorman <mel@csn.ul.ie>
 
-commit 664dc878ed6f0476b875547547a49e06f7a4e73b upstream.
+commit b44129b30652c8771db2265939bb8b463724043d upstream.
 
-During init, reading the 2 PHY ID registers back-to-back in the default
-fast mode could return invalid data (all F's) and in slow mode could
-return data to the second read the data from the first read.  To resolve
-the issue in fast mode, set to slow mode before any PHY accesses; to
-resolve the issue in slow mode, put in a delay for every 82579 PHY access.
-Since this PHY is currently only paired with the pch2lan MAC and the PHY
-type is not known before the first PHY access which can fail this way,
-check for this based on MAC-type.
+reduce_pgdat_percpu_threshold() and restore_pgdat_percpu_threshold() exist
+to adjust the per-cpu vmstat thresholds while kswapd is awake to avoid
+errors due to counter drift.  The functions duplicate some code so this
+patch replaces them with a single set_pgdat_percpu_threshold() that takes
+a callback function to calculate the desired threshold as a parameter.
 
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Acked-by: Brandon Philips <bphilips@suse.de>
+[akpm@linux-foundation.org: readability tweak]
+[kosaki.motohiro@jp.fujitsu.com: set_pgdat_percpu_threshold(): don't use for_each_online_cpu]
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/net/e1000e/ich8lan.c |   16 +++++++++++-----
- drivers/net/e1000e/phy.c     |   14 ++++++++++++++
- 2 files changed, 25 insertions(+), 5 deletions(-)
+ include/linux/vmstat.h |   10 ++++++----
+ mm/vmscan.c            |   19 +++++++++++++++++--
+ mm/vmstat.c            |   36 +++++++-----------------------------
+ 3 files changed, 30 insertions(+), 35 deletions(-)
 
---- a/drivers/net/e1000e/ich8lan.c
-+++ b/drivers/net/e1000e/ich8lan.c
-@@ -338,12 +338,17 @@ static s32 e1000_init_phy_params_pchlan(
- 	}
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -254,8 +254,11 @@ extern void dec_zone_state(struct zone *
+ extern void __dec_zone_state(struct zone *, enum zone_stat_item);
  
- 	phy->id = e1000_phy_unknown;
--	ret_val = e1000e_get_phy_id(hw);
--	if (ret_val)
--		goto out;
--	if ((phy->id == 0) || (phy->id == PHY_REVISION_MASK)) {
-+	switch (hw->mac.type) {
-+	default:
-+		ret_val = e1000e_get_phy_id(hw);
-+		if (ret_val)
-+			goto out;
-+		if ((phy->id != 0) && (phy->id != PHY_REVISION_MASK))
-+			break;
-+		/* fall-through */
-+	case e1000_pch2lan:
- 		/*
--		 * In case the PHY needs to be in mdio slow mode (eg. 82577),
-+		 * In case the PHY needs to be in mdio slow mode,
- 		 * set slow mode and try to get the PHY id again.
- 		 */
- 		ret_val = e1000_set_mdio_slow_mode_hv(hw);
-@@ -352,6 +357,7 @@ static s32 e1000_init_phy_params_pchlan(
- 		ret_val = e1000e_get_phy_id(hw);
- 		if (ret_val)
- 			goto out;
-+		break;
- 	}
- 	phy->type = e1000e_get_phy_type_from_id(phy->id);
- 
---- a/drivers/net/e1000e/phy.c
-+++ b/drivers/net/e1000e/phy.c
-@@ -226,6 +226,13 @@ s32 e1000e_read_phy_reg_mdic(struct e100
- 	}
- 	*data = (u16) mdic;
- 
-+	/*
-+	 * Allow some time after each MDIC transaction to avoid
-+	 * reading duplicate data in the next MDIC transaction.
-+	 */
-+	if (hw->mac.type == e1000_pch2lan)
-+		udelay(100);
+ void refresh_cpu_vm_stats(int);
+-void reduce_pgdat_percpu_threshold(pg_data_t *pgdat);
+-void restore_pgdat_percpu_threshold(pg_data_t *pgdat);
 +
- 	return 0;
++int calculate_pressure_threshold(struct zone *zone);
++int calculate_normal_threshold(struct zone *zone);
++void set_pgdat_percpu_threshold(pg_data_t *pgdat,
++				int (*calculate_pressure)(struct zone *));
+ #else /* CONFIG_SMP */
+ 
+ /*
+@@ -300,8 +303,7 @@ static inline void __dec_zone_page_state
+ #define dec_zone_page_state __dec_zone_page_state
+ #define mod_zone_page_state __mod_zone_page_state
+ 
+-static inline void reduce_pgdat_percpu_threshold(pg_data_t *pgdat) { }
+-static inline void restore_pgdat_percpu_threshold(pg_data_t *pgdat) { }
++#define set_pgdat_percpu_threshold(pgdat, callback) { }
+ 
+ static inline void refresh_cpu_vm_stats(int cpu) { }
+ #endif
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2448,9 +2448,24 @@ static int kswapd(void *p)
+ 				 */
+ 				if (!sleeping_prematurely(pgdat, order, remaining)) {
+ 					trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
+-					restore_pgdat_percpu_threshold(pgdat);
++
++					/*
++					 * vmstat counters are not perfectly
++					 * accurate and the estimated value
++					 * for counters such as NR_FREE_PAGES
++					 * can deviate from the true value by
++					 * nr_online_cpus * threshold. To
++					 * avoid the zone watermarks being
++					 * breached while under pressure, we
++					 * reduce the per-cpu vmstat threshold
++					 * while kswapd is awake and restore
++					 * them before going back to sleep.
++					 */
++					set_pgdat_percpu_threshold(pgdat,
++						calculate_normal_threshold);
+ 					schedule();
+-					reduce_pgdat_percpu_threshold(pgdat);
++					set_pgdat_percpu_threshold(pgdat,
++						calculate_pressure_threshold);
+ 				} else {
+ 					if (remaining)
+ 						count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -83,7 +83,7 @@ EXPORT_SYMBOL(vm_stat);
+ 
+ #ifdef CONFIG_SMP
+ 
+-static int calculate_pressure_threshold(struct zone *zone)
++int calculate_pressure_threshold(struct zone *zone)
+ {
+ 	int threshold;
+ 	int watermark_distance;
+@@ -107,7 +107,7 @@ static int calculate_pressure_threshold(
+ 	return threshold;
  }
  
-@@ -279,6 +286,13 @@ s32 e1000e_write_phy_reg_mdic(struct e10
- 		return -E1000_ERR_PHY;
- 	}
+-static int calculate_threshold(struct zone *zone)
++int calculate_normal_threshold(struct zone *zone)
+ {
+ 	int threshold;
+ 	int mem;	/* memory in 128 MB units */
+@@ -166,7 +166,7 @@ static void refresh_zone_stat_thresholds
+ 	for_each_populated_zone(zone) {
+ 		unsigned long max_drift, tolerate_drift;
  
-+	/*
-+	 * Allow some time after each MDIC transaction to avoid
-+	 * reading duplicate data in the next MDIC transaction.
-+	 */
-+	if (hw->mac.type == e1000_pch2lan)
-+		udelay(100);
-+
- 	return 0;
+-		threshold = calculate_threshold(zone);
++		threshold = calculate_normal_threshold(zone);
+ 
+ 		for_each_online_cpu(cpu)
+ 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+@@ -185,46 +185,24 @@ static void refresh_zone_stat_thresholds
+ 	}
  }
  
+-void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
++void set_pgdat_percpu_threshold(pg_data_t *pgdat,
++				int (*calculate_pressure)(struct zone *))
+ {
+ 	struct zone *zone;
+ 	int cpu;
+ 	int threshold;
+ 	int i;
+ 
+-	get_online_cpus();
+ 	for (i = 0; i < pgdat->nr_zones; i++) {
+ 		zone = &pgdat->node_zones[i];
+ 		if (!zone->percpu_drift_mark)
+ 			continue;
+ 
+-		threshold = calculate_pressure_threshold(zone);
+-		for_each_online_cpu(cpu)
+-			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+-							= threshold;
+-	}
+-	put_online_cpus();
+-}
+-
+-void restore_pgdat_percpu_threshold(pg_data_t *pgdat)
+-{
+-	struct zone *zone;
+-	int cpu;
+-	int threshold;
+-	int i;
+-
+-	get_online_cpus();
+-	for (i = 0; i < pgdat->nr_zones; i++) {
+-		zone = &pgdat->node_zones[i];
+-		if (!zone->percpu_drift_mark)
+-			continue;
+-
+-		threshold = calculate_threshold(zone);
+-		for_each_online_cpu(cpu)
++		threshold = (*calculate_pressure)(zone);
++		for_each_possible_cpu(cpu)
+ 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+ 							= threshold;
+ 	}
+-	put_online_cpus();
+ }
+ 
+ /*
 
 
