@@ -1,141 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1CEVu5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 16:50:57 -0500
-Received: from gate.crashing.org ([63.228.1.57]:53282 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab1CEVu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 16:50:56 -0500
-Subject: Re: [RFC] memblock; Properly handle overlaps
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>
-In-Reply-To: <1299361063.8833.953.camel@pasglop>
-References: <1299297946.8833.931.camel@pasglop>
-	 <4D71CE24.1090302@kernel.org> <1299311788.8833.937.camel@pasglop>
-	 <4D728B8C.2080803@kernel.org>  <1299361063.8833.953.camel@pasglop>
+	id S1752994Ab1CEXBs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 18:01:48 -0500
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:35747 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667Ab1CEXBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 18:01:47 -0500
+Subject: [PATCH v2] intel8x0m: wait a bit before warm reset check
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Sun, 06 Mar 2011 00:01:43 +0100
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Mar 2011 08:50:19 +1100
-Message-ID: <1299361819.8833.954.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.91.90 (2.91.90-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1299366106.2470.5.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+At every resume a laptop I use prints this message (at KERN_ERR level):
+    ALSA sound/pci/intel8x0m.c:904: AC'97 warm reset still in progress? [0x2]
 
-> Can you reply inline next to the respective code ? It would make things
-> easier :-)
-> 
-> > 1. after check with bottom, we need to update the size. otherwise when we
-> > checking with top, we could use wrong size, and increase to extra big.
-> 
-> You mean adding this ?
-> 
-> 			/* We continue processing from the end of the
-> 			 * coalesced block.
-> 			 */
-> 			base = rgn->base + rgn->size;
-> + 			size = end - base;
-> 
-> I suppose you are right. Interestingly enough I haven't trigged that in
-> my tests, I'll add an specific scenario to trigger that problem.
-> 
-> > 2. before we calling memblock_remove_region() in the loop, it could render
-> > blank array. So need to move the special case handle down.
-> 
-> I'm not sure I understand what you mean here.
-> 
-> The blank array always has a count of 1, so memblock_remove_region()
-> should be safe to call at any time. I can see how __memblock_remove()
-> can hit the case of a blank array but that seems harmless to me.
+The thing to note here is that 0x2 corresponds to ICH_AC97COLD. Ie, what
+seems to be happening is that the register involved indicated a warm
+reset for some time (as the ICH_AC97WARM bit was set) but by the time
+the warning is printed, and that same register is checked again, that
+bit is already cleared and only the ICH_AC97COLD bit is still set.
 
-Ok, I see there is indeed a problem as we do an i-- in this case and so
-end up in an infinite loop trying to remove the fake entry. I'll fix
-that too. Thanks.
+It turns out a warm reset needs some time to settle, but it is currently
+checked right away. The test therefore fails the first time it is done
+and schedule_timeout_uninterruptible() will be called. Once we return
+from that jiffies is already (far) past end_time on this laptop, so we
+exit the loop, print a warning, and exit the function while the warm
+reset actually succeeded.
 
-Cheers,
-Ben.
+One way to fix this is to call udelay() after writing to the register
+involved. A handful of tests suggests 500 usecs is a safe value. (This
+might punish the "finish cold reset" case, but on this laptop such a
+cold reset apparently never happens, so I can't say for sure.)
 
-> Thanks.
-> 
-> Ben.
-> 
-> > Thanks
-> > 
-> > Yinghai
-> > 
-> > ---
-> >  mm/memblock.c |   32 +++++++++++++++++++-------------
-> >  1 file changed, 19 insertions(+), 13 deletions(-)
-> > 
-> > Index: linux-2.6/mm/memblock.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/memblock.c
-> > +++ linux-2.6/mm/memblock.c
-> > @@ -279,15 +279,6 @@ static long __init_memblock memblock_add
-> >  	phys_addr_t end = base + size;
-> >  	long i;
-> >  
-> > -	/* If the array is empty, special case, replace the fake
-> > -	 * filler region and return
-> > -	 */
-> > -	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
-> > -		type->regions[0].base = base;
-> > -		type->regions[0].size = size;
-> > -		return 0;
-> > -	}
-> > -
-> >  	/* First try and coalesce this MEMBLOCK with others */
-> >  	for (i = 0; i < type->cnt; i++) {
-> >  		struct memblock_region *rgn = &type->regions[i];
-> > @@ -330,11 +321,17 @@ static long __init_memblock memblock_add
-> >  			 * coalesced block.
-> >  			 */
-> >  			base = rgn->base + rgn->size;
-> > -		}
-> >  
-> > -		/* Check if e have nothing else to allocate (fully coalesced) */
-> > -		if (base >= end)
-> > -			return 0;
-> > +			/*
-> > +			 * Check if We have nothing else to allocate
-> > +			 * (fully coalesced)
-> > +			 */
-> > +			if (base >= end)
-> > +				return 0;
-> > +
-> > +			/* Update left over size */
-> > +			size = end - base;
-> > +		}
-> >  
-> >  		/* Now check if we overlap or are adjacent with the
-> >  		 * top of a block
-> > @@ -360,6 +357,15 @@ static long __init_memblock memblock_add
-> >  		}
-> >  	}
-> >  
-> > +	/* If the array is empty, special case, replace the fake
-> > +	 * filler region and return
-> > +	 */
-> > +	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
-> > +		type->regions[0].base = base;
-> > +		type->regions[0].size = size;
-> > +		return 0;
-> > +	}
-> > +
-> >   new_block:
-> >  	/* If we are out of space, we fail. It's too late to resize the array
-> >  	 * but then this shouldn't have happened in the first place.
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+While we're at it drop the extra single tick from end_time, as it looks
+rather silly.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) v1 was called " intel8x0m: schedule timeout before warm reset check".
+
+1) A udelay of 250 usecs always failed while 300 usecs always worked. So
+500 usecs might be a bit cautious.
+
+ sound/pci/intel8x0m.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/sound/pci/intel8x0m.c b/sound/pci/intel8x0m.c
+index 13cec1e..62fad24 100644
+--- a/sound/pci/intel8x0m.c
++++ b/sound/pci/intel8x0m.c
+@@ -894,7 +894,8 @@ static int snd_intel8x0m_ich_chip_init(struct intel8x0m *chip, int probing)
+ 	/* finish cold or do warm reset */
+ 	cnt |= (cnt & ICH_AC97COLD) == 0 ? ICH_AC97COLD : ICH_AC97WARM;
+ 	iputdword(chip, ICHREG(GLOB_CNT), cnt);
+-	end_time = (jiffies + (HZ / 4)) + 1;
++	udelay(500);
++	end_time = jiffies + HZ / 4;
+ 	do {
+ 		if ((igetdword(chip, ICHREG(GLOB_CNT)) & ICH_AC97WARM) == 0)
+ 			goto __ok;
+-- 
+1.7.4.1
+
 
 
