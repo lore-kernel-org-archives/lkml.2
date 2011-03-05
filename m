@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab1CEOZh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 09:25:37 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57946 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab1CEOZg (ORCPT
+	id S1752635Ab1CEOXV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 09:23:21 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:50270 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab1CEOXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 09:25:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=YUOMyAmsWXQNDeSZE9TmzTUReZX/L2sMICLw8QyyDHl4lLv5vyNk/Orfm3oq39xYtw
-         nQbD9Z+Rvh1mqqcb89LH55+X+4bzt4v0Vo9RoLdVRokQ2zjMtf1R5qDj0q4VO0jRgIX5
-         T3eCj+69Lgvdrd2t28krtUtztBFZW7QlMg/X8=
-MIME-Version: 1.0
-Date: Sat, 5 Mar 2011 16:25:35 +0200
-Message-ID: <AANLkTim9hWBfaPrqWpsKD9dYDAGY47i-ggA0FRrk-ey7@mail.gmail.com>
-Subject: LSM hooks: which to use? .socket_sock_rcv_skb or .socket_sendmsg?
-From: =?KOI8-R?B?SWdvciAnTG8nICjpLkwuKQ==?= <bombsiteunrested@gmail.com>
+	Sat, 5 Mar 2011 09:23:20 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [regression] 2.6.38-post-rc7 with radeon kms: reproducably locks up hard when using desktop cube of kwin
+Date: Sat, 5 Mar 2011 15:23:13 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7-tp42-00142-g212e349; KDE/4.5.3; i686; ; )
+Cc: DRI <dri-devel@lists.freedesktop.org>
+References: <201103051510.35057.Martin@lichtvoll.de> (sfid-20110305_151616_695932_4AD33AC9)
+In-Reply-To: <201103051510.35057.Martin@lichtvoll.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103051523.17315.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all.
+Am Saturday 05 March 2011 schrieb Martin Steigerwald:
+> I will add a regression entry in bugzilla after I got the URL of that
+> mail.
+> 
+> 
+> Hi!
+> 
+> No, I do not actively search for lockup bugs, but they seem to search
+> me ;).
+> 
+> 
+> martin@shambhala:~> cat /proc/version
+> Linux version 2.6.38-rc7-tp42-00142-g212e349 (martin@shambhala) (gcc
+> version 4.4.5 (Debian 4.4.5-11) ) #4 PREEMPT Sat Mar 5 12:03:41 CET
+> 2011
+> 
+> locks up hard when using desktop cube of kwin from KDE 4.5.1.
+> 
+> It happens within a few seconds to about 30 seconds after activating
+> the effect with Ctrl-F11. Otherwise the machine seems to work fine so
+> far - if that continues I do not have much of a problem with the bug
+[...]
 
-I need to capture outgoing TCP packet and modify it using LSM
-framework (and not Netfilter).
+Reported as
 
-First, which hooks will work for outgoing packets, preferably before
-Netfilter comes in play (actually there was a note that some LSM hooks
-reuse Netfilter's, but don't know the right order)?
+Bug 30472 - 2.6.38-post-rc7 with radeon kms: reproducably locks up hard 
+when using desktop cube of kwin
 
-Second, can .socket_sendmsg provide the access to structures
-containing both packet payload and TCP header? Does even
-.socket_sock_rcv_skb provide those structures via some skb?
-
-/* It's the old story about trying to modify packet size so they got
-larger that IP fragmentation limit and get another set of SEQ/ACK,
-that is almost broken behind documentation in default NFQUEUE target
-and makes me to successfully lurk with tcp_output.c hacks rather than
-wishing to write NF modules. (TCPOPTSTRIP target is next to explore,
-but first want to get the best joy of System.map and LSM tricks) */
+Thanks,
 -- 
-cheers,
-Igor
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
