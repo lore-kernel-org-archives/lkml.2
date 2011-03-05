@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760262Ab1CEA77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 19:59:59 -0500
-Received: from kroah.org ([198.145.64.141]:50144 "EHLO coco.kroah.org"
+	id S1760349Ab1CEBAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:00:11 -0500
+Received: from kroah.org ([198.145.64.141]:50177 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760224Ab1CEA75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 19:59:57 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:35 2011
-Message-Id: <20110305005635.653859317@clark.kroah.org>
+	id S1760306Ab1CEBAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:04 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:36 2011
+Message-Id: <20110305005636.371928382@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:16 -0800
+Date: Fri, 04 Mar 2011 16:55:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>, Hugh Dickins <hughd@google.com>
-Subject: [11/73] mm: prevent concurrent unmap_mapping_range() on the same inode
+        Davide Libenzi <davidel@xmailserver.org>,
+        Nelson Elhage <nelhage@ksplice.com>
+Subject: [18/73] epoll: prevent creating circular epoll structures
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,214 +26,203 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Davide Libenzi <davidel@xmailserver.org>
 
-commit 2aa15890f3c191326678f1bd68af61ec6b8753ec upstream.
+commit 22bacca48a1755f79b7e0f192ddb9fbb7fc6e64e upstream.
 
-Michael Leun reported that running parallel opens on a fuse filesystem
-can trigger a "kernel BUG at mm/truncate.c:475"
+In several places, an epoll fd can call another file's ->f_op->poll()
+method with ep->mtx held.  This is in general unsafe, because that other
+file could itself be an epoll fd that contains the original epoll fd.
 
-Gurudas Pai reported the same bug on NFS.
+The code defends against this possibility in its own ->poll() method using
+ep_call_nested, but there are several other unsafe calls to ->poll
+elsewhere that can be made to deadlock.  For example, the following simple
+program causes the call in ep_insert recursively call the original fd's
+->poll, leading to deadlock:
 
-The reason is, unmap_mapping_range() is not prepared for more than
-one concurrent invocation per inode.  For example:
+ #include <unistd.h>
+ #include <sys/epoll.h>
 
-  thread1: going through a big range, stops in the middle of a vma and
-     stores the restart address in vm_truncate_count.
+ int main(void) {
+     int e1, e2, p[2];
+     struct epoll_event evt = {
+         .events = EPOLLIN
+     };
 
-  thread2: comes in with a small (e.g. single page) unmap request on
-     the same vma, somewhere before restart_address, finds that the
-     vma was already unmapped up to the restart address and happily
-     returns without doing anything.
+     e1 = epoll_create(1);
+     e2 = epoll_create(2);
+     pipe(p);
 
-Another scenario would be two big unmap requests, both having to
-restart the unmapping and each one setting vm_truncate_count to its
-own value.  This could go on forever without any of them being able to
-finish.
+     epoll_ctl(e2, EPOLL_CTL_ADD, e1, &evt);
+     epoll_ctl(e1, EPOLL_CTL_ADD, p[0], &evt);
+     write(p[1], p, sizeof p);
+     epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
 
-Truncate and hole punching already serialize with i_mutex.  Other
-callers of unmap_mapping_range() do not, and it's difficult to get
-i_mutex protection for all callers.  In particular ->d_revalidate(),
-which calls invalidate_inode_pages2_range() in fuse, may be called
-with or without i_mutex.
+     return 0;
+ }
 
-This patch adds a new mutex to 'struct address_space' to prevent
-running multiple concurrent unmap_mapping_range() on the same mapping.
+On insertion, check whether the inserted file is itself a struct epoll,
+and if so, do a recursive walk to detect whether inserting this file would
+create a loop of epoll structures, which could lead to deadlock.
 
-[ We'll hopefully get rid of all this with the upcoming mm
-  preemptibility series by Peter Zijlstra, the "mm: Remove i_mmap_mutex
-  lockbreak" patch in particular.  But that is for 2.6.39 ]
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Reported-by: Michael Leun <lkml20101129@newton.leun.net>
-Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
-Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
-Acked-by: Hugh Dickins <hughd@google.com>
+[nelhage@ksplice.com: Use epmutex to serialize concurrent inserts]
+Signed-off-by: Davide Libenzi <davidel@xmailserver.org>
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+Reported-by: Nelson Elhage <nelhage@ksplice.com>
+Tested-by: Nelson Elhage <nelhage@ksplice.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/gfs2/main.c     |    9 +--------
- fs/inode.c         |   22 +++++++++++++++-------
- fs/nilfs2/btnode.c |    5 -----
- fs/nilfs2/btnode.h |    1 -
- fs/nilfs2/mdt.c    |    4 ++--
- fs/nilfs2/page.h   |    1 -
- fs/nilfs2/super.c  |    2 +-
- include/linux/fs.h |    2 ++
- mm/memory.c        |    2 ++
- 9 files changed, 23 insertions(+), 25 deletions(-)
+ fs/eventpoll.c |   95 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 95 insertions(+)
 
---- a/fs/gfs2/main.c
-+++ b/fs/gfs2/main.c
-@@ -59,14 +59,7 @@ static void gfs2_init_gl_aspace_once(voi
- 	struct address_space *mapping = (struct address_space *)(gl + 1);
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -63,6 +63,13 @@
+  * cleanup path and it is also acquired by eventpoll_release_file()
+  * if a file has been pushed inside an epoll set and it is then
+  * close()d without a previous call toepoll_ctl(EPOLL_CTL_DEL).
++ * It is also acquired when inserting an epoll fd onto another epoll
++ * fd. We do this so that we walk the epoll tree and ensure that this
++ * insertion does not create a cycle of epoll file descriptors, which
++ * could lead to deadlock. We need a global mutex to prevent two
++ * simultaneous inserts (A into B and B into A) from racing and
++ * constructing a cycle without either insert observing that it is
++ * going to.
+  * It is possible to drop the "ep->mtx" and to use the global
+  * mutex "epmutex" (together with "ep->lock") to have it working,
+  * but having "ep->mtx" will make the interface more scalable.
+@@ -224,6 +231,9 @@ static int max_user_watches __read_mostl
+  */
+ static DEFINE_MUTEX(epmutex);
  
- 	gfs2_init_glock_once(gl);
--	memset(mapping, 0, sizeof(*mapping));
--	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
--	spin_lock_init(&mapping->tree_lock);
--	spin_lock_init(&mapping->i_mmap_lock);
--	INIT_LIST_HEAD(&mapping->private_list);
--	spin_lock_init(&mapping->private_lock);
--	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
--	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
-+	address_space_init_once(mapping);
++/* Used to check for epoll file descriptor inclusion loops */
++static struct nested_calls poll_loop_ncalls;
++
+ /* Used for safe wake up implementation */
+ static struct nested_calls poll_safewake_ncalls;
+ 
+@@ -1195,6 +1205,62 @@ retry:
+ 	return res;
  }
  
- /**
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -280,6 +280,20 @@ static void destroy_inode(struct inode *
- 		kmem_cache_free(inode_cachep, (inode));
- }
- 
-+void address_space_init_once(struct address_space *mapping)
++/**
++ * ep_loop_check_proc - Callback function to be passed to the @ep_call_nested()
++ *                      API, to verify that adding an epoll file inside another
++ *                      epoll structure, does not violate the constraints, in
++ *                      terms of closed loops, or too deep chains (which can
++ *                      result in excessive stack usage).
++ *
++ * @priv: Pointer to the epoll file to be currently checked.
++ * @cookie: Original cookie for this call. This is the top-of-the-chain epoll
++ *          data structure pointer.
++ * @call_nests: Current dept of the @ep_call_nested() call stack.
++ *
++ * Returns: Returns zero if adding the epoll @file inside current epoll
++ *          structure @ep does not violate the constraints, or -1 otherwise.
++ */
++static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
 +{
-+	memset(mapping, 0, sizeof(*mapping));
-+	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
-+	spin_lock_init(&mapping->tree_lock);
-+	spin_lock_init(&mapping->i_mmap_lock);
-+	INIT_LIST_HEAD(&mapping->private_list);
-+	spin_lock_init(&mapping->private_lock);
-+	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
-+	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
-+	mutex_init(&mapping->unmap_mutex);
++	int error = 0;
++	struct file *file = priv;
++	struct eventpoll *ep = file->private_data;
++	struct rb_node *rbp;
++	struct epitem *epi;
++
++	mutex_lock(&ep->mtx);
++	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
++		epi = rb_entry(rbp, struct epitem, rbn);
++		if (unlikely(is_file_epoll(epi->ffd.file))) {
++			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++					       ep_loop_check_proc, epi->ffd.file,
++					       epi->ffd.file->private_data, current);
++			if (error != 0)
++				break;
++		}
++	}
++	mutex_unlock(&ep->mtx);
++
++	return error;
 +}
-+EXPORT_SYMBOL(address_space_init_once);
++
++/**
++ * ep_loop_check - Performs a check to verify that adding an epoll file (@file)
++ *                 another epoll file (represented by @ep) does not create
++ *                 closed loops or too deep chains.
++ *
++ * @ep: Pointer to the epoll private data structure.
++ * @file: Pointer to the epoll file to be checked.
++ *
++ * Returns: Returns zero if adding the epoll @file inside current epoll
++ *          structure @ep does not violate the constraints, or -1 otherwise.
++ */
++static int ep_loop_check(struct eventpoll *ep, struct file *file)
++{
++	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++			      ep_loop_check_proc, file, ep, current);
++}
 +
  /*
-  * These are initializations that only need to be done
-  * once, because the fields are idempotent across use
-@@ -293,13 +307,7 @@ void inode_init_once(struct inode *inode
- 	INIT_LIST_HEAD(&inode->i_devices);
- 	INIT_LIST_HEAD(&inode->i_wb_list);
- 	INIT_LIST_HEAD(&inode->i_lru);
--	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
--	spin_lock_init(&inode->i_data.tree_lock);
--	spin_lock_init(&inode->i_data.i_mmap_lock);
--	INIT_LIST_HEAD(&inode->i_data.private_list);
--	spin_lock_init(&inode->i_data.private_lock);
--	INIT_RAW_PRIO_TREE_ROOT(&inode->i_data.i_mmap);
--	INIT_LIST_HEAD(&inode->i_data.i_mmap_nonlinear);
-+	address_space_init_once(&inode->i_data);
- 	i_size_ordered_init(inode);
- #ifdef CONFIG_FSNOTIFY
- 	INIT_HLIST_HEAD(&inode->i_fsnotify_marks);
---- a/fs/nilfs2/btnode.c
-+++ b/fs/nilfs2/btnode.c
-@@ -35,11 +35,6 @@
- #include "btnode.h"
+  * Open an eventpoll file descriptor.
+  */
+@@ -1243,6 +1309,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 		struct epoll_event __user *, event)
+ {
+ 	int error;
++	int did_lock_epmutex = 0;
+ 	struct file *file, *tfile;
+ 	struct eventpoll *ep;
+ 	struct epitem *epi;
+@@ -1284,6 +1351,25 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 	 */
+ 	ep = file->private_data;
  
++	/*
++	 * When we insert an epoll file descriptor, inside another epoll file
++	 * descriptor, there is the change of creating closed loops, which are
++	 * better be handled here, than in more critical paths.
++	 *
++	 * We hold epmutex across the loop check and the insert in this case, in
++	 * order to prevent two separate inserts from racing and each doing the
++	 * insert "at the same time" such that ep_loop_check passes on both
++	 * before either one does the insert, thereby creating a cycle.
++	 */
++	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD)) {
++		mutex_lock(&epmutex);
++		did_lock_epmutex = 1;
++		error = -ELOOP;
++		if (ep_loop_check(ep, tfile) != 0)
++			goto error_tgt_fput;
++	}
++
++
+ 	mutex_lock(&ep->mtx);
  
--void nilfs_btnode_cache_init_once(struct address_space *btnc)
--{
--	nilfs_mapping_init_once(btnc);
--}
--
- static const struct address_space_operations def_btnode_aops = {
- 	.sync_page		= block_sync_page,
- };
---- a/fs/nilfs2/btnode.h
-+++ b/fs/nilfs2/btnode.h
-@@ -37,7 +37,6 @@ struct nilfs_btnode_chkey_ctxt {
- 	struct buffer_head *newbh;
- };
- 
--void nilfs_btnode_cache_init_once(struct address_space *);
- void nilfs_btnode_cache_init(struct address_space *, struct backing_dev_info *);
- void nilfs_btnode_cache_clear(struct address_space *);
- struct buffer_head *nilfs_btnode_create_block(struct address_space *btnc,
---- a/fs/nilfs2/mdt.c
-+++ b/fs/nilfs2/mdt.c
-@@ -460,9 +460,9 @@ int nilfs_mdt_setup_shadow_map(struct in
- 	struct backing_dev_info *bdi = inode->i_sb->s_bdi;
- 
- 	INIT_LIST_HEAD(&shadow->frozen_buffers);
--	nilfs_mapping_init_once(&shadow->frozen_data);
-+	address_space_init_once(&shadow->frozen_data);
- 	nilfs_mapping_init(&shadow->frozen_data, bdi, &shadow_map_aops);
--	nilfs_mapping_init_once(&shadow->frozen_btnodes);
-+	address_space_init_once(&shadow->frozen_btnodes);
- 	nilfs_mapping_init(&shadow->frozen_btnodes, bdi, &shadow_map_aops);
- 	mi->mi_shadow = shadow;
- 	return 0;
---- a/fs/nilfs2/page.h
-+++ b/fs/nilfs2/page.h
-@@ -61,7 +61,6 @@ void nilfs_free_private_page(struct page
- int nilfs_copy_dirty_pages(struct address_space *, struct address_space *);
- void nilfs_copy_back_pages(struct address_space *, struct address_space *);
- void nilfs_clear_dirty_pages(struct address_space *);
--void nilfs_mapping_init_once(struct address_space *mapping);
- void nilfs_mapping_init(struct address_space *mapping,
- 			struct backing_dev_info *bdi,
- 			const struct address_space_operations *aops);
---- a/fs/nilfs2/super.c
-+++ b/fs/nilfs2/super.c
-@@ -1263,7 +1263,7 @@ static void nilfs_inode_init_once(void *
- #ifdef CONFIG_NILFS_XATTR
- 	init_rwsem(&ii->xattr_sem);
- #endif
--	nilfs_btnode_cache_init_once(&ii->i_btnode_cache);
-+	address_space_init_once(&ii->i_btnode_cache);
- 	ii->i_bmap = &ii->i_bmap_data;
- 	inode_init_once(&ii->vfs_inode);
- }
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -646,6 +646,7 @@ struct address_space {
- 	spinlock_t		private_lock;	/* for use by the address_space */
- 	struct list_head	private_list;	/* ditto */
- 	struct address_space	*assoc_mapping;	/* ditto */
-+	struct mutex		unmap_mutex;    /* to protect unmapping */
- } __attribute__((aligned(sizeof(long))));
  	/*
- 	 * On most architectures that alignment is already the case; but
-@@ -2203,6 +2204,7 @@ extern loff_t vfs_llseek(struct file *fi
+@@ -1319,6 +1405,9 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 	mutex_unlock(&ep->mtx);
  
- extern int inode_init_always(struct super_block *, struct inode *);
- extern void inode_init_once(struct inode *);
-+extern void address_space_init_once(struct address_space *mapping);
- extern void ihold(struct inode * inode);
- extern void iput(struct inode *);
- extern struct inode * igrab(struct inode *);
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2572,6 +2572,7 @@ void unmap_mapping_range(struct address_
- 		details.last_index = ULONG_MAX;
- 	details.i_mmap_lock = &mapping->i_mmap_lock;
+ error_tgt_fput:
++	if (unlikely(did_lock_epmutex))
++		mutex_unlock(&epmutex);
++
+ 	fput(tfile);
+ error_fput:
+ 	fput(file);
+@@ -1437,6 +1526,12 @@ static int __init eventpoll_init(void)
+ 	max_user_watches = (((si.totalram - si.totalhigh) / 25) << PAGE_SHIFT) /
+ 		EP_ITEM_COST;
  
-+	mutex_lock(&mapping->unmap_mutex);
- 	spin_lock(&mapping->i_mmap_lock);
- 
- 	/* Protect against endless unmapping loops */
-@@ -2588,6 +2589,7 @@ void unmap_mapping_range(struct address_
- 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
- 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
- 	spin_unlock(&mapping->i_mmap_lock);
-+	mutex_unlock(&mapping->unmap_mutex);
- }
- EXPORT_SYMBOL(unmap_mapping_range);
++	/*
++	 * Initialize the structure used to perform epoll file descriptor
++	 * inclusion loops checks.
++	 */
++	ep_nested_calls_init(&poll_loop_ncalls);
++
+ 	/* Initialize the structure used to perform safe poll wait head wake ups */
+ 	ep_nested_calls_init(&poll_safewake_ncalls);
  
 
 
