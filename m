@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab1CEVyq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 16:54:46 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54947 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752197Ab1CEVyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 16:54:44 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-pci@vger.kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [RFT][PATCH] PCI / ACPI: Do not require MSI support for PCIe native features
-Date: Sat, 5 Mar 2011 22:54:48 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+	id S1753681Ab1CERKv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 12:10:51 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64208 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab1CERKu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 12:10:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=urJdsHMeFO2Iy/pD5BP/JLCWyUWg3A8qLculUveGgozj9M9rBBuKB+hC1sykYBIx7N
+         34iSZaFZrkOAvBse8lZ8YDrakjWoNzjk1StLZOs8lgCbHl3cWlNJyzULfuKRF34Rggo3
+         QcUMhHEWyQ/s2yihgJ7jxflJM6bbyqYyyUlyc=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103052254.48515.rjw@sisk.pl>
+In-Reply-To: <1299343345-3984-7-git-send-email-cesarb@cesarb.net>
+References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
+	<1299343345-3984-7-git-send-email-cesarb@cesarb.net>
+Date: Sat, 5 Mar 2011 19:10:49 +0200
+X-Google-Sender-Auth: VgYHtq82W9JCzmvQ1AJLmTAblqY
+Message-ID: <AANLkTikdXLUaE2dJgEzBFpc_e6Pgu6rwML+dowdJ22w3@mail.gmail.com>
+Subject: Re: [PATCHv2 06/24] sys_swapon: simplify error flow in alloc_swap_info
+From: Pekka Enberg <penberg@kernel.org>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org, Eric B Munson <emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Sat, Mar 5, 2011 at 6:42 PM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> Since there is no cleanup to do, there is no reason to jump to a label.
+> Return directly instead.
+>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> Tested-by: Eric B Munson <emunson@mgebm.net>
+> Acked-by: Eric B Munson <emunson@mgebm.net>
 
-After commit 415e12b2379239973feab91850b0dce985c6058a
-(PCI/ACPI: Request _OSC control once for each root bridge (v3)) we
-require MSI to be supported so that we use _OSC to request control
-of PCIe native features (hotplug, AER, PME), but that appears to
-be overkill and causes problems to happen on some systems.  For
-this reason, request control of PCIe native features via _OSC
-even if MSI support is not enabled.
-
-Reported-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
-
-Hi,
-
-Sarah, please test this patch on your machine causing PCIe hotplug
-problems on top of the patch from https://patchwork.kernel.org/patch/612171/
-and on top of 2.6.38-rc6 or later.
-
-Thanks,
-Rafael
-
----
- drivers/acpi/pci_root.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-Index: linux-2.6/drivers/acpi/pci_root.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/pci_root.c
-+++ linux-2.6/drivers/acpi/pci_root.c
-@@ -50,8 +50,7 @@ static int acpi_pci_root_start(struct ac
- 
- #define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
- 				| OSC_ACTIVE_STATE_PWR_SUPPORT \
--				| OSC_CLOCK_PWR_CAPABILITY_SUPPORT \
--				| OSC_MSI_SUPPORT)
-+				| OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
- 
- static const struct acpi_device_id root_device_ids[] = {
- 	{"PNP0A03", 0},
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
