@@ -1,144 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab1CEUk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 15:40:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412Ab1CEUkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 15:40:24 -0500
-Date: Sat, 5 Mar 2011 21:31:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH v4 2/4] exec: introduce struct user_arg_ptr
-Message-ID: <20110305203122.GC7546@redhat.com>
-References: <20110302162650.GA26810@redhat.com> <20110302162712.GB26810@redhat.com> <20110303114952.B94B.A69D9226@jp.fujitsu.com> <20110303154706.GA22560@redhat.com> <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com> <20110305203040.GA7546@redhat.com>
+	id S1752605Ab1CEOKo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 09:10:44 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:46791 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab1CEOKn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 09:10:43 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [regression] 2.6.37-post-rc7 with radeon kms: reproducably locks up hard when using desktop cube of kwin
+Date: Sat, 5 Mar 2011 15:10:24 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7-tp42-00142-g212e349; KDE/4.5.3; i686; ; )
+Cc: DRI <dri-devel@lists.freedesktop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110305203040.GA7546@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: multipart/signed;
+  boundary="nextPart4188849.Ju5I9lK7Lo";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103051510.35057.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, preparation.
+--nextPart4188849.Ju5I9lK7Lo
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Introduce struct user_arg_ptr, change do_execve() paths to use it
-instead of "char __user * const __user *argv".
+I will add a regression entry in bugzilla after I got the URL of that=20
+mail.
 
-This makes the argv/envp arguments opaque, we are ready to handle the
-compat case which needs argv pointing to compat_uptr_t.
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
+Hi!
 
- fs/exec.c |   42 ++++++++++++++++++++++++++++++------------
- 1 file changed, 30 insertions(+), 12 deletions(-)
+No, I do not actively search for lockup bugs, but they seem to search me=20
+;).
 
---- 38/fs/exec.c~2_typedef_for_argv	2011-03-05 21:21:56.000000000 +0100
-+++ 38/fs/exec.c	2011-03-05 21:22:42.000000000 +0100
-@@ -395,12 +395,15 @@ err:
- 	return err;
- }
- 
--static const char __user *
--get_user_arg_ptr(const char __user * const __user *argv, int nr)
-+struct user_arg_ptr {
-+	const char __user *const __user *native;
-+};
-+
-+static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
- {
- 	const char __user *ptr;
- 
--	if (get_user(ptr, argv + nr))
-+	if (get_user(ptr, argv.native + nr))
- 		return ERR_PTR(-EFAULT);
- 
- 	return ptr;
-@@ -409,11 +412,11 @@ get_user_arg_ptr(const char __user * con
- /*
-  * count() counts the number of strings in array ARGV.
-  */
--static int count(const char __user * const __user * argv, int max)
-+static int count(struct user_arg_ptr argv, int max)
- {
- 	int i = 0;
- 
--	if (argv != NULL) {
-+	if (argv.native != NULL) {
- 		for (;;) {
- 			const char __user *p = get_user_arg_ptr(argv, i);
- 
-@@ -439,7 +442,7 @@ static int count(const char __user * con
-  * processes's memory to the new process's stack.  The call to get_user_pages()
-  * ensures the destination page is created and not swapped out.
-  */
--static int copy_strings(int argc, const char __user *const __user *argv,
-+static int copy_strings(int argc, struct user_arg_ptr argv,
- 			struct linux_binprm *bprm)
- {
- 	struct page *kmapped_page = NULL;
-@@ -530,14 +533,19 @@ out:
- /*
-  * Like copy_strings, but get argv and its values from kernel memory.
-  */
--int copy_strings_kernel(int argc, const char *const *argv,
-+int copy_strings_kernel(int argc, const char *const *__argv,
- 			struct linux_binprm *bprm)
- {
- 	int r;
- 	mm_segment_t oldfs = get_fs();
-+	struct user_arg_ptr argv = {
-+		.native = (const char __user *const  __user *)__argv,
-+	};
-+
- 	set_fs(KERNEL_DS);
--	r = copy_strings(argc, (const char __user *const  __user *)argv, bprm);
-+	r = copy_strings(argc, argv, bprm);
- 	set_fs(oldfs);
-+
- 	return r;
- }
- EXPORT_SYMBOL(copy_strings_kernel);
-@@ -1387,10 +1395,10 @@ EXPORT_SYMBOL(search_binary_handler);
- /*
-  * sys_execve() executes a new program.
-  */
--int do_execve(const char * filename,
--	const char __user *const __user *argv,
--	const char __user *const __user *envp,
--	struct pt_regs * regs)
-+static int do_execve_common(const char *filename,
-+				struct user_arg_ptr argv,
-+				struct user_arg_ptr envp,
-+				struct pt_regs *regs)
- {
- 	struct linux_binprm *bprm;
- 	struct file *file;
-@@ -1497,6 +1505,16 @@ out_ret:
- 	return retval;
- }
- 
-+int do_execve(const char *filename,
-+	const char __user *const __user *__argv,
-+	const char __user *const __user *__envp,
-+	struct pt_regs *regs)
-+{
-+	struct user_arg_ptr argv = { .native = __argv };
-+	struct user_arg_ptr envp = { .native = __envp };
-+	return do_execve_common(filename, argv, envp, regs);
-+}
-+
- void set_binfmt(struct linux_binfmt *new)
- {
- 	struct mm_struct *mm = current->mm;
 
+martin@shambhala:~> cat /proc/version
+Linux version 2.6.38-rc7-tp42-00142-g212e349 (martin@shambhala) (gcc=20
+version 4.4.5 (Debian 4.4.5-11) ) #4 PREEMPT Sat Mar 5 12:03:41 CET 2011
+
+locks up hard when using desktop cube of kwin from KDE 4.5.1.
+
+It happens within a few seconds to about 30 seconds after activating the=20
+effect with Ctrl-F11. Otherwise the machine seems to work fine so far - if=
+=20
+that continues I do not have much of a problem with the bug since I do not=
+=20
+use desktop cube other than for getting a feel of compositing performance.=
+=20
+Effects seem to be more fluent, more smooth anyway, I guess due to Radeon=20
+KMS page flipping.
+
+I am using X.org 1.9.4 with Radeon driver 1:6.14.0-1 on Debian=20
+Wheezy/Sid/Experimental on a ThinkPad T42 with:
+
+martin@shambhala:~> lspci -nn | grep VGA
+01:00.0 VGA compatible controller [0300]: ATI Technologies Inc RV350=20
+[Mobility Radeon 9600 M10] [1002:4e50]
+
+This didn't happen with 2.6.37-tp42-rtime-00004-g9eb63ce, same gcc.
+
+Possibly related to bug #28622 "radeon video lookup".
+
+
+As I am in my holidays in Sevilla I will only care about bisecting when it=
+=20
+rains three days in a row ;) - cause I insist on my holidays being=20
+holidays and so will only do light kernel testing ;). I wanted to report=20
+this nonetheless since at least on my machine this is really easy to=20
+reproduce.=20
+
+Ciao,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart4188849.Ju5I9lK7Lo
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk1yRFEACgkQmRvqrKWZhMfx4gCgnh28dsa98TtRIhD+BpudTBJi
+uaIAn0/7wv35NLavahybbEjskM2CfFRz
+=cspj
+-----END PGP SIGNATURE-----
+
+--nextPart4188849.Ju5I9lK7Lo--
