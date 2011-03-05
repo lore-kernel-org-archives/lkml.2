@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760701Ab1CEBOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:14:18 -0500
-Received: from kroah.org ([198.145.64.141]:50247 "EHLO coco.kroah.org"
+	id S1760714Ab1CEBOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:14:38 -0500
+Received: from kroah.org ([198.145.64.141]:50233 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760371Ab1CEBAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Mar 2011 20:00:16 -0500
+	id S1760363Ab1CEBAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Mar 2011 20:00:14 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 16:56:37 2011
-Message-Id: <20110305005637.511201005@clark.kroah.org>
+Message-Id: <20110305005637.327705973@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 16:55:35 -0800
+Date: Fri, 04 Mar 2011 16:55:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [30/73] xhci: Clarify some expressions in the TRB math
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [28/73] x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems
 In-Reply-To: <20110305005720.GA16162@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,112 +26,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit a2490187011cc2263117626615a581927d19f1d3 upstream.
+commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12 upstream.
 
-This makes it easier to spot some problems, which will be fixed by the
-next patch in the series. Also change dev_dbg to dev_err in
-check_trb_math(), so any math errors will be visible even when running
-with debug disabled.
+On some SB800 systems polarity for IOAPIC pin2 is wrongly
+specified as low active by BIOS. This caused system hangs after
+resume from S3 when HPET was used in one-shot mode on such
+systems because a timer interrupt was missed (HPET signal is
+high active).
 
-Note: This patch changes the expressions containing
-"((1 << TRB_MAX_BUFF_SHIFT) - 1)" to use the equivalent
-"(TRB_MAX_BUFF_SIZE - 1)". No change in behavior is intended for
-those expressions.
+For more details see:
 
-This patch should be queued for stable kernels back to 2.6.31.
+  http://marc.info/?l=linux-kernel&m=129623757413868
 
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Manoj Iyer <manoj.iyer@canonical.com>
+Tested-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20110224145346.GD3658@alberich.amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/acpi.h    |    1 +
+ arch/x86/kernel/acpi/boot.c    |   14 ++++++++++----
+ arch/x86/kernel/early-quirks.c |   16 +++++++---------
+ 3 files changed, 18 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2374,7 +2374,7 @@ static unsigned int count_sg_trbs_needed
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -88,6 +88,7 @@ extern int acpi_disabled;
+ extern int acpi_pci_disabled;
+ extern int acpi_skip_timer_override;
+ extern int acpi_use_timer_override;
++extern int acpi_fix_pin2_polarity;
  
- 		/* Scatter gather list entries may cross 64KB boundaries */
- 		running_total = TRB_MAX_BUFF_SIZE -
--			(sg_dma_address(sg) & ((1 << TRB_MAX_BUFF_SHIFT) - 1));
-+			(sg_dma_address(sg) & (TRB_MAX_BUFF_SIZE - 1));
- 		if (running_total != 0)
- 			num_trbs++;
+ extern u8 acpi_sci_flags;
+ extern int acpi_sci_override_gsi;
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -72,6 +72,7 @@ u8 acpi_sci_flags __initdata;
+ int acpi_sci_override_gsi __initdata;
+ int acpi_skip_timer_override __initdata;
+ int acpi_use_timer_override __initdata;
++int acpi_fix_pin2_polarity __initdata;
  
-@@ -2404,11 +2404,11 @@ static unsigned int count_sg_trbs_needed
- static void check_trb_math(struct urb *urb, int num_trbs, int running_total)
+ #ifdef CONFIG_X86_LOCAL_APIC
+ static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
+@@ -410,10 +411,15 @@ acpi_parse_int_src_ovr(struct acpi_subta
+ 		return 0;
+ 	}
+ 
+-	if (acpi_skip_timer_override &&
+-	    intsrc->source_irq == 0 && intsrc->global_irq == 2) {
+-		printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
+-		return 0;
++	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
++		if (acpi_skip_timer_override) {
++			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
++			return 0;
++		}
++		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
++			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
++			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
++		}
+ 	}
+ 
+ 	mp_override_legacy_irq(intsrc->source_irq,
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -143,15 +143,10 @@ static void __init ati_bugs(int num, int
+ 
+ static u32 __init ati_sbx00_rev(int num, int slot, int func)
  {
- 	if (num_trbs != 0)
--		dev_dbg(&urb->dev->dev, "%s - ep %#x - Miscalculated number of "
-+		dev_err(&urb->dev->dev, "%s - ep %#x - Miscalculated number of "
- 				"TRBs, %d left\n", __func__,
- 				urb->ep->desc.bEndpointAddress, num_trbs);
- 	if (running_total != urb->transfer_buffer_length)
--		dev_dbg(&urb->dev->dev, "%s - ep %#x - Miscalculated tx length, "
-+		dev_err(&urb->dev->dev, "%s - ep %#x - Miscalculated tx length, "
- 				"queued %#x (%d), asked for %#x (%d)\n",
- 				__func__,
- 				urb->ep->desc.bEndpointAddress,
-@@ -2540,8 +2540,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 	sg = urb->sg;
- 	addr = (u64) sg_dma_address(sg);
- 	this_sg_len = sg_dma_len(sg);
--	trb_buff_len = TRB_MAX_BUFF_SIZE -
--		(addr & ((1 << TRB_MAX_BUFF_SHIFT) - 1));
-+	trb_buff_len = TRB_MAX_BUFF_SIZE - (addr & (TRB_MAX_BUFF_SIZE - 1));
- 	trb_buff_len = min_t(int, trb_buff_len, this_sg_len);
- 	if (trb_buff_len > urb->transfer_buffer_length)
- 		trb_buff_len = urb->transfer_buffer_length;
-@@ -2577,7 +2576,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 				(unsigned int) (addr + TRB_MAX_BUFF_SIZE) & ~(TRB_MAX_BUFF_SIZE - 1),
- 				(unsigned int) addr + trb_buff_len);
- 		if (TRB_MAX_BUFF_SIZE -
--				(addr & ((1 << TRB_MAX_BUFF_SHIFT) - 1)) < trb_buff_len) {
-+				(addr & (TRB_MAX_BUFF_SIZE - 1)) < trb_buff_len) {
- 			xhci_warn(xhci, "WARN: sg dma xfer crosses 64KB boundaries!\n");
- 			xhci_dbg(xhci, "Next boundary at %#x, end dma = %#x\n",
- 					(unsigned int) (addr + TRB_MAX_BUFF_SIZE) & ~(TRB_MAX_BUFF_SIZE - 1),
-@@ -2621,7 +2620,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 		}
+-	u32 old, d;
++	u32 d;
  
- 		trb_buff_len = TRB_MAX_BUFF_SIZE -
--			(addr & ((1 << TRB_MAX_BUFF_SHIFT) - 1));
-+			(addr & (TRB_MAX_BUFF_SIZE - 1));
- 		trb_buff_len = min_t(int, trb_buff_len, this_sg_len);
- 		if (running_total + trb_buff_len > urb->transfer_buffer_length)
- 			trb_buff_len =
-@@ -2661,7 +2660,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 	num_trbs = 0;
- 	/* How much data is (potentially) left before the 64KB boundary? */
- 	running_total = TRB_MAX_BUFF_SIZE -
--		(urb->transfer_dma & ((1 << TRB_MAX_BUFF_SHIFT) - 1));
-+		(urb->transfer_dma & (TRB_MAX_BUFF_SIZE - 1));
+-	d = read_pci_config(num, slot, func, 0x70);
+-	old = d;
+-	d &= ~(1<<8);
+-	write_pci_config(num, slot, func, 0x70, d);
+ 	d = read_pci_config(num, slot, func, 0x8);
+ 	d &= 0xff;
+-	write_pci_config(num, slot, func, 0x70, old);
  
- 	/* If there's some data on this 64KB chunk, or we have to send a
- 	 * zero-length transfer, we need at least one TRB
-@@ -2704,8 +2703,8 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 	/* How much data is in the first TRB? */
- 	addr = (u64) urb->transfer_dma;
- 	trb_buff_len = TRB_MAX_BUFF_SIZE -
--		(urb->transfer_dma & ((1 << TRB_MAX_BUFF_SHIFT) - 1));
--	if (urb->transfer_buffer_length < trb_buff_len)
-+		(urb->transfer_dma & (TRB_MAX_BUFF_SIZE - 1));
-+	if (trb_buff_len > urb->transfer_buffer_length)
- 		trb_buff_len = urb->transfer_buffer_length;
+ 	return d;
+ }
+@@ -160,13 +155,16 @@ static void __init ati_bugs_contd(int nu
+ {
+ 	u32 d, rev;
  
- 	first_trb = true;
-@@ -2877,8 +2876,7 @@ static int count_isoc_trbs_needed(struct
- 	addr = (u64) (urb->transfer_dma + urb->iso_frame_desc[i].offset);
- 	td_len = urb->iso_frame_desc[i].length;
+-	if (acpi_use_timer_override)
+-		return;
+-
+ 	rev = ati_sbx00_rev(num, slot, func);
++	if (rev >= 0x40)
++		acpi_fix_pin2_polarity = 1;
++
+ 	if (rev > 0x13)
+ 		return;
  
--	running_total = TRB_MAX_BUFF_SIZE -
--			(addr & ((1 << TRB_MAX_BUFF_SHIFT) - 1));
-+	running_total = TRB_MAX_BUFF_SIZE - (addr & (TRB_MAX_BUFF_SIZE - 1));
- 	if (running_total != 0)
- 		num_trbs++;
- 
++	if (acpi_use_timer_override)
++		return;
++
+ 	/* check for IRQ0 interrupt swap */
+ 	d = read_pci_config(num, slot, func, 0x64);
+ 	if (!(d & (1<<14)))
 
 
