@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab1CEIRa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 03:17:30 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47087 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1CEIR2 (ORCPT
+	id S1752043Ab1CEITE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 03:19:04 -0500
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:50315 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751206Ab1CEITD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 03:17:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=dBbjDuq9b3Df5tK8hG6M4VXJPBC7gexCC5p6CT0FjPIntVBbFgwekpUaDu5UZLtShg
-         itBPIwwstkKtJCZcTe7ikrZI5+KQKlS9IkU2tF+lm8buEsGcQz3Szlh/OTtUqd0mFeQO
-         kFmze0yQKbZRxTKeYUIvSRAiIOrqC5uQrHmb0=
-Message-ID: <4D71F194.9010402@suse.cz>
-Date: Sat, 05 Mar 2011 09:17:24 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	Sat, 5 Mar 2011 03:19:03 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+References: <1290060899-9786-1-git-send-email-ccross@android.com><AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com><4D70BE9D.4000507@stericsson.com><AANLkTin7ZXYALOy_jk1uR3SbZA51nSnU-ncSjG+n_RPn@mail.gmail.com><4D714C17.7080102@gmail.com>
+ <AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        netdev@vger.kernel.org, maxk@qualcomm.com
-Subject: Re: tun routing is broken
-References: <20110304.010603.104076956.davem@davemloft.net>	<4D70B2DC.2000005@gmail.com>	<4D71EE86.6030309@suse.cz> <20110305.001022.183044112.davem@davemloft.net>
-In-Reply-To: <20110305.001022.183044112.davem@davemloft.net>
-X-Enigmail-Version: 1.1.2
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com>
+Thread-Index: Acvas+cEUmGc+81rT5aJ0w6Dca29MwAWLa8Q
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Date: Sat, 5 Mar 2011 13:49:00 +0530
+Message-ID: <eea425c066cc69c30f118fb102fff43e@mail.gmail.com>
+Subject: RE: [PATCH] ARM: twd: Adjust localtimer frequency with cpufreqnotifiers
+To: Colin Cross <ccross@android.com>, Rob Herring <robherring2@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
+        Varun Swara <Varun.Swara@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        martin persson <martin.persson@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2011 09:10 AM, David Miller wrote:
-> From: Jiri Slaby <jslaby@suse.cz>
-> Date: Sat, 05 Mar 2011 09:04:22 +0100
-> 
->> Ok, so I booted the new kernel, and tun is broken there completely. If I
->> try to ping a vpn peer:
-> 
-> -mm tree is missing this fix which went in yesterday.  Please if
-> you are going to be testing networking a lot, test against net-next-2.6
-> instead of Andrew's tree which invariable lags behind:
+Collin, Rob,
+> -----Original Message-----
+> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-
+> arm-kernel-bounces@lists.infradead.org] On Behalf Of Colin Cross
+> Sent: Saturday, March 05, 2011 3:03 AM
+> To: Rob Herring
+> Cc: Russell King; Srinidhi KASAGAR; Harald Gustafsson; Linus
+> Walleij; linux-kernel@vger.kernel.org; Rickard ANDERSSON; Varun
+> Swara; Catalin Marinas; martin persson; linux-arm-
+> kernel@lists.infradead.org
+> Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency with
+> cpufreqnotifiers
+>
+[...]
 
-I'm not testing networking, I'm just using my desktop :). (And
-next/master is mostly unusable for these needs. In comparison to mmotm
-which is some kind of a "release".)
+>
+> Using a clock along with the cpufreq notifiers would simplify my
+> patch
+> some.  Maybe we can use the traction this patch has among platforms
+> that use the twd to get the necessary clocks added.  Can you post a
+> version of your patch that assumes the presence of a twd clock, and
+> I'll work on getting the necessary clocks added and updating my
+> patch on top of yours?
+>
 
-> --------------------
-> ipv4: Fix __ip_dev_find() to use ifa_local instead of ifa_address.
+Some time back I also fixed the TWD scaling problem based on more
+or less similar idea of pre-scaler and CPUFREQ notifiers.
+Rob's clock idea was neat and useful to re-calibration
 
-It would be great to have a References: tag or better changelog. Then I
-would give the commit a shot. The way it is I ignored it when looking at
-next/master inside net/ipv4/ changes for commits to test.
+While doing this patch for OMAP I also found that
+CPUFREQ notifiers does delays scaling timer frequency
+and there is a tick deviation(3-4 ms) around 1st tick and
+last tick around twd rescaling.
 
-Going to boot with this change.
+Another issue was not able to select higher fixed twd rate
+and found fix for the same.
 
-> Reported-by: Stephen Hemminger <shemminger@vyatta.com>
-> Reported-by: Julian Anastasov <ja@ssi.bg>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> ---
->  net/ipv4/devinet.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-> index 9038928..ff53860 100644
-> --- a/net/ipv4/devinet.c
-> +++ b/net/ipv4/devinet.c
-> @@ -111,7 +111,7 @@ static inline unsigned int inet_addr_hash(struct net *net, __be32 addr)
->  
->  static void inet_hash_insert(struct net *net, struct in_ifaddr *ifa)
->  {
-> -	unsigned int hash = inet_addr_hash(net, ifa->ifa_address);
-> +	unsigned int hash = inet_addr_hash(net, ifa->ifa_local);
->  
->  	spin_lock(&inet_addr_hash_lock);
->  	hlist_add_head_rcu(&ifa->hash, &inet_addr_lst[hash]);
-> @@ -146,7 +146,7 @@ struct net_device *__ip_dev_find(struct net *net, __be32 addr, bool devref)
->  
->  		if (!net_eq(dev_net(dev), net))
->  			continue;
-> -		if (ifa->ifa_address == addr) {
-> +		if (ifa->ifa_local == addr) {
->  			result = dev;
->  			break;
->  		}
-
-thanks,
--- 
-js
-suse labs
+Regards,
+Santosh
