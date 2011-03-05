@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab1CEBGX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Mar 2011 20:06:23 -0500
-Received: from kroah.org ([198.145.64.141]:47732 "EHLO coco.kroah.org"
+	id S932741Ab1CEBGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Mar 2011 20:06:21 -0500
+Received: from kroah.org ([198.145.64.141]:47736 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932707Ab1CEBFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932428Ab1CEBFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Mar 2011 20:05:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Mar  4 17:03:53 2011
-Message-Id: <20110305010353.171707641@clark.kroah.org>
+Message-Id: <20110305010353.288994925@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 04 Mar 2011 17:03:08 -0800
+Date: Fri, 04 Mar 2011 17:03:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [14/18] e1000e: disable broken PHY wakeup for ICH10 LOMs, use MAC wakeup instead
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [15/18] r8169: disable ASPM
 In-Reply-To: <20110305010410.GA18668@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 4def99bbfd46e05c5e03b5b282cb4ee30e27ff19 upstream.
+commit ba04c7c93bbcb48ce880cf75b6e9dffcd79d4c7b upstream.
 
-When support for 82577/82578 was added[1] in 2.6.31, PHY wakeup was in-
-advertently enabled (even though it does not function properly) on ICH10
-LOMs.  This patch makes it so that the ICH10 LOMs use MAC wakeup instead
-as was done with the initial support for those devices (i.e. 82567LM-3,
-82567LF-3 and 82567V-4).
+For some time is known that ASPM is causing troubles on r8169, i.e. make
+device randomly stop working without any errors in dmesg.
 
-[1] commit a4f58f5455ba0efda36fb33c37074922d1527a10
+Currently Tomi Leppikangas reports that system with r8169 device hangs
+with MCE errors when ASPM is enabled:
+https://bugzilla.redhat.com/show_bug.cgi?id=642861#c4
 
-Reported-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Lets disable ASPM for r8169 devices at all, to avoid problems with
+r8169 PCIe devices at least for some users.
+
+Reported-by: Tomi Leppikangas <tomi.leppikangas@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000e/netdev.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/r8169.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -5186,7 +5186,8 @@ static int __devinit e1000_probe(struct
- 		/* APME bit in EEPROM is mapped to WUC.APME */
- 		eeprom_data = er32(WUC);
- 		eeprom_apme_mask = E1000_WUC_APME;
--		if (eeprom_data & E1000_WUC_PHY_WAKE)
-+		if ((hw->mac.type > e1000_ich10lan) &&
-+		    (eeprom_data & E1000_WUC_PHY_WAKE))
- 			adapter->flags2 |= FLAG2_HAS_PHY_WAKEUP;
- 	} else if (adapter->flags & FLAG_APME_IN_CTRL3) {
- 		if (adapter->flags & FLAG_APME_CHECK_PORT_B &&
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -23,6 +23,7 @@
+ #include <linux/tcp.h>
+ #include <linux/init.h>
+ #include <linux/dma-mapping.h>
++#include <linux/pci-aspm.h>
+ 
+ #include <asm/system.h>
+ #include <asm/io.h>
+@@ -3030,6 +3031,11 @@ rtl8169_init_one(struct pci_dev *pdev, c
+ 	mii->reg_num_mask = 0x1f;
+ 	mii->supports_gmii = !!(cfg->features & RTL_FEATURE_GMII);
+ 
++	/* disable ASPM completely as that cause random device stop working
++	 * problems as well as full system hangs for some PCIe devices users */
++	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
++				     PCIE_LINK_STATE_CLKPM);
++
+ 	/* enable device (incl. PCI PM wakeup and hotplug setup) */
+ 	rc = pci_enable_device(pdev);
+ 	if (rc < 0) {
 
 
