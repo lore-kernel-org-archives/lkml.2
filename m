@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab1CFWNp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 17:13:45 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60786 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab1CFWNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 17:13:42 -0500
-Date: Sun, 6 Mar 2011 23:13:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1754619Ab1CFUtH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 15:49:07 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:53274 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754474Ab1CFUsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 15:48:42 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, William Cohen <wcohen@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/6] perf/core tui fixes and improvements
-Message-ID: <20110306221324.GA569@elte.hu>
-References: <1299444507-26549-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+        Tom Zanussi <tzanussi@gmail.com>, William Cohen <wcohen@redhat.com>
+Subject: [PATCH 1/6] perf report tui: Fix multi event switching
+Date: Sun,  6 Mar 2011 17:48:22 -0300
+Message-Id: <1299444507-26549-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1299444507-26549-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+References: <1299444507-26549-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+TAB/UNTAB were not hotkeys, so didn't exit hists__browse back to
+hists__tui_browse_tree, allowing just the first event to be browsed.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (6):
->   perf report tui: Fix multi event switching
->   perf hists: Remove needless global col lenght calcs
->   perf hists browser: Handle browsing empty hists tree
->   perf evlist: Split perf_evlist__id_hash
->   perf tools: Improve support for sessions with multiple events
->   perf report tui: Improve multi event session support
-> 
->  tools/perf/builtin-annotate.c       |   80 +++++++++++----
->  tools/perf/builtin-report.c         |  161 +++++++++---------------------
->  tools/perf/util/event.c             |   57 +-----------
->  tools/perf/util/evlist.c            |   28 ++++--
->  tools/perf/util/evlist.h            |    3 +
->  tools/perf/util/evsel.h             |    2 +
->  tools/perf/util/header.c            |   31 ------
->  tools/perf/util/header.h            |    2 -
->  tools/perf/util/hist.c              |   15 +++-
->  tools/perf/util/hist.h              |   22 +---
->  tools/perf/util/session.c           |   63 ++++++++++++-
->  tools/perf/util/session.h           |   16 +--
->  tools/perf/util/symbol.c            |    1 -
->  tools/perf/util/symbol.h            |    1 -
->  tools/perf/util/ui/browsers/hists.c |  188 +++++++++++++++++++++++++++++-----
->  15 files changed, 383 insertions(+), 287 deletions(-)
+Reported-by: William Cohen <wcohen@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: William Cohen <wcohen@redhat.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/hists.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Pulled, thanks a lot Arnaldo!
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 497b3c4..c27ab35 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -292,7 +292,8 @@ static int hist_browser__run(struct hist_browser *self, const char *title)
+ {
+ 	int key;
+ 	int exit_keys[] = { 'a', '?', 'h', 'C', 'd', 'D', 'E', 't',
+-			    NEWT_KEY_ENTER, NEWT_KEY_RIGHT, NEWT_KEY_LEFT, 0, };
++			    NEWT_KEY_ENTER, NEWT_KEY_RIGHT, NEWT_KEY_LEFT,
++			    NEWT_KEY_TAB, NEWT_KEY_UNTAB, 0, };
+ 
+ 	self->b.entries = &self->hists->entries;
+ 	self->b.nr_entries = self->hists->nr_entries;
+@@ -859,6 +860,7 @@ int hists__browse(struct hists *self, const char *helpline,
+ 					"E         Expand all callchains\n"
+ 					"d         Zoom into current DSO\n"
+ 					"t         Zoom into current Thread\n"
++					"TAB/UNTAB Switch events\n"
+ 					"q/CTRL+C  Exit browser");
+ 			continue;
+ 		case NEWT_KEY_ENTER:
+@@ -997,6 +999,7 @@ int hists__tui_browse_tree(struct rb_root *self, const char *help, int evidx)
+ 			if (nd == first)
+ 				continue;
+ 			nd = rb_prev(nd);
++			break;
+ 		default:
+ 			return key;
+ 		}
+-- 
+1.6.2.5
 
-	Ingo
