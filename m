@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab1CFQhO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 11:37:14 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41203 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab1CFQhK (ORCPT
+	id S1755172Ab1CFM4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:56:25 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:56036 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754638Ab1CFMv6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 11:37:10 -0500
-Date: Sun, 6 Mar 2011 16:36:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [ARM] tlb: fix build error with CONFIG_SWAP=n
-Message-ID: <20110306163656.GH27468@n2100.arm.linux.org.uk>
-References: <1299426386-28746-1-git-send-email-dbaryshkov@gmail.com>
+	Sun, 6 Mar 2011 07:51:58 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "=?utf-8?q?Ferenc=20W=C3=A1gner?=" <wferi@niif.hu>
+References: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
+In-Reply-To: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1299426386-28746-1-git-send-email-dbaryshkov@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <sUKqYsqyJ4N.A.54G.UA4cNB@chimera>
+Subject: [Bug #26582] NULL pointer dereference on pipe creation
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun,  6 Mar 2011 13:40:38 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 06, 2011 at 06:46:26PM +0300, Dmitry Eremin-Solenikov wrote:
-> Fix this build error with CONFIG_SWAP=n:
-> 
-> In file included from arch/arm/mm/init.c:28:
-> arch/arm/include/asm/tlb.h: In function ‘tlb_flush_mmu’:
-> arch/arm/include/asm/tlb.h:104: error: implicit declaration of function ‘release_pages’
-> arch/arm/include/asm/tlb.h: In function ‘tlb_remove_page’:
-> arch/arm/include/asm/tlb.h:168: error: implicit declaration of function ‘page_cache_release’
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.36 and 2.6.37.
 
-Already caught:
+The following bug entry is on the current list of known regressions
+introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
-http://ftp.arm.linux.org.uk/git/?p=linux-2.6-arm.git;a=shortlog;h=refs/heads/fixes
 
-11 days    Uwe Kleine...   ARM: 6757/1: fix tlb.h induced linux/swap.h
-ago                        build failure
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26582
+Subject		: NULL pointer dereference on pipe creation
+Submitter	: Ferenc Wágner <wferi@niif.hu>
+Date		: 2011-01-12 13:30 (54 days old)
 
-I've had about four of these patches over the last two weeks or so,
-it would be a good idea to check the git tree before sending another
-version of this.
+
