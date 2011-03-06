@@ -1,42 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab1CFR6H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 12:58:07 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:46968 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab1CFR6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 12:58:03 -0500
-Date: Sun, 6 Mar 2011 18:57:13 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Florian Mickler <florian@mickler.org>
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Oliver Neukum <oliver@neukum.org>, Jack Stone <jwjstone@fastmail.fm>
-Subject: Re: [PATCH 1/2 v3] [media] dib0700: get rid of on-stack dma buffers
-Message-ID: <20110306185713.5b621e80@schatten.dmk.lab>
-In-Reply-To: <1299433677-8269-1-git-send-email-florian@mickler.org>
-References: <201103061744.15946.oliver@neukum.org>
-	<1299433677-8269-1-git-send-email-florian@mickler.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753113Ab1CFQ6a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 11:58:30 -0500
+Received: from mail1.nippynetworks.com ([91.220.24.129]:53614 "EHLO
+	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab1CFQ61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 11:58:27 -0500
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 11:58:27 EST
+From: kernel@wildgooses.com
+To: rpurdie@rpsys.net
+Cc: const@mimas.ru, daniel@caiaq.de, a.zummo@towertech.it,
+        linux-kernel@vger.kernel.org, Ed Wildgoose <kernel@wildgooses.com>
+Subject: [PATCH] leds: New PCEngines Alix LED driver using gpio interface
+Date: Sun,  6 Mar 2011 16:51:25 +0000
+Message-Id: <1299430285-13189-1-git-send-email-kernel@wildgooses.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  6 Mar 2011 18:47:56 +0100
-Florian Mickler <florian@mickler.org> wrote:
+From: Ed Wildgoose <kernel@wildgooses.com>
 
+This new driver replaces the old PCEngines Alix 2/3 LED driver with
+a new driver that controls the LEDs through the leds-gpio driver.
+The old driver accessed GPIOs directly, which created a conflict 
+and prevented also loading the cs5535-gio driver to read other
+GPIOs on the Alix board. With this new driver, both are loaded
+and therefore it's possible to access both the LEDs and onboard GPIOs 
 
-> +static void dib0700_disconnect(struct usb_interface *intf) {
+This driver is based on leds-net5501.c 
+by: Alessandro Zummo <a.zummo@towertech.it>
+Additionally it relies on parts of the patch: 7f131cf3ed
+by: Daniel Mack <daniel@caiaq.de> to perform detection of the Alix board
 
+Signed-off-by: Ed Wildgoose <kernel@wildgooses.com>
+---
+:100644 100644 6f190f4... 25f0285... M	drivers/leds/Kconfig
+:100644 100644 f59ffad... 62c8fff... M	drivers/leds/leds-alix2.c
+ drivers/leds/Kconfig      |    2 +-
+ drivers/leds/leds-alix2.c |  196 ++++++++++----------------------------------
+ 2 files changed, 46 insertions(+), 152 deletions(-)
 
-That { should go on its own line... sorry ;-)
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 6f190f4..25f0285 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -100,7 +100,7 @@ config LEDS_WRAP
+ config LEDS_ALIX2
+ 	tristate "LED Support for ALIX.2 and ALIX.3 series"
+ 	depends on LEDS_CLASS
+-	depends on X86 && !GPIO_CS5535 && !CS5535_GPIO
++	depends on X86 && LEDS_GPIO_PLATFORM && GPIO_CS5535
+ 	help
+ 	  This option enables support for the PCEngines ALIX.2 and ALIX.3 LEDs.
+ 	  You have to set leds-alix2.force=1 for boards with Award BIOS.
+diff --git a/drivers/leds/leds-alix2.c b/drivers/leds/leds-alix2.c
+index f59ffad..62c8fff 100644
+--- a/drivers/leds/leds-alix2.c
++++ b/drivers/leds/leds-alix2.c
+@@ -1,119 +1,66 @@
+ /*
+  * LEDs driver for PCEngines ALIX.2 and ALIX.3
+  *
+- * Copyright (C) 2008 Constantin Baranov <const@mimas.ru>
++ * Copyright (C) 2011 Nippy Networks Ltd
++ * Written by Ed Wildgoose <kernel@wildgooses.com>
++ * Based on leds-net5501.c by Alessandro Zummo <a.zummo@towertech.it>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2
++ * as published by the Free Software Foundation.
+  */
+ 
+-#include <linux/err.h>
+-#include <linux/io.h>
+ #include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/string.h>
+ #include <linux/leds.h>
+-#include <linux/module.h>
+ #include <linux/platform_device.h>
+-#include <linux/string.h>
+-#include <linux/pci.h>
++#include <linux/gpio.h>
++
++#include <asm/geode.h>
+ 
+ static int force = 0;
+ module_param(force, bool, 0444);
+ MODULE_PARM_DESC(force, "Assume system has ALIX.2/ALIX.3 style LEDs");
+ 
+-#define MSR_LBAR_GPIO		0x5140000C
+-#define CS5535_GPIO_SIZE	256
+-
+-static u32 gpio_base;
+-
+-static struct pci_device_id divil_pci[] = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_NS,  PCI_DEVICE_ID_NS_CS5535_ISA) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA) },
+-	{ } /* NULL entry */
+-};
+-MODULE_DEVICE_TABLE(pci, divil_pci);
+-
+-struct alix_led {
+-	struct led_classdev cdev;
+-	unsigned short port;
+-	unsigned int on_value;
+-	unsigned int off_value;
+-};
+-
+-static void alix_led_set(struct led_classdev *led_cdev,
+-			 enum led_brightness brightness)
+-{
+-	struct alix_led *led_dev =
+-		container_of(led_cdev, struct alix_led, cdev);
+-
+-	if (brightness)
+-		outl(led_dev->on_value, gpio_base + led_dev->port);
+-	else
+-		outl(led_dev->off_value, gpio_base + led_dev->port);
+-}
+-
+-static struct alix_led alix_leds[] = {
++static struct gpio_led alix_leds[] = {
+ 	{
+-		.cdev = {
+-			.name = "alix:1",
+-			.brightness_set = alix_led_set,
+-		},
+-		.port = 0x00,
+-		.on_value = 1 << 22,
+-		.off_value = 1 << 6,
++		.name = "alix:1",
++		.gpio = 6,
++		.default_trigger = "default-on",
++		.active_low = 1,
+ 	},
+ 	{
+-		.cdev = {
+-			.name = "alix:2",
+-			.brightness_set = alix_led_set,
+-		},
+-		.port = 0x80,
+-		.on_value = 1 << 25,
+-		.off_value = 1 << 9,
++		.name = "alix:2",
++		.gpio = 25,
++		.default_trigger = "default-off",
++		.active_low = 1,
+ 	},
+ 	{
+-		.cdev = {
+-			.name = "alix:3",
+-			.brightness_set = alix_led_set,
+-		},
+-		.port = 0x80,
+-		.on_value = 1 << 27,
+-		.off_value = 1 << 11,
++		.name = "alix:3",
++		.gpio = 27,
++		.default_trigger = "default-off",
++		.active_low = 1,
+ 	},
+ };
+ 
+-static int __init alix_led_probe(struct platform_device *pdev)
+-{
+-	int i;
+-	int ret;
+-
+-	for (i = 0; i < ARRAY_SIZE(alix_leds); i++) {
+-		alix_leds[i].cdev.flags |= LED_CORE_SUSPENDRESUME;
+-		ret = led_classdev_register(&pdev->dev, &alix_leds[i].cdev);
+-		if (ret < 0)
+-			goto fail;
+-	}
+-	return 0;
++static struct gpio_led_platform_data alix_leds_data = {
++	.num_leds = ARRAY_SIZE(alix_leds),
++	.leds = alix_leds,
++};
+ 
+-fail:
+-	while (--i >= 0)
+-		led_classdev_unregister(&alix_leds[i].cdev);
+-	return ret;
+-}
++static struct platform_device alix_leds_dev = {
++	.name = "leds-gpio",
++	.id = -1,
++	.dev.platform_data = &alix_leds_data,
++};
+ 
+-static int alix_led_remove(struct platform_device *pdev)
++static void __init register_alix(void)
+ {
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(alix_leds); i++)
+-		led_classdev_unregister(&alix_leds[i].cdev);
+-	return 0;
++	platform_device_register(&alix_leds_dev);
+ }
+ 
+-static struct platform_driver alix_led_driver = {
+-	.remove = alix_led_remove,
+-	.driver = {
+-		.name = KBUILD_MODNAME,
+-		.owner = THIS_MODULE,
+-	},
+-};
+-
+ static int __init alix_present(unsigned long bios_phys,
+ 				const char *alix_sig,
+ 				size_t alix_sig_len)
+@@ -164,76 +111,23 @@ static int __init alix_present(unsigned long bios_phys,
+ 	return 0;
+ }
+ 
+-static struct platform_device *pdev;
+-
+-static int __init alix_pci_led_init(void)
+-{
+-	u32 low, hi;
+-
+-	if (pci_dev_present(divil_pci) == 0) {
+-		printk(KERN_WARNING KBUILD_MODNAME": DIVIL not found\n");
+-		return -ENODEV;
+-	}
+-
+-	/* Grab the GPIO I/O range */
+-	rdmsr(MSR_LBAR_GPIO, low, hi);
+-
+-	/* Check the mask and whether GPIO is enabled (sanity check) */
+-	if (hi != 0x0000f001) {
+-		printk(KERN_WARNING KBUILD_MODNAME": GPIO not enabled\n");
+-		return -ENODEV;
+-	}
+-
+-	/* Mask off the IO base address */
+-	gpio_base = low & 0x0000ff00;
+-
+-	if (!request_region(gpio_base, CS5535_GPIO_SIZE, KBUILD_MODNAME)) {
+-		printk(KERN_ERR KBUILD_MODNAME": can't allocate I/O for GPIO\n");
+-		return -ENODEV;
+-	}
+-
+-	/* Set GPIO function to output */
+-	outl(1 << 6, gpio_base + 0x04);
+-	outl(1 << 9, gpio_base + 0x84);
+-	outl(1 << 11, gpio_base + 0x84);
+-
+-	return 0;
+-}
+-
+-static int __init alix_led_init(void)
++static int __init alix_init(void)
+ {
+-	int ret = -ENODEV;
+ 	const char tinybios_sig[] = "PC Engines ALIX.";
+ 	const char coreboot_sig[] = "PC Engines\0ALIX.";
+ 
++	if (!is_geode())
++		return 0;
++
+ 	if (alix_present(0xf0000, tinybios_sig, sizeof(tinybios_sig) - 1) ||
+ 	    alix_present(0x500, coreboot_sig, sizeof(coreboot_sig) - 1))
+-		ret = alix_pci_led_init();
++		register_alix();
+ 
+-	if (ret < 0)
+-		return ret;
+-
+-	pdev = platform_device_register_simple(KBUILD_MODNAME, -1, NULL, 0);
+-	if (!IS_ERR(pdev)) {
+-		ret = platform_driver_probe(&alix_led_driver, alix_led_probe);
+-		if (ret)
+-			platform_device_unregister(pdev);
+-	} else
+-		ret = PTR_ERR(pdev);
+-
+-	return ret;
+-}
+-
+-static void __exit alix_led_exit(void)
+-{
+-	platform_device_unregister(pdev);
+-	platform_driver_unregister(&alix_led_driver);
+-	release_region(gpio_base, CS5535_GPIO_SIZE);
++	return 0;
+ }
+ 
+-module_init(alix_led_init);
+-module_exit(alix_led_exit);
++arch_initcall(alix_init);
+ 
+-MODULE_AUTHOR("Constantin Baranov <const@mimas.ru>");
++MODULE_AUTHOR("Ed Wildgoose <kernel@wildgooses.com>");
+ MODULE_DESCRIPTION("PCEngines ALIX.2 and ALIX.3 LED driver");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.4
 
-If that patch is acceptable, I can resend with that fixed. 
-
-Regards,
-Flo
