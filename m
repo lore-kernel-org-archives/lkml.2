@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab1CFHxj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 02:53:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38308 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1CFHxi (ORCPT
+	id S1752222Ab1CFK1d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 05:27:33 -0500
+Received: from chipmunk.wormnet.eu ([195.195.131.226]:36384 "EHLO
+	chipmunk.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab1CFK1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 02:53:38 -0500
-Date: Sun, 6 Mar 2011 00:53:34 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
-Message-ID: <20110306075334.GC29325@angua.secretlab.ca>
-References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
- <1297698493.965.5475.camel@petert>
- <20110214170812.6f54a4bb@lxorguk.ukuu.org.uk>
- <AANLkTimyD=U-+=HpXWmF2B9KjrDf8HMCZenAgW3SQgDK@mail.gmail.com>
- <20110214193502.101759d0@lxorguk.ukuu.org.uk>
- <1297726502.965.6921.camel@petert>
- <20110215114210.1f1a8470@lxorguk.ukuu.org.uk>
- <1297789548.965.10101.camel@petert>
+	Sun, 6 Mar 2011 05:27:31 -0500
+X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 05:27:31 EST
+Date: Sun, 6 Mar 2011 10:18:37 +0000
+From: Alexander Clouter <alex@digriz.org.uk>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] MAINTAINERS: inflict self with ARM/ts78xx-setup platform
+ maintainership
+Message-ID: <20110306101836.GH22117@chipmunk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297789548.965.10101.camel@petert>
+Organization: diGriz
+X-URL: http://www.digriz.org.uk/
+X-JabberID: alex@digriz.org.uk
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 11:05:48AM -0600, Peter Tyser wrote:
-> > > Also, in most cases I'd think that the BIOS/U-Boot/firmware should have
-> > > configured the GPIO pins appropriately, which Linux should inherit in
-> > > general.  Linux currently inherits GPIO states that were set in firmware
-> > > when a GPIO is requested, but it doesn't properly report those values
-> > > via sysfs - that's the only bug I'm trying to fix.
-> > 
-> > Yes - however you can't fix it unless you are prepared to admit that the
-> > gpio has multiple states. At minimum you need to be able to report
-> > 
-> > 	input/output/unknown/unavailable
-> > 
-> > if you want to generalise it. Otherwise you don't solve the problem
-> > because you are asking a question that driver cannot answer correctly.
-> 
-> As far as the "unknown" state, I can update the patch to have the logic:
-> +       if (chip->get_direction) {
-> +               /* chip->get_direction may sleep */
-> +               spin_unlock_irqrestore(&gpio_lock, flags);
-> +               if (chip->get_direction(chip, gpio - chip->base) > 0)
-> +                       set_bit(FLAG_IS_OUT, &desc->flags);
-> +               spin_lock_irqsave(&gpio_lock, flags);
-> +       } else {
-> +               set_bit(FLAG_IS_UNKNOWN, &desc->flags);
-> +       }
-> 
-> This would have the side effect of having nearly all GPIO drivers
-> default to an "unknown" direction until they implement the new
-> get_direction() function, which I think is an improvement over the
-> current system where they are all unconditionally shown as "input",
-> often incorrectly.  Are you OK with this Grant?
+Signed-off-by: Alexander Clouter <alex@digriz.org.uk>
+---
+ MAINTAINERS |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Not really, no.  Defaulting to "input" may be incorrect, but it is
-always safe, it it should only be a minor inconvenience to human users
-of the sysfs interface.  Actual usage of a gpio pin must always be to
-explicitly set the direction before using a pin.
-
-
-> Changing the logic to allow "unavailable" GPIO pins to be
-> requested/exported would require larger changes to the code, and
-> wouldn't provide much benefit without additional changes (eg an alt_func
-> feature).  So I'd vote to not add support for "unavailable" pins in this
-> patch and rather wait until someone has a specific use for it, and add
-> it then.
-
-Agreed.
-
-g.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6f99e12..4e81034 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -856,6 +856,13 @@ F:	arch/arm/mach-mv78xx0/
+ F:	arch/arm/mach-orion5x/
+ F:	arch/arm/plat-orion/
+ 
++ARM/Orion SoC/Technologic Systems TS-78xx platform support
++M:	Alexander Clouter <alex@digriz.org.uk>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++W:	http://www.digriz.org.uk/ts78xx/kernel
++S:	Maintained
++F:	arch/arm/mach-orion5x/ts78xx-*
++
+ ARM/MIOA701 MACHINE SUPPORT
+ M:	Robert Jarzmik <robert.jarzmik@free.fr>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-- 
+1.7.4.1
