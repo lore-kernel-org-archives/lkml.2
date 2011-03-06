@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab1CFMLp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 07:11:45 -0500
-Received: from smtp-out003.kontent.com ([81.88.40.217]:40859 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab1CFMLn convert rfc822-to-8bit (ORCPT
+	id S1753359Ab1CFMQo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:16:44 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65146 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab1CFMQn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 07:11:43 -0500
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 07:11:43 EST
-From: Oliver Neukum <oliver@neukum.org>
-To: Florian Mickler <florian@mickler.org>
-Subject: Re: [PATCH] [media] dib0700: get rid of on-stack dma buffers
-Date: Sun, 6 Mar 2011 13:06:09 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <greg@kroah.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-References: <1299410212-24897-1-git-send-email-florian@mickler.org>
-In-Reply-To: <1299410212-24897-1-git-send-email-florian@mickler.org>
+	Sun, 6 Mar 2011 07:16:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Mvw4HuOG07LL2ClNHhvwnBGzZFTiF83+35/Ct/ERqfgNgxuNGl2LproJzT3Msuv7Zr
+         yoMNtEUM6aU2BCoOfsvgWDTnRlWO8NHfDVjwVD4W4HNL4hEhvf5e4fiYB8P/gLIGEoVv
+         eEVJugkfvK3G7rlv0hJ2WMM9JygRHXbOWhBl8=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+In-Reply-To: <1299385050-13674-2-git-send-email-bgat@billgatliff.com>
+References: <1299385050-13674-1-git-send-email-bgat@billgatliff.com>
+	<1299385050-13674-2-git-send-email-bgat@billgatliff.com>
+Date: Sun, 6 Mar 2011 13:16:43 +0100
+X-Google-Sender-Auth: FvveDyaNWEXt_TunkaZw2P6Vf-k
+Message-ID: <AANLkTinTRXPY4=FfAe2esu27WjZumiL7ng3cGHQ2aAe+@mail.gmail.com>
+Subject: Re: [PWM v6 1/3] PWM: Implement a generic PWM framework
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bill Gatliff <bgat@billgatliff.com>
+Cc: linux-kernel@vger.kernel.org, Arun MURTHY <arun.murthy@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201103061306.10045.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 6. März 2011, 12:16:52 schrieb Florian Mickler:
-> This should fix warnings seen by some:
-> 	WARNING: at lib/dma-debug.c:866 check_for_stack
-> 
-> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=15977.
-> Reported-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-> Signed-off-by: Florian Mickler <florian@mickler.org>
-> CC: Mauro Carvalho Chehab <mchehab@infradead.org>
-> CC: linux-media@vger.kernel.org
-> CC: linux-kernel@vger.kernel.org
-> CC: Greg Kroah-Hartman <greg@kroah.com>
-> CC: Rafael J. Wysocki <rjw@sisk.pl>
-> CC: Maciej Rutecki <maciej.rutecki@gmail.com>
-> ---
-> 
-> Please take a look at it, as I do not do that much kernel hacking
-> and don't wanna brake anybodys computer... :)
-> 
-> From my point of view this should _not_ go to stable even though it would
-> be applicable. But if someone feels strongly about that and can
-> take responsibility for that change...
+2011/3/6 Bill Gatliff <bgat@billgatliff.com>:
 
-The patch looks good and is needed in stable.
-It could be improved by using a buffer allocated once in the places
-you hold a mutex anyway.
+> Updates the existing PWM-related functions to support multiple
+> and/or hotplugged PWM devices, and adds a sysfs interface.
+> Moves the code to drivers/pwm.
 
-	Regards
-		Oliver
+Cool!
+
+> For now, this new code can exist alongside the current PWM
+> implementations; the existing implementations will be migrated
+> to this new framework as time permits.  Eventually, the current
+> PWM implementation will be deprecated and then expunged.
+
+Is it possible to get atleast one driver switched over to this
+framework (i.e. moved over to drivers/pwm and the origin
+deleted) as part of the patch series? Mainly so one knows
+what to do to convert existing drivers.
+
+Yours,
+Linus Walleij
