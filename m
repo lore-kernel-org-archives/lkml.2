@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1CFANf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 19:13:35 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:42816 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752617Ab1CFANd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 19:13:33 -0500
-Date: Sat, 5 Mar 2011 11:25:08 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, cl@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-Message-ID: <20110305162508.GA11120@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
-	Pekka Enberg <penberg@kernel.org>,
-	Dan Rosenberg <drosenberg@vsecurity.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Dave Hansen <dave@linux.vnet.ibm.com>, cl@linux-foundation.org,
-	linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-	Ingo Molnar <mingo@elte.hu>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
- <1299270709.3062.313.camel@calx>
- <1299271377.2071.1406.camel@dan>
- <AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
- <1299272907.2071.1415.camel@dan>
- <AANLkTina+O77BFV+7mO9fX2aJimpO0ov_MKwxGtMwqG+@mail.gmail.com>
- <1299275042.2071.1422.camel@dan>
- <AANLkTikA=88EMs8RRm0RPQ+Q9nKj=2G+G86h5nCnV7Se@mail.gmail.com>
- <AANLkTikQxOgYFLbc2KbEKgRYL1RCnkPE-T80-GBY2Cgj@mail.gmail.com>
- <1299279756.3062.361.camel@calx>
+	id S1752811Ab1CFLUw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 06:20:52 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54823 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab1CFLUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 06:20:50 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH rh6] mm: skip zombie in OOM-killer
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1103041541040.7795@chino.kir.corp.google.com>
+References: <1299274256-2122-1-git-send-email-avagin@openvz.org> <alpine.DEB.2.00.1103041541040.7795@chino.kir.corp.google.com>
+Message-Id: <20110306201947.6CCC.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1299279756.3062.361.camel@calx>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sun,  6 Mar 2011 20:20:46 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 04, 2011 at 05:02:36PM -0600, Matt Mackall wrote:
-> copies too many bytes from userspace. Every piece of code writes its own
-> bound checks on copy_from_user, for instance, and gets it wrong by
-> hitting signed/unsigned issues, alignment issues, etc. that are on the
-> very edge of the average C coder's awareness.
+> On Sat, 5 Mar 2011, Andrey Vagin wrote:
+> 
+> > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> > index 7dcca55..2fc554e 100644
+> > --- a/mm/oom_kill.c
+> > +++ b/mm/oom_kill.c
+> > @@ -311,7 +311,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+> >  		 * blocked waiting for another task which itself is waiting
+> >  		 * for memory. Is there a better alternative?
+> >  		 */
+> > -		if (test_tsk_thread_flag(p, TIF_MEMDIE))
+> > +		if (test_tsk_thread_flag(p, TIF_MEMDIE) && p->mm)
+> >  			return ERR_PTR(-1UL);
+> >  
+> >  		/*
+> 
+> I think it would be better to just do
+> 
+> 	if (!p->mm)
+> 		continue;
+> 
+> after the check for oom_unkillable_task() because everything that follows 
+> this really depends on p->mm being non-NULL to actually do anything 
+> useful.
 
-Agreed.  Maybe something that would help is to have helper routines
-which handle the most common patterns that driver writers need.  Some
-of the most common that I've seen from doing a quick survey are:
+I'm glad you join to review MM patches. It is worth effort for making
+solid kernel. But, please look at a current code at first.
 
-1) kmalloc() followed by copy_from_user()
-2) kmem_cache_alloc() followed by copy_from_user()
-3) copy_from_user() to a buffer allocated on the stack, where the length
-   is passed in from userspace, and the maximum expected input size is
-   declared by the driver.  (Used by debugfs, proc, and sysfs handlers)
-4) copy_from_user() to a structure allocated on the stack
 
-If we had wrappers for the most common cases, then any cases that were
-left that used copy_from_user() explicitly could be flagged and
-checked by hand, since they would be exception, and not the rule.
-
-	   	       	    	     		- Ted
