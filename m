@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab1CFS32 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 13:29:28 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:35463 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab1CFS31 (ORCPT
+	id S1754123Ab1CFTq1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 14:46:27 -0500
+Received: from hylle01.itea.ntnu.no ([129.241.56.100]:39204 "EHLO
+	hylle01.itea.ntnu.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab1CFTq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 13:29:27 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [regression] 2.6.37-post-rc7 with radeon kms: reproducably locks up hard when using desktop cube of kwin
-Date: Sun, 6 Mar 2011 19:29:13 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc7-tp42-00142-g212e349; KDE/4.5.3; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, DRI <dri-devel@lists.freedesktop.org>
-References: <201103051510.35057.Martin@lichtvoll.de> <AANLkTi=3HwdHdQzoLUDebfAAMKwSQvVZ43_eQDfi1iB+@mail.gmail.com> (sfid-20110306_192554_491089_8FB472E6)
-In-Reply-To: <AANLkTi=3HwdHdQzoLUDebfAAMKwSQvVZ43_eQDfi1iB+@mail.gmail.com>
+	Sun, 6 Mar 2011 14:46:26 -0500
+X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 14:46:26 EST
+Date: Sun, 6 Mar 2011 20:42:39 +0100
+From: Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+To: linux-kernel@vger.kernel.org
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Subject: [PATCH] avr32: fix deadlock when reading clock list in debugfs
+Message-ID: <20110306194239.GA9342@siv.localdomain>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1614217.vt5xbdBzHi";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201103061929.23007.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1614217.vt5xbdBzHi
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+When writing out /sys/kernel/debug/at32ap_clk, clock list lock is being
+held while clk_get() is called. clk_get() attempts to take the same
+lock, which results in deadlock. Introduce and call lock free version,
+__clk_get(), instead.
 
-Am Sunday 06 March 2011 schrieb Alex Deucher:
-> On Sat, Mar 5, 2011 at 9:10 AM, Martin Steigerwald <Martin@lichtvoll.de>=
-=20
-wrote:
-> > I will add a regression entry in bugzilla after I got the URL of that
-> > mail.
-> >=20
-> >=20
-> > Hi!
-> >=20
-> > No, I do not actively search for lockup bugs, but they seem to search
-> > me ;).
-> >=20
-> >=20
-> > martin@shambhala:~> cat /proc/version
-> > Linux version 2.6.38-rc7-tp42-00142-g212e349 (martin@shambhala) (gcc
-> > version 4.4.5 (Debian 4.4.5-11) ) #4 PREEMPT Sat Mar 5 12:03:41 CET
-> > 2011
-> >=20
-> > locks up hard when using desktop cube of kwin from KDE 4.5.1.
-> >=20
-> > It happens within a few seconds to about 30 seconds after activating
-> > the effect with Ctrl-F11. Otherwise the machine seems to work fine
-> > so far - if that continues I do not have much of a problem with the
-> > bug since I do not use desktop cube other than for getting a feel of
-> > compositing performance. Effects seem to be more fluent, more smooth
-> > anyway, I guess due to Radeon KMS page flipping.
-> >=20
-> > I am using X.org 1.9.4 with Radeon driver 1:6.14.0-1 on Debian
-> > Wheezy/Sid/Experimental on a ThinkPad T42 with:
-> >=20
-> > martin@shambhala:~> lspci -nn | grep VGA
-> > 01:00.0 VGA compatible controller [0300]: ATI Technologies Inc RV350
-> > [Mobility Radeon 9600 M10] [1002:4e50]
-> >=20
-> > This didn't happen with 2.6.37-tp42-rtime-00004-g9eb63ce, same gcc.
->=20
-> Did you also update your ddx or mesa during this period?  It might
-> also be a issue in the userspace acceleration drivers.  Are you using
-> the r300 classic or r300 gallium 3D driver?
+Signed-off-by: Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+---
+ arch/avr32/mach-at32ap/clock.c |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
 
-Debian maintainers activated the gallium one in the meantime:
+diff --git a/arch/avr32/mach-at32ap/clock.c b/arch/avr32/mach-at32ap/clock.c
+index 442f08c..86925fd 100644
+--- a/arch/avr32/mach-at32ap/clock.c
++++ b/arch/avr32/mach-at32ap/clock.c
+@@ -35,22 +35,30 @@ void at32_clk_register(struct clk *clk)
+ 	spin_unlock(&clk_list_lock);
+ }
+ 
+-struct clk *clk_get(struct device *dev, const char *id)
++static struct clk *__clk_get(struct device *dev, const char *id)
+ {
+ 	struct clk *clk;
+ 
+-	spin_lock(&clk_list_lock);
+-
+ 	list_for_each_entry(clk, &at32_clock_list, list) {
+ 		if (clk->dev == dev && strcmp(id, clk->name) == 0) {
+-			spin_unlock(&clk_list_lock);
+ 			return clk;
+ 		}
+ 	}
+ 
+-	spin_unlock(&clk_list_lock);
+ 	return ERR_PTR(-ENOENT);
+ }
++
++struct clk *clk_get(struct device *dev, const char *id)
++{
++	struct clk *clk;
++
++	spin_lock(&clk_list_lock);
++	clk = __clk_get(dev, id);
++	spin_unlock(&clk_list_lock);
++
++	return clk;
++}
++
+ EXPORT_SYMBOL(clk_get);
+ 
+ void clk_put(struct clk *clk)
+@@ -257,15 +265,15 @@ static int clk_show(struct seq_file *s, void *unused)
+ 	spin_lock(&clk_list_lock);
+ 
+ 	/* show clock tree as derived from the three oscillators */
+-	clk = clk_get(NULL, "osc32k");
++	clk = __clk_get(NULL, "osc32k");
+ 	dump_clock(clk, &r);
+ 	clk_put(clk);
+ 
+-	clk = clk_get(NULL, "osc0");
++	clk = __clk_get(NULL, "osc0");
+ 	dump_clock(clk, &r);
+ 	clk_put(clk);
+ 
+-	clk = clk_get(NULL, "osc1");
++	clk = __clk_get(NULL, "osc1");
+ 	dump_clock(clk, &r);
+ 	clk_put(clk);
+ 
+-- 
+1.7.4
 
-martin@shambhala:~> glxinfo | grep OpenGL
-OpenGL vendor string: X.Org R300 Project
-OpenGL renderer string: Gallium 0.4 on ATI RV350
-OpenGL version string: 2.1 Mesa 7.10
-OpenGL shading language version string: 1.20
-OpenGL extensions:
-
-I think I tried the desktop cube with the gallium one already, but I am=20
-not absolutely sure.
-
-I have a 2.6.37 kernel still at hand and will test with just changing the=20
-kernel.
-
-Thanks,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart1614217.vt5xbdBzHi
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk1z0n0ACgkQmRvqrKWZhMc0fgCcCrONVACChXZCIK0w8dZfOysf
-ac4AnR+7kDvJJplNpuVeNOd/O19hsNo3
-=fffh
------END PGP SIGNATURE-----
-
---nextPart1614217.vt5xbdBzHi--
