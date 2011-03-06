@@ -1,396 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab1CGDEK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 22:04:10 -0500
-Received: from gate.crashing.org ([63.228.1.57]:58492 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755187Ab1CGDEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 22:04:08 -0500
-Subject: [PATCH/v2] mm/memblock: Properly handle overlaps and fix error path
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Miller <davem@davemloft.net>
+	id S1754646Ab1CFVEB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 16:04:01 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:60866 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754435Ab1CFVD6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 16:03:58 -0500
+Subject: Re: BUG at mm/mmap.c:2309 when cx18.ko and cx18-alsa.ko loaded
+From: Andy Walls <awalls@md.metrocast.net>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        David Miller <davem@davemloft.net>, linux-media@vger.kernel.org,
+        Devin Heitmueller <dheitmueller@kernellabs.com>
+In-Reply-To: <AANLkTimU9qV11p+wTDz4SCvaoYyxpja8tmJ5D7-ki==B@mail.gmail.com>
+References: <1299204400.2812.35.camel@localhost>
+	 <1299362366.2570.27.camel@localhost> <1299377017.2341.50.camel@localhost>
+	 <AANLkTimU9qV11p+wTDz4SCvaoYyxpja8tmJ5D7-ki==B@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Mar 2011 14:03:00 +1100
-Message-ID: <1299466980.8833.973.camel@pasglop>
+Date: Sun, 06 Mar 2011 16:04:06 -0500
+Message-ID: <1299445446.2310.157.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-03-06_04:2011-03-04,2011-03-06,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1012030000 definitions=main-1103060091
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently memblock_reserve() or memblock_free() don't handle overlaps
-of any kind. There is some special casing for coalescing exactly
-adjacent regions but that's about it.
+On Sun, 2011-03-06 at 10:37 -0800, Hugh Dickins wrote:
+> On Sat, Mar 5, 2011 at 6:03 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+> > On Sat, 2011-03-05 at 16:59 -0500, Andy Walls wrote:
+> >> On Thu, 2011-03-03 at 21:06 -0500, Andy Walls wrote:
+> >> > Hi,
+> >> >
+> >> > I got a BUG when loading the cx18.ko module (which in turn requests the
+> >> > cx18-alsa.ko module) on a kernel built from this repository
+> >> >
+> >> >     http://git.linuxtv.org/media_tree.git staging/for_v2.6.39
+> >> >
+> >> > which I beleive is based on 2.6.38-rc2.
+> >>
+> >> [snip]
+> >>
+> >> > So here is my transcription of a fuzzy digital photo of the screen:
+> >> >
+> >> > kernel BUG at /home/andy/cx18dev/git/media_tree/mm/mmap.c:2309!
+> >> > invalid opcode: 0000 [#1] SMP
+> >> > last sysfs file: /sys/module/snd_pcm/initstate
+> >> > Modules linked in: tda9887 tda8290 mxl5005s s5h1409 tuner_simple ...
+> >> > ...
+> >> > Pid: 2580, comm: udevd Not tainted 2.6.38-rc2-cx18-vb2-proto+
+> >> > RIP: 0010:[<ffffffff810eb50b>]  [<ffffffff810eb50b>] exit_mmap+0x10f/0x11e
+> >> > RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0020000000000000
+> >> > RDX: 0000000000160011 RSI: ffffea____c42___ RDI: 0000000000000202
+> >> > RBP: ffff____18c1f_58 R08: ffff____________ R09: 0000000000000004
+> >> > R10: ffff_______bb_38 R11: 0000000000000000 R12: ffff____344a6680
+> >> > R13: 00007fff22______ R14: ffff____________ R15: 0000000000000001
+> >> > ...
+> >> > CR2: 0000000000000000 ...
+> >> > ....
+> >> > Process udevd (pid: 25__, threadinfo ffff________, ...
+> >> > Stack:
+> >> >  000000000000015e ffff00003bc0e1d0 0000000000000246 ....
+> >> > .....
+> >> > Call Trace:
+> >> > ... mmput+0x63/0xcf
+> >> > ... exit_mm+0x132/0x13f
+> >> > ... do_exit+0x238/0x749
+> >> > ... ? __dequeue_signal+0xfa/0x12f
+> >> > ... do_group_exit+0x7d/0xa5
+> >> > ... get_signal_to_deliver+0x371/0x395
+> >> > ... do_signal+0x72/0x692
+> >> > ... ? do_page_fault+0x24a/0x391
+> >> > ... ? printk+0x41/0x47
+> >> > ... ? sigprocmask+0xa3/0xcd
+> >> > ... do_notify_resume+0x2c/0x64
+> >> > ... retint_signal+0x48/0x8c
+> >> >
+> >> > Code: ff ff 48 8b 7d d8 4c 89 ea 31 f6 e8 3e fe ff ff 48 89 df e8 78 fe
+> >> > ff ff 48 85 c0 48 89 c3 75 f0 49 83 bc 24 e0 00 00 00 00 74 04 <0f> 0b
+> >> > eb fe 48 83 c4 18 5b 41 5c 41 5d c9 c3 55 48 89 e5 41 57
+> >> > RIP  [<ffffffff810eb50b>] exit_mmap+0x10f/0x11e
+> >> >  RSP <ffff880018c1fc28>
+> >> > general protection fault: 0000 [#2] SMP
+> >> > last sysfs file: /sys/devices/virtual/sound/card2/uevent
+> >> > CPU 1
+> >> > Modules linked in: cx18-alsa tda9887 tda8290 mxl5005s s5h1409
+> >> > tuner_simple tuner_types cs5345 tuner cx18 dvb_core cx2341x v4l2_common
+> >> > videodev v4l2_compat_ioctl32
+> >>
+> >>
+> >> I'm dumping all my previous assumtpions about this BUG.  After a bit of
+> >> reading, all I can say is that it's a page table deallocation problem at
+> >> process exit.  After all the page table deallocations on exit,
+> >> mm->nr_ptes is still > 0, and that's a bad thing.
+> >>
+> >> It apparently happened in a child udevd exiting shortly after cx18.ko
+> >> loaded.  The cx18 driver allocating large amounts kernel memory for DMA
+> >> buffers upon load may be related to triggering the problem, but I doubt
+> >> it is a root cause of the BUG.
+> >>
+> >>
+> >> This monsterous thread from 5 years ago is somewhat enlightening:
+> >>
+> >>       http://lkml.indiana.edu/hypermail/linux/kernel/0503.2/1680.html
+> >>       http://lkml.indiana.edu/hypermail/linux/kernel/0503.2/1787.html
+> >>
+> >> so it gives me a place to start looking for the problem.
+> >>
+> >> Any advice on what data to collect is appreciated.
+> >
+> > When attemtping to reproduce this BUG, I got another bug related to
+> > memory management:
+> >
+> > (Details handtyped from a photo):
+> > BUG: unable to handle kernel NULL pointer dereference at           (null)
+> > IP: [<ffffffff010f22fa>] remove_vm_area+0x42/0x77
+> > PGD 37cdd067 PUD 336c__67 PMD 0
+> > Oops: 0000 [#1] SMP
+> > last sysfs file: /sys/devices/pci0000:00/0000:00:14.4/0000:03:00.0/firmware/0000:03:00.0/loading
+> > CPU 0
+> > Modules linked in: tda9887 tda8290 mxl5005s s5h1409 tuner_simple tuner_types cx5345 tuner cx18(+) dvb_core cx2341x ...
+> > Pid: 2470, comm: work_for_cpu Tainted: G        W 2.6.28-rc2-cx18-vb2-proto+
+> > RIP: 0010:[<ffffffff010f22fa>]  [<ffffffff010f22fa>] remove_vm_area+0x42/0x77
+> > ...
+> > RAX: 0000000000000000 RBX: ffff____35e7c540 RCX: 0000000000001000
+> > RDX: 0000000000000000 ....
+> > ...
+> > CR2: 0000000000000000 ....
+> > Stack:
+> >  ffff__0011485968 000000000000001 ffff____1147dc9_ ffffffff_1_f23__
+> > ....
+> > Call Trace:
+> > ... __vunmap+0x3e/0xbd
+> > ... vfree+0x2e/0x30
+> > ... dvb_dmx_init+0x7e/0x253 [dvb_core]
+> > ... cx18_dvb_register+0xd2/0x75c [cx18]
+> > ... cx18_streams_resgister+0x6a/0x26a [cx18]
+> > ... cx18_streams_setup+0x3cc/0x486 [cx18]
+> > ... cx18_probe+0x11cc/0x12fb [cx18]
+> > ......
+> >
+> > The code appears to be failing here:
+> >
+> > /home/andy/cx18dev/git/media_tree/mm/vmalloc.c:1352
+> >    161d:       eb 06                   jmp    1625 <remove_vm_area+0x45>
+> >    161f:       48 89 c2                mov    %rax,%rdx
+> >    1622:       48 8b 00                mov    (%rax),%rax    <--- Oops  p = &tmp->next)  (tmp = *p)
+> >    1625:       48 39 d8                cmp    %rbx,%rax                (tmp = *p) != vm;
+> >    1628:       75 f5                   jne    161f <remove_vm_area+0x3f>
+> > /home/andy/cx18dev/git/media_tree/mm/vmalloc.c:1354
+> >
+> > Corresponding to this code in mm/vmalloc.c:
+> >
+> > struct vm_struct *remove_vm_area(const void *addr)
+> > {
+> >        struct vmap_area *va;
+> >
+> >        va = find_vmap_area((unsigned long)addr);
+> >        if (va && va->flags & VM_VM_AREA) {
+> >                struct vm_struct *vm = va->private;
+> >                struct vm_struct *tmp, **p;
+> >                /*
+> >                 * remove from list and disallow access to this vm_struct
+> >                 * before unmap. (address range confliction is maintained by
+> >                 * vmap.)
+> >                 */
+> >                write_lock(&vmlist_lock);
+> >                for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)  <--- Ooops
+> >                        ;
+> > [...]
+> >
+> > That for() loop appears to assume the vm_struct will be on the vmlist
+> > somewhere.  If it isn't, then I suppose the for() loop could end up
+> > doing a NULL dereference.
+> >
+> > This BUG happened in the final stages of the cx18 driver setting up a
+> > CX23418 card instance.  I have 2 cards in this machine, so a number of
+> > buffers had certainly been allocated using kmalloc().  The code in the
+> > dvb_core that is failing got BUG'ed in this case was this:
+> >
+> > int dvb_dmx_init(struct dvb_demux *dvbdemux)
+> > {
+> >        int i;
+> >        struct dmx_demux *dmx = &dvbdemux->dmx;
+> >
+> >        dvbdemux->cnt_storage = NULL;
+> >        dvbdemux->users = 0;
+> >        dvbdemux->filter = vmalloc(dvbdemux->filternum * sizeof(struct dvb_demux_filter));
+> >
+> >        if (!dvbdemux->filter)
+> >                return -ENOMEM;
+> >
+> >        dvbdemux->feed = vmalloc(dvbdemux->feednum * sizeof(struct dvb_demux_feed));
+> >        if (!dvbdemux->feed) {
+> >                vfree(dvbdemux->filter);     <------- BUG/Oops happened in this call
+> >                dvbdemux->filter = NULL;
+> >                return -ENOMEM;
+> >        }
+> > ...
+> >
+> > Which is kind of interesting:
+> > 1. The first vmalloc() succeeded.
+> > 2. The second vmalloc() failed.
+> > 3. The vfree() of the pointer from the first vmalloc() caused an
+> > Oops/BUG.
+> >
+> > I'm not sure where to go from here.
+> 
+> Thanks for all the effort you are putting into investigating this: you
+> deserve a better response than I can give you.
+> 
+> mm/vmalloc.c's vmap_area handling is entirely separate from
+> mm/mmap.c's vm_area_struct handling, yet both misbehaviors would be
+> explained if a next pointer has been corrupted to NULL.
+> 
+> Probably just coincidence that they both manifest that way, though the
+> underlying problem may turn out to be one.
 
-This is annoying because typically memblock_reserve() is used to
-mark regions passed by the firmware as reserved and we all know
-how much we can trust our firmwares...
+Hi Hugh,
 
-Also, with the current code, if we do something it doesn't handle
-right such as trying to memblock_reserve() a large range spanning
-multiple existing smaller reserved regions for example, or doing
-overlapping reservations, it can silently corrupt the internal
-region array, causing odd errors much later on, such as allocations
-returning reserved regions etc...
+I suspect the underlying problem is the same.  Because VM area and
+Vmalloc handling is very different, I agree, it is likely not in either
+one, but somewhere else.  (e.g. list.[ch] maybe?)
 
-This patch rewrites the underlying functions that add or remove a
-region to the arrays. The new code is a lot more robust as it fully
-handles overlapping regions. It's also, imho, simpler than the previous
-implementation.
+> If you have not already, it would be well worth turning on
+> CONFIG_DEBUG_LIST and CONFIG_DEBUG_SLAB or CONFIG_SLUB_DEBUG with
+> CONFIG_SLUB_DEBUG_ON.
 
-In addition, while doing so, I found a bug where if we fail to double
-the array while adding a region, we would remove the last region of
-the array rather than the region we just allocated. This fixes it too.
+Will do.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
+> If that BUG_ON(mm->nr_ptes ...) in exit_mmap() is preventing you from
+> getting on with your work, or slowing down reproduction of the
+> testcase, you should be able to replace it by a WARN_ON.  You will
+> probably leak at least one page (the page table) and perhaps many
+> pages (those that that page table points to) each time it hits, but it
+> shouldn't actually be unsafe to continue - it's really a development
+> BUG_ON, to check that  new architectures added are freeing all the
+> page tables they have allocated.
 
-Hopefully not damaged with a spurious bit of email header this
-time around... sorry about that.
+I added debug to dump the VM Areas' start & end values and get past the
+BUG.  That's when I got the seconds BUG with involing vmlist. :(
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 4618fda..de8f470 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -58,28 +58,6 @@ static unsigned long __init_memblock memblock_addrs_overlap(phys_addr_t base1, p
- 	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
- }
- 
--static long __init_memblock memblock_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
--			       phys_addr_t base2, phys_addr_t size2)
--{
--	if (base2 == base1 + size1)
--		return 1;
--	else if (base1 == base2 + size2)
--		return -1;
--
--	return 0;
--}
--
--static long __init_memblock memblock_regions_adjacent(struct memblock_type *type,
--				 unsigned long r1, unsigned long r2)
--{
--	phys_addr_t base1 = type->regions[r1].base;
--	phys_addr_t size1 = type->regions[r1].size;
--	phys_addr_t base2 = type->regions[r2].base;
--	phys_addr_t size2 = type->regions[r2].size;
--
--	return memblock_addrs_adjacent(base1, size1, base2, size2);
--}
--
- long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
- {
- 	unsigned long i;
-@@ -206,14 +184,13 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 		type->regions[i].size = type->regions[i + 1].size;
- 	}
- 	type->cnt--;
--}
- 
--/* Assumption: base addr of region 1 < base addr of region 2 */
--static void __init_memblock memblock_coalesce_regions(struct memblock_type *type,
--		unsigned long r1, unsigned long r2)
--{
--	type->regions[r1].size += type->regions[r2].size;
--	memblock_remove_region(type, r2);
-+	/* Special case for empty arrays */
-+	if (type->cnt == 0) {
-+		type->cnt = 1;
-+		type->regions[0].base = 0;
-+		type->regions[0].size = 0;
-+	}
- }
- 
- /* Defined below but needed now */
-@@ -276,7 +253,7 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 		return 0;
- 
- 	/* Add the new reserved region now. Should not fail ! */
--	BUG_ON(memblock_add_region(&memblock.reserved, addr, new_size) < 0);
-+	BUG_ON(memblock_add_region(&memblock.reserved, addr, new_size));
- 
- 	/* If the array wasn't our static init one, then free it. We only do
- 	 * that before SLAB is available as later on, we don't know whether
-@@ -296,58 +273,99 @@ extern int __init_memblock __weak memblock_memory_can_coalesce(phys_addr_t addr1
- 	return 1;
- }
- 
--static long __init_memblock memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-+static long __init_memblock memblock_add_region(struct memblock_type *type,
-+						phys_addr_t base, phys_addr_t size)
- {
--	unsigned long coalesced = 0;
--	long adjacent, i;
--
--	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
--		type->regions[0].base = base;
--		type->regions[0].size = size;
--		return 0;
--	}
-+	phys_addr_t end = base + size;
-+	int i, slot = -1;
- 
--	/* First try and coalesce this MEMBLOCK with another. */
-+	/* First try and coalesce this MEMBLOCK with others */
- 	for (i = 0; i < type->cnt; i++) {
--		phys_addr_t rgnbase = type->regions[i].base;
--		phys_addr_t rgnsize = type->regions[i].size;
-+		struct memblock_region *rgn = &type->regions[i];
-+		phys_addr_t rend = rgn->base + rgn->size;
-+
-+		/* Exit if there's no possible hits */
-+		if (rgn->base > end || rgn->size == 0)
-+			break;
- 
--		if ((rgnbase == base) && (rgnsize == size))
--			/* Already have this region, so we're done */
-+		/* Check if we are fully enclosed within an existing
-+		 * block
-+		 */
-+		if (rgn->base <= base && rend >= end)
- 			return 0;
- 
--		adjacent = memblock_addrs_adjacent(base, size, rgnbase, rgnsize);
--		/* Check if arch allows coalescing */
--		if (adjacent != 0 && type == &memblock.memory &&
--		    !memblock_memory_can_coalesce(base, size, rgnbase, rgnsize))
--			break;
--		if (adjacent > 0) {
--			type->regions[i].base -= size;
--			type->regions[i].size += size;
--			coalesced++;
--			break;
--		} else if (adjacent < 0) {
--			type->regions[i].size += size;
--			coalesced++;
--			break;
-+		/* Check if we overlap or are adjacent with the bottom
-+		 * of a block.
-+		 */
-+		if (base < rgn->base && end >= rgn->base) {
-+			/* If we can't coalesce, create a new block */
-+			if (!memblock_memory_can_coalesce(base, size,
-+							  rgn->base,
-+							  rgn->size)) {
-+				/* Overlap & can't coalesce are mutually
-+				 * exclusive, if you do that, be prepared
-+				 * for trouble
-+				 */
-+				WARN_ON(end != rgn->base);
-+				goto new_block;
-+			}
-+			/* We extend the bottom of the block down to our
-+			 * base
-+			 */
-+			rgn->base = base;
-+			rgn->size = rend - base;
-+
-+			/* Return if we have nothing else to allocate
-+			 * (fully coalesced)
-+			 */
-+			if (rend >= end)
-+				return 0;
-+
-+			/* We continue processing from the end of the
-+			 * coalesced block.
-+			 */
-+			base = rend;
-+			size = end - base;
-+		}
-+
-+		/* Now check if we overlap or are adjacent with the
-+		 * top of a block
-+		 */
-+		if (base <= rend && end >= rend) {
-+			/* If we can't coalesce, create a new block */
-+			if (!memblock_memory_can_coalesce(rgn->base,
-+							  rgn->size,
-+							  base, size)) {
-+				/* Overlap & can't coalesce are mutually
-+				 * exclusive, if you do that, be prepared
-+				 * for trouble
-+				 */
-+				WARN_ON(rend != base);
-+				goto new_block;
-+			}
-+			/* We adjust our base down to enclose the
-+			 * original block and destroy it. It will be
-+			 * part of our new allocation. Since we've
-+			 * freed an entry, we know we won't fail
-+			 * to allocate one later, so we won't risk
-+			 * losing the original block allocation.
-+			 */
-+			size += (base - rgn->base);
-+			base = rgn->base;			
-+			memblock_remove_region(type, i--);
- 		}
- 	}
- 
--	/* If we plugged a hole, we may want to also coalesce with the
--	 * next region
-+	/* If the array is empty, special case, replace the fake
-+	 * filler region and return
- 	 */
--	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1) &&
--	    ((type != &memblock.memory || memblock_memory_can_coalesce(type->regions[i].base,
--							     type->regions[i].size,
--							     type->regions[i+1].base,
--							     type->regions[i+1].size)))) {
--		memblock_coalesce_regions(type, i, i+1);
--		coalesced++;
-+	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
-+		type->regions[0].base = base;
-+		type->regions[0].size = size;
-+		return 0;
- 	}
- 
--	if (coalesced)
--		return coalesced;
--
-+ new_block:
- 	/* If we are out of space, we fail. It's too late to resize the array
- 	 * but then this shouldn't have happened in the first place.
- 	 */
-@@ -362,13 +380,14 @@ static long __init_memblock memblock_add_region(struct memblock_type *type, phys
- 		} else {
- 			type->regions[i+1].base = base;
- 			type->regions[i+1].size = size;
-+			slot = i + 1;
- 			break;
- 		}
- 	}
--
- 	if (base < type->regions[0].base) {
- 		type->regions[0].base = base;
- 		type->regions[0].size = size;
-+		slot = 0;
- 	}
- 	type->cnt++;
- 
-@@ -376,7 +395,8 @@ static long __init_memblock memblock_add_region(struct memblock_type *type, phys
- 	 * our allocation and return an error
- 	 */
- 	if (type->cnt == type->max && memblock_double_array(type)) {
--		type->cnt--;
-+		BUG_ON(slot < 0);
-+		memblock_remove_region(type, slot);
- 		return -1;
- 	}
- 
-@@ -389,52 +409,55 @@ long __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
- 
- }
- 
--static long __init_memblock __memblock_remove(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-+static long __init_memblock __memblock_remove(struct memblock_type *type,
-+					      phys_addr_t base, phys_addr_t size)
- {
--	phys_addr_t rgnbegin, rgnend;
- 	phys_addr_t end = base + size;
- 	int i;
- 
--	rgnbegin = rgnend = 0; /* supress gcc warnings */
--
--	/* Find the region where (base, size) belongs to */
--	for (i=0; i < type->cnt; i++) {
--		rgnbegin = type->regions[i].base;
--		rgnend = rgnbegin + type->regions[i].size;
-+	/* Walk through the array for collisions */
-+	for (i = 0; i < type->cnt; i++) {
-+		struct memblock_region *rgn = &type->regions[i];
-+		phys_addr_t rend = rgn->base + rgn->size;
- 
--		if ((rgnbegin <= base) && (end <= rgnend))
-+		/* Nothing more to do, exit */
-+		if (rgn->base > end || rgn->size == 0)
- 			break;
--	}
- 
--	/* Didn't find the region */
--	if (i == type->cnt)
--		return -1;
-+		/* If we fully enclose the block, drop it */
-+		if (base <= rgn->base && end >= rend) {
-+			memblock_remove_region(type, i--);
-+			continue;
-+		}
- 
--	/* Check to see if we are removing entire region */
--	if ((rgnbegin == base) && (rgnend == end)) {
--		memblock_remove_region(type, i);
--		return 0;
--	}
-+		/* If we are fully enclosed within a block
-+		 * then we need to split it and we are done
-+		 */
-+		if (base > rgn->base && end < rend) {
-+			rgn->size = base - rgn->base;
-+			if (!memblock_add_region(type, end, rend - end))
-+				return 0;
-+			/* Failure to split is bad, we at least
-+			 * restore the block before erroring
-+			 */
-+			rgn->size = rend - rgn->base;
-+			WARN_ON(1);
-+			return -1;
-+		}
- 
--	/* Check to see if region is matching at the front */
--	if (rgnbegin == base) {
--		type->regions[i].base = end;
--		type->regions[i].size -= size;
--		return 0;
--	}
-+		/* Check if we need to trim the bottom of a block */
-+		if (rgn->base < end && rend > end) {
-+			rgn->size -= end - rgn->base;
-+			rgn->base = end;
-+			break;
-+		}
- 
--	/* Check to see if the region is matching at the end */
--	if (rgnend == end) {
--		type->regions[i].size -= size;
--		return 0;
--	}
-+		/* And check if we need to trim the top of a block */
-+		if (base < rend)
-+			rgn->size -= rend - base;
- 
--	/*
--	 * We need to split the entry -  adjust the current one to the
--	 * beginging of the hole and add the region after hole.
--	 */
--	type->regions[i].size = base - type->regions[i].base;
--	return memblock_add_region(type, end, rgnend - end);
-+	}
-+	return 0;
- }
- 
- long __init_memblock memblock_remove(phys_addr_t base, phys_addr_t size)
-@@ -467,7 +490,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- 
- 	found = memblock_find_base(size, align, 0, max_addr);
- 	if (found != MEMBLOCK_ERROR &&
--	    memblock_add_region(&memblock.reserved, found, size) >= 0)
-+	    !memblock_add_region(&memblock.reserved, found, size))
- 		return found;
- 
- 	return 0;
-@@ -548,7 +571,7 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
- 		if (this_nid == nid) {
- 			phys_addr_t ret = memblock_find_region(start, this_end, size, align);
- 			if (ret != MEMBLOCK_ERROR &&
--			    memblock_add_region(&memblock.reserved, ret, size) >= 0)
-+			    !memblock_add_region(&memblock.reserved, ret, size))
- 				return ret;
- 		}
- 		start = this_end;
+
+> I do expect the underlying problem to be somewhere down the driver
+> end, given that nobody else has been reporting these issues.  I'm
+> hoping that once the cx18 guys have time to try to reproduce it,
+> they'll be better able to track it down.
+
+Well, I am the cx18 guy (except for Devin who wrote the guts of
+cx18-alsa*c).  Given that the cx18 driver has been pretty static for the
+past few months, I'm doubting it is there.  
+
+I have been doing a recent change to add dynamic SCB MDL entry
+management, but that is in a small 64kB region in the ioremap()'ed
+memory of the CX23418 device.
+
+(one patch I have locally hasn't been pushed yet, but here is the one
+patch I pushed before I began testing:
+http://git.linuxtv.org/awalls/media_tree.git?a=shortlog;h=refs/heads/cx18-vb2-proto )
+
+My overall objective is to start convert cx18 to use the videobuf2
+infrastruutre instead of allocating so many buffers at module load.
+
+The cx18 driver kmalloc()'s *a lot* of buffers per card at module load,
+and I have two cards in my machine.  I think these consecutive
+allocations by the cx18 driver are creating conditions that induce
+corruption in the memory management system.  I'm guessing it is probably
+due to some locking or list handling bug.
+
+
+
+
+>  But you are having trouble
+> reproducing it yourself?
+
+I can't say yet.  I'm currently two for two.
+
+I hate BUG-ing our household "production" machine that has all the kids'
+homework, financal tracking, saved e-mails, etc.  I've got to make a
+backup first or just slap in a new disk for development.
+
+
+>   hitting this vmalloc one before you could
+> reproduce the exit_mmap one?
+
+I hit the exit_mmap() one; added debug to get past the BUG; and then got
+the new Oops/BUG.
+
+Loading the cx18 driver was clearly the action in both cases that caused
+the BUGs.
+
+>   No chance to bisect it to a particular
+> commit if you cannot reliably reproduce it.
+
+I have to back up home directories before I can begin a bisect on this
+one.
+
+> There was a horrid list corruption bug in early 2.6.38-rc, fixed in
+> -rc6; but although I guess it could cause all kinds of havoc, its
+> particular signature was not like this, so I don't really believe that
+> one was to blame here.
+
+Sounds like it may be worth me reviewing the commits that introduced the
+failure and the commit that fixed it.  Do you happen to know what they
+are?
+
+Regards,
+Andy
+
+> Hugh
 
 
