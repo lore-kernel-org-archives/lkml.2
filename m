@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1CFL0O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 06:26:14 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58339 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab1CFL0M convert rfc822-to-8bit (ORCPT
+	id S1754677Ab1CFMXl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:23:41 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55808 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754476Ab1CFMXe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 06:26:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=XQmRYY07TawcTZIghIxpR4DW51YvRwcGa8gOHVA9Z1NmvZrgivcPtRWKF4Dof2fBXF
-         tnkL3UWoiQGUQTspWdCyoHhaagakOcLJDiMc8/zBTdN8PzIQjHJbt5/KDeEi0iFrcIK4
-         Q26ys1tqG3xogwRGYpHRgpD57XIc+FRWbks4c=
+	Sun, 6 Mar 2011 07:23:34 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Alexander Beregalov" <a.beregalov@gmail.com>
+References: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
+In-Reply-To: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Date: Sun, 6 Mar 2011 17:26:10 +0600
-Message-ID: <AANLkTimPwqTnjNNZx6zVef6n=X00+G5dZSzp2aOSRp1b@mail.gmail.com>
-Subject: [PATCH] drivers, pch_dma: Fix warning when CONFIG_PM=n.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-ID: <GTlFTeOGjrB.A._TE.4p3cNB@chimera>
+Subject: [Bug #29852] 2.6.38-rc5: nfsd: page allocation failure. spinlock trylock failure on UP
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun,  6 Mar 2011 13:10:21 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_PM=n, we get the following warning:
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-drivers/dma/pch_dma.c:741: warning: ‘pch_dma_suspend’ defined but not used
-drivers/dma/pch_dma.c:755: warning: ‘pch_dma_resume’ defined but not used
+The following bug entry is on the current list of known regressions
+from 2.6.37.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-To fix it, wrap pch_dma_{suspend,resume} and
-pch_dma_{save,restore}_regs functions with CONFIG_PM.
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29852
+Subject		: 2.6.38-rc5: nfsd: page allocation failure. spinlock trylock failure on UP
+Submitter	: Alexander Beregalov <a.beregalov@gmail.com>
+Date		: 2011-02-21 20:33 (14 days old)
+Message-ID	: <AANLkTi=14N_c_B7mLY0H8Dt8pte6C0mjFnVuC37e44Hs@mail.gmail.com>
+References	: http://marc.info/?l=linux-netdev&m=129832042402668&w=2
 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 1c38418..33073cc 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -694,6 +694,7 @@ static irqreturn_t pd_irq(int irq, void *devid)
- 	return ret;
- }
 
-+#ifdef	CONFIG_PM
- static void pch_dma_save_regs(struct pch_dma *pd)
- {
- 	struct pch_dma_chan *pd_chan;
-@@ -771,6 +772,7 @@ static int pch_dma_resume(struct pci_dev *pdev)
-
- 	return 0;
- }
-+#endif
-
- static int __devinit pch_dma_probe(struct pci_dev *pdev,
- 				   const struct pci_device_id *id)
