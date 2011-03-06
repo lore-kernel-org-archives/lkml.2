@@ -1,167 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab1CFFmi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 00:42:38 -0500
-Received: from polaris.galacticasoftware.com ([216.55.199.131]:40827 "EHLO
-	polaris.galacticasoftware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751231Ab1CFFm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 00:42:27 -0500
-Date: Sat, 5 Mar 2011 23:20:48 -0600
-From: Adam Majer <adamm@zombino.com>
-To: netdev@vger.kernel.org
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, bridge@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] Retry autoconfiguration on interface after
- NETDEV_CHANGE notification
-Message-ID: <20110306052048.GA3146@mira.lan.galacticasoftware.com>
-References: <20110306051833.GA3098@mira.lan.galacticasoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110306051833.GA3098@mira.lan.galacticasoftware.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751270Ab1CFFxE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 00:53:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47138 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab1CFFxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 00:53:01 -0500
+Date: Sun, 6 Mar 2011 16:52:42 +1100
+From: NeilBrown <neilb@suse.de>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [PATCH] NFSD, VFS: Remove dead code in nfsd_rename()
+Message-ID: <20110306165242.0cafd68a@notabene.brown>
+In-Reply-To: <alpine.LNX.2.00.1103060024380.6297@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1103060024380.6297@swampdragon.chaosbits.net>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 6 Mar 2011 00:30:35 +0100 (CET) Jesper Juhl <jj@chaosbits.net> wrote:
 
-A bridged interface will timeout trying to receive Router Advert as
-these packets are not forwarded when bridge is UP but not in the
-FORWARDING state (eg. LEARNING state). Bridge code issues
-NETDEV_CHANGE when bridge's internal state is changed. It is then
-possible to retry Router Solicitation.
+> Currently we have the following code in fs/nfsd/vfs.c::nfsd_rename() :
+> 
+> 	...
+> 	host_err = nfsd_break_lease(odentry->d_inode);
+> 	if (host_err)
+> 		goto out_drop_write;
+> 	if (ndentry->d_inode) {
+> 		host_err = nfsd_break_lease(ndentry->d_inode);
+> 		if (host_err)
+> 			goto out_drop_write;
+> 	}
+> 	if (host_err)
+> 		goto out_drop_write;
+> 	...
+> 
+> 'host_err' is guaranteed to be 0 by the time we test 'ndentry->d_inode'. 
+> If 'host_err' becomes != 0 inside the 'if' statement, then we goto 
+> 'out_drop_write'. So, after the 'if' statement there is no way that 
+> 'host_err' can be anything but 0, so the test afterwards is just dead 
+> code.
+> This patch removes the dead code.
 
-Signed-off-by: Adam Majer <adamm@zombino.com>
----
- net/ipv6/addrconf.c |   74 +++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 49 insertions(+), 25 deletions(-)
+I would probably have gone for:
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index fd6782e..f8018b3 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -152,6 +152,7 @@ static void addrconf_dad_start(struct inet6_ifaddr *ifp, u32 flags);
- static void addrconf_dad_timer(unsigned long data);
- static void addrconf_dad_completed(struct inet6_ifaddr *ifp);
- static void addrconf_dad_run(struct inet6_dev *idev);
-+static void addrconf_rs_start(struct inet6_ifaddr *ifp);
- static void addrconf_rs_timer(unsigned long data);
- static void __ipv6_ifa_notify(int event, struct inet6_ifaddr *ifa);
- static void ipv6_ifa_notify(int event, struct inet6_ifaddr *ifa);
-@@ -2368,6 +2369,18 @@ static void addrconf_add_linklocal(struct inet6_dev *idev, struct in6_addr *addr
- 		addrconf_prefix_route(&ifp->addr, ifp->prefix_len, idev->dev, 0, 0);
- 		addrconf_dad_start(ifp, 0);
- 		in6_ifa_put(ifp);
-+	} else if (PTR_ERR(ifp) == -EEXIST &&
-+		list_is_singular(&idev->addr_list)) {
-+		/*
-+		 * first address must be link local, but no router - re-solicit.
-+		 * This code path is called when bridge exits LEARNING state
-+		 */
-+
-+		ifp = list_first_entry(&idev->addr_list,
-+				       struct inet6_ifaddr,
-+				       if_list);
-+
-+		addrconf_rs_start(ifp);
- 	}
- }
- 
-@@ -2532,8 +2545,11 @@ static int addrconf_notify(struct notifier_block *this, unsigned long event,
- 			}
- 
- 			if (idev) {
--				if (idev->if_flags & IF_READY)
--					/* device is already configured. */
-+				if (idev->if_flags & IF_READY &&
-+				    idev->if_flags & IF_RA_RCVD)
-+					/* device is already configured and
-+					 * RA was received.
-+					 */
- 					break;
- 				idev->if_flags |= IF_READY;
- 			}
-@@ -2775,6 +2791,35 @@ static int addrconf_ifdown(struct net_device *dev, int how)
- 	return 0;
- }
- 
-+static void addrconf_rs_start(struct inet6_ifaddr *ifp)
-+{
-+	/* If added prefix is link local and forwarding is off,
-+	   start sending router solicitations.
-+	 */
-+	struct net_device *dev = ifp->idev->dev;
-+
-+	if ((ifp->idev->cnf.forwarding == 0 ||
-+	     ifp->idev->cnf.forwarding == 2) &&
-+	    ifp->idev->cnf.rtr_solicits > 0 &&
-+	    (dev->flags&IFF_LOOPBACK) == 0 &&
-+	    (ipv6_addr_type(&ifp->addr) & IPV6_ADDR_LINKLOCAL)) {
-+		/*
-+		 *	If a host as already performed a random delay
-+		 *	[...] as part of DAD [...] there is no need
-+		 *	to delay again before sending the first RS
-+		 */
-+		ndisc_send_rs(ifp->idev->dev, &ifp->addr,
-+			      &in6addr_linklocal_allrouters);
-+
-+		spin_lock_bh(&ifp->lock);
-+		ifp->probes = 1;
-+		ifp->idev->if_flags |= IF_RS_SENT;
-+		addrconf_mod_timer(ifp, AC_RS,
-+				   ifp->idev->cnf.rtr_solicit_interval);
-+		spin_unlock_bh(&ifp->lock);
-+	}
-+}
-+
- static void addrconf_rs_timer(unsigned long data)
- {
- 	struct inet6_ifaddr *ifp = (struct inet6_ifaddr *) data;
-@@ -2935,36 +2980,15 @@ out:
- 
- static void addrconf_dad_completed(struct inet6_ifaddr *ifp)
- {
--	struct net_device *dev = ifp->idev->dev;
--
- 	/*
- 	 *	Configure the address for reception. Now it is valid.
- 	 */
- 
- 	ipv6_ifa_notify(RTM_NEWADDR, ifp);
- 
--	/* If added prefix is link local and forwarding is off,
--	   start sending router solicitations.
--	 */
-+	/* start sending router solicitations. */
- 
--	if ((ifp->idev->cnf.forwarding == 0 ||
--	     ifp->idev->cnf.forwarding == 2) &&
--	    ifp->idev->cnf.rtr_solicits > 0 &&
--	    (dev->flags&IFF_LOOPBACK) == 0 &&
--	    (ipv6_addr_type(&ifp->addr) & IPV6_ADDR_LINKLOCAL)) {
--		/*
--		 *	If a host as already performed a random delay
--		 *	[...] as part of DAD [...] there is no need
--		 *	to delay again before sending the first RS
--		 */
--		ndisc_send_rs(ifp->idev->dev, &ifp->addr, &in6addr_linklocal_allrouters);
--
--		spin_lock_bh(&ifp->lock);
--		ifp->probes = 1;
--		ifp->idev->if_flags |= IF_RS_SENT;
--		addrconf_mod_timer(ifp, AC_RS, ifp->idev->cnf.rtr_solicit_interval);
--		spin_unlock_bh(&ifp->lock);
--	}
-+	addrconf_rs_start(ifp);
- }
- 
- static void addrconf_dad_run(struct inet6_dev *idev)
--- 
-1.7.2.3
+  host_err = nfsd_break_lease(odentry->d_inode);
+  if (!host_err && ndentry->d_inode)
+        host_err = nfsd_break_lease(ndentry->d_inode);
+  if (host_err)
+        goto out_drop_write;
+
+or even
+  host_err = nfsd_break_lease(odentry->d_inode);
+  if (ndentry->d_inode)
+        host_err = hosterr ?: nfsd_break_lease(ndentry->d_inode);
+  if (host_err)
+        goto out_drop_write;
+
+
+but it is largely a matter of taste.  I agree there is redundant code there
+and your's is a suitable fix.
+
+NeilBrown
+
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  vfs.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+> index da1d970..9cc626b 100644
+> --- a/fs/nfsd/vfs.c
+> +++ b/fs/nfsd/vfs.c
+> @@ -1749,8 +1749,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+>  		if (host_err)
+>  			goto out_drop_write;
+>  	}
+> -	if (host_err)
+> -		goto out_drop_write;
+>  	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
+>  	if (!host_err) {
+>  		host_err = commit_metadata(tfhp);
+> 
+> 
+
