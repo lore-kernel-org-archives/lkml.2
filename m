@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab1CFPrL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 10:47:11 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:55181 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752771Ab1CFPrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 10:47:08 -0500
-Date: Sun, 6 Mar 2011 10:47:05 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Florian Mickler <florian@mickler.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [linux-pm] 2.6.38-rc7-git4: Reported regressions from 2.6.37
-In-Reply-To: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
-Message-ID: <Pine.LNX.4.44L0.1103061041440.13175-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754077Ab1CFOqd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 09:46:33 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:45000 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753670Ab1CFOqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 09:46:18 -0500
+From: Florian Mickler <florian@mickler.org>
+To: mchehab@infradead.org
+Cc: Florian Mickler <florian@mickler.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Oliver Neukum <oliver@neukum.org>, Jack Stone <jwjstone@fastmail.fm>
+Subject: [PATCH 2/3] [media] dib0700: remove unused variable
+Date: Sun,  6 Mar 2011 15:45:15 +0100
+Message-Id: <1299422716-29461-2-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.4.rc3
+In-Reply-To: <1299422716-29461-1-git-send-email-florian@mickler.org>
+References: <20110306153805.001011a9@schatten.dmk.lab>
+ <1299422716-29461-1-git-send-email-florian@mickler.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Mar 2011, Rafael J. Wysocki wrote:
+Signed-off-by: Florian Mickler <florian@mickler.org>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: linux-media@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+CC: Greg Kroah-Hartman <greg@kroah.com>
+CC: Rafael J. Wysocki <rjw@sisk.pl>
+CC: Maciej Rutecki <maciej.rutecki@gmail.com>
+CC: Oliver Neukum <oliver@neukum.org>
+CC: Jack Stone <jwjstone@fastmail.fm>
+---
+ drivers/media/dvb/dvb-usb/dib0700_core.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29902
-> Subject		: System suspend failed after 1-2 successful resumes
-> Submitter	: Alex Terekhov <a.terekhov@gmail.com>
-> Date		: 2011-02-25 22:24 (10 days old)
-
-As far as I know, this isn't a regression.  Most likely it is present 
-in earlier kernels too, but the OP hasn't tried any.
-
-Anyway, it appears to be a combination of problems.  One is a bug, for 
-which a patch has been written and will be submitted soon.  The other 
-is unclear, it is probably a hardware issue.
-
-Alan Stern
+diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb/dvb-usb/dib0700_core.c
+index 028ed87..77a3060 100644
+--- a/drivers/media/dvb/dvb-usb/dib0700_core.c
++++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
+@@ -576,7 +576,6 @@ struct dib0700_rc_response {
+ static void dib0700_rc_urb_completion(struct urb *purb)
+ {
+ 	struct dvb_usb_device *d = purb->context;
+-	struct dib0700_state *st;
+ 	struct dib0700_rc_response *poll_reply;
+ 	u32 uninitialized_var(keycode);
+ 	u8 toggle;
+@@ -591,7 +590,6 @@ static void dib0700_rc_urb_completion(struct urb *purb)
+ 		return;
+ 	}
+ 
+-	st = d->priv;
+ 	poll_reply = purb->transfer_buffer;
+ 
+ 	if (purb->status < 0) {
+-- 
+1.7.4.rc3
 
