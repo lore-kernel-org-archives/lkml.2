@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab1CFK1d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 05:27:33 -0500
-Received: from chipmunk.wormnet.eu ([195.195.131.226]:36384 "EHLO
-	chipmunk.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab1CFK1b (ORCPT
+	id S1751493Ab1CFHIf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 02:08:35 -0500
+Received: from asset.uwaterloo.ca ([129.97.92.29]:37781 "EHLO
+	asset.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab1CFHIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 05:27:31 -0500
-X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 05:27:31 EST
-Date: Sun, 6 Mar 2011 10:18:37 +0000
-From: Alexander Clouter <alex@digriz.org.uk>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] MAINTAINERS: inflict self with ARM/ts78xx-setup platform
- maintainership
-Message-ID: <20110306101836.GH22117@chipmunk>
+	Sun, 6 Mar 2011 02:08:34 -0500
+Date: Sun, 6 Mar 2011 02:08:32 -0500
+From: j223yang@asset.uwaterloo.ca
+To: rdunlap@xenotime.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [Patch] ariadne: fix possible null dereference
+Message-ID: <20110306070832.GA26188@asset.uwaterloo.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: diGriz
-X-URL: http://www.digriz.org.uk/
-X-JabberID: alex@digriz.org.uk
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Clouter <alex@digriz.org.uk>
----
- MAINTAINERS |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6f99e12..4e81034 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -856,6 +856,13 @@ F:	arch/arm/mach-mv78xx0/
- F:	arch/arm/mach-orion5x/
- F:	arch/arm/plat-orion/
+Hi Randy,
+I have tested my patch, and it is ok now.
+Could you please try patching again? Sorry for previous trouble.
+Thank you!
  
-+ARM/Orion SoC/Technologic Systems TS-78xx platform support
-+M:	Alexander Clouter <alex@digriz.org.uk>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+W:	http://www.digriz.org.uk/ts78xx/kernel
-+S:	Maintained
-+F:	arch/arm/mach-orion5x/ts78xx-*
-+
- ARM/MIOA701 MACHINE SUPPORT
- M:	Robert Jarzmik <robert.jarzmik@free.fr>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
--- 
-1.7.4.1
+Jinqiu
+------------------------------------------------------
+This patch fixes bugzilla #13853:
+https://bugzilla.kernel.org/show_bug.cgi?id=13853
+
+The patch removes dereference of 'dev' after testing for NULL.
+
+Signed-off-by: Jinqiu Yang<crindy646@gmail.com>
+---
+ ariadne.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ariadne.c b/drivers/net/ariadne.c
+--- a/drivers/net/ariadne.c	2011-03-04 11:16:42.332164362 -0500
++++ b/drivers/net/ariadne.c	2011-03-05 21:11:52.949164759 -0500
+@@ -420,7 +420,7 @@ static inline void ariadne_reset(struct 
+ static irqreturn_t ariadne_interrupt(int irq, void *data)
+ {
+     struct net_device *dev = (struct net_device *)data;
+-    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
++    volatile struct Am79C960 *lance;
+     struct ariadne_private *priv;
+     int csr0, boguscnt;
+     int handled = 0;
+@@ -430,6 +430,7 @@ static irqreturn_t ariadne_interrupt(int
+ 	return IRQ_NONE;
+     }
+ 
++    lance = (struct Am79C960 *)dev->base_addr;
+     lance->RAP = CSR0;			/* PCnet-ISA Controller Status */
+ 
+     if (!(lance->RDP & INTR))		/* Check if any interrupt has been */
