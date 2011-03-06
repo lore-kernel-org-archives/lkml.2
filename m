@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab1CFLef (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 06:34:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab1CFLed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 06:34:33 -0500
-Date: Sun, 6 Mar 2011 13:33:49 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+	id S1753203Ab1CFLjJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 06:39:09 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48087 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab1CFLjF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 06:39:05 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: bookjovi@gmail.com
+Subject: Re: [PATCH 2/2] proc: fix some wrong error code usage
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] vhost: copy_from_user -> __copy_from_user
-Message-ID: <20110306113349.GA24333@redhat.com>
+In-Reply-To: <1299104422-2620-1-git-send-email-bookjovi@gmail.com>
+References: <1299104422-2620-1-git-send-email-bookjovi@gmail.com>
+Message-Id: <20110306203830.6CD2.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sun,  6 Mar 2011 20:39:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_from_user is pretty high on perf top profile,
-replacing it with __copy_from_user helps.
-It's also safe because we do access_ok checks during setup.
+> From: Jovi Zhang <bookjovi@gmail.com>
+> 
+> [root@wei 1]# cat /proc/1/mem
+> cat: /proc/1/mem: No such process
+> 
+> error code -ESRCH is wrong in this situation
+> 
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/vhost/vhost.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Looks fine.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index ade0568..01701b8 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -1153,7 +1153,7 @@ int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 			       i, vq->num, head);
- 			return -EINVAL;
- 		}
--		ret = copy_from_user(&desc, vq->desc + i, sizeof desc);
-+		ret = __copy_from_user(&desc, vq->desc + i, sizeof desc);
- 		if (unlikely(ret)) {
- 			vq_err(vq, "Failed to get descriptor: idx %d addr %p\n",
- 			       i, vq->desc + i);
--- 
-1.7.3.2.91.g446ac
+
+
