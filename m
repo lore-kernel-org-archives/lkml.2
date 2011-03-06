@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1CFUtD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 15:49:03 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:53273 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab1CFUsm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 15:48:42 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 3/6] perf hists browser: Handle browsing empty hists tree
-Date: Sun,  6 Mar 2011 17:48:24 -0300
-Message-Id: <1299444507-26549-4-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1299444507-26549-1-git-send-email-acme@infradead.org>
-References: <1299444507-26549-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1751716Ab1CFQDp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 11:03:45 -0500
+Received: from gwu.lbox.cz ([62.245.111.132]:44770 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751000Ab1CFQDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 11:03:44 -0500
+Date: Sun, 6 Mar 2011 17:03:28 +0100
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        KVM list <kvm@vger.kernel.org>,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
+	boot
+Message-ID: <20110306160328.GA29429@nik-comp.lan>
+References: <20110303220155.GB27691@nik-comp.lan> <4D7101AF.6060009@redhat.com> <20110304182733.GA2867@nik-comp.lan> <1299265762.11618.140.camel@mothafucka.localdomain> <20110304205512.GB2867@nik-comp.lan> <1299274906.11618.157.camel@mothafucka.localdomain> <20110304223640.GC2867@nik-comp.lan> <4D718F2D.6080105@redhat.com> <20110305072115.GA2166@nik-comp.lan> <4D739FEF.7000502@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D739FEF.7000502@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 4781649 records (last update: 20110306)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> I did read your mail, but I was working on an old tree... because of  
+> that transformation, this fix will unfortunately have to be back and  
+> forward ported by hand.
+OK, sorry, I didn't mean to be adverse...
+>
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browsers/hists.c |   22 +++++++++++++++-------
- 1 files changed, 15 insertions(+), 7 deletions(-)
+> Did you try just that change right applied on top of the patch  
+> (e48672fa25e879f7ae21785c7efd187738139593) implicated by bisect?
+yes, with host running e48672fa25e879f7ae21785c7efd187738139593,
+32bit SMP guest doesn't boot, when I add kvm_request_guest_time_update(vcpu),
+it helps.
 
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index c27ab35..c98e6f8 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -639,6 +639,9 @@ static void ui_browser__hists_seek(struct ui_browser *self,
- 	struct rb_node *nd;
- 	bool first = true;
- 
-+	if (self->nr_entries == 0)
-+		return;
-+
- 	switch (whence) {
- 	case SEEK_SET:
- 		nd = hists__filter_entries(rb_first(self->entries));
-@@ -820,8 +823,8 @@ int hists__browse(struct hists *self, const char *helpline,
- 	hists__browser_title(self, msg, sizeof(msg), ev_name,
- 			     dso_filter, thread_filter);
- 	while (1) {
--		const struct thread *thread;
--		const struct dso *dso;
-+		const struct thread *thread = NULL;
-+		const struct dso *dso = NULL;
- 		char *options[16];
- 		int nr_options = 0, choice = 0, i,
- 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
-@@ -829,8 +832,10 @@ int hists__browse(struct hists *self, const char *helpline,
- 
- 		key = hist_browser__run(browser, msg);
- 
--		thread = hist_browser__selected_thread(browser);
--		dso = browser->selection->map ? browser->selection->map->dso : NULL;
-+		if (browser->he_selection != NULL) {
-+			thread = hist_browser__selected_thread(browser);
-+			dso = browser->selection->map ? browser->selection->map->dso : NULL;
-+		}
- 
- 		switch (key) {
- 		case NEWT_KEY_TAB:
-@@ -841,7 +846,8 @@ int hists__browse(struct hists *self, const char *helpline,
- 			 */
- 			goto out_free_stack;
- 		case 'a':
--			if (browser->selection->map == NULL &&
-+			if (browser->selection == NULL ||
-+			    browser->selection->map == NULL ||
- 			    browser->selection->map->dso->annotate_warned)
- 				continue;
- 			goto do_annotate;
-@@ -887,7 +893,8 @@ int hists__browse(struct hists *self, const char *helpline,
- 			goto out_free_stack;
- 		}
- 
--		if (browser->selection->sym != NULL &&
-+		if (browser->selection != NULL &&
-+		    browser->selection->sym != NULL &&
- 		    !browser->selection->map->dso->annotate_warned &&
- 		    asprintf(&options[nr_options], "Annotate %s",
- 			     browser->selection->sym->name) > 0)
-@@ -906,7 +913,8 @@ int hists__browse(struct hists *self, const char *helpline,
- 			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
- 			zoom_dso = nr_options++;
- 
--		if (browser->selection->map != NULL &&
-+		if (browser->selection != NULL &&
-+		    browser->selection->map != NULL &&
- 		    asprintf(&options[nr_options], "Browse map details") > 0)
- 			browse_map = nr_options++;
- 
+>
+> It will be great to know if that change alone fixes the problem, if so,  
+> the fix you propose is probably the right one for upstream.
+ok, so shell I submit patch adding kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu)?
+this fixes things for me for 2.6.37.
+
+>
+> Thanks,
+>
+> Zach
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
 -- 
-1.6.2.5
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
 
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
