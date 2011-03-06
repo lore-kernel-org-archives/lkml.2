@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab1CFPqg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 10:46:36 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63200 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab1CFPqe (ORCPT
+	id S1753132Ab1CFPrL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 10:47:11 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:55181 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752771Ab1CFPrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 10:46:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=ZKtKHR4w4KpAGCkdYKjH6lrvu4oFtaO9vwQWATHAU+VNTmP6SFQeM2rXk1gENX5csk
-         /X/yWz/O6dAIA4rcnXgAPIJf0W+wQHwBll561oOk0jPmZbHSoTWh0kRaVJ7EcpbJpQkB
-         mV8iKWrJZueh0u6ag1XmfI+6xaa/ZT1F4gEW4=
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [ARM] tlb: fix build error with CONFIG_SWAP=n
-Date: Sun,  6 Mar 2011 18:46:26 +0300
-Message-Id: <1299426386-28746-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Sun, 6 Mar 2011 10:47:08 -0500
+Date: Sun, 6 Mar 2011 10:47:05 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Florian Mickler <florian@mickler.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [linux-pm] 2.6.38-rc7-git4: Reported regressions from 2.6.37
+In-Reply-To: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
+Message-ID: <Pine.LNX.4.44L0.1103061041440.13175-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix this build error with CONFIG_SWAP=n:
+On Sun, 6 Mar 2011, Rafael J. Wysocki wrote:
 
-In file included from arch/arm/mm/init.c:28:
-arch/arm/include/asm/tlb.h: In function ‘tlb_flush_mmu’:
-arch/arm/include/asm/tlb.h:104: error: implicit declaration of function ‘release_pages’
-arch/arm/include/asm/tlb.h: In function ‘tlb_remove_page’:
-arch/arm/include/asm/tlb.h:168: error: implicit declaration of function ‘page_cache_release’
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29902
+> Subject		: System suspend failed after 1-2 successful resumes
+> Submitter	: Alex Terekhov <a.terekhov@gmail.com>
+> Date		: 2011-02-25 22:24 (10 days old)
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
----
- arch/arm/include/asm/tlb.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+As far as I know, this isn't a regression.  Most likely it is present 
+in earlier kernels too, but the OP hasn't tried any.
 
-diff --git a/arch/arm/include/asm/tlb.h b/arch/arm/include/asm/tlb.h
-index 82dfe5d..36e75e5 100644
---- a/arch/arm/include/asm/tlb.h
-+++ b/arch/arm/include/asm/tlb.h
-@@ -29,6 +29,7 @@
- 
- #else /* !CONFIG_MMU */
- 
-+#include <linux/pagemap.h>
- #include <linux/swap.h>
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
--- 
-1.7.2.3
+Anyway, it appears to be a combination of problems.  One is a bug, for 
+which a patch has been written and will be submitted soon.  The other 
+is unclear, it is probably a hardware issue.
+
+Alan Stern
 
