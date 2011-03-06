@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1CFEQx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 23:16:53 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48285 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab1CFEQu (ORCPT
+	id S1752435Ab1CFAnV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 19:43:21 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19201 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1CFAnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 23:16:50 -0500
-From: Bill Gatliff <bgat@billgatliff.com>
-To: linux-kernel@vger.kernel.org
-Cc: Bill Gatliff <bgat@billgatliff.com>
-Subject: [PWM v6 0/3] Implement a generic PWM framework
-Date: Sat,  5 Mar 2011 22:17:27 -0600
-Message-Id: <1299385050-13674-1-git-send-email-bgat@billgatliff.com>
-X-Mailer: git-send-email 1.7.2.3
+	Sat, 5 Mar 2011 19:43:20 -0500
+Date: Sun, 6 Mar 2011 01:42:46 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        cl@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+In-Reply-To: <1299273034.2071.1417.camel@dan>
+Message-ID: <alpine.LNX.2.00.1103060137410.6297@swampdragon.chaosbits.net>
+References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>  <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>  <1299191400.2071.203.camel@dan>  <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>  <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
+  <1299260164.8493.4071.camel@nimitz>  <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>  <1299262495.3062.298.camel@calx>  <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>  <1299271041.2071.1398.camel@dan> 
+ <AANLkTimvhHxsMCf2FX0O8VqksOa2EAMz=S_C3LQKvE60@mail.gmail.com> <1299273034.2071.1417.camel@dan>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series contains the sixth attempt at implementation of
-a generic PWM device interface framework.  Think gpiolib, but for
-devices and pseudo-devices that generate pulse-wave-modulated outputs.
+On Fri, 4 Mar 2011, Dan Rosenberg wrote:
 
-Compared to the previous version, this patch series:
+> On Fri, 2011-03-04 at 22:58 +0200, Pekka Enberg wrote:
+> > On Fri, Mar 4, 2011 at 10:37 PM, Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+> > > This patch makes these techniques more difficult by making it hard to
+> > > know whether the last attacker-allocated object resides before a free or
+> > > allocated object.  Especially with vulnerabilities that only allow one
+> > > attempt at exploitation before recovery is needed to avoid trashing too
+> > > much heap state and causing a crash, this could go a long way.  I'd
+> > > still argue in favor of removing the ability to know how many objects
+> > > are used in a given slab, since randomizing objects doesn't help if you
+> > > know every object is allocated.
+> > 
+> > So if the attacker knows every object is allocated, how does that help
+> > if we're randomizing the initial freelist?
+> 
+> If you know you've got a slab completely full of your objects, then it
+> doesn't matter that they happened to be allocated in a random fashion -
+> they're still all allocated, and by freeing one of them and
+> reallocating, you'll still be next to your target.
+> 
 
-  * Cleans up error handling in atmel-pwmc device registration and removal
-  * Removes excessive inlines from atmel-pwmc implementation
-  * Drops unnecessary IS_ERR_OR_NULL test from ioremap return value
-  * Removes Atmel PWMC's Kconfig patch from the gpio-pwm patch file
+But still, if randomizing allocations makes life just a little harder for 
+attackers in some scenarios, why not just do it?
+Same with making /proc/slabinfo 0400, if it just makes things a little 
+harder in a few cases, why not do it? It's not like a admin who needs 
+/proc/slabinfo to have other permissions can't arrange for that.
 
-Functionally-speaking, this series has regressed somewhat from
-previous versions because I am currently focusing my attention on the
-API itself.  I include only implementations for GPIO+hrtimer devices
-and the Atmel PWMC peripheral as references in this series; I will
-post patches for LED drivers, PXA, Samsung, etc. devices once I know
-that the API itself is on its way to mainline.  (I believe that the
-two reference implementations sufficiently confirm the utility of the
-API itself).
+Having been employed as a systems administrator for many years and having 
+seen many a box cracked, my oppinion is that every little bit helps. The 
+kernel is currently not a hard target and everything we can do to harden 
+it is a good thing (within reason of course).
 
-The code in this series is significantly clearer and more
-straightforward than previous versions.  Thanks to everyone who helped
-me with this refactoring!  I'm pretty convinced that the code you see
-here is at last suitable for pulling into mainline.
-
-Finally, the attached code CAN be used to control devices that drive
-stepper motors and the like, but doing so is discouraged as I am
-anticipating a request to develop an API specifically for such
-situations.
-
-
-Regards,
-
-
-b.g.
-
-
-Bill Gatliff (3):
-  PWM: Implement a generic PWM framework
-  PWM: GPIO+hrtimer device emulation
-  PWM: Atmel PWMC driver
-
- Documentation/pwm.txt    |  277 +++++++++++++++++++++
- drivers/Kconfig          |    2 +
- drivers/Makefile         |    2 +
- drivers/pwm/Kconfig      |   29 +++
- drivers/pwm/Makefile     |    7 +
- drivers/pwm/atmel-pwmc.c |  494 +++++++++++++++++++++++++++++++++++++
- drivers/pwm/gpio-pwm.c   |  348 ++++++++++++++++++++++++++
- drivers/pwm/pwm.c        |  610 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pwm/pwm.h  |  155 ++++++++++++
- 9 files changed, 1924 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/pwm.txt
- create mode 100644 drivers/pwm/Kconfig
- create mode 100644 drivers/pwm/Makefile
- create mode 100644 drivers/pwm/atmel-pwmc.c
- create mode 100644 drivers/pwm/gpio-pwm.c
- create mode 100644 drivers/pwm/pwm.c
- create mode 100644 include/linux/pwm/pwm.h
+Why not just do both randomization and 0400 as a start? We can always 
+harden further later.
 
 -- 
-1.7.2.3
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
 
