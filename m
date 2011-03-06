@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1CFLjJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 06:39:09 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48087 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab1CFLjF (ORCPT
+	id S1754763Ab1CFMv7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:51:59 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:56023 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753995Ab1CFMvz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 06:39:05 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: bookjovi@gmail.com
-Subject: Re: [PATCH 2/2] proc: fix some wrong error code usage
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1299104422-2620-1-git-send-email-bookjovi@gmail.com>
-References: <1299104422-2620-1-git-send-email-bookjovi@gmail.com>
-Message-Id: <20110306203830.6CD2.A69D9226@jp.fujitsu.com>
+	Sun, 6 Mar 2011 07:51:55 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "=?utf-8?q?Ferenc=20W=C3=A1gner?=" <wferi@niif.hu>
+References: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
+In-Reply-To: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun,  6 Mar 2011 20:39:02 +0900 (JST)
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <sUKqYsqyJ4N.A.rHH.tA4cNB@chimera>
+Subject: [Bug #26042] BUG: NULL pointer dereference at shrink_dcache_parent
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun,  6 Mar 2011 13:40:37 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Jovi Zhang <bookjovi@gmail.com>
-> 
-> [root@wei 1]# cat /proc/1/mem
-> cat: /proc/1/mem: No such process
-> 
-> error code -ESRCH is wrong in this situation
-> 
-> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.36 and 2.6.37.
 
-Looks fine.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+The following bug entry is on the current list of known regressions
+introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26042
+Subject		: BUG: NULL pointer dereference at shrink_dcache_parent
+Submitter	: Ferenc Wágner <wferi@niif.hu>
+Date		: 2011-01-03 10:49 (63 days old)
 
 
