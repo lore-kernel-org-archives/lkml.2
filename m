@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab1CFMwp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 07:52:45 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:56076 "EHLO ogre.sisk.pl"
+	id S1754985Ab1CFMwr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:52:47 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:56071 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738Ab1CFMwc convert rfc822-to-8bit (ORCPT
+	id S1754596Ab1CFMwc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Mar 2011 07:52:32 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Martin Steigerwald" <Martin@lichtvoll.de>
+        "Rob Landley" <rlandley@parallels.com>
 References: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
 In-Reply-To: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <sUKqYsqyJ4N.A.IbG.e_3cNB@chimera>
-Subject: [Bug #27842] [regression?] hang with 2.6.37 on a BTRFS test machine
+Message-ID: <sUKqYsqyJ4N.A.QhG.k_3cNB@chimera>
+Subject: [Bug #27642] 2.6.37 says WARNING: at arch/x86/kernel/apic/apic.c:1287 setup_local_APIC+0x18f/0x263()
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun,  6 Mar 2011 13:40:40 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +34,11 @@ introduced between 2.6.36 and 2.6.37.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27842
-Subject		: [regression?] hang with 2.6.37 on a BTRFS test machine
-Submitter	: Martin Steigerwald <Martin@lichtvoll.de>
-Date		: 2011-01-23 12:06 (43 days old)
-Message-ID	: <<201101231306.23069.Martin@lichtvoll.de>>
-References	: http://marc.info/?l=linux-kernel&m=129578445613283&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27642
+Subject		: 2.6.37 says WARNING: at arch/x86/kernel/apic/apic.c:1287 setup_local_APIC+0x18f/0x263()
+Submitter	: Rob Landley <rlandley@parallels.com>
+Date		: 2011-01-18 13:11 (48 days old)
+Message-ID	: <4D359188.3040408@parallels.com>
+References	: http://marc.info/?l=linux-kernel&m=129535632319892&w=2
 
 
