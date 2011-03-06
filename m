@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab1CFUZg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 15:25:36 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60978 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab1CFUZf (ORCPT
+	id S1754336Ab1CFUTY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 15:19:24 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:53526 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753848Ab1CFUTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 15:25:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YrwozNQbYPeQVEG3KMDxY3Uc9D8mS/jwZUklAUFqLoN1SQzrGQVNFlEyIG9a80ymHl
-         9Jt521DEZBR8r5f2JrFlxwZb9HQ+IRq9vApZz0eqv4Rr/vN4EuMWEaYw1T+LCvjGgeb6
-         8UjorocqaMV3b1MVf747NFbOu4MLXWg7Ehgn4=
+	Sun, 6 Mar 2011 15:19:23 -0500
+Message-ID: <4D73EC49.8030809@bluewatersys.com>
+Date: Mon, 07 Mar 2011 09:19:21 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <201103062020.21959.Martin@lichtvoll.de>
-References: <201103051510.35057.Martin@lichtvoll.de>
-	<AANLkTi=3HwdHdQzoLUDebfAAMKwSQvVZ43_eQDfi1iB+@mail.gmail.com>
-	<201103061929.23007.Martin@lichtvoll.de>
-	<201103062020.21959.Martin@lichtvoll.de>
-Date: Mon, 7 Mar 2011 06:25:34 +1000
-Message-ID: <AANLkTinhx12_HvDq3Mp7xrkrCez90pNiSuh7KrJAmFXp@mail.gmail.com>
-Subject: Re: [regression] 2.6.37-post-rc7 with radeon kms: reproducably locks
- up hard when using desktop cube of kwin
-From: Dave Airlie <airlied@gmail.com>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
-        DRI <dri-devel@lists.freedesktop.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: Re: [PATCH v5 1/4] gpiolib: Add "unknown" direction support
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com> <20110306072505.GC7467@angua.secretlab.ca>
+In-Reply-To: <20110306072505.GC7467@angua.secretlab.ca>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> I verified this. Lockup happens with 2.6.38, last one tested rc8-gfb62c00,
-> but not with 2.6.37 with exactly same userspace. Needed to try the effect
-> several times, as this time the lockup with 2.6.38 only happened shortly
-> after the second activation of the effect.
->
+On 03/06/2011 08:25 PM, Grant Likely wrote:
 
-Hmm, can you attach Xorg logs from both?
+> Back to sysfs:  The sysfs gpio interface is useful for many reasons,
+> but it is dangerous much in the same way that /dev/mem is dangerous.
+> It gives userspace unfettered access to gpio resources without any
+> clues about how it should be used.  I consider it bad practice to
+> depend on the gpio sysfs interface for any real system/application.
 
-I'm guessing its either pageflipping or a later kernel allowing some
-feature of mesa to be used.
+In an embedded system, where both the kernel and the userspace are
+provided by the hardware vendor, it can be completely sensible to rely
+on gpio numbers in userspace (though I would also like to see the sysfs
+interface able to use named access). There are some existing kernel
+interfaces for common gpio functions such as leds and input devices, but
+there are also many other valid uses for gpios. There are many reasons
+for the access code to be in userspace too: It may be easier to write
+and debug, depending on the setup of the device it may be easier to do
+firmware upgrades of userspace than it is for the kernel, etc.
 
-Dave.
+> gpio numbers could easily change or become unavailable if a kernel
+> driver decides to use them (heck, I'd like to be rid of gpio
+> numbers entirely, but that's a separate debate). I'd much rather see
+> real device drivers be written for gpio interfaces instead of bodging
+> things together from userspace.  Since the addition of an 'unknown'
+> direction is solely for benefit of the sysfs interface, I don't (yet)
+> see a valid argument for adding it.  *Who cares* if sysfs might report
+> direction as 'input' inaccurately?
+
+Because it is incorrect? It may also be useful for a userspace debug
+tool to request all available gpios and show the current direction and
+value of them.
+
+> It may be mildly inconvenient to a
+> human reader, but it doesn't change the usage model one iota because
+> the direction still must be explicitly set before using the gpio.
+
+I agree that the usage model should be to request and then explicitly
+set the direction before use, but that isn't really an argument for
+exporting incorrect information to userspace. The ABI should attempt to
+prevent abuse of itself so that crappy userspace apps cannot be written.
+Either exporting the direction as "unknown" or making the direction file
+unreadable and the value file unreadable/unwritable until the direction
+has been explicitly set?
+
+> So, I'm going to say no to this patch.
+
+The patch is small (it adds 9 lines) and fixes an incorrect value being
+exported to userspace. By your argument we should actually remove the
+ability to read the direction file in sysfs, since userspace must
+explicitly set it, and therefore knows what the direction is?
+
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
