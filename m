@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab1CFTCp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 14:02:45 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40881 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab1CFTCo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 14:02:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com>
-References: <1290060899-9786-1-git-send-email-ccross@android.com>
-	<AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com>
-	<4D70BE9D.4000507@stericsson.com>
-	<AANLkTin7ZXYALOy_jk1uR3SbZA51nSnU-ncSjG+n_RPn@mail.gmail.com>
-	<4D714C17.7080102@gmail.com>
-	<AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com>
-	<eea425c066cc69c30f118fb102fff43e@mail.gmail.com>
-	<AANLkTi=KcmqmghVxhwGvv79heRU3C+TC-v2VnWSWt7bU@mail.gmail.com>
-	<7e9fafa016bfe536ccc373fc2cc7ba61@mail.gmail.com>
-	<AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com>
-Date: Sun, 6 Mar 2011 20:02:42 +0100
-Message-ID: <AANLkTikkcYw66MiJO9Bpm+De=XD2-1MFxm-CUPp6sMqL@mail.gmail.com>
-Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency withcpufreqnotifiers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Colin Cross <ccross@android.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        martin persson <martin.persson@stericsson.com>,
-        Varun Swara <Varun.Swara@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753656Ab1CFTLp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 14:11:45 -0500
+Received: from xenotime.net ([184.105.210.51]:35448 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752291Ab1CFTLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 14:11:44 -0500
+Date: Sun, 6 Mar 2011 11:11:41 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: j223yang@asset.uwaterloo.ca
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Patch] ariadne: fix possible null dereference
+Message-Id: <20110306111141.9cc51306.rdunlap@xenotime.net>
+In-Reply-To: <20110306070832.GA26188@asset.uwaterloo.ca>
+References: <20110306070832.GA26188@asset.uwaterloo.ca>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 6, 2011 at 6:42 PM, Colin Cross <ccross@android.com> wrote:
+On Sun, 6 Mar 2011 02:08:32 -0500 j223yang@asset.uwaterloo.ca wrote:
 
-> Is there any way
-> for a clockevent to invalidate the current event and ask for it to be
-> reprogrammed?
+> Hi Randy,
+> I have tested my patch, and it is ok now.
+> Could you please try patching again? Sorry for previous trouble.
+> Thank you!
 
-TGLX will know for sure... Thomas?
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-(This is inside a CPUfreq hook for a localtimer for the record.)
+Thanks.
 
-Yours,
-Linus Walleij
+> Jinqiu
+> ------------------------------------------------------
+> This patch fixes bugzilla #13853:
+> https://bugzilla.kernel.org/show_bug.cgi?id=13853
+> 
+> The patch removes dereference of 'dev' after testing for NULL.
+> 
+> Signed-off-by: Jinqiu Yang<crindy646@gmail.com>
+> ---
+>  ariadne.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ariadne.c b/drivers/net/ariadne.c
+> --- a/drivers/net/ariadne.c	2011-03-04 11:16:42.332164362 -0500
+> +++ b/drivers/net/ariadne.c	2011-03-05 21:11:52.949164759 -0500
+> @@ -420,7 +420,7 @@ static inline void ariadne_reset(struct 
+>  static irqreturn_t ariadne_interrupt(int irq, void *data)
+>  {
+>      struct net_device *dev = (struct net_device *)data;
+> -    volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
+> +    volatile struct Am79C960 *lance;
+>      struct ariadne_private *priv;
+>      int csr0, boguscnt;
+>      int handled = 0;
+> @@ -430,6 +430,7 @@ static irqreturn_t ariadne_interrupt(int
+>  	return IRQ_NONE;
+>      }
+>  
+> +    lance = (struct Am79C960 *)dev->base_addr;
+>      lance->RAP = CSR0;			/* PCnet-ISA Controller Status */
+>  
+>      if (!(lance->RDP & INTR))		/* Check if any interrupt has been */
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
