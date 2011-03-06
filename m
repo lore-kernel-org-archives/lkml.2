@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab1CFOqf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 09:46:35 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:45007 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889Ab1CFOqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 09:46:24 -0500
-From: Florian Mickler <florian@mickler.org>
-To: mchehab@infradead.org
-Cc: Florian Mickler <florian@mickler.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Oliver Neukum <oliver@neukum.org>, Jack Stone <jwjstone@fastmail.fm>
-Subject: [PATCH 3/3] [media] dib0700: don't ignore errors in driver probe
-Date: Sun,  6 Mar 2011 15:45:16 +0100
-Message-Id: <1299422716-29461-3-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.4.rc3
-In-Reply-To: <1299422716-29461-1-git-send-email-florian@mickler.org>
-References: <20110306153805.001011a9@schatten.dmk.lab>
- <1299422716-29461-1-git-send-email-florian@mickler.org>
+	id S1753828Ab1CFOtl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 09:49:41 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:42685 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1CFOtk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 09:49:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:reply-to:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Oj9VaOBkXS380nk9ZuvJGNeMek1q+1KCVIzBrLnAXgqeXwSpkNpa7CD9mZJmpJdMxm
+         eOSTNUyjRLNhP1srTeW8pQEFXIk95fkyl4bZxJY9BRcCt2PRuD4alzUvCWDa1pLqhuy6
+         GwqAQIMljzKYtQVH8f7XTp3PB/7oRcJLoNLxY=
+Date: Sun, 6 Mar 2011 22:53:21 +0800
+From: Xiaochen Wang <wangxiaochen0@gmail.com>
+To: greg@kroah.com, Larry.Finger@lwfinger.net,
+        florian.c.schilhabel@googlemail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] check _malloc return value in rtl8712
+Message-ID: <20110306145321.GA20485@chii>
+Reply-To: Xiaochen Wang <wangxiaochen0@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Florian Mickler <florian@mickler.org>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: linux-media@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-CC: Greg Kroah-Hartman <greg@kroah.com>
-CC: Rafael J. Wysocki <rjw@sisk.pl>
-CC: Maciej Rutecki <maciej.rutecki@gmail.com>
-CC: Oliver Neukum <oliver@neukum.org>
-CC: Jack Stone <jwjstone@fastmail.fm>
----
- drivers/media/dvb/dvb-usb/dib0700_core.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+Description: The original check is wrong.
 
-diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb/dvb-usb/dib0700_core.c
-index 77a3060..3ad18ce 100644
---- a/drivers/media/dvb/dvb-usb/dib0700_core.c
-+++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
-@@ -698,6 +698,7 @@ static int dib0700_probe(struct usb_interface *intf,
- 		const struct usb_device_id *id)
- {
- 	int i;
-+	int ret;
- 	struct dvb_usb_device *dev;
+Signed-off-by: Xiaochen Wang <wangxiaochen0@gmail.com>
+---
+ drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+index 685a7b1..51fef02 100644
+--- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
++++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+@@ -953,7 +953,7 @@ static int r871x_wx_set_priv(struct net_device *dev,
  
- 	for (i = 0; i < dib0700_device_count; i++)
-@@ -706,8 +707,10 @@ static int dib0700_probe(struct usb_interface *intf,
- 			struct dib0700_state *st = dev->priv;
- 			u32 hwversion, romversion, fw_version, fwtype;
- 
--			dib0700_get_version(dev, &hwversion, &romversion,
-+			ret = dib0700_get_version(dev, &hwversion, &romversion,
- 				&fw_version, &fwtype);
-+			if (ret < 0)
-+				goto out;
- 
- 			deb_info("Firmware version: %x, %d, 0x%x, %d\n",
- 				hwversion, romversion, fw_version, fwtype);
-@@ -721,11 +724,15 @@ static int dib0700_probe(struct usb_interface *intf,
- 			else
- 				dev->props.rc.core.bulk_mode = false;
- 
--			dib0700_rc_setup(dev);
-+			ret = dib0700_rc_setup(dev);
-+			if (ret)
-+				goto out;
- 
- 			return 0;
-+out:
-+			dvb_usb_device_exit();
-+			return ret;
- 		}
--
- 	return -ENODEV;
- }
- 
+ 	len = dwrq->length;
+ 	ext = _malloc(len);
+-	if (!_malloc(len))
++	if (!ext)
+ 		return -ENOMEM;
+ 	if (copy_from_user(ext, dwrq->pointer, len)) {
+ 		kfree(ext);
 -- 
-1.7.4.rc3
+1.7.2.3
 
