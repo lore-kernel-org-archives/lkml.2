@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab1CGGNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 01:13:45 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36482 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab1CGGNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 01:13:44 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 7 Mar 2011 15:07:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: remove inline from scan_swap_map
-Message-Id: <20110307150721.16ff00e8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299350956-5614-1-git-send-email-cesarb@cesarb.net>
-References: <1299350956-5614-1-git-send-email-cesarb@cesarb.net>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753402Ab1CFMOZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:14:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752738Ab1CFMOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 07:14:23 -0500
+Message-ID: <4D737A96.6040409@redhat.com>
+Date: Sun, 06 Mar 2011 14:14:14 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 6/10] KVM: MMU: don not record gfn in kvm_mmu_pte_write
+References: <4D70C569.1030107@cn.fujitsu.com> <4D70C630.1080100@cn.fujitsu.com>
+In-Reply-To: <4D70C630.1080100@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  5 Mar 2011 15:49:16 -0300
-Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+On 03/04/2011 01:00 PM, Xiao Guangrong wrote:
+> No need to record the gfn to verifier the pte has the same mode as
+> current vcpu, it's because we only speculatively update the pte only
+> if the pte and vcpu have the same mode
 
-> scan_swap_map is a large function (224 lines), with several loops and a
-> complex control flow involving several gotos.
-> 
-> Given all that, it is a bit silly that is is marked as inline. The
-> compiler agrees with me: on a x86-64 compile, it did not inline the
-> function.
-> 
-> Remove the "inline" and let the compiler decide instead.
-> 
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+True.  We can, as an additional cleanup, change mmu_pte_write_new_pte() 
+to just do vcpu->arch.mmu.update_spte(...) instead of the if ().
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+-- 
+error compiling committee.c: too many arguments to function
 
