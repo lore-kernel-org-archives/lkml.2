@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1CFMVg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 07:21:36 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55749 "EHLO ogre.sisk.pl"
+	id S1755073Ab1CFM4K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:56:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:56042 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753973Ab1CFMV1 convert rfc822-to-8bit (ORCPT
+	id S1754681Ab1CFMv7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 07:21:27 -0500
+	Sun, 6 Mar 2011 07:51:59 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "=?utf-8?q?Jind=C5=99ich=20Makovi=C4=8Dka?=" <makovick@gmail.com>
-References: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
-In-Reply-To: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
+        Florian Mickler <florian@mickler.org>, "Pawel Sikora" <pluto@agmk.net>
+References: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
+In-Reply-To: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <GTlFTeOGjrB.A.tQF.Vr3cNB@chimera>
-Subject: [Bug #28432] khugepaged: gets stuck when writing to USB flash, 2.6.38-rc2
+Message-ID: <sUKqYsqyJ4N.A.yFH.rA4cNB@chimera>
+Subject: [Bug #26102] [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  6 Mar 2011 13:10:17 +0100 (CET)
+Date: Sun,  6 Mar 2011 13:40:37 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.36 and 2.6.37.
 
 The following bug entry is on the current list of known regressions
-from 2.6.37.  Please verify if it still should be listed and let the tracking team
-know (either way).
+introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28432
-Subject		: khugepaged: gets stuck when writing to USB flash, 2.6.38-rc2
-Submitter	: Jindřich Makovička <makovick@gmail.com>
-Date		: 2011-01-31 19:28 (35 days old)
-Message-ID	: <AANLkTi=uOpN0PwWdGh6iri-vJwuMS+WMPxmaZjv0-TrV@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=129650210516627&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26102
+Subject		: [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
+Submitter	: Pawel Sikora <pluto@agmk.net>
+Date		: 2010-12-30 15:08 (67 days old)
+Message-ID	: <201012301608.40859.pluto@agmk.net>
+References	: http://marc.info/?l=linux-kernel&m=129372388925679&w=2
 
 
