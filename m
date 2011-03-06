@@ -1,33 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab1CFMfK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 07:35:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6504 "EHLO mx1.redhat.com"
+	id S1754747Ab1CFM0d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:26:33 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55764 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752451Ab1CFMfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 07:35:06 -0500
-Message-ID: <4D737F72.2070804@redhat.com>
-Date: Sun, 06 Mar 2011 14:34:58 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1752570Ab1CFMW3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 07:22:29 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Kusanagi Kouichi" <slash@ac.auone-net.jp>
+References: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
+In-Reply-To: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/10] KVM: MMU: fix kvm_mmu_slot_remove_write_access
-References: <4D70C569.1030107@cn.fujitsu.com>
-In-Reply-To: <4D70C569.1030107@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <GTlFTeOGjrB.A.dvE.Yq3cNB@chimera>
+Subject: [Bug #29252] IPv6 doesn't work in a kvm guest.
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun,  6 Mar 2011 13:10:19 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2011 12:56 PM, Xiao Guangrong wrote:
-> Only remove write access in the last sptes
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-Thanks, applied patches 1, 3, 5, 6, 8, and 9.
+The following bug entry is on the current list of known regressions
+from 2.6.37.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
--- 
-error compiling committee.c: too many arguments to function
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29252
+Subject		: IPv6 doesn't work in a kvm guest.
+Submitter	: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Date		: 2011-02-16 13:03 (19 days old)
+
 
