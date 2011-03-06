@@ -1,162 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab1CFPwx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 10:52:53 -0500
-Received: from trinity.develer.com ([83.149.158.210]:56774 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab1CFPww (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 10:52:52 -0500
-Date: Sun, 6 Mar 2011 16:52:47 +0100
-From: Andrea Righi <arighi@develer.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
-Message-ID: <20110306155247.GA1687@linux.develer.com>
-References: <1298888105-3778-1-git-send-email-arighi@develer.com>
- <20110228230114.GB20845@redhat.com>
- <20110302132830.GB2061@linux.develer.com>
- <20110302214705.GD2547@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302214705.GD2547@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754724Ab1CFWIW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 17:08:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42825 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752222Ab1CFWIV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 17:08:21 -0500
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sun, 06 Mar 2011 22:08:03 +0000
+Message-ID: <1299449283.3134.6.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: [PATCH] perf: Define make variables ARCH and SRCARCH consistently
+ with Kbuild
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.i.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 04:47:05PM -0500, Vivek Goyal wrote:
-> On Wed, Mar 02, 2011 at 02:28:30PM +0100, Andrea Righi wrote:
-> > On Mon, Feb 28, 2011 at 06:01:14PM -0500, Vivek Goyal wrote:
-> > > On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
-> > > > Overview
-> > > > ========
-> > > > Currently the blkio.throttle controller only support synchronous IO requests.
-> > > > This means that we always look at the current task to identify the "owner" of
-> > > > each IO request.
-> > > > 
-> > > > However dirty pages in the page cache can be wrote to disk asynchronously by
-> > > > the per-bdi flusher kernel threads or by any other thread in the system,
-> > > > according to the writeback policy.
-> > > > 
-> > > > For this reason the real writes to the underlying block devices may
-> > > > occur in a different IO context respect to the task that originally
-> > > > generated the dirty pages involved in the IO operation. This makes the
-> > > > tracking and throttling of writeback IO more complicate respect to the
-> > > > synchronous IO from the blkio controller's perspective.
-> > > > 
-> > > > Proposed solution
-> > > > =================
-> > > > In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
-> > > > the problem of the buffered writes limitation by tracking the ownership of all
-> > > > the dirty pages in the system.
-> > > > 
-> > > > This would allow to always identify the owner of each IO operation at the block
-> > > > layer and apply the appropriate throttling policy implemented by the
-> > > > blkio.throttle controller.
-> > > > 
-> > > > This solution makes the blkio.throttle controller to work as expected also for
-> > > > writeback IO, but it does not resolve the problem of faster cgroups getting
-> > > > blocked by slower cgroups (that would expose a potential way to create DoS in
-> > > > the system).
-> > > > 
-> > > > In fact, at the moment critical IO requests (that have dependency with other IO
-> > > > requests made by other cgroups) and non-critical requests are mixed together at
-> > > > the filesystem layer in a way that throttling a single write request may stop
-> > > > also other requests in the system, and at the block layer it's not possible to
-> > > > retrieve such informations to make the right decision.
-> > > > 
-> > > > A simple solution to this problem could be to just limit the rate of async
-> > > > writes at the time a task is generating dirty pages in the page cache. The
-> > > > big advantage of this approach is that it does not need the overhead of
-> > > > tracking the ownership of the dirty pages, because in this way from the blkio
-> > > > controller perspective all the IO operations will happen from the process
-> > > > context: writes in memory and synchronous reads from the block device.
-> > > > 
-> > > > The drawback of this approach is that the blkio.throttle controller becomes a
-> > > > little bit leaky, because with this solution the controller is still affected
-> > > > by the IO spikes during the writeback of dirty pages executed by the kernel
-> > > > threads.
-> > > > 
-> > > > Probably an even better approach would be to introduce the tracking of the
-> > > > dirty page ownership to properly account the cost of each IO operation at the
-> > > > block layer and apply the throttling of async writes in memory only when IO
-> > > > limits are exceeded.
-> > > 
-> > > Andrea, I am curious to know more about it third option. Can you give more
-> > > details about accouting in block layer but throttling in memory. So say 
-> > > a process starts IO, then it will still be in throttle limits at block
-> > > layer (because no writeback has started), then the process will write
-> > > bunch of pages in cache. By the time throttle limits are crossed at
-> > > block layer, we already have lots of dirty data in page cache and
-> > > throttling process now is already late?
-> > 
-> > Charging the cost of each IO operation at the block layer would allow
-> > tasks to write in memory at the maximum speed. Instead, with the 3rd
-> > approach, tasks are forced to write in memory at the rate defined by the
-> > blkio.throttle.write_*_device (or blkio.throttle.async.write_*_device).
-> > 
-> > When we'll have the per-cgroup dirty memory accounting and limiting
-> > feature, with this approach each cgroup could write to its dirty memory
-> > quota at the maximum rate.
-> 
-> Ok, so this is option 3 which you have already implemented in this
-> patchset. 
-> 
-> I guess then I am confused with option 2. Can you elaborate a little
-> more there.
+It is confusing to use RAW_ARCH/ARCH instead of ARCH/SRCARCH.  The
+current definitions also make it difficult to build for i386 on an
+x86_64 host.
 
-With option 3, we can just limit the rate at which dirty pages are
-generated in memory. And this can be done introducing the files
-blkio.throttle.async.write_bps/iops_device.
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ tools/perf/Makefile              |   20 ++++++++------------
+ tools/perf/arch/arm/Makefile     |    2 +-
+ tools/perf/arch/powerpc/Makefile |    2 +-
+ tools/perf/arch/s390/Makefile    |    2 +-
+ tools/perf/arch/sh/Makefile      |    2 +-
+ tools/perf/arch/sparc/Makefile   |    2 +-
+ tools/perf/arch/x86/Makefile     |    2 +-
+ 7 files changed, 14 insertions(+), 18 deletions(-)
 
-At the moment in blk_throtl_bio() we charge the dispatched bytes/iops
-_and_ we check if the bio can be dispatched. These two distinct
-operations are now done by the same function.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 7141c42..c5d09b0 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -174,19 +174,15 @@ uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
+ uname_P := $(shell sh -c 'uname -p 2>/dev/null || echo not')
+ uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
+ 
+-ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++ARCH ?= $(uname_M)
++SRCARCH := $(shell echo $(ARCH) | sed -e s/i.86/x86/ -e s/sun4u/sparc64/ \
+ 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-				  -e s/sh[234].*/sh/ )
++				  -e s/sh[234].*/sh/ -e s/x86_64/x86/ )
+ 
+-# Additional ARCH settings for x86
+-ifeq ($(ARCH),i386)
+-        ARCH := x86
+-endif
++# Additional ARCH settings for x86_64
+ ifeq ($(ARCH),x86_64)
+-	RAW_ARCH := x86_64
+-        ARCH := x86
+ 	ARCH_CFLAGS := -DARCH_X86_64
+ 	ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S
+ endif
+@@ -305,7 +301,7 @@ endif
+ # Those must not be GNU-specific; they are shared with perl/ which may
+ # be built by a different compiler. (Note that this is an artifact now
+ # but it still might be nice to keep that distinction.)
+-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include
++BASIC_CFLAGS = -Iutil/include -Iarch/$(SRCARCH)/include
+ BASIC_LDFLAGS =
+ 
+ # Guard against environment variables
+@@ -488,7 +484,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+-ifeq ($(RAW_ARCH),x86_64)
++ifeq ($(ARCH),x86_64)
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+ endif
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+@@ -533,7 +529,7 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+ endif # Dwarf support
+ endif # NO_DWARF
+ 
+--include arch/$(ARCH)/Makefile
++-include arch/$(SRCARCH)/Makefile
+ 
+ ifeq ($(uname_S),Darwin)
+ 	ifndef NO_FINK
+@@ -571,7 +567,7 @@ endif
+ 
+ ifndef NO_DWARF
+ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+-	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
++	msg := $(warning DWARF register mappings have not been defined for architecture $(SRCARCH), DWARF support disabled);
+ else
+ 	BASIC_CFLAGS += -DDWARF_SUPPORT
+ 	EXTLIBS += -lelf -ldw
+diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
+index 15130b5..571affa 100644
+--- a/tools/perf/arch/arm/Makefile
++++ b/tools/perf/arch/arm/Makefile
+@@ -1,4 +1,4 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(SRCARCH)/util/dwarf-regs.o
+ endif
+diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
+index 15130b5..571affa 100644
+--- a/tools/perf/arch/powerpc/Makefile
++++ b/tools/perf/arch/powerpc/Makefile
+@@ -1,4 +1,4 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(SRCARCH)/util/dwarf-regs.o
+ endif
+diff --git a/tools/perf/arch/s390/Makefile b/tools/perf/arch/s390/Makefile
+index 15130b5..571affa 100644
+--- a/tools/perf/arch/s390/Makefile
++++ b/tools/perf/arch/s390/Makefile
+@@ -1,4 +1,4 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(SRCARCH)/util/dwarf-regs.o
+ endif
+diff --git a/tools/perf/arch/sh/Makefile b/tools/perf/arch/sh/Makefile
+index 15130b5..571affa 100644
+--- a/tools/perf/arch/sh/Makefile
++++ b/tools/perf/arch/sh/Makefile
+@@ -1,4 +1,4 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(SRCARCH)/util/dwarf-regs.o
+ endif
+diff --git a/tools/perf/arch/sparc/Makefile b/tools/perf/arch/sparc/Makefile
+index 15130b5..571affa 100644
+--- a/tools/perf/arch/sparc/Makefile
++++ b/tools/perf/arch/sparc/Makefile
+@@ -1,4 +1,4 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(SRCARCH)/util/dwarf-regs.o
+ endif
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 15130b5..571affa 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -1,4 +1,4 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(SRCARCH)/util/dwarf-regs.o
+ endif
+-- 
+1.7.4.1
 
-With option 2, I'm proposing to split these two operations and place
-throtl_charge_io() at the block layer in __generic_make_request() and an
-equivalent of tg_may_dispatch_bio() (maybe a better name would be
-blk_is_throttled()) at the page cache layer, in
-balance_dirty_pages_ratelimited_nr():
 
-A prototype for blk_is_throttled() could be the following:
-
-bool blk_is_throttled(void);
-
-This means in balance_dirty_pages_ratelimited_nr() we won't charge any
-bytes/iops to the cgroup, but we'll just check if the limits are
-exceeded. And stop it in that case, so that no more dirty pages can be
-generated by this cgroup.
-
-Instead at the block layer WRITEs will be always dispatched in
-blk_throtl_bio() (tg_may_dispatch_bio() will always return true), but
-the throtl_charge_io() would charge the cost of the IO operation to the
-right cgroup.
-
-To summarize:
-
-__generic_make_request():
-	blk_throtl_bio(q, &bio);
-
-balance_dirty_pages_ratelimited_nr():
-	if (blk_is_throttled())
-		// add the current task into a per-group wait queue and
-		// wake up once this cgroup meets its quota
-
-What do you think?
-
-Thanks,
--Andrea
