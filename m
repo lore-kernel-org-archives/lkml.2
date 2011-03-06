@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab1CGCPA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 21:15:00 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:53118 "EHLO
+	id S1754644Ab1CFWEL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 17:04:11 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:22327 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab1CGCO6 (ORCPT
+	with ESMTP id S1752222Ab1CFWEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 21:14:58 -0500
+	Sun, 6 Mar 2011 17:04:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=w2///J63I0Oi7QYPoCUiFVKAyT/XKAQ4KIT3KOelAto0ghwc6MWn0CApf45gSKj+a5
-         TrgFAyS8pYThgmDKB+DQ==
-Date: Sun, 6 Mar 2011 18:14:50 -0800
-From: Michel Lespinasse <walken@google.com>
-To: Stephen Hemminger <shemminger@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=O2TiKoUIfnM9Z0nV75FjeX+fM1NG3WiTBzNBEmhpYQ1ahb/oat8Q1+fGTD4OF6nmgf
+         i6DRjjWdJrr7RSu2zxOw==
+Date: Sun, 6 Mar 2011 14:03:39 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/net: fix build warnings with CONFIG_PM_SLEEP
- disabled
-Message-ID: <20110307021450.GC31188@google.com>
+Subject: Re: [PATCH] mm: skip zombie in OOM-killer
+In-Reply-To: <20110306193519.49DD.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1103061400170.23737@chino.kir.corp.google.com>
+References: <1299286307-4386-1-git-send-email-avagin@openvz.org> <20110306193519.49DD.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a couple of build warnings when CONFIG_PM is enabled but
-CONFIG_PM_SLEEP is disabled. Applies on top of v2.6.38-rc7 - I know it's
-late, but it would be great if v2.6.38 could compile without warnings!
+On Sun, 6 Mar 2011, KOSAKI Motohiro wrote:
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- drivers/net/forcedeth.c |    8 ++++++--
- drivers/net/sky2.c      |    2 +-
- 2 files changed, 7 insertions(+), 3 deletions(-)
+> > When we check that task has flag TIF_MEMDIE, we forgot check that
+> > it has mm. A task may be zombie and a parent may wait a memor.
+> > 
+> > v2: Check that task doesn't have mm one time and skip it immediately
+> > 
+> > Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> 
+> This seems incorrect. Do you have a reprodusable testcasae?
+> Your patch only care thread group leader state, but current code
+> care all thread in the process. Please look at oom_badness() and 
+> find_lock_task_mm(). 
+> 
 
-diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
-index 9c0b1ba..7b92897 100644
---- a/drivers/net/forcedeth.c
-+++ b/drivers/net/forcedeth.c
-@@ -5744,7 +5744,7 @@ static void __devexit nv_remove(struct pci_dev *pci_dev)
- 	pci_set_drvdata(pci_dev, NULL);
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int nv_suspend(struct device *device)
- {
- 	struct pci_dev *pdev = to_pci_dev(device);
-@@ -5795,6 +5795,11 @@ static int nv_resume(struct device *device)
- static SIMPLE_DEV_PM_OPS(nv_pm_ops, nv_suspend, nv_resume);
- #define NV_PM_OPS (&nv_pm_ops)
- 
-+#else
-+#define NV_PM_OPS NULL
-+#endif /* CONFIG_PM_SLEEP */
-+
-+#ifdef CONFIG_PM
- static void nv_shutdown(struct pci_dev *pdev)
- {
- 	struct net_device *dev = pci_get_drvdata(pdev);
-@@ -5822,7 +5827,6 @@ static void nv_shutdown(struct pci_dev *pdev)
- 	}
- }
- #else
--#define NV_PM_OPS NULL
- #define nv_shutdown NULL
- #endif /* CONFIG_PM */
- 
-diff --git a/drivers/net/sky2.c b/drivers/net/sky2.c
-index 7d85a38..2a91868 100644
---- a/drivers/net/sky2.c
-+++ b/drivers/net/sky2.c
-@@ -4983,7 +4983,7 @@ static int sky2_suspend(struct device *dev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int sky2_resume(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
+That's all irrelevant, the test for TIF_MEMDIE specifically makes the oom 
+killer a complete no-op when an eligible task is found to have been oom 
+killed to prevent needlessly killing additional tasks.  oom_badness() and 
+find_lock_task_mm() have nothing to do with that check to return 
+ERR_PTR(-1UL) from select_bad_process().
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Andrey is patching the case where an eligible TIF_MEMDIE process is found 
+but it has already detached its ->mm.  In combination with the patch 
+posted to linux-mm, oom: prevent unnecessary oom kills or kernel panics, 
+which makes select_bad_process() iterate over all threads, it is an 
+effective solution.
+
+Thanks.
