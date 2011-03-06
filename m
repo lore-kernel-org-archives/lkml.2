@@ -1,163 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab1CFIrP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 03:47:15 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58934 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1CFIrJ convert rfc822-to-8bit (ORCPT
+	id S1750987Ab1CFFb4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 00:31:56 -0500
+Received: from polaris.galacticasoftware.com ([216.55.199.131]:39102 "EHLO
+	polaris.galacticasoftware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750726Ab1CFFbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 03:47:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bKn5kAUGm7VfWspa0mE2vOx0jQ/PYnaTrRrM/M1awninWIRujcRikGRBrPL+JgnbTO
-         ftb4LhfOFVqzkd7i5MygvmJNz4OalEoat77IVfmx42nryODFTho85TyA3UQKEKPMyQ3x
-         EC3u4IKoz+JCeXb5KrmWD6N5BNBd9Rv0ve8qQ=
+	Sun, 6 Mar 2011 00:31:55 -0500
+X-Greylist: delayed 762 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 00:31:54 EST
+Date: Sat, 5 Mar 2011 23:31:34 -0600
+From: Adam Majer <adamm@zombino.com>
+To: netdev@vger.kernel.org
+Cc: Stephen Hemminger <shemminger@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, bridge@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Issue NETDEV_CHANGE notification when bridge
+ changes state
+Message-ID: <20110306053134.GB3146@mira.lan.galacticasoftware.com>
+References: <20110306051833.GA3098@mira.lan.galacticasoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <20110303135942.GA8969@tuxdriver.com>
-References: <AANLkTik9To0Rkq2FRqQFB2wNu0kyJ7CzyBek2jBp36Cb@mail.gmail.com>
-	<20110303135942.GA8969@tuxdriver.com>
-Date: Sun, 6 Mar 2011 00:47:05 -0800
-Message-ID: <AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>
-Subject: Re: WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536
- ath_stoprecv+0xc8/0xda [ath9k]()
-From: Justin Mattock <justinmattock@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ath9k-devel@atheros.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110306051833.GA3098@mira.lan.galacticasoftware.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 3, 2011 at 5:59 AM, John W. Linville <linville@tuxdriver.com> wrote:
-> On Wed, Mar 02, 2011 at 09:47:43PM -0800, Justin Mattock wrote:
->> not sure what this is..(below)
->>
->>
->> [   33.951046] CE: hpet increased min_delta_ns to 20113 nsec
->> [   35.567319] EXT4-fs (sda3): re-mounted. Opts:
->> errors=panic,user_xattr,debug,acl,commit=600
->> [   36.350144] wlan0: authenticate with 00:0b:86:32:f8:60 (try 1)
->> [   36.352284] wlan0: authenticated
->> [   36.352396] wlan0: associate with 00:0b:86:32:f8:60 (try 1)
->> [   36.356854] wlan0: RX AssocResp from 00:0b:86:32:f8:60 (capab=0x421
->> status=0 aid=2)
->> [   36.356862] wlan0: associated
->> [   41.370318] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->> AR_DIAG_SW=0x42000020
->> [   41.370324] ath: Could not stop RX, we could be confusing the DMA
->> engine when we start RX up
->> [   41.370328] ------------[ cut here ]------------
->> [   41.370345] WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536
->> ath_stoprecv+0xc8/0xda [ath9k]()
->> [   41.370349] Hardware name: MacBookPro2,2
->> [   41.370351] Modules linked in: hidp xfrm4_mode_transport xcbc
->> rmd160 sha512_generic rfcomm sco bnep l2cap ipt_REJECT xt_tcpudp
->> ipt_LOG iptable_nat nf_nat xt_state nf_conntrack_ftp nf_conntrack_ipv4
->> nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables btusb
->> bluetooth evdev psmouse thermal fan container button ac battery video
->> ath9k ath9k_common ath9k_hw ath ttm drm aes_x86_64 lzo zlib ipcomp
->> xfrm_ipcomp crypto_null sha256_generic cbc des_generic cast5 blowfish
->> serpent camellia twofish_generic twofish_x86_64 twofish_common ctr ah4
->> esp4 authenc firewire_ohci firewire_core uhci_hcd ehci_hcd coretemp
->> acpi_cpufreq processor mperf appletouch applesmc
->> [   41.370430] Pid: 766, comm: kworker/u:4 Not tainted
->> 2.6.38-rc6-00116-g2821f46 #5
->> [   41.370434] Call Trace:
->> [   41.370444]  [<ffffffff810612c0>] ? warn_slowpath_common+0x80/0x98
->> [   41.370450]  [<ffffffff810612ed>] ? warn_slowpath_null+0x15/0x17
->> [   41.370458]  [<ffffffffa01c6438>] ? ath_stoprecv+0xc8/0xda [ath9k]
->> [   41.370467]  [<ffffffffa01c3a62>] ? ath_set_channel+0xb0/0x217 [ath9k]
->> [   41.370475]  [<ffffffffa01c3f89>] ? ath9k_config+0x3c0/0x4c3 [ath9k]
->> [   41.370482]  [<ffffffff8140fe8a>] ? ieee80211_hw_config+0x120/0x129
->> [   41.370487]  [<ffffffff81413902>] ? ieee80211_scan_work+0x2f8/0x496
->> [   41.370495]  [<ffffffffa01c7934>] ?
->> ath_tx_complete_poll_work+0xf3/0x102 [ath9k]
->> [   41.370501]  [<ffffffff8141360a>] ? ieee80211_scan_work+0x0/0x496
->> [   41.370506]  [<ffffffff810769c7>] ? process_one_work+0x266/0x3d7
->> [   41.370511]  [<ffffffff81076e9f>] ? worker_thread+0x1d6/0x350
->> [   41.370515]  [<ffffffff81076cc9>] ? worker_thread+0x0/0x350
->> [   41.370521]  [<ffffffff8107bdcf>] ? kthread+0x7d/0x85
->> [   41.370528]  [<ffffffff8102e064>] ? kernel_thread_helper+0x4/0x10
->> [   41.370533]  [<ffffffff8107bd52>] ? kthread+0x0/0x85
->> [   41.370537]  [<ffffffff8102e060>] ? kernel_thread_helper+0x0/0x10
->> [   41.370541] ---[ end trace 062f507148a6fa8e ]---
->>
->>
->> from what I remember I was at a local college(caltech) trying to
->> connect to their public wifi
->> in the public area. with no luck, then this popped up.
->> full dmesg here:
->>
->> http://fpaste.org/SKU4/
->
-> In ath_stoprecv:
->
->        if (!(ah->ah_flags & AH_UNPLUGGED) &&
->            unlikely(!stopped)) {
->                ath_err(ath9k_hw_common(sc->sc_ah),
->                        "Could not stop RX, we could be "
->                        "confusing the DMA engine when we start RX up\n");
->                ATH_DBG_WARN_ON_ONCE(!stopped);
->        }
->
-> The Atheros guys will have to comment.
->
-> John
-> --
-> John W. Linville                Someday the world will need a hero, and you
-> linville@tuxdriver.com                  might be all we have.  Be ready.
->
+Hello,
 
-well even at home this seems to be firing off. was watching movies,music, etc..
+As background for these 2 patches, the current bridge code does not
+play very nicely with IPv6 autoconfiguration. What happens is,
 
-[21471.152404] ------------[ cut here ]------------
-[21471.152426] WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536
-ath_stoprecv+0xc8/0xda [ath9k]()
-[21471.152429] Hardware name: MacBookPro2,2
-[21471.152431] Modules linked in: hidp xfrm4_mode_transport xcbc
-rmd160 sha512_generic rfcomm sco bnep l2cap ipt_REJECT xt_tcpudp
-ipt_LOG iptable_nat nf_nat xt_state nf_conntrack_ftp nf_conntrack_ipv4
-nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables btusb
-bluetooth evdev psmouse thermal fan container button ac battery video
-ath9k ath9k_common ath9k_hw ath ttm drm aes_x86_64 lzo zlib ipcomp
-xfrm_ipcomp crypto_null sha256_generic cbc des_generic cast5 blowfish
-serpent camellia twofish_generic twofish_x86_64 twofish_common ctr ah4
-esp4 authenc firewire_ohci firewire_core uhci_hcd ehci_hcd coretemp
-acpi_cpufreq processor mperf appletouch applesmc
-[21471.152492] Pid: 4637, comm: kworker/u:2 Not tainted
-2.6.38-rc7-00143-gd1b152c #7
-[21471.152495] Call Trace:
-[21471.152504]  [<ffffffff810612c0>] ? warn_slowpath_common+0x80/0x98
-[21471.152508]  [<ffffffff810612ed>] ? warn_slowpath_null+0x15/0x17
-[21471.152514]  [<ffffffffa01c6438>] ? ath_stoprecv+0xc8/0xda [ath9k]
-[21471.152520]  [<ffffffffa01c3a62>] ? ath_set_channel+0xb0/0x217 [ath9k]
-[21471.152526]  [<ffffffffa01c3f89>] ? ath9k_config+0x3c0/0x4c3 [ath9k]
-[21471.152532]  [<ffffffff814101fe>] ? ieee80211_hw_config+0x120/0x129
-[21471.152536]  [<ffffffff81413c76>] ? ieee80211_scan_work+0x2f8/0x496
-[21471.152541]  [<ffffffff8141dccc>] ? ieee80211_iface_work+0x28d/0x2a6
-[21471.152547]  [<ffffffffa01c7934>] ?
-ath_tx_complete_poll_work+0xf3/0x102 [ath9k]
-[21471.152550]  [<ffffffff8141397e>] ? ieee80211_scan_work+0x0/0x496
-[21471.152555]  [<ffffffff8107697f>] ? process_one_work+0x266/0x3d7
-[21471.152558]  [<ffffffff81076e57>] ? worker_thread+0x1d6/0x350
-[21471.152561]  [<ffffffff81076c81>] ? worker_thread+0x0/0x350
-[21471.152566]  [<ffffffff8107bd87>] ? kthread+0x7d/0x85
-[21471.152572]  [<ffffffff8102e064>] ? kernel_thread_helper+0x4/0x10
-[21471.152575]  [<ffffffff8107bd0a>] ? kthread+0x0/0x85
-[21471.152578]  [<ffffffff8102e060>] ? kernel_thread_helper+0x0/0x10
-[21471.152581] ---[ end trace 11eeb73d205c9b43 ]---
+[   35.117030] device eth0 entered promiscuous mode
+[   35.120898] br0: port 1(eth0) entering learning state
+[   35.120901] br0: port 1(eth0) entering learning state
 
-full dmesg here:
-http://fpaste.org/5JQp/
-let me know if I need to supply any info(also I can try a bisect, but
-am in the middle of changing residencies, so it might not be right
-away)
+Here bridge is setup and both interface eth0 and br0 are indicated as
+up via NETDEV_UP notification. The IPv6 autoconfiguration code
+configures linklocal address and start to issue RS packets. These
+timeout because bridge is in learning state, not forwarding state.
+
+[   45.168007] br0: no IPv6 routers present
+[   45.312020] eth0: no IPv6 routers present
+
+RS timeouts and IPv6 is abandoned at this point.
+
+[   50.144011] br0: port 1(eth0) entering forwarding state
+
+Now bridge entered forwarding state. Userland sets up IPv4 via DHCP or
+otherwise.
+
+[   50.144487] ADDRCONF(NETDEV_CHANGE): br0: link becomes ready
+
+With the patches, NETDEV_CHANGE is issued by the bridge once it
+changes state. The autoconfiguration code then checks that no RA
+packets are received and only linklocal interface is setup. It then
+retries soliciting router information.
+
+
+This is my first attempt at a kernel patch so please be gentle :) Part
+of the autoconf patch splits out the addrconf_rs_start() code from the
+addrconf_dad_completed() function.
+
+Cheers,
+Adam
 
 
 -- 
-Justin P. Mattock
+Adam Majer
+adamm@zombino.com
