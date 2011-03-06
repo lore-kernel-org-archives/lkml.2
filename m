@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1CFMEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 07:04:09 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48820 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab1CFMEF (ORCPT
+	id S1753099Ab1CFMLp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:11:45 -0500
+Received: from smtp-out003.kontent.com ([81.88.40.217]:40859 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab1CFMLn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 07:04:05 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH v4 0/4] exec: unify native/compat code
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
-        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
-        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20110305203040.GA7546@redhat.com>
-References: <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com> <20110305203040.GA7546@redhat.com>
-Message-Id: <20110306210334.6CD5.A69D9226@jp.fujitsu.com>
+	Sun, 6 Mar 2011 07:11:43 -0500
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Mar 2011 07:11:43 EST
+From: Oliver Neukum <oliver@neukum.org>
+To: Florian Mickler <florian@mickler.org>
+Subject: Re: [PATCH] [media] dib0700: get rid of on-stack dma buffers
+Date: Sun, 6 Mar 2011 13:06:09 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <greg@kroah.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <1299410212-24897-1-git-send-email-florian@mickler.org>
+In-Reply-To: <1299410212-24897-1-git-send-email-florian@mickler.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun,  6 Mar 2011 21:04:01 +0900 (JST)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103061306.10045.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 03/03, Linus Torvalds wrote:
-> >
-> > On Thu, Mar 3, 2011 at 7:47 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > >> I _personally_ don't like "conditional". Its name is based on code logic.
-> > >> It's unclear what mean "conditional". From data strucuture view, It is
-> > >> "opaque userland pointer".
-> > >
-> > > I agree with any naming, just suggest a better name ;)
-> >
-> > Maybe just "struct user_arg_ptr" or something?
+Am Sonntag, 6. März 2011, 12:16:52 schrieb Florian Mickler:
+> This should fix warnings seen by some:
+> 	WARNING: at lib/dma-debug.c:866 check_for_stack
 > 
-> OK, nothing else was suggessted, I assume Kosaki agrees.
-
-Sure. :)
-
-And, I happily reported this series run successfully my testsuite.
-Could you please add my tested-by tag?
-
-thanks.
-
-
+> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=15977.
+> Reported-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+> Signed-off-by: Florian Mickler <florian@mickler.org>
+> CC: Mauro Carvalho Chehab <mchehab@infradead.org>
+> CC: linux-media@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
+> CC: Greg Kroah-Hartman <greg@kroah.com>
+> CC: Rafael J. Wysocki <rjw@sisk.pl>
+> CC: Maciej Rutecki <maciej.rutecki@gmail.com>
+> ---
 > 
-> So rename conditional_ptr to user_arg_ptr.
+> Please take a look at it, as I do not do that much kernel hacking
+> and don't wanna brake anybodys computer... :)
 > 
-> Also rename get_user_ptr() to get_user_arg_ptr(). It was suggested to
-> use the same "user_arg_ptr" for this helper too, but this is not
-> grep-friendly. As for get_ in the name... Well, I can redo again ;)
-> But this matches get_user() and this is all what this helper does.
-> 
-> Otherwise unchanged.
-> 
-> Oleg.
-> 
+> From my point of view this should _not_ go to stable even though it would
+> be applicable. But if someone feels strongly about that and can
+> take responsibility for that change...
 
+The patch looks good and is needed in stable.
+It could be improved by using a buffer allocated once in the places
+you hold a mutex anyway.
 
-
+	Regards
+		Oliver
