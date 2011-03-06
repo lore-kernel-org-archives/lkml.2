@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab1CFOxo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 09:53:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26657 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab1CFOxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 09:53:40 -0500
-Message-ID: <4D739FEF.7000502@redhat.com>
-Date: Sun, 06 Mar 2011 09:53:35 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752428Ab1CFPGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 10:06:20 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:46841 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1CFPGT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 10:06:19 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Florian Mickler <florian@mickler.org>
+Subject: Re: [PATCH] [media] dib0700: get rid of on-stack dma buffers
+Date: Sun, 6 Mar 2011 16:06:38 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <greg@kroah.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <1299410212-24897-1-git-send-email-florian@mickler.org> <201103061306.10045.oliver@neukum.org> <20110306153805.001011a9@schatten.dmk.lab>
+In-Reply-To: <20110306153805.001011a9@schatten.dmk.lab>
 MIME-Version: 1.0
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-CC: Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: regression - 2.6.36 -> 2.6.37 - kvm - 32bit SMP guests don't
- boot
-References: <20110303210647.GA27691@nik-comp.lan> <4D700F09.9000002@redhat.com> <20110303220155.GB27691@nik-comp.lan> <4D7101AF.6060009@redhat.com> <20110304182733.GA2867@nik-comp.lan> <1299265762.11618.140.camel@mothafucka.localdomain> <20110304205512.GB2867@nik-comp.lan> <1299274906.11618.157.camel@mothafucka.localdomain> <20110304223640.GC2867@nik-comp.lan> <4D718F2D.6080105@redhat.com> <20110305072115.GA2166@nik-comp.lan>
-In-Reply-To: <20110305072115.GA2166@nik-comp.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103061606.38846.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2011 02:21 AM, Nikola Ciprich wrote:
->    
->> Can you try this patch to see if it fixes the problem?
->>      
-> You haven't read my replies, did you? ;-)
-> kvm_request_guest_time_update seems to have been
-> removed, and kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu)
-> seems to be used instead, adding it fixes the problem.
-> That's what I was going to use in the patch... :)
->    
+Am Sonntag, 6. März 2011, 15:38:05 schrieb Florian Mickler:
+> On Sun, 6 Mar 2011 13:06:09 +0100
+> Oliver Neukum <oliver@neukum.org> wrote:
+> 
+> > Am Sonntag, 6. März 2011, 12:16:52 schrieb Florian Mickler:
 
-I did read your mail, but I was working on an old tree... because of 
-that transformation, this fix will unfortunately have to be back and 
-forward ported by hand.
+> > > Please take a look at it, as I do not do that much kernel hacking
+> > > and don't wanna brake anybodys computer... :)
+> > > 
+> > > From my point of view this should _not_ go to stable even though it would
+> > > be applicable. But if someone feels strongly about that and can
+> > > take responsibility for that change...
+> > 
+> > The patch looks good and is needed in stable.
+> > It could be improved by using a buffer allocated once in the places
+> > you hold a mutex anyway.
+> > 
+> > 	Regards
+> > 		Oliver
+> 
+> Ok, I now put a buffer member in the priv dib0700_state which gets
+> allocated on the heap. 
 
-Did you try just that change right applied on top of the patch 
-(e48672fa25e879f7ae21785c7efd187738139593) implicated by bisect?
+This however is wrong. Just like DMA on the stack this breaks
+coherency rules. You may do DMA to the heap in the sense that
+you can do DMA to buffers allocated on the heap, but you cannot
+do DMA to a part of another structure allocated on the heap.
+You need a separate kmalloc for each buffer.
+You can reuse the buffer with proper locking, but you must allocate
+it seperately once.
 
-It will be great to know if that change alone fixes the problem, if so, 
-the fix you propose is probably the right one for upstream.
-
-Thanks,
-
-Zach
+	Regards
+		Oliver
