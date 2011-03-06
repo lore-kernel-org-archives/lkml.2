@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab1CFQn6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 11:43:58 -0500
-Received: from smtp-out002.kontent.com ([81.88.40.216]:38111 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab1CFQn5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 11:43:57 -0500
-From: Oliver Neukum <oliver@neukum.org>
-To: Florian Mickler <florian@mickler.org>
-Subject: Re: [PATCH] [media] dib0700: get rid of on-stack dma buffers
-Date: Sun, 6 Mar 2011 17:44:15 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <greg@kroah.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-References: <1299410212-24897-1-git-send-email-florian@mickler.org> <201103061606.38846.oliver@neukum.org> <20110306164521.2a88a155@schatten.dmk.lab>
-In-Reply-To: <20110306164521.2a88a155@schatten.dmk.lab>
+	id S1755001Ab1CFXpI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 18:45:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54997 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753306Ab1CFXpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 18:45:05 -0500
+Message-ID: <4D741C46.70702@zytor.com>
+Date: Sun, 06 Mar 2011 15:44:06 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103061744.15946.oliver@neukum.org>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] mm/memblock: Properly handle overlaps and fix error path
+References: <1299453678.8833.969.camel@pasglop> <4D741890.7000607@kernel.org>
+In-Reply-To: <4D741890.7000607@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 6. März 2011, 16:45:21 schrieb Florian Mickler:
+On 03/06/2011 03:28 PM, Yinghai Lu wrote:
+>>  
+>> -	rgnbegin = rgnend = 0; /* supress gcc warnings */
+>> -From 1f75ea7782bd83f6402964d3b9889ccd69484e02 Mon Sep 17 00:00:00 2001
+>> From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Date: Mon, 7 Mar 2011 10:18:38 +1100
+>> Subject: 
+> 
+> you put two patches in one mail?
+> 
 
-> Hm.. allocating the buffer
-> in the probe routine and deallocating it in the usb_driver disconnect
-> callback should work?
+And you quoted the entire email, including both patches, in its entirety
+to say that?
 
-Yes.
- 
-> How come that it must be a seperate kmalloc buffer? Is it some aligning
-> that kmalloc garantees? 
+	-hpa
 
-On some CPUs DMA affects on main CPU, not the CPU caches. You
-need to synchronize the cache before you start DMA and must not touch
-the buffer until DMA is finished. This applies with a certain granularity
-that kmalloc respects. The ugly details are in Documentation.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-	Regards
-		Oliver
