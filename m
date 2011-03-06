@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab1CFM0d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 07:26:33 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55764 "EHLO ogre.sisk.pl"
+	id S1753963Ab1CFMg1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:36:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21156 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570Ab1CFMW3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 07:22:29 -0500
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Kusanagi Kouichi" <slash@ac.auone-net.jp>
-References: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
-In-Reply-To: <t0W8Ea1iKeB.A.6xD.Lp3cNB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1752451Ab1CFMg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 07:36:26 -0500
+Message-ID: <4D737FC3.9090801@redhat.com>
+Date: Sun, 06 Mar 2011 14:36:19 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <GTlFTeOGjrB.A.dvE.Yq3cNB@chimera>
-Subject: [Bug #29252] IPv6 doesn't work in a kvm guest.
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  6 Mar 2011 13:10:19 +0100 (CET)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: improve comment on rcu use in irqfd_deassign
+References: <20110306110326.GA23818@redhat.com>
+In-Reply-To: <20110306110326.GA23818@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On 03/06/2011 01:03 PM, Michael S. Tsirkin wrote:
+> The RCU use in kvm_irqfd_deassign is tricky: we have rcu_assign_pointer
+> but no synchronize_rcu: synchronize_rcu is done by kvm_irq_routing_update
+> which we share a spinlock with.
+>
+> Fix up a comment in an attempt to make this clearer.
 
-The following bug entry is on the current list of known regressions
-from 2.6.37.  Please verify if it still should be listed and let the tracking team
-know (either way).
+Applied, thanks.
 
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29252
-Subject		: IPv6 doesn't work in a kvm guest.
-Submitter	: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Date		: 2011-02-16 13:03 (19 days old)
-
+-- 
+error compiling committee.c: too many arguments to function
 
