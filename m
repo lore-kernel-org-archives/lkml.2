@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1CFCZC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 21:25:02 -0500
-Received: from trent.utfs.org ([194.246.123.103]:58704 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab1CFCZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 21:25:01 -0500
-X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Mar 2011 21:25:00 EST
-Date: Sat, 5 Mar 2011 18:16:58 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: heiko.carstens@de.ibm.com, arjan@infradead.org
-Subject: arch/x86/include/asm/uaccess_32.h:212: copy_from_user() buffer size
- is not provably correct
-Message-ID: <alpine.DEB.2.01.1103051749500.23816@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1753332Ab1CFCuT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 21:50:19 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:28781 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab1CFCuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 21:50:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=CNNfWtnY7hBRWK1mQOYMnpWpjp8PLvubxaG2mR2mOscxqh0Ezum7boPsr+LmXGIhpB
+         7ERGTuO1lEFhTBtfp5FA==
+Date: Sat, 5 Mar 2011 18:50:11 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Justin Mattock <justinmattock@gmail.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: <IRQ> [<ffffffff810c9204>] ?
+ __alloc_pages_nodemask+0x622/0x696
+In-Reply-To: <AANLkTikaLb_xan2ePfo9JCZ1w7RZ76wF8NUT2tYr0ZD=@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1103051847100.8779@chino.kir.corp.google.com>
+References: <AANLkTikaLb_xan2ePfo9JCZ1w7RZ76wF8NUT2tYr0ZD=@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 5 Mar 2011, Justin Mattock wrote:
 
-while trying to compile 2.6.38-rc7 with randconfigs, I noticed 
-compilation would sometimes fail with:
+> [  339.787008] SLUB: Unable to allocate memory on node -1 (gfp=0x20)
+> [  339.787008]   cache: kmalloc-8192, object size: 8192, buffer size:
+> 8264, default order: 3, min order: 2
+> [  339.787008]   kmalloc-8192 debugging increased min order, use
+> slub_debug=O to disable.
+> [  339.787008]   node 0: slabs: 181, objs: 543, free: 0
+> [  339.790575] skbuff alloc of size 3904 failed
+> [  339.823775] swapper: page allocation failure. order:2, mode:0x4020
+> [  339.823781] Pid: 0, comm: swapper Not tainted 2.6.38-rc7-00143-gd1b152c #7
+> [  339.823783] Call Trace:
+> [  339.823786]  <IRQ>  [<ffffffff810c9204>] ? __alloc_pages_nodemask+0x622/0x696
+> [  339.823811]  [<ffffffffa015a077>] ? ath_rxbuf_alloc+0x29/0x9a [ath]
+> [  339.823815]  [<ffffffff810f67cf>] ? new_slab+0x7b/0x1c6
+> [  339.823819]  [<ffffffffa015a077>] ? ath_rxbuf_alloc+0x29/0x9a [ath]
+> [  339.823823]  [<ffffffff810f6dd6>] ? T.925+0x163/0x29c
+> [  339.823827]  [<ffffffff810c4ecc>] ? mempool_destroy+0xf/0x17
+> [  339.823832]  [<ffffffffa015a077>] ? ath_rxbuf_alloc+0x29/0x9a [ath]
+> [  339.823836]  [<ffffffff810f895a>] ? __kmalloc_track_caller+0xfe/0x190
+> 
 
--------------------------------------------------------
-In file included from 
-/usr/local/src/linux-2.6-git/arch/x86/include/asm/uaccess.h:571,                 
-from /usr/local/src/linux-2.6-git/include/net/checksum.h:25,
-                 from 
-/usr/local/src/linux-2.6-git/include/linux/skbuff.h:28,
-                 from 
-/usr/local/src/linux-2.6-git/include/linux/if_ether.h:126,
-                 from 
-/usr/local/src/linux-2.6-git/include/linux/netdevice.h:29,
-                 from 
-/usr/local/src/linux-2.6-git/net/packet/af_packet.c:58:
-In function 'copy_from_user',
-    inlined from 'packet_getsockopt' at 
-/usr/local/src/linux-2.6-git/net/packet/af_packet.c:2137:
-/usr/local/src/linux-2.6-git/arch/x86/include/asm/uaccess_32.h:212: error: 
-call to 'copy_from_user_overflow' declared with attribute error: 
-copy_from_user() buffer size is not provably correct
--------------------------------------------------------
-
-A few failed configs (and compile logs) are here:
-
-  http://nerdbynature.de/bits/2.6.38-rc7/copy_from_user/
-
-I've seen a thread[0] in Jan 2010, dealing with copy_from_user, but don't 
-know if that is the reason for these compile failures.
-
-It's not really an issue for me, since they're randconfigs anyway so might 
-not even be runnable on real hardware, but thought it would be worth to 
-mention anyway.
-
-Thanks,
-Christian.
-
-[0] http://lkml.org/lkml/2010/1/5/75
--- 
-BOFH excuse #395:
-
-Redundant ACLs.
+Order-2 atomic allocations are always going to be difficult since we can't 
+do synchronous compaction or reclaim, but I'd try the suggestion shown 
+above: boot with slub_debug=O or disable slub debugging so that 
+kmalloc-8192 is actually order-1 like it should be.
