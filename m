@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab1CFOio (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 09:38:44 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:40899 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab1CFOim convert rfc822-to-8bit (ORCPT
+	id S1754585Ab1CFUtD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 15:49:03 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:53273 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab1CFUsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 09:38:42 -0500
-Date: Sun, 6 Mar 2011 15:38:05 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Greg Kroah-Hartman" <greg@kroah.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] [media] dib0700: get rid of on-stack dma buffers
-Message-ID: <20110306153805.001011a9@schatten.dmk.lab>
-In-Reply-To: <201103061306.10045.oliver@neukum.org>
-References: <1299410212-24897-1-git-send-email-florian@mickler.org>
-	<201103061306.10045.oliver@neukum.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	Sun, 6 Mar 2011 15:48:42 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 3/6] perf hists browser: Handle browsing empty hists tree
+Date: Sun,  6 Mar 2011 17:48:24 -0300
+Message-Id: <1299444507-26549-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1299444507-26549-1-git-send-email-acme@infradead.org>
+References: <1299444507-26549-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Mar 2011 13:06:09 +0100
-Oliver Neukum <oliver@neukum.org> wrote:
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-> Am Sonntag, 6. März 2011, 12:16:52 schrieb Florian Mickler:
-> > This should fix warnings seen by some:
-> > 	WARNING: at lib/dma-debug.c:866 check_for_stack
-> > 
-> > Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=15977.
-> > Reported-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-> > Signed-off-by: Florian Mickler <florian@mickler.org>
-> > CC: Mauro Carvalho Chehab <mchehab@infradead.org>
-> > CC: linux-media@vger.kernel.org
-> > CC: linux-kernel@vger.kernel.org
-> > CC: Greg Kroah-Hartman <greg@kroah.com>
-> > CC: Rafael J. Wysocki <rjw@sisk.pl>
-> > CC: Maciej Rutecki <maciej.rutecki@gmail.com>
-> > ---
-> > 
-> > Please take a look at it, as I do not do that much kernel hacking
-> > and don't wanna brake anybodys computer... :)
-> > 
-> > From my point of view this should _not_ go to stable even though it would
-> > be applicable. But if someone feels strongly about that and can
-> > take responsibility for that change...
-> 
-> The patch looks good and is needed in stable.
-> It could be improved by using a buffer allocated once in the places
-> you hold a mutex anyway.
-> 
-> 	Regards
-> 		Oliver
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/hists.c |   22 +++++++++++++++-------
+ 1 files changed, 15 insertions(+), 7 deletions(-)
 
-Ok, I now put a buffer member in the priv dib0700_state which gets
-allocated on the heap. 
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index c27ab35..c98e6f8 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -639,6 +639,9 @@ static void ui_browser__hists_seek(struct ui_browser *self,
+ 	struct rb_node *nd;
+ 	bool first = true;
+ 
++	if (self->nr_entries == 0)
++		return;
++
+ 	switch (whence) {
+ 	case SEEK_SET:
+ 		nd = hists__filter_entries(rb_first(self->entries));
+@@ -820,8 +823,8 @@ int hists__browse(struct hists *self, const char *helpline,
+ 	hists__browser_title(self, msg, sizeof(msg), ev_name,
+ 			     dso_filter, thread_filter);
+ 	while (1) {
+-		const struct thread *thread;
+-		const struct dso *dso;
++		const struct thread *thread = NULL;
++		const struct dso *dso = NULL;
+ 		char *options[16];
+ 		int nr_options = 0, choice = 0, i,
+ 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+@@ -829,8 +832,10 @@ int hists__browse(struct hists *self, const char *helpline,
+ 
+ 		key = hist_browser__run(browser, msg);
+ 
+-		thread = hist_browser__selected_thread(browser);
+-		dso = browser->selection->map ? browser->selection->map->dso : NULL;
++		if (browser->he_selection != NULL) {
++			thread = hist_browser__selected_thread(browser);
++			dso = browser->selection->map ? browser->selection->map->dso : NULL;
++		}
+ 
+ 		switch (key) {
+ 		case NEWT_KEY_TAB:
+@@ -841,7 +846,8 @@ int hists__browse(struct hists *self, const char *helpline,
+ 			 */
+ 			goto out_free_stack;
+ 		case 'a':
+-			if (browser->selection->map == NULL &&
++			if (browser->selection == NULL ||
++			    browser->selection->map == NULL ||
+ 			    browser->selection->map->dso->annotate_warned)
+ 				continue;
+ 			goto do_annotate;
+@@ -887,7 +893,8 @@ int hists__browse(struct hists *self, const char *helpline,
+ 			goto out_free_stack;
+ 		}
+ 
+-		if (browser->selection->sym != NULL &&
++		if (browser->selection != NULL &&
++		    browser->selection->sym != NULL &&
+ 		    !browser->selection->map->dso->annotate_warned &&
+ 		    asprintf(&options[nr_options], "Annotate %s",
+ 			     browser->selection->sym->name) > 0)
+@@ -906,7 +913,8 @@ int hists__browse(struct hists *self, const char *helpline,
+ 			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
+ 			zoom_dso = nr_options++;
+ 
+-		if (browser->selection->map != NULL &&
++		if (browser->selection != NULL &&
++		    browser->selection->map != NULL &&
+ 		    asprintf(&options[nr_options], "Browse map details") > 0)
+ 			browse_map = nr_options++;
+ 
+-- 
+1.6.2.5
 
-My patch introduces a new error condition in the dib0700_identify_state
-callback which gets not checked for in dvb_usb_find_device... 
-Should we worry?
-
-Same for dib0700_get_version in the probe callback...
-But there, there was already the possibility of usb_control_msg
-returning an error...
-
-Regards,
-Flo
