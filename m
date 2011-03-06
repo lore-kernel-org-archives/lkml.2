@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab1CFMwF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 07:52:05 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:56027 "EHLO ogre.sisk.pl"
+	id S1754883Ab1CFMwK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 07:52:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:56048 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab1CFMv4 convert rfc822-to-8bit (ORCPT
+	id S1753995Ab1CFMwA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 07:51:56 -0500
+	Sun, 6 Mar 2011 07:52:00 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "" <acaizzo@gmail.com>,
-        "Mauro Carvalho Chehab" <mchehab@redhat.com>,
-        "Maxim Levitsky" <maximlevitsky@gmail.com>
+        Florian Mickler <florian@mickler.org>,
+        "=?utf-8?q?Patrick=20Matth=C3=A4i?=" <patrick@linux-dev.org>
 References: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
 In-Reply-To: <dtUMITvTCCN.A.uuF.y-3cNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -19,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <sUKqYsqyJ4N.A.4nG.v_3cNB@chimera>
-Subject: [Bug #27202] Remote control of saa7134-based tv card "ASUSTeK P7131 Hybrid" stopped working in 2.6.37
+Message-ID: <sUKqYsqyJ4N.A.ywG.BA4cNB@chimera>
+Subject: [Bug #26802] b43: Suspend failed
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  6 Mar 2011 13:40:39 +0100 (CET)
+Date: Sun,  6 Mar 2011 13:40:38 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,12 +34,9 @@ introduced between 2.6.36 and 2.6.37.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27202
-Subject		: Remote control of saa7134-based tv card "ASUSTeK P7131 Hybrid" stopped working in 2.6.37
-Submitter	:  <acaizzo@gmail.com>
-Date		: 2011-01-20 17:23 (46 days old)
-First-Bad-Commit: http://git.kernel.org/linus/4651918a4afdd49bdea21d2f919b189ef17a6399
-Handled-By	: Mauro Carvalho Chehab <mchehab@redhat.com>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=44532
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26802
+Subject		: b43: Suspend failed
+Submitter	: Patrick Matthäi <patrick@linux-dev.org>
+Date		: 2011-01-15 18:56 (51 days old)
 
 
