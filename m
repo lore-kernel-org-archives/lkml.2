@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab1CFThy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 14:37:54 -0500
-Received: from mail.lang.hm ([64.81.33.126]:54844 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab1CFThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 14:37:53 -0500
-Date: Sun, 6 Mar 2011 11:36:24 -0800 (PST)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Vasiliy Kulikov <segoon@openwall.com>
-cc: linux-kernel@vger.kernel.org, security@kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] power: disable hibernation if module loading is
- disabled
-In-Reply-To: <1299255084-4390-1-git-send-email-segoon@openwall.com>
-Message-ID: <alpine.DEB.2.00.1103061134520.9066@asgard.lang.hm>
-References: <1299255084-4390-1-git-send-email-segoon@openwall.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753586Ab1CFTCp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 14:02:45 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40881 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab1CFTCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 14:02:44 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com>
+References: <1290060899-9786-1-git-send-email-ccross@android.com>
+	<AANLkTimCuV5N0jr8c949uONEvieQ5MDZ9KHDXtneG5AT@mail.gmail.com>
+	<4D70BE9D.4000507@stericsson.com>
+	<AANLkTin7ZXYALOy_jk1uR3SbZA51nSnU-ncSjG+n_RPn@mail.gmail.com>
+	<4D714C17.7080102@gmail.com>
+	<AANLkTims4e7o0sPxVnN0D1mNWDH7uC9q=pBQrBoad2os@mail.gmail.com>
+	<eea425c066cc69c30f118fb102fff43e@mail.gmail.com>
+	<AANLkTi=KcmqmghVxhwGvv79heRU3C+TC-v2VnWSWt7bU@mail.gmail.com>
+	<7e9fafa016bfe536ccc373fc2cc7ba61@mail.gmail.com>
+	<AANLkTinRNG4nTjh15a2tuJt_iDboHUtomxemSjY+6DcD@mail.gmail.com>
+Date: Sun, 6 Mar 2011 20:02:42 +0100
+Message-ID: <AANLkTikkcYw66MiJO9Bpm+De=XD2-1MFxm-CUPp6sMqL@mail.gmail.com>
+Subject: Re: [PATCH] ARM: twd: Adjust localtimer frequency withcpufreqnotifiers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Colin Cross <ccross@android.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
+        martin persson <martin.persson@stericsson.com>,
+        Varun Swara <Varun.Swara@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Mar 2011, Vasiliy Kulikov wrote:
+On Sun, Mar 6, 2011 at 6:42 PM, Colin Cross <ccross@android.com> wrote:
 
-> If /proc/sys/kernel/modules_disabled is set to 1, then nobody (even full
-> root) may not read/write arbitrary kernel memory.  In spite of it,
-> hibernation allows anyone with an access to either /dev/snapshot or
-> /sys/power/ make the full snapshot of the system.  This snapshot may be
-> freely changed and uploaded back.
+> Is there any way
+> for a clockevent to invalidate the current event and ask for it to be
+> reprogrammed?
 
-given that the user can boot a different OS entirely and modify the stored 
-image, I don't see how this can work, even conceptually.
+TGLX will know for sure... Thomas?
 
-and tieing anything modules related to hibernation is just wrong, you are 
-mixing completely different concepts (even if the implementation happens 
-to be similar)
+(This is inside a CPUfreq hook for a localtimer for the record.)
 
-David Lang
+Yours,
+Linus Walleij
