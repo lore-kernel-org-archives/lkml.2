@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab1CFA5j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Mar 2011 19:57:39 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:64523 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab1CFA5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Mar 2011 19:57:38 -0500
+	id S1752635Ab1CFBJs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Mar 2011 20:09:48 -0500
+Received: from waste.org ([173.11.57.241]:41547 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab1CFBJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Mar 2011 20:09:46 -0500
 Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Matt Mackall <mpm@selenic.com>
 To: Jesper Juhl <jj@chaosbits.net>
-Cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
+        Pekka Enberg <penberg@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
         cl@linux-foundation.org, linux-mm@kvack.org,
@@ -31,10 +31,10 @@ References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>
 	 <1299273034.2071.1417.camel@dan>
 	 <alpine.LNX.2.00.1103060137410.6297@swampdragon.chaosbits.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Mar 2011 19:57:32 -0500
-Message-ID: <1299373052.2071.1431.camel@dan>
+Date: Sat, 05 Mar 2011 19:09:41 -0600
+Message-ID: <1299373781.3062.374.camel@calx>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -65,29 +65,18 @@ On Sun, 2011-03-06 at 01:42 +0100, Jesper Juhl wrote:
 > 
 > But still, if randomizing allocations makes life just a little harder for 
 > attackers in some scenarios, why not just do it?
-> Same with making /proc/slabinfo 0400, if it just makes things a little 
-> harder in a few cases, why not do it? It's not like a admin who needs 
-> /proc/slabinfo to have other permissions can't arrange for that.
-> 
-> Having been employed as a systems administrator for many years and having 
-> seen many a box cracked, my oppinion is that every little bit helps. The 
-> kernel is currently not a hard target and everything we can do to harden 
-> it is a good thing (within reason of course).
-> 
-> Why not just do both randomization and 0400 as a start? We can always 
-> harden further later.
 
-I agree that there's no harm in these patches, and they might make it
-(only) slightly harder in some cases, so yes, we might as well.  I just
-don't want to trick anyone into a false sense of security by thinking
-that these measures by themselves are doing anything especially
-substantial to prevent heap exploits.  But as you say, it's a start.
+Lemme guess, you work for the TSA?
 
-Another hardening measure that's been mentioned before is validating the
-address of each to-be-returned pointer during allocation, to avoid
-attacks that rely on corrupting free list pointers (i.e. compare against
-TASK_SIZE).  But then we're talking about introducing additional
-overhead into every single kmalloc() call.
+As far as I can tell neither of the patches under discussion do anything
+that couldn't be worked around by an exploit writer in the time it takes
+to write this email. And the second attacker, of course, will have even
+less trouble.
 
--Dan
+Putting trivial obstacles in the way of attackers accomplishes little
+beyond annoying users.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
 
