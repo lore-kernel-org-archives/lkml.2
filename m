@@ -1,221 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab1CFWQc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 17:16:32 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:10477 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab1CFWQG (ORCPT
+	id S1752175Ab1CFQG0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 11:06:26 -0500
+Received: from trinity.develer.com ([83.149.158.210]:42355 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab1CFQGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 17:16:06 -0500
-X-IronPort-AV: E=Sophos;i="4.62,272,1297036800"; 
-   d="scan'208";a="270820816"
-From: David Ahern <daahern@cisco.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
-        David Ahern <daahern@cisco.com>
-Subject: [PATCH 1/2] perf script: change process_event prototype
-Date: Sun,  6 Mar 2011 15:16:34 -0700
-Message-Id: <1299449795-12933-2-git-send-email-daahern@cisco.com>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1299449795-12933-1-git-send-email-daahern@cisco.com>
-References: <1299449795-12933-1-git-send-email-daahern@cisco.com>
+	Sun, 6 Mar 2011 11:06:25 -0500
+Date: Sun, 6 Mar 2011 17:06:20 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Justin TerAvest <teravest@google.com>, Chad Talbott <ctalbott@google.com>,
+        Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: RFC: default group_isolation to 1, remove option
+Message-ID: <20110306160620.GB1687@linux.develer.com>
+References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com>
+ <20110301142002.GB25699@redhat.com>
+ <AANLkTimEcrZPv8L_Sn3UtkCQ3yUUJFORtHVEvFapcJG-@mail.gmail.com>
+ <20110302212845.GC2547@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110302212845.GC2547@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for handling of samples for any event type.
+On Wed, Mar 02, 2011 at 04:28:45PM -0500, Vivek Goyal wrote:
+> On Tue, Mar 01, 2011 at 10:44:52AM -0800, Justin TerAvest wrote:
+> > On Tue, Mar 1, 2011 at 6:20 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > On Mon, Feb 28, 2011 at 04:19:43PM -0800, Justin TerAvest wrote:
+> > >> Hi Vivek,
+> > >>
+> > >> I'd like to propose removing the group_isolation setting and changing
+> > >> the default to 1. Do we know if anyone is using group_isolation=0 to get
+> > >> easy group separation between sequential readers and random readers?
+> > >
+> > > CCing Corrado.
+> > >
+> > > I like the idea of setting group_isolation = 1 to default. So far I have
+> > > not found anybody trying to use group_isolation=0 and every time I had
+> > > to say can you try setting group_isolation to 1 if you are not seeing
+> > > service differentiation.
+> > >
+> > > I think I would not mind removing it completely altogether also. This will
+> > > also remove some code from CFQ. The reason we introduced group_isolation
+> > > because by default we idle on sync-noidle tree and on fast devices idling on
+> > > every syn-noidle tree can be very harmful for throughput, especially on faster
+> > > storage like storage arrays.
+> > >
+> > > One of the soutions for that problem can be that run with slice idle
+> > > enabled on SATA disks and run with slice_idle=0 and possibly group_idle=0
+> > > also on faster storage. Setting idling to 0 will increase throughput but
+> > > at the same time reduce the isolation significantly. But I guess this
+> > > is the performance vs isolation trade off.
+> > 
+> > I agree. Thanks! I'll send a patch shortly, CCing everyone here and we
+> > can have any further discussion there.
+> > 
+> > >
+> > >>
+> > >> Allowing group_isolation complicates implementing per-cgroup request
+> > >> descriptor pools when a queue is moved to the root group. Specifically,
+> > >> if we have pools per-cgroup, we would be forced to use request
+> > >> descriptors from the pool for the "original" cgroup, while the requests
+> > >> are actually being serviced by the root cgroup.
+> > >
+> > > I think creating per group request pool will complicate the implementation
+> > > further. (we have done that once in the past). Jens once mentioned that
+> > > he liked number of requests per iocontext limit better than overall queue
+> > > limit. So if we implement per iocontext limit, it will get rid of need
+> > > of doing anything extra for group infrastructure.
+> > 
+> > I will go read the discussion history for this, but I am concerned that doing
+> > page tracking to look up the iocontext will be more complicated than
+> > tracking dirtied pages per-cgroup. I would hope there is a big advantage
+> > to per icontext limits.
+> 
+> Advantage of iocontext limit I think is that we don't have to implement
+> per group request descriptor pools or limits.
+> 
+> Secondly, it also allows some isolation between two processes/iocontexts
+> with-in the group.
+> 
+> So we could think of a page taking a reference on iocontext but the
+> real issue would be how to store the pointer of that iocontext in
+> page_cgroup. We are already hard pressed for space and cssid consumes
+> less bits.
+> 
+> So may be keeping it per group might turn out to be simpler.
+> 
+> Also once we were talking (I think at LSF last year) about associating an
+> inode to a cgroup. So a bio can point to page and page can point to its inode
+> and we get the pointer to the cgroup. This approach should not require tracking
+> information in page and at coarse level it should work (as long as
+> applications are working on separate inodes).
+> 
+> I think another advantage of this scheme is that request queue can
+> export per cgroup congestion mechanism. So if a flusher thread picks
+> an inode for writting back the pages, it can retrieve the cgroup from
+> inode and enquire block layer if associated cgroup on the device is
+> congested and if it is, flusher thread can move on to next inode.
+> 
+> In fact if we are just worried about isolating READS from WRITES, then
+> we can skip implementing per group congestion idea. Even if flusher
+> thread gets blocked because of request descriptors, it does not impact
+> reads. I think at last summit people did not like the idea of congestion
+> per group per bdi.
 
-Signed-off-by: David Ahern <daahern@cisco.com>
----
- tools/perf/builtin-script.c                        |   35 ++++++++++++++-----
- .../perf/util/scripting-engines/trace-event-perl.c |   12 +++++--
- .../util/scripting-engines/trace-event-python.c    |   12 +++++--
- tools/perf/util/trace-event-scripting.c            |   10 +++---
- tools/perf/util/trace-event.h                      |    8 +++-
- 5 files changed, 55 insertions(+), 22 deletions(-)
+I'm not so confident about this approach and I think we should never
+block flusher threads. READs are not probably affected, but the
+writeback of dirty pages for that particular block device will be
+stopped. This means that all the tasks that are generating dirty pages
+for that device will soon exceed the dirty_ratio limit and will start to
+actively writeback dirty pages.
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 5f40df6..48bdf94 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -20,6 +20,21 @@ static u64			last_timestamp;
- static u64			nr_unordered;
- extern const struct option	record_options[];
- 
-+static void process_event(union perf_event *event __unused,
-+			  struct perf_sample *sample,
-+			  struct perf_session *session __unused,
-+			  struct perf_event_attr *attr __unused,
-+			  struct thread *thread)
-+{
-+	/*
-+	 * FIXME: better resolve from pid from the struct trace_entry
-+	 * field, although it should be the same than this perf
-+	 * event pid
-+	 */
-+	print_event(sample->cpu, sample->raw_data, sample->raw_size,
-+		    sample->time, thread->comm);
-+}
-+
- static int default_start_script(const char *script __unused,
- 				int argc __unused,
- 				const char **argv __unused)
-@@ -40,7 +55,7 @@ static int default_generate_script(const char *outfile __unused)
- static struct scripting_ops default_scripting_ops = {
- 	.start_script		= default_start_script,
- 	.stop_script		= default_stop_script,
--	.process_event		= print_event,
-+	.process_event		= process_event,
- 	.generate_script	= default_generate_script,
- };
- 
-@@ -67,6 +82,7 @@ static int process_sample_event(union perf_event *event,
- 				struct perf_sample *sample,
- 				struct perf_session *session)
- {
-+	struct perf_event_attr *attr;
- 	struct thread *thread = perf_session__findnew(session, event->ip.pid);
- 
- 	if (thread == NULL) {
-@@ -75,6 +91,13 @@ static int process_sample_event(union perf_event *event,
- 		return -1;
- 	}
- 
-+	attr = perf_header__find_attr(sample->id, &session->header);
-+	if (!attr) {
-+		pr_debug("No attributes found for sample id %" PRId64 ". "
-+			 "skipping it.\n", sample->id);
-+		return -1;
-+	}
-+
- 	if (session->sample_type & PERF_SAMPLE_RAW) {
- 		if (debug_mode) {
- 			if (sample->time < last_timestamp) {
-@@ -86,14 +109,8 @@ static int process_sample_event(union perf_event *event,
- 			last_timestamp = sample->time;
- 			return 0;
- 		}
--		/*
--		 * FIXME: better resolve from pid from the struct trace_entry
--		 * field, although it should be the same than this perf
--		 * event pid
--		 */
--		scripting_ops->process_event(sample->cpu, sample->raw_data,
--					     sample->raw_size,
--					     sample->time, thread->comm);
-+		scripting_ops->process_event(event, sample, session,
-+					     attr, thread);
- 	}
- 
- 	session->hists.stats.total_period += sample->period;
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index 9368081..ed69d4c 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -245,9 +245,11 @@ static inline struct event *find_cache_event(int type)
- 	return event;
- }
- 
--static void perl_process_event(int cpu, void *data,
--			       int size __unused,
--			       unsigned long long nsecs, char *comm)
-+static void perl_process_event(union perf_event *pevent __unused,
-+			       struct perf_sample *sample,
-+			       struct perf_session *session __unused,
-+			       struct perf_event_attr *attr __unused,
-+			       struct thread *thread)
- {
- 	struct format_field *field;
- 	static char handler[256];
-@@ -256,6 +258,10 @@ static void perl_process_event(int cpu, void *data,
- 	struct event *event;
- 	int type;
- 	int pid;
-+	int cpu = sample->cpu;
-+	void *data = sample->raw_data;
-+	unsigned long long nsecs = sample->time;
-+	char *comm = thread->comm;
- 
- 	dSP;
- 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 2040b85..9fded61 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -204,9 +204,11 @@ static inline struct event *find_cache_event(int type)
- 	return event;
- }
- 
--static void python_process_event(int cpu, void *data,
--				 int size __unused,
--				 unsigned long long nsecs, char *comm)
-+static void python_process_event(union perf_event *pevent __unused,
-+				 struct perf_sample *sample,
-+				 struct perf_session *session __unused,
-+				 struct perf_event_attr *attr __unused,
-+				 struct thread *thread)
- {
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
-@@ -217,6 +219,10 @@ static void python_process_event(int cpu, void *data,
- 	unsigned n = 0;
- 	int type;
- 	int pid;
-+	int cpu = sample->cpu;
-+	void *data = sample->raw_data;
-+	unsigned long long nsecs = sample->time;
-+	char *comm = thread->comm;
- 
- 	t = PyTuple_New(MAX_FIELDS);
- 	if (!t)
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index f7af2fc..6f91d3c 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -36,11 +36,11 @@ static int stop_script_unsupported(void)
- 	return 0;
- }
- 
--static void process_event_unsupported(int cpu __unused,
--				      void *data __unused,
--				      int size __unused,
--				      unsigned long long nsecs __unused,
--				      char *comm __unused)
-+static void process_event_unsupported(union perf_event *event __unused,
-+				      struct perf_sample *sample __unused,
-+				      struct perf_session *session __unused,
-+				      struct perf_event_attr *attr __unused,
-+				      struct thread *thread __unused)
- {
- }
- 
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index b5f12ca..b4b939d 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -3,6 +3,7 @@
- 
- #include <stdbool.h>
- #include "parse-events.h"
-+#include "session.h"
- 
- #define __unused __attribute__((unused))
- 
-@@ -278,8 +279,11 @@ struct scripting_ops {
- 	const char *name;
- 	int (*start_script) (const char *script, int argc, const char **argv);
- 	int (*stop_script) (void);
--	void (*process_event) (int cpu, void *data, int size,
--			       unsigned long long nsecs, char *comm);
-+	void (*process_event) (union perf_event *event,
-+			       struct perf_sample *sample,
-+			       struct perf_session *session,
-+			       struct perf_event_attr *attr,
-+			       struct thread *thread);
- 	int (*generate_script) (const char *outfile);
- };
- 
--- 
-1.7.4
+I would consider the writeback IO performed (only) by the flusher thread
+a "good" condition. Or better, if flusher threads are able to maintain
+the amount of dirty pages below dirty_background_ratio limit, then they
+shouldn't be throttled.
 
+Instead, when normal tasks are forced to writeback dirty pages to disk
+via writeback_inodes_wb(), because flusher threads aren't able to
+maintain the quota of dirty pages below the limit, well, only in that
+case IMHO each task should be forced to writeback the inodes of the
+cgroup they belong (when we'll have the inode->cgroup mapping, or kind
+of) and in case stop those tasks if blkio limits are exceeded.
+
+> 
+> One could do similar things with getting page->cgroup pointer also but
+> then flusher threads will also have to go throgh all the pages of
+> inode before it can decide whether to dispatch some IO or not and that
+> might slow down the writeback.
+> 
+> So if we are ready to sacrifice some granularity of async writeback
+> control and do it per inode basis instead of per page basis, it might
+> simplify the implementation and reduce performance overhead.
+> 
+> CCing Greg and Andrea. They might have thoughts on this.
+> 
+> Thanks
+> Vivek
+
+Thanks,
+-Andrea
