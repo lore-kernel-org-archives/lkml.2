@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab1CFPOi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 10:14:38 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33416 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1CFPOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 10:14:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=M76KK9kKWpLGEc6Wmnj6iuNiIJpJO/0qfdL6gQpcnYbqnS0NXPGPBYpkW7+4wns87v
-         qItC9SGp0WgaNTCEkcS+ISjHrt1pAmytUnLar2emZSSy5Gc4zob1VBfg0C/CbFcIs0R3
-         LcbZzOhVKpL02BKcNYtUgkJPZnj38eKOPfh6A=
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
-        linux-kernel@vger.kernel.org, oakad@yahoo.com
-In-Reply-To: <20110306162859E.fujita.tomonori@lab.ntt.co.jp>
-References: <1299212213-4255-1-git-send-email-maximlevitsky@gmail.com>
-	 <1299212213-4255-2-git-send-email-maximlevitsky@gmail.com>
-	 <20110306162859E.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Mar 2011 17:14:30 +0200
-Message-ID: <1299424470.22378.9.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753336Ab1CFRL1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 12:11:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752833Ab1CFRLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 12:11:25 -0500
+Date: Sun, 6 Mar 2011 18:02:21 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        pageexec@freemail.hu, Solar Designer <solar@openwall.com>,
+        Eugene Teo <eteo@redhat.com>, Brad Spengler <spender@grsecurity.net>,
+        Roland McGrath <roland@redhat.com>, Milton Miller <miltonm@bga.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH v5 1/4] exec: introduce get_user_arg_ptr() helper
+Message-ID: <20110306170221.GB24175@redhat.com>
+References: <AANLkTimp=mhedXLdrZFqK2QWYvg7MdmUPj3-Q9m2vtTx@mail.gmail.com> <20110305203040.GA7546@redhat.com> <20110306210334.6CD5.A69D9226@jp.fujitsu.com> <20110306170156.GA24175@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110306170156.GA24175@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-06 at 16:29 +0900, FUJITA Tomonori wrote:
-> On Fri,  4 Mar 2011 06:16:50 +0200
-> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> 
-> > While developing memstick driver for legacy memsticks
-> > I found the need in few helpers that I think should be
-> > in common scatterlist library
-> > 
-> > The functions that were added:
-> > 
-> > * sg_nents/sg_total_len - iterate over scatterlist to figure
-> > out total length of memory it covers / number of entries.
-> 
-> You should invent a data structure per I/O request, something like
-> msb_request structure. Then you can store nents and total_len in
-> that.
-> 
-> That's what block subsystems and drivers do. I took a look at your
-> driver but I can't see why your driver can't do the same.
-I also need to break the request into small grained chunks.
-If I invent such structure, I will end up writing these helpers for it.
+Introduce get_user_arg_ptr() helper, convert count() and copy_strings()
+to use it.
 
-The I have this lifetime of a request:
+No functional changes, preparation. This helper is trivial, it just
+reads the pointer from argv/envp user-space array.
 
-I get arbitary sized request from block layer (I can of course control
-maximum size/number of segments in it, etc).
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Tested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
 
-I break it into eraseblock sized chunks, and for each I translate the
-the LBA, into flash address.
+ fs/exec.c |   36 +++++++++++++++++++++++++-----------
+ 1 file changed, 25 insertions(+), 11 deletions(-)
 
-Then I break it into flash page sized requests (512 bytes), and yet its
-better not to assume that such requests always contained in one sg
-entry.
-
-Worse than that, I have to pass an sg list that spans always one 512
-page to lowlevel driver, because thats how Alex defined the interface.
+--- 38/fs/exec.c~1_get_arg_ptr	2011-03-06 17:48:00.000000000 +0100
++++ 38/fs/exec.c	2011-03-06 17:51:01.000000000 +0100
+@@ -395,6 +395,17 @@ err:
+ 	return err;
+ }
  
-Thats why I coded it this way.
-
-Folks, really what the status of this, when to expect it to be merged?
-
-If you think some of helper functions don't belong to scatterlist.c,
-just tell me to move them back to ms_block.c.
-
-Andrew, please note again that richoh lowlevel driver doesn't need any
-helper functions, its patch is standalone and thus should be merged
-regardless.
-
-Best regards,
-	Maxim Levitsky
++static const char __user *
++get_user_arg_ptr(const char __user * const __user *argv, int nr)
++{
++	const char __user *ptr;
++
++	if (get_user(ptr, argv + nr))
++		return ERR_PTR(-EFAULT);
++
++	return ptr;
++}
++
+ /*
+  * count() counts the number of strings in array ARGV.
+  */
+@@ -404,13 +415,14 @@ static int count(const char __user * con
+ 
+ 	if (argv != NULL) {
+ 		for (;;) {
+-			const char __user * p;
++			const char __user *p = get_user_arg_ptr(argv, i);
+ 
+-			if (get_user(p, argv))
+-				return -EFAULT;
+ 			if (!p)
+ 				break;
+-			argv++;
++
++			if (IS_ERR(p))
++				return -EFAULT;
++
+ 			if (i++ >= max)
+ 				return -E2BIG;
+ 
+@@ -440,16 +452,18 @@ static int copy_strings(int argc, const 
+ 		int len;
+ 		unsigned long pos;
+ 
+-		if (get_user(str, argv+argc) ||
+-				!(len = strnlen_user(str, MAX_ARG_STRLEN))) {
+-			ret = -EFAULT;
++		ret = -EFAULT;
++		str = get_user_arg_ptr(argv, argc);
++		if (IS_ERR(str))
+ 			goto out;
+-		}
+ 
+-		if (!valid_arg_len(bprm, len)) {
+-			ret = -E2BIG;
++		len = strnlen_user(str, MAX_ARG_STRLEN);
++		if (!len)
++			goto out;
++
++		ret = -E2BIG;
++		if (!valid_arg_len(bprm, len))
+ 			goto out;
+-		}
+ 
+ 		/* We're going to work our way backwords. */
+ 		pos = bprm->p;
 
