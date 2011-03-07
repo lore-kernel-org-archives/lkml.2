@@ -1,126 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab1CGTn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 14:43:27 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:51938 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755790Ab1CGTn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 14:43:26 -0500
-X-ASG-Debug-ID: 1299527004-01de284cf81cfc0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D753556.3020800@fusionio.com>
-Date: Mon, 7 Mar 2011 20:43:18 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mike Snitzer <snitzer@redhat.com>, Shaohua Li <shli@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	 <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>	 <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>	 <20110303221353.GA10366@redhat.com>	 <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com>	 <20110304214359.GA18442@redhat.com> <4D715E8A.5070006@fusionio.com>	 <20110304222702.GB18921@redhat.com>  <4D72A302.6060008@fusionio.com> <1299493427.2308.11.camel@twins>
-X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <1299493427.2308.11.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299527004
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57340
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1755899Ab1CGTp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 14:45:26 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46284 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab1CGTpY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 14:45:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Nx/4rRwmjptngra9HnVUzYWd3h4+oiV/cYenzhPWDLwMkg0mmk2WS/ammrylL7NNgF
+         SEt2Hvam2jcWRIPs1S9fE43sx/IvrE9QDLUJzwFynlkBCBy0vdBluxZwz1IxEmXcj0AP
+         bOjKekbkPNwqXEgAI78J7xRA3jt2yOHweTUm0=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]trivial: Remove one to many r's in some comments.
+Date: Mon,  7 Mar 2011 11:45:03 -0800
+Message-Id: <1299527103-9953-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-07 11:23, Peter Zijlstra wrote:
-> On Sat, 2011-03-05 at 21:54 +0100, Jens Axboe wrote:
->>
->> Apparently so. Peter/Ingo, please shoot this one down in flames.
->> Summary:
->>
->> - Need a way to trigger this flushing when a task is going to sleep
->> - It's currently done right before calling deactivate_task(). We know
->>   the task is going to sleep here, but it's also under the runqueue
->>   lock. Not good.
->> - In the new location, it's not completely clear to me whether we can
->>   safely deref 'prev' or not. The usage of prev_state would seem to
->>   indicate that we cannot, and as far as I can tell, prev could at this
->>   point already potentially be running on another CPU.
->>
->> Help? Peter, we talked about this in Tokyo in September. Initial
->> suggestion was to use preempt notifiers, which we can't because:
->>
->> - runqueue lock is also held
->> - It's not unconditionally available, depends on config.
->>
->> diff --git a/kernel/sched.c b/kernel/sched.c
->> index e806446..8581ad3 100644
->> --- a/kernel/sched.c
->> +++ b/kernel/sched.c
->> @@ -2826,6 +2826,14 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
->>  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
->>         finish_lock_switch(rq, prev);
->>  
->> +       /*
->> +        * If this task has IO plugged, make sure it
->> +        * gets flushed out to the devices before we go
->> +        * to sleep
->> +        */
->> +       if (prev_state != TASK_RUNNING)
->> +               blk_flush_plug(prev);
->> +
->>         fire_sched_in_preempt_notifiers(current);
->>         if (mm)
->>                 mmdrop(mm);
->> @@ -3973,14 +3981,6 @@ need_resched_nonpreemptible:
->>                                 if (to_wakeup)
->>                                         try_to_wake_up_local(to_wakeup);
->>                         }
->> -                       /*
->> -                        * If this task has IO plugged, make sure it
->> -                        * gets flushed out to the devices before we go
->> -                        * to sleep
->> -                        */
->> -                       blk_flush_plug(prev);
->> -                       BUG_ON(prev->plug && !list_empty(&prev->plug->list));
->> -
->>                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
->>                 }
->>                 switch_count = &prev->nvcsw;
->>
-> 
-> Right, so your new location is still under rq->lock for a number of
-> architectures (including x86). finish_lock_switch() doesn't actually
-> release the lock unless __ARCH_WANT_INTERRUPTS_ON_CTXSW ||
-> __ARCH_WANT_UNLOCKED_CTXSW (the former implies the latter since rq->lock
-> is IRQ-safe).
+The below patch fixes some typos with one to many "rr's" in a comment.
+PLease have a look and let me know if I missed anything.
+NOte: I am limited with my intranet connection so I will try to 
+get this asap if anything needs to be resent.
 
-Ah, thanks for that.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-> If you want a safe place to drop rq->lock (but keep in mind to keep IRQs
-> disabled there) and use prev, do something like the below. Both
-> pre_schedule() and idle_balance() can already drop the rq->lock do doing
-> it once more is quite all-right ;-)
-> 
-> Note that once you drop rq->lock prev->state can change to TASK_RUNNING
-> again so don't re-check that.
+---
+ arch/arm/mach-omap2/smartreflex.c                  |    2 +-
+ arch/powerpc/platforms/embedded6xx/storcenter.c    |    2 +-
+ arch/sparc/kernel/smp_64.c                         |    2 +-
+ drivers/ata/sata_dwc_460ex.c                       |    2 +-
+ drivers/message/fusion/lsi/mpi_ioc.h               |    2 +-
+ drivers/net/arm/ks8695net.c                        |    2 +-
+ drivers/net/atlx/atl1.c                            |    2 +-
+ drivers/net/cs89x0.c                               |    2 +-
+ drivers/net/qlge/qlge_main.c                       |    2 +-
+ drivers/net/sky2.c                                 |    2 +-
+ drivers/net/wireless/rtlwifi/pci.c                 |    2 +-
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ++--
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |    2 +-
+ drivers/staging/sep/sep_driver.c                   |    2 +-
+ drivers/staging/tidspbridge/Kconfig                |    2 +-
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |    2 +-
+ .../astoria/include/linux/westbridge/cyasstorage.h |    2 +-
+ drivers/tty/serial/mrst_max3110.c                  |    2 +-
+ drivers/usb/gadget/langwell_udc.c                  |    2 +-
+ drivers/usb/musb/musb_gadget.c                     |    2 +-
+ include/linux/pxa2xx_ssp.h                         |    2 +-
+ net/ipv4/ip_fragment.c                             |    2 +-
+ 22 files changed, 23 insertions(+), 23 deletions(-)
 
-So that's a problem. If I end up flushing this structure that sits on
-the stack of the process, I cannot have it running on another CPU at
-that time.
-
-I need the process to be in such a state that it will not get scheduled
-on another CPU before this has completed.
-
-Is that even possible? If not, then I think the best solution is to
-flush on preempt as well and hence move it up a bit like Shaohua posted
-as well. This is also how it was originally done, but I wanted to avoid
-that if at all possible.
-
-
+diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+index 95ac336..ab98c00 100644
+--- a/arch/arm/mach-omap2/smartreflex.c
++++ b/arch/arm/mach-omap2/smartreflex.c
+@@ -246,7 +246,7 @@ static void sr_stop_vddautocomp(struct omap_sr *sr)
+  * driver register and sr device intializtion API's. Only one call
+  * will ultimately succeed.
+  *
+- * Currenly this function registers interrrupt handler for a particular SR
++ * Currenly this function registers interrupt handler for a particular SR
+  * if smartreflex class driver is already registered and has
+  * requested for interrupts and the SR interrupt line in present.
+  */
+diff --git a/arch/powerpc/platforms/embedded6xx/storcenter.c b/arch/powerpc/platforms/embedded6xx/storcenter.c
+index 613070e..f1eebca 100644
+--- a/arch/powerpc/platforms/embedded6xx/storcenter.c
++++ b/arch/powerpc/platforms/embedded6xx/storcenter.c
+@@ -77,7 +77,7 @@ static void __init storcenter_setup_arch(void)
+ }
+ 
+ /*
+- * Interrupt setup and service.  Interrrupts on the turbostation come
++ * Interrupt setup and service.  Interrupts on the turbostation come
+  * from the four PCI slots plus onboard 8241 devices: I2C, DUART.
+  */
+ static void __init storcenter_init_IRQ(void)
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 555a76d..63a6142 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -842,7 +842,7 @@ static void tsb_sync(void *info)
+ 	struct trap_per_cpu *tp = &trap_block[raw_smp_processor_id()];
+ 	struct mm_struct *mm = info;
+ 
+-	/* It is not valid to test "currrent->active_mm == mm" here.
++	/* It is not valid to test "current->active_mm == mm" here.
+ 	 *
+ 	 * The value of "current" is not changed atomically with
+ 	 * switch_mm().  But that's OK, we just need to check the
+diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
+index 6cf57c5..bc09a35 100644
+--- a/drivers/ata/sata_dwc_460ex.c
++++ b/drivers/ata/sata_dwc_460ex.c
+@@ -350,7 +350,7 @@ static void sata_dwc_tf_dump(struct ata_taskfile *tf)
+ /*
+  * Function: get_burst_length_encode
+  * arguments: datalength: length in bytes of data
+- * returns value to be programmed in register corrresponding to data length
++ * returns value to be programmed in register corresponding to data length
+  * This value is effectively the log(base 2) of the length
+  */
+ static  int get_burst_length_encode(int datalength)
+diff --git a/drivers/message/fusion/lsi/mpi_ioc.h b/drivers/message/fusion/lsi/mpi_ioc.h
+index 8faa4fa..d28c15d 100644
+--- a/drivers/message/fusion/lsi/mpi_ioc.h
++++ b/drivers/message/fusion/lsi/mpi_ioc.h
+@@ -856,7 +856,7 @@ typedef struct _EVENT_DATA_SAS_DISCOVERY
+ #define MPI_EVENT_SAS_DSCVRY_PHY_BITS_MASK                  (0xFFFF0000)
+ #define MPI_EVENT_SAS_DSCVRY_PHY_BITS_SHIFT                 (16)
+ 
+-/* SAS Discovery Errror Event data */
++/* SAS Discovery Error Event data */
+ 
+ typedef struct _EVENT_DATA_DISCOVERY_ERROR
+ {
+diff --git a/drivers/net/arm/ks8695net.c b/drivers/net/arm/ks8695net.c
+index aa07657..f251fe0 100644
+--- a/drivers/net/arm/ks8695net.c
++++ b/drivers/net/arm/ks8695net.c
+@@ -412,7 +412,7 @@ ks8695_tx_irq(int irq, void *dev_id)
+  *    Interrupt Status Register (Offset 0xF208)
+  *        Bit29: WAN MAC Receive Status
+  *        Bit16: LAN MAC Receive Status
+- *    So, this Rx interrrupt enable/status bit number is equal
++ *    So, this Rx interrupt enable/status bit number is equal
+  *    as Rx IRQ number.
+  */
+ static inline u32 ks8695_get_rx_enable_bit(struct ks8695_priv *ksp)
+diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
+index 3b52768..bd0d409 100644
+--- a/drivers/net/atlx/atl1.c
++++ b/drivers/net/atlx/atl1.c
+@@ -857,7 +857,7 @@ static s32 atl1_init_hw(struct atl1_hw *hw)
+ 	atl1_init_flash_opcode(hw);
+ 
+ 	if (!hw->phy_configured) {
+-		/* enable GPHY LinkChange Interrrupt */
++		/* enable GPHY LinkChange Interrupt */
+ 		ret_val = atl1_write_phy_reg(hw, 18, 0xC00);
+ 		if (ret_val)
+ 			return ret_val;
+diff --git a/drivers/net/cs89x0.c b/drivers/net/cs89x0.c
+index d325e01..b04a21e 100644
+--- a/drivers/net/cs89x0.c
++++ b/drivers/net/cs89x0.c
+@@ -1330,7 +1330,7 @@ release_irq:
+                 if (result==DETECTED_NONE) {
+                         printk(KERN_WARNING "%s: 10Base-5 (AUI) has no cable\n", dev->name);
+                         if (lp->auto_neg_cnf & IMM_BIT) /* check "ignore missing media" bit */
+-                                result = DETECTED_AUI; /* Yes! I don't care if I see a carrrier */
++                                result = DETECTED_AUI; /* Yes! I don't care if I see a carrier */
+                 }
+ 		break;
+ 	case A_CNF_MEDIA_10B_2:
+diff --git a/drivers/net/qlge/qlge_main.c b/drivers/net/qlge/qlge_main.c
+index 49bfa58..e9cb3c7 100644
+--- a/drivers/net/qlge/qlge_main.c
++++ b/drivers/net/qlge/qlge_main.c
+@@ -2086,7 +2086,7 @@ static unsigned long ql_process_mac_rx_intr(struct ql_adapter *qdev,
+ 						length, vlan_id);
+ 	} else {
+ 		/* Non-TCP/UDP large frames that span multiple buffers
+-		 * can be processed corrrectly by the split frame logic.
++		 * can be processed correctly by the split frame logic.
+ 		 */
+ 		ql_process_mac_split_rx_intr(qdev, rx_ring, ib_mac_rsp,
+ 						vlan_id);
+diff --git a/drivers/net/sky2.c b/drivers/net/sky2.c
+index 7d85a38..ec77231 100644
+--- a/drivers/net/sky2.c
++++ b/drivers/net/sky2.c
+@@ -1972,7 +1972,7 @@ static void sky2_hw_down(struct sky2_port *sky2)
+ 
+ 	sky2_write8(hw, SK_REG(port, RX_GMF_CTRL_T), GMF_RST_SET);
+ 
+-	/* Force any delayed status interrrupt and NAPI */
++	/* Force any delayed status interrupt and NAPI */
+ 	sky2_write32(hw, STAT_LEV_TIMER_CNT, 0);
+ 	sky2_write32(hw, STAT_TX_TIMER_CNT, 0);
+ 	sky2_write32(hw, STAT_ISR_TIMER_CNT, 0);
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 1758d44..1473476 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1506,7 +1506,7 @@ void rtl_pci_stop(struct ieee80211_hw *hw)
+ 	u8 RFInProgressTimeOut = 0;
+ 
+ 	/*
+-	 *should before disable interrrupt&adapter
++	 *should before disable interrupt&adapter
+ 	 *and will do it immediately.
+ 	 */
+ 	set_hal_stop(rtlhal);
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 588afd5..318b41f 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -386,10 +386,10 @@ static void ft1000_reset_asic(struct net_device *dev)
+ 	}
+ 	mdelay(1);
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+-		// set watermark to -1 in order to not generate an interrrupt
++		// set watermark to -1 in order to not generate an interrupt
+ 		ft1000_write_reg(dev, FT1000_REG_WATERMARK, 0xffff);
+ 	} else {
+-		// set watermark to -1 in order to not generate an interrrupt
++		// set watermark to -1 in order to not generate an interrupt
+ 		ft1000_write_reg(dev, FT1000_REG_MAG_WATERMARK, 0xffff);
+ 	}
+ 	// clear interrupts
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index 643a637..835f738 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -663,7 +663,7 @@ static void ft1000_reset_asic (struct net_device *dev)
+ 
+     mdelay(1);
+ 
+-    // set watermark to -1 in order to not generate an interrrupt
++    // set watermark to -1 in order to not generate an interrupt
+     ft1000_write_register(ft1000dev, 0xffff, FT1000_REG_MAG_WATERMARK);
+ 
+     // clear interrupts
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index ac5d569..57500cd 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -1427,7 +1427,7 @@ static void sep_build_lli_table(struct sep_device *sep,
+ 
+ 	dev_dbg(&sep->pdev->dev, "sep_build_lli_table start\n");
+ 
+-	/* Init currrent table data size and lli array entry counter */
++	/* Init current table data size and lli array entry counter */
+ 	curr_table_data_size = 0;
+ 	array_counter = 0;
+ 	*num_table_entries_ptr = 1;
+diff --git a/drivers/staging/tidspbridge/Kconfig b/drivers/staging/tidspbridge/Kconfig
+index 93de4f2..21a559e 100644
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -78,7 +78,7 @@ config TIDSPBRIDGE_NTFY_PWRERR
+ 	bool "Notify power errors"
+ 	depends on TIDSPBRIDGE
+ 	help
+-	  Enable notifications to registered clients on the event of power errror
++	  Enable notifications to registered clients on the event of power error
+ 	  trying to suspend bridge driver. Say Y, to signal this event as a fatal
+ 	  error, this will require a bridge restart to recover.
+ 
+diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+index 3581a55..e231f44 100644
+--- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
++++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+@@ -285,7 +285,7 @@ int dcd_enumerate_object(s32 index, enum dsp_dcdobjtype obj_type,
+ 			enum_refs = 0;
+ 
+ 			/*
+-			 * TODO: Revisit, this is not an errror case but code
++			 * TODO: Revisit, this is not an error case but code
+ 			 * expects non-zero value.
+ 			 */
+ 			status = ENODATA;
+diff --git a/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h b/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h
+index 64f078c..a8a8eb7 100644
+--- a/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h
++++ b/drivers/staging/westbridge/astoria/include/linux/westbridge/cyasstorage.h
+@@ -297,7 +297,7 @@ typedef enum cy_as_storage_event {
+ 	cy_as_storage_inserted,
+ 
+ 	/* This event occurs when the West Bridge device
+-	 * percieves an interrrupt from an SDIO card */
++	 * percieves an interrupt from an SDIO card */
+ 	cy_as_sdio_interrupt
+ 
+ } cy_as_storage_event;
+diff --git a/drivers/tty/serial/mrst_max3110.c b/drivers/tty/serial/mrst_max3110.c
+index b62857b..6d18830 100644
+--- a/drivers/tty/serial/mrst_max3110.c
++++ b/drivers/tty/serial/mrst_max3110.c
+@@ -23,7 +23,7 @@
+  *    1 word. If SPI master controller doesn't support sclk frequency change,
+  *    then the char need be sent out one by one with some delay
+  *
+- * 2. Currently only RX availabe interrrupt is used, no need for waiting TXE
++ * 2. Currently only RX availabe interrupt is used, no need for waiting TXE
+  *    interrupt for a low speed UART device
+  */
+ 
+diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
+index 1eca8b4..acc155a 100644
+--- a/drivers/usb/gadget/langwell_udc.c
++++ b/drivers/usb/gadget/langwell_udc.c
+@@ -2968,7 +2968,7 @@ static irqreturn_t langwell_irq(int irq, void *_dev)
+ 		handle_port_change(dev);
+ 	}
+ 
+-	/* suspend interrrupt */
++	/* suspend interrupt */
+ 	if (irq_sts & STS_SLI) {
+ 		dev_vdbg(&dev->pdev->dev, "suspend interrupt\n");
+ 		handle_bus_suspend(dev);
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 2fe3046..c5d03e0 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -699,7 +699,7 @@ static void rxstate(struct musb *musb, struct musb_request *req)
+ 	 * most these gadgets, end of is signified either by a short packet,
+ 	 * or filling the last byte of the buffer.  (Sending extra data in
+ 	 * that last pckate should trigger an overflow fault.)  But in mode 1,
+-	 * we don't get DMA completion interrrupt for short packets.
++	 * we don't get DMA completion interrupt for short packets.
+ 	 *
+ 	 * Theoretically, we could enable DMAReq irq (MUSB_RXCSR_DMAMODE = 1),
+ 	 * to get endpoint interrupt on every DMA req, but that didn't seem
+diff --git a/include/linux/pxa2xx_ssp.h b/include/linux/pxa2xx_ssp.h
+index 2f691e4..d2d4fb6 100644
+--- a/include/linux/pxa2xx_ssp.h
++++ b/include/linux/pxa2xx_ssp.h
+@@ -56,7 +56,7 @@
+ /* PXA27x, PXA3xx */
+ #define SSCR0_EDSS	(1 << 20)	/* Extended data size select */
+ #define SSCR0_NCS	(1 << 21)	/* Network clock select */
+-#define SSCR0_RIM	(1 << 22)	/* Receive FIFO overrrun interrupt mask */
++#define SSCR0_RIM	(1 << 22)	/* Receive FIFO overrun interupt mask */
+ #define SSCR0_TUM	(1 << 23)	/* Transmit FIFO underrun interrupt mask */
+ #define SSCR0_FRDC	(0x07000000)	/* Frame rate divider control (mask) */
+ #define SSCR0_SlotsPerFrm(x) (((x) - 1) << 24)	/* Time slots per frame [1..8] */
+diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
+index a1151b8..9647259 100644
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -374,7 +374,7 @@ static int ip_frag_queue(struct ipq *qp, struct sk_buff *skb)
+ 	/* Is this the final fragment? */
+ 	if ((flags & IP_MF) == 0) {
+ 		/* If we already have some bits beyond end
+-		 * or have different end, the segment is corrrupted.
++		 * or have different end, the segment is corrupted.
+ 		 */
+ 		if (end < qp->q.len ||
+ 		    ((qp->q.last_in & INET_FRAG_LAST_IN) && end != qp->q.len))
 -- 
-Jens Axboe
+1.7.4.1
 
