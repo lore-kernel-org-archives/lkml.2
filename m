@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab1CGU3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 15:29:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35158 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203Ab1CGU3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 15:29:19 -0500
-Date: Mon, 7 Mar 2011 15:29:17 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "oleg@redhat.com" <oleg@redhat.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] blk-throttle: Couple of cleanup and fixes for limit
- update code
-Message-ID: <20110307202917.GI9540@redhat.com>
-References: <1298331770-20079-1-git-send-email-vgoyal@redhat.com>
- <20110307155006.GF9540@redhat.com>
- <4D753C79.4020800@fusionio.com>
+	id S1754406Ab1CGU30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 15:29:26 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:36710
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753556Ab1CGU3Y convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 15:29:24 -0500
+X-SpamScore: -24
+X-BigFish: VS-24(zz542N1432N4015L9371Pzz1202hzz8275bh8275dhz2dh2a8h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Thread-Topic: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Thread-Index: AQHL3OEO2wru9FbG9kebNQISz1Arp5QiUaHw
+Date: Mon, 7 Mar 2011 20:29:17 +0000
+Message-ID: <56132A77AB93C141BF06E6B96CA6CFEA194786@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+	<87oc5puwg3.fsf@lebrac.rtp-net.org>
+	<56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+ <87fwqyvrzf.fsf@lebrac.rtp-net.org>
+In-Reply-To: <87fwqyvrzf.fsf@lebrac.rtp-net.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.81.68.39]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D753C79.4020800@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 09:13:45PM +0100, Jens Axboe wrote:
-> On 2011-03-07 16:50, Vivek Goyal wrote:
-> > On Mon, Feb 21, 2011 at 06:42:48PM -0500, Vivek Goyal wrote:
-> >> Hi Jens,
-> >>
-> >> Couple of throttle fixes seem to have fallen through cracks.
-> >>
-> >> https://lkml.org/lkml/2010/12/15/331
-> >>
-> >> I am reposting it for inclusion. Please let me know if you have any concerns.
-> >> Oleg and Paul acked the patch in the past so I am retaining their Reviewed-by:
-> >> lines.
-> >>
-> > 
-> > Hi Jens,
-> > 
-> > Can you please apply following patches for 2.6.39. These are good for fixing
-> > couple of race conditions in block throttle code w.r.t limit updates.
-> > Please let me know if you have concernes with these patches.
-> 
-> I have applied them now. 2/2 is a nice cleanup. But it does not apply
-> cleanly after the workqueue change we merged last week. I fixed it up
-> for you, manually applied hunk #5 and added the below diff. Please
-> inspect the end result. You should have rebased that patch.
 
-Sorry, this patch was posted before workqueue change last week. I should
-have rebased and reposted it before pinging you again. Will take care of
-it next time onwards.
+Hi Arnaud,
 
-> 
-> Also note that you seem to have a double xchg() in there, also added
-> from 2/2.
 
-Actually one xchg is tracking per group limit changes (tg) and one xchg()
-it tracking overall limit change per queue (td), meaning if any of
-the group on this queue has changed the limit or not. That avoids
-traversal of list of all the groups if none of the group has changed
-the limit.
+>-----Original Message-----
+>From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-
+>bounces@lists.infradead.org] On Behalf Of Arnaud Patard
+>Sent: Monday, March 07, 2011 10:02 AM
+>To: Nguyen Dinh-R00091
+>Cc: linux@arm.linux.org.uk; s.hauer@pengutronix.de; linux-kernel@vger.kernel.org; Vaidyanathan
+>Ranjani-RA5478; u.kleine-koenig@pengutronix.de; Zhang Lily-R58066; linux-arm-
+>kernel@lists.infradead.org
+>Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
+>
+>Nguyen Dinh-R00091 <R00091@freescale.com> writes:
+>
+>> Hi Arnaud,
+>
+>Hi,
+>>
+>> Just to verify that you are testing on an MX51-Babbage board? Here's my log:
+>
+>I never said I was testing on babbage. The reason is because I'm using a
+>efika smartbook and not a babbage.
+>
+>>
+>> root@freescale ~$ uname -a
+>> Linux freescale 2.6.38-rc1+ #93 Fri Mar 4 17:18:15 CST 2011 armv7l GNU/Linux
+>
+>2.6.38-rc1+ ? which tree are you using ? The for-next branch of Sascha
+>Hauer's tree is at least 2.6.38-rc5 so you're trying to merge something
+>without even testing it on the current tree. Can you please test suspend
+>with current imx for-next tree (with no other patches than theses 2
+>patches if possible), in order to make sure that it's still working with it ?
+>
 
-> 
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 7a833c9..32dd3e4 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -898,7 +898,7 @@ static void throtl_update_blkio_group_common(struct throtl_data *td,
->  	xchg(&tg->limits_changed, true);
->  	xchg(&td->limits_changed, true);
->  	/* Schedule a work now to process the limit change */
-> -	throtl_schedule_delayed_work(td->queue, 0);
-> +	throtl_schedule_delayed_work(td, 0);
+I just tested the same 2 patches on Sascha's imx for-next branch and its working fine. I used a lab power supply to measure that the system did indeed suspend and wakeup. When the Babbage is running at 5V, its drawing 900 mA, after putting the system in suspend, it draws 200 mA.
 
-This looks good. Thanks Jens.
+And I can wakeup just fine using a irq from a gpio. Perhaps you IRQ source is not capable of waking up the system?
 
-Vivek
+Dinh
+
+>Thanks,
+>Arnaud
+>
+>_______________________________________________
+>linux-arm-kernel mailing list
+>linux-arm-kernel@lists.infradead.org
+>http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
