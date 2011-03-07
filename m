@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab1CGDtl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 22:49:41 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:52617 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753934Ab1CGDtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 22:49:39 -0500
-Message-ID: <4D74560D.6060206@cn.fujitsu.com>
-Date: Mon, 07 Mar 2011 11:50:37 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755129Ab1CGEPF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 23:15:05 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:50966 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab1CGEPD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 23:15:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=t9bdGUIthaoh65/mu/XSw4p/D4UpgyCsGqRWrK3YfP95vPSzOn4nes50Kj+tpikRnT
+         KVI61ucL32eqfcdXznQHtqyZEEfgheA1jEQ9NfTxM3ZbJYo3w+UpnWGLTbsG1KqxqXzX
+         OCztLNJKNf49hEBH2NJSh1rvZFXyHdCkJcdaI=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 7/10] KVM: MMU: introduce a common function to get no-dirty-logged
- slot
-References: <4D70C569.1030107@cn.fujitsu.com> <4D70C657.4030105@cn.fujitsu.com> <4D737DEE.2050402@redhat.com>
-In-Reply-To: <4D737DEE.2050402@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-07 11:48:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-07 11:48:26,
-	Serialize complete at 2011-03-07 11:48:26
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D72650D.8070503@lwfinger.net>
+References: <1299108754-5492-1-git-send-email-bookjovi@gmail.com>
+	<1299328260.4277.92.camel@localhost>
+	<AANLkTimnSvBKSL6_d3RxufxUL_C9wCM+Fz66_B5Sc0KE@mail.gmail.com>
+	<4D72650D.8070503@lwfinger.net>
+Date: Mon, 7 Mar 2011 12:15:02 +0800
+Message-ID: <AANLkTi=GHOyeSWA96UUokmYSdHHc5cuY53xJuhVzBNwz@mail.gmail.com>
+Subject: Re: [PATCH] net: mac80211: fix compilation warning
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "open list:NETWORKING [WIREL..." <linux-wireless@vger.kernel.org>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2011 08:28 PM, Avi Kivity wrote:
-
->>   static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
->> @@ -2155,9 +2166,8 @@ pte_prefetch_gfn_to_memslot(struct kvm_vcpu *vcpu, gfn_t gfn, bool no_dirty_log)
->>   {
->>       struct kvm_memory_slot *slot;
+On Sun, Mar 6, 2011 at 12:30 AM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
+> On 03/05/2011 07:52 AM, Jovi Zhang wrote:
 >>
->> -    slot = gfn_to_memslot(vcpu->kvm, gfn);
->> -    if (!slot || slot->flags&  KVM_MEMSLOT_INVALID ||
->> -          (no_dirty_log&&  slot->dirty_bitmap))
->> +    slot = gfn_to_memslot_dirty_bitmap(vcpu, gfn, no_dirty_log);
->> +    if (slot&&  slot->flags&  KVM_MEMSLOT_INVALID)
->>           slot = NULL;
+>> On Sat, Mar 5, 2011 at 8:31 PM, Ben Hutchings<bhutchings@solarflare.com>
+>>  wrote:
+>>>
+>>> On Wed, 2011-03-02 at 18:32 -0500, bookjovi@gmail.com wrote:
+>>>>
+>>>> From: Jovi Zhang<bookjovi@gmail.com>
+>>>>
+>>>> this commit fix compilation warning as following:
+>>>> net/mac80211/tx.c:1753: warning: unused variable mppath
+>>>
+>>> [...]
+>>>
+>>> You clearly didn't try building this with CONFIG_MAC80211_MESH enabled.
+>>>
+>> Sorry, indeed, maybe should be like this:
 >>
->>       return slot;
-> 
-> For a unification this adds a lot of code... I think the result is more complicated than the starting point.
-> 
+>> +#ifdef CONFIG_MAC80211_MESH
+>>        struct mesh_path *mppath = NULL;
+>> +#endif
+>
+> Linville likes "struct mesh_path *mppath __maybe_unused = NULL;" over the
+> ifdef form.
 
-After more thinking, i think we can move 'slot->flags&  KVM_MEMSLOT_INVALID'
-into the common function, since the later gva_to_pfn also can filter this out.
+That's better, Thanks.
