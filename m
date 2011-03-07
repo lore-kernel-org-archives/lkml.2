@@ -1,102 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab1CGLsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 06:48:46 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:51398 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab1CGLsp (ORCPT
+	id S1755544Ab1CGLuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 06:50:37 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:45412 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab1CGLuf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 06:48:45 -0500
-Date: Mon, 7 Mar 2011 17:18:39 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: stable@kernel.org
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com, anton@samba.org,
-        benh@kernel.crashing.org
-Subject: [PATCH 3/7] powerpc: Use more accurate limit for first segment
-	memory allocations
-Message-ID: <20110307114839.GE8194@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+	Mon, 7 Mar 2011 06:50:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ji8YbLXhLRiK7L2weFi5b9hy33g02VXbDOptW721BLBsnJeNNpuZsNoWYh2cPC0Obk
+         RTwDnsIx1o3cyTZSf+i5De7UP12e4XPdeyvdx49R/Qm7DsM8wEnbI25MDh+BumBJaLrn
+         SPOjYc4Fj3zA2B9BYXqGs4jYco2o+9wjdwFqA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110307114142.GB13471@opensource.wolfsonmicro.com>
+References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com> <20110307114142.GB13471@opensource.wolfsonmicro.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 7 Mar 2011 06:50:15 -0500
+Message-ID: <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
+Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
+ ADAU1701 SigmaDSP
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    powerpc: Use more accurate limit for first segment memory allocations
+On Mon, Mar 7, 2011 at 06:41, Mark Brown wrote:
+> On Mon, Mar 07, 2011 at 09:11:42AM +0800, cliff.cai@analog.com wrote:
+>> From: Cliff Cai <cliff.cai@analog.com>
+>> It needs to include "linux/sigma.h" which is still in Andrew Morton's
+>> tree.
+>
+> Is this needed by other trees?
 
-    Commit: 095c7965f4dc870ed2b65143b1e2610de653416c upstream
+no
 
-    On large machines we are running out of room below 256MB. In some cases we
-    only need to ensure the allocation is in the first segment, which may be
-    256MB or 1TB.
+> I can't apply this driver until it's merged into ASoC via some means
 
-    Add slb0_limit and use it to specify the upper limit for the irqstack and
-    emergency stacks.
+and andrew has been holding off on merging the firmware driver until
+something in mainline needs it.  once a driver gets to the point where
+you're fine with merging it, we can bug akpm to push the sigma
+firmware loader to linus.
 
-    On a large ppc64 box, this fixes a panic at boot when the crashkernel=
-    option is specified (previously we would run out of memory below 256MB).
+>>       select SND_SOC_PCM3008
+>>       select SND_SOC_SPDIF
+>>       select SND_SOC_SSM2602 if I2C
+>> +     select SND_SOC_ADAU1701 if I2C
+>>       select SND_SOC_STAC9766 if SND_SOC_AC97_BUS
+>>       select SND_SOC_TLV320AIC23 if I2C
+>
+> This presumably also needs to select the DSP API otherwise it's not
+> going to build.
 
-    Signed-off-by: Milton Miller <miltonm@bga.com>
-    Signed-off-by: Anton Blanchard <anton@samba.org>
-    Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-    Signed-off-by: Kamalesh babulal <kamalesh@linux.vnet.ibm.com>
----
- arch/powerpc/kernel/setup_64.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+by "DSP API" i'm guessing you mean the Sigma firmware loader
 
-Index: b/arch/powerpc/kernel/setup_64.c
-===================================================================
---- a/arch/powerpc/kernel/setup_64.c	2011-03-07 00:31:51.559273335 -0800
-+++ b/arch/powerpc/kernel/setup_64.c	2011-03-07 02:12:58.681888270 -0800
-@@ -432,9 +432,18 @@
-	DBG(" <- setup_system()\n");
- }
+>> +static ssize_t adau1371_dsp_load(struct device *dev,
+>> +                               struct device_attribute *attr,
+>> +                               const char *buf, size_t count)
+>> +{
+>> +     int ret = 0;
+>> +     struct adau1701_priv *adau1701 = dev_get_drvdata(dev);
+>> +     struct snd_soc_codec *codec = adau1701->codec;
+>> +     ret = adau1701_setprogram(codec);
+>> +     if (ret)
+>> +             return ret;
+>> +     else
+>> +             return count;
+>> +}
+>> +static DEVICE_ATTR(dsp, 0644, NULL, adau1371_dsp_load);
+>
+> You're marking the file as supporting both read and write but only
+> providing write functionality, and the write functionality totally
+> ignores the written data.
+>
+> More generally this doesn't seem like a great interface - apparently the
+> device requries that firmware be loaded but the whole firmware load
+> process isn't at all joined up with the driver code meaning that the
+> application layer has to figure out when firmware needs to be reloaded,
+> there's no understanding on the part of the driver of what the firmware
+> on the device is doing or how it's glued into the audio subsystem.
 
-+static u64 slb0_limit(void)
-+{
-+	if (cpu_has_feature(CPU_FTR_1T_SEGMENT))
-+		return 1UL << SID_SHIFT_1T;
-+
-+       return 1UL << SID_SHIFT;
-+}
-+
- #ifdef CONFIG_IRQSTACKS
- static void __init irqstack_early_init(void)
- {
-+	u64 limit = slb0_limit();
-	unsigned int i;
-
-	/*
-@@ -444,10 +453,10 @@
-	for_each_possible_cpu(i) {
-		softirq_ctx[i] = (struct thread_info *)
-			__va(lmb_alloc_base(THREAD_SIZE,
--					    THREAD_SIZE, 0x10000000));
-+					    THREAD_SIZE, limit));
-		hardirq_ctx[i] = (struct thread_info *)
-			__va(lmb_alloc_base(THREAD_SIZE,
--					    THREAD_SIZE, 0x10000000));
-+					    THREAD_SIZE, limit));
-	}
- }
- #else
-@@ -478,7 +487,7 @@
-  */
- static void __init emergency_stack_init(void)
- {
--	unsigned long limit;
-+	u64 limit;
-	unsigned int i;
-
-	/*
-@@ -490,7 +499,7 @@
-	 * bringup, we need to get at them in real mode. This means they
-	 * must also be within the RMO region.
-	 */
--	limit = min(0x10000000ULL, lmb.rmo_size);
-+	limit = min(slb0_limit(), lmb.rmo_size);
-
-	for_each_possible_cpu(i) {
-		unsigned long sp;
+the API should allow for userspace to specify the firmware name, but
+that's about it.  it is up to the userspace application to arbitrarily
+load different firmware files on the fly into the codec without the
+codec caring what's going into it.  often times the firmware is DSP
+code to do different post processing on the audio stream (cleanup or
+whatever).
+-mike
