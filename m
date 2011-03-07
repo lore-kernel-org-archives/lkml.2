@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab1CGRAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 12:00:41 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39201 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab1CGRAk (ORCPT
+	id S1754680Ab1CGRBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 12:01:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58421 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1CGRBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 12:00:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=mAxlItpav6z634RFipORwDxoQCWXOvlPQlz/1fD4YJr3HTK9BzIGBrNJsxl68bWR76
-         GrXv+AGKU4Fne6VTT1xykktCdS2O6xjZfcayqqRj2NarH8S3oYfG2PGTcF/ivY0mp0ko
-         VtqANdSMqubmHptoNxMV1QI7opVkX3ouWXPak=
-Message-ID: <4D750F32.5050106@gmail.com>
-Date: Mon, 07 Mar 2011 18:00:34 +0100
-From: roel <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drm: index i shadowed in 2nd loop
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Mar 2011 12:01:48 -0500
+Date: Mon, 7 Mar 2011 09:00:17 -0800
+From: Randy Dunlap <randy.dunlap@Oracle.COM>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Samuel Ortiz <sameo@linux.intel.com>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: Re: [PATCH v3 1/4] MAX8997/8966 MFD Driver Initial Release
+ (PMIC+RTC+MUIC+Haptic+...)
+Message-Id: <20110307090017.79e7746a.randy.dunlap@oracle.com>
+In-Reply-To: <1299493651-25832-2-git-send-email-myungjoo.ham@samsung.com>
+References: <1299493651-25832-1-git-send-email-myungjoo.ham@samsung.com>
+	<1299493651-25832-2-git-send-email-myungjoo.ham@samsung.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0204.4D750F64.0229,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Index i was already used in thhe first loop
+On Mon, 07 Mar 2011 19:27:28 +0900 MyungJoo Ham wrote:
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index fd01836..c682ad1 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -293,6 +293,18 @@ config MFD_MAX8925
+>  	  accessing the device, additional drivers must be enabled in order
+>  	  to use the functionality of the device.
+>  
+> +config MFD_MAX8997
+> +	bool "Maxim Semiconductor MAX8997/8966 PMIC Support"
+> +	depends on I2C=y && GENERIC_HARDIRQS
+> +	select MFD_CORE
+> +	help
+> +	  Say yes here to support for Maxim Semiconductor MAX8998/8966.
+> +	  This is a Power Management IC with RTC, Flash, Fuel Gauge, Haptic,
+> +	  MUIC controls on chip.
+> +	  This driver provies common support for accessing the device,
+
+	              provides                                 device;
+
+> +	  additional drivers must be enabled in order to use the functionality
+> +	  of the device.
+> +
+>  config MFD_MAX8998
+>  	bool "Maxim Semiconductor MAX8998/National LP3974 PMIC Support"
+>  	depends on I2C=y && GENERIC_HARDIRQS
+
 ---
- drivers/gpu/drm/drm_fb_helper.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-The original was wrong, isn't it?
-
-diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index 6977a1c..f73ef43 100644
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -672,7 +672,7 @@ int drm_fb_helper_setcmap(struct fb_cmap *cmap, struct fb_info *info)
- 	struct drm_crtc_helper_funcs *crtc_funcs;
- 	u16 *red, *green, *blue, *transp;
- 	struct drm_crtc *crtc;
--	int i, rc = 0;
-+	int i, j, rc = 0;
- 	int start;
- 
- 	for (i = 0; i < fb_helper->crtc_count; i++) {
-@@ -685,7 +685,7 @@ int drm_fb_helper_setcmap(struct fb_cmap *cmap, struct fb_info *info)
- 		transp = cmap->transp;
- 		start = cmap->start;
- 
--		for (i = 0; i < cmap->len; i++) {
-+		for (j = 0; j < cmap->len; j++) {
- 			u16 hred, hgreen, hblue, htransp = 0xffff;
- 
- 			hred = *red++;
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
