@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab1CGP4E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 10:56:04 -0500
-Received: from dakia2.marvell.com ([65.219.4.35]:33395 "EHLO
+	id S1755477Ab1CGP4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 10:56:07 -0500
+Received: from dakia2.marvell.com ([65.219.4.35]:33401 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab1CGPzT (ORCPT
+	with ESMTP id S1754619Ab1CGPzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 10:55:19 -0500
-X-ASG-Debug-ID: 1299512687-082d75160001-xx1T2L
+	Mon, 7 Mar 2011 10:55:22 -0500
+X-ASG-Debug-ID: 1299512689-082c75230001-xx1T2L
 X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: johnpol@2ka.mipt.ru, sameo@linux.intel.com, a.zummo@towertech.it,
@@ -15,16 +15,17 @@ To: johnpol@2ka.mipt.ru, sameo@linux.intel.com, a.zummo@towertech.it,
         dmitry.torokhov@gmail.com, dtor@mail.ru, rpurdie@rpsys.net,
         linux-kernel@vger.kernel.org
 Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH] mfd: adopt mfd_data in 88pm860x led
-Subject: [PATCH] mfd: adopt mfd_data in 88pm860x led
-Date: Mon,  7 Mar 2011 23:43:10 +0800
-X-ASG-Orig-Subj: [PATCH] mfd: adopt mfd_data in 88pm860x led
-Message-Id: <1299512600-29047-2-git-send-email-haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH] mfd: adopt mfd_data in 88pm860x regulator
+Subject: [PATCH] mfd: adopt mfd_data in 88pm860x regulator
+Date: Mon,  7 Mar 2011 23:43:11 +0800
+X-ASG-Orig-Subj: [PATCH] mfd: adopt mfd_data in 88pm860x regulator
+Message-Id: <1299512600-29047-3-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1299512600-29047-1-git-send-email-haojian.zhuang@marvell.com>
+In-Reply-To: <1299512600-29047-2-git-send-email-haojian.zhuang@marvell.com>
 References: <1299512600-29047-1-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-2-git-send-email-haojian.zhuang@marvell.com>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1299512687
+X-Barracuda-Start-Time: 1299512689
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -33,315 +34,368 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Copy 88pm860x platform data into different mfd_data structure for
-led driver. So move the identification of device node from led
-driver to mfd driver.
+regulator driver. So move the identification of device node from
+regulator driver to mfd driver.
 
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
 ---
- drivers/leds/leds-88pm860x.c |   60 +++++++++++------------
- drivers/mfd/88pm860x-core.c  |  109 +++++++++++++++++++-----------------------
- include/linux/mfd/88pm860x.h |    3 +-
- 3 files changed, 79 insertions(+), 93 deletions(-)
+ drivers/mfd/88pm860x-core.c  |  165 ++++++++++++++++++++++++++----------------
+ drivers/regulator/88pm8607.c |   46 ++++++------
+ include/linux/mfd/88pm860x.h |    7 +-
+ 3 files changed, 132 insertions(+), 86 deletions(-)
 
-diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
-index e672b44..416def8 100644
---- a/drivers/leds/leds-88pm860x.c
-+++ b/drivers/leds/leds-88pm860x.c
-@@ -17,6 +17,7 @@
- #include <linux/leds.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
-+#include <linux/mfd/core.h>
- #include <linux/mfd/88pm860x.h>
- 
- #define LED_PWM_SHIFT		(3)
-@@ -118,7 +119,8 @@ static void pm860x_led_work(struct work_struct *work)
- 
- 	struct pm860x_led *led;
- 	struct pm860x_chip *chip;
--	int mask;
-+	unsigned char buf[3];
-+	int mask, ret;
- 
- 	led = container_of(work, struct pm860x_led, work);
- 	chip = led->chip;
-@@ -128,16 +130,27 @@ static void pm860x_led_work(struct work_struct *work)
- 			pm860x_set_bits(led->i2c, __led_off(led->port),
- 					LED_CURRENT_MASK, led->iset);
- 		}
-+		pm860x_set_bits(led->i2c, __blink_off(led->port),
-+				LED_BLINK_MASK, LED_ON_CONTINUOUS);
- 		mask = __blink_ctl_mask(led->port);
- 		pm860x_set_bits(led->i2c, PM8606_WLED3B, mask, mask);
--	} else if (led->brightness == 0) {
--		pm860x_set_bits(led->i2c, __led_off(led->port),
--				LED_CURRENT_MASK, 0);
--		mask = __blink_ctl_mask(led->port);
--		pm860x_set_bits(led->i2c, PM8606_WLED3B, mask, 0);
- 	}
- 	pm860x_set_bits(led->i2c, __led_off(led->port), LED_PWM_MASK,
- 			led->brightness);
-+
-+	if (led->brightness == 0) {
-+		pm860x_bulk_read(led->i2c, __led_off(led->port), 3, buf);
-+		ret = buf[0] & LED_PWM_MASK;
-+		ret |= buf[1] & LED_PWM_MASK;
-+		ret |= buf[2] & LED_PWM_MASK;
-+		if (ret == 0) {
-+			/* unset current since no led is lighting */
-+			pm860x_set_bits(led->i2c, __led_off(led->port),
-+					LED_CURRENT_MASK, 0);
-+			mask = __blink_ctl_mask(led->port);
-+			pm860x_set_bits(led->i2c, PM8606_WLED3B, mask, 0);
-+		}
-+	}
- 	led->current_brightness = led->brightness;
- 	dev_dbg(chip->dev, "Update LED. (reg:%d, brightness:%d)\n",
- 		__led_off(led->port), led->brightness);
-@@ -153,31 +166,12 @@ static void pm860x_led_set(struct led_classdev *cdev,
- 	schedule_work(&data->work);
- }
- 
--static int __check_device(struct pm860x_led_pdata *pdata, char *name)
--{
--	struct pm860x_led_pdata *p = pdata;
--	int ret = -EINVAL;
--
--	while (p && p->id) {
--		if ((p->id != PM8606_ID_LED) || (p->flags < 0))
--			break;
--
--		if (!strncmp(name, pm860x_led_name[p->flags],
--			MFD_NAME_SIZE)) {
--			ret = (int)p->flags;
--			break;
--		}
--		p++;
--	}
--	return ret;
--}
--
- static int pm860x_led_probe(struct platform_device *pdev)
- {
- 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
--	struct pm860x_platform_data *pm860x_pdata;
- 	struct pm860x_led_pdata *pdata;
- 	struct pm860x_led *data;
-+	struct mfd_cell *cell;
- 	struct resource *res;
- 	int ret;
- 
-@@ -187,10 +181,11 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	if (pdev->dev.parent->platform_data) {
--		pm860x_pdata = pdev->dev.parent->platform_data;
--		pdata = pm860x_pdata->led;
--	} else {
-+	cell = pdev->dev.platform_data;
-+	if (cell == NULL)
-+		return -ENODEV;
-+	pdata = cell->mfd_data;
-+	if (pdata == NULL) {
- 		dev_err(&pdev->dev, "No platform data!\n");
- 		return -EINVAL;
- 	}
-@@ -198,12 +193,12 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 	data = kzalloc(sizeof(struct pm860x_led), GFP_KERNEL);
- 	if (data == NULL)
- 		return -ENOMEM;
--	strncpy(data->name, res->name, MFD_NAME_SIZE);
-+	strncpy(data->name, res->name, MFD_NAME_SIZE - 1);
- 	dev_set_drvdata(&pdev->dev, data);
- 	data->chip = chip;
- 	data->i2c = (chip->id == CHIP_PM8606) ? chip->client : chip->companion;
- 	data->iset = pdata->iset;
--	data->port = __check_device(pdata, data->name);
-+	data->port = pdata->flags;
- 	if (data->port < 0) {
- 		dev_err(&pdev->dev, "check device failed\n");
- 		kfree(data);
-@@ -221,6 +216,7 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "Failed to register LED: %d\n", ret);
- 		goto out;
- 	}
-+	pm860x_led_set(&data->cdev, 0);
- 	return 0;
- out:
- 	kfree(data);
 diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index a88967a..cec375c 100644
+index cec375c..96ea0c6 100644
 --- a/drivers/mfd/88pm860x-core.c
 +++ b/drivers/mfd/88pm860x-core.c
-@@ -26,57 +26,32 @@ static struct resource bk_resources[] __initdata = {
- 	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,},
+@@ -17,6 +17,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/88pm860x.h>
++#include <linux/regulator/machine.h>
+ 
+ #define INT_STATUS_NUM			3
+ 
+@@ -35,6 +36,27 @@ static struct resource led_resources[] __initdata = {
+ 	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
  };
  
-+static struct resource led_resources[] __initdata = {
-+	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,},
-+	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,},
-+	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,},
-+	{PM8606_LED2_RED,   PM8606_LED2_RED,   "led1-red",   IORESOURCE_IO,},
-+	{PM8606_LED2_GREEN, PM8606_LED2_GREEN, "led1-green", IORESOURCE_IO,},
-+	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
++static struct resource regulator_resources[] __initdata = {
++	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,},
++	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,},
++	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,},
++	{PM8607_ID_LDO1,  PM8607_ID_LDO1,  "ldo-01", IORESOURCE_IO,},
++	{PM8607_ID_LDO2,  PM8607_ID_LDO2,  "ldo-02", IORESOURCE_IO,},
++	{PM8607_ID_LDO3,  PM8607_ID_LDO3,  "ldo-03", IORESOURCE_IO,},
++	{PM8607_ID_LDO4,  PM8607_ID_LDO4,  "ldo-04", IORESOURCE_IO,},
++	{PM8607_ID_LDO5,  PM8607_ID_LDO5,  "ldo-05", IORESOURCE_IO,},
++	{PM8607_ID_LDO6,  PM8607_ID_LDO6,  "ldo-06", IORESOURCE_IO,},
++	{PM8607_ID_LDO7,  PM8607_ID_LDO7,  "ldo-07", IORESOURCE_IO,},
++	{PM8607_ID_LDO8,  PM8607_ID_LDO8,  "ldo-08", IORESOURCE_IO,},
++	{PM8607_ID_LDO9,  PM8607_ID_LDO9,  "ldo-09", IORESOURCE_IO,},
++	{PM8607_ID_LDO10, PM8607_ID_LDO10, "ldo-10", IORESOURCE_IO,},
++	{PM8607_ID_LDO11, PM8607_ID_LDO11, "ldo-11", IORESOURCE_IO,},
++	{PM8607_ID_LDO12, PM8607_ID_LDO12, "ldo-12", IORESOURCE_IO,},
++	{PM8607_ID_LDO13, PM8607_ID_LDO13, "ldo-13", IORESOURCE_IO,},
++	{PM8607_ID_LDO14, PM8607_ID_LDO14, "ldo-14", IORESOURCE_IO,},
++	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,},
 +};
 +
  static struct mfd_cell bk_devs[] __initdata = {
  	{"88pm860x-backlight", 0,},
  	{"88pm860x-backlight", 1,},
- 	{"88pm860x-backlight", 2,},
+@@ -50,8 +72,30 @@ static struct mfd_cell led_devs[] __initdata = {
+ 	{"88pm860x-led", 5,},
  };
  
--static struct pm860x_backlight_pdata bk_pdata[ARRAY_SIZE(bk_devs)];
--
--char pm860x_led_name[][MFD_NAME_SIZE] = {
--	"led0-red",
--	"led0-green",
--	"led0-blue",
--	"led1-red",
--	"led1-green",
--	"led1-blue",
--};
--EXPORT_SYMBOL(pm860x_led_name);
--
--#define PM8606_LED_RESOURCE(_i, _x)			\
--{							\
--	.name	= pm860x_led_name[_i],			\
--	.start	= PM8606_##_x,				\
--	.end	= PM8606_##_x,				\
--	.flags	= IORESOURCE_IO,			\
--}
--
--static struct resource led_resources[] = {
--	PM8606_LED_RESOURCE(PM8606_LED1_RED, RGB1B),
--	PM8606_LED_RESOURCE(PM8606_LED1_GREEN, RGB1C),
--	PM8606_LED_RESOURCE(PM8606_LED1_BLUE, RGB1D),
--	PM8606_LED_RESOURCE(PM8606_LED2_RED, RGB2B),
--	PM8606_LED_RESOURCE(PM8606_LED2_GREEN, RGB2C),
--	PM8606_LED_RESOURCE(PM8606_LED2_BLUE, RGB2D),
-+static struct mfd_cell led_devs[] __initdata = {
-+	{"88pm860x-led", 0,},
-+	{"88pm860x-led", 1,},
-+	{"88pm860x-led", 2,},
-+	{"88pm860x-led", 3,},
-+	{"88pm860x-led", 4,},
-+	{"88pm860x-led", 5,},
- };
- 
--#define PM8606_LED_DEVS(_i)				\
--{							\
--	.name		= "88pm860x-led",		\
--	.num_resources	= 1,				\
--	.resources	= &led_resources[_i],		\
--	.id		= _i,				\
--}
--
--static struct mfd_cell led_devs[] = {
--	PM8606_LED_DEVS(PM8606_LED1_RED),
--	PM8606_LED_DEVS(PM8606_LED1_GREEN),
--	PM8606_LED_DEVS(PM8606_LED1_BLUE),
--	PM8606_LED_DEVS(PM8606_LED2_RED),
--	PM8606_LED_DEVS(PM8606_LED2_GREEN),
--	PM8606_LED_DEVS(PM8606_LED2_BLUE),
--};
-+static struct pm860x_backlight_pdata bk_pdata[ARRAY_SIZE(bk_devs)];
-+static struct pm860x_led_pdata led_pdata[ARRAY_SIZE(led_devs)];
++static struct mfd_cell regulator_devs[] __initdata = {
++	{"88pm860x-regulator", 0,},
++	{"88pm860x-regulator", 1,},
++	{"88pm860x-regulator", 2,},
++	{"88pm860x-regulator", 3,},
++	{"88pm860x-regulator", 4,},
++	{"88pm860x-regulator", 5,},
++	{"88pm860x-regulator", 6,},
++	{"88pm860x-regulator", 7,},
++	{"88pm860x-regulator", 8,},
++	{"88pm860x-regulator", 9,},
++	{"88pm860x-regulator", 10,},
++	{"88pm860x-regulator", 11,},
++	{"88pm860x-regulator", 12,},
++	{"88pm860x-regulator", 13,},
++	{"88pm860x-regulator", 14,},
++	{"88pm860x-regulator", 15,},
++	{"88pm860x-regulator", 16,},
++	{"88pm860x-regulator", 17,},
++};
++
+ static struct pm860x_backlight_pdata bk_pdata[ARRAY_SIZE(bk_devs)];
+ static struct pm860x_led_pdata led_pdata[ARRAY_SIZE(led_devs)];
++static struct regulator_init_data regulator_pdata[ARRAY_SIZE(regulator_devs)];
  
  static struct resource touch_resources[] = {
  	{
-@@ -611,25 +586,41 @@ static void __devinit device_bk_init(struct pm860x_chip *chip,
- 	}
- }
- 
--static void __devinit device_8606_init(struct pm860x_chip *chip,
--				       struct i2c_client *i2c,
--				       struct pm860x_platform_data *pdata)
-+static void __devinit device_led_init(struct pm860x_chip *chip,
-+				      struct i2c_client *i2c,
-+				      struct pm860x_platform_data *pdata)
- {
- 	int ret;
-+	int i, j, id;
- 
--	if (pdata && pdata->led) {
--		ret = mfd_add_devices(chip->dev, 0, &led_devs[0],
--				      ARRAY_SIZE(led_devs),
--				      &led_resources[0], 0);
--		if (ret < 0) {
--			dev_err(chip->dev, "Failed to add led "
--				"subdev\n");
--			goto out_dev;
-+	if ((pdata == NULL) || (pdata->led == NULL))
-+		return;
-+
-+	if (pdata->num_leds > ARRAY_SIZE(led_devs))
-+		pdata->num_leds = ARRAY_SIZE(led_devs);
-+
-+	for (i = 0; i < pdata->num_leds; i++) {
-+		memcpy(&led_pdata[i], &pdata->led[i],
-+			sizeof(struct pm860x_led_pdata));
-+		led_devs[i].mfd_data = &led_pdata[i];
-+
-+		for (j = 0; j < ARRAY_SIZE(led_devs); j++) {
-+			id = led_resources[j].start;
-+			if (led_pdata[i].flags != id)
-+				continue;
-+
-+			led_devs[i].num_resources = 1;
-+			led_devs[i].resources = &led_resources[j],
-+			ret = mfd_add_devices(chip->dev, 0,
-+					      &led_devs[i], 1,
-+					      &led_resources[j], 0);
-+			if (ret < 0) {
-+				dev_err(chip->dev, "Failed to add "
-+					"led subdev\n");
-+				return;
-+			}
- 		}
- 	}
--	return;
--out_dev:
--	device_irq_exit(chip);
- }
- 
- static void __devinit device_8607_init(struct pm860x_chip *chip,
-@@ -748,7 +739,7 @@ int __devinit pm860x_device_init(struct pm860x_chip *chip,
- 	switch (chip->id) {
- 	case CHIP_PM8606:
- 		device_bk_init(chip, chip->client, pdata);
--		device_8606_init(chip, chip->client, pdata);
-+		device_led_init(chip, chip->client, pdata);
- 		break;
- 	case CHIP_PM8607:
- 		device_8607_init(chip, chip->client, pdata);
-@@ -759,7 +750,7 @@ int __devinit pm860x_device_init(struct pm860x_chip *chip,
- 		switch (chip->id) {
- 		case CHIP_PM8607:
- 			device_bk_init(chip, chip->companion, pdata);
--			device_8606_init(chip, chip->companion, pdata);
-+			device_led_init(chip, chip->companion, pdata);
- 			break;
- 		case CHIP_PM8606:
- 			device_8607_init(chip, chip->companion, pdata);
-diff --git a/include/linux/mfd/88pm860x.h b/include/linux/mfd/88pm860x.h
-index f790d37..ff60614 100644
---- a/include/linux/mfd/88pm860x.h
-+++ b/include/linux/mfd/88pm860x.h
-@@ -356,12 +356,11 @@ struct pm860x_platform_data {
- 	int		i2c_port;	/* Controlled by GI2C or PI2C */
- 	int		irq_mode;	/* Clear interrupt by read/write(0/1) */
- 	int		irq_base;	/* IRQ base number of 88pm860x */
-+	int		num_leds;
- 	int		num_backlights;
- 	struct regulator_init_data *regulator[PM8607_MAX_REGULATOR];
+@@ -69,13 +113,6 @@ static struct mfd_cell touch_devs[] = {
+ 	},
  };
  
--extern char pm860x_led_name[][MFD_NAME_SIZE];
+-#define PM8607_REG_RESOURCE(_start, _end)		\
+-{							\
+-	.start	= PM8607_##_start,			\
+-	.end	= PM8607_##_end,			\
+-	.flags	= IORESOURCE_IO,			\
+-}
 -
+ static struct resource power_supply_resources[] = {
+ 	{
+ 		.name		= "88pm860x-power",
+@@ -149,52 +186,6 @@ static struct mfd_cell codec_devs[] = {
+ 	},
+ };
+ 
+-static struct resource regulator_resources[] = {
+-	PM8607_REG_RESOURCE(BUCK1, BUCK1),
+-	PM8607_REG_RESOURCE(BUCK2, BUCK2),
+-	PM8607_REG_RESOURCE(BUCK3, BUCK3),
+-	PM8607_REG_RESOURCE(LDO1,  LDO1),
+-	PM8607_REG_RESOURCE(LDO2,  LDO2),
+-	PM8607_REG_RESOURCE(LDO3,  LDO3),
+-	PM8607_REG_RESOURCE(LDO4,  LDO4),
+-	PM8607_REG_RESOURCE(LDO5,  LDO5),
+-	PM8607_REG_RESOURCE(LDO6,  LDO6),
+-	PM8607_REG_RESOURCE(LDO7,  LDO7),
+-	PM8607_REG_RESOURCE(LDO8,  LDO8),
+-	PM8607_REG_RESOURCE(LDO9,  LDO9),
+-	PM8607_REG_RESOURCE(LDO10, LDO10),
+-	PM8607_REG_RESOURCE(LDO12, LDO12),
+-	PM8607_REG_RESOURCE(VIBRATOR_SET, VIBRATOR_SET),
+-	PM8607_REG_RESOURCE(LDO14, LDO14),
+-};
+-
+-#define PM8607_REG_DEVS(_id)						\
+-{									\
+-	.name		= "88pm860x-regulator",				\
+-	.num_resources	= 1,						\
+-	.resources	= &regulator_resources[PM8607_ID_##_id],	\
+-	.id		= PM8607_ID_##_id,				\
+-}
+-
+-static struct mfd_cell regulator_devs[] = {
+-	PM8607_REG_DEVS(BUCK1),
+-	PM8607_REG_DEVS(BUCK2),
+-	PM8607_REG_DEVS(BUCK3),
+-	PM8607_REG_DEVS(LDO1),
+-	PM8607_REG_DEVS(LDO2),
+-	PM8607_REG_DEVS(LDO3),
+-	PM8607_REG_DEVS(LDO4),
+-	PM8607_REG_DEVS(LDO5),
+-	PM8607_REG_DEVS(LDO6),
+-	PM8607_REG_DEVS(LDO7),
+-	PM8607_REG_DEVS(LDO8),
+-	PM8607_REG_DEVS(LDO9),
+-	PM8607_REG_DEVS(LDO10),
+-	PM8607_REG_DEVS(LDO12),
+-	PM8607_REG_DEVS(LDO13),
+-	PM8607_REG_DEVS(LDO14),
+-};
+-
+ struct pm860x_irq_data {
+ 	int	reg;
+ 	int	mask_reg;
+@@ -623,6 +614,64 @@ static void __devinit device_led_init(struct pm860x_chip *chip,
+ 	}
+ }
+ 
++static void __devinit device_regulator_init(struct pm860x_chip *chip,
++					    struct i2c_client *i2c,
++					    struct pm860x_platform_data *pdata)
++{
++	struct regulator_init_data *initdata;
++	int ret;
++	int i, j;
++
++	if ((pdata == NULL) || (pdata->regulator == NULL))
++		return;
++
++	if (pdata->num_regulators > ARRAY_SIZE(regulator_devs))
++		pdata->num_regulators = ARRAY_SIZE(regulator_devs);
++
++	for (i = 0, j = -1; i < pdata->num_regulators; i++) {
++		initdata = &pdata->regulator[i];
++		if (strstr(initdata->constraints.name, "BUCK")) {
++			sscanf(initdata->constraints.name, "BUCK%d", &j);
++			/* BUCK1 ~ BUCK3 */
++			if ((j < 1) || (j > 3)) {
++				dev_err(chip->dev, "Failed to add constraint "
++					"(%s)\n", initdata->constraints.name);
++				goto out;
++			}
++			j = (j - 1) + PM8607_ID_BUCK1;
++		}
++		if (strstr(initdata->constraints.name, "LDO")) {
++			sscanf(initdata->constraints.name, "LDO%d", &j);
++			/* LDO1 ~ LDO15 */
++			if ((j < 1) || (j > 15)) {
++				dev_err(chip->dev, "Failed to add constraint "
++					"(%s)\n", initdata->constraints.name);
++				goto out;
++			}
++			j = (j - 1) + PM8607_ID_LDO1;
++		}
++		if (j == -1) {
++			dev_err(chip->dev, "Failed to add constraint (%s)\n",
++				initdata->constraints.name);
++			goto out;
++		}
++		memcpy(&regulator_pdata[i], &pdata->regulator[i],
++			sizeof(struct regulator_init_data));
++		regulator_devs[i].mfd_data = &regulator_pdata[i];
++		regulator_devs[i].num_resources = 1;
++		regulator_devs[i].resources = &regulator_resources[j];
++
++		ret = mfd_add_devices(chip->dev, 0, &regulator_devs[i], 1,
++				      &regulator_resources[j], 0);
++		if (ret < 0) {
++			dev_err(chip->dev, "Failed to add regulator subdev\n");
++			goto out;
++		}
++	}
++out:
++	return;
++}
++
+ static void __devinit device_8607_init(struct pm860x_chip *chip,
+ 				       struct i2c_client *i2c,
+ 				       struct pm860x_platform_data *pdata)
+@@ -678,14 +727,6 @@ static void __devinit device_8607_init(struct pm860x_chip *chip,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	ret = mfd_add_devices(chip->dev, 0, &regulator_devs[0],
+-			      ARRAY_SIZE(regulator_devs),
+-			      &regulator_resources[0], 0);
+-	if (ret < 0) {
+-		dev_err(chip->dev, "Failed to add regulator subdev\n");
+-		goto out_dev;
+-	}
+-
+ 	if (pdata && pdata->touch) {
+ 		ret = mfd_add_devices(chip->dev, 0, &touch_devs[0],
+ 				      ARRAY_SIZE(touch_devs),
+@@ -723,6 +764,8 @@ static void __devinit device_8607_init(struct pm860x_chip *chip,
+ 		dev_err(chip->dev, "Failed to add codec subdev\n");
+ 		goto out_dev;
+ 	}
++
++	device_regulator_init(chip, i2c, pdata);
+ 	return;
+ out_dev:
+ 	mfd_remove_devices(chip->dev);
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index dd63084..8592512 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -15,6 +15,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/mfd/core.h>
+ #include <linux/mfd/88pm860x.h>
+ 
+ struct pm8607_regulator_info {
+@@ -394,47 +395,48 @@ static struct pm8607_regulator_info pm8607_regulator_info[] = {
+ 	PM8607_LDO(14,        LDO14, 0, 4, SUPPLIES_EN12, 6),
+ };
+ 
+-static inline struct pm8607_regulator_info *find_regulator_info(int id)
++static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
+ {
+-	struct pm8607_regulator_info *info;
++	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
++	struct pm8607_regulator_info *info = NULL;
++	struct regulator_init_data *pdata;
++	struct mfd_cell *cell;
+ 	int i;
+ 
++	cell = pdev->dev.platform_data;
++	if (cell == NULL)
++		return -ENODEV;
++	pdata = cell->mfd_data;
++	if (pdata == NULL)
++		return -EINVAL;
++
+ 	for (i = 0; i < ARRAY_SIZE(pm8607_regulator_info); i++) {
+ 		info = &pm8607_regulator_info[i];
+-		if (info->desc.id == id)
+-			return info;
++		if (!strcmp(info->desc.name, pdata->constraints.name))
++			break;
+ 	}
+-	return NULL;
+-}
+-
+-static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
+-{
+-	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
+-	struct pm860x_platform_data *pdata = chip->dev->platform_data;
+-	struct pm8607_regulator_info *info = NULL;
+-
+-	info = find_regulator_info(pdev->id);
+-	if (info == NULL) {
+-		dev_err(&pdev->dev, "invalid regulator ID specified\n");
++	if (i > ARRAY_SIZE(pm8607_regulator_info)) {
++		dev_err(&pdev->dev, "Failed to find regulator %s\n",
++			pdata->constraints.name);
+ 		return -EINVAL;
+ 	}
+ 
+ 	info->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip->companion;
+ 	info->chip = chip;
+ 
++	/* check DVC ramp slope double */
++	if (!strcmp(info->desc.name, "BUCK3"))
++		if (info->chip->buck3_double)
++			info->slope_double = 1;
++
+ 	info->regulator = regulator_register(&info->desc, &pdev->dev,
+-					     pdata->regulator[pdev->id], info);
++					     pdata, info);
+ 	if (IS_ERR(info->regulator)) {
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 			info->desc.name);
+ 		return PTR_ERR(info->regulator);
+ 	}
+ 
+-	/* check DVC ramp slope double */
+-	if (info->desc.id == PM8607_ID_BUCK3)
+-		if (info->chip->buck3_double)
+-			info->slope_double = 1;
+-
+ 	platform_set_drvdata(pdev, info);
+ 	return 0;
+ }
+diff --git a/include/linux/mfd/88pm860x.h b/include/linux/mfd/88pm860x.h
+index ff60614..a6f6f81 100644
+--- a/include/linux/mfd/88pm860x.h
++++ b/include/linux/mfd/88pm860x.h
+@@ -131,9 +131,11 @@ enum {
+ 	PM8607_ID_LDO8,
+ 	PM8607_ID_LDO9,
+ 	PM8607_ID_LDO10,
++	PM8607_ID_LDO11,
+ 	PM8607_ID_LDO12,
+ 	PM8607_ID_LDO13,
+ 	PM8607_ID_LDO14,
++	PM8607_ID_LDO15,
+ 
+ 	PM8607_ID_RG_MAX,
+ };
+@@ -310,8 +312,6 @@ struct pm860x_chip {
+ 
+ };
+ 
+-#define PM8607_MAX_REGULATOR	PM8607_ID_RG_MAX	/* 3 Bucks, 13 LDOs */
+-
+ enum {
+ 	GI2C_PORT = 0,
+ 	PI2C_PORT,
+@@ -351,6 +351,7 @@ struct pm860x_platform_data {
+ 	struct pm860x_led_pdata		*led;
+ 	struct pm860x_touch_pdata	*touch;
+ 	struct pm860x_power_pdata	*power;
++	struct regulator_init_data	*regulator;
+ 
+ 	unsigned short	companion_addr;	/* I2C address of companion chip */
+ 	int		i2c_port;	/* Controlled by GI2C or PI2C */
+@@ -358,7 +359,7 @@ struct pm860x_platform_data {
+ 	int		irq_base;	/* IRQ base number of 88pm860x */
+ 	int		num_leds;
+ 	int		num_backlights;
+-	struct regulator_init_data *regulator[PM8607_MAX_REGULATOR];
++	int		num_regulators;
+ };
+ 
  extern int pm860x_reg_read(struct i2c_client *, int);
- extern int pm860x_reg_write(struct i2c_client *, int, unsigned char);
- extern int pm860x_bulk_read(struct i2c_client *, int, int, unsigned char *);
 -- 
 1.5.6.5
 
