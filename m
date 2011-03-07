@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab1CGWig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 17:38:36 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:34329 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756198Ab1CGWif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 17:38:35 -0500
-Date: Mon, 7 Mar 2011 22:38:06 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm final fixes
-In-Reply-To: <alpine.DEB.2.00.1103072130050.17490@skynet.skynet.ie>
-Message-ID: <alpine.DEB.2.00.1103072236370.17490@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1103072130050.17490@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932075Ab1CGWip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 17:38:45 -0500
+Received: from ns.meirelesefreitas.com.br ([187.58.67.228]:51969 "EHLO
+	correio.meirelesefreitas.com.br" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756621Ab1CGWim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 17:38:42 -0500
+Date: Mon, 7 Mar 2011 19:38:40 -0300 (BRT)
+From: WERSTEN UNION MONEY TRANSFER OFFICE 
+	<cleonice@meirelesefreitas.com.br>
+Message-ID: <13141248.23936.1299537520013.JavaMail.root@correio.meirelesefreitas.com.br>
+Subject: Pick Up Your $5000.00USD From Western Union Office Now!!
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.64.252]
+X-Mailer: Zimbra 6.0.6_GA_2324.RHEL5 (zclient/6.0.6_GA_2324.RHEL5)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Nouveau and Intel,
-> 
-> The two from Ben fixes regressions in since 2.6.38-rc1,
-> 
-> Chris has a revert + hopefully a more correct fix, along with an overflow 
-> fix, and disabling the GPU semaphores which seemed to be causing hangs.
-> 
-> I'm just passing these on since I'm stuck at home today and can't do much 
-> more than read the patches and build them.
+How are you today?
 
-And it wouldn't be me unless one more fix came in overnight and I missed 
-it. Fix from Roel for a loop variable re-use that may have caused some 
-meomry corruption.
+I write to inform you that we have already sent you $5,000.00USD through Western Union as we have been given the mandate to transfer your full compensation payment of $1.800,000.00USD via Western Union Money Transfer by the United Nations (ECOWAS). This is because the United Nations and (ECOWAS) are supporting individuals due to the worldwide economy meltdown.
 
-The following changes since commit fb62c00a6d8942775abc23d1621db1252e2d93d1:
+I would have requested for your phone number to give you the information through phone but internet hackers were many. So i decided to email you the MTCN and sender name so that you can pick up this $5,000.00USD to enable us send another $5,000.00USD by tomorrow as you know that we will be sending you only $5,000.00USD per day.  The fund was sent in the name which you use in opening your e-mail address.
+Please pick up this information and rush to any western union to pick up the $5,000.00USD and send us an email back to enable us send you another payment by tomorrow.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2011-03-05 10:43:22 -0800)
+Manager :Mrs.Anita Daniel
+Email:westernunion212@yahoo.com.hk
 
-are available in the git repository at:
+email me once you picked up this USD5000.00 today.
+Here is the western union information to pick up the
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+USD5000.00,
 
-Ben Skeggs (2):
-      drm/nouveau: fix regression causing ttm to not be able to evict vram
-      drm/nv50-nvc0: prevent multiple vm/bar flushes occuring simultanenously
+Sender First Name:Steven
+Sender Last Name:Anderson
+MTCN:   9730356598
+Question: Who Is Great
+Answer: God
+Amount: $5000.00USD
+COUNTRY....Nigeria
 
-Chris Wilson (4):
-      Revert "drm/i915: fix corruptions on i8xx due to relaxed fencing"
-      drm/i915: Do not overflow the MMADDR write FIFO
-      drm/i915: Disable GPU semaphores by default
-      drm/i915: Rebind the buffer if its alignment constraints changes with tiling
+I am waiting for your email once you pick up USD5000.00,
 
-Dave Airlie (1):
-      Merge remote branch 'ickle/drm-intel-fixes' into drm-fixes
+Thanks
 
-roel (1):
-      drm: index i shadowed in 2nd loop
-
- drivers/gpu/drm/drm_fb_helper.c            |    4 +-
- drivers/gpu/drm/i915/i915_debugfs.c        |    4 +-
- drivers/gpu/drm/i915/i915_drv.c            |   17 +++++++++++-
- drivers/gpu/drm/i915/i915_drv.h            |   24 ++++++++++++++----
- drivers/gpu/drm/i915/i915_gem.c            |    2 +-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    4 +-
- drivers/gpu/drm/i915/i915_gem_tiling.c     |   37 +++++++++++++--------------
- drivers/gpu/drm/i915/i915_reg.h            |    2 +
- drivers/gpu/drm/i915/intel_display.c       |    8 +++---
- drivers/gpu/drm/i915/intel_ringbuffer.h    |   13 +++++----
- drivers/gpu/drm/nouveau/nouveau_mem.c      |    6 +++-
- drivers/gpu/drm/nouveau/nouveau_mm.c       |    2 +-
- drivers/gpu/drm/nouveau/nv50_instmem.c     |    8 ++++++
- drivers/gpu/drm/nouveau/nv50_vm.c          |    4 +++
- 14 files changed, 89 insertions(+), 46 deletions(-)
+Mrs.Anita Daniel
