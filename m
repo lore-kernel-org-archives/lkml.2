@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab1CGKEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 05:04:16 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57841 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755117Ab1CGKEG (ORCPT
+	id S1755686Ab1CGKEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 05:04:35 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43519 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab1CGKEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 05:04:06 -0500
+	Mon, 7 Mar 2011 05:04:34 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 7 Mar 2011 18:57:38 +0900
+Date: Mon, 7 Mar 2011 18:58:13 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Cesar Eduardo Barros <cesarb@cesarb.net>
 Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
         Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
         Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCHv2 16/24] sys_swapon: separate parsing of swapfile header
-Message-Id: <20110307185738.735bd6dd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299343345-3984-17-git-send-email-cesarb@cesarb.net>
+Subject: Re: [PATCHv2 17/24] sys_swapon: simplify error flow in
+ read_swap_header
+Message-Id: <20110307185813.a2375c19.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1299343345-3984-18-git-send-email-cesarb@cesarb.net>
 References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
-	<1299343345-3984-17-git-send-email-cesarb@cesarb.net>
+	<1299343345-3984-18-git-send-email-cesarb@cesarb.net>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -29,12 +30,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  5 Mar 2011 13:42:17 -0300
+On Sat,  5 Mar 2011 13:42:18 -0300
 Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
 
-> Move the code which parses and checks the swapfile header (except for
-> the bad block list) to a separate function. Only code movement, no
-> functional changes.
+> Since there is no cleanup to do, there is no reason to jump to a label.
+> Return directly instead.
 > 
 > Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 > Tested-by: Eric B Munson <emunson@mgebm.net>
