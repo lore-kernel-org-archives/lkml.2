@@ -1,409 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1CGIL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 03:11:56 -0500
-Received: from vs81.sauer-cs.de ([80.244.252.81]:50301 "EHLO kbdbabel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab1CGILx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 03:11:53 -0500
-Date: Mon, 7 Mar 2011 11:11:43 +0300 (MSK)
-From: Alexander Kurz <linux@kbdbabel.org>
-X-X-Sender: linux@vs81.sauer-cs.de
-To: Greg Ungerer <gerg@uclinux.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] m68knommu: fixing compiler warnings
-Message-ID: <alpine.DEB.1.10.1103071110070.17775@vs81.sauer-cs.de>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1753307Ab1CGIPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 03:15:40 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58643 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab1CGIPh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 03:15:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=kXpvgbolu6+4+OhvRf4YoZGrYFdStF9gJf6JOzc3FQb0LN28W9/DNKx7OeM2BROPqI
+         3qkuIJkrj2lbOOZyoemaro7HVrEJ0cPYT0UUtvKlVQkIjfTZIA/pNRnOabCEmxPUsKa5
+         Ont+Y9KK6q87cVE9si0V76dzHAWlS9iTbPZoo=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH 2/2] ARM: s3c24xx: Switch to common GPIO controlled UDC pullup implementation
+Date: Mon, 7 Mar 2011 10:15:16 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r1-anarsoul; KDE/4.6.1; i686; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1299483720-18175-1-git-send-email-lars@metafoo.de> <1299483720-18175-2-git-send-email-lars@metafoo.de>
+In-Reply-To: <1299483720-18175-2-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103071015.17295.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9e6846f985e84b0a915df50908f7f44d942ab891 Mon Sep 17 00:00:00 2001
-From: Alexander Kurz <linux@kbdbabel.org>
-Date: Sun, 20 Feb 2011 22:45:33 +0100
-Subject: [PATCH] m68knommu: fixing compiler warnings
+On Monday 07 March 2011 09:42:00 Lars-Peter Clausen wrote:
+> Currently all boards using the s3c2410_udc driver use a GPIO to control the
+> state of the pullup, as a result the same code is reimplemented in each
+> board This patch changes these boards to use the common implementation for
+> GPIO controlled pullup in the UDC driver.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  arch/arm/mach-s3c2410/mach-h1940.c    |   24 +-----------------------
+>  arch/arm/mach-s3c2410/mach-n30.c      |   21 +--------------------
+>  arch/arm/mach-s3c2412/mach-smdk2413.c |   24 +-----------------------
+>  arch/arm/mach-s3c2440/mach-gta02.c    |   22 ++--------------------
+>  arch/arm/mach-s3c2440/mach-mini2440.c |   24 +-----------------------
+>  arch/arm/mach-s3c2440/mach-rx1950.c   |   21 +--------------------
+>  6 files changed, 7 insertions(+), 129 deletions(-)
 
-Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
----
- arch/m68knommu/platform/528x/gpio.c |  210 +++++++++++++++++-----------------
- 1 files changed, 105 insertions(+), 105 deletions(-)
+For h1940 and rx1950 parts:
 
-diff --git a/arch/m68knommu/platform/528x/gpio.c b/arch/m68knommu/platform/528x/gpio.c
-index eedaf0a..526db66 100644
---- a/arch/m68knommu/platform/528x/gpio.c
-+++ b/arch/m68knommu/platform/528x/gpio.c
-@@ -33,9 +33,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 1,
- 			.ngpio			= 7,
- 		},
--		.pddr				= MCFEPORT_EPDDR,
--		.podr				= MCFEPORT_EPDR,
--		.ppdr				= MCFEPORT_EPPDR,
-+		.pddr				= (void __iomem *)MCFEPORT_EPDDR,
-+		.podr				= (void __iomem *)MCFEPORT_EPDR,
-+		.ppdr				= (void __iomem *)MCFEPORT_EPPDR,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -49,9 +49,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 8,
- 			.ngpio			= 4,
- 		},
--		.pddr				= MCFGPTA_GPTDDR,
--		.podr				= MCFGPTA_GPTPORT,
--		.ppdr				= MCFGPTB_GPTPORT,
-+		.pddr				= (void __iomem *)MCFGPTA_GPTDDR,
-+		.podr				= (void __iomem *)MCFGPTA_GPTPORT,
-+		.ppdr				= (void __iomem *)MCFGPTB_GPTPORT,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -65,9 +65,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 16,
- 			.ngpio			= 4,
- 		},
--		.pddr				= MCFGPTB_GPTDDR,
--		.podr				= MCFGPTB_GPTPORT,
--		.ppdr				= MCFGPTB_GPTPORT,
-+		.pddr				= (void __iomem *)MCFGPTB_GPTDDR,
-+		.podr				= (void __iomem *)MCFGPTB_GPTPORT,
-+		.ppdr				= (void __iomem *)MCFGPTB_GPTPORT,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -81,9 +81,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 24,
- 			.ngpio			= 4,
- 		},
--		.pddr				= MCFQADC_DDRQA,
--		.podr				= MCFQADC_PORTQA,
--		.ppdr				= MCFQADC_PORTQA,
-+		.pddr				= (void __iomem *)MCFQADC_DDRQA,
-+		.podr				= (void __iomem *)MCFQADC_PORTQA,
-+		.ppdr				= (void __iomem *)MCFQADC_PORTQA,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -97,9 +97,9 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 32,
- 			.ngpio			= 4,
- 		},
--		.pddr				= MCFQADC_DDRQB,
--		.podr				= MCFQADC_PORTQB,
--		.ppdr				= MCFQADC_PORTQB,
-+		.pddr				= (void __iomem *)MCFQADC_DDRQB,
-+		.podr				= (void __iomem *)MCFQADC_PORTQB,
-+		.ppdr				= (void __iomem *)MCFQADC_PORTQB,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -113,11 +113,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 40,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRA,
--		.podr				= MCFGPIO_PORTA,
--		.ppdr				= MCFGPIO_PORTAP,
--		.setr				= MCFGPIO_SETA,
--		.clrr				= MCFGPIO_CLRA,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRA,
-+		.podr				= (void __iomem *)MCFGPIO_PORTA,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTAP,
-+		.setr				= (void __iomem *)MCFGPIO_SETA,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRA,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -131,11 +131,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 48,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRB,
--		.podr				= MCFGPIO_PORTB,
--		.ppdr				= MCFGPIO_PORTBP,
--		.setr				= MCFGPIO_SETB,
--		.clrr				= MCFGPIO_CLRB,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRB,
-+		.podr				= (void __iomem *)MCFGPIO_PORTB,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTBP,
-+		.setr				= (void __iomem *)MCFGPIO_SETB,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRB,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -149,11 +149,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 56,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRC,
--		.podr				= MCFGPIO_PORTC,
--		.ppdr				= MCFGPIO_PORTCP,
--		.setr				= MCFGPIO_SETC,
--		.clrr				= MCFGPIO_CLRC,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRC,
-+		.podr				= (void __iomem *)MCFGPIO_PORTC,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTCP,
-+		.setr				= (void __iomem *)MCFGPIO_SETC,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRC,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -167,11 +167,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 64,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRD,
--		.podr				= MCFGPIO_PORTD,
--		.ppdr				= MCFGPIO_PORTDP,
--		.setr				= MCFGPIO_SETD,
--		.clrr				= MCFGPIO_CLRD,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRD,
-+		.podr				= (void __iomem *)MCFGPIO_PORTD,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTDP,
-+		.setr				= (void __iomem *)MCFGPIO_SETD,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRD,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -185,11 +185,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 72,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRE,
--		.podr				= MCFGPIO_PORTE,
--		.ppdr				= MCFGPIO_PORTEP,
--		.setr				= MCFGPIO_SETE,
--		.clrr				= MCFGPIO_CLRE,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRE,
-+		.podr				= (void __iomem *)MCFGPIO_PORTE,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTEP,
-+		.setr				= (void __iomem *)MCFGPIO_SETE,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRE,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -203,11 +203,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 80,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRF,
--		.podr				= MCFGPIO_PORTF,
--		.ppdr				= MCFGPIO_PORTFP,
--		.setr				= MCFGPIO_SETF,
--		.clrr				= MCFGPIO_CLRF,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRF,
-+		.podr				= (void __iomem *)MCFGPIO_PORTF,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTFP,
-+		.setr				= (void __iomem *)MCFGPIO_SETF,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRF,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -221,11 +221,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 88,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRG,
--		.podr				= MCFGPIO_PORTG,
--		.ppdr				= MCFGPIO_PORTGP,
--		.setr				= MCFGPIO_SETG,
--		.clrr				= MCFGPIO_CLRG,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRG,
-+		.podr				= (void __iomem *)MCFGPIO_PORTG,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTGP,
-+		.setr				= (void __iomem *)MCFGPIO_SETG,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRG,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -239,11 +239,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 96,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRH,
--		.podr				= MCFGPIO_PORTH,
--		.ppdr				= MCFGPIO_PORTHP,
--		.setr				= MCFGPIO_SETH,
--		.clrr				= MCFGPIO_CLRH,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRH,
-+		.podr				= (void __iomem *)MCFGPIO_PORTH,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTHP,
-+		.setr				= (void __iomem *)MCFGPIO_SETH,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRH,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -257,11 +257,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 104,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRJ,
--		.podr				= MCFGPIO_PORTJ,
--		.ppdr				= MCFGPIO_PORTJP,
--		.setr				= MCFGPIO_SETJ,
--		.clrr				= MCFGPIO_CLRJ,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRJ,
-+		.podr				= (void __iomem *)MCFGPIO_PORTJ,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTJP,
-+		.setr				= (void __iomem *)MCFGPIO_SETJ,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRJ,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -275,11 +275,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 112,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDRDD,
--		.podr				= MCFGPIO_PORTDD,
--		.ppdr				= MCFGPIO_PORTDDP,
--		.setr				= MCFGPIO_SETDD,
--		.clrr				= MCFGPIO_CLRDD,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRDD,
-+		.podr				= (void __iomem *)MCFGPIO_PORTDD,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTDDP,
-+		.setr				= (void __iomem *)MCFGPIO_SETDD,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRDD,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -293,11 +293,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 120,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDREH,
--		.podr				= MCFGPIO_PORTEH,
--		.ppdr				= MCFGPIO_PORTEHP,
--		.setr				= MCFGPIO_SETEH,
--		.clrr				= MCFGPIO_CLREH,
-+		.pddr				= (void __iomem *)MCFGPIO_DDREH,
-+		.podr				= (void __iomem *)MCFGPIO_PORTEH,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTEHP,
-+		.setr				= (void __iomem *)MCFGPIO_SETEH,
-+		.clrr				= (void __iomem *)MCFGPIO_CLREH,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -311,11 +311,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 128,
- 			.ngpio			= 8,
- 		},
--		.pddr				= MCFGPIO_DDREL,
--		.podr				= MCFGPIO_PORTEL,
--		.ppdr				= MCFGPIO_PORTELP,
--		.setr				= MCFGPIO_SETEL,
--		.clrr				= MCFGPIO_CLREL,
-+		.pddr				= (void __iomem *)MCFGPIO_DDREL,
-+		.podr				= (void __iomem *)MCFGPIO_PORTEL,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTELP,
-+		.setr				= (void __iomem *)MCFGPIO_SETEL,
-+		.clrr				= (void __iomem *)MCFGPIO_CLREL,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -329,11 +329,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 136,
- 			.ngpio			= 6,
- 		},
--		.pddr				= MCFGPIO_DDRAS,
--		.podr				= MCFGPIO_PORTAS,
--		.ppdr				= MCFGPIO_PORTASP,
--		.setr				= MCFGPIO_SETAS,
--		.clrr				= MCFGPIO_CLRAS,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRAS,
-+		.podr				= (void __iomem *)MCFGPIO_PORTAS,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTASP,
-+		.setr				= (void __iomem *)MCFGPIO_SETAS,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRAS,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -347,11 +347,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 144,
- 			.ngpio			= 7,
- 		},
--		.pddr				= MCFGPIO_DDRQS,
--		.podr				= MCFGPIO_PORTQS,
--		.ppdr				= MCFGPIO_PORTQSP,
--		.setr				= MCFGPIO_SETQS,
--		.clrr				= MCFGPIO_CLRQS,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRQS,
-+		.podr				= (void __iomem *)MCFGPIO_PORTQS,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTQSP,
-+		.setr				= (void __iomem *)MCFGPIO_SETQS,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRQS,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -365,11 +365,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 152,
- 			.ngpio			= 6,
- 		},
--		.pddr				= MCFGPIO_DDRSD,
--		.podr				= MCFGPIO_PORTSD,
--		.ppdr				= MCFGPIO_PORTSDP,
--		.setr				= MCFGPIO_SETSD,
--		.clrr				= MCFGPIO_CLRSD,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRSD,
-+		.podr				= (void __iomem *)MCFGPIO_PORTSD,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTSDP,
-+		.setr				= (void __iomem *)MCFGPIO_SETSD,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRSD,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -383,11 +383,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 160,
- 			.ngpio			= 4,
- 		},
--		.pddr				= MCFGPIO_DDRTC,
--		.podr				= MCFGPIO_PORTTC,
--		.ppdr				= MCFGPIO_PORTTCP,
--		.setr				= MCFGPIO_SETTC,
--		.clrr				= MCFGPIO_CLRTC,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRTC,
-+		.podr				= (void __iomem *)MCFGPIO_PORTTC,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTTCP,
-+		.setr				= (void __iomem *)MCFGPIO_SETTC,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRTC,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -401,11 +401,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 168,
- 			.ngpio			= 4,
- 		},
--		.pddr				= MCFGPIO_DDRTD,
--		.podr				= MCFGPIO_PORTTD,
--		.ppdr				= MCFGPIO_PORTTDP,
--		.setr				= MCFGPIO_SETTD,
--		.clrr				= MCFGPIO_CLRTD,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRTD,
-+		.podr				= (void __iomem *)MCFGPIO_PORTTD,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTTDP,
-+		.setr				= (void __iomem *)MCFGPIO_SETTD,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRTD,
- 	},
- 	{
- 		.gpio_chip			= {
-@@ -419,11 +419,11 @@ static struct mcf_gpio_chip mcf_gpio_chips[] = {
- 			.base			= 176,
- 			.ngpio			= 4,
- 		},
--		.pddr				= MCFGPIO_DDRUA,
--		.podr				= MCFGPIO_PORTUA,
--		.ppdr				= MCFGPIO_PORTUAP,
--		.setr				= MCFGPIO_SETUA,
--		.clrr				= MCFGPIO_CLRUA,
-+		.pddr				= (void __iomem *)MCFGPIO_DDRUA,
-+		.podr				= (void __iomem *)MCFGPIO_PORTUA,
-+		.ppdr				= (void __iomem *)MCFGPIO_PORTUAP,
-+		.setr				= (void __iomem *)MCFGPIO_SETUA,
-+		.clrr				= (void __iomem *)MCFGPIO_CLRUA,
- 	},
- };
- 
--- 
-1.7.2.3
-
+Acked-by: Vasily Khoruzhick <anarsoul@gmail.com>
