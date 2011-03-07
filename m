@@ -1,100 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1CGUnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 15:43:18 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:53844 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab1CGUnQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 15:43:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=JW/Jp3nMLM4sMkbRCdPY+BCrk3GJSYu8FKeBJVmggT6PDMcqd6aQrDgb8jjKPVErr9
-         QDhIFW1S0xMNu67s6x2A==
-Date: Mon, 7 Mar 2011 12:36:49 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Vagin <avagin@gmail.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: skip zombie in OOM-killer
-In-Reply-To: <AANLkTi=d+eZxg_NgNWa7roo=1YQS06=EaWJzjseL_Hhs@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1103071234480.10264@chino.kir.corp.google.com>
-References: <1299286307-4386-1-git-send-email-avagin@openvz.org> <20110306193519.49DD.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1103061400170.23737@chino.kir.corp.google.com> <AANLkTi=d+eZxg_NgNWa7roo=1YQS06=EaWJzjseL_Hhs@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752584Ab1CGUo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 15:44:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62559 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750814Ab1CGUoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 15:44:25 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1855919177-1299530211=:10264"
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+X-Fcc: ~/Mail/linus
+Cc: Oleg Nesterov <oleg@redhat.com>, jan.kratochvil@redhat.com,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC] Proposal for ptrace improvements
+In-Reply-To: Tejun Heo's message of  Tuesday, 1 March 2011 16:24:57 +0100 <20110301152457.GE26074@htj.dyndns.org>
+References: <20110301152457.GE26074@htj.dyndns.org>
+X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
+Message-Id: <20110307204346.19557183C29@magilla.sf.frob.com>
+Date: Mon,  7 Mar 2011 12:43:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+I've only skimmed through this whole thread, and I'm not going to try to
+respond to all the details.  I've lost interest in working in this area
+and I don't plan to keep up with all the details any more.  If you want
+to reach me about kernel subjects after March 11, you'll need to use the
+address <roland@hack.frob.com> as I won't be getting @redhat.com any more.
 
---531368966-1855919177-1299530211=:10264
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+I'll just give you a few thoughts that I don't think have been raised.
+Then I'll leave it to Oleg and the rest of you to decide how to move
+forward.
 
-On Mon, 7 Mar 2011, Andrew Vagin wrote:
+I've said before more than once what I think are the important
+principles about compatibility that ought to be maintained so as not to
+break existing applications such as older versions of GDB and strace
+(not to mention things less well-known and not publically visible, where
+code has come to depend on details of ptrace behavior and there may not
+even be anyone who really knows what they are depending on by now).
+When real-world applications have worked in practice, even if the
+behavior they were seeing was not pedantically reliable, they should not
+be broken.  Saner behavior can be provided when new requests or new
+options are used, without breaking any old usage.
 
-> > Andrey is patching the case where an eligible TIF_MEMDIE process is found
-> > but it has already detached its ->mm.  In combination with the patch
-> > posted to linux-mm, oom: prevent unnecessary oom kills or kernel panics,
-> > which makes select_bad_process() iterate over all threads, it is an
-> > effective solution.
-> 
-> Probably you said about the first version of my patch.
-> This version is incorrect because of
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=dd8e8f405ca386c7ce7cbb996ccd985d283b0e03
-> 
-> but my first patch is correct and it has a simple reproducer(I
-> attached it). You can execute it and your kernel hangs up, because the
-> parent doesn't wait children, but the one child (zombie) will have
-> flag TIF_MEMDIE, oom_killer will kill nobody
-> 
+I see the appeal of the PTRACE_SEIZE idea, and I don't dismiss it
+entirely.  But I am quite skeptical that this is a good approach to be
+the sole new mechanism to replace PTRACE_ATTACH with something sane and
+predictable.  There are a few things that concern me.
 
-The second version of your patch works fine in combination with the 
-pending "oom: prevent unnecessary oom kills or kernel panics" patch from 
-linux-mm (included below).  Try your test case with both this patch and 
-the second version of your patch.
+A problem long identified with ptrace is that there is no way to attach
+or detach without perturbing some of the user-visible behavior of the
+traced threads.  (There will always be some perturbation of the timing
+of the thread's activities, but I mean factors other than that alone.)
+Not overloading SIGSTOP is certainly an improvement.  But, PTRACE_SEIZE
+still has this problem in ways that the proposed PTRACE_ATTACH_NOSTOP
+does not.  For any passive tracing use (such as strace -p), you don't
+actually want the thing to stop right away, you only want it to stop
+when a new event happens (such as the next syscall entry/exit).  The
+PTRACE_SEIZE idea does not give the option of attaching without any
+perturbation when you don't care about "seizing".
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -292,11 +292,11 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 		unsigned long totalpages, struct mem_cgroup *mem,
- 		const nodemask_t *nodemask)
- {
--	struct task_struct *p;
-+	struct task_struct *g, *p;
- 	struct task_struct *chosen = NULL;
- 	*ppoints = 0;
- 
--	for_each_process(p) {
-+	do_each_thread(g, p) {
- 		unsigned int points;
- 
- 		if (oom_unkillable_task(p, mem, nodemask))
-@@ -324,7 +324,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 		 * the process of exiting and releasing its resources.
- 		 * Otherwise we could get an easy OOM deadlock.
- 		 */
--		if (thread_group_empty(p) && (p->flags & PF_EXITING) && p->mm) {
-+		if ((p->flags & PF_EXITING) && p->mm) {
- 			if (p != current)
- 				return ERR_PTR(-1UL);
- 
-@@ -337,7 +337,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 			chosen = p;
- 			*ppoints = points;
- 		}
--	}
-+	} while_each_thread(g, p);
- 
- 	return chosen;
- }
---531368966-1855919177-1299530211=:10264--
+Anything that works via interruption can perturb the user-visible
+behavior of a system call already in progress.  It would be nice if all
+uninterruptible waits were truly reliably short and if all system call
+paths supported syscall restart thoroughly so that they could be
+interrupted with TIF_SIGPENDING and then restarted (a la SA_RESTART, or
+its equivalent when there is no actual signal to handle) with no change
+in semantics that userland can perceive (aside from timing).  But it
+just isn't so, and the way the kernel is organized makes it a difficult
+and open-ended task (perhaps an impossible one for some cases) to try to
+hunt down and fix every violation of that principle or to prevent
+introductions of new violations in the future.
+
+The PTRACE_INTERRUPT idea addresses this in two key ways.  Firstly, it's
+a separate request not unavoidably implied by attaching, so tracers have
+the option of simply not doing it if they don't want to perturb the
+tracee at all.  Second, the PTRACE_INTERRUPT idea came with a variant
+that's either a parallel request PTRACE_REPORT, or option flags in the
+one request, or whatever, that does not interrupt at all.  Instead, it
+uses the TIF_NOTIFY_RESUME mechanism (see set_notify_resume() in
+linux/tracehook.h) to arrest all user-mode activity without affecting
+kernel-mode activity at all (hence, the report/stop may not be immediate
+at all if the thread might block in the kernel, but it will immediately
+guarantee that no more user instructions will run before a report).
+These possibilities give an intelligent tracer the opportunity to
+control the user thread in the ways it needs to while avoiding
+perturbation of the user-visible semantics of kernel operations.
+
+The other areas of concern with PTRACE_SEIZE are its robustness and
+scalability.  The whole point of this request is that the one ptrace
+call does a full synchronization with the tracee, blocking until it has
+been interrupted and stopped.  This necessarily entails some ping-pong
+scheduling to interrupt the thread, yield to it, and wait for it to
+stop, and yield back to the tracer thread.  That's fine and useful to
+roll into one kernel operation when you want to synchronously arrest a
+single tracee thread.  But there are two problems there.
+
+For robustness, the PTRACE_SEIZE block itself must be interruptible.
+If the tracer thread will block arbitrarily waiting for the tracee
+thread to finish up its kernel activities and stop, then it would be
+irresponsible to make it impossible for the tracer thread to be
+interrupted from this block.  If it does get interrupted, then in what
+state does it leave the tracee?  Normal principles of interrupted and
+restartable calls would suggest that it leave the tracee as it was
+before, i.e. unattached.  Is that the plan?  If not, then would it
+leave the tracee attached but not "seized", which defeats the whole
+purpose of simple and predictable behavior for the tracer.  If the
+call is not interruptible at all, then that's a recipe for permanently
+wedged debugger threads and that's just a lousy thing to permit.  Of
+course the bare minimum would be to make it a noninterruptible but
+killable wait (TASK_KILLABLE), meaning all you can do is SIGKILL a
+wedged debugger.  That's better than nothing, but it's hardly good
+enough to allow one to write a robust debugger in any sensible fashion.
+
+Finally, there is the scalability concern.  This synchronization delay
+happens inside each single PTRACE_SEIZE call acting on one tracee
+thread.  When a debugger wants to attach to a process, it wants to
+attach to all the threads in that process, and there can be thousands.
+For that to work at all reasonably with nontrivial numbers of threads,
+the act of attaching to each individual thread should be asynchronous.
+>From the debugger implementor's perspective, it's certainly even more
+desireable to have a single kernel call that will attach to all the
+threads in the process.  But that needs to be scalable as well, and
+it's not necessarily at all what the debugger wants that you stop each
+and every thread at attach time.
+
+None of this means at all that PTRACE_SEIZE is worthless.  But it is
+certainly inadequate to meet the essential needs that motivate adding
+new interfaces in this area.  The PTRACE_ATTACH_NOSTOP idea I
+suggested is far from complete for all the issues as well, but it is a
+more versatile building block than PTRACE_SEIZE.
+
+I don't intend to debate all these subjects.  As I said, I'm no longer
+going to work on this area of the kernel.  I'm glad Oleg and Tejun are
+putting effort into improving it, regardless of how the details shake
+out.  I've raised some issues that I think have been overlooked by the
+discussion so far.  I hope they'll now be considered more carefully in
+how the work moves forward.
+
+
+Thanks,
+Roland
