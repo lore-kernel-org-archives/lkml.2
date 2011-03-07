@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab1CGRtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 12:49:32 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:43005 "EHLO
+	id S1755712Ab1CGRtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 12:49:46 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:43041 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252Ab1CGRt2 (ORCPT
+	with ESMTP id S1755635Ab1CGRtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 12:49:28 -0500
-Message-Id: <20110307172207.309211374@chello.nl>
+	Mon, 7 Mar 2011 12:49:42 -0500
+Message-Id: <20110307172206.762715755@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Mar 2011 18:14:02 +0100
+Date: Mon, 07 Mar 2011 18:13:54 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
         Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
@@ -22,54 +22,65 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Russell King <rmk@arm.linux.org.uk>,
         Chris Metcalf <cmetcalf@tilera.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [RFC][PATCH 12/15] mm, mips: Convert mips to generic tlb
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [RFC][PATCH 04/15] mm: Optimize fullmm TLB flushing
 References: <20110307171350.989666626@chello.nl>
-Content-Disposition: inline; filename=mips-mmu_range.patch
+Content-Disposition: inline; filename=mmu_gather_fullmm.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
+This originated from s390 which does something similar and would allow
+s390 to use the generic TLB flushing code.
+
+The idea is to flush the mm wide cache and tlb a priory and not bother
+with multiple flushes if the batching isn't large enough.
+
+This can be safely done since there cannot be any concurrency on this
+mm, its either after the process died (exit) or in the middle of
+execve where the thread switched to the new mm.
+
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/mips/Kconfig           |    1 +
- arch/mips/include/asm/tlb.h |   10 ----------
- 2 files changed, 1 insertion(+), 10 deletions(-)
+ include/asm-generic/tlb.h |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-Index: linux-2.6/arch/mips/Kconfig
+Index: linux-2.6/include/asm-generic/tlb.h
 ===================================================================
---- linux-2.6.orig/arch/mips/Kconfig
-+++ linux-2.6/arch/mips/Kconfig
-@@ -22,6 +22,7 @@ config MIPS
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_MMU_GATHER_RANGE
+--- linux-2.6.orig/include/asm-generic/tlb.h
++++ linux-2.6/include/asm-generic/tlb.h
+@@ -149,6 +149,11 @@ tlb_gather_mmu(struct mmu_gather *tlb, s
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb->batch = NULL;
+ #endif
++
++	if (fullmm) {
++		flush_cache_mm(mm);
++		flush_tlb_mm(mm);
++	}
+ }
  
- menu "Machine selection"
+ static inline void
+@@ -156,13 +161,15 @@ tlb_flush_mmu(struct mmu_gather *tlb)
+ {
+ 	struct mmu_gather_batch *batch;
  
-Index: linux-2.6/arch/mips/include/asm/tlb.h
-===================================================================
---- linux-2.6.orig/arch/mips/include/asm/tlb.h
-+++ linux-2.6/arch/mips/include/asm/tlb.h
-@@ -1,16 +1,6 @@
- #ifndef __ASM_TLB_H
- #define __ASM_TLB_H
+-	if (!tlb->need_flush)
+-		return;
+-	tlb->need_flush = 0;
+-	flush_tlb_mm(tlb->mm);
++	if (!tlb->fullmm && tlb->need_flush) {
++		tlb->need_flush = 0;
++		flush_tlb_mm(tlb->mm);
++	}
++
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb_table_flush(tlb);
+ #endif
++
+ 	if (tlb_fast_mode(tlb))
+ 		return;
  
--/*
-- * MIPS doesn't need any special per-pte or per-vma handling, except
-- * we need to flush cache for area to be unmapped.
-- */
--#define tlb_start_vma(tlb, vma) 				\
--	do {							\
--		if (!tlb->fullmm)				\
--			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
--	}  while (0)
--#define tlb_end_vma(tlb, vma) do { } while (0)
- #define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
- 
- #include <asm-generic/tlb.h>
 
 
