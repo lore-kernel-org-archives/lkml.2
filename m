@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab1CGTqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 14:46:51 -0500
-Received: from mx1.fusionio.com ([64.244.102.30]:44677 "EHLO mx1.fusionio.com"
+	id S1755951Ab1CGTrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 14:47:04 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43955 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab1CGTqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 14:46:50 -0500
-X-ASG-Debug-ID: 1299527209-03d6a54f631cbc0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D753625.6040300@fusionio.com>
-Date: Mon, 7 Mar 2011 20:46:45 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "owen.smith@citrix.com" <owen.smith@citrix.com>
-Subject: Re: [owen.smith@citrix.com: [Xen-devel] [PATCH 1/2 xen/stable-2.6.32.x]
-  Union the blkif_request request specific fields]
-References: <20110307173405.GA6087@dumpdata.com>
-X-ASG-Orig-Subj: Re: [owen.smith@citrix.com: [Xen-devel] [PATCH 1/2 xen/stable-2.6.32.x]
-  Union the blkif_request request specific fields]
-In-Reply-To: <20110307173405.GA6087@dumpdata.com>
+	id S1755927Ab1CGTrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 14:47:03 -0500
+Subject: Re: [PATCH] hugetlb: /proc/meminfo shows data for all sizes of
+ hugepages
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: linux-kernel@vger.kernel.org, emunson@mgebm.net, anton@redhat.com,
+        Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
+In-Reply-To: <1299503155-6210-1-git-send-email-pholasek@redhat.com>
+References: <1299503155-6210-1-git-send-email-pholasek@redhat.com>
 Content-Type: text/plain; charset="ISO-8859-1"
+Date: Mon, 07 Mar 2011 11:46:54 -0800
+Message-ID: <1299527214.8493.13263.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299527209
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.20
-X-Barracuda-Spam-Status: No, SCORE=0.20 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=PR0N_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57339
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.20 PR0N_SUBJECT           Subject has letters around special characters (pr0n)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-07 18:34, Konrad Rzeszutek Wilk wrote:
-> Jens,
-> 
-> Are you OK with this patch? I was thinking to push it for 2.6.39.
-> I've it in my tree, but if you would rather carry it for the merge window
-> it is in 
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/blkfront-cleanup
+On Mon, 2011-03-07 at 14:05 +0100, Petr Holasek wrote:
+> +       for_each_hstate(h)
+> +               seq_printf(m,
+> +                               "HugePages_Total:   %5lu\n"
+> +                               "HugePages_Free:    %5lu\n"
+> +                               "HugePages_Rsvd:    %5lu\n"
+> +                               "HugePages_Surp:    %5lu\n"
+> +                               "Hugepagesize:   %8lu kB\n",
+> +                               h->nr_huge_pages,
+> +                               h->free_huge_pages,
+> +                               h->resv_huge_pages,
+> +                               h->surplus_huge_pages,
+> +                               1UL << (huge_page_order(h) + PAGE_SHIFT - 10));
+>  }
 
-I'd prefer block drivers going through the block tree, but if you have
-it queued and since it's completely local to that driver, go ahead and
-keep it in your tree. No worries on my side :-)
+It sounds like now we'll get a meminfo that looks like:
 
-You can add my acked-by, if you want.
+...
+AnonHugePages:    491520 kB
+HugePages_Total:       5
+HugePages_Free:        2
+HugePages_Rsvd:        3
+HugePages_Surp:        1
+Hugepagesize:       2048 kB
+HugePages_Total:       2
+HugePages_Free:        1
+HugePages_Rsvd:        1
+HugePages_Surp:        1
+Hugepagesize:    1048576 kB
+DirectMap4k:       12160 kB
+DirectMap2M:     2082816 kB
+DirectMap1G:     2097152 kB
 
--- 
-Jens Axboe
+At best, that's a bit confusing.  There aren't any other entries in
+meminfo that occur more than once.  Plus, this information is available
+in the sysfs interface.  Why isn't that sufficient?
+
+Could we do something where we keep the default hpage_size looking like
+it does now, but append the size explicitly for the new entries?
+
+HugePages_Total(1G):       2
+HugePages_Free(1G):        1
+HugePages_Rsvd(1G):        1
+HugePages_Surp(1G):        1
+
+-- Dave
 
