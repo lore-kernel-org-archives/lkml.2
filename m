@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1CGCti (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 21:49:38 -0500
-Received: from xes-mad.com ([216.165.139.218]:43161 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab1CGCth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 21:49:37 -0500
-Subject: Re: [PATCH v5 1/4] gpiolib: Add "unknown" direction support
-From: Peter Tyser <ptyser@xes-inc.com>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-In-Reply-To: <4D73EC49.8030809@bluewatersys.com>
-References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
-	 <20110306072505.GC7467@angua.secretlab.ca>
-	 <4D73EC49.8030809@bluewatersys.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Mar 2011 20:48:47 -0600
-Message-ID: <1299466127.11719.127.camel@ptyser-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755219Ab1CGCPA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 21:15:00 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:53118 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200Ab1CGCO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 21:14:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=w2///J63I0Oi7QYPoCUiFVKAyT/XKAQ4KIT3KOelAto0ghwc6MWn0CApf45gSKj+a5
+         TrgFAyS8pYThgmDKB+DQ==
+Date: Sun, 6 Mar 2011 18:14:50 -0800
+From: Michel Lespinasse <walken@google.com>
+To: Stephen Hemminger <shemminger@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net: fix build warnings with CONFIG_PM_SLEEP
+ disabled
+Message-ID: <20110307021450.GC31188@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 09:19 +1300, Ryan Mallon wrote:
-> On 03/06/2011 08:25 PM, Grant Likely wrote:
-> 
-> > Back to sysfs:  The sysfs gpio interface is useful for many reasons,
-> > but it is dangerous much in the same way that /dev/mem is dangerous.
-> > It gives userspace unfettered access to gpio resources without any
-> > clues about how it should be used.  I consider it bad practice to
-> > depend on the gpio sysfs interface for any real system/application.
-> 
-> In an embedded system, where both the kernel and the userspace are
-> provided by the hardware vendor, it can be completely sensible to rely
-> on gpio numbers in userspace (though I would also like to see the sysfs
-> interface able to use named access). There are some existing kernel
-> interfaces for common gpio functions such as leds and input devices, but
-> there are also many other valid uses for gpios. There are many reasons
-> for the access code to be in userspace too: It may be easier to write
-> and debug, depending on the setup of the device it may be easier to do
-> firmware upgrades of userspace than it is for the kernel, etc.
-> 
-> > gpio numbers could easily change or become unavailable if a kernel
-> > driver decides to use them (heck, I'd like to be rid of gpio
-> > numbers entirely, but that's a separate debate). I'd much rather see
-> > real device drivers be written for gpio interfaces instead of bodging
-> > things together from userspace.  Since the addition of an 'unknown'
-> > direction is solely for benefit of the sysfs interface, I don't (yet)
-> > see a valid argument for adding it.  *Who cares* if sysfs might report
-> > direction as 'input' inaccurately?
-> 
-> Because it is incorrect? It may also be useful for a userspace debug
-> tool to request all available gpios and show the current direction and
-> value of them.
-> 
-> > It may be mildly inconvenient to a
-> > human reader, but it doesn't change the usage model one iota because
-> > the direction still must be explicitly set before using the gpio.
-> 
-> I agree that the usage model should be to request and then explicitly
-> set the direction before use, but that isn't really an argument for
-> exporting incorrect information to userspace. The ABI should attempt to
-> prevent abuse of itself so that crappy userspace apps cannot be written.
-> Either exporting the direction as "unknown" or making the direction file
-> unreadable and the value file unreadable/unwritable until the direction
-> has been explicitly set?
-> 
-> > So, I'm going to say no to this patch.
-> 
-> The patch is small (it adds 9 lines) and fixes an incorrect value being
-> exported to userspace. By your argument we should actually remove the
-> ability to read the direction file in sysfs, since userspace must
-> explicitly set it, and therefore knows what the direction is?
+This fixes a couple of build warnings when CONFIG_PM is enabled but
+CONFIG_PM_SLEEP is disabled. Applies on top of v2.6.38-rc7 - I know it's
+late, but it would be great if v2.6.38 could compile without warnings!
 
-+1 to all Ryan's points.  I hope this patch, or something like it, will
-be accepted.
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ drivers/net/forcedeth.c |    8 ++++++--
+ drivers/net/sky2.c      |    2 +-
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-On a related note, I just noticed I need to update
-Documentation/gpio.txt to document the 'unknown' direction, if this
-patch is accepted.  I'll resubmit after waiting for feedback.
+diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+index 9c0b1ba..7b92897 100644
+--- a/drivers/net/forcedeth.c
++++ b/drivers/net/forcedeth.c
+@@ -5744,7 +5744,7 @@ static void __devexit nv_remove(struct pci_dev *pci_dev)
+ 	pci_set_drvdata(pci_dev, NULL);
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int nv_suspend(struct device *device)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+@@ -5795,6 +5795,11 @@ static int nv_resume(struct device *device)
+ static SIMPLE_DEV_PM_OPS(nv_pm_ops, nv_suspend, nv_resume);
+ #define NV_PM_OPS (&nv_pm_ops)
+ 
++#else
++#define NV_PM_OPS NULL
++#endif /* CONFIG_PM_SLEEP */
++
++#ifdef CONFIG_PM
+ static void nv_shutdown(struct pci_dev *pdev)
+ {
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+@@ -5822,7 +5827,6 @@ static void nv_shutdown(struct pci_dev *pdev)
+ 	}
+ }
+ #else
+-#define NV_PM_OPS NULL
+ #define nv_shutdown NULL
+ #endif /* CONFIG_PM */
+ 
+diff --git a/drivers/net/sky2.c b/drivers/net/sky2.c
+index 7d85a38..2a91868 100644
+--- a/drivers/net/sky2.c
++++ b/drivers/net/sky2.c
+@@ -4983,7 +4983,7 @@ static int sky2_suspend(struct device *dev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int sky2_resume(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
 
-Best,
-Peter
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
