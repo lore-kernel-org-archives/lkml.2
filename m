@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab1CGXys (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 18:54:48 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:3179 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752121Ab1CGXyr convert rfc822-to-8bit (ORCPT
+	id S1752775Ab1CGX55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:57:57 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35122
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750754Ab1CGX5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 18:54:47 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Subject: Re: [PATCH] [SCSI] bnx2fc: fix build error when !CONFIG_MODULES
-From: "Bhanu Gollapudi" <bprakash@broadcom.com>
-To: "Mariusz Kozlowski" <mk@lab.zgora.pl>
-cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-In-Reply-To: <20110307201610.GA9032@mako-laptop>
-References: <20110302182740.e4dfd79f.sfr@canb.auug.org.au>
- <1299103803-32594-1-git-send-email-mk@lab.zgora.pl>
- <20110307201610.GA9032@mako-laptop>
-Date: Mon, 7 Mar 2011 15:54:35 -0800
-Message-ID: <1299542075.5232.5.camel@LTSJC-BPRAKASH.corp.ad.broadcom.com>
-MIME-Version: 1.0
-X-WSS-ID: 616BAF5A3T83480993-01-01
-Content-Type: text/plain;
- charset=cp1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Mar 2011 18:57:55 -0500
+Date: Mon, 07 Mar 2011 15:58:32 -0800 (PST)
+Message-Id: <20110307.155832.52202423.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: nikai@nikai.net, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/macvtap: fix error check
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201103071059.04321.arnd@arndb.de>
+References: <20110305004941.7b195e9d@absol.kitzblitz>
+	<201103071059.04321.arnd@arndb.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 12:16 -0800, Mariusz Kozlowski wrote: 
-> On Wed, Mar 02, 2011 at 11:10:03PM +0100, Mariusz Kozlowski wrote:
-> > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: dereferencing pointer to incomplete type
-> > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:1815: error: ‘MODULE_STATE_LIVE’ undeclared (first use in this function)
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Mon, 7 Mar 2011 10:59:04 +0100
+
+> On Saturday 05 March 2011, Nicolas Kaiser wrote:
+>> 'len' is unsigned of type size_t and can't be negative.
+>> 
+>> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 > 
-> Hm. Still there in next-20110307. Is this patch wrong or..?
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
+> I think it's harmless: the worst thing that can happen is
+> macvtap_alloc_skb() failing with ENOMEM when it gets a
+> large argument, but we could have it in -stable just to
+> be sure.
 
-James,
+I'm just going to add it to net-2.6
 
-Here is my ack for this patch.
-
-Thanks,
-Bhanu
-
-
+I verified that gcc is not generating this test at all
+currently, so putting this into -stable is quite pointless.
