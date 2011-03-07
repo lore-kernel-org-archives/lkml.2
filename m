@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab1CGVxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:53:13 -0500
-Received: from mail.windriver.com ([147.11.1.11]:49010 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756526Ab1CGVxL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756522Ab1CGVxL (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Mar 2011 16:53:11 -0500
-Message-ID: <4D7553C4.7080801@windriver.com>
-Date: Mon, 07 Mar 2011 16:53:08 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110127 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Nathan Grennan <linux-rt-users@cygnusx-1.org>
-CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38000 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755246Ab1CGVxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 16:53:10 -0500
+Date: Mon, 7 Mar 2011 13:52:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Vagin <avagin@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] RT for v2.6.34.8 now available.
-References: <4D71668F.9050201@windriver.com>	<4D71A88E.2060608@cygnusx-1.org> <AANLkTim3Bwhp4W2zOcAnNxBzz1hmgvPMjtewt1cW8V0s@mail.gmail.com> <4D754FDC.5050701@cygnusx-1.org>
-In-Reply-To: <4D754FDC.5050701@cygnusx-1.org>
-Content-Type: text/plain; charset=windows-1252
+Subject: Re: [PATCH] mm: skip zombie in OOM-killer
+Message-Id: <20110307135228.aad5a97d.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1103071234480.10264@chino.kir.corp.google.com>
+References: <1299286307-4386-1-git-send-email-avagin@openvz.org>
+	<20110306193519.49DD.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1103061400170.23737@chino.kir.corp.google.com>
+	<AANLkTi=d+eZxg_NgNWa7roo=1YQS06=EaWJzjseL_Hhs@mail.gmail.com>
+	<alpine.DEB.2.00.1103071234480.10264@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Mar 2011 21:53:09.0593 (UTC) FILETIME=[0C504C90:01CBDD12]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-03-07 04:36 PM, Nathan Grennan wrote:
+On Mon, 7 Mar 2011 12:36:49 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
+
+> On Mon, 7 Mar 2011, Andrew Vagin wrote:
 > 
->> Yes, it is the header cleanup done in the 33-->34 dev cycle, seen
->> between the rev list ^9e74e7c b66696e that changes slab.h use.
->>
->> If you look at 8a2032dba45e24 *in the patch repo* you will see where
->> I fixed it for the baseline RT-enabled defconfig.  (Meaning I did a
->> make defconfig, then enabled the RT options).  Your config must be
->> setting something different/extra.
->>
->> If you do a git show on the above rev list and on the fix in the patch
->> repo, you will probably be able to tell what is going on.  Also please
->> send me your config (off list) so I can ensure it compiles properly myself.
->>
+> > > Andrey is patching the case where an eligible TIF_MEMDIE process is found
+> > > but it has already detached its ->mm. __In combination with the patch
+> > > posted to linux-mm, oom: prevent unnecessary oom kills or kernel panics,
+> > > which makes select_bad_process() iterate over all threads, it is an
+> > > effective solution.
+> > 
+> > Probably you said about the first version of my patch.
+> > This version is incorrect because of
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=dd8e8f405ca386c7ce7cbb996ccd985d283b0e03
+> > 
+> > but my first patch is correct and it has a simple reproducer(I
+> > attached it). You can execute it and your kernel hangs up, because the
+> > parent doesn't wait children, but the one child (zombie) will have
+> > flag TIF_MEMDIE, oom_killer will kill nobody
+> > 
 > 
-> I found the cause. The patching was incomplete. The correct patch 
-> command is the one below, removing the comment lines.
-> 
-> cat ../rt-patches/series | grep -v '\#' | xargs -i cat ../rt-patches/{} 
-> | patch -p1
+> The second version of your patch works fine in combination with the 
+> pending "oom: prevent unnecessary oom kills or kernel panics" patch from 
+> linux-mm (included below).
 
-Folks should really use git, or quilt, or guilt, or git quilt-import, or
-for that matter, *anything* that at least checks exit status.
-
-I like the fact that "git am" is quite strict about what it accepts
-and applies, so I'll typically wrap things around that core operation. 
-
-Here is a completely trivial example of using git am:
-
-cat `grep ^[a-zA-Z0-9] series` > /tmp/foo.mbox
-git am /tmp/foo.mbox
-
-Paul.
-
+Andrew's v2 doesn't apply on top of
+oom-prevent-unnecessary-oom-kills-or-kernel-panics.patch and I'm
+disinclined to fix that up and merge some untested patch combination.
 
