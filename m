@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab1CGM3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 07:29:34 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58639 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927Ab1CGM3d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 07:29:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=OOahH5NjwkLuc2yOMiSHaL7UMDpGc+cO5qhZWPynrC+jk0lwnTbGj3qQemz7frkhbs
-         6NN9MTzfACnoyTCY+hD6OKbFVsGphkohStdu54+iaHwiIO/kSHiJqXa1rv0ENOUGd1jb
-         Pp4neJRCyhXDamHlFwdjGfGZNxEqYPstnwYZ4=
+	id S1753485Ab1CGMye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 07:54:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53612 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab1CGMyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 07:54:31 -0500
+Date: Mon, 7 Mar 2011 13:54:18 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
+        netdev@vger.kernel.org, maxk@qualcomm.com
+Subject: Re: tun routing is broken
+In-Reply-To: <4D71F194.9010402@suse.cz>
+Message-ID: <alpine.LRH.2.00.1103071352100.19033@twin.jikos.cz>
+References: <20110304.010603.104076956.davem@davemloft.net> <4D70B2DC.2000005@gmail.com> <4D71EE86.6030309@suse.cz> <20110305.001022.183044112.davem@davemloft.net> <4D71F194.9010402@suse.cz>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110307121502.GG13471@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com> <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
- <20110307121502.GG13471@opensource.wolfsonmicro.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 7 Mar 2011 07:29:12 -0500
-Message-ID: <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
-Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
- ADAU1701 SigmaDSP
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 7, 2011 at 07:15, Mark Brown wrote:
-> On Mon, Mar 07, 2011 at 06:50:15AM -0500, Mike Frysinger wrote:
->> On Mon, Mar 7, 2011 at 06:41, Mark Brown wrote:
->> > I can't apply this driver until it's merged into ASoC via some means
->>
->> and andrew has been holding off on merging the firmware driver until
->> something in mainline needs it.  once a driver gets to the point where
->> you're fine with merging it, we can bug akpm to push the sigma
->> firmware loader to linus.
->
-> It'd seem easier to just merge the two patches together rather than
-> trying to deal with cross-tree issues.
+On Sat, 5 Mar 2011, Jiri Slaby wrote:
 
-that sounds like a terrible idea.  they're logically different
-changesets and we shouldnt be squashing them together simply to work
-around problems with process workflows.
+> > Date: Sat, 05 Mar 2011 09:04:22 +0100
+> > 
+> >> Ok, so I booted the new kernel, and tun is broken there completely. If I
+> >> try to ping a vpn peer:
+> > 
+> > -mm tree is missing this fix which went in yesterday.  Please if
+> > you are going to be testing networking a lot, test against net-next-2.6
+> > instead of Andrew's tree which invariable lags behind:
+> 
+> I'm not testing networking, I'm just using my desktop :). (And
+> next/master is mostly unusable for these needs. In comparison to mmotm
+> which is some kind of a "release".)
 
->> > More generally this doesn't seem like a great interface - apparently the
->> > device requries that firmware be loaded but the whole firmware load
->> > process isn't at all joined up with the driver code meaning that the
->> > application layer has to figure out when firmware needs to be reloaded,
->> > there's no understanding on the part of the driver of what the firmware
->> > on the device is doing or how it's glued into the audio subsystem.
->
->> the API should allow for userspace to specify the firmware name, but
->> that's about it.  it is up to the userspace application to arbitrarily
->> load different firmware files on the fly into the codec without the
->> codec caring what's going into it.  often times the firmware is DSP
->> code to do different post processing on the audio stream (cleanup or
->> whatever).
->
-> Right, and this isn't a particularly unusual requirement especially if
-> the driver isn't going to have any ability to interact with the DSP (at
-> which point it's just coefficient data, the fact that it's a DSP program
-> is uninteresting).  The problem is that this isn't a great interface for
-> doing that.
+I have been hit by similar issues several times already as well.
 
-i dont see suggestions of a better interface anywhere ...
+I guess that question of including -mm into linux-next should be raised 
+again here ... Andrew, if I remember correctly, on last kernel summit you 
+were stating that you'd stop eating untill you have -mm included in -next. 
+Seems like you must be quite hungry these days already :)
 
-> At a really basic level the code is not at all integrated with either
-> power management or stream handling in ASoC meaning that the user could
-> try to download firmware in the middle of an active audio stream (which
-> isn't going to be ideal).  Obviously the driver doesn't really support
-> any kind of power management at the minute but if it were improved in
-> this area you'd also have issues with trying to download firmware while
-> the device is off which probably isn't going to work either.
+Thanks,
 
-wrt pm, that's a trivial programming issue that would be resolved in
-the driver.  userspace need not care.
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
 
-wrt stream flows, all the customers we've talked to are fine with this
--- having stream control be an application issue.  their application
-is driving the codec directly and knows when it needs to change the
-firmware, so it pauses its alsa flow, loads the new firmware, and
-moves on.
-
-that said, i dont see anything in asoc today to address this, so if
-we're simply missing it, please highlight it for us.
-
-> It's also not an interface which offers any kind of discoverability or
-> enumerability, meaning that it's not suitable for integration into
-> application layer code such as the use case manager.  Applications need
-> to be hard coded to know that a particular magic sysfs file needs to be
-> poked.  This would be a big step backwards in terms of the ability to
-> run off the shelf application software.
-
-i dont see the issue here.  the firmware is *optional* and does not
-impair basic audio output.  further, the firmware is fully
-written/compiled/maintained by the end customer, just like the
-application.  which means there is no "magic" here -- the end customer
-is the wizard.
-
-there is no "stock" firmware that ADI or anyone provides for any of
-these SigmaDSP audio codecs.
--mike
