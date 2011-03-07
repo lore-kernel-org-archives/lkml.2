@@ -1,118 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab1CGWoZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 17:44:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50583 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756589Ab1CGWoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 17:44:23 -0500
-Date: Tue, 8 Mar 2011 09:44:12 +1100
-From: NeilBrown <neilb@suse.de>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH] Fix over-zealous flush_disk when changing
- device size.
-Message-ID: <20110308094412.1c45b277@notabene.brown>
-In-Reply-To: <1299516418.15258.4.camel@mulgrave.site>
-References: <20110217165057.5c50e566@notabene.brown>
-	<20110303143120.GA8134@infradead.org>
-	<20110304111624.4be27aaf@notabene.brown>
-	<1299259506.2118.24.camel@grinch>
-	<20110306174755.49404c8e@notabene.brown>
-	<1299471771.2228.11.camel@grinch>
-	<1299516418.15258.4.camel@mulgrave.site>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756691Ab1CGWpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 17:45:18 -0500
+Received: from mail2.microsoft.com ([131.107.115.215]:33670 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527Ab1CGWpR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 17:45:17 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/16] Staging: hv: Consolidate driver and device
+ abstractions
+Thread-Topic: [PATCH 00/16] Staging: hv: Consolidate driver and device
+ abstractions
+Thread-Index: AQHL3RZ3wHBycqZ49EOrvHzNUQlzbpQicxCQ
+Date: Mon, 7 Mar 2011 22:45:15 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480173E9@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1299531695-22352-1-git-send-email-kys@microsoft.com>
+ <20110307222356.GA25714@kroah.com>
+In-Reply-To: <20110307222356.GA25714@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(linux-fsdevel added - seems relevant)
 
-On Mon, 07 Mar 2011 10:46:58 -0600 James Bottomley <James.Bottomley@suse.de>
-wrote:
 
-> On Sun, 2011-03-06 at 21:22 -0700, Andrew Patterson wrote:
-> > On Sun, 2011-03-06 at 17:47 +1100, NeilBrown wrote:
-> > >  Would you be uncomfortable if I asked Linus to revert both my fix and your
-> > >  original patch??
-> > 
-> > James Bottomley wanted me to put this functionality in. I have no
-> > problem with reverting it myself, especially if it is causing other
-> > problems.  I would have to say that you need to ask him (or rather, I am
-> > not qualified to render an opinion here).
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Monday, March 07, 2011 5:24 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/16] Staging: hv: Consolidate driver and device
+> abstractions
 > 
-> So it seems we have a couple of problems: the first being that
-> flush_disk() doesn't actually do what it says (flush the disk).  If it's
-> just discarding all data, dirty or clean, then its use in the
-> grow/shrink interface is definitely wrong.
+> On Mon, Mar 07, 2011 at 01:01:35PM -0800, K. Y. Srinivasan wrote:
+> > Hyper-V has maintained both its class independent driver and
+> > device state in two independent data structures:
+> > Driver state: struct driver_context (vmbus.h) and struct hv_driver
+> > (vmbus_api.h)
+> > Device state: struct vm_device (vmbus.h) and struct hv_device (vmbus_api.h)
+> >
+> > While sruct driver_context and struct vm_device embed generic
+> > Linux abstractions of struct device_driver and struct device respectively;
+> > the lower level hyperv abstraction: struct hv_driver and struct hv_device
+> > have maintained state needed to communicate with the host. This partitioning
+> > made sense at a point in time when it was not clear how much of
+> > the hypervisor interaction would be open sourced. Given where we are
+> > today, there is no reason to keep this layering. This patchset
+> > consolidates all the driver state into a single structure:
+> > struct hv_driver while all the device state is consolidated into
+> > a single structure: struct hv_device. This consolidation simplifies
+> > the code while simultaneously getting rid of redundant state -
+> > for instance in the current code, both struct driver_context and
+> > struct hv_driver both have state to represent the class as well as
+> > instance id. We do this consolidation by moving state from higher
+> > level structures (struct driver_context and struct vm_device) to
+> > lower level structures (struct hv_driver and hv_device) respectively.
+> >
+> > While it has not been a goal of this effort to cleanup structure and
+> > variable names, this consolidation effort has resulted in some cleanup
+> > with regards to structure and variable names: a) Some of the badly
+> > named structures have been eliminated (struct driver_context etc.)
+> > while hopefully all newly introduced names are acceptable.
+> >
+> > Patches 1 through 11 deal with consolidating the device driver
+> > state while patches 12 through 16  deal with consolidating
+> > device state.
 > 
-> The idea is that before we complete the grow/shrink, we make sure that
-> the device doesn't have any errors, so we want to try to write out all
-> dirty buffers to make sure they still have a home.  If flush_disk()
-> doesn't do that, then we need to use a different interface ... what's
-> the interface to flush a disk?
+> Very nice job, now that's the way to break up and send a patch series.
 > 
-
-Hi James,
-
-I *always* want to make sure that my device doesn't have any errors, not just
-when it changes size... but I'm not sure that regularly flushing out data is
-the right way to do it.
-But maybe I still misunderstand what the real point of this is.
-
-As for the correct interface to flush a disk - there isn't one.
-One doesn't flush a storage device, one flushes a cache - to a storage
-device.  And there is not a 1-to-1 mapping.
-
-A block device *is* associated with one cache - one which is used for
-caching accesses through /dev/XXX and also by some filesystems to cache some
-metadata.  You can flush this cache with sync_blockdev().  This just
-flushes out dirty pages in that cache, it doesn't discard clean pages.
-invalidate_bdev() can discard clean pages.  Call both, and get both outcomes.
-
-If a filesystem is mounted directly on a given block_device, then it
-should have a valid s_bdev pointer and it is possible to find that filesystem
-from the block_device using get_active_super().  You could then call
-sync_filesystem() to flush out dirty data.  There isn't really a good
-interface to discard clean data. shrink_dcache_sb() does some of it, other
-bits of code do other bits.
-
-Note that a block_device also can have a pointer to a super_block (bd_super).
-This does not seem to be widely used .... ext3 and ext4 use it so that memory
-pressure felt by the block-device cache can transmitted to the fs, so the
-fs can associate private data with the block device's cache I guess.
-I don't think bd_super is sufficiently persistent reference to be usable
-for sync_filesystems (it could race with unmount).
+> I've queued them all up now.
 
 
-But if the block device is within a dm or md device, or is an external
-journal for e.g. ext3, or is in some more complex relationship with a
-filesystem, then there is no way to request that any particular cache get
-flushed to the block device.  And if some user-space app has cached data
-for the device .... there is no way to get at that either.
+Thanks Greg; coming from you it means a lot to me.
 
-If we wanted a "proper" solution for this we probably need to leverage
-the 'bd_claim' concept.  When a device is claimed, allow an 'operations'
-structure to be provided with operations like:
-   flush_caches  (writes out data)
-   purge_caches  (discards clean data)
-   discard_caches  (discards all data)
-   prepare_resize (is allowed to fail)
-   commit_resize
-   freeze_io
-   thaw_io
+> 
+> I'm guessing that you will have follow-on patches now to complete the
+> migration to the correct driver core use (i.e. proper driver and device
+> usage?)  Or do you want me to look into doing this?
 
-But flush_disk is definitely a wrong interface.  It has a meaningless name
-(as discussed above), and purges some caches while discarding others.
+My immediate goal is to get the vmbus driver to exit staging. To that
+end I am working on a patch-set to cleanup vmbus_drv.c. I should have this
+patch-set fairly soon.  Once that is
+done, I think we would have addressed all the structural/architectural issues
+of the vmbus driver that is preventing us from exiting staging. 
+We are planning to address the issues with other drivers after we are done
+with the vmbus driver. As always, your help is greatly appreciated.
 
-What do we *really* lose if we just revert that original patch?
+Regards,
 
-Thanks,
-NeilBrown
+K. Y   
 
