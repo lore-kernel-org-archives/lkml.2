@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab1CGFuz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 00:50:55 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57415 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1CGFuw (ORCPT
+	id S1751728Ab1CGFvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 00:51:47 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:40948 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1CGFvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 00:50:52 -0500
+	Mon, 7 Mar 2011 00:51:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=NMWi6/A/3OhG2l/Ox91geNm+Ex1WR6UPiFqBjZPIS049fKlrhpAObscOR75lwKNUw6
-         F3jHM0NYlPNWNvpwaZTmYa27zUYvKLvVNV0XUela+2s5YCBrNTdaHTM1sq0ckOklg6Vd
-         46CDKT2kx4HoGn3fIiySYIZR9sd83POp/B5co=
-Subject: [PATCH 1/2] [ARM] am200epd: fix resource leak in
-	am200_init_gpio_regs error path
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=C/Qs0Z5WDeXvcvfw+D7oveMKol7frg8C2YRjtMyQq3Ww4NidEyskO+/7c6Ki/E0TLr
+         SntJZLbgKNs14hxRiGpXDhb2/QtgZmWX2v7WjoO0Q1cPOx5B07BUreVobuDvjKl8Qxfb
+         VrqhGpScUytjISIPcBYBV9kRHpnqIjME7cTIo=
+Subject: [PATCH 2/2] [ARM] am300epd: fix resource leak in
+	am300_init_gpio_regs error path
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jaya Kumar <jayakumar.lkml@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1299477315.10486.1.camel@mola>
+References: <1299477315.10486.1.camel@mola>
 Content-Type: text/plain
-Date: Mon, 07 Mar 2011 13:55:15 +0800
-Message-Id: <1299477315.10486.1.camel@mola>
+Date: Mon, 07 Mar 2011 13:56:11 +0800
+Message-Id: <1299477371.10486.2.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -36,16 +38,33 @@ implementation.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/arm/mach-pxa/am200epd.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-pxa/am300epd.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-pxa/am200epd.c b/arch/arm/mach-pxa/am200epd.c
-index 3499fad..811d797 100644
---- a/arch/arm/mach-pxa/am200epd.c
-+++ b/arch/arm/mach-pxa/am200epd.c
-@@ -128,8 +128,8 @@ static int am200_init_gpio_regs(struct metronomefb_par *par)
+diff --git a/arch/arm/mach-pxa/am300epd.c b/arch/arm/mach-pxa/am300epd.c
+index 993d75e..fa8bad2 100644
+--- a/arch/arm/mach-pxa/am300epd.c
++++ b/arch/arm/mach-pxa/am300epd.c
+@@ -125,10 +125,7 @@ static int am300_init_gpio_regs(struct broadsheetfb_par *par)
+ 		if (err) {
+ 			dev_err(&am300_device->dev, "failed requesting "
+ 				"gpio %d, err=%d\n", i, err);
+-			while (i >= DB0_GPIO_PIN)
+-				gpio_free(i--);
+-			i = ARRAY_SIZE(gpios) - 1;
+-			goto err_req_gpio;
++			goto err_req_gpio2;
+ 		}
+ 	}
+ 
+@@ -159,9 +156,13 @@ static int am300_init_gpio_regs(struct broadsheetfb_par *par)
+ 
  	return 0;
  
++err_req_gpio2:
++	while (--i >= DB0_GPIO_PIN)
++		gpio_free(i);
++	i = ARRAY_SIZE(gpios);
  err_req_gpio:
 -	while (i > 0)
 -		gpio_free(gpios[i--]);
