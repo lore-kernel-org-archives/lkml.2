@@ -1,288 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1CGSLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 13:11:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46366 "EHLO mx1.redhat.com"
+	id S1754940Ab1CGSMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 13:12:09 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:58390 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab1CGSLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 13:11:08 -0500
-Date: Mon, 7 Mar 2011 19:10:39 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        masami.hiramatsu.pt@hitachi.com, hpa@zytor.com, ananth@in.ibm.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        eric.dumazet@gmail.com, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] x86: separating entry text section
-Message-ID: <20110307181039.GB15197@jolsa.redhat.com>
-References: <20110220125948.GC25700@elte.hu>
- <1298298313-5980-1-git-send-email-jolsa@redhat.com>
- <1298298313-5980-2-git-send-email-jolsa@redhat.com>
- <20110222080934.GB7001@elte.hu>
- <20110222125201.GB1884@jolsa.brq.redhat.com>
- <20110307104423.GA3661@jolsa.redhat.com>
- <20110307152921.GC28226@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110307152921.GC28226@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752803Ab1CGSMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 13:12:08 -0500
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: UV broadcast assist unit base destination node id
+Cc: mingo@elte.hu
+Message-Id: <E1Pwevz-0003JE-3g@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Mon, 07 Mar 2011 12:13:31 -0600
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 04:29:21PM +0100, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > hi,
-> > any feedback?
-> 
-> Did you get my reply below?
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+From: Cliff Wickman <cpw@sgi.com>
 
-hi,
+The BAU's initialization of the broadcast description header is lacking
+the coherence domain (high bits) in the nasid.  This causes a catastrophic
+system failure when running on a system with multiple coherence domains. 
 
-strange, I believe I did reply on this.. got missed
-somehow or I'm missing simething :) reattached..
+Diffed against 2.6.32.12
 
-thanks,
-jirka
-
-
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
 ---
-hi,
+ arch/x86/include/asm/uv/uv_bau.h |    2 +-
+ arch/x86/kernel/tlb_uv.c         |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-I made another test with "reseting" the system state as suggested and
-only for cache-misses together with instructions and cycles events.
-
-I can see even bigger drop of icache load misses than before
-from 19359739 to 16448709 (about 15%).
-
-The instruction/cycles count is slightly bigger in the patched
-kernel run though..
-
-perf stat --repeat 100  -e L1-icache-load-misses -e instructions -e cycles ./hackbench/hackbench 10
-
--------------------------------------------------------------------------------
-before patch:
-
- Performance counter stats for './hackbench/hackbench 10' (100 runs):
-
-           19359739  L1-icache-load-misses      ( +-   0.313% )
-         2667528936  instructions             #      0.498 IPC     ( +- 0.165% )
-         5352849800  cycles                     ( +-   0.303% )
-
-        0.205402048  seconds time elapsed   ( +-   0.299% )
-
- Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-           19417627  L1-icache-load-misses      ( +-   0.147% )
-         2676914223  instructions             #      0.497 IPC     ( +- 0.079% )
-         5389516026  cycles                     ( +-   0.144% )
-
-        0.206267711  seconds time elapsed   ( +-   0.138% )
-
-
--------------------------------------------------------------------------------
-after patch:
-
- Performance counter stats for './hackbench/hackbench 10' (100 runs):
-
-           16448709  L1-icache-load-misses      ( +-   0.426% )
-         2698406306  instructions             #      0.500 IPC     ( +- 0.177% )
-         5393976267  cycles                     ( +-   0.321% )
-
-        0.206072845  seconds time elapsed   ( +-   0.276% )
-
- Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-           16490788  L1-icache-load-misses      ( +-   0.180% )
-         2717734941  instructions             #      0.502 IPC     ( +- 0.079% )
-         5414756975  cycles                     ( +-   0.148% )
-
-        0.206747566  seconds time elapsed   ( +-   0.137% )
-
-
-Attaching patch with above numbers in comment.
-
-thanks,
-jirka
-
-
----
-Putting x86 entry code to the separate section: .entry.text.
-
-Separating the entry text section seems to have performance
-benefits with regards to the instruction cache usage.
-
-Running hackbench showed that the change compresses the icache
-footprint. The icache load miss rate went down by about 15%:
-
-before patch:
-         19417627  L1-icache-load-misses      ( +-   0.147% )
-
-after patch:
-         16490788  L1-icache-load-misses      ( +-   0.180% )
-
-
-Whole perf output follows.
-
-- results for current tip tree:
-  Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-         19417627  L1-icache-load-misses      ( +-   0.147% )
-       2676914223  instructions             #      0.497 IPC     ( +- 0.079% )
-       5389516026  cycles                     ( +-   0.144% )
-
-      0.206267711  seconds time elapsed   ( +-   0.138% )
-
-- results for current tip tree with the patch applied are:
-  Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-         16490788  L1-icache-load-misses      ( +-   0.180% )
-       2717734941  instructions             #      0.502 IPC     ( +- 0.079% )
-       5414756975  cycles                     ( +-   0.148% )
-
-      0.206747566  seconds time elapsed   ( +-   0.137% )
-
-
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/ia32/ia32entry.S         |    2 ++
- arch/x86/kernel/entry_32.S        |    6 ++++--
- arch/x86/kernel/entry_64.S        |    6 ++++--
- arch/x86/kernel/vmlinux.lds.S     |    1 +
- include/asm-generic/sections.h    |    1 +
- include/asm-generic/vmlinux.lds.h |    6 ++++++
- 6 files changed, 18 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 0ed7896..50f1630 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -25,6 +25,8 @@
- #define sysretl_audit ia32_ret_from_sys_call
- #endif
- 
-+	.section .entry.text, "ax"
-+
- #define IA32_NR_syscalls ((ia32_syscall_end - ia32_sys_call_table)/8)
- 
- 	.macro IA32_ARG_FIXUP noebp=0
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..f5accf8 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -65,6 +65,8 @@
- #define sysexit_audit	syscall_exit_work
- #endif
- 
-+	.section .entry.text, "ax"
-+
- /*
-  * We use macros for low-level operations which need to be overridden
-  * for paravirtualization.  The following will never clobber any registers:
-@@ -788,7 +790,7 @@ ENDPROC(ptregs_clone)
-  */
- .section .init.rodata,"a"
- ENTRY(interrupt)
--.text
-+.section .entry.text, "ax"
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -807,7 +809,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.long 1b
--      .text
-+      .section .entry.text, "ax"
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 891268c..39f8d21 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -61,6 +61,8 @@
- #define __AUDIT_ARCH_LE	   0x40000000
- 
- 	.code64
-+	.section .entry.text, "ax"
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- ENTRY(mcount)
-@@ -744,7 +746,7 @@ END(stub_rt_sigreturn)
-  */
- 	.section .init.rodata,"a"
- ENTRY(interrupt)
--	.text
-+	.section .entry.text
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -763,7 +765,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.quad 1b
--      .text
-+      .section .entry.text
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index e70cc3d..459dce2 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -105,6 +105,7 @@ SECTIONS
- 		SCHED_TEXT
- 		LOCK_TEXT
- 		KPROBES_TEXT
-+		ENTRY_TEXT
- 		IRQENTRY_TEXT
- 		*(.fixup)
- 		*(.gnu.warning)
-diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
-index b3bfabc..c1a1216 100644
---- a/include/asm-generic/sections.h
-+++ b/include/asm-generic/sections.h
-@@ -11,6 +11,7 @@ extern char _sinittext[], _einittext[];
- extern char _end[];
- extern char __per_cpu_load[], __per_cpu_start[], __per_cpu_end[];
- extern char __kprobes_text_start[], __kprobes_text_end[];
-+extern char __entry_text_start[], __entry_text_end[];
- extern char __initdata_begin[], __initdata_end[];
- extern char __start_rodata[], __end_rodata[];
- 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index fe77e33..906c3ce 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -424,6 +424,12 @@
- 		*(.kprobes.text)					\
- 		VMLINUX_SYMBOL(__kprobes_text_end) = .;
- 
-+#define ENTRY_TEXT							\
-+		ALIGN_FUNCTION();					\
-+		VMLINUX_SYMBOL(__entry_text_start) = .;			\
-+		*(.entry.text)						\
-+		VMLINUX_SYMBOL(__entry_text_end) = .;
-+
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- #define IRQENTRY_TEXT							\
- 		ALIGN_FUNCTION();					\
--- 
-1.7.1
-
+Index: linux/arch/x86/kernel/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/kernel/tlb_uv.c
++++ linux/arch/x86/kernel/tlb_uv.c
+@@ -1361,7 +1361,8 @@ uv_activation_descriptor_init(int node,
+ 		 * in the partition. The bit map will indicate uvhub numbers,
+ 		 * which are 0-N in a partition. Pnodes are unique system-wide.
+ 		 */
+-		bd2->header.base_dest_nodeid = uv_partition_base_pnode << 1;
++		bd2->header.base_dest_nodeid =
++			UV_PNODE_TO_NASID(uv_partition_base_pnode);
+ 		bd2->header.dest_subnodeid = 0x10; /* the LB */
+ 		bd2->header.command = UV_NET_ENDPOINT_INTD;
+ 		bd2->header.int_both = 1;
+Index: linux/arch/x86/include/asm/uv/uv_bau.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linux/arch/x86/include/asm/uv/uv_bau.h
+@@ -176,7 +176,7 @@ struct bau_msg_payload {
+ struct bau_msg_header {
+ 	unsigned int dest_subnodeid:6;	/* must be 0x10, for the LB */
+ 	/* bits 5:0 */
+-	unsigned int base_dest_nodeid:15; /* nasid (pnode<<1) of */
++	unsigned int base_dest_nodeid:15; /* nasid of the */
+ 	/* bits 20:6 */			  /* first bit in uvhub map */
+ 	unsigned int command:8;	/* message type */
+ 	/* bits 28:21 */
