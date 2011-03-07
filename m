@@ -1,129 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab1CGV7Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:59:16 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49399 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756476Ab1CGV7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:59:14 -0500
-Date: Mon, 7 Mar 2011 13:58:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Vagin <avagin@gmail.com>, Andrey Vagin <avagin@openvz.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: check zone->all_unreclaimable in
- all_unreclaimable()
-Message-Id: <20110307135831.9e0d7eaa.akpm@linux-foundation.org>
-In-Reply-To: <20110305170759.GC1918@barrios-desktop>
-References: <1299325456-2687-1-git-send-email-avagin@openvz.org>
-	<20110305152056.GA1918@barrios-desktop>
-	<4D72580D.4000208@gmail.com>
-	<20110305155316.GB1918@barrios-desktop>
-	<4D7267B6.6020406@gmail.com>
-	<20110305170759.GC1918@barrios-desktop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756605Ab1CGV7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 16:59:43 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:40576
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756246Ab1CGV7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 16:59:42 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: kys@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Subject: [PATCH 00/16] Staging: hv: Consolidate driver and device abstractions 
+Date: Mon,  7 Mar 2011 14:09:04 -0800
+Message-Id: <1299535744-23047-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Mar 2011 02:07:59 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+Hyper-V has maintained both its class independent driver and 
+device state in two independent data structures:
+Driver state: struct driver_context (vmbus.h) and struct hv_driver
+(vmbus_api.h)
+Device state: struct vm_device (vmbus.h) and struct hv_device (vmbus_api.h)
 
-> On Sat, Mar 05, 2011 at 07:41:26PM +0300, Andrew Vagin wrote:
-> > On 03/05/2011 06:53 PM, Minchan Kim wrote:
-> > >On Sat, Mar 05, 2011 at 06:34:37PM +0300, Andrew Vagin wrote:
-> > >>On 03/05/2011 06:20 PM, Minchan Kim wrote:
-> > >>>On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
-> > >>>>Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
-> > >>>>kernel may hang up, because shrink_zones() will do nothing, but
-> > >>>>all_unreclaimable() will say, that zone has reclaimable pages.
-> > >>>>
-> > >>>>do_try_to_free_pages()
-> > >>>>	shrink_zones()
-> > >>>>		 for_each_zone
-> > >>>>			if (zone->all_unreclaimable)
-> > >>>>				continue
-> > >>>>	if !all_unreclaimable(zonelist, sc)
-> > >>>>		return 1
-> > >>>>
-> > >>>>__alloc_pages_slowpath()
-> > >>>>retry:
-> > >>>>	did_some_progress = do_try_to_free_pages(page)
-> > >>>>	...
-> > >>>>	if (!page&&   did_some_progress)
-> > >>>>		retry;
-> > >>>>
-> > >>>>Signed-off-by: Andrey Vagin<avagin@openvz.org>
-> > >>>>---
-> > >>>>  mm/vmscan.c |    2 ++
-> > >>>>  1 files changed, 2 insertions(+), 0 deletions(-)
-> > >>>>
-> > >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > >>>>index 6771ea7..1c056f7 100644
-> > >>>>--- a/mm/vmscan.c
-> > >>>>+++ b/mm/vmscan.c
-> > >>>>@@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
-> > >>>>
-> > >>>>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> > >>>>  			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> > >>>>+		if (zone->all_unreclaimable)
-> > >>>>+			continue;
-> > >>>>  		if (!populated_zone(zone))
-> > >>>>  			continue;
-> > >>>>  		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> > >>>zone_reclaimable checks it. Isn't it enough?
-> > >>I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
-> > >>This two patches are enough.
-> > >Sorry if I confused you.
-> > >I mean zone->all_unreclaimable become true if !zone_reclaimable in balance_pgdat.
-> > >zone_reclaimable compares recent pages_scanned with the number of zone lru pages.
-> > >So too many page scanning in small lru pages makes the zone to unreclaimable zone.
-> > >
-> > >In all_unreclaimable, we calls zone_reclaimable to detect it.
-> > >It's the same thing with your patch.
-> > balance_pgdat set zone->all_unreclaimable, but the problem is that
-> > it is cleaned late.
-> 
-> Yes. It can be delayed by pcp so (zone->all_unreclaimable = true) is
-> a false alram since zone have a free page and it can be returned 
-> to free list by drain_all_pages in next turn.
-> 
-> > 
-> > The problem is that zone->all_unreclaimable = True, but
-> > zone_reclaimable() returns True too.
-> 
-> Why is it a problem? 
-> If zone->all_unreclaimable gives a false alram, we does need to check
-> it again by zone_reclaimable call.
-> 
-> If we believe a false alarm and give up the reclaim, maybe we have to make
-> unnecessary oom kill.
-> 
-> > 
-> > zone->all_unreclaimable will be cleaned in free_*_pages, but this
-> > may be late. It is enough allocate one page from page cache, that
-> > zone_reclaimable() returns True and zone->all_unreclaimable becomes
-> > True.
-> > >>>Does the hang up really happen or see it by code review?
-> > >>Yes. You can reproduce it for help the attached python program. It's
-> > >>not very clever:)
-> > >>It make the following actions in loop:
-> > >>1. fork
-> > >>2. mmap
-> > >>3. touch memory
-> > >>4. read memory
-> > >>5. munmmap
-> > >It seems the test program makes fork bombs and memory hogging.
-> > >If you applied this patch, the problem is gone?
-> > Yes.
-> 
-> Hmm.. Although it solves the problem, I think it's not a good idea that
-> depends on false alram and give up the retry.
+While sruct driver_context and struct vm_device embed generic 
+Linux abstractions of struct device_driver and struct device respectively; 
+the lower level hyperv abstraction: struct hv_driver and struct hv_device
+have maintained state needed to communicate with the host. This partitioning
+made sense at a point in time when it was not clear how much of 
+the hypervisor interaction would be open sourced. Given where we are
+today, there is no reason to keep this layering. This patchset 
+consolidates all the driver state into a single structure: 
+struct hv_driver while all the device state is consolidated into
+a single structure: struct hv_device. This consolidation simplifies
+the code while simultaneously getting rid of redundant state -
+for instance in the current code, both struct driver_context and
+struct hv_driver both have state to represent the class as well as
+instance id. We do this consolidation by moving state from higher
+level structures (struct driver_context and struct vm_device) to
+lower level structures (struct hv_driver and hv_device) respectively.
 
-Any alternative proposals?  We should get the livelock fixed if possible..
+While it has not been a goal of this effort to cleanup structure and 
+variable names, this consolidation effort has resulted in some cleanup
+with regards to structure and variable names: a) Some of the badly
+named structures have been eliminated (struct driver_context etc.) 
+while hopefully all newly introduced names are acceptable.  
+
+Patches 1 through 11 deal with consolidating the device driver
+state while patches 12 through 16  deal with consolidating
+device state.
+
+
+Regards,
+
+K. Y
+
