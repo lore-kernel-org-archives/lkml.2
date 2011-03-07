@@ -1,242 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab1CGP4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 10:56:10 -0500
-Received: from dakia2.marvell.com ([65.219.4.35]:33402 "EHLO
-	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab1CGPzW (ORCPT
+	id S1755540Ab1CGP4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 10:56:13 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:12857 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653Ab1CGPzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 10:55:22 -0500
-X-ASG-Debug-ID: 1299512701-082b75310001-xx1T2L
-X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
-From: Haojian Zhuang <haojian.zhuang@marvell.com>
-To: johnpol@2ka.mipt.ru, sameo@linux.intel.com, a.zummo@towertech.it,
-        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
-        dmitry.torokhov@gmail.com, dtor@mail.ru, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-X-ASG-Orig-Subj: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
-Subject: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
-Date: Mon,  7 Mar 2011 23:43:20 +0800
-X-ASG-Orig-Subj: [PATCH] mfd: pxa-w1: MFD driver for PXA 1wire control + DS1WM chip
-Message-Id: <1299512600-29047-12-git-send-email-haojian.zhuang@marvell.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1299512600-29047-11-git-send-email-haojian.zhuang@marvell.com>
-References: <1299512600-29047-1-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-2-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-3-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-4-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-5-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-6-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-7-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-8-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-9-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-10-git-send-email-haojian.zhuang@marvell.com>
- <1299512600-29047-11-git-send-email-haojian.zhuang@marvell.com>
-X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1299512701
-X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: -1002.00
-X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
+	Mon, 7 Mar 2011 10:55:54 -0500
+X-IronPort-AV: E=Sophos;i="4.62,277,1297036800"; 
+   d="scan'208";a="4654134"
+Date: Mon, 7 Mar 2011 15:55:37 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: "x86-64, mm: Put early page table high" causes crash on Xen
+In-Reply-To: <20110302170628.GA9268@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1103071317390.2968@kaball-desktop>
+References: <alpine.DEB.2.00.1103011517280.2917@kaball-desktop> <4D6D6980.7060304@kernel.org> <alpine.DEB.2.00.1103021123140.2968@kaball-desktop> <20110302170628.GA9268@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver provides registers and IRQ of PXA3xx chips to the ds1wm driver.
+On Wed, 2 Mar 2011, Konrad Rzeszutek Wilk wrote:
+> On Wed, Mar 02, 2011 at 03:23:48PM +0000, Stefano Stabellini wrote:
+> > On Tue, 1 Mar 2011, Yinghai Lu wrote:
+> > > We do need map_low_page ( BTW, that name is totally misleading...)
+> > > 
+> > > the reason is we put page_table high and at that time is not under max_pfn_mapped. (aka not mapped).
+> > > 
+> > > So have to use 
+> > > 	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
+> > > to early map it and Read/Write to it.
+> >  
+> > I think I have figured out a way to update the logic of mask_rw_pte to
+> > account for the new way of allocating kernel pagetables.
+> > The appended patch fix the boot crash for me.
+> > 
+> > ---
+> > 
+> > xen: update mask_rw_pte after kernel page tables init changes
+> > 
+> > Already existing kernel page table pages can now be mapped using
+> > early_ioremap too so we need to update mask_rw_pte to make sure these
+> > pages are still mapped RO.
+> > We do that by mapping RO all the pages mapped using early_ioremap apart
+> > from the last one that has been allocated because it is not a page table
+> > page yet (it has been hooked into the page tables yet).
+>                   ^- has not?
+> 
+> ..this is b/c the initial_kernel_mapping and its family of calls update
+> the pgt_buf_end (used to be called e820_table_end), _before__
+> it calls the Xen MMU to set the PTE entries and then after it is done
+> update the PMD?. Hence the simple check to see if the PFN is the _old_
+> value of the pgt_buf_end and if so skip altering the mapping from RW to RO
+> and leave them be?
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
----
- drivers/mfd/Kconfig  |    7 ++
- drivers/mfd/Makefile |    1 +
- drivers/mfd/pxa-w1.c |  149 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 157 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/pxa-w1.c
+yes and yes
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 5309534..1bb0ebd 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -34,6 +34,13 @@ config MFD_88PM860X
- 	  select individual components like voltage regulators, RTC and
- 	  battery-charger under the corresponding menus.
- 
-+config MFD_PXA_DS1WM
-+	tristate "Support DS1WM chip on Marvell silicons"
-+	select MFD_CORE
-+	help
-+	  This core driver provides register access for PXA_DS1WM.
-+	  Actual functionality is handled by the ds1wm drivers.
-+
- config MFD_SM501
- 	tristate "Support for Silicon Motion SM501"
- 	 ---help---
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index c7e99df..3d1648f 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -4,6 +4,7 @@
- 
- 88pm860x-objs			:= 88pm860x-core.o 88pm860x-i2c.o
- obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
-+obj-$(CONFIG_MFD_PXA_DS1WM)	+= pxa-w1.o
- obj-$(CONFIG_MFD_SM501)		+= sm501.o
- obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
- obj-$(CONFIG_MFD_SH_MOBILE_SDHI)		+= sh_mobile_sdhi.o
-diff --git a/drivers/mfd/pxa-w1.c b/drivers/mfd/pxa-w1.c
-new file mode 100644
-index 0000000..1fb380f
---- /dev/null
-+++ b/drivers/mfd/pxa-w1.c
-@@ -0,0 +1,149 @@
-+/*
-+ * Core driver for PXA DS1WM chip.
-+ *
-+ * Copyright (C) 2010 Marvell  <jtzhou@marvell.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/interrupt.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/ds1wm.h>
-+
-+struct pxa_w1_info {
-+	struct clk *clk;
-+};
-+
-+static int ds1wm_enable(struct platform_device *pdev)
-+{
-+	struct device *dev = pdev->dev.parent;
-+	struct pxa_w1_info *info = dev_get_drvdata(dev);
-+
-+	clk_enable(info->clk);
-+	dev_dbg(dev, "pxa DS1WM clk (active)\n");
-+	return 0;
-+}
-+
-+static int ds1wm_disable(struct platform_device *pdev)
-+{
-+	struct device *dev = pdev->dev.parent;
-+	struct pxa_w1_info *info = dev_get_drvdata(dev);
-+
-+	clk_disable(info->clk);
-+	dev_dbg(dev, "pxa DS1WM clk (in-active)\n");
-+	return 0;
-+}
-+
-+static struct resource ds1wm_resources[] __initdata = {
-+	{0, 0, "ds1wm-mem", IORESOURCE_MEM,},
-+	{0, 0, "ds1wm-irq", IORESOURCE_IRQ,},
-+};
-+
-+static struct ds1wm_driver_data ds1wm_pdata;
-+
-+static struct mfd_cell ds1wm_cell __initdata = {
-+	.name		= "ds1wm",
-+	.enable		= ds1wm_enable,
-+	.disable	= ds1wm_disable,
-+	.mfd_data	= &ds1wm_pdata,
-+	.num_resources	= ARRAY_SIZE(ds1wm_resources),
-+	.resources	= ds1wm_resources,
-+};
-+
-+static int __devinit pxa_w1_probe(struct platform_device *pdev)
-+{
-+	struct ds1wm_driver_data *pdata = pdev->dev.platform_data;
-+	struct pxa_w1_info *info;
-+	struct resource *r;
-+	int ret, irq;
-+
-+	info = kzalloc(sizeof(struct pxa_w1_info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (r == NULL) {
-+		ret = -ENXIO;
-+		goto out;
-+	}
-+	irq = r->start;
-+	if (pdata)
-+		ds1wm_pdata.active_high = pdata->active_high;
-+	if (ds1wm_pdata.active_high)
-+		ds1wm_resources[1].flags |= IORESOURCE_IRQ_HIGHEDGE;
-+	else
-+		ds1wm_resources[1].flags |= IORESOURCE_IRQ_LOWEDGE;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (r == NULL) {
-+		ret = -ENXIO;
-+		goto out;
-+	}
-+	ds1wm_resources[0].end = resource_size(r) - 1;
-+
-+	info->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(info->clk)) {
-+		ret = PTR_ERR(info->clk);
-+		goto out;
-+	}
-+	platform_set_drvdata(pdev, info);
-+
-+	ds1wm_pdata.clock_rate = clk_get_rate(info->clk);
-+	ret = mfd_add_devices(&pdev->dev, pdev->id, &ds1wm_cell, 1, r, irq);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to register pxa DS1WM\n");
-+
-+	return 0;
-+out:
-+	kfree(info);
-+	return ret;
-+}
-+
-+static int __devexit pxa_w1_remove(struct platform_device *pdev)
-+{
-+	struct pxa_w1_info *info = platform_get_drvdata(pdev);
-+
-+	mfd_remove_devices(&pdev->dev);
-+	clk_put(info->clk);
-+	kfree(info);
-+	platform_set_drvdata(pdev, NULL);
-+	return 0;
-+}
-+
-+static struct platform_driver pxa_w1_driver = {
-+	.driver = {
-+		   .name	= "pxa3xx-w1",
-+		   .owner	= THIS_MODULE,
-+	},
-+	.probe		= pxa_w1_probe,
-+	.remove		= __devexit_p(pxa_w1_remove),
-+};
-+
-+static int __init pxa_w1_base_init(void)
-+{
-+	return platform_driver_register(&pxa_w1_driver);
-+}
-+
-+static void __exit pxa_w1_base_exit(void)
-+{
-+	platform_driver_unregister(&pxa_w1_driver);
-+}
-+
-+module_init(pxa_w1_base_init);
-+module_exit(pxa_w1_base_exit);
-+
-+MODULE_AUTHOR("Jett Zhou <jtzhou@marvell.com>");
-+MODULE_DESCRIPTION("one wire driver for PXA");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:pxa-w1");
--- 
-1.5.6.5
 
+> On subsequent passes we fall within the first conditional
+> and update the PTE to RO?
+> When is that pass done?
+
+kernel_physical_mapping_init doesn't go through the same pagetable
+pages twice so that is not the issue.
+The problem is that kernel_physical_mapping_init is now re-mapping all
+the initial pagetable pages using early_ioremap, so the usage of
+early_ioremap is not enough anymore to distinguish between freshly
+allocated page table pages and already hooked pagetable pages.
+I am investigating the possibility that the introduction of map_low_page
+is actually overkill for this reason.
+
+
+> You also might want to mention the git commits that inspired this patch
+> and include the nice description you provided in the first email of this
+> thread.
+
+sure
