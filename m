@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1CGIXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 03:23:04 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60411 "EHLO
+	id S1755157Ab1CGIXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 03:23:07 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49168 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab1CGIWJ (ORCPT
+	with ESMTP id S1754620Ab1CGIWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 03:22:09 -0500
+	Mon, 7 Mar 2011 03:22:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=dT7/NeB1uIx5dwzl5zLODRuT+qovCH5Imn6c5UigC/vN0aoMz8IeGUY8OPNUqBlelF
-         OHa5Ya0qbkFmcraEvJpGNJg0Bkptn9PLQiEL2AvbsJQCWG+f4+CucOU3iR6JVvq3gsOd
-         0JjHrSLxp01E1tpKyS5xrLRbIok5AbJwtRYVI=
+        b=XpzGL9uo2I33MuQBYy0/dHCXeYIeQLVc/WaMkPmu9cayKN0JGbl5qYoCRuKrX5bnF+
+         lbwHRv8qT6XsrOMamm3OPWbZ66VGUMxuMDjwJui4MAtflGl9Fr78NELaVXognIlD4Itp
+         Oddw3KJIYAl02XxXeKkV1jaoqDV4M5TYjWTT4=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 20/21] staging: ft1000: Fix coding style in ft1000_dsp_prov function.
-Date: Mon,  7 Mar 2011 09:21:25 +0100
-Message-Id: <1299486086-7325-21-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 19/21] staging: ft1000: Fix coding style in ft1000_receive_cmd function.
+Date: Mon,  7 Mar 2011 09:21:24 +0100
+Message-Id: <1299486086-7325-20-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
@@ -30,179 +30,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |  161 +++++++++++++------------
- 1 files changed, 83 insertions(+), 78 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |  112 ++++++++++++++-----------
+ 1 files changed, 63 insertions(+), 49 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 9e0b696..deefefd 100644
+index 5fdfbbd..9e0b696 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1439,92 +1439,97 @@ static bool ft1000_receive_cmd(struct ft1000_device *dev, u16 *pbuffer,
- 	}
- }
- 
--
- static int ft1000_dsp_prov(void *arg)
- {
--    struct ft1000_device *dev = (struct ft1000_device *)arg;
-+	struct ft1000_device *dev = (struct ft1000_device *)arg;
- 	struct ft1000_info *info = netdev_priv(dev->net);
+@@ -1373,56 +1373,70 @@ static int ft1000_chkcard(struct ft1000_device *dev)
+ //          = 1 (successful)
+ //
+ //---------------------------------------------------------------------------
+-static bool ft1000_receive_cmd (struct ft1000_device *dev, u16 *pbuffer, int maxsz, u16 *pnxtph) {
+-    u16 size, ret;
+-    u16 *ppseudohdr;
+-    int i;
 -    u16 tempword;
--    u16 len;
--    u16 i=0;
++static bool ft1000_receive_cmd(struct ft1000_device *dev, u16 *pbuffer,
++			       int maxsz, u16 *pnxtph)
++{
++	u16 size, ret;
++	u16 *ppseudohdr;
++	int i;
 +	u16 tempword;
-+	u16 len;
-+	u16 i = 0;
- 	struct prov_record *ptr;
- 	struct pseudo_hdr *ppseudo_hdr;
--    u16 *pmsg;
--    u16 status;
--    u16 TempShortBuf [256];
-+	u16 *pmsg;
-+	u16 status;
-+	u16 TempShortBuf[256];
  
--    DEBUG("*** DspProv Entered\n");
-+	DEBUG("*** DspProv Entered\n");
- 
--    while (list_empty(&info->prov_list) == 0)
--    {
--	DEBUG("DSP Provisioning List Entry\n");
--
--        // Check if doorbell is available
--        DEBUG("check if doorbell is cleared\n");
--        status = ft1000_read_register (dev, &tempword, FT1000_REG_DOORBELL);
--        if (status)
--	{
--		DEBUG("ft1000_dsp_prov::ft1000_read_register error\n");
--            break;
--        }
-+	while (list_empty(&info->prov_list) == 0) {
-+		DEBUG("DSP Provisioning List Entry\n");
-+
-+		/* Check if doorbell is available */
-+		DEBUG("check if doorbell is cleared\n");
-+		status =
-+		    ft1000_read_register(dev, &tempword, FT1000_REG_DOORBELL);
-+		if (status) {
-+			DEBUG("ft1000_dsp_prov::ft1000_read_register error\n");
-+			break;
-+		}
- 
--        while (tempword & FT1000_DB_DPRAM_TX) {
--            mdelay(10);
--            i++;
--            if (i==10) {
--               DEBUG("FT1000:ft1000_dsp_prov:message drop\n");
--               return STATUS_FAILURE;
--            }
--            ft1000_read_register(dev, &tempword, FT1000_REG_DOORBELL);
--        }
-+		while (tempword & FT1000_DB_DPRAM_TX) {
-+			mdelay(10);
-+			i++;
-+			if (i == 10) {
-+				DEBUG("FT1000:ft1000_dsp_prov:message drop\n");
-+				return STATUS_FAILURE;
-+			}
-+			ft1000_read_register(dev, &tempword,
-+					     FT1000_REG_DOORBELL);
-+		}
- 
--        if ( !(tempword & FT1000_DB_DPRAM_TX) ) {
--            DEBUG("*** Provision Data Sent to DSP\n");
--
--            // Send provisioning data
--		ptr = list_entry(info->prov_list.next, struct prov_record, list);
--            len = *(u16 *)ptr->pprov_data;
--            len = htons(len);
--            len += PSEUDOSZ;
--
--            pmsg = (u16 *)ptr->pprov_data;
--		ppseudo_hdr = (struct pseudo_hdr *)pmsg;
--            // Insert slow queue sequence number
--            ppseudo_hdr->seq_num = info->squeseqnum++;
--            ppseudo_hdr->portsrc = 0;
--            // Calculate new checksum
--            ppseudo_hdr->checksum = *pmsg++;
--            //DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum);
--            for (i=1; i<7; i++) {
--                ppseudo_hdr->checksum ^= *pmsg++;
--                //DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum);
--            }
-+		if (!(tempword & FT1000_DB_DPRAM_TX)) {
-+			DEBUG("*** Provision Data Sent to DSP\n");
- 
--            TempShortBuf[0] = 0;
--            TempShortBuf[1] = htons (len);
--            memcpy(&TempShortBuf[2], ppseudo_hdr, len);
-+			/* Send provisioning data */
-+			ptr =
-+			    list_entry(info->prov_list.next, struct prov_record,
-+				       list);
-+			len = *(u16 *) ptr->pprov_data;
-+			len = htons(len);
-+			len += PSEUDOSZ;
- 
--            status = ft1000_write_dpram32 (dev, 0, (u8 *)&TempShortBuf[0], (unsigned short)(len+2));
--            status = ft1000_write_register (dev, FT1000_DB_DPRAM_TX, FT1000_REG_DOORBELL);
-+			pmsg = (u16 *) ptr->pprov_data;
-+			ppseudo_hdr = (struct pseudo_hdr *)pmsg;
-+			/* Insert slow queue sequence number */
-+			ppseudo_hdr->seq_num = info->squeseqnum++;
-+			ppseudo_hdr->portsrc = 0;
-+			/* Calculate new checksum */
-+			ppseudo_hdr->checksum = *pmsg++;
-+			//DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum);
-+			for (i = 1; i < 7; i++) {
-+				ppseudo_hdr->checksum ^= *pmsg++;
-+				//DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum);
-+			}
- 
--            list_del(&ptr->list);
--            kfree(ptr->pprov_data);
--            kfree(ptr);
--        }
--        msleep(10);
+-    ret = ft1000_read_dpram16(dev, FT1000_MAG_PH_LEN, (u8 *)&size, FT1000_MAG_PH_LEN_INDX);
+-    size = ntohs(size) + PSEUDOSZ;
+-    if (size > maxsz) {
+-        DEBUG("FT1000:ft1000_receive_cmd:Invalid command length = %d\n", size);
+-        return FALSE;
 -    }
-+			TempShortBuf[0] = 0;
-+			TempShortBuf[1] = htons(len);
-+			memcpy(&TempShortBuf[2], ppseudo_hdr, len);
-+
-+			status =
-+			    ft1000_write_dpram32(dev, 0,
-+						 (u8 *) &TempShortBuf[0],
-+						 (unsigned short)(len + 2));
-+			status =
-+			    ft1000_write_register(dev, FT1000_DB_DPRAM_TX,
-+						  FT1000_REG_DOORBELL);
-+
-+			list_del(&ptr->list);
-+			kfree(ptr->pprov_data);
-+			kfree(ptr);
+-    else {
+-        ppseudohdr = (u16 *)pbuffer;
+-        ft1000_write_register(dev, FT1000_DPRAM_MAG_RX_BASE, FT1000_REG_DPRAM_ADDR);
+-        ret = ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAH);
+-        //DEBUG("ft1000_hw:received data = 0x%x\n", *pbuffer);
+-        pbuffer++;
+-        ft1000_write_register(dev,  FT1000_DPRAM_MAG_RX_BASE+1, FT1000_REG_DPRAM_ADDR);
+-        for (i=0; i<=(size>>2); i++) {
+-            ret = ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAL);
+-            pbuffer++;
+-            ret = ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAH);
+-            pbuffer++;
+-        }
+-        //copy odd aligned word
+-        ret = ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAL);
+-        //DEBUG("ft1000_hw:received data = 0x%x\n", *pbuffer);
+-        pbuffer++;
+-        ret = ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAH);
+-        //DEBUG("ft1000_hw:received data = 0x%x\n", *pbuffer);
+-        pbuffer++;
+-        if (size & 0x0001) {
+-            //copy odd byte from fifo
+-            ret = ft1000_read_register(dev, &tempword, FT1000_REG_DPRAM_DATA);
+-            *pbuffer = ntohs(tempword);
+-        }
++	ret =
++	    ft1000_read_dpram16(dev, FT1000_MAG_PH_LEN, (u8 *) &size,
++				FT1000_MAG_PH_LEN_INDX);
++	size = ntohs(size) + PSEUDOSZ;
++	if (size > maxsz) {
++		DEBUG("FT1000:ft1000_receive_cmd:Invalid command length = %d\n",
++		      size);
++		return FALSE;
++	} else {
++		ppseudohdr = (u16 *) pbuffer;
++		ft1000_write_register(dev, FT1000_DPRAM_MAG_RX_BASE,
++				      FT1000_REG_DPRAM_ADDR);
++		ret =
++		    ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAH);
++		//DEBUG("ft1000_hw:received data = 0x%x\n", *pbuffer);
++		pbuffer++;
++		ft1000_write_register(dev, FT1000_DPRAM_MAG_RX_BASE + 1,
++				      FT1000_REG_DPRAM_ADDR);
++		for (i = 0; i <= (size >> 2); i++) {
++			ret =
++			    ft1000_read_register(dev, pbuffer,
++						 FT1000_REG_MAG_DPDATAL);
++			pbuffer++;
++			ret =
++			    ft1000_read_register(dev, pbuffer,
++						 FT1000_REG_MAG_DPDATAH);
++			pbuffer++;
 +		}
-+		msleep(10);
++		/* copy odd aligned word */
++		ret =
++		    ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAL);
++		//DEBUG("ft1000_hw:received data = 0x%x\n", *pbuffer);
++		pbuffer++;
++		ret =
++		    ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAH);
++		//DEBUG("ft1000_hw:received data = 0x%x\n", *pbuffer);
++		pbuffer++;
++		if (size & 0x0001) {
++			/* copy odd byte from fifo */
++			ret =
++			    ft1000_read_register(dev, &tempword,
++						 FT1000_REG_DPRAM_DATA);
++			*pbuffer = ntohs(tempword);
++		}
++		/* Check if pseudo header checksum is good
++		 * Calculate pseudo header checksum
++		 */
++		tempword = *ppseudohdr++;
++		for (i = 1; i < 7; i++)
++			tempword ^= *ppseudohdr++;
+ 
+-        // Check if pseudo header checksum is good
+-        // Calculate pseudo header checksum
+-        tempword = *ppseudohdr++;
+-        for (i=1; i<7; i++) {
+-            tempword ^= *ppseudohdr++;
+-        }
+-        if ( (tempword != *ppseudohdr) ) {
+-            return FALSE;
+-        }
++		if ((tempword != *ppseudohdr))
++			return FALSE;
+ 
+-        return TRUE;
+-    }
++		return TRUE;
 +	}
- 
--    DEBUG("DSP Provisioning List Entry finished\n");
-+	DEBUG("DSP Provisioning List Entry finished\n");
- 
--    msleep(100);
-+	msleep(100);
- 
--    info->fProvComplete = 1;
--    info->CardReady = 1;
--    return STATUS_SUCCESS;
-+	info->fProvComplete = 1;
-+	info->CardReady = 1;
- 
-+	return STATUS_SUCCESS;
  }
  
--
- static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
- 	struct ft1000_info *info = netdev_priv(dev->net);
-     u16 msgtype;
+ 
 -- 
 1.7.1
 
