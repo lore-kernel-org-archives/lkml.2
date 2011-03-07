@@ -1,147 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab1CGUo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 15:44:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62559 "EHLO mx1.redhat.com"
+	id S1752887Ab1CGUqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 15:46:16 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:39008 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1CGUoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 15:44:25 -0500
+	id S1750814Ab1CGUqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 15:46:15 -0500
+X-ASG-Debug-ID: 1299530774-03d6a54f601d9c0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D754411.5010508@fusionio.com>
+Date: Mon, 7 Mar 2011 21:46:09 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Snitzer <snitzer@redhat.com>, Shaohua Li <shli@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 05/10] block: remove per-queue plugging
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	 <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>	 <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>	 <20110303221353.GA10366@redhat.com>	 <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com>	 <20110304214359.GA18442@redhat.com> <4D715E8A.5070006@fusionio.com>	 <20110304222702.GB18921@redhat.com>  <4D72A302.6060008@fusionio.com>	 <1299493427.2308.11.camel@twins>  <4D753556.3020800@fusionio.com> <1299530500.2308.417.camel@twins>
+X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
+In-Reply-To: <1299530500.2308.417.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-X-Fcc: ~/Mail/linus
-Cc: Oleg Nesterov <oleg@redhat.com>, jan.kratochvil@redhat.com,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC] Proposal for ptrace improvements
-In-Reply-To: Tejun Heo's message of  Tuesday, 1 March 2011 16:24:57 +0100 <20110301152457.GE26074@htj.dyndns.org>
-References: <20110301152457.GE26074@htj.dyndns.org>
-X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
-Message-Id: <20110307204346.19557183C29@magilla.sf.frob.com>
-Date: Mon,  7 Mar 2011 12:43:46 -0800 (PST)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299530774
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57343
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've only skimmed through this whole thread, and I'm not going to try to
-respond to all the details.  I've lost interest in working in this area
-and I don't plan to keep up with all the details any more.  If you want
-to reach me about kernel subjects after March 11, you'll need to use the
-address <roland@hack.frob.com> as I won't be getting @redhat.com any more.
+On 2011-03-07 21:41, Peter Zijlstra wrote:
+> On Mon, 2011-03-07 at 20:43 +0100, Jens Axboe wrote:
+>> On 2011-03-07 11:23, Peter Zijlstra wrote:
+>>> On Sat, 2011-03-05 at 21:54 +0100, Jens Axboe wrote:
+>>>>
+>>>> Apparently so. Peter/Ingo, please shoot this one down in flames.
+>>>> Summary:
+>>>>
+>>>> - Need a way to trigger this flushing when a task is going to sleep
+>>>> - It's currently done right before calling deactivate_task(). We know
+>>>>   the task is going to sleep here, but it's also under the runqueue
+>>>>   lock. Not good.
+>>>> - In the new location, it's not completely clear to me whether we can
+>>>>   safely deref 'prev' or not. The usage of prev_state would seem to
+>>>>   indicate that we cannot, and as far as I can tell, prev could at this
+>>>>   point already potentially be running on another CPU.
+>>>>
+>>>> Help? Peter, we talked about this in Tokyo in September. Initial
+>>>> suggestion was to use preempt notifiers, which we can't because:
+>>>>
+>>>> - runqueue lock is also held
+>>>> - It's not unconditionally available, depends on config.
+>>>>
+>>>> diff --git a/kernel/sched.c b/kernel/sched.c
+>>>> index e806446..8581ad3 100644
+>>>> --- a/kernel/sched.c
+>>>> +++ b/kernel/sched.c
+>>>> @@ -2826,6 +2826,14 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+>>>>  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+>>>>         finish_lock_switch(rq, prev);
+>>>>  
+>>>> +       /*
+>>>> +        * If this task has IO plugged, make sure it
+>>>> +        * gets flushed out to the devices before we go
+>>>> +        * to sleep
+>>>> +        */
+>>>> +       if (prev_state != TASK_RUNNING)
+>>>> +               blk_flush_plug(prev);
+>>>> +
+>>>>         fire_sched_in_preempt_notifiers(current);
+>>>>         if (mm)
+>>>>                 mmdrop(mm);
+>>>> @@ -3973,14 +3981,6 @@ need_resched_nonpreemptible:
+>>>>                                 if (to_wakeup)
+>>>>                                         try_to_wake_up_local(to_wakeup);
+>>>>                         }
+>>>> -                       /*
+>>>> -                        * If this task has IO plugged, make sure it
+>>>> -                        * gets flushed out to the devices before we go
+>>>> -                        * to sleep
+>>>> -                        */
+>>>> -                       blk_flush_plug(prev);
+>>>> -                       BUG_ON(prev->plug && !list_empty(&prev->plug->list));
+>>>> -
+>>>>                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
+>>>>                 }
+>>>>                 switch_count = &prev->nvcsw;
+>>>>
+>>>
+>>> Right, so your new location is still under rq->lock for a number of
+>>> architectures (including x86). finish_lock_switch() doesn't actually
+>>> release the lock unless __ARCH_WANT_INTERRUPTS_ON_CTXSW ||
+>>> __ARCH_WANT_UNLOCKED_CTXSW (the former implies the latter since rq->lock
+>>> is IRQ-safe).
+>>
+>> Ah, thanks for that.
+>>
+>>> If you want a safe place to drop rq->lock (but keep in mind to keep IRQs
+>>> disabled there) and use prev, do something like the below. Both
+>>> pre_schedule() and idle_balance() can already drop the rq->lock do doing
+>>> it once more is quite all-right ;-)
+>>>
+>>> Note that once you drop rq->lock prev->state can change to TASK_RUNNING
+>>> again so don't re-check that.
+>>
+>> So that's a problem. If I end up flushing this structure that sits on
+>> the stack of the process, I cannot have it running on another CPU at
+>> that time.
+>>
+>> I need the process to be in such a state that it will not get scheduled
+>> on another CPU before this has completed.
+>>
+>> Is that even possible? 
+> 
+> Yes, if prev will be flipped back to TASK_RUNNING it will still stay on
+> that cpu, it will not migrate until the cpu that schedules it away (the
+> cpu you're on) will have flipped rq->curr, and that happens way after
+> this point. So you're good to go, just don't rely on ->state once you
+> release rq->lock.
 
-I'll just give you a few thoughts that I don't think have been raised.
-Then I'll leave it to Oleg and the rest of you to decide how to move
-forward.
+Great, that'll work for me! Your patch should work as-is, then. Thanks
+Peter.
 
-I've said before more than once what I think are the important
-principles about compatibility that ought to be maintained so as not to
-break existing applications such as older versions of GDB and strace
-(not to mention things less well-known and not publically visible, where
-code has come to depend on details of ptrace behavior and there may not
-even be anyone who really knows what they are depending on by now).
-When real-world applications have worked in practice, even if the
-behavior they were seeing was not pedantically reliable, they should not
-be broken.  Saner behavior can be provided when new requests or new
-options are used, without breaking any old usage.
+-- 
+Jens Axboe
 
-I see the appeal of the PTRACE_SEIZE idea, and I don't dismiss it
-entirely.  But I am quite skeptical that this is a good approach to be
-the sole new mechanism to replace PTRACE_ATTACH with something sane and
-predictable.  There are a few things that concern me.
-
-A problem long identified with ptrace is that there is no way to attach
-or detach without perturbing some of the user-visible behavior of the
-traced threads.  (There will always be some perturbation of the timing
-of the thread's activities, but I mean factors other than that alone.)
-Not overloading SIGSTOP is certainly an improvement.  But, PTRACE_SEIZE
-still has this problem in ways that the proposed PTRACE_ATTACH_NOSTOP
-does not.  For any passive tracing use (such as strace -p), you don't
-actually want the thing to stop right away, you only want it to stop
-when a new event happens (such as the next syscall entry/exit).  The
-PTRACE_SEIZE idea does not give the option of attaching without any
-perturbation when you don't care about "seizing".
-
-Anything that works via interruption can perturb the user-visible
-behavior of a system call already in progress.  It would be nice if all
-uninterruptible waits were truly reliably short and if all system call
-paths supported syscall restart thoroughly so that they could be
-interrupted with TIF_SIGPENDING and then restarted (a la SA_RESTART, or
-its equivalent when there is no actual signal to handle) with no change
-in semantics that userland can perceive (aside from timing).  But it
-just isn't so, and the way the kernel is organized makes it a difficult
-and open-ended task (perhaps an impossible one for some cases) to try to
-hunt down and fix every violation of that principle or to prevent
-introductions of new violations in the future.
-
-The PTRACE_INTERRUPT idea addresses this in two key ways.  Firstly, it's
-a separate request not unavoidably implied by attaching, so tracers have
-the option of simply not doing it if they don't want to perturb the
-tracee at all.  Second, the PTRACE_INTERRUPT idea came with a variant
-that's either a parallel request PTRACE_REPORT, or option flags in the
-one request, or whatever, that does not interrupt at all.  Instead, it
-uses the TIF_NOTIFY_RESUME mechanism (see set_notify_resume() in
-linux/tracehook.h) to arrest all user-mode activity without affecting
-kernel-mode activity at all (hence, the report/stop may not be immediate
-at all if the thread might block in the kernel, but it will immediately
-guarantee that no more user instructions will run before a report).
-These possibilities give an intelligent tracer the opportunity to
-control the user thread in the ways it needs to while avoiding
-perturbation of the user-visible semantics of kernel operations.
-
-The other areas of concern with PTRACE_SEIZE are its robustness and
-scalability.  The whole point of this request is that the one ptrace
-call does a full synchronization with the tracee, blocking until it has
-been interrupted and stopped.  This necessarily entails some ping-pong
-scheduling to interrupt the thread, yield to it, and wait for it to
-stop, and yield back to the tracer thread.  That's fine and useful to
-roll into one kernel operation when you want to synchronously arrest a
-single tracee thread.  But there are two problems there.
-
-For robustness, the PTRACE_SEIZE block itself must be interruptible.
-If the tracer thread will block arbitrarily waiting for the tracee
-thread to finish up its kernel activities and stop, then it would be
-irresponsible to make it impossible for the tracer thread to be
-interrupted from this block.  If it does get interrupted, then in what
-state does it leave the tracee?  Normal principles of interrupted and
-restartable calls would suggest that it leave the tracee as it was
-before, i.e. unattached.  Is that the plan?  If not, then would it
-leave the tracee attached but not "seized", which defeats the whole
-purpose of simple and predictable behavior for the tracer.  If the
-call is not interruptible at all, then that's a recipe for permanently
-wedged debugger threads and that's just a lousy thing to permit.  Of
-course the bare minimum would be to make it a noninterruptible but
-killable wait (TASK_KILLABLE), meaning all you can do is SIGKILL a
-wedged debugger.  That's better than nothing, but it's hardly good
-enough to allow one to write a robust debugger in any sensible fashion.
-
-Finally, there is the scalability concern.  This synchronization delay
-happens inside each single PTRACE_SEIZE call acting on one tracee
-thread.  When a debugger wants to attach to a process, it wants to
-attach to all the threads in that process, and there can be thousands.
-For that to work at all reasonably with nontrivial numbers of threads,
-the act of attaching to each individual thread should be asynchronous.
->From the debugger implementor's perspective, it's certainly even more
-desireable to have a single kernel call that will attach to all the
-threads in the process.  But that needs to be scalable as well, and
-it's not necessarily at all what the debugger wants that you stop each
-and every thread at attach time.
-
-None of this means at all that PTRACE_SEIZE is worthless.  But it is
-certainly inadequate to meet the essential needs that motivate adding
-new interfaces in this area.  The PTRACE_ATTACH_NOSTOP idea I
-suggested is far from complete for all the issues as well, but it is a
-more versatile building block than PTRACE_SEIZE.
-
-I don't intend to debate all these subjects.  As I said, I'm no longer
-going to work on this area of the kernel.  I'm glad Oleg and Tejun are
-putting effort into improving it, regardless of how the details shake
-out.  I've raised some issues that I think have been overlooked by the
-discussion so far.  I hope they'll now be considered more carefully in
-how the work moves forward.
-
-
-Thanks,
-Roland
