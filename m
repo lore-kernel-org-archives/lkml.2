@@ -1,46 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab1CGLdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 06:33:11 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33324 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab1CGLdI (ORCPT
+	id S1752061Ab1CGLeQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 06:34:16 -0500
+Received: from trinity.develer.com ([83.149.158.210]:43014 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab1CGLeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 06:33:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ZU03+hvehvZ/AZ4LjIHdgpnDpiU6KPRvNLiY9n0zR7WhMzmqixbS32KCGyRKBqsT9B
-         XhE3ceXASL3NdK43ZUAPSke1gKcKdbVrZubOG7k1IefJnusPSSuR4sCi9Ua7o86kRCxK
-         d8NH6dSJp/Ns6AT3wSEDh9J2lEvKbv/YNkHgY=
+	Mon, 7 Mar 2011 06:34:14 -0500
+Date: Mon, 7 Mar 2011 12:34:11 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
+Message-ID: <20110307113411.GA4485@linux.develer.com>
+References: <1298888105-3778-1-git-send-email-arighi@develer.com>
+ <20110228230114.GB20845@redhat.com>
+ <20110302132830.GB2061@linux.develer.com>
+ <20110302214705.GD2547@redhat.com>
+ <20110306155247.GA1687@linux.develer.com>
+ <4D7489BF.9030808@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <op.vryqz6qt3ri7v4@arend-laptop>
-References: <AANLkTinhThfS587rkX4y1UbJLQzQKEWGfrFArUVGD3Ew@mail.gmail.com>
-	<op.vryqz6qt3ri7v4@arend-laptop>
-Date: Mon, 7 Mar 2011 12:33:07 +0100
-Message-ID: <AANLkTinbrbkUO-ycAsX4cLEoM6avPeiYEZZ-zKtavfqq@mail.gmail.com>
-Subject: Re: brcm80211: the system freezes if booted with laptop wifi switch
- to OFF
-From: Francis Moreau <francis.moro@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Brett Rudley <brudley@broadcom.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7489BF.9030808@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 7, 2011 at 8:56 AM, Arend van Spriel <arend@broadcom.com> wrote:
->
-> Some time ago we (broadcom) submitted a patch for rfkill functionality (ie.
-> wifi switch) to staging-2.6 repository. I looked up the tagged version you
-> are referring to in the linux-next repository and it seems that the patch I
-> mentioned is not included in there.
+On Mon, Mar 07, 2011 at 03:31:11PM +0800, Gui Jianfeng wrote:
+> Andrea Righi wrote:
+> > On Wed, Mar 02, 2011 at 04:47:05PM -0500, Vivek Goyal wrote:
+> >> On Wed, Mar 02, 2011 at 02:28:30PM +0100, Andrea Righi wrote:
+> >>> On Mon, Feb 28, 2011 at 06:01:14PM -0500, Vivek Goyal wrote:
+> >>>> On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
+> >>>>> Overview
+> >>>>> ========
+> >>>>> Currently the blkio.throttle controller only support synchronous IO requests.
+> >>>>> This means that we always look at the current task to identify the "owner" of
+> >>>>> each IO request.
+> >>>>>
+> >>>>> However dirty pages in the page cache can be wrote to disk asynchronously by
+> >>>>> the per-bdi flusher kernel threads or by any other thread in the system,
+> >>>>> according to the writeback policy.
+> >>>>>
+> >>>>> For this reason the real writes to the underlying block devices may
+> >>>>> occur in a different IO context respect to the task that originally
+> >>>>> generated the dirty pages involved in the IO operation. This makes the
+> >>>>> tracking and throttling of writeback IO more complicate respect to the
+> >>>>> synchronous IO from the blkio controller's perspective.
+> >>>>>
+> >>>>> Proposed solution
+> >>>>> =================
+> >>>>> In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
+> >>>>> the problem of the buffered writes limitation by tracking the ownership of all
+> >>>>> the dirty pages in the system.
+> >>>>>
+> >>>>> This would allow to always identify the owner of each IO operation at the block
+> >>>>> layer and apply the appropriate throttling policy implemented by the
+> >>>>> blkio.throttle controller.
+> >>>>>
+> >>>>> This solution makes the blkio.throttle controller to work as expected also for
+> >>>>> writeback IO, but it does not resolve the problem of faster cgroups getting
+> >>>>> blocked by slower cgroups (that would expose a potential way to create DoS in
+> >>>>> the system).
+> >>>>>
+> >>>>> In fact, at the moment critical IO requests (that have dependency with other IO
+> >>>>> requests made by other cgroups) and non-critical requests are mixed together at
+> >>>>> the filesystem layer in a way that throttling a single write request may stop
+> >>>>> also other requests in the system, and at the block layer it's not possible to
+> >>>>> retrieve such informations to make the right decision.
+> >>>>>
+> >>>>> A simple solution to this problem could be to just limit the rate of async
+> >>>>> writes at the time a task is generating dirty pages in the page cache. The
+> >>>>> big advantage of this approach is that it does not need the overhead of
+> >>>>> tracking the ownership of the dirty pages, because in this way from the blkio
+> >>>>> controller perspective all the IO operations will happen from the process
+> >>>>> context: writes in memory and synchronous reads from the block device.
+> >>>>>
+> >>>>> The drawback of this approach is that the blkio.throttle controller becomes a
+> >>>>> little bit leaky, because with this solution the controller is still affected
+> >>>>> by the IO spikes during the writeback of dirty pages executed by the kernel
+> >>>>> threads.
+> >>>>>
+> >>>>> Probably an even better approach would be to introduce the tracking of the
+> >>>>> dirty page ownership to properly account the cost of each IO operation at the
+> >>>>> block layer and apply the throttling of async writes in memory only when IO
+> >>>>> limits are exceeded.
+> >>>> Andrea, I am curious to know more about it third option. Can you give more
+> >>>> details about accouting in block layer but throttling in memory. So say 
+> >>>> a process starts IO, then it will still be in throttle limits at block
+> >>>> layer (because no writeback has started), then the process will write
+> >>>> bunch of pages in cache. By the time throttle limits are crossed at
+> >>>> block layer, we already have lots of dirty data in page cache and
+> >>>> throttling process now is already late?
+> >>> Charging the cost of each IO operation at the block layer would allow
+> >>> tasks to write in memory at the maximum speed. Instead, with the 3rd
+> >>> approach, tasks are forced to write in memory at the rate defined by the
+> >>> blkio.throttle.write_*_device (or blkio.throttle.async.write_*_device).
+> >>>
+> >>> When we'll have the per-cgroup dirty memory accounting and limiting
+> >>> feature, with this approach each cgroup could write to its dirty memory
+> >>> quota at the maximum rate.
+> >> Ok, so this is option 3 which you have already implemented in this
+> >> patchset. 
+> >>
+> >> I guess then I am confused with option 2. Can you elaborate a little
+> >> more there.
+> > 
+> > With option 3, we can just limit the rate at which dirty pages are
+> > generated in memory. And this can be done introducing the files
+> > blkio.throttle.async.write_bps/iops_device.
+> > 
+> > At the moment in blk_throtl_bio() we charge the dispatched bytes/iops
+> > _and_ we check if the bio can be dispatched. These two distinct
+> > operations are now done by the same function.
+> > 
+> > With option 2, I'm proposing to split these two operations and place
+> > throtl_charge_io() at the block layer in __generic_make_request() and an
+> > equivalent of tg_may_dispatch_bio() (maybe a better name would be
+> > blk_is_throttled()) at the page cache layer, in
+> > balance_dirty_pages_ratelimited_nr():
+> > 
+> > A prototype for blk_is_throttled() could be the following:
+> > 
+> > bool blk_is_throttled(void);
+> > 
+> > This means in balance_dirty_pages_ratelimited_nr() we won't charge any
+> > bytes/iops to the cgroup, but we'll just check if the limits are
+> > exceeded. And stop it in that case, so that no more dirty pages can be
+> > generated by this cgroup.
+> > 
+> > Instead at the block layer WRITEs will be always dispatched in
+> > blk_throtl_bio() (tg_may_dispatch_bio() will always return true), but
+> > the throtl_charge_io() would charge the cost of the IO operation to the
+> > right cgroup.
+> > 
+> > To summarize:
+> > 
+> > __generic_make_request():
+> > 	blk_throtl_bio(q, &bio);
+> > 
+> > balance_dirty_pages_ratelimited_nr():
+> > 	if (blk_is_throttled())
+> > 		// add the current task into a per-group wait queue and
+> > 		// wake up once this cgroup meets its quota
+> > 
+> > What do you think?
+> 
+> Hi Andrea,
+> 
+> This means when you throttle writes, the reads issued by this task are also throttled?
+> 
+> Thanks,
+> Gui
 
-Would it be possible to submit it one more time ?
+Exactly, we're treating the throttling of READs and WRITEs in two
+different ways.
 
-Thanks
--- 
-Francis
+READs will be always throttled synchronously in the
+__generic_make_request() -> blk_throtl_bio() path.
+
+-Andrea
