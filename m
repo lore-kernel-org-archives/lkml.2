@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab1CGV7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:59:43 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:40576
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756246Ab1CGV7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:59:42 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: kys@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: [PATCH 00/16] Staging: hv: Consolidate driver and device abstractions 
-Date: Mon,  7 Mar 2011 14:09:04 -0800
-Message-Id: <1299535744-23047-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1756545Ab1CGWCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 17:02:00 -0500
+Received: from kroah.org ([198.145.64.141]:39312 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752815Ab1CGWB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 17:01:59 -0500
+Date: Mon, 7 Mar 2011 14:01:21 -0800
+From: Greg KH <greg@kroah.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Dan Carpenter <error27@gmail.com>,
+        Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/21] staging: ft1000: Fix coding style in
+ ft1000_usb_transmit_complete function.
+Message-ID: <20110307220121.GA28725@kroah.com>
+References: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
+ <1299486086-7325-12-git-send-email-marek.belisko@open-nandra.com>
+ <20110307155529.GV3416@bicker>
+ <AANLkTiknavmcagz63oFmqhgF5nV6xEMmLwU=i129LcVB@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTiknavmcagz63oFmqhgF5nV6xEMmLwU=i129LcVB@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hyper-V has maintained both its class independent driver and 
-device state in two independent data structures:
-Driver state: struct driver_context (vmbus.h) and struct hv_driver
-(vmbus_api.h)
-Device state: struct vm_device (vmbus.h) and struct hv_device (vmbus_api.h)
+On Mon, Mar 07, 2011 at 08:25:07PM +0100, Belisko Marek wrote:
+> On Mon, Mar 7, 2011 at 4:55 PM, Dan Carpenter <error27@gmail.com> wrote:
+> > On Mon, Mar 07, 2011 at 09:21:16AM +0100, Marek Belisko wrote:
+> >> -    if (urb->status)
+> >> -        printk("%s: TX status %d\n", ft1000dev->net->name, urb->status);
+> >> +     if (urb->status)
+> >> +             DEBUG("%s: TX status %d\n", ft1000dev->net->name, urb->status);
+> >>
+> >
+> > Why did you change the printk() to a DEBUG()?  That's a behavior change,
+> > and it should have been mentioned in the commit message.
+> Mea culpa. checkpatch.pl complain about no KERN_... prefix so just fix with
+> replace to DEBUG. Will return back to printk.
+> @Greg: should resend whole serie or just this patch?
 
-While sruct driver_context and struct vm_device embed generic 
-Linux abstractions of struct device_driver and struct device respectively; 
-the lower level hyperv abstraction: struct hv_driver and struct hv_device
-have maintained state needed to communicate with the host. This partitioning
-made sense at a point in time when it was not clear how much of 
-the hypervisor interaction would be open sourced. Given where we are
-today, there is no reason to keep this layering. This patchset 
-consolidates all the driver state into a single structure: 
-struct hv_driver while all the device state is consolidated into
-a single structure: struct hv_device. This consolidation simplifies
-the code while simultaneously getting rid of redundant state -
-for instance in the current code, both struct driver_context and
-struct hv_driver both have state to represent the class as well as
-instance id. We do this consolidation by moving state from higher
-level structures (struct driver_context and struct vm_device) to
-lower level structures (struct hv_driver and hv_device) respectively.
+Which ever you feel ok with.
 
-While it has not been a goal of this effort to cleanup structure and 
-variable names, this consolidation effort has resulted in some cleanup
-with regards to structure and variable names: a) Some of the badly
-named structures have been eliminated (struct driver_context etc.) 
-while hopefully all newly introduced names are acceptable.  
+thanks,
 
-Patches 1 through 11 deal with consolidating the device driver
-state while patches 12 through 16  deal with consolidating
-device state.
-
-
-Regards,
-
-K. Y
-
+greg k-h
