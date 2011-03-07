@@ -1,100 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1CGSHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 13:07:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34965 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab1CGSHH (ORCPT
+	id S1755007Ab1CGSIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 13:08:34 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:17931 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab1CGSHf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 13:07:07 -0500
-Date: Mon, 7 Mar 2011 19:07:00 +0100
-From: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-To: Nguyen Dinh-R00091 <R00091@freescale.com>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        Zhang Lily-R58066 <R58066@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
- WFI
-Message-ID: <20110307180700.GQ29521@pengutronix.de>
-References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
- <56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
- <87oc5puwg3.fsf@lebrac.rtp-net.org>
- <56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
- <87fwqyvrzf.fsf@lebrac.rtp-net.org>
- <56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
+	Mon, 7 Mar 2011 13:07:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=alPc3uJ2ZJhNHUsMv2kIraW2qOyhDUTvbmTx4WFXRbP72yPpGhW759CTsrgQ7FvMHY
+         8Mb+cL5ICAPhmO/x1Grw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 19:05:53 up 19 days,  6:03, 31 users,  load average: 5.33, 4.23,
- 2.80
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110307142828.GA9540@redhat.com>
+References: <4D6201A3.70301@cn.fujitsu.com> <4D64788F.6040408@cn.fujitsu.com>
+ <20110224181140.GE18494@redhat.com> <4D670C14.9040504@cn.fujitsu.com>
+ <20110227231618.GA1014@redhat.com> <20110228001544.GA2762@redhat.com>
+ <4D6E1556.5060905@cn.fujitsu.com> <4D706BC3.9090900@cn.fujitsu.com>
+ <20110304191458.GE5466@redhat.com> <4D71C718.3020800@cn.fujitsu.com> <20110307142828.GA9540@redhat.com>
+From: Justin TerAvest <teravest@google.com>
+Date: Mon, 7 Mar 2011 10:07:12 -0800
+Message-ID: <AANLkTike5qZCvidcMzAS2+mmTyQ1igv472+PYaRhJixL@mail.gmail.com>
+Subject: Re: [PATCH 0/6 v5.1] cfq-iosched: Introduce CFQ group hierarchical
+ scheduling and "use_hierarchy" interface
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        Chad Talbott <ctalbott@google.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 04:35:48PM +0000, Nguyen Dinh-R00091 wrote:
-> Hi Arnaud,
-> 
-> 
-> >-----Original Message-----
-> >From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-
-> >bounces@lists.infradead.org] On Behalf Of Arnaud Patard
-> >Sent: Monday, March 07, 2011 10:02 AM
-> >To: Nguyen Dinh-R00091
-> >Cc: linux@arm.linux.org.uk; s.hauer@pengutronix.de; linux-kernel@vger.kernel.org; Vaidyanathan
-> >Ranjani-RA5478; u.kleine-koenig@pengutronix.de; Zhang Lily-R58066; linux-arm-
-> >kernel@lists.infradead.org
-> >Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
-> >
-> >Nguyen Dinh-R00091 <R00091@freescale.com> writes:
-> >
-> >> Hi Arnaud,
-> >
-> >Hi,
-> >>
-> >> Just to verify that you are testing on an MX51-Babbage board? Here's my log:
-> >
-> >I never said I was testing on babbage. The reason is because I'm using a
-> >efika smartbook and not a babbage.
-> >
-> >>
-> >> root@freescale ~$ uname -a
-> >> Linux freescale 2.6.38-rc1+ #93 Fri Mar 4 17:18:15 CST 2011 armv7l GNU/Linux
-> >
-> >2.6.38-rc1+ ? which tree are you using ? The for-next branch of Sascha
-> >Hauer's tree is at least 2.6.38-rc5 so you're trying to merge something
-> >without even testing it on the current tree. Can you please test suspend
-> >with current imx for-next tree (with no other patches than theses 2
-> >patches if possible), in order to make sure that it's still working with it ?
-> >
-> 
-> The current imx for-next tree is not booting on my Babbage board. Is
-> it okay for you with your HW. I'll have to debug the booting part
-> first.
+On Mon, Mar 7, 2011 at 6:28 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Sat, Mar 05, 2011 at 01:16:08PM +0800, Gui Jianfeng wrote:
+>
+> [..]
+>> >> This bug seems being introduced in commmit 763414b in for-next branch when
+>> >> merging for-2.6.39/core branch.
+>> >> Would you apply the above patch?
+>> >>
+>> >> Vivek, can you try the patchset again with this fix? It works fine for me now.
+>> >
+>> > Gui,
+>> >
+>> > Ok, I ran iostest with this fix and it seems to have worked. I need to run
+>> > it for some more time. And I also need to spend more time reviewing your
+>> > patchset. There are so many details to it. Soon I will spare some time
+>> > to review it more and also test it bit more.
+>>
+>> Vivek,
+>>
+>> Ok, thanks.
+>>
+>> >
+>> > Of the top of my head I have one concern.
+>> >
+>> > - How to map iopriority to weights. I am thinking that currently weight
+>> >   range is 100-1000. If we decide to extend the range in current scheme,
+>> >   it will change the ioprio entity weight also and effectively the
+>> >   service differentiation between ioprio level will change. I am
+>> >   wondering if this is a concern and how cpu scheduler has managed it
+>>
+>> Isn't it enought for ten times of weight difference? The old ioprio scheme
+>> has only 4.5 times service difference. So I think we don't need to extend
+>> the range for the time being.
+>
+> Well, never say never. I think google guys are already using minimum
+> weight of 10. So don't rule it out.
 
-Probably because other than kconfig states i.MX51 and i.MX53 cannot be
-compiled in one kernel. the for-next branch boots fine on my babbage.
+Yes, we're using a minimum weight of 10. We still see good isolation with
+the minimum that low.
 
-Sascha
+Thanks,
+Justin
 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>
+> Secondly, because we might not idle all the time the effective service
+> differentiation might be much less than a factor of 10. In that case
+> to get effective 10, one might have to go for wider range of weights.
+>
+> Thanks
+> Vivek
+>
