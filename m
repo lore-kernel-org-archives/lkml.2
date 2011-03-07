@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab1CGQ7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:59:24 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58633 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594Ab1CGQ7W (ORCPT
+	id S1754874Ab1CGRAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 12:00:41 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39201 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab1CGRAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:59:22 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>
-Subject: Re: [RFC] a couple of i_nlink fixes in btrfs
-In-reply-to: <20110304171353.GU22723@ZenIV.linux.org.uk>
-References: <20110304171353.GU22723@ZenIV.linux.org.uk>
-Date: Mon, 07 Mar 2011 11:58:13 -0500
-Message-Id: <1299517070-sup-1687@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D750EE7.00D9,ss=1,fgs=0
+	Mon, 7 Mar 2011 12:00:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=mAxlItpav6z634RFipORwDxoQCWXOvlPQlz/1fD4YJr3HTK9BzIGBrNJsxl68bWR76
+         GrXv+AGKU4Fne6VTT1xykktCdS2O6xjZfcayqqRj2NarH8S3oYfG2PGTcF/ivY0mp0ko
+         VtqANdSMqubmHptoNxMV1QI7opVkX3ouWXPak=
+Message-ID: <4D750F32.5050106@gmail.com>
+Date: Mon, 07 Mar 2011 18:00:34 +0100
+From: roel <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drm: index i shadowed in 2nd loop
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Al Viro's message of 2011-03-04 12:13:53 -0500:
->     a) rename() plays with i_nlink of old_inode; bad, since it's not
-> locked.  I'd add a variant of btrfs_unlink_inode() that would leave
-> btrfs_drop_nlink()/btrfs_update_inode() to callers and use it instead.
->     b) btrfs_link() doesn't check for i_nlink overflows.  I don't
-> know if there's anything preventing that many links to a file on btrfs,
-> but if there is, it's at least worth a comment in there...
-> 
->     Please, review; patches in followups or in #btrfs in vfs-2.6.git
+Index i was already used in thhe first loop
 
-Thanks, these both look good but I'll test here as well.  Are you
-planning on pushing for .38?
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ drivers/gpu/drm/drm_fb_helper.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
--chris
+The original was wrong, isn't it?
+
+diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+index 6977a1c..f73ef43 100644
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -672,7 +672,7 @@ int drm_fb_helper_setcmap(struct fb_cmap *cmap, struct fb_info *info)
+ 	struct drm_crtc_helper_funcs *crtc_funcs;
+ 	u16 *red, *green, *blue, *transp;
+ 	struct drm_crtc *crtc;
+-	int i, rc = 0;
++	int i, j, rc = 0;
+ 	int start;
+ 
+ 	for (i = 0; i < fb_helper->crtc_count; i++) {
+@@ -685,7 +685,7 @@ int drm_fb_helper_setcmap(struct fb_cmap *cmap, struct fb_info *info)
+ 		transp = cmap->transp;
+ 		start = cmap->start;
+ 
+-		for (i = 0; i < cmap->len; i++) {
++		for (j = 0; j < cmap->len; j++) {
+ 			u16 hred, hgreen, hblue, htransp = 0xffff;
+ 
+ 			hred = *red++;
