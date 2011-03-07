@@ -1,285 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab1CGXWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 18:22:35 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36922 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab1CGXWd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 18:22:33 -0500
-Subject: Re: [RFC 12/12] iscsi-target: Add Makefile/Kconfig and update TCM
-	top level
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-In-Reply-To: <1299258022.7041.64.camel@mulgrave.site>
-References: <1299036841-23677-1-git-send-email-nab@linux-iscsi.org>
-	 <1299036841-23677-13-git-send-email-nab@linux-iscsi.org>
-	 <20110301223251.11c95eed.rdunlap@xenotime.net>
-	 <1299101531.5401.313.camel@haakon2.linux-iscsi.org>
-	 <20110303141928.GA25256@infradead.org>
-	 <1299185905.5401.405.camel@haakon2.linux-iscsi.org>
-	 <1299258022.7041.64.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Mon, 07 Mar 2011 15:15:47 -0800
-Message-Id: <1299539747.19683.333.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1756713Ab1CGXY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:24:27 -0500
+Received: from kroah.org ([198.145.64.141]:52287 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755982Ab1CGXYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 18:24:24 -0500
+Date: Mon, 7 Mar 2011 15:24:04 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.33
+Message-ID: <20110307232404.GA24927@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-03-04 at 11:00 -0600, James Bottomley wrote:
-> On Thu, 2011-03-03 at 12:58 -0800, Nicholas A. Bellinger wrote:
-> > On Thu, 2011-03-03 at 09:19 -0500, Christoph Hellwig wrote:
-> > > On Wed, Mar 02, 2011 at 01:32:11PM -0800, Nicholas A. Bellinger wrote:
-> > > > The kernel code itself that is specific to using the SSE v4.2
-> > > > instruction for CRC32C offload are using #ifdef CONFIG_X86 stubs in
-> > > > iscsi_target_login.c:iscsi_login_setup_crypto(), and !CONFIG_X86 will
-> > > > default to using the unoptimized 1x8 slicing soft CRC32C code.  This
-> > > > particular piece of logic has been tested on powerpc and arm and is
-> > > > funcitoning as expected from the kernel level using the arch independent
-> > > > soft code.
-> > > 
-> > > I don't think you need that code at all.  The crypto code is structured
-> > > to prefer the optimized implementation if it is present.  Just stripping
-> > > the x86-specific code out and always requesting the plain crc32c
-> > > algorithm should give you the optimized one if it is present on your
-> > > system.
-> > > 
-> > > Please give it a try.
-> > > 
-> > 
-> > This is what I originally thought as well, but this ended up not being
-> > the case when the logic was originally coded up.   I just tried again
-> > with .38-rc7 on a 5500 series machine and simply stubbing out the
-> > CONFIG_X86 part from iscsi_login_setup_crypto() and calling:
-> > 
-> >    crypto_alloc_hash("crc32c", 0, CRYPTO_ALG_ASYNC)
-> > 
-> > does not automatically load and use crc32c_intel.ko when only requesting
-> > plain crc32c.
-> 
-> It sounds like there might be a bug in the crypto layer, so the Linux
-> way is to make it work as intended.
-> 
-> It's absolutely not acceptable just to pull other layer workarounds into
-> drivers.
-> 
-> > The reason for the extra crypto_alloc_hash("crc32c-intel", ...) call in
-> > iscsi_login_setup_crypto() is to load crc32c_intel.ko on-demand for
-> > cpu_has_xmm4_2 capable machines.
-> > 
-> > I should mention this is with the following .config:
-> > 
-> > CONFIG_CRYPTO_CRC32C=y
-> > CONFIG_CRYPTO_CRC32C_INTEL=m
-> > 
-> > This would seem to indicate that CRC32C_INTEL needs to be compiled in
-> > (or at least manually loaded) for libcypto to use the optimized
-> > instructions when the plain crc32c is called, correct..?
-> 
-> That sounds right.  There's probably not an autoload for this on
-> recognising sse instructions.
-> 
+I'm announcing the release of the 2.6.32.33 kernel.
 
-I have been thinking about this some more, and modifying libcrypto to be
-aware of optimized offload methods for hardware specific modules that it
-should load does sound useful, but it seem like overkill to me for only
-this particular case.
+All users of the 2.6.32 kernel series must upgrade.
 
-What about the following to simply call request_module("crc32c_intel")
-at module_init() time and top the extra iscsi_login_setup_crypto()
-code..?
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.32.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=summary
 
-Thanks,
+thanks,
 
---nab
+greg k-h
 
-[PATCH] iscsi-target: Call request_module("crc32c_intel") during module_init
+------------
 
-This patch adds a call during module_init() -> iscsi_target_register_configfs()
-to request the loading of crc32c_intel.ko to allow libcrypto to properly use
-the optimized offload where available.
+ Makefile                             |    2 -
+ arch/x86/include/asm/smpboot_hooks.h |    2 -
+ drivers/gpu/drm/drm_irq.c            |    3 +-
+ drivers/hid/hid-core.c               |    1 
+ drivers/hid/hid-cypress.c            |    2 +
+ drivers/hid/hid-ids.h                |    1 
+ drivers/mfd/ucb1x00-ts.c             |   12 ++++++--
+ drivers/net/e1000e/netdev.c          |    3 +-
+ drivers/net/netxen/netxen_nic_hw.c   |    3 ++
+ drivers/net/r8169.c                  |    6 ++++
+ drivers/net/wireless/p54/p54usb.c    |    1 
+ drivers/usb/misc/iowarrior.c         |    2 -
+ drivers/virtio/virtio_pci.c          |    1 
+ fs/cifs/cifsproto.h                  |    2 -
+ fs/cifs/cifssmb.c                    |    4 ++
+ fs/cifs/file.c                       |   17 ++++++-----
+ fs/ext2/namei.c                      |    9 +-----
+ fs/fuse/file.c                       |   52 ++++++++++++++++++++++++++++++-----
+ fs/fuse/fuse_i.h                     |    6 +++-
+ fs/ocfs2/refcounttree.c              |    7 +++-
+ include/drm/drmP.h                   |    2 -
+ include/net/sctp/command.h           |    1 
+ kernel/time/tick-broadcast.c         |   10 ++++++
+ kernel/time/tick-common.c            |    6 +++-
+ kernel/time/tick-internal.h          |    3 ++
+ net/dccp/input.c                     |    7 ++--
+ net/ipv4/devinet.c                   |   30 +++++++++++++-------
+ net/sctp/sm_make_chunk.c             |   15 ----------
+ net/sctp/sm_sideeffect.c             |   26 +++++++++++++++++
+ net/sctp/sm_statefuns.c              |    8 ++++-
+ 30 files changed, 177 insertions(+), 67 deletions(-)
 
-It also removes the extra crypto_alloc_hash("crc32c-intel", ...) calls
-from iscsi_login_setup_crypto() and removes the unnecessary TPG attribute
-crc32c_x86_offload for control this offload from configfs.
+Amit Kumar Salecha (1):
+      netxen: fix set mac addr
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/lio-target/iscsi_target_configfs.c |   18 +++++++----
- drivers/target/lio-target/iscsi_target_core.h     |    4 --
- drivers/target/lio-target/iscsi_target_login.c    |   34 ++-------------------
- drivers/target/lio-target/iscsi_target_tpg.c      |   19 -----------
- drivers/target/lio-target/iscsi_target_tpg.h      |    1 -
- 5 files changed, 15 insertions(+), 61 deletions(-)
+Bruce Allan (1):
+      e1000e: disable broken PHY wakeup for ICH10 LOMs, use MAC wakeup instead
 
-diff --git a/drivers/target/lio-target/iscsi_target_configfs.c b/drivers/target/lio-target/iscsi_target_configfs.c
-index 76ee4fc..7ba169a 100644
---- a/drivers/target/lio-target/iscsi_target_configfs.c
-+++ b/drivers/target/lio-target/iscsi_target_configfs.c
-@@ -927,11 +927,6 @@ TPG_ATTR(demo_mode_write_protect, S_IRUGO | S_IWUSR);
-  */
- DEF_TPG_ATTRIB(prod_mode_write_protect);
- TPG_ATTR(prod_mode_write_protect, S_IRUGO | S_IWUSR);
--/*
-- * Define iscsi_tpg_attrib_s_crc32c_x86_offload
-- */
--DEF_TPG_ATTRIB(crc32c_x86_offload);
--TPG_ATTR(crc32c_x86_offload, S_IRUGO | S_IWUSR);
+Christian Lamparter (1):
+      p54usb: add Senao NUB-350 usbid
 
- static struct configfs_attribute *lio_target_tpg_attrib_attrs[] = {
-        &iscsi_tpg_attrib_authentication.attr,
-@@ -942,7 +937,6 @@ static struct configfs_attribute *lio_target_tpg_attrib_attrs[] = {
-        &iscsi_tpg_attrib_cache_dynamic_acls.attr,
-        &iscsi_tpg_attrib_demo_mode_write_protect.attr,
-        &iscsi_tpg_attrib_prod_mode_write_protect.attr,
--       &iscsi_tpg_attrib_crc32c_x86_offload.attr,
-        NULL,
- };
+Dave Airlie (1):
+      drm: fix unsigned vs signed comparison issue in modeset ctl ioctl.
 
-@@ -1525,6 +1519,18 @@ int iscsi_target_register_configfs(void)
-        lio_target_fabric_configfs = fabric;
-        printk(KERN_INFO "LIO_TARGET[0] - Set fabric ->"
-                        " lio_target_fabric_configfs\n");
-+#ifdef CONFIG_X86
-+       /*
-+        * For cpu_has_xmm4_2 go ahead and load crc32c_intel.ko in order for
-+        * iscsi_login_setup_crypto() -> crypto_alloc_hash("crc32c", ...) to
-+        * use the offload when available from libcrypto..
-+        */
-+       if (cpu_has_xmm4_2) {
-+               int rc = request_module("crc32c_intel");
-+               if (rc < 0)
-+                       printk(KERN_ERR "Unable to load crc32c_intel.ko\n");
-+       }
-+#endif
-        return 0;
- }
+Don Zickus (1):
+      x86: Use u32 instead of long to set reset vector back to 0
 
-diff --git a/drivers/target/lio-target/iscsi_target_core.h b/drivers/target/lio-target/iscsi_target_core.h
-index b8e87a3..93632f3 100644
---- a/drivers/target/lio-target/iscsi_target_core.h
-+++ b/drivers/target/lio-target/iscsi_target_core.h
-@@ -83,8 +83,6 @@
- #define TA_DEMO_MODE_WRITE_PROTECT     1
- /* Disabled by default in production mode w/ explict ACLs */
- #define TA_PROD_MODE_WRITE_PROTECT     0
--/* Enabled by default with x86 supporting SSE v4.2 */
--#define TA_CRC32C_X86_OFFLOAD          1
- #define TA_CACHE_CORE_NPS              0
+Gerrit Renker (1):
+      dccp: fix oops on Reset after close
 
- /* struct iscsi_data_count->type */
-@@ -781,8 +779,6 @@ struct iscsi_tpg_attrib {
-        u32                     default_cmdsn_depth;
-        u32                     demo_mode_write_protect;
-        u32                     prod_mode_write_protect;
--       /* Used to signal libcrypto crc32-intel offload instruction usage */
--       u32                     crc32c_x86_offload;
-        u32                     cache_core_nps;
-        struct iscsi_portal_group *tpg;
- }  ____cacheline_aligned;
-diff --git a/drivers/target/lio-target/iscsi_target_login.c b/drivers/target/lio-target/iscsi_target_login.c
-index 35d4765..0f098d3 100644
---- a/drivers/target/lio-target/iscsi_target_login.c
-+++ b/drivers/target/lio-target/iscsi_target_login.c
-@@ -95,38 +95,10 @@ static int iscsi_login_init_conn(struct iscsi_conn *conn)
- int iscsi_login_setup_crypto(struct iscsi_conn *conn)
- {
-        struct iscsi_portal_group *tpg = conn->tpg;
--#ifdef CONFIG_X86
-        /*
--        * Check for the Nehalem optimized crc32c-intel instructions
--        * This is only currently available while running on bare-metal,
--        * and is not yet available with QEMU-KVM guests.
--        */
--       if (cpu_has_xmm4_2 && ISCSI_TPG_ATTRIB(tpg)->crc32c_x86_offload) {
--               conn->conn_rx_hash.flags = 0;
--               conn->conn_rx_hash.tfm = crypto_alloc_hash("crc32c-intel", 0,
--                                               CRYPTO_ALG_ASYNC);
--               if (IS_ERR(conn->conn_rx_hash.tfm)) {
--                       printk(KERN_ERR "crypto_alloc_hash() failed for conn_rx_tfm\n");
--                       goto check_crc32c;
--               }
--
--               conn->conn_tx_hash.flags = 0;
--               conn->conn_tx_hash.tfm = crypto_alloc_hash("crc32c-intel", 0,
--                                               CRYPTO_ALG_ASYNC);
--               if (IS_ERR(conn->conn_tx_hash.tfm)) {   
--                       printk(KERN_ERR "crypto_alloc_hash() failed for conn_tx_tfm\n");
--                       crypto_free_hash(conn->conn_rx_hash.tfm);
--                       goto check_crc32c;
--               }
--
--               printk(KERN_INFO "LIO-Target[0]: Using Nehalem crc32c-intel"
--                                       " offload instructions\n");
--               return 0;
--       }
--check_crc32c:
--#endif /* CONFIG_X86 */
--       /*
--        * Setup slicing by 1x CRC32C algorithm for RX and TX libcrypto contexts
-+        * Setup slicing by CRC32C algorithm for RX and TX libcrypto contexts
-+        * which will default to crc32c_intel.ko for cpu_has_xmm4_2, or fallback
-+        * to software 1x8 byte slicing from crc32c.ko
-         */
-        conn->conn_rx_hash.flags = 0;
-        conn->conn_rx_hash.tfm = crypto_alloc_hash("crc32c", 0,
-diff --git a/drivers/target/lio-target/iscsi_target_tpg.c b/drivers/target/lio-target/iscsi_target_tpg.c
-index e851982..212d8c1 100644
---- a/drivers/target/lio-target/iscsi_target_tpg.c
-+++ b/drivers/target/lio-target/iscsi_target_tpg.c
-@@ -465,7 +465,6 @@ static void iscsi_set_default_tpg_attribs(struct iscsi_portal_group *tpg)
-        a->cache_dynamic_acls = TA_CACHE_DYNAMIC_ACLS;
-        a->demo_mode_write_protect = TA_DEMO_MODE_WRITE_PROTECT;
-        a->prod_mode_write_protect = TA_PROD_MODE_WRITE_PROTECT;
--       a->crc32c_x86_offload = TA_CRC32C_X86_OFFLOAD;
-        a->cache_core_nps = TA_CACHE_CORE_NPS;
- }
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.32
 
-@@ -1103,24 +1102,6 @@ int iscsi_ta_prod_mode_write_protect(
-        return 0;
- }
+Ian Campbell (1):
+      arp_notify: unconditionally send gratuitous ARP for NETDEV_NOTIFY_PEERS.
 
--int iscsi_ta_crc32c_x86_offload(
--       struct iscsi_portal_group *tpg,
--       u32 flag)
--{
--       struct iscsi_tpg_attrib *a = &tpg->tpg_attrib;
--
--       if ((flag != 0) && (flag != 1)) {
--               printk(KERN_ERR "Illegal value %d\n", flag);
--               return -EINVAL;
--       }
--
--       a->crc32c_x86_offload = flag;
--       printk(KERN_INFO "iSCSI_TPG[%hu] - CRC32C x86 Offload: %s\n",
--               tpg->tpgt, (a->crc32c_x86_offload) ? "ON" : "OFF");
--
--       return 0;
--}
--
- void iscsi_disable_tpgs(struct iscsi_tiqn *tiqn)
- {
-        struct iscsi_portal_group *tpg;
-diff --git a/drivers/target/lio-target/iscsi_target_tpg.h b/drivers/target/lio-target/iscsi_target_tpg.h
-index bcdfacb..2553707 100644
---- a/drivers/target/lio-target/iscsi_target_tpg.h
-+++ b/drivers/target/lio-target/iscsi_target_tpg.h
-@@ -53,7 +53,6 @@ extern int iscsi_ta_default_cmdsn_depth(struct iscsi_portal_group *, u32);
- extern int iscsi_ta_cache_dynamic_acls(struct iscsi_portal_group *, u32);
- extern int iscsi_ta_demo_mode_write_protect(struct iscsi_portal_group *, u32);
- extern int iscsi_ta_prod_mode_write_protect(struct iscsi_portal_group *, u32);
--extern int iscsi_ta_crc32c_x86_offload(struct iscsi_portal_group *, u32);
- extern void iscsi_disable_tpgs(struct iscsi_tiqn *);
- extern void iscsi_disable_all_tpgs(void);
- extern void iscsi_remove_tpgs(struct iscsi_tiqn *);
--- 
-1.6.2.2
+Jiri Kosina (1):
+      HID: add support for Acan FG-8100 barcode reader
 
+Jochen Friedrich (1):
+      mfd: Fix NULL pointer due to non-initialized ucb1x00-ts absinfo
+
+Josh Hunt (1):
+      ext2: Fix link count corruption under heavy link+rename load
+
+Kees Cook (1):
+      usb: iowarrior: don't trust report_size for buffer size
+
+Michael S. Tsirkin (1):
+      virtio: set pci bus master enable bit
+
+Miklos Szeredi (1):
+      fuse: fix hang of single threaded fuseblk filesystem
+
+Pavel Shilovsky (1):
+      CIFS: Fix oplock break handling (try #2)
+
+Stanislaw Gruszka (1):
+      r8169: disable ASPM
+
+Thomas Gleixner (1):
+      clockevents: Prevent oneshot mode when broadcast device is periodic
+
+Tristan Ye (1):
+      Ocfs2/refcounttree: Fix a bug for refcounttree to writeback clusters in a right number.
+
+Vlad Yasevich (1):
+      sctp: Fix oops when sending queued ASCONF chunks
 
