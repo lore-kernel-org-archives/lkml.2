@@ -1,152 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab1CGO7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 09:59:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42979 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751221Ab1CGO7e (ORCPT
+	id S1753745Ab1CGPCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 10:02:15 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:23160 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab1CGPCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 09:59:34 -0500
-Date: Mon, 7 Mar 2011 14:59:31 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
- ADAU1701 SigmaDSP
-Message-ID: <20110307145931.GK13471@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com>
- <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
- <20110307121502.GG13471@opensource.wolfsonmicro.com>
- <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
+	Mon, 7 Mar 2011 10:02:14 -0500
+X-IronPort-AV: E=Sophos;i="4.62,277,1297036800"; 
+   d="scan'208";a="4652616"
+Date: Mon, 7 Mar 2011 15:01:56 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Allen Kay <allen.m.kay@intel.com>
+Subject: Re: [RFC PATCH] set current_state to D0 in register_slot
+In-Reply-To: <20110304104251.45b257c4@jbarnes-desktop>
+Message-ID: <alpine.DEB.2.00.1103071500070.2968@kaball-desktop>
+References: <alpine.DEB.2.00.1102281605130.2917@kaball-desktop> <20110304104251.45b257c4@jbarnes-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 07:29:12AM -0500, Mike Frysinger wrote:
-> On Mon, Mar 7, 2011 at 07:15, Mark Brown wrote:
+On Fri, 4 Mar 2011, Jesse Barnes wrote:
+> On Mon, 28 Feb 2011 16:20:11 +0000
+> Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> 
+> > Hi all,
+> > if a device doesn't support power management (pm_cap == 0) but it is
+> > acpi_pci_power_manageable() because there is a _PS0 method declared for
+> > it and _EJ0 is also declared for the slot then nobody is going to set
+> > current_state = PCI_D0 for this device.  This is what I think it is
+> > happening:
+> > 
+> > 
+> > pci_enable_device
+> >     |
+> > __pci_enable_device_flags
+> > /* here we do not set current_state because !pm_cap */
+> >     |
+> > do_pci_enable_device
+> >     |
+> > pci_set_power_state
+> >     |
+> > __pci_start_power_transition
+> >     |
+> > pci_platform_power_transition
+> > /* platform_pci_power_manageable() calls acpi_pci_power_manageable that
+> >  * returns true */
+> >     |
+> > platform_pci_set_power_state
+> > /* acpi_pci_set_power_state gets called and does nothing because the
+> >  * acpi device has _EJ0, see the comment "If the ACPI device has _EJ0,
+> >  * ignore the device" */
+> > 
+> > 
+> > at this point if we refer to the commit message that introduced the
+> > comment above (10b3dcae0f275e2546e55303d64ddbb58cec7599), it is up to
+> > the hotplug driver to set the state to D0.
+> > However AFAICT the pci hotplug driver never does, in fact
+> > drivers/pci/hotplug/acpiphp_glue.c:register_slot sets the slot flags to
+> > (SLOT_ENABLED | SLOT_POWEREDON) but it does not set the pci device
+> > current state to PCI_D0.
+> > 
+> > So my proposed fix is also to set current_state = PCI_D0 in
+> > register_slot.
+> > Comments are very welcome.
+> > 
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> Yeah, looks fine.  ACPIPHP is happy for the attention. :)
 
-> > It'd seem easier to just merge the two patches together rather than
-> > trying to deal with cross-tree issues.
-
-> that sounds like a terrible idea.  they're logically different
-> changesets and we shouldnt be squashing them together simply to work
-> around problems with process workflows.
-
-I'm not saying squash the changes, I'm saying apply them both via the
-same tree.  From what you're saying the DSP code is used exclusively by
-audio devices anyway...
-
-> > Right, and this isn't a particularly unusual requirement especially if
-> > the driver isn't going to have any ability to interact with the DSP (at
-> > which point it's just coefficient data, the fact that it's a DSP program
-> > is uninteresting).  The problem is that this isn't a great interface for
-> > doing that.
-
-> i dont see suggestions of a better interface anywhere ...
-
-It currently isn't and I'd encourage you to contribute to the discussion
-that's been going on on this, or even better help out with code.  There
-was some discussion on the list recently (in the past month IIRC).
-
-Whatever we do is going to require some additional APIs in alsa-lib, I'd
-expect.  The key requirements I'm aware of are that we be able to
-support:
-
- - Discoverable userspace interface.
- - Very large data sizes (megabytes have been mentioned).
- - Adding and removing parameter sets at runtime (for in system
-   callibration).
-
-Given the number of people looking at this from various angles I'd
-expect to see some sort of progress this year (probably in the next
-quater or so), but obviously no guarantees.
-
-> wrt pm, that's a trivial programming issue that would be resolved in
-> the driver.  userspace need not care.
-
-That's the ideal, I mentioned this as several of my other review
-comments concerned issues with power management in the driver -
-addressing those will probably require that the integration occur.
-
-> wrt stream flows, all the customers we've talked to are fine with this
-> -- having stream control be an application issue.  their application
-> is driving the codec directly and knows when it needs to change the
-> firmware, so it pauses its alsa flow, loads the new firmware, and
-> moves on.
-
-I'd expect that the driver would at least error out if the user tried to
-do the wrong thing here, like I say currently the firmware code is just
-not joined up with anything else at all.
-
-> that said, i dont see anything in asoc today to address this, so if
-> we're simply missing it, please highlight it for us.
-
-There's handling of this in a bunch of drivers for things like EQ
-coefficients - the missing bit is a way of telling the driver that there
-are new coefficient sets available at runtime, at the minute everything
-that supports this enumerates the available coefficient sets in platform
-data and presents the user with an enumeration.
-
-> > It's also not an interface which offers any kind of discoverability or
-> > enumerability, meaning that it's not suitable for integration into
-> > application layer code such as the use case manager.  Applications need
-> > to be hard coded to know that a particular magic sysfs file needs to be
-> > poked.  This would be a big step backwards in terms of the ability to
-> > run off the shelf application software.
-
-> i dont see the issue here.  the firmware is *optional* and does not
-> impair basic audio output.  further, the firmware is fully
-
-If the firmware is totally optional the driver needs updating -
-currently at startup it does:
-
-| +       /* Load default program */
-| +       ret = adau1701_setprogram(codec);
-| +       if (ret < 0) {
-| +               printk(KERN_ERR "Loading program data failed\n");
-| +               goto error;
-| +       }
-
-which will make the firmware mandatory.  In any case, the interface
-issues are there if the firmware is optional or not.
-
-> written/compiled/maintained by the end customer, just like the
-> application.  which means there is no "magic" here -- the end customer
-> is the wizard.
-
-> there is no "stock" firmware that ADI or anyone provides for any of
-> these SigmaDSP audio codecs.
-
-The question of where the DSP firmware (or coefficient data) comes from
-is orthogonal to the issue of runtime management of the data.  The issue
-is how the application layer can tell if there are multiple coefficient
-sets and change between them, either directly or via something like UCM.  
-Even if the system is using a custom application rather than an off the
-shelf distribution (which are becoming more and more common in embedded
-systems) there's no reason they shouldn't be able to rely on standard
-tools for managing their audio configurations.
-
-At present userspace can enumerate and change the runtime configuration
-the system offers via the ALSA APIs (and this will get even better once
-the media controller API starts being used).  This means that you can
-fairly easily write a userspace that'll run on pretty much any Linux
-audio hardware, adapting with pure configuration for which you can
-provide point and click tuning (realistically by allowing the user to
-configure via standard ALSA tools and offering a "save as use case" type
-interface).  If we start adding backdoors to drivers we're taking a step
-back from where we are currently by requiring that the application layer
-know magic stuff about individual systems in order to work with them.
-
-If this was an obscure system-specific feature it'd be much less of an
-issue but this is something which pretty much all modern CODECs can make
-use of.
+Great, thanks!
+Would you be OK with taking this patch in your tree?
+Or do you prefer me to send to it Linus myself?
