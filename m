@@ -1,382 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab1CGJdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 04:33:09 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:57901 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752370Ab1CGJdE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 04:33:04 -0500
-From: Daniel WILLERUD <daniel.willerud@stericsson.com>
-To: Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Date: Mon, 7 Mar 2011 10:06:05 +0100
-Subject: RE: [PATCH 2/5] mfd: reentrance and revamp ab8500 gpadc fetching
- interface
-Thread-Topic: [PATCH 2/5] mfd: reentrance and revamp ab8500 gpadc fetching
- interface
-Thread-Index: AcvbIo/an7GAnUS8QdK8yOTEtlAy5QBgl5yA
-Message-ID: <757395B8DE5A844B80F3F4BE9867DDB64FAF4FA284@EXDCVYMBSTM006.EQ1STM.local>
-References: <1299321973-6798-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1299321973-6798-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-puzzleid: {45AAE578-87E3-4842-A22D-717544F5F492}
-x-cr-hashedpuzzle: FOLV FnQ5 Jiuw Pn9F Tu3B V3sF V4Jx W3wP cM19 gXS5 i22M
- kO/X nprp p2yP so3D
- uBLO;4;bABlAGUALgBqAG8AbgBlAHMAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAbABpAG4AdQBzAC4AdwBhAGwAbABlAGkAagBAAGwAaQBuAGEAcgBvAC4AbwByAGcAOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcwBhAG0AZQBvAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0A;Sosha1_v1;7;{45AAE578-87E3-4842-A22D-717544F5F492};ZABhAG4AaQBlAGwALgB3AGkAbABsAGUAcgB1AGQAQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0A;Mon,
- 07 Mar 2011 09:06:06
- GMT;UgBFADoAIABbAFAAQQBUAEMASAAgADIALwA1AF0AIABtAGYAZAA6ACAAcgBlAGUAbgB0AHIAYQBuAGMAZQAgAGEAbgBkACAAcgBlAHYAYQBtAHAAIABhAGIAOAA1ADAAMAAgAGcAcABhAGQAYwAgAGYAZQB0AGMAaABpAG4AZwAgAGkAbgB0AGUAcgBmAGEAYwBlAA==
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755442Ab1CGJdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 04:33:40 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:38951 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755370Ab1CGJdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 04:33:38 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19ozR4ADxVoWe5j9JW/KSRzWN5Tcyuzg0bZ5m+w6j
+	IaHqanBNuQoeLL
+Subject: Re: [patchlet] sched: fix rt throttle runtime borrowing
+From: Mike Galbraith <efault@gmx.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <AANLkTikOY2-_EAjYTBZG4Wb9HNHRxJ4Qcd+zbvbxzPbt@mail.gmail.com>
+References: <1299486101.14465.25.camel@marge.simson.net>
+	 <AANLkTikOY2-_EAjYTBZG4Wb9HNHRxJ4Qcd+zbvbxzPbt@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Mar 2011 10:33:34 +0100
+Message-ID: <1299490414.14465.74.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@Linus The ab8500-gpadc.h should be modified in this patch as well.
+On Mon, 2011-03-07 at 17:11 +0800, Yong Zhang wrote:
+> On Mon, Mar 7, 2011 at 4:21 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > Greetings,
+> >
+> > The RT throttle leaves a bit to be desired as a protection mechanism.
+> > With default settings, the thing won't save your bacon if you start a
+> > single hog as RT on SMP box, or if your normally sane app goes nuts.
+> >
+> > With the below, my box will limp along so I can kill the RT hog.  May
+> > not be the best solution, but works for me.. modulo bustage I haven't
+> > noticed yet of course.
+> >
+> > sched: fix rt throttle runtime borrowing
+> >
+> > If allowed to borrow up to rt_period, the throttle has no effect on an out
+> > of control RT task, allowing it to consume 100% CPU indefinitely, blocking
+> > system critical SCHED_NORMAL threads indefinitely.
+> 
+> Yep.
+> I think it's helpful.
 
-Clients ought to be aware of the gpadc struct and the get method, please add
-the following two lines to the ab8500-gpadc.h
+Well, it does prevent complete death, but you have to be pretty darn
+attentive to notice that the patient is still technically alive ;-)
 
-struct ab8500_gpadc;
-struct ab8500_gpadc *ab8500_gpadc_get(char *name);
+As such, turning borrowing off by default, and making borrowing up to
+within a micron of 100% CPU an opt-in feature likely makes more sense.
 
+	-Mike
 
-/Daniel Willerud
-
------Original Message-----
-From: Linus WALLEIJ 
-Sent: den 5 mars 2011 11:46
-To: Samuel Ortiz; linux-kernel@vger.kernel.org
-Cc: Lee Jones; Daniel WILLERUD; Linus Walleij
-Subject: [PATCH 2/5] mfd: reentrance and revamp ab8500 gpadc fetching interface
-
-From: Daniel Willerud <daniel.willerud@stericsson.com>
-
-This revamps the interface so that AB8500 GPADCs are fetched by
-name. Probed GPADCs are added to a list and this list is searched
-for a matching GPADC. This makes it possible to have multiple
-AB8500 GPADC instances instead of it being a singleton, and
-rids the need to keep a GPADC pointer around in the core AB8500
-MFD struct.
-
-Currently the match is made to the device name which is by default
-numbered from the device instance such as "ab8500-gpadc.0" but
-by using the .init_name field of the device a more intiutive
-naming for the GPADC blocks can be achieved if desired.
-
-Signed-off-by: Daniel Willerud <daniel.willerud@stericsson.com>
-[Match by name instead of taking the first GPADC]
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/ab8500-gpadc.c              |  115 +++++++++++++++++++------------
- include/linux/mfd/ab8500/ab8500-gpadc.h |    6 ++-
- 2 files changed, 75 insertions(+), 46 deletions(-)
-
-diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-index f60f71f4..178cbc5 100644
---- a/drivers/mfd/ab8500-gpadc.c
-+++ b/drivers/mfd/ab8500-gpadc.c
-@@ -3,6 +3,7 @@
-  *
-  * License Terms: GNU General Public License v2
-  * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ * Author: Daniel Willerud <daniel.willerud@stericsson.com>
-  */
- #include <linux/init.h>
- #include <linux/module.h>
-@@ -15,6 +16,7 @@
- #include <linux/regulator/consumer.h>
- #include <linux/err.h>
- #include <linux/slab.h>
-+#include <linux/list.h>
- #include <linux/mfd/ab8500.h>
- #include <linux/mfd/abx500.h>
- #include <linux/mfd/ab8500/ab8500-gpadc.h>
-@@ -48,21 +50,41 @@
- /**
-  * struct ab8500_gpadc - ab8500 GPADC device information
-  * @dev:			pointer to the struct device
-- * @parent:			pointer to the parent device structure ab8500
-+ * @node:			a list of AB8500 GPADCs, hence prepared for
-+				reentrance
-  * @ab8500_gpadc_complete:	pointer to the struct completion, to indicate
-  *				the completion of gpadc conversion
-  * @ab8500_gpadc_lock:		structure of type mutex
-  * @regu:			pointer to the struct regulator
-  * @irq:			interrupt number that is used by gpadc
-  */
--static struct ab8500_gpadc {
-+struct ab8500_gpadc {
- 	struct device *dev;
--	struct ab8500 *parent;
-+	struct list_head node;
- 	struct completion ab8500_gpadc_complete;
- 	struct mutex ab8500_gpadc_lock;
- 	struct regulator *regu;
- 	int irq;
--} *di;
-+};
-+
-+static LIST_HEAD(ab8500_gpadc_list);
-+
-+/**
-+ * ab8500_gpadc_get() - returns a reference to the primary AB8500 GPADC
-+ * (i.e. the first GPADC in the instance list)
-+ */
-+struct ab8500_gpadc *ab8500_gpadc_get(char *name)
-+{
-+	struct ab8500_gpadc *gpadc;
-+
-+	list_for_each_entry(gpadc, &ab8500_gpadc_list, node) {
-+		if (!strcmp(name, dev_name(gpadc->dev)))
-+		    return gpadc;
-+	}
-+
-+	return ERR_PTR(-ENOENT);
-+}
-+EXPORT_SYMBOL(ab8500_gpadc_get);
- 
- /**
-  * ab8500_gpadc_convert() - gpadc conversion
-@@ -72,24 +94,24 @@ static struct ab8500_gpadc {
-  * data. Thereafter calibration has to be made to obtain the
-  * data in the required quantity measurement.
-  */
--int ab8500_gpadc_convert(u8 input)
-+int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
- {
- 	int ret;
- 	u16 data = 0;
- 	int looplimit = 0;
- 	u8 val, low_data, high_data;
- 
--	if (!di)
-+	if (!gpadc)
- 		return -ENODEV;
- 
--	mutex_lock(&di->ab8500_gpadc_lock);
-+	mutex_lock(&gpadc->ab8500_gpadc_lock);
- 	/* Enable VTVout LDO this is required for GPADC */
--	regulator_enable(di->regu);
-+	regulator_enable(gpadc->regu);
- 
- 	/* Check if ADC is not busy, lock and proceed */
- 	do {
--		ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
--			AB8500_GPADC_STAT_REG, &val);
-+		ret = abx500_get_register_interruptible(gpadc->dev,
-+			AB8500_GPADC, AB8500_GPADC_STAT_REG, &val);
- 		if (ret < 0)
- 			goto out;
- 		if (!(val & GPADC_BUSY))
-@@ -97,75 +119,76 @@ int ab8500_gpadc_convert(u8 input)
- 		msleep(10);
- 	} while (++looplimit < 10);
- 	if (looplimit >= 10 && (val & GPADC_BUSY)) {
--		dev_err(di->dev, "gpadc_conversion: GPADC busy");
-+		dev_err(gpadc->dev, "gpadc_conversion: GPADC busy");
- 		ret = -EINVAL;
- 		goto out;
- 	}
- 
- 	/* Enable GPADC */
--	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
--		AB8500_GPADC_CTRL1_REG, EN_GPADC, EN_GPADC);
-+	ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
-+		AB8500_GPADC, AB8500_GPADC_CTRL1_REG, EN_GPADC, EN_GPADC);
- 	if (ret < 0) {
--		dev_err(di->dev, "gpadc_conversion: enable gpadc failed\n");
-+		dev_err(gpadc->dev, "gpadc_conversion: enable gpadc failed\n");
- 		goto out;
- 	}
- 	/* Select the input source and set average samples to 16 */
--	ret = abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+	ret = abx500_set_register_interruptible(gpadc->dev, AB8500_GPADC,
- 		AB8500_GPADC_CTRL2_REG, (input | SW_AVG_16));
- 	if (ret < 0) {
--		dev_err(di->dev,
-+		dev_err(gpadc->dev,
- 			"gpadc_conversion: set avg samples failed\n");
- 		goto out;
- 	}
- 	/* Enable ADC, Buffering and select rising edge, start Conversion */
--	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
--		AB8500_GPADC_CTRL1_REG, EN_BUF, EN_BUF);
-+	ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
-+		AB8500_GPADC, AB8500_GPADC_CTRL1_REG, EN_BUF, EN_BUF);
- 	if (ret < 0) {
--		dev_err(di->dev,
-+		dev_err(gpadc->dev,
- 			"gpadc_conversion: select falling edge failed\n");
- 		goto out;
- 	}
--	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
--		AB8500_GPADC_CTRL1_REG, ADC_SW_CONV, ADC_SW_CONV);
-+	ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
-+		AB8500_GPADC, AB8500_GPADC_CTRL1_REG, ADC_SW_CONV, ADC_SW_CONV);
- 	if (ret < 0) {
--		dev_err(di->dev,
-+		dev_err(gpadc->dev,
- 			"gpadc_conversion: start s/w conversion failed\n");
- 		goto out;
- 	}
- 	/* wait for completion of conversion */
--	if (!wait_for_completion_timeout(&di->ab8500_gpadc_complete, 2*HZ)) {
--		dev_err(di->dev,
-+	if (!wait_for_completion_timeout(&gpadc->ab8500_gpadc_complete, 2*HZ)) {
-+		dev_err(gpadc->dev,
- 			"timeout: didnt recieve GPADC conversion interrupt\n");
- 		ret = -EINVAL;
- 		goto out;
- 	}
- 
- 	/* Read the converted RAW data */
--	ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+	ret = abx500_get_register_interruptible(gpadc->dev, AB8500_GPADC,
- 		AB8500_GPADC_MANDATAL_REG, &low_data);
- 	if (ret < 0) {
--		dev_err(di->dev, "gpadc_conversion: read low data failed\n");
-+		dev_err(gpadc->dev, "gpadc_conversion: read low data failed\n");
- 		goto out;
- 	}
- 
--	ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+	ret = abx500_get_register_interruptible(gpadc->dev, AB8500_GPADC,
- 		AB8500_GPADC_MANDATAH_REG, &high_data);
- 	if (ret < 0) {
--		dev_err(di->dev, "gpadc_conversion: read high data failed\n");
-+		dev_err(gpadc->dev,
-+			"gpadc_conversion: read high data failed\n");
- 		goto out;
- 	}
- 
- 	data = (high_data << 8) | low_data;
- 	/* Disable GPADC */
--	ret = abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+	ret = abx500_set_register_interruptible(gpadc->dev, AB8500_GPADC,
- 		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
- 	if (ret < 0) {
--		dev_err(di->dev, "gpadc_conversion: disable gpadc failed\n");
-+		dev_err(gpadc->dev, "gpadc_conversion: disable gpadc failed\n");
- 		goto out;
- 	}
- 	/* Disable VTVout LDO this is required for GPADC */
--	regulator_disable(di->regu);
--	mutex_unlock(&di->ab8500_gpadc_lock);
-+	regulator_disable(gpadc->regu);
-+	mutex_unlock(&gpadc->ab8500_gpadc_lock);
- 	return data;
- 
- out:
-@@ -175,12 +198,12 @@ out:
- 	 * GPADC status register to go low. In V1.1 there wait_for_completion
- 	 * seems to timeout when waiting for an interrupt.. Not seen in V2.0
- 	 */
--	(void) abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+	(void) abx500_set_register_interruptible(gpadc->dev, AB8500_GPADC,
- 		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
--	regulator_disable(di->regu);
--	mutex_unlock(&di->ab8500_gpadc_lock);
--	dev_err(di->dev, "gpadc_conversion: Failed to AD convert channel %d\n",
--		input);
-+	regulator_disable(gpadc->regu);
-+	mutex_unlock(&gpadc->ab8500_gpadc_lock);
-+	dev_err(gpadc->dev,
-+		"gpadc_conversion: Failed to AD convert channel %d\n", input);
- 	return ret;
- }
- EXPORT_SYMBOL(ab8500_gpadc_convert);
-@@ -195,9 +218,9 @@ EXPORT_SYMBOL(ab8500_gpadc_convert);
-  * can be read from the registers.
-  * Returns IRQ status(IRQ_HANDLED)
-  */
--static irqreturn_t ab8500_bm_gpswadcconvend_handler(int irq, void *_di)
-+static irqreturn_t ab8500_bm_gpswadcconvend_handler(int irq, void *_gpadc)
- {
--	struct ab8500_gpadc *gpadc = _di;
-+	struct ab8500_gpadc *gpadc = _gpadc;
- 
- 	complete(&gpadc->ab8500_gpadc_complete);
- 
-@@ -215,16 +238,16 @@ static int __devinit ab8500_gpadc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	gpadc->parent = dev_get_drvdata(pdev->dev.parent);
- 	gpadc->irq = platform_get_irq_byname(pdev, "SW_CONV_END");
- 	if (gpadc->irq < 0) {
--		dev_err(gpadc->dev, "failed to get platform irq-%d\n", di->irq);
-+		dev_err(gpadc->dev, "failed to get platform irq-%d\n",
-+			gpadc->irq);
- 		ret = gpadc->irq;
- 		goto fail;
- 	}
- 
- 	gpadc->dev = &pdev->dev;
--	mutex_init(&di->ab8500_gpadc_lock);
-+	mutex_init(&gpadc->ab8500_gpadc_lock);
- 
- 	/* Initialize completion used to notify completion of conversion */
- 	init_completion(&gpadc->ab8500_gpadc_complete);
-@@ -246,7 +269,7 @@ static int __devinit ab8500_gpadc_probe(struct platform_device *pdev)
- 		dev_err(gpadc->dev, "failed to get vtvout LDO\n");
- 		goto fail;
- 	}
--	di = gpadc;
-+	list_add_tail(&gpadc->node, &ab8500_gpadc_list);
- 	dev_dbg(gpadc->dev, "probe success\n");
- 	return 0;
- fail:
-@@ -259,8 +282,10 @@ static int __devexit ab8500_gpadc_remove(struct platform_device *pdev)
- {
- 	struct ab8500_gpadc *gpadc = platform_get_drvdata(pdev);
- 
-+	/* remove this gpadc entry from the list */
-+	list_del(&gpadc->node);
- 	/* remove interrupt  - completion of Sw ADC conversion */
--	free_irq(gpadc->irq, di);
-+	free_irq(gpadc->irq, gpadc);
- 	/* disable VTVout LDO that is being used by GPADC */
- 	regulator_put(gpadc->regu);
- 	kfree(gpadc);
-@@ -291,6 +316,6 @@ subsys_initcall_sync(ab8500_gpadc_init);
- module_exit(ab8500_gpadc_exit);
- 
- MODULE_LICENSE("GPL v2");
--MODULE_AUTHOR("Arun R Murthy");
-+MODULE_AUTHOR("Arun R Murthy, Daniel Willerud");
- MODULE_ALIAS("platform:ab8500_gpadc");
- MODULE_DESCRIPTION("AB8500 GPADC driver");
-diff --git a/include/linux/mfd/ab8500/ab8500-gpadc.h b/include/linux/mfd/ab8500/ab8500-gpadc.h
-index 74b87dd..46b9540 100644
---- a/include/linux/mfd/ab8500/ab8500-gpadc.h
-+++ b/include/linux/mfd/ab8500/ab8500-gpadc.h
-@@ -3,6 +3,7 @@
-  * Licensed under GPLv2.
-  *
-  * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ * Author: Daniel Willerud <daniel.willerud@stericsson.com>
-  */
- 
- #ifndef	_AB8500_GPADC_H
-@@ -23,6 +24,9 @@
- #define BK_BAT_V	0x0C
- #define DIE_TEMP	0x0D
- 
--int ab8500_gpadc_convert(u8 input);
-+struct ab8500_gpadc;
-+
-+struct ab8500_gpadc *ab8500_gpadc_get(char *name);
-+int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input);
- 
- #endif /* _AB8500_GPADC_H */
--- 
-1.7.3.2
 
