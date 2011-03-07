@@ -1,98 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab1CGWi5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 17:38:57 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:46605
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753540Ab1CGWiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 17:38:54 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: kys@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Cc: Abhishek Kane <v-abkane@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 09/16] Staging: hv: Eliminate mousevsc_driver_context
-Date: Mon,  7 Mar 2011 13:33:21 -0800
-Message-Id: <1299533601-22741-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1756675Ab1CGWoZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 17:44:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50583 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756589Ab1CGWoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 17:44:23 -0500
+Date: Tue, 8 Mar 2011 09:44:12 +1100
+From: NeilBrown <neilb@suse.de>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] Fix over-zealous flush_disk when changing
+ device size.
+Message-ID: <20110308094412.1c45b277@notabene.brown>
+In-Reply-To: <1299516418.15258.4.camel@mulgrave.site>
+References: <20110217165057.5c50e566@notabene.brown>
+	<20110303143120.GA8134@infradead.org>
+	<20110304111624.4be27aaf@notabene.brown>
+	<1299259506.2118.24.camel@grinch>
+	<20110306174755.49404c8e@notabene.brown>
+	<1299471771.2228.11.camel@grinch>
+	<1299516418.15258.4.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the consolidation of all driver state into one data structure;
-mousevsc_driver_context structure is not needed; get rid of it.
+(linux-fsdevel added - seems relevant)
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/hv_mouse.c |   21 +++++++--------------
- 1 files changed, 7 insertions(+), 14 deletions(-)
+On Mon, 07 Mar 2011 10:46:58 -0600 James Bottomley <James.Bottomley@suse.de>
+wrote:
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index f762a8a..6c5c00d 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -777,11 +777,8 @@ struct input_device_context {
- 	int			connected;
- };
- 
--struct mousevsc_driver_context {
--	struct mousevsc_drv_obj	drv_obj;
--};
- 
--static struct mousevsc_driver_context g_mousevsc_drv;
-+static struct  mousevsc_drv_obj g_mousevsc_drv;
- 
- static void deviceinfo_callback(struct hv_device *dev, struct hv_input_dev_info *info)
- {
-@@ -824,9 +821,7 @@ static int mousevsc_probe(struct device *device)
- 
- 	struct hv_driver *drv =
- 		drv_to_hv_drv(device->driver);
--	struct mousevsc_driver_context *mousevsc_drv_ctx =
--		(struct mousevsc_driver_context *)drv->priv;
--	struct mousevsc_drv_obj *mousevsc_drv_obj = &mousevsc_drv_ctx->drv_obj;
-+	struct mousevsc_drv_obj *mousevsc_drv_obj = drv->priv;
- 
- 	struct vm_device *device_ctx = device_to_vm_device(device);
- 	struct hv_device *device_obj = &device_ctx->device_obj;
-@@ -855,9 +850,7 @@ static int mousevsc_remove(struct device *device)
- 
- 	struct hv_driver *drv =
- 		drv_to_hv_drv(device->driver);
--	struct mousevsc_driver_context *mousevsc_drv_ctx =
--		(struct mousevsc_driver_context *)drv->priv;
--	struct mousevsc_drv_obj *mousevsc_drv_obj = &mousevsc_drv_ctx->drv_obj;
-+	struct mousevsc_drv_obj *mousevsc_drv_obj = drv->priv;
- 
- 	struct vm_device *device_ctx = device_to_vm_device(device);
- 	struct hv_device *device_obj = &device_ctx->device_obj;
-@@ -956,8 +949,8 @@ static int mousevsc_drv_exit_cb(struct device *dev, void *data)
- 
- static void mousevsc_drv_exit(void)
- {
--	struct mousevsc_drv_obj *mousevsc_drv_obj = &g_mousevsc_drv.drv_obj;
--	struct hv_driver *drv = &g_mousevsc_drv.drv_obj.Base;
-+	struct mousevsc_drv_obj *mousevsc_drv_obj = &g_mousevsc_drv;
-+	struct hv_driver *drv = &g_mousevsc_drv.Base;
- 	int ret;
- 
- 	struct device *current_dev = NULL;
-@@ -1008,8 +1001,8 @@ static int mouse_vsc_initialize(struct hv_driver *Driver)
- 
- static int __init mousevsc_init(void)
- {
--	struct mousevsc_drv_obj *input_drv_obj = &g_mousevsc_drv.drv_obj;
--	struct hv_driver *drv = &g_mousevsc_drv.drv_obj.Base;
-+	struct mousevsc_drv_obj *input_drv_obj = &g_mousevsc_drv;
-+	struct hv_driver *drv = &g_mousevsc_drv.Base;
- 
- 	DPRINT_INFO(INPUTVSC_DRV, "Hyper-V Mouse driver initializing.");
- 
--- 
-1.5.5.6
+> On Sun, 2011-03-06 at 21:22 -0700, Andrew Patterson wrote:
+> > On Sun, 2011-03-06 at 17:47 +1100, NeilBrown wrote:
+> > >  Would you be uncomfortable if I asked Linus to revert both my fix and your
+> > >  original patch??
+> > 
+> > James Bottomley wanted me to put this functionality in. I have no
+> > problem with reverting it myself, especially if it is causing other
+> > problems.  I would have to say that you need to ask him (or rather, I am
+> > not qualified to render an opinion here).
+> 
+> So it seems we have a couple of problems: the first being that
+> flush_disk() doesn't actually do what it says (flush the disk).  If it's
+> just discarding all data, dirty or clean, then its use in the
+> grow/shrink interface is definitely wrong.
+> 
+> The idea is that before we complete the grow/shrink, we make sure that
+> the device doesn't have any errors, so we want to try to write out all
+> dirty buffers to make sure they still have a home.  If flush_disk()
+> doesn't do that, then we need to use a different interface ... what's
+> the interface to flush a disk?
+> 
+
+Hi James,
+
+I *always* want to make sure that my device doesn't have any errors, not just
+when it changes size... but I'm not sure that regularly flushing out data is
+the right way to do it.
+But maybe I still misunderstand what the real point of this is.
+
+As for the correct interface to flush a disk - there isn't one.
+One doesn't flush a storage device, one flushes a cache - to a storage
+device.  And there is not a 1-to-1 mapping.
+
+A block device *is* associated with one cache - one which is used for
+caching accesses through /dev/XXX and also by some filesystems to cache some
+metadata.  You can flush this cache with sync_blockdev().  This just
+flushes out dirty pages in that cache, it doesn't discard clean pages.
+invalidate_bdev() can discard clean pages.  Call both, and get both outcomes.
+
+If a filesystem is mounted directly on a given block_device, then it
+should have a valid s_bdev pointer and it is possible to find that filesystem
+from the block_device using get_active_super().  You could then call
+sync_filesystem() to flush out dirty data.  There isn't really a good
+interface to discard clean data. shrink_dcache_sb() does some of it, other
+bits of code do other bits.
+
+Note that a block_device also can have a pointer to a super_block (bd_super).
+This does not seem to be widely used .... ext3 and ext4 use it so that memory
+pressure felt by the block-device cache can transmitted to the fs, so the
+fs can associate private data with the block device's cache I guess.
+I don't think bd_super is sufficiently persistent reference to be usable
+for sync_filesystems (it could race with unmount).
+
+
+But if the block device is within a dm or md device, or is an external
+journal for e.g. ext3, or is in some more complex relationship with a
+filesystem, then there is no way to request that any particular cache get
+flushed to the block device.  And if some user-space app has cached data
+for the device .... there is no way to get at that either.
+
+If we wanted a "proper" solution for this we probably need to leverage
+the 'bd_claim' concept.  When a device is claimed, allow an 'operations'
+structure to be provided with operations like:
+   flush_caches  (writes out data)
+   purge_caches  (discards clean data)
+   discard_caches  (discards all data)
+   prepare_resize (is allowed to fail)
+   commit_resize
+   freeze_io
+   thaw_io
+
+But flush_disk is definitely a wrong interface.  It has a meaningless name
+(as discussed above), and purges some caches while discarding others.
+
+What do we *really* lose if we just revert that original patch?
+
+Thanks,
+NeilBrown
 
