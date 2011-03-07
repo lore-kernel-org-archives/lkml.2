@@ -1,105 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab1CGNIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 08:08:13 -0500
-Received: from foo.stuge.se ([213.88.146.6]:52282 "HELO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751221Ab1CGNIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 08:08:12 -0500
-Message-ID: <20110307130809.10143.qmail@stuge.se>
-Date: Mon, 7 Mar 2011 14:08:09 +0100
-From: Peter Stuge <peter@stuge.se>
-To: linux-kernel@vger.kernel.org
-Subject: btrfs resize ate my root node
-Mail-Followup-To: linux-kernel@vger.kernel.org
+	id S1754162Ab1CGNMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 08:12:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32687 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751070Ab1CGNMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 08:12:50 -0500
+Date: Mon, 7 Mar 2011 14:12:17 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Daniel Halperin <dhalperi@cs.washington.edu>, Ingo Molnar <mingo@elte.hu>,
+        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Undefined TASK_INTERRUPTIBLE (Was: Re: [PATCH 1/3] iwlwifi: move
+ rx handlers code to iwl-rx.c)
+Message-ID: <20110307131217.GA9571@redhat.com>
+References: <1299257511-5241-1-git-send-email-sgruszka@redhat.com>
+ <1299447258.5082.164.camel@wwguy-huron>
+ <AANLkTimNjxguAFcRr-mJr-pPMkf6zTxzm4k7oV+6zngG@mail.gmail.com>
+ <20110307081241.GA2216@redhat.com>
+ <1299489602.2308.1.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1299489602.2308.1.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Mar 07, 2011 at 10:20:02AM +0100, Peter Zijlstra wrote:
+> On Mon, 2011-03-07 at 09:12 +0100, Stanislaw Gruszka wrote:
+> > 
+> > But perhaps we need a more generic fix in wait.h for the future. Maybe
+> > we should decouple definitions of TASK_INTERRUPTIBLE and friends from
+> > sched.h into separate header and include that header in wait.h as
+> > well?
+> 
+> No! That only makes the mess worse, the only sane option is to fix
+> things so that wait.h can include sched.h and that is non-trivial.
 
-I ran btrfsctl resize -r -3gb /dev/sda2 using wireless-testing.git
-based on 2.6.38-rc6 and all seemed good. df reported reduced size so
-I repartitioned and rebooted. Filesystem can no longer be mounted:
+I was not aware of recent discussion
+http://marc.info/?t=129829886000004&r=1&w=2
 
-[10560.129038] device fsid b2408c2e83f55cc2-5f7a14e35f176484 devid 1 transid 341132 /dev/sdb2
-[10560.133407] btrfs bad tree block start 0 34520006656
-[10560.134031] btrfs bad tree block start 0 34520006656
-[10560.134904] btrfs bad tree block start 0 34520006656
-[10560.134912] btrfs: failed to read tree root on sdb2
-[10560.137206] btrfs: open_ctree failed
-
-btrfs-debug-tree and friends are similarly upset:
-
-$ ./btrfs-debug-tree /dev/sdb2
-btrfs-debug-tree: disk-io.c:739: open_ctree_fd: Assertion `!(!tree_root->node)' failed.
-
-$ gdb --args ./btrfs-debug-tree /dev/sdb2
-GNU gdb 6.8
-..
-(gdb) b disk-io.c:44
-Breakpoint 1 at 0x8050db7: file disk-io.c, line 44.
-..
-Breakpoint 1, check_tree_block (root=0x946e2e8, buf=0x9471538) at disk-io.c:44
-44              if (buf->start != btrfs_header_bytenr(buf))
-(gdb) p buf->start
-$1 = 20971520
-..
-Breakpoint 1, check_tree_block (root=0x946e2e8, buf=0x9472588) at disk-io.c:44
-44              if (buf->start != btrfs_header_bytenr(buf))
-(gdb) p buf->start
-$2 = 20987904
-..
-Breakpoint 1, check_tree_block (root=0x946e2e8, buf=0x94735d8) at disk-io.c:44
-44              if (buf->start != btrfs_header_bytenr(buf))
-(gdb) p buf->start
-$3 = 20983808
-
-The above checks succeed but next time check_tree_block() is called
-the check does not succeed.
-
-Breakpoint 1, check_tree_block (root=0x946e008, buf=0x9474628) at disk-io.c:44
-44              if (buf->start != btrfs_header_bytenr(buf))
-(gdb) p buf->start
-$4 = 34520006656
-(gdb) p btrfs_header_bytenr(buf)
-$5 = 0
-..
-(gdb) bt
-#0  check_tree_block (root=0x946e008, buf=0x9474628) at disk-io.c:45
-#1  0x080514fc in read_tree_block (root=0x946e008, bytenr=34520006656, 
-    blocksize=4096, parent_transid=341132) at disk-io.c:207
-#2  0x080531a7 in open_ctree_fd (fp=7, path=0xbfef322a "/dev/sdb2", 
-    sb_bytenr=65536, writes=0) at disk-io.c:736
-#3  0x08052a58 in open_ctree (filename=0xbfef322a "/dev/sdb2", sb_bytenr=0, 
-    writes=0) at disk-io.c:587
-#4  0x080735cf in main (ac=1, av=0xbfef2374) at debug-tree.c:148
-
-This is disk-io.c:
-
-732     blocksize = btrfs_level_size(tree_root,
-                                     btrfs_super_root_level(disk_super));  
-        generation = btrfs_super_generation(disk_super);  
-
-        tree_root->node = read_tree_block(tree_root,
-                                          btrfs_super_root(disk_super),
-                                          blocksize, generation);
-..
-188     eb = btrfs_find_create_tree_block(root, bytenr, blocksize);
-..
-198             ret = btrfs_map_block(&root->fs_info->mapping_tree, READ,
-                                      eb->start, &length, &multi, mirror_num);
-..
-206             ret = read_extent_from_disk(eb);
-                if (ret == 0 && check_tree_block(root, eb) == 0 &&
-
-This is the call that fails.
-
-
-Where do I look next?
-
-
-//Peter
