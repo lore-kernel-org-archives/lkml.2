@@ -1,122 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1CGReS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 12:34:18 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57053 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab1CGReP (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 7 Mar 2011 12:34:15 -0500
-Date: Mon, 7 Mar 2011 12:34:06 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org, owen.smith@citrix.com
-Subject: [owen.smith@citrix.com: [Xen-devel] [PATCH 1/2
- xen/stable-2.6.32.x] Union the blkif_request request specific fields]
-Message-ID: <20110307173405.GA6087@dumpdata.com>
+	id S1755077Ab1CGRkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 12:40:20 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47188 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab1CGRkS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 12:40:18 -0500
+From: "Igor M. Liplianin" <liplianin@me.by>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: Kernelspace firmware loaders (was: linux-next: manual merge of the staging tree with the v4l-dvb tree)
+Date: Mon, 7 Mar 2011 19:40:28 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.37-smp; KDE/4.4.3; i686; ; )
+Cc: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Ben Gamari <bgamari.foss@gmail.com>
+References: <20110304163905.ed6dd630.sfr@canb.auug.org.au> <20110307161658.GA9088@kroah.com> <201103071751.28477.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201103071751.28477.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D751712.0089,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201103071940.29074.liplianin@me.by>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens,
+В сообщении от 7 марта 2011 18:51:27 автор Laurent Pinchart написал:
+> Hi Greg,
+> 
+> On Monday 07 March 2011 17:16:58 Greg KH wrote:
+> > On Mon, Mar 07, 2011 at 03:07:36PM +0100, Laurent Pinchart wrote:
+> > > On Friday 04 March 2011 18:54:24 Mauro Carvalho Chehab wrote:
+> > > > Em 04-03-2011 14:13, Greg KH escreveu:
+> > > > > On Fri, Mar 04, 2011 at 04:39:05PM +1100, Stephen Rothwell wrote:
+> > > > >> Today's linux-next merge of the staging tree got a conflict in
+> > > > >> drivers/staging/Kconfig between commit
+> > > > >> a1256092a1e87511c977a3d0ef96151cda77e5c9 ("[media] Altera FPGA
+> > > > >> firmware download module") from the v4l-dvb tree and commit
+> > > > >> 0867b42113ec4eb8646eb361b15cbcfb741ddf5b ("staging: gma500: Intel
+> > > > >> GMA500 staging driver") from the staging tree.
+> > > > >> 
+> > > > >> I fixed it up (see below) and can carry the fix as necessary.
+> > > > > 
+> > > > > That looks correct.
+> > > > > 
+> > > > > Mauro, what is this driver and why is it added to the staging tree?
+> > > > 
+> > > > This driver implements the FPGA programming logic for a firmware
+> > > > required by a DVB driver, and was proposed initially for 2.6.37
+> > > > inclusion. During the 2.6.38 development cycle, it suffered several
+> > > > revisions, based on our input at the media and lkml mailing lists,
+> > > > where Igor fixed all CodingStyle issues.
+> > > > 
+> > > > In the last minute, during 2.6.38 merge window, two developers
+> > > > (Laurent and Ben) [1] complained against adding a driver for loading
+> > > > FPGA firmware as-is. So, I decided to add it, for now, at staging,
+> > > > to avoid needing to postpone a long series of patches again just
+> > > > because of that, especially since a series of DVB-C devices are
+> > > > without support on Linux without this patch series, and there are
+> > > > very few DVB-C devices currently supported.
+> > > > 
+> > > > The Altera driver is compliant with CodingStyle, and, from my side,
+> > > > it is ok to move it to drivers/others, but it doesn't hurt to give
+> > > > some time for Ben and Laurent to propose alternative way of
+> > > > implementing the firmware request logic.
+> > > > 
+> > > > If nothing happens until 2.6.40 merge window, I think we should go
+> > > > forward and move it to the proper place.
+> > > 
+> > > What's the policy regarding firmware loaders in kernelspace vs.
+> > > userspace ? JTAG is a quite complex protocol, and we already have lots
+> > > of JTAG libraries in userspace (http://urjtag.org/ seems to be the
+> > > most popular one). We also have userspace firmware loaders (such as
+> > > fxload for the Cypress EZ USB microcontrollers). Do we need a
+> > > kernelspace JTAG implementation ?
+> > > 
+> > > > [1]
+> > > > http://www.mail-archive.com/linux-media@vger.kernel.org/msg26422.html
+> > 
+> > If the code is just a "pass-through" to the hardware, I have no
+> > objection to the driver being in the kernel, if it needs to be in order
+> > to control the hardware properly.
+> 
+> The code implements a JTAG TAP state machine with a bit-banging algorithm,
+> including direct parallel port (LPT) access, and a bitcode interpreter for
+LPT access procedure included for historical reason, on early development stages it was used for 
+program FPGA, then we swithed to cx23885 GPIO's. Developer can choose(develop) his own procedure 
+for JTAG pins access.
 
-Are you OK with this patch? I was thinking to push it for 2.6.39.
-I've it in my tree, but if you would rather carry it for the merge window
-it is in 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/blkfront-cleanup
+> the files generated by the Altera FPGA proprietary development tools.
+So, we used this tools. And the code is from widely opened sources.
 
-
-commit cd50f830627fd8ec0d97a73c970ccec9811c6bae
-Author: Owen Smith <owen.smith@citrix.com>
-Date:   Wed Dec 22 15:05:00 2010 +0000
-
-    xen: Union the blkif_request request specific fields
-    
-    Prepare for extending the block device ring to allow request
-    specific fields, by moving the request specific fields for
-    reads, writes and barrier requests to a union member.
-    
-    Signed-off-by: Owen Smith <owen.smith@citrix.com>
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index d7aa39e..cc4514c 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -281,7 +281,7 @@ static int blkif_queue_request(struct request *req)
- 	info->shadow[id].request = req;
- 
- 	ring_req->id = id;
--	ring_req->sector_number = (blkif_sector_t)blk_rq_pos(req);
-+	ring_req->u.rw.sector_number = (blkif_sector_t)blk_rq_pos(req);
- 	ring_req->handle = info->handle;
- 
- 	ring_req->operation = rq_data_dir(req) ?
-@@ -317,7 +317,7 @@ static int blkif_queue_request(struct request *req)
- 				rq_data_dir(req) );
- 
- 		info->shadow[id].frame[i] = mfn_to_pfn(buffer_mfn);
--		ring_req->seg[i] =
-+		ring_req->u.rw.seg[i] =
- 				(struct blkif_request_segment) {
- 					.gref       = ref,
- 					.first_sect = fsect,
-@@ -615,7 +615,7 @@ static void blkif_completion(struct blk_shadow *s)
- {
- 	int i;
- 	for (i = 0; i < s->req.nr_segments; i++)
--		gnttab_end_foreign_access(s->req.seg[i].gref, 0, 0UL);
-+		gnttab_end_foreign_access(s->req.u.rw.seg[i].gref, 0, 0UL);
- }
- 
- static irqreturn_t blkif_interrupt(int irq, void *dev_id)
-@@ -932,7 +932,7 @@ static int blkif_recover(struct blkfront_info *info)
- 		/* Rewrite any grant references invalidated by susp/resume. */
- 		for (j = 0; j < req->nr_segments; j++)
- 			gnttab_grant_foreign_access_ref(
--				req->seg[j].gref,
-+				req->u.rw.seg[j].gref,
- 				info->xbdev->otherend_id,
- 				pfn_to_mfn(info->shadow[req->id].frame[j]),
- 				rq_data_dir(info->shadow[req->id].request));
-diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
-index c2d1fa4..e4f743c 100644
---- a/include/xen/interface/io/blkif.h
-+++ b/include/xen/interface/io/blkif.h
-@@ -51,11 +51,7 @@ typedef uint64_t blkif_sector_t;
-  */
- #define BLKIF_MAX_SEGMENTS_PER_REQUEST 11
- 
--struct blkif_request {
--	uint8_t        operation;    /* BLKIF_OP_???                         */
--	uint8_t        nr_segments;  /* number of segments                   */
--	blkif_vdev_t   handle;       /* only for read/write requests         */
--	uint64_t       id;           /* private guest value, echoed in resp  */
-+struct blkif_request_rw {
- 	blkif_sector_t sector_number;/* start sector idx on disk (r/w only)  */
- 	struct blkif_request_segment {
- 		grant_ref_t gref;        /* reference to I/O buffer frame        */
-@@ -65,6 +61,16 @@ struct blkif_request {
- 	} seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
- };
- 
-+struct blkif_request {
-+	uint8_t        operation;    /* BLKIF_OP_???                         */
-+	uint8_t        nr_segments;  /* number of segments                   */
-+	blkif_vdev_t   handle;       /* only for read/write requests         */
-+	uint64_t       id;           /* private guest value, echoed in resp  */
-+	union {
-+		struct blkif_request_rw rw;
-+	} u;
-+};
-+
- struct blkif_response {
- 	uint64_t        id;              /* copied from request */
- 	uint8_t         operation;       /* copied from request */
+-- 
+Igor M. Liplianin
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
