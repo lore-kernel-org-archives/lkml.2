@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1CGWK2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 17:10:28 -0500
-Received: from imr3.ericy.com ([198.24.6.13]:49431 "EHLO imr3.ericy.com"
+	id S1756661Ab1CGWMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 17:12:22 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:49561 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab1CGWK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 17:10:27 -0500
-Date: Mon, 7 Mar 2011 14:08:39 -0800
+	id S1756615Ab1CGWMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 17:12:19 -0500
+Date: Mon, 7 Mar 2011 14:11:29 -0800
 From: Guenter Roeck <guenter.roeck@ericsson.com>
 To: Greg Schnorr <gschnorr@cisco.com>
 CC: Jean Delvare <khali@linux-fr.org>,
         Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
         Randy Dunlap <rdunlap@xenotime.net>,
         "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: (pmbus) Improve support for paged fans
-Message-ID: <20110307220839.GB14789@ericsson.com>
-References: <1299341303-32570-1-git-send-email-guenter.roeck@ericsson.com>
- <C99A914D.5A89C%gschnorr@cisco.com>
+Subject: Re: [PATCH] hwmon: (pmbus) More stringent checking of VOUT_MODE
+ register
+Message-ID: <20110307221129.GC14789@ericsson.com>
+References: <1299043940-22798-1-git-send-email-guenter.roeck@ericsson.com>
+ <C99A91CB.5A89D%gschnorr@cisco.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <C99A914D.5A89C%gschnorr@cisco.com>
+In-Reply-To: <C99A91CB.5A89D%gschnorr@cisco.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 04:42:37PM -0500, Greg Schnorr wrote:
-> Verified this patch works as expected on such "fan rich" hardware...
+On Mon, Mar 07, 2011 at 04:44:43PM -0500, Greg Schnorr wrote:
+> Looks good, tested and works on one such VOUT_MODE poor design...
 > 
-> On 3/5/11 8:08 AM, "Guenter Roeck" <guenter.roeck@ericsson.com> wrote:
+> On 3/1/11 9:32 PM, "Guenter Roeck" <guenter.roeck@ericsson.com> wrote:
 > 
-> > So far, it seemed like fans would either all be in page 0, or that
-> > there would be one page per fan.
+> > Some PMBus chips do not support the VOUT_MODE register. To make matters worse,
+> > such chips may not return an error when reading the register either, but
+> > instead
+> > return 0xff.
 > > 
-> > Turns out this was a wrong assumption. There is at least one PMBus
-> > fan controller which supports three pages with four fans each.
-> > Update code to handle this situation.
+> > Check if the register exists using pmbus_check_byte_register() before reading
+> > its value. In addition, validate the returned value and ignore it if it is
+> > 0xff
+> > (which is invalid).
 > > 
 > > Reported-by: Greg Schnorr <gschnorr@cisco.com>
 > > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
