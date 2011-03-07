@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1CFVuX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 16:50:23 -0500
-Received: from sh.osrg.net ([192.16.179.4]:51034 "EHLO sh.osrg.net"
+	id S1755141Ab1CGCoI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 21:44:08 -0500
+Received: from xes-mad.com ([216.165.139.218]:39643 "EHLO xes-mad.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab1CFVuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 16:50:20 -0500
-Date: Mon, 7 Mar 2011 06:49:38 +0900
-To: maximlevitsky@gmail.com
-Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-        James.Bottomley@HansenPartnership.com, linux-kernel@vger.kernel.org,
-        oakad@yahoo.com
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1299424470.22378.9.camel@maxim-laptop>
-References: <1299212213-4255-2-git-send-email-maximlevitsky@gmail.com>
-	<20110306162859E.fujita.tomonori@lab.ntt.co.jp>
-	<1299424470.22378.9.camel@maxim-laptop>
+	id S1754883Ab1CGCoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 21:44:07 -0500
+Subject: Re: [PATCH v5 1/4] gpiolib: Add "unknown" direction support
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Ryan Mallon <ryan@bluewatersys.com>
+In-Reply-To: <20110306072505.GC7467@angua.secretlab.ca>
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
+	 <20110306072505.GC7467@angua.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Mar 2011 20:43:05 -0600
+Message-ID: <1299465785.11719.114.camel@ptyser-laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20110307064900X.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 07 Mar 2011 06:49:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 06 Mar 2011 17:14:30 +0200
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> The thing about gpios is that how they are used is entirely dependant
+> on what they are wired up to.  There is no avoiding the fact that you
+> *absolutely* must understand the usage model before even considering
+> fiddling with a gpio (ignoring the "I wonder what this knob does"
+> use-case such as when reverse engineer a board).  So, while it is nice
+> to have an 'unknown' state for sysfs to report, it is certainly not
+> required.  The model still remains that the pin direction must be set
+> before (or at the same time as) reading/writing the pin.
 
-> On Sun, 2011-03-06 at 16:29 +0900, FUJITA Tomonori wrote:
-> > On Fri,  4 Mar 2011 06:16:50 +0200
-> > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > 
-> > > While developing memstick driver for legacy memsticks
-> > > I found the need in few helpers that I think should be
-> > > in common scatterlist library
-> > > 
-> > > The functions that were added:
-> > > 
-> > > * sg_nents/sg_total_len - iterate over scatterlist to figure
-> > > out total length of memory it covers / number of entries.
-> > 
-> > You should invent a data structure per I/O request, something like
-> > msb_request structure. Then you can store nents and total_len in
-> > that.
-> > 
-> > That's what block subsystems and drivers do. I took a look at your
-> > driver but I can't see why your driver can't do the same.
-> I also need to break the request into small grained chunks.
-> If I invent such structure, I will end up writing these helpers for it.
-> 
-> The I have this lifetime of a request:
-> 
-> I get arbitary sized request from block layer (I can of course control
-> maximum size/number of segments in it, etc).
-> 
-> I break it into eraseblock sized chunks, and for each I translate the
-> the LBA, into flash address.
-> 
-> Then I break it into flash page sized requests (512 bytes), and yet its
-> better not to assume that such requests always contained in one sg
-> entry.
-> 
-> Worse than that, I have to pass an sg list that spans always one 512
-> page to lowlevel driver, because thats how Alex defined the interface.
+As is, even if someone knows about the GPIO wiring on their board, they
+have to know Linux has a "rule" that "before I can use a GPIO, I have to
+explicitly set its direction, even if the current reported direction is
+what I want".  A number of our customers have tried to use a GPIO which
+states its an 'input' as an input after exporting it, which is
+completely logical.  But it doesn't work, because its not really an
+input...  Why not set the direction accurately as 'unknown' so users
+intuitively know they have to set the direction before using it?  You
+also mention that it would be a nice feature above, so why not include
+it?
 
-This restriction is due to hardware specification or the software
-design (e.g. memstick layer)? If it is due to the latter, why can't
-you fix that?
+> Since the addition of an 'unknown'
+> direction is solely for benefit of the sysfs interface, I don't (yet)
+> see a valid argument for adding it.  *Who cares* if sysfs might report
+> direction as 'input' inaccurately?  It may be mildly inconvenient to a
+> human reader, but it doesn't change the usage model one iota because
+> the direction still must be explicitly set before using the gpio.
 
-Why can't the block layer split requests for you? It's better to let
-the block layer handle that.
+Adding an 'unknown' direction *forces* people to use the recommended
+usage model.  As is, I'd guess most end users don't know about the
+recommended usage model, and they are misled by the incorrect info in
+sysfs to boot.
 
+Best,
+Peter
 
-> Folks, really what the status of this, when to expect it to be merged?
-> 
-> If you think some of helper functions don't belong to scatterlist.c,
-> just tell me to move them back to ms_block.c.
-> 
-> Andrew, please note again that richoh lowlevel driver doesn't need any
-> helper functions, its patch is standalone and thus should be merged
-> regardless.
-
-I think that we need to make the design of the driver easily
-understandable to kernel developers and maintainable by them. I don't
-think that this is 'standalone or not' issue.
-
-Adding a doc about why the driver is designed in such odd way would be
-helpful. But I still think that we could design the driver in a better
-way.
