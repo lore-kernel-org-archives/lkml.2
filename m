@@ -1,71 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab1CGPXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 10:23:51 -0500
-Received: from asset.uwaterloo.ca ([129.97.92.29]:39480 "EHLO
-	asset.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab1CGPXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 10:23:49 -0500
-Date: Mon, 7 Mar 2011 10:23:45 -0500
-From: chenliu@asset.uwaterloo.ca
-To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH]early: fix possible overlapping data buffer
-Message-ID: <20110307152345.GA1709@asset.uwaterloo.ca>
+	id S1753052Ab1CGP3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 10:29:42 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40724 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab1CGP3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 10:29:41 -0500
+Date: Mon, 7 Mar 2011 16:29:21 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        masami.hiramatsu.pt@hitachi.com, hpa@zytor.com, ananth@in.ibm.com,
+        davem@davemloft.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        eric.dumazet@gmail.com, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] x86: separating entry text section
+Message-ID: <20110307152921.GC28226@elte.hu>
+References: <20110220125948.GC25700@elte.hu>
+ <1298298313-5980-1-git-send-email-jolsa@redhat.com>
+ <1298298313-5980-2-git-send-email-jolsa@redhat.com>
+ <20110222080934.GB7001@elte.hu>
+ <20110222125201.GB1884@jolsa.brq.redhat.com>
+ <20110307104423.GA3661@jolsa.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110307104423.GA3661@jolsa.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes bugzilla #12965:
-https://bugzilla.kernel.org/show_bug.cgi?id=12965
 
-The original code contains dangerous uses of sprintf functions like sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13", defsys_cmd, min_size), where defsys_cmd is used both as input string as well as output string. It should remember the written bytes of the previous sprintf and use that as the offset when adding something. Also use snprintf makes the code safer.
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-Signed-off-by: Chen Liu<chenliunju@gmail.com>
----
- arch/s390/kernel/early.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+> hi,
+> any feedback?
 
-diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
+Did you get my reply below?
 
---- a/arch/s390/kernel/early.c
-+++ b/arch/s390/kernel/early.c
-@@ -94,6 +94,7 @@ static noinline __init void create_kerne
- 	unsigned int sinitrd_pfn, einitrd_pfn;
- #endif
- 	int response;
-+	int hlen;
- 	size_t len;
- 	char *savesys_ptr;
- 	char defsys_cmd[DEFSYS_CMD_SIZE];
-@@ -124,7 +125,7 @@ static noinline __init void create_kerne
- 	end_pfn = PFN_UP(__pa(&_end));
- 	min_size = end_pfn << 2;
- 
--	sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
-+	hlen = sprintf(defsys_cmd, "DEFSYS %s 00000-%.5X EW %.5X-%.5X SR %.5X-%.5X",
- 		kernel_nss_name, stext_pfn - 1, stext_pfn, eshared_pfn - 1,
- 		eshared_pfn, end_pfn);
- 
-@@ -133,13 +134,13 @@ static noinline __init void create_kerne
- 		sinitrd_pfn = PFN_DOWN(__pa(INITRD_START));
- 		einitrd_pfn = PFN_UP(__pa(INITRD_START + INITRD_SIZE));
- 		min_size = einitrd_pfn << 2;
--		sprintf(defsys_cmd, "%s EW %.5X-%.5X", defsys_cmd,
-+		hlen += snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen, " EW %.5X-%.5X",
- 		sinitrd_pfn, einitrd_pfn);
- 	}
- #endif
- 
--	sprintf(defsys_cmd, "%s EW MINSIZE=%.7iK PARMREGS=0-13",
--		defsys_cmd, min_size);
-+	hlen += snprintf(defsys_cmd + hlen, DEFSYS_CMD_SIZE - hlen, " EW MINSIZE=%.7iK PARMREGS=0-13",
-+		min_size);
- 	sprintf(savesys_cmd, "SAVESYS %s \n IPL %s",
- 		kernel_nss_name, kernel_nss_name);
- 
+Thanks,
+
+	Ingo
+
+----- Forwarded message from Ingo Molnar <mingo@elte.hu> -----
+
+Date: Tue, 22 Feb 2011 09:09:34 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jiri Olsa <jolsa@redhat.com>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Frédéric Weisbecker <fweisbec@gmail.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: masami.hiramatsu.pt@hitachi.com, acme@redhat.com, fweisbec@gmail.com,
+	hpa@zytor.com, ananth@in.ibm.com, davem@davemloft.net,
+	linux-kernel@vger.kernel.org, tglx@linutronix.de,
+	a.p.zijlstra@chello.nl, eric.dumazet@gmail.com,
+	2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] x86: separating entry text section
+
+
+* Jiri Olsa <jolsa@redhat.com> wrote:
+
+> Putting x86 entry code to the separate section: .entry.text.
+
+Trying to apply your patch i noticed one detail:
+
+> before patch:
+>      26282174  L1-icache-load-misses      ( +-   0.099% )  (scaled from 81.00%)
+>   0.206651959  seconds time elapsed   ( +-   0.152% )
+> 
+> after patch:
+>      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
+>   0.210509948  seconds time elapsed   ( +-   0.140% )
+
+So time elapsed actually went up.
+
+hackbench is notoriously unstable when it comes to runtime - and increasing the 
+--repeat value only has limited effects on that.
+
+Dropping all system caches:
+
+   echo 1 > /proc/sys/vm/drop_caches
+
+Seems to do a better job of 'resetting' system state, but if we put that into the 
+measured workload then the results are all over the place (as we now depend on IO 
+being done):
+
+ # cat hb10
+
+ echo 1 > /proc/sys/vm/drop_caches
+ ./hackbench 10
+
+ # perf stat --repeat 3 ./hb10
+
+ Time: 0.097
+ Time: 0.095
+ Time: 0.101
+
+ Performance counter stats for './hb10' (3 runs):
+
+         21.351257 task-clock-msecs         #      0.044 CPUs    ( +-  27.165% )
+                 6 context-switches         #      0.000 M/sec   ( +-  34.694% )
+                 1 CPU-migrations           #      0.000 M/sec   ( +-  25.000% )
+               410 page-faults              #      0.019 M/sec   ( +-   0.081% )
+        25,407,650 cycles                   #   1189.984 M/sec   ( +-  49.154% )
+        25,407,650 instructions             #      1.000 IPC     ( +-  49.154% )
+         5,126,580 branches                 #    240.107 M/sec   ( +-  46.012% )
+           192,272 branch-misses            #      3.750 %       ( +-  44.911% )
+           901,701 cache-references         #     42.232 M/sec   ( +-  12.857% )
+           802,767 cache-misses             #     37.598 M/sec   ( +-   9.282% )
+
+        0.483297792  seconds time elapsed   ( +-  31.152% )
+
+So here's a perf stat feature suggestion to solve such measurement problems: a new 
+'pre-run' 'dry' command could be specified that is executed before the real 'hot' 
+run is executed. Something like this:
+
+  perf stat --pre-run-script ./hb10 --repeat 10 ./hackbench 10
+
+Would do the cache-clearing before each run, it would run hackbench once (dry run) 
+and then would run hackbench 10 for real - and would repeat the whole thing 10 
+times. Only the 'hot' portion of the run would be measured and displayed in the perf 
+stat output event counts.
+
+Another observation:
+
+>      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
+
+Could you please do runs that do not display 'scaled from' messages? Since we are 
+measuring a relatively small effect here, and scaling adds noise, it would be nice 
+to ensure that the effect persists with non-scaled events as well:
+
+You can do that by reducing the number of events that are measured. The PMU can not 
+measure all those L1 cache events you listed - so only use the most important one 
+and add cycles and instructions to make sure the measurements are comparable:
+
+  -e L1-icache-load-misses -e instructions -e cycles
+
+Btw., there's another 'perf stat' feature suggestion: it would be nice if it was 
+possible to 'record' a perf stat run, and do a 'perf diff' over it. That would 
+compare the two runs all automatically, without you having to do the comparison 
+manually.
+
+Thanks,
+
+	Ingo
+
