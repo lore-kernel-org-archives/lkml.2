@@ -1,124 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab1CGHA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 02:00:27 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48030 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab1CGHAZ (ORCPT
+	id S1753963Ab1CGHD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 02:03:57 -0500
+Received: from smtp-out-189.synserver.de ([212.40.185.189]:1059 "HELO
+	smtp-out-189.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752255Ab1CGHD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 02:00:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=waNHzmtfsAhTga2+2NwY+6YoKQxqysOvZPvVc+gmKkz0X47Rd7m7ouWZd+EZP8svnz
-         9+KMYDHqw0hEBWJ58v0d8al5HFCNxW+TLATU18QkxI9BsSvOapUAjdDT4jnuXcH+5/Vq
-         Kdq00snq1sBO3/+HYajotPR2zYIYX8+l0X+fY=
-MIME-Version: 1.0
-In-Reply-To: <20110304121146.GG2868@balbir.in.ibm.com>
-References: <20110303113435.GA2868@balbir.in.ibm.com>
-	<20110303140551.GA20677@zhy>
-	<AANLkTikHFLoJOZvx2YebKdHt+jjiHgUFasiLTrZ6vBUJ@mail.gmail.com>
-	<AANLkTikqC=MNXXavJ_jxhFNQz1uNdABXVhvj82HW=BNA@mail.gmail.com>
-	<20110304072517.GC2868@balbir.in.ibm.com>
-	<AANLkTikuQKGS2SQArVBDo=5vOkyrNPdqXHPrOyQz3KdP@mail.gmail.com>
-	<AANLkTi=gtnZ-uC-t6u9R=pNd_aSKE3YsXi_HUqnu5+VQ@mail.gmail.com>
-	<AANLkTinMvkuxdrwgj4bS9MfVaimWx-DYaanhUD-bT_wO@mail.gmail.com>
-	<AANLkTimy5mPqCEbMv_68XMa7Pq_n_-jq0Pdor8+ck64B@mail.gmail.com>
-	<AANLkTi=CxyXHXpa-=CNyyJPOHe-OV0xGr3USKx+TyeqK@mail.gmail.com>
-	<20110304121146.GG2868@balbir.in.ibm.com>
-Date: Mon, 7 Mar 2011 15:00:24 +0800
-Message-ID: <AANLkTinLe8bMUCTp8Kmv98=s8D8-1qUo78Vff_-Vpgfv@mail.gmail.com>
-Subject: Re: [BUGFIX][PATCH] Fix sched rt group scheduling when hierachy is enabled
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: balbir@linux.vnet.ibm.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <pzijlstr@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Bharata B Rao <bharata.rao@in.ibm.com>
-Content-Type: multipart/mixed; boundary=000e0cd47c58cd9725049ddf0cd0
+	Mon, 7 Mar 2011 02:03:56 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 8276
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jassi Brar <jassi.brar@samsung.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/7] ASoC: neo1973_wm8753: Remove scenario management code.
+Date: Mon,  7 Mar 2011 08:04:54 +0100
+Message-Id: <1299481500-5481-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd47c58cd9725049ddf0cd0
-Content-Type: text/plain; charset=UTF-8
+It has been proven to be inflexible to do scenario management in kernel space.
 
-On Fri, Mar 4, 2011 at 8:11 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> I based the changes on what I saw during my debugging/test. I
-> explained it earlier,
->
-> Everyone is dequeued
->
-> 1. child runs first, finds parent throttled, so it does not queue
-> anything on parent group. child is unthrottled and rt_time now becomes
-> 0, parent's rt_nr_running is not incremented.
-> 2. Parent timer runs, it is unthrottled, its group->rt_nr_running is 0
-> hence enqueue is not called
+Since actual neo1973 board support has not been merged in mainline and this
+patch has been in the neo1973 tree for some time now it should be safe to remove
+this functionality without breaking existing userspace.
 
-I have tested with the attached(web mail will mangle it) patch with
-yours applied. But I failed to trigger that WARNING.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ sound/soc/samsung/neo1973_wm8753.c |  148 +++---------------------------------
+ 1 files changed, 11 insertions(+), 137 deletions(-)
 
-Below is my steps:
-1)mount -t cgroup -ocpu cpu /mnt
-2)mkdir /mnt/test-1
-3)mkdir /mnt/test-1-1
-4)set rt_runtime to 100000 for test-1 and test-1-1
-5)run a loop task and attach it to test-1-1
-
-So I thought out a scenario to satisfy your description,
-but it's based on the unpatched(without your patch) kernel:
-Let's assume a dual-core system with test-1/test-1-1
-for rt group, a loop task is running on CPU 1 and test-1
-and test-1-1 are both throttled.
-
-              CPU-0                                  CPU-1
-do_sched_rt_period_timer(test-1-1)
-{
-  for CPU-1
-    unthrottled test-1-1.rt_rq[1];
-      but fail to enqueue it because
-      we alway get test-1-1.rt_se[0]
-      due to smp_processor_id();
-      thus test-1.rt_rq[1].nr_running == 0;
-      and it returned with run_time == 0;
-}
-do_sched_rt_period_timer(test-1)
-  unthrottle test-1.rt_rt[1] but
-  fail to enqueue test-1.rt_rt[1];
-  because nr_running == 0;
-
-                           So if we have your patch for issue-1, when
-                           the hrtimer is running on CPU-1, test-1-1
-                           and test-1 will be queued because that
-                           additional check in run_timer == 0 case.
-
-But once we have your patch for issue-2, the above
-problem will be killed by it. right?
-
-Correct me if I'm wrong :)
-
-Thanks,
-Yong
-
-
+diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
+index d3cd688..fe92946 100644
+--- a/sound/soc/samsung/neo1973_wm8753.c
++++ b/sound/soc/samsung/neo1973_wm8753.c
+@@ -37,17 +37,6 @@
+ #include "dma.h"
+ #include "s3c24xx-i2s.h"
+ 
+-/* define the scenarios */
+-#define NEO_AUDIO_OFF			0
+-#define NEO_GSM_CALL_AUDIO_HANDSET	1
+-#define NEO_GSM_CALL_AUDIO_HEADSET	2
+-#define NEO_GSM_CALL_AUDIO_BLUETOOTH	3
+-#define NEO_STEREO_TO_SPEAKERS		4
+-#define NEO_STEREO_TO_HEADPHONES	5
+-#define NEO_CAPTURE_HANDSET		6
+-#define NEO_CAPTURE_HEADSET		7
+-#define NEO_CAPTURE_BLUETOOTH		8
+-
+ static struct snd_soc_card neo1973;
+ static struct i2c_client *i2c;
+ 
+@@ -224,113 +213,6 @@ static struct snd_soc_ops neo1973_voice_ops = {
+ 	.hw_free = neo1973_voice_hw_free,
+ };
+ 
+-static int neo1973_scenario;
+-
+-static int neo1973_get_scenario(struct snd_kcontrol *kcontrol,
+-	struct snd_ctl_elem_value *ucontrol)
+-{
+-	ucontrol->value.integer.value[0] = neo1973_scenario;
+-	return 0;
+-}
+-
+-static int set_scenario_endpoints(struct snd_soc_codec *codec, int scenario)
+-{
+-	struct snd_soc_dapm_context *dapm = &codec->dapm;
+-
+-	pr_debug("Entered %s\n", __func__);
+-
+-	switch (neo1973_scenario) {
+-	case NEO_AUDIO_OFF:
+-		snd_soc_dapm_disable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_GSM_CALL_AUDIO_HANDSET:
+-		snd_soc_dapm_enable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_enable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_enable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_enable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_GSM_CALL_AUDIO_HEADSET:
+-		snd_soc_dapm_enable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_enable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_enable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_enable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_GSM_CALL_AUDIO_BLUETOOTH:
+-		snd_soc_dapm_disable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_enable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_enable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_STEREO_TO_SPEAKERS:
+-		snd_soc_dapm_enable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_STEREO_TO_HEADPHONES:
+-		snd_soc_dapm_enable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_CAPTURE_HANDSET:
+-		snd_soc_dapm_disable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_enable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_CAPTURE_HEADSET:
+-		snd_soc_dapm_disable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_enable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-		break;
+-	case NEO_CAPTURE_BLUETOOTH:
+-		snd_soc_dapm_disable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-		break;
+-	default:
+-		snd_soc_dapm_disable_pin(dapm, "Audio Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
+-		snd_soc_dapm_disable_pin(dapm, "GSM Line In");
+-		snd_soc_dapm_disable_pin(dapm, "Headset Mic");
+-		snd_soc_dapm_disable_pin(dapm, "Call Mic");
+-	}
+-
+-	snd_soc_dapm_sync(dapm);
+-
+-	return 0;
+-}
+-
+-static int neo1973_set_scenario(struct snd_kcontrol *kcontrol,
+-	struct snd_ctl_elem_value *ucontrol)
+-{
+-	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+-
+-	pr_debug("Entered %s\n", __func__);
+-
+-	if (neo1973_scenario == ucontrol->value.integer.value[0])
+-		return 0;
+-
+-	neo1973_scenario = ucontrol->value.integer.value[0];
+-	set_scenario_endpoints(codec, neo1973_scenario);
+-	return 1;
+-}
+-
+ static u8 lm4857_regs[4] = {0x00, 0x40, 0x80, 0xC0};
+ 
+ static void lm4857_write_regs(void)
+@@ -454,26 +336,16 @@ static const struct soc_enum lm4857_mode_enum[] = {
+ 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(lm4857_mode), lm4857_mode),
+ };
+ 
+-static const char *neo_scenarios[] = {
+-	"Off",
+-	"GSM Handset",
+-	"GSM Headset",
+-	"GSM Bluetooth",
+-	"Speakers",
+-	"Headphones",
+-	"Capture Handset",
+-	"Capture Headset",
+-	"Capture Bluetooth"
+-};
+-
+-static const struct soc_enum neo_scenario_enum[] = {
+-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(neo_scenarios), neo_scenarios),
+-};
+-
+ static const DECLARE_TLV_DB_SCALE(stereo_tlv, -4050, 150, 0);
+ static const DECLARE_TLV_DB_SCALE(mono_tlv, -3450, 150, 0);
+ 
+ static const struct snd_kcontrol_new wm8753_neo1973_controls[] = {
++	SOC_DAPM_PIN_SWITCH("Audio Out"),
++	SOC_DAPM_PIN_SWITCH("GSM Line Out"),
++	SOC_DAPM_PIN_SWITCH("GSM Line In"),
++	SOC_DAPM_PIN_SWITCH("Headset Mic"),
++	SOC_DAPM_PIN_SWITCH("Call Mic"),
++
+ 	SOC_SINGLE_EXT_TLV("Amp Left Playback Volume", LM4857_LVOL, 0, 31, 0,
+ 		lm4857_get_reg, lm4857_set_reg, stereo_tlv),
+ 	SOC_SINGLE_EXT_TLV("Amp Right Playback Volume", LM4857_RVOL, 0, 31, 0,
+@@ -482,8 +354,6 @@ static const struct snd_kcontrol_new wm8753_neo1973_controls[] = {
+ 		lm4857_get_reg, lm4857_set_reg, mono_tlv),
+ 	SOC_ENUM_EXT("Amp Mode", lm4857_mode_enum[0],
+ 		lm4857_get_mode, lm4857_set_mode),
+-	SOC_ENUM_EXT("Neo Mode", neo_scenario_enum[0],
+-		neo1973_get_scenario, neo1973_set_scenario),
+ 	SOC_SINGLE_EXT("Amp Spk 3D Playback Switch", LM4857_LVOL, 5, 1, 0,
+ 		lm4857_get_reg, lm4857_set_reg),
+ 	SOC_SINGLE_EXT("Amp HP 3d Playback Switch", LM4857_RVOL, 5, 1, 0,
+@@ -520,7 +390,11 @@ static int neo1973_wm8753_init(struct snd_soc_pcm_runtime *rtd)
+ 				  ARRAY_SIZE(wm8753_dapm_widgets));
+ 
+ 	/* set endpoints to default mode */
+-	set_scenario_endpoints(codec, NEO_AUDIO_OFF);
++	snd_soc_dapm_disable_pin(dapm, "Audio Out");
++	snd_soc_dapm_disable_pin(dapm, "GSM Line Out");
++	snd_soc_dapm_disable_pin(dapm, "GSM Line In");
++	snd_soc_dapm_disable_pin(dapm, "Headset Mic");
++	snd_soc_dapm_disable_pin(dapm, "Call Mic");
+ 
+ 	/* add neo1973 specific controls */
+ 	err = snd_soc_add_controls(codec, wm8753_neo1973_controls,
 -- 
-Only stand for myself
+1.7.2.3
 
---000e0cd47c58cd9725049ddf0cd0
-Content-Type: text/x-patch; charset=US-ASCII; name="0001.patch"
-Content-Disposition: attachment; filename="0001.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gkz0kqlz0
-
-ZGlmZiAtLWdpdCBhL2tlcm5lbC9zY2hlZF9ydC5jIGIva2VybmVsL3NjaGVkX3J0LmMKaW5kZXgg
-MDFmNzVhNS4uN2U0ODM5YyAxMDA2NDQKLS0tIGEva2VybmVsL3NjaGVkX3J0LmMKKysrIGIva2Vy
-bmVsL3NjaGVkX3J0LmMKQEAgLTU2OCw4ICs1NjgsMTIgQEAgc3RhdGljIGludCBkb19zY2hlZF9y
-dF9wZXJpb2RfdGltZXIoc3RydWN0IHJ0X2JhbmR3aWR0aCAqcnRfYiwgaW50IG92ZXJydW4pCiAJ
-CQlyYXdfc3Bpbl91bmxvY2soJnJ0X3JxLT5ydF9ydW50aW1lX2xvY2spOwogCQl9IGVsc2UgaWYg
-KHJ0X3JxLT5ydF9ucl9ydW5uaW5nKSB7CiAJCQlpZGxlID0gMDsKLQkJCWlmICghcnRfcnFfdGhy
-b3R0bGVkKHJ0X3JxKSkKKwkJCWlmICghcnRfcnFfdGhyb3R0bGVkKHJ0X3JxKSkgeworCQkJCWlu
-dCBjcHUgPSBjcHVfb2YocnFfb2ZfcnRfcnEocnRfcnEpKTsKKworCQkJCVdBUk5fT04oIW9uX3J0
-X3JxKHJ0X3JxLT50Zy0+cnRfc2VbY3B1XSkpOwogCQkJCWVucXVldWUgPSAxOworCQkJfQogCQl9
-CiAKIAkJaWYgKGVucXVldWUpCg==
---000e0cd47c58cd9725049ddf0cd0--
