@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab1CGTZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 14:25:45 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38849 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754317Ab1CGTZo (ORCPT
+	id S1755544Ab1CGT3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 14:29:06 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:42597 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752610Ab1CGT3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 14:25:44 -0500
-Message-ID: <4D75317F.2090501@metafoo.de>
-Date: Mon, 07 Mar 2011 20:26:55 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Mon, 7 Mar 2011 14:29:04 -0500
 MIME-Version: 1.0
-To: Bill Gatliff <bgat@billgatliff.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PWM v6 1/3] PWM: Implement a generic PWM framework
-References: <1299385050-13674-1-git-send-email-bgat@billgatliff.com>	<1299385050-13674-2-git-send-email-bgat@billgatliff.com>	<4D7326B0.6050706@metafoo.de>	<4D732B25.2010708@metafoo.de> <AANLkTinJM4YNL-H-QKtsqTWwRksK=__KUCgY5wDP-c+E@mail.gmail.com>
-In-Reply-To: <AANLkTinJM4YNL-H-QKtsqTWwRksK=__KUCgY5wDP-c+E@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <AANLkTi=w=5L8tbjGDCgoRpjRXYrNxsfWaE2SL4XG9+pY@mail.gmail.com>
+References: <1292865120-24020-1-git-send-email-felipe.contreras@nokia.com>
+	<AANLkTi=w=5L8tbjGDCgoRpjRXYrNxsfWaE2SL4XG9+pY@mail.gmail.com>
+Date: Mon, 7 Mar 2011 13:29:02 -0600
+Message-ID: <AANLkTimsrmGdBEEpV7OPFtGG=yRfeVBPxGP5y8gkUHfJ@mail.gmail.com>
+Subject: Re: [PATCH] staging: tidspbridge: protect dmm_map properly
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Ameya Palande <ameya.palande@nokia.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2011 05:28 PM, Bill Gatliff wrote:
-> Lars:
-> 
-> On Sun, Mar 6, 2011 at 12:35 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> On 03/06/2011 07:16 AM, Lars-Peter Clausen wrote:
->>> On 03/06/2011 05:17 AM, Bill Gatliff wrote:
->>>> +
->>>> +
->>>> +pwm_set_handler() -- Defines an end-of-period callback.  The indicated
->>>> +function will be invoked in a worker thread at the end of each PWM
->>>> +period, and can subsequently invoke pwm_config(), etc.  Must be used
->>>> +with extreme care for high-speed PWM outputs.  Set the handler
->>>> +function to NULL to un-set the handler.
->>>> +
+Hi Felipe,
+
+On Mon, Mar 7, 2011 at 12:02 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> On Mon, Dec 20, 2010 at 7:12 PM, Felipe Contreras
+> <felipe.contreras@nokia.com> wrote:
+>> We need to protect not only the dmm_map list, but the individual
+>> map_obj's, otherwise, we might be building the scatter-gather list with
+>> garbage. So, use the existing proc_lock for that.
 >>
->> This looks like a poor man's IRQ handler implementation. In my opinion something
->> like pwm_to_irq would be better suited interface.
-> 
-> Not sure what you mean here.  Can you elaborate?
-> 
-> 
-> b.g.
+>> I observed race conditions which caused kernel panics while running
+>> stress tests. This patch fixes those.
+>
+> I just heard that Tuomas Kulve is getting a lot of panics on Gumstix
+> Overo. I propose we apply this patch on the stable tree ASAP, and if
+> there's no better proposals, also on .38.
 
-I was thinking about an interface similar to gpio_to_irq. So you could map a
-PWM device to a IRQ number and use the existing the existing genirq framework
-to manage the callback handler.
+Can you or Tuomas share the bug report data (panic log, test case
+maybe)? I would like to discard issues affected by timing that could
+be hidden with this patch.
 
-The hardware will quite likely inform the software about when the period has
-ended through an interrupt.
-So what you basically will end up doing in almost every PWM device driver
-implementation is to call pwm_handler() from its interrupt handler.
+I agree that for the time being this needs to be sent upstream, even
+if in paper Ohad's patch solves the issue without side effects of
+locking.
 
-I for example have a SoC with an PWM unit where at least for some channels an
-IRQ number from the main interrupt controller is directly mapped to PWM
-channel. In such an case I could simply return the IRQ number directly instead
-of implementing a IRQ handler which does nothing but calls pwm_handler().
-For other case where the IRQ is muxed onto multiple PWM device you can use an
-irq_chip.
+Thanks,
 
-I think there are still some problems with your current callback handler
-implementation that could prove to be racy. Also each driver has to keep track
-whether the handler should be invoked or not.
-All these problems should go away with a genirq based implementation.
-
-Maybe I'm on the wrong track here though. Could you explain what your expected
-use case is for this part of the API? For example what would a driver using a
-PWM device normally be doing in the handler it passed to the PWM device?
-
-Oh and another thing, will it be mandatory for a PWM driver to provide callback
-functionality and what if the underlying hardware does not support it?
-
-- Lars
+Omar
