@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab1CGVdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:33:09 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:35547 "EHLO gir.skynet.ie"
+	id S1756259Ab1CGVdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 16:33:35 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:58454 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853Ab1CGVdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:33:08 -0500
-Date: Mon, 7 Mar 2011 21:32:38 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm final fixes
-Message-ID: <alpine.DEB.2.00.1103072130050.17490@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754696Ab1CGVde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 16:33:34 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: libc-alpha@sourceware.org
+Subject: Re: X32 psABI status update
+Date: Mon, 7 Mar 2011 16:33:06 -0500
+User-Agent: KMail/1.13.6 (Linux/2.6.37; KDE/4.6.0; x86_64; ; )
+Cc: "H.J. Lu" <hjl.tools@gmail.com>, GCC Development <gcc@gcc.gnu.org>,
+        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+References: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
+In-Reply-To: <AANLkTik53Ss4hk3_nproctYLX0=imnt4HOt=pGV5idcU@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart2832693.oG9cLejGR2";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201103071633.08197.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--nextPart2832693.oG9cLejGR2
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Nouveau and Intel,
+On Saturday, March 05, 2011 14:08:04 H.J. Lu wrote:
+> Many x32 bugs are fixed in kernel, glibc, binutils and GCC:
+>=20
+> https://sites.google.com/site/x32abi/
+>=20
+> The major remaining issues are glibc/gcc testsuite failures,
+> kernel core dump and signal handler unwind.
 
-The two from Ben fixes regressions in since 2.6.38-rc1,
+are you getting a unique host tuple for this ?  or are you extending x86_64-
+linux-gnu ?  so the only way of knowing which ABI is to check for the outpu=
+t=20
+of the compiler+compiler flags ?
+=2Dmike
 
-Chris has a revert + hopefully a more correct fix, along with an overflow 
-fix, and disabling the GPU semaphores which seemed to be causing hangs.
+--nextPart2832693.oG9cLejGR2
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-I'm just passing these on since I'm stuck at home today and can't do much 
-more than read the patches and build them.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Dave.
+iQIcBAABAgAGBQJNdU8UAAoJEEFjO5/oN/WBv4wP/jAoOa9Wk6IuPWRP973njvss
+jM3ECHPilAPzpBnO+p/0Y4+wq8ekpjdrHRHmZOgtsV/e/I4tJqS3SSh3wMTq4CsZ
+XquVLsS5DyC7+SG0/kQXIJWZBf4jTtAdDPQxIVRuHlX6ywZjdE5iCjhtBSSAACm1
+XrSOjQfbdD2edKT49qYVtHK0U8tL4DKisVB8LlQ/HZEmLDVua0Kx2nWhCz8HVo27
+Bjjb0babS1uTnpJPpborAxFdqJaW+M0RVpZS+4lHH+9VKilpHqfm8Tg2dLR9qqOU
+ygmMyJglXEa0oYVAgGONLruiAvzgV1KZCV/TPPAQFQxWGGumXZb2W2LIL6rEBW7/
+1K4ocnpMh1rHzUeXaAQK3QAMYwD7eS8tI0ASOvCy9omkrMElhIMp80kTgh+rO9Km
+Y2vgq4ZhcQwW3KqnMM9h30VU1cmFJMh5NT6hcM2LFnrrRDW0oHazVFhYZBehRuwI
+JAN5uHYoBsc+Aem2JLUskiiNIQhYCq83lEgwZF8uCNGbYW7OOOBULdXqlsSMsMlB
+rkD22DmYYfso39+EEdjapgrxzk3ABhPixRrfgtapEPSVidTOPkXtr1Wc1EX1eDFD
+zWHO/0i6FUovWA4Q0Xc+Yr0Svg8bK4UUQpYdikzXzeJaqYxOkxCVp/gTvz7ve20T
+9mxiGnd0qulIFd6T4o4c
+=wHgO
+-----END PGP SIGNATURE-----
 
-The following changes since commit fb62c00a6d8942775abc23d1621db1252e2d93d1:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2011-03-05 10:43:22 -0800)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Ben Skeggs (2):
-      drm/nouveau: fix regression causing ttm to not be able to evict vram
-      drm/nv50-nvc0: prevent multiple vm/bar flushes occuring simultanenously
-
-Chris Wilson (4):
-      Revert "drm/i915: fix corruptions on i8xx due to relaxed fencing"
-      drm/i915: Do not overflow the MMADDR write FIFO
-      drm/i915: Disable GPU semaphores by default
-      drm/i915: Rebind the buffer if its alignment constraints changes with tiling
-
-Dave Airlie (1):
-      Merge remote branch 'ickle/drm-intel-fixes' into drm-fixes
-
- drivers/gpu/drm/i915/i915_debugfs.c        |    4 +-
- drivers/gpu/drm/i915/i915_drv.c            |   17 +++++++++++-
- drivers/gpu/drm/i915/i915_drv.h            |   24 ++++++++++++++----
- drivers/gpu/drm/i915/i915_gem.c            |    2 +-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    4 +-
- drivers/gpu/drm/i915/i915_gem_tiling.c     |   37 +++++++++++++--------------
- drivers/gpu/drm/i915/i915_reg.h            |    2 +
- drivers/gpu/drm/i915/intel_display.c       |    8 +++---
- drivers/gpu/drm/i915/intel_ringbuffer.h    |   13 +++++----
- drivers/gpu/drm/nouveau/nouveau_mem.c      |    6 +++-
- drivers/gpu/drm/nouveau/nouveau_mm.c       |    2 +-
- drivers/gpu/drm/nouveau/nv50_instmem.c     |    8 ++++++
- drivers/gpu/drm/nouveau/nv50_vm.c          |    4 +++
- 13 files changed, 87 insertions(+), 44 deletions(-)
+--nextPart2832693.oG9cLejGR2--
