@@ -1,182 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1CGHk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 02:40:56 -0500
-Received: from smtp-out-189.synserver.de ([212.40.185.189]:1132 "HELO
-	smtp-out-189.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755191Ab1CGHks (ORCPT
+	id S1753839Ab1CGHBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 02:01:44 -0500
+Received: from smtp2.Stanford.EDU ([171.67.219.82]:38097 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751499Ab1CGHBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 02:40:48 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 20568
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Vasily Khoruzhick <anarsoul@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 1/2] USB: s3c2410_udc: Add common implementation for GPIO controlled pullups
-Date: Mon,  7 Mar 2011 08:41:59 +0100
-Message-Id: <1299483720-18175-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
+	Mon, 7 Mar 2011 02:01:42 -0500
+X-Greylist: delayed 611 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Mar 2011 02:01:42 EST
+Message-ID: <4D748070.1030502@localhost>
+Date: Sun, 06 Mar 2011 22:51:28 -0800
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, lwn@lwn.net
+Subject: Re: [ANNOUNCE] RT for v2.6.34.8 now available.
+References: <4D71668F.9050201@windriver.com>
+In-Reply-To: <4D71668F.9050201@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all boards using the s3c2410_udc driver use a GPIO to control the
-state of the pullup, as a result the same code is reimplemented in each board
-file.
-This patch adds support for using a GPIO to control the pullup state to the udc
-driver, so the boards can use a common implementation.
+On 03/04/2011 02:24 PM, Paul Gortmaker wrote:
+> As a value add to the 2.6.34 long term release, I'm happy to also
+> announce the availability of 2.6.34-RT.
+>
+> You can find it in the v2.6.34-rt branch at:
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/paulg/rt-patches.git
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- arch/arm/plat-s3c24xx/include/plat/udc.h |    4 ++
- drivers/usb/gadget/s3c2410_udc.c         |   60 +++++++++++++++++++++++++----
- 2 files changed, 55 insertions(+), 9 deletions(-)
+Great! Many thanks... Actually, impressive work.
 
-diff --git a/arch/arm/plat-s3c24xx/include/plat/udc.h b/arch/arm/plat-s3c24xx/include/plat/udc.h
-index 546bb40..80457c6 100644
---- a/arch/arm/plat-s3c24xx/include/plat/udc.h
-+++ b/arch/arm/plat-s3c24xx/include/plat/udc.h
-@@ -27,6 +27,10 @@ enum s3c2410_udc_cmd_e {
- struct s3c2410_udc_mach_info {
- 	void	(*udc_command)(enum s3c2410_udc_cmd_e);
-  	void	(*vbus_draw)(unsigned int ma);
-+
-+	unsigned int pullup_pin;
-+	unsigned int pullup_pin_inverted;
-+
- 	unsigned int vbus_pin;
- 	unsigned char vbus_pin_inverted;
- };
-diff --git a/drivers/usb/gadget/s3c2410_udc.c b/drivers/usb/gadget/s3c2410_udc.c
-index 2b02520..6d8b040 100644
---- a/drivers/usb/gadget/s3c2410_udc.c
-+++ b/drivers/usb/gadget/s3c2410_udc.c
-@@ -1481,7 +1481,9 @@ static int s3c2410_udc_set_pullup(struct s3c2410_udc *udc, int is_on)
- {
- 	dprintk(DEBUG_NORMAL, "%s()\n", __func__);
- 
--	if (udc_info && udc_info->udc_command) {
-+	if (udc_info && (udc_info->udc_command ||
-+		gpio_is_valid(udc_info->pullup_pin))) {
-+
- 		if (is_on)
- 			s3c2410_udc_enable(udc);
- 		else {
-@@ -1558,6 +1560,32 @@ static const struct usb_gadget_ops s3c2410_ops = {
- 	.vbus_draw		= s3c2410_vbus_draw,
- };
- 
-+static void s3c2410_udc_command(enum s3c2410_udc_cmd_e cmd)
-+{
-+	if (!udc_info)
-+		return;
-+
-+	if (udc_info->udc_command) {
-+		udc_info->udc_command(S3C2410_UDC_P_DISABLE);
-+	} else if (gpio_is_valid(udc_info->pullup_pin)) {
-+		int value;
-+
-+		switch (cmd) {
-+		case S3C2410_UDC_P_ENABLE:
-+			value = 1;
-+			break;
-+		case S3C2410_UDC_P_DISABLE:
-+			value = 0;
-+			break;
-+		default:
-+			return;
-+		}
-+		value ^= udc_info->pullup_pin_inverted;
-+
-+		gpio_set_value(udc_info->pullup_pin, value);
-+	}
-+}
-+
- /*------------------------- gadget driver handling---------------------------*/
- /*
-  * s3c2410_udc_disable
-@@ -1579,8 +1607,7 @@ static void s3c2410_udc_disable(struct s3c2410_udc *dev)
- 	udc_write(0x1F, S3C2410_UDC_EP_INT_REG);
- 
- 	/* Good bye, cruel world */
--	if (udc_info && udc_info->udc_command)
--		udc_info->udc_command(S3C2410_UDC_P_DISABLE);
-+	s3c2410_udc_command(S3C2410_UDC_P_DISABLE);
- 
- 	/* Set speed to unknown */
- 	dev->gadget.speed = USB_SPEED_UNKNOWN;
-@@ -1641,8 +1668,7 @@ static void s3c2410_udc_enable(struct s3c2410_udc *dev)
- 	udc_write(S3C2410_UDC_INT_EP0, S3C2410_UDC_EP_INT_EN_REG);
- 
- 	/* time to say "hello, world" */
--	if (udc_info && udc_info->udc_command)
--		udc_info->udc_command(S3C2410_UDC_P_ENABLE);
-+	s3c2410_udc_command(S3C2410_UDC_P_ENABLE);
- }
- 
- /*
-@@ -1917,6 +1943,17 @@ static int s3c2410_udc_probe(struct platform_device *pdev)
- 		udc->vbus = 1;
- 	}
- 
-+	if (udc_info && !udc_info->udc_command &&
-+		gpio_is_valid(udc_info->pullup_pin)) {
-+
-+		retval = gpio_request_one(udc_info->pullup_pin,
-+				udc_info->vbus_pin_inverted ?
-+				GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW,
-+				"udc pullup");
-+		if (retval)
-+			goto err_vbus_irq;
-+	}
-+
- 	if (s3c2410_udc_debugfs_root) {
- 		udc->regs_info = debugfs_create_file("registers", S_IRUGO,
- 				s3c2410_udc_debugfs_root,
-@@ -1929,6 +1966,9 @@ static int s3c2410_udc_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
-+err_vbus_irq:
-+	if (udc_info && udc_info->vbus_pin > 0)
-+		free_irq(gpio_to_irq(udc_info->vbus_pin), udc);
- err_gpio_claim:
- 	if (udc_info && udc_info->vbus_pin > 0)
- 		gpio_free(udc_info->vbus_pin);
-@@ -1956,6 +1996,10 @@ static int s3c2410_udc_remove(struct platform_device *pdev)
- 
- 	debugfs_remove(udc->regs_info);
- 
-+	if (udc_info && !udc_info->udc_command &&
-+		gpio_is_valid(udc_info->pullup_pin))
-+		gpio_free(udc_info->pullup_pin);
-+
- 	if (udc_info && udc_info->vbus_pin > 0) {
- 		irq = gpio_to_irq(udc_info->vbus_pin);
- 		free_irq(irq, udc);
-@@ -1987,16 +2031,14 @@ static int s3c2410_udc_remove(struct platform_device *pdev)
- #ifdef CONFIG_PM
- static int s3c2410_udc_suspend(struct platform_device *pdev, pm_message_t message)
- {
--	if (udc_info && udc_info->udc_command)
--		udc_info->udc_command(S3C2410_UDC_P_DISABLE);
-+	s3c2410_udc_command(S3C2410_UDC_P_DISABLE);
- 
- 	return 0;
- }
- 
- static int s3c2410_udc_resume(struct platform_device *pdev)
- {
--	if (udc_info && udc_info->udc_command)
--		udc_info->udc_command(S3C2410_UDC_P_ENABLE);
-+	s3c2410_udc_command(S3C2410_UDC_P_ENABLE);
- 
- 	return 0;
- }
--- 
-1.7.2.3
+I'm trying to integrate/build it into my Fedora based rt packages for 
+Planet CCRMA. Warning: I'm doing this on top of the 2.6.34.8-68 fc13 
+koji build, so rt is patched on top of the additional Fedora patches for 
+that build (with a few trivial tweaks to patch cleanly). So I don't know 
+if the following issues are due to that - I will investigate:
 
+I found a couple of extra argument cases for __netif_tx_lock:
+
+--- a/drivers/net/qlcnic/qlcnic_main.c	2010-05-16 17:17:36.000000000 -0400
++++ b/drivers/net/qlcnic/qlcnic_main.c	2011-03-06 20:08:16.000000000 -0500
+@@ -1881,7 +1881,7 @@
+  		smp_mb();
+
+  		if (netif_queue_stopped(netdev) && netif_carrier_ok(netdev)) {
+-			__netif_tx_lock(tx_ring->txq, smp_processor_id());
++			__netif_tx_lock(tx_ring->txq);
+  			if (qlcnic_tx_avail(tx_ring) > TX_STOP_THRESH) {
+  				netif_wake_queue(netdev);
+  				adapter->tx_timeo_cnt = 0;
+--- a/drivers/net/bnx2x_main.c	2010-05-16 17:17:36.000000000 -0400
++++ b/drivers/net/bnx2x_main.c	2011-03-06 19:58:45.000000000 -0500
+@@ -976,7 +976,7 @@
+  		 * stops the queue
+  		 */
+
+-		__netif_tx_lock(txq, smp_processor_id());
++		__netif_tx_lock(txq);
+
+  		if ((netif_tx_queue_stopped(txq)) &&
+  		    (bp->state == BNX2X_STATE_OPEN) &&
+----
+
+a missing include (incomplete type errors for semaphores):
+
+--- a/drivers/net/mlx4/mlx4.h	2010-05-16 17:17:36.000000000 -0400
++++ b/drivers/net/mlx4/mlx4.h	2011-03-06 20:07:05.000000000 -0500
+@@ -37,6 +37,7 @@
+  #ifndef MLX4_H
+  #define MLX4_H
+
++#include <linux/semaphore.h>
+  #include <linux/mutex.h>
+  #include <linux/radix-tree.h>
+  #include <linux/timer.h>
+----
+
+and this (found compilation fix here:
+http://groups.google.com/group/linux.kernel/browse_thread/thread/c4f0fd1ca9298c45/18316184209e6e84?show_docid=18316184209e6e84&fwc=1):
+
+--- a/drivers/net/wireless/ath/ar9170/usb.c	2011-03-06 
+19:13:12.000000000 -0500
++++ b/drivers/net/wireless/ath/ar9170/usb.c	2011-03-06 
+20:13:06.000000000 -0500
+@@ -741,10 +741,10 @@
+
+  	/* unbind anything failed */
+  	if (parent)
+-		down(&parent->sem);
++		device_lock(parent);
+  	device_release_driver(&aru->udev->dev);
+  	if (parent)
+-		up(&parent->sem);
++		device_unlock(parent);
+
+  	usb_put_dev(aru->udev);
+  }
+----
+
+I'll let you know how it goes (light testing probably tomorrow, still 
+building).
+
+-- Fernando "patiently waiting for 2.6.37-rtx"
+:-)
