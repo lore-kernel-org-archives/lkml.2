@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab1CGQUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:20:19 -0500
-Received: from kroah.org ([198.145.64.141]:45262 "EHLO coco.kroah.org"
+	id S1754835Ab1CGQUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:20:17 -0500
+Received: from kroah.org ([198.145.64.141]:45255 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550Ab1CGQUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754212Ab1CGQUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Mar 2011 11:20:15 -0500
-Date: Mon, 7 Mar 2011 08:18:05 -0800
+Date: Mon, 7 Mar 2011 08:16:58 -0800
 From: Greg KH <greg@kroah.com>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: stable@kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [stable] [PATCH] [stable-37] ideapad: read brightness setting
- when have brightness key notify
-Message-ID: <20110307161805.GB9088@kroah.com>
-References: <1299494125-9655-1-git-send-email-ike.pan@canonical.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        "Igor M. Liplianin" <liplianin@me.by>,
+        Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Kernelspace firmware loaders (was: linux-next: manual merge of
+ the staging tree with the v4l-dvb tree)
+Message-ID: <20110307161658.GA9088@kroah.com>
+References: <20110304163905.ed6dd630.sfr@canb.auug.org.au>
+ <20110304171343.GE22173@kroah.com>
+ <4D712750.1070402@redhat.com>
+ <201103071507.37378.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1299494125-9655-1-git-send-email-ike.pan@canonical.com>
+In-Reply-To: <201103071507.37378.laurent.pinchart@ideasonboard.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 06:35:25PM +0800, Ike Panhc wrote:
-> BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=25922
+On Mon, Mar 07, 2011 at 03:07:36PM +0100, Laurent Pinchart wrote:
+> On Friday 04 March 2011 18:54:24 Mauro Carvalho Chehab wrote:
+> > Em 04-03-2011 14:13, Greg KH escreveu:
+> > > On Fri, Mar 04, 2011 at 04:39:05PM +1100, Stephen Rothwell wrote:
+> > >> Today's linux-next merge of the staging tree got a conflict in
+> > >> drivers/staging/Kconfig between commit
+> > >> a1256092a1e87511c977a3d0ef96151cda77e5c9 ("[media] Altera FPGA firmware
+> > >> download module") from the v4l-dvb tree and commit
+> > >> 0867b42113ec4eb8646eb361b15cbcfb741ddf5b ("staging: gma500: Intel GMA500
+> > >> staging driver") from the staging tree.
+> > >> 
+> > >> I fixed it up (see below) and can carry the fix as necessary.
+> > > 
+> > > That looks correct.
+> > > 
+> > > Mauro, what is this driver and why is it added to the staging tree?
+> > 
+> > This driver implements the FPGA programming logic for a firmware required
+> > by a DVB driver, and was proposed initially for 2.6.37 inclusion. During
+> > the 2.6.38 development cycle, it suffered several revisions, based on our
+> > input at the media and lkml mailing lists, where Igor fixed all
+> > CodingStyle issues.
+> > 
+> > In the last minute, during 2.6.38 merge window, two developers (Laurent and
+> > Ben) [1] complained against adding a driver for loading FPGA firmware
+> > as-is. So, I decided to add it, for now, at staging, to avoid needing to
+> > postpone a long series of patches again just because of that, especially
+> > since a series of DVB-C devices are without support on Linux without this
+> > patch series, and there are very few DVB-C devices currently supported.
+> > 
+> > The Altera driver is compliant with CodingStyle, and, from my side, it is
+> > ok to move it to drivers/others, but it doesn't hurt to give some time for
+> > Ben and Laurent to propose alternative way of implementing the firmware
+> > request logic.
+> > 
+> > If nothing happens until 2.6.40 merge window, I think we should go forward
+> > and move it to the proper place.
 > 
-> On ideapad Y530, the brightness key notify will be blocked if the last notify
-> is not responsed by getting the brightness value. Read value when we get the
-> notify shall fix the problem and will not have any difference on other ideapads.
+> What's the policy regarding firmware loaders in kernelspace vs. userspace ? 
+> JTAG is a quite complex protocol, and we already have lots of JTAG libraries 
+> in userspace (http://urjtag.org/ seems to be the most popular one). We also 
+> have userspace firmware loaders (such as fxload for the Cypress EZ USB 
+> microcontrollers). Do we need a kernelspace JTAG implementation ?
 > 
-> This patch is made against 2.6.37.y and this bug impacts kernel after 2.6.37.
-> 
-> The equivalent-fix patch is not in upstream yet. Since the policy of stable tree
-> is changed and .38 kernel is going to finalize.
+> > [1] http://www.mail-archive.com/linux-media@vger.kernel.org/msg26422.html
 
-What "policy of the stable tree is changed"?  Huh?
+If the code is just a "pass-through" to the hardware, I have no
+objection to the driver being in the kernel, if it needs to be in order
+to control the hardware properly.
 
-> I think to post this patch for stable kernel now should be a good
-> idea.
-
-Have you not read the Documentation/stable_kernel_rules.txt and seen
-that this is totally and completly not allowed?  Why is it suddenly not
-true?
-
-confused,
+thanks,
 
 greg k-h
