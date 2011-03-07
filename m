@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab1CGKC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 05:02:58 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44382 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab1CGKC5 (ORCPT
+	id S1755673Ab1CGKEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 05:04:16 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57841 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117Ab1CGKEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 05:02:57 -0500
+	Mon, 7 Mar 2011 05:04:06 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 7 Mar 2011 18:56:34 +0900
+Date: Mon, 7 Mar 2011 18:57:38 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Cesar Eduardo Barros <cesarb@cesarb.net>
 Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
         Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
         Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCHv2 15/24] sys_swapon: move setting of swapfilepages near
- use
-Message-Id: <20110307185634.cd34d3b8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299343345-3984-16-git-send-email-cesarb@cesarb.net>
+Subject: Re: [PATCHv2 16/24] sys_swapon: separate parsing of swapfile header
+Message-Id: <20110307185738.735bd6dd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1299343345-3984-17-git-send-email-cesarb@cesarb.net>
 References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
-	<1299343345-3984-16-git-send-email-cesarb@cesarb.net>
+	<1299343345-3984-17-git-send-email-cesarb@cesarb.net>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -30,12 +29,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  5 Mar 2011 13:42:16 -0300
+On Sat,  5 Mar 2011 13:42:17 -0300
 Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
 
-> There is no reason I can see to read inode->i_size long before it is
-> needed. Move its read to just before it is needed, to reduce the
-> variable lifetime.
+> Move the code which parses and checks the swapfile header (except for
+> the bad block list) to a separate function. Only code movement, no
+> functional changes.
 > 
 > Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 > Tested-by: Eric B Munson <emunson@mgebm.net>
