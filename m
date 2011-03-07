@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab1CGCIA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 21:08:00 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:41210 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab1CGCH6 (ORCPT
+	id S1755166Ab1CGDBJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 22:01:09 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57072 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab1CGDBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 21:07:58 -0500
+	Sun, 6 Mar 2011 22:01:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Kzu6O2r7fGBs1fFO+J3hVCwa+OSAdYgaMV8Q67a5iMejJU3ghM3NHj6TG6k7BgRMc9
-         6/yS2v8roLszBMEcQBNQ==
-Date: Sun, 6 Mar 2011 18:07:50 -0800
-From: Michel Lespinasse <walken@google.com>
-To: Darren Hart <dvhltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] futex: update futex_wait_setup comments about locking
-Message-ID: <20110307020750.GA31188@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=kUKRtWzEXg6C2A9FIfycXY/b6DiG9qw7vYeCFq8RYkHxnRi0em/cqu9nanOT1E3ZPs
+         0LzKNj4JXRvNg7OlQF3IXCeN1uoURQ84m6MYdzkyCl5qkaU2Svxi5LKS2GoC/ZZVjuVE
+         3htnKAysvjf8uQHSZl4WZy1LwUvIdhFd5+ZWQ=
+Subject: [PATCH 3/3] hwmon: twl4030-madc-hwmon: add "platform:" prefix for
+	platform modalias
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: J Keerthy <j-keerthy@ti.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
+In-Reply-To: <1299466949.3879.0.camel@mola>
+References: <1299466949.3879.0.camel@mola>
+Content-Type: text/plain
+Date: Mon, 07 Mar 2011 11:05:33 +0800
+Message-Id: <1299467133.3879.5.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviving a cleanup I had done about a year ago as part of a larger
-futex_set_wait proposal. Over the years, the locking of the hashed
-futex queue got improved, so that some of the "rare but normal" race
-conditions described in comments can't actually happen anymore.
+Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+with "platform:"), the platform modalias is prefixed with "platform:".
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- kernel/futex.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/hwmon/twl4030-madc-hwmon.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index b766d28..3184d3b 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1781,13 +1781,14 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
- 	 *
- 	 * The basic logical guarantee of a futex is that it blocks ONLY
- 	 * if cond(var) is known to be true at the time of blocking, for
--	 * any cond.  If we queued after testing *uaddr, that would open
--	 * a race condition where we could block indefinitely with
-+	 * any cond.  If we locked the hash-bucket after testing *uaddr, that
-+	 * would open a race condition where we could block indefinitely with
- 	 * cond(var) false, which would violate the guarantee.
- 	 *
--	 * A consequence is that futex_wait() can return zero and absorb
--	 * a wakeup when *uaddr != val on entry to the syscall.  This is
--	 * rare, but normal.
-+	 * On the other hand, we insert q and release the hash-bucket only
-+	 * after testing *uaddr.  This guarantees that futex_wait() will NOT
-+	 * absorb a wakeup if *uaddr does not match the desired values
-+	 * while the syscall executes.
- 	 */
- retry:
- 	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
-
+diff --git a/drivers/hwmon/twl4030-madc-hwmon.c b/drivers/hwmon/twl4030-madc-hwmon.c
+index 97e22be..de58191 100644
+--- a/drivers/hwmon/twl4030-madc-hwmon.c
++++ b/drivers/hwmon/twl4030-madc-hwmon.c
+@@ -154,4 +154,4 @@ module_exit(twl4030_madc_hwmon_exit);
+ MODULE_DESCRIPTION("TWL4030 ADC Hwmon driver");
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("J Keerthy");
+-MODULE_ALIAS("twl4030_madc_hwmon");
++MODULE_ALIAS("platform:twl4030_madc_hwmon");
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.2
+
+
+
