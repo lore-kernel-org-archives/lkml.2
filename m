@@ -1,191 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1CGMOa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 07:14:30 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51178 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201Ab1CGMO3 convert rfc822-to-8bit (ORCPT
+	id S1755619Ab1CGMPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 07:15:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50817 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753549Ab1CGMPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 07:14:29 -0500
-Message-ID: <4D74CC5F.9070002@cn.fujitsu.com>
-Date: Mon, 07 Mar 2011 20:15:27 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Mon, 7 Mar 2011 07:15:06 -0500
+Date: Mon, 7 Mar 2011 12:15:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
+Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
+ ADAU1701 SigmaDSP
+Message-ID: <20110307121502.GG13471@opensource.wolfsonmicro.com>
+References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
+ <20110307114142.GB13471@opensource.wolfsonmicro.com>
+ <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrea Righi <arighi@develer.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] blk-throttle: async write throttling
-References: <1298888105-3778-1-git-send-email-arighi@develer.com> <20110228230114.GB20845@redhat.com> <20110302132830.GB2061@linux.develer.com> <20110302214705.GD2547@redhat.com> <20110306155247.GA1687@linux.develer.com> <4D7489BF.9030808@cn.fujitsu.com> <20110307113411.GA4485@linux.develer.com> <4D74C531.7070305@cn.fujitsu.com> <20110307115918.GB4485@linux.develer.com>
-In-Reply-To: <20110307115918.GB4485@linux.develer.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-07 20:13:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-07 20:13:15
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrea Righi wrote:
-> On Mon, Mar 07, 2011 at 07:44:49PM +0800, Gui Jianfeng wrote:
->> Andrea Righi wrote:
->>> On Mon, Mar 07, 2011 at 03:31:11PM +0800, Gui Jianfeng wrote:
->>>> Andrea Righi wrote:
->>>>> On Wed, Mar 02, 2011 at 04:47:05PM -0500, Vivek Goyal wrote:
->>>>>> On Wed, Mar 02, 2011 at 02:28:30PM +0100, Andrea Righi wrote:
->>>>>>> On Mon, Feb 28, 2011 at 06:01:14PM -0500, Vivek Goyal wrote:
->>>>>>>> On Mon, Feb 28, 2011 at 11:15:02AM +0100, Andrea Righi wrote:
->>>>>>>>> Overview
->>>>>>>>> ========
->>>>>>>>> Currently the blkio.throttle controller only support synchronous IO requests.
->>>>>>>>> This means that we always look at the current task to identify the "owner" of
->>>>>>>>> each IO request.
->>>>>>>>>
->>>>>>>>> However dirty pages in the page cache can be wrote to disk asynchronously by
->>>>>>>>> the per-bdi flusher kernel threads or by any other thread in the system,
->>>>>>>>> according to the writeback policy.
->>>>>>>>>
->>>>>>>>> For this reason the real writes to the underlying block devices may
->>>>>>>>> occur in a different IO context respect to the task that originally
->>>>>>>>> generated the dirty pages involved in the IO operation. This makes the
->>>>>>>>> tracking and throttling of writeback IO more complicate respect to the
->>>>>>>>> synchronous IO from the blkio controller's perspective.
->>>>>>>>>
->>>>>>>>> Proposed solution
->>>>>>>>> =================
->>>>>>>>> In the previous patch set http://lwn.net/Articles/429292/ I proposed to resolve
->>>>>>>>> the problem of the buffered writes limitation by tracking the ownership of all
->>>>>>>>> the dirty pages in the system.
->>>>>>>>>
->>>>>>>>> This would allow to always identify the owner of each IO operation at the block
->>>>>>>>> layer and apply the appropriate throttling policy implemented by the
->>>>>>>>> blkio.throttle controller.
->>>>>>>>>
->>>>>>>>> This solution makes the blkio.throttle controller to work as expected also for
->>>>>>>>> writeback IO, but it does not resolve the problem of faster cgroups getting
->>>>>>>>> blocked by slower cgroups (that would expose a potential way to create DoS in
->>>>>>>>> the system).
->>>>>>>>>
->>>>>>>>> In fact, at the moment critical IO requests (that have dependency with other IO
->>>>>>>>> requests made by other cgroups) and non-critical requests are mixed together at
->>>>>>>>> the filesystem layer in a way that throttling a single write request may stop
->>>>>>>>> also other requests in the system, and at the block layer it's not possible to
->>>>>>>>> retrieve such informations to make the right decision.
->>>>>>>>>
->>>>>>>>> A simple solution to this problem could be to just limit the rate of async
->>>>>>>>> writes at the time a task is generating dirty pages in the page cache. The
->>>>>>>>> big advantage of this approach is that it does not need the overhead of
->>>>>>>>> tracking the ownership of the dirty pages, because in this way from the blkio
->>>>>>>>> controller perspective all the IO operations will happen from the process
->>>>>>>>> context: writes in memory and synchronous reads from the block device.
->>>>>>>>>
->>>>>>>>> The drawback of this approach is that the blkio.throttle controller becomes a
->>>>>>>>> little bit leaky, because with this solution the controller is still affected
->>>>>>>>> by the IO spikes during the writeback of dirty pages executed by the kernel
->>>>>>>>> threads.
->>>>>>>>>
->>>>>>>>> Probably an even better approach would be to introduce the tracking of the
->>>>>>>>> dirty page ownership to properly account the cost of each IO operation at the
->>>>>>>>> block layer and apply the throttling of async writes in memory only when IO
->>>>>>>>> limits are exceeded.
->>>>>>>> Andrea, I am curious to know more about it third option. Can you give more
->>>>>>>> details about accouting in block layer but throttling in memory. So say 
->>>>>>>> a process starts IO, then it will still be in throttle limits at block
->>>>>>>> layer (because no writeback has started), then the process will write
->>>>>>>> bunch of pages in cache. By the time throttle limits are crossed at
->>>>>>>> block layer, we already have lots of dirty data in page cache and
->>>>>>>> throttling process now is already late?
->>>>>>> Charging the cost of each IO operation at the block layer would allow
->>>>>>> tasks to write in memory at the maximum speed. Instead, with the 3rd
->>>>>>> approach, tasks are forced to write in memory at the rate defined by the
->>>>>>> blkio.throttle.write_*_device (or blkio.throttle.async.write_*_device).
->>>>>>>
->>>>>>> When we'll have the per-cgroup dirty memory accounting and limiting
->>>>>>> feature, with this approach each cgroup could write to its dirty memory
->>>>>>> quota at the maximum rate.
->>>>>> Ok, so this is option 3 which you have already implemented in this
->>>>>> patchset. 
->>>>>>
->>>>>> I guess then I am confused with option 2. Can you elaborate a little
->>>>>> more there.
->>>>> With option 3, we can just limit the rate at which dirty pages are
->>>>> generated in memory. And this can be done introducing the files
->>>>> blkio.throttle.async.write_bps/iops_device.
->>>>>
->>>>> At the moment in blk_throtl_bio() we charge the dispatched bytes/iops
->>>>> _and_ we check if the bio can be dispatched. These two distinct
->>>>> operations are now done by the same function.
->>>>>
->>>>> With option 2, I'm proposing to split these two operations and place
->>>>> throtl_charge_io() at the block layer in __generic_make_request() and an
->>>>> equivalent of tg_may_dispatch_bio() (maybe a better name would be
->>>>> blk_is_throttled()) at the page cache layer, in
->>>>> balance_dirty_pages_ratelimited_nr():
->>>>>
->>>>> A prototype for blk_is_throttled() could be the following:
->>>>>
->>>>> bool blk_is_throttled(void);
->>>>>
->>>>> This means in balance_dirty_pages_ratelimited_nr() we won't charge any
->>>>> bytes/iops to the cgroup, but we'll just check if the limits are
->>>>> exceeded. And stop it in that case, so that no more dirty pages can be
->>>>> generated by this cgroup.
->>>>>
->>>>> Instead at the block layer WRITEs will be always dispatched in
->>>>> blk_throtl_bio() (tg_may_dispatch_bio() will always return true), but
->>>>> the throtl_charge_io() would charge the cost of the IO operation to the
->>>>> right cgroup.
->>>>>
->>>>> To summarize:
->>>>>
->>>>> __generic_make_request():
->>>>> 	blk_throtl_bio(q, &bio);
->>>>>
->>>>> balance_dirty_pages_ratelimited_nr():
->>>>> 	if (blk_is_throttled())
->>>>> 		// add the current task into a per-group wait queue and
->>>>> 		// wake up once this cgroup meets its quota
->>>>>
->>>>> What do you think?
->>>> Hi Andrea,
->>>>
->>>> This means when you throttle writes, the reads issued by this task are also throttled?
->>>>
->>>> Thanks,
->>>> Gui
->>> Exactly, we're treating the throttling of READs and WRITEs in two
->>> different ways.
->>>
->>> READs will be always throttled synchronously in the
->>> __generic_make_request() -> blk_throtl_bio() path.
->> Andreaï¼Œ
->>
->> I means If the task exceeds write limit, this task will be put to sleep, right?
->> So It doesn't get a chance to issue read requests.
-> 
-> Oh yes, you're right. This could be a problem. OTOH I wouldn't like to
-> introduce an additional queue to submit the write requests in the page
-> cache and dispatch them asyncrhonously.
-> 
-> mmh... ideas?
-> 
+On Mon, Mar 07, 2011 at 06:50:15AM -0500, Mike Frysinger wrote:
+> On Mon, Mar 7, 2011 at 06:41, Mark Brown wrote:
 
-hmm, dispatching asynchronously will make things more complicated.
-But writes blocking reads goes against the idea of page cache.
-I'm not sure how to solve this...
+> > Is this needed by other trees?
 
-Gui
+> no
 
-> -Andrea
-> 
+> > I can't apply this driver until it's merged into ASoC via some means
+
+> and andrew has been holding off on merging the firmware driver until
+> something in mainline needs it.  once a driver gets to the point where
+> you're fine with merging it, we can bug akpm to push the sigma
+> firmware loader to linus.
+
+It'd seem easier to just merge the two patches together rather than
+trying to deal with cross-tree issues.
+
+> > This presumably also needs to select the DSP API otherwise it's not
+> > going to build.
+
+> by "DSP API" i'm guessing you mean the Sigma firmware loader
+
+Yes.
+
+> > More generally this doesn't seem like a great interface - apparently the
+> > device requries that firmware be loaded but the whole firmware load
+> > process isn't at all joined up with the driver code meaning that the
+> > application layer has to figure out when firmware needs to be reloaded,
+> > there's no understanding on the part of the driver of what the firmware
+> > on the device is doing or how it's glued into the audio subsystem.
+
+> the API should allow for userspace to specify the firmware name, but
+> that's about it.  it is up to the userspace application to arbitrarily
+> load different firmware files on the fly into the codec without the
+> codec caring what's going into it.  often times the firmware is DSP
+> code to do different post processing on the audio stream (cleanup or
+> whatever).
+
+Right, and this isn't a particularly unusual requirement especially if
+the driver isn't going to have any ability to interact with the DSP (at
+which point it's just coefficient data, the fact that it's a DSP program
+is uninteresting).  The problem is that this isn't a great interface for
+doing that.
+
+At a really basic level the code is not at all integrated with either
+power management or stream handling in ASoC meaning that the user could
+try to download firmware in the middle of an active audio stream (which
+isn't going to be ideal).  Obviously the driver doesn't really support
+any kind of power management at the minute but if it were improved in
+this area you'd also have issues with trying to download firmware while
+the device is off which probably isn't going to work either.
+
+It's also not an interface which offers any kind of discoverability or
+enumerability, meaning that it's not suitable for integration into
+application layer code such as the use case manager.  Applications need
+to be hard coded to know that a particular magic sysfs file needs to be
+poked.  This would be a big step backwards in terms of the ability to
+run off the shelf application software.
