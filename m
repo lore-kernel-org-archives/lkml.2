@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab1CGCkB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 21:40:01 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:48215 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab1CGCkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 21:40:00 -0500
-Date: Mon, 7 Mar 2011 13:39:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: linux-next: build failure after merge of the block tree
-Message-Id: <20110307133957.3b9d814c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755117Ab1CGCmP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 21:42:15 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37049 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab1CGCmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 21:42:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=pa2PVCmFg9qVueQIkFTunNERSkvMKrdJ5CLpfjdET+RTz1/fb7hsV2Luott0QqHRMh
+         kxcvewEdN03wVr6Fwmns69r4j23JP5MxZ1X+jmNimpEZuoPwBm18vVhZfYCsJwzF686J
+         apSYvg/O14tCTwJi9VEwUxDPgCv6dw3WGJhSc=
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: linux-kernel@vger.kernel.org, gregkh@suse.de
+Cc: Alan Cox <alan@linux.intel.com>, Dave Airlie <airlied@gmail.com>,
+        Alexander Beregalov <a.beregalov@gmail.com>
+Subject: [PATCH next] staging: gma500: fix build according to drm changes
+Date: Mon,  7 Mar 2011 05:41:04 +0300
+Message-Id: <1299465664-7760-1-git-send-email-a.beregalov@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+Commit 8410ea3b (drm: rework PCI/platform driver interface.)
+changed drm_driver structure. Fix build according to these changes.
 
-After merging the block tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-block/blk-flush.c: In function 'flush_end_io':
-block/blk-flush.c:217: error: too few arguments to function '__blk_run_queue'
-block/blk-flush.c: In function 'flush_data_end_io':
-block/blk-flush.c:271: error: too few arguments to function '__blk_run_queue'
-
-Caused by commit ae1b1539622fb46e51b4d13b3f9e5f4c713f86ae ("block:
-reimplement FLUSH/FUA to support merge") interacting with commit
-1654e7411a1ad4999fe7890ef51d2a2bbb1fcf76 ("block: add @force_kblockd to
-__blk_run_queue()") from Linus' tree.  My merge fix up was obviously not
-sufficient.
-
-I added this merge fix patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 7 Mar 2011 13:27:04 +1100
-Subject: [PATCH] block: update for __blk_run_queue() API update
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
 ---
- block/blk-flush.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/gma500/psb_drv.c |   30 +++++++++++++++++-------------
+ 1 files changed, 17 insertions(+), 13 deletions(-)
 
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index a867e3f..f9b0228 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -214,7 +214,7 @@ static void flush_end_io(struct request *flush_rq, int error)
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index 2b410af..9214e47 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -1605,6 +1605,18 @@ static const struct dev_pm_ops psb_pm_ops = {
+ 	.runtime_idle = psb_runtime_idle,
+ };
  
- 	/* after populating an empty queue, kick it to avoid stall */
- 	if (queued && was_empty)
--		__blk_run_queue(q);
-+		__blk_run_queue(q, false);
++static struct pci_driver psb_pci_driver = {
++	.name = DRIVER_NAME,
++	.id_table = pciidlist,
++	.resume = ospm_power_resume,
++	.suspend = ospm_power_suspend,
++	.probe = psb_probe,
++	.remove = psb_remove,
++#ifdef CONFIG_PM
++	.driver.pm = &psb_pm_ops,
++#endif
++};
++
+ static struct drm_driver driver = {
+ 	.driver_features = DRIVER_HAVE_IRQ | DRIVER_IRQ_SHARED | \
+ 			   DRIVER_IRQ_VBL | DRIVER_MODESET,
+@@ -1642,17 +1654,9 @@ static struct drm_driver driver = {
+ 		 .fasync = drm_fasync,
+ 		 .read = drm_read,
+ 		 },
+-	.pci_driver = {
+-		       .name = DRIVER_NAME,
+-		       .id_table = pciidlist,
+-		       .resume = ospm_power_resume,
+-		       .suspend = ospm_power_suspend,
+-		       .probe = psb_probe,
+-		       .remove = psb_remove,
+-#ifdef CONFIG_PM
+-			.driver.pm = &psb_pm_ops,
+-#endif
+-		       },
++	.kdriver = {
++		.pci = &psb_pci_driver,
++		},
+ 	.name = DRIVER_NAME,
+ 	.desc = DRIVER_DESC,
+ 	.date = PSB_DRM_DRIVER_DATE,
+@@ -1671,12 +1675,12 @@ static int psb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+ static int __init psb_init(void)
+ {
+-	return drm_init(&driver);
++	return drm_pci_init(&driver, &psb_pci_driver);
  }
  
- /**
-@@ -268,7 +268,7 @@ static void flush_data_end_io(struct request *rq, int error)
- 
- 	/* after populating an empty queue, kick it to avoid stall */
- 	if (blk_flush_complete_seq(rq, REQ_FSEQ_DATA, error) && was_empty)
--		__blk_run_queue(q);
-+		__blk_run_queue(q, false);
+ static void __exit psb_exit(void)
+ {
+-	drm_exit(&driver);
++	drm_pci_exit(&driver, &psb_pci_driver);
  }
  
- /**
+ late_initcall(psb_init);
 -- 
 1.7.4.1
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
