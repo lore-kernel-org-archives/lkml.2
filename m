@@ -1,297 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab1CGHkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 02:40:52 -0500
-Received: from smtp-out-189.synserver.de ([212.40.185.189]:1139 "HELO
+	id S1755344Ab1CGHEU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 02:04:20 -0500
+Received: from smtp-out-189.synserver.de ([212.40.185.189]:1138 "HELO
 	smtp-out-189.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755220Ab1CGHks (ORCPT
+	with SMTP id S1754063Ab1CGHEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 02:40:48 -0500
+	Mon, 7 Mar 2011 02:04:01 -0500
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 20568
+X-SynServer-PPID: 8276
 From: Lars-Peter Clausen <lars@metafoo.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Vasily Khoruzhick <anarsoul@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/2] ARM: s3c24xx: Switch to common GPIO controlled UDC pullup implementation
-Date: Mon,  7 Mar 2011 08:42:00 +0100
-Message-Id: <1299483720-18175-2-git-send-email-lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jassi Brar <jassi.brar@samsung.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 6/7] ASoC: Add driver for the dfbmcs320 bluetooth module
+Date: Mon,  7 Mar 2011 08:04:59 +0100
+Message-Id: <1299481500-5481-6-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299483720-18175-1-git-send-email-lars@metafoo.de>
-References: <1299483720-18175-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1299481500-5481-1-git-send-email-lars@metafoo.de>
+References: <1299481500-5481-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all boards using the s3c2410_udc driver use a GPIO to control the
-state of the pullup, as a result the same code is reimplemented in each board
-This patch changes these boards to use the common implementation for GPIO
-controlled pullup in the UDC driver.
+This patch adds a codec driver for the dfbmcs320 bluetooth module, which is used
+on the neo1973 boards.
+
+The patch also modifies the neo1937_wm8753 sound board driver to use the new
+driver instead of registering the bluetooth DAI manually.
+Previously there was a name mismatch between the bluetooth DAI and the bluetooth
+DAI link and the sound card was not instantiated, with this patch the issue is
+no longer present and sound support works again.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- arch/arm/mach-s3c2410/mach-h1940.c    |   24 +-----------------------
- arch/arm/mach-s3c2410/mach-n30.c      |   21 +--------------------
- arch/arm/mach-s3c2412/mach-smdk2413.c |   24 +-----------------------
- arch/arm/mach-s3c2440/mach-gta02.c    |   22 ++--------------------
- arch/arm/mach-s3c2440/mach-mini2440.c |   24 +-----------------------
- arch/arm/mach-s3c2440/mach-rx1950.c   |   21 +--------------------
- 6 files changed, 7 insertions(+), 129 deletions(-)
+ sound/soc/codecs/Kconfig           |    5 ++-
+ sound/soc/codecs/Makefile          |    2 +
+ sound/soc/codecs/dfbmcs320.c       |   72 ++++++++++++++++++++++++++++++++++++
+ sound/soc/samsung/Kconfig          |    1 +
+ sound/soc/samsung/neo1973_wm8753.c |   35 +++--------------
+ 5 files changed, 86 insertions(+), 29 deletions(-)
+ create mode 100644 sound/soc/codecs/dfbmcs320.c
 
-diff --git a/arch/arm/mach-s3c2410/mach-h1940.c b/arch/arm/mach-s3c2410/mach-h1940.c
-index 5531c4c..882b32a 100644
---- a/arch/arm/mach-s3c2410/mach-h1940.c
-+++ b/arch/arm/mach-s3c2410/mach-h1940.c
-@@ -169,29 +169,10 @@ struct gpio_chip h1940_latch_gpiochip = {
- 	.get			= h1940_gpiolib_latch_get,
- };
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 37035e6..212859c 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -29,6 +29,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_CS4271 if SND_SOC_I2C_AND_SPI
+ 	select SND_SOC_CX20442
+ 	select SND_SOC_DA7210 if I2C
++	select SND_SOC_DFBMCS320
+ 	select SND_SOC_JZ4740_CODEC if SOC_JZ4740
+ 	select SND_SOC_MAX98088 if I2C
+ 	select SND_SOC_MAX9877 if I2C
+@@ -175,6 +176,9 @@ config SND_SOC_L3
+ config SND_SOC_DA7210
+         tristate
  
--static void h1940_udc_pullup(enum s3c2410_udc_cmd_e cmd)
--{
--	printk(KERN_DEBUG "udc: pullup(%d)\n",cmd);
++config SND_SOC_DFBMCS320
++	tristate
++
+ config SND_SOC_DMIC
+ 	tristate
+ 
+@@ -361,4 +365,3 @@ config SND_SOC_WM2000
+ 
+ config SND_SOC_WM9090
+ 	tristate
 -
--	switch (cmd)
--	{
--		case S3C2410_UDC_P_ENABLE :
--			gpio_set_value(H1940_LATCH_USB_DP, 1);
--			break;
--		case S3C2410_UDC_P_DISABLE :
--			gpio_set_value(H1940_LATCH_USB_DP, 0);
--			break;
--		case S3C2410_UDC_P_RESET :
--			break;
--		default:
--			break;
--	}
--}
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index 0663d22..ebb059c 100644
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -15,6 +15,7 @@ snd-soc-cs4270-objs := cs4270.o
+ snd-soc-cs4271-objs := cs4271.o
+ snd-soc-cx20442-objs := cx20442.o
+ snd-soc-da7210-objs := da7210.o
++snd-soc-dfbmcs320-objs := dfbmcs320.o
+ snd-soc-dmic-objs := dmic.o
+ snd-soc-l3-objs := l3.o
+ snd-soc-max98088-objs := max98088.o
+@@ -101,6 +102,7 @@ obj-$(CONFIG_SND_SOC_CS4270)	+= snd-soc-cs4270.o
+ obj-$(CONFIG_SND_SOC_CS4271)	+= snd-soc-cs4271.o
+ obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
+ obj-$(CONFIG_SND_SOC_DA7210)	+= snd-soc-da7210.o
++obj-$(CONFIG_SND_SOC_DFBMCS320)	+= snd-soc-dfbmcs320.o
+ obj-$(CONFIG_SND_SOC_DMIC)	+= snd-soc-dmic.o
+ obj-$(CONFIG_SND_SOC_L3)	+= snd-soc-l3.o
+ obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
+diff --git a/sound/soc/codecs/dfbmcs320.c b/sound/soc/codecs/dfbmcs320.c
+new file mode 100644
+index 0000000..704bbde
+--- /dev/null
++++ b/sound/soc/codecs/dfbmcs320.c
+@@ -0,0 +1,72 @@
++/*
++ * Driver for the DFBM-CS320 bluetooth module
++ * Copyright 2011 Lars-Peter Clausen <lars@metafoo.de>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++
++#include <sound/soc.h>
++
++static struct snd_soc_dai_driver dfbmcs320_dai = {
++	.name = "dfbmcs320-pcm",
++	.playback = {
++		.channels_min = 1,
++		.channels_max = 1,
++		.rates = SNDRV_PCM_RATE_8000,
++		.formats = SNDRV_PCM_FMTBIT_S16_LE,
++	},
++	.capture = {
++		.channels_min = 1,
++		.channels_max = 1,
++		.rates = SNDRV_PCM_RATE_8000,
++		.formats = SNDRV_PCM_FMTBIT_S16_LE,
++	},
++};
++
++static struct snd_soc_codec_driver soc_codec_dev_dfbmcs320;
++
++static int __devinit dfbmcs320_probe(struct platform_device *pdev)
++{
++	return snd_soc_register_codec(&pdev->dev, &soc_codec_dev_dfbmcs320,
++			&dfbmcs320_dai, 1);
++}
++
++static int __devexit dfbmcs320_remove(struct platform_device *pdev)
++{
++	snd_soc_unregister_codec(&pdev->dev);
++
++	return 0;
++}
++
++static struct platform_driver dfmcs320_driver = {
++	.driver = {
++		.name = "dfbmcs320",
++		.owner = THIS_MODULE,
++	},
++	.probe = dfbmcs320_probe,
++	.remove = __devexit_p(dfbmcs320_remove),
++};
++
++static int __init dfbmcs320_init(void)
++{
++	return platform_driver_register(&dfmcs320_driver);
++}
++module_init(dfbmcs320_init);
++
++static void __exit dfbmcs320_exit(void)
++{
++	platform_driver_unregister(&dfmcs320_driver);
++}
++module_exit(dfbmcs320_exit);
++
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_DESCRIPTION("ASoC DFBM-CS320 bluethooth module driver");
++MODULE_LICENSE("GPL");
+diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
+index c3014e8..a08237a 100644
+--- a/sound/soc/samsung/Kconfig
++++ b/sound/soc/samsung/Kconfig
+@@ -40,6 +40,7 @@ config SND_SOC_SAMSUNG_NEO1973_WM8753
+ 	select SND_S3C24XX_I2S
+ 	select SND_SOC_WM8753
+ 	select SND_SOC_LM4857 if MACH_NEO1973_GTA01
++	select SND_SOC_DFBMCS320
+ 	help
+ 	  Say Y here to enable audio support for the Openmoko Neo1973
+ 	  Smartphones.
+diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
+index 37cfbb8..78bfdb3 100644
+--- a/sound/soc/samsung/neo1973_wm8753.c
++++ b/sound/soc/samsung/neo1973_wm8753.c
+@@ -418,23 +418,6 @@ static int neo1973_lm4857_init(struct snd_soc_dapm_context *dapm)
+ static int neo1973_lm4857_init(struct snd_soc_dapm_context *dapm) { return 0; };
+ #endif
+ 
+-/*
+- * BT Codec DAI
+- */
+-static struct snd_soc_dai_driver bt_dai = {
+-	.name = "bluetooth-dai",
+-	.playback = {
+-		.channels_min = 1,
+-		.channels_max = 1,
+-		.rates = SNDRV_PCM_RATE_8000,
+-		.formats = SNDRV_PCM_FMTBIT_S16_LE,},
+-	.capture = {
+-		.channels_min = 1,
+-		.channels_max = 1,
+-		.rates = SNDRV_PCM_RATE_8000,
+-		.formats = SNDRV_PCM_FMTBIT_S16_LE,},
+-};
 -
- static struct s3c2410_udc_mach_info h1940_udc_cfg __initdata = {
--	.udc_command		= h1940_udc_pullup,
- 	.vbus_pin		= S3C2410_GPG(5),
- 	.vbus_pin_inverted	= 1,
-+	.pullup_pin		= H1940_LATCH_USB_DP,
- };
+ static struct snd_soc_dai_link neo1973_dai[] = {
+ { /* Hifi Playback - for similatious use with voice below */
+ 	.name = "WM8753",
+@@ -450,7 +433,7 @@ static struct snd_soc_dai_link neo1973_dai[] = {
+ 	.name = "Bluetooth",
+ 	.stream_name = "Voice",
+ 	.platform_name = "samsung-audio",
+-	.cpu_dai_name = "bluetooth-dai",
++	.cpu_dai_name = "dfbmcs320-pcm",
+ 	.codec_dai_name = "wm8753-voice",
+ 	.codec_name = "wm8753-codec.0-001a",
+ 	.ops = &neo1973_voice_ops,
+@@ -459,6 +442,10 @@ static struct snd_soc_dai_link neo1973_dai[] = {
  
- static struct s3c2410_ts_mach_info h1940_ts_cfg __initdata = {
-@@ -742,9 +723,6 @@ static void __init h1940_init(void)
- 	gpio_direction_output(H1940_LATCH_LCD_P4, 0);
- 	gpio_direction_output(H1940_LATCH_MAX1698_nSHUTDOWN, 0);
+ static struct snd_soc_aux_dev neo1973_aux_devs[] = {
+ 	{
++		.name = "dfbmcs320",
++		.codec_name = "dfbmcs320.0",
++	},
++	{
+ 		.name = "lm4857",
+ 		.codec_name = "lm4857.0-007c",
+ 		.init = neo1973_lm4857_init,
+@@ -502,7 +489,7 @@ static int __init neo1973_init(void)
  
--	gpio_request(H1940_LATCH_USB_DP, "USB pullup");
--	gpio_direction_output(H1940_LATCH_USB_DP, 0);
--
- 	gpio_request(H1940_LATCH_SD_POWER, "SD power");
- 	gpio_direction_output(H1940_LATCH_SD_POWER, 0);
+ 	if (machine_is_neo1973_gta02()) {
+ 		neo1973.name = "neo1973gta02";
+-		neo1973.num_aux_devs = 0;
++		neo1973.num_aux_devs = 1;
  
-diff --git a/arch/arm/mach-s3c2410/mach-n30.c b/arch/arm/mach-s3c2410/mach-n30.c
-index 271b9aa..66f4444 100644
---- a/arch/arm/mach-s3c2410/mach-n30.c
-+++ b/arch/arm/mach-s3c2410/mach-n30.c
-@@ -84,26 +84,10 @@ static struct s3c2410_uartcfg n30_uartcfgs[] = {
- 	},
- };
- 
--static void n30_udc_pullup(enum s3c2410_udc_cmd_e cmd)
--{
--	switch (cmd) {
--	case S3C2410_UDC_P_ENABLE :
--		gpio_set_value(S3C2410_GPB(3), 1);
--		break;
--	case S3C2410_UDC_P_DISABLE :
--		gpio_set_value(S3C2410_GPB(3), 0);
--		break;
--	case S3C2410_UDC_P_RESET :
--		break;
--	default:
--		break;
--	}
--}
--
- static struct s3c2410_udc_mach_info n30_udc_cfg __initdata = {
--	.udc_command		= n30_udc_pullup,
- 	.vbus_pin		= S3C2410_GPG(1),
- 	.vbus_pin_inverted	= 0,
-+	.pullup_pin		= S3C2410_GPB(3),
- };
- 
- static struct gpio_keys_button n30_buttons[] = {
-@@ -596,9 +580,6 @@ static void __init n30_init(void)
- 
- 		platform_add_devices(n35_devices, ARRAY_SIZE(n35_devices));
+ 		ret = gpio_request_array(neo1973_gta02_gpios,
+ 				ARRAY_SIZE(neo1973_gta02_gpios));
+@@ -516,21 +503,14 @@ static int __init neo1973_init(void)
+ 		goto err_gpio_free;
  	}
+ 
+-	/* register bluetooth DAI here */
+-	ret = snd_soc_register_dai(&neo1973_snd_device->dev, &bt_dai);
+-	if (ret)
+-		goto err_put_device;
 -
--	WARN_ON(gpio_request(S3C2410_GPB(3), "udc pup"));
--	gpio_direction_output(S3C2410_GPB(3), 0);
- }
+ 	platform_set_drvdata(neo1973_snd_device, &neo1973);
+ 	ret = platform_device_add(neo1973_snd_device);
  
- MACHINE_START(N30, "Acer-N30")
-diff --git a/arch/arm/mach-s3c2412/mach-smdk2413.c b/arch/arm/mach-s3c2412/mach-smdk2413.c
-index 8e5758b..834cfb6 100644
---- a/arch/arm/mach-s3c2412/mach-smdk2413.c
-+++ b/arch/arm/mach-s3c2412/mach-smdk2413.c
-@@ -78,28 +78,9 @@ static struct s3c2410_uartcfg smdk2413_uartcfgs[] __initdata = {
- 	}
- };
+ 	if (ret)
+-		goto err_unregister_dai;
++		goto err_put_device;
  
--static void smdk2413_udc_pullup(enum s3c2410_udc_cmd_e cmd)
--{
--	printk(KERN_DEBUG "udc: pullup(%d)\n",cmd);
--
--	switch (cmd)
--	{
--		case S3C2410_UDC_P_ENABLE :
--			gpio_set_value(S3C2410_GPF(2), 1);
--			break;
--		case S3C2410_UDC_P_DISABLE :
--			gpio_set_value(S3C2410_GPF(2), 0);
--			break;
--		case S3C2410_UDC_P_RESET :
--			break;
--		default:
--			break;
--	}
--}
--
+ 	return 0;
  
- static struct s3c2410_udc_mach_info smdk2413_udc_cfg __initdata = {
--	.udc_command		= smdk2413_udc_pullup,
-+	.pullup_pin = S3C2410_GPF(2),
- };
+-err_unregister_dai:
+-	snd_soc_unregister_dai(&neo1973_snd_device->dev);
+ err_put_device:
+ 	platform_device_put(neo1973_snd_device);
+ err_gpio_free:
+@@ -544,7 +524,6 @@ module_init(neo1973_init);
  
+ static void __exit neo1973_exit(void)
+ {
+-	snd_soc_unregister_dai(&neo1973_snd_device->dev);
+ 	platform_device_unregister(neo1973_snd_device);
  
-@@ -133,9 +114,6 @@ static void __init smdk2413_machine_init(void)
- {	/* Turn off suspend on both USB ports, and switch the
- 	 * selectable USB port to USB device mode. */
- 
--	WARN_ON(gpio_request(S3C2410_GPF(2), "udc pull"));
--	gpio_direction_output(S3C2410_GPF(2), 0);
--
- 	s3c2410_modify_misccr(S3C2410_MISCCR_USBHOST |
- 			      S3C2410_MISCCR_USBSUSPND0 |
- 			      S3C2410_MISCCR_USBSUSPND1, 0x0);
-diff --git a/arch/arm/mach-s3c2440/mach-gta02.c b/arch/arm/mach-s3c2440/mach-gta02.c
-index d217ef3..0db2411 100644
---- a/arch/arm/mach-s3c2440/mach-gta02.c
-+++ b/arch/arm/mach-s3c2440/mach-gta02.c
-@@ -448,28 +448,10 @@ static struct s3c2410_platform_nand __initdata gta02_nand_info = {
- };
- 
- 
--static void gta02_udc_command(enum s3c2410_udc_cmd_e cmd)
--{
--	switch (cmd) {
--	case S3C2410_UDC_P_ENABLE:
--		pr_debug("%s S3C2410_UDC_P_ENABLE\n", __func__);
--		gpio_direction_output(GTA02_GPIO_USB_PULLUP, 1);
--		break;
--	case S3C2410_UDC_P_DISABLE:
--		pr_debug("%s S3C2410_UDC_P_DISABLE\n", __func__);
--		gpio_direction_output(GTA02_GPIO_USB_PULLUP, 0);
--		break;
--	case S3C2410_UDC_P_RESET:
--		pr_debug("%s S3C2410_UDC_P_RESET\n", __func__);
--		/* FIXME: Do something here. */
--	}
--}
--
- /* Get PMU to set USB current limit accordingly. */
--static struct s3c2410_udc_mach_info gta02_udc_cfg = {
-+static struct s3c2410_udc_mach_info gta02_udc_cfg __initdata = {
- 	.vbus_draw	= gta02_udc_vbus_draw,
--	.udc_command	= gta02_udc_command,
--
-+	.pullup_pin = GTA02_GPIO_USB_PULLUP,
- };
- 
- /* USB */
-diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
-index f62bb4c..d80f129 100644
---- a/arch/arm/mach-s3c2440/mach-mini2440.c
-+++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -97,26 +97,8 @@ static struct s3c2410_uartcfg mini2440_uartcfgs[] __initdata = {
- 
- /* USB device UDC support */
- 
--static void mini2440_udc_pullup(enum s3c2410_udc_cmd_e cmd)
--{
--	pr_debug("udc: pullup(%d)\n", cmd);
--
--	switch (cmd) {
--		case S3C2410_UDC_P_ENABLE :
--			gpio_set_value(S3C2410_GPC(5), 1);
--			break;
--		case S3C2410_UDC_P_DISABLE :
--			gpio_set_value(S3C2410_GPC(5), 0);
--			break;
--		case S3C2410_UDC_P_RESET :
--			break;
--		default:
--			break;
--	}
--}
--
- static struct s3c2410_udc_mach_info mini2440_udc_cfg __initdata = {
--	.udc_command		= mini2440_udc_pullup,
-+	.pullup_pin = S3C2410_GPC(5),
- };
- 
- 
-@@ -644,10 +626,6 @@ static void __init mini2440_init(void)
- 	s3c2410_gpio_setpin(S3C2410_GPB(1), 0);
- 	s3c_gpio_cfgpin(S3C2410_GPB(1), S3C2410_GPIO_INPUT);
- 
--	/* Make sure the D+ pullup pin is output */
--	WARN_ON(gpio_request(S3C2410_GPC(5), "udc pup"));
--	gpio_direction_output(S3C2410_GPC(5), 0);
--
- 	/* mark the key as input, without pullups (there is one on the board) */
- 	for (i = 0; i < ARRAY_SIZE(mini2440_buttons); i++) {
- 		s3c_gpio_setpull(mini2440_buttons[i].gpio, S3C_GPIO_PULL_UP);
-diff --git a/arch/arm/mach-s3c2440/mach-rx1950.c b/arch/arm/mach-s3c2440/mach-rx1950.c
-index 2d2f4e4..22f18d9 100644
---- a/arch/arm/mach-s3c2440/mach-rx1950.c
-+++ b/arch/arm/mach-s3c2440/mach-rx1950.c
-@@ -616,26 +616,10 @@ static struct s3c2410_platform_nand rx1950_nand_info = {
- 	.sets = rx1950_nand_sets,
- };
- 
--static void rx1950_udc_pullup(enum s3c2410_udc_cmd_e cmd)
--{
--	switch (cmd) {
--	case S3C2410_UDC_P_ENABLE:
--		gpio_direction_output(S3C2410_GPJ(5), 1);
--		break;
--	case S3C2410_UDC_P_DISABLE:
--		gpio_direction_output(S3C2410_GPJ(5), 0);
--		break;
--	case S3C2410_UDC_P_RESET:
--		break;
--	default:
--		break;
--	}
--}
--
- static struct s3c2410_udc_mach_info rx1950_udc_cfg __initdata = {
--	.udc_command = rx1950_udc_pullup,
- 	.vbus_pin = S3C2410_GPG(5),
- 	.vbus_pin_inverted = 1,
-+	.pullup_pin = S3C2410_GPJ(5),
- };
- 
- static struct s3c2410_ts_mach_info rx1950_ts_cfg __initdata = {
-@@ -800,9 +784,6 @@ static void __init rx1950_init_machine(void)
- 						S3C2410_MISCCR_USBSUSPND0 |
- 						S3C2410_MISCCR_USBSUSPND1, 0x0);
- 
--	WARN_ON(gpio_request(S3C2410_GPJ(5), "UDC pullup"));
--	gpio_direction_output(S3C2410_GPJ(5), 0);
--
- 	/* mmc power is disabled by default */
- 	WARN_ON(gpio_request(S3C2410_GPJ(1), "MMC power"));
- 	gpio_direction_output(S3C2410_GPJ(1), 0);
+ 	if (machine_is_neo1973_gta02()) {
 -- 
 1.7.2.3
 
