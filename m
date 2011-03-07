@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab1CGIWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 03:22:08 -0500
+	id S1755007Ab1CGIWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 03:22:40 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:49168 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab1CGIWB (ORCPT
+	with ESMTP id S1754462Ab1CGIWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 03:22:01 -0500
+	Mon, 7 Mar 2011 03:22:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=pQqPg6D3MmhZzr/AqqjjIFzDTkQRNd3dDyMxe8PX2Eb/70Iv0KWbITc1oj/hWgXKTM
-         tXv+R74OakdUvj0+KYEAYN7Eu3z3c1fXkiI8OJf8tTxN8fRM7VLFyvM5DMKxk0V4jfM9
-         gmor3St9Ni8tEDKckxN4C75GrXaNh+YryBNtg=
+        b=Az8www/qnB9SOiowUQXui65CawDDk2ZMh5003A4mOZ61V8nHOFpiUtsi8pWW62DlLe
+         ByKN52bLJf/CzKiHrgrSFFwis8YMEI4M239KCmW+YrPzOi3tlAUjtyc6kChJlnSnhzwb
+         ouNoyPdWESMR+8cKiW3qDzpRjE0IjfUW1Yk/c=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 15/21] staging: ft1000: Fix coding style in ft1000_copy_up_pkt function.
-Date: Mon,  7 Mar 2011 09:21:20 +0100
-Message-Id: <1299486086-7325-16-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 21/21] staging: ft1000: Fix coding style in ft1000_proc_drvmsg function.
+Date: Mon,  7 Mar 2011 09:21:26 +0100
+Message-Id: <1299486086-7325-22-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
@@ -30,202 +30,595 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |  167 ++++++++++++-------------
- 1 files changed, 79 insertions(+), 88 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |  566 +++++++++++++------------
+ 1 files changed, 299 insertions(+), 267 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index d2e8de5..26981ed 100644
+index deefefd..d3231e8 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1085,109 +1085,100 @@ err:
- //              SUCCESS
- //
- //---------------------------------------------------------------------------
--static int ft1000_copy_up_pkt (struct urb *urb)
-+static int ft1000_copy_up_pkt(struct urb *urb)
- {
- 	struct ft1000_info *info = urb->context;
--    struct ft1000_device *ft1000dev = info->pFt1000Dev;
--    struct net_device *net = ft1000dev->net;
--
--    u16 tempword;
--    u16 len;
--    u16 lena; //mbelian
--    struct sk_buff *skb;
--    u16 i;
--    u8 *pbuffer=NULL;
--    u8 *ptemp=NULL;
--    u16 *chksum;
--
--
--    //DEBUG("ft1000_copy_up_pkt entered\n");
--
--    if ( ft1000dev->status & FT1000_STATUS_CLOSING)
--    {
--        DEBUG("network driver is closed, return\n");
--        return STATUS_SUCCESS;
--    }
--
--    // Read length
--    len = urb->transfer_buffer_length;
--    lena = urb->actual_length; //mbelian
--    //DEBUG("ft1000_copy_up_pkt: transfer_buffer_length=%d, actual_buffer_len=%d\n",
--      //       urb->transfer_buffer_length, urb->actual_length);
--
--    chksum = (u16 *)ft1000dev->rx_buf;
--
--    tempword = *chksum++;
--    for (i=1; i<7; i++)
--    {
--        tempword ^= *chksum++;
--    }
--
--    if  (tempword != *chksum)
--    {
--        info->stats.rx_errors ++;
--        ft1000_submit_rx_urb(info);
--        return STATUS_FAILURE;
--    }
--
--
--    //DEBUG("ft1000_copy_up_pkt: checksum is correct %x\n", *chksum);
--
--    skb = dev_alloc_skb(len+12+2);
--
--    if (skb == NULL)
--    {
--        DEBUG("ft1000_copy_up_pkt: No Network buffers available\n");
--        info->stats.rx_errors++;
--        ft1000_submit_rx_urb(info);
--        return STATUS_FAILURE;
--    }
--
--    pbuffer = (u8 *)skb_put(skb, len+12);
-+	struct ft1000_device *ft1000dev = info->pFt1000Dev;
-+	struct net_device *net = ft1000dev->net;
- 
--    //subtract the number of bytes read already
--    ptemp = pbuffer;
-+	u16 tempword;
-+	u16 len;
-+	u16 lena;		//mbelian
-+	struct sk_buff *skb;
-+	u16 i;
-+	u8 *pbuffer = NULL;
-+	u8 *ptemp = NULL;
-+	u16 *chksum;
- 
--    // fake MAC address
--    *pbuffer++ = net->dev_addr[0];
--    *pbuffer++ = net->dev_addr[1];
--    *pbuffer++ = net->dev_addr[2];
--    *pbuffer++ = net->dev_addr[3];
--    *pbuffer++ = net->dev_addr[4];
--    *pbuffer++ = net->dev_addr[5];
--    *pbuffer++ = 0x00;
--    *pbuffer++ = 0x07;
--    *pbuffer++ = 0x35;
--    *pbuffer++ = 0xff;
--    *pbuffer++ = 0xff;
--    *pbuffer++ = 0xfe;
-+	//DEBUG("ft1000_copy_up_pkt entered\n");
- 
-+	if (ft1000dev->status & FT1000_STATUS_CLOSING) {
-+		DEBUG("network driver is closed, return\n");
-+		return STATUS_SUCCESS;
-+	}
-+	// Read length
-+	len = urb->transfer_buffer_length;
-+	lena = urb->actual_length;	//mbelian
-+	//DEBUG("ft1000_copy_up_pkt: transfer_buffer_length=%d, actual_buffer_len=%d\n",
-+	//       urb->transfer_buffer_length, urb->actual_length);
-+
-+	chksum = (u16 *) ft1000dev->rx_buf;
-+
-+	tempword = *chksum++;
-+	for (i = 1; i < 7; i++)
-+		tempword ^= *chksum++;
-+
-+	if (tempword != *chksum) {
-+		info->stats.rx_errors++;
-+		ft1000_submit_rx_urb(info);
-+		return STATUS_FAILURE;
-+	}
- 
-+	//DEBUG("ft1000_copy_up_pkt: checksum is correct %x\n", *chksum);
- 
-+	skb = dev_alloc_skb(len + 12 + 2);
- 
--	memcpy(pbuffer, ft1000dev->rx_buf+sizeof(struct pseudo_hdr), len-sizeof(struct pseudo_hdr));
-+	if (skb == NULL) {
-+		DEBUG("ft1000_copy_up_pkt: No Network buffers available\n");
-+		info->stats.rx_errors++;
-+		ft1000_submit_rx_urb(info);
-+		return STATUS_FAILURE;
-+	}
- 
--    //DEBUG("ft1000_copy_up_pkt: Data passed to Protocol layer\n");
--    /*for (i=0; i<len+12; i++)
--    {
--        DEBUG("ft1000_copy_up_pkt: Protocol Data: 0x%x\n ", *ptemp++);
--    }*/
-+	pbuffer = (u8 *) skb_put(skb, len + 12);
-+
-+	/* subtract the number of bytes read already */
-+	ptemp = pbuffer;
-+
-+	/* fake MAC address */
-+	*pbuffer++ = net->dev_addr[0];
-+	*pbuffer++ = net->dev_addr[1];
-+	*pbuffer++ = net->dev_addr[2];
-+	*pbuffer++ = net->dev_addr[3];
-+	*pbuffer++ = net->dev_addr[4];
-+	*pbuffer++ = net->dev_addr[5];
-+	*pbuffer++ = 0x00;
-+	*pbuffer++ = 0x07;
-+	*pbuffer++ = 0x35;
-+	*pbuffer++ = 0xff;
-+	*pbuffer++ = 0xff;
-+	*pbuffer++ = 0xfe;
-+
-+	memcpy(pbuffer, ft1000dev->rx_buf + sizeof(struct pseudo_hdr),
-+	       len - sizeof(struct pseudo_hdr));
-+
-+	//DEBUG("ft1000_copy_up_pkt: Data passed to Protocol layer\n");
-+	/*for (i=0; i<len+12; i++)
-+	   {
-+	   DEBUG("ft1000_copy_up_pkt: Protocol Data: 0x%x\n ", *ptemp++);
-+	   } */
- 
--    skb->dev = net;
-+	skb->dev = net;
- 
--    skb->protocol = eth_type_trans(skb, net);
--    skb->ip_summed = CHECKSUM_UNNECESSARY;
--    netif_rx(skb);
-+	skb->protocol = eth_type_trans(skb, net);
-+	skb->ip_summed = CHECKSUM_UNNECESSARY;
-+	netif_rx(skb);
- 
--    info->stats.rx_packets++;
--    // Add on 12 bytes for MAC address which was removed
--    info->stats.rx_bytes += (lena+12); //mbelian
-+	info->stats.rx_packets++;
-+	/* Add on 12 bytes for MAC address which was removed */
-+	info->stats.rx_bytes += (lena + 12);	//mbelian
- 
--    ft1000_submit_rx_urb(info);
--    //DEBUG("ft1000_copy_up_pkt exited\n");
--    return SUCCESS;
-+	ft1000_submit_rx_urb(info);
-+	//DEBUG("ft1000_copy_up_pkt exited\n");
-+	return SUCCESS;
+@@ -1530,286 +1530,318 @@ static int ft1000_dsp_prov(void *arg)
+ 	return STATUS_SUCCESS;
  }
  
+-static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
++static int ft1000_proc_drvmsg(struct ft1000_device *dev, u16 size)
++{
+ 	struct ft1000_info *info = netdev_priv(dev->net);
+-    u16 msgtype;
+-    u16 tempword;
++	u16 msgtype;
++	u16 tempword;
+ 	struct media_msg *pmediamsg;
+ 	struct dsp_init_msg *pdspinitmsg;
+ 	struct drv_msg *pdrvmsg;
+-    u16 i;
++	u16 i;
+ 	struct pseudo_hdr *ppseudo_hdr;
+-    u16 *pmsg;
+-    u16 status;
+-    union {
+-        u8  byte[2];
+-        u16 wrd;
+-    } convert;
+-
+-
+-    char *cmdbuffer = kmalloc(1600, GFP_KERNEL);
+-    if (!cmdbuffer)
+-	return STATUS_FAILURE;
+-
+-    status = ft1000_read_dpram32(dev, 0x200, cmdbuffer, size);
++	u16 *pmsg;
++	u16 status;
++	union {
++		u8 byte[2];
++		u16 wrd;
++	} convert;
+ 
++	char *cmdbuffer = kmalloc(1600, GFP_KERNEL);
++	if (!cmdbuffer)
++		return STATUS_FAILURE;
+ 
++	status = ft1000_read_dpram32(dev, 0x200, cmdbuffer, size);
+ 
+ #ifdef JDEBUG
+-        DEBUG("ft1000_proc_drvmsg:cmdbuffer\n");
+-        for(i = 0; i < size; i+=5)
+-        {
+-            if( (i + 5) < size )
+-                DEBUG("0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", cmdbuffer[i], cmdbuffer[i+1], cmdbuffer[i+2], cmdbuffer[i+3], cmdbuffer[i+4]);
+-            else
+-            {
+-                for (j = i; j < size; j++)
+-                DEBUG("0x%x ", cmdbuffer[j]);
+-                DEBUG("\n");
+-                break;
+-            }
+-        }
++	DEBUG("ft1000_proc_drvmsg:cmdbuffer\n");
++	for (i = 0; i < size; i += 5) {
++		if ((i + 5) < size)
++			DEBUG("0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", cmdbuffer[i],
++			      cmdbuffer[i + 1], cmdbuffer[i + 2],
++			      cmdbuffer[i + 3], cmdbuffer[i + 4]);
++		else {
++			for (j = i; j < size; j++)
++				DEBUG("0x%x ", cmdbuffer[j]);
++			DEBUG("\n");
++			break;
++		}
++	}
+ #endif
+ 	pdrvmsg = (struct drv_msg *)&cmdbuffer[2];
+-        msgtype = ntohs(pdrvmsg->type);
+-        DEBUG("ft1000_proc_drvmsg:Command message type = 0x%x\n", msgtype);
+-        switch (msgtype) {
+-            case MEDIA_STATE: {
+-                DEBUG("ft1000_proc_drvmsg:Command message type = MEDIA_STATE");
+-
+-		pmediamsg = (struct media_msg *)&cmdbuffer[0];
+-                if (info->ProgConStat != 0xFF) {
+-                    if (pmediamsg->state) {
+-                        DEBUG("Media is up\n");
+-                        if (info->mediastate == 0) {
+-                            if ( info->NetDevRegDone )
+-                            {
+-                                //netif_carrier_on(dev->net);//mbelian
+-                                netif_wake_queue(dev->net);
+-                            }
+-                            info->mediastate = 1;
+-                            /*do_gettimeofday(&tv);
+-                            info->ConTm = tv.tv_sec;*/ //mbelian
+-                        }
+-                    }
+-                    else {
+-                        DEBUG("Media is down\n");
+-                        if (info->mediastate == 1) {
+-                            info->mediastate = 0;
+-                            if ( info->NetDevRegDone )
+-                            {
+-                                //netif_carrier_off(dev->net); mbelian
+-                                //netif_stop_queue(dev->net);
+-                            }
+-                            info->ConTm = 0;
+-                        }
+-                    }
+-                }
+-                else {
+-                    DEBUG("Media is down\n");
+-                    if (info->mediastate == 1) {
+-                        info->mediastate = 0;
+-                        if ( info->NetDevRegDone)
+-                        {
+-                            //netif_carrier_off(dev->net); //mbelian
+-                            //netif_stop_queue(dev->net);
+-                        }
+-                        info->ConTm = 0;
+-                    }
+-                }
+-                break;
+-            }
+-            case DSP_INIT_MSG: {
+-                DEBUG("ft1000_proc_drvmsg:Command message type = DSP_INIT_MSG");
+-
+-		pdspinitmsg = (struct dsp_init_msg *)&cmdbuffer[2];
+-                memcpy(info->DspVer, pdspinitmsg->DspVer, DSPVERSZ);
+-                DEBUG("DSPVER = 0x%2x 0x%2x 0x%2x 0x%2x\n", info->DspVer[0], info->DspVer[1], info->DspVer[2], info->DspVer[3]);
+-                memcpy(info->HwSerNum, pdspinitmsg->HwSerNum, HWSERNUMSZ);
+-                memcpy(info->Sku, pdspinitmsg->Sku, SKUSZ);
+-                memcpy(info->eui64, pdspinitmsg->eui64, EUISZ);
+-                DEBUG("EUI64=%2x.%2x.%2x.%2x.%2x.%2x.%2x.%2x\n", info->eui64[0],info->eui64[1], info->eui64[2], info->eui64[3], info->eui64[4], info->eui64[5],info->eui64[6], info->eui64[7]);
+-                dev->net->dev_addr[0] = info->eui64[0];
+-                dev->net->dev_addr[1] = info->eui64[1];
+-                dev->net->dev_addr[2] = info->eui64[2];
+-                dev->net->dev_addr[3] = info->eui64[5];
+-                dev->net->dev_addr[4] = info->eui64[6];
+-                dev->net->dev_addr[5] = info->eui64[7];
+-
+-		if (ntohs(pdspinitmsg->length) == (sizeof(struct dsp_init_msg) - 20)) {
+-                    memcpy(info->ProductMode, pdspinitmsg->ProductMode, MODESZ);
+-                    memcpy(info->RfCalVer, pdspinitmsg->RfCalVer, CALVERSZ);
+-                    memcpy(info->RfCalDate, pdspinitmsg->RfCalDate, CALDATESZ);
+-                    DEBUG("RFCalVer = 0x%2x 0x%2x\n", info->RfCalVer[0], info->RfCalVer[1]);
+-                }
+-                break;
+-            }
+-            case DSP_PROVISION: {
+-                DEBUG("ft1000_proc_drvmsg:Command message type = DSP_PROVISION\n");
++	msgtype = ntohs(pdrvmsg->type);
++	DEBUG("ft1000_proc_drvmsg:Command message type = 0x%x\n", msgtype);
++	switch (msgtype) {
++	case MEDIA_STATE:{
++			DEBUG
++			    ("ft1000_proc_drvmsg:Command message type = MEDIA_STATE");
 +
- //---------------------------------------------------------------------------
- //
- // Function:   ft1000_submit_rx_urb
++			pmediamsg = (struct media_msg *)&cmdbuffer[0];
++			if (info->ProgConStat != 0xFF) {
++				if (pmediamsg->state) {
++					DEBUG("Media is up\n");
++					if (info->mediastate == 0) {
++						if (info->NetDevRegDone) {
++							//netif_carrier_on(dev->net);//mbelian
++							netif_wake_queue(dev->
++									 net);
++						}
++						info->mediastate = 1;
++						/*do_gettimeofday(&tv);
++						   info->ConTm = tv.tv_sec; *///mbelian
++					}
++				} else {
++					DEBUG("Media is down\n");
++					if (info->mediastate == 1) {
++						info->mediastate = 0;
++						if (info->NetDevRegDone) {
++							//netif_carrier_off(dev->net); mbelian
++							//netif_stop_queue(dev->net);
++						}
++						info->ConTm = 0;
++					}
++				}
++			} else {
++				DEBUG("Media is down\n");
++				if (info->mediastate == 1) {
++					info->mediastate = 0;
++					if (info->NetDevRegDone) {
++						//netif_carrier_off(dev->net); //mbelian
++						//netif_stop_queue(dev->net);
++					}
++					info->ConTm = 0;
++				}
++			}
++			break;
++		}
++	case DSP_INIT_MSG:{
++			DEBUG
++			    ("ft1000_proc_drvmsg:Command message type = DSP_INIT_MSG");
++
++			pdspinitmsg = (struct dsp_init_msg *)&cmdbuffer[2];
++			memcpy(info->DspVer, pdspinitmsg->DspVer, DSPVERSZ);
++			DEBUG("DSPVER = 0x%2x 0x%2x 0x%2x 0x%2x\n",
++			      info->DspVer[0], info->DspVer[1], info->DspVer[2],
++			      info->DspVer[3]);
++			memcpy(info->HwSerNum, pdspinitmsg->HwSerNum,
++			       HWSERNUMSZ);
++			memcpy(info->Sku, pdspinitmsg->Sku, SKUSZ);
++			memcpy(info->eui64, pdspinitmsg->eui64, EUISZ);
++			DEBUG("EUI64=%2x.%2x.%2x.%2x.%2x.%2x.%2x.%2x\n",
++			      info->eui64[0], info->eui64[1], info->eui64[2],
++			      info->eui64[3], info->eui64[4], info->eui64[5],
++			      info->eui64[6], info->eui64[7]);
++			dev->net->dev_addr[0] = info->eui64[0];
++			dev->net->dev_addr[1] = info->eui64[1];
++			dev->net->dev_addr[2] = info->eui64[2];
++			dev->net->dev_addr[3] = info->eui64[5];
++			dev->net->dev_addr[4] = info->eui64[6];
++			dev->net->dev_addr[5] = info->eui64[7];
++
++			if (ntohs(pdspinitmsg->length) ==
++			    (sizeof(struct dsp_init_msg) - 20)) {
++				memcpy(info->ProductMode,
++				       pdspinitmsg->ProductMode, MODESZ);
++				memcpy(info->RfCalVer, pdspinitmsg->RfCalVer,
++				       CALVERSZ);
++				memcpy(info->RfCalDate, pdspinitmsg->RfCalDate,
++				       CALDATESZ);
++				DEBUG("RFCalVer = 0x%2x 0x%2x\n",
++				      info->RfCalVer[0], info->RfCalVer[1]);
++			}
++			break;
++		}
++	case DSP_PROVISION:{
++			DEBUG
++			    ("ft1000_proc_drvmsg:Command message type = DSP_PROVISION\n");
++
++			/* kick off dspprov routine to start provisioning
++			 * Send provisioning data to DSP
++			 */
++			if (list_empty(&info->prov_list) == 0) {
++				info->fProvComplete = 0;
++				status = ft1000_dsp_prov(dev);
++				if (status != STATUS_SUCCESS)
++					goto out;
++			} else {
++				info->fProvComplete = 1;
++				status =
++				    ft1000_write_register(dev, FT1000_DB_HB,
++							  FT1000_REG_DOORBELL);
++				DEBUG
++				    ("FT1000:drivermsg:No more DSP provisioning data in dsp image\n");
++			}
++			DEBUG("ft1000_proc_drvmsg:DSP PROVISION is done\n");
++			break;
++		}
++	case DSP_STORE_INFO:{
++			DEBUG
++			    ("ft1000_proc_drvmsg:Command message type = DSP_STORE_INFO");
++
++			DEBUG("FT1000:drivermsg:Got DSP_STORE_INFO\n");
++			tempword = ntohs(pdrvmsg->length);
++			info->DSPInfoBlklen = tempword;
++			if (tempword < (MAX_DSP_SESS_REC - 4)) {
++				pmsg = (u16 *) &pdrvmsg->data[0];
++				for (i = 0; i < ((tempword + 1) / 2); i++) {
++					DEBUG
++					    ("FT1000:drivermsg:dsp info data = 0x%x\n",
++					     *pmsg);
++					info->DSPInfoBlk[i + 10] = *pmsg++;
++				}
++			} else {
++				info->DSPInfoBlklen = 0;
++			}
++			break;
++		}
++	case DSP_GET_INFO:{
++			DEBUG("FT1000:drivermsg:Got DSP_GET_INFO\n");
++			/* copy dsp info block to dsp */
++			info->DrvMsgPend = 1;
++			/* allow any outstanding ioctl to finish */
++			mdelay(10);
++			status =
++			    ft1000_read_register(dev, &tempword,
++						 FT1000_REG_DOORBELL);
++			if (tempword & FT1000_DB_DPRAM_TX) {
++				mdelay(10);
++				status =
++				    ft1000_read_register(dev, &tempword,
++							 FT1000_REG_DOORBELL);
++				if (tempword & FT1000_DB_DPRAM_TX) {
++					mdelay(10);
++					status =
++					    ft1000_read_register(dev, &tempword,
++								 FT1000_REG_DOORBELL);
++					if (tempword & FT1000_DB_DPRAM_TX)
++						break;
++				}
++			}
++			/* Put message into Slow Queue
++			 * Form Pseudo header
++			 */
++			pmsg = (u16 *) info->DSPInfoBlk;
++			*pmsg++ = 0;
++			*pmsg++ =
++			    htons(info->DSPInfoBlklen + 20 +
++				  info->DSPInfoBlklen);
++			ppseudo_hdr =
++			    (struct pseudo_hdr *)(u16 *) &info->DSPInfoBlk[2];
++			ppseudo_hdr->length =
++			    htons(info->DSPInfoBlklen + 4 +
++				  info->DSPInfoBlklen);
++			ppseudo_hdr->source = 0x10;
++			ppseudo_hdr->destination = 0x20;
++			ppseudo_hdr->portdest = 0;
++			ppseudo_hdr->portsrc = 0;
++			ppseudo_hdr->sh_str_id = 0;
++			ppseudo_hdr->control = 0;
++			ppseudo_hdr->rsvd1 = 0;
++			ppseudo_hdr->rsvd2 = 0;
++			ppseudo_hdr->qos_class = 0;
++			/* Insert slow queue sequence number */
++			ppseudo_hdr->seq_num = info->squeseqnum++;
++			/* Insert application id */
++			ppseudo_hdr->portsrc = 0;
++			/* Calculate new checksum */
++			ppseudo_hdr->checksum = *pmsg++;
++			for (i = 1; i < 7; i++)
++				ppseudo_hdr->checksum ^= *pmsg++;
+ 
+-                // kick off dspprov routine to start provisioning
+-                // Send provisioning data to DSP
+-                if (list_empty(&info->prov_list) == 0)
+-                {
+-		    info->fProvComplete = 0;
+-		    status = ft1000_dsp_prov(dev);
+-		    if (status != STATUS_SUCCESS)
+-		        goto out;
+-                }
+-                else {
+-                    info->fProvComplete = 1;
+-                    status = ft1000_write_register (dev, FT1000_DB_HB, FT1000_REG_DOORBELL);
+-                    DEBUG("FT1000:drivermsg:No more DSP provisioning data in dsp image\n");
+-                }
+-                DEBUG("ft1000_proc_drvmsg:DSP PROVISION is done\n");
+-                break;
+-            }
+-            case DSP_STORE_INFO: {
+-                DEBUG("ft1000_proc_drvmsg:Command message type = DSP_STORE_INFO");
+-
+-                DEBUG("FT1000:drivermsg:Got DSP_STORE_INFO\n");
+-                tempword = ntohs(pdrvmsg->length);
+-                info->DSPInfoBlklen = tempword;
+-                if (tempword < (MAX_DSP_SESS_REC-4) ) {
+-                    pmsg = (u16 *)&pdrvmsg->data[0];
+-                    for (i=0; i<((tempword+1)/2); i++) {
+-                        DEBUG("FT1000:drivermsg:dsp info data = 0x%x\n", *pmsg);
+-                        info->DSPInfoBlk[i+10] = *pmsg++;
+-                    }
+-                }
+-                else {
+-                    info->DSPInfoBlklen = 0;
+-                }
+-                break;
+-            }
+-            case DSP_GET_INFO: {
+-                DEBUG("FT1000:drivermsg:Got DSP_GET_INFO\n");
+-                // copy dsp info block to dsp
+-                info->DrvMsgPend = 1;
+-                // allow any outstanding ioctl to finish
+-                mdelay(10);
+-                status = ft1000_read_register(dev, &tempword, FT1000_REG_DOORBELL);
+-                if (tempword & FT1000_DB_DPRAM_TX) {
+-                    mdelay(10);
+-                    status = ft1000_read_register(dev, &tempword, FT1000_REG_DOORBELL);
+-                    if (tempword & FT1000_DB_DPRAM_TX) {
+-                        mdelay(10);
+-                            status = ft1000_read_register(dev, &tempword, FT1000_REG_DOORBELL);
+-                            if (tempword & FT1000_DB_DPRAM_TX) {
+-                                break;
+-                            }
+-                    }
+-                }
+-
+-                // Put message into Slow Queue
+-                // Form Pseudo header
+-                pmsg = (u16 *)info->DSPInfoBlk;
+-                *pmsg++ = 0;
+-                *pmsg++ = htons(info->DSPInfoBlklen+20+info->DSPInfoBlklen);
+-		ppseudo_hdr = (struct pseudo_hdr *)(u16 *)&info->DSPInfoBlk[2];
+-                ppseudo_hdr->length = htons(info->DSPInfoBlklen+4+info->DSPInfoBlklen);
+-                ppseudo_hdr->source = 0x10;
+-                ppseudo_hdr->destination = 0x20;
+-                ppseudo_hdr->portdest = 0;
+-                ppseudo_hdr->portsrc = 0;
+-                ppseudo_hdr->sh_str_id = 0;
+-                ppseudo_hdr->control = 0;
+-                ppseudo_hdr->rsvd1 = 0;
+-                ppseudo_hdr->rsvd2 = 0;
+-                ppseudo_hdr->qos_class = 0;
+-                // Insert slow queue sequence number
+-                ppseudo_hdr->seq_num = info->squeseqnum++;
+-                // Insert application id
+-                ppseudo_hdr->portsrc = 0;
+-                // Calculate new checksum
+-                ppseudo_hdr->checksum = *pmsg++;
+-                for (i=1; i<7; i++) {
+-                    ppseudo_hdr->checksum ^= *pmsg++;
+-                }
+-                info->DSPInfoBlk[10] = 0x7200;
+-                info->DSPInfoBlk[11] = htons(info->DSPInfoBlklen);
+-                status = ft1000_write_dpram32 (dev, 0, (u8 *)&info->DSPInfoBlk[0], (unsigned short)(info->DSPInfoBlklen+22));
+-                status = ft1000_write_register (dev, FT1000_DB_DPRAM_TX, FT1000_REG_DOORBELL);
+-                info->DrvMsgPend = 0;
+-
+-                break;
+-            }
++			info->DSPInfoBlk[10] = 0x7200;
++			info->DSPInfoBlk[11] = htons(info->DSPInfoBlklen);
++			status =
++			    ft1000_write_dpram32(dev, 0,
++						 (u8 *) &info->DSPInfoBlk[0],
++						 (unsigned short)(info->
++								  DSPInfoBlklen
++								  + 22));
++			status =
++			    ft1000_write_register(dev, FT1000_DB_DPRAM_TX,
++						  FT1000_REG_DOORBELL);
++			info->DrvMsgPend = 0;
+ 
+-          case GET_DRV_ERR_RPT_MSG: {
+-              DEBUG("FT1000:drivermsg:Got GET_DRV_ERR_RPT_MSG\n");
+-              // copy driver error message to dsp
+-              info->DrvMsgPend = 1;
+-              // allow any outstanding ioctl to finish
+-              mdelay(10);
+-              status = ft1000_read_register(dev, &tempword, FT1000_REG_DOORBELL);
+-              if (tempword & FT1000_DB_DPRAM_TX) {
+-                  mdelay(10);
+-                  status = ft1000_read_register(dev, &tempword, FT1000_REG_DOORBELL);
+-                  if (tempword & FT1000_DB_DPRAM_TX) {
+-                      mdelay(10);
+-                  }
+-              }
+-
+-              if ( (tempword & FT1000_DB_DPRAM_TX) == 0) {
+-                  // Put message into Slow Queue
+-                  // Form Pseudo header
+-                  pmsg = (u16 *)&tempbuffer[0];
+-			ppseudo_hdr = (struct pseudo_hdr *)pmsg;
+-                  ppseudo_hdr->length = htons(0x0012);
+-                  ppseudo_hdr->source = 0x10;
+-                  ppseudo_hdr->destination = 0x20;
+-                  ppseudo_hdr->portdest = 0;
+-                  ppseudo_hdr->portsrc = 0;
+-                  ppseudo_hdr->sh_str_id = 0;
+-                  ppseudo_hdr->control = 0;
+-                  ppseudo_hdr->rsvd1 = 0;
+-                  ppseudo_hdr->rsvd2 = 0;
+-                  ppseudo_hdr->qos_class = 0;
+-                  // Insert slow queue sequence number
+-                  ppseudo_hdr->seq_num = info->squeseqnum++;
+-                  // Insert application id
+-                  ppseudo_hdr->portsrc = 0;
+-                  // Calculate new checksum
+-                  ppseudo_hdr->checksum = *pmsg++;
+-                  for (i=1; i<7; i++) {
+-                      ppseudo_hdr->checksum ^= *pmsg++;
+-                  }
+-                  pmsg = (u16 *)&tempbuffer[16];
+-                  *pmsg++ = htons(RSP_DRV_ERR_RPT_MSG);
+-                  *pmsg++ = htons(0x000e);
+-                  *pmsg++ = htons(info->DSP_TIME[0]);
+-                  *pmsg++ = htons(info->DSP_TIME[1]);
+-                  *pmsg++ = htons(info->DSP_TIME[2]);
+-                  *pmsg++ = htons(info->DSP_TIME[3]);
+-                  convert.byte[0] = info->DspVer[0];
+-                  convert.byte[1] = info->DspVer[1];
+-                  *pmsg++ = convert.wrd;
+-                  convert.byte[0] = info->DspVer[2];
+-                  convert.byte[1] = info->DspVer[3];
+-                  *pmsg++ = convert.wrd;
+-                  *pmsg++ = htons(info->DrvErrNum);
+-
+-                  card_send_command (dev, (unsigned char*)&tempbuffer[0], (u16)(0x0012 + PSEUDOSZ));
+-                  info->DrvErrNum = 0;
+-              }
+-              info->DrvMsgPend = 0;
+-
+-          break;
+-      }
+-
+-      default:
+-          break;
+-        }
++			break;
++		}
++
++	case GET_DRV_ERR_RPT_MSG:{
++			DEBUG("FT1000:drivermsg:Got GET_DRV_ERR_RPT_MSG\n");
++			/* copy driver error message to dsp */
++			info->DrvMsgPend = 1;
++			/* allow any outstanding ioctl to finish */
++			mdelay(10);
++			status =
++			    ft1000_read_register(dev, &tempword,
++						 FT1000_REG_DOORBELL);
++			if (tempword & FT1000_DB_DPRAM_TX) {
++				mdelay(10);
++				status =
++				    ft1000_read_register(dev, &tempword,
++							 FT1000_REG_DOORBELL);
++				if (tempword & FT1000_DB_DPRAM_TX)
++					mdelay(10);
++			}
+ 
++			if ((tempword & FT1000_DB_DPRAM_TX) == 0) {
++				/* Put message into Slow Queue
++				 * Form Pseudo header
++				 */
++				pmsg = (u16 *) &tempbuffer[0];
++				ppseudo_hdr = (struct pseudo_hdr *)pmsg;
++				ppseudo_hdr->length = htons(0x0012);
++				ppseudo_hdr->source = 0x10;
++				ppseudo_hdr->destination = 0x20;
++				ppseudo_hdr->portdest = 0;
++				ppseudo_hdr->portsrc = 0;
++				ppseudo_hdr->sh_str_id = 0;
++				ppseudo_hdr->control = 0;
++				ppseudo_hdr->rsvd1 = 0;
++				ppseudo_hdr->rsvd2 = 0;
++				ppseudo_hdr->qos_class = 0;
++				/* Insert slow queue sequence number */
++				ppseudo_hdr->seq_num = info->squeseqnum++;
++				/* Insert application id */
++				ppseudo_hdr->portsrc = 0;
++				/* Calculate new checksum */
++				ppseudo_hdr->checksum = *pmsg++;
++				for (i = 1; i < 7; i++)
++					ppseudo_hdr->checksum ^= *pmsg++;
++
++				pmsg = (u16 *) &tempbuffer[16];
++				*pmsg++ = htons(RSP_DRV_ERR_RPT_MSG);
++				*pmsg++ = htons(0x000e);
++				*pmsg++ = htons(info->DSP_TIME[0]);
++				*pmsg++ = htons(info->DSP_TIME[1]);
++				*pmsg++ = htons(info->DSP_TIME[2]);
++				*pmsg++ = htons(info->DSP_TIME[3]);
++				convert.byte[0] = info->DspVer[0];
++				convert.byte[1] = info->DspVer[1];
++				*pmsg++ = convert.wrd;
++				convert.byte[0] = info->DspVer[2];
++				convert.byte[1] = info->DspVer[3];
++				*pmsg++ = convert.wrd;
++				*pmsg++ = htons(info->DrvErrNum);
++
++				CardSendCommand(dev,
++						(unsigned char *)&tempbuffer[0],
++						(u16) (0x0012 + PSEUDOSZ));
++				info->DrvErrNum = 0;
++			}
++			info->DrvMsgPend = 0;
+ 
+-    status = STATUS_SUCCESS;
+-out:
+-    kfree(cmdbuffer);
+-    DEBUG("return from ft1000_proc_drvmsg\n");
+-    return status;
+-}
++			break;
++		}
+ 
++	default:
++		break;
++	}
+ 
++	status = STATUS_SUCCESS;
++out:
++	kfree(cmdbuffer);
++	DEBUG("return from ft1000_proc_drvmsg\n");
++	return status;
++}
+ 
+ int ft1000_poll(void* dev_id) {
+ 
 -- 
 1.7.1
 
