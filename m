@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab1CGKaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 05:30:20 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58925 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab1CGKaQ (ORCPT
+	id S1755399Ab1CGKb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 05:31:58 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55983 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752589Ab1CGKbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 05:30:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Mj+E2D7JOTetKDFyRoA3SOcBsFkBMKkv1R5/oL7Yoorx0X6/LSXwFta8c2J62LrPd6
-         hWcO2yWJrhwTWRfv7hHNsLN6/AMNSTte/DYzBnox14LY3OIlcg2p6W1IaYFqhzQGiirJ
-         rylCzxCUaGfdRKM4VX4AqUTZAeK7dsKAyppYs=
-Date: Mon, 7 Mar 2011 18:29:58 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: rdunlap@xenotime.net, linux-kernel@vger.kernel.org, linux@kbdbabel.org,
-        romfs@googlegroups.com, linux-doc@vger.kernel.org,
-        akpm@linux-foundation.org, greg@kroah.com
-Subject: Re: [PATCH]fix a link in Documentation/filesystem/romfs.txt
-Message-ID: <20110307102956.GA2041@gmail.com>
-Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>, rdunlap@xenotime.net,
-	linux-kernel@vger.kernel.org, linux@kbdbabel.org,
-	romfs@googlegroups.com, linux-doc@vger.kernel.org,
-	akpm@linux-foundation.org, greg@kroah.com
-References: <20110304115926.GA4104@gmail.com>
- <20110304093548.a37e0ef9.rdunlap@xenotime.net>
- <alpine.LNX.2.00.1103062207470.19969@pobox.suse.cz>
- <alpine.LNX.2.00.1103062211320.19969@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1103062211320.19969@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 7 Mar 2011 05:31:55 -0500
+Date: Mon, 7 Mar 2011 10:31:39 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ghozlane Toumi <gtoumi@laposte.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alan Hourihane <alanh@tungstengraphics.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] video: add MODULE_DEVICE_TABLE
+Message-ID: <20110307103139.53cdaa71@lxorguk.ukuu.org.uk>
+In-Reply-To: <1299486373.20702.1.camel@mola>
+References: <1299486373.20702.1.camel@mola>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 06, 2011 at 10:12:23PM +0100, Jiri Kosina wrote:
-> On Sun, 6 Mar 2011, Jiri Kosina wrote:
-> 
-> > > > Hello romfs group,
-> > > > 	 I have posted a patch to fix the reference to
-> > > > the outdated ftp site (which still serves genromfs-0.5.1) in
-> > > > Documentation/filesystems/romfs.txt last month,
-> > > > but nobody has picked it up yet.
-> > > > 
-> > > > Does anybody like to forward this?
-> > > > Thanks, Alexander
-> > > 
-> > > Hi Jiri,
-> > > Do you have this merged somewhere?
-> > 
-> > Hi Randy,
-> > 
-> > nope, I haven't been CCed and missed it on lkml (obviously :) ). Picked up 
-> > now, thanks.
-> 
-> Ah, actually yes, it's already in the queue, commit ddf1228695.
-Ok, thanks.
+On Mon, 07 Mar 2011 16:26:13 +0800
+Axel Lin <axel.lin@gmail.com> wrote:
 
-Best Regards.
-Harry Wei.
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
+> The device table is required to load modules based on modaliases.
+
+Doing this then triggers autoloading which for some of these drivers is
+the wrong thing.
+
+> diff --git a/drivers/video/sstfb.c b/drivers/video/sstfb.c
+> index 2ab7041..597e80b 100644
+> --- a/drivers/video/sstfb.c
+> +++ b/drivers/video/sstfb.c
+> @@ -1485,6 +1485,7 @@ static const struct pci_device_id sstfb_id_tbl[] = {
+>  		.driver_data = ID_VOODOO2, },
+>  	{ 0 },
+>  };
+> +MODULE_DEVICE_TABLE(pci, sstfb_id_tbl);
+
+NAK - as things stand in the frame buffer world you don't want sstfb
+autoloading and stealing your main framebuffer away.
+
