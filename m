@@ -1,123 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab1CGHXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 02:23:09 -0500
-Received: from 210513-www4.sumeffect.com ([98.129.86.238]:37039 "EHLO
-	210513-www4.sumeffect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab1CGHXG (ORCPT
+	id S1755301Ab1CGHEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 02:04:14 -0500
+Received: from smtp-out-189.synserver.de ([212.40.185.189]:1060 "HELO
+	smtp-out-189.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753381Ab1CGHD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 02:23:06 -0500
-X-Greylist: delayed 1906 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Mar 2011 02:23:06 EST
-To: linux-kernel@vger.kernel.org
-Subject: Spirituality
-From: earn2011@yahoo.com
-Reply-To: earn2011@yahoo.com
-Content-Type: text/plain; charset=UTF-8
-Message-Id: <20110307065119.D1518400E2@210513-www4.sumeffect.com>
-Date: Mon,  7 Mar 2011 00:51:19 -0600 (CST)
+	Mon, 7 Mar 2011 02:03:59 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 8276
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jassi Brar <jassi.brar@samsung.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 3/7] ASoC: neo1973_gta02_wm8753: Remove lm4853_{set,get}_state
+Date: Mon,  7 Mar 2011 08:04:56 +0100
+Message-Id: <1299481500-5481-3-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1299481500-5481-1-git-send-email-lars@metafoo.de>
+References: <1299481500-5481-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Name: Jessica Reyes
-Email: earn2011@yahoo.com
-Learn how to process simple customer rebates at home and earn $15 each GUARANTEED!
+This patch drops the lm4853_{set,get}_state functions and the "Amp State Switch"
+control.
+Those were noops which existed to maintain alsa state file compatibility. Since
+the control names have changed due to internal changes in the ASoC core and
+state file compatibility was broken anyway it makes sense to drop them.
 
-Dear Friend,
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ sound/soc/samsung/neo1973_gta02_wm8753.c |   55 ++++--------------------------
+ 1 files changed, 7 insertions(+), 48 deletions(-)
 
-INSANE conversion rate, currently more that 1 out of 25 prospects purchase the product! 
-Rebate Processor Jobs Unlimited Access Membership is a product for the Work from home/ 
-Work at home niche which is very popular out there. People from all over te globe 
-want to stay at home and earn some extra cash. This product enables them to do so. 
-So with a killer conversion rate and a big market this is a wonderful business to be in, 
-let's make some money together, Join up now!
-
-Keywords: Work from home, work at home, rebate processing, 
-rebate processor, home business, home based business
-
-Congratulations:  Get Your Simple $720 Commissions Now!!!
-
-It's The Perfect Feeder Program!If You Are in One of Those High Priced Programs,   
-and You're Finding it Hard To Recruit People Because of The Bad Economy, 
-This is The Perfect Feeder Program To Start Your People In!
+diff --git a/sound/soc/samsung/neo1973_gta02_wm8753.c b/sound/soc/samsung/neo1973_gta02_wm8753.c
+index 95ebf81..b007dd79 100644
+--- a/sound/soc/samsung/neo1973_gta02_wm8753.c
++++ b/sound/soc/samsung/neo1973_gta02_wm8753.c
+@@ -194,47 +194,14 @@ static struct snd_soc_ops neo1973_gta02_voice_ops = {
+ 	.hw_free = neo1973_gta02_voice_hw_free,
+ };
  
-We've Start putting 48 Members in YOUR TEAM for the March 1t-8th 2011
-commission cycle.and GROWING everyday Earn minimum of $75 up to $150 or more.
+-#define LM4853_AMP 1
+-#define LM4853_SPK 2
+-
+-static u8 lm4853_state;
+-
+-/* This has no effect, it exists only to maintain compatibility with
+- * existing ALSA state files.
+- */
+-static int lm4853_set_state(struct snd_kcontrol *kcontrol,
+-	struct snd_ctl_elem_value *ucontrol)
+-{
+-	int val = ucontrol->value.integer.value[0];
+-
+-	if (val)
+-		lm4853_state |= LM4853_AMP;
+-	else
+-		lm4853_state &= ~LM4853_AMP;
+-
+-	return 0;
+-}
+-
+-static int lm4853_get_state(struct snd_kcontrol *kcontrol,
+-	struct snd_ctl_elem_value *ucontrol)
+-{
+-	ucontrol->value.integer.value[0] = lm4853_state & LM4853_AMP;
+-
+-	return 0;
+-}
++static int gta02_speaker_enabled;
+ 
+ static int lm4853_set_spk(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+ {
+-	int val = ucontrol->value.integer.value[0];
+-
+-	if (val) {
+-		lm4853_state |= LM4853_SPK;
+-		gpio_set_value(GTA02_GPIO_HP_IN, 0);
+-	} else {
+-		lm4853_state &= ~LM4853_SPK;
+-		gpio_set_value(GTA02_GPIO_HP_IN, 1);
+-	}
++	gta02_speaker_enabled = ucontrol->value.integer.value[0];
++
++	gpio_set_value(GTA02_GPIO_HP_IN, !gta02_speaker_enabled);
+ 
+ 	return 0;
+ }
+@@ -242,14 +209,12 @@ static int lm4853_set_spk(struct snd_kcontrol *kcontrol,
+ static int lm4853_get_spk(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol)
+ {
+-	ucontrol->value.integer.value[0] = (lm4853_state & LM4853_SPK) >> 1;
+-
++	ucontrol->value.integer.value[0] = gta02_speaker_enabled;
+ 	return 0;
+ }
+ 
+ static int lm4853_event(struct snd_soc_dapm_widget *w,
+-			struct snd_kcontrol *k,
+-			int event)
++			struct snd_kcontrol *k, int event)
+ {
+ 	gpio_set_value(GTA02_GPIO_AMP_SHUT, SND_SOC_DAPM_EVENT_OFF(event));
+ 
+@@ -304,13 +269,7 @@ static const struct snd_kcontrol_new wm8753_neo1973_gta02_controls[] = {
+ 	SOC_DAPM_PIN_SWITCH("Handset Mic"),
+ 	SOC_DAPM_PIN_SWITCH("Handset Spk"),
+ 
+-	/* This has no effect, it exists only to maintain compatibility with
+-	 * existing ALSA state files.
+-	 */
+-	SOC_SINGLE_EXT("Amp State Switch", 6, 0, 1, 0,
+-		lm4853_get_state,
+-		lm4853_set_state),
+-	SOC_SINGLE_EXT("Amp Spk Switch", 7, 0, 1, 0,
++	SOC_SINGLE_BOOL_EXT("Amp Spk Switch", 0,
+ 		lm4853_get_spk,
+ 		lm4853_set_spk),
+ };
+-- 
+1.7.2.3
 
-IMPORTANT:Join before March/8/2011 is the Cut-Off day to lock in your
-position then faster you act the higher commission turn you will earn!
-
-Go Here To Secure not less than $720 commission Now and it still growing as 
-many people joining under you. important secure your position right away.
-Your commission will Send Arrive Through ,Paypal, or Credit Card in your area  
-on April 20 2011...And Hurry For 3 days & 3 Remaining Position This Week!!
-
-Once your Membership are set up, you will be able to earn $720 in less than 
-2 hours a day.  I will show you how we do that and then I will help you  
-through the process so that YOU SUCCEED!
-
-You will access your money in any ATM when you follow the instructions.
-
-Click below!!
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2926118&referrer=profit2010
-
-TYPE  DATE   &  TIME ------ NEW MEMBERS --New Upgrade --- COUNTRY
-
-P --- March.05 @ 2:38  AM-- Sarrah Grant------------ United States
-P --- March.05 @ 2:53  AM-- Aldren William --------- United Kingdom
-P --- March.05 @ 2:56  AM-- Jeffrey Jacobs---------- Germany
-M --- March.05 @ 4:19  AM-- Mayeth Thompson--------- Singapore
-P --- March.05 @ 4:28  AM-- Chandrena White--------- Italy
-P --- March.05 @ 2:38  AM-- Jinky Buffer------------ United States
-P --- March.05 @ 2:53  AM-- Ailaine Smith ---------- United Kingdom
-P --- March.05 @ 2:56  AM-- Mandene Jonhson--------- Germany
-M --- March.05 @ 4:19  AM-- Cristian Gatmaitan------ Singapore
-P --- March.05 @ 4:28  AM-- Jhon Carmalon----------- Italy
-M --- March.05 @ 6:01  AM-- lalaine Anderson-------- Australia
-P --- March.05 @ 7:11  AM-- Rebecca Underwood------- Hungary
-P --- March.05 @ 7:39  AM-- Jericho Jackson--------- Canada
-P --- March.05 @ 9:42  AM-- Thomas Silva ----------- Sri Lanka
-M --- March.05 @ 9:58  PM-- Grace Taylor------------ Russia
-P --- March.05 @ 10:21 PM-- Gina Henry-------------- New Zealand
-P --- March.05 @ 11:24 PM-- Mohammed Ahmen --------- Romania
-M --- March.05 @ 11:33 PM-- Tracey Duncan----------- Puerto Rico
-P --- March.05 @ 11:41 PM-- Jane furlong------------ Potugal
-P --- March.05 @ 11:47 PM-- Janice Youngtown-------- Taiwan
-P --- March.05 @ 11:53 PM-- Shirley Ong------------- China
-P --- March.05 @ 1:45  AM-- Ryann Lambert ---------- Europe
-M --- March.05 @ 12:34 AM-- Nick Gauci ------------- Calefornia
-M --- March.05 @ 10:24 AM-- Don Riley -------------- Netherland
-P --- March.05 @ 10:30 AM-- Lorne Whittaker -------- Swetzerland
-P --- March.05 @ 02:14 AM-- Ashwani Vohra ---------- Brazil
-M --- March.05 @ 2:34  AM-- Kevin Hunt ------------- Sweden
-P --- March.05 @ 1:54  AM-- Charles Brown----------- South Africa
-P --- March.05 @ 12:34 AM-- Delia Lane ------------- New York
-P --- March.05 @ 6:45  AM-- Mohamed Salamaikom------ Saudi Arabia
-                                              
-Therefore, you have a GUARANTEED $720 Commissions  every month from now on!
-
-Earn $15 Per Process!Each $15 x 48 each member =$720 Commission will be yours...
-
-Be Sure to Copy the link below & Paste into your browser and press enter:
-To Secure your $720 commission!!!
-
-You will access your money in any ATM when you follow the instructions you receive.
-
-Click below!!
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2926118&referrer=profit2010
-
-Just one simple payment of $39 & $42.95 and you could have earn $720 And you are   
-Secure to recieve unlimited commissions every 20th of the month. Today its $720 For    
-the start of the month of March/2011 if goes up daily until the end of the month.
-
-You must UPGRADE right away or before others do....
-
-To Your Success
-
-Jessica Reyes
-
-For mre info contact rebatecustomerhelp@gmail.com
-
-http://www.truthitnow.com/cart.php?m=product_detail&p=8
