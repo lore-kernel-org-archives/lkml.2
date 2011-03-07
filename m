@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1CGUqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 15:46:16 -0500
-Received: from mx1.fusionio.com ([64.244.102.30]:39008 "EHLO mx1.fusionio.com"
+	id S1754050Ab1CGUrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 15:47:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19187 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1CGUqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 15:46:15 -0500
-X-ASG-Debug-ID: 1299530774-03d6a54f601d9c0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D754411.5010508@fusionio.com>
-Date: Mon, 7 Mar 2011 21:46:09 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752008Ab1CGUrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 15:47:00 -0500
+Date: Mon, 7 Mar 2011 15:46:51 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Justin TerAvest <teravest@google.com>, Chad Talbott <ctalbott@google.com>,
+        Nauman Rafique <nauman@google.com>, Divyesh Shah <dpshah@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>
+Subject: Re: RFC: default group_isolation to 1, remove option
+Message-ID: <20110307204651.GK9540@redhat.com>
+References: <AANLkTinXa4Zjg0zGbPQRZQi2QW_-0y+PBzQwcdjPLVKZ@mail.gmail.com>
+ <20110301142002.GB25699@redhat.com>
+ <4D6F0ED0.80804@kernel.dk>
+ <AANLkTin+TycqQxWGyxWOsuT+WOaEA0XhqFkJBMKe7-uY@mail.gmail.com>
+ <4D753488.6090808@kernel.dk>
+ <20110307202432.GH9540@redhat.com>
+ <4D7540F6.3080303@kernel.dk>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mike Snitzer <snitzer@redhat.com>, Shaohua Li <shli@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	 <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>	 <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>	 <20110303221353.GA10366@redhat.com>	 <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com>	 <20110304214359.GA18442@redhat.com> <4D715E8A.5070006@fusionio.com>	 <20110304222702.GB18921@redhat.com>  <4D72A302.6060008@fusionio.com>	 <1299493427.2308.11.camel@twins>  <4D753556.3020800@fusionio.com> <1299530500.2308.417.camel@twins>
-X-ASG-Orig-Subj: Re: [PATCH 05/10] block: remove per-queue plugging
-In-Reply-To: <1299530500.2308.417.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1299530774
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57343
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D7540F6.3080303@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-07 21:41, Peter Zijlstra wrote:
-> On Mon, 2011-03-07 at 20:43 +0100, Jens Axboe wrote:
->> On 2011-03-07 11:23, Peter Zijlstra wrote:
->>> On Sat, 2011-03-05 at 21:54 +0100, Jens Axboe wrote:
->>>>
->>>> Apparently so. Peter/Ingo, please shoot this one down in flames.
->>>> Summary:
->>>>
->>>> - Need a way to trigger this flushing when a task is going to sleep
->>>> - It's currently done right before calling deactivate_task(). We know
->>>>   the task is going to sleep here, but it's also under the runqueue
->>>>   lock. Not good.
->>>> - In the new location, it's not completely clear to me whether we can
->>>>   safely deref 'prev' or not. The usage of prev_state would seem to
->>>>   indicate that we cannot, and as far as I can tell, prev could at this
->>>>   point already potentially be running on another CPU.
->>>>
->>>> Help? Peter, we talked about this in Tokyo in September. Initial
->>>> suggestion was to use preempt notifiers, which we can't because:
->>>>
->>>> - runqueue lock is also held
->>>> - It's not unconditionally available, depends on config.
->>>>
->>>> diff --git a/kernel/sched.c b/kernel/sched.c
->>>> index e806446..8581ad3 100644
->>>> --- a/kernel/sched.c
->>>> +++ b/kernel/sched.c
->>>> @@ -2826,6 +2826,14 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
->>>>  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
->>>>         finish_lock_switch(rq, prev);
->>>>  
->>>> +       /*
->>>> +        * If this task has IO plugged, make sure it
->>>> +        * gets flushed out to the devices before we go
->>>> +        * to sleep
->>>> +        */
->>>> +       if (prev_state != TASK_RUNNING)
->>>> +               blk_flush_plug(prev);
->>>> +
->>>>         fire_sched_in_preempt_notifiers(current);
->>>>         if (mm)
->>>>                 mmdrop(mm);
->>>> @@ -3973,14 +3981,6 @@ need_resched_nonpreemptible:
->>>>                                 if (to_wakeup)
->>>>                                         try_to_wake_up_local(to_wakeup);
->>>>                         }
->>>> -                       /*
->>>> -                        * If this task has IO plugged, make sure it
->>>> -                        * gets flushed out to the devices before we go
->>>> -                        * to sleep
->>>> -                        */
->>>> -                       blk_flush_plug(prev);
->>>> -                       BUG_ON(prev->plug && !list_empty(&prev->plug->list));
->>>> -
->>>>                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
->>>>                 }
->>>>                 switch_count = &prev->nvcsw;
->>>>
->>>
->>> Right, so your new location is still under rq->lock for a number of
->>> architectures (including x86). finish_lock_switch() doesn't actually
->>> release the lock unless __ARCH_WANT_INTERRUPTS_ON_CTXSW ||
->>> __ARCH_WANT_UNLOCKED_CTXSW (the former implies the latter since rq->lock
->>> is IRQ-safe).
->>
->> Ah, thanks for that.
->>
->>> If you want a safe place to drop rq->lock (but keep in mind to keep IRQs
->>> disabled there) and use prev, do something like the below. Both
->>> pre_schedule() and idle_balance() can already drop the rq->lock do doing
->>> it once more is quite all-right ;-)
->>>
->>> Note that once you drop rq->lock prev->state can change to TASK_RUNNING
->>> again so don't re-check that.
->>
->> So that's a problem. If I end up flushing this structure that sits on
->> the stack of the process, I cannot have it running on another CPU at
->> that time.
->>
->> I need the process to be in such a state that it will not get scheduled
->> on another CPU before this has completed.
->>
->> Is that even possible? 
+On Mon, Mar 07, 2011 at 09:32:54PM +0100, Jens Axboe wrote:
+
+[..]
+> > So given then fact that per-ioc-per-disk accounting of request descriptors
+> > makes the accounting complicated and also makes it hard for block IO
+> > controller to use it, the other approach of implementing per group limit
+> > and per-group-per-bdi congested might be reasonable. Having said that, the
+> > patch I had written for per group descritor was also not necessarily very
+> > simple.
 > 
-> Yes, if prev will be flipped back to TASK_RUNNING it will still stay on
-> that cpu, it will not migrate until the cpu that schedules it away (the
-> cpu you're on) will have flipped rq->curr, and that happens way after
-> this point. So you're good to go, just don't rely on ->state once you
-> release rq->lock.
+> So before all of this gets over designed a lot... If we get rid of the
+> one remaining direct buffered writeback in bdp(), then only the flusher
+> threads should be sending huge amounts of IO. So if we attack the
+> problem from that end instead, have it do that accounting in the bdi.
+> With that in place, I'm fairly confident that we can remove the request
+> limits.
+> 
+> Basically just replace the congestion_wait() in there with a bit of
+> accounting logic. Since it's per bdi anyway, we don't even have to
+> maintain that state in the bdi itself. It can remain in the thread
+> stack.
 
-Great, that'll work for me! Your patch should work as-is, then. Thanks
-Peter.
+Moving the accounting up sounds interesting. For cgroup stuff we again shall
+have to do something additional like having per cgroup per bdi flusher threads
+or mainting the number of pending IO per group and not flusher thread does not
+submitting IOs for groups which have lots of pending IOs (to avoid faster
+group getting blocked behind slower one).
 
--- 
-Jens Axboe
-
+Thanks
+Vivek
