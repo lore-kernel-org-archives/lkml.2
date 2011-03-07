@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab1CGVol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:44:41 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:5957 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736Ab1CGVok (ORCPT
+	id S1756367Ab1CGVqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 16:46:53 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19263 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756185Ab1CGVqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:44:40 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsIGAG/gdE2rR7H+/2dsb2JhbACmVQJ0okCcAoViBIUchxSDSYIbgxQ
-X-IronPort-AV: E=Sophos;i="4.62,279,1297036800"; 
-   d="scan'208";a="272092789"
-User-Agent: Microsoft-Entourage/12.28.0.101117
-Date: Mon, 07 Mar 2011 13:44:43 -0800
-Subject: Re: [PATCH] hwmon: (pmbus) More stringent checking of VOUT_MODE
- register
-From: Greg Schnorr <gschnorr@cisco.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-CC: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, <lm-sensors@lm-sensors.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Message-ID: <C99A91CB.5A89D%gschnorr@cisco.com>
-Thread-Topic: [PATCH] hwmon: (pmbus) More stringent checking of VOUT_MODE
- register
-Thread-Index: AcvdEN5c15Vyi7Qi6EOW+Iz7WDM3Qw==
-In-Reply-To: <1299043940-22798-1-git-send-email-guenter.roeck@ericsson.com>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
-X-OriginalArrivalTime: 07 Mar 2011 21:44:37.0442 (UTC) FILETIME=[DB0C4220:01CBDD10]
+	Mon, 7 Mar 2011 16:46:52 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6278"; a="78538810"
+From: Sheetal Sahasrabudhe <sheetals@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: will.deacon@arm.com, jamie.iles@picochip.com, jean.pihet@newoldbits.com,
+        robert.richter@amd.com, dwalker@fifo99.com, bryanh@codeaurora.org,
+        davidb@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sheetal Sahasrabudhe <sheetals@codeaurora.org>
+Subject: [PATCH v2 0/3] ARM: Add Scorpion/ScorpionMP support to perf and Oprofile
+Date: Mon,  7 Mar 2011 16:46:44 -0500
+Message-Id: <1299534404-25346-1-git-send-email-sheetals@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good, tested and works on one such VOUT_MODE poor design...
+This patchset contains the following features:
+It adds support for Qualcomm Scorpion and ScorpionMP processors to perfevents
+and Oprofile.
+It adds PMU support for Scorpion and ScorpionMP.
+It also updates PMU IRQ identifiers for various Scorpion and ScorpionMP targets.
 
-On 3/1/11 9:32 PM, "Guenter Roeck" <guenter.roeck@ericsson.com> wrote:
+Sheetal Sahasrabudhe (3):
+  msm: Add support for Scorpion and ScorpionMP PMU
+  [ARM] perfevents: Add support for Scorpion performance monitors
+  [ARM] Oprofile: Add Qualcomm Scorpion and ScorpionMP CPU type
 
-> Some PMBus chips do not support the VOUT_MODE register. To make matters worse,
-> such chips may not return an error when reading the register either, but
-> instead
-> return 0xff.
-> 
-> Check if the register exists using pmbus_check_byte_register() before reading
-> its value. In addition, validate the returned value and ignore it if it is
-> 0xff
-> (which is invalid).
-> 
-> Reported-by: Greg Schnorr <gschnorr@cisco.com>
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Greg Schnorr <gschnorr@cisco.com>
+ arch/arm/include/asm/perf_event.h          |    2 +
+ arch/arm/kernel/perf_event.c               |   11 +
+ arch/arm/kernel/perf_event_msm.c           |  665 ++++++++++++++++++++++++++++
+ arch/arm/mach-msm/Makefile                 |    2 +
+ arch/arm/mach-msm/include/mach/irqs-7x30.h |    2 +-
+ arch/arm/mach-msm/include/mach/irqs-8960.h |    2 +-
+ arch/arm/mach-msm/include/mach/irqs-8x50.h |    2 +-
+ arch/arm/mach-msm/include/mach/irqs-8x60.h |    2 +-
+ arch/arm/mach-msm/pmu.c                    |   35 ++
+ arch/arm/oprofile/common.c                 |    4 +
+ 10 files changed, 723 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/kernel/perf_event_msm.c
+ create mode 100644 arch/arm/mach-msm/pmu.c
+
+-- 
+1.7.4.1
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
 
