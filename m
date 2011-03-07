@@ -1,275 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab1CGHEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 02:04:20 -0500
-Received: from smtp-out-189.synserver.de ([212.40.185.189]:1138 "HELO
-	smtp-out-189.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754063Ab1CGHEB (ORCPT
+	id S1752337Ab1CGGuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 01:50:09 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60259 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab1CGGuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 02:04:01 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 8276
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Jassi Brar <jassi.brar@samsung.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 6/7] ASoC: Add driver for the dfbmcs320 bluetooth module
-Date: Mon,  7 Mar 2011 08:04:59 +0100
-Message-Id: <1299481500-5481-6-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1299481500-5481-1-git-send-email-lars@metafoo.de>
-References: <1299481500-5481-1-git-send-email-lars@metafoo.de>
+	Mon, 7 Mar 2011 01:50:07 -0500
+Date: Sun, 6 Mar 2011 23:50:02 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: Re: [PATCH v5 1/4] gpiolib: Add "unknown" direction support
+Message-ID: <20110307065002.GA29999@angua.secretlab.ca>
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
+ <20110306072505.GC7467@angua.secretlab.ca>
+ <4D73EC49.8030809@bluewatersys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D73EC49.8030809@bluewatersys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a codec driver for the dfbmcs320 bluetooth module, which is used
-on the neo1973 boards.
+On Mon, Mar 07, 2011 at 09:19:21AM +1300, Ryan Mallon wrote:
+> On 03/06/2011 08:25 PM, Grant Likely wrote:
+> 
+> > Back to sysfs:  The sysfs gpio interface is useful for many reasons,
+> > but it is dangerous much in the same way that /dev/mem is dangerous.
+> > It gives userspace unfettered access to gpio resources without any
+> > clues about how it should be used.  I consider it bad practice to
+> > depend on the gpio sysfs interface for any real system/application.
+> 
+> In an embedded system, where both the kernel and the userspace are
+> provided by the hardware vendor, it can be completely sensible to rely
+> on gpio numbers in userspace (though I would also like to see the sysfs
+> interface able to use named access). There are some existing kernel
+> interfaces for common gpio functions such as leds and input devices, but
+> there are also many other valid uses for gpios. There are many reasons
+> for the access code to be in userspace too: It may be easier to write
+> and debug, depending on the setup of the device it may be easier to do
+> firmware upgrades of userspace than it is for the kernel, etc.
 
-The patch also modifies the neo1937_wm8753 sound board driver to use the new
-driver instead of registering the bluetooth DAI manually.
-Previously there was a name mismatch between the bluetooth DAI and the bluetooth
-DAI link and the sound card was not instantiated, with this patch the issue is
-no longer present and sound support works again.
+I don't dispute any of the above points.  It is the sysfs interface
+itself that I see as problematic.  It provides no discoverability and
+it does not change the fact that once gpios are actually attached to
+something they become specific purpose and users *absolutely must*
+understand exactly what they are doing.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- sound/soc/codecs/Kconfig           |    5 ++-
- sound/soc/codecs/Makefile          |    2 +
- sound/soc/codecs/dfbmcs320.c       |   72 ++++++++++++++++++++++++++++++++++++
- sound/soc/samsung/Kconfig          |    1 +
- sound/soc/samsung/neo1973_wm8753.c |   35 +++--------------
- 5 files changed, 86 insertions(+), 29 deletions(-)
- create mode 100644 sound/soc/codecs/dfbmcs320.c
+> > gpio numbers could easily change or become unavailable if a kernel
+> > driver decides to use them (heck, I'd like to be rid of gpio
+> > numbers entirely, but that's a separate debate). I'd much rather see
+> > real device drivers be written for gpio interfaces instead of bodging
+> > things together from userspace.  Since the addition of an 'unknown'
+> > direction is solely for benefit of the sysfs interface, I don't (yet)
+> > see a valid argument for adding it.  *Who cares* if sysfs might report
+> > direction as 'input' inaccurately?
+> 
+> Because it is incorrect? It may also be useful for a userspace debug
+> tool to request all available gpios and show the current direction and
+> value of them.
 
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 37035e6..212859c 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -29,6 +29,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_CS4271 if SND_SOC_I2C_AND_SPI
- 	select SND_SOC_CX20442
- 	select SND_SOC_DA7210 if I2C
-+	select SND_SOC_DFBMCS320
- 	select SND_SOC_JZ4740_CODEC if SOC_JZ4740
- 	select SND_SOC_MAX98088 if I2C
- 	select SND_SOC_MAX9877 if I2C
-@@ -175,6 +176,9 @@ config SND_SOC_L3
- config SND_SOC_DA7210
-         tristate
- 
-+config SND_SOC_DFBMCS320
-+	tristate
-+
- config SND_SOC_DMIC
- 	tristate
- 
-@@ -361,4 +365,3 @@ config SND_SOC_WM2000
- 
- config SND_SOC_WM9090
- 	tristate
--
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 0663d22..ebb059c 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -15,6 +15,7 @@ snd-soc-cs4270-objs := cs4270.o
- snd-soc-cs4271-objs := cs4271.o
- snd-soc-cx20442-objs := cx20442.o
- snd-soc-da7210-objs := da7210.o
-+snd-soc-dfbmcs320-objs := dfbmcs320.o
- snd-soc-dmic-objs := dmic.o
- snd-soc-l3-objs := l3.o
- snd-soc-max98088-objs := max98088.o
-@@ -101,6 +102,7 @@ obj-$(CONFIG_SND_SOC_CS4270)	+= snd-soc-cs4270.o
- obj-$(CONFIG_SND_SOC_CS4271)	+= snd-soc-cs4271.o
- obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
- obj-$(CONFIG_SND_SOC_DA7210)	+= snd-soc-da7210.o
-+obj-$(CONFIG_SND_SOC_DFBMCS320)	+= snd-soc-dfbmcs320.o
- obj-$(CONFIG_SND_SOC_DMIC)	+= snd-soc-dmic.o
- obj-$(CONFIG_SND_SOC_L3)	+= snd-soc-l3.o
- obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
-diff --git a/sound/soc/codecs/dfbmcs320.c b/sound/soc/codecs/dfbmcs320.c
-new file mode 100644
-index 0000000..704bbde
---- /dev/null
-+++ b/sound/soc/codecs/dfbmcs320.c
-@@ -0,0 +1,72 @@
-+/*
-+ * Driver for the DFBM-CS320 bluetooth module
-+ * Copyright 2011 Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+
-+#include <sound/soc.h>
-+
-+static struct snd_soc_dai_driver dfbmcs320_dai = {
-+	.name = "dfbmcs320-pcm",
-+	.playback = {
-+		.channels_min = 1,
-+		.channels_max = 1,
-+		.rates = SNDRV_PCM_RATE_8000,
-+		.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+	},
-+	.capture = {
-+		.channels_min = 1,
-+		.channels_max = 1,
-+		.rates = SNDRV_PCM_RATE_8000,
-+		.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+	},
-+};
-+
-+static struct snd_soc_codec_driver soc_codec_dev_dfbmcs320;
-+
-+static int __devinit dfbmcs320_probe(struct platform_device *pdev)
-+{
-+	return snd_soc_register_codec(&pdev->dev, &soc_codec_dev_dfbmcs320,
-+			&dfbmcs320_dai, 1);
-+}
-+
-+static int __devexit dfbmcs320_remove(struct platform_device *pdev)
-+{
-+	snd_soc_unregister_codec(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver dfmcs320_driver = {
-+	.driver = {
-+		.name = "dfbmcs320",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = dfbmcs320_probe,
-+	.remove = __devexit_p(dfbmcs320_remove),
-+};
-+
-+static int __init dfbmcs320_init(void)
-+{
-+	return platform_driver_register(&dfmcs320_driver);
-+}
-+module_init(dfbmcs320_init);
-+
-+static void __exit dfbmcs320_exit(void)
-+{
-+	platform_driver_unregister(&dfmcs320_driver);
-+}
-+module_exit(dfbmcs320_exit);
-+
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("ASoC DFBM-CS320 bluethooth module driver");
-+MODULE_LICENSE("GPL");
-diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
-index c3014e8..a08237a 100644
---- a/sound/soc/samsung/Kconfig
-+++ b/sound/soc/samsung/Kconfig
-@@ -40,6 +40,7 @@ config SND_SOC_SAMSUNG_NEO1973_WM8753
- 	select SND_S3C24XX_I2S
- 	select SND_SOC_WM8753
- 	select SND_SOC_LM4857 if MACH_NEO1973_GTA01
-+	select SND_SOC_DFBMCS320
- 	help
- 	  Say Y here to enable audio support for the Openmoko Neo1973
- 	  Smartphones.
-diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
-index 37cfbb8..78bfdb3 100644
---- a/sound/soc/samsung/neo1973_wm8753.c
-+++ b/sound/soc/samsung/neo1973_wm8753.c
-@@ -418,23 +418,6 @@ static int neo1973_lm4857_init(struct snd_soc_dapm_context *dapm)
- static int neo1973_lm4857_init(struct snd_soc_dapm_context *dapm) { return 0; };
- #endif
- 
--/*
-- * BT Codec DAI
-- */
--static struct snd_soc_dai_driver bt_dai = {
--	.name = "bluetooth-dai",
--	.playback = {
--		.channels_min = 1,
--		.channels_max = 1,
--		.rates = SNDRV_PCM_RATE_8000,
--		.formats = SNDRV_PCM_FMTBIT_S16_LE,},
--	.capture = {
--		.channels_min = 1,
--		.channels_max = 1,
--		.rates = SNDRV_PCM_RATE_8000,
--		.formats = SNDRV_PCM_FMTBIT_S16_LE,},
--};
--
- static struct snd_soc_dai_link neo1973_dai[] = {
- { /* Hifi Playback - for similatious use with voice below */
- 	.name = "WM8753",
-@@ -450,7 +433,7 @@ static struct snd_soc_dai_link neo1973_dai[] = {
- 	.name = "Bluetooth",
- 	.stream_name = "Voice",
- 	.platform_name = "samsung-audio",
--	.cpu_dai_name = "bluetooth-dai",
-+	.cpu_dai_name = "dfbmcs320-pcm",
- 	.codec_dai_name = "wm8753-voice",
- 	.codec_name = "wm8753-codec.0-001a",
- 	.ops = &neo1973_voice_ops,
-@@ -459,6 +442,10 @@ static struct snd_soc_dai_link neo1973_dai[] = {
- 
- static struct snd_soc_aux_dev neo1973_aux_devs[] = {
- 	{
-+		.name = "dfbmcs320",
-+		.codec_name = "dfbmcs320.0",
-+	},
-+	{
- 		.name = "lm4857",
- 		.codec_name = "lm4857.0-007c",
- 		.init = neo1973_lm4857_init,
-@@ -502,7 +489,7 @@ static int __init neo1973_init(void)
- 
- 	if (machine_is_neo1973_gta02()) {
- 		neo1973.name = "neo1973gta02";
--		neo1973.num_aux_devs = 0;
-+		neo1973.num_aux_devs = 1;
- 
- 		ret = gpio_request_array(neo1973_gta02_gpios,
- 				ARRAY_SIZE(neo1973_gta02_gpios));
-@@ -516,21 +503,14 @@ static int __init neo1973_init(void)
- 		goto err_gpio_free;
- 	}
- 
--	/* register bluetooth DAI here */
--	ret = snd_soc_register_dai(&neo1973_snd_device->dev, &bt_dai);
--	if (ret)
--		goto err_put_device;
--
- 	platform_set_drvdata(neo1973_snd_device, &neo1973);
- 	ret = platform_device_add(neo1973_snd_device);
- 
- 	if (ret)
--		goto err_unregister_dai;
-+		goto err_put_device;
- 
- 	return 0;
- 
--err_unregister_dai:
--	snd_soc_unregister_dai(&neo1973_snd_device->dev);
- err_put_device:
- 	platform_device_put(neo1973_snd_device);
- err_gpio_free:
-@@ -544,7 +524,6 @@ module_init(neo1973_init);
- 
- static void __exit neo1973_exit(void)
- {
--	snd_soc_unregister_dai(&neo1973_snd_device->dev);
- 	platform_device_unregister(neo1973_snd_device);
- 
- 	if (machine_is_neo1973_gta02()) {
--- 
-1.7.2.3
+If it was a simple & correct fix, then I'd have no problem with it.
+The current proposed solution doesn't meet that criteria for me (more
+below)
 
+> 
+> > It may be mildly inconvenient to a
+> > human reader, but it doesn't change the usage model one iota because
+> > the direction still must be explicitly set before using the gpio.
+> 
+> I agree that the usage model should be to request and then explicitly
+> set the direction before use, but that isn't really an argument for
+> exporting incorrect information to userspace. The ABI should attempt to
+> prevent abuse of itself so that crappy userspace apps cannot be written.
+> Either exporting the direction as "unknown" or making the direction file
+> unreadable and the value file unreadable/unwritable until the direction
+> has been explicitly set?
+
+I'm far more interested in a solution that puts the onus on the GPIO
+driver to populate the starting state at registration time, and
+possibly to update it if it changes due to unrelated events.
+
+Another consideration is that adding an 'unknown' value changes the
+user space ABI, which must always be approached carefully.
+
+> 
+> > So, I'm going to say no to this patch.
+> 
+> The patch is small (it adds 9 lines) and fixes an incorrect value being
+> exported to userspace.
+
+It solves the problem at the wrong level.  Rather than having an
+'unknown' state, I'm far more interested in a solution that pushed
+back on the drivers to correctly initialize the gpio starting state
+at gpiochip_add() time.  This would be both simpler and more correct
+from my perspective.
+
+And, yes, I do realize that some controllers cannot be probed for the
+starting state, but I strongly suspect them to be a minority and
+starting state can be handled with pdata in those cases.
+
+> By your argument we should actually remove the
+> ability to read the direction file in sysfs, since userspace must
+> explicitly set it, and therefore knows what the direction is?
+
+No, I'm arguing that the driver should provide good data from the
+outset.  If it does not, then defaulting to 'input' is both a
+reasonable assumption, and is safe.
+
+g.
