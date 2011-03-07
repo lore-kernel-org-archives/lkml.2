@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab1CGRwL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 12:52:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56359 "EHLO
+	id S1756102Ab1CGRwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 12:52:32 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56353 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351Ab1CGRtK (ORCPT
+	with ESMTP id S1755268Ab1CGRtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 12:49:10 -0500
-Message-Id: <20110307172206.557810970@chello.nl>
+	Mon, 7 Mar 2011 12:49:09 -0500
+Message-Id: <20110307172207.242624219@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Mar 2011 18:13:51 +0100
+Date: Mon, 07 Mar 2011 18:14:01 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
         Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
@@ -22,50 +22,50 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Russell King <rmk@arm.linux.org.uk>,
         Chris Metcalf <cmetcalf@tilera.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [RFC][PATCH 01/15] mm, powerpc: Dont use tlb_flush for external tlb flushes
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Subject: [RFC][PATCH 11/15] mm, avr32: Convert avr32 to generic tlb
 References: <20110307171350.989666626@chello.nl>
-Content-Disposition: inline; filename=powerpc64-tlb_flush.patch
+Content-Disposition: inline; filename=avr32-mmu_range.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both sparc64 and powerpc64 use tlb_flush() to flush their respective
-hash-tables which is entirely different from what
-flush_tlb_range()/flush_tlb_mm() would do.
-
-Powerpc64 already uses arch_*_lazy_mmu_mode() to batch and flush these
-so any tlb_flush() caller should already find an empty batch. So
-remove this functionality from tlb_flush().
-
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/powerpc/mm/tlb_hash64.c         |   10 ----------
- arch/sparc/include/asm/tlb_64.h      |    2 +-
- arch/sparc/include/asm/tlbflush_64.h |   13 +++++++++++++
- 3 files changed, 14 insertions(+), 11 deletions(-)
+ arch/avr32/Kconfig           |    1 +
+ arch/avr32/include/asm/tlb.h |    6 ------
+ 2 files changed, 1 insertion(+), 6 deletions(-)
 
-Index: linux-2.6/arch/powerpc/mm/tlb_hash64.c
+Index: linux-2.6/arch/avr32/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/powerpc/mm/tlb_hash64.c
-+++ linux-2.6/arch/powerpc/mm/tlb_hash64.c
-@@ -155,16 +155,6 @@ void __flush_tlb_pending(struct ppc64_tl
+--- linux-2.6.orig/arch/avr32/Kconfig
++++ linux-2.6/arch/avr32/Kconfig
+@@ -7,6 +7,7 @@ config AVR32
+ 	select HAVE_OPROFILE
+ 	select HAVE_KPROBES
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++	select HAVE_MMU_GATHER_RANGE
+ 	help
+ 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
+ 	  designed for cost-sensitive embedded applications, with particular
+Index: linux-2.6/arch/avr32/include/asm/tlb.h
+===================================================================
+--- linux-2.6.orig/arch/avr32/include/asm/tlb.h
++++ linux-2.6/arch/avr32/include/asm/tlb.h
+@@ -8,12 +8,6 @@
+ #ifndef __ASM_AVR32_TLB_H
+ #define __ASM_AVR32_TLB_H
  
- void tlb_flush(struct mmu_gather *tlb)
- {
--	struct ppc64_tlb_batch *tlbbatch = &get_cpu_var(ppc64_tlb_batch);
+-#define tlb_start_vma(tlb, vma) \
+-	flush_cache_range(vma, vma->vm_start, vma->vm_end)
 -
--	/* If there's a TLB batch pending, then we must flush it because the
--	 * pages are going to be freed and we really don't want to have a CPU
--	 * access a freed page because it has a stale TLB
--	 */
--	if (tlbbatch->index)
--		__flush_tlb_pending(tlbbatch);
+-#define tlb_end_vma(tlb, vma) \
+-	flush_tlb_range(vma, vma->vm_start, vma->vm_end)
 -
--	put_cpu_var(ppc64_tlb_batch);
- }
+ #define __tlb_remove_tlb_entry(tlb, pte, address) do { } while(0)
  
- /**
+ #include <asm-generic/tlb.h>
 
 
