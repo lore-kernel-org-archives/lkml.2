@@ -1,122 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab1CGI0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 03:26:16 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60411 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab1CGIVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 03:21:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=PhBXHKPavcKiIfD/iKfaKWELC6Bezu5nY5ugrYveHFYu3i0tbqhAhu7PamFInwGnGh
-         M59/m0PRn9nx6/lIhZJN/4S7Q19v7IZxkjSpcP/IWdHfaH3RMzpVB9Uy6Q1N4IWoeknW
-         t5zNtyq286G6mQmnV/1jDBZMRgXwKY784JDMs=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 02/21] staging: ft1000: Fix coding style in card_send_command function.
-Date: Mon,  7 Mar 2011 09:21:07 +0100
-Message-Id: <1299486086-7325-3-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
+	id S1755117Ab1CGI0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 03:26:54 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:34737 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753552Ab1CGI0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 03:26:50 -0500
+X-ASG-Debug-ID: 1299486409-03d6a54f6315a70001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D7496C5.6010900@fusionio.com>
+Date: Mon, 7 Mar 2011 09:26:45 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: [PATCH]cfq-iosched: give busy sync queue no dispatch limit
+References: <1299225689.2337.4.camel@sli10-conroe>
+X-ASG-Orig-Subj: Re: [PATCH]cfq-iosched: give busy sync queue no dispatch limit
+In-Reply-To: <1299225689.2337.4.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1299486409
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.57296
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   60 +++++++++++-------------
- 1 files changed, 28 insertions(+), 32 deletions(-)
+On 2011-03-04 09:01, Shaohua Li wrote:
+> If there are a sync and an async queue and the sync queue's think time is small,
+> we can ignore the sync queue's dispatch quantum. Because the sync queue will
+> always preempt the async queue, we don't need to care about async's latency.
+> This can fix a performance regression of aiostress test, which is introduced by
+> commit f8ae6e3eb825. The issue should exist even without the commit, but the
+> commit amplifies the impact.
+> 
+> The initial post does the same optimization for RT queue too, but since I have
+> no real workload for it, Vivek suggests to drop it.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 293a469..ded13f2 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -481,51 +481,47 @@ static void card_reset_dsp(struct ft1000_device *ft1000dev, bool value)
- // Notes:
- //
- //---------------------------------------------------------------------------
--void card_send_command(struct ft1000_device *ft1000dev, void *ptempbuffer, int size)
-+void card_send_command(struct ft1000_device *ft1000dev, void *ptempbuffer,
-+		       int size)
- {
--    unsigned short temp;
--    unsigned char *commandbuf;
-+	unsigned short temp;
-+	unsigned char *commandbuf;
- 
--    DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
-+	DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
- 
--    commandbuf =(unsigned char*) kmalloc(size+2, GFP_KERNEL);
--    memcpy((void*)commandbuf+2, (void*)ptempbuffer, size);
-+	commandbuf = (unsigned char *)kmalloc(size + 2, GFP_KERNEL);
-+	memcpy((void *)commandbuf + 2, (void *)ptempbuffer, size);
- 
--    //DEBUG("card_send_command: Command Send\n");
-+	//DEBUG("card_send_command: Command Send\n");
- 
--    ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
-+	ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
- 
--    if (temp & 0x0100)
--    {
--       msleep(10);
--    }
-+	if (temp & 0x0100)
-+		msleep(10);
- 
--    // check for odd word
--    size = size + 2;
--    if (size % 4)
--    {
--       // Must force to be 32 bit aligned
--       size += 4 - (size % 4);
--    }
-+	/* check for odd word */
-+	size = size + 2;
- 
-+	/* Must force to be 32 bit aligned */
-+	if (size % 4)
-+		size += 4 - (size % 4);
- 
--    //DEBUG("card_send_command: write dpram ... size=%d\n", size);
--    ft1000_write_dpram32(ft1000dev, 0,commandbuf, size);
--    msleep(1);
--    //DEBUG("card_send_command: write into doorbell ...\n");
--    ft1000_write_register(ft1000dev,  FT1000_DB_DPRAM_TX ,FT1000_REG_DOORBELL) ;
--    msleep(1);
-+	//DEBUG("card_send_command: write dpram ... size=%d\n", size);
-+	ft1000_write_dpram32(ft1000dev, 0, commandbuf, size);
-+	msleep(1);
-+	//DEBUG("card_send_command: write into doorbell ...\n");
-+	ft1000_write_register(ft1000dev, FT1000_DB_DPRAM_TX,
-+			      FT1000_REG_DOORBELL);
-+	msleep(1);
- 
--    ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
--    //DEBUG("card_send_command: read doorbell ...temp=%x\n", temp);
--    if ( (temp & 0x0100) == 0)
--    {
--       //DEBUG("card_send_command: Message sent\n");
--    }
-+	ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
-+	//DEBUG("card_send_command: read doorbell ...temp=%x\n", temp);
-+	if ((temp & 0x0100) == 0) {
-+		//DEBUG("card_send_command: Message sent\n");
-+	}
- 
- }
- 
--
- //--------------------------------------------------------------------------
- //
- //  Function:   dsp_reload
+Thanks, applied.
+
 -- 
-1.7.1
+Jens Axboe
 
