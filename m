@@ -1,120 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab1CGVoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:44:04 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33605 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab1CGVoB (ORCPT
+	id S1756479Ab1CGVol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 16:44:41 -0500
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:5957 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab1CGVok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:44:01 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jan Kara <jack@suse.cz>, Joel Becker <jlbec@evilplan.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
-In-reply-to: <20110304210724.GF27190@tux1.beaverton.ibm.com>
-References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <yq1vd0cf26f.fsf@sermon.lab.mkp.net> <20110223202446.GG4020@noexit> <1298493173-sup-8301@think> <20110224164758.GH23042@quack.suse.cz> <1298566775-sup-730@think> <20110224182732.GV27190@tux1.beaverton.ibm.com> <1298897186-sup-9394@think> <20110304210724.GF27190@tux1.beaverton.ibm.com>
-Date: Mon, 07 Mar 2011 16:12:18 -0500
-Message-Id: <1299531108-sup-8484@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D75518E.012B,ss=1,fgs=0
+	Mon, 7 Mar 2011 16:44:40 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsIGAG/gdE2rR7H+/2dsb2JhbACmVQJ0okCcAoViBIUchxSDSYIbgxQ
+X-IronPort-AV: E=Sophos;i="4.62,279,1297036800"; 
+   d="scan'208";a="272092789"
+User-Agent: Microsoft-Entourage/12.28.0.101117
+Date: Mon, 07 Mar 2011 13:44:43 -0800
+Subject: Re: [PATCH] hwmon: (pmbus) More stringent checking of VOUT_MODE
+ register
+From: Greg Schnorr <gschnorr@cisco.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+CC: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, <lm-sensors@lm-sensors.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <C99A91CB.5A89D%gschnorr@cisco.com>
+Thread-Topic: [PATCH] hwmon: (pmbus) More stringent checking of VOUT_MODE
+ register
+Thread-Index: AcvdEN5c15Vyi7Qi6EOW+Iz7WDM3Qw==
+In-Reply-To: <1299043940-22798-1-git-send-email-guenter.roeck@ericsson.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
+X-OriginalArrivalTime: 07 Mar 2011 21:44:37.0442 (UTC) FILETIME=[DB0C4220:01CBDD10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Darrick J. Wong's message of 2011-03-04 16:07:24 -0500:
-> On Mon, Feb 28, 2011 at 07:54:05AM -0500, Chris Mason wrote:
-> > Excerpts from Darrick J. Wong's message of 2011-02-24 13:27:32 -0500:
-> > > On Thu, Feb 24, 2011 at 12:37:53PM -0500, Chris Mason wrote:
-> > > > Excerpts from Jan Kara's message of 2011-02-24 11:47:58 -0500:
-> > > > > On Wed 23-02-11 15:35:11, Chris Mason wrote:
-> > > > > > Excerpts from Joel Becker's message of 2011-02-23 15:24:47 -0500:
-> > > > > > > On Tue, Feb 22, 2011 at 11:45:44AM -0500, Martin K. Petersen wrote:
-> > > > > > > > Also, DIX is only the tip of the iceberg. Many other impending
-> > > > > > > > technologies feature checksums and require pages to be stable during I/O
-> > > > > > > > due to checksumming, encryption and so on.
-> > > > > > > > 
-> > > > > > > > The VM is already trying to do the right thing. We just need the
-> > > > > > > > relevant filesystems to catch up.
-> > > > > > > 
-> > > > > > >     ocfs2 handles stable metadata for its checksums when feeding
-> > > > > > > things to the journal.  If we're doing pagecache-based I/O, is the
-> > > > > > > pagecache going to help here for data?
-> > > > > > 
-> > > > > > Data is much easier than metadata.  All you really need is to wait on
-> > > > > > writeback in file_write, wait on writeback in page_mkwrite, and make
-> > > > > > sure you don't free blocks back to the allocator that are actively under
-> > > > > > IO.
-> > > > > > 
-> > > > > > I expect the hard part to be jbd and metadata in ext34.
-> > > > >   But JBD already has to do data copy if a buffer is going to be modified
-> > > > > before/while it is written to the journal. So we should alredy do all that
-> > > > > is needed for metadata. I don't say there aren't any bugs as they could be
-> > > > > triggered only by crashing at the wrong moment and observing fs corruption.
-> > > > > But most of the work should be there...
-> > > > 
-> > > > Most of it is there, but there are always little bits and pieces.  The
-> > > > ext4 journal csumming code was one semi-recent example where we found
-> > > > metadata changing in flight.
-> > > > 
-> > > > A big part of testing this is getting some way to detect the bugs
-> > > > without dif/dix.  With btrfs I have patches to do set_memory_ro on
-> > > > pages once I've don the crc, hopefully we can generalize that idea or
-> > > > some up with something smarter.
-> > > 
-> > > Right now I'm faking it with modprobe scsi_debug ato=1 guard=1 dif=3 dix=199.
-> > > 
-> > > Hm, would you mind sharing those patches?  I've been working on a second patch
-> > > to do the wait-on-writeback per everyone's suggestions, but I still see the
-> > > occasional corruption error as soon as I enable the mmap write case and covet
-> > > some more debugging tools.  It does seem to be working for the pure pwrite()
-> > > case. :)
-> > 
-> > Here's an ext4 version of the debugging patch.  It's a few years old but
-> > it'll give you the idea.  This only covers metadata pages.
-> > 
-> > Looks like I hacked the btrfs version up and didn't keep the original,
-> > I'll have to rework it, I was trying to use it for the big corruption I
-> > fixed recently and made a bunch of changes.
-> > 
-> > For data if mmap is giving you trouble you need to wait on writeback in
-> > page_mkwrite, with the page locked.  fs/btrfs/inode.c has our
-> > page_mkwrite, which uses wait_on_page_writeback() and also the btrfs
-> > ordered write code.  But for the other filesystems, waiting on writeback
-> > should be enough.
+Looks good, tested and works on one such VOUT_MODE poor design...
+
+On 3/1/11 9:32 PM, "Guenter Roeck" <guenter.roeck@ericsson.com> wrote:
+
+> Some PMBus chips do not support the VOUT_MODE register. To make matters worse,
+> such chips may not return an error when reading the register either, but
+> instead
+> return 0xff.
 > 
-> Ok, here's what I have so far.  I took everyone's suggestions of where to add
-> calls to wait_on_page_writeback, which seems to handle the multiple-write case
-> adequately.  Unfortunately, it is still possible to generate checksum errors by
-> scribbling furiously on a mmap'd region, even after adding the writeback wait
-> in the ext4 writepage function.  Oddly, I couldn't break btrfs with mmap by
-> removing its wait_for_page_writeback call, so I suspect there's a bit more
-> going on in btrfs than I've been able to figure out.
+> Check if the register exists using pmbus_check_byte_register() before reading
+> its value. In addition, validate the returned value and ignore it if it is
+> 0xff
+> (which is invalid).
+> 
+> Reported-by: Greg Schnorr <gschnorr@cisco.com>
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Greg Schnorr <gschnorr@cisco.com>
 
-Hi, thanks for working on this.
-
-Btrfs waits for page writeback but then it also waits for its own
-ordered extents, which is basically tracks writeback and some extra
-btrfs accounting.  If you take out the btrfs_lookup_ordered_extent bits,
-and the waiting on page writeback, you'll see fireworks.
-
-Your patch changes ext4_writepage, but by the time writepage is called
-we should already have waited for PageWriteback.  So that should be
-BUG_ON(PageWriteback(page)).  And ext4_writepage should be called with
-the page locked...so your extra lock_page call should be deadlocking.
-Maybe all the writes are going through writepages instead?
-
-You really want to be changing ext4_page_mkwrite, that's where all the
-magic for mmap really happens.  The block_page_mkwrite call is a good
-start, but ext4 doesn't use it.
-
--chris
