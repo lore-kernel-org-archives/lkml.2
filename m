@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab1CGHFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 02:05:53 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40549 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab1CGHFv (ORCPT
+	id S1754139Ab1CGHIU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 02:08:20 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60471 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab1CGHIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 02:05:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XT2c5+P7WWiebf+2GdfZbRF8kHuwXghBHAtacAqwDCu+nq6bcctnQpIvmcZUik7NqW
-         SHPWgErjxCEJuhLHqbqw4FfpesCg4buXG/8vYEBrL4TYC7dSWisItqJJLC8HAsPtRqHR
-         oIQLa5ZgNwR6eviG5CgmceiD2fw7eV1FC7FTE=
-Date: Mon, 7 Mar 2011 15:05:10 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, nicolas.2p.debian@free.fr,
-        mmarek@suse.cz, max@stro.at, linux-kbuild@vger.kernel.org
-Subject: Re: cannot create include/linux/version.h.tmp: Read-only file system
-Message-ID: <20110307070510.GA1166@cr0.redhat.com>
-References: <alpine.DEB.2.01.1103061600260.23816@trent.utfs.org>
+	Mon, 7 Mar 2011 02:08:19 -0500
+Date: Mon, 7 Mar 2011 00:08:16 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v5 2/4] gpiolib: Add ability to get GPIO direction
+Message-ID: <20110307070816.GC29999@angua.secretlab.ca>
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
+ <1299022100-14564-2-git-send-email-ptyser@xes-inc.com>
+ <20110306073003.GA29325@angua.secretlab.ca>
+ <1299467241.11719.145.camel@ptyser-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.01.1103061600260.23816@trent.utfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1299467241.11719.145.camel@ptyser-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 06, 2011 at 04:22:21PM -0800, Christian Kujau wrote:
->Hi,
->
->I'm trying to build a kernel with O= with the kernel source residing 
->on a readonly NFS share. The main build finishes just fine, vmlinux & the 
->modules are all built, but "make deb-pkg" and "make rpm-pkg" fail to 
->build:
->
->--------------------------
->$ make V=1 O=/mnt/sdb/s0/ deb-pkg
->[...]
->set -e; : '  CHK     include/linux/version.h'; mkdir -p 
->include/linux/; 	
->(echo \#define LINUX_VERSION_CODE 132646; echo '#define 
->KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';) < 
->/usr/local/src/linux-2.6-git/Makefile > include/linux/version.h.tmp; if [ 
->-r include/linux/version.h ] && cmp -s include/linux/version.h 
->include/linux/version.h.tmp; then rm -f include/linux/version.h.tmp; else 
->: '  UPD     include/linux/version.h'; mv -f include/linux/version.h.tmp 
->include/linux/version.h; fi
->/bin/sh: cannot create include/linux/version.h.tmp: Read-only file system
->make[4]: *** [include/linux/version.h] Error 2
->
->--------------------------
->$ make V=1 O=/mnt/sdb/s0/ rpm-pkg
->[...]
->make -f /usr/local/src/linux-2.6-git/scripts/Makefile.clean 
->obj=arch/x86/boot/compressed
->  rm -rf .tmp_versions
->  rm -f vmlinux System.map .tmp_kallsyms* .tmp_version .tmp_vmlinux* 
->.tmp_System.map
->set -e; cd ..; ln -sf /usr/local/src/linux-2.6-git kernel-2.6.38rc7
->ln: creating symbolic link `kernel-2.6.38rc7': Permission denied
->make[2]: *** [rpm-pkg] Error 1
->--------------------------
->
->The full buidlogs are here: http://nerdbynature.de/bits/2.6.38-rc7/make/
->
->Note that e.g. "make binrpm-pkg" succeeds and puts the .rpm in $HOME, I 
->wonder if at least deb-pkg could be fixed..?
->
+On Sun, Mar 06, 2011 at 09:07:21PM -0600, Peter Tyser wrote:
+> On Sun, 2011-03-06 at 00:30 -0700, Grant Likely wrote:
+> > On Tue, Mar 01, 2011 at 05:28:18PM -0600, Peter Tyser wrote:
+> > > Add a new get_direction() function to the gpio_chip structure.  This is
+> > > useful so that the direction of a GPIO can be determined when its
+> > > initially exported.  Previously, the direction defaulted to "unknown"
+> > > regardless of the actual configuration of the GPIO.
+> > > 
+> > > If a GPIO driver implements get_direction(), it is called in
+> > > gpio_request() to set the initial direction of the GPIO accurately.
+> > 
+> > I don't like this approach.  It effectively creates two methods for
+> > determining the direction of a gpio; either ask the driver, or read
+> > the flags value.  Currently, only gpio_request() actually uses the
+> > first option, but it still leaves the ambiguity.
+> > 
+> > Instead, the driver should be able to preload the direction flag at or
+> > shortly after gpiochip_add() time.  No need for a new callback hook
+> > from what I can see.
+> 
+> The callback hook was used because the gpio_desc[] structure was local
+> to gpiolib.c.  The code would have to be restructured a bit to allow
+> drivers to set the flags themselves.  I can do that if you'd prefer, but
+> don't think it'd be all that much cleaner.
 
-The following patch should fix both of them. :)
+Make it part of the gpiochip_add function, or add a function for
+explicitly setting gpio directions.  Should not require any
+reorganization at all.
 
------------------->
+> Also, I thought it made sense to read the direction of the GPIO in
+> gpio_request() because that's the point that the GPIO comes under the
+> GPIO subsystem's control.  Prior to that, there's a chance the direction
+> could be changed by platform code, or another driver, etc, so reading
+> the direction in gpiochip_add() may result in out-of-date directions.
 
-Signed-off: WANG Cong <xiyou.wangcong@gmail.com>
+That's the problem with gpiolib having sole responsibility of the
+cache.  It doesn't give the driver any recourse for changing things if
+it needs to.  The best solution might very well be to eliminate the
+direction state flag entirely and force all gpiochip drivers to
+populate a gpio_get_direction() callback, but that is a lot more work.
 
----
-diff --git a/Makefile b/Makefile
-index 26d7d82..37163fa 100644
---- a/Makefile
-+++ b/Makefile
-@@ -979,7 +979,7 @@ define filechk_version.h
- 	echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';)
- endef
- 
--include/linux/version.h: $(srctree)/Makefile FORCE
-+include/linux/version.h: $(objtree)/Makefile FORCE
- 	$(call filechk,version.h)
- 
- include/generated/utsrelease.h: include/config/kernel.release FORCE
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-index d0b931b..b5c3b67 100644
---- a/scripts/package/Makefile
-+++ b/scripts/package/Makefile
-@@ -26,7 +26,7 @@ RPM := $(shell if [ -x "/usr/bin/rpmbuild" ]; then echo rpmbuild; \
- 	           else echo rpm; fi)
- 
- # Remove hyphens since they have special meaning in RPM filenames
--KERNELPATH := kernel-$(subst -,,$(KERNELRELEASE))
-+KERNELPATH := $(objtree)/kernel-$(subst -,,$(KERNELRELEASE))
- MKSPEC     := $(srctree)/scripts/package/mkspec
- PREV       := set -e; cd ..;
- 
+> The reading of the direction could also be put in chip drivers'
+> request() function.  That would get rid of the callback and still ensure
+> the direction is up-to-date.
+
+I don't object to a callback hook.  My objection is how it is bodged
+on to work around limitations to the direction being cached in the
+flags variable.  I want to see a solution that either depends entirely
+on the callback, or completely fixes the problems with the cached
+value by allowing the driver to update it.
+
+> I think the current patch seems cleaner than the alternatives, but will
+> change if you'd prefer.
+
+Thanks,
+g.
+
