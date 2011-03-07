@@ -1,113 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1CGHOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 02:14:50 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:49799 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab1CGHOr (ORCPT
+	id S1753266Ab1CGGw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 01:52:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48272 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1CGGw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 02:14:47 -0500
-Date: Mon, 07 Mar 2011 15:42:56 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 08/09] ARM: s3c2440: gta02: Request usb pullup pin before
- using it
-In-reply-to: <4D6B7FE6.8090802@metafoo.de>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-id: <031101cbdc92$e6c44730$b44cd590$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcvXNkvLl34E2+FeQ3SlcVBuKGOM5wFXHUCA
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
- <1297043521-21903-8-git-send-email-lars@metafoo.de>
- <000301cbd70f$12367070$36a35150$%kim@samsung.com>
- <4D6B7826.1030500@metafoo.de>
- <003201cbd734$79d87050$6d8950f0$%kim@samsung.com> <4D6B7FE6.8090802@metafoo.de>
+	Mon, 7 Mar 2011 01:52:57 -0500
+Date: Sun, 6 Mar 2011 23:52:53 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Ryan Mallon <ryan@bluewatersys.com>
+Subject: Re: [PATCH v5 1/4] gpiolib: Add "unknown" direction support
+Message-ID: <20110307065253.GB29999@angua.secretlab.ca>
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
+ <20110306072505.GC7467@angua.secretlab.ca>
+ <1299465785.11719.114.camel@ptyser-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1299465785.11719.114.camel@ptyser-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars-Peter Clausen wrote:
+On Sun, Mar 06, 2011 at 08:43:05PM -0600, Peter Tyser wrote:
+> > The thing about gpios is that how they are used is entirely dependant
+> > on what they are wired up to.  There is no avoiding the fact that you
+> > *absolutely* must understand the usage model before even considering
+> > fiddling with a gpio (ignoring the "I wonder what this knob does"
+> > use-case such as when reverse engineer a board).  So, while it is nice
+> > to have an 'unknown' state for sysfs to report, it is certainly not
+> > required.  The model still remains that the pin direction must be set
+> > before (or at the same time as) reading/writing the pin.
 > 
-> On 02/28/2011 11:44 AM, Kukjin Kim wrote:
-> > Lars-Peter Clausen wrote:
-> >>
-> >> On 02/28/2011 07:16 AM, Kukjin Kim wrote:
-> >>> Lars-Peter Clausen wrote:
-> >>>>
-> >>>> Request the gpio pin used to control the usb pullup before using it
-to
-> >>> avoid
-> >>>> a
-> >>>> runtime warning about an auto-requested gpio.
-> >>>>
-> >>>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> >>>> ---
-> >>>>  arch/arm/mach-s3c2440/mach-gta02.c |   17 +++++++++++++++--
-> >>>>  1 files changed, 15 insertions(+), 2 deletions(-)
-> >>>>
-> >>>> diff --git a/arch/arm/mach-s3c2440/mach-gta02.c
-> >>> b/arch/arm/mach-s3c2440/mach-
-> >>>> gta02.c
-> >>>> index 1396639..94456fa 100644
-> >>>> --- a/arch/arm/mach-s3c2440/mach-gta02.c
-> >>>> +++ b/arch/arm/mach-s3c2440/mach-gta02.c
-> >>>> @@ -451,11 +451,11 @@ static void gta02_udc_command(enum
-> > s3c2410_udc_cmd_e
-> >>>> cmd)
-> >>>>  	switch (cmd) {
-> >>>>  	case S3C2410_UDC_P_ENABLE:
-> >>>>  		pr_debug("%s S3C2410_UDC_P_ENABLE\n", __func__);
-> >>>> -		gpio_direction_output(GTA02_GPIO_USB_PULLUP, 1);
-> >>>> +		gpio_set_value(GTA02_GPIO_USB_PULLUP, 1);
-> >>>
-> >>> How about following instead?
-> >>> 	gpio_request(GTA02_GPIO_USB_PULLUP, "USB_PULLUP");
-> >>> 	gpio_direction_output(GTA02_GPIO_USB_PULLUP, 1);
-> >>> 	gpio_free(GTA02_GPIO_USB_PULLUP);
-> >>>
-> >>
-> >> I don't think that is a good idea. This gpio should really be reserved
-for
-> >> the
-> >> udc driver. If it is freed again, it could be requested from someone
-else
-> >> which
-> >> could lead to undefined behaviour.
-> >>
-> > Yes right, but I mean the board designer already knows the usage of
-> > regarding GPIOs on his board.
-> > So why do we really need gpio_request for it?...
-> 
-> Well, for one because it's part of the gpio-api. You should not call any
-> other
-> gpio functions on a pin unless you've successfully requested that pin.
-> On the other hand this helps debugging and ensures that the same gpio is
-not
-> used by two drivers accident. For example it is also possible to request
-> gpios
-> from userspace using the gpio sysfs. So by keeping the gpio requested it
-wont
-> be possible to request it from userspace by accident. And the gpio will
-also
-> be
-> listed in the gpio debugfs file, which can be helpful for debugging as
-well.
-> 
-> - Lars
+> As is, even if someone knows about the GPIO wiring on their board, they
+> have to know Linux has a "rule" that "before I can use a GPIO, I have to
+> explicitly set its direction, even if the current reported direction is
+> what I want".  A number of our customers have tried to use a GPIO which
+> states its an 'input' as an input after exporting it, which is
+> completely logical.  But it doesn't work, because its not really an
+> input...  Why not set the direction accurately as 'unknown' so users
+> intuitively know they have to set the direction before using it?  You
+> also mention that it would be a nice feature above, so why not include
+> it?
 
-Hi Lars,
+I don't like what it does to the implementation, and I'd rather make
+drivers provide accurate data at the outset.
 
-Ok, will apply :)
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+g.
 
