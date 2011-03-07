@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab1CGIkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 03:40:47 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33232 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab1CGIkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 03:40:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nrBwiE64UcD71i/21hmwhdCFjCQ9/hoLUS6I02qBnMR3g7SxJDnZ8kFGnspMHNo96t
-         xOlF5//UJKzNmJ4txK/N2qWhLE/CsDPDmPotzvKL4l3nAgoo6921Y2BS8dKrJ9VArXVv
-         RWz0O3RfEkkjPL9ckKS5Ec/b1CHg+kjU3gnXo=
-Message-ID: <4D749A09.1060901@gmail.com>
-Date: Mon, 07 Mar 2011 11:40:41 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+	id S1754724Ab1CGIlI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 03:41:08 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:40352 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264Ab1CGIlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 03:41:07 -0500
+Message-ID: <4D749A20.9080701@kernel.dk>
+Date: Mon, 07 Mar 2011 09:41:04 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC -tip] perf, x86: P4 PMU -- Address erratum 15 and 17
-References: <4D7141FC.8000504@gmail.com> <1299334487.2324.1.camel@localhost>	 <4D724D95.3060808@gmail.com> <1299486452.2908.47.camel@minggr.sh.intel.com>
-In-Reply-To: <1299486452.2908.47.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: Mike Snitzer <snitzer@gmail.com>, Jan Beulich <JBeulich@novell.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2.6.38-rc5 2/2] block: blk-flush shouldn't call  directly
+ into q->request_fn() __blk_run_queue()
+References: <20110217111511.GQ19830@htj.dyndns.org> <20110217111619.GR19830@htj.dyndns.org> <AANLkTi=rPKN25yZTziv1dz=Ke0db8ZOwUgKFNzWn9+x7@mail.gmail.com> <20110218094903.GF21209@htj.dyndns.org> <4D6E4A46.1040709@kernel.dk> <20110304182507.GY20499@htj.dyndns.org>
+In-Reply-To: <20110304182507.GY20499@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2011 11:27 AM, Lin Ming wrote:
-> On Sat, 2011-03-05 at 22:49 +0800, Cyrill Gorcunov wrote:
->> On 03/05/2011 05:14 PM, Lin Ming wrote:
->>> On Sat, 2011-03-05 at 03:48 +0800, Cyrill Gorcunov wrote:
->>>> Errata N15 and 17 of 249199-071 should be taken
->>>> into account. They are mostly hard to hit at moment
->>>> i believe but still better to be fixed.
->>>>
->>>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
->>>> ---
->>>>
->>>> Ming, mind to give it a shot? I seems will be able to test myself
->>>> at Wednesday only. And I would like to get a review first to eliminate
->>>> some silly mistakes ;)
->>>
->>> I'll test this next Monday when I back to office.
->>>
->>> Thanks.
->>>
+On 2011-03-04 19:25, Tejun Heo wrote:
+> Hello, Jens.
+> 
+> On Wed, Mar 02, 2011 at 08:46:46AM -0500, Jens Axboe wrote:
+>>> Right, thanks.  Jens, after you apply the two fixes for 2.6.38, I can
+>>> create a merge branch for for-2.6.39/core which you can pull.  Would
+>>> that work for you?
 >>
->> Great, no hurry.
+>> Thanks, that would be great. I'm applying them now.
 > 
-> This patch causes problem.
+> Okay, please pull from the following branch to receive the merge
+> between linux-2.6-block:for-linus and :for-2.6.39/core.
 > 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-for-2.6.39-core
+> 
+> HEAD is e83a46bbb1d4c03defd733a64b727632a40059ad but git.korg seems a
+> bit slow to sync, so if you don't see the commit there, please pull
+> from master.korg.
+> 
+>  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-for-2.6.39-core
+> 
+> Thanks.
 
-Thanks Ming, i'll investigate.
+Pulled, thanks Tejun.
 
 -- 
-    Cyrill
+Jens Axboe
+
