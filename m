@@ -1,112 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab1CGPzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 10:55:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54078 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750881Ab1CGPzM (ORCPT
+	id S1755117Ab1CGPzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 10:55:48 -0500
+Received: from dakia2.marvell.com ([65.219.4.35]:33398 "EHLO
+	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab1CGPzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 10:55:12 -0500
-Date: Mon, 7 Mar 2011 15:55:09 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
-Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
- ADAU1701 SigmaDSP
-Message-ID: <20110307155508.GM13471@opensource.wolfsonmicro.com>
-References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
- <20110307114142.GB13471@opensource.wolfsonmicro.com>
- <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
- <20110307121502.GG13471@opensource.wolfsonmicro.com>
- <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
- <20110307145931.GK13471@opensource.wolfsonmicro.com>
- <AANLkTi=e1xDz6fhBU7NL32DXL1J9Y1CDD2bHQVL6oASw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=e1xDz6fhBU7NL32DXL1J9Y1CDD2bHQVL6oASw@mail.gmail.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 7 Mar 2011 10:55:22 -0500
+X-ASG-Debug-ID: 1299512693-082d75180001-xx1T2L
+X-Barracuda-Envelope-From: haojian.zhuang@marvell.com
+From: Haojian Zhuang <haojian.zhuang@marvell.com>
+To: johnpol@2ka.mipt.ru, sameo@linux.intel.com, a.zummo@towertech.it,
+        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
+        dmitry.torokhov@gmail.com, dtor@mail.ru, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+X-ASG-Orig-Subj: [PATCH] input: touchscreen: use polling mode in 88pm860x
+Subject: [PATCH] input: touchscreen: use polling mode in 88pm860x
+Date: Mon,  7 Mar 2011 23:43:14 +0800
+X-ASG-Orig-Subj: [PATCH] input: touchscreen: use polling mode in 88pm860x
+Message-Id: <1299512600-29047-6-git-send-email-haojian.zhuang@marvell.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1299512600-29047-5-git-send-email-haojian.zhuang@marvell.com>
+References: <1299512600-29047-1-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-2-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-3-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-4-git-send-email-haojian.zhuang@marvell.com>
+ <1299512600-29047-5-git-send-email-haojian.zhuang@marvell.com>
+X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
+X-Barracuda-Start-Time: 1299512693
+X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 10:33:25AM -0500, Mike Frysinger wrote:
-> On Mon, Mar 7, 2011 at 09:59, Mark Brown wrote:
+Measuring point on touchscreen with IRQ mode can only monitor pen-down
+event. If finger is moving on touchscreen, it can't be monitored by
+IRQ pen-down event. So switch to polling mode after pen-down event.
 
-Please at the start of capitalise sentences, it makes your text much
-more leigible.
+Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+---
+ drivers/input/touchscreen/88pm860x-ts.c |   77 +++++++++++++++++++++++-------
+ 1 files changed, 59 insertions(+), 18 deletions(-)
 
-> > It currently isn't and I'd encourage you to contribute to the discussion
-> > that's been going on on this, or even better help out with code.  There
-> > was some discussion on the list recently (in the past month IIRC).
+diff --git a/drivers/input/touchscreen/88pm860x-ts.c b/drivers/input/touchscreen/88pm860x-ts.c
+index b3aebc2..7d481cc 100644
+--- a/drivers/input/touchscreen/88pm860x-ts.c
++++ b/drivers/input/touchscreen/88pm860x-ts.c
+@@ -19,6 +19,18 @@
+ #define MEAS_LEN		(8)
+ #define ACCURATE_BIT		(12)
+ 
++/*
++ * While 32KHz hardware timer is used for scheduler, we always assign HZ
++ * to 128. It means that 1 tick costs 7.8msec.
++ */
++#define MEASURE_INTERVAL_MS	(7)
++
++/* debounce register */
++#define DEBOUNCE		(0x0A)
++
++#define PD_DEBOUNCE_0MSEC	(0)
++#define PD_DEBOUNCE_MASK	(3)
++
+ /* touch register */
+ #define MEAS_EN3		(0x52)
+ 
+@@ -39,22 +51,26 @@
+ #define MEAS_TSIZ2_EN		(1 << 7)
+ 
+ struct pm860x_touch {
+-	struct input_dev *idev;
+-	struct i2c_client *i2c;
+-	struct pm860x_chip *chip;
+-	int irq;
+-	int res_x;		/* resistor of Xplate */
++	struct input_dev	*idev;
++	struct i2c_client	*i2c;
++	struct pm860x_chip	*chip;
++	struct delayed_work	poll_work;
++
++	int			irq;
++	int			res_x;		/* resistor of Xplate */
+ };
+ 
+-static irqreturn_t pm860x_touch_handler(int irq, void *data)
++static void pm860x_poll_work(struct work_struct *work)
+ {
+-	struct pm860x_touch *touch = data;
++	struct pm860x_touch *touch = container_of(work, struct pm860x_touch,
++						  poll_work.work);
+ 	struct pm860x_chip *chip = touch->chip;
++	int x, y, z1, z2, rt = 0;
++	int ret, pen_down, interval;
+ 	unsigned char buf[MEAS_LEN];
+-	int x, y, pen_down;
+-	int z1, z2, rt = 0;
+-	int ret;
++	struct timeval start, end;
+ 
++	do_gettimeofday(&start);
+ 	ret = pm860x_bulk_read(touch->i2c, MEAS_TSIX_1, MEAS_LEN, buf);
+ 	if (ret < 0)
+ 		goto out;
+@@ -77,6 +93,15 @@ static irqreturn_t pm860x_touch_handler(int irq, void *data)
+ 		input_report_abs(touch->idev, ABS_PRESSURE, rt);
+ 		input_report_key(touch->idev, BTN_TOUCH, 1);
+ 		dev_dbg(chip->dev, "pen down at [%d, %d].\n", x, y);
++
++		do_gettimeofday(&end);
++		interval = (end.tv_sec - start.tv_sec) * 1000000 +
++			(end.tv_usec - start.tv_usec) / 1000;
++		interval = (interval < MEASURE_INTERVAL_MS)
++			? (MEASURE_INTERVAL_MS - interval) : 0;
++		queue_delayed_work(touch->chip->monitor_wqueue,
++				   &touch->poll_work,
++				   msecs_to_jiffies(interval));
+ 	} else {
+ 		input_report_abs(touch->idev, ABS_PRESSURE, 0);
+ 		input_report_key(touch->idev, BTN_TOUCH, 0);
+@@ -85,22 +110,36 @@ static irqreturn_t pm860x_touch_handler(int irq, void *data)
+ 	input_sync(touch->idev);
+ 
+ out:
++	return;
++}
++
++static irqreturn_t pm860x_touch_handler(int irq, void *data)
++{
++	struct pm860x_touch *touch = data;
++	int ret;
++
++	ret = pm860x_reg_read(touch->i2c, PM8607_STATUS_1);
++	dev_dbg(touch->chip->dev, "pen status:%d\n", (ret & PM8607_STATUS_PEN)
++		? 1 : 0);
++	if ((ret & PM8607_STATUS_PEN) == 0)
++		return IRQ_HANDLED;
++
++	pm860x_poll_work(&touch->poll_work.work);
+ 	return IRQ_HANDLED;
+ }
+ 
+ static int pm860x_touch_open(struct input_dev *dev)
+ {
+ 	struct pm860x_touch *touch = input_get_drvdata(dev);
+-	int data, ret;
++	int data;
+ 
++	/* set debounce time with 0ms */
++	pm860x_set_bits(touch->i2c, DEBOUNCE, PD_DEBOUNCE_MASK,
++			PD_DEBOUNCE_0MSEC);
+ 	data = MEAS_PD_EN | MEAS_TSIX_EN | MEAS_TSIY_EN
+ 		| MEAS_TSIZ1_EN | MEAS_TSIZ2_EN;
+-	ret = pm860x_set_bits(touch->i2c, MEAS_EN3, data, data);
+-	if (ret < 0)
+-		goto out;
++	pm860x_set_bits(touch->i2c, MEAS_EN3, data, data);
+ 	return 0;
+-out:
+-	return ret;
+ }
+ 
+ static void pm860x_touch_close(struct input_dev *dev)
+@@ -152,14 +191,14 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	touch->idev->name = "88pm860x-touch";
+-	touch->idev->phys = "88pm860x/input0";
++	touch->idev->phys = "88pm860x/input1";
+ 	touch->idev->id.bustype = BUS_I2C;
+ 	touch->idev->dev.parent = &pdev->dev;
+ 	touch->idev->open = pm860x_touch_open;
+ 	touch->idev->close = pm860x_touch_close;
+ 	touch->chip = chip;
+ 	touch->i2c = (chip->id == CHIP_PM8607) ? chip->client : chip->companion;
+-	touch->irq = irq + chip->irq_base;
++	touch->irq = irq;
+ 	touch->res_x = pdata->res_x;
+ 	input_set_drvdata(touch->idev, touch);
+ 
+@@ -188,6 +227,7 @@ static int __devinit pm860x_touch_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	platform_set_drvdata(pdev, touch);
++	INIT_DELAYED_WORK(&touch->poll_work, pm860x_poll_work);
+ 	return 0;
+ out_rg:
+ 	free_irq(touch->irq, touch);
+@@ -202,6 +242,7 @@ static int __devexit pm860x_touch_remove(struct platform_device *pdev)
+ {
+ 	struct pm860x_touch *touch = platform_get_drvdata(pdev);
+ 
++	flush_workqueue(touch->chip->monitor_wqueue);
+ 	input_unregister_device(touch->idev);
+ 	free_irq(touch->irq, touch);
+ 	platform_set_drvdata(pdev, NULL);
+-- 
+1.5.6.5
 
-> i'd be looking at Cliff/Michael for this.  the ADI linux team has been
-> restructured and audio parts are handled by Michael's new group now.
-
-Sure, "you" in the above is Analog (and indeed anyone else who's looking
-at similar areas).
-
-> > I'd expect that the driver would at least error out if the user tried to
-> > do the wrong thing here, like I say currently the firmware code is just
-> > not joined up with anything else at all.
-
-> i dont see how the driver can detect a "wrong" thing.  the driver has
-> no idea what arbitrary code the user is going to load and what that
-> code is going to do, or validate the code in any way.  this is why the
-> firmware has a small crc header on it -- we only make sure that what
-> the user compiled at build time matches what is loaded into the
-> hardware.
-
-At a bare minimum suddenly stopping and starting the firmware while
-audio is going through it is unlikely to work well (you'd most likely
-get a hard stop of the audio followed by a sudden hard start which sound
-very unpleasant to listeners) and so should be prevented.  There's a
-bunch of options for doing this (including refusing to change, ensuring
-the DSP output is muted during the change or routing around the DSP
-while doing the change).
-
-> > systems) there's no reason they shouldn't be able to rely on standard
-> > tools for managing their audio configurations.
-
-> if the standard tools existed today, i'd of course agree.  but as you
-> indicated there's nothing right now for us to bug off of.  so how
-> userspace "probes" for existing data would be however the end user
-> chooses to manage things.  it's not like the standard tools could
-> really provide anything other than a simple string that indicates
-> "some blob exists with name xxx".  the meaning/metadata that surrounds
-> xxx isnt really relevant from the kernel's pov.
-
-The standard tools should also be able to manage the mechanics of
-actually getting the new data into the kernel at appropriate moments.
-This includes both offering control via UIs such as alsamixer and being
-able to include configuration of the data in UCM configurations.
-
-> > At present userspace can enumerate and change the runtime configuration
-> > the system offers via the ALSA APIs (and this will get even better once
-> > the media controller API starts being used).  This means that you can
-> > fairly easily write a userspace that'll run on pretty much any Linux
-> > audio hardware, adapting with pure configuration for which you can
-> > provide point and click tuning (realistically by allowing the user to
-> > configure via standard ALSA tools and offering a "save as use case" type
-> > interface).  If we start adding backdoors to drivers we're taking a step
-> > back from where we are currently by requiring that the application layer
-> > know magic stuff about individual systems in order to work with them.
-
-> from how we've seen people using these codecs, this scenario doesnt
-> make much sense.  the different algorithms would be loaded on the fly
-> by the application and its current operating needs, not a single
-> algorithm selected by the ender user that wouldnt change for the life
-> of the app.  not saying the scenario would never come up, just that it
-> isnt the one we'd be focused on.
-
-I'm not sure you're following what's being said here.  The above control
-discussed above full system configuration of all the control offered by
-the system, not tuning the parameters of an individual algorithm.  This
-includes volume controls, routing controls, algorithms, coefficients and
-anything else that can be changed.  A scenario where you want to change
-the set of algorithms the hardware can support is certainly included in
-that.
