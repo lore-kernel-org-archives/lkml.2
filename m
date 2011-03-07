@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1CGCUK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 21:20:10 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:49224 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab1CGCUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 21:20:08 -0500
-Date: Mon, 7 Mar 2011 13:19:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: linux-next: manual merge of the block tree with Linus' tree
-Message-Id: <20110307131958.84a5d818.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755108Ab1CGCUn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 21:20:43 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:58722 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab1CGCUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 21:20:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=c+enKZaPG2zIXsBL9+3bRkpEQfGUZRgNWLkCvJRq6EETtOmHUmDGMamqi94G8Kgaay
+         +9qZWtpy2nUVQmEaCiac11S78x74xk641WjuOPBsoG1JnudtpkGKKJ3pQngzncD77thS
+         d2Y03FJHTXpZIQvhLM7hSg2LOwaBjmB65wqmk=
+Subject: Re: [PATCH 1/4] scatterlist: new helper functions
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
+        linux-kernel@vger.kernel.org, oakad@yahoo.com
+In-Reply-To: <20110307064900X.fujita.tomonori@lab.ntt.co.jp>
+References: <1299212213-4255-2-git-send-email-maximlevitsky@gmail.com>
+	 <20110306162859E.fujita.tomonori@lab.ntt.co.jp>
+	 <1299424470.22378.9.camel@maxim-laptop>
+	 <20110307064900X.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Mar 2011 04:20:37 +0200
+Message-ID: <1299464437.24051.13.camel@maxim-laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__7_Mar_2011_13_19_58_+1100_ndk+pu9uKp1Ld_J8"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__7_Mar_2011_13_19_58_+1100_ndk+pu9uKp1Ld_J8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2011-03-07 at 06:49 +0900, FUJITA Tomonori wrote:
+> On Sun, 06 Mar 2011 17:14:30 +0200
+> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > On Sun, 2011-03-06 at 16:29 +0900, FUJITA Tomonori wrote:
+> > > On Fri,  4 Mar 2011 06:16:50 +0200
+> > > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > > 
+> > > > While developing memstick driver for legacy memsticks
+> > > > I found the need in few helpers that I think should be
+> > > > in common scatterlist library
+> > > > 
+> > > > The functions that were added:
+> > > > 
+> > > > * sg_nents/sg_total_len - iterate over scatterlist to figure
+> > > > out total length of memory it covers / number of entries.
+> > > 
+> > > You should invent a data structure per I/O request, something like
+> > > msb_request structure. Then you can store nents and total_len in
+> > > that.
+> > > 
+> > > That's what block subsystems and drivers do. I took a look at your
+> > > driver but I can't see why your driver can't do the same.
+> > I also need to break the request into small grained chunks.
+> > If I invent such structure, I will end up writing these helpers for it.
+> > 
+> > The I have this lifetime of a request:
+> > 
+> > I get arbitary sized request from block layer (I can of course control
+> > maximum size/number of segments in it, etc).
+> > 
+> > I break it into eraseblock sized chunks, and for each I translate the
+> > the LBA, into flash address.
+> > 
+> > Then I break it into flash page sized requests (512 bytes), and yet its
+> > better not to assume that such requests always contained in one sg
+> > entry.
+> > 
+> > Worse than that, I have to pass an sg list that spans always one 512
+> > page to lowlevel driver, because thats how Alex defined the interface.
+> 
+> This restriction is due to hardware specification or the software
+> design (e.g. memstick layer)? If it is due to the latter, why can't
+> you fix that?
 
-Hi Jens,
+Yes.
+I already tried addressing some shortcomings of memstick layer, no no, I
+don't want to deal with its author, Alex Dubov again.
+I think this code tries to be too clever/complex for the range of
+devices/speeds it supports, but I rather leave it as is.
 
-Today's linux-next merge of the block tree got a conflict in
-block/blk-flush.c between commit 255bb490c8c27eed484d538efe6ef6a7473bd3f6
-("block: blk-flush shouldn't call directly into q->request_fn()
-__blk_run_queue()") from the  tree and commit
-ae1b1539622fb46e51b4d13b3f9e5f4c713f86ae ("block: reimplement FLUSH/FUA
-to support merge") from the block tree.
 
-The latter rewrote a large part of the file, so I just used that.  If
-this is not correct, please fix it up in the block tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+To be honest, the code in question is for >5 year old memstick standard
+cards, thats hardly anybody uses.
+It works, it is more or less simple, its not performance bound, its
+testd, and thus I want to keep it as is _for_ now.
 
---Signature=_Mon__7_Mar_2011_13_19_58_+1100_ndk+pu9uKp1Ld_J8
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Why I break sg lists into chunks?
+Because unlike vast majority of block devices, I need to do FTL in the
+driver, thus its easier to work on eraseblock boundary.
+Also unlike anything else, you can't just read/write a sector from a
+memorystick (especially the legacy one), you have to perform full dance
+of commands.
 
-iQEcBAEBAgAGBQJNdEDOAAoJEDMEi1NhKgbsM0oH/2W1MH9RcYzgOhzbvyS5DaG0
-PYCfz0i6OkSnD9l5u/fWFEvokdILZXVEGaXxNAONrqJHPAnKCqqJiH69mXs4gqRm
-/mEsAgGmVWk08ZOIZen5xrm8VqdEOS9oe5V3/yAvk/oNGglC4k+qog2epPzNTBZd
-rbvffz6CoasntrM+9i+fxPDBWB8XfgSUT7tQ+pjU7xcbz1pNWxfiGgCWFZ++yv1Q
-qqC5PIJ8wS5V3mARihqoIF6/+RtNMdY3VYdoLXQeLc0Doqtmq+5oSuQi+JwXVuzx
-hdGAoeSS80J3kfHsbQhe+v0GoAneJTtibqo+vS/blAfTjW90fLRBtDb7s/bFphA=
-=VPWc
------END PGP SIGNATURE-----
+Not to mention error handling (like if you failed to write to block, you
+must try to choose another one, etc...)
 
---Signature=_Mon__7_Mar_2011_13_19_58_+1100_ndk+pu9uKp1Ld_J8--
+(Of course writes follow same rules as raw nand flash, thats is writes
+only clear bits, and you can erase a eraseblock only).
+
+
+
+> 
+> Why can't the block layer split requests for you? It's better to let
+> the block layer handle that.
+You mean tell it not to give me more that one eraseblock to handle?
+Could you explain that a bit more?
+
+
+Anyway, could we merge the code?
+I would happy to improve it later, but currently merge window is very
+close, and the code is more or less agreed upon everyone, and written
+more that 1/2 of year ago.
+
+Andrew Morton, could you help me with this, Please?
+
+
+Best regards,
+	Maxim Levitsky
+
+> 
+> 
+> > Folks, really what the status of this, when to expect it to be merged?
+> > 
+> > If you think some of helper functions don't belong to scatterlist.c,
+> > just tell me to move them back to ms_block.c.
+> > 
+> > Andrew, please note again that richoh lowlevel driver doesn't need any
+> > helper functions, its patch is standalone and thus should be merged
+> > regardless.
+> 
+> I think that we need to make the design of the driver easily
+> understandable to kernel developers and maintainable by them. I don't
+> think that this is 'standalone or not' issue.
+> 
+> Adding a doc about why the driver is designed in such odd way would be
+> helpful. But I still think that we could design the driver in a better
+> way.
+
+
