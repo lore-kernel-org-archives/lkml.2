@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1CGTrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 14:47:04 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43955 "EHLO e9.ny.us.ibm.com"
+	id S1755993Ab1CGTru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 14:47:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21423 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755927Ab1CGTrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 14:47:03 -0500
-Subject: Re: [PATCH] hugetlb: /proc/meminfo shows data for all sizes of
- hugepages
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Petr Holasek <pholasek@redhat.com>
-Cc: linux-kernel@vger.kernel.org, emunson@mgebm.net, anton@redhat.com,
-        Andi Kleen <ak@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
-In-Reply-To: <1299503155-6210-1-git-send-email-pholasek@redhat.com>
-References: <1299503155-6210-1-git-send-email-pholasek@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 07 Mar 2011 11:46:54 -0800
-Message-ID: <1299527214.8493.13263.camel@nimitz>
+	id S1755834Ab1CGTrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 14:47:49 -0500
+Subject: Re: Network link detection
+From: Dan Williams <dcbw@redhat.com>
+To: Nico =?ISO-8859-1?Q?Sch=FCmann?= <dev@nico22.de>
+Cc: David Miller <davem@davemloft.net>, chris.friesen@genband.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Mon, 07 Mar 2011 13:49:08 -0600
+In-Reply-To: <20110303222957.GA30472@svh.nico22.de>
+References: <20110303193006.GA29129@svh.nico22.de>
+	 <4D700A5B.2000807@genband.com>
+	 <20110303.140106.191399853.davem@davemloft.net>
+	 <20110303222957.GA30472@svh.nico22.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Message-ID: <1299527350.3269.11.camel@dcbw.foobar.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 14:05 +0100, Petr Holasek wrote:
-> +       for_each_hstate(h)
-> +               seq_printf(m,
-> +                               "HugePages_Total:   %5lu\n"
-> +                               "HugePages_Free:    %5lu\n"
-> +                               "HugePages_Rsvd:    %5lu\n"
-> +                               "HugePages_Surp:    %5lu\n"
-> +                               "Hugepagesize:   %8lu kB\n",
-> +                               h->nr_huge_pages,
-> +                               h->free_huge_pages,
-> +                               h->resv_huge_pages,
-> +                               h->surplus_huge_pages,
-> +                               1UL << (huge_page_order(h) + PAGE_SHIFT - 10));
->  }
+On Thu, 2011-03-03 at 23:29 +0100, Nico Schümann wrote:
+> On Thu, Mar 03, 2011 at 02:01:06PM -0800, David Miller wrote:
+> > From: Chris Friesen <chris.friesen@genband.com>
+> > Date: Thu, 03 Mar 2011 15:38:35 -0600
+> > 
+> > > You might look at whether you could write a kernel module to register
+> > > for NETDEV_CHANGE notifications and pass that back to userspace.
+> > 
+> > This is the kind of responses you get when you ask networking specific
+> > questions and don't CC: netdev :-/
+> > 
+> 
+> Thank you for CC.
+> 
+> > There is this thing called netlink, you can listen for arbitrary
+> > network state change events on a socket, and get the link state
+> > notifications you are looking for.  It's in use by many real
+> > applications like NetworkManager and co.
+> 
+> That really looks like what I'm looking for. I was already wondering 
+> where NetworkManager gets the link state changes from, but I just 
+> expected it to poll. So now I'll read a bit of documentation and 
+> hopefully get it work.
 
-It sounds like now we'll get a meminfo that looks like:
+http://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/src/nm-netlink-monitor.c
 
-...
-AnonHugePages:    491520 kB
-HugePages_Total:       5
-HugePages_Free:        2
-HugePages_Rsvd:        3
-HugePages_Surp:        1
-Hugepagesize:       2048 kB
-HugePages_Total:       2
-HugePages_Free:        1
-HugePages_Rsvd:        1
-HugePages_Surp:        1
-Hugepagesize:    1048576 kB
-DirectMap4k:       12160 kB
-DirectMap2M:     2082816 kB
-DirectMap1G:     2097152 kB
+NM uses libnl as the basic library for parsing netlink messages and
+handling communication with the kernel.  Which is why you'll see a lot
+of nl_* calls in there.  NM sets up the netlink connection using libnl,
+then creates a GIOChannel to handle communication over the netlink
+socket.  When something comes in (to event_handler()) the code handles
+error conditions on the socket, then dispatches to libnl for processing.
+libnl then calls back into NM to handle the actual message in
+event_msg_ready().
 
-At best, that's a bit confusing.  There aren't any other entries in
-meminfo that occur more than once.  Plus, this information is available
-in the sysfs interface.  Why isn't that sufficient?
+Dan
 
-Could we do something where we keep the default hpage_size looking like
-it does now, but append the size explicitly for the new entries?
-
-HugePages_Total(1G):       2
-HugePages_Free(1G):        1
-HugePages_Rsvd(1G):        1
-HugePages_Surp(1G):        1
-
--- Dave
 
