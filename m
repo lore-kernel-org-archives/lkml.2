@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab1CGQCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:02:16 -0500
-Received: from waste.org ([173.11.57.241]:60885 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab1CGQCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:02:14 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Matt Mackall <mpm@selenic.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, cl@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1299509808.2071.1445.camel@dan>
-References: <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
-	 <1299270709.3062.313.camel@calx> <1299271377.2071.1406.camel@dan>
-	 <AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
-	 <1299272907.2071.1415.camel@dan>
-	 <AANLkTina+O77BFV+7mO9fX2aJimpO0ov_MKwxGtMwqG+@mail.gmail.com>
-	 <1299275042.2071.1422.camel@dan>
-	 <AANLkTikA=88EMs8RRm0RPQ+Q9nKj=2G+G86h5nCnV7Se@mail.gmail.com>
-	 <AANLkTikQxOgYFLbc2KbEKgRYL1RCnkPE-T80-GBY2Cgj@mail.gmail.com>
-	 <1299279756.3062.361.camel@calx> <20110305162508.GA11120@thunk.org>
-	 <20110306131955.722d9bd5@lxorguk.ukuu.org.uk>
-	 <1299509808.2071.1445.camel@dan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Mar 2011 10:02:10 -0600
-Message-ID: <1299513730.3062.444.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755093Ab1CGQC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:02:56 -0500
+Received: from lebrac.rtp-net.org ([88.191.135.105]:35682 "EHLO
+	lebrac.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab1CGQCy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 11:02:54 -0500
+From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
+To: Nguyen Dinh-R00091 <R00091@freescale.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "s.hauer\@pengutronix.de" <s.hauer@pengutronix.de>,
+        "u.kleine-koenig\@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>
+Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
+Organization: RtpNet
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+	<87oc5puwg3.fsf@lebrac.rtp-net.org>
+	<56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+Date: Mon, 07 Mar 2011 17:02:28 +0100
+In-Reply-To: <56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+	(Nguyen Dinh-R's message of "Mon, 7 Mar 2011 15:37:38 +0000")
+Message-ID: <87fwqyvrzf.fsf@lebrac.rtp-net.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 09:56 -0500, Dan Rosenberg wrote:
-> On Sun, 2011-03-06 at 13:19 +0000, Alan Cox wrote:
-> > > If we had wrappers for the most common cases, then any cases that were
-> > > left that used copy_from_user() explicitly could be flagged and
-> > > checked by hand, since they would be exception, and not the rule.
-> > 
-> > Arjan's copy_from_user validation code already does verification checks
-> > on the copies using gcc magic.
-> > 
-> > Some of the others might be useful - kmalloc_from_user() is a fairly
-> > obvious interface, a copy_from_user_into() interface where you pass
-> > the destination object and its actual length as well is mostly covered by
-> > Arjan's stuff.
-> > 
-> > Alan
-> 
-> This is all worthwhile discussion, and a good implementation of these
-> kinds of features is available as part of grsecurity (PAX_USERCOPY) - it
-> provides additional bounds-checking for copy operations into both heap
-> and stack buffers.  Rather than reinventing the wheel, perhaps it would
-> be a better use of time to extract this patch and make it suitable for
-> inclusion.
+Nguyen Dinh-R00091 <R00091@freescale.com> writes:
 
-Bounds-checking the existing generic functions is not at all the same,
-and is in fact counterproductive. It says "go ahead, think even LESS
-about getting your code right, because there's a (slow) safety net
-built-in".
+> Hi Arnaud,
 
-The above proposal is instead "copy these patterns that simplify your
-code"
+Hi,
+>
+> Just to verify that you are testing on an MX51-Babbage board? Here's my log:
 
-Consider time_after:
+I never said I was testing on babbage. The reason is because I'm using a
+efika smartbook and not a babbage.
 
-http://www.cs.fsu.edu/~baker/devices/lxr/http/source/linux/include/linux/jiffies.h#L93
+>
+> root@freescale ~$ uname -a
+> Linux freescale 2.6.38-rc1+ #93 Fri Mar 4 17:18:15 CST 2011 armv7l GNU/Linux
 
-Before this code (now more than 10 years old), there was lots of code in
-the kernel that manually compared time stamps and got it wrong. These
-error would show up about 43 days later when someone on an Alpha would
-get a panic. We eventually ended up setting the clock to wrap after only
-5 minutes and hundreds of these bugs showed up. The fix was not to try
-to catch unlikely timer values, but to instead make it easy to get the
-code right.
+2.6.38-rc1+ ? which tree are you using ? The for-next branch of Sascha
+Hauer's tree is at least 2.6.38-rc5 so you're trying to merge something
+without even testing it on the current tree. Can you please test suspend
+with current imx for-next tree (with no other patches than theses 2
+patches if possible), in order to make sure that it's still working with it ?
 
-> In the meantime, I'd like to get back to the original patch
-> (make /proc/slabinfo 0400), and the subsequent followup patch (randomize
-> free objects within a slab).  While it's clear that these patches by
-> themselves will not entirely prevent kernel heap exploits, they both
-> seem to be sane improvements, won't significantly impact performance,
-> and shouldn't be more than a very minor inconvenience to some small
-> subset of normal users.  In addition, the absence of these changes might
-> undermine future hardening improvements (e.g. with a more hardened heap,
-> the readability of /proc/slabinfo may be more necessary for successful
-> exploitation).
-
-If a "hardened heap" ever shows up which doesn't have the massive
-overhead of a debugging heap and is thus interesting to the real world,
-we can consider these changes then. But I won't be holding my breath.
-
-The only method I know of to harden a heap that would prevent the
-exploits we're looking at is basically CONFIG_PAGE_DEBUG: put each
-object on a separate page and surround it by two not-present pages. Then
-any overflow gets caught instantaneously by the MMU. Before anyone gets
-excited about this approach: having 96-byte objects take 4k of physical
-memory, 12k of virtual memory, and have massive TLB flushing overhead is
-a great way to make your i7 feel like a 386.
-
-Every other method that doesn't rely on hardware (eg redzoning) is only
-defense against accidental overruns and will only catch problems long
-after the fact. Further, if you can inject exploit code into a
-neighboring object, you can probably properly repair the redzone while
-you're at it.
-
-The kind of randomization that defends address spaces won't work here.
-That requires a vast amount of virtual memory to be any defense against
-NOP sleds or equivalents. And we've only got physical space around the
-size of a page to play with. If the attacker can control allocation of
-lots of objects, we basically have to assume that space is crowded.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Thanks,
+Arnaud
