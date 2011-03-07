@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab1CGDFS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 22:05:18 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:49441 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755047Ab1CGDFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 22:05:16 -0500
-Message-ID: <4D744BA5.5020607@cn.fujitsu.com>
-Date: Mon, 07 Mar 2011 11:06:13 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/10] KVM: MMU: fix kvm_mmu_get_spte_hierarchy
-References: <4D70C569.1030107@cn.fujitsu.com> <4D70C597.4070105@cn.fujitsu.com> <20110305164805.GB4607@amt.cnet>
-In-Reply-To: <20110305164805.GB4607@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-07 11:04:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-03-07 11:04:02,
-	Serialize complete at 2011-03-07 11:04:02
+	id S1755209Ab1CGDHz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 22:07:55 -0500
+Received: from xes-mad.com ([216.165.139.218]:38292 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754549Ab1CGDHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Mar 2011 22:07:54 -0500
+Subject: Re: [PATCH v5 2/4] gpiolib: Add ability to get GPIO direction
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110306073003.GA29325@angua.secretlab.ca>
+References: <1299022100-14564-1-git-send-email-ptyser@xes-inc.com>
+	 <1299022100-14564-2-git-send-email-ptyser@xes-inc.com>
+	 <20110306073003.GA29325@angua.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Mar 2011 21:07:21 -0600
+Message-ID: <1299467241.11719.145.camel@ptyser-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2011 12:48 AM, Marcelo Tosatti wrote:
-> On Fri, Mar 04, 2011 at 06:57:27PM +0800, Xiao Guangrong wrote:
->> Don not walk to the next level if spte is mapping to the large page
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
->> ---
->>  arch/x86/kvm/mmu.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index b9bf016..10e0982 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -3819,7 +3819,8 @@ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
->>  	for_each_shadow_entry(vcpu, addr, iterator) {
->>  		sptes[iterator.level-1] = *iterator.sptep;
->>  		nr_sptes++;
->> -		if (!is_shadow_present_pte(*iterator.sptep))
->> +		if (!is_shadow_present_pte(*iterator.sptep) ||
->> +		      is_last_spte(*iterator.sptep, iterator.level))
->>  			break;
->>  	}
->>  	spin_unlock(&vcpu->kvm->mmu_lock);
+On Sun, 2011-03-06 at 00:30 -0700, Grant Likely wrote:
+> On Tue, Mar 01, 2011 at 05:28:18PM -0600, Peter Tyser wrote:
+> > Add a new get_direction() function to the gpio_chip structure.  This is
+> > useful so that the direction of a GPIO can be determined when its
+> > initially exported.  Previously, the direction defaulted to "unknown"
+> > regardless of the actual configuration of the GPIO.
+> > 
+> > If a GPIO driver implements get_direction(), it is called in
+> > gpio_request() to set the initial direction of the GPIO accurately.
 > 
-> shadow_walk_okay covers that case.
+> I don't like this approach.  It effectively creates two methods for
+> determining the direction of a gpio; either ask the driver, or read
+> the flags value.  Currently, only gpio_request() actually uses the
+> first option, but it still leaves the ambiguity.
 > 
+> Instead, the driver should be able to preload the direction flag at or
+> shortly after gpiochip_add() time.  No need for a new callback hook
+> from what I can see.
 
-We can get the large mapping pte in the loop:
+The callback hook was used because the gpio_desc[] structure was local
+to gpiolib.c.  The code would have to be restructured a bit to allow
+drivers to set the flags themselves.  I can do that if you'd prefer, but
+don't think it'd be all that much cleaner.
 
-static bool shadow_walk_okay(struct kvm_shadow_walk_iterator *iterator)
-{
-	if (iterator->level < PT_PAGE_TABLE_LEVEL)
-		return false;
+Also, I thought it made sense to read the direction of the GPIO in
+gpio_request() because that's the point that the GPIO comes under the
+GPIO subsystem's control.  Prior to that, there's a chance the direction
+could be changed by platform code, or another driver, etc, so reading
+the direction in gpiochip_add() may result in out-of-date directions.
 
-	if (iterator->level == PT_PAGE_TABLE_LEVEL)
-		if (is_large_pte(*iterator->sptep))
-			return false;
+The reading of the direction could also be put in chip drivers'
+request() function.  That would get rid of the callback and still ensure
+the direction is up-to-date.
 
-	......
-}
+I think the current patch seems cleaner than the alternatives, but will
+change if you'd prefer.
 
-if level > 1 and pte.pse is set, it will return true.
+Best,
+Peter
 
-And, i think this judgment is useless:
-	if (iterator->level == PT_PAGE_TABLE_LEVEL)
-		if (is_large_pte(*iterator->sptep))
-			return false;
-since if level = 1, the pte bit7 is PAT.
