@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1CGT4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 14:56:06 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25195 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab1CGT4F (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 7 Mar 2011 14:56:05 -0500
-Date: Mon, 7 Mar 2011 14:55:27 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "owen.smith@citrix.com" <owen.smith@citrix.com>
-Subject: Re: [owen.smith@citrix.com: [Xen-devel] [PATCH 1/2
- xen/stable-2.6.32.x] Union the blkif_request request specific fields]
-Message-ID: <20110307195527.GA16058@dumpdata.com>
-References: <20110307173405.GA6087@dumpdata.com>
- <4D753625.6040300@fusionio.com>
+	id S1756089Ab1CGUAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 15:00:52 -0500
+Received: from smtp4.Stanford.EDU ([171.67.219.84]:44654 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755553Ab1CGUAv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 15:00:51 -0500
+Message-ID: <4D753970.4030607@localhost>
+Date: Mon, 07 Mar 2011 12:00:48 -0800
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D753625.6040300@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4D753834.01BA,ss=1,fgs=0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, lwn@lwn.net
+Subject: Re: [ANNOUNCE] RT for v2.6.34.8 now available.
+References: <4D71668F.9050201@windriver.com> <4D748070.1030502@localhost>
+In-Reply-To: <4D748070.1030502@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 08:46:45PM +0100, Jens Axboe wrote:
-> On 2011-03-07 18:34, Konrad Rzeszutek Wilk wrote:
-> > Jens,
-> > 
-> > Are you OK with this patch? I was thinking to push it for 2.6.39.
-> > I've it in my tree, but if you would rather carry it for the merge window
-> > it is in 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/blkfront-cleanup
-> 
-> I'd prefer block drivers going through the block tree, but if you have
-> it queued and since it's completely local to that driver, go ahead and
-> keep it in your tree. No worries on my side :-)
+On 03/06/2011 10:51 PM, Fernando Lopez-Lezcano wrote:
+> On 03/04/2011 02:24 PM, Paul Gortmaker wrote:
+>> As a value add to the 2.6.34 long term release, I'm happy to also
+>> announce the availability of 2.6.34-RT.
+>>
+>> You can find it in the v2.6.34-rt branch at:
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/paulg/rt-patches.git
+>
+> Great! Many thanks... Actually, impressive work.
+>
+> I'm trying to integrate/build it into my Fedora based rt packages for
+> Planet CCRMA. Warning: I'm doing this on top of the 2.6.34.8-68 fc13
+> koji build, so rt is patched on top of the additional Fedora patches for
+> that build (with a few trivial tweaks to patch cleanly). So I don't know
+> if the following issues are due to that...
 
-OK. Thank you.
-> 
-> You can add my acked-by, if you want.
+Caveat above still applies...
+So far mixed success:
 
-Will do.
+- Fedora 14 desktop w/radeon graphics: OK
+- Lenovo laptop, Fedora 13, Nvidia binary driver (barf!): OK
+
+- EeePC netbook, Fedora 13, Intel Mobile 945GME graphics: X does not start
+- Lenovo laptop, fedora 14, Intel 9xx graphics (at home): X does not start
+These last two share Intel graphics and the problem seems to be the 
+same, something to do with dri. The standard Fedora kernel works fine so 
+it must be some rt interaction (perhaps with the added Fedora patches).
+
+But it is a good start!
+-- Fernando
