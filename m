@@ -1,122 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab1CGUmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 15:42:03 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37307 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab1CGUmB convert rfc822-to-8bit (ORCPT
+	id S1756146Ab1CGUnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 15:43:18 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:53844 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab1CGUnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 15:42:01 -0500
-Subject: Re: [PATCH 05/10] block: remove per-queue plugging
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, Shaohua Li <shli@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <4D753556.3020800@fusionio.com>
-References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-	 <1295659049-2688-6-git-send-email-jaxboe@fusionio.com>
-	 <AANLkTin8FoXX6oqUyW+scwhadyX-TfW16_oKjvngU9-m@mail.gmail.com>
-	 <20110303221353.GA10366@redhat.com>
-	 <AANLkTi=MfDzf+-eLbysoP-ZiXX6cV_tVxYE14Vr8FSak@mail.gmail.com>
-	 <20110304214359.GA18442@redhat.com> <4D715E8A.5070006@fusionio.com>
-	 <20110304222702.GB18921@redhat.com>  <4D72A302.6060008@fusionio.com>
-	 <1299493427.2308.11.camel@twins>  <4D753556.3020800@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 07 Mar 2011 21:41:40 +0100
-Message-ID: <1299530500.2308.417.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 7 Mar 2011 15:43:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=JW/Jp3nMLM4sMkbRCdPY+BCrk3GJSYu8FKeBJVmggT6PDMcqd6aQrDgb8jjKPVErr9
+         QDhIFW1S0xMNu67s6x2A==
+Date: Mon, 7 Mar 2011 12:36:49 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Vagin <avagin@gmail.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: skip zombie in OOM-killer
+In-Reply-To: <AANLkTi=d+eZxg_NgNWa7roo=1YQS06=EaWJzjseL_Hhs@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1103071234480.10264@chino.kir.corp.google.com>
+References: <1299286307-4386-1-git-send-email-avagin@openvz.org> <20110306193519.49DD.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1103061400170.23737@chino.kir.corp.google.com> <AANLkTi=d+eZxg_NgNWa7roo=1YQS06=EaWJzjseL_Hhs@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1855919177-1299530211=:10264"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-03-07 at 20:43 +0100, Jens Axboe wrote:
-> On 2011-03-07 11:23, Peter Zijlstra wrote:
-> > On Sat, 2011-03-05 at 21:54 +0100, Jens Axboe wrote:
-> >>
-> >> Apparently so. Peter/Ingo, please shoot this one down in flames.
-> >> Summary:
-> >>
-> >> - Need a way to trigger this flushing when a task is going to sleep
-> >> - It's currently done right before calling deactivate_task(). We know
-> >>   the task is going to sleep here, but it's also under the runqueue
-> >>   lock. Not good.
-> >> - In the new location, it's not completely clear to me whether we can
-> >>   safely deref 'prev' or not. The usage of prev_state would seem to
-> >>   indicate that we cannot, and as far as I can tell, prev could at this
-> >>   point already potentially be running on another CPU.
-> >>
-> >> Help? Peter, we talked about this in Tokyo in September. Initial
-> >> suggestion was to use preempt notifiers, which we can't because:
-> >>
-> >> - runqueue lock is also held
-> >> - It's not unconditionally available, depends on config.
-> >>
-> >> diff --git a/kernel/sched.c b/kernel/sched.c
-> >> index e806446..8581ad3 100644
-> >> --- a/kernel/sched.c
-> >> +++ b/kernel/sched.c
-> >> @@ -2826,6 +2826,14 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
-> >>  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
-> >>         finish_lock_switch(rq, prev);
-> >>  
-> >> +       /*
-> >> +        * If this task has IO plugged, make sure it
-> >> +        * gets flushed out to the devices before we go
-> >> +        * to sleep
-> >> +        */
-> >> +       if (prev_state != TASK_RUNNING)
-> >> +               blk_flush_plug(prev);
-> >> +
-> >>         fire_sched_in_preempt_notifiers(current);
-> >>         if (mm)
-> >>                 mmdrop(mm);
-> >> @@ -3973,14 +3981,6 @@ need_resched_nonpreemptible:
-> >>                                 if (to_wakeup)
-> >>                                         try_to_wake_up_local(to_wakeup);
-> >>                         }
-> >> -                       /*
-> >> -                        * If this task has IO plugged, make sure it
-> >> -                        * gets flushed out to the devices before we go
-> >> -                        * to sleep
-> >> -                        */
-> >> -                       blk_flush_plug(prev);
-> >> -                       BUG_ON(prev->plug && !list_empty(&prev->plug->list));
-> >> -
-> >>                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
-> >>                 }
-> >>                 switch_count = &prev->nvcsw;
-> >>
-> > 
-> > Right, so your new location is still under rq->lock for a number of
-> > architectures (including x86). finish_lock_switch() doesn't actually
-> > release the lock unless __ARCH_WANT_INTERRUPTS_ON_CTXSW ||
-> > __ARCH_WANT_UNLOCKED_CTXSW (the former implies the latter since rq->lock
-> > is IRQ-safe).
-> 
-> Ah, thanks for that.
-> 
-> > If you want a safe place to drop rq->lock (but keep in mind to keep IRQs
-> > disabled there) and use prev, do something like the below. Both
-> > pre_schedule() and idle_balance() can already drop the rq->lock do doing
-> > it once more is quite all-right ;-)
-> > 
-> > Note that once you drop rq->lock prev->state can change to TASK_RUNNING
-> > again so don't re-check that.
-> 
-> So that's a problem. If I end up flushing this structure that sits on
-> the stack of the process, I cannot have it running on another CPU at
-> that time.
-> 
-> I need the process to be in such a state that it will not get scheduled
-> on another CPU before this has completed.
-> 
-> Is that even possible? 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Yes, if prev will be flipped back to TASK_RUNNING it will still stay on
-that cpu, it will not migrate until the cpu that schedules it away (the
-cpu you're on) will have flipped rq->curr, and that happens way after
-this point. So you're good to go, just don't rely on ->state once you
-release rq->lock.
+--531368966-1855919177-1299530211=:10264
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 7 Mar 2011, Andrew Vagin wrote:
+
+> > Andrey is patching the case where an eligible TIF_MEMDIE process is found
+> > but it has already detached its ->mm.  In combination with the patch
+> > posted to linux-mm, oom: prevent unnecessary oom kills or kernel panics,
+> > which makes select_bad_process() iterate over all threads, it is an
+> > effective solution.
+> 
+> Probably you said about the first version of my patch.
+> This version is incorrect because of
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=dd8e8f405ca386c7ce7cbb996ccd985d283b0e03
+> 
+> but my first patch is correct and it has a simple reproducer(I
+> attached it). You can execute it and your kernel hangs up, because the
+> parent doesn't wait children, but the one child (zombie) will have
+> flag TIF_MEMDIE, oom_killer will kill nobody
+> 
+
+The second version of your patch works fine in combination with the 
+pending "oom: prevent unnecessary oom kills or kernel panics" patch from 
+linux-mm (included below).  Try your test case with both this patch and 
+the second version of your patch.
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -292,11 +292,11 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 		unsigned long totalpages, struct mem_cgroup *mem,
+ 		const nodemask_t *nodemask)
+ {
+-	struct task_struct *p;
++	struct task_struct *g, *p;
+ 	struct task_struct *chosen = NULL;
+ 	*ppoints = 0;
+ 
+-	for_each_process(p) {
++	do_each_thread(g, p) {
+ 		unsigned int points;
+ 
+ 		if (oom_unkillable_task(p, mem, nodemask))
+@@ -324,7 +324,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 		 * the process of exiting and releasing its resources.
+ 		 * Otherwise we could get an easy OOM deadlock.
+ 		 */
+-		if (thread_group_empty(p) && (p->flags & PF_EXITING) && p->mm) {
++		if ((p->flags & PF_EXITING) && p->mm) {
+ 			if (p != current)
+ 				return ERR_PTR(-1UL);
+ 
+@@ -337,7 +337,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			chosen = p;
+ 			*ppoints = points;
+ 		}
+-	}
++	} while_each_thread(g, p);
+ 
+ 	return chosen;
+ }
+--531368966-1855919177-1299530211=:10264--
