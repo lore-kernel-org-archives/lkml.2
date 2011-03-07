@@ -1,121 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab1CGPCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 10:02:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754359Ab1CGPCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 10:02:24 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate name
- service errors
-To: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-api@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Mon, 07 Mar 2011 15:02:18 +0000
-Message-ID: <20110307150218.28218.84916.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20110307150208.28218.89348.stgit@warthog.procyon.org.uk>
-References: <20110307150208.28218.89348.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1753494Ab1CGPPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 10:15:49 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33087 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab1CGPPr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 10:15:47 -0500
+Date: Mon, 7 Mar 2011 10:12:01 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Justin Mattock <justinmattock@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ath9k-devel@atheros.com
+Subject: Re: WARNING: at drivers/net/wireless/ath/ath9k/recv.c:536
+ ath_stoprecv+0xc8/0xda [ath9k]()
+Message-ID: <20110307151201.GC2664@tuxdriver.com>
+References: <AANLkTik9To0Rkq2FRqQFB2wNu0kyJ7CzyBek2jBp36Cb@mail.gmail.com>
+ <20110303135942.GA8969@tuxdriver.com>
+ <AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=mtaf==aLfOFK06EgmbdZ4aVk3GEthw7PwuSTS@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the kernel has filesystems (and possibly other services) that want to
-look up internet addresses corresponding to arbitrary hostnames retrieved from
-the server, it would seem useful to provide a couple of error codes to indicate
-problems with the look up, rather than overloading some other error code.
+On Sun, Mar 06, 2011 at 12:47:05AM -0800, Justin Mattock wrote:
 
-Define ENONAMESERVICE to indicate "Network name service unavailable".  This can
-be used to indicate, for example, that an attempt was made by dns_query() to
-make a query, but the name server (e.g. a DNS server) it is supposed to contact
-didn't answer or that it couldn't determine the location of a suitable server.
+> full dmesg here:
+> http://fpaste.org/5JQp/
+> let me know if I need to supply any info(also I can try a bisect, but
+> am in the middle of changing residencies, so it might not be right
+> away)
 
-Define ENAMEUNKNOWN to indicate "Network name unknown".  This can be used to
-indicate, for example, that an attempt was made by dns_query() to make a query,
-but the name server (e.g. a DNS server) replied indicating that it had no
-matching records.
+One of the Atheros guys suggested that you change a DMA timeout value.
+Did you try that?
 
-The DNS query upcall program can report these to keyctl_reject() so that cached
-failed queries will respond with these errors until they expire.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- arch/alpha/include/asm/errno.h  |    2 ++
- arch/mips/include/asm/errno.h   |    2 ++
- arch/parisc/include/asm/errno.h |    2 ++
- arch/sparc/include/asm/errno.h  |    2 ++
- include/asm-generic/errno.h     |    2 ++
- 5 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/arch/alpha/include/asm/errno.h b/arch/alpha/include/asm/errno.h
-index 519663c..ee8a3f0 100644
---- a/arch/alpha/include/asm/errno.h
-+++ b/arch/alpha/include/asm/errno.h
-@@ -122,5 +122,7 @@
- 
- #define	ERFKILL		138	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	139	/* Authentication service not available */
-+#define	ENONAMESERVICE	140	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	141	/* Network name unknown */
- 
- #endif
-diff --git a/arch/mips/include/asm/errno.h b/arch/mips/include/asm/errno.h
-index 5fa7fed..faed965 100644
---- a/arch/mips/include/asm/errno.h
-+++ b/arch/mips/include/asm/errno.h
-@@ -121,6 +121,8 @@
- 
- #define	ERFKILL		167	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	168	/* Authentication service not available */
-+#define	ENONAMESERVICE	169	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	170	/* Network name unknown */
- 
- #define EDQUOT		1133	/* Quota exceeded */
- 
-diff --git a/arch/parisc/include/asm/errno.h b/arch/parisc/include/asm/errno.h
-index 6a19346..63ee0bc 100644
---- a/arch/parisc/include/asm/errno.h
-+++ b/arch/parisc/include/asm/errno.h
-@@ -122,5 +122,7 @@
- 
- #define	ERFKILL		256	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	257	/* Authentication service not available */
-+#define	ENONAMESERVICE	258	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	259	/* Network name unknown */
- 
- #endif
-diff --git a/arch/sparc/include/asm/errno.h b/arch/sparc/include/asm/errno.h
-index ab3a26a..f40d5ae 100644
---- a/arch/sparc/include/asm/errno.h
-+++ b/arch/sparc/include/asm/errno.h
-@@ -112,5 +112,7 @@
- 
- #define	ERFKILL		134	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	135	/* Authentication service not available */
-+#define	ENONAMESERVICE	136	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	137	/* Network name unknown */
- 
- #endif
-diff --git a/include/asm-generic/errno.h b/include/asm-generic/errno.h
-index bcf1908..25878f1 100644
---- a/include/asm-generic/errno.h
-+++ b/include/asm-generic/errno.h
-@@ -108,5 +108,7 @@
- 
- #define ERFKILL		132	/* Operation not possible due to RF-kill */
- #define	ENOAUTHSERVICE	133	/* Authentication service not available */
-+#define	ENONAMESERVICE	134	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	135	/* Network name unknown */
- 
- #endif
-
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
