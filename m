@@ -1,136 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1CGMZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 07:25:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab1CGMZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 07:25:22 -0500
-Date: Mon, 7 Mar 2011 13:25:08 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, dmonakhov@openvz.org, axboe@kernel.dk
-Subject: Re: [PATCH] block: fix mis-synchronisation in
- blkdev_issue_zeroout()
-In-Reply-To: <x49lj0uj4rk.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <alpine.LFD.2.00.1103071315320.5084@dhcp-27-109.brq.redhat.com>
-References: <1299231968-5730-1-git-send-email-lczerner@redhat.com> <x49zkpbhszn.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1103041552020.5003@dhcp-27-109.brq.redhat.com> <x49lj0uj4rk.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753494Ab1CGM03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 07:26:29 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57268 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab1CGM0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 07:26:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=JIgwB7Ilp2EdPo1yX53b5ePHgm7Lw7HcMV+iiDDYtR0DlkdQMIicD8Yjzo35hi6wVI
+         c6gZ91TRSA7qLuvlxdMxYMeq73zf0/esyogdVRrAoKKrg4p3U6gJg+sSJjQdfGQe16bX
+         zYfxxdbVCSRwMUxMiWKOoDT2jKyQr4aOjGf0E=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <4D74C5AD.6020400@kernel.dk>
+References: <20110307131958.84a5d818.sfr@canb.auug.org.au>
+	<20110307063618.GA10365@mtj.dyndns.org>
+	<4D749A81.50809@kernel.dk>
+	<AANLkTim0qwr-L9RLRDtoZBrFBWGJ1ze9LMxr9dTmdrr9@mail.gmail.com>
+	<20110307104747.GH20499@htj.dyndns.org>
+	<AANLkTinBx5Z9Gp7ZTcbbTMCZZ4Z68-vMBP9yOX-k15EA@mail.gmail.com>
+	<4D74BE7C.4050701@kernel.dk>
+	<AANLkTi=9AUSv0rJtudgnEBERaCLpyHhVmcUY9mZUa8H-@mail.gmail.com>
+	<4D74C101.1030204@kernel.dk>
+	<AANLkTim=ftTzEX9arXjpPhs8XPbUCzZ2BJ3pOdxL+bNF@mail.gmail.com>
+	<4D74C5AD.6020400@kernel.dk>
+Date: Mon, 7 Mar 2011 13:26:23 +0100
+Message-ID: <AANLkTin+OCtg5-0Tx8urH7bk1ZO2_N05-vQeLFbO36hy@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the block tree with Linus' tree
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Mar 2011, Jeff Moyer wrote:
+Thanks, I will wait till tommorrow with a new build of linux-next
+(looks like this is one of this "manic mondays" and... more coffee).
 
-> Lukas Czerner <lczerner@redhat.com> writes:
-> 
-> > On Fri, 4 Mar 2011, Jeff Moyer wrote:
-> >> It seems to me like it might be better to just not complete anything
-> >> until the count is zero.  Why issue a wakeup for every bio?
-> >> fs/direct-io does something similar, maybe take a look at the
-> >> dio_bio_end* routines and see if that would fit well here.  With your
-> >> scheme, I worry about missing a completion, maybe because the first bio
-> >> completes before you are done submitting bios.  Is that possible?
-> >
-> > I do not think it is possible. For every bio submitted there is
-> > wait_for_completion called. When bio complete()s completion->done is
-> > incremented (under the wait->lock). In wait_for_completion() we are
-> > waiting for single submitted bio to complete (completion->done > 0),
-> > then completion->done is decremented. It seems like simple
-> > synchronization.
-> >
-> > I am not sure what wakeup you have in mind, but thanks for the tip I'll
-> > look in fs/direct-io.
-> 
-> Let's say you have several bios to submit, and the first bio is errored
-> immediately in submit_bio.  Since you didn't add yourself to the
-> waitqueue yet, you might miss the wakeup and sleep forever.
-> 
-> Cheers,
-> Jeff
-> 
+Just looked in the meantime trough WildWildWeb and found a new
+tig-0.17 which I could built successfully against ncurses-5.8 and this
+was more important.
 
-(Adding Dimitry and Jens into CC)
+- Sedat -
 
-This can not happen. submit_bio does not return any value. The way how
-it does notify caller about its status is via ->bio_end_io (see comment
-for __generic_make_request()). Now the ->bio_end_io is in this case
-always set because it is the first thing we are doing, so for every bio
-submitted there will be appropriate complete() and wait_for_completition()
-call.
-
-The one thing can fail though, and it is bio_alloc() however when this
-fails we are jumping out of the loop immediately without touching
-"issued" at all, so if it is a first bio issued = 0, hence there is
-nothing to wait for.
-
-I do not see any problems here.
-
-But, now I can see you point about calling wakeup() for every completed
-bio, which is not strictly needed and we should call complete() only
-once when the last bio is completed. So how about this ?
-
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 1a320d2..ccf5a40 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -109,7 +109,6 @@ struct bio_batch
- 	atomic_t 		done;
- 	unsigned long 		flags;
- 	struct completion 	*wait;
--	bio_end_io_t		*end_io;
- };
- 
- static void bio_batch_end_io(struct bio *bio, int err)
-@@ -122,12 +121,9 @@ static void bio_batch_end_io(struct bio *bio, int err)
- 		else
- 			clear_bit(BIO_UPTODATE, &bb->flags);
- 	}
--	if (bb) {
--		if (bb->end_io)
--			bb->end_io(bio, err);
--		atomic_inc(&bb->done);
--		complete(bb->wait);
--	}
-+	if (bb)
-+		if (atomic_dec_and_test(&bb->done))
-+			complete(bb->wait);
- 	bio_put(bio);
- }
- 
-@@ -150,13 +146,12 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 	int ret;
- 	struct bio *bio;
- 	struct bio_batch bb;
--	unsigned int sz, issued = 0;
-+	unsigned int sz;
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 
--	atomic_set(&bb.done, 0);
-+	atomic_set(&bb.done, 1);
- 	bb.flags = 1 << BIO_UPTODATE;
- 	bb.wait = &wait;
--	bb.end_io = NULL;
- 
- submit:
- 	ret = 0;
-@@ -185,12 +180,12 @@ submit:
- 				break;
- 		}
- 		ret = 0;
--		issued++;
-+		atomic_inc(&bb.done);
- 		submit_bio(WRITE, bio);
- 	}
- 
- 	/* Wait for bios in-flight */
--	while (issued != atomic_read(&bb.done))
-+	if (!atomic_dec_and_test(&bb.done))
- 		wait_for_completion(&wait);
- 
- 	if (!test_bit(BIO_UPTODATE, &bb.flags))
+On 3/7/11, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2011-03-07 12:35, Sedat Dilek wrote:
+>> On 3/7/11, Jens Axboe <axboe@kernel.dk> wrote:
+>>> On 2011-03-07 12:25, Sedat Dilek wrote:
+>>>> On 3/7/11, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>> On 2011-03-07 12:14, Sedat Dilek wrote:
+>>>>>> On 3/7/11, Tejun Heo <tj@kernel.org> wrote:
+>>>>>>> On Mon, Mar 07, 2011 at 11:41:23AM +0100, Sedat Dilek wrote:
+>>>>>>>> $ git log -1 | cat
+>>>>>>>> commit c45165cd2c77843f24ca18af54044303dc2a81ab
+>>>>>>>> Author: Stephen Rothwell <sfr@canb.auug.org.au>
+>>>>>>>> Date:   Mon Mar 7 17:38:41 2011 +1100
+>>>>>>>>
+>>>>>>>>     Add linux-next specific files for 20110307
+>>>>>>>>
+>>>>>>>>     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+>>>>>>>>
+>>>>>>>> $ git pull
+>>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block.git
+>>>>>>>> for-next
+>>>>>>>> remote: Counting objects: 158, done.
+>>>>>>>> remote: Compressing objects: 100% (89/89), done.
+>>>>>>>> remote: Total 106 (delta 87), reused 21 (delta 17)
+>>>>>>>> Receiving objects: 100% (106/106), 23.33 KiB, done.
+>>>>>>>> Resolving deltas: 100% (87/87), completed with 34 local objects.
+>>>>>>>> From
+>>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block
+>>>>>>>>  * branch            for-next   -> FETCH_HEAD
+>>>>>>>> warning: too many files (created: 1120 deleted: 637), skipping
+>>>>>>>> inexact
+>>>>>>>> rename detection
+>>>>>>>> warning: too many files (created: 974 deleted: 462), skipping
+>>>>>>>> inexact
+>>>>>>>> rename detection
+>>>>>>>> Auto-merging block/blk-core.c
+>>>>>>>> Auto-merging block/blk-flush.c
+>>>>>>>> CONFLICT (content): Merge conflict in block/blk-flush.c
+>>>>>>>> Auto-merging block/cfq-iosched.c
+>>>>>>>> CONFLICT (content): Merge conflict in block/cfq-iosched.c
+>>>>>>>> Automatic merge failed; fix conflicts and then commit the result.
+>>>>>>>
+>>>>>>> Ummm... don't those conflicts come from Stephen's commits?  You would
+>>>>>>> need to revert the merge and fixup commits and then pull in the block
+>>>>>>> branch.
+>>>>>>>
+>>>>>>> Thanks.
+>>>>>>>
+>>>>>>> --
+>>>>>>> tejun
+>>>>>>>
+>>>>>>
+>>>>>> I have reverted the merge-fix from Stephen "[PATCH] block: update for
+>>>>>> __blk_run_queue() API update" which changed block/blk-flush.c, this
+>>>>>> remains:
+>>>>>> ...
+>>>>>> CONFLICT (content): Merge conflict in block/cfq-iosched.c
+>>>>>>
+>>>>>> As it is 12p.m. and sun shining, my decision and direction is clear:
+>>>>>> Lunch + City.
+>>>>>
+>>>>> Just checked here, I can pull my for-next cleanly into Linus' master.
+>>>>> What is the block tree for-next branch sha?
+>>>>>
+>>>>> --
+>>>>> Jens Axboe
+>>>>>
+>>>>>
+>>>>
+>>>> No, I tried to merge your for-next into linux-next (which will happen
+>>>> with tomorrows linux-next).
+>>>>
+>>>> [ linux-2.6-block.git#for-next ]
+>>>> commit b873c5d692d4d5453cceed18bb06c62bb1a73ac0
+>>>> "Merge branch 'block-for-2.6.39-core' of
+>>>> ssh:///linux/kernel/git/tj/misc into for-2.6.39/core"
+>>>
+>>> linux-next should not have any CFQ changes that don't come from for-next
+>>> from the linux block tree. Are you pulling it into a linux-next that
+>>> already have some of the block changes?
+>>>
+>>> --
+>>> Jens Axboe
+>>>
+>>>
+>>
+>> I have reverted the manual merge-fix from Stephen as pointed out by Tejun.
+>>
+>> As tig (utility) is broken with ncurses-5.8 in Debian/sid I currently
+>> can't look through the commits.
+>> So, I can't say if there were further modifications by merging block
+>> stuff into linux-next.
+>> I have added the last 5 commits to block/cfq-iosched.c as TXT.
+>
+> OK, I see Stephen already pointed out where things have gone wrong. I
+> try to ensure that it'll merge into Linus' git cleanly, so I know that
+> Stephen wont run into problems. Sometimes things will get fast tracked
+> into Linus' git and I don't update for-next in time, that's when
+> problems arise.
+>
+> linux-next is a new tree everyday, you can't pull from it like you would
+> other development trees.
+>
+> --
+> Jens Axboe
+>
+>
