@@ -1,41 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab1CGQBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:01:09 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50783 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753340Ab1CGQBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:01:06 -0500
-Date: Mon, 7 Mar 2011 16:00:42 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate
- name service errors
-Message-ID: <20110307160042.2ddc8e65@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110307150218.28218.84916.stgit@warthog.procyon.org.uk>
-References: <20110307150208.28218.89348.stgit@warthog.procyon.org.uk>
-	<20110307150218.28218.84916.stgit@warthog.procyon.org.uk>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1754897Ab1CGQCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:02:16 -0500
+Received: from waste.org ([173.11.57.241]:60885 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519Ab1CGQCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 11:02:14 -0500
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+From: Matt Mackall <mpm@selenic.com>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
+        Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, cl@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1299509808.2071.1445.camel@dan>
+References: <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
+	 <1299270709.3062.313.camel@calx> <1299271377.2071.1406.camel@dan>
+	 <AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
+	 <1299272907.2071.1415.camel@dan>
+	 <AANLkTina+O77BFV+7mO9fX2aJimpO0ov_MKwxGtMwqG+@mail.gmail.com>
+	 <1299275042.2071.1422.camel@dan>
+	 <AANLkTikA=88EMs8RRm0RPQ+Q9nKj=2G+G86h5nCnV7Se@mail.gmail.com>
+	 <AANLkTikQxOgYFLbc2KbEKgRYL1RCnkPE-T80-GBY2Cgj@mail.gmail.com>
+	 <1299279756.3062.361.camel@calx> <20110305162508.GA11120@thunk.org>
+	 <20110306131955.722d9bd5@lxorguk.ukuu.org.uk>
+	 <1299509808.2071.1445.camel@dan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Mar 2011 10:02:10 -0600
+Message-ID: <1299513730.3062.444.camel@calx>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Define ENONAMESERVICE to indicate "Network name service unavailable".  This can
-> be used to indicate, for example, that an attempt was made by dns_query() to
-> make a query, but the name server (e.g. a DNS server) it is supposed to contact
-> didn't answer or that it couldn't determine the location of a suitable server.
+On Mon, 2011-03-07 at 09:56 -0500, Dan Rosenberg wrote:
+> On Sun, 2011-03-06 at 13:19 +0000, Alan Cox wrote:
+> > > If we had wrappers for the most common cases, then any cases that were
+> > > left that used copy_from_user() explicitly could be flagged and
+> > > checked by hand, since they would be exception, and not the rule.
+> > 
+> > Arjan's copy_from_user validation code already does verification checks
+> > on the copies using gcc magic.
+> > 
+> > Some of the others might be useful - kmalloc_from_user() is a fairly
+> > obvious interface, a copy_from_user_into() interface where you pass
+> > the destination object and its actual length as well is mostly covered by
+> > Arjan's stuff.
+> > 
+> > Alan
+> 
+> This is all worthwhile discussion, and a good implementation of these
+> kinds of features is available as part of grsecurity (PAX_USERCOPY) - it
+> provides additional bounds-checking for copy operations into both heap
+> and stack buffers.  Rather than reinventing the wheel, perhaps it would
+> be a better use of time to extract this patch and make it suitable for
+> inclusion.
 
-Are these in glibc and are there glibc patches submitted and accepted for
-this ?
+Bounds-checking the existing generic functions is not at all the same,
+and is in fact counterproductive. It says "go ahead, think even LESS
+about getting your code right, because there's a (slow) safety net
+built-in".
 
-(I only ask because I know its previously taken years for glibc to catch
-up with stuff)
+The above proposal is instead "copy these patterns that simplify your
+code"
+
+Consider time_after:
+
+http://www.cs.fsu.edu/~baker/devices/lxr/http/source/linux/include/linux/jiffies.h#L93
+
+Before this code (now more than 10 years old), there was lots of code in
+the kernel that manually compared time stamps and got it wrong. These
+error would show up about 43 days later when someone on an Alpha would
+get a panic. We eventually ended up setting the clock to wrap after only
+5 minutes and hundreds of these bugs showed up. The fix was not to try
+to catch unlikely timer values, but to instead make it easy to get the
+code right.
+
+> In the meantime, I'd like to get back to the original patch
+> (make /proc/slabinfo 0400), and the subsequent followup patch (randomize
+> free objects within a slab).  While it's clear that these patches by
+> themselves will not entirely prevent kernel heap exploits, they both
+> seem to be sane improvements, won't significantly impact performance,
+> and shouldn't be more than a very minor inconvenience to some small
+> subset of normal users.  In addition, the absence of these changes might
+> undermine future hardening improvements (e.g. with a more hardened heap,
+> the readability of /proc/slabinfo may be more necessary for successful
+> exploitation).
+
+If a "hardened heap" ever shows up which doesn't have the massive
+overhead of a debugging heap and is thus interesting to the real world,
+we can consider these changes then. But I won't be holding my breath.
+
+The only method I know of to harden a heap that would prevent the
+exploits we're looking at is basically CONFIG_PAGE_DEBUG: put each
+object on a separate page and surround it by two not-present pages. Then
+any overflow gets caught instantaneously by the MMU. Before anyone gets
+excited about this approach: having 96-byte objects take 4k of physical
+memory, 12k of virtual memory, and have massive TLB flushing overhead is
+a great way to make your i7 feel like a 386.
+
+Every other method that doesn't rely on hardware (eg redzoning) is only
+defense against accidental overruns and will only catch problems long
+after the fact. Further, if you can inject exploit code into a
+neighboring object, you can probably properly repair the redzone while
+you're at it.
+
+The kind of randomization that defends address spaces won't work here.
+That requires a vast amount of virtual memory to be any defense against
+NOP sleds or equivalents. And we've only got physical space around the
+size of a page to play with. If the attacker can control allocation of
+lots of objects, we basically have to assume that space is crowded.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
