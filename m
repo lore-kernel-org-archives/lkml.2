@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1CGLZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 06:25:41 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50786 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755569Ab1CGLZ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755761Ab1CGLZ1 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Mar 2011 06:25:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=B8Havh8OnU9CLLOXVFYyZa7f29A9LO4ev97W6I14FUmeCVguARRWod/F/1YCKJE9ye
-         x65+7I6k093teIdQskJKufoEsRYM5kjTLsIywtmkntN8Jf4NWQ+0X++1q4A7dzxOiEg9
-         Q8Xe3Jv47ItHmj91hfs+LegWxrEWsSCy0s3m0=
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61049 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1CGLZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 06:25:17 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <4D74BE7C.4050701@kernel.dk>
-References: <20110307131958.84a5d818.sfr@canb.auug.org.au>
-	<20110307063618.GA10365@mtj.dyndns.org>
-	<4D749A81.50809@kernel.dk>
-	<AANLkTim0qwr-L9RLRDtoZBrFBWGJ1ze9LMxr9dTmdrr9@mail.gmail.com>
-	<20110307104747.GH20499@htj.dyndns.org>
-	<AANLkTinBx5Z9Gp7ZTcbbTMCZZ4Z68-vMBP9yOX-k15EA@mail.gmail.com>
-	<4D74BE7C.4050701@kernel.dk>
-Date: Mon, 7 Mar 2011 12:25:23 +0100
-Message-ID: <AANLkTi=9AUSv0rJtudgnEBERaCLpyHhVmcUY9mZUa8H-@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the block tree with Linus' tree
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1299192176.6376.47.camel@gandalf.stny.rr.com>
+References: <AANLkTinbYWQxde2jTcAtyYQGvGgt2Lmtnph=voj=haXF@mail.gmail.com>
+	<201103021157.08260.trenn@suse.de>
+	<AANLkTi=dht7+bPrBqmt6shHefBxSB3yOUu4OcSvcd0am@mail.gmail.com>
+	<201103022307.46694.trenn@suse.de>
+	<1299192176.6376.47.camel@gandalf.stny.rr.com>
+Date: Mon, 7 Mar 2011 13:25:15 +0200
+Message-ID: <AANLkTi=VnpgjKdz1GBX801Uf3SHo-nOFEn1fSq9nVYct@mail.gmail.com>
+Subject: Re: [PATCH V6 0/2] tracing, perf: cpu hotplug trace events
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Renninger <trenn@suse.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, fweisbec@gmail.com,
+        rusty@rustcorp.com.au, tglx@linutronix.de,
+        Arjan van de Ven <arjan@infradead.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-perf-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/7/11, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2011-03-07 12:14, Sedat Dilek wrote:
->> On 3/7/11, Tejun Heo <tj@kernel.org> wrote:
->>> On Mon, Mar 07, 2011 at 11:41:23AM +0100, Sedat Dilek wrote:
->>>> $ git log -1 | cat
->>>> commit c45165cd2c77843f24ca18af54044303dc2a81ab
->>>> Author: Stephen Rothwell <sfr@canb.auug.org.au>
->>>> Date:   Mon Mar 7 17:38:41 2011 +1100
->>>>
->>>>     Add linux-next specific files for 20110307
->>>>
->>>>     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>>>
->>>> $ git pull
->>>> git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block.git
->>>> for-next
->>>> remote: Counting objects: 158, done.
->>>> remote: Compressing objects: 100% (89/89), done.
->>>> remote: Total 106 (delta 87), reused 21 (delta 17)
->>>> Receiving objects: 100% (106/106), 23.33 KiB, done.
->>>> Resolving deltas: 100% (87/87), completed with 34 local objects.
->>>> From git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block
->>>>  * branch            for-next   -> FETCH_HEAD
->>>> warning: too many files (created: 1120 deleted: 637), skipping inexact
->>>> rename detection
->>>> warning: too many files (created: 974 deleted: 462), skipping inexact
->>>> rename detection
->>>> Auto-merging block/blk-core.c
->>>> Auto-merging block/blk-flush.c
->>>> CONFLICT (content): Merge conflict in block/blk-flush.c
->>>> Auto-merging block/cfq-iosched.c
->>>> CONFLICT (content): Merge conflict in block/cfq-iosched.c
->>>> Automatic merge failed; fix conflicts and then commit the result.
->>>
->>> Ummm... don't those conflicts come from Stephen's commits?  You would
->>> need to revert the merge and fixup commits and then pull in the block
->>> branch.
->>>
->>> Thanks.
->>>
->>> --
->>> tejun
->>>
->>
->> I have reverted the merge-fix from Stephen "[PATCH] block: update for
->> __blk_run_queue() API update" which changed block/blk-flush.c, this
->> remains:
->> ...
->> CONFLICT (content): Merge conflict in block/cfq-iosched.c
->>
->> As it is 12p.m. and sun shining, my decision and direction is clear:
->> Lunch + City.
+On Fri, Mar 4, 2011 at 12:42 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Wed, 2011-03-02 at 23:07 +0100, Thomas Renninger wrote:
 >
-> Just checked here, I can pull my for-next cleanly into Linus' master.
-> What is the block tree for-next branch sha?
+>> I doubt cpu offlining is the proper instrument to save power.
+>> You want to prevent the CPU of being used by ripping it out from scheduler decisions and
+>> make sure it doesn't get interrupts by offlining. But the (latency) price is high.
 >
-> --
-> Jens Axboe
+> I could imagine that a server could use this for power savings to take
+> down all but 1 CPU on off hours. When it knows its not going to get much
+> action but still needs to remain online. Then just before peak times
+> begin, online the other CPUs.
 >
+> But anything more dynamic than that, I can't see it really worth it. As
+> the latency to bring the other CPU online, may miss a peak when it was
+> needed.
 >
 
-No, I tried to merge your for-next into linux-next (which will happen
-with tomorrows linux-next).
+ARM SoCs require both cores to be idle to hit the really low power
+retention/off states. Hoping for both cores to go idle at the same
+instant causes several low power opportunities to be lost. Hence the
+experiments with hotplug to improve the idle characteristics of the
+system. On our wiki page[1], you can see some results under "Idle
+improvement" section.
 
-[ linux-2.6-block.git#for-next ]
-commit b873c5d692d4d5453cceed18bb06c62bb1a73ac0
-"Merge branch 'block-for-2.6.39-core' of
-ssh:///linux/kernel/git/tj/misc into for-2.6.39/core"
+But sched_mc does seem like a more appropriate way to help nudge all
+the workload onto a single core.
 
-- Sedat -
+Regards,
+Amit
+
+
+[1] https://wiki.linaro.org/WorkingGroups/PowerManagement/Doc/Hotplug
