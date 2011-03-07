@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab1CGQkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:40:09 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59534 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751366Ab1CGQkG (ORCPT
+	id S1754707Ab1CGQkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:40:32 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:23293 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754271Ab1CGQkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:40:06 -0500
+	Mon, 7 Mar 2011 11:40:31 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: WD2a.mYVM1nSO4j1pfAepjl7i3vjttd.pP_7.8ADRWikWnW
+ 4KWACjp3KCFrGfsHBepkDoFaBAikLKiqieG9XNJherU3RHzoSq8B1pjnXof7
+ tqjQKbZVBWMZjexrxfPrbLLtCNJaPcFEKcciS0WvR.NfuX2nqzfXFpwXJ1CV
+ a7KC8FjuiCklKtZr3DbyK0PVN1JtOKtWQOuOti09bjHmhirj2BPXmuyABCFD
+ 9jK05i_7M9vhyOOpjFg_2.yKYDUl_eiZ4g4j_B7lbtFEzMUo-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 7 Mar 2011 10:40:25 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Jesper Juhl <jj@chaosbits.net>
+cc: Matt Mackall <mpm@selenic.com>, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Theodore Tso <tytso@mit.edu>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Make /proc/slabinfo 0400
+In-Reply-To: <alpine.LNX.2.00.1103060213110.6297@swampdragon.chaosbits.net>
+Message-ID: <alpine.DEB.2.00.1103071039470.1973@router.home>
+References: <1299174652.2071.12.camel@dan> <1299185882.3062.233.camel@calx>  <1299186986.2071.90.camel@dan> <1299188667.3062.259.camel@calx>  <1299191400.2071.203.camel@dan>  <2DD7330B-2FED-4E58-A76D-93794A877A00@mit.edu>  <AANLkTimpfk8EHjVKYsJv0p_G7tS2yB-n=PPbD2v7xefV@mail.gmail.com>
+  <1299260164.8493.4071.camel@nimitz>  <AANLkTim+XcYiiM9u8nT659FHaZO1RPDEtyAgFtiA8VOk@mail.gmail.com>  <1299262495.3062.298.camel@calx>  <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>  <1299271041.2071.1398.camel@dan> 
+ <AANLkTimvhHxsMCf2FX0O8VqksOa2EAMz=S_C3LQKvE60@mail.gmail.com>  <1299273034.2071.1417.camel@dan>  <alpine.LNX.2.00.1103060137410.6297@swampdragon.chaosbits.net> <1299373781.3062.374.camel@calx>
+ <alpine.LNX.2.00.1103060213110.6297@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110307161658.GA9088@kroah.com>
-References: <20110304163905.ed6dd630.sfr@canb.auug.org.au> <20110304171343.GE22173@kroah.com>
- <4D712750.1070402@redhat.com> <201103071507.37378.laurent.pinchart@ideasonboard.com>
- <20110307161658.GA9088@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 7 Mar 2011 08:39:43 -0800
-Message-ID: <AANLkTi=Yavz4=KYNgsR02yTmBU_+BigC9qCSdX4SrTF2@mail.gmail.com>
-Subject: Re: Kernelspace firmware loaders (was: linux-next: manual merge of
- the staging tree with the v4l-dvb tree)
-To: Greg KH <greg@kroah.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        "Igor M. Liplianin" <liplianin@me.by>,
-        Ben Gamari <bgamari.foss@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 7, 2011 at 8:16 AM, Greg KH <greg@kroah.com> wrote:
->
-> If the code is just a "pass-through" to the hardware, I have no
-> objection to the driver being in the kernel, if it needs to be in order
-> to control the hardware properly.
+On Sun, 6 Mar 2011, Jesper Juhl wrote:
 
-.. or even if it doesn't "need to be", and you _could_ do it in user space.
+> > Putting trivial obstacles in the way of attackers accomplishes little
+> > beyond annoying users.
+> >
+> If we annoy users I agree we shouldn't. If we don't annoy users (and don't
+> impact performance in any relevant way) then even trivial obstacles that
+> stop just a few exploits are worth it IMHO.
 
-We've had tons of problems with user space breakage and version skew
-etc. It's often been a total pain to have user space-vs-kernel
-components that support one version but not the other, making it hard
-to upgrade the kernel independently of other things. The whole
-experience with X-vs-drm has been very painful.
-
-There are two cases where user-space drivers work fine:
-
- (a) if there is no kernel component to them at all. Think "this
-driver would work on not just Linux, but on FreeBSD and UnixWare".
-Examples of this would be the original X approach.
-
- (b) if there's a kernel driver which exports an interface that is
-specified by the hardware (NOT specified by some "abstraction" layer),
-and where the kernel just exports an interface and doesn't expect
-anything back (ie the kernel is _strictly_ the lower-level driver,
-there is no two-way "user space helps kernel" crap)
-
-     A reasonable example of this would be the USB user space drivers:
-the kernel interface is clearly _below_ (so the kernel does not depend
-on user space), and the defined not by some crazy software interface,
-but by the USB hardware standard.
-
-But any other kind of mixing is just a big pain. Having a user-space
-thing to set things up for a kernel driver is crazy crap. It
-inevitably leads to "one or the other is broken, and people working on
-one piece aren't the same people working on the other". Just don't do
-it. Every time it's done, it leads to problems. You need special
-programs to set things up etc. It's just f*cked up.
-
-(An example of why it's crazy crap: it inevitably means that the
-kernel can not "resume" a device. Because it now needs user space help
-to get the device going again. Crazy. Don't do it. It's shit).
-
-                               Linus
+Randomizing affects performance. The current way of initialization for the
+list of free objects was chosen because the processor can do effective
+prefetching when the allocator serves objects following each other.
