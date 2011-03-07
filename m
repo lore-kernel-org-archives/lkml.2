@@ -1,641 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab1CGV0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:26:35 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:37695
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756057Ab1CGV0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:26:33 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: kys@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Cc: Abhishek Kane <v-abkane@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 16/16] Staging: hv: Remove the vm_device structure
-Date: Mon,  7 Mar 2011 13:35:48 -0800
-Message-Id: <1299533748-22920-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1756226Ab1CGVdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 16:33:09 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:35547 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853Ab1CGVdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 16:33:08 -0500
+Date: Mon, 7 Mar 2011 21:32:38 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm final fixes
+Message-ID: <alpine.DEB.2.00.1103072130050.17490@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consolidate all device related state in struct hv_device by
-moving the device field from struct vm_device to
-struct hv_device. As part of this, also get rid of struct
-vm_device since the consolidation is complete.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/blkvsc_drv.c  |   16 +++----
- drivers/staging/hv/hv_mouse.c    |   19 +++------
- drivers/staging/hv/netvsc_drv.c  |   24 +++++-------
- drivers/staging/hv/storvsc_drv.c |   24 +++++------
- drivers/staging/hv/vmbus.h       |   12 +-----
- drivers/staging/hv/vmbus_api.h   |    2 +
- drivers/staging/hv/vmbus_drv.c   |   77 +++++++++++++++++---------------------
- 7 files changed, 73 insertions(+), 101 deletions(-)
+Nouveau and Intel,
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 0f9fb05..6e02f1b 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -95,7 +95,7 @@ struct blkvsc_request {
- /* Per device structure */
- struct block_device_context {
- 	/* point back to our device context */
--	struct vm_device *device_ctx;
-+	struct hv_device *device_ctx;
- 	struct kmem_cache *request_pool;
- 	spinlock_t lock;
- 	struct gendisk *gd;
-@@ -240,8 +240,7 @@ static int blkvsc_probe(struct device *device)
- 				drv_to_hv_drv(device->driver);
- 	struct storvsc_driver_object *storvsc_drv_obj =
- 				drv->priv;
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
- 
- 	struct block_device_context *blkdev = NULL;
- 	struct storvsc_device_info device_info;
-@@ -273,7 +272,7 @@ static int blkvsc_probe(struct device *device)
- 	/* ASSERT(sizeof(struct blkvsc_request_group) <= */
- 	/* 	sizeof(struct blkvsc_request)); */
- 
--	blkdev->request_pool = kmem_cache_create(dev_name(&device_ctx->device),
-+	blkdev->request_pool = kmem_cache_create(dev_name(&device_obj->device),
- 					sizeof(struct blkvsc_request) +
- 					storvsc_drv_obj->request_ext_size, 0,
- 					SLAB_HWCACHE_ALIGN, NULL);
-@@ -290,7 +289,7 @@ static int blkvsc_probe(struct device *device)
- 		goto Cleanup;
- 	}
- 
--	blkdev->device_ctx = device_ctx;
-+	blkdev->device_ctx = device_obj;
- 	/* this identified the device 0 or 1 */
- 	blkdev->target = device_info.target_id;
- 	/* this identified the ide ctrl 0 or 1 */
-@@ -723,8 +722,7 @@ static int blkvsc_remove(struct device *device)
- 				drv_to_hv_drv(device->driver);
- 	struct storvsc_driver_object *storvsc_drv_obj =
- 				drv->priv;
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
- 	struct block_device_context *blkdev = dev_get_drvdata(device);
- 	unsigned long flags;
- 	int ret;
-@@ -839,7 +837,7 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
- 			void (*request_completion)(struct hv_storvsc_request *))
- {
- 	struct block_device_context *blkdev = blkvsc_req->dev;
--	struct vm_device *device_ctx = blkdev->device_ctx;
-+	struct hv_device *device_ctx = blkdev->device_ctx;
- 	struct hv_driver *drv =
- 			drv_to_hv_drv(device_ctx->device.driver);
- 	struct storvsc_driver_object *storvsc_drv_obj =
-@@ -884,7 +882,7 @@ static int blkvsc_submit_request(struct blkvsc_request *blkvsc_req,
- 	storvsc_req->sense_buffer = blkvsc_req->sense_buffer;
- 	storvsc_req->sense_buffer_size = SCSI_SENSE_BUFFERSIZE;
- 
--	ret = storvsc_drv_obj->on_io_request(&blkdev->device_ctx->device_obj,
-+	ret = storvsc_drv_obj->on_io_request(blkdev->device_ctx,
- 					   &blkvsc_req->request);
- 	if (ret == 0)
- 		blkdev->num_outstanding_reqs++;
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index 6c5c00d..8f94f43 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -771,7 +771,7 @@ static void MousevscOnCleanup(struct hv_driver *drv)
-  * Data types
-  */
- struct input_device_context {
--	struct vm_device	*device_ctx;
-+	struct hv_device	*device_ctx;
- 	struct hid_device	*hid_device;
- 	struct hv_input_dev_info device_info;
- 	int			connected;
-@@ -782,9 +782,8 @@ static struct  mousevsc_drv_obj g_mousevsc_drv;
- 
- static void deviceinfo_callback(struct hv_device *dev, struct hv_input_dev_info *info)
- {
--	struct vm_device *device_ctx = to_vm_device(dev);
- 	struct input_device_context *input_device_ctx =
--		dev_get_drvdata(&device_ctx->device);
-+		dev_get_drvdata(&dev->device);
- 
- 	memcpy(&input_device_ctx->device_info, info,
- 	       sizeof(struct hv_input_dev_info));
-@@ -796,9 +795,8 @@ static void inputreport_callback(struct hv_device *dev, void *packet, u32 len)
- {
- 	int ret = 0;
- 
--	struct vm_device *device_ctx = to_vm_device(dev);
- 	struct input_device_context *input_dev_ctx =
--		dev_get_drvdata(&device_ctx->device);
-+		dev_get_drvdata(&dev->device);
- 
- 	ret = hid_input_report(input_dev_ctx->hid_device,
- 			      HID_INPUT_REPORT, packet, len, 1);
-@@ -823,8 +821,7 @@ static int mousevsc_probe(struct device *device)
- 		drv_to_hv_drv(device->driver);
- 	struct mousevsc_drv_obj *mousevsc_drv_obj = drv->priv;
- 
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
- 	struct input_device_context *input_dev_ctx;
- 
- 	input_dev_ctx = kmalloc(sizeof(struct input_device_context),
-@@ -852,8 +849,7 @@ static int mousevsc_remove(struct device *device)
- 		drv_to_hv_drv(device->driver);
- 	struct mousevsc_drv_obj *mousevsc_drv_obj = drv->priv;
- 
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
- 	struct input_device_context *input_dev_ctx;
- 
- 	input_dev_ctx = kmalloc(sizeof(struct input_device_context),
-@@ -887,9 +883,8 @@ static int mousevsc_remove(struct device *device)
- 
- static void reportdesc_callback(struct hv_device *dev, void *packet, u32 len)
- {
--	struct vm_device *device_ctx = to_vm_device(dev);
- 	struct input_device_context *input_device_ctx =
--		dev_get_drvdata(&device_ctx->device);
-+		dev_get_drvdata(&dev->device);
- 	struct hid_device *hid_dev;
- 
- 	/* hid_debug = -1; */
-@@ -910,7 +905,7 @@ static void reportdesc_callback(struct hv_device *dev, void *packet, u32 len)
- 		hid_dev->vendor = input_device_ctx->device_info.vendor;
- 		hid_dev->product = input_device_ctx->device_info.product;
- 		hid_dev->version = input_device_ctx->device_info.version;
--		hid_dev->dev = device_ctx->device;
-+		hid_dev->dev = dev->device;
- 
- 		sprintf(hid_dev->name, "%s",
- 			input_device_ctx->device_info.name);
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index f0d258c..2d40f5f 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -44,7 +44,7 @@
- 
- struct net_device_context {
- 	/* point back to our device context */
--	struct vm_device *device_ctx;
-+	struct hv_device *device_ctx;
- 	unsigned long avail;
- };
- 
-@@ -70,7 +70,7 @@ static void netvsc_set_multicast_list(struct net_device *net)
- static int netvsc_open(struct net_device *net)
- {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
--	struct hv_device *device_obj = &net_device_ctx->device_ctx->device_obj;
-+	struct hv_device *device_obj = net_device_ctx->device_ctx;
- 	int ret = 0;
- 
- 	if (netif_carrier_ok(net)) {
-@@ -93,7 +93,7 @@ static int netvsc_open(struct net_device *net)
- static int netvsc_close(struct net_device *net)
- {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
--	struct hv_device *device_obj = &net_device_ctx->device_ctx->device_obj;
-+	struct hv_device *device_obj = net_device_ctx->device_ctx;
- 	int ret;
- 
- 	netif_stop_queue(net);
-@@ -190,7 +190,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	packet->completion.send.send_completion_ctx = packet;
- 	packet->completion.send.send_completion_tid = (unsigned long)skb;
- 
--	ret = net_drv_obj->send(&net_device_ctx->device_ctx->device_obj,
-+	ret = net_drv_obj->send(net_device_ctx->device_ctx,
- 				  packet);
- 	if (ret == 0) {
- 		net->stats.tx_bytes += skb->len;
-@@ -218,8 +218,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- static void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 				       unsigned int status)
- {
--	struct vm_device *device_ctx = to_vm_device(device_obj);
--	struct net_device *net = dev_get_drvdata(&device_ctx->device);
-+	struct net_device *net = dev_get_drvdata(&device_obj->device);
- 
- 	if (!net) {
- 		DPRINT_ERR(NETVSC_DRV, "got link status but net device "
-@@ -244,8 +243,7 @@ static void netvsc_linkstatus_callback(struct hv_device *device_obj,
- static int netvsc_recv_callback(struct hv_device *device_obj,
- 				struct hv_netvsc_packet *packet)
- {
--	struct vm_device *device_ctx = to_vm_device(device_obj);
--	struct net_device *net = dev_get_drvdata(&device_ctx->device);
-+	struct net_device *net = dev_get_drvdata(&device_obj->device);
- 	struct sk_buff *skb;
- 	void *data;
- 	int i;
-@@ -335,8 +333,7 @@ static int netvsc_probe(struct device *device)
- 	struct hv_driver *drv =
- 		drv_to_hv_drv(device->driver);
- 	struct netvsc_driver *net_drv_obj = drv->priv;
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
- 	struct net_device *net = NULL;
- 	struct net_device_context *net_device_ctx;
- 	struct netvsc_device_info device_info;
-@@ -353,7 +350,7 @@ static int netvsc_probe(struct device *device)
- 	netif_carrier_off(net);
- 
- 	net_device_ctx = netdev_priv(net);
--	net_device_ctx->device_ctx = device_ctx;
-+	net_device_ctx->device_ctx = device_obj;
- 	net_device_ctx->avail = ring_size;
- 	dev_set_drvdata(device, net);
- 
-@@ -405,9 +402,8 @@ static int netvsc_remove(struct device *device)
- 	struct hv_driver *drv =
- 		drv_to_hv_drv(device->driver);
- 	struct netvsc_driver *net_drv_obj = drv->priv;
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct net_device *net = dev_get_drvdata(&device_ctx->device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
-+	struct net_device *net = dev_get_drvdata(&device_obj->device);
- 	int ret;
- 
- 	if (net == NULL) {
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 9722734..e6462a2 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -42,7 +42,7 @@ struct host_device_context {
- 	/* must be 1st field
- 	 * FIXME this is a bug */
- 	/* point back to our device context */
--	struct vm_device *device_ctx;
-+	struct hv_device *device_ctx;
- 	struct kmem_cache *request_pool;
- 	unsigned int port;
- 	unsigned char path;
-@@ -216,8 +216,7 @@ static int storvsc_probe(struct device *device)
- 	struct hv_driver *drv =
- 				drv_to_hv_drv(device->driver);
- 	struct storvsc_driver_object *storvsc_drv_obj = drv->priv;
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
- 	struct Scsi_Host *host;
- 	struct host_device_context *host_device_ctx;
- 	struct storvsc_device_info device_info;
-@@ -238,10 +237,10 @@ static int storvsc_probe(struct device *device)
- 	memset(host_device_ctx, 0, sizeof(struct host_device_context));
- 
- 	host_device_ctx->port = host->host_no;
--	host_device_ctx->device_ctx = device_ctx;
-+	host_device_ctx->device_ctx = device_obj;
- 
- 	host_device_ctx->request_pool =
--				kmem_cache_create(dev_name(&device_ctx->device),
-+				kmem_cache_create(dev_name(&device_obj->device),
- 					sizeof(struct storvsc_cmd_request) +
- 					storvsc_drv_obj->request_ext_size, 0,
- 					SLAB_HWCACHE_ALIGN, NULL);
-@@ -298,8 +297,7 @@ static int storvsc_remove(struct device *device)
- 	struct hv_driver *drv =
- 			drv_to_hv_drv(device->driver);
- 	struct storvsc_driver_object *storvsc_drv_obj = drv->priv;
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *device_obj = &device_ctx->device_obj;
-+	struct hv_device *device_obj = device_to_hv_device(device);
- 	struct Scsi_Host *host = dev_get_drvdata(device);
- 	struct host_device_context *host_device_ctx =
- 			(struct host_device_context *)host->hostdata;
-@@ -589,7 +587,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 	int ret;
- 	struct host_device_context *host_device_ctx =
- 		(struct host_device_context *)scmnd->device->host->hostdata;
--	struct vm_device *device_ctx = host_device_ctx->device_ctx;
-+	struct hv_device *device_ctx = host_device_ctx->device_ctx;
- 	struct hv_driver *drv =
- 		drv_to_hv_drv(device_ctx->device.driver);
- 	struct storvsc_driver_object *storvsc_drv_obj = drv->priv;
-@@ -737,7 +735,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 
- retry_request:
- 	/* Invokes the vsc to start an IO */
--	ret = storvsc_drv_obj->on_io_request(&device_ctx->device_obj,
-+	ret = storvsc_drv_obj->on_io_request(device_ctx,
- 					   &cmd_request->request);
- 	if (ret == -1) {
- 		/* no more space */
-@@ -824,18 +822,18 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
- 	int ret;
- 	struct host_device_context *host_device_ctx =
- 		(struct host_device_context *)scmnd->device->host->hostdata;
--	struct vm_device *device_ctx = host_device_ctx->device_ctx;
-+	struct hv_device *device_ctx = host_device_ctx->device_ctx;
- 
- 	DPRINT_INFO(STORVSC_DRV, "sdev (%p) dev obj (%p) - host resetting...",
--		    scmnd->device, &device_ctx->device_obj);
-+		    scmnd->device, device_ctx);
- 
- 	/* Invokes the vsc to reset the host/bus */
--	ret = stor_vsc_on_host_reset(&device_ctx->device_obj);
-+	ret = stor_vsc_on_host_reset(device_ctx);
- 	if (ret != 0)
- 		return ret;
- 
- 	DPRINT_INFO(STORVSC_DRV, "sdev (%p) dev obj (%p) - host reseted",
--		    scmnd->device, &device_ctx->device_obj);
-+		    scmnd->device, device_ctx);
- 
- 	return ret;
- }
-diff --git a/drivers/staging/hv/vmbus.h b/drivers/staging/hv/vmbus.h
-index ab296bb..73087f2 100644
---- a/drivers/staging/hv/vmbus.h
-+++ b/drivers/staging/hv/vmbus.h
-@@ -29,19 +29,11 @@
- #include "vmbus_api.h"
- 
- 
--struct vm_device {
--	struct hv_device device_obj;
--	struct device device;
--};
- 
--static inline struct vm_device *to_vm_device(struct hv_device *d)
--{
--	return container_of(d, struct vm_device, device_obj);
--}
- 
--static inline struct vm_device *device_to_vm_device(struct device *d)
-+static inline struct hv_device *device_to_hv_device(struct device *d)
- {
--	return container_of(d, struct vm_device, device);
-+	return container_of(d, struct hv_device, device);
- }
- 
- static inline struct hv_driver *drv_to_hv_drv(struct device_driver *d)
-diff --git a/drivers/staging/hv/vmbus_api.h b/drivers/staging/hv/vmbus_api.h
-index 4c5a38e..f0d96eb 100644
---- a/drivers/staging/hv/vmbus_api.h
-+++ b/drivers/staging/hv/vmbus_api.h
-@@ -128,6 +128,8 @@ struct hv_device {
- 	/* the device instance id of this device */
- 	struct hv_guid dev_instance;
- 
-+	struct device device;
-+
- 	struct vmbus_channel *channel;
- 
- 	/* Device extension; */
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 8193662..159dfda 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -49,7 +49,7 @@ struct vmbus_driver_context {
- 	struct tasklet_struct event_dpc;
- 
- 	/* The bus root device */
--	struct vm_device device_ctx;
-+	struct hv_device device_ctx;
- };
- 
- static int vmbus_match(struct device *device, struct device_driver *driver);
-@@ -349,12 +349,12 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
- 				      struct device_attribute *dev_attr,
- 				      char *buf)
- {
--	struct vm_device *device_ctx = device_to_vm_device(dev);
-+	struct hv_device *device_ctx = device_to_hv_device(dev);
- 	struct hv_device_info device_info;
- 
- 	memset(&device_info, 0, sizeof(struct hv_device_info));
- 
--	get_channel_info(&device_ctx->device_obj, &device_info);
-+	get_channel_info(device_ctx, &device_info);
- 
- 	if (!strcmp(dev_attr->attr.name, "class_id")) {
- 		return sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-@@ -459,7 +459,7 @@ static int vmbus_bus_init(void)
- {
- 	struct vmbus_driver_context *vmbus_drv_ctx = &vmbus_drv;
- 	struct hv_driver *driver = &vmbus_drv.drv_obj;
--	struct vm_device *dev_ctx = &vmbus_drv.device_ctx;
-+	struct hv_device *dev_ctx = &vmbus_drv.device_ctx;
- 	int ret;
- 	unsigned int vector;
- 
-@@ -530,9 +530,9 @@ static int vmbus_bus_init(void)
- 	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", vmbus_irq, vector);
- 
- 	/* Call to bus driver to add the root device */
--	memset(dev_ctx, 0, sizeof(struct vm_device));
-+	memset(dev_ctx, 0, sizeof(struct hv_device));
- 
--	ret = driver->dev_add(&dev_ctx->device_obj, &vector);
-+	ret = driver->dev_add(dev_ctx, &vector);
- 	if (ret != 0) {
- 		DPRINT_ERR(VMBUS_DRV,
- 			   "ERROR - Unable to add vmbus root device");
-@@ -585,11 +585,11 @@ static void vmbus_bus_exit(void)
- 	struct hv_driver *driver = &vmbus_drv.drv_obj;
- 	struct vmbus_driver_context *vmbus_drv_ctx = &vmbus_drv;
- 
--	struct vm_device *dev_ctx = &vmbus_drv.device_ctx;
-+	struct hv_device *dev_ctx = &vmbus_drv.device_ctx;
- 
- 	/* Remove the root device */
- 	if (driver->dev_rm)
--		driver->dev_rm(&dev_ctx->device_obj);
-+		driver->dev_rm(dev_ctx);
- 
- 	if (driver->cleanup)
- 		driver->cleanup(driver);
-@@ -664,12 +664,11 @@ struct hv_device *vmbus_child_device_create(struct hv_guid *type,
- 					    struct hv_guid *instance,
- 					    struct vmbus_channel *channel)
- {
--	struct vm_device *child_device_ctx;
- 	struct hv_device *child_device_obj;
- 
- 	/* Allocate the new child device */
--	child_device_ctx = kzalloc(sizeof(struct vm_device), GFP_KERNEL);
--	if (!child_device_ctx) {
-+	child_device_obj = kzalloc(sizeof(struct hv_device), GFP_KERNEL);
-+	if (!child_device_obj) {
- 		DPRINT_ERR(VMBUS_DRV,
- 			"unable to allocate device_context for child device");
- 		return NULL;
-@@ -680,7 +679,7 @@ struct hv_device *vmbus_child_device_create(struct hv_guid *type,
- 		"%02x%02x%02x%02x%02x%02x%02x%02x},"
- 		"id {%02x%02x%02x%02x-%02x%02x-%02x%02x-"
- 		"%02x%02x%02x%02x%02x%02x%02x%02x}",
--		&child_device_ctx->device,
-+		&child_device_obj->device,
- 		type->data[3], type->data[2], type->data[1], type->data[0],
- 		type->data[5], type->data[4], type->data[7], type->data[6],
- 		type->data[8], type->data[9], type->data[10], type->data[11],
-@@ -694,7 +693,6 @@ struct hv_device *vmbus_child_device_create(struct hv_guid *type,
- 		instance->data[12], instance->data[13],
- 		instance->data[14], instance->data[15]);
- 
--	child_device_obj = &child_device_ctx->device_obj;
- 	child_device_obj->channel = channel;
- 	memcpy(&child_device_obj->dev_type, type, sizeof(struct hv_guid));
- 	memcpy(&child_device_obj->dev_instance, instance,
-@@ -711,39 +709,36 @@ int vmbus_child_device_register(struct hv_device *root_device_obj,
- 				struct hv_device *child_device_obj)
- {
- 	int ret = 0;
--	struct vm_device *root_device_ctx =
--				to_vm_device(root_device_obj);
--	struct vm_device *child_device_ctx =
--				to_vm_device(child_device_obj);
-+
- 	static atomic_t device_num = ATOMIC_INIT(0);
- 
- 	DPRINT_DBG(VMBUS_DRV, "child device (%p) registering",
--		   child_device_ctx);
-+		   child_device_obj);
- 
- 	/* Set the device name. Otherwise, device_register() will fail. */
--	dev_set_name(&child_device_ctx->device, "vmbus_0_%d",
-+	dev_set_name(&child_device_obj->device, "vmbus_0_%d",
- 		     atomic_inc_return(&device_num));
- 
- 	/* The new device belongs to this bus */
--	child_device_ctx->device.bus = &vmbus_drv.bus; /* device->dev.bus; */
--	child_device_ctx->device.parent = &root_device_ctx->device;
--	child_device_ctx->device.release = vmbus_device_release;
-+	child_device_obj->device.bus = &vmbus_drv.bus; /* device->dev.bus; */
-+	child_device_obj->device.parent = &root_device_obj->device;
-+	child_device_obj->device.release = vmbus_device_release;
- 
- 	/*
- 	 * Register with the LDM. This will kick off the driver/device
- 	 * binding...which will eventually call vmbus_match() and vmbus_probe()
- 	 */
--	ret = device_register(&child_device_ctx->device);
-+	ret = device_register(&child_device_obj->device);
- 
- 	/* vmbus_probe() error does not get propergate to device_register(). */
--	ret = child_device_ctx->device_obj.probe_error;
-+	ret = child_device_obj->probe_error;
- 
- 	if (ret)
- 		DPRINT_ERR(VMBUS_DRV, "unable to register child device (%p)",
--			   &child_device_ctx->device);
-+			   &child_device_obj->device);
- 	else
- 		DPRINT_INFO(VMBUS_DRV, "child device (%p) registered",
--			    &child_device_ctx->device);
-+			    &child_device_obj->device);
- 
- 	return ret;
- }
-@@ -754,19 +749,18 @@ int vmbus_child_device_register(struct hv_device *root_device_obj,
-  */
- void vmbus_child_device_unregister(struct hv_device *device_obj)
- {
--	struct vm_device *device_ctx = to_vm_device(device_obj);
- 
- 	DPRINT_INFO(VMBUS_DRV, "unregistering child device (%p)",
--		    &device_ctx->device);
-+		    &device_obj->device);
- 
- 	/*
- 	 * Kick off the process of unregistering the device.
- 	 * This will call vmbus_remove() and eventually vmbus_device_release()
- 	 */
--	device_unregister(&device_ctx->device);
-+	device_unregister(&device_obj->device);
- 
- 	DPRINT_INFO(VMBUS_DRV, "child device (%p) unregistered",
--		    &device_ctx->device);
-+		    &device_obj->device);
- }
- 
- /*
-@@ -778,8 +772,7 @@ void vmbus_child_device_unregister(struct hv_device *device_obj)
-  */
- static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
- {
--	struct vm_device *device_ctx = device_to_vm_device(device);
--	struct hv_device *dev = &device_ctx->device_obj;
-+	struct hv_device *dev = device_to_hv_device(device);
- 	int ret;
- 
- 	DPRINT_INFO(VMBUS_DRV, "generating uevent - VMBUS_DEVICE_CLASS_GUID={"
-@@ -852,17 +845,17 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
- {
- 	int match = 0;
- 	struct hv_driver *drv = drv_to_hv_drv(driver);
--	struct vm_device *device_ctx = device_to_vm_device(device);
-+	struct hv_device *device_ctx = device_to_hv_device(device);
- 
- 	/* We found our driver ? */
--	if (memcmp(&device_ctx->device_obj.dev_type, &drv->dev_type,
-+	if (memcmp(&device_ctx->dev_type, &drv->dev_type,
- 		   sizeof(struct hv_guid)) == 0) {
- 
--		device_ctx->device_obj.drv = drv->priv;
-+		device_ctx->drv = drv->priv;
- 		DPRINT_INFO(VMBUS_DRV,
- 			    "device object (%p) set to driver object (%p)",
--			    &device_ctx->device_obj,
--			    device_ctx->device_obj.drv);
-+			    &device_ctx,
-+			    device_ctx->drv);
- 
- 		match = 1;
- 	}
-@@ -878,7 +871,7 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
-  */
- static void vmbus_probe_failed_cb(struct work_struct *context)
- {
--	struct vm_device *device_ctx = (struct vm_device *)context;
-+	struct hv_device *device_ctx = (struct hv_device *)context;
- 
- 	/*
- 	 * Kick off the process of unregistering the device.
-@@ -897,13 +890,11 @@ static int vmbus_probe(struct device *child_device)
- 	int ret = 0;
- 	struct hv_driver *drv =
- 			drv_to_hv_drv(child_device->driver);
--	struct vm_device *device_ctx =
--			device_to_vm_device(child_device);
--	struct hv_device *dev = &device_ctx->device_obj;
-+	struct hv_device *dev = device_to_hv_device(child_device);
- 
- 	/* Let the specific open-source driver handles the probe if it can */
- 	if (drv->driver.probe) {
--		ret = device_ctx->device_obj.probe_error =
-+		ret = dev->probe_error =
- 		drv->driver.probe(child_device);
- 		if (ret != 0) {
- 			DPRINT_ERR(VMBUS_DRV, "probe() failed for device %s "
-@@ -1006,7 +997,7 @@ static void vmbus_bus_release(struct device *device)
-  */
- static void vmbus_device_release(struct device *device)
- {
--	struct vm_device *device_ctx = device_to_vm_device(device);
-+	struct hv_device *device_ctx = device_to_hv_device(device);
- 
- 	kfree(device_ctx);
- 
--- 
-1.5.5.6
+The two from Ben fixes regressions in since 2.6.38-rc1,
 
+Chris has a revert + hopefully a more correct fix, along with an overflow 
+fix, and disabling the GPU semaphores which seemed to be causing hangs.
+
+I'm just passing these on since I'm stuck at home today and can't do much 
+more than read the patches and build them.
+
+Dave.
+
+The following changes since commit fb62c00a6d8942775abc23d1621db1252e2d93d1:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2011-03-05 10:43:22 -0800)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Ben Skeggs (2):
+      drm/nouveau: fix regression causing ttm to not be able to evict vram
+      drm/nv50-nvc0: prevent multiple vm/bar flushes occuring simultanenously
+
+Chris Wilson (4):
+      Revert "drm/i915: fix corruptions on i8xx due to relaxed fencing"
+      drm/i915: Do not overflow the MMADDR write FIFO
+      drm/i915: Disable GPU semaphores by default
+      drm/i915: Rebind the buffer if its alignment constraints changes with tiling
+
+Dave Airlie (1):
+      Merge remote branch 'ickle/drm-intel-fixes' into drm-fixes
+
+ drivers/gpu/drm/i915/i915_debugfs.c        |    4 +-
+ drivers/gpu/drm/i915/i915_drv.c            |   17 +++++++++++-
+ drivers/gpu/drm/i915/i915_drv.h            |   24 ++++++++++++++----
+ drivers/gpu/drm/i915/i915_gem.c            |    2 +-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    4 +-
+ drivers/gpu/drm/i915/i915_gem_tiling.c     |   37 +++++++++++++--------------
+ drivers/gpu/drm/i915/i915_reg.h            |    2 +
+ drivers/gpu/drm/i915/intel_display.c       |    8 +++---
+ drivers/gpu/drm/i915/intel_ringbuffer.h    |   13 +++++----
+ drivers/gpu/drm/nouveau/nouveau_mem.c      |    6 +++-
+ drivers/gpu/drm/nouveau/nouveau_mm.c       |    2 +-
+ drivers/gpu/drm/nouveau/nv50_instmem.c     |    8 ++++++
+ drivers/gpu/drm/nouveau/nv50_vm.c          |    4 +++
+ 13 files changed, 87 insertions(+), 44 deletions(-)
