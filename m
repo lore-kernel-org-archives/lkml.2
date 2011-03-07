@@ -1,100 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1CGQ6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:58:45 -0500
-Received: from fieldses.org ([174.143.236.118]:57716 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435Ab1CGQ6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:58:44 -0500
-Date: Mon, 7 Mar 2011 11:58:41 -0500
-From: "J. Bruce  Fields" <bfields@fieldses.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [PATCH] NFSD, VFS: Remove dead code in nfsd_rename()
-Message-ID: <20110307165840.GD6718@fieldses.org>
-References: <alpine.LNX.2.00.1103060024380.6297@swampdragon.chaosbits.net>
- <20110306165242.0cafd68a@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110306165242.0cafd68a@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754952Ab1CGQ7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:59:24 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58633 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab1CGQ7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 11:59:22 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: [RFC] a couple of i_nlink fixes in btrfs
+In-reply-to: <20110304171353.GU22723@ZenIV.linux.org.uk>
+References: <20110304171353.GU22723@ZenIV.linux.org.uk>
+Date: Mon, 07 Mar 2011 11:58:13 -0500
+Message-Id: <1299517070-sup-1687@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D750EE7.00D9,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 06, 2011 at 04:52:42PM +1100, NeilBrown wrote:
-> On Sun, 6 Mar 2011 00:30:35 +0100 (CET) Jesper Juhl <jj@chaosbits.net> wrote:
+Excerpts from Al Viro's message of 2011-03-04 12:13:53 -0500:
+>     a) rename() plays with i_nlink of old_inode; bad, since it's not
+> locked.  I'd add a variant of btrfs_unlink_inode() that would leave
+> btrfs_drop_nlink()/btrfs_update_inode() to callers and use it instead.
+>     b) btrfs_link() doesn't check for i_nlink overflows.  I don't
+> know if there's anything preventing that many links to a file on btrfs,
+> but if there is, it's at least worth a comment in there...
 > 
-> > Currently we have the following code in fs/nfsd/vfs.c::nfsd_rename() :
-> > 
-> > 	...
-> > 	host_err = nfsd_break_lease(odentry->d_inode);
-> > 	if (host_err)
-> > 		goto out_drop_write;
-> > 	if (ndentry->d_inode) {
-> > 		host_err = nfsd_break_lease(ndentry->d_inode);
-> > 		if (host_err)
-> > 			goto out_drop_write;
-> > 	}
-> > 	if (host_err)
-> > 		goto out_drop_write;
-> > 	...
-> > 
-> > 'host_err' is guaranteed to be 0 by the time we test 'ndentry->d_inode'. 
-> > If 'host_err' becomes != 0 inside the 'if' statement, then we goto 
-> > 'out_drop_write'. So, after the 'if' statement there is no way that 
-> > 'host_err' can be anything but 0, so the test afterwards is just dead 
-> > code.
-> > This patch removes the dead code.
-> 
-> I would probably have gone for:
-> 
->   host_err = nfsd_break_lease(odentry->d_inode);
->   if (!host_err && ndentry->d_inode)
->         host_err = nfsd_break_lease(ndentry->d_inode);
->   if (host_err)
->         goto out_drop_write;
-> 
-> or even
->   host_err = nfsd_break_lease(odentry->d_inode);
->   if (ndentry->d_inode)
->         host_err = hosterr ?: nfsd_break_lease(ndentry->d_inode);
->   if (host_err)
->         goto out_drop_write;
-> 
-> 
-> but it is largely a matter of taste.  I agree there is redundant code there
-> and your's is a suitable fix.
+>     Please, review; patches in followups or in #btrfs in vfs-2.6.git
 
-Yeah, works for me.  Thanks for catching that; queueing up for 2.6.39.
+Thanks, these both look good but I'll test here as well.  Are you
+planning on pushing for .38?
 
---b.
-
-> 
-> NeilBrown
-> 
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  vfs.c |    2 --
-> >  1 file changed, 2 deletions(-)
-> > 
-> > diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-> > index da1d970..9cc626b 100644
-> > --- a/fs/nfsd/vfs.c
-> > +++ b/fs/nfsd/vfs.c
-> > @@ -1749,8 +1749,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
-> >  		if (host_err)
-> >  			goto out_drop_write;
-> >  	}
-> > -	if (host_err)
-> > -		goto out_drop_write;
-> >  	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
-> >  	if (!host_err) {
-> >  		host_err = commit_metadata(tfhp);
-> > 
-> > 
-> 
+-chris
