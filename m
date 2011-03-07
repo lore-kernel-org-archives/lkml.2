@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab1CGKF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 05:05:59 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43578 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130Ab1CGKF6 (ORCPT
+	id S1755741Ab1CGKGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 05:06:43 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:44467 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471Ab1CGKGk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 05:05:58 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 7 Mar 2011 18:59:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCHv2 18/24] sys_swapon: call swap_cgroup_swapon earlier
-Message-Id: <20110307185934.506df651.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299343345-3984-19-git-send-email-cesarb@cesarb.net>
-References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
-	<1299343345-3984-19-git-send-email-cesarb@cesarb.net>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Mar 2011 05:06:40 -0500
+MIME-Version: 1.0
+X-Originating-IP: [81.245.157.124]
+In-Reply-To: <1299276551-11978-1-git-send-email-sheetals@codeaurora.org>
+References: <1299276551-11978-1-git-send-email-sheetals@codeaurora.org>
+Date: Mon, 7 Mar 2011 11:06:39 +0100
+Message-ID: <AANLkTinmRZ4H_UCDokx=WgPYxCSvP1is7uwRZ9KtC4rZ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] ARM: Add Scorpion/ScorpionMP support to perf and Oprofile
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Sheetal Sahasrabudhe <sheetals@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, will.deacon@arm.com,
+        jamie.iles@picochip.com, robert.richter@amd.com, dwalker@fifo99.com,
+        bryanh@codeaurora.org, davidb@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  5 Mar 2011 13:42:19 -0300
-Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+Hi,
 
-> The call to swap_cgroup_swapon is in the middle of loading the swap map
-> and extents. As it only does memory allocation and does not depend on
-> the swapfile layout (map/extents), it can be called earlier (or later).
-> 
-> Move it to just after the allocation of swap_map, since it is
-> conceptually similar (allocates a map).
-> 
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> Tested-by: Eric B Munson <emunson@mgebm.net>
-> Acked-by: Eric B Munson <emunson@mgebm.net>
+On Fri, Mar 4, 2011 at 11:09 PM, Sheetal Sahasrabudhe
+<sheetals@codeaurora.org> wrote:
+> This patchset contains the following features:
+> It adds support for Qualcomm Scorpion and ScorpionMP processors to perfevents
+> and Oprofile.
+> It adds PMU support for Scorpion and ScorpionMP.
+> It also updates PMU IRQ identifiers for various Scorpion and ScorpionMP targets.
+>
+> Sheetal Sahasrabudhe (3):
+>  msm: Add support for Scorpion and ScorpionMP PMU
+>  [ARM] perfevents: Add support for Scorpion performance monitors
+>  [ARM] Oprofile: Add Qualcomm Scorpion and ScorpionMP CPU type
+>
+>  arch/arm/include/asm/perf_event.h          |    2 +
+>  arch/arm/kernel/perf_event.c               |   11 +
+>  arch/arm/kernel/perf_event_qc.c            |  677 ++++++++++++++++++++++++++++
+>  arch/arm/mach-msm/Makefile                 |    2 +
+>  arch/arm/mach-msm/include/mach/irqs-7x30.h |    2 +-
+>  arch/arm/mach-msm/include/mach/irqs-8960.h |    2 +-
+>  arch/arm/mach-msm/include/mach/irqs-8x50.h |    2 +-
+>  arch/arm/mach-msm/include/mach/irqs-8x60.h |    2 +-
+>  arch/arm/mach-msm/pmu.c                    |   36 ++
+>  arch/arm/oprofile/common.c                 |    4 +
+>  10 files changed, 736 insertions(+), 4 deletions(-)
+>  create mode 100644 arch/arm/kernel/perf_event_qc.c
+>  create mode 100644 arch/arm/mach-msm/pmu.c
+>
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I cannot test on the actual HW so here is the review ack:
+Reviewed-by: Jean Pihet <j-pihet@ti.com>
 
+Thanks,
+Jean
+
+> --
+> 1.7.4.1
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+>
+>
