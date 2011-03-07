@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab1CGQft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:35:49 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41822 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab1CGQfs convert rfc822-to-8bit (ORCPT
+	id S1753975Ab1CGQf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:35:56 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:3259 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab1CGQfu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:35:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <4D745D1F.2070808@fastmail.fm>
-References: <1299385050-13674-1-git-send-email-bgat@billgatliff.com>
-	<1299385050-13674-2-git-send-email-bgat@billgatliff.com>
-	<4D745D1F.2070808@fastmail.fm>
-Date: Mon, 7 Mar 2011 10:35:47 -0600
-Message-ID: <AANLkTi=h0MkySh+VjrdohLzTB-NqSmmZOKcRtGRyHTg=@mail.gmail.com>
-Subject: Re: [PWM v6 1/3] PWM: Implement a generic PWM framework
-From: Bill Gatliff <bgat@billgatliff.com>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Mar 2011 11:35:50 -0500
+X-SpamScore: -24
+X-BigFish: VS-24(zz542N1432N4015L9371Pzz1202hzz8275bh8275dhz2dh2a8h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Thread-Topic: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Thread-Index: AQHL3OEO2wru9FbG9kebNQISz1Arp5QiEUJg
+Date: Mon, 7 Mar 2011 16:35:48 +0000
+Message-ID: <56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+	<56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+	<87oc5puwg3.fsf@lebrac.rtp-net.org>
+	<56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+ <87fwqyvrzf.fsf@lebrac.rtp-net.org>
+In-Reply-To: <87fwqyvrzf.fsf@lebrac.rtp-net.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.81.68.39]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jack:
+Hi Arnaud,
 
 
-On Sun, Mar 6, 2011 at 10:20 PM, Jack Stone <jwjstone@fastmail.fm> wrote:
-> On 06/03/2011 04:17, Bill Gatliff wrote:
->> +The Generic PWM Device API framework is implemented in
->> +include/linux/pwm/pwm.h and drivers/pwm/pwm.c.  The functions therein
->> +use information from pwm_device and pwm__config structures to invoke
+>-----Original Message-----
+>From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-
+>bounces@lists.infradead.org] On Behalf Of Arnaud Patard
+>Sent: Monday, March 07, 2011 10:02 AM
+>To: Nguyen Dinh-R00091
+>Cc: linux@arm.linux.org.uk; s.hauer@pengutronix.de; linux-kernel@vger.kernel.org; Vaidyanathan
+>Ranjani-RA5478; u.kleine-koenig@pengutronix.de; Zhang Lily-R58066; linux-arm-
+>kernel@lists.infradead.org
+>Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
 >
-> Could you fix that to be pwm_config please.
-
-Fixed.
-
->> +menuconfig GENERIC_PWM
->> +     tristate "PWM Support"
->> +     help
->> +       Enables PWM device support implemented via a generic
->> +       framework.  If unsure, say N.
->> +
+>Nguyen Dinh-R00091 <R00091@freescale.com> writes:
 >
-> Does this need help text? Can't we just select GENERIC_PWM for the
-> drivers / users that need it?
-
-That would be my preference, actually.  I'll see if I can do that at
-the next review.
-
->> +
->> +     if (p->ops->request) {
->> +             ret = p->ops->request(p);
->> +             if (ret) {
->> +                     clear_bit(FLAG_REQUESTED, &p->flags);
->> +                     goto done;
+>> Hi Arnaud,
 >
-> You don't need this goto here.
-
-Fixed.
-
->> +struct pwm_device *pwm_request(const char *bus_id, int id, const char *label)
->> +{
->> +     char name[256];
->> +     int ret;
->> +
->> +     if (id == -1)
->> +             ret = scnprintf(name, sizeof name, "%s", bus_id);
+>Hi,
+>>
+>> Just to verify that you are testing on an MX51-Babbage board? Here's my log:
 >
-> Kernel doc comment for the function to describe the id == -1 case?
-
-Fixed.
-
->> +static void pwm_handler(struct work_struct *w)
->> +{
->> +     struct pwm_device *p = container_of(w, struct pwm_device,
->> +                                         handler_work);
+>I never said I was testing on babbage. The reason is because I'm using a
+>efika smartbook and not a babbage.
 >
->        You could just not queue the work if !p->handler
-
-Good point.  Fixed.
-
->> +     if (id == -1)
->> +             ret = scnprintf(name, sizeof name, "%s", dev_name(parent));
+>>
+>> root@freescale ~$ uname -a
+>> Linux freescale 2.6.38-rc1+ #93 Fri Mar 4 17:18:15 CST 2011 armv7l GNU/Linux
 >
-> A kernel doc comment to explain id == -1 would be nice.
+>2.6.38-rc1+ ? which tree are you using ? The for-next branch of Sascha
+>Hauer's tree is at least 2.6.38-rc5 so you're trying to merge something
+>without even testing it on the current tree. Can you please test suspend
+>with current imx for-next tree (with no other patches than theses 2
+>patches if possible), in order to make sure that it's still working with it ?
 >
 
-Fixed.
+The current imx for-next tree is not booting on my Babbage board. Is it okay for you with your HW. I'll have to debug the booting part first.
 
-> Very nice framework!
-
-Thank you!!
-
+>Thanks,
+>Arnaud
 >
-> Would be nice to have kernel doc comments for the functions but that can
-> follow on later.
+>_______________________________________________
+>linux-arm-kernel mailing list
+>linux-arm-kernel@lists.infradead.org
+>http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-I'll try to do some of it for the next review series.
 
-
-b.g.
--- 
-Bill Gatliff
-bgat@billgatliff.com
