@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab1CGQoW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 11:44:22 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:40802 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab1CGQoT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 11:44:19 -0500
-Date: Mon, 7 Mar 2011 10:44:16 -0600
-From: scameron@beardog.cce.hp.com
-To: james.bottomley@hansenpartnership.com
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        scameron@beardog.cce.hp.com, mikem@beardog.cce.hp.com,
-        thenzl@redhat.com, akpm@linux-foundation.org
-Subject: [PATCH] hpsa: fix incorrect PCI IDs and add two new ones (2nd try)
-Message-ID: <20110307164416.GK12760@beardog.cce.hp.com>
+	id S1753130Ab1CGQrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 11:47:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33015 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab1CGQrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 11:47:03 -0500
+Subject: Re: [dm-devel] [PATCH] Fix over-zealous flush_disk when changing
+ device size.
+From: James Bottomley <James.Bottomley@suse.de>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: NeilBrown <neilb@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <1299471771.2228.11.camel@grinch>
+References: <20110217165057.5c50e566@notabene.brown>
+	 <20110303143120.GA8134@infradead.org>
+	 <20110304111624.4be27aaf@notabene.brown> <1299259506.2118.24.camel@grinch>
+	 <20110306174755.49404c8e@notabene.brown>  <1299471771.2228.11.camel@grinch>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Mar 2011 10:46:58 -0600
+Message-ID: <1299516418.15258.4.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2011-03-06 at 21:22 -0700, Andrew Patterson wrote:
+> On Sun, 2011-03-06 at 17:47 +1100, NeilBrown wrote:
+> >  Would you be uncomfortable if I asked Linus to revert both my fix and your
+> >  original patch??
+> 
+> James Bottomley wanted me to put this functionality in. I have no
+> problem with reverting it myself, especially if it is causing other
+> problems.  I would have to say that you need to ask him (or rather, I am
+> not qualified to render an opinion here).
 
-My first attempt was botched, got the wrong PCI Device ID
-(used PCI_DEVICE_ID_HP_CISSE, should have been PCI_DEVICE_ID_HP_CISSF)
+So it seems we have a couple of problems: the first being that
+flush_disk() doesn't actually do what it says (flush the disk).  If it's
+just discarding all data, dirty or clean, then its use in the
+grow/shrink interface is definitely wrong.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+The idea is that before we complete the grow/shrink, we make sure that
+the device doesn't have any errors, so we want to try to write out all
+dirty buffers to make sure they still have a home.  If flush_disk()
+doesn't do that, then we need to use a different interface ... what's
+the interface to flush a disk?
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index c30591f..09a529e 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -89,11 +89,13 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324a},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324b},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3233},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3250},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3251},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3350},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3351},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3352},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3353},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
- 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
- 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
- 	{0,}
-@@ -113,11 +115,13 @@ static struct board_type products[] = {
- 	{0x3249103C, "Smart Array P812", &SA5_access},
- 	{0x324a103C, "Smart Array P712m", &SA5_access},
- 	{0x324b103C, "Smart Array P711m", &SA5_access},
--	{0x3250103C, "Smart Array", &SA5_access},
--	{0x3250113C, "Smart Array", &SA5_access},
--	{0x3250123C, "Smart Array", &SA5_access},
--	{0x3250133C, "Smart Array", &SA5_access},
--	{0x3250143C, "Smart Array", &SA5_access},
-+	{0x3350103C, "Smart Array", &SA5_access},
-+	{0x3351103C, "Smart Array", &SA5_access},
-+	{0x3352103C, "Smart Array", &SA5_access},
-+	{0x3353103C, "Smart Array", &SA5_access},
-+	{0x3354103C, "Smart Array", &SA5_access},
-+	{0x3355103C, "Smart Array", &SA5_access},
-+	{0x3356103C, "Smart Array", &SA5_access},
- 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
- };
- 
+James
+
 
