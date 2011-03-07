@@ -1,143 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab1CGSG2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 13:06:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36710 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1CGSG0 (ORCPT
+	id S1754680Ab1CGSHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 13:07:09 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34965 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab1CGSHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 13:06:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZLghrXBRHHmyFO3f6GFDwsXoNamM5urawdLlWQ7+1xzfnKYGgWN0SqZLzhLfog/C7a
-         4/HOfspFnFwyhzXwJyqEQ5fz4Kp7r4Gylf2YpMkkpfnPPTJvmweFbcXlo4ujZMvaQQNm
-         eK9DvD66+SuaEKeKd2+qSvV2LCiLuXUS2FWfE=
-Date: Mon, 7 Mar 2011 19:06:21 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Sam Liao <phyomh@gmail.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@redhat.com, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] Add inverted call graph report support to perf tool
-Message-ID: <20110307180619.GG1873@nowhere>
-References: <AANLkTi=vxgHe=dqz+xEPcZ9oBexM1jBxFz3sXA2DJEZA@mail.gmail.com>
+	Mon, 7 Mar 2011 13:07:07 -0500
+Date: Mon, 7 Mar 2011 19:07:00 +0100
+From: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+To: Nguyen Dinh-R00091 <R00091@freescale.com>
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaidyanathan Ranjani-RA5478 <RA5478@freescale.com>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        Zhang Lily-R58066 <R58066@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter
+ WFI
+Message-ID: <20110307180700.GQ29521@pengutronix.de>
+References: <1299281399-32304-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <56132A77AB93C141BF06E6B96CA6CFEA19124C@039-SN1MPN1-004.039d.mgd.msft.net>
+ <87oc5puwg3.fsf@lebrac.rtp-net.org>
+ <56132A77AB93C141BF06E6B96CA6CFEA193F14@039-SN1MPN1-004.039d.mgd.msft.net>
+ <87fwqyvrzf.fsf@lebrac.rtp-net.org>
+ <56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=vxgHe=dqz+xEPcZ9oBexM1jBxFz3sXA2DJEZA@mail.gmail.com>
+In-Reply-To: <56132A77AB93C141BF06E6B96CA6CFEA1940F8@039-SN1MPN1-004.039d.mgd.msft.net>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:05:53 up 19 days,  6:03, 31 users,  load average: 5.33, 4.23,
+ 2.80
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2011 at 09:43:27PM +0800, Sam Liao wrote:
-> Add "-r" option to support inverted butterfly report, in the
-> inverted report, the call graph start from the callee's ancestor,
-> like main->func1->func2 style. users can use such view to catch
-> system's performance bottleneck, find the software's design
-> problem not just some function's poor performance.
-
-Yeah, that can be interesting.
-
+On Mon, Mar 07, 2011 at 04:35:48PM +0000, Nguyen Dinh-R00091 wrote:
+> Hi Arnaud,
 > 
-> Current pref implementation is not easy to add such inversion, so this
-> fix just invert the ip and callchain in an ugly style. But I do think
-> this invert
-> view help developer to find performance root cause for complex
-> software.
-> ---
->  tools/perf/builtin-report.c |   43 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 43 insertions(+), 0 deletions(-)
 > 
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index c27e31f..ac2ec0e 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -33,6 +33,7 @@
->  static char		const *input_name = "perf.data";
+> >-----Original Message-----
+> >From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-
+> >bounces@lists.infradead.org] On Behalf Of Arnaud Patard
+> >Sent: Monday, March 07, 2011 10:02 AM
+> >To: Nguyen Dinh-R00091
+> >Cc: linux@arm.linux.org.uk; s.hauer@pengutronix.de; linux-kernel@vger.kernel.org; Vaidyanathan
+> >Ranjani-RA5478; u.kleine-koenig@pengutronix.de; Zhang Lily-R58066; linux-arm-
+> >kernel@lists.infradead.org
+> >Subject: Re: [PATCHv2 1/2] ARM: mx51: Implement code to allow mx51 to enter WFI
+> >
+> >Nguyen Dinh-R00091 <R00091@freescale.com> writes:
+> >
+> >> Hi Arnaud,
+> >
+> >Hi,
+> >>
+> >> Just to verify that you are testing on an MX51-Babbage board? Here's my log:
+> >
+> >I never said I was testing on babbage. The reason is because I'm using a
+> >efika smartbook and not a babbage.
+> >
+> >>
+> >> root@freescale ~$ uname -a
+> >> Linux freescale 2.6.38-rc1+ #93 Fri Mar 4 17:18:15 CST 2011 armv7l GNU/Linux
+> >
+> >2.6.38-rc1+ ? which tree are you using ? The for-next branch of Sascha
+> >Hauer's tree is at least 2.6.38-rc5 so you're trying to merge something
+> >without even testing it on the current tree. Can you please test suspend
+> >with current imx for-next tree (with no other patches than theses 2
+> >patches if possible), in order to make sure that it's still working with it ?
+> >
 > 
->  static bool		force, use_tui, use_stdio;
-> +static bool		reverse_call;
->  static bool		hide_unresolved;
->  static bool		dont_use_callchains;
-> 
-> @@ -155,6 +156,41 @@ static int process_sample_event(event_t *event,
-> struct sample_data *sample,
->  {
->  	struct addr_location al;
->  	struct perf_event_attr *attr;
-> +
-> +	/* reverse call chain data */
-> +	if (reverse_call && symbol_conf.use_callchain && sample->callchain) {
-> +		struct ip_callchain *chain;
-> +		int i, j;
-> +		u64 tmp_ip;
-> +		event_t *reverse_event;
-> +
-> +		chain = malloc(sizeof(u64) * (sample->callchain->nr + 1));
-> +		if (!chain) {
-> +			pr_debug("malloc failed\n");
-> +			return -1;
-> +		}
-> +		reverse_event = malloc(sizeof(event_t));
-> +		if (!reverse_event) {
-> +			pr_debug("malloc failed\n");
-> +			return -1;
-> +		}
-> +		memcpy(reverse_event, event, sizeof(event_t));
-> +
-> +		chain->nr = sample->callchain->nr;
-> +		j = sample->callchain->nr;
-> +		tmp_ip = event->ip.ip;
-> +		reverse_event->ip.ip = sample->callchain->ips[j-1];
-> +		chain->ips[j-1] = tmp_ip;
-> +		for (i = 0, j = sample->callchain->nr - 2; i < j; i++, j--) {
-> +			chain->ips[i] = sample->callchain->ips[j];
-> +			chain->ips[j] = sample->callchain->ips[i];
-> +		}
-> +
-> +		sample->callchain = chain;
-> +		call_chain_reversed = true;
-> +		event = reverse_event;
-> +	}
+> The current imx for-next tree is not booting on my Babbage board. Is
+> it okay for you with your HW. I'll have to debug the booting part
+> first.
 
-So, instead of having such temporary copy, could you rather feed the callchain
-into the cursor in reverse from perf_session__resolve_callchain() ?
+Probably because other than kconfig states i.MX51 and i.MX53 cannot be
+compiled in one kernel. the for-next branch boots fine on my babbage.
 
-You can keep the common part inside the loop into a seperate helper
-but have two different kinds of loops.
+Sascha
 
-> 
->  	if (event__preprocess_sample(event, session, &al, sample, NULL) < 0) {
->  		fprintf(stderr, "problem processing %d event, skipping it.\n",
-> @@ -177,6 +213,11 @@ static int process_sample_event(event_t *event,
-> struct sample_data *sample,
->  		return -1;
->  	}
-> 
-> +	if (reverse_call && call_chain_reversed) {
-> +		free(sample->callchain);
-> +		free(event);
-> +	}
-> +
->  	return 0;
->  }
-> 
-> @@ -469,6 +510,8 @@ static const struct option options[] = {
->  	OPT_CALLBACK_DEFAULT('g', "call-graph", NULL, "output_type,min_percent",
->  		     "Display callchains using output_type (graph, flat, fractal,
-> or none) and min percent threshold. "
->  		     "Default: fractal,0.5", &parse_callchain_opt, callchain_default_opt),
-> +	OPT_BOOLEAN('r', "reverse-call", &reverse_call,
-> +			"reverse call chain report (butterfly view)"),
 
-What about making it an argument to the exisiting -g option, something
-that defines the base of the callchain like "caller" and "callee"
-
-Like "-g graph,0.5,caller".
-
-caller would be what we call here reverse and callee the current and future default.
-
-Does that look sensible?
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
