@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1CGEPF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 23:15:05 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:50966 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab1CGEPD convert rfc822-to-8bit (ORCPT
+	id S1755283Ab1CGEPt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 23:15:49 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:51703 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754920Ab1CGEPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 23:15:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=t9bdGUIthaoh65/mu/XSw4p/D4UpgyCsGqRWrK3YfP95vPSzOn4nes50Kj+tpikRnT
-         KVI61ucL32eqfcdXznQHtqyZEEfgheA1jEQ9NfTxM3ZbJYo3w+UpnWGLTbsG1KqxqXzX
-         OCztLNJKNf49hEBH2NJSh1rvZFXyHdCkJcdaI=
+	Sun, 6 Mar 2011 23:15:48 -0500
+Message-ID: <4D745BD1.4020506@st.com>
+Date: Mon, 7 Mar 2011 09:45:13 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <4D72650D.8070503@lwfinger.net>
-References: <1299108754-5492-1-git-send-email-bookjovi@gmail.com>
-	<1299328260.4277.92.camel@localhost>
-	<AANLkTimnSvBKSL6_d3RxufxUL_C9wCM+Fz66_B5Sc0KE@mail.gmail.com>
-	<4D72650D.8070503@lwfinger.net>
-Date: Mon, 7 Mar 2011 12:15:02 +0800
-Message-ID: <AANLkTi=GHOyeSWA96UUokmYSdHHc5cuY53xJuhVzBNwz@mail.gmail.com>
-Subject: Re: [PATCH] net: mac80211: fix compilation warning
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        "open list:NETWORKING [WIREL..." <linux-wireless@vger.kernel.org>,
-        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Shiraz HASHIM <shiraz.hashim@st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        amitgoel <amit.goel@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/8 resend] dw_dmac: Remove compilation dependency from
+ AVR32
+References: <cover.1298889267.git.viresh.kumar@st.com> <d41145ce4d5e3d870f720709f68d5b1dbf34d6a0.1298889267.git.viresh.kumar@st.com> <1299084372.6974.91.camel@vkoul-udesk3> <4D6F0E32.6050505@st.com> <20110303041909.GT244@DLHLAP0379> <20110305113817.GC27468@n2100.arm.linux.org.uk>
+In-Reply-To: <20110305113817.GC27468@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 6, 2011 at 12:30 AM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 03/05/2011 07:52 AM, Jovi Zhang wrote:
->>
->> On Sat, Mar 5, 2011 at 8:31 PM, Ben Hutchings<bhutchings@solarflare.com>
->>  wrote:
->>>
->>> On Wed, 2011-03-02 at 18:32 -0500, bookjovi@gmail.com wrote:
->>>>
->>>> From: Jovi Zhang<bookjovi@gmail.com>
->>>>
->>>> this commit fix compilation warning as following:
->>>> net/mac80211/tx.c:1753: warning: unused variable mppath
->>>
->>> [...]
->>>
->>> You clearly didn't try building this with CONFIG_MAC80211_MESH enabled.
->>>
->> Sorry, indeed, maybe should be like this:
->>
->> +#ifdef CONFIG_MAC80211_MESH
->>        struct mesh_path *mppath = NULL;
->> +#endif
->
-> Linville likes "struct mesh_path *mppath __maybe_unused = NULL;" over the
-> ifdef form.
+On 03/05/2011 05:08 PM, Russell King - ARM Linux wrote:
+> On Thu, Mar 03, 2011 at 09:49:09AM +0530, Shiraz Hashim wrote:
+>> > On Thu, Mar 03, 2011 at 11:42:42AM +0800, Viresh KUMAR wrote:
+>>> > > On 03/02/2011 10:16 PM, Koul, Vinod wrote:
+>>>> > > > On Mon, 2011-02-28 at 16:11 +0530, Viresh Kumar wrote:
+>> > 
+>> > [...]
+>> > 
+>>>>> > > >>  drivers/dma/Kconfig |    1 -
+>>>>> > > >>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>>>> > > >>
+>>>>> > > >> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+>>>>> > > >> index 1c28816..95c7db7 100644
+>>>>> > > >> --- a/drivers/dma/Kconfig
+>>>>> > > >> +++ b/drivers/dma/Kconfig
+>>>>> > > >> @@ -82,7 +82,6 @@ config INTEL_IOP_ADMA
+>>>>> > > >>  
+>>>>> > > >>  config DW_DMAC
+>>>>> > > >>  	tristate "Synopsys DesignWare AHB DMA support"
+>>>>> > > >> -	depends on AVR32
+>>>> > > > Shouldn't you be adding a corresponding depends on new arch? And since
+>>>> > > > this supports old arch as well, it should say depends on both...
+>>> > > 
+>>> > > Why should this driver be dependent on ARM or AVR32? It can be present
+>>> > > on any other arch too.. So i thought removing this dependency all together
+>>> > > is better.
+>> > 
+>> > There could be a dependency on HAVE_CLK as it uses clock APIs.
+> If it uses the clk APIs then it should already depend on HAVE_CLK.
 
-That's better, Thanks.
+It wasn't. But i have done that in my patchset.
+
+-- 
+viresh
