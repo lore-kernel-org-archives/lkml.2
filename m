@@ -1,62 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab1CGB16 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Mar 2011 20:27:58 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50344 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab1CGB14 (ORCPT
+	id S1755179Ab1CGCpL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Mar 2011 21:45:11 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44065 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab1CGCpJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Mar 2011 20:27:56 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: Re: [PATCH] mm: remove inline from scan_swap_map
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1299350956-5614-1-git-send-email-cesarb@cesarb.net>
-References: <1299350956-5614-1-git-send-email-cesarb@cesarb.net>
-Message-Id: <20110307102754.89EA.A69D9226@jp.fujitsu.com>
+	Sun, 6 Mar 2011 21:45:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=asTanNNIez4Fh6XhxbwEJTqIxJpxWvBTl9xL4KOhFTxYnnAZRuR2XNWiqgq0QtNeC+
+         Nv1mzXZtpLthgbotrEkbtYpCcEo6rg6OgHSkHi30EkNtYI4b4xC9ipnyrBZI0jv5NbY6
+         d3JGI6OXIALR8bhTXj/clGhmpl3f0oGpi5xpo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon,  7 Mar 2011 10:27:52 +0900 (JST)
+In-Reply-To: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
+References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sun, 6 Mar 2011 21:44:49 -0500
+Message-ID: <AANLkTinGyn8tujw-TrLibuDuj_Xqb4_YEPfLPFUy4WdO@mail.gmail.com>
+Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
+ ADAU1701 SigmaDSP
+To: cliff.cai@analog.com
+Cc: broonie@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org, akpm@linux-foundation.org,
+        lrg@slimlogic.co.uk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> scan_swap_map is a large function (224 lines), with several loops and a
-> complex control flow involving several gotos.
-> 
-> Given all that, it is a bit silly that is is marked as inline. The
-> compiler agrees with me: on a x86-64 compile, it did not inline the
-> function.
-> 
-> Remove the "inline" and let the compiler decide instead.
-> 
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> ---
->  mm/swapfile.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index 0341c57..8ed42e7 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -212,8 +212,8 @@ static int wait_for_discard(void *word)
->  #define SWAPFILE_CLUSTER	256
->  #define LATENCY_LIMIT		256
->  
-> -static inline unsigned long scan_swap_map(struct swap_info_struct *si,
-> -					  unsigned char usage)
-> +static unsigned long scan_swap_map(struct swap_info_struct *si,
-> +				   unsigned char usage)
+On Sun, Mar 6, 2011 at 20:11,  <cliff.cai@analog.com> wrote:
+> +#define ADAU1701_FIRMWARE "SigmaDSP_fw.bin"
 
-I agree.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+this probably needs to be more specific.  like "adau1701.bin".
+otherwise it makes it a pain to work with diff codecs in the same
+system.
 
+> +static int adau1701_write_register(struct snd_soc_codec *codec,
+> +       u16 reg_address, u8 length, u32 value)
+> +{
+> +       int ret;
+> +       int count = length + 2; /*data plus 16bit register address*/
+> +       u8 buf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+> +
+> +       if (length == 0)
+> +               return -1;
+> +       buf[0] = (reg_address >> 8) & 0xFF;
 
+should be a blank line after that return
+
+> +       buf[1] = reg_address & 0xFF;
+> +       if (length == 1)
+> +               buf[2] = value & 0xFF;
+> +       else if (length == 2) {
+> +               buf[2] = (value >> 8) & 0xFF;
+> +               buf[3] = value & 0xFF;
+> +       } else if (length == 3) {
+> +               buf[2] = (value >> 16) & 0xFF;
+> +               buf[3] = (value >> 8) & 0xFF;
+> +               buf[4] = value & 0xFF;
+> +       }
+
+i think the buf[8] init forces gcc to generate bad code, and seems to
+be useless.  shouldnt the code have an "else" brace to return -1 if
+length is greater than 3, and then change the decl to "u8 buf[5];" ?
+
+also, all these 0xFF masks are useless -- you're assigning it to a u8
+which implies bit truncation
+
+> +       ret = i2c_master_send(codec->control_data, buf, count);
+> +
+> +       return ret;
+> +
+> +}
+
+the whole "int ret" seems kind of useless in this func.  just return
+the i2c_master_send and drop the ret var completely.  and drop the
+blank link after the return.
+
+> +/*
+> + * read ADAU1701 hw register
+> + */
+> +static u32 adau1701_read_register(struct snd_soc_codec *codec,
+> +       u16 reg_address, u8 length)
+> +{
+> +       u8 addr[2];
+> +       u8 buf[2];
+> +       u32 value = 0;
+> +       int ret;
+> +
+> +       if (reg_address < ADAU1701_FIRSTREG)
+> +               reg_address = reg_address + ADAU1701_FIRSTREG;
+> +
+> +       if ((reg_address < ADAU1701_FIRSTREG) || (reg_address > ADAU1701_LASTREG))
+> +               return -EIO;
+
+this func has "u32" for ret, and you return the raw register value
+below.  but here you try returning -EIO.  shouldnt it be "int" so the
+caller can check for "< 0" ?
+
+> +       addr[0] = (reg_address >> 8) & 0xFF;
+> +       addr[1] = reg_address & 0xFF;
+> +
+> +       /* write the 2byte read address */
+> +       ret = i2c_master_send(codec->control_data, addr, 2);
+> +       if (ret)
+> +               return ret;
+> +
+> +       if (length == 1) {
+> +               if (i2c_master_recv(codec->control_data, buf, 1) != 1)
+> +                       return -EIO;
+> +               value = buf[0];
+> +       } else if (length == 2) {
+> +               if (i2c_master_recv(codec->control_data, buf, 2) != 2)
+> +                       return -EIO;
+
+seems like this can be combined into one simple code block where you
+replace "1" and '2" with "length"
+
+> +static int adau1701_setprogram(struct snd_soc_codec *codec)
+> +{
+> +       int ret = 0;
+> +
+> +       ret = process_sigma_firmware(codec->control_data, ADAU1701_FIRMWARE);
+> +
+> +       return ret;
+> +}
+
+seems like this should be one statement -- a simple return
+
+> +static int adau1701_set_bias_level(struct snd_soc_codec *codec,
+> +                                enum snd_soc_bias_level level)
+> +{
+> +       u16 reg;
+> +       switch (level) {
+> +       case SND_SOC_BIAS_ON:
+> +               reg = adau1701_read_register(codec, ADAU1701_AUXNPOW, 2);
+> +               reg &= ~(AUXNPOW_AAPD | AUXNPOW_D0PD | AUXNPOW_D1PD |  AUXNPOW_D2PD |
+> +                        AUXNPOW_D3PD | AUXNPOW_VBPD | AUXNPOW_VRPD);
+> +               adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, reg);
+> +               break;
+> +       case SND_SOC_BIAS_PREPARE:
+> +               break;
+> +       case SND_SOC_BIAS_STANDBY:
+> +               break;
+> +       case SND_SOC_BIAS_OFF:
+> +               /* everything off, dac mute, inactive */
+> +               reg = adau1701_read_register(codec, ADAU1701_AUXNPOW, 2);
+> +               reg |= AUXNPOW_AAPD | AUXNPOW_D0PD | AUXNPOW_D1PD |  AUXNPOW_D2PD |
+> +                        AUXNPOW_D3PD | AUXNPOW_VBPD | AUXNPOW_VRPD;
+> +               adau1701_write_register(codec, ADAU1701_AUXNPOW, 2, reg);
+
+error checking missing on the read_register() call
+
+> +               break;
+> +
+> +       }
+
+drop the blank line before the brace
+
+> +struct snd_soc_dai_driver adau1701_dai = {
+> +       .name = "ADAU1701",
+
+i think the standard is to use all lower case
+
+> +static int adau1701_suspend(struct snd_soc_codec *codec, pm_message_t state)
+> +{
+> +       adau1701_set_bias_level(codec, SND_SOC_BIAS_OFF);
+> +       return 0;
+> +}
+> +
+> +static int adau1701_resume(struct snd_soc_codec *codec)
+> +{
+> +       adau1701_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+> +       return 0;
+> +}
+> ...
+> +static int adau1701_remove(struct snd_soc_codec *codec)
+> +{
+> +       adau1701_set_bias_level(codec, SND_SOC_BIAS_OFF);
+> +       return 0;
+> +}
+
+why not return set_bias_level ?
+
+> +static int adau1701_reg_init(struct snd_soc_codec *codec)
+> ...
+> +               printk(KERN_ERR "Loading program data failed\n");
+
+dev_err
+
+> +struct snd_soc_codec_driver soc_codec_dev_adau1701 = {
+
+static
+
+> +static __devinit int adau1701_i2c_probe(struct i2c_client *i2c,
+> +                             const struct i2c_device_id *id)
+> +{
+> +       struct adau1701_priv *adau1701;
+> +       int ret = 0;
+> +
+> +       adau1701 = kzalloc(sizeof(struct adau1701_priv), GFP_KERNEL);
+
+sizeof(*adau1701)
+
+> +static int __init adau1701_modinit(void)
+> +{
+> +       int ret;
+> +
+> +       ret = i2c_add_driver(&adau1701_i2c_driver);
+> +       if (ret != 0) {
+> +               printk(KERN_ERR "Failed to register adau1701 I2C driver: %d\n",
+> +                      ret);
+> +       }
+
+uesless braces, and should be pr_err
+
+> +MODULE_DESCRIPTION("ASoC ADAU1701 SigmaDSP driver");
+> +MODULE_AUTHOR("Cliff Cai");
+> +MODULE_LICENSE("GPL");
+
+MODULE_ALIAS() ?
+
+> +++ b/sound/soc/codecs/adau1701.h
+> ...
+> +#define        AUXADCE_AAEN            (1 << 15)
+> +#define OSCIPOW_OPD            (0x04)
+> +#define        DACSET_DACEN            (1)
+
+looks like you got "#define<tab>" junk in here
+-mike
