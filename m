@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab1CGL1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 06:27:03 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46612 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896Ab1CGL1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 06:27:01 -0500
-Message-ID: <4D74C101.1030204@kernel.dk>
-Date: Mon, 07 Mar 2011 12:26:57 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1754299Ab1CGLdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 06:33:11 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33324 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab1CGLdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 06:33:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ZU03+hvehvZ/AZ4LjIHdgpnDpiU6KPRvNLiY9n0zR7WhMzmqixbS32KCGyRKBqsT9B
+         XhE3ceXASL3NdK43ZUAPSke1gKcKdbVrZubOG7k1IefJnusPSSuR4sCi9Ua7o86kRCxK
+         d8NH6dSJp/Ns6AT3wSEDh9J2lEvKbv/YNkHgY=
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>, Tejun Heo <tj@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the block tree with Linus' tree
-References: <20110307131958.84a5d818.sfr@canb.auug.org.au>	<20110307063618.GA10365@mtj.dyndns.org>	<4D749A81.50809@kernel.dk>	<AANLkTim0qwr-L9RLRDtoZBrFBWGJ1ze9LMxr9dTmdrr9@mail.gmail.com>	<20110307104747.GH20499@htj.dyndns.org>	<AANLkTinBx5Z9Gp7ZTcbbTMCZZ4Z68-vMBP9yOX-k15EA@mail.gmail.com>	<4D74BE7C.4050701@kernel.dk> <AANLkTi=9AUSv0rJtudgnEBERaCLpyHhVmcUY9mZUa8H-@mail.gmail.com>
-In-Reply-To: <AANLkTi=9AUSv0rJtudgnEBERaCLpyHhVmcUY9mZUa8H-@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <op.vryqz6qt3ri7v4@arend-laptop>
+References: <AANLkTinhThfS587rkX4y1UbJLQzQKEWGfrFArUVGD3Ew@mail.gmail.com>
+	<op.vryqz6qt3ri7v4@arend-laptop>
+Date: Mon, 7 Mar 2011 12:33:07 +0100
+Message-ID: <AANLkTinbrbkUO-ycAsX4cLEoM6avPeiYEZZ-zKtavfqq@mail.gmail.com>
+Subject: Re: brcm80211: the system freezes if booted with laptop wifi switch
+ to OFF
+From: Francis Moreau <francis.moro@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Brett Rudley <brudley@broadcom.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-03-07 12:25, Sedat Dilek wrote:
-> On 3/7/11, Jens Axboe <axboe@kernel.dk> wrote:
->> On 2011-03-07 12:14, Sedat Dilek wrote:
->>> On 3/7/11, Tejun Heo <tj@kernel.org> wrote:
->>>> On Mon, Mar 07, 2011 at 11:41:23AM +0100, Sedat Dilek wrote:
->>>>> $ git log -1 | cat
->>>>> commit c45165cd2c77843f24ca18af54044303dc2a81ab
->>>>> Author: Stephen Rothwell <sfr@canb.auug.org.au>
->>>>> Date:   Mon Mar 7 17:38:41 2011 +1100
->>>>>
->>>>>     Add linux-next specific files for 20110307
->>>>>
->>>>>     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>>>>
->>>>> $ git pull
->>>>> git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block.git
->>>>> for-next
->>>>> remote: Counting objects: 158, done.
->>>>> remote: Compressing objects: 100% (89/89), done.
->>>>> remote: Total 106 (delta 87), reused 21 (delta 17)
->>>>> Receiving objects: 100% (106/106), 23.33 KiB, done.
->>>>> Resolving deltas: 100% (87/87), completed with 34 local objects.
->>>>> From git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block
->>>>>  * branch            for-next   -> FETCH_HEAD
->>>>> warning: too many files (created: 1120 deleted: 637), skipping inexact
->>>>> rename detection
->>>>> warning: too many files (created: 974 deleted: 462), skipping inexact
->>>>> rename detection
->>>>> Auto-merging block/blk-core.c
->>>>> Auto-merging block/blk-flush.c
->>>>> CONFLICT (content): Merge conflict in block/blk-flush.c
->>>>> Auto-merging block/cfq-iosched.c
->>>>> CONFLICT (content): Merge conflict in block/cfq-iosched.c
->>>>> Automatic merge failed; fix conflicts and then commit the result.
->>>>
->>>> Ummm... don't those conflicts come from Stephen's commits?  You would
->>>> need to revert the merge and fixup commits and then pull in the block
->>>> branch.
->>>>
->>>> Thanks.
->>>>
->>>> --
->>>> tejun
->>>>
->>>
->>> I have reverted the merge-fix from Stephen "[PATCH] block: update for
->>> __blk_run_queue() API update" which changed block/blk-flush.c, this
->>> remains:
->>> ...
->>> CONFLICT (content): Merge conflict in block/cfq-iosched.c
->>>
->>> As it is 12p.m. and sun shining, my decision and direction is clear:
->>> Lunch + City.
->>
->> Just checked here, I can pull my for-next cleanly into Linus' master.
->> What is the block tree for-next branch sha?
->>
->> --
->> Jens Axboe
->>
->>
-> 
-> No, I tried to merge your for-next into linux-next (which will happen
-> with tomorrows linux-next).
-> 
-> [ linux-2.6-block.git#for-next ]
-> commit b873c5d692d4d5453cceed18bb06c62bb1a73ac0
-> "Merge branch 'block-for-2.6.39-core' of
-> ssh:///linux/kernel/git/tj/misc into for-2.6.39/core"
+On Mon, Mar 7, 2011 at 8:56 AM, Arend van Spriel <arend@broadcom.com> wrote:
+>
+> Some time ago we (broadcom) submitted a patch for rfkill functionality (ie.
+> wifi switch) to staging-2.6 repository. I looked up the tagged version you
+> are referring to in the linux-next repository and it seems that the patch I
+> mentioned is not included in there.
 
-linux-next should not have any CFQ changes that don't come from for-next
-from the linux block tree. Are you pulling it into a linux-next that
-already have some of the block changes?
+Would it be possible to submit it one more time ?
 
+Thanks
 -- 
-Jens Axboe
-
+Francis
