@@ -1,50 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab1CGV6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 16:58:34 -0500
-Received: from mga01.intel.com ([192.55.52.88]:53226 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756275Ab1CGV6c convert rfc822-to-8bit (ORCPT
+	id S1756598Ab1CGV7Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 16:59:16 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49399 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756476Ab1CGV7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 16:58:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,279,1297065600"; 
-   d="scan'208";a="894760984"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Michel Lespinasse <walken@google.com>, Darren Hart <dvhltc@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Matt Turner <mattst88@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 7 Mar 2011 13:58:30 -0800
-Subject: RE: [PATCH] futex: cmpxchg_futex_value_locked API change
-Thread-Topic: [PATCH] futex: cmpxchg_futex_value_locked API change
-Thread-Index: AcvcbRiAx5Yf1S92QYyhestru/6I5QApXWcw
-Message-ID: <987664A83D2D224EAE907B061CE93D53019DA69EFC@orsmsx505.amr.corp.intel.com>
-References: <20110307021127.GB31188@google.com>
-In-Reply-To: <20110307021127.GB31188@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 7 Mar 2011 16:59:14 -0500
+Date: Mon, 7 Mar 2011 13:58:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Vagin <avagin@gmail.com>, Andrey Vagin <avagin@openvz.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: check zone->all_unreclaimable in
+ all_unreclaimable()
+Message-Id: <20110307135831.9e0d7eaa.akpm@linux-foundation.org>
+In-Reply-To: <20110305170759.GC1918@barrios-desktop>
+References: <1299325456-2687-1-git-send-email-avagin@openvz.org>
+	<20110305152056.GA1918@barrios-desktop>
+	<4D72580D.4000208@gmail.com>
+	<20110305155316.GB1918@barrios-desktop>
+	<4D7267B6.6020406@gmail.com>
+	<20110305170759.GC1918@barrios-desktop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tried out the ia64 bits. They seem fine.
+On Sun, 6 Mar 2011 02:07:59 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+> On Sat, Mar 05, 2011 at 07:41:26PM +0300, Andrew Vagin wrote:
+> > On 03/05/2011 06:53 PM, Minchan Kim wrote:
+> > >On Sat, Mar 05, 2011 at 06:34:37PM +0300, Andrew Vagin wrote:
+> > >>On 03/05/2011 06:20 PM, Minchan Kim wrote:
+> > >>>On Sat, Mar 05, 2011 at 02:44:16PM +0300, Andrey Vagin wrote:
+> > >>>>Check zone->all_unreclaimable in all_unreclaimable(), otherwise the
+> > >>>>kernel may hang up, because shrink_zones() will do nothing, but
+> > >>>>all_unreclaimable() will say, that zone has reclaimable pages.
+> > >>>>
+> > >>>>do_try_to_free_pages()
+> > >>>>	shrink_zones()
+> > >>>>		 for_each_zone
+> > >>>>			if (zone->all_unreclaimable)
+> > >>>>				continue
+> > >>>>	if !all_unreclaimable(zonelist, sc)
+> > >>>>		return 1
+> > >>>>
+> > >>>>__alloc_pages_slowpath()
+> > >>>>retry:
+> > >>>>	did_some_progress = do_try_to_free_pages(page)
+> > >>>>	...
+> > >>>>	if (!page&&   did_some_progress)
+> > >>>>		retry;
+> > >>>>
+> > >>>>Signed-off-by: Andrey Vagin<avagin@openvz.org>
+> > >>>>---
+> > >>>>  mm/vmscan.c |    2 ++
+> > >>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+> > >>>>
+> > >>>>diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > >>>>index 6771ea7..1c056f7 100644
+> > >>>>--- a/mm/vmscan.c
+> > >>>>+++ b/mm/vmscan.c
+> > >>>>@@ -2002,6 +2002,8 @@ static bool all_unreclaimable(struct zonelist *zonelist,
+> > >>>>
+> > >>>>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> > >>>>  			gfp_zone(sc->gfp_mask), sc->nodemask) {
+> > >>>>+		if (zone->all_unreclaimable)
+> > >>>>+			continue;
+> > >>>>  		if (!populated_zone(zone))
+> > >>>>  			continue;
+> > >>>>  		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+> > >>>zone_reclaimable checks it. Isn't it enough?
+> > >>I sent one more patch [PATCH] mm: skip zombie in OOM-killer.
+> > >>This two patches are enough.
+> > >Sorry if I confused you.
+> > >I mean zone->all_unreclaimable become true if !zone_reclaimable in balance_pgdat.
+> > >zone_reclaimable compares recent pages_scanned with the number of zone lru pages.
+> > >So too many page scanning in small lru pages makes the zone to unreclaimable zone.
+> > >
+> > >In all_unreclaimable, we calls zone_reclaimable to detect it.
+> > >It's the same thing with your patch.
+> > balance_pgdat set zone->all_unreclaimable, but the problem is that
+> > it is cleaned late.
+> 
+> Yes. It can be delayed by pcp so (zone->all_unreclaimable = true) is
+> a false alram since zone have a free page and it can be returned 
+> to free list by drain_all_pages in next turn.
+> 
+> > 
+> > The problem is that zone->all_unreclaimable = True, but
+> > zone_reclaimable() returns True too.
+> 
+> Why is it a problem? 
+> If zone->all_unreclaimable gives a false alram, we does need to check
+> it again by zone_reclaimable call.
+> 
+> If we believe a false alarm and give up the reclaim, maybe we have to make
+> unnecessary oom kill.
+> 
+> > 
+> > zone->all_unreclaimable will be cleaned in free_*_pages, but this
+> > may be late. It is enough allocate one page from page cache, that
+> > zone_reclaimable() returns True and zone->all_unreclaimable becomes
+> > True.
+> > >>>Does the hang up really happen or see it by code review?
+> > >>Yes. You can reproduce it for help the attached python program. It's
+> > >>not very clever:)
+> > >>It make the following actions in loop:
+> > >>1. fork
+> > >>2. mmap
+> > >>3. touch memory
+> > >>4. read memory
+> > >>5. munmmap
+> > >It seems the test program makes fork bombs and memory hogging.
+> > >If you applied this patch, the problem is gone?
+> > Yes.
+> 
+> Hmm.. Although it solves the problem, I think it's not a good idea that
+> depends on false alram and give up the retry.
+
+Any alternative proposals?  We should get the livelock fixed if possible..
