@@ -1,74 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab1CGO4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 09:56:55 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:62767 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab1CGO4y (ORCPT
+	id S1753919Ab1CGO7i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 09:59:38 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42979 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751221Ab1CGO7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 09:56:54 -0500
-Subject: Re: [PATCH] Make /proc/slabinfo 0400
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, cl@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110306131955.722d9bd5@lxorguk.ukuu.org.uk>
-References: <AANLkTimRN_=APe_PWMFe_6CHHC7psUbCYE-O0qc=mmYY@mail.gmail.com>
-	 <1299270709.3062.313.camel@calx> <1299271377.2071.1406.camel@dan>
-	 <AANLkTik6tAfaSr3wxdQ1u_Hd326TmNZe0-FQc3NuYMKN@mail.gmail.com>
-	 <1299272907.2071.1415.camel@dan>
-	 <AANLkTina+O77BFV+7mO9fX2aJimpO0ov_MKwxGtMwqG+@mail.gmail.com>
-	 <1299275042.2071.1422.camel@dan>
-	 <AANLkTikA=88EMs8RRm0RPQ+Q9nKj=2G+G86h5nCnV7Se@mail.gmail.com>
-	 <AANLkTikQxOgYFLbc2KbEKgRYL1RCnkPE-T80-GBY2Cgj@mail.gmail.com>
-	 <1299279756.3062.361.camel@calx> <20110305162508.GA11120@thunk.org>
-	 <20110306131955.722d9bd5@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Mar 2011 09:56:48 -0500
-Message-ID: <1299509808.2071.1445.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Mar 2011 09:59:34 -0500
+Date: Mon, 7 Mar 2011 14:59:31 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: cliff.cai@analog.com, device-drivers-devel@blackfin.uclinux.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, lrg@slimlogic.co.uk
+Subject: Re: [Device-drivers-devel] [PATCH] Add driver for Analog Devices
+ ADAU1701 SigmaDSP
+Message-ID: <20110307145931.GK13471@opensource.wolfsonmicro.com>
+References: <1299460302-15392-1-git-send-email-cliff.cai@analog.com>
+ <20110307114142.GB13471@opensource.wolfsonmicro.com>
+ <AANLkTikynw7vCsqqyNZW-LFuGUKKQEtG3s4YCZjpOvko@mail.gmail.com>
+ <20110307121502.GG13471@opensource.wolfsonmicro.com>
+ <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinKpvgBokSHpsVf1KVX+m6sD0Xp_dFe8Y+HzY-7@mail.gmail.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-03-06 at 13:19 +0000, Alan Cox wrote:
-> > If we had wrappers for the most common cases, then any cases that were
-> > left that used copy_from_user() explicitly could be flagged and
-> > checked by hand, since they would be exception, and not the rule.
-> 
-> Arjan's copy_from_user validation code already does verification checks
-> on the copies using gcc magic.
-> 
-> Some of the others might be useful - kmalloc_from_user() is a fairly
-> obvious interface, a copy_from_user_into() interface where you pass
-> the destination object and its actual length as well is mostly covered by
-> Arjan's stuff.
-> 
-> Alan
+On Mon, Mar 07, 2011 at 07:29:12AM -0500, Mike Frysinger wrote:
+> On Mon, Mar 7, 2011 at 07:15, Mark Brown wrote:
 
-This is all worthwhile discussion, and a good implementation of these
-kinds of features is available as part of grsecurity (PAX_USERCOPY) - it
-provides additional bounds-checking for copy operations into both heap
-and stack buffers.  Rather than reinventing the wheel, perhaps it would
-be a better use of time to extract this patch and make it suitable for
-inclusion.
+> > It'd seem easier to just merge the two patches together rather than
+> > trying to deal with cross-tree issues.
 
-In the meantime, I'd like to get back to the original patch
-(make /proc/slabinfo 0400), and the subsequent followup patch (randomize
-free objects within a slab).  While it's clear that these patches by
-themselves will not entirely prevent kernel heap exploits, they both
-seem to be sane improvements, won't significantly impact performance,
-and shouldn't be more than a very minor inconvenience to some small
-subset of normal users.  In addition, the absence of these changes might
-undermine future hardening improvements (e.g. with a more hardened heap,
-the readability of /proc/slabinfo may be more necessary for successful
-exploitation).
+> that sounds like a terrible idea.  they're logically different
+> changesets and we shouldnt be squashing them together simply to work
+> around problems with process workflows.
 
--Dan
+I'm not saying squash the changes, I'm saying apply them both via the
+same tree.  From what you're saying the DSP code is used exclusively by
+audio devices anyway...
 
+> > Right, and this isn't a particularly unusual requirement especially if
+> > the driver isn't going to have any ability to interact with the DSP (at
+> > which point it's just coefficient data, the fact that it's a DSP program
+> > is uninteresting).  The problem is that this isn't a great interface for
+> > doing that.
+
+> i dont see suggestions of a better interface anywhere ...
+
+It currently isn't and I'd encourage you to contribute to the discussion
+that's been going on on this, or even better help out with code.  There
+was some discussion on the list recently (in the past month IIRC).
+
+Whatever we do is going to require some additional APIs in alsa-lib, I'd
+expect.  The key requirements I'm aware of are that we be able to
+support:
+
+ - Discoverable userspace interface.
+ - Very large data sizes (megabytes have been mentioned).
+ - Adding and removing parameter sets at runtime (for in system
+   callibration).
+
+Given the number of people looking at this from various angles I'd
+expect to see some sort of progress this year (probably in the next
+quater or so), but obviously no guarantees.
+
+> wrt pm, that's a trivial programming issue that would be resolved in
+> the driver.  userspace need not care.
+
+That's the ideal, I mentioned this as several of my other review
+comments concerned issues with power management in the driver -
+addressing those will probably require that the integration occur.
+
+> wrt stream flows, all the customers we've talked to are fine with this
+> -- having stream control be an application issue.  their application
+> is driving the codec directly and knows when it needs to change the
+> firmware, so it pauses its alsa flow, loads the new firmware, and
+> moves on.
+
+I'd expect that the driver would at least error out if the user tried to
+do the wrong thing here, like I say currently the firmware code is just
+not joined up with anything else at all.
+
+> that said, i dont see anything in asoc today to address this, so if
+> we're simply missing it, please highlight it for us.
+
+There's handling of this in a bunch of drivers for things like EQ
+coefficients - the missing bit is a way of telling the driver that there
+are new coefficient sets available at runtime, at the minute everything
+that supports this enumerates the available coefficient sets in platform
+data and presents the user with an enumeration.
+
+> > It's also not an interface which offers any kind of discoverability or
+> > enumerability, meaning that it's not suitable for integration into
+> > application layer code such as the use case manager.  Applications need
+> > to be hard coded to know that a particular magic sysfs file needs to be
+> > poked.  This would be a big step backwards in terms of the ability to
+> > run off the shelf application software.
+
+> i dont see the issue here.  the firmware is *optional* and does not
+> impair basic audio output.  further, the firmware is fully
+
+If the firmware is totally optional the driver needs updating -
+currently at startup it does:
+
+| +       /* Load default program */
+| +       ret = adau1701_setprogram(codec);
+| +       if (ret < 0) {
+| +               printk(KERN_ERR "Loading program data failed\n");
+| +               goto error;
+| +       }
+
+which will make the firmware mandatory.  In any case, the interface
+issues are there if the firmware is optional or not.
+
+> written/compiled/maintained by the end customer, just like the
+> application.  which means there is no "magic" here -- the end customer
+> is the wizard.
+
+> there is no "stock" firmware that ADI or anyone provides for any of
+> these SigmaDSP audio codecs.
+
+The question of where the DSP firmware (or coefficient data) comes from
+is orthogonal to the issue of runtime management of the data.  The issue
+is how the application layer can tell if there are multiple coefficient
+sets and change between them, either directly or via something like UCM.  
+Even if the system is using a custom application rather than an off the
+shelf distribution (which are becoming more and more common in embedded
+systems) there's no reason they shouldn't be able to rely on standard
+tools for managing their audio configurations.
+
+At present userspace can enumerate and change the runtime configuration
+the system offers via the ALSA APIs (and this will get even better once
+the media controller API starts being used).  This means that you can
+fairly easily write a userspace that'll run on pretty much any Linux
+audio hardware, adapting with pure configuration for which you can
+provide point and click tuning (realistically by allowing the user to
+configure via standard ALSA tools and offering a "save as use case" type
+interface).  If we start adding backdoors to drivers we're taking a step
+back from where we are currently by requiring that the application layer
+know magic stuff about individual systems in order to work with them.
+
+If this was an obscure system-specific feature it'd be much less of an
+issue but this is something which pretty much all modern CODECs can make
+use of.
