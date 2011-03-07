@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab1CGI0B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 03:26:01 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49168 "EHLO
+	id S1755382Ab1CGI0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 03:26:16 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60411 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab1CGIVn (ORCPT
+	with ESMTP id S1751526Ab1CGIVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 03:21:43 -0500
+	Mon, 7 Mar 2011 03:21:42 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=X3jC0I5zmrq4Q8Frp/lugguoGDStDtehEQPh+nJo+9BkLofskInMGd5sHCgWHL/Kwg
-         Oo1kZL97Q1JmkNLiI9EKQkxTsimFrKtgIq6r/wBtM+pBx1vAJ8zOMo6mlECgG2eQEjaf
-         e5Qiz1bulQjDHzWJZXBhh4EO35XtN9OQRV8b8=
+        b=PhBXHKPavcKiIfD/iKfaKWELC6Bezu5nY5ugrYveHFYu3i0tbqhAhu7PamFInwGnGh
+         M59/m0PRn9nx6/lIhZJN/4S7Q19v7IZxkjSpcP/IWdHfaH3RMzpVB9Uy6Q1N4IWoeknW
+         t5zNtyq286G6mQmnV/1jDBZMRgXwKY784JDMs=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 03/21] staging: ft1000: Fix coding style in dsp_reload function.
-Date: Mon,  7 Mar 2011 09:21:08 +0100
-Message-Id: <1299486086-7325-4-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 02/21] staging: ft1000: Fix coding style in card_send_command function.
+Date: Mon,  7 Mar 2011 09:21:07 +0100
+Message-Id: <1299486086-7325-3-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1299486086-7325-1-git-send-email-marek.belisko@open-nandra.com>
@@ -30,93 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   57 +++++++++++++------------
- 1 files changed, 30 insertions(+), 27 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   60 +++++++++++-------------
+ 1 files changed, 28 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index ded13f2..53073d5 100644
+index 293a469..ded13f2 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -534,49 +534,52 @@ void card_send_command(struct ft1000_device *ft1000dev, void *ptempbuffer,
- //-----------------------------------------------------------------------
- int dsp_reload(struct ft1000_device *ft1000dev)
+@@ -481,51 +481,47 @@ static void card_reset_dsp(struct ft1000_device *ft1000dev, bool value)
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-void card_send_command(struct ft1000_device *ft1000dev, void *ptempbuffer, int size)
++void card_send_command(struct ft1000_device *ft1000dev, void *ptempbuffer,
++		       int size)
  {
--    u16 status;
--    u16 tempword;
--    u32 templong;
-+	u16 status;
-+	u16 tempword;
-+	u32 templong;
+-    unsigned short temp;
+-    unsigned char *commandbuf;
++	unsigned short temp;
++	unsigned char *commandbuf;
  
- 	struct ft1000_info *pft1000info;
+-    DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
++	DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
  
--    pft1000info = netdev_priv(ft1000dev->net);
-+	pft1000info = netdev_priv(ft1000dev->net);
+-    commandbuf =(unsigned char*) kmalloc(size+2, GFP_KERNEL);
+-    memcpy((void*)commandbuf+2, (void*)ptempbuffer, size);
++	commandbuf = (unsigned char *)kmalloc(size + 2, GFP_KERNEL);
++	memcpy((void *)commandbuf + 2, (void *)ptempbuffer, size);
  
--    pft1000info->CardReady = 0;
-+	pft1000info->CardReady = 0;
+-    //DEBUG("card_send_command: Command Send\n");
++	//DEBUG("card_send_command: Command Send\n");
  
--    // Program Interrupt Mask register
--    status = ft1000_write_register (ft1000dev, 0xffff, FT1000_REG_SUP_IMASK);
-+	/* Program Interrupt Mask register */
-+	status = ft1000_write_register(ft1000dev, 0xffff, FT1000_REG_SUP_IMASK);
+-    ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
++	ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
  
--    status = ft1000_read_register (ft1000dev, &tempword, FT1000_REG_RESET);
--    tempword |= ASIC_RESET_BIT;
--    status = ft1000_write_register (ft1000dev, tempword, FT1000_REG_RESET);
--    msleep(1000);
--    status = ft1000_read_register (ft1000dev, &tempword, FT1000_REG_RESET);
--    DEBUG("Reset Register = 0x%x\n", tempword);
-+	status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
-+	tempword |= ASIC_RESET_BIT;
-+	status = ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
-+	msleep(1000);
-+	status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
-+	DEBUG("Reset Register = 0x%x\n", tempword);
+-    if (temp & 0x0100)
+-    {
+-       msleep(10);
+-    }
++	if (temp & 0x0100)
++		msleep(10);
  
--    // Toggle DSP reset
--    card_reset_dsp (ft1000dev, 1);
--    msleep(1000);
--    card_reset_dsp (ft1000dev, 0);
--    msleep(1000);
-+	/* Toggle DSP reset */
-+	card_reset_dsp(ft1000dev, 1);
-+	msleep(1000);
-+	card_reset_dsp(ft1000dev, 0);
-+	msleep(1000);
+-    // check for odd word
+-    size = size + 2;
+-    if (size % 4)
+-    {
+-       // Must force to be 32 bit aligned
+-       size += 4 - (size % 4);
+-    }
++	/* check for odd word */
++	size = size + 2;
  
--    status = ft1000_write_register (ft1000dev, HOST_INTF_BE, FT1000_REG_SUP_CTRL);
-+	status =
-+	    ft1000_write_register(ft1000dev, HOST_INTF_BE, FT1000_REG_SUP_CTRL);
++	/* Must force to be 32 bit aligned */
++	if (size % 4)
++		size += 4 - (size % 4);
  
--    // Let's check for FEFE
--    status = ft1000_read_dpram32 (ft1000dev, FT1000_MAG_DPRAM_FEFE_INDX, (u8 *)&templong, 4);
--    DEBUG("templong (fefe) = 0x%8x\n", templong);
-+	/* Let's check for FEFE */
-+	status =
-+	    ft1000_read_dpram32(ft1000dev, FT1000_MAG_DPRAM_FEFE_INDX,
-+				(u8 *) &templong, 4);
-+	DEBUG("templong (fefe) = 0x%8x\n", templong);
+-    //DEBUG("card_send_command: write dpram ... size=%d\n", size);
+-    ft1000_write_dpram32(ft1000dev, 0,commandbuf, size);
+-    msleep(1);
+-    //DEBUG("card_send_command: write into doorbell ...\n");
+-    ft1000_write_register(ft1000dev,  FT1000_DB_DPRAM_TX ,FT1000_REG_DOORBELL) ;
+-    msleep(1);
++	//DEBUG("card_send_command: write dpram ... size=%d\n", size);
++	ft1000_write_dpram32(ft1000dev, 0, commandbuf, size);
++	msleep(1);
++	//DEBUG("card_send_command: write into doorbell ...\n");
++	ft1000_write_register(ft1000dev, FT1000_DB_DPRAM_TX,
++			      FT1000_REG_DOORBELL);
++	msleep(1);
  
--    // call codeloader
--    status = scram_dnldr(ft1000dev, pFileStart, FileLength);
-+	/* call codeloader */
-+	status = scram_dnldr(ft1000dev, pFileStart, FileLength);
+-    ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
+-    //DEBUG("card_send_command: read doorbell ...temp=%x\n", temp);
+-    if ( (temp & 0x0100) == 0)
+-    {
+-       //DEBUG("card_send_command: Message sent\n");
+-    }
++	ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
++	//DEBUG("card_send_command: read doorbell ...temp=%x\n", temp);
++	if ((temp & 0x0100) == 0) {
++		//DEBUG("card_send_command: Message sent\n");
++	}
  
- 	if (status != STATUS_SUCCESS)
- 		return -EIO;
- 
--    msleep(1000);
-+	msleep(1000);
- 
--    DEBUG("dsp_reload returned\n");
--	return 0;
-+	DEBUG("dsp_reload returned\n");
- 
-+	return 0;
  }
  
- //---------------------------------------------------------------------------
+-
+ //--------------------------------------------------------------------------
+ //
+ //  Function:   dsp_reload
 -- 
 1.7.1
 
