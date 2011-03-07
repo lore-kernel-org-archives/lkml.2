@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab1CGFvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 00:51:47 -0500
-Received: from mail-gw0-f51.google.com ([74.125.83.51]:40948 "EHLO
-	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1CGFvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 00:51:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=C/Qs0Z5WDeXvcvfw+D7oveMKol7frg8C2YRjtMyQq3Ww4NidEyskO+/7c6Ki/E0TLr
-         SntJZLbgKNs14hxRiGpXDhb2/QtgZmWX2v7WjoO0Q1cPOx5B07BUreVobuDvjKl8Qxfb
-         VrqhGpScUytjISIPcBYBV9kRHpnqIjME7cTIo=
-Subject: [PATCH 2/2] [ARM] am300epd: fix resource leak in
-	am300_init_gpio_regs error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jaya Kumar <jayakumar.lkml@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1299477315.10486.1.camel@mola>
-References: <1299477315.10486.1.camel@mola>
-Content-Type: text/plain
-Date: Mon, 07 Mar 2011 13:56:11 +0800
-Message-Id: <1299477371.10486.2.camel@mola>
+	id S1751557Ab1CGFy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 00:54:26 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:45894 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750754Ab1CGFyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 00:54:25 -0500
+Date: Mon, 7 Mar 2011 16:54:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steve Sakoman <steve@sakoman.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: linux-next: manual merge of the usb tree with the omap_dss2 tree
+Message-Id: <20110307165418.f17fdf4d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If gpio_request fails when i > 0, gpios[0] is not freed in current
-implementation.
+Hi Greg,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- arch/arm/mach-pxa/am300epd.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+Today's linux-next merge of the usb tree got a conflict in
+arch/arm/mach-omap2/board-overo.c between commit fd045fe21361 ("OMAP:
+DSS2: Add DSS2 support for Overo") from the omap_dss2 tree and commits
+181b250cf532 ("arm: omap: usb: create common enums and structures for
+ehci and ohci") and 9e64bb1e9f06 ("arm: omap: usb: Invoke usbhs core
+device initialization") from the usb tree.
 
-diff --git a/arch/arm/mach-pxa/am300epd.c b/arch/arm/mach-pxa/am300epd.c
-index 993d75e..fa8bad2 100644
---- a/arch/arm/mach-pxa/am300epd.c
-+++ b/arch/arm/mach-pxa/am300epd.c
-@@ -125,10 +125,7 @@ static int am300_init_gpio_regs(struct broadsheetfb_par *par)
- 		if (err) {
- 			dev_err(&am300_device->dev, "failed requesting "
- 				"gpio %d, err=%d\n", i, err);
--			while (i >= DB0_GPIO_PIN)
--				gpio_free(i--);
--			i = ARRAY_SIZE(gpios) - 1;
--			goto err_req_gpio;
-+			goto err_req_gpio2;
- 		}
- 	}
- 
-@@ -159,9 +156,13 @@ static int am300_init_gpio_regs(struct broadsheetfb_par *par)
- 
- 	return 0;
- 
-+err_req_gpio2:
-+	while (--i >= DB0_GPIO_PIN)
-+		gpio_free(i);
-+	i = ARRAY_SIZE(gpios);
- err_req_gpio:
--	while (i > 0)
--		gpio_free(gpios[i--]);
-+	while (--i >= 0)
-+		gpio_free(gpios[i]);
- 
- 	return err;
- }
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 -- 
-1.7.2
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-
+diff --cc arch/arm/mach-omap2/board-overo.c
+index d621ee8,08770cc..0000000
+--- a/arch/arm/mach-omap2/board-overo.c
++++ b/arch/arm/mach-omap2/board-overo.c
+@@@ -580,12 -414,19 +580,12 @@@ static void __init overo_init_early(voi
+  	omap2_init_common_infrastructure();
+  	omap2_init_common_devices(mt46h32m32lf6_sdrc_params,
+  				  mt46h32m32lf6_sdrc_params);
+ -	omap_init_irq();
+  }
+  
+- static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
+- 	.port_mode[0] = EHCI_HCD_OMAP_MODE_UNKNOWN,
+- 	.port_mode[1] = EHCI_HCD_OMAP_MODE_PHY,
+- 	.port_mode[2] = EHCI_HCD_OMAP_MODE_UNKNOWN,
+ -static struct platform_device *overo_devices[] __initdata = {
+ -	&overo_lcd_device,
+ -};
+ -
++ static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
++ 	.port_mode[0] = OMAP_USBHS_PORT_MODE_UNUSED,
++ 	.port_mode[1] = OMAP_EHCI_PORT_MODE_PHY,
++ 	.port_mode[2] = OMAP_USBHS_PORT_MODE_UNUSED,
+  
+  	.phy_reset  = true,
+  	.reset_gpio_port[0]  = -EINVAL,
+@@@ -613,10 -454,9 +613,10 @@@ static void __init overo_init(void
+  	omap_serial_init();
+  	overo_flash_init();
+  	usb_musb_init(&musb_board_data);
+- 	usb_ehci_init(&ehci_pdata);
++ 	usbhs_init(&usbhs_bdata);
+ -	overo_ads7846_init();
+ +	overo_spi_init();
+  	overo_init_smsc911x();
+ +	overo_display_init();
+  
+  	/* Ensure SDRC pins are mux'd for self-refresh */
+  	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
