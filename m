@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1CGX55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 18:57:57 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35122
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750754Ab1CGX5z (ORCPT
+	id S1753604Ab1CGX7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 18:59:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41128 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751344Ab1CGX7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 18:57:55 -0500
-Date: Mon, 07 Mar 2011 15:58:32 -0800 (PST)
-Message-Id: <20110307.155832.52202423.davem@davemloft.net>
-To: arnd@arndb.de
-Cc: nikai@nikai.net, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/macvtap: fix error check
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201103071059.04321.arnd@arndb.de>
-References: <20110305004941.7b195e9d@absol.kitzblitz>
-	<201103071059.04321.arnd@arndb.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 7 Mar 2011 18:59:14 -0500
+Date: Mon, 7 Mar 2011 15:58:23 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pidns: Make pid_max per namespace
+Message-Id: <20110307155823.22e47d73.akpm@linux-foundation.org>
+In-Reply-To: <4D6F53B5.5090105@parallels.com>
+References: <4D6F53B5.5090105@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Mon, 7 Mar 2011 10:59:04 +0100
+On Thu, 03 Mar 2011 11:39:17 +0300
+Pavel Emelyanov <xemul@parallels.com> wrote:
 
-> On Saturday 05 March 2011, Nicolas Kaiser wrote:
->> 'len' is unsigned of type size_t and can't be negative.
->> 
->> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> Rationale:
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> On x86_64 with big ram people running containers set pid_max on host to 
+> large values to be able to launch more containers. At the same time 
+> containers running 32-bit software experience problems with large pids - ps
+> calls readdir/stat on proc entries and inode's i_ino happen to be too big 
+> for the 32-bit API.
 > 
-> I think it's harmless: the worst thing that can happen is
-> macvtap_alloc_skb() failing with ENOMEM when it gets a
-> large argument, but we could have it in -stable just to
-> be sure.
+> Thus, the ability to limit the pid value inside container is required.
+> 
 
-I'm just going to add it to net-2.6
+This is a behavioural change, isn't it?  In current kernels a write to
+/proc/sys/kernel/pid_max will change the max pid on all processes. 
+After this change, that write will only affect processes in the current
+namespace.  Anyone who was depending on the old behaviour might run
+into problems?
 
-I verified that gcc is not generating this test at all
-currently, so putting this into -stable is quite pointless.
+Also: documentation.  Documentation/sysctl/kernel.txt would like an
+update.  And perhaps also the pidns documentation which we forgot to
+create :(
+
+
