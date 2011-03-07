@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab1CGJYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 04:24:22 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56028 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab1CGJYV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 04:24:21 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 7 Mar 2011 18:17:54 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCHv2 02/24] sys_swapon: remove changelog from function
- comment
-Message-Id: <20110307181754.65e3d230.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1299343345-3984-3-git-send-email-cesarb@cesarb.net>
-References: <1299343345-3984-1-git-send-email-cesarb@cesarb.net>
-	<1299343345-3984-3-git-send-email-cesarb@cesarb.net>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755335Ab1CGJOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 04:14:36 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:50119 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754243Ab1CGJOd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Mar 2011 04:14:33 -0500
+From: Daniel WILLERUD <daniel.willerud@stericsson.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 7 Mar 2011 10:13:55 +0100
+Subject: RE: [PATCH 3/5] mfd: free dangling irq in ab8500 gpadc probe error
+ path
+Thread-Topic: [PATCH 3/5] mfd: free dangling irq in ab8500 gpadc probe error
+ path
+Thread-Index: AcvbIpbB+o46TmwMQPSY+3RIJfG4wgBhUhDg
+Message-ID: <757395B8DE5A844B80F3F4BE9867DDB64FAF4FA2AA@EXDCVYMBSTM006.EQ1STM.local>
+References: <1299321987-6832-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1299321987-6832-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  5 Mar 2011 13:42:03 -0300
-Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+Acked-by: Daniel Willerud <daniel.willerud@stericsson.com>
 
-> Changelogs belong in the git history instead of in the source code.
-> 
-> Also, "The swapon system call" is redundant with
-> "SYSCALL_DEFINE2(swapon, ...)".
-> 
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> Tested-by: Eric B Munson <emunson@mgebm.net>
-> Acked-by: Eric B Munson <emunson@mgebm.net>
+-----Original Message-----
+From: Linus WALLEIJ 
+Sent: den 5 mars 2011 11:46
+To: Samuel Ortiz; linux-kernel@vger.kernel.org
+Cc: Lee Jones; Daniel WILLERUD; Linus Walleij
+Subject: [PATCH 3/5] mfd: free dangling irq in ab8500 gpadc probe error path
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Daniel Willerud <daniel.willerud@stericsson.com>
+
+Signed-off-by: Daniel Willerud <daniel.willerud@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/ab8500-gpadc.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
+index 178cbc5..b5b75b7 100644
+--- a/drivers/mfd/ab8500-gpadc.c
++++ b/drivers/mfd/ab8500-gpadc.c
+@@ -267,11 +267,13 @@ static int __devinit ab8500_gpadc_probe(struct platform_device *pdev)
+ 	if (IS_ERR(gpadc->regu)) {
+ 		ret = PTR_ERR(gpadc->regu);
+ 		dev_err(gpadc->dev, "failed to get vtvout LDO\n");
+-		goto fail;
++		goto fail_irq;
+ 	}
+ 	list_add_tail(&gpadc->node, &ab8500_gpadc_list);
+ 	dev_dbg(gpadc->dev, "probe success\n");
+ 	return 0;
++fail_irq:
++	free_irq(gpadc->irq, gpadc);
+ fail:
+ 	kfree(gpadc);
+ 	gpadc = NULL;
+-- 
+1.7.3.2
 
