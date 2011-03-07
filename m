@@ -1,98 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab1CGRkU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Mar 2011 12:40:20 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47188 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751Ab1CGRkS convert rfc822-to-8bit (ORCPT
+	id S1755192Ab1CGRlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Mar 2011 12:41:18 -0500
+Received: from sj-iport-2.cisco.com ([171.71.176.71]:35938 "EHLO
+	sj-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab1CGRlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Mar 2011 12:40:18 -0500
-From: "Igor M. Liplianin" <liplianin@me.by>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: Kernelspace firmware loaders (was: linux-next: manual merge of the staging tree with the v4l-dvb tree)
-Date: Mon, 7 Mar 2011 19:40:28 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.37-smp; KDE/4.4.3; i686; ; )
-Cc: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Ben Gamari <bgamari.foss@gmail.com>
-References: <20110304163905.ed6dd630.sfr@canb.auug.org.au> <20110307161658.GA9088@kroah.com> <201103071751.28477.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201103071751.28477.laurent.pinchart@ideasonboard.com>
+	Mon, 7 Mar 2011 12:41:15 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAAyndE2rR7Ht/2dsb2JhbACmTnSiUptdhWIEhRyHFIND
+X-IronPort-AV: E=Sophos;i="4.62,278,1297036800"; 
+   d="scan'208";a="317582700"
+Message-ID: <4D7518DB.9090004@cisco.com>
+Date: Mon, 07 Mar 2011 10:41:47 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201103071940.29074.liplianin@me.by>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 2/2] perf script: support custom field selection for output
+References: <1299449795-12933-1-git-send-email-daahern@cisco.com> <1299449795-12933-3-git-send-email-daahern@cisco.com> <20110307165009.GF1873@nowhere>
+In-Reply-To: <20110307165009.GF1873@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В сообщении от 7 марта 2011 18:51:27 автор Laurent Pinchart написал:
-> Hi Greg,
-> 
-> On Monday 07 March 2011 17:16:58 Greg KH wrote:
-> > On Mon, Mar 07, 2011 at 03:07:36PM +0100, Laurent Pinchart wrote:
-> > > On Friday 04 March 2011 18:54:24 Mauro Carvalho Chehab wrote:
-> > > > Em 04-03-2011 14:13, Greg KH escreveu:
-> > > > > On Fri, Mar 04, 2011 at 04:39:05PM +1100, Stephen Rothwell wrote:
-> > > > >> Today's linux-next merge of the staging tree got a conflict in
-> > > > >> drivers/staging/Kconfig between commit
-> > > > >> a1256092a1e87511c977a3d0ef96151cda77e5c9 ("[media] Altera FPGA
-> > > > >> firmware download module") from the v4l-dvb tree and commit
-> > > > >> 0867b42113ec4eb8646eb361b15cbcfb741ddf5b ("staging: gma500: Intel
-> > > > >> GMA500 staging driver") from the staging tree.
-> > > > >> 
-> > > > >> I fixed it up (see below) and can carry the fix as necessary.
-> > > > > 
-> > > > > That looks correct.
-> > > > > 
-> > > > > Mauro, what is this driver and why is it added to the staging tree?
-> > > > 
-> > > > This driver implements the FPGA programming logic for a firmware
-> > > > required by a DVB driver, and was proposed initially for 2.6.37
-> > > > inclusion. During the 2.6.38 development cycle, it suffered several
-> > > > revisions, based on our input at the media and lkml mailing lists,
-> > > > where Igor fixed all CodingStyle issues.
-> > > > 
-> > > > In the last minute, during 2.6.38 merge window, two developers
-> > > > (Laurent and Ben) [1] complained against adding a driver for loading
-> > > > FPGA firmware as-is. So, I decided to add it, for now, at staging,
-> > > > to avoid needing to postpone a long series of patches again just
-> > > > because of that, especially since a series of DVB-C devices are
-> > > > without support on Linux without this patch series, and there are
-> > > > very few DVB-C devices currently supported.
-> > > > 
-> > > > The Altera driver is compliant with CodingStyle, and, from my side,
-> > > > it is ok to move it to drivers/others, but it doesn't hurt to give
-> > > > some time for Ben and Laurent to propose alternative way of
-> > > > implementing the firmware request logic.
-> > > > 
-> > > > If nothing happens until 2.6.40 merge window, I think we should go
-> > > > forward and move it to the proper place.
-> > > 
-> > > What's the policy regarding firmware loaders in kernelspace vs.
-> > > userspace ? JTAG is a quite complex protocol, and we already have lots
-> > > of JTAG libraries in userspace (http://urjtag.org/ seems to be the
-> > > most popular one). We also have userspace firmware loaders (such as
-> > > fxload for the Cypress EZ USB microcontrollers). Do we need a
-> > > kernelspace JTAG implementation ?
-> > > 
-> > > > [1]
-> > > > http://www.mail-archive.com/linux-media@vger.kernel.org/msg26422.html
-> > 
-> > If the code is just a "pass-through" to the hardware, I have no
-> > objection to the driver being in the kernel, if it needs to be in order
-> > to control the hardware properly.
-> 
-> The code implements a JTAG TAP state machine with a bit-banging algorithm,
-> including direct parallel port (LPT) access, and a bitcode interpreter for
-LPT access procedure included for historical reason, on early development stages it was used for 
-program FPGA, then we swithed to cx23885 GPIO's. Developer can choose(develop) his own procedure 
-for JTAG pins access.
 
-> the files generated by the Altera FPGA proprietary development tools.
-So, we used this tools. And the code is from widely opened sources.
 
--- 
-Igor M. Liplianin
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+On 03/07/11 09:50, Frederic Weisbecker wrote:
+>> +-U::
+>> +--show-unresolved::
+>> +        Display all addresses including unresolved to a symbol.
+> 
+> We should always do it I think. As long as the sym format is asked, try
+> to resolve it, otherwise print the raw address.
+
+Ok. I'll remove.
+
+
+>> +/* default set to maintain compatibility with current format */
+>> +#define output_fields_default   (PERF_OUTPUT_COMM | PERF_OUTPUT_PID | \
+>> +				PERF_OUTPUT_CPU | PERF_OUTPUT_TIME | \
+>> +				PERF_OUTPUT_EVNAME | PERF_OUTPUT_TRACE)
+>> +
+>> +u64 output_fields = output_fields_default;
+> 
+> Hm, we should have one default for tracepoint events and one
+> for others. For example dso and sym make sense for hardware,
+> breakpoint and software event, but it makes few sense for tracepoints.
+
+That default was strictly to maintain backwards compatibility with
+existing output. So you would like to see:
+
+out_fields_def_trace = <the above default>
+
+out_fields_def_sw = PERF_OUTPUT_COMM | PERF_OUTPUT_TID | \
+                    PERF_OUTPUT_CPU | PERF_OUTPUT_TIME | \
+                    PERF_OUTPUT_EVNAM | PERF_OUTPUT_SYM
+
+If user does not specify custom option, set output_fields to default
+based on event type - which conceptually can change sample to sample
+(though perf currently can't handle a S/W and a trace event in the same
+file).
+
+As for H/W events, the cycles format should be the same as the S/W
+format. After that perf-record does not mix well with H/W events.
+
+
+>>  static void process_event(union perf_event *event __unused,
+>>  			  struct perf_sample *sample,
+>> @@ -31,8 +107,15 @@ static void process_event(union perf_event *event __unused,
+>>  	 * field, although it should be the same than this perf
+>>  	 * event pid
+>>  	 */
+>> -	print_event(sample->cpu, sample->raw_data, sample->raw_size,
+>> -		    sample->time, thread->comm);
+>> +	if (PRINT_FIELD(TRACE))
+>> +		print_event(sample->cpu, sample->raw_data,
+>> +			    sample->raw_size, sample->time,
+>> +			    thread->comm);
+> 
+> The print_event() thing we have in trace-event-parse.c should really handle only
+> the raw trace itself. More on that below when I reach that file.
+
+Ok
+
+
+>> +		callchain_cursor_commit(cursor);
+>> +		if (cursor->nr == 0)
+>> +			return;
+> 
+> I guess you don't need the above check.
+
+Ok. I'll remove.
+
+
+>> diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+>> index d8e622d..9ac6524 100644
+>> --- a/tools/perf/util/trace-event-parse.c
+>> +++ b/tools/perf/util/trace-event-parse.c
+>> @@ -32,6 +32,7 @@
+>>  #include "../perf.h"
+>>  #include "util.h"
+>>  #include "trace-event.h"
+>> +#include "output.h"
+>>  
+>>  int header_page_ts_offset;
+>>  int header_page_ts_size;
+>> @@ -2683,13 +2684,18 @@ static void print_graph_proc(int pid, const char *comm)
+>>  	/* sign + log10(MAX_INT) + '\0' */
+>>  	char pid_str[11];
+>>  	int spaces = 0;
+>> -	int len;
+>> +	int len = 0;
+>>  	int i;
+>>  
+>>  	sprintf(pid_str, "%d", pid);
+>>  
+>>  	/* 1 stands for the "-" character */
+>> -	len = strlen(comm) + strlen(pid_str) + 1;
+>> +	if (PRINT_FIELD(COMM) && PRINT_FIELD(PID))
+>> +		len = strlen(comm) + strlen(pid_str) + 1;
+>> +	else if (PRINT_FIELD(COMM))
+>> +		len = strlen(comm);
+>> +	else if (PRINT_FIELD(PID))
+>> +		len = strlen(pid_str);
+> 
+> For now we don't use that function because the function graph tracer
+> is not yet supported by perf.
+> 
+> Just forget about that, we'll take care of that later. Consider
+> pretty_print_func_graph() can't be called.
+
+That certainly helps make it simpler. I left the printing of those
+fields in that file b/c of that function.
+
+> 
+> trace-event-parse.c and its print_event() pretty printing should not care
+> about the output format. It only needs to print the raw trace itself.
+> All the comm, time, etc... things should be handled from perf script
+> core.
+> 
+> In fact, print_event() should really be renamed print_trace() or something.
+
+Ok. I'll pull the comm, pid, time options into builtin-script's version
+and rename the function.
+
+David
+
+> 
+> Other than that, looks like a right direction.
+> 
+> Thanks!
